@@ -40,6 +40,24 @@ static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QuerySecurity r;
+
+	r.in.handle = handle;
+	r.in.sec_info = 7;
+
+	status = dcerpc_samr_QuerySecurity(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QuerySecurity failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 
 static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				struct policy_handle *handle)
@@ -141,6 +159,10 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!test_QuerySecurity(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
 	if (!test_QueryUserInfo(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
@@ -173,6 +195,10 @@ static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!test_QuerySecurity(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
 	if (!test_QueryGroupInfo(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
@@ -203,6 +229,10 @@ static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenAlias(%u) failed - %s\n", rid, nt_errstr(status));
 		return False;
+	}
+
+	if (!test_QuerySecurity(p, mem_ctx, &acct_handle)) {
+		ret = False;
 	}
 
 	if (!test_QueryAliasInfo(p, mem_ctx, &acct_handle)) {
@@ -370,6 +400,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!test_QuerySecurity(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
 	if (!test_QueryDomainInfo(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
@@ -508,6 +542,10 @@ BOOL torture_rpc_samr(int dummy)
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_Connect(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_QuerySecurity(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

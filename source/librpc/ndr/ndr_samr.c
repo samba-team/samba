@@ -28,6 +28,8 @@ NTSTATUS ndr_push_samr_SetSecurity(struct ndr_push *ndr, struct samr_SetSecurity
 
 NTSTATUS ndr_push_samr_QuerySecurity(struct ndr_push *ndr, struct samr_QuerySecurity *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.sec_info));
 
 	return NT_STATUS_OK;
 }
@@ -500,6 +502,26 @@ NTSTATUS ndr_pull_samr_SetSecurity(struct ndr_pull *ndr, struct samr_SetSecurity
 
 NTSTATUS ndr_pull_samr_QuerySecurity(struct ndr_pull *ndr, struct samr_QuerySecurity *r)
 {
+	uint32 _ptr_length;
+	uint32 _ptr_sd;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_length));
+	if (_ptr_length) {
+		NDR_ALLOC(ndr, r->out.length);
+	} else {
+		r->out.length = NULL;
+	}
+	if (r->out.length) {
+		NDR_CHECK(ndr_pull_uint32(ndr, r->out.length));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sd));
+	if (_ptr_sd) {
+		NDR_ALLOC(ndr, r->out.sd);
+	} else {
+		r->out.sd = NULL;
+	}
+	if (r->out.sd) {
+	NDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, r->out.sd, (ndr_pull_flags_fn_t) ndr_pull_security_descriptor));
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -2359,11 +2381,28 @@ void ndr_print_samr_QuerySecurity(struct ndr_print *ndr, const char *name, int f
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "samr_QuerySecurity");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "sec_info", r->in.sec_info);
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "samr_QuerySecurity");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "length", r->out.length);
+	ndr->depth++;
+	if (r->out.length) {
+		ndr_print_uint32(ndr, "length", *r->out.length);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sd", r->out.sd);
+	ndr->depth++;
+	if (r->out.sd) {
+		ndr_print_security_descriptor(ndr, "sd", r->out.sd);
+	}
+	ndr->depth--;
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}

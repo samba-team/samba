@@ -29,7 +29,12 @@
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS samr_QuerySecurity ();
+	NTSTATUS samr_QuerySecurity (
+		[in,ref]          policy_handle *handle,
+		[in]              uint32 sec_info,
+		[out]             uint32 *length,
+		[out,subcontext]  security_descriptor *sd
+		);
 
 	/******************/
 	/* Function: 0x04 */

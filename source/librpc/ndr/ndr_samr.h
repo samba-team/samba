@@ -111,9 +111,13 @@ struct samr_SetSecurity {
 
 struct samr_QuerySecurity {
 	struct {
+		struct policy_handle *handle;
+		uint32 sec_info;
 	} in;
 
 	struct {
+		uint32 *length;
+		struct security_descriptor *sd;
 		NTSTATUS result;
 	} out;
 
