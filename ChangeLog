@@ -1,3 +1,14 @@
+Tue Sep  9 07:46:05 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_addrs.c: rewrote.  Now should be able to handle
+ 	aliases and IPv6 addresses
+
+	* kuser/klist.c: try printing IPv6 addresses
+
+	* kdc/kerberos5.c: increase the arbitrary limit from 1024 to 8192
+
+	* configure.in: check for <netinet/in6_var.h>
+
 Mon Sep  8 02:57:14 1997  Assar Westerlund  <assar@sics.se>
 
 	* doc: fixes
