@@ -64,7 +64,9 @@ TicketFlags ::=   BIT STRING {
 		initial(9),
 		pre-authent(10),
 		hw-authent(11),
-		transited-policy-checked(12)
+		transited-policy-checked(12),
+		ok-as-delegate(13),
+		anonymous(14),
 }
 
 KDCOptions ::=   BIT STRING {
@@ -80,6 +82,7 @@ KDCOptions ::=   BIT STRING {
 		unused9(9),
 		unused10(10),
 		unused11(11),
+		request-version4(13),		-- non-standard
 		request-anonymous(14),
 		disable-transited-check(26),
 		renewable-ok(27),
