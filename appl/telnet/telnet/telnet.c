@@ -2071,9 +2071,13 @@ my_telnet(char *user)
 	send_will(TELOPT_ENCRYPT, 1);
 	while (1) {
 	    if (my_want_state_is_wont(TELOPT_AUTHENTICATION)) {
-		printf("\nServer refused to negotiate authentication,\n");
-		printf("which is required for encryption.\n");
-		Exit(1);
+		if (wantencryption == -1) {
+		    break;
+		} else {
+		    printf("\nServer refused to negotiate authentication,\n");
+		    printf("which is required for encryption.\n");
+		    Exit(1);
+		}
 	    }
 	    if (auth_has_failed) {
 		printf("\nAuthentication negotation has failed,\n");

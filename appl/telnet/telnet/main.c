@@ -329,6 +329,7 @@ main(int argc, char **argv)
 #if defined(ENCRYPTION)
 		encrypt_auto(1);
 		decrypt_auto(1);
+		wantencryption = -1;
 #endif
 	}
 
