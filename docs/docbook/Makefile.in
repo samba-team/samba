@@ -13,16 +13,14 @@
 
 MANPAGES_NAMES=findsmb.1 smbclient.1 \
 	smbspool.8 lmhosts.5 \
-	smbcontrol.1  smbstatus.1 \
-	make_smbcodepage.1  smbd.8 \
-	smbtar.1 nmbd.8 smbmnt.8 \
-	smbumount.8 nmblookup.1 \
-	smbmount.8 swat.8 rpcclient.1	 \
+	smbcontrol.1 smbstatus.1 \
+	smbd.8 net.8 smbtar.1 nmbd.8 \
+	smbmnt.8 smbumount.8 nmblookup.1 \
+	smbmount.8 swat.8 rpcclient.1 \
 	smbpasswd.5 testparm.1 samba.7 \
 	smbpasswd.8 testprns.1 \
 	smb.conf.5 wbinfo.1 pdbedit.8 \
 	smbcacls.1 smbsh.1 winbindd.8 \
-	make_unicodemap.1 net.8 \
 	smbgroupedit.8 vfstest.1
 
 ## This part contains only rules. You shouldn't need to change it 

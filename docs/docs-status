@@ -50,5 +50,6 @@ Merge the various docs about wins and browsing
 Windows NT 4.0 Style Trust Relationship
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
 ldap passwd sync
+merge the various pdb docs
 
 http://www.unav.es/cti/ldap-smb/smb-ldap-3-howto.html
