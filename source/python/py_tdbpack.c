@@ -636,6 +636,9 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 	if (PyList_Append(val_list, str_obj) == -1)
 		goto failed;
 	
+	Py_DECREF(len_obj);
+	Py_DECREF(str_obj);
+	
 	return val_list;
 
   failed:
