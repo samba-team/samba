@@ -270,13 +270,23 @@
 					</xsl:element>
 				</xsl:element>
 				<xsl:element name="imageobject">
+					<xsl:attribute name="role"><xsl:text>html</xsl:text></xsl:attribute>
 					<xsl:element name="imagedata">
 						<xsl:attribute name="fileref">
-							<xsl:text>howto/imagefiles/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
+							<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
 						<xsl:attribute name="scale"><xsl:text>50</xsl:text></xsl:attribute>
 						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
 					</xsl:element>
 				</xsl:element>
+				<xsl:element name="imageobject">
+					<xsl:element name="imagedata">
+						<xsl:attribute name="fileref">
+							<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
+						<xsl:attribute name="scale"><xsl:text>50</xsl:text></xsl:attribute>
+						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
+					</xsl:element>
+				</xsl:element>
+
 			</xsl:element>
 		</xsl:element>
 	</xsl:template>

@@ -104,10 +104,7 @@ txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-G
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) $(HTMLDIR)/CSS
 
 html-single: $(HTMLDIR) $(HTMLDIR)/CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html $(HTMLDIR)/Samba-Guide.html
-	@if [ ! -d $(HTMLDIR)/images/ ]; then \
-		mkdir $(HTMLDIR)/images/; \
-	fi \
-	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
+	cp -p $(GUIDEDOC_IMAGES_PNG) $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/images/
 
 html: $(HTMLDIR)/howto $(HTMLDIR)/guide $(HTMLDIR)/devel
 	
