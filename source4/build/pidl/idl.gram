@@ -17,7 +17,7 @@ module_header: '[' <commit> module_param(s? /,/) ']'
           }}
 	      | <error?>
 
-module_param: identifier '(' text ')'
+module_param: identifier '(' <commit> text ')'
           {{ "$item{identifier}" => "$item{text}" }}
           | <error>
 

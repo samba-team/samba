@@ -6,6 +6,7 @@
 
 [ uuid(12345778-1234-abcd-ef00-0123456789ab),
   version(0.0),
+  endpoints(lsarpc lsass),
   pointer_default(unique)
 ] interface lsarpc
 {
@@ -444,7 +445,20 @@
 	NTSTATUS UNK_GET_CONNUSER ();
 	/* Function:          0x2e */
 	NTSTATUS QUERYINFO2 ();
+}
 
 
+[ 
+  uuid(3919286a-b10c-11d0-9ba8-00c04fd92ef5)
+  version(0.0),
+  endpoints(lsarpc,lsass),
+  pointer_default(unique)
+] 
+interface lsads
+{
+
+	/*****************/
+        /* Function 0x00 */
+	lsads_Unknown0();
 
 }

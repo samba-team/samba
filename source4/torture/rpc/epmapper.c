@@ -118,6 +118,11 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.entry_handle = &handle;
 	r.in.max_towers = 100;
 
+	if (twr->towers.num_floors != 5) {
+		printf(" tower has %d floors - skipping test_Map\n", twr->towers.num_floors);
+		return True;
+	}
+
 	uuid_str = GUID_string(mem_ctx, &twr->towers.floors[0].lhs.info.uuid.uuid);
 
 	printf("epm_Map results for '%s':\n", 

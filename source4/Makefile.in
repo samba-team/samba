@@ -199,7 +199,10 @@ LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 		librpc/gen_ndr/ndr_epmapper.o librpc/gen_ndr/ndr_winreg.o \
 		librpc/gen_ndr/ndr_mgmt.o librpc/gen_ndr/ndr_protected_storage.o \
 		librpc/gen_ndr/ndr_dcom.o librpc/gen_ndr/ndr_wzcsvc.o \
-		librpc/gen_ndr/ndr_browser.o
+		librpc/gen_ndr/ndr_browser.o librpc/gen_ndr/ndr_w32time.o \
+		librpc/gen_ndr/ndr_scerpc.o librpc/gen_ndr/ndr_ntsvcs.o \
+		librpc/gen_ndr/ndr_netlogon.o librpc/gen_ndr/ndr_trkwks.o \
+		librpc/gen_ndr/ndr_keysvc.o
 
 LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_auth.o \
 		librpc/rpc/dcerpc_util.o \

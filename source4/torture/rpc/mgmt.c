@@ -49,11 +49,16 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 	}
 
 	for (i=0;i<r.out.if_id_vector->count;i++) {
+		const char *uuid;
 		struct dcerpc_syntax_id *id = r.out.if_id_vector->if_id[i].id;
 		if (!id) continue;
-		printf("\tuuid %s  version 0x%04x:0x%04x\n",
-		       GUID_string(mem_ctx, &id->uuid),
-		       id->major_version, id->minor_version);
+
+		uuid = GUID_string(mem_ctx, &id->uuid);
+
+		printf("\tuuid %s  version 0x%04x:0x%04x  '%s'\n",
+		       uuid,
+		       id->major_version, id->minor_version,
+		       idl_pipe_name(uuid, id->major_version));
 	}
 
 	return True;
