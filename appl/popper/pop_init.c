@@ -363,7 +363,8 @@ pop_init(POP *p,int argcount,char **argmessage)
         }
 	freehostent (ch_again);
     }
-    freehostent (ch);
+    if(ch != NULL)
+	freehostent (ch);
 
     /*  Create input file stream for TCP/IP communication */
     if ((p->input = fdopen(STDIN_FILENO,"r")) == NULL){
