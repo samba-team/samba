@@ -53,7 +53,7 @@ db_fetch(krb5_context context, krb5_principal principal)
     if (ret) {
 	return NULL;
     }
-    ent = malloc(sizeof(*ent));
+    ALLOC(ent);
     krb5_copy_principal(context, principal, &ent->principal);
     ret = db->fetch(context, db, ent);
     db->close(context, db);
