@@ -28,7 +28,6 @@
  Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
 ****************************************************************************/
-
 const char *tmpdir(void)
 {
 	char *p;
@@ -37,28 +36,10 @@ const char *tmpdir(void)
 	return "/tmp";
 }
 
-/****************************************************************************
- Determine whether we are in the specified group.
-****************************************************************************/
-
-BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
-{
-	int i;
-
-	if (group == current_gid)
-		return(True);
-
-	for (i=0;i<ngroups;i++)
-		if (group == groups[i])
-			return(True);
-
-	return(False);
-}
 
 /*******************************************************************
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
-
 BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
@@ -765,107 +746,6 @@ const char *shlib_ext(void)
   return dyn_SHLIBEXT;
 }
 
-
-/*********************************************************
- Recursive routine that is called by unix_wild_match.
-*********************************************************/
-
-static BOOL unix_do_match(char *regexp, char *str)
-{
-	char *p;
-
-	for( p = regexp; *p && *str; ) {
-
-		switch(*p) {
-			case '?':
-				str++;
-				p++;
-				break;
-
-			case '*':
-
-				/*
-				 * Look for a character matching 
-				 * the one after the '*'.
-				 */
-				p++;
-				if(!*p)
-					return True; /* Automatic match */
-				while(*str) {
-
-					while(*str && (*p != *str))
-						str++;
-
-					/*
-					 * Patch from weidel@multichart.de. In the case of the regexp
-					 * '*XX*' we want to ensure there are at least 2 'X' characters
-					 * in the string after the '*' for a match to be made.
-					 */
-
-					{
-						int matchcount=0;
-
-						/*
-						 * Eat all the characters that match, but count how many there were.
-						 */
-
-						while(*str && (*p == *str)) {
-							str++;
-							matchcount++;
-						}
-
-						/*
-						 * Now check that if the regexp had n identical characters that
-						 * matchcount had at least that many matches.
-						 */
-
-						while ( *(p+1) && (*(p+1) == *p)) {
-							p++;
-							matchcount--;
-						}
-
-						if ( matchcount <= 0 )
-							return False;
-					}
-
-					str--; /* We've eaten the match char after the '*' */
-
-					if(unix_do_match(p, str))
-						return True;
-
-					if(!*str)
-						return False;
-					else
-						str++;
-				}
-				return False;
-
-			default:
-				if(*str != *p)
-					return False;
-				str++;
-				p++;
-				break;
-		}
-	}
-
-	if(!*p && !*str)
-		return True;
-
-	if (!*p && str[0] == '.' && str[1] == 0)
-		return(True);
-  
-	if (!*str && *p == '?') {
-		while (*p == '?')
-			p++;
-		return(!*p);
-	}
-
-	if(!*str && (*p == '*' && p[1] == '\0'))
-		return True;
-
-	return False;
-}
 
 void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 {
