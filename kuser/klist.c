@@ -49,6 +49,15 @@ printable_time(time_t t)
     return s;
 }
 
+static char*
+printable_time_long(time_t t)
+{
+    static char s[128];
+    strcpy(s, ctime(&t)+ 4);
+    s[20] = 0;
+    return s;
+}
+
 void
 print_cred(krb5_context context, krb5_creds *cred)
 {
@@ -107,16 +116,16 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     krb5_keytype_to_string(context, cred->session.keytype, &str);
     printf("Session key: %s\n", str);
     free(str);
-    printf("Auth time:  %s\n", printable_time(cred->times.authtime));
+    printf("Auth time:  %s\n", printable_time_long(cred->times.authtime));
     if(cred->times.authtime != cred->times.starttime)
-	printf("Start time: %s\n", printable_time(cred->times.starttime));
-    printf("End time:   %s", printable_time(cred->times.endtime));
+	printf("Start time: %s\n", printable_time_long(cred->times.starttime));
+    printf("End time:   %s", printable_time_long(cred->times.endtime));
     if(sec > cred->times.endtime)
 	printf(" (expired)");
     printf("\n");
     if(cred->flags.b.renewable)
 	printf("Renew till: %s\n", 
-	       printable_time(cred->times.renew_till));
+	       printable_time_long(cred->times.renew_till));
     printf("Ticket flags: ");
 #define PRINT_FLAG2(f, s) if(cred->flags.b.f) { if(!first_flag) printf(", "); printf("%s", #s); first_flag = 0; }
 #define PRINT_FLAG(f) PRINT_FLAG2(f, f)
