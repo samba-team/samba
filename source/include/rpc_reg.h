@@ -24,34 +24,39 @@
 #define _RPC_REG_H 
 
 
-/* winreg pipe defines */
+/* winreg pipe defines 
+   NOT IMPLEMENTED !!
 #define REG_OPEN_HKCR		0x00
 #define _REG_UNK_01		0x01
-#define REG_OPEN_HKLM		0x02
 #define _REG_UNK_03		0x03
-#define REG_OPEN_HKU		0x04
-#define REG_CLOSE		0x05
 #define REG_CREATE_KEY		0x06
 #define REG_DELETE_KEY		0x07
 #define REG_DELETE_VALUE	0x08
-#define REG_ENUM_KEY		0x09
 #define REG_ENUM_VALUE		0x0a
 #define REG_FLUSH_KEY		0x0b
 #define REG_GET_KEY_SEC		0x0c
 #define	_REG_UNK_0D		0x0d
 #define _REG_UNK_0E		0x0e
-#define REG_OPEN_ENTRY		0x0f
-#define REG_QUERY_KEY		0x10
-#define REG_INFO		0x11
 #define	_REG_UNK_12		0x12
 #define _REG_UNK_13		0x13
 #define	_REG_UNK_14		0x14
 #define REG_SET_KEY_SEC		0x15
 #define REG_CREATE_VALUE	0x16
 #define	_REG_UNK_17		0x17
+*/
+
+/* Implemented */
+#define REG_OPEN_HKLM		0x02
+#define REG_OPEN_HKU		0x04
+#define REG_CLOSE		0x05
+#define REG_ENUM_KEY		0x09
+#define REG_OPEN_ENTRY		0x0f
+#define REG_QUERY_KEY		0x10
+#define REG_INFO		0x11
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
-#define REG_UNK_1A		0x1a
+#define REG_UNKNOWN_1A		0x1a
+
 
 #define HKEY_CLASSES_ROOT	0x80000000
 #define HKEY_CURRENT_USER	0x80000001
@@ -121,17 +126,17 @@ REG_R_OPEN_HKLM;
 typedef struct q_reg_open_hku_info
 {
 	uint32 ptr;
-	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
-	uint16 unknown_1; /* random.  changes */
-	uint32 level;     /* 0x0000 0002 - 32 bit unknown */
+	uint16 unknown_0; 
+	uint16 unknown_1; 
+	uint32 access_mask;    
 
 } REG_Q_OPEN_HKU;
 
 /* REG_R_OPEN_HKU */
 typedef struct r_reg_open_hku_info
 {
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
+	POLICY_HND pol;      /* policy handle */
+	NTSTATUS status;     /* return status */
 
 } REG_R_OPEN_HKU;
 
@@ -355,7 +360,7 @@ typedef struct r_reg_query_key_info
 
 	uint32 num_subkeys;
 	uint32 max_subkeylen;
-	uint32 max_subkeysize; /* 0x0000 0000 */
+	uint32 reserved; /* 0x0000 0000 - according to MSDN (max_subkeysize?) */
 	uint32 num_values;
 	uint32 max_valnamelen;
 	uint32 max_valbufsize; 
@@ -367,20 +372,20 @@ typedef struct r_reg_query_key_info
 } REG_R_QUERY_KEY;
 
 
-/* REG_Q_UNK_1A */
+/* REG_Q_UNKNOWN_1A */
 typedef struct q_reg_unk_1a_info
 {
 	POLICY_HND pol;       /* policy handle */
 
-} REG_Q_UNK_1A;
+} REG_Q_UNKNOWN_1A;
 
-/* REG_R_UNK_1A */
+/* REG_R_UNKNOWN_1A */
 typedef struct r_reg_unk_1a_info
 {
 	uint32 unknown;         /* 0x0500 0000 */
 	NTSTATUS status;         /* return status */
 
-} REG_R_UNK_1A;
+} REG_R_UNKNOWN_1A;
 
 
 /* REG_Q_CLOSE */
@@ -498,7 +503,7 @@ typedef struct q_reg_open_entry_info
 	UNISTR2 uni_name;       /* unicode registry string name */
 
 	uint32 unknown_0;       /* 32 bit unknown - 0x0000 0000 */
-	uint32 unknown_1;       /* 32 bit unknown - 0x0200 0000 */
+	uint32 access_desired; 
 
 } REG_Q_OPEN_ENTRY;
 
