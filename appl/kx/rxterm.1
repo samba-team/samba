@@ -14,6 +14,7 @@ start a secure remote xterm
 .Op Fl r Ar rsh_args
 .Op Fl x Ar xterm_args
 .Op Fl w Ar term_emulator
+.Op Fl b Ar rsh_program
 .Ar host
 .Op Ar port
 .Sh DESCRIPTION
@@ -49,6 +50,12 @@ as arguments to
 Use
 .Ar term_emulator
 instead of xterm.
+.It Fl b
+Use
+.Ar rsh_program
+instead of rsh.
+.It Fl v
+Be verbose.
 .El
 .Sh EXAMPLE
 To login from host
