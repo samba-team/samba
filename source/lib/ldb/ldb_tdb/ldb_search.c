@@ -150,12 +150,13 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 			continue;
 		}
 
-		if (ldb_attr_cmp(attrs[i], "dn") == 0) {
+		if (ldb_attr_cmp(attrs[i], "dn") == 0 ||
+		    ldb_attr_cmp(attrs[i], "distinguishedName") == 0) {
 			struct ldb_message_element el2;
 			struct ldb_val val;
 
 			el2.flags = 0;
-			el2.name = talloc_strdup(ret, "dn");
+			el2.name = talloc_strdup(ret, attrs[i]);
 			if (!el2.name) {
 				talloc_free(ret);
 				return NULL;				
@@ -501,7 +502,8 @@ int ltdb_search(struct ldb_module *module, const char *base,
 	}
 
 	if (tree->operation == LDB_OP_SIMPLE && 
-	    ldb_attr_cmp(tree->u.simple.attr, "dn") == 0 &&
+	    (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0 ||
+	     ldb_attr_cmp(tree->u.simple.attr, "distinguishedName") == 0) &&
 	    !ltdb_has_wildcard(module, tree->u.simple.attr, &tree->u.simple.value)) {
 		/* yay! its a nice simple one */
 		ret = ltdb_search_dn(module, tree->u.simple.value.data, attrs, res);
