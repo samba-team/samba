@@ -1734,6 +1734,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 
 /*The following definitions come from  replace.c  */
 
+char *rep_inet_ntoa(struct in_addr ip);
 
 /*The following definitions come from  reply.c  */
 
