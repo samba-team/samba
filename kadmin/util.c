@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -194,15 +194,18 @@ str2time_t (const char *str, time_t *t)
     if (p == NULL)
 	return -1;
 
-    /* Do it on the end of the day */
-    tm2.tm_hour = 23;
-    tm2.tm_min  = 59;
-    tm2.tm_sec  = 59;
 
+    /* XXX this is really a bit optimistic, we should really complain
+       if there was a problem parsing the time */
     if(strptime (p, "%t%H:%M:%S", &tm2) != NULL) {
 	tm.tm_hour = tm2.tm_hour;
 	tm.tm_min  = tm2.tm_min;
 	tm.tm_sec  = tm2.tm_sec;
+    } else {
+	/* Do it on the end of the day */
+	tm.tm_hour = 23;
+	tm.tm_min  = 59;
+	tm.tm_sec  = 59;
     }
 
     *t = tm2time (tm, 0);
