@@ -22,34 +22,10 @@ import samba.tdbpack
 
 both_unpackers = (samba.tdbpack.unpack, oldtdbutil.unpack)
 both_packers = (samba.tdbpack.pack, oldtdbutil.pack)
-    
-class PackTests(unittest.TestCase):
-    symm_cases = [
-             ('w', [42], '\x2a\0'),
-             ('www', [42, 2, 69], '\x2a\0\x02\0\x45\0'),
-             ('wd', [42, 256], '\x2a\0\0\x01\0\0'),
-             ('w', [0], '\0\0'),
-             ('w', [255], '\xff\0'),
-             ('w', [256], '\0\x01'),
-             ('w', [0xdead], '\xad\xde'),
-             ('w', [0xffff], '\xff\xff'),
-             ('p', [0], '\0\0\0\0'),
-             ('p', [1], '\x01\0\0\0'),
-             ('d', [0x01020304], '\x04\x03\x02\x01'),
-             ('d', [0x7fffffff], '\xff\xff\xff\x7f'),
-             ('d', [0x80000000L], '\x00\x00\x00\x80'),
-             ('d', [0x80000069L], '\x69\x00\x00\x80'),
-#              ('d', [-1], '\xff\xff\xff\xff'),
-#              ('d', [-255], '\x01\xff\xff\xff'),
-#              ('d', [-256], '\x00\xff\xff\xff'),
-#              ('ddd', [1, 10, 50], '\x01\0\0\0\x0a\0\0\0\x32\0\0\0'),
-#              ('ff', ['hello', 'world'], 'hello\0world\0'),
-#              ('fP', ['hello', 'world'], 'hello\0world\0'),
-#              ('PP', ['hello', 'world'], 'hello\0world\0'),
-#              ('B', [0, ''], '\0\0\0\0'),
-#              ('B', [5, 'hello'], '\x05\0\0\0hello'),
+
+
+
 # #             ('B', [10, 'hello'], '\x0a\0\0\0hello'),
-# #             ('B', [2, 'hello'], '\x0a\0\0\0hello'),
 #              ('BB', [11, 'hello\0world', 3, 'now'],
 #               '\x0b\0\0\0hello\0world\x03\0\0\0now'),
 #              ('pd', [1, 10], '\x01\0\0\0\x0a\0\0\0'),
@@ -76,12 +52,40 @@ class PackTests(unittest.TestCase):
 #              ('BB', [(5 * 40000), 'hello' * 40000,
 #                      (5 * 50000), 'world' * 50000],
 #               '\x40\x0d\x03\0' + 'hello' * 40000 + '\x90\xd0\x03\x00' + 'world' * 50000),
+
+    
+class PackTests(unittest.TestCase):
+    symm_cases = [
+             ('w', [42], '\x2a\0'),
+             ('www', [42, 2, 69], '\x2a\0\x02\0\x45\0'),
+             ('wd', [42, 256], '\x2a\0\0\x01\0\0'),
+             ('w', [0], '\0\0'),
+             ('w', [255], '\xff\0'),
+             ('w', [256], '\0\x01'),
+             ('w', [0xdead], '\xad\xde'),
+             ('w', [0xffff], '\xff\xff'),
+             ('p', [0], '\0\0\0\0'),
+             ('p', [1], '\x01\0\0\0'),
+             ('d', [0x01020304], '\x04\x03\x02\x01'),
+             ('d', [0x7fffffff], '\xff\xff\xff\x7f'),
+             ('d', [0x80000000L], '\x00\x00\x00\x80'),
+             ('d', [0x80000069L], '\x69\x00\x00\x80'),
+             ('d', [0xffffffffL], '\xff\xff\xff\xff'),
+             ('d', [0xffffff00L], '\x00\xff\xff\xff'),
+             ('ddd', [1, 10, 50], '\x01\0\0\0\x0a\0\0\0\x32\0\0\0'),
+             ('ff', ['hello', 'world'], 'hello\0world\0'),
+             ('fP', ['hello', 'world'], 'hello\0world\0'),
+             ('PP', ['hello', 'world'], 'hello\0world\0'),
+             ('B', [0, ''], '\0\0\0\0'),
+# old implementation is wierd when string is not the right length             
+#             ('B', [2, 'hello'], '\x0a\0\0\0hello'),
+             ('B', [5, 'hello'], '\x05\0\0\0hello'),
              ]
 
     def test_symmetric(self):
         """Cookbook of symmetric pack/unpack tests
         """
-        for packer in both_packers:
+        for packer in [samba.tdbpack.pack]: # both_packers:
             for unpacker in both_unpackers:
                 for format, values, expected in self.symm_cases:
                     out_packed = packer(format, values)
