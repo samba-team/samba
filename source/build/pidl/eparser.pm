@@ -228,6 +228,17 @@ sub NeededTypedef($)
 
 	    $needed{"ett_$t->{NAME}"} = 1;
 	}
+
+	if ($t->{DATA}->{TYPE} eq "ENUM") {
+	    use Data::Dumper;
+	    print Dumper($t);
+
+	    $needed{"hf_$t->{NAME}"} = {
+		'name' => $t->{NAME},
+		'ft' => 'FT_UINT32',
+		'base' => 'BASE_HEX'
+		};
+	}
 }
 
 #####################################################################
@@ -342,6 +353,10 @@ sub RewriteHeader($$$)
 
 	s/(struct pidl_pull \*ndr, int ndr_flags)/$1, pidl_tree *tree/smg;
 
+	# Bitmaps
+
+	s/(uint32_t \*r\);)/pidl_tree *tree, int hf, $1/smg;
+
 	pidl $_;
     }
 
@@ -405,10 +420,11 @@ sub RewriteC($$$)
 
 	s/NDR_CHECK\((.*)\)/$1/g;
 
-	# We're not interested in ndr_print or ndr_push functions.
+	# We're not interested in ndr_print, ndr_push or ndr_size functions.
 
 	s/^(static )?NTSTATUS (ndr_push[^\(]+).*?^\}\n\n//smg;
 	s/^void (ndr_print[^\(]+).*?^\}\n\n//smg;
+	s/^size_t (ndr_size[^\(]+).*?^\}\n\n//smg;
 
 	# Get rid of dcerpc interface structures and functions
 
@@ -435,7 +451,9 @@ sub RewriteC($$$)
 
 	# Add tree argument to ndr_pull_array()
 
-	s/(ndr_pull_array\(ndr, ([^,]*?), ([^\)].*?)\);)/ndr_pull_array( ndr, $2, tree, $3);/smg;
+#get_subtree(tree, \"$2\", ndr, ett_$2)
+#ndr_pull_array( ndr, NDR_SCALARS, tree, (void **)r->aces, sizeof(r->aces[0]), r->num_aces, (ndr_pull_flags_fn_t)ndr_pull_security_ace);
+	s/(ndr_pull_array\(ndr, ([^,]*?), ([^,]*?), ([^\)].*?)\);)/ndr_pull_array( ndr, $2, tree, $3, $4);/smg;
 
 	s/(ndr_pull_array_([^\(]*?)\(ndr, ([^,]*?), (r->((in|out).)?([^,]*?)), (.*?)\);)/ndr_pull_array_$2( ndr, $3, tree, hf_$7_$2_array, $4, $8);/smg;
  
@@ -491,7 +509,19 @@ sub RewriteC($$$)
 
         s/uint(16|32) _level/uint$1_t _level/smg;
         s/ndr_pull_([^\(]*)\(ndr, tree, hf_level, &_level\);/ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smg;
-							      
+				
+	# Enums
+
+        s/(^static NTSTATUS ndr_pull_(.+?), (enum .+?)\))/static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smg;
+	s/uint(8|16|32) v;/uint$1_t v;/smg;
+	s/(ndr_pull_([^\)]*?)\(ndr, &v\);)/ndr_pull_$2(ndr, tree, hf, &v);/smg;
+
+	s/(ndr_pull_([^\(]+?)\(ndr, &_level\);)/ndr_pull_$2(ndr, tree, hf_$2, &_level);/smg;
+
+	# Bitmaps
+
+	s/(^NTSTATUS ndr_pull_(.+?), uint32 \*r\))/NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, uint32_t *r)/smg;
+
 	pidl $_;
     }
 
