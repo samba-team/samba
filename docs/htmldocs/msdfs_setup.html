@@ -45,7 +45,14 @@ TARGET="_top"
 >This document explains how to host a Dfs tree on a Unix 
 	machine (for Dfs-aware clients to browse) using Samba.</P
 ><P
->A Samba server can be made a Dfs server by setting the global 
+>To enable SMB-based DFS for Samba, configure it with the 
+	<TT
+CLASS="PARAMETER"
+><I
+>--with-msdfs</I
+></TT
+> option. Once built, a 
+	Samba server can be made a Dfs server by setting the global 
 	boolean <A
 HREF="smb.conf.5.html#HOSTMSDFS"
 TARGET="_top"
@@ -74,7 +81,7 @@ CLASS="PARAMETER"
 	to other servers. For example, a symbolic link
 	<TT
 CLASS="FILENAME"
->junction-&gt;msdfs:storage1&bsol;share1</TT
+>junction-&gt;msdfs:storage1\share1</TT
 > in 
 	the share directory acts as the Dfs junction. When Dfs-aware 
 	clients attempt to access the junction link, they are redirected 
@@ -169,7 +176,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN37"
+NAME="AEN38"
 >Notes</A
 ></H2
 ><P
