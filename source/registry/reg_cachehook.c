@@ -70,6 +70,7 @@ REGISTRY_HOOK* reghook_cache_find( char *keyname )
 {
 	char *key;
 	int len;
+	REGISTRY_HOOK *hook;
 	
 	if ( !keyname )
 		return NULL;
@@ -92,7 +93,11 @@ REGISTRY_HOOK* reghook_cache_find( char *keyname )
 		
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
 	
-	return sorted_tree_find( cache_tree, key ) ;
+	hook = sorted_tree_find( cache_tree, key ) ;
+	
+	SAFE_FREE( key );
+	
+	return hook;
 }
 
 /**********************************************************************

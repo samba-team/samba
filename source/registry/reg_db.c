@@ -39,8 +39,6 @@ static BOOL init_registry_data( void )
 
 	ZERO_STRUCTP( &subkeys );
 
-	regsubkey_ctr_init( &subkeys );
-
 	/* HKEY_LOCAL_MACHINE */
 	
 	regsubkey_ctr_init( &subkeys );
@@ -215,6 +213,7 @@ BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 
 done:		
 	SAFE_FREE( buffer );
+	
 	return ret;
 }
 
@@ -238,7 +237,7 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 	pstrcpy( path, key );
 	
 	/* convert to key format */
-	pstring_sub( path, "\\", "/" );
+	pstring_sub( path, "\\", "/" ); 
 	
 	dbuf = tdb_fetch_by_string( tdb_reg, path );
 	
@@ -257,7 +256,8 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 		regsubkey_ctr_addkey( ctr, subkeyname );
 	}
 
-	SAFE_FREE(dbuf.dptr);
+	SAFE_FREE( dbuf.dptr );
+	
 	return num_items;
 }
 

@@ -204,15 +204,19 @@ void regsubkey_ctr_init( REGSUBKEY_CTR *ctr )
 int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, char *keyname )
 {
 	uint32 len;
+	char **pp;
 	
 	if ( keyname )
 	{
 		len = strlen( keyname );
 
 		if (  ctr->subkeys == 0 )
-			ctr->subkeys = talloc( ctr->ctx, 1 );
-		else
-			talloc_realloc(	ctr->ctx, ctr->subkeys, ctr->num_subkeys+1 );
+			ctr->subkeys = talloc( ctr->ctx, sizeof(char*) );
+		else {
+			pp = talloc_realloc( ctr->ctx, ctr->subkeys, sizeof(char*)*(ctr->num_subkeys+1) );
+			if ( pp )
+				ctr->subkeys = pp;
+		}
 
 		ctr->subkeys[ctr->num_subkeys] = talloc( ctr->ctx, len+1 );
 		strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );

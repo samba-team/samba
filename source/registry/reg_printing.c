@@ -66,7 +66,7 @@ static char* trim_reg_path( char *path )
 	}
 	
 	
-	p = path + strlen(KEY_PRINTING);
+	p = path + strlen( KEY_PRINTING );
 	
 	if ( *p == '\\' )
 		p++;
@@ -81,7 +81,7 @@ static char* trim_reg_path( char *path )
  handle enumeration of subkeys below KEY_PRINTING\Environments
  *********************************************************************/
  
-static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys, int32 idx )
+static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 {
 	DEBUG(10,("print_subpath_environments: key=>[%s]\n", key ? key : "NULL" ));
 	
@@ -99,7 +99,7 @@ static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys, int32 
  handle enumeration of subkeys below KEY_PRINTING\Forms
  *********************************************************************/
  
-static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys, int32 idx )
+static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys )
 {
 	DEBUG(10,("print_subpath_forms: key=>[%s]\n", key ? key : "NULL" ));
 	
@@ -110,7 +110,7 @@ static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys, int32 idx )
  handle enumeration of values below KEY_PRINTING\Forms
  *********************************************************************/
  
-static int print_values_forms( char *key, REGVAL_CTR *val, int idx )
+static int print_values_forms( char *key, REGVAL_CTR *val )
 {
 	int num_values = 0;
 	
@@ -148,11 +148,33 @@ static int print_values_forms( char *key, REGVAL_CTR *val, int idx )
  handle enumeration of subkeys below KEY_PRINTING\Printers
  *********************************************************************/
  
-static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys, int32 idx )
+static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 {
+	int n_services = lp_numservices();
+	int snum;
+	fstring sname;
+	
 	DEBUG(10,("print_subpath_printers: key=>[%s]\n", key ? key : "NULL" ));
 	
-	return 0;
+	if ( !key )
+	{
+		/* enumerate all printers */
+		
+		for (snum=0; snum<n_services; snum++) {
+			if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
+				continue;
+				
+			fstrcpy( sname, lp_servicename(snum) );
+				
+			regsubkey_ctr_addkey( subkeys, sname );
+		}
+	}
+	else 
+	{
+		/* get information for a specific printer */
+	}
+	
+	return regsubkey_ctr_numkeys( subkeys );
 }
 
 /**********************************************************************
@@ -161,15 +183,13 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys, int32 idx 
  valid pointers. 
  *********************************************************************/
  
-static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys,
-                                    REGVAL_CTR *val, int32 key_index, int32 val_index )
+static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CTR *val )
 {
 	int result = 0;
 	char *p, *base;
 	int i;
 	
-	DEBUG(10,("handle_printing_subpath: key=>[%s], key_index == [%d], val_index == [%d]\n",
-		key, key_index, val_index));	
+	DEBUG(10,("handle_printing_subpath: key=>[%s]\n", key ));
 	
 	/* 
 	 * break off the first part of the path 
@@ -186,27 +206,31 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys,
 	
 	DEBUG(10,("handle_printing_subpath: base=>[%s], i==[%d]\n", base, i));	
 		
-	if ( (key_index != -1) && !(i < MAX_TOP_LEVEL_KEYS) )
+	if ( !(i < MAX_TOP_LEVEL_KEYS) )
 		return -1;
-			
+	
+	/* quick hack for now */
+	if ( !subkeys )
+		return 0;
+					
 	/* Call routine to handle each top level key */
 	switch ( i )
 	{
 		case KEY_INDEX_ENVIR:
 			if ( subkeys )
-				print_subpath_environments( p, subkeys, key_index );
+				print_subpath_environments( p, subkeys );
 #if 0	/* JERRY */
 			if ( val )
-				print_subpath_values_environments( p, val, val_index );
+				print_subpath_values_environments( p, val );
 #endif
 			break;
 		
 		case KEY_INDEX_FORMS:
-			result = print_subpath_forms( p, subkeys, key_index );
+			result = print_subpath_forms( p, subkeys );
 			break;
 			
 		case KEY_INDEX_PRINTER:
-			result = print_subpath_printers( p, subkeys, key_index );
+			result = print_subpath_printers( p, subkeys );
 			break;
 	
 		/* default case for top level key that has no handler */
@@ -245,7 +269,7 @@ int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
 			regsubkey_ctr_addkey( subkey_ctr, top_level_keys[num_subkeys] );
 	}
 	else
-		num_subkeys = handle_printing_subpath( path, subkey_ctr, NULL, -1, -1 );
+		num_subkeys = handle_printing_subpath( path, subkey_ctr, NULL );
 	
 	SAFE_FREE( path );
 	
@@ -274,11 +298,9 @@ int printing_value_info( char *key, REGVAL_CTR *val )
 	
 	/* fill in values from the getprinterdata_printer_server() */
 	if ( top_level )
-	{
 		num_values = 0;
-	}
 	else
-		num_values = handle_printing_subpath( path, NULL, val, -1, -1 );
+		num_values = handle_printing_subpath( path, NULL, val );
 		
 	
 	return num_values;
