@@ -6,6 +6,9 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+use strict;
+package input;
+
 sub strtrim($)
 {
 	my $str = shift;
@@ -123,7 +126,7 @@ sub _check_binaries($)
 # check_input($SMB_BUILD_CTX)
 #
 # $SMB_BUILD_CTX -	the global SMB_BUILD context
-sub check_input($)
+sub check($)
 {
 	my $CTX = shift;
 

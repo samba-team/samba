@@ -6,6 +6,11 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+package config_mk;
+use input;
+
+use strict;
+
 ###########################################################
 # The parsing function which parses the file
 #
@@ -188,9 +193,9 @@ sub _fetch_var_from_config_mk($$$)
 	}
 
 	if (defined($result->{$section}{$key})) {
-		$val = strtrim($result->{$section}{$key}{VAL});
+		$val = input::strtrim($result->{$section}{$key}{VAL});
 	} elsif (defined($result->{DEFAULT}{$key})) {
-		$val = strtrim($result->{DEFAULT}{$key}{VAL});
+		$val = input::strtrim($result->{DEFAULT}{$key}{VAL});
 	}
 
 	return $val;
@@ -225,9 +230,9 @@ sub _fetch_array_from_config_mk($$$)
 	}
 
 	if (defined($result->{$section}{$key})) {
-		@val = str2array($result->{$section}{$key}{VAL});
+		@val = input::str2array($result->{$section}{$key}{VAL});
 	} elsif (defined($result->{DEFAULT}{$key})) {
-		@val = str2array($result->{DEFAULT}{$key}{VAL});
+		@val = input::str2array($result->{DEFAULT}{$key}{VAL});
 	}	
 
 	return @val;
