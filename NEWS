@@ -6,6 +6,8 @@ Changes in release 0.4e
 
  * some improvements to gssapi library
 
+ * test for existing compile_et/libcom_err
+
  * portability fixes
 
  * bug fixes
