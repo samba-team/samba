@@ -141,17 +141,11 @@ static int nt_printq_status(int v)
 
 static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 {
-	SPOOL_NOTIFY_OPTION *sp = *pp;
-
-	*pp = NULL;
-
-	if (!sp)
+	if (*pp == NULL)
 		return;
 
-	if (sp->ctr.type)
-		safe_free(sp->ctr.type);
-
-	free(sp);
+	SAFE_FREE((*pp)->ctr.type);
+	SAFE_FREE(*pp);
 }
 
 /***************************************************************************
@@ -201,7 +195,7 @@ static void free_printer_entry(void *ptr)
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
 
-	safe_free(Printer);
+	SAFE_FREE(Printer);
 }
 
 /****************************************************************************
@@ -225,7 +219,7 @@ SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
 		new_sp->ctr.type = (SPOOL_NOTIFY_OPTION_TYPE *)memdup(sp->ctr.type, sizeof(SPOOL_NOTIFY_OPTION_TYPE) * sp->ctr.count);
 
 		if (!new_sp->ctr.type) {
-			safe_free(new_sp);
+			SAFE_FREE(new_sp);
 			return NULL;
 		}
 	}
@@ -541,7 +535,7 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
 	new_printer->notify.option=NULL;
 				
 	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
-		safe_free(new_printer);
+		SAFE_FREE(new_printer);
 		return False;
 	}
 
@@ -1005,7 +999,7 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 	 */
 
 	if ((devmode->driverextra != 0) && (devmode->private != NULL)) {
-		safe_free(nt_devmode->private);
+		SAFE_FREE(nt_devmode->private);
 		nt_devmode->driverextra=devmode->driverextra;
 		if((nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8))) == NULL)
 			return False;
@@ -1284,7 +1278,7 @@ static BOOL getprinterdata_printer(pipes_struct *p, TALLOC_CTX *ctx, POLICY_HND 
 	
 	DEBUG(5,("getprinterdata_printer:copy done\n"));
 			
-	safe_free(idata);
+	SAFE_FREE(idata);
 	
 	return True;
 }	
@@ -1840,7 +1834,7 @@ static void spoolss_notify_status(int snum,
 	memset(&status, 0, sizeof(status));
 	print_queue_status(snum, &q, &status);
 	data->notify_data.value[0]=(uint32) status.status;
-	safe_free(q);
+	SAFE_FREE(q);
 }
 
 /*******************************************************************
@@ -1857,7 +1851,7 @@ static void spoolss_notify_cjobs(int snum,
 
 	memset(&status, 0, sizeof(status));
 	data->notify_data.value[0] = print_queue_status(snum, &q, &status);
-	safe_free(q);
+	SAFE_FREE(q);
 }
 
 /*******************************************************************
@@ -2445,7 +2439,7 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 			free_a_printer(&printer, 2);
 			
 		done:
-			safe_free(queue);
+			SAFE_FREE(queue);
 			break;
 		}
 		}
@@ -2624,7 +2618,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 	printer->unknown28 = 0;
 	printer->unknown29 = 0;
 	
-	safe_free(queue);
+	SAFE_FREE(queue);
 	free_a_printer(&ntprinter,2);
 	return (True);	
 }
@@ -2674,10 +2668,8 @@ static void free_dev_mode(DEVICEMODE *dev)
 	if (dev == NULL)
 		return;
 
-	if (dev->private)
-		safe_free(dev->private);
-
-	safe_free(dev);	
+	SAFE_FREE(dev->private);
+	SAFE_FREE(dev);	
 }
 
 /****************************************************************************
@@ -2828,7 +2820,7 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum)
 	}
 
 	free_a_printer(&ntprinter, 2);
-	safe_free(queue);
+	SAFE_FREE(queue);
 	return True;
 }
 
@@ -2906,7 +2898,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 
 			if (construct_printer_info_1(flags, &current_prt, snum)) {
 				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
 					DEBUG(0,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
-					safe_free(printers);
+					SAFE_FREE(printers);
 					*returned=0;
 					return WERR_NOMEM;
 				}
@@ -2930,7 +2922,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 
 		smb_io_printer_info_1("", buffer, &printers[i], 0);	
 
 	/* clear memory */
-	safe_free(printers);
+	SAFE_FREE(printers);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -3004,7 +2996,7 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 	*needed += spoolss_size_printer_info_1(printer);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(printer);
+		SAFE_FREE(printer);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -3012,7 +3004,7 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 	smb_io_printer_info_1("", buffer, printer, 0);	
 
 	/* clear memory */
-	safe_free(printer);
+	SAFE_FREE(printer);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -3054,7 +3046,7 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 			if (construct_printer_info_2(&current_prt, snum)) {
 				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL) {
 					DEBUG(0,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
-					safe_free(printers);
+					SAFE_FREE(printers);
 					*returned = 0;
 					return WERR_NOMEM;
 				}
@@ -3074,7 +3066,7 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 		for (i=0; i<*returned; i++) {
 			free_devmode(printers[i].devmode);
 		}
-		safe_free(printers);
+		SAFE_FREE(printers);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -3086,7 +3078,7 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 	for (i=0; i<*returned; i++) {
 		free_devmode(printers[i].devmode);
 	}
-	safe_free(printers);
+	SAFE_FREE(printers);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -3234,7 +3226,7 @@ static WERROR getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	*needed += spoolss_size_printer_info_0(printer);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(printer);
+		SAFE_FREE(printer);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -3242,7 +3234,7 @@ static WERROR getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	smb_io_printer_info_0("", buffer, printer, 0);	
 	
 	/* clear memory */
-	safe_free(printer);
+	SAFE_FREE(printer);
 
 	if (*needed > offered) {
 		return WERR_INSUFFICIENT_BUFFER;
@@ -3266,7 +3258,7 @@ static WERROR getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	*needed += spoolss_size_printer_info_1(printer);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(printer);
+		SAFE_FREE(printer);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -3274,7 +3266,7 @@ static WERROR getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	smb_io_printer_info_1("", buffer, printer, 0);	
 	
 	/* clear memory */
-	safe_free(printer);
+	SAFE_FREE(printer);
 
 	if (*needed > offered) {
 		return WERR_INSUFFICIENT_BUFFER;
@@ -3704,7 +3696,7 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 
 static void free_printer_driver_info_3(DRIVER_INFO_3 *info)
 {
-	safe_free(info->dependentfiles);
+	SAFE_FREE(info->dependentfiles);
 }
 
 /****************************************************************************
@@ -3712,7 +3704,7 @@ static void free_printer_driver_info_3(DRIVER_INFO_3 *info)
 
 static void free_printer_driver_info_6(DRIVER_INFO_6 *info)
 {
-	safe_free(info->dependentfiles);
+	SAFE_FREE(info->dependentfiles);
 	
 }
 
@@ -3728,7 +3720,7 @@ static WERROR getprinterdriver2_level1(fstring servername, fstring architecture,
 	
 	status=construct_printer_driver_info_1(info, snum, servername, architecture, version);
 	if (!W_ERROR_IS_OK(status)) {
-		safe_free(info);
+		SAFE_FREE(info);
 		return status;
 	}
 
@@ -3736,7 +3728,7 @@ static WERROR getprinterdriver2_level1(fstring servername, fstring architecture,
 	*needed += spoolss_size_printer_driver_info_1(info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info);
+		SAFE_FREE(info);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -3744,7 +3736,7 @@ static WERROR getprinterdriver2_level1(fstring servername, fstring architecture,
 	smb_io_printer_driver_info_1("", buffer, info, 0);	
 
 	/* clear memory */
-	safe_free(info);
+	SAFE_FREE(info);
 
 	if (*needed > offered)
 		return WERR_INSUFFICIENT_BUFFER;
@@ -3764,7 +3756,7 @@ static WERROR getprinterdriver2_level2(fstring servername, fstring architecture,
 	
 	status=construct_printer_driver_info_2(info, snum, servername, architecture, version);
 	if (!W_ERROR_IS_OK(status)) {
-		safe_free(info);
+		SAFE_FREE(info);
 		return status;
 	}
 
@@ -3772,7 +3764,7 @@ static WERROR getprinterdriver2_level2(fstring servername, fstring architecture,
 	*needed += spoolss_size_printer_driver_info_2(info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info);
+		SAFE_FREE(info);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -3780,7 +3772,7 @@ static WERROR getprinterdriver2_level2(fstring servername, fstring architecture,
 	smb_io_printer_driver_info_2("", buffer, info, 0);	
 
 	/* clear memory */
-	safe_free(info);
+	SAFE_FREE(info);
 
 	if (*needed > offered)
 		return WERR_INSUFFICIENT_BUFFER;
@@ -4792,7 +4784,7 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 	
 	info=(JOB_INFO_1 *)malloc(*returned*sizeof(JOB_INFO_1));
 	if (info==NULL) {
-		safe_free(queue);
+		SAFE_FREE(queue);
 		*returned=0;
 		return WERR_NOMEM;
 	}
@@ -4800,14 +4792,14 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 	for (i=0; i<*returned; i++)
 		fill_job_info_1(&info[i], &queue[i], i, snum);
 
-	safe_free(queue);
+	SAFE_FREE(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_job_info_1(&info[i]);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info);
+		SAFE_FREE(info);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -4816,7 +4808,7 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 		smb_io_job_info_1("", buffer, &info[i], 0);	
 
 	/* clear memory */
-	safe_free(info);
+	SAFE_FREE(info);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -4854,14 +4846,14 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter);
 
 	free_a_printer(&ntprinter, 2);
-	safe_free(queue);
+	SAFE_FREE(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_job_info_2(&info[i]);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info);
+		SAFE_FREE(info);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -4873,7 +4865,7 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 	for (i = 0; i < *returned; i++)
 		free_job_info_2(&info[i]);
 
-	free(info);
+	SAFE_FREE(info);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -4920,7 +4912,7 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
 	if (*returned == 0) {
-		safe_free(queue);
+		SAFE_FREE(queue);
 		return WERR_OK;
 	}
 
@@ -4930,7 +4922,7 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	case 2:
 		return enumjobs_level2(queue, snum, buffer, offered, needed, returned);
 	default:
-		safe_free(queue);
+		SAFE_FREE(queue);
 		*returned=0;
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -5024,8 +5016,8 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 		if(ndrivers != 0) {
 			if((tdi1=(DRIVER_INFO_1 *)Realloc(driver_info_1, (*returned+ndrivers) * sizeof(DRIVER_INFO_1))) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level1: failed to enlarge driver info buffer!\n"));
-				safe_free(driver_info_1);
-				safe_free(list);
+				SAFE_FREE(driver_info_1);
+				SAFE_FREE(list);
 				return WERR_NOMEM;
 			}
 			else driver_info_1 = tdi1;
@@ -5038,7 +5030,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 			status = get_a_printer_driver(&driver, 3, list[i], 
 						      architecture, version);
 			if (!W_ERROR_IS_OK(status)) {
-				safe_free(list);
+				SAFE_FREE(list);
 				return status;
 			}
 			fill_printer_driver_info_1(&driver_info_1[*returned+i], driver, servername, architecture );		
@@ -5046,7 +5038,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 		}	
 
 		*returned+=ndrivers;
-		safe_free(list);
+		SAFE_FREE(list);
 	}
 	
 	/* check the required size. */
@@ -5056,7 +5048,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 	}
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(driver_info_1);
+		SAFE_FREE(driver_info_1);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -5066,7 +5058,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 		smb_io_printer_driver_info_1("", buffer, &driver_info_1[i], 0);
 	}
 
-	safe_free(driver_info_1);
+	SAFE_FREE(driver_info_1);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -5103,8 +5095,8 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 		if(ndrivers != 0) {
 			if((tdi2=(DRIVER_INFO_2 *)Realloc(driver_info_2, (*returned+ndrivers) * sizeof(DRIVER_INFO_2))) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level2: failed to enlarge driver info buffer!\n"));
-				safe_free(driver_info_2);
-				safe_free(list);
+				SAFE_FREE(driver_info_2);
+				SAFE_FREE(list);
 				return WERR_NOMEM;
 			}
 			else driver_info_2 = tdi2;
@@ -5118,7 +5110,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 			status = get_a_printer_driver(&driver, 3, list[i], 
 						      architecture, version);
 			if (!W_ERROR_IS_OK(status)) {
-				safe_free(list);
+				SAFE_FREE(list);
 				return status;
 			}
 			fill_printer_driver_info_2(&driver_info_2[*returned+i], driver, servername);		
@@ -5126,7 +5118,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 		}	
 
 		*returned+=ndrivers;
-		safe_free(list);
+		SAFE_FREE(list);
 	}
 	
 	/* check the required size. */
@@ -5136,7 +5128,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 	}
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(driver_info_2);
+		SAFE_FREE(driver_info_2);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -5146,7 +5138,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 		smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
 	}
 
-	safe_free(driver_info_2);
+	SAFE_FREE(driver_info_2);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -5183,8 +5175,8 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 		if(ndrivers != 0) {
 			if((tdi3=(DRIVER_INFO_3 *)Realloc(driver_info_3, (*returned+ndrivers) * sizeof(DRIVER_INFO_3))) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level3: failed to enlarge driver info buffer!\n"));
-				safe_free(driver_info_3);
-				safe_free(list);
+				SAFE_FREE(driver_info_3);
+				SAFE_FREE(list);
 				return WERR_NOMEM;
 			}
 			else driver_info_3 = tdi3;
@@ -5198,7 +5190,7 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 			status = get_a_printer_driver(&driver, 3, list[i], 
 						      architecture, version);
 			if (!W_ERROR_IS_OK(status)) {
-				safe_free(list);
+				SAFE_FREE(list);
 				return status;
 			}
 			fill_printer_driver_info_3(&driver_info_3[*returned+i], driver, servername);		
@@ -5206,7 +5198,7 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 		}	
 
 		*returned+=ndrivers;
-		safe_free(list);
+		SAFE_FREE(list);
 	}
 
 	/* check the required size. */
@@ -5216,7 +5208,7 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 	}
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(driver_info_3);
+		SAFE_FREE(driver_info_3);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 	
@@ -5227,9 +5219,9 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 	}
 
 	for (i=0; i<*returned; i++)
-		safe_free(driver_info_3[i].dependentfiles);
+		SAFE_FREE(driver_info_3[i].dependentfiles);
 	
-	safe_free(driver_info_3);
+	SAFE_FREE(driver_info_3);
 	
 	if (*needed > offered) {
 		*returned=0;
@@ -5277,7 +5269,7 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 		return enumprinterdrivers_level3(servername, architecture, buffer, offered, needed, returned);
 	default:
 		*returned=0;
-		safe_free(list);
+		SAFE_FREE(list);
 		return WERR_UNKNOWN_LEVEL;
 	}
 }
@@ -5345,14 +5337,14 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 			fill_form_1(&forms_1[i], &builtinlist[i]);
 		}
 		
-		safe_free(builtinlist);
+		SAFE_FREE(builtinlist);
 
 		for (; i<*numofforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
 			fill_form_1(&forms_1[i], &list[i-numbuiltinforms]);
 		}
 		
-		safe_free(list);
+		SAFE_FREE(list);
 
 		/* check the required size. */
 		for (i=0; i<numbuiltinforms; i++) {
@@ -5367,7 +5359,7 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		*needed=buffer_size;		
 		
 		if (!alloc_buffer_size(buffer, buffer_size)){
-			safe_free(forms_1);
+			SAFE_FREE(forms_1);
 			return WERR_INSUFFICIENT_BUFFER;
 		}
 
@@ -5381,7 +5373,7 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 			smb_io_form_1("", buffer, &forms_1[i], 0);
 		}
 
-		safe_free(forms_1);
+		SAFE_FREE(forms_1);
 
 		if (*needed > offered) {
 			*numofforms=0;
@@ -5391,8 +5383,8 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 			return WERR_OK;
 			
 	default:
-		safe_free(list);
-		safe_free(builtinlist);
+		SAFE_FREE(list);
+		SAFE_FREE(builtinlist);
 		return WERR_UNKNOWN_LEVEL;
 	}
 
@@ -5455,7 +5447,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 				}
 			}
 			
-			safe_free(list);
+			SAFE_FREE(list);
 			if (i == numofforms) {
 				return WERR_BADFID;
 			}
@@ -5479,7 +5471,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 		return WERR_OK;
 			
 	default:
-		safe_free(list);
+		SAFE_FREE(list);
 		return WERR_UNKNOWN_LEVEL;
 	}
 }
@@ -5572,7 +5564,7 @@ static WERROR enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	}
 		
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(ports);
+		SAFE_FREE(ports);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -5582,7 +5574,7 @@ static WERROR enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		smb_io_port_1("", buffer, &ports[i], 0);
 	}
 
-	safe_free(ports);
+	SAFE_FREE(ports);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -5670,7 +5662,7 @@ static WERROR enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	}
 		
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(ports);
+		SAFE_FREE(ports);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -5680,7 +5672,7 @@ static WERROR enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		smb_io_port_2("", buffer, &ports[i], 0);
 	}
 
-	safe_free(ports);
+	SAFE_FREE(ports);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -5908,13 +5900,13 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	*needed += spoolss_size_driverdir_info_1(info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info);
+		SAFE_FREE(info);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	smb_io_driverdir_1("", buffer, info, 0);
 
-	safe_free(info);
+	SAFE_FREE(info);
 	
 	if (*needed > offered)
 		return WERR_INSUFFICIENT_BUFFER;
@@ -6026,14 +6018,13 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		 */
 
 		if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
-			safe_free(data);
+			SAFE_FREE(data);
 			free_a_printer(&printer, 2);
 			return WERR_NO_MORE_ITEMS;
 		}
 #endif
 
-		safe_free(data);
-		data = NULL;
+		SAFE_FREE(data);
 
 		param_index=0;
 		biggest_valuesize=0;
@@ -6045,8 +6036,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 			DEBUG(6,("current values: [%d], [%d]\n", biggest_valuesize, biggest_datasize));
 
-			safe_free(data);
-			data = NULL;
+			SAFE_FREE(data);
 			param_index++;
 		}
 
@@ -6078,7 +6068,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 */
 
 	if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
-		safe_free(data);
+		SAFE_FREE(data);
 		free_a_printer(&printer, 2);
 		return WERR_NO_MORE_ITEMS;
 	}
@@ -6096,7 +6086,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	
 	*out_max_value_len=(in_value_len/sizeof(uint16));
 	if((*out_value=(uint16 *)talloc_zero(p->mem_ctx,in_value_len*sizeof(uint8))) == NULL) {
-		safe_free(data);
+		SAFE_FREE(data);
 		return WERR_NOMEM;
 	}
 	
@@ -6107,14 +6097,14 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	/* the data is counted in bytes */
 	*out_max_data_len=in_data_len;
 	if((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) {
-		safe_free(data);
+		SAFE_FREE(data);
 		return WERR_NOMEM;
 	}
 	
 	memcpy(*data_out, data, (size_t)data_len);
 	*out_data_len=data_len;
 
-	safe_free(data);
+	SAFE_FREE(data);
 	
 	return WERR_OK;
 }
@@ -6213,7 +6203,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	free_a_printer(&printer, 2);
 	if (param)
 		free_nt_printer_param(&param);
-	safe_free(old_param.data);
+	SAFE_FREE(old_param.data);
 
 	return status;
 }
@@ -6295,7 +6285,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		return WERR_NOMEM;
 	write_ntforms(&list, count);
 
-	safe_free(list);
+	SAFE_FREE(list);
 
 	return WERR_OK;
 }
@@ -6329,7 +6319,7 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	if (!delete_a_form(&list, form_name, &count, &ret))
 		return WERR_INVALID_PARAM;
 
-	safe_free(list);
+	SAFE_FREE(list);
 
 	return ret;
 }
@@ -6364,7 +6354,7 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
 
-	safe_free(list);
+	SAFE_FREE(list);
 
 	return WERR_OK;
 }
@@ -6390,7 +6380,7 @@ static WERROR enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 
 	smb_io_printprocessor_info_1("", buffer, info_1, 0);
 
-	safe_free(info_1);
+	SAFE_FREE(info_1);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -6458,7 +6448,7 @@ static WERROR enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 
 	smb_io_printprocdatatype_info_1("", buffer, info_1, 0);
 
-	safe_free(info_1);
+	SAFE_FREE(info_1);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -6520,7 +6510,7 @@ static WERROR enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 
 	smb_io_printmonitor_info_1("", buffer, info_1, 0);
 
-	safe_free(info_1);
+	SAFE_FREE(info_1);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -6553,7 +6543,7 @@ static WERROR enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 
 	smb_io_printmonitor_info_2("", buffer, info_2, 0);
 
-	safe_free(info_2);
+	SAFE_FREE(info_2);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -6612,7 +6602,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
 
 	if (info_1 == NULL) {
-		safe_free(queue);
+		SAFE_FREE(queue);
 		return WERR_NOMEM;
 	}
 		
@@ -6622,26 +6612,26 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	}
 	
 	if (found==False) {
-		safe_free(queue);
-		safe_free(info_1);
+		SAFE_FREE(queue);
+		SAFE_FREE(info_1);
 		/* I shoud reply something else ... I can't find the good one */
 		return WERR_OK;
 	}
 	
 	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
 	
-	safe_free(queue);
+	SAFE_FREE(queue);
 	
 	*needed += spoolss_size_job_info_1(info_1);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info_1);
+		SAFE_FREE(info_1);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	smb_io_job_info_1("", buffer, info_1, 0);
 
-	safe_free(info_1);
+	SAFE_FREE(info_1);
 
 	if (*needed > offered)
 		return WERR_INSUFFICIENT_BUFFER;
@@ -6665,7 +6655,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	ZERO_STRUCTP(info_2);
 
 	if (info_2 == NULL) {
-		safe_free(queue);
+		SAFE_FREE(queue);
 		return WERR_NOMEM;
 	}
 
@@ -6675,34 +6665,34 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	}
 	
 	if (found==False) {
-		safe_free(queue);
-		safe_free(info_2);
+		SAFE_FREE(queue);
+		SAFE_FREE(info_2);
 		/* I shoud reply something else ... I can't find the good one */
 		return WERR_OK;
 	}
 	
 	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(ret)) {
-		safe_free(queue);
+		SAFE_FREE(queue);
 		return ret;
 	}
 
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter);
 	
 	free_a_printer(&ntprinter, 2);
-	safe_free(queue);
+	SAFE_FREE(queue);
 	
 	*needed += spoolss_size_job_info_2(info_2);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info_2);
+		SAFE_FREE(info_2);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	smb_io_job_info_2("", buffer, info_2, 0);
 
 	free_job_info_2(info_2);
-	free(info_2);
+	SAFE_FREE(info_2);
 
 	if (*needed > offered)
 		return WERR_INSUFFICIENT_BUFFER;
@@ -6751,7 +6741,7 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	case 2:
 		return getjob_level_2(queue, count, snum, jobid, buffer, offered, needed);
 	default:
-		safe_free(queue);
+		SAFE_FREE(queue);
 		return WERR_UNKNOWN_LEVEL;
 	}
 }

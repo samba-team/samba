@@ -45,7 +45,7 @@ static void free_lsa_info(void *ptr)
 {
 	struct lsa_info *lsa = (struct lsa_info *)ptr;
 
-	safe_free(lsa);
+	SAFE_FREE(lsa);
 }
 
 /***************************************************************************
@@ -620,7 +620,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	sids->sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(DOM_SID2));
 
 	if (sids->ptr_sid==NULL || sids->sid==NULL) {
-		safe_free(map);
+		SAFE_FREE(map);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -630,7 +630,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 		j++;
 	}
 
-	safe_free(map);
+	SAFE_FREE(map);
 
 	init_lsa_r_enum_accounts(r_u, j);
 

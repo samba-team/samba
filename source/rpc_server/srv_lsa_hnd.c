@@ -194,7 +194,7 @@ BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 
 	ZERO_STRUCTP(pol);
 
-	free(pol);
+	SAFE_FREE(pol);
 
 	return True;
 }
@@ -217,8 +217,7 @@ void close_policy_by_pipe(pipes_struct *p)
 		p->pipe_handles->Policy = NULL;
 		p->pipe_handles->count = 0;
 
-		free(p->pipe_handles);
-		p->pipe_handles = NULL;
+		SAFE_FREE(p->pipe_handles);
 		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
 	}
 }

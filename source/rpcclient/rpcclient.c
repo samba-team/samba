@@ -84,7 +84,7 @@ static char **completion_fn(char *text, int start, int end)
 	}
 
 	if (count == 2) {
-		free(matches[0]);
+		SAFE_FREE(matches[0]);
 		matches[0] = strdup(matches[1]);
 	}
 	matches[count] = NULL;
@@ -453,10 +453,10 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *c
 						
 	/* Cleanup */
 	for (i = 0; i < argc; i++) {
-		free(argv[i]);
+		SAFE_FREE(argv[i]);
 	}
 	
-	free(argv);
+	SAFE_FREE(argv);
 	
 	return result;
 }
