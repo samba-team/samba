@@ -180,6 +180,8 @@
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
+#undef HAVE_LIBDL
+#undef NEED_SGI_SEMUN_HACK
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -882,9 +884,6 @@
 
 /* Define if you have the cups library (-lcups).  */
 #undef HAVE_LIBCUPS
-
-/* Define if you have the dl library (-ldl).  */
-#undef HAVE_LIBDL
 
 /* Define if you have the gen library (-lgen).  */
 #undef HAVE_LIBGEN
