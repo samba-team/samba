@@ -221,7 +221,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
       make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-      smbcacls smbcontrol wbinfo
+      smbcacls smbcontrol wbinfo smbmnt
 do
 install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -231,7 +231,7 @@ do
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount smbmnt debug2html winbindd
+for i in smbd nmbd swat smbmount smbumount debug2html winbindd
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
@@ -239,7 +239,6 @@ done
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
-ln -sf %{prefix}/sbin/smbmnt $RPM_BUILD_ROOT%{prefix}/bin/smbmnt
 
 # This allows us to get away without duplicating code that 
 #  sombody else can maintain for us.  
@@ -519,7 +518,7 @@ fi
 %{prefix}/sbin/smbd
 %{prefix}/sbin/nmbd
 %{prefix}/sbin/swat
-%{prefix}/sbin/smbmnt
+%{prefix}/bin/smbmnt
 %{prefix}/sbin/smbmount
 %{prefix}/sbin/smbumount
 %{prefix}/sbin/winbindd
