@@ -390,7 +390,7 @@ static NTSTATUS trans2_qfsinfo(struct smbsrv_request *req, struct smb_trans2 *tr
 			return status;
 		}
 
-		memcpy(trans->out.data.data, guid_blob.data, GUID_SIZE);
+		memcpy(trans->out.data.data, guid_blob.data, guid_blob.length);
 
 		for (i=0;i<6;i++) {
 			SBVAL(trans->out.data.data, 16 + 8*i, fsinfo.objectid_information.out.unknown[i]);

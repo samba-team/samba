@@ -21,6 +21,14 @@
 
 #include "includes.h"
 
+/* A netbios node status array element. */
+struct node_status {
+	char name[16];
+	uint8_t type;
+	uint8_t flags;
+};
+
+
 /* nmbd.c sets this to True. */
 BOOL global_in_nmbd = False;
 

@@ -213,7 +213,6 @@ struct smbsrv_connection {
 	/* the context associated with open files on an smb socket */
 	struct {
 		struct files_struct *files; /* open files */
-		struct bitmap *file_bmap; /* bitmap used to allocate file handles */
 	
 		/* a fsp to use when chaining */
 		struct files_struct *chain_fsp;

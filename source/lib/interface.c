@@ -26,6 +26,14 @@ static int total_probed;
 static struct in_addr allones_ip;
 struct in_addr loopback_ip;
 
+/* used for network interfaces */
+struct interface {
+	struct interface *next, *prev;
+	struct in_addr ip;
+	struct in_addr bcast;
+	struct in_addr nmask;
+};
+
 static struct interface *local_interfaces;
 
 #define ALLONES  ((uint32_t)0xFFFFFFFF)
