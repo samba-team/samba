@@ -954,7 +954,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   pstrcpy(file_name, fsp->fsp_name);
 
   while((fsp = initial_break_processing(dev, inode, tval)) &&
-        OPEN_FSP(fsp) && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+        OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
   {
     if(receive_smb(Client,inbuf, timeout) == False)
     {
@@ -1042,7 +1042,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
    */
 
   if(oplock_timeout && (fsp = initial_break_processing(dev, inode, tval)) &&
-        OPEN_FSP(fsp) && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+        OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
   {
     DEBUG(0,("oplock_break: client failure in oplock break in file %s\n", fsp->fsp_name));
     remove_oplock(fsp);
@@ -1305,7 +1305,7 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
 
   DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->fsp_name));
 
-  if (fsp->open && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !fsp->sent_oplock_break && (fsp->fd_ptr != NULL)) {
+  if (fsp->open && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !fsp->sent_oplock_break && (fsp->fd_ptr != NULL)) {
 
     /* Try and break the oplock. */
     file_fd_struct *fd_ptr = fsp->fd_ptr;

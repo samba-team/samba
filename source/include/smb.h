@@ -1614,7 +1614,7 @@ extern int unix_ERR_code;
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
 
-#define EXLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+#define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & BATCH_OPLOCK)
 #define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & LEVEL_II_OPLOCK)
 

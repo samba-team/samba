@@ -911,7 +911,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
            * Check if someone has an oplock on this file. If so we must break 
            * it before continuing. 
            */
-          if((oplock_request && EXLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
+          if((oplock_request && EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
              (!oplock_request && (share_entry->op_type != NO_OPLOCK)))
           {
 
