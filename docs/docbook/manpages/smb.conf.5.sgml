@@ -489,6 +489,19 @@
 	<variablelist>
 	
 	<varlistentry>
+		<term>mangling method</term>
+		<listitem><para> controls the algorithm used for the generating
+		the mangled names. Can take two different values, "hash" and
+		"hash2". "hash" is  the default and is the algorithm that has been
+		used in Samba for many years. "hash2" is a newer and considered
+		a better algorithm (generates less collisions) in the names.
+		However, many Win32 applications store the
+		mangled names and so changing to the new algorithm must not be done
+		lightly as these applications may break unless reinstalled.
+		New installations of Samba may set the default to hash2.
+		Default <emphasis>hash</emphasis>.</para></listitem>
+		</varlistentry> 
+	
 		<term>mangle case = yes/no</term>
 		<listitem><para> controls if names that have characters that 
 		aren't of the "default" case are mangled. For example, 
@@ -667,6 +680,7 @@
 		<listitem><para><link linkend="LPQCACHETIME"><parameter>lpq cache time</parameter></link></para></listitem>
 		<listitem><para><link linkend="MACHINEPASSWORDTIMEOUT"><parameter>machine password timeout</parameter></link></para></listitem>
 		<listitem><para><link linkend="MANGLEDSTACK"><parameter>mangled stack</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLINGMETHOD"><parameter>mangling method</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAPTOGUEST"><parameter>map to guest</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAXDISKSIZE"><parameter>max disk size</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAXLOGSIZE"><parameter>max log size</parameter></link></para></listitem>
@@ -4307,7 +4321,7 @@
 		<para>See the section on <link linkend="NAMEMANGLINGSECT">
 		NAME MANGLING</link> for details on how to control the mangling process.</para>
 
-		<para>If mangling is used then the mangling algorithm is as follows:</para>
+		<para>If mangling algorithm "hash" is used then the mangling algorithm is as follows:</para>
 
 		<itemizedlist>
 			<listitem><para>The first (up to) five alphanumeric characters 
@@ -4346,6 +4360,40 @@
 		<para>This algorithm can cause name collisions only if files 
 		in a directory share the same first five alphanumeric characters. 
 		The probability of such a clash is 1/1300.</para>
+
+		<para>If mangling algorithm "hash2" is used then the mangling algorithm is as follows:</para>
+
+		<itemizedlist>
+			<listitem><para>The first alphanumeric character 
+			before the rightmost dot of the filename is preserved, forced 
+			to upper case, and appears as the first character of the mangled name.
+			</para></listitem>
+		
+			<listitem><para>A base63 hash of 5 characters is generated and the
+			first 4 characters of that hash are appended to the first character.
+			</para></listitem>
+
+			<listitem><para>A tilde "~" is appended to the first part of the mangled
+			name, followed by the final character of the base36 hash of the name.
+			</para>
+
+			<para>Note that the character to use may be specified using 
+			the <link linkend="MANGLINGCHAR"><parameter>mangling char</parameter>
+			</link> option, if you don't like '~'.</para></listitem>
+
+			<listitem><para>The first three alphanumeric characters of the final 
+			extension are preserved, forced to upper case and appear as the 
+			extension of the mangled name. The final extension is defined as that 
+			part of the original filename after the rightmost dot. If there are no 
+			dots in the filename, the mangled name will have no extension (except 
+			in the case of "hidden files" - see below).</para></listitem>
+
+			<listitem><para>Files whose UNIX name begins with a dot will be 
+			presented as DOS hidden files. The mangled name will be created as 
+			for other filenames, but with the leading dot removed and "___" as 
+			its extension regardless of actual original extension (that's three 
+			underscores).</para></listitem>
+		</itemizedlist>
 
 		<para>The name mangling (if enabled) allows a file to be 
 		copied between UNIX directories from Windows/DOS while retaining 
@@ -4400,6 +4448,21 @@
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term><anchor id="MANGLINGMETHOD">mangling mathod(G)</term>
+                <listitem><para> controls the algorithm used for the generating
+                the mangled names. Can take two different values, "hash" and
+                "hash2". "hash" is  the default and is the algorithm that has been
+                used in Samba for many years. "hash2" is a newer and considered
+                a better algorithm (generates less collisions) in the names.
+                However, many Win32 applications store the mangled names and so
+		changing to the new algorithm must not be done
+                lightly as these applications may break unless reinstalled.
+                New installations of Samba may set the default to hash2.</para>
+		<para>Default: <command>mangling method = hash</command></para>
+		<para>Example: <command>mangling method = hash2</command></para>
+		</listitem>
+		</varlistentry>
 
 
 
