@@ -272,6 +272,7 @@ enum ntlm_break {
 struct samlogon_state {
 	TALLOC_CTX *mem_ctx;
 	const char *account_name;
+	const char *account_domain;
 	const char *password;
 	struct dcerpc_pipe *p;
 	struct netr_LogonSamLogon r;
@@ -307,7 +308,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		samlogon_state->r.in.logon_level = levels[i];
 		samlogon_state->r.in.logon.network = &ninfo;
 	
-		ninfo.identity_info.domain_name.string = lp_workgroup();
+		ninfo.identity_info.domain_name.string = samlogon_state->account_domain;
 		ninfo.identity_info.parameter_control = 0;
 		ninfo.identity_info.logon_id_low = 0;
 		ninfo.identity_info.logon_id_high = 0;
@@ -663,7 +664,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	ZERO_STRUCT(user_session_key);
 	
 	/* TODO - test with various domain cases, and without domain */
-	if (!SMBNTLMv2encrypt(samlogon_state->account_name, lp_workgroup(), 
+	if (!SMBNTLMv2encrypt(samlogon_state->account_name, samlogon_state->account_domain, 
 			      samlogon_state->password, &samlogon_state->chall,
 			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 
@@ -888,6 +889,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 	samlogon_state.mem_ctx = mem_ctx;
 	samlogon_state.account_name = lp_parm_string(-1, "torture", "username");
+	samlogon_state.account_domain = lp_parm_string(-1, "torture", "userdomain");
 	samlogon_state.password = lp_parm_string(-1, "torture", "password");
 	samlogon_state.p = p;
 
@@ -1534,7 +1536,7 @@ static BOOL test_InteractiveLogin(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.validation_level = 6;
 	r.in.flags = 0;
 
-	pinfo.identity_info.domain_name.string = lp_workgroup();
+	pinfo.identity_info.domain_name.string = lp_parm_string(-1, "torture", "userdomain");
 	pinfo.identity_info.parameter_control = 0;
 	pinfo.identity_info.logon_id_low = 0;
 	pinfo.identity_info.logon_id_high = 0;
