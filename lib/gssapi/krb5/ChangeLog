@@ -1,3 +1,8 @@
+2003-08-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.[ch]: draft-ietf-krb-wg-gssapi-cfx-01.txt implemetation
+	From: Luke Howard <lukeh@PADL.COM>
+	
 2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* arcfour.c (arcfour_mic_cksum): use free_Checksum to free the
