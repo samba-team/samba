@@ -238,16 +238,18 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr && valstr && timeout);
 
-	if (!gencache_init()) return False;
+	if (!gencache_init())
+		return False;
 	
 	keybuf.dptr = strdup(keystr);
 	keybuf.dsize = strlen(keystr);
 	databuf = tdb_fetch(cache, keybuf);
 	
-	if (databuf.dptr) {
+	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
 		char* entry_buf = strndup(databuf.dptr, databuf.dsize);
 		*valstr = (char*)malloc(sizeof(char) * (databuf.dsize - TIMEOUT_LEN));
 				
+		SAFE_FREE(databuf.dptr);
 		sscanf(entry_buf, CACHE_DATA_FMT, (int*)timeout, *valstr);
 		SAFE_FREE(entry_buf);
 
@@ -256,6 +258,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		           ctime(timeout)));
 		return *timeout > time(NULL);
 	} else {
+		SAFE_FREE(databuf.dptr);
 		*valstr = NULL;
 		timeout = NULL;
 		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", keystr));
@@ -300,7 +303,12 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		 * all of the entries. Validity verification is up to fn routine.
 		 */
 		databuf = tdb_fetch(cache, node->node_key);
+		if (!databuf.dptr || databuf.dsize <= TIMEOUT_LEN) {
+			SAFE_FREE(databuf.dptr);
+			continue;
+		}
 		entry = strndup(databuf.dptr, databuf.dsize);
+		SAFE_FREE(databuf.dptr);
 		valstr = (char*)malloc(sizeof(char) * (databuf.dsize - TIMEOUT_LEN));
 		sscanf(entry, CACHE_DATA_FMT, (int*)(&timeout), valstr);
 		
@@ -315,5 +323,3 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	
 	tdb_search_list_free(first_node);
 }
-
-
