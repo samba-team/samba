@@ -92,7 +92,12 @@ find_etype(hdb_entry *princ, unsigned *etypes, unsigned len,
 static krb5_error_code
 find_keys(hdb_entry *client, hdb_entry *server, 
 	  Key **ckey, krb5_enctype *cetype,
-	  Key **skey, krb5_enctype *setype, krb5_keytype *sess_ktype,
+	  Key **skey, krb5_enctype *setype, 
+#ifndef KTYPE_IS_ETYPE
+	  krb5_keytype *sess_ktype,
+#else
+	  krb5_enctype *sess_ktype,
+#endif
 	  unsigned *etypes, unsigned num_etypes)
 {
     int i;
@@ -108,13 +113,17 @@ find_keys(hdb_entry *client, hdb_entry *server,
     }
 
     if(server){
-	/* find sesion key type */
+	/* find session key type */
 	ret = find_etype(server, etypes, num_etypes, skey, NULL);
 	if(ret){
 	    kdc_log(0, "Server has no support for etypes");
 	    return KRB5KDC_ERR_ETYPE_NOSUPP;
 	}
+#ifndef KTYPE_IS_ETYPE
 	*sess_ktype = (*skey)->key.keytype;
+#else
+	*sess_ktype = etypes[i];
+#endif
     }
     if(server){
 	/* find server key */
@@ -203,7 +212,11 @@ as_rep(KDC_REQ *req,
     KDCOptions f = b->kdc_options;
     hdb_entry *client = NULL, *server = NULL;
     krb5_enctype cetype, setype;
+#ifndef KTYPE_IS_ETYPE
     krb5_keytype sess_ktype;
+#else
+    krb5_enctype sess_ktype;
+#endif
     EncTicketPart et;
     EncKDCRepPart ek;
     krb5_principal client_princ, server_princ;
@@ -398,15 +411,14 @@ as_rep(KDC_REQ *req,
 	    e_text = NULL;
 	    goto out;
 	}
-    }else if (require_preauth || client->flags.require_preauth) {
-	/* XXX check server->flags.require_preauth? */
+    }else if (require_preauth || client->flags.require_preauth || server->flags.require_preauth) {
 	METHOD_DATA method_data;
 	PA_DATA pa_data;
 	u_char buf[16];
 	size_t len;
 	krb5_data foo_data;
-	
-    use_pa:
+
+    use_pa: 
 	method_data.len = 1;
 	method_data.val = &pa_data;
 
@@ -430,8 +442,8 @@ as_rep(KDC_REQ *req,
 		      server_princ,
 		      0,
 		      reply);
-	
 	kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
+	ret = 0;
 	goto out2;
     }
 
@@ -443,19 +455,33 @@ as_rep(KDC_REQ *req,
 	goto out;
 	
     {
-	char *cet, *set, *skt;
+	char *cet, *set = NULL, *skt = NULL;
 	krb5_etype_to_string(context, cetype, &cet);
 	if(cetype != setype)
 	    krb5_etype_to_string(context, setype, &set);
+#ifndef KTYPE_IS_ETYPE
 	krb5_keytype_to_string(context, sess_ktype, &skt);
-	if(cetype != setype)
-	    kdc_log(5, "Using %s/%s/%s", cet, set, skt);
+#else
+	if(cetype != sess_ktype)
+	    krb5_etype_to_string(context, sess_ktype, &skt);
+#endif
+	if(set)
+	    if(skt)
+		kdc_log(5, "Using %s/%s/%s", cet, set, skt);
+	    else
+		kdc_log(5, "Using %s/%s", cet, set);
 	else
-	    kdc_log(5, "Using %s/%s", cet, skt);
-	free(cet);
-	if(cetype != setype)
-	    free(set);
+	    if(skt){
+#ifndef KTYPE_IS_ETYPE
+		kdc_log(5, "Using %s/%s", cet, skt);
+#else
+		kdc_log(5, "Using %s/%s/%s", cet, cet, skt);
+#endif
+	    }else
+    		kdc_log(5, "Using %s", cet);
 	free(skt);
+	free(set);
+	free(cet);
     }
     
 
@@ -505,7 +531,15 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
+#ifndef KTYPE_IS_ETYPE
     krb5_generate_random_keyblock(context, sess_ktype, &et.key);
+#else
+    {
+	krb5_keytype kt;
+	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
+	krb5_generate_random_keyblock(context, kt, &et.key);
+    }
+#endif
     copy_PrincipalName(b->cname, &et.cname);
     copy_Realm(&b->realm, &et.crealm);
     
@@ -841,7 +875,11 @@ tgs_make_reply(KDC_REQ_BODY *b,
     krb5_enctype setype;
     Key *skey;
     EncryptionKey *ekey;
+#ifndef KTYPE_IS_ETYPE
     krb5_keytype sess_ktype;
+#else
+    krb5_enctype sess_ktype;
+#endif
     
     ret = find_keys(NULL, server, NULL, NULL, &skey, &setype, 
 		    &sess_ktype, b->etype.val, b->etype.len);
@@ -941,7 +979,15 @@ tgs_make_reply(KDC_REQ_BODY *b,
     /* XXX Check enc-authorization-data */
     et.authorization_data = auth_data;
 
+#ifndef KTYPE_IS_ETYPE
     krb5_generate_random_keyblock(context, sess_ktype, &et.key);
+#else
+    {
+	krb5_keytype kt;
+	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
+	krb5_generate_random_keyblock(context, kt, &et.key);
+    }
+#endif
     et.crealm = tgt->crealm;
     et.cname = tgt->cname;
 	    
