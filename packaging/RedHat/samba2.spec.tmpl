@@ -239,6 +239,7 @@ done
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+ln -sf %{prefix}/sbin/smbmnt $RPM_BUILD_ROOT/bin/smbmnt
 
 # This allows us to get away without duplicating code that 
 #  sombody else can maintain for us.  
