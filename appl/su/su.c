@@ -138,7 +138,7 @@ krb5_verify(struct passwd *login_info, struct passwd *su_info,
     ret = krb5_init_context (&context);
     if (ret) {
 #if 0
-	warnx("krb5_init_context failed: %u", ret);
+	warnx("krb5_init_context failed: %d", ret);
 #endif
 	return 1;
     }
