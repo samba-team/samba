@@ -526,7 +526,20 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		id2->lm_chal_resp.str_str_len, 
 		id2->nt_chal_resp.str_str_len));
 
-	/* check the lm password, first. */
+	/* JRA. Check the NT password first if it exists - this is a higher quality 
+           password, if it exists and it doesn't match - fail. */
+
+	if (id2->nt_chal_resp.str_str_len == 24 && 
+		smb_pass->smb_nt_passwd != NULL)
+	{
+		if(smb_password_check(id2->nt_chal_resp.buffer,
+		                   smb_pass->smb_nt_passwd,
+                           id2->lm_chal)) 
+                  return 0x0;
+                else
+	          return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+	}
+
 	/* lkclXXXX this is not a good place to put disabling of LM hashes in.
 	   if that is to be done, first move this entire function into a
 	   library routine that calls the two smb_password_check() functions.
@@ -543,16 +556,6 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		return 0x0;
 	}
 
-	/* now check the nt password, if it exists */
-
-	if (id2->nt_chal_resp.str_str_len == 24 && 
-		smb_pass->smb_nt_passwd != NULL &&
-		smb_password_check(id2->nt_chal_resp.buffer,
-		                   smb_pass->smb_nt_passwd,
-                           id2->lm_chal)) 
-	{
-		return 0x0;
-	}
 
 	/* oops! neither password check succeeded */
 
