@@ -17,6 +17,7 @@ Source Only
 	ftp://sunsite.mff.cuni.cz/Net/Protocols/Samba/
 --- Germany ---  
 	ftp://ftp.uni-trier.de/pub/unix/network/samba/
+	ftp://ftp.gwdg.de/pub/server/samba/
 --- Japan ---  
 	ftp://ring.asahi-net.or.jp/archives/net/samba/
 	ftp://ring.aist.go.jp/archives/net/samba/
@@ -56,6 +57,19 @@ AIX and DEC OSF/1 binaries are available from:
 
 QNX binaries and source code:
 	ftp://quics.qnx.com/usr/free/staging/samba
+
+Amiga OS binaries and source:
+	http://www.gbar.dtu.dk/~c948374/Amiga/Samba
+
+Stratos VOS binaries and source:
+	ftp://ftp.stratus.com/pub/vos/tools
+
+OS/2 binaries and source:
+	http://carol.wins.uva.nl/~leeuw/samba/samba2.html
+
+IBM OS/390 MVS:
+	ftp://ftp.mks.com/pub/samba
+
 
 There are several others. Give archie a try.
 
