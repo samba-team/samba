@@ -734,7 +734,7 @@ static BOOL call_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.datatype = NULL;
 	r.in.devmode_ctr.size = 0;
 	r.in.devmode_ctr.devmode = NULL;
-	r.in.access_required = 0x02000000;
+	r.in.access_mask = 0x02000000;
 	r.in.level = 1;
 	r.out.handle = handle;
 
