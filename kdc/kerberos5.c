@@ -9,13 +9,6 @@ RCSID("$Id$");
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
 krb5_error_code
-krb5_encrypt (krb5_context context,
-	      void *ptr,
-	      size_t len,
-	      krb5_keyblock *keyblock,
-	      krb5_data *result);
-
-krb5_error_code
 as_rep(krb5_context context, 
        KDC_REQ *req, 
        krb5_data *data)
