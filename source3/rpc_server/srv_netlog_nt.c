@@ -280,7 +280,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 (char *)p->dc.md4pw, p->dc.sess_key);
+				 p->dc.md4pw, p->dc.sess_key);
 		
 		/* check that the client credentials are valid */
 		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
@@ -342,7 +342,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 		
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 (char *)p->dc.md4pw, p->dc.sess_key);
+				 p->dc.md4pw, p->dc.sess_key);
 		
 		/* check that the client credentials are valid */
 		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
@@ -708,7 +708,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    pdb_get_username(sampw),
 				    pdb_get_fullname(sampw),
 				    pdb_get_homedir(sampw),
-				    pdb_get_dirdrive(sampw),
+				    pdb_get_dir_drive(sampw),
 				    pdb_get_logon_script(sampw),
 				    pdb_get_profile_path(sampw),
 				    pdb_get_logon_time(sampw),

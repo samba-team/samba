@@ -83,7 +83,7 @@ static BOOL api_reg_open_hklm(pipes_struct *p)
 }
 
 /*******************************************************************
- api_reg_open_khlm
+ api_reg_open_khu
  ********************************************************************/
 
 static BOOL api_reg_open_hku(pipes_struct *p)
@@ -103,6 +103,32 @@ static BOOL api_reg_open_hku(pipes_struct *p)
 	r_u.status = _reg_open_hku(p, &q_u, &r_u);
 
 	if(!reg_io_r_open_hku("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ api_reg_open_khcr
+ ********************************************************************/
+
+static BOOL api_reg_open_hkcr(pipes_struct *p)
+{
+	REG_Q_OPEN_HKCR q_u;
+	REG_R_OPEN_HKCR r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg open */
+	if(!reg_io_q_open_hkcr("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_open_hkcr(p, &q_u, &r_u);
+
+	if(!reg_io_r_open_hkcr("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -290,6 +316,56 @@ static BOOL api_reg_enum_key(pipes_struct *p)
 	return True;
 }
 
+/*******************************************************************
+ api_reg_enum_value
+ ********************************************************************/
+
+static BOOL api_reg_enum_value(pipes_struct *p)
+{
+	REG_Q_ENUM_VALUE q_u;
+	REG_R_ENUM_VALUE r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!reg_io_q_enum_val("", &q_u, data, 0))
+		return False;
+		
+	r_u.status = _reg_enum_value(p, &q_u, &r_u);
+
+	if(!reg_io_r_enum_val("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ api_reg_save_key
+ ********************************************************************/
+
+static BOOL api_reg_save_key(pipes_struct *p)
+{
+	REG_Q_SAVE_KEY q_u;
+	REG_R_SAVE_KEY r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!reg_io_q_save_key("", &q_u, data, 0))
+		return False;
+		
+	r_u.status = _reg_save_key(p, &q_u, &r_u);
+
+	if(!reg_io_r_save_key("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
 
 
 /*******************************************************************
@@ -299,14 +375,17 @@ static struct api_struct api_reg_cmds[] =
 {
 	{ "REG_CLOSE"              , REG_CLOSE              , api_reg_close            },
 	{ "REG_OPEN_ENTRY"         , REG_OPEN_ENTRY         , api_reg_open_entry       },
+	{ "REG_OPEN_HKCR"          , REG_OPEN_HKCR          , api_reg_open_hkcr        },
 	{ "REG_OPEN_HKLM"          , REG_OPEN_HKLM          , api_reg_open_hklm        },
 	{ "REG_OPEN_HKU"     	   , REG_OPEN_HKU           , api_reg_open_hku         },
 	{ "REG_ENUM_KEY"           , REG_ENUM_KEY           , api_reg_enum_key         },
+	{ "REG_ENUM_VALUE"         , REG_ENUM_VALUE         , api_reg_enum_value       },
 	{ "REG_QUERY_KEY"          , REG_QUERY_KEY          , api_reg_query_key        },
 	{ "REG_INFO"               , REG_INFO               , api_reg_info             },
 	{ "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
 	{ "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
 	{ "REG_UNKNOWN_1A"         , REG_UNKNOWN_1A         , api_reg_unknown_1a       },
+	{ "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         },
 	{ NULL                     , 0                      , NULL                     }
 };
 
