@@ -28,6 +28,7 @@
 #include <ldap.h>
 
 extern int DEBUGLEVEL;
+extern DOM_SID global_sam_sid;
 
 /* Internal state */
 extern LDAP *ldap_struct;
@@ -48,6 +49,7 @@ static DOMAIN_GRP *ldapgroup_getgrp(DOMAIN_GRP *group,
 	fstring temp;
 	char **values;
 	DOMAIN_GRP_MEMBER *memblist;
+	char *value, *sep;
 	int i;
 
 	if(!ldap_entry)
@@ -60,7 +62,7 @@ static DOMAIN_GRP *ldapgroup_getgrp(DOMAIN_GRP *group,
 	DEBUG(2,("Retrieving group [%s]\n", group->name));
 
         if(ldap_get_attribute("rid", temp)) {
-		group->rid = atoi(temp);
+		group->rid = strtol(temp, NULL, 16);
 	} else {
 		DEBUG(0, ("Missing rid\n"));
 		return NULL;
@@ -76,16 +78,33 @@ static DOMAIN_GRP *ldapgroup_getgrp(DOMAIN_GRP *group,
 		return group;
 	}
 
-	if(values = ldap_get_values(ldap_struct, ldap_entry, "uidMember")) {
-
-		DEBUG(0, ("Need to return NT names here\n"));
+	if(values = ldap_get_values(ldap_struct, ldap_entry, "member")) {
 
 		*num_membs = i = ldap_count_values(values);
 		*members = memblist = malloc(i * sizeof(DOMAIN_GRP_MEMBER));
 
 		do {
-			fstrcpy(memblist[--i].name, values[i]);
+                        value = values[--i];
+                
+                        if(!(sep = strchr(value, ','))) {
+                                DEBUG(0, ("Malformed group member\n"));
+                                return NULL;
+                        }
+                        *(sep++) = 0;
+                        fstrcpy(memblist[i].name, value);   
+
+                        if(!(value = strchr(sep, ','))) {
+                                DEBUG(0, ("Malformed group member\n"));
+                                return NULL;
+                        }
+                        memblist[i].rid = strtol(sep, &value, 16);
+
+                        if((memblist[i].sid_use = atoi(value+1))
+                                        >= SID_NAME_UNKNOWN)
+                                DEBUG(0, ("Invalid SID use in group"));
+
 			memblist[i].attr = 0x7;
+
 		} while(i > 0);
 
 		ldap_value_free(values);
@@ -115,14 +134,35 @@ static void ldapgroup_grpmods(DOMAIN_GRP *group, LDAPMod ***mods,
 		ldap_make_mod(mods, LDAP_MOD_ADD, "objectClass", "sambaGroup");
 		ldap_make_mod(mods, LDAP_MOD_ADD, "cn", group->name);
 
-		slprintf(temp, sizeof(temp)-1, "%d", (gid_t)(-1));
-		ldap_make_mod(mods, LDAP_MOD_ADD, "gidNumber", temp);
-
-		slprintf(temp, sizeof(temp)-1, "%d", group->rid);
+		slprintf(temp, sizeof(temp)-1, "%x", group->rid);
 		ldap_make_mod(mods, LDAP_MOD_ADD, "rid", temp);
 	}
 
 	ldap_make_mod(mods, operation, "description", group->comment);
+}
+
+
+/************************************************************************
+  Create a group member entry
+ ************************************************************************/
+
+static BOOL ldapgroup_memmods(uint32 user_rid, LDAPMod ***mods, int operation)
+{
+	pstring member;
+	fstring name;
+	DOM_SID sid;
+	uint8 type;
+
+	sid_copy(&sid, &global_sam_sid);
+	sid_append_rid(&sid, user_rid);
+	if (lookup_sid(&sid, name, &type))
+		return (False);
+
+	slprintf(member, sizeof(member)-1, "%s,%x,%d", name, user_rid, type);
+
+	*mods = NULL;
+	ldap_make_mod(mods, operation, "member", member);
+	return True;
 }
 
 
@@ -138,7 +178,7 @@ static void *ldapgroup_enumfirst(BOOL update)
 			server_role == ROLE_DOMAIN_MEMBER)
                 return NULL;
 
-	if (!ldap_open_connection(False))
+	if (!ldap_connect())
 		return NULL;
 
 	ldap_search_for("objectclass=sambaGroup");
@@ -148,7 +188,7 @@ static void *ldapgroup_enumfirst(BOOL update)
 
 static void ldapgroup_enumclose(void *vp)
 {
-	ldap_close_connection();
+	ldap_disconnect();
 }
 
 
@@ -178,7 +218,7 @@ static DOMAIN_GRP *ldapgroup_getgrpbynam(const char *name,
 	fstring filter;
 	DOMAIN_GRP *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return (False);
 
 	slprintf(filter, sizeof(filter)-1,
@@ -187,7 +227,7 @@ static DOMAIN_GRP *ldapgroup_getgrpbynam(const char *name,
 
 	ret = ldapgroup_getgrp(&domgrp, members, num_membs);
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -197,7 +237,7 @@ static DOMAIN_GRP *ldapgroup_getgrpbygid(gid_t grp_id,
 	fstring filter;
 	DOMAIN_GRP *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return (False);
 
 	slprintf(filter, sizeof(filter)-1,
@@ -206,7 +246,7 @@ static DOMAIN_GRP *ldapgroup_getgrpbygid(gid_t grp_id,
 
 	ret = ldapgroup_getgrp(&domgrp, members, num_membs);
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -216,16 +256,16 @@ static DOMAIN_GRP *ldapgroup_getgrpbyrid(uint32 grp_rid,
 	fstring filter;
 	DOMAIN_GRP *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return (False);
 
 	slprintf(filter, sizeof(filter)-1,
-		 "(&(rid=%d)(objectClass=sambaGroup))", grp_rid);
+		 "(&(rid=%x)(objectClass=sambaGroup))", grp_rid);
 	ldap_search_for(filter);
 
 	ret = ldapgroup_getgrp(&domgrp, members, num_membs);
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -237,12 +277,18 @@ static DOMAIN_GRP *ldapgroup_getcurrentgrp(void *vp,
 
 
 /*************************************************************************
-  Add/modify domain groups.
+  Add/modify/delete domain groups.
  *************************************************************************/
 
 static BOOL ldapgroup_addgrp(DOMAIN_GRP *group)
 {
 	LDAPMod **mods;
+
+	if (!ldap_allocaterid(&group->rid))
+	{
+	    DEBUG(0,("RID generation failed\n"));
+	    return (False);
+	}
 
 	ldapgroup_grpmods(group, &mods, LDAP_MOD_ADD); 
 	return ldap_makemods("cn", group->name, mods, True);
@@ -254,6 +300,69 @@ static BOOL ldapgroup_modgrp(DOMAIN_GRP *group)
 
 	ldapgroup_grpmods(group, &mods, LDAP_MOD_REPLACE);
 	return ldap_makemods("cn", group->name, mods, False);
+}
+
+static BOOL ldapgroup_delgrp(uint32 grp_rid)
+{
+	fstring filter;
+	char *dn;
+	int err;
+
+	if (!ldap_connect())
+		return (False);
+
+	slprintf(filter, sizeof(filter)-1,
+		 "(&(rid=%x)(objectClass=sambaGroup))", grp_rid);
+	ldap_search_for(filter);
+
+	if (!ldap_entry || !(dn = ldap_get_dn(ldap_struct, ldap_entry)))
+	{
+		ldap_disconnect();
+		return (False);
+	}
+
+	err = ldap_delete_s(ldap_struct, dn);
+	free(dn);
+	ldap_disconnect();
+
+	if (err != LDAP_SUCCESS)
+	{
+		DEBUG(0, ("delete: %s\n", ldap_err2string(err)));
+		return (False);
+	}
+
+	return True;
+}
+
+
+/*************************************************************************
+  Add users to/remove users from groups.
+ *************************************************************************/
+
+static BOOL ldapgroup_addmem(uint32 grp_rid, uint32 user_rid)
+{
+	LDAPMod **mods;
+        fstring rid_str;
+
+	slprintf(rid_str, sizeof(rid_str)-1, "%x", grp_rid);
+
+	if(!ldapgroup_memmods(user_rid, &mods, LDAP_MOD_ADD))
+		return (False);
+
+	return ldap_makemods("rid", rid_str, mods, False);
+}
+
+static BOOL ldapgroup_delmem(uint32 grp_rid, uint32 user_rid)
+{
+	LDAPMod **mods;
+        fstring rid_str;
+
+	slprintf(rid_str, sizeof(rid_str)-1, "%x", grp_rid);
+
+	if(!ldapgroup_memmods(user_rid, &mods, LDAP_MOD_DELETE))
+		return (False);
+
+	return ldap_makemods("rid", rid_str, mods, False);
 }
 
 
@@ -268,14 +377,18 @@ static BOOL ldapgroup_getusergroups(const char *name, DOMAIN_GRP **groups,
 	fstring filter;
 	int i;
 
+	if(!ldap_connect())
+		return (False);
+
 	slprintf(filter, sizeof(pstring)-1,
-		 "(&(uidMember=%s)(objectclass=sambaGroup))", name);
+		 "(&(member=%s,*)(objectclass=sambaGroup))", name);
 	ldap_search_for(filter);
 
 	*num_grps = i = ldap_count_entries(ldap_struct, ldap_results);
 
 	if(!i) {
 		*groups = NULL;
+		ldap_disconnect();
 		return (True);
 	}
 
@@ -284,6 +397,7 @@ static BOOL ldapgroup_getusergroups(const char *name, DOMAIN_GRP **groups,
 		i--;
 	} while(ldapgroup_getgrp(&grouplist[i], NULL, NULL) && (i > 0));
 
+	ldap_disconnect();
 	return (True);
 }
 
@@ -302,6 +416,10 @@ static struct groupdb_ops ldapgroup_ops =
 
 	ldapgroup_addgrp,
 	ldapgroup_modgrp,
+	ldapgroup_delgrp,
+
+	ldapgroup_addmem,
+	ldapgroup_delmem,
 
 	ldapgroup_getusergroups
 };
