@@ -263,6 +263,7 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		if (fsp->open && 
+			fsp->fd_ptr != NULL &&
 		    fsp->fd_ptr->dev == dev && 
 		    fsp->fd_ptr->inode == inode &&
 		    (tval ? (fsp->open_time.tv_sec == tval->tv_sec) : True ) &&
@@ -287,6 +288,7 @@ files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 
     for (fsp=Files;fsp;fsp=fsp->next) {
         if (fsp->open &&
+			fsp->fd_ptr != NULL &&
             fsp->fd_ptr->dev == dev &&
             fsp->fd_ptr->inode == inode )
             return fsp;
@@ -305,6 +307,7 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 
     for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
         if (fsp->open &&
+			fsp->fd_ptr != NULL &&
             fsp->fd_ptr->dev == start_fsp->fd_ptr->dev &&
             fsp->fd_ptr->inode == start_fsp->fd_ptr->inode )
             return fsp;
@@ -337,7 +340,7 @@ void file_sync_all(connection_struct *conn)
 
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
-		if (fsp->open && conn == fsp->conn) {
+		if (fsp->open && (conn == fsp->conn) && (fsp->fd_ptr != NULL)) {
 			sync_file(conn,fsp);
 		}
 	}
@@ -371,7 +374,7 @@ void file_free(files_struct *fsp)
 
 	string_free(&fsp->fsp_name);
 
-	if (fsp->fd_ptr && fsp->fd_ptr->ref_count == 0) {
+	if ((fsp->fd_ptr != NULL) && fsp->fd_ptr->ref_count == 0) {
 		fd_ptr_free(fsp->fd_ptr);
 	}
 
