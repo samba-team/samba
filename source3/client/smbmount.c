@@ -358,18 +358,21 @@ static void cmd_mount(char *inbuf,char *outbuf)
 
 	DEBUG(3, ("mount command: %s\n", mount_command));
 
-	/*
-	 * Create the background process before trying the mount.
-	 * (We delay closing files to allow diagnostic messages.)
-	 */
-	daemonize();
-
-	/* The parent has exited here, the child handles the connection: */
 	if ((retval = system(mount_command)) != 0)
 	{
 		DEBUG(0,("mount failed\n"));
 		exit(1);
 	}
+
+	/*
+	 * Create the background process after trying the mount.
+	 * to avoid race conditions with automount and other processes.
+	 */
+	daemonize();
+
+	/* The parent has exited here, leave the daemon to deal with
+	 * disconnects and reconnects
+         */
 	send_fs_socket(mount_point, inbuf, outbuf);
 }	
 
