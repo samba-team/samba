@@ -99,6 +99,74 @@ typedef struct sid_info
 #define _DOM_SID
 #endif
 
+#ifndef _SEC_ACCESS
+/* SEC_ACCESS */
+typedef struct security_info_info
+{
+    uint32 mask;
+
+} SEC_ACCESS;
+#define _SEC_ACCESS
+#endif
+
+#ifndef _SEC_ACE
+/* SEC_ACE */
+typedef struct security_ace_info
+{
+    uint8 type;  /* xxxx_xxxx_ACE_TYPE - e.g allowed / denied etc */
+    uint8 flags; /* xxxx_INHERIT_xxxx - e.g OBJECT_INHERIT_ACE */
+    uint16 size;
+
+    SEC_ACCESS info;
+    DOM_SID sid;
+
+} SEC_ACE;
+#define _SEC_ACE
+#endif
+
+#ifndef ACL_REVISION
+#define ACL_REVISION 0x3
+#endif
+
+#ifndef _SEC_ACL
+/* SEC_ACL */
+typedef struct security_acl_info
+{
+    uint16 revision; /* 0x0003 */
+    uint16 size; /* size in bytes of the entire ACL structure */
+    uint32 num_aces; /* number of Access Control Entries */
+
+    SEC_ACE *ace;
+
+} SEC_ACL;
+#define _SEC_ACL
+#endif
+
+#ifndef SEC_DESC_REVISION
+#define SEC_DESC_REVISION 0x1
+#endif
+
+#ifndef _SEC_DESC
+/* SEC_DESC */
+typedef struct security_descriptor_info
+{
+    uint16 revision; /* 0x0001 */
+    uint16 type;     /* SEC_DESC_xxxx flags */
+
+    uint32 off_owner_sid; /* offset to owner sid */
+    uint32 off_grp_sid  ; /* offset to group sid */
+    uint32 off_sacl     ; /* offset to system list of permissions */
+    uint32 off_dacl     ; /* offset to list of permissions */
+
+    SEC_ACL *dacl; /* user ACL */
+    SEC_ACL *sacl; /* system ACL */
+    DOM_SID *owner_sid;
+    DOM_SID *grp_sid;
+
+} SEC_DESC;
+#define _SEC_DESC
+#endif
+
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
@@ -110,6 +178,12 @@ typedef struct _nt_user_token {
     DOM_SID *user_sids;
 } NT_USER_TOKEN;
 #define _NT_USER_TOKEN
+#endif
+
+/* Avoid conflict with an AIX include file */
+
+#ifdef vfs_ops
+#undef vfs_ops
 #endif
 
 /* Information from the connection_struct passed to the vfs layer */
@@ -144,20 +218,13 @@ struct vfs_connection_struct {
 	NT_USER_TOKEN *nt_user_token;
 };
 
-/* Avoid conflict with an AIX include file */
-
-#ifdef vfs_ops
-#undef vfs_ops
-#endif
-
 /* VFS operations structure */
 
 struct vfs_ops {
 
     /* Disk operations */
     
-    int (*connect)(struct vfs_connection_struct *conn, char *service, 
-		   char *user);
+    int (*connect)(struct vfs_connection_struct *conn, char *service, char *user);
     void (*disconnect)(void);
     SMB_BIG_UINT (*disk_free)(char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			      SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
@@ -190,10 +257,11 @@ struct vfs_ops {
     int (*utime)(char *path, struct utimbuf *times);
 	int (*ftruncate)(int fd, SMB_OFF_T offset);
 	BOOL (*lock)(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-#if 0
-	size_t (*get_nt_acl)(files_struct *fsp, SEC_DESC **ppdesc);
-	BOOL (*set_nt_acl)(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
-#endif
+
+	size_t (*fget_nt_acl)(int fd, SEC_DESC **ppdesc);
+	size_t (*get_nt_acl)(char *name, SEC_DESC **ppdesc);
+	BOOL (*fset_nt_acl)(int fd, uint32 security_info_sent, SEC_DESC *psd);
+	BOOL (*set_nt_acl)(char *name, uint32 security_info_sent, SEC_DESC *psd);
 };
 
 struct vfs_options {

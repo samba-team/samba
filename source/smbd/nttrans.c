@@ -1611,6 +1611,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   files_struct *fsp = NULL;
   uint32 security_info_sent = 0;
   TALLOC_CTX *mem_ctx;
+  BOOL ret;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1659,7 +1660,9 @@ security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (!set_nt_acl(fsp, security_info_sent, psd)) {
+  ret = set_nt_acl( fsp, security_info_sent, psd);
+
+  if (!ret) {
 	free_sec_desc(&psd);
     talloc_destroy(mem_ctx);
 	return(UNIXERROR(ERRDOS,ERRnoaccess));
