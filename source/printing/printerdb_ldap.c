@@ -90,20 +90,18 @@ static struct printerdb_methods ldap_methods = {
 	ldap_get_drivers, 
 	ldap_add_driver, 
 	ldap_get_driver, /*
-	ldap_set_driver_init_2,
-	ldap_update_driver_init_2,
 	ldap_del_driver,
-	ldap_del_driver_all,
-	ldap_get_printer_2,
-	ldap_update_printer_2,
+	ldap_del_driver_init,
+	ldap_get_printers,
+	ldap_get_printer,
+	ldap_update_printer,
 	ldap_del_printer,
 	ldap_getsec,
 	ldap_setsec,
-	ldap_pack_values,
-	ldap_unpack_values,
-	ldap_pack_devicemode,
-	ldap_unpack_devicemode,
-	ldap_printerdb_close, */
+	ldap_printerdb_close, 
+	ldap_set_driver_init,
+	ldap_update_driver_init
+	*/
 };
 
 

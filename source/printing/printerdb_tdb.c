@@ -799,7 +799,6 @@ WERROR tdb_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 		     const char *short_archi, 
 		     uint32 version)
 {
-	WERROR ret;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA kbuf, dbuf;
 	int len = 0;
@@ -816,9 +815,8 @@ WERROR tdb_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 	kbuf.dsize = strlen(key)+1;
 	
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-	if (!dbuf.dptr) {
-		ret = WERR_UNKNOWN_PRINTER_DRIVER;
-	}
+	if (!dbuf.dptr) 
+		return WERR_UNKNOWN_PRINTER_DRIVER;
 
 	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dffffffff",
 			  &driver.cversion,
@@ -944,6 +942,36 @@ static WERROR tdb_set_secdesc(TALLOC_CTX *ctx, const char *printername, SEC_DESC
 	return WERR_OK;
 }
 
+int tdb_get_printers(fstring **list)
+{
+	int total=0;
+	fstring *fl;
+	pstring key;
+	TDB_DATA kbuf, newkey;
+
+	slprintf(key, sizeof(key)-1, "%s", PRINTERS_PREFIX);
+
+	for (kbuf = tdb_firstkey(tdb_printers);
+	     kbuf.dptr;
+	     newkey = tdb_nextkey(tdb_printers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+
+		if (strncmp(kbuf.dptr, key, strlen(key)) != 0)
+			continue;
+		
+		if ((fl = SMB_REALLOC_ARRAY(*list, fstring, total+1)) == NULL) {
+			DEBUG(0,("tdb_get_printers: failed to enlarge list!\n"));
+			return -1;
+		} else {
+			*list = fl;
+		}
+
+		fstrcpy((*list)[total], kbuf.dptr+strlen(key));
+		total++;
+	}
+
+	return total;
+}
+
 WERROR tdb_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharename)
 {
 	pstring key;
@@ -987,11 +1015,11 @@ WERROR tdb_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharename
 			info.printprocessor,
 			info.datatype,
 			info.parameters);
-#if 1
+
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
-#endif
+
 	SAFE_FREE(dbuf.dptr);
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
@@ -1091,6 +1119,7 @@ static struct printerdb_methods tdb_methods = {
 	tdb_get_driver,
 	tdb_del_driver,
 	tdb_del_driver_init,
+	tdb_get_printers,
 	tdb_get_printer,
 	tdb_update_printer,
 	tdb_del_printer,

@@ -1502,9 +1502,12 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		version = 0;
 
 	ret = printerdb_get_driver(info_ptr, drivername, architecture, version);
-	if (!W_ERROR_IS_OK(ret)) {
+
+	if (W_ERROR_EQUAL(ret, WERR_UNKNOWN_PRINTER_DRIVER))
+		return ret;
+
+	if (!W_ERROR_IS_OK(ret))
 		return get_a_printer_driver_3_default(info_ptr, drivername, arch);
-	}
 
 	return ret;
 }

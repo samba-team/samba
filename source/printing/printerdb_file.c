@@ -150,7 +150,6 @@ static BOOL create_prefix_dir(const char *prefix)
 	}
 
 	if (!check_dir(dirname, True)) {
-		DEBUG(0,("create_prefix_dir: failed call check_dir()\n"));
 		SAFE_FREE(dirname);
 		return False;
 	}
@@ -193,7 +192,7 @@ BOOL file_printerdb_init(char *param)
 	if (mem_ctx == NULL)
 		goto done;
 
-	file_root = "/var/lib/samba/printerdb";
+	file_root = talloc_asprintf(mem_ctx, "%s/%s", dyn_LIBDIR, "printerdb");
 
 	if ((param != NULL) && (param[0] != '\0')) {
 		file_root = SMB_STRDUP(param);
@@ -460,10 +459,8 @@ int file_write_forms(nt_forms_struct **list, int number)
 	if (filename == NULL)
 		goto done;
 
-	if (!check_dir(filename, False)) {
-		DEBUG(0,("file_write_forms: failed call check_dir()\n"));
+	if (!check_dir(filename, False))
 		goto done;
-	}
 
 	for (i=0;i<number;i++) {
 
@@ -567,10 +564,8 @@ int file_get_drivers(fstring **list, const char *short_archi, uint32 version)
 	if (filename == NULL)
 		goto done;
 	
-	if (!check_dir(filename, False)) {
-		DEBUG(0,("file_get_drivers: failed call check_dir()\n"));
+	if (!check_dir(filename, False))
 		goto done;
-	}
 
 	file_list = NULL;
 
@@ -670,9 +665,10 @@ WERROR file_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 	TALLOC_CTX *mem_ctx = talloc_init("file_get_driver");
 	char *filename;
 	uint8_t *buf;
-	int len;
+	int len = 0, buflen = 0;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	WERROR result = WERR_NOMEM;
+	int i = 0;
 
 	ZERO_STRUCT(driver);
 
@@ -685,12 +681,12 @@ WERROR file_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 	if (filename == NULL)
 		goto done;
 
-	if (!read_complete_file(mem_ctx, filename, &buf, &len)) {
+	if (!read_complete_file(mem_ctx, filename, &buf, &buflen)) {
 		result = WERR_UNKNOWN_PRINTER_DRIVER;
 		goto done;
 	}
 
-	tdb_unpack(buf, len, "dffffffff",
+	len += tdb_unpack(buf, buflen, "dffffffff",
 		   &driver.cversion,
 		   driver.name,
 		   driver.environment,
@@ -701,7 +697,31 @@ WERROR file_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 		   driver.monitorname,
 		   driver.defaultdatatype);
 
-	/* missing dependentfiles */
+	while (len < buflen) {
+
+		fstring *tddfs;
+
+		tddfs = SMB_REALLOC_ARRAY(driver.dependentfiles, fstring, i+2);
+		if (tddfs == NULL) {
+			DEBUG(0,("file_get_driver: failed to enlarge buffer!\n"));
+			break;
+		} else {
+			driver.dependentfiles = tddfs;
+		}
+		len += tdb_unpack(buf+len, buflen-len, "f",
+				  &driver.dependentfiles[i]);
+		i++;
+
+	}
+	
+	if (driver.dependentfiles != NULL) 
+		fstrcpy(driver.dependentfiles[i], "");
+
+	if (len != buflen) {
+		SAFE_FREE(driver.dependentfiles);
+		result = WERR_INVALID_PARAM;
+		goto done;
+	}
 
 	*info_ptr = (NT_PRINTER_DRIVER_INFO_LEVEL_3 *)memdup(&driver, sizeof(driver));
 
@@ -710,6 +730,7 @@ WERROR file_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
  done:
 	if (mem_ctx != NULL)
 		talloc_destroy(mem_ctx);
+
 	return result;
 }
 
@@ -828,13 +849,68 @@ done:
 	return result;
 }
 
+int file_get_printers(fstring **list)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("file_get_printers");
+	char *dirname;
+	struct file_list *file_list, *temp_list;
+	int n = 0;
+	fstring *loc_list;
+	int num_files;
+
+	if (mem_ctx == NULL)
+		goto done;
+
+	dirname = talloc_asprintf(mem_ctx, "%s/%s/", file_root,
+				   PRINTERS_PREFIX);
+
+	if (dirname == NULL)
+		goto done;
+	
+	if (!check_dir(dirname, False))
+		goto done;
+
+	file_list = NULL;
+
+	if (!file_find(mem_ctx, dirname, &file_list, &num_files)) {
+		goto done;
+	}
+
+	for (temp_list = file_list; temp_list; temp_list = temp_list->next) {
+
+		loc_list = SMB_REALLOC_ARRAY(*list, fstring, n+1);
+
+		if (loc_list == NULL) {
+			DEBUG(0,("get_ntdrivers: failed to enlarge list!\n"));
+			n = 0;
+			goto done;
+		}
+		
+		*list = loc_list;
+
+		if (temp_list->file == NULL)
+			continue;
+	
+		fstrcpy((*list)[n], temp_list->file);
+		++n;
+
+	}
+
+ done:
+	if (mem_ctx != NULL)
+		talloc_destroy(mem_ctx);
+
+	return n;
+}
+
+
 WERROR file_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharename)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("file_get_printer");
 	NT_PRINTER_INFO_LEVEL_2 info;
 	char *filename;
 	uint8_t *buf;
-	int len;
+	int len = 0, buflen = 0;
 	WERROR result = WERR_OK;
 
 	ZERO_STRUCT(info);
@@ -847,12 +923,12 @@ WERROR file_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharenam
 	if (filename == NULL)
 		return WERR_NOMEM;
 
-	if (!read_complete_file(mem_ctx, filename, &buf, &len)) {
+	if (!read_complete_file(mem_ctx, filename, &buf, &buflen)) {
 		result = WERR_INVALID_PRINTER_NAME;
 		goto done;
 	}
 
-	len += tdb_unpack(buf, len, "dddddddddddfffffPfffff",
+	len += tdb_unpack(buf, buflen, "dddddddddddfffffPfffff",
 			&info.attributes,
 			&info.priority,
 			&info.default_priority,
@@ -876,11 +952,10 @@ WERROR file_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharenam
 			info.datatype,
 			info.parameters);
 
-#if 0
-	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+	len += unpack_devicemode(&info.devmode, buf+len, buflen);
 
-	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
-#endif
+	len += unpack_values( &info.data, buf+len, buflen );
+
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
 
  done:
@@ -892,19 +967,26 @@ WERROR file_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharenam
 
 WERROR file_update_printer(NT_PRINTER_INFO_LEVEL_2 *info)
 {
+	TALLOC_CTX *mem_ctx = talloc_init("file_update_printer");
 	char *filename;
 	int len;
 	uint8_t *buf;
 	WERROR result;
 	int buflen;
 
-	if (asprintf(&filename, "%s/%s/%s", file_root, PRINTERS_PREFIX, info->sharename) < 0)
-		return WERR_NOMEM;
+	if (mem_ctx == NULL)
+		goto done;
+
+	filename = talloc_asprintf(mem_ctx, "%s/%s/%s", file_root,
+				   PRINTERS_PREFIX, info->sharename);
+
+	if (filename == NULL)
+		goto done;
 
 	buf = NULL;
 	buflen = 0;
 
- again:	
+ again:
 	len = 0;
 	len += tdb_pack(buf+len, buflen-len, "dddddddddddfffffPfffff",
 			info->attributes,
@@ -939,12 +1021,15 @@ WERROR file_update_printer(NT_PRINTER_INFO_LEVEL_2 *info)
 
 		tb = (char *)SMB_REALLOC(buf, len);
 		if (!tb) {
-			DEBUG(0,("update_a_printer_2: failed to enlarge buffer!\n"));
+			DEBUG(0,("file_update_printer: failed to enlarge buffer!\n"));
 			result = WERR_NOMEM;
 			goto done;
+		} else {
+			buf = tb;
 		}
-		else buf = tb;
+
 		buflen = len;
+
 		goto again;
 	}
 	
@@ -960,8 +1045,8 @@ WERROR file_update_printer(NT_PRINTER_INFO_LEVEL_2 *info)
 		 info->sharename, info->drivername, info->portname, len));
 
 done:
-
-	SAFE_FREE(buf);
+	if (mem_ctx != NULL)
+		talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -981,6 +1066,7 @@ static struct printerdb_methods file_methods = {
 	file_get_driver,
 	file_del_driver,
 	file_del_driver_init,
+	file_get_printers,
 	file_get_printer,
 	file_update_printer,
 	file_del_printer,

@@ -782,48 +782,47 @@ static BOOL migrate_drivers(void)
 	return True;
 }
 
-/* FIXME: should we save defaults ????  */
 static BOOL migrate_printers(void)
 {
-//	int snum;
-//	int n_services=lp_numservices();
 	WERROR err;
+	fstring *printers = NULL;
+	int num_printers = 0, p;
 
 	TALLOC_CTX *mem_ctx = talloc_init("migrate_printers");
 
 	if (mem_ctx == NULL)
 		return False;
 
-#if 0
-	for (snum=0; snum<n_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
+	num_printers = tdb_get_printers(&printers);
 
-			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
-#endif
-			const char *printername = "HPLaserJ";
+	d_printf("got %d printers\n", num_printers);
 
-			d_printf("got 1 printer\n");
+	for (p=0; p<num_printers; p++) {
 
-//			NT_PRINTER_INFO_LEVEL_2 **info;
-			NT_PRINTER_INFO_LEVEL_2	*info = NULL;
+		d_printf("migrating PRINTER: %s\n", printers[p]);
 
-			ZERO_STRUCTP(info);
-			err = tdb_get_printer(&info, printername);
-			if (!W_ERROR_IS_OK(err)) return False;
-			err = file_update_printer(info);
-			if (!W_ERROR_IS_OK(err)) return False;
+		NT_PRINTER_INFO_LEVEL_2	*info = NULL;
+
+		ZERO_STRUCTP(info);
+
+		err = tdb_get_printer(&info, printers[p]);
+		if (!W_ERROR_IS_OK(err)) 
+			return False;
+		err = file_update_printer(info);
+		if (!W_ERROR_IS_OK(err)) 
+			return False;
 			
-			d_printf("got 1 security descriptor\n");
+		d_printf("migrating SECDESC: %s\n", printers[p]);
+		SEC_DESC_BUF *secdesc_ctr = NULL;
 
-			SEC_DESC_BUF *secdesc_ctr;
-			err = tdb_get_secdesc(mem_ctx, printername, &secdesc_ctr);
-			if (!W_ERROR_IS_OK(err)) return False;
-			err = file_set_secdesc(mem_ctx, printername, secdesc_ctr);
-			if (!W_ERROR_IS_OK(err)) return False;
-#if 0			
-		}
+		err = tdb_get_secdesc(mem_ctx, printers[p], &secdesc_ctr);
+		if (!W_ERROR_IS_OK(err)) 
+			return False;
+		err = file_set_secdesc(mem_ctx, printers[p], secdesc_ctr);
+		if (!W_ERROR_IS_OK(err)) 
+			return False;
 	}
-#endif
+
 	if (mem_ctx != NULL)
 		talloc_destroy(mem_ctx);
 

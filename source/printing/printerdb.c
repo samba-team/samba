@@ -220,7 +220,7 @@ uint32 printerdb_update_driver_init(NT_PRINTER_INFO_LEVEL_2 *info)
 
 WERROR printerdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr)
 {
-//	return remote_map->get_secdesc(mem_ctx, printername, secdesc_ctr);
+	return remote_map->get_secdesc(mem_ctx, printername, secdesc_ctr);
 #if 0
 	WERROR err;
 	if (remote_map) {
@@ -233,6 +233,7 @@ WERROR printerdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *printername, SEC_D
 
 WERROR printerdb_set_secdesc(TALLOC_CTX *mem_ctx, const char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
+	return remote_map->set_secdesc(mem_ctx, printername, secdesc_ctr);
 #if 0
 	WERROR err;
 	if (remote_map) {
@@ -248,27 +249,32 @@ BOOL printerdb_del_driver(const char *short_archi, int version, const char *driv
 	BOOL ret;
 	if (remote_map) {
 		ret = remote_map->del_driver(short_archi, version, drivername);
-		if (ret) { return ret; };
+		if (ret) 
+			return ret;
 	}
 	return cache_map->del_driver(short_archi, version, drivername);
 }
 
+/* del driver_init */
 BOOL printerdb_del_driver_init(const char *drivername)
 {
 	BOOL ret;
 	if (remote_map) {
 		ret = remote_map->del_driver_init(drivername);
-		if (ret) { return ret; };
+		if (ret)
+			return ret;
 	}
 	return cache_map->del_driver_init(drivername);
 }
 
+/* del printer */
 WERROR printerdb_del_printer(const char *sharename)
 {
 	WERROR err;
 	if (remote_map) {
 		err = remote_map->del_printer(sharename);
-		if (!W_ERROR_IS_OK(err)) return err;
+		if (!W_ERROR_IS_OK(err)) 
+			return err;
 	}
 	return cache_map->del_printer(sharename);
 }
@@ -279,7 +285,8 @@ BOOL printerdb_del_form(char *del_name, WERROR *err)
 	BOOL ret;
 	if (remote_map) {
 		ret = remote_map->del_form(del_name, err);
-		if (ret) { return ret; }
+		if (ret)
+			return ret;
 	}
 	return cache_map->del_form(del_name, err);
 }
@@ -311,7 +318,8 @@ int printerdb_write_forms(nt_forms_struct **list, int num_forms)
 	int ret;
 	if (remote_map) {
 		ret = remote_map->write_forms(list, num_forms);
-		if (!ret) return ret;
+		if (!ret) 
+			return ret;
 	}
 	return cache_map->write_forms(list, num_forms);
 }
@@ -322,20 +330,19 @@ int printerdb_get_drivers(fstring **list,
 			  uint32 version)
 {
 	int num_drivers;
+	int i = 0;
 
 	if (printerdb_valid(cache_map, TDB_DRIVERS))
 		goto cache;
 
 	if (remote_map) {
 		num_drivers = remote_map->get_drivers(list, short_archi, version);
-#if 0
-	int i = 0;
-		/* refresh here ? */ 
 		for (i=0; i < num_drivers; i++) {
-			remote_map->get_driver(driver, drivername, short_archi, version);
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver = NULL;
+			remote_map->get_driver(&driver, (*list)[i], short_archi, version);
 			cache_map->add_driver(driver, short_archi);
 		}
-#endif
+		return num_drivers;
 	}
 cache:
 	return cache_map->get_drivers(list, short_archi, version);
@@ -357,7 +364,8 @@ WERROR printerdb_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 		return remote_map->get_driver(info_ptr, drivername, arch, version);
 		if (!W_ERROR_IS_OK(err)) return err;
 		ret = cache_map->add_driver(*info_ptr, arch);
-		if (ret) return WERR_GENERAL_FAILURE;
+		if (ret)
+			return WERR_UNKNOWN_PRINTER_DRIVER;
 		return WERR_OK;
 	}
 cache:
@@ -367,7 +375,7 @@ cache:
 /* update printer */
 WERROR printerdb_update_printer(NT_PRINTER_INFO_LEVEL_2 *info)
 {
-//	return remote_map->update_printer(info);
+	return remote_map->update_printer(info);
 #if 0
 	WERROR err;
 	if (remote_map) {
@@ -381,18 +389,18 @@ WERROR printerdb_update_printer(NT_PRINTER_INFO_LEVEL_2 *info)
 /* get printer */
 WERROR printerdb_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharename)
 {
-//	return remote_map->get_printer(info_ptr, sharename);
+	return remote_map->get_printer(info_ptr, sharename);
+	WERROR err;
 	if (printerdb_valid(cache_map, TDB_PRINTERS))
 		goto cache;
 	
-#if 0
-	WERROR err;
 	if (remote_map) {
 		err = remote_map->get_printer(info_ptr, sharename);
-		if (!W_ERROR_IS_OK(err)) return err;
+		if (!W_ERROR_IS_OK(err)) 
+			return err;
 		cache_map->update_printer(*info_ptr);
 	}
-#endif
+
 cache:
 	return cache_map->get_printer(info_ptr, sharename);
 }

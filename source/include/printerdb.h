@@ -61,6 +61,7 @@ struct printerdb_methods {
 	BOOL (*del_driver)( const char *short_archi, int version, const char *drivername );
 	BOOL (*del_driver_init) (const char *drivername);
 
+	int (*get_printers)(fstring **list);
 	WERROR (*get_printer)(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharename);
 	WERROR (*update_printer)(NT_PRINTER_INFO_LEVEL_2 *info);
 	WERROR (*del_printer)( const char *sharename );
