@@ -886,7 +886,7 @@ static void init_globals(void)
 	init_printer_values();
 
 	do_parameter("fstype", FSTYPE_STRING);
-	do_parameter("ntvfs handler", "default");
+	do_parameter("ntvfs handler", "unixuid default");
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss");
 	do_parameter("server services", "smb rpc");
