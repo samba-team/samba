@@ -451,7 +451,10 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	if (!interactive) {
 		if (argc < 2) usage(True);
-		return (do_command(argv[0],argv[1], argc-2, argc > 2 ? &argv[2] : 0));
+		/* Need to invert sense of return code -- samba
+		 * routines mostly return True==1 for success, but
+		 * shell needs 0. */ 
+		return ! do_command(argv[0],argv[1], argc-2, argc > 2 ? &argv[2] : 0);
 	}
 
 	while (True) {
