@@ -61,6 +61,7 @@ struct krb5_pk_identity {
     EVP_PKEY *private_key;
     STACK_OF(X509) *cert;
     STACK_OF(X509) *trusted_certs;
+    STACK_OF(X509_CRL) *crls;
 };
 
 /* XXX copied from lib/krb5/pkinit.c */
@@ -120,10 +121,6 @@ extern heim_oid pkcs7_enveloped_oid;
 
 static struct krb5_pk_identity *kdc_identity;
 static struct pk_principal_mapping principal_mappings;
-
-/*
- *
- */
 
 /*
  *
