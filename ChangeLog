@@ -1,3 +1,7 @@
+Sat Apr 18 00:31:11 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/sock_principal.c: Save hostname.
+
 Sun Apr  5 11:29:45 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/mk_req_ext.c: Use same enctype as in ticket.
