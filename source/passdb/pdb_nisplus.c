@@ -1207,7 +1207,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
       nis_freeresult(result); /* not needed any more */
 
-      tblresult = nisp_get_nis_list(pfiletmp,
+      tblresult = nis_lookup(pfiletmp,
 				    MASTER_ONLY|FOLLOW_LINKS|\
 				    FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP); 
     }
