@@ -1,0 +1,103 @@
+#!/usr/bin/perl
+
+$srcdir = $ENV{"PWD"};
+
+#AC_ARG_WITH(fhs, 
+#[  --with-fhs              Use FHS-compliant paths (default=no)],
+#AC_ARG_WITH(privatedir,
+#[  --with-privatedir=DIR   Where to put smbpasswd ($ac_default_prefix/private)],
+#AC_ARG_WITH(lockdir,
+#[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
+#AC_ARG_WITH(piddir,
+#[  --with-piddir=DIR       Where to put pid files ($ac_default_prefix/var/locks)],
+#AC_ARG_WITH(configdir,
+#[  --with-configdir=DIR    Where to put configuration files (\$libdir)],
+#AC_ARG_WITH(logfilebase,
+#[  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
+#AC_ARG_ENABLE(debug, 
+#[  --enable-debug          Turn on compiler debugging information (default=no)],
+#AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
+#AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
+#AC_ARG_ENABLE(gtkdeveloper, [  --enable-gtkdeveloper  Turn on developer warnings and debugging, except -Wstrict-prototypes and -Wshadow (default=no)],
+#AC_ARG_ENABLE(experimental, [  --enable-experimental Turn on experimental features (default=no)],
+#AC_ARG_WITH(disable-ext-lib,
+#[  --with-disable-ext-lib=LIB Comma-seperated list of external libraries],
+#AC_ARG_WITH(exclude-modules,
+#[  --with-exclude-modules=MODULES Comma-seperated list of names of modules to exclude from build],
+#AC_ARG_WITH(shared-modules,
+#[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
+#AC_ARG_WITH(static-modules,
+#[  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
+#
+require "build/smb_build/check.pm";
+require "build/smb_build/public.pm";
+require "build/smb_build/env.pm";
+require "build/m4/rewrite.pm";
+
+require "lib/popt/config.pm";
+require "lib/iconv.pm";
+require "lib/basic.pm";
+require "lib/socket/config.pm";
+require "lib/messaging/config.pm";
+require "lib/tdb/config.pm";
+require "lib/ldb/config.pm";
+require "lib/cmdline/config.pm";
+require "libcli/auth/config.pm";
+require "libcli/auth/gensec.pm";
+require "libcli/ldap/config.pm";
+require "libcli/config.pm";
+require "librpc/config.pm";
+require "libcli/libsmb.pm";
+require "libnet/config.pm";
+require "param/config.pm";
+require "smbd/process_model.pm";
+require "smb_server/config.pm";
+require "ldap_server/config.pm";
+require "auth/config.pm";
+require "ntvfs/config.pm";
+require "rpc_server/config.pm";
+require "lib/registry/config.pm";
+require "torture/config.pm";
+require "scripting/config.pm";
+require "client/config.pm";
+require "utils/config.pm";
+require "smbd/config.pm";
+require "gtk/config.pm";
+require "lib/dcom/config.pm";
+require "nsswitch/config.pm";
+
+$ALLLIBS_LIBS="$LIBS";
+$ALLLIBS_CFLAGS="$CFLAGS";
+$ALLLIBS_CPPFLAGS="$CPPFLAGS";
+$ALLLIBS_LDFLAGS="$LDFLAGS";
+
+ext_lib_enable("ALLLIBS");
+
+ext_lib("ALLLIBS", "LIBS" => "$ALLLIBS_LIBS", "CFLAGS" => "$ALLLIBS_CFLAGS", "CPPFLAGS" => "$ALLLIBS_CPPFLAGS", "LDFLAGS" => "$ALLLIBS_LDFLAGS");
+
+#################################################
+# do extra things if we are running insure
+
+if ($ac_cv_prog_CC eq "insure") {
+	$CPPFLAGS += "-D__INSURE__";
+}
+
+#################################################
+# add DEVELOPER_CFLAGS only for the real build
+$CFLAGS+=$DEVELOPER_CFLAGS;
+
+#################################################
+# final configure stuff
+
+check_run("configure summary", "#include \"$srcdir/build/tests/summary.c\"") or die("summary failure. Aborting config");
+$builddir=$ENV{"PWD"};
+
+# Remove -L/usr/lib/? from LDFLAGS and LIBS
+$LDFLAGS = lib_remove_usr_lib($LDFLAGS);
+$LIBS = lib_remove_usr_lib($LIBS);
+
+# remove -i/usr/include/? from cflags and cppflags
+$CFLAGS = cflags_remove_usr_include($CFLAGS);
+$CPPFLAGS = cflags_remove_usr_include($CPPFLAGS);
+
+require "build/smb_build/makefile.pl";
