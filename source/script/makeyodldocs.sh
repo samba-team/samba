@@ -1,5 +1,11 @@
-#!/bin/sh -v
+#!/bin/sh
 SRCDIR=$1
+shift
+FILES=$@
+
+if test -z $FILES; then
+    FILES=*.yo
+fi
 
 YODLDIR=$SRCDIR/../docs/yodldocs
 MANPAGEDIR=$SRCDIR/../docs/manpages
@@ -24,7 +30,7 @@ fi
 
 cd $YODLDIR
 
-for d in *.yo
+for d in $FILES
 do
 
 #
