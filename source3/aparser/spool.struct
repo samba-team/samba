@@ -1,16 +1,16 @@
 module spool
-test PRINTER_DRIVER_INFO_LEVEL_6
+test R_GETPRINTERDRIVER2
 
 struct BUFFER5 {
        uint32 buf_len;
-       uint16 *buffer[buf_len];
+       uint16 buffer[buf_len];
 };
 
 struct UNISTR2 {
        uint32 max_len;
        uint32 undoc;
        uint32 str_len;
-       uint16 *buffer[str_len];
+       uint16 buffer[str_len];
 };
 
 struct UINT64_S {
@@ -69,3 +69,13 @@ struct PRINTER_DRIVER_INFO {
 	      case 6 PRINTER_DRIVER_INFO_LEVEL_6 info_6;
        }
 };
+
+
+struct R_GETPRINTERDATA {
+	uint32 type;
+	uint32 size;
+	uint8 *data;
+	uint32 needed;
+	uint32 status;
+};
+

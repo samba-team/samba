@@ -11,7 +11,7 @@
 int main(int argc, char *argv[])
 {
 	BOOL ret;
-	TEST_STRUCT *q_u;
+	TEST_STRUCT *il;
 	char *desc = TEST_NAME;
 	char *fname = argv[1];
 	int fd;	
@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
 	prs_read(&ps, fd, st.st_size, 0);
 	ps.data_offset = 0;
 	ps.io = UNMARSHALL;
-	ret = TEST_FUNC(desc, &q_u, &ps, 1);
+	il = (TEST_STRUCT *)malloc(sizeof(*il));
+	ret = TEST_FUNC(desc, &ps, 1, il, PARSE_SCALARS|PARSE_BUFFERS);
 	printf("\nret=%s\n\n\n", ret?"OK":"Bad");
 	dump_data(0, ps.data_p, ps.grow_size);
 	return !ret;

@@ -1,7 +1,8 @@
-	if (il->@ARRAYLEN@ > 0) {
-		il->@ELEM@ = (@TYPE@ *)malloc(sizeof(@TYPE@)*il->@ARRAYLEN@);
-		if (!il->@ELEM@) goto fail;
-		if (!prs_@TYPE@s(True, "@ELEM@", ps, depth+1, il->@ELEM@, il->@ARRAYLEN@)) goto fail;
-	} else {
-	        il->@ELEM@ = NULL; 
+	if ((@FLAGS@ & PARSE_SCALARS) &&
+            !io_alloc("@ELEM@", ps, (void **)&il->@ELEM@, sizeof(*(il->@ELEM@))*il->@ARRAY_LEN@)) goto fail;
+	{
+		int i;
+		for (i=0;i<il->@ARRAY_LEN@;i++) {
+		if (!io_@TYPE@("@ELEM@...", ps, depth+1, &il->@ELEM@[i], @FLAGS@)) goto fail;
+		}
 	}

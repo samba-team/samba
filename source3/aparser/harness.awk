@@ -7,7 +7,7 @@ function produce_harness(f,
 	v["TEST"]=test;
 	v["TEST_FUNC"]=moduletest;
 	v["STRUCTNAME"] = structs[struct_num, "name"];
-	v["FUNCNAME"] = v["MODULE"] "_io_" v["STRUCTNAME"];
+	v["FUNCNAME"] = "io_" v["STRUCTNAME"];
 
 	print_template(f, "harness_start.tpl", v);
 }
