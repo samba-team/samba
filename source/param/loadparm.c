@@ -73,7 +73,7 @@ extern pstring user_socket_options;
 
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
-#define VALID(i) ServicePtrs[i]->valid
+#define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
 
 int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;

@@ -5169,10 +5169,25 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
                          * defaults ...
                          */
 
-                   if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
-                      DEBUG(5, ("Could not load either config file: %s or %s\n",
-                             conf, dyn_CONFIGFILE));
-                   }
+                        if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+                                DEBUG(5, ("Could not load either config file: "
+                                          "%s or %s\n",
+                                          conf, dyn_CONFIGFILE));
+                        } else {
+                                /*
+                                 * We loaded the global config file.  Now lets
+                                 * load user-specific modifications to the
+                                 * global config.
+                                 */
+                                slprintf(conf, sizeof(conf),
+                                         "%s/.smb/smb.conf.append", home);
+                                if (!lp_load(conf, True, False, False)) {
+                                        DEBUG(10,
+                                              ("Could not append config file: "
+                                               "%s\n",
+                                               conf));
+                                }
+                        }
                 }
 
                 reopen_logs();  /* Get logging working ... */
