@@ -240,48 +240,143 @@ enum winbindd_result winbindd_getdcname(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
+struct sequence_state {
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_cli_state *cli_state;
+	struct winbindd_domain *domain;
+	struct winbindd_request *request;
+	struct winbindd_response *response;
+	char *extra_data;
+};
+
+static void sequence_recv(void *private, BOOL success);
+
+enum winbindd_result winbindd_show_sequence_async(
+	struct winbindd_cli_state *state)
+{
+	struct sequence_state *seq;
+
+	/* Ensure null termination */
+	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
+
+	if (strlen(state->request.domain_name) > 0) {
+		struct winbindd_domain *domain;
+		domain = find_domain_from_name_noinit(
+			state->request.domain_name);
+		if (domain == NULL)
+			return WINBINDD_ERROR;
+		return async_domain_request(state->mem_ctx, domain,
+					    &state->request, &state->response,
+					    request_finished_cont, state);
+	}
+
+	/* Ask all domains in sequence, collect the results in sequence_recv */
+
+	seq = TALLOC_P(state->mem_ctx, struct sequence_state);
+	if (seq == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return WINBINDD_ERROR;
+	}
+
+	seq->mem_ctx = state->mem_ctx;
+	seq->cli_state = state;
+	seq->domain = domain_list();
+	if (seq->domain == NULL) {
+		DEBUG(0, ("domain list empty\n"));
+		return WINBINDD_ERROR;
+	}
+	seq->request = TALLOC_ZERO_P(state->mem_ctx,
+				     struct winbindd_request);
+	seq->response = TALLOC_ZERO_P(state->mem_ctx,
+				      struct winbindd_response);
+	seq->extra_data = talloc_strdup(state->mem_ctx, "");
+
+	if ((seq->request == NULL) || (seq->response == NULL) ||
+	    (seq->extra_data == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return WINBINDD_ERROR;
+	}
+
+	seq->request->length = sizeof(*seq->request);
+	seq->request->cmd = WINBINDD_SHOW_SEQUENCE;
+	fstrcpy(seq->request->domain_name, seq->domain->name);
+
+	return async_domain_request(state->mem_ctx, seq->domain,
+				    seq->request, seq->response,
+				    sequence_recv, seq);
+}
+
+static void sequence_recv(void *private, BOOL success)
+{
+	struct sequence_state *state = private;
+	uint32 seq = DOM_SEQUENCE_NONE;
+
+	if ((success) && (state->response->result == WINBINDD_OK))
+		seq = state->response->data.domain_info.sequence_number;
+
+	if (seq == DOM_SEQUENCE_NONE) {
+		state->extra_data = talloc_asprintf(state->mem_ctx,
+						    "%s%s : DISCONNECTED\n",
+						    state->extra_data,
+						    state->domain->name);
+	} else {
+		state->extra_data = talloc_asprintf(state->mem_ctx,
+						    "%s%s : %d\n",
+						    state->extra_data,
+						    state->domain->name, seq);
+	}
+
+	state->domain->sequence_number = seq;
+
+	state->domain = state->domain->next;
+
+	if (state->domain == NULL) {
+		struct winbindd_cli_state *cli_state = state->cli_state;
+		cli_state->response.result = WINBINDD_OK;
+		cli_state->response.length =
+			sizeof(cli_state->response) +
+			strlen(state->extra_data) + 1;
+		cli_state->response.extra_data =
+			SMB_STRDUP(state->extra_data);
+		request_finished(cli_state);
+		return;
+	}
+
+	/* Ask the next domain */
+	fstrcpy(state->request->domain_name, state->domain->name);
+	async_domain_request(state->mem_ctx, state->domain,
+			     state->request, state->response,
+			     sequence_recv, state);
+}
+
+/* This is the child-only version of --sequence. It only allows for a single
+ * domain (ie "our" one) to be displayed. */
+
 enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	char *extra_data = NULL;
-	const char *which_domain;
 
 	DEBUG(3, ("[%5lu]: show sequence\n", (unsigned long)state->pid));
 
 	/* Ensure null termination */
-	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
-	which_domain = state->request.domain_name;
+	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
 
-	extra_data = SMB_STRDUP("");
-
-	/* this makes for a very simple data format, and is easily parsable as well
-	   if that is ever needed */
-	for (domain = domain_list(); domain; domain = domain->next) {
-		char *s;
-
-		/* if we have a domain name restricting the request and this
-		   one in the list doesn't match, then just bypass the remainder
-		   of the loop */
-
-		if ( *which_domain && !strequal(which_domain, domain->name) )
-			continue;
-
-		domain->methods->sequence_number(domain, &domain->sequence_number);
-		
-		if (DOM_SEQUENCE_NONE == (unsigned)domain->sequence_number) {
-			asprintf(&s,"%s%s : DISCONNECTED\n", extra_data, 
-				 domain->name);
-		} else {
-			asprintf(&s,"%s%s : %u\n", extra_data, 
-				 domain->name, (unsigned)domain->sequence_number);
-		}
-		free(extra_data);
-		extra_data = s;
+	domain = find_domain_from_name_noinit(state->request.domain_name);
+	if (domain == NULL) {
+		DEBUG(0, ("Domain %s not found\n",
+			  state->request.domain_name));
+		return WINBINDD_ERROR;
 	}
 
-	state->response.extra_data = extra_data;
-	/* must add one to length to copy the 0 for string termination */
-	state->response.length += strlen(extra_data) + 1;
+	if (!domain->initialized) {
+		DEBUG(0, ("Domain %s not initialized\n", domain->name));
+		return WINBINDD_ERROR;
+	}
+
+	domain->methods->sequence_number(domain, &domain->sequence_number);
+
+	state->response.data.domain_info.sequence_number =
+		domain->sequence_number;
 
 	return WINBINDD_OK;
 }
@@ -356,7 +451,7 @@ static void domain_info_init_recv(void *private, BOOL success)
 		DEBUG(5, ("Could not init child for domain %s\n",
 			  domain->name));
 		state->response.result = WINBINDD_ERROR;
-		request_finished_cont(state);
+		request_finished_cont(state, False);
 		return;
 	}
 
@@ -377,7 +472,7 @@ static void domain_info_init_recv(void *private, BOOL success)
 		domain->sequence_number;
 
 	state->response.result = WINBINDD_OK;
-	request_finished_cont(state);
+	request_finished_cont(state, True);
 }
 
 enum winbindd_result winbindd_ping(struct winbindd_cli_state

@@ -190,7 +190,7 @@ struct trustdom_state {
 	struct winbindd_response *response;
 };
 
-static void trustdom_recv(void *private);
+static void trustdom_recv(void *private, BOOL success);
 
 static void add_trusted_domains( struct winbindd_domain *domain )
 {
@@ -230,14 +230,14 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	}
 }
 
-static void trustdom_recv(void *private)
+static void trustdom_recv(void *private, BOOL success)
 {
 	extern struct winbindd_methods cache_methods;
 	struct trustdom_state *state = private;
 	struct winbindd_response *response = state->response;
 	char *p;
 
-	if (response->result != WINBINDD_OK) {
+	if ((!success) || (response->result != WINBINDD_OK)) {
 		DEBUG(1, ("Could not receive trustdoms\n"));
 		talloc_destroy(state->mem_ctx);
 		return;
@@ -317,13 +317,13 @@ struct init_child_state {
 	void *private;
 };
 
-static void init_child_recv(void *private);
-static void init_child_getdc_recv(void *private);
+static void init_child_recv(void *private, BOOL success);
+static void init_child_getdc_recv(void *private, BOOL success);
 
-void init_child_connection(struct winbindd_domain *domain,
-			   void (*continuation)(void *private,
-						BOOL success),
-			   void *private)
+enum winbindd_result init_child_connection(struct winbindd_domain *domain,
+					   void (*continuation)(void *private,
+								BOOL success),
+					   void *private)
 {
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
@@ -331,10 +331,10 @@ void init_child_connection(struct winbindd_domain *domain,
 	struct init_child_state *state;
 	struct winbindd_domain *our_domain;
 
-	mem_ctx = talloc_init("add_trusted_domains");
+	mem_ctx = talloc_init("init_child_connection");
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_init failed\n"));
-		return;
+		return WINBINDD_ERROR;
 	}
 
 	request = TALLOC_ZERO_P(mem_ctx, struct winbindd_request);
@@ -344,7 +344,7 @@ void init_child_connection(struct winbindd_domain *domain,
 	if ((request == NULL) || (response == NULL) || (state == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
 		continuation(private, False);
-		return;
+		return WINBINDD_ERROR;
 	}
 
 	request->length = sizeof(*request);
@@ -363,9 +363,9 @@ void init_child_connection(struct winbindd_domain *domain,
 		request->data.init_conn.is_primary = True;
 		fstrcpy(request->data.init_conn.dcname, "");
 
-		async_request(mem_ctx, &domain->child, request, response,
-			      init_child_recv, state);
-		return;
+		return async_request(mem_ctx, &domain->child,
+				     request, response,
+				     init_child_recv, state);
 	}
 
 	/* This is *not* the primary domain, let's ask our DC about a DC
@@ -375,27 +375,25 @@ void init_child_connection(struct winbindd_domain *domain,
 
 	if (our_domain == NULL) {
 		DEBUG(0, ("Could not find our domain\n"));
-		return;
+		return WINBINDD_ERROR;
 	}
 
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	async_request(mem_ctx, &our_domain->child,
-		      request, response,
-		      init_child_getdc_recv, state);
+	return async_request(mem_ctx, &our_domain->child,
+			     request, response,
+			     init_child_getdc_recv, state);
 }
 
-static void init_child_getdc_recv(void *private)
+static void init_child_getdc_recv(void *private, BOOL success)
 {
 	struct init_child_state *state = private;
 	const char *dcname = "";
 
 	DEBUG(10, ("Received getdcname response\n"));
 
-	if (state->response->result == WINBINDD_OK) {
-		/* This is not a reason to call out to state->continuation,
-		 * the child has to figure out the DC name itself. */
+	if (success && (state->response->result == WINBINDD_OK)) {
 		dcname = state->response->data.dc_name;
 	}
 
@@ -409,11 +407,11 @@ static void init_child_getdc_recv(void *private)
 		      init_child_recv, state);
 }
 
-static void init_child_recv(void *private)
+static void init_child_recv(void *private, BOOL success)
 {
 	struct init_child_state *state = private;
 
-	if (state->response->result != WINBINDD_OK) {
+	if ((!success) || (state->response->result != WINBINDD_OK)) {
 		DEBUG(3, ("Could not init child\n"));
 		state->continuation(state->private, False);
 		talloc_destroy(state->mem_ctx);

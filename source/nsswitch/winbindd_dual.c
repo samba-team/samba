@@ -257,7 +257,7 @@ struct winbindd_async_request {
 	struct winbindd_child *child;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	void (*continuation)(void *private);
+	void (*continuation)(void *private, BOOL success);
 	void *private;
 };
 
@@ -269,7 +269,8 @@ enum winbindd_result async_request(TALLOC_CTX *mem_ctx,
 				   struct winbindd_child *child,
 				   struct winbindd_request *request,
 				   struct winbindd_response *response,
-				   void (*continuation)(void *private),
+				   void (*continuation)(void *private,
+							BOOL success),
 				   void *private)
 {
 	struct winbindd_async_request *state, *tmp;
@@ -304,7 +305,7 @@ static void async_request_sent(void *private, BOOL success)
 
 		state->response->length = sizeof(struct winbindd_response);
 		state->response->result = WINBINDD_ERROR;
-		state->continuation(state->private);
+		state->continuation(state->private, False);
 		return;
 	}
 
@@ -337,7 +338,7 @@ static void async_reply_recv(void *private, BOOL success)
 	schedule_async_request(child);
 
 	if (state->continuation != NULL)
-		state->continuation(state->private);
+		state->continuation(state->private, True);
 }
 
 static void schedule_async_request(struct winbindd_child *child)
@@ -355,6 +356,64 @@ static void schedule_async_request(struct winbindd_child *child)
 			  async_request_sent, request);
 }
 
+struct domain_request_state {
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_domain *domain;
+	struct winbindd_request *request;
+	struct winbindd_response *response;
+	void (*continuation)(void *private, BOOL success);
+	void *private;
+};
+
+static void domain_init_recv(void *private, BOOL success);
+
+enum winbindd_result async_domain_request(TALLOC_CTX *mem_ctx,
+					  struct winbindd_domain *domain,
+					  struct winbindd_request *request,
+					  struct winbindd_response *response,
+					  void (*continuation)(void *private,
+							       BOOL success),
+					  void *private)
+{
+	struct domain_request_state *state;
+
+	if (domain->initialized)
+		return async_request(mem_ctx, &domain->child,
+				     request, response,
+				     continuation, private);
+
+	state = TALLOC_P(mem_ctx, struct domain_request_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return WINBINDD_ERROR;
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->domain = domain;
+	state->request = request;
+	state->response = response;
+	state->continuation = continuation;
+	state->private = private;
+
+	return init_child_connection(domain, domain_init_recv, state);
+}
+
+static void domain_init_recv(void *private, BOOL success)
+{
+	struct domain_request_state *state = private;
+
+	if (!success) {
+		state->continuation(state->private, False);
+		return;
+	}
+
+	if (async_request(state->mem_ctx, &state->domain->child,
+			  state->request, state->response,
+			  state->continuation, state->private)
+	    != WINBINDD_PENDING)
+		state->continuation(state->private, False);
+}
+
 static struct winbindd_dispatch_table child_dispatch_table[] = {
 	
 	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
@@ -364,7 +423,7 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_INIT_CONNECTION, winbindd_init_connection,
 	  "INIT_CONNECTION" },
 	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
-
+	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

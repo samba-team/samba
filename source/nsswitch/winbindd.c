@@ -259,7 +259,7 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	{ WINBINDD_LIST_USERS, winbindd_list_users, "LIST_USERS" },
 	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains_async, "LIST_TRUSTDOM" },
-	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
+	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence_async, "SHOW_SEQUENCE" },
 
 	/* SID related functions */
 
@@ -448,7 +448,7 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
 static void request_len_recv(void *private, BOOL success);
 static void request_recv(void *private, BOOL success);
 void request_finished(struct winbindd_cli_state *state);
-void request_finished_cont(void *private);
+void request_finished_cont(void *private, BOOL success);
 static void response_main_sent(void *private, BOOL success);
 static void response_extra_sent(void *private, BOOL success);
 
@@ -495,9 +495,11 @@ void request_finished(struct winbindd_cli_state *state)
 			  sizeof(state->response), response_main_sent, state);
 }
 
-void request_finished_cont(void *private)
+void request_finished_cont(void *private, BOOL success)
 {
 	struct winbindd_cli_state *state = private;
+	if (!success)
+		state->response.result = WINBINDD_ERROR;
 	request_finished(state);
 }
 
