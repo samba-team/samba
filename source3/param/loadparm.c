@@ -1238,7 +1238,7 @@ static void init_globals(void)
 	Globals.minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
 	Globals.paranoid_server_security = True;
-	Globals.bEncryptPasswords = False;
+	Globals.bEncryptPasswords = True;
 	Globals.bUpdateEncrypt = False;
 	Globals.bReadRaw = True;
 	Globals.bWriteRaw = True;
@@ -3850,3 +3850,29 @@ void get_private_directory(pstring privdir)
 {
 	pstrcpy (privdir, lp_private_dir());
 }
+
+
+/****************************************************************
+ Is netbios alias or name
+*****************************************************************/
+
+BOOL is_netbios_alias_or_name(char *name)
+{
+	char **netbios_aliases = lp_netbios_aliases();
+	
+	if (StrCaseCmp(name, global_myname) == 0) {
+		return True;
+	}
+
+	for (netbios_aliases = lp_netbios_aliases();
+	     netbios_aliases && *netbios_aliases;
+	     netbios_aliases++) {
+		if (StrCaseCmp(name, *netbios_aliases) == 0) {
+			return True;
+		}
+	}
+	
+	return False;
+}
+
+

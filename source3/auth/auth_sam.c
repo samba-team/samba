@@ -337,7 +337,7 @@ SMB hash supplied in the user_info structure
 return an NT_STATUS constant.
 ****************************************************************************/
 
-NTSTATUS check_sam_security(void *my_private_dat,
+static NTSTATUS check_sam_security(void *my_private_data,
 			    const auth_usersupplied_info *user_info, 
 			    const auth_authsupplied_info *auth_info,
 			    auth_serversupplied_info **server_info)
@@ -408,5 +408,40 @@ BOOL auth_init_sam(auth_methods **auth_method)
 	return True;
 }
 
+/****************************************************************************
+check if a username/password is OK assuming the password is a 24 byte
+SMB hash supplied in the user_info structure
+return an NT_STATUS constant.
+****************************************************************************/
 
+static NTSTATUS check_samstrict_security(void *my_private_data,
+				  const auth_usersupplied_info *user_info, 
+				  const auth_authsupplied_info *auth_info,
+				  auth_serversupplied_info **server_info)
+{
+
+	if (!user_info || !auth_info) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	/* If we are a domain member, we must not 
+	   attempt to check the password locally,
+	   unless it is one of our aliases. */
+	
+	if (!is_netbios_alias_or_name(user_info->domain.str)) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+	
+	return check_sam_security(my_private_data, user_info, auth_info, server_info);
+}
+
+BOOL auth_init_samstrict(auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_method)) {
+		return False;
+	}
+
+	(*auth_method)->auth = check_samstrict_security;
+	return True;
+}
 
