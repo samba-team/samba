@@ -59,7 +59,7 @@
 
 #ifdef DEVELOPER
 #define SOCKET_WRAPPER_REPLACE
-#include "lib/socket_wrapper.h"
+#include "lib/socket_wrapper/socket_wrapper.h"
 #endif
 
 #ifdef REPLACE_INET_NTOA
