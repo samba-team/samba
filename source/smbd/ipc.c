@@ -103,7 +103,7 @@ void send_trans_reply(char *outbuf,
 	if (buffer_too_large)
 	{
 		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
-		if (!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) { 
+		if (!(global_client_caps & CAP_STATUS32 )) { 
 			/* Win9x version. */
 			SSVAL(outbuf, smb_err, ERRmoredata);
 			SCVAL(outbuf, smb_rcls, ERRDOS);
