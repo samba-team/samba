@@ -615,7 +615,7 @@ sendrequest (char *cmd, char *local, char *remote, char *lmode, int printnames)
     int (*closefunc) (FILE *);
     RETSIGTYPE (*oldintr)(), (*oldintp)();
     long bytes = 0, hashbytes = HASHBYTES;
-    char *rmode;
+    char *rmode = "w";
 
     if (verbose && printnames) {
 	if (local && strcmp (local, "-") != 0)
@@ -632,7 +632,7 @@ sendrequest (char *cmd, char *local, char *remote, char *lmode, int printnames)
     closefunc = NULL;
     oldintr = NULL;
     oldintp = NULL;
-    lmode = "w";
+
     if (setjmp (sendabort)) {
 	while (cpend) {
 	    getreply (0);
