@@ -1150,9 +1150,11 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SMB_OFF_T size=0;
   time_t mtime=0;
   BOOL bad_path = False;
+  char *p;
   START_PROFILE(SMBgetatr);
- 
-  pstrcpy(fname,smb_buf(inbuf) + 1);
+
+  p = smb_buf(inbuf) + 1;
+  p += srvstr_pull(inbuf, fname, p, sizeof(fname), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
   
@@ -1231,9 +1233,12 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   time_t mtime;
   SMB_STRUCT_STAT sbuf;
   BOOL bad_path = False;
+  char *p;
+
   START_PROFILE(SMBsetatr);
- 
-  pstrcpy(fname,smb_buf(inbuf) + 1);
+
+  p = smb_buf(inbuf) + 1;
+  p += srvstr_pull(inbuf, fname, p, sizeof(fname), -1, STR_TERMINATE);
   unix_convert(fname,conn,0,&bad_path,&sbuf);
 
   mode = SVAL(inbuf,smb_vwv0);
@@ -1781,7 +1786,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   com = SVAL(inbuf,smb_com);
 
   createmode = SVAL(inbuf,smb_vwv0);
-  pstrcpy(fname,smb_buf(inbuf)+1);
+  srvstr_pull(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -2046,7 +2051,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   dirtype = SVAL(inbuf,smb_vwv0);
 
-  pstrcpy(name,smb_buf(inbuf) + 1);
+  srvstr_pull(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
@@ -3888,10 +3893,14 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
   int outsize = 0;
   pstring name;
   pstring newname;
+  char *p;
+
   START_PROFILE(SMBmv);
 
-  pstrcpy(name,smb_buf(inbuf) + 1);
-  pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
+  p = smb_buf(inbuf) + 1;
+  p += srvstr_pull(inbuf, name, p, sizeof(name), -1, STR_TERMINATE);
+  p++;
+  p += srvstr_pull(inbuf, newname, p, sizeof(newname), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
   RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
@@ -4019,8 +4028,9 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
   *directory = *mask = 0;
 
-  pstrcpy(name,smb_buf(inbuf));
-  pstrcpy(newname,smb_buf(inbuf) + 1 + strlen(name));
+  p = smb_buf(inbuf);
+  p += srvstr_pull(inbuf, name, p, sizeof(name), -1, STR_TERMINATE);
+  p += srvstr_pull(inbuf, newname, p, sizeof(newname), -1, STR_TERMINATE);
    
   DEBUG(3,("reply_copy : %s -> %s\n",name,newname));
    
