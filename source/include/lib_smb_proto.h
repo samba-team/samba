@@ -286,6 +286,7 @@ void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24]);
 BOOL make_oem_passwd_hash(uchar data[516],
 				const char *pwrd, int new_pw_len,
 				const uchar old_pw_hash[16], BOOL unicode);
+BOOL nt_encrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 void create_ntlmssp_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,

@@ -653,6 +653,44 @@ BOOL lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, 
 }
 
 /*******************************************************************
+reads or writes an LSA_Q_SET_SECRET structure.
+********************************************************************/
+BOOL lsa_io_q_set_secret(char *desc, LSA_Q_SET_SECRET *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL) return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_set_secret");
+	depth++;
+
+	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+
+	prs_uint32("ptr_value ", ps, depth, &(q_q->ptr_value ));
+
+	if (q_q->ptr_value != 0)
+	{
+		lsa_io_secret_value("", &(q_q->value), ps, depth);
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_SET_SECRET structure.
+********************************************************************/
+BOOL lsa_io_r_set_secret(char *desc, LSA_R_SET_SECRET *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_set_secret");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
+}
+
+/*******************************************************************
 makes an LSA_Q_ENUM_TRUST_DOM structure.
 ********************************************************************/
 BOOL make_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,

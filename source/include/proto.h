@@ -1069,6 +1069,7 @@ void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24]);
 BOOL make_oem_passwd_hash(uchar data[516],
 				const char *pwrd, int new_pw_len,
 				const uchar old_pw_hash[16], BOOL unicode);
+BOOL nt_encrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 void create_ntlmssp_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
@@ -2192,6 +2193,7 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 				const char *secret_name,
 				uint32 des_access,
 				POLICY_HND *hnd_secret);
+uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 *secret);
 BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 		      NTTIME *last_update);
 BOOL lsa_lookup_names( POLICY_HND *hnd,
@@ -2541,6 +2543,9 @@ uint32 lookup_lsa_name(const char *domain,
 				char *name, DOM_SID *sid, uint32 *type);
 uint32 lookup_lsa_sid(const char *domain,
 				DOM_SID *sid, char *name, uint32 *type);
+BOOL msrpc_lsa_set_secret(const char* srv_name,
+				const char* secret_name,
+				const STRING2 *secret);
 BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,
@@ -3283,6 +3288,7 @@ void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
+void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */

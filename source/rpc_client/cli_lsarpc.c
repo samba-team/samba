@@ -317,7 +317,7 @@ BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 	lsa_io_q_open_pol2("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_OPENPOLICY2, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, LSA_OPENPOLICY, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL2 r_o;
 		BOOL p;
@@ -336,6 +336,7 @@ BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
 			                                cli_con_sec_ctx(con),
 			                                hnd, des_access) &&
@@ -406,6 +407,76 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 	prs_free_data(&buf );
 
 	return valid_pol;
+}
+
+/****************************************************************************
+do a LSA Set Secret
+****************************************************************************/
+uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 *secret)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_SET_SECRET q_q;
+
+	uchar sess_key[16];
+	uint32 status = NT_STATUS_NOPROBLEMO;
+
+	if (hnd == NULL) return NT_STATUS_INVALID_PARAMETER;
+
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0   , 4, True );
+
+	/* create and send a MSRPC command with api LSA_SETSECRET */
+
+	DEBUG(4,("LSA Set Secret\n"));
+
+	memcpy(&q_q.pol, hnd, sizeof(q_q.pol));
+	q_q.ptr_value = 1;
+	make_strhdr2(&q_q.value.hdr_secret, secret->str_str_len,
+	                                    secret->str_max_len, 1);
+
+	if (!cli_get_sesskey(hnd, sess_key))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	dump_data_pw("sess_key:", sess_key, 16);
+	if (!nt_encrypt_string2(&q_q.value.enc_secret, secret, sess_key))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* turn parameters into data stream */
+	lsa_io_q_set_secret("", &q_q, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_hnd_pipe_req(hnd, LSA_SETSECRET, &buf, &rbuf))
+	{
+		LSA_R_SET_SECRET r_q;
+		BOOL p;
+
+		lsa_io_r_set_secret("", &r_q, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_q.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_SETSECRET: %s\n", get_nt_error_msg(r_q.status)));
+			status = NT_STATUS_INVALID_PARAMETER;
+		}
+		else
+		{
+			status = r_q.status;
+		}
+	}
+	else
+	{
+
+		status = NT_STATUS_INVALID_PARAMETER;
+	}
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
+
+	return status;
 }
 
 /****************************************************************************
@@ -923,7 +994,7 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 				                 &r_q.domain_sid[i].sid);
 			}
 
-			if (r_q.status == 0x0)
+			if (r_q.status == NT_STATUS_NOPROBLEMO)
 			{
 				*enum_ctx = r_q.enum_context;
 			}

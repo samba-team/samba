@@ -216,7 +216,8 @@ typedef struct lsa_q_set_secret_info
 {
 	POLICY_HND pol;
 
-	LSA_SECRET_INFO info;    /* [in, out] */
+	uint32 ptr_value;
+	LSA_SECRET_VALUE value;
 
 } LSA_Q_SET_SECRET;
 

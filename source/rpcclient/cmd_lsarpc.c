@@ -336,6 +336,39 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 nt lsa query
 ****************************************************************************/
+void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[])
+{
+	char *secret_name;
+	STRING2 secret;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (argc != 3)
+	{
+		report(out_hnd, "setsecret <secret name> <secret value>\n");
+		return;
+	}
+
+	secret_name = argv[1];
+
+	make_string2(&secret, argv[2], strlen(argv[2]));
+
+	if (msrpc_lsa_set_secret(srv_name, secret_name, &secret))
+	{
+		report(out_hnd, "LSA Set Secret: OK\n");
+	}
+	else
+	{
+		report(out_hnd, "LSA Set Secret: failed\n");
+	}
+}
+
+/****************************************************************************
+nt lsa query
+****************************************************************************/
 void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 {
 	char *secret_name;

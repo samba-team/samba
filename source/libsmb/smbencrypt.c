@@ -452,6 +452,48 @@ BOOL make_oem_passwd_hash(uchar data[516],
 	return True;
 }
 
+BOOL nt_encrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
+{
+	uchar bufhdr[8];
+	int datalen;
+
+	const uchar *keyptr = key;
+	const uchar *keyend = key + 16;
+
+	uchar *outbuf = (uchar *)out->buffer;
+	const uchar *inbuf = (const uchar *)in->buffer;
+	const uchar *inbufend;
+
+	smbhash(bufhdr, inbuf, keyptr, 1);
+	datalen = IVAL(inbuf, 0);
+
+	if ((datalen > in->str_str_len) || (datalen > MAX_STRINGLEN))
+	{
+		DEBUG(0, ("nt_decrypt_string2: failed\n"));
+		return False;
+	}
+
+	out->str_max_len = out->str_str_len = datalen;
+	inbuf += 8;
+	inbufend = inbuf + datalen;
+
+	while (inbuf < inbufend)
+	{
+		keyptr += 7;
+		if (keyptr + 7 > keyend)
+		{
+			keyptr = (keyend - keyptr) + key;
+		}
+
+		smbhash(outbuf, inbuf, keyptr, 1);
+
+		inbuf += 8;
+		outbuf += 8;
+	}
+
+	return True;
+}
+
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
 {
 	uchar bufhdr[8];

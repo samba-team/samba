@@ -190,6 +190,36 @@ uint32 lookup_lsa_sid(const char *domain,
 /****************************************************************************
 nt lsa query secret
 ****************************************************************************/
+BOOL msrpc_lsa_set_secret(const char* srv_name,
+				const char* secret_name,
+				const STRING2 *secret)
+{
+	BOOL res = True;
+	BOOL res1;
+	BOOL res2;
+
+	POLICY_HND pol_sec;
+	POLICY_HND lsa_pol;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy2( srv_name,
+				&lsa_pol, False, 0x02000000) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res1 = res ? lsa_open_secret( &lsa_pol,
+				secret_name, 0x02000000, &pol_sec) : False;
+
+	res2 = res1 ? (lsa_set_secret(&pol_sec, secret) == NT_STATUS_NOPROBLEMO) : False;
+
+	res1 = res1 ? lsa_close(&pol_sec) : False;
+
+	res = res ? lsa_close(&lsa_pol) : False;
+
+	return res2;
+}
+/****************************************************************************
+nt lsa query secret
+****************************************************************************/
 BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,

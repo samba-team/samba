@@ -114,6 +114,8 @@ BOOL lsa_io_secret_info(char *desc, LSA_SECRET_INFO *info, prs_struct *ps, int d
 BOOL make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol);
 BOOL lsa_io_q_query_secret(char *desc, LSA_Q_QUERY_SECRET *q_q, prs_struct *ps, int depth);
 BOOL lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, int depth);
+BOOL lsa_io_q_set_secret(char *desc, LSA_Q_SET_SECRET *q_q, prs_struct *ps, int depth);
+BOOL lsa_io_r_set_secret(char *desc, LSA_R_SET_SECRET *r_q, prs_struct *ps, int depth);
 BOOL make_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 				POLICY_HND *pol,
 				uint32 enum_context, uint32 preferred_len);
