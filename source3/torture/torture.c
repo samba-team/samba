@@ -3417,6 +3417,50 @@ static BOOL run_opentest(int dummy)
 
 	cli_unlink(&cli1, fname);
 
+	/* Test 8 - attributes test test... */
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, FILE_ATTRIBUTE_HIDDEN,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("test 8 open 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 8 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	/* FILE_SUPERSEDE && FILE_OVERWRITE_IF have the same effect here. */
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("test 8 open 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 8 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	/* This open should fail with ACCESS_DENIED for FILE_SUPERSEDE, FILE_OVERWRITE and FILE_OVERWRITE_IF. */
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
+
+	if (fnum1 != -1) {
+		printf("test 8 open 3 of %s succeeded - should have failed with (NT_STATUS_ACCESS_DENIED)\n", fname);
+		correct = False;
+		cli_close(&cli1, fnum1);
+	} else {
+		printf("test 8 open 3 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(&cli1), "ACCESS_DENIED");
+	}
+
+	printf("Attribute open test #8 passed.\n");
+
+	cli_unlink(&cli1, fname);
+
 	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
