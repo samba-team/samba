@@ -1,5 +1,8 @@
 2003-04-25  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/time.c (krb5_us_timeofday): make the sec parameter a
+	krb5_timestamp
+
 	* lib/krb5/mk_priv.c lib/krb5/mk_safe.c lib/krb5/rd_priv.c
 	lib/krb5/rd_safe.c lib/krb5/rd_cred.c: implement RET_SEQUENCE and
 	RET_TIME
