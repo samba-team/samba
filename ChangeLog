@@ -1,5 +1,8 @@
 2003-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/verify_krb5_conf.c: print the error value
+	krb5_init_context failed with
+
 	* lib/krb5/config_file.c (krb5_config_parse_file_debug): punt if
 	there is binding before a section declaration. Bug found by
 	Arkadiusz Miskiewicz <arekm@pld-linux.org>
