@@ -1204,16 +1204,13 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int *count)
 {
 	int name_type = pdc_only ? 0x1B : 0x1C;
-	fstring dos_group;
-
-	fstrcpy(dos_group, unix_to_dos_static(group));
 
 	/*
 	 * If it's our domain then
 	 * use the 'password server' parameter.
 	 */
 
-	if (strequal(dos_group, lp_workgroup_dos())) {
+	if (strequal_unix(group, lp_workgroup_unix())) {
 		char *p;
 		char *pserver = lp_passwordserver(); /* UNIX charset. */
 		fstring name;
