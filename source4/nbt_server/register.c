@@ -170,7 +170,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	iname->name.name = strupper_talloc(iname, name);
 	iname->name.type = type;
 	if (scope && *scope) {
-		iname->name.scope = talloc_strdup(iname, scope);
+		iname->name.scope = strupper_talloc(iname, scope);
 	} else {
 		iname->name.scope = NULL;
 	}
