@@ -839,10 +839,13 @@ uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIV
 	{
         	ZERO_STRUCT(r_o);
 
-        	if(!spoolss_io_r_addprinterdriver("", &r_o, &rbuf, 0)) 
+        	if(spoolss_io_r_addprinterdriver("", &r_o, &rbuf, 0)) 
 		{
-                        /* report error code */
-                        DEBUG(5,("SPOOLSS_ADDPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+                        	/* report error code */
+                        	DEBUG(0,("SPOOLSS_ADDPRINTERDRIVER: %s\n", get_nt_error_msg(r_o.status)));
+			}
 		}
         }
 
