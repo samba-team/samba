@@ -338,8 +338,8 @@ kadmind_loop(krb5_context context,
     void *kadm_handle;
     ret = kadm5_init_with_password_ctx(context, 
 				       client, 
-				       "password", 
-				       "service",
+				       NULL,
+				       KADM5_ADMIN_SERVICE,
 				       NULL, 0, 0, 
 				       &kadm_handle);
     if(ret) {
