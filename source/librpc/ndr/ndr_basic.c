@@ -965,12 +965,30 @@ NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, NTTIME t)
 }
 
 /*
-  pull a NTTIME
+  pull a NTTIME_1sec
 */
 NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, NTTIME *t)
 {
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, t));
 	(*t) *= 10000000;
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a NTTIME_hyper
+*/
+NTSTATUS ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, NTTIME_hyper *t)
+{
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, t));
+	return NT_STATUS_OK;
+}
+
+/*
+  push a NTTIME_hyper
+*/
+NTSTATUS ndr_push_NTTIME_hyper(struct ndr_push *ndr, NTTIME_hyper t)
+{
+	NDR_CHECK(ndr_push_HYPER_T(ndr, t));
 	return NT_STATUS_OK;
 }
 
@@ -1082,7 +1100,12 @@ void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
 	ndr->print(ndr, "%-25s: %s", name, nt_time_string(ndr, t));
 }
 
-void ndr_print_NTTIME_1sec(struct ndr_print *ndr, const char *name, NTTIME t)
+void ndr_print_NTTIME_1sec(struct ndr_print *ndr, const char *name, NTTIME_1sec t)
+{
+	ndr_print_NTTIME(ndr, name, t * 10000000);
+}
+
+void ndr_print_NTTIME_hyper(struct ndr_print *ndr, const char *name, NTTIME_hyper t)
 {
 	ndr_print_NTTIME(ndr, name, t);
 }

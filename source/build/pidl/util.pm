@@ -301,7 +301,8 @@ my %type_alignments =
      "WERROR" => 4,
      "boolean32" => 4,
      "unsigned32" => 4,
-     "HYPER_T" => 8
+     "HYPER_T" => 8,
+     "NTTIME_hyper" => 8
      );
 
 sub is_scalar_type($)

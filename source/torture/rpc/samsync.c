@@ -121,6 +121,7 @@ struct samsync_secret {
 	struct samsync_secret *prev, *next;
 	DATA_BLOB secret;
 	char *name;
+	NTTIME mtime;
 };
 
 struct samsync_trusted_domain {
@@ -699,11 +700,14 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
 	const char *name = delta->delta_id_union.name;
 	struct samsync_secret *new = talloc_p(samsync_state, struct samsync_secret);
+	struct samsync_secret *old = talloc_p(mem_ctx, struct samsync_secret);
 	struct lsa_QuerySecret q;
 	struct lsa_OpenSecret o;
 	struct policy_handle sec_handle;
 	struct lsa_DATA_BUF_PTR bufp1;
+	struct lsa_DATA_BUF_PTR bufp2;
 	NTTIME new_mtime;
+	NTTIME old_mtime;
 	BOOL ret = True;
 	DATA_BLOB lsa_blob1, lsa_blob_out, session_key;
 	NTSTATUS status;
@@ -716,8 +720,13 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 	new->name = talloc_reference(new, name);
 	new->secret = data_blob_talloc(new, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
+	new->mtime = secret->current_cipher_set_time;
 
 	DLIST_ADD(samsync_state->secrets, new);
+
+	old->name = talloc_reference(old, name);
+	old->secret = data_blob_const(secret->old_cipher.cipher_data, secret->old_cipher.maxlen);
+	old->mtime = secret->old_cipher_set_time;
 
 	o.in.handle = samsync_state->lsa_handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -742,20 +751,61 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 
 	ZERO_STRUCT(new_mtime);
+	ZERO_STRUCT(old_mtime);
 
 	/* fetch the secret back again */
 	q.in.handle = &sec_handle;
 	q.in.new_val = &bufp1;
 	q.in.new_mtime = &new_mtime;
-	q.in.old_val = NULL;
-	q.in.old_mtime = NULL;
+	q.in.old_val = &bufp2;
+	q.in.old_mtime = &old_mtime;
 
 	bufp1.buf = NULL;
+	bufp2.buf = NULL;
 
 	status = dcerpc_lsa_QuerySecret(samsync_state->p_lsa, mem_ctx, &q);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
+		/* some things are just off limits */
+		return True;
+	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("QuerySecret failed - %s\n", nt_errstr(status));
 		return False;
+	}
+
+	if (q.out.old_val->buf == NULL) {
+		/* probably just not available due to ACLs */
+	} else {
+		lsa_blob1.data = q.out.old_val->buf->data;
+		lsa_blob1.length = q.out.old_val->buf->length;
+
+		lsa_blob_out = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key);
+		
+		if (!q.out.old_mtime) {
+			printf("OLD mtime not available on LSA for secret %s\n", old->name);
+			ret = False;
+		}
+		if (old->mtime != *q.out.old_mtime) {
+			printf("OLD mtime on secret %s does not match between SAMSYNC (%s) and LSA (%s)\n", 
+			       old->name, nt_time_string(mem_ctx, old->mtime), 
+			       nt_time_string(mem_ctx, *q.out.old_mtime)); 
+			ret = False;
+		}
+
+		if (old->secret.length != lsa_blob_out.length) {
+			printf("Returned secret %s doesn't match: %d != %d\n",
+			       old->name, old->secret.length, lsa_blob_out.length);
+			ret = False;
+		} else if (memcmp(lsa_blob_out.data, 
+			   old->secret.data, old->secret.length) != 0) {
+			printf("Returned secret %s doesn't match: \n",
+			       old->name);
+			DEBUG(1, ("SamSync Secret:\n"));
+			dump_data(1, old->secret.data, old->secret.length);
+			DEBUG(1, ("LSA Secret:\n"));
+			dump_data(1, lsa_blob_out.data, lsa_blob_out.length);
+			ret = False;
+		}
+
 	}
 
 	if (q.out.new_val->buf == NULL) {
@@ -766,13 +816,22 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 		lsa_blob_out = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key);
 		
+		if (!q.out.new_mtime) {
+			printf("NEW mtime not available on LSA for secret %s\n", new->name);
+			ret = False;
+		}
+		if (new->mtime != *q.out.new_mtime) {
+			printf("NEW mtime on secret %s does not match between SAMSYNC (%s) and LSA (%s)\n", 
+			       new->name, nt_time_string(mem_ctx, new->mtime), 
+			       nt_time_string(mem_ctx, *q.out.new_mtime)); 
+			ret = False;
+		}
+
 		if (new->secret.length != lsa_blob_out.length) {
 			printf("Returned secret %s doesn't match: %d != %d\n",
 			       new->name, new->secret.length, lsa_blob_out.length);
 			ret = False;
-		}
-
-		if (memcmp(lsa_blob_out.data, 
+		} else if (memcmp(lsa_blob_out.data, 
 			   new->secret.data, new->secret.length) != 0) {
 			printf("Returned secret %s doesn't match: \n",
 			       new->name);
