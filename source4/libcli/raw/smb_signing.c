@@ -21,6 +21,8 @@
 */
 
 #include "includes.h"
+static void smbcli_free_signing_context(struct smb_signing_context *sign_info);
+static BOOL smbcli_null_set_signing(struct smb_signing_context *sign_info);
 
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation
@@ -40,9 +42,7 @@ static BOOL set_smb_signing_common(struct smbcli_transport *transport)
 		return False;
 	}
 
-	if (transport->negotiate.sign_info.free_signing_context)
-		transport->negotiate.sign_info
-			.free_signing_context(&transport->negotiate.sign_info);
+	smbcli_free_signing_context(&transport->negotiate.sign_info);
 
 	/* These calls are INCOMPATIBLE with SMB signing */
 	transport->negotiate.readbraw_supported = False;
@@ -74,10 +74,9 @@ static BOOL signing_good(struct smb_signing_context *sign_info,
 			/* If we have never seen a good packet, just turn it off */
 			DEBUG(5, ("signing_good: signing negotiated but not required and peer\n"
 				  "isn't sending correct signatures. Turning off.\n"));
-			sign_info->allow_smb_signing = False;
 			sign_info->doing_signing = False;
-			if (sign_info->free_signing_context)
-				sign_info->free_signing_context(sign_info);
+			smbcli_free_signing_context(sign_info);
+	
 			smbcli_null_set_signing(sign_info);
 			return True;
 		} else {
@@ -188,7 +187,7 @@ BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key
 /***********************************************************
  SMB signing - Simple implementation - calculate a MAC to send.
 ************************************************************/
-static void smbcli_request_simple_sign_outgoing_message(struct smbcli_request *req)
+void smbcli_request_calculate_sign_mac(struct smbcli_request *req)
 {
 #if 0
 	/* enable this when packet signing is preventing you working out why valgrind 
@@ -196,51 +195,121 @@ static void smbcli_request_simple_sign_outgoing_message(struct smbcli_request *r
 	file_save("pkt.dat", req->out.buffer, req->out.size);
 #endif
 
-	req->seq_num = req->transport->negotiate.sign_info.next_seq_num;
-	
-	/* some requests (eg. NTcancel) are one way, and the sequence number
-	   should be increased by 1 not 2 */
-	if (req->sign_single_increment) {
-		req->transport->negotiate.sign_info.next_seq_num += 1;
-	} else {
-		req->transport->negotiate.sign_info.next_seq_num += 2;
+	switch (req->transport->negotiate.sign_info.signing_state) {
+	case SMB_SIGNING_ENGINE_OFF:
+		break;
+
+	case SMB_SIGNING_ENGINE_BSRSPYL:
+		/* mark the packet as signed - BEFORE we sign it...*/
+		mark_packet_signed(&req->out);
+		
+		/* I wonder what BSRSPYL stands for - but this is what MS 
+		   actually sends! */
+		memcpy((req->out.hdr + HDR_SS_FIELD), "BSRSPYL ", 8);
+		break;
+
+	case SMB_SIGNING_ENGINE_ON:
+			
+		req->seq_num = req->transport->negotiate.sign_info.next_seq_num;
+		
+		/* some requests (eg. NTcancel) are one way, and the sequence number
+		   should be increased by 1 not 2 */
+		if (req->sign_single_increment) {
+			req->transport->negotiate.sign_info.next_seq_num += 1;
+		} else {
+			req->transport->negotiate.sign_info.next_seq_num += 2;
+		}
+		
+		sign_outgoing_message(&req->out, 
+				      &req->transport->negotiate.sign_info.mac_key, 
+				      req->seq_num);
+		break;
 	}
-	
-	sign_outgoing_message(&req->out, 
-			      &req->transport->negotiate.sign_info.mac_key, 
-			      req->seq_num);
+	return;
 }
 
+
+/**
+ SMB signing - NULL implementation - setup the MAC key.
+
+ @note Used as an initialisation only - it will not correctly
+       shut down a real signing mechanism
+*/
+static BOOL smbcli_null_set_signing(struct smb_signing_context *sign_info)
+{
+	sign_info->mac_key = data_blob(NULL, 0);
+	sign_info->signing_state = SMB_SIGNING_ENGINE_OFF;
+	return True;
+}
+
+/**
+ SMB signing - TEMP implementation - setup the MAC key.
+
+ @note Used as an initialisation only - it will not correctly
+       shut down a real signing mechanism
+*/
+BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
+{
+	if (!set_smb_signing_common(transport)) {
+		return False;
+	}
+
+	transport->negotiate.sign_info.mac_key = data_blob(NULL, 0);
+	transport->negotiate.sign_info.signing_state = SMB_SIGNING_ENGINE_BSRSPYL;
+
+	return True;
+}
+
+/**
+ * Free the signing context
+ */
+static void smbcli_free_signing_context(struct smb_signing_context *sign_info) 
+{
+	data_blob_free(&sign_info->mac_key);
+	smbcli_null_set_signing(sign_info);
+}
 
 /***********************************************************
  SMB signing - Simple implementation - check a MAC sent by server.
 ************************************************************/
-static BOOL smbcli_request_simple_check_incoming_message(struct smbcli_request *req)
+/**
+ * Check a packet supplied by the server.
+ * @return False if we had an established signing connection
+ *         which had a back checksum, True otherwise
+ */
+BOOL smbcli_request_check_sign_mac(struct smbcli_request *req) 
 {
-	BOOL good = check_signed_incoming_message(&req->in, 
-						  &req->transport->negotiate.sign_info.mac_key, 
-						  req->seq_num+1);
-						  
-	return signing_good(&req->transport->negotiate.sign_info, 
-			    req->seq_num+1, good);
+	BOOL good;
+
+	switch (req->transport->negotiate.sign_info.signing_state) 
+	{
+	case SMB_SIGNING_ENGINE_OFF:
+		return True;
+	case SMB_SIGNING_ENGINE_BSRSPYL:
+	case SMB_SIGNING_ENGINE_ON:
+	{			
+		if (req->in.size < (HDR_SS_FIELD + 8)) {
+			return False;
+		} else {
+			good = check_signed_incoming_message(&req->in, 
+							     &req->transport->negotiate.sign_info.mac_key, 
+							     req->seq_num+1);
+			
+			return signing_good(&req->transport->negotiate.sign_info, 
+					    req->seq_num+1, good);
+		}
+	}
+	}
+	return False;
 }
 
-
-/***********************************************************
- SMB signing - Simple implementation - free signing context
-************************************************************/
-static void smbcli_transport_simple_free_signing_context(struct smb_signing_context *sign_info)
-{
-	data_blob_free(&sign_info->mac_key);
-	return;
-}
 
 /***********************************************************
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
-BOOL smbcli_simple_set_signing(struct smb_signing_context *sign_info,
-			       const DATA_BLOB user_session_key, 
-			       const DATA_BLOB response)
+static BOOL smbcli_simple_set_signing(struct smb_signing_context *sign_info,
+				      const DATA_BLOB user_session_key, 
+				      const DATA_BLOB response)
 {
 	if (sign_info->mandatory_signing) {
 		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
@@ -261,9 +330,7 @@ BOOL smbcli_simple_set_signing(struct smb_signing_context *sign_info,
 	/* Initialise the sequence number */
 	sign_info->next_seq_num = 0;
 
-	sign_info->sign_outgoing_message = smbcli_request_simple_sign_outgoing_message;
-	sign_info->check_incoming_message = smbcli_request_simple_check_incoming_message;
-	sign_info->free_signing_context = smbcli_transport_simple_free_signing_context;
+	sign_info->signing_state = SMB_SIGNING_ENGINE_ON;
 
 	return True;
 }
@@ -273,8 +340,8 @@ BOOL smbcli_simple_set_signing(struct smb_signing_context *sign_info,
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
 BOOL smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
-				      const DATA_BLOB user_session_key, 
-				      const DATA_BLOB response)
+					 const DATA_BLOB user_session_key, 
+					 const DATA_BLOB response)
 {
 	if (!set_smb_signing_common(transport)) {
 		return False;
@@ -286,143 +353,6 @@ BOOL smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
 }
 
 
-/***********************************************************
- SMB signing - NULL implementation - calculate a MAC to send.
-************************************************************/
-static void smbcli_request_null_sign_outgoing_message(struct smbcli_request *req)
-{
-	/* we can't zero out the sig, as we might be trying to send a
-	   transport request - which is NBT-level, not SMB level and doesn't
-	   have the field */
-}
-
-
-/***********************************************************
- SMB signing - NULL implementation - check a MAC sent by server.
-************************************************************/
-static BOOL smbcli_request_null_check_incoming_message(struct smbcli_request *req)
-{
-	return True;
-}
-
-
-/***********************************************************
- SMB signing - NULL implementation - free signing context
-************************************************************/
-static void smbcli_null_free_signing_context(struct smb_signing_context *sign_info)
-{
-}
-
-/**
- SMB signing - NULL implementation - setup the MAC key.
-
- @note Used as an initialisation only - it will not correctly
-       shut down a real signing mechanism
-*/
-BOOL smbcli_null_set_signing(struct smb_signing_context *sign_info)
-{
-	sign_info->sign_outgoing_message = smbcli_request_null_sign_outgoing_message;
-	sign_info->check_incoming_message = smbcli_request_null_check_incoming_message;
-	sign_info->free_signing_context = smbcli_null_free_signing_context;
-
-	return True;
-}
-
-/***********************************************************
- SMB signing - TEMP implementation (send BSRSPYL during SPNEGO) - calculate a MAC to send.
-************************************************************/
-static void smbcli_request_temp_sign_outgoing_message(struct smbcli_request *req)
-{
-	/* mark the packet as signed - BEFORE we sign it...*/
-	mark_packet_signed(&req->out);
-
-	/* I wonder what BSRSPYL stands for - but this is what MS 
-	   actually sends! */
-	memcpy((req->out.hdr + HDR_SS_FIELD), "BSRSPYL ", 8);
-
-	return;
-}
-
-/***********************************************************
- SMB signing - TEMP implementation - check a MAC sent by server.
-************************************************************/
-static BOOL smbcli_request_temp_check_incoming_message(struct smbcli_request *req)
-{
-	return True;
-}
-
-/***********************************************************
- SMB signing - NULL implementation - free signing context
-************************************************************/
-static void smbcli_temp_free_signing_context(struct smb_signing_context *sign_info)
-{
-	return;
-}
-
-/**
- SMB signing - TEMP implementation - setup the MAC key.
-
- @note Used as an initialisation only - it will not correctly
-       shut down a real signing mechanism
-*/
-BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
-{
-	if (!set_smb_signing_common(transport)) {
-		return False;
-	}
-
-	transport->negotiate.sign_info.sign_outgoing_message = smbcli_request_temp_sign_outgoing_message;
-	transport->negotiate.sign_info.check_incoming_message = smbcli_request_temp_check_incoming_message;
-	transport->negotiate.sign_info.free_signing_context = smbcli_temp_free_signing_context;
-
-	return True;
-}
-
-/**
- * Free the signing context
- */
-void smbcli_transport_free_signing_context(struct smb_signing_context *sign_info) 
-{
-	if (sign_info->free_signing_context) {
-		sign_info->free_signing_context(sign_info);
-	}
-
-	smbcli_null_set_signing(sign_info);
-}
-
-
-/**
- * Sign a packet with the current mechanism
- */
-void smbcli_request_calculate_sign_mac(struct smbcli_request *req)
-{
-	req->transport->negotiate.sign_info.sign_outgoing_message(req);
-}
-
-
-/**
- * Check a packet with the current mechanism
- * @return False if we had an established signing connection
- *         which had a back checksum, True otherwise
- */
-BOOL smbcli_request_check_sign_mac(struct smbcli_request *req) 
-{
-	BOOL good;
-
-	if (req->in.size < (HDR_SS_FIELD + 8)) {
-		good = False;
-	} else {
-		good = req->transport->negotiate.sign_info.check_incoming_message(req);
-	}
-
-	if (!good && req->transport->negotiate.sign_info.doing_signing) {
-		return False;
-	}
-
-	return True;
-}
-
-
 BOOL smbcli_init_signing(struct smbcli_transport *transport) 
 {
 	if (!smbcli_null_set_signing(&transport->negotiate.sign_info)) {
@@ -431,7 +361,7 @@ BOOL smbcli_init_signing(struct smbcli_transport *transport)
 	
 	switch (lp_client_signing()) {
 	case SMB_SIGNING_OFF:
-	transport->negotiate.sign_info.allow_smb_signing = False;
+		transport->negotiate.sign_info.allow_smb_signing = False;
 		break;
 	case SMB_SIGNING_SUPPORTED:
 		transport->negotiate.sign_info.allow_smb_signing = True;
