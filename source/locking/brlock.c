@@ -121,7 +121,7 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 	struct lock_key *key;
 	int count, i;
 
-	tdb_lockchain(tdb, kbuf);
+	tdb_chainlock(tdb, kbuf);
 
 	locks = (struct lock_struct *)dbuf.dptr;
 	key = (struct lock_key *)kbuf.dptr;
@@ -147,7 +147,7 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 	}
 
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return 0;
 }
 
@@ -188,7 +188,7 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(tdb, kbuf);
+	tdb_chainlock(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
 
 	lock.context.smbpid = smbpid;
@@ -218,12 +218,12 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
 	free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return True;
 
  fail:
 	if (dbuf.dptr) free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
 
@@ -244,7 +244,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(tdb, kbuf);
+	tdb_chainlock(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
 
 	if (!dbuf.dptr) {
@@ -292,7 +292,7 @@ smbpid = %u, pid = %u, tid = %u\n",
 			}
 
 			free(dbuf.dptr);
-			tdb_unlockchain(tdb, kbuf);
+			tdb_chainunlock(tdb, kbuf);
 			return True;
 		}
 	}
@@ -301,7 +301,7 @@ smbpid = %u, pid = %u, tid = %u\n",
 
  fail:
 	if (dbuf.dptr) free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
 
@@ -322,7 +322,7 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(tdb, kbuf);
+	tdb_chainlock(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
 
 	lock.context.smbpid = smbpid;
@@ -346,12 +346,12 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	/* no conflicts - we could have added it */
 	free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return True;
 
  fail:
 	if (dbuf.dptr) free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
 
@@ -369,7 +369,7 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(tdb, kbuf);
+	tdb_chainlock(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
 
 	if (!dbuf.dptr) goto fail;
@@ -404,7 +404,7 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 	/* we didn't find it */
  fail:
 	if (dbuf.dptr) free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 }
 
 /****************************************************************************

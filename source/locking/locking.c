@@ -274,7 +274,7 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
 BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode)
 {
-	return tdb_lockchain(tdb, locking_key(dev, inode)) == 0;
+	return tdb_chainlock(tdb, locking_key(dev, inode)) == 0;
 }
 
 /*******************************************************************
@@ -283,7 +283,7 @@ BOOL lock_share_entry(connection_struct *conn,
 BOOL unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode)
 {
-	return tdb_unlockchain(tdb, locking_key(dev, inode)) == 0;
+	return tdb_chainunlock(tdb, locking_key(dev, inode)) == 0;
 }
 
 
@@ -292,7 +292,7 @@ BOOL unlock_share_entry(connection_struct *conn,
 ******************************************************************/
 BOOL lock_share_entry_fsp(files_struct *fsp)
 {
-	return tdb_lockchain(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
+	return tdb_chainlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
 }
 
 /*******************************************************************
@@ -300,7 +300,7 @@ BOOL lock_share_entry_fsp(files_struct *fsp)
 ******************************************************************/
 BOOL unlock_share_entry_fsp(files_struct *fsp)
 {
-	return tdb_unlockchain(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
+	return tdb_chainunlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
 }
 
 /*******************************************************************

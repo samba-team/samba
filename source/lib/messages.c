@@ -174,7 +174,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	kbuf = message_key_pid(pid);
 
 	/* lock the record for the destination */
-	tdb_lockchain(tdb, kbuf);
+	tdb_chainlock(tdb, kbuf);
 
 	dbuf = tdb_fetch(tdb, kbuf);
 
@@ -208,7 +208,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 				if (!len || (len && !memcmp( ptr + sizeof(rec), (char *)buf, len))) {
 					DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
 					free(dbuf.dptr);
-					tdb_unlockchain(tdb, kbuf);
+					tdb_chainunlock(tdb, kbuf);
 					return True;
 				}
 			}
@@ -232,11 +232,11 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	free(dbuf.dptr);
 
  ok:
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return message_notify(pid);
 
  failed:
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
 
@@ -253,7 +253,7 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 
 	kbuf = message_key_pid(sys_getpid());
 
-	tdb_lockchain(tdb, kbuf);
+	tdb_chainlock(tdb, kbuf);
 	
 	dbuf = tdb_fetch(tdb, kbuf);
 	if (dbuf.dptr == NULL || dbuf.dsize == 0) goto failed;
@@ -288,11 +288,11 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
 	free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return True;
 
  failed:
-	tdb_unlockchain(tdb, kbuf);
+	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
 

@@ -4014,23 +4014,34 @@ int smbw_stat_printjob(struct smbw_server *srv,char *path,
 int smbw_fstat(int fd, struct stat *st);
 int smbw_stat(const char *fname, struct stat *st);
 
+/*The following definitions come from  tdb/spinlock.c  */
+
+int tdb_spinlock(TDB_CONTEXT *tdb, int list, int rw_type);
+int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type);
+int tdb_create_rwlocks(int fd, unsigned int hash_size);
+int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
+int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
+
 /*The following definitions come from  tdb/tdb.c  */
 
-char *tdb_error(TDB_CONTEXT *tdb);
-int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
+void tdb_printfreelist(TDB_CONTEXT *tdb);
+const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void* state), void* state);
+int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state);
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
-TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
+TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey);
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 int tdb_close(TDB_CONTEXT *tdb);
-int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
-void tdb_printfreelist(TDB_CONTEXT *tdb);
+int tdb_lockall(TDB_CONTEXT *tdb);
+void tdb_unlockall(TDB_CONTEXT *tdb);
+int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
+void tdb_unlockkeys(TDB_CONTEXT *tdb);
+int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
+void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 

@@ -97,7 +97,7 @@ QUOTAOBJS=@QUOTAOBJS@
 # object file lists
 ######################################################################
 
-TDB_OBJ = tdb/tdb.o tdb/tdbutil.o 
+TDB_OBJ = tdb/tdb.o tdb/spinlock.o tdb/tdbutil.o 
 
 LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
