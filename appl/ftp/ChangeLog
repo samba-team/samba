@@ -1,3 +1,8 @@
+Tue Jun 30 18:07:15 1998  Assar Westerlund  <assar@sics.se>
+
+	* ftp/security.c (auth): free `app_data'
+	(sec_end): only destroy if it was initialized
+
 Tue Jun  9 21:01:59 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* ftp/krb4.c: pass client address to krb_rd_req

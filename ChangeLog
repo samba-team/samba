@@ -1,3 +1,44 @@
+Tue Jun 30 18:08:05 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): do not close the
+ 	unopened file
+
+	* lib/krb5/mk_priv.c: realloc correctly
+
+	* lib/krb5/get_addrs.c (find_all_addresses): init j
+
+	* lib/krb5/context.c (krb5_init_context): print error if parsing
+ 	of config file produced an error.
+
+	* lib/krb5/config_file.c (parse_list, krb5_config_parse_file):
+ 	ignore more spaces
+
+	* lib/krb5/codec.c (krb5_encode_EncKrbCredPart,
+ 	krb5_encode_ETYPE_INFO): initialize `ret'
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): realloc
+ 	correctly
+
+	* lib/kadm5/set_keys.c (_kadm5_set_keys): initialize `ret'
+
+	* lib/kadm5/init_c.c (get_cred_cache): try to do the right thing
+ 	with default_client
+
+	* kuser/kinit.c (main): initialize `ticket_life'
+
+	* kdc/kerberos5.c (get_pa_etype_info): initialize `ret'
+	(tgs_rep2): initialize `krbtgt'
+
+	* kdc/connect.c (do_request): check for errors from `sendto'
+
+	* kdc/524.c (do_524): initialize `ret'
+
+	* kadmin/util.c (foreach_principal): don't clobber `ret'
+
+	* kadmin/del.c (del_entry): don't apply on zeroth argument
+
+	* kadmin/cpw.c (do_cpw_entry): initialize `ret'
+
 Sat Jun 13 04:14:01 1998  Assar Westerlund  <assar@juguete.sics.se>
 
 	* Release 0.0r
