@@ -128,13 +128,19 @@ the password change is done.
 
 
 <sect1>
-<title>Can Samba be a Backup Domain Controller?</title>
+<title>Can Samba be a Backup Domain Controller to an NT PDC?</title>
 
 <para>
 With version 2.2, no. The native NT SAM replication protocols have
 not yet been fully implemented. The Samba Team is working on
 understanding and implementing the protocols, but this work has not
 been finished for version 2.2.
+</para>
+
+<para>
+With version 3.0, the work on both the replication protocols and a
+suitable storage mechanism has progressed, and some form of NT4 BDC
+support is expected soon.
 </para>
 
 <para>
@@ -178,7 +184,8 @@ whenever changes are made, or the PDC is set up as a NIS master
 server and the BDC as a NIS slave server. To set up the BDC as a
 mere NIS client would not be enough, as the BDC would not be able to
 access its user database in case of a PDC failure.
-</para></listitem>
+</para>
+</listitem>
 
 <listitem><para>
 The Samba password database in the file private/smbpasswd has to be
@@ -236,5 +243,15 @@ password.
 
 
 </sect2>
+<sect2>
+<title>Can I do this all with LDAP?</title>
+<para>The simple answer is YES.  Samba's pdb_ldap code supports
+binding to a replica LDAP server, and will also follow referrals and
+rebind to the master if it ever needs to make a modification to the
+database.  (Normally BDCs are read only, so this will not occur
+often).
+</para>
+</sect2>
+
 </sect1>
 </chapter>

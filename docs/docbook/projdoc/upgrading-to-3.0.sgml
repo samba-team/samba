@@ -16,4 +16,24 @@ FIXME
 
 </sect1>
 
+<sect1>
+<title>Obsolete configuration options</title>
+
+<para>
+In 3.0, the following configuration options have been removed.
+</para>
+
+<simplelist>
+<member>printer driver</member>
+<member>printer driver file</member>
+<member>printer driver location</member>
+<member>use rhosts</member>
+<member>postscript</member>
+</simplelist>
+
+<para>The first three options have been replaced by new driver procedures. 
+Please read the printing documentation.</para>
+
+</sect1>
+
 </chapter>
