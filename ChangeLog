@@ -1,4 +1,15 @@
+Fri Nov  7 02:45:26 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/kadm5/create_s.c: Get some default values from `default'
+ 	principal.
+
+	* lib/kadm5/ent_setup.c: Add optional default entry to get some
+ 	values from.
+
 Thu Nov  6 00:20:41 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/error/compile_et.awk: Remove generated destroy_*_error_table
+ 	prototype
 
 	* kadmin/kadmind.c: Crude admin server.
 
