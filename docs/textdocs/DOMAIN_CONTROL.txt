@@ -22,7 +22,7 @@ In fact, the registry contains entries that describes everything that anything
 may need to know to interact with the rest of the system.
 
 The Microsoft Windows NT system is structured within a security model that
-says that all applications and services much authenticate themselves before
+says that all applications and services must authenticate themselves before
 they can obtain permission from the security manager to do what they set out
 to do.
 
