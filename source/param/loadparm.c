@@ -1199,24 +1199,18 @@ static void init_printer_values(service *pService)
 		case PRINT_LPROS2:
 			string_set(&pService->szLpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand,
-				   "lpr -r -P'%p' %s");
+			string_set(&pService->szPrintcommand, "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
 			string_set(&pService->szLpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand,
-				   "lpr -r -P'%p' %s");
-			string_set(&pService->szQueuepausecommand,
-				   "lpc stop '%p'");
-			string_set(&pService->szQueueresumecommand,
-				   "lpc start '%p'");
-			string_set(&pService->szLppausecommand,
-				   "lpc hold '%p' %j");
-			string_set(&pService->szLpresumecommand,
-				   "lpc release '%p' %j");
+			string_set(&pService->szPrintcommand, "lpr -r -P'%p' %s");
+			string_set(&pService->szQueuepausecommand, "lpc stop '%p'");
+			string_set(&pService->szQueueresumecommand, "lpc start '%p'");
+			string_set(&pService->szLppausecommand, "lpc hold '%p' %j");
+			string_set(&pService->szLpresumecommand, "lpc release '%p' %j");
 			break;
 
 		case PRINT_CUPS:
@@ -1231,20 +1225,13 @@ static void init_printer_values(service *pService)
 
 	                string_set(&Globals.szPrintcapname, "cups");
 #else
-			string_set(&pService->szLpqcommand,
-			           "/usr/bin/lpstat -o '%p'");
-			string_set(&pService->szLprmcommand,
-			           "/usr/bin/cancel '%p-%j'");
-			string_set(&pService->szPrintcommand,
-			           "/usr/bin/lp -d '%p' %s; rm %s");
-			string_set(&pService->szLppausecommand,
-				   "lp -i '%p-%j' -H hold");
-			string_set(&pService->szLpresumecommand,
-				   "lp -i '%p-%j' -H resume");
-			string_set(&pService->szQueuepausecommand,
-			           "/usr/bin/disable '%p'");
-			string_set(&pService->szQueueresumecommand,
-			           "/usr/bin/enable '%p'");
+			string_set(&pService->szLpqcommand, "/usr/bin/lpstat -o '%p'");
+			string_set(&pService->szLprmcommand, "/usr/bin/cancel '%p-%j'");
+			string_set(&pService->szPrintcommand, "/usr/bin/lp -d '%p' %s; rm %s");
+			string_set(&pService->szLppausecommand, "lp -i '%p-%j' -H hold");
+			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
+			string_set(&pService->szQueuepausecommand, "/usr/bin/disable '%p'");
+			string_set(&pService->szQueueresumecommand, "/usr/bin/enable '%p'");
 			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_CUPS */
 			break;
@@ -1253,17 +1240,12 @@ static void init_printer_values(service *pService)
 		case PRINT_HPUX:
 			string_set(&pService->szLpqcommand, "lpstat -o%p");
 			string_set(&pService->szLprmcommand, "cancel %p-%j");
-			string_set(&pService->szPrintcommand,
-				   "lp -c -d%p %s; rm %s");
-			string_set(&pService->szQueuepausecommand,
-				   "disable %p");
-			string_set(&pService->szQueueresumecommand,
-				   "enable %p");
+			string_set(&pService->szPrintcommand, "lp -c -d%p %s; rm %s");
+			string_set(&pService->szQueuepausecommand, "disable %p");
+			string_set(&pService->szQueueresumecommand, "enable %p");
 #ifndef HPUX
-			string_set(&pService->szLppausecommand,
-				   "lp -i %p-%j -H hold");
-			string_set(&pService->szLpresumecommand,
-				   "lp -i %p-%j -H resume");
+			string_set(&pService->szLppausecommand, "lp -i %p-%j -H hold");
+			string_set(&pService->szLpresumecommand, "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
 
