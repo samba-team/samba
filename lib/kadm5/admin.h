@@ -676,6 +676,16 @@ kadm5_store_tl_data __P((
 	krb5_storage *sp,
 	krb5_tl_data *tl));
 
+void
+kadm5_setup_passwd_quality_check(krb5_context context,
+				 const char *check_library,
+				 const char *check_function);
+
+const char *
+kadm5_check_password_quality (krb5_context context,
+			      krb5_principal principal,
+			      krb5_data *pwd_data);
+
 #if 0
 /* unimplemented functions */
 kadm5_ret_t 
