@@ -732,6 +732,7 @@ int main(int argc, char **argv)
 {
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
+	extern BOOL append_log;
 	pstring logfile;
 	int accept_sock;
 	BOOL interactive = False;
@@ -785,6 +786,12 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	}
+
+
+	/* Append to log file by default as we are a single process daemon
+	   program. */
+
+	append_log = True;
 
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);

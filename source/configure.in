@@ -103,6 +103,21 @@ AC_ARG_WITH(codepagedir,
     ;;
   esac])
 
+#################################################
+# set log directory location
+AC_ARG_WITH(logfilebase,
+[  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-logfilebase called without argument - will use default])
+  ;;
+  * )
+    logfilebase="$withval"
+    ;;
+  esac])
 
 AC_SUBST(codepagedir)
 AC_SUBST(configdir)
