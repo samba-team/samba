@@ -72,7 +72,7 @@ BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
 }
 
 static void spool_print_info_ctr(const char* srv_name, uint32 level,
-				uint32 num, void **ctr)
+				uint32 num, void *const *const ctr)
 {
 	display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, num, ctr);
 	display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, num, ctr);

@@ -139,7 +139,7 @@ BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
 	return res1;
 }
 
-static void srv_display_tprt_ctr(SRV_TPRT_INFO_CTR *ctr)
+static void srv_display_tprt_ctr(const SRV_TPRT_INFO_CTR *ctr)
 {
 	display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER   , ctr);
 	display_srv_tprt_info_ctr(out_hnd, ACTION_ENUMERATE, ctr);

@@ -36,7 +36,7 @@ extern int smb_tidx;
 
 extern FILE* out_hnd;
 
-void svc_display_query_svc_cfg(QUERY_SERVICE_CONFIG *cfg)
+void svc_display_query_svc_cfg(const QUERY_SERVICE_CONFIG *cfg)
 {
 	display_query_svc_cfg(out_hnd, ACTION_HEADER   , cfg);
 	display_query_svc_cfg(out_hnd, ACTION_ENUMERATE, cfg);
@@ -124,7 +124,7 @@ void cmd_svc_info(struct client_info *info)
 	}
 }
 
-static void svc_display_svc_info(ENUM_SRVC_STATUS *svc)
+static void svc_display_svc_info(const ENUM_SRVC_STATUS *svc)
 {
 	display_svc_info(out_hnd, ACTION_HEADER   , svc);
 	display_svc_info(out_hnd, ACTION_ENUMERATE, svc);

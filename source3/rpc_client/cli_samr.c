@@ -148,7 +148,8 @@ BOOL create_samr_domain_group(struct cli_state *cli, uint16 fnum,
 do a SAMR query user groups
 ****************************************************************************/
 BOOL get_samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol_open_domain, uint32 user_rid,
+				const POLICY_HND *pol_open_domain,
+				uint32 user_rid,
 				uint32 *num_groups, DOM_GID **gid)
 {
 	POLICY_HND pol_open_user;
@@ -213,7 +214,7 @@ BOOL delete_samr_dom_group(struct cli_state *cli, uint16 fnum,
 do a SAMR query group members 
 ****************************************************************************/
 BOOL get_samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol_open_domain,
+				const POLICY_HND *pol_open_domain,
 				uint32 group_rid, uint32 *num_mem,
 				uint32 **rid, uint32 **attr)
 {
@@ -223,7 +224,7 @@ BOOL get_samr_query_groupmem(struct cli_state *cli, uint16 fnum,
 	if (pol_open_domain == NULL || num_mem == NULL || rid == NULL || attr == NULL) return False;
 
 	/* send open domain (on group sid) */
-	if (!samr_open_group(cli, fnum,pol_open_domain,
+	if (!samr_open_group(cli, fnum, pol_open_domain,
 				0x00000010, group_rid,
 				&pol_open_group))
 	{
@@ -276,7 +277,7 @@ BOOL delete_samr_dom_alias(struct cli_state *cli, uint16 fnum,
 do a SAMR query alias members 
 ****************************************************************************/
 BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol_open_domain,
+				const POLICY_HND *pol_open_domain,
 				uint32 alias_rid, uint32 *num_mem, DOM_SID2 *sid)
 {
 	POLICY_HND pol_open_alias;
@@ -379,7 +380,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum,
 do a SAMR query group info
 ****************************************************************************/
 BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol_open_domain,
+				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 group_rid, GROUP_INFO_CTR *ctr)
 {
@@ -415,7 +416,7 @@ BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 do a SAMR query alias info
 ****************************************************************************/
 BOOL get_samr_query_aliasinfo(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol_open_domain,
+				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 alias_rid, ALIAS_INFO_CTR *ctr)
 {
@@ -929,7 +930,7 @@ uint32 samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 do a SAMR Connect
 ****************************************************************************/
 BOOL samr_connect(struct cli_state *cli, uint16 fnum, 
-				char *srv_name, uint32 unknown_0,
+				const char *srv_name, uint32 unknown_0,
 				POLICY_HND *connect_pol)
 {
 	prs_struct data;
@@ -987,7 +988,8 @@ BOOL samr_connect(struct cli_state *cli, uint16 fnum,
 do a SAMR Open User
 ****************************************************************************/
 BOOL samr_open_user(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
+				const POLICY_HND *pol,
+				uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol)
 {
 	prs_struct data;
@@ -1045,7 +1047,7 @@ BOOL samr_open_user(struct cli_state *cli, uint16 fnum,
 do a SAMR Open Alias
 ****************************************************************************/
 BOOL samr_open_alias(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *domain_pol,
+				const POLICY_HND *domain_pol,
 				uint32 flags, uint32 rid,
 				POLICY_HND *alias_pol)
 {
@@ -1499,7 +1501,7 @@ BOOL samr_set_aliasinfo(struct cli_state *cli, uint16 fnum,
 do a SAMR Open Group
 ****************************************************************************/
 BOOL samr_open_group(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *domain_pol,
+				const POLICY_HND *domain_pol,
 				uint32 flags, uint32 rid,
 				POLICY_HND *group_pol)
 {
@@ -1834,8 +1836,9 @@ BOOL samr_set_groupinfo(struct cli_state *cli, uint16 fnum,
 do a SAMR Open Domain
 ****************************************************************************/
 BOOL samr_open_domain(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *connect_pol, uint32 ace_perms,
-				DOM_SID *sid,
+				const POLICY_HND *connect_pol,
+				uint32 ace_perms,
+				const DOM_SID *sid,
 				POLICY_HND *domain_pol)
 {
 	pstring sid_str;
@@ -2040,7 +2043,7 @@ BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum,
 do a SAMR Query Lookup RIDS
 ****************************************************************************/
 BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 flags,
+				const POLICY_HND *pol, uint32 flags,
 				uint32 num_rids, uint32 *rids,
 				uint32 *num_names,
 				char   ***names,
@@ -2139,7 +2142,7 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 do a SAMR Query Alias Members
 ****************************************************************************/
 BOOL samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *alias_pol, 
+				const POLICY_HND *alias_pol, 
 				uint32 *num_mem, DOM_SID2 *sid)
 {
 	prs_struct data;
@@ -2200,7 +2203,8 @@ BOOL samr_query_aliasmem(struct cli_state *cli, uint16 fnum,
 do a SAMR Query User Aliases
 ****************************************************************************/
 BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 *ptr_sid, DOM_SID2 *sid,
+				const POLICY_HND *pol,
+				uint32 *ptr_sid, DOM_SID2 *sid,
 				uint32 *num_aliases, uint32 **rid)
 {
 	prs_struct data;

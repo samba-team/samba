@@ -150,8 +150,8 @@ BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				POLICY_HND *connect_pol, uint32 flags,
-				DOM_SID *sid)
+				const POLICY_HND *connect_pol, uint32 flags,
+				const DOM_SID *sid)
 {
 	if (q_u == NULL) return False;
 
@@ -1846,7 +1846,7 @@ BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct
 makes a SAMR_Q_OPEN_GROUP structure.
 ********************************************************************/
 BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP *q_c,
-				POLICY_HND *hnd, uint32 unk, uint32 rid)
+				const POLICY_HND *hnd, uint32 unk, uint32 rid)
 {
 	if (q_c == NULL || hnd == NULL) return False;
 
@@ -3290,7 +3290,7 @@ BOOL samr_io_r_set_aliasinfo(char *desc,  SAMR_R_SET_ALIASINFO *r_u, prs_struct 
 makes a SAMR_Q_QUERY_USERALIASES structure.
 ********************************************************************/
 BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
-				POLICY_HND *hnd,
+				const POLICY_HND *hnd,
 				uint32 *ptr_sid, DOM_SID2 *sid)
 {
 	if (q_u == NULL || hnd == NULL) return False;
@@ -3484,7 +3484,7 @@ void samr_free_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u)
 /*******************************************************************
 makes a SAMR_Q_OPEN_ALIAS structure.
 ********************************************************************/
-BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u, POLICY_HND *pol,
+BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u, const POLICY_HND *pol,
 				uint32 unknown_0, uint32 rid)
 {
 	if (q_u == NULL) return False;
@@ -3545,7 +3545,7 @@ BOOL samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, i
 makes a SAMR_Q_LOOKUP_RIDS structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
-		POLICY_HND *pol, uint32 flags,
+		const POLICY_HND *pol, uint32 flags,
 		uint32 num_rids, uint32 *rid)
 {
 	if (q_u == NULL) return False;
@@ -4117,7 +4117,8 @@ BOOL samr_io_r_delete_dom_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_s
 /*******************************************************************
 makes a SAMR_Q_QUERY_ALIASMEM structure.
 ********************************************************************/
-BOOL make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_c, POLICY_HND *hnd)
+BOOL make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_c,
+				const POLICY_HND *hnd)
 {
 	if (q_c == NULL || hnd == NULL) return False;
 
@@ -4404,7 +4405,7 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
-				POLICY_HND *pol,
+				const POLICY_HND *pol,
 				uint32 unk_0, uint32 rid)
 {
 	if (q_u == NULL) return False;
@@ -5617,7 +5618,7 @@ BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *p
 makes a SAMR_Q_CONNECT structure.
 ********************************************************************/
 BOOL make_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				char *srv_name, uint32 unknown_0)
+				const char *srv_name, uint32 unknown_0)
 {
 	int len_srv_name = strlen(srv_name);
 

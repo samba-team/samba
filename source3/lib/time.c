@@ -247,7 +247,7 @@ its the GMT you get by taking a localtime and adding the
 serverzone. This is NOT the same as GMT in some cases. This routine
 converts this to real GMT.
 ****************************************************************************/
-time_t nt_time_to_unix(NTTIME *nt)
+time_t nt_time_to_unix(const NTTIME *nt)
 {
   double d;
   time_t ret;
