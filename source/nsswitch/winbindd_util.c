@@ -679,26 +679,6 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 	return result;
 };
 
-/* parse a string of the form DOMAIN/user into a domain and a user */
-
-void parse_domain_user(char *domuser, fstring domain, fstring user)
-{
-	char *p;
-	char *sep = lp_winbind_separator();
-	if (!sep) sep = "\\";
-	p = strchr(domuser,*sep);
-	if (!p) p = strchr(domuser,'\\');
-	if (!p) {
-		fstrcpy(domain,"");
-		fstrcpy(user, domuser);
-		return;
-	}
-	
-	fstrcpy(user, p+1);
-	fstrcpy(domain, domuser);
-	domain[PTR_DIFF(p, domuser)] = 0;
-}
-
 /* find the sequence number for a domain */
 
 uint32 domain_sequence_number(char *domain_name)
@@ -725,15 +705,15 @@ uint32 domain_sequence_number(char *domain_name)
    application. */
 
 BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
-                             uint16 info_level, uint32 *num_entries,
-                             SAM_DISPINFO_CTR *ctr)
+			     uint32 *start_idx, uint16 info_level, 
+			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
 	BOOL res;
 
 	if (!domain_handles_open(domain)) return False;
 
-	res = samr_query_dispinfo(&domain->sam_dom_handle, info_level,
-				  num_entries, ctr);
+	res = samr_query_dispinfo(&domain->sam_dom_handle, start_idx,
+				  info_level, num_entries, ctr);
 
 	return res;
 }
