@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "02 May 2002" "" ""
+.TH "SMB.CONF" "5" "08 May 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -360,6 +360,9 @@ the NetBIOS name of the client machine
 the NetBIOS name of the server. This allows you 
 to change your config based on what the client calls you. Your 
 server can have a "dual personality".
+
+Note that this paramater is not available when Samba listens
+on port 445, as clients no longer send this information 
 .TP
 \fB%M\fR
 the Internet name of the client machine.
@@ -7271,15 +7274,18 @@ Default: \fBwinbind uid = <empty string>
 \fR
 Example: \fBwinbind uid = 10000-20000\fR
 .TP
-\fBwinbind use default domain (G)\fR
-This option controls whether or not smbd
-should lookup 'username' as 'DOMAIN\\username' when winbindd is
-running on a system. This is most useful when used in conjunction
-with pam_winbind.so to prevent a Windows user from having to enter
-commands like "ssh 'DOMAIN\\username@hostname'". This option is disabled 
-by default, thus requiring that the DOMAIN\\username format be used.
+\fBwinbind use default domain\fR
+.TP
+\fBwinbind use default domain\fR
+This parameter specifies whether the  winbindd(8)
+daemon should operate on users without domain component in their username. 
+Users without a domain component are treated as is part of the winbindd server's 
+own domain. While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+function in a way much closer to the way they would in a native unix system.
 
-Default: \fBwinbind use default domain = no\fR
+Default: \fBwinbind use default domain = <falseg> 
+\fR
+Example: \fBwinbind use default domain = true\fR
 .TP
 \fBwins hook (G)\fR
 When Samba is running as a WINS server this 

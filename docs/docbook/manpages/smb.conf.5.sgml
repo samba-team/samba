@@ -394,7 +394,12 @@
 		<term>%L</term>
 		<listitem><para>the NetBIOS name of the server. This allows you 
 		to change your config based on what the client calls you. Your 
-		server can have a "dual personality".</para></listitem>
+		server can have a "dual personality".</para>
+
+                <para>Note that this paramater is not available when Samba listens
+                on port 445, as clients no longer send this information </para>
+                </listitem>
+
 		</varlistentry>
 		
 		<varlistentry>
@@ -8338,23 +8343,22 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		</varlistentry>
 
 
-
-
 		<varlistentry>
-		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain (G)</term>
-		<listitem><para>This option controls whether or not smbd
-		should lookup 'username' as 'DOMAIN\username' when winbindd is
-		running on a system.  This is most useful when used in conjunction
-		with pam_winbind.so to prevent a Windows user from having to enter
-		commands like "ssh 'DOMAIN\username@hostname'".  This option is disabled 
-		by default, thus requiring that the DOMAIN\username format be used.</para>
-
-		<para>Default: <command>winbind use default domain = no</command>
-		</para></listitem>
+		<term>winbind use default domain</term>
+		
+		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain</term>
+		<listitem><para>This parameter specifies whether the <ulink url="winbindd.8.html">
+		winbindd(8)</ulink>
+		daemon should operate on users without domain component in their username.  
+                Users without a domain component are treated as is part of the winbindd server's 
+                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+                function in a way much closer to the way they would in a native unix system.</para>
+		
+		<para>Default: <command>winbind use default domain = &lt;falseg&gt; 
+		</command></para>
+		<para>Example: <command>winbind use default domain = true</command></para>
+		</listitem>
 		</varlistentry>
-
-
-
 
 
 		<varlistentry>

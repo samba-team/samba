@@ -590,6 +590,9 @@ CLASS="VARIABLELIST"
 >the NetBIOS name of the server. This allows you 
 		to change your config based on what the client calls you. Your 
 		server can have a "dual personality".</P
+><P
+>Note that this paramater is not available when Samba listens
+                on port 445, as clients no longer send this information </P
 ></DD
 ><DT
 >%M</DT
@@ -686,7 +689,7 @@ CLASS="REPLACEABLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN202"
+NAME="AEN203"
 ></A
 ><H2
 >NAME MANGLING</H2
@@ -771,7 +774,7 @@ CLASS="VARIABLELIST"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN235"
+NAME="AEN236"
 ></A
 ><H2
 >NOTE ABOUT USERNAME/PASSWORD VALIDATION</H2
@@ -849,7 +852,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN254"
+NAME="AEN255"
 ></A
 ><H2
 >COMPLETE LIST OF GLOBAL PARAMETERS</H2
@@ -3036,7 +3039,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN982"
+NAME="AEN983"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4515,7 +4518,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1474"
+NAME="AEN1475"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5480,7 +5483,7 @@ NAME="CASESENSITIVE"
 ><DD
 ><P
 >See the discussion in the section <A
-HREF="#AEN202"
+HREF="#AEN203"
 >NAME MANGLING</A
 >.</P
 ><P
@@ -6609,7 +6612,7 @@ NAME="DEFAULTCASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 >. Also note the <A
 HREF="#SHORTPRESERVECASE"
@@ -11304,7 +11307,7 @@ NAME="MANGLECASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 ></P
 ><P
@@ -11376,7 +11379,7 @@ NAME="MANGLEDNAMES"
 		or whether non-DOS names should simply be ignored.</P
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 > for details on how to control the mangling process.</P
 ><P
@@ -11497,7 +11500,7 @@ NAME="MANGLINGCHAR"
 		the <EM
 >magic</EM
 > character in <A
-HREF="#AEN202"
+HREF="#AEN203"
 >name mangling</A
 >. The default is a '~'
 		but this may interfere with some software. Use this option to set 
@@ -14227,7 +14230,7 @@ CLASS="COMMAND"
 ></P
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >NAME 
 		MANGLING</A
 > for a fuller discussion.</P
@@ -15869,7 +15872,7 @@ CLASS="PARAMETER"
 		be used in granting access.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15950,7 +15953,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -16026,7 +16029,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -16141,7 +16144,7 @@ CLASS="COMMAND"
 		Domain Controller. This issue will be addressed in a future release.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -16405,7 +16408,7 @@ CLASS="COMMAND"
 		names are lowered. </P
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 >.</P
 ><P
@@ -18114,7 +18117,7 @@ CLASS="PARAMETER"
 		search.</P
 ><P
 >See the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >NOTE ABOUT 
 		USERNAME/PASSWORD VALIDATION</A
 > for more information on how 
@@ -19019,24 +19022,32 @@ CLASS="COMMAND"
 ></P
 ></DD
 ><DT
-><A
+>winbind use default domain, <A
 NAME="WINBINDUSEDEFAULTDOMAIN"
 ></A
->winbind use default domain (G)</DT
+>winbind use default domain</DT
 ><DD
 ><P
->This option controls whether or not smbd
-		should lookup 'username' as 'DOMAIN\username' when winbindd is
-		running on a system.  This is most useful when used in conjunction
-		with pam_winbind.so to prevent a Windows user from having to enter
-		commands like "ssh 'DOMAIN\username@hostname'".  This option is disabled 
-		by default, thus requiring that the DOMAIN\username format be used.</P
+>This parameter specifies whether the <A
+HREF="winbindd.8.html"
+TARGET="_top"
+>		winbindd(8)</A
+>
+		daemon should operate on users without domain component in their username.  
+                Users without a domain component are treated as is part of the winbindd server's 
+                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+                function in a way much closer to the way they would in a native unix system.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind use default domain = no</B
->
-		</P
+>winbind use default domain = &#60;falseg&#62; 
+		</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>winbind use default domain = true</B
+></P
 ></DD
 ><DT
 ><A
@@ -19407,7 +19418,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6134"
+NAME="AEN6139"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19437,7 +19448,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6140"
+NAME="AEN6145"
 ></A
 ><H2
 >VERSION</H2
@@ -19448,7 +19459,7 @@ NAME="AEN6140"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6143"
+NAME="AEN6148"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19527,7 +19538,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6163"
+NAME="AEN6168"
 ></A
 ><H2
 >AUTHOR</H2
