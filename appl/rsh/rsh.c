@@ -167,7 +167,8 @@ send_krb4_auth(int s,
     int status;
     size_t len;
 
-    status = krb_sendauth (do_encrypt ? KOPT_DO_MUTUAL : 0,
+    /* the normal default for krb4 should be to disable encryption */
+    status = krb_sendauth ((do_encrypt == 1) ? KOPT_DO_MUTUAL : 0,
 			   s, &text, "rcmd",
 			   (char *)hostname, krb_realmofhost (hostname),
 			   getpid(), &msg, &cred, schedule,
@@ -304,6 +305,14 @@ send_krb5_auth(int s,
 	return 1;
     }
 
+    if(do_encrypt == -1) {
+	krb5_appdefault_boolean(context, NULL, 
+				krb5_principal_get_realm(context, server), 
+				"encrypt", 
+				FALSE, 
+				&do_encrypt);
+    }
+
     cksum_data.length = asprintf ((char **)&cksum_data.data,
 				  "%u:%s%s%s",
 				  ntohs(socket_get_port(thataddr)),
@@ -343,6 +352,19 @@ send_krb5_auth(int s,
 			    NULL,
 			    NULL);
 
+    /* do this while we have a principal */
+    if(do_forward == -1 || do_forwardable == -1) {
+	krb5_const_realm realm = krb5_principal_get_realm(context, server);
+	if (do_forwardable == -1)
+	    krb5_appdefault_boolean(context, NULL, realm,
+				    "forwardable", FALSE, 
+				    &do_forwardable);
+	if (do_forward == -1)
+	    krb5_appdefault_boolean(context, NULL, realm,
+				    "forward", FALSE, 
+				    &do_forward);
+    }
+    
     krb5_free_principal(context, server);
     krb5_data_free(&cksum_data);
 
@@ -921,37 +943,12 @@ main(int argc, char **argv)
 	else
 	    use_v5 = 0;
     }
-      
-    if (do_forwardable == -1)
-	do_forwardable = krb5_config_get_bool (context, NULL,
-					       "libdefaults",
-					       "forwardable",
-					       NULL);
-	
-    if (do_forward == -1)
-	do_forward = krb5_config_get_bool (context, NULL,
-					   "libdefaults",
-					   "forward",
-					   NULL);
-    else if (do_forward == 0)
-	do_forwardable = 0;
 
-    if (do_forwardable)
+    /* request for forwardable on the command line means we should
+       also forward */
+    if (do_forwardable == 1)
 	do_forward = 1;
-#endif
-#if defined(KRB4) || defined(KRB5)
-    if (do_encrypt == -1) {
-	/* we want to tell the -x flag from the default encryption
-           option */
-#ifdef KRB5
-	/* the normal default for krb4 should be to disable encryption */
-	if(!krb5_config_get_bool (context, NULL,
-				  "libdefaults",
-				  "encrypt",
-				  NULL))
-#endif
-	    do_encrypt = 0;
-    }
+
 #endif
 
 #if defined(KRB4) && defined(KRB5)
