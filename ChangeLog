@@ -1,3 +1,8 @@
+2003-05-28  Assar Westerlund  <assar@kth.se>
+
+	* lib/krb5/heim_threads.h: Fix unlock/destroy macros for the
+	non-threaded cases to work.  Fix typo.
+
 2003-05-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/asn1/{der_put.c,der_length.c,check-der.c}: Fix encoding of
