@@ -404,7 +404,7 @@ SAM_ACCOUNT* pdb_getsampwnam (char *sname)
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
-	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, name);
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 
@@ -496,7 +496,7 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 	pstrcat (tdbfile, RIDDB_FILE_NAME);
 	
 	/* set search key */
-	slprintf(keystr, sizeof(keystr), "%s%.8x", RIDPREFIX, rid);
+	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 
@@ -553,7 +553,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	}
   
   	/* set the search key */
-	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, name);
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 	
@@ -599,7 +599,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	}	
 
   	/* set the search key */
-	slprintf(keystr, sizeof(keystr), "%s%.8x", RIDPREFIX, rid);
+	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 
@@ -655,7 +655,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	strlower (name);
 	
   	/* setup the USER index key */
-	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, name);
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 
@@ -702,7 +702,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	pstrcat (tdbfile, RIDDB_FILE_NAME);
 
 	/* setup the RID index key */
-	slprintf(keystr, sizeof(keystr), "%s%.8x", RIDPREFIX, pdb_get_user_rid(newpwd));
+	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, pdb_get_user_rid(newpwd));
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 	
