@@ -1,3 +1,9 @@
+2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* irix.m4: move some stuff here and rename to irix.m4
+
+	* krb-sys-nextstep.m4: move SGTTY stuff to read_pwd.c
+
 2002-08-28  Jacques Vidrine  <nectar@kth.se>
 
 	* auth-modules.m4: do not build pam_krb4 on freebsd
