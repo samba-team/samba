@@ -665,7 +665,7 @@ BOOL user_ok(char *user,int snum)
  Validate a group username entry. Return the username or NULL.
 ****************************************************************************/
 
-static char *validate_group(char *group,char *password,int pwlen,int snum)
+static char *validate_group(const char *group,char *password,int pwlen,int snum)
 {
 #ifdef HAVE_NETGROUP
 	{
@@ -684,66 +684,24 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	}
 #endif
   
-#ifdef HAVE_GETGRENT
 	{
-		struct group *gptr;
-		setgrent();
-		while ((gptr = (struct group *)getgrent())) {
-			if (strequal(gptr->gr_name,group))
-				break;
-		}
+		struct sys_userlist *user_list = get_users_in_group(group);
+		struct sys_userlist *member;
 
-		/*
-		 * As user_ok can recurse doing a getgrent(), we must
-		 * copy the member list into a pstring on the stack before
-		 * use. Bug pointed out by leon@eatworms.swmed.edu.
-		 */
-
-		if (gptr) {
-			pstring member_list;
-			char *member;
-			size_t copied_len = 0;
-			int i;
-
-			*member_list = '\0';
-			member = member_list;
-
-			for(i = 0; gptr->gr_mem && gptr->gr_mem[i]; i++) {
-				size_t member_len = strlen(gptr->gr_mem[i]) + 1;
-				if( copied_len + member_len < sizeof(pstring)) { 
-
-					DEBUG(10,("validate_group: = gr_mem = %s\n", gptr->gr_mem[i]));
-
-					safe_strcpy(member, gptr->gr_mem[i], sizeof(pstring) - copied_len - 1);
-					copied_len += member_len;
-					member += copied_len;
-				} else {
-					*member = '\0';
-				}
+		for (member = user_list; member; member = member->next) {
+			static fstring name;
+			fstrcpy(name,member->unix_name);
+			if (user_ok(name,snum) &&
+			    password_ok(name,password,pwlen,NULL)) {
+				free_userlist(user_list);
+				return(&name[0]);
 			}
 
-			endgrent();
-
-			member = member_list;
-			while (*member) {
-				static fstring name;
-				fstrcpy(name,member);
-				if (user_ok(name,snum) &&
-				    password_ok(name,password,pwlen,NULL)) {
-					endgrent();
-					return(&name[0]);
-				}
-
-				DEBUG(10,("validate_group = member = %s\n", member));
-
-				member += strlen(member) + 1;
-			}
-		} else {
-			endgrent();
-			return NULL;
+			DEBUG(10,("validate_group = member = %s\n", member->unix_name));
 		}
+		free_userlist(user_list);
 	}
-#endif
+
 	return(NULL);
 }
 
@@ -872,7 +830,7 @@ and given password ok\n", user));
 			pstring_sub(user_list,"%S",lp_servicename(snum));
 	  
 			for (auser=strtok(user_list,LIST_SEP); auser && !ok;
-											auser = strtok(NULL,LIST_SEP)) {
+					auser = strtok(NULL,LIST_SEP)) {
 				if (*auser == '@') {
 					auser = validate_group(auser+1,password,pwlen,snum);
 					if (auser) {

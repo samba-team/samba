@@ -347,11 +347,11 @@ failed with error %s\n", strerror(errno) ));
  Check if a user is in a UNIX group.
 ****************************************************************************/
 
-static BOOL user_in_unix_group_list(char *user,char *gname)
+static BOOL user_in_unix_group_list(char *user,const char *gname)
 {
-	struct group *gptr;
-	char **member;  
 	struct passwd *pass = Get_Pwnam(user,False);
+	struct sys_userlist *user_list;
+	struct sys_userlist *member;
 
 	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
 
@@ -367,20 +367,22 @@ static BOOL user_in_unix_group_list(char *user,char *gname)
  		}
  	}
  
- 	if ((gptr = (struct group *)getgrnam(gname)) == NULL) {
+	user_list = get_users_in_group(gname);
+ 	if (user_list == NULL) {
  		DEBUG(10,("user_in_unix_group_list: no such group %s\n", gname ));
  		return False;
  	}
- 
- 	member = gptr->gr_mem;
-  	while (member && *member) {
- 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n", user, *member ));
-  		if (strequal(*member,user)) {
+
+	for (member = user_list; member; member = member->next) {
+ 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n",
+			user, member->unix_name ));
+  		if (strequal(member->unix_name,user)) {
+			free_userlist(user_list);
   			return(True);
   		}
-		member++;
 	}
 
+	free_userlist(user_list);
 	return False;
 }	      
 
@@ -518,10 +520,6 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
 	ssize_t len = (ssize_t)strlen(s);
 	int i;
 	struct passwd *ret;
-
-#ifdef PASSWORD_LENGTH
-	len = MIN(len,PASSWORD_LENGTH);
-#endif
 
 	if (N <= 0 || offset >= len)
 		return(fn(s));
