@@ -286,80 +286,29 @@ static void delete_map_list(ubi_slList *map_list)
 ***************************************************************************/
 static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 {
-	int ret = False;
-	fstring sid_str;
+	pstring sid_str;
 
-	if (!map_domain_name_to_sid(&grp->sid, &(grp->nt_domain)))
+	if (!lookup_lsa_name(grp->nt_domain, grp->nt_name,
+	                     &grp->sid, &grp->type))
 	{
-		DEBUG(0,("make_mydomain_sid: unknown domain %s\n",
-			  grp->nt_domain));
 		return False;
 	}
 
-	if (sid_equal(&grp->sid, &global_sid_S_1_5_20))
+	if (grp->type == SID_NAME_UNKNOWN || grp->type == SID_NAME_DELETED)
 	{
-		/*
-		 * only builtin aliases are recognised in S-1-5-20
-		 */
-		DEBUG(10,("make_mydomain_sid: group %s in builtin domain\n",
-		           grp->nt_name));
-
-		if (lookup_builtin_alias_name(grp->nt_name, "BUILTIN", &grp->sid, &grp->type) != 0x0)
-		{
-			DEBUG(0,("unix group %s mapped to an unrecognised BUILTIN domain name %s\n",
-			          grp->unix_name, grp->nt_name));
-			return False;
-		}
-		ret = True;
+		return False;
 	}
-	else if (lookup_wk_user_name(grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
+	if (type != grp->type)
 	{
-		if (type != DOM_MAP_USER)
-		{
-			DEBUG(0,("well-known NT user %s\\%s listed in wrong map file\n",
-			          grp->nt_domain, grp->nt_name));
-			return False;
-		}
-		ret = True;
-	}
-	else if (lookup_wk_group_name(grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
-	{
-		if (type != DOM_MAP_DOMAIN)
-		{
-			DEBUG(0,("well-known NT group %s\\%s listed in wrong map file\n",
-			          grp->nt_domain, grp->nt_name));
-			return False;
-		}
-		ret = True;
-	}
-	else
-	{
-		switch (type)
-		{
-			case DOM_MAP_USER:
-			{
-				grp->type = SID_NAME_USER;
-				break;
-			}
-			case DOM_MAP_DOMAIN:
-			{
-				grp->type = SID_NAME_DOM_GRP;
-				break;
-			}
-			case DOM_MAP_LOCAL:
-			{
-				grp->type = SID_NAME_ALIAS;
-				break;
-			}
-		}
-
-		ret = pwdb_unixid_to_sam_sid(grp->unix_id, grp->type, &grp->sid);
+		DEBUG(0,("well-known NT name %s\\%s listed in wrong map file\n",
+		          grp->nt_domain, grp->nt_name));
+		return False;
 	}
 
 	sid_to_string(sid_str, &grp->sid);
 	DEBUG(10,("nt name %s\\%s gid %d mapped to %s\n",
 	           grp->nt_domain, grp->nt_name, grp->unix_id, sid_str));
-	return ret;
+	return True;
 }
 
 /**************************************************************************
@@ -1331,5 +1280,66 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep)
 
 	/* oops */
 	return False;
+}
+
+
+/****************************************************************************
+  does _both_ nt->unix and unix->unix username remappings.
+****************************************************************************/
+const struct passwd *map_nt_and_unix_username(const char *domain,
+				const char *ntuser,
+				char *unix_user, char *nt_user)
+{
+	DOM_NAME_MAP gmep;
+	fstring nt_username;
+
+	if (nt_user == NULL)
+	{
+		nt_user = nt_username;
+	}
+
+	memset(nt_user, 0, sizeof(nt_user));
+	if (domain != NULL)
+	{
+		slprintf(nt_user, sizeof(fstring), "%s\\%s",
+			 domain, ntuser);
+	}
+	else
+	{
+		fstrcpy(nt_user, ntuser);
+	}
+
+#if 1
+
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
+
+	if (lp_server_role() != ROLE_DOMAIN_NONE)
+	{
+		if (lookupsmbpwntnam(nt_user, &gmep))
+		{
+			fstrcpy(unix_user, gmep.unix_name);
+		}
+	}
+#else
+	DEBUG(1,("map_nt_and_unix_username: NT->Unix map DISABLED\n"));
+	
+	/* assume unix name is same as nt name */
+	fstrcpy(unix_user, ntuser);
+#endif
+
+	/*
+	 * Pass the user through the unix -> unix user mapping
+	 * function.
+	 */
+
+	(void)map_username(unix_user);
+
+	/*
+	 * Do any UNIX username case mangling.
+	 */
+	return Get_Pwnam( unix_user, True);
 }
 

@@ -194,6 +194,9 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
 BOOL lookupsmbgrpnam(const char *unix_grp_name, DOM_NAME_MAP *grp);
 BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
 BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep);
+const struct passwd *map_nt_and_unix_username(const char *domain,
+				const char *ntuser,
+				char *unix_user, char *nt_user);
 
 /*The following definitions come from  lib/doscalls.c  */
 
@@ -559,9 +562,6 @@ void pwdb_sethexpwd(char *p, const uchar *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
 void *memdup(const void *p, size_t size);
 char *lock_path(char *name);
-const struct passwd *map_nt_and_unix_username(const char *domain,
-				const char *ntuser,
-				char *unix_user, char *nt_user);
 
 /*The following definitions come from  lib/util_array.c  */
 

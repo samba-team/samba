@@ -232,6 +232,7 @@ struct passwd *hashed_getpwnam(const char *name)
 
   DEBUG(5,("getpwnam(%s)\n", name));
 
+#if 0
   if (have_passwd_hash())
   {
     int name_i=name_hash_function(name);
@@ -256,6 +257,7 @@ struct passwd *hashed_getpwnam(const char *name)
     DEBUG(5,("%s not found\n",name));
     return NULL;
   } 
+#endif
 
   /* Fall back to real getpwnam() */
   return sys_getpwnam(name);
@@ -271,6 +273,7 @@ char *uidtoname(uid_t uid)
   struct passwd *pass=NULL;
 
   DEBUG(5,("uidtoname(%d)\n",uid));
+#if 0
   if (have_passwd_hash()) {
     int hash_index=pht->uids[uid_hash_function(uid)];
     while(hash_index!=-1) {
@@ -290,7 +293,9 @@ char *uidtoname(uid_t uid)
     }
     DEBUG(5,("Hash miss"));
     pass=NULL;
-  } else {
+  } else
+#endif
+  {
     /* No hash table, fall back to getpwuid */
     pass = getpwuid(uid);
   }

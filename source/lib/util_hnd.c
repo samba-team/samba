@@ -81,7 +81,7 @@ static struct policy
 
 } *Policy;
 
-static struct bitmap *bmap;
+static struct bitmap *bmap = NULL;
 
 
 /****************************************************************************

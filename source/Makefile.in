@@ -225,7 +225,9 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 	    smbd/vfs-wrap.o smbd/dfs.o \
 		smbd/challenge.o \
 		passdb/smbpassfile.o \
-		passdb/pass_check.o
+		passdb/pass_check.o \
+		rpc_client/msrpc_lsarpc.o   \
+		lib/domain_namemap.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
 

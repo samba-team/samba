@@ -312,6 +312,12 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 	struct ntuser_creds *usr;
 	usr = (struct ntuser_creds*)cli_conn_get_auth_creds(con);
 
+	if (usr == NULL)
+	{
+		DEBUG(10,("create_ntlmssp_bind_req: NULL user creds\n"));
+		return False;
+	}
+
 	prs_init(&rhdr     , 0x10, 4, False);
 	prs_init(&rhdr_rb  , 0x0 , 4, False);
 	prs_init(&rhdr_auth, 8   , 4, False);

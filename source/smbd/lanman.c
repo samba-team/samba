@@ -1553,21 +1553,10 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
    */
   (void)Get_Pwnam( user, True);
 
+  if (strequal(param + 2, "zb16b16WW"))
+  {
   /*
-   * Attempt the plaintext password change first.
-   * Older versions of Windows seem to do this.
-   */
-
-	nt_lm_owf_gen(pass1, nt_pw, lm_pw);
-	if (msrpc_sam_ntchange_pwd("\\\\.", user, global_sam_name,
-	                           lm_pw, nt_pw, pass2))
-	{
-		SSVAL(*rparam,0,NERR_Success);
-	}
-
-  /*
-   * If the plaintext change failed, attempt
-   * the encrypted. NT will generate this
+   * attempt the encrypted pw change. NT will generate this
    * after trying the samr method.
    */
 
@@ -1581,7 +1570,21 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 			SSVAL(*rparam,0,NERR_Success);
 		}
 	}
+  }
+  else
+  {
+  /*
+   * Attempt the plaintext password change first.
+   * Older versions of Windows seem to do this.
+   */
 
+	nt_lm_owf_gen(pass1, nt_pw, lm_pw);
+	if (msrpc_sam_ntchange_pwd("\\\\.", user, global_sam_name,
+	                           lm_pw, nt_pw, pass2))
+	{
+		SSVAL(*rparam,0,NERR_Success);
+	}
+  }
 	ZERO_STRUCT(pwbuf);
 	ZERO_STRUCT(pass1);
 	ZERO_STRUCT(pass2);

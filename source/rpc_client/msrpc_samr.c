@@ -1746,7 +1746,8 @@ BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user,
 
 	/* open SAMR session.  */
 	res = res ? cli_connection_init_auth(srv_name, PIPE_SAMR, &con,
-	             &cli_ntlmssp_fns, (void*)samr_creds) : False;
+			     samr_creds != NULL ? &cli_ntlmssp_fns : NULL,
+	                     (void*)samr_creds) : False;
 
 	res1 = res  ? samr_unknown_38(con, srv_name) : False;
 	res1 = res1 ? samr_chgpasswd_user(con, srv_name, user,

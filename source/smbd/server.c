@@ -480,6 +480,7 @@ static void init_structs(void)
 {
 	conn_init();
 	file_init();
+	init_policy_hnd(64);
 	init_rpc_pipe_hnd(); /* for RPC pipes */
 	init_dptrs();
 	init_dfs_table();

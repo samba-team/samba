@@ -339,7 +339,7 @@ BOOL cli_connection_init_auth(const char* srv_name, const char* pipe_name,
 	 * allocate
 	 */
 
-	DEBUG(10,("cli_connection_init: %s %s\n",
+	DEBUG(10,("cli_connection_init_auth: %s %s\n",
 	            srv_name != NULL ? srv_name : "<null>", pipe_name));
 
 	*con = cli_con_get(srv_name, pipe_name, auth, auth_creds, reuse);

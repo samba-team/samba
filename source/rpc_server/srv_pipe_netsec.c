@@ -381,7 +381,7 @@ static BOOL api_netsec_decode_pdu(rpcsrv_struct *l)
 	smb_io_rpc_auth_netsec_chk("auth_sign", &netsec_chk, &l->data_i, 0);
 
 	if (!netsec_decode(a, &netsec_chk,
-	                   prs_data(&l->data_i, l->data_i.offset),
+	                   prs_data(&l->data_i, old_offset),
 	                   data_len))
 	{
 		return False;
