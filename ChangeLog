@@ -1,3 +1,8 @@
+1999-07-28  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_sname_to_principal): use
+ 	getipnodebyname
+
 1999-07-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/Makefile.am: bump version number (changed function
