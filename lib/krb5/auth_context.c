@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -58,9 +58,11 @@ krb5_auth_con_init(krb5_context context,
     memset (p->authenticator, 0, sizeof(*p->authenticator));
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
 
-    p->local_address = NULL;
+    p->local_address  = NULL;
     p->remote_address = NULL;
-    *auth_context = p;
+    p->keytype        = KEYTYPE_NULL;
+    p->cksumtype      = CKSUMTYPE_NONE;
+    *auth_context     = p;
     return 0;
 }
 
@@ -280,7 +282,8 @@ krb5_auth_setcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_cksumtype cksumtype)
 {
-    krb5_abortx(context, "unimplemented krb5_auth_setcksumtype called");
+    auth_context->cksumtype = cksumtype;
+    return 0;
 }
 
 krb5_error_code
@@ -288,9 +291,29 @@ krb5_auth_getcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_cksumtype *cksumtype)
 {
-    krb5_abortx(context, "unimplemented krb5_auth_getcksumtype called");
+    *cksumtype = auth_context->cksumtype;
+    return 0;
 }
 
+krb5_error_code
+krb5_auth_setkeytype (krb5_context context,
+		      krb5_auth_context auth_context,
+		      krb5_keytype keytype)
+{
+    auth_context->keytype = keytype;
+    return 0;
+}
+
+krb5_error_code
+krb5_auth_getkeytype (krb5_context context,
+		      krb5_auth_context auth_context,
+		      krb5_keytype *keytype)
+{
+    *keytype = auth_context->keytype;
+    return 0;
+}
+
+#if 0
 krb5_error_code
 krb5_auth_setenctype(krb5_context context,
 		     krb5_auth_context auth_context,
@@ -312,6 +335,7 @@ krb5_auth_getenctype(krb5_context context,
 {
     krb5_abortx(context, "unimplemented krb5_auth_getenctype called");
 }
+#endif
 
 krb5_error_code
 krb5_auth_getlocalseqnumber(krb5_context context,
