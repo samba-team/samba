@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBSH" "1" "06 December 2001" "" ""
+.TH "SMBSH" "1" "24 January 2002" "" ""
 .SH NAME
 smbsh \- Allows access to Windows NT filesystem  using UNIX commands
 .SH SYNOPSIS
 .sp
-\fBsmbsh\fR
+\fBsmbsh\fR [ \fB-W workgroup\fR ]  [ \fB-U username\fR ]  [ \fB-P prefix\fR ]  [ \fB-R <name resolve order>\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-l logfile\fR ]  [ \fB-L libdir\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -17,6 +17,104 @@ This tool is part of the  Sambasuite.
 using UNIX commands such as \fBls\fR, \fB egrep\fR, and \fBrcp\fR. You must use a 
 shell that is dynamically linked in order for \fBsmbsh\fR 
 to work correctly.
+.SH "OPTIONS"
+.TP
+\fB-W WORKGROUP\fR
+Override the default workgroup specified in the 
+workgroup parameter of the \fIsmb.conf\fR file 
+for this session. This may be needed to connect to some 
+servers. 
+.TP
+\fB-U username[%pass]\fR
+Sets the SMB username or username and password.
+If this option is not specified, the user will be prompted for 
+both the username and the password. If %pass is not specified, 
+the user will be prompted for the password.
+.TP
+\fB-P prefix\fR
+This option allows
+the user to set the directory prefix for SMB access. The 
+default value if this option is not specified is 
+\fBsmb\fR.
+.TP
+\fB-R <name resolve order>\fR
+This option is used to determine what naming 
+services and in what order to resolve 
+host names to IP addresses. The option takes a space-separated 
+string of different name resolution options.
+
+The options are :"lmhosts", "host", "wins" and "bcast". 
+They cause names to be resolved as follows :
+.RS
+.TP 0.2i
+\(bu
+lmhosts : 
+Lookup an IP address in the Samba lmhosts file. If the 
+line in lmhosts has no name type attached to the 
+NetBIOS name 
+(see the lmhosts(5)
+for details) then any name type matches for lookup.
+.TP 0.2i
+\(bu
+host : 
+Do a standard host name to IP address resolution, using
+the system \fI/etc/hosts\fR, NIS, or DNS
+lookups. This method of name resolution is operating 
+system dependent, for instance on IRIX or Solaris this 
+may be controlled by the \fI/etc/nsswitch.conf
+\fRfile). Note that this method is only used 
+if the NetBIOS name type being queried is the 0x20 
+(server) name type, otherwise it is ignored.
+.TP 0.2i
+\(bu
+wins : 
+Query a name with the IP address listed in the 
+\fIwins server\fR parameter. If no 
+WINS server has been specified this method will be 
+ignored.
+.TP 0.2i
+\(bu
+bcast : 
+Do a broadcast on each of the known local interfaces 
+listed in the \fIinterfaces\fR
+parameter. This is the least reliable of the name 
+resolution methods as it depends on the target host 
+being on a locally connected subnet.
+.RE
+.PP
+If this parameter is not set then the name resolve order 
+defined in the \fIsmb.conf\fR file parameter 
+(name resolve order) will be used. 
+.PP
+.PP
+The default order is lmhosts, host, wins, bcast. Without 
+this parameter or any entry in the \fIname resolve order
+\fRparameter of the \fIsmb.conf\fR 
+file, the name resolution methods will be attempted in this 
+order. 
+.PP
+.TP
+\fB-d <debug level>\fR
+debug level is an integer from 0 to 10.
+
+The default value if this parameter is not specified
+is zero.
+
+The higher this value, the more detail will be logged
+about the activities of \fBnmblookup\fR. At level
+0, only critical errors and serious warnings will be logged.
+.TP
+\fB-l logfilename\fR
+If specified causes all debug messages to be
+written to the file specified by \fIlogfilename
+\fR\&. If not specified then all messages will be 
+written to\fIstderr\fR.
+.TP
+\fB-L libdir\fR
+This parameter specifies the location of the 
+shared libraries used by \fBsmbsh\fR. The default
+value is specified at compile time.
+.SH "EXAMPLES"
 .PP
 To use the \fBsmbsh\fR command, execute \fB smbsh\fR from the prompt and enter the username and password 
 that authenticates you to the machine running the Windows NT 

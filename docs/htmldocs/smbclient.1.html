@@ -1051,6 +1051,42 @@ CLASS="REPLACEABLE"
 		</P
 ></DD
 ><DT
+>altname file</DT
+><DD
+><P
+>The client will request that the server return
+		the "alternate" name (the 8.3 name) for a file or directory.
+		</P
+></DD
+><DT
+>cancel jobid0 [jobid1] ... [jobidN]</DT
+><DD
+><P
+>The client will request that the server cancel
+		the printjobs identified by the given numeric print job ids.
+		</P
+></DD
+><DT
+>chmod file mode in octal</DT
+><DD
+><P
+>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		change the UNIX permissions to the given octal mode, in standard UNIX format.
+		</P
+></DD
+><DT
+>chown file uid gid</DT
+><DD
+><P
+>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		change the UNIX user and group ownership to the given decimal values. Note there is
+		currently no way to remotely look up the UNIX uid and gid values for a given name.
+		This may be addressed in future versions of the CIFS UNIX extensions.
+		</P
+></DD
+><DT
 >cd [directory name]</DT
 ><DD
 ><P
@@ -1136,6 +1172,16 @@ CLASS="REPLACEABLE"
 ><P
 >If no directory name is specified, the name of the 
 		current working directory on the local machine will be reported. 
+		</P
+></DD
+><DT
+>link source destination</DT
+><DD
+><P
+>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		create a hard link between the source and destination files. The source file
+		must not exist.
 		</P
 ></DD
 ><DT
@@ -1352,6 +1398,31 @@ CLASS="REPLACEABLE"
 		privileges permitting) from the server. </P
 ></DD
 ><DT
+>setmode &#60;filename&#62; &#60;perm=[+|\-]rsha&#62;</DT
+><DD
+><P
+>A version of the DOS attrib command to set 
+		file permissions. For example: </P
+><P
+><B
+CLASS="COMMAND"
+>setmode myfile +r </B
+></P
+><P
+>would make myfile read only. </P
+></DD
+><DT
+>symlink source destination</DT
+><DD
+><P
+>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		create a symbolic hard link between the source and destination files. The source file
+		must not exist. Note that the server will not create a link to any path that lies 
+		outside the currently connected share. This is enforced by the Samba server.
+		</P
+></DD
+><DT
 >tar &#60;c|x&#62;[IXbgNa]</DT
 ><DD
 ><P
@@ -1391,27 +1462,13 @@ CLASS="REPLACEABLE"
 		tar will reset the archive bit on all files it backs up (implies 
 		read/write share). </P
 ></DD
-><DT
->setmode &#60;filename&#62; &#60;perm=[+|\-]rsha&#62;</DT
-><DD
-><P
->A version of the DOS attrib command to set 
-		file permissions. For example: </P
-><P
-><B
-CLASS="COMMAND"
->setmode myfile +r </B
-></P
-><P
->would make myfile read only. </P
-></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN477"
+NAME="AEN501"
 ></A
 ><H2
 >NOTES</H2
@@ -1432,7 +1489,7 @@ NAME="AEN477"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN482"
+NAME="AEN506"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
@@ -1465,7 +1522,7 @@ CLASS="ENVAR"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN490"
+NAME="AEN514"
 ></A
 ><H2
 >INSTALLATION</H2
@@ -1503,7 +1560,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN500"
+NAME="AEN524"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -1519,7 +1576,7 @@ NAME="AEN500"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN504"
+NAME="AEN528"
 ></A
 ><H2
 >VERSION</H2
@@ -1530,7 +1587,7 @@ NAME="AEN504"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN507"
+NAME="AEN531"
 ></A
 ><H2
 >AUTHOR</H2

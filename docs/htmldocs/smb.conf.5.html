@@ -2745,6 +2745,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#UNIXEXTENSIONS"
+><TT
+CLASS="PARAMETER"
+><I
+>unix extensions</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#UNIXPASSWORDSYNC"
 ><TT
 CLASS="PARAMETER"
@@ -2999,7 +3011,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN970"
+NAME="AEN974"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4430,7 +4442,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1446"
+NAME="AEN1450"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -17590,6 +17602,25 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="UNIXEXTENSIONS"
+></A
+>unix extensions(G)</DT
+><DD
+><P
+>This boolean parameter controls whether Samba 
+		implments the CIFS UNIX extensions, as defined by HP. These
+		extensions enable CIFS to server UNIX clients to UNIX servers
+		better, and allow such things as symbolic links, hard links etc.
+		These extensions require a similarly enabled client, and are of
+		no current use to Windows clients.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>unix extensions = no</B
+></P
+></DD
+><DT
+><A
 NAME="UNIXPASSWORDSYNC"
 ></A
 >unix password sync (G)</DT
@@ -19193,7 +19224,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6054"
+NAME="AEN6065"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19223,7 +19254,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6060"
+NAME="AEN6071"
 ></A
 ><H2
 >VERSION</H2
@@ -19234,7 +19265,7 @@ NAME="AEN6060"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6063"
+NAME="AEN6074"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19313,7 +19344,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6083"
+NAME="AEN6094"
 ></A
 ><H2
 >AUTHOR</H2
