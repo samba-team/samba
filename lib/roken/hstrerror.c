@@ -11,20 +11,26 @@
 
 static
 const
-char *const msg[] = {
-  "No error",
-  "Authoritative Answer Host not found",
-  "Non-Authoritive Host not found, or SERVERFAIL",
-  "Non recoverable errors, FORMERR, REFUSED, NOTIMP",
-  "Valid name, no data record of requested type"
+char *const h_errlist[] = {
+  "Resolver Error 0 (no error)",
+  "Unknown host",		/* 1 HOST_NOT_FOUND */
+  "Host name lookup failure",	/* 2 TRY_AGAIN */
+  "Unknown server error",	/* 3 NO_RECOVERY */
+  "No address associated with name", /* 4 NO_ADDRESS */
 };
 
+static
 const
-char *hstrerror(int herr)
+int h_nerr = { sizeof h_errlist / sizeof h_errlist[0] };
+
+const
+char *
+hstrerror(int herr)
 {
-  if (herr >= 0 && herr <= 4)
-    return msg[herr];
-  return "Error number out of range (hstrerror)";
+  if (0 <= herr && herr < h_nerr)
+    return h_errlist[herr];
+  else
+    return "Error number out of range (hstrerror)";
 }
 
 #endif
