@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,13 +35,35 @@
 
 RCSID("$Id$");
 
+static void
+str2data (krb5_data *d,
+	  const char *fmt,
+	  ...) __attribute__ ((format (printf, 2, 3)));
+
+static void
+str2data (krb5_data *d,
+	  const char *fmt,
+	  ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    d->length = vasprintf ((char **)&d->data, fmt, args);
+    va_end(args);
+}
+
+/*
+ * Change password protocol defined by draft-....-04.txt
+ */
+
 static krb5_error_code
-send_request (krb5_context context,
-	      krb5_auth_context *auth_context,
-	      krb5_creds *creds,
-	      int sock,
-	      char *passwd,
-	      const char *host)
+chgpw_send_request (krb5_context context,
+		    krb5_auth_context *auth_context,
+		    krb5_creds *creds,
+		    krb5_principal targprinc,
+		    int sock,
+		    char *passwd,
+		    const char *host)
 {
     krb5_error_code ret;
     krb5_data ap_req_data;
@@ -52,6 +74,10 @@ send_request (krb5_context context,
     u_char *p;
     struct iovec iov[3];
     struct msghdr msghdr;
+
+    if (targprinc &&
+	krb5_principal_compare(context, creds->client, targprinc) != TRUE)
+	return KRB5_KPASSWD_MALFORMED;
 
     krb5_data_zero (&ap_req_data);
 
@@ -114,31 +140,14 @@ out2:
     return ret;
 }
 
-static void
-str2data (krb5_data *d,
-	  const char *fmt,
-	  ...) __attribute__ ((format (printf, 2, 3)));
-
-static void
-str2data (krb5_data *d,
-	  const char *fmt,
-	  ...)
-{
-    va_list args;
-
-    va_start(args, fmt);
-    d->length = vasprintf ((char **)&d->data, fmt, args);
-    va_end(args);
-}
-
 static krb5_error_code
-process_reply (krb5_context context,
-	       krb5_auth_context auth_context,
-	       int sock,
-	       int *result_code,
-	       krb5_data *result_code_string,
-	       krb5_data *result_string,
-	       const char *host)
+chgpw_process_reply (krb5_context context,
+		     krb5_auth_context auth_context,
+		     int sock,
+		     int *result_code,
+		     krb5_data *result_code_string,
+		     krb5_data *result_string,
+		     const char *host)
 {
     krb5_error_code ret;
     u_char reply[BUFSIZ];
@@ -238,18 +247,312 @@ process_reply (krb5_context context,
 }
 
 /*
+ * Set password protocol as defined by RFC3244 --
+ * Microsoft Windows 2000 Kerberos Change Password and Set Password Protocols
+ */
+
+static krb5_error_code
+setpw_send_request (krb5_context context,
+		    krb5_auth_context *auth_context,
+		    krb5_creds *creds,
+		    krb5_principal targprinc,
+		    int sock,
+		    char *passwd,
+		    const char *host)
+{
+    krb5_error_code ret;
+    krb5_data ap_req_data;
+    krb5_data krb_priv_data;
+    krb5_data pwd_data;
+    ChangePasswdDataMS chpw;
+    size_t len;
+    u_char header[6];
+    u_char *p;
+    struct iovec iov[3];
+    struct msghdr msghdr;
+
+    krb5_data_zero (&ap_req_data);
+
+    ret = krb5_mk_req_extended (context,
+				auth_context,
+				AP_OPTS_MUTUAL_REQUIRED | AP_OPTS_USE_SUBKEY,
+				NULL, /* in_data */
+				creds,
+				&ap_req_data);
+    if (ret)
+	return ret;
+
+    chpw.newpasswd.length = strlen(passwd);
+    chpw.newpasswd.data = passwd;
+    if (targprinc) {
+	chpw.targname = &targprinc->name;
+	chpw.targrealm = &targprinc->realm;
+    } else {
+	chpw.targname = NULL;
+	chpw.targrealm = NULL;
+    }
+	
+    ASN1_MALLOC_ENCODE(ChangePasswdDataMS, pwd_data.data, pwd_data.length,
+		       &chpw, &len, ret);
+    if (ret)
+	return ret;
+
+    if(pwd_data.length != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+
+    ret = krb5_mk_priv (context,
+			*auth_context,
+			&pwd_data,
+			&krb_priv_data,
+			NULL);
+    if (ret)
+	goto out2;
+
+    len = 6 + ap_req_data.length + krb_priv_data.length;
+    p = header;
+    *p++ = (len >> 8) & 0xFF;
+    *p++ = (len >> 0) & 0xFF;
+    *p++ = 0xff;
+    *p++ = 0x80;
+    *p++ = (ap_req_data.length >> 8) & 0xFF;
+    *p++ = (ap_req_data.length >> 0) & 0xFF;
+
+    memset(&msghdr, 0, sizeof(msghdr));
+    msghdr.msg_name       = NULL;
+    msghdr.msg_namelen    = 0;
+    msghdr.msg_iov        = iov;
+    msghdr.msg_iovlen     = sizeof(iov)/sizeof(*iov);
+#if 0
+    msghdr.msg_control    = NULL;
+    msghdr.msg_controllen = 0;
+#endif
+
+    iov[0].iov_base    = (void*)header;
+    iov[0].iov_len     = 6;
+    iov[1].iov_base    = ap_req_data.data;
+    iov[1].iov_len     = ap_req_data.length;
+    iov[2].iov_base    = krb_priv_data.data;
+    iov[2].iov_len     = krb_priv_data.length;
+
+    if (sendmsg (sock, &msghdr, 0) < 0) {
+	ret = errno;
+	krb5_set_error_string(context, "sendmsg %s: %s", host, strerror(ret));
+    }
+
+    krb5_data_free (&krb_priv_data);
+out2:
+    krb5_data_free (&ap_req_data);
+    krb5_data_free (&pwd_data);
+    return ret;
+}
+
+static krb5_error_code
+setpw_process_reply (krb5_context context,
+		     krb5_auth_context auth_context,
+		     int sock,
+		     int *result_code,
+		     krb5_data *result_code_string,
+		     krb5_data *result_string,
+		     const char *host)
+{
+    krb5_error_code ret;
+    u_char reply[BUFSIZ];
+    size_t len;
+    u_int16_t pkt_len, pkt_ver;
+    krb5_data ap_rep_data;
+    int save_errno;
+
+    ret = recvfrom (sock, reply, sizeof(reply), 0, NULL, NULL);
+    if (ret < 0) {
+	save_errno = errno;
+	krb5_set_error_string(context, "recvfrom %s: %s",
+			      host, strerror(save_errno));
+	return save_errno;
+    }
+
+    len = ret;
+
+    if (len < 6) {
+	krb5_set_error_string(context, "server %s sent to short message "
+			      "(%d bytes)", host, len);
+	return KRB5_KPASSWD_MALFORMED;
+    }
+
+    pkt_len = (reply[0] << 8) | (reply[1]);
+    pkt_ver = (reply[2] << 8) | (reply[3]);
+
+    if ((pkt_len != len) || (reply[1] == 0x7e || reply[1] == 0x5e)) {
+	KRB_ERROR error;
+	size_t size;
+	u_char *p;
+
+	memset(&error, 0, sizeof(error));
+
+	ret = decode_KRB_ERROR(reply, len, &error, &size);
+	if (ret)
+	    return ret;
+
+	if (error.e_data->length < 2) {
+	    krb5_set_error_string(context, "server %s sent too short "
+				  "e_data to print anything usable", host);
+	    free_KRB_ERROR(&error);
+	    return KRB5_KPASSWD_MALFORMED;
+	}
+
+	p = error.e_data->data;
+	*result_code = (p[0] << 8) | p[1];
+	if (error.e_data->length == 2)
+	    str2data(result_string, "server only sent error code");
+	else 
+	    krb5_data_copy (result_string,
+			    p + 2,
+			    error.e_data->length - 2);
+	free_KRB_ERROR(&error);
+	return 0;
+    }
+
+    if (pkt_len != len) {
+	str2data (result_string, "client: wrong len in reply");
+	*result_code = KRB5_KPASSWD_MALFORMED;
+	return 0;
+    }
+    if (pkt_ver != KRB5_KPASSWD_VERS_SETPW &&
+	pkt_ver != KRB5_KPASSWD_VERS_CHANGEPW) {
+	str2data (result_string,
+		  "client: wrong version number (%d)", pkt_ver);
+	*result_code = KRB5_KPASSWD_MALFORMED;
+	return 0;
+    }
+
+    ap_rep_data.data = reply + 6;
+    ap_rep_data.length  = (reply[4] << 8) | (reply[5]);
+  
+    if (reply + len < (u_char *)ap_rep_data.data + ap_rep_data.length) {
+	str2data (result_string, "client: wrong AP len in reply");
+	*result_code = KRB5_KPASSWD_MALFORMED;
+	return 0;
+    }
+
+    if (ap_rep_data.length) {
+	krb5_ap_rep_enc_part *ap_rep;
+	krb5_data priv_data;
+	u_char *p;
+
+	ret = krb5_rd_rep (context,
+			   auth_context,
+			   &ap_rep_data,
+			   &ap_rep);
+	if (ret)
+	    return ret;
+
+	krb5_free_ap_rep_enc_part (context, ap_rep);
+
+	priv_data.data   = (u_char*)ap_rep_data.data + ap_rep_data.length;
+	priv_data.length = len - ap_rep_data.length - 6;
+
+	ret = krb5_rd_priv (context,
+			    auth_context,
+			    &priv_data,
+			    result_code_string,
+			    NULL);
+	if (ret) {
+	    krb5_data_free (result_code_string);
+	    return ret;
+	}
+
+	if (result_code_string->length < 2) {
+	    *result_code = KRB5_KPASSWD_MALFORMED;
+	    str2data (result_string,
+		      "client: bad length in result");
+	    return 0;
+	}
+
+        p = result_code_string->data;
+      
+        *result_code = (p[0] << 8) | p[1];
+        krb5_data_copy (result_string,
+                        (unsigned char*)result_code_string->data + 2,
+                        result_code_string->length - 2);
+        return 0;
+    } else {
+	KRB_ERROR error;
+	size_t size;
+	u_char *p;
+      
+	ret = decode_KRB_ERROR(reply + 6, len - 6, &error, &size);
+	if (ret) {
+	    return ret;
+	}
+	if (error.e_data->length < 2) {
+	    krb5_warnx (context, "too short e_data to print anything usable");
+	    return 1;		/* XXX */
+	}
+
+	p = error.e_data->data;
+	*result_code = (p[0] << 8) | p[1];
+	krb5_data_copy (result_string,
+			p + 2,
+			error.e_data->length - 2);
+	return 0;
+    }
+}
+
+
+/*
  * change the password using the credentials in `creds' (for the
  * principal indicated in them) to `newpw', storing the result of
  * the operation in `result_*' and an error code or 0.
  */
 
-krb5_error_code
-krb5_change_password (krb5_context	context,
+typedef krb5_error_code (*kpwd_send_request) (krb5_context,
+					      krb5_auth_context *,
+					      krb5_creds *,
+					      krb5_principal,
+					      int,
+					      char *,
+					      const char *);
+typedef krb5_error_code (*kpwd_process_reply) (krb5_context,
+					       krb5_auth_context,
+					       int,
+					       int *,
+					       krb5_data *,
+					       krb5_data *,
+					       const char *);
+
+struct kpwd_proc {
+    const char *name;
+    kpwd_send_request send_req;
+    kpwd_process_reply process_rep;
+} procs[] = {
+    { "MS set password", setpw_send_request, setpw_process_reply },
+    { "change password", chgpw_send_request, chgpw_process_reply },
+    { NULL }
+};
+
+static struct kpwd_proc *
+find_chpw_proto(const char *name)
+{
+    struct kpwd_proc *p;
+    for (p = procs; p->name != NULL; p++) {
+	if (strcmp(p->name, name) == 0)
+	    return p;
+    }
+    return NULL;
+}
+
+/*
+ *
+ */
+
+static krb5_error_code
+change_password_loop (krb5_context	context,
 		      krb5_creds	*creds,
+		      krb5_principal	targprinc,
 		      char		*newpw,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
-		      krb5_data		*result_string)
+		      krb5_data		*result_string,
+		      struct kpwd_proc	*proc)
 {
     krb5_error_code ret;
     krb5_auth_context auth_context = NULL;
@@ -304,12 +607,14 @@ krb5_change_password (krb5_context	context,
 
 		if (!replied) {
 		    replied = 0;
-		    ret = send_request (context,
-					&auth_context,
-					creds,
-					sock,
-					newpw,
-					hi->hostname);
+		    
+		    ret = (*proc->send_req) (context,
+					     &auth_context,
+					     creds,
+					     targprinc,
+					     sock,
+					     newpw,
+					     hi->hostname);
 		    if (ret) {
 			close(sock);
 			goto out;
@@ -334,13 +639,13 @@ krb5_change_password (krb5_context	context,
 		    goto out;
 		}
 		if (ret == 1) {
-		    ret = process_reply (context,
-					 auth_context,
-					 sock,
-					 result_code,
-					 result_code_string,
-					 result_string,
-					 hi->hostname);
+		    ret = (*proc->process_rep) (context,
+						auth_context,
+						sock,
+						result_code,
+						result_code_string,
+						result_string,
+						hi->hostname);
 		    if (ret == 0)
 			done = 1;
 		    else if (i > 0 && ret == KRB5KRB_AP_ERR_MUT_FAIL)
@@ -367,6 +672,107 @@ krb5_change_password (krb5_context	context,
     }
 }
 
+
+/*
+ * change the password using the credentials in `creds' (for the
+ * principal indicated in them) to `newpw', storing the result of
+ * the operation in `result_*' and an error code or 0.
+ */
+
+krb5_error_code
+krb5_change_password (krb5_context	context,
+		      krb5_creds	*creds,
+		      char		*newpw,
+		      int		*result_code,
+		      krb5_data		*result_code_string,
+		      krb5_data		*result_string)
+{
+    struct kpwd_proc *p = find_chpw_proto("change password");
+
+    *result_code = KRB5_KPASSWD_MALFORMED;
+    result_code_string->data = result_string->data = NULL;
+    result_code_string->length = result_string->length = 0;
+
+    if (p == NULL)
+	return KRB5_KPASSWD_MALFORMED;
+
+    return change_password_loop(context, creds, NULL, newpw, 
+				result_code, result_code_string, 
+				result_string, p);
+}
+
+/*
+ *
+ */
+
+krb5_error_code
+krb5_set_password (krb5_context	 context,
+		   krb5_ccache	 ccache,
+		   char		*newpw,
+		   krb5_principal targprinc,
+		   int		*result_code,
+		   krb5_data	*result_code_string,
+		   krb5_data	*result_string)
+{
+    krb5_creds creds, *credsp;
+    krb5_error_code ret;
+    krb5_principal principal = NULL;
+    int i;
+
+    *result_code = KRB5_KPASSWD_MALFORMED;
+    result_code_string->data = result_string->data = NULL;
+    result_code_string->length = result_string->length = 0;
+
+    memset(&creds, 0, sizeof(creds));
+
+    if (targprinc == NULL) {
+	ret = krb5_cc_get_principal(context, ccache, &principal);
+	if (ret)
+	    return ret;
+    } else
+	principal = targprinc;
+
+
+    ret = krb5_make_principal(context, &creds.server, 
+			      *krb5_princ_realm(context, principal),
+			      "kadmin", "changepw", NULL);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_get_principal(context, ccache, &creds.client);
+    if (ret) {
+        krb5_free_principal(context, creds.server);
+	goto out;
+    }
+
+    ret = krb5_get_credentials(context, 0, ccache, &creds, &credsp);
+    krb5_free_principal(context, creds.server);
+    krb5_free_principal(context, creds.client);
+    if (ret)
+	goto out;
+
+    for (i = 0; procs[i].name != NULL; i++) {
+	*result_code = 0;
+	ret = change_password_loop(context, credsp, targprinc, newpw, 
+				   result_code, result_code_string, 
+				   result_string, 
+				   &procs[i]);
+	if (ret == 0 && *result_code == 0)
+	    break;
+    }
+    krb5_free_creds(context, credsp); 
+
+    return ret;
+ out:
+    if (targprinc == NULL)
+	krb5_free_principal(context, principal);
+    return ret;
+}
+
+/*
+ *
+ */
+
 const char *
 krb5_passwd_result_to_string (krb5_context context,
 			      int result)
@@ -376,10 +782,13 @@ krb5_passwd_result_to_string (krb5_context context,
 	"Malformed",
 	"Hard error",
 	"Auth error",
-	"Soft error" 
+	"Soft error" ,
+	"Access denied",
+	"Bad version",
+	"Initial flag needed"
     };
 
-    if (result < 0 || result > KRB5_KPASSWD_SOFTERROR)
+    if (result < 0 || result > KRB5_KPASSWD_INITIAL_FLAG_NEEDED)
 	return "unknown result code";
     else
 	return strings[result];
