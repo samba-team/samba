@@ -48,6 +48,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
 	va_end(ap);
+	fflush(stdout);
 }
 
 static void compare_db(void)
@@ -188,39 +189,34 @@ static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void *state
 
 static void merge_test()
 {
-    int klen, dlen;
-    int i;
+	int klen, dlen;
+	int i;
 	char keys[5][2];
-    TDB_DATA key, data;
-
+	TDB_DATA key, data;
+	
 	for (i = 0; i < 5; i++) {
 		sprintf(keys[i], "%d", i);
-	    key.dptr = keys[i];
-	    key.dsize = 2;
-
-        data.dptr = "test";
-        data.dsize = 4;
-
-        if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
-            fatal("tdb_store failed");
-        }
+		key.dptr = keys[i];
+		key.dsize = 2;
+		
+		data.dptr = "test";
+		data.dsize = 4;
+		
+		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
+			fatal("tdb_store failed");
+		}
 	}
 
 	key.dptr = keys[0];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[4];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[2];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[1];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[3];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 }
 	
 int main(int argc, char *argv[])

@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -37,7 +38,7 @@
 
 /* a tdb tool for manipulating a tdb database */
 
-#define FSTRING_LEN 128
+#define FSTRING_LEN 256
 typedef char fstring[FSTRING_LEN];
 
 typedef struct connections_key {
@@ -65,6 +66,13 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 static void print_asc(unsigned char *buf,int len)
 {
 	int i;
+
+	/* We're probably printing ASCII strings so don't try to display
+	   the trailing NULL character. */
+
+	if (buf[len - 1] == 0)
+	        len--;
+
 	for (i=0;i<len;i++)
 		printf("%c",isprint(buf[i])?buf[i]:'.');
 }
@@ -246,7 +254,10 @@ static void show_tdb(void)
 	key.dsize = strlen(k)+1;
 
 	dbuf = tdb_fetch(tdb, key);
-	if (!dbuf.dptr) terror("fetch failed");
+	if (!dbuf.dptr) {
+		terror("fetch failed");
+		return;
+	}
 	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
 	print_rec(tdb, key, dbuf, NULL);
 }
@@ -299,11 +310,18 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 	return 0;
 #else
 	printf("\nkey %d bytes\n", key.dsize);
-	print_data(key.dptr, key.dsize);
+	print_asc(key.dptr, key.dsize);
 	printf("data %d bytes\n", dbuf.dsize);
 	print_data(dbuf.dptr, dbuf.dsize);
 	return 0;
 #endif
+}
+
+static int print_key(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+{
+	print_asc(key.dptr, key.dsize);
+	printf("\n");
+	return 0;
 }
 
 static int total_bytes;
@@ -445,6 +463,9 @@ int main(int argc, char *argv[])
         } else if ((strcmp(tok, "n") == 0) ||
                    (strcmp(tok, "next") == 0)) {
             next_record(tdb, &iterate_kbuf);
+        } else if ((strcmp(tok, "keys") == 0)) {
+                bIterate = 0;
+                tdb_traverse(tdb, print_key, NULL);
         } else {
             help();
         }

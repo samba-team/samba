@@ -1,4 +1,4 @@
-/* 
+ /* 
    Unix SMB/Netbios implementation.
    Version 3.0
    Samba database functions
@@ -1380,6 +1380,13 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
+	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL);
+}
+
+TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
+			 int open_flags, mode_t mode,
+			 tdb_log_func log_fn)
+{
 	TDB_CONTEXT tdb, *ret, *i;
 	struct stat st;
 	int rev = 0, locked;
@@ -1391,6 +1398,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.lockedkeys = NULL;
 	tdb.flags = tdb_flags;
 	tdb.open_flags = open_flags;
+	tdb.log_fn = log_fn;
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		errno = EINVAL;

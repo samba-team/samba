@@ -24,7 +24,10 @@
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
-/* lock a chain by string */
+/****************************************************************************
+ Lock a chain by string.
+****************************************************************************/
+
 int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval)
 {
 	TDB_DATA key;
@@ -35,7 +38,10 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval)
 	return tdb_chainlock(tdb, key);
 }
 
-/* unlock a chain by string */
+/****************************************************************************
+ Unlock a chain by string.
+****************************************************************************/
+
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 {
 	TDB_DATA key;
@@ -46,7 +52,10 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 	tdb_chainunlock(tdb, key);
 }
 
-/* fetch a value by a arbitrary blob key, return -1 if not found */
+/****************************************************************************
+ Fetch a value by a arbitrary blob key, return -1 if not found.
+****************************************************************************/
+
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 {
 	TDB_DATA key, data;
@@ -55,20 +64,27 @@ int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 	key.dptr = keyval;
 	key.dsize = len;
 	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(int)) return -1;
+	if (!data.dptr || data.dsize != sizeof(int))
+		return -1;
 	
 	memcpy(&ret, data.dptr, sizeof(int));
 	free(data.dptr);
 	return ret;
 }
 
-/* fetch a value by string key, return -1 if not found */
+/****************************************************************************
+ Fetch a value by string key, return -1 if not found.
+****************************************************************************/
+
 int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr)
 {
 	return tdb_fetch_int_byblob(tdb, keystr, strlen(keystr) + 1);
 }
 
-/* store a value by an arbitary blob key, return 0 on success, -1 on failure */
+/****************************************************************************
+ Store a value by an arbitary blob key, return 0 on success, -1 on failure.
+****************************************************************************/
+
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v)
 {
 	TDB_DATA key, data;
@@ -81,14 +97,20 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v)
 	return tdb_store(tdb, key, data, TDB_REPLACE);
 }
 
-/* store a value by string key, return 0 on success, -1 on failure */
+/****************************************************************************
+ Store a value by string key, return 0 on success, -1 on failure.
+****************************************************************************/
+
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v)
 {
 	return tdb_store_int_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
 
-/* Store a buffer by a null terminated string key.  Return 0 on success, -1
-   on failure */
+/****************************************************************************
+ Store a buffer by a null terminated string key.  Return 0 on success, -1
+ on failure.
+****************************************************************************/
+
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len)
 {
     TDB_DATA key, data;
@@ -102,8 +124,10 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len)
     return tdb_store(tdb, key, data, TDB_REPLACE);
 }
 
-/* Fetch a buffer using a null terminated string key.  Don't forget to call
-   free() on the result dptr. */
+/****************************************************************************
+ Fetch a buffer using a null terminated string key.  Don't forget to call
+ free() on the result dptr.
+****************************************************************************/
 
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 {
@@ -115,7 +139,9 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
     return tdb_fetch(tdb, key);
 }
 
-/* Atomic integer change. Returns old value. To create, set initial value in *oldval. */
+/****************************************************************************
+ Atomic integer change. Returns old value. To create, set initial value in *oldval. 
+****************************************************************************/
 
 int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val)
 {
@@ -147,8 +173,11 @@ int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int chang
 	return ret;
 }
 
-/* useful pair of routines for packing/unpacking data consisting of
-   integers and strings */
+/****************************************************************************
+ Useful pair of routines for packing/unpacking data consisting of
+ integers and strings.
+****************************************************************************/
+
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 {
 	va_list ap;
@@ -170,40 +199,35 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 		case 'w':
 			len = 2;
 			w = (uint16)va_arg(ap, int);
-			if (bufsize >= len) {
+			if (bufsize >= len)
 				SSVAL(buf, 0, w);
-			}
 			break;
 		case 'd':
 			len = 4;
 			d = va_arg(ap, uint32);
-			if (bufsize >= len) {
+			if (bufsize >= len)
 				SIVAL(buf, 0, d);
-			}
 			break;
 		case 'p':
 			len = 4;
 			p = va_arg(ap, void *);
 			d = p?1:0;
-			if (bufsize >= len) {
+			if (bufsize >= len)
 				SIVAL(buf, 0, d);
-			}
 			break;
 		case 'P':
 			s = va_arg(ap,char *);
 			w = strlen(s);
 			len = w + 1;
-			if (bufsize >= len) {
+			if (bufsize >= len)
 				memcpy(buf, s, len);
-			}
 			break;
 		case 'f':
 			s = va_arg(ap,char *);
 			w = strlen(s);
 			len = w + 1;
-			if (bufsize >= len) {
+			if (bufsize >= len)
 				memcpy(buf, s, len);
-			}
 			break;
 		case 'B':
 			i = va_arg(ap, int);
@@ -233,10 +257,10 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 	return PTR_DIFF(buf, buf0);
 }
 
-
-
-/* useful pair of routines for packing/unpacking data consisting of
-   integers and strings */
+/****************************************************************************
+ Useful pair of routines for packing/unpacking data consisting of
+ integers and strings.
+****************************************************************************/
 
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 {
@@ -259,47 +283,55 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 		case 'w':
 			len = 2;
 			w = va_arg(ap, uint16 *);
-			if (bufsize < len) goto no_space;
+			if (bufsize < len)
+				goto no_space;
 			*w = SVAL(buf, 0);
 			break;
 		case 'd':
 			len = 4;
 			d = va_arg(ap, uint32 *);
-			if (bufsize < len) goto no_space;
+			if (bufsize < len)
+				goto no_space;
 			*d = IVAL(buf, 0);
 			break;
 		case 'p':
 			len = 4;
 			p = va_arg(ap, void **);
-			if (bufsize < len) goto no_space;
+			if (bufsize < len)
+				goto no_space;
 			*p = (void *)IVAL(buf, 0);
 			break;
 		case 'P':
 			s = va_arg(ap,char *);
 			len = strlen(buf) + 1;
-			if (bufsize < len || len > sizeof(pstring)) goto no_space;
+			if (bufsize < len || len > sizeof(pstring))
+				goto no_space;
 			memcpy(s, buf, len);
 			break;
 		case 'f':
 			s = va_arg(ap,char *);
 			len = strlen(buf) + 1;
-			if (bufsize < len || len > sizeof(fstring)) goto no_space;
+			if (bufsize < len || len > sizeof(fstring))
+				goto no_space;
 			memcpy(s, buf, len);
 			break;
 		case 'B':
 			i = va_arg(ap, int *);
 			b = va_arg(ap, char **);
 			len = 4;
-			if (bufsize < len) goto no_space;
+			if (bufsize < len)
+				goto no_space;
 			*i = IVAL(buf, 0);
 			if (! *i) {
 				*b = NULL;
 				break;
 			}
 			len += *i;
-			if (bufsize < len) goto no_space;
+			if (bufsize < len)
+				goto no_space;
 			*b = (char *)malloc(*i);
-			if (! *b) goto no_space;
+			if (! *b)
+				goto no_space;
 			memcpy(*b, buf+4, *i);
 			break;
 		default:
@@ -326,8 +358,9 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 }
 
 /****************************************************************************
-log tdb messages via DEBUG()
+ Log tdb messages via DEBUG().
 ****************************************************************************/
+
 static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 {
 	va_list ap;
@@ -337,16 +370,18 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	vasprintf(&ptr, format, ap);
 	va_end(ap);
 	
-	if (!ptr || !*ptr) return;
+	if (!ptr || !*ptr)
+		return;
 
 	DEBUG(level, ("tdb(%s): %s", tdb->name, ptr));
 	free(ptr);
 }
 
+/****************************************************************************
+ Like tdb_open() but also setup a logging function that redirects to
+ the samba DEBUG() system.
+****************************************************************************/
 
-
-/* like tdb_open() but also setup a logging function that redirects to
-   the samba DEBUG() system */
 TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
@@ -357,7 +392,8 @@ TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
 
 	tdb = tdb_open(name, hash_size, tdb_flags, 
 				    open_flags, mode);
-	if (!tdb) return NULL;
+	if (!tdb)
+		return NULL;
 
 	tdb_logging_function(tdb, tdb_log);
 
