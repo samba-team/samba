@@ -735,17 +735,17 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
     
     /* dir_drive */
     /* must support set, unset and change */
-    if( (pdb_get_dirdrive(sampass) && 
+    if( (pdb_get_dir_drive(sampass) && 
 	 !ENTRY_VAL(old, NPF_DIR_DRIVE)) ||
 	(ENTRY_VAL(old, NPF_DIR_DRIVE) && 
-	 !pdb_get_dirdrive(sampass)) ||
+	 !pdb_get_dir_drive(sampass)) ||
 	(ENTRY_VAL(old, NPF_DIR_DRIVE) && 
-	 pdb_get_dirdrive(sampass) &&
+	 pdb_get_dir_drive(sampass) &&
 	 strcmp( ENTRY_VAL(old, NPF_DIR_DRIVE),
-		 pdb_get_dirdrive(sampass)))) {
+		 pdb_get_dir_drive(sampass)))) {
       need_to_modify = True;
-      set_single_attribute(obj, NPF_DIR_DRIVE, pdb_get_dirdrive(sampass),
-			   strlen(pdb_get_dirdrive(sampass)), EN_MODIFIED);
+      set_single_attribute(obj, NPF_DIR_DRIVE, pdb_get_dir_drive(sampass),
+			   strlen(pdb_get_dir_drive(sampass)), EN_MODIFIED);
     }
     
     /* logon_script */
@@ -860,7 +860,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
     set_single_attribute(obj, NPF_HOME_DIR,
 			 homedir, strlen(homedir), 0);
     
-    if(!(dirdrive = pdb_get_dirdrive(sampass)))
+    if(!(dirdrive = pdb_get_dir_drive(sampass)))
        dirdrive = empty;
        
     set_single_attribute(obj, NPF_DIR_DRIVE,

@@ -708,7 +708,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    pdb_get_username(sampw),
 				    pdb_get_fullname(sampw),
 				    pdb_get_homedir(sampw),
-				    pdb_get_dirdrive(sampw),
+				    pdb_get_dir_drive(sampw),
 				    pdb_get_logon_script(sampw),
 				    pdb_get_profile_path(sampw),
 				    pdb_get_logon_time(sampw),
