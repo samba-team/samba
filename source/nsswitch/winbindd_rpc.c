@@ -681,6 +681,168 @@ done:
         return result;
 }
 
+#ifdef HAVE_LDAP
+
+#include <ldap.h>
+
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
+static LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
+{
+	LDAP *ldp = NULL;
+
+	/* Setup timeout */
+	gotalarm = 0;
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	alarm(to);
+	/* End setup timeout. */
+
+	ldp = ldap_open(server, port);
+
+	/* Teardown timeout. */
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	alarm(0);
+
+	return ldp;
+}
+
+static int get_ldap_seq(const char *server, uint32 *seq)
+{
+	int ret = -1;
+	struct timeval to;
+	char *attrs[] = {"highestCommittedUSN", NULL};
+	LDAPMessage *res = NULL;
+	char **values = NULL;
+	LDAP *ldp = NULL;
+
+	*seq = DOM_SEQUENCE_NONE;
+
+	/*
+	 * 10 second timeout on open. This is needed as the search timeout
+	 * doesn't seem to apply to doing an open as well. JRA.
+	 */
+
+	if ((ldp = ldap_open_with_timeout(server, LDAP_PORT, 10)) == NULL)
+		return -1;
+
+#if 0
+	/* As per tridge comment this doesn't seem to be needed. JRA */
+	if ((err = ldap_simple_bind_s(ldp, NULL, NULL)) != 0)
+		goto done;
+#endif
+
+	/* Timeout if no response within 20 seconds. */
+	to.tv_sec = 10;
+	to.tv_usec = 0;
+
+	if (ldap_search_st(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)", &attrs[0], 0, &to, &res))
+		goto done;
+
+	if (ldap_count_entries(ldp, res) != 1)
+		goto done;
+
+	values = ldap_get_values(ldp, res, "highestCommittedUSN");
+	if (!values || !values[0])
+		goto done;
+
+	*seq = atoi(values[0]);
+	ret = 0;
+
+  done:
+
+	if (values)
+		ldap_value_free(values);
+	if (res)
+		ldap_msgfree(res);
+	if (ldp)
+		ldap_unbind(ldp);
+	return ret;
+}
+
+/**********************************************************************
+ Get the sequence number for a Windows AD native mode domain using
+ LDAP queries
+**********************************************************************/
+
+int get_ldap_sequence_number( const char* domain, uint32 *seq)
+{
+	int ret = -1;
+	int i;
+	struct in_addr *ip_list = NULL;
+	int count;
+	BOOL list_ordered;
+	
+	if ( !get_dc_list( domain, &ip_list, &count, &list_ordered ) ) {
+		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+		return False;
+	}
+
+	if ( !list_ordered )
+	{
+		/* 
+		 * Pick a nice close server. Look for DC on local net 
+		 * (assuming we don't have a list of preferred DC's)
+		 */
+
+		for (i = 0; i < count; i++) {
+			if (is_zero_ip(ip_list[i]))
+				continue;
+
+			if ( !is_local_net(ip_list[i]) )
+				continue;
+		
+			if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
+				goto done;
+		
+			zero_ip(&ip_list[i]);
+		}
+	
+
+		/*
+		 * Secondly try and contact a random PDC/BDC.
+		 */
+
+		i = (sys_random() % count);
+
+		if ( !is_zero_ip(ip_list[i]) ) {
+			if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
+				goto done;
+		}
+		zero_ip(&ip_list[i]); /* Tried and failed. */
+	}
+
+	/* Finally return first DC that we can contact */
+
+	for (i = 0; i < count; i++) {
+		if (is_zero_ip(ip_list[i]))
+			continue;
+
+		if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
+			goto done;
+	}
+
+done:
+	if ( ret == 0 ) {
+		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence number for Domain (%s) from DC (%s)\n", 
+			domain, inet_ntoa(ip_list[i])));
+	}
+
+	SAFE_FREE(ip_list);
+
+	return ret;
+}
+
+#endif /* HAVE_LDAP */
+
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
@@ -704,6 +866,22 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	retry = 0;
 	do {
+#ifdef HAVE_LDAP
+		if ( domain->native_mode ) 
+		{
+			DEBUG(8,("using get_ldap_seq() to retrieve the sequence number\n"));
+
+			if ( get_ldap_sequence_number( domain->name, seq ) == 0 ) {			
+				result = NT_STATUS_OK;
+				DEBUG(10,("domain_sequence_number: LDAP for domain %s is %u\n",
+					domain->name, *seq));
+				goto done;
+			}
+
+			DEBUG(10,("domain_sequence_number: failed to get LDAP sequence number for domain %s\n",
+			domain->name ));
+		}
+#endif /* HAVE_LDAP */
 	        /* Get sam handle */
 		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
 			goto done;

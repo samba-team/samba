@@ -75,7 +75,9 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 	*num_gr_mem = 0;
 	
-	if ((group_name_type!=SID_NAME_DOM_GRP) && (group_name_type!=SID_NAME_ALIAS)) {
+	if ( !((group_name_type==SID_NAME_DOM_GRP) ||
+		((group_name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	{
 		DEBUG(1, ("SID %s in domain %s isn't a domain group (%d)\n", 
 			  sid_to_string(sid_string, group_sid), domain->name, 
 			  group_name_type));
@@ -228,7 +230,9 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if ((name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_DOM_GRP)) {
+	if ( !((name_type==SID_NAME_DOM_GRP) ||
+		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	{
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  name_group, name_type));
 		return WINBINDD_ERROR;
@@ -292,8 +296,9 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (!((name_type == SID_NAME_ALIAS) || 
-	      (name_type == SID_NAME_DOM_GRP))) {
+	if ( !((name_type==SID_NAME_DOM_GRP) ||
+		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	{
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  group_name, name_type));
 		return WINBINDD_ERROR;
@@ -451,10 +456,10 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	
 	ent->num_sam_entries = num_entries;
 	
-	/* get the domain local groups if we are a member of a native win2k domain */
+	/* get the domain local groups if we are a member of a native win2k domain
+	   and are not using LDAP to get the groups */
 	   
-	if ( domain->native_mode 
-		&& domain->methods->enum_local_groups 
+	if ( lp_security != SEC_ADS && domain->native_mode 
 		&& strequal(lp_workgroup(), domain->name) )
 	{
 		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
@@ -891,8 +896,9 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			/* Check it is a domain group or an alias (domain local group) 
 			   in a win2k native mode domain. */
 			
-			if ( !(sid_type == SID_NAME_DOM_GRP || sid_type == SID_NAME_ALIAS) ) {
-
+			if ( !((sid_type==SID_NAME_DOM_GRP) ||
+				((sid_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+			{
 				DEBUG(10, ("winbindd_getgroups: sid type %d "
 					   "for %s is not a domain group\n",
 					   sid_type,
