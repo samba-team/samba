@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
  smb_ucs2_t wchar_list_sep[] = { (smb_ucs2_t)' ', (smb_ucs2_t)'\t', (smb_ucs2_t)',',
 								(smb_ucs2_t)';', (smb_ucs2_t)':', (smb_ucs2_t)'\n',
 								(smb_ucs2_t)'\r', 0 };
@@ -201,11 +199,10 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(MAXUNI-3, str->uni_str_len);
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
+	for (p = lbuf; (p - lbuf < MAXUNI-3) && (src - str->buffer < str->uni_str_len) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -223,26 +220,24 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 
 /*******************************************************************
  Put an ASCII string into a UNICODE array (uint16's).
+ use little-endian ucs2
  ********************************************************************/
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 {
-        uint16 *destend = dest + maxlen;
-        register char c;
+	uint16 *destend = dest + maxlen;
+	char c;
 
-        while (dest < destend)
-        {
-                c = *(src++);
-                if (c == 0)
-                {
-                        break;
-                }
+	while (dest < destend) {
+		c = *(src++);
+		if (c == 0)
+			break;
 
-                *(dest++) = (uint16)c;
-        }
+		SSVAL(dest, 0, c);
+		dest++;
+	}
 
-        *dest = 0;
+	*dest = 0;
 }
-
 
 /*******************************************************************
  Pull an ASCII string out of a UNICODE array (uint16's).
@@ -250,23 +245,20 @@ void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 
 void unistr_to_ascii(char *dest, const uint16 *src, int len)
 {
-        char *destend = dest + len;
-        register uint16 c;
+	char *destend = dest + len;
+	uint16 c;
 	
-	if (src == NULL)
-	{
+	if (src == NULL) {
 		*dest = '\0';
 		return;
 	}
 
 	/* normal code path for a valid 'src' */
-	while (dest < destend)
-	{
-		c = *(src++);
+	while (dest < destend) {
+		c = SVAL(src, 0);
+		src++;
 		if (c == 0)
-		{
 			break;
-		}
 
 		*(dest++) = (char)c;
 	}
@@ -276,7 +268,7 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 }
 
 /*******************************************************************
- Convert a UNISTR2 structure to an ASCII string
+ Convert a (little-endian) UNISTR2 structure to an ASCII string
  Warning: this version does DOS codepage.
 ********************************************************************/
 
@@ -292,21 +284,21 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	}
 
 	src = str->buffer;
-	len = MIN(str->uni_str_len, maxlen);
 
+	len = MIN(str->uni_str_len, maxlen);
 	if (len == 0) {
 		*dest='\0';
 		return;
 	}
 
-	for (p = dest; (p-dest < len) && *src; src++) {
+	for (p = dest; (p-dest < maxlen-3) && (src - str->buffer < str->uni_str_len) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
 		else {
-			*p   = (cp_val >> 8) & 0xff;
+			*p++ = (cp_val >> 8) & 0xff;
 			*p++ = (cp_val & 0xff);
 		}
 	}
@@ -336,11 +328,10 @@ char *dos_buffer2_to_str(BUFFER2 *str)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-3, str->buf_len/2);
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
+	for (p = lbuf; (p - lbuf < sizeof(str->buffer)-3) && (src - str->buffer < str->buf_len/2) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -365,11 +356,10 @@ char *dos_buffer2_to_multistr(BUFFER2 *str)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-3, str->buf_len/2);
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; p-lbuf < max_size; src++) {
+	for (p = lbuf; (p - lbuf < sizeof(str->buffer)-3) && (src - str->buffer < str->buf_len/2); src++) {
 		if (*src == 0) {
 			*p++ = ' ';
 		} else {
@@ -418,13 +408,6 @@ size_t dos_struni2(char *dst, const char *src, size_t max_len)
 				val = ((val << 8) | (src[1] & 0xff));
 
 			SSVAL(dst,0,doscp_to_ucs2[val]);
-
-			/* If the second byte of this unicode char is 
-			   non-zero, then this is probably a i18n bug */
-
-			if (*(dst+1) != 0)
-				DEBUG(0, ("dos_unistr2(): high byte set, probable unicode bug!\n"));
-
 			if (skip)
 				src += skip;
 			else
@@ -485,8 +468,6 @@ int unistrcpy(char *dst, char *src)
 	return num_wchars;
 }
 
-
-
 /*******************************************************************
  Free any existing maps.
 ********************************************************************/
@@ -508,7 +489,6 @@ static void free_maps(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 		*pp_ucs2_to_cp = NULL;
 	}
 }
-
 
 /*******************************************************************
  Build a default (null) codepage to unicode map.
@@ -859,7 +839,7 @@ size_t strlen_w(const smb_ucs2_t *src)
 {
   size_t len;
 
-  for(len = 0; *src; len++)
+  for(len = 0; *src++; len++)
     ;
 
   return len;
@@ -1598,9 +1578,10 @@ BOOL str_is_all_w(const smb_ucs2_t *s,smb_ucs2_t c)
  maxlength is in ucs2 units.
 ********************************************************************/
 
-smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength)
+smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const smb_ucs2_t *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
+	smb_ucs2_t nullstr_w = (smb_ucs2_t)0;
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy_w\n"));
@@ -1616,9 +1597,12 @@ smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxle
 	if (len >= maxlength)
 		len = maxlength - 1;
 
+	if (!other_safe_chars)
+		other_safe_chars = &nullstr_w;
+
 	for(i = 0; i < len; i++) {
 		smb_ucs2_t val = src[i];
-		if(isupper_w(val) ||islower_w(val) || isdigit_w(val))
+		if(isupper_w(val) ||islower_w(val) || isdigit_w(val) || strchr_w(other_safe_chars, val))
 			dest[i] = src[i];
 		else
 			dest[i] = (smb_ucs2_t)'_';
@@ -1964,9 +1948,9 @@ smb_ucs2_t *octal_string_w(int i)
 	char ret[64];
 
 	if (i == -1)
-		slprintf(ret, sizeof(ret), "-1");
+		slprintf(ret, sizeof(ret)-1, "-1");
 	else 
-		slprintf(ret, sizeof(ret), "0%o", i);
+		slprintf(ret, sizeof(ret)-1, "0%o", i);
 	return unix_to_unicode(wret, ret, sizeof(wret));
 }
 
