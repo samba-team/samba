@@ -118,7 +118,7 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 	}
 
 	/* If connected, get list of jobs */
-	status = dcerpc_pipe_connect(&sam_pipe, (char *)gtk_rpc_binding_dialog_get_binding(d, DCERPC_SAMR_NAME), DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, lp_workgroup(), (char *)gtk_rpc_binding_dialog_get_username(d), (char *)gtk_rpc_binding_dialog_get_password(d));
+	status = dcerpc_pipe_connect(&sam_pipe, gtk_rpc_binding_dialog_get_binding(d, DCERPC_SAMR_NAME), DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, lp_workgroup(), gtk_rpc_binding_dialog_get_username(d), gtk_rpc_binding_dialog_get_password(d));
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
 		sam_pipe = NULL;
@@ -208,9 +208,8 @@ on_about_activate                     (GtkMenuItem     *menuitem,
 GtkWidget*
 create_mainwindow (void)
 {
-	GtkWidget *mainwin;
 	GtkWidget *vbox1;
-	GtkWidget *connect;
+	GtkWidget *mnu_connect;
 	GtkWidget *menubar;
 	GtkWidget *menuitem1;
 	GtkWidget *menuitem1_menu;
@@ -260,9 +259,9 @@ create_mainwindow (void)
 	menuitem1_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem1), menuitem1_menu);
 
-	connect = gtk_menu_item_new_with_mnemonic ("_Connect");
-	gtk_widget_show (connect);
-	gtk_container_add (GTK_CONTAINER (menuitem1_menu), connect);
+	mnu_connect = gtk_menu_item_new_with_mnemonic ("_Connect");
+	gtk_widget_show (mnu_connect);
+	gtk_container_add (GTK_CONTAINER (menuitem1_menu), mnu_connect);
 
 	seldomain = gtk_menu_item_new_with_mnemonic("_Select Domain");
 	gtk_widget_show(seldomain);
@@ -374,7 +373,7 @@ create_mainwindow (void)
 	g_signal_connect ((gpointer) seldomain, "activate",
 					  G_CALLBACK (on_select_domain_activate),
 					  NULL);
-	g_signal_connect ((gpointer) connect, "activate",
+	g_signal_connect ((gpointer) mnu_connect, "activate",
 					  G_CALLBACK (on_connect_activate),
 					  NULL);
 	g_signal_connect ((gpointer) quit, "activate",

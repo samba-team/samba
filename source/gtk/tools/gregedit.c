@@ -83,7 +83,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(mainwin, error);
 }
 
-static void registry_load_root() 
+static void registry_load_root(void) 
 {
 	struct registry_key *root;
 	GtkTreeIter iter, tmpiter;
@@ -316,6 +316,7 @@ static GtkWidget* create_mainwin (void)
 	GtkWidget *menu_file;
 	GtkWidget *menu_file_menu;
 	GtkWidget *open_nt4;
+	GtkWidget *open_ldb;
 	GtkWidget *open_w95;
 	GtkWidget *open_gconf;
 	GtkWidget *open_remote;
@@ -367,7 +368,7 @@ static GtkWidget* create_mainwin (void)
 
 		g_signal_connect ((gpointer) open_nt4, "activate",
 						  G_CALLBACK (on_open_file_activate),
-						  "nt4");
+						  (gconstpointer)"nt4");
 	}
 
 	if(reg_has_backend("w95")) {
@@ -377,7 +378,7 @@ static GtkWidget* create_mainwin (void)
 
 		g_signal_connect ((gpointer) open_w95, "activate",
 						  G_CALLBACK (on_open_file_activate),
-						  "w95");
+						  (gconstpointer)"w95");
 	}
 
 	if(reg_has_backend("gconf")) {
@@ -398,6 +399,16 @@ static GtkWidget* create_mainwin (void)
 		g_signal_connect ((gpointer) open_remote, "activate",
 						  G_CALLBACK (on_open_remote_activate),
 						  NULL);
+	}
+
+	if(reg_has_backend("ldb")) {
+		open_ldb = gtk_image_menu_item_new_with_mnemonic("Open _LDB file");
+		gtk_widget_show (open_ldb);
+		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_ldb);
+
+		g_signal_connect ((gpointer) open_ldb, "activate",
+						  G_CALLBACK (on_open_file_activate),
+						  (gconstpointer)"ldb");
 	}
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);

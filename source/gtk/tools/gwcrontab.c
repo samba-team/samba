@@ -97,7 +97,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 	}
 
 	/* If connected, get list of jobs */
-	status = dcerpc_pipe_connect(&at_pipe, (char *)gtk_rpc_binding_dialog_get_binding(d, DCERPC_ATSVC_NAME), DCERPC_ATSVC_UUID, DCERPC_ATSVC_VERSION, lp_workgroup(), (char *)gtk_rpc_binding_dialog_get_username(d), (char *)gtk_rpc_binding_dialog_get_password(d));
+	status = dcerpc_pipe_connect(&at_pipe, gtk_rpc_binding_dialog_get_binding(d, DCERPC_ATSVC_NAME), DCERPC_ATSVC_UUID, DCERPC_ATSVC_VERSION, lp_workgroup(), gtk_rpc_binding_dialog_get_username(d), gtk_rpc_binding_dialog_get_password(d));
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
 		at_pipe = NULL;
@@ -213,7 +213,7 @@ create_mainwindow (void)
 	GtkWidget *menubar;
 	GtkWidget *menuitem4;
 	GtkWidget *menuitem4_menu;
-	GtkWidget *connect;
+	GtkWidget *mnu_connect;
 	GtkWidget *separatormenuitem1;
 	GtkWidget *quit;
 	GtkWidget *task;
@@ -249,9 +249,11 @@ create_mainwindow (void)
 	menuitem4_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem4), menuitem4_menu);
 
-	connect = gtk_menu_item_new_with_mnemonic ("_Connect");
-	gtk_widget_show (connect);
-	gtk_container_add (GTK_CONTAINER (menuitem4_menu), connect);
+	mnu_connect = gtk_menu_item_new_with_mnemonic ("_Connect");
+	gtk_widget_show (mnu_connect);
+	gtk_container_add (GTK_CONTAINER (menuitem4_menu), mnu_connect);
+	g_signal_connect ((gpointer) mnu_connect, "activate",
+	  G_CALLBACK (on_connect_activate), NULL);
 
 	separatormenuitem1 = gtk_separator_menu_item_new ();
 	gtk_widget_show (separatormenuitem1);
@@ -343,21 +345,15 @@ create_mainwindow (void)
 	gtk_widget_show (statusbar);
 	gtk_box_pack_start (GTK_BOX (vbox), statusbar, FALSE, FALSE, 0);
 
-	g_signal_connect ((gpointer) connect, "activate",
-					  G_CALLBACK (on_connect_activate),
-					  NULL);
+
 	g_signal_connect ((gpointer) quit, "activate",
-					  G_CALLBACK (on_quit_activate),
-					  NULL);
+	  G_CALLBACK (on_quit_activate), NULL);
 	g_signal_connect ((gpointer) new, "activate",
-					  G_CALLBACK (on_new_activate),
-					  NULL);
+	  G_CALLBACK (on_new_activate), NULL);
 	g_signal_connect ((gpointer) delete, "activate",
-					  G_CALLBACK (on_delete_activate),
-					  NULL);
+	  G_CALLBACK (on_delete_activate), NULL);
 	g_signal_connect ((gpointer) about, "activate",
-					  G_CALLBACK (on_about_activate),
-					  NULL);
+	  G_CALLBACK (on_about_activate), NULL);
 
 	gtk_window_add_accel_group (GTK_WINDOW (mainwindow), accel_group);
 	gtk_widget_set_sensitive(tasks, FALSE);
