@@ -639,23 +639,11 @@ static void api_lsa_close( rpcsrv_struct *p, prs_struct *data,
 	LSA_R_CLOSE r_c;
 	LSA_Q_CLOSE q_c;
 
-	lsa_io_q_close("", &q_c, data, 0);
-
+	ZERO_STRUCT(q_c);
 	ZERO_STRUCT(r_c);
 
-	r_c.status = 0x0;
-
-	/* find the connection policy handle. */
-	if (r_c.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_c.pol)) == -1))
-	{
-		r_c.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	if (r_c.status == 0x0)
-	{
-		close_policy_hnd(get_global_hnd_cache(), &(q_c.pol));
-	}
-
-	/* store the response in the SMB stream */
+	lsa_io_q_close("", &q_c, data, 0);
+	r_c.status = _lsa_close(&q_c.pol);
 	lsa_io_r_close("", &r_c, rdata, 0);
 }
 
@@ -682,15 +670,15 @@ static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
  ***************************************************************************/
 static struct api_struct api_lsa_cmds[] =
 {
-	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2   },
-	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy    },
-	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info     },
-	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom },
-	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close          },
-	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret    },
-	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids    },
-	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names   },
-	{ NULL                  , 0                   , NULL                   }
+	{ "LSA_OPENPOLICY2"    , LSA_OPENPOLICY2    , api_lsa_open_policy2   },
+	{ "LSA_OPENPOLICY"     , LSA_OPENPOLICY     , api_lsa_open_policy    },
+	{ "LSA_QUERYINFOPOLICY", LSA_QUERYINFOPOLICY, api_lsa_query_info     },
+	{ "LSA_ENUMTRUSTDOM"   , LSA_ENUMTRUSTDOM   , api_lsa_enum_trust_dom },
+	{ "LSA_CLOSE"          , LSA_CLOSE          , api_lsa_close          },
+	{ "LSA_OPENSECRET"     , LSA_OPENSECRET     , api_lsa_open_secret    },
+	{ "LSA_LOOKUPSIDS"     , LSA_LOOKUPSIDS     , api_lsa_lookup_sids    },
+	{ "LSA_LOOKUPNAMES"    , LSA_LOOKUPNAMES    , api_lsa_lookup_names   },
+	{ NULL                 , 0                  , NULL                   }
 };
 
 /***************************************************************************

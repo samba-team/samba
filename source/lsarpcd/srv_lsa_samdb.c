@@ -503,9 +503,9 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 }
 
 /***************************************************************************
-api_lsa_open_policy
+_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
+static void _lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL2 q_o;
@@ -522,9 +522,9 @@ static void api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
-api_lsa_open_policy
+_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
+static void _lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL q_o;
@@ -541,9 +541,9 @@ static void api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
-api_lsa_enum_trust_dom
+_lsa_enum_trust_dom
  ***************************************************************************/
-static void api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
+static void _lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	LSA_Q_ENUM_TRUST_DOM q_e;
@@ -558,9 +558,9 @@ static void api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
-api_lsa_query_info
+_lsa_query_info
  ***************************************************************************/
-static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
+static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
                                 prs_struct *rdata )
 {
 	LSA_Q_QUERY_INFO q_i;
@@ -601,9 +601,9 @@ static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
-api_lsa_lookup_sids
+_lsa_lookup_sids
  ***************************************************************************/
-static void api_lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
+static void _lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
                                  prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_SIDS q_l;
@@ -617,9 +617,9 @@ static void api_lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
-api_lsa_lookup_names
+_lsa_lookup_names
  ***************************************************************************/
-static void api_lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
+static void _lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_NAMES q_l;
@@ -634,38 +634,24 @@ static void api_lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
- api_lsa_close
+_lsa_close
  ***************************************************************************/
-static void api_lsa_close( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata)
+uint32 _lsa_close(POLICY_HND *hnd)
 {
-	LSA_R_CLOSE r_c;
-	LSA_Q_CLOSE q_c;
-
-	lsa_io_q_close("", &q_c, data, 0);
-
-	ZERO_STRUCT(r_c);
-
-	r_c.status = 0x0;
-
 	/* find the connection policy handle. */
-	if (r_c.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_c.pol)) == -1))
+	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
 	{
-		r_c.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
-	if (r_c.status == 0x0)
-	{
-		close_policy_hnd(get_global_hnd_cache(), &(q_c.pol));
-	}
+	close_policy_hnd(get_global_hnd_cache(), hnd);
 
-	/* store the response in the SMB stream */
-	lsa_io_r_close("", &r_c, rdata, 0);
+	return 0x0;
 }
 
 /***************************************************************************
- api_lsa_open_secret
+ _lsa_open_secret
  ***************************************************************************/
-static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
+static void _lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_R_OPEN_SECRET r_o;
@@ -678,28 +664,4 @@ static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
 
 	/* store the response in the SMB stream */
 	lsa_io_r_open_secret("", &r_o, rdata, 0);
-}
-
-/***************************************************************************
- \PIPE\ntlsa commands
- ***************************************************************************/
-static struct api_struct api_lsa_cmds[] =
-{
-	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2   },
-	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy    },
-	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info     },
-	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom },
-	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close          },
-	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret    },
-	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids    },
-	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names   },
-	{ NULL                  , 0                   , NULL                   }
-};
-
-/***************************************************************************
- api_ntLsarpcTNP
- ***************************************************************************/
-BOOL api_ntlsa_rpc(rpcsrv_struct *p)
-{
-	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds);
 }

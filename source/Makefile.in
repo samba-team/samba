@@ -298,6 +298,7 @@ SVCCTLD_OBJ1 = svcctld/svcctld.o \
 
 LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
 		lsarpcd/srv_lsa.o \
+		lsarpcd/srv_lsa_samdb.o \
 		rpc_server/srv_lookup.o \
 		passdb/smbpassfile.o
 
