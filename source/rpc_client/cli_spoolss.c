@@ -767,6 +767,9 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 	case 3:
 		decode_printer_driver_3(mem_ctx, r.buffer, 1, &ctr->info3);
 		break;
+	default:
+		DEBUG(10, ("cli_spoolss_getprinterdriver: unknown info level %d", level));
+		return WERR_UNKNOWN_LEVEL;
 	}
 
  done:
