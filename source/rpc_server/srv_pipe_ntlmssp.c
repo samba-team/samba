@@ -26,17 +26,17 @@
 
 extern int DEBUGLEVEL;
 
-static void NTLMSSPcalc_p( ntlmssp_auth_struct *a, unsigned char *data, int len)
+static void NTLMSSPcalc_p( ntlmssp_auth_struct *a, uchar *data, int len)
 {
-	unsigned char *hash = a->ntlmssp_hash;
-	unsigned char index_i = hash[256];
-	unsigned char index_j = hash[257];
+	uchar *hash = a->ntlmssp_hash;
+	uchar index_i = hash[256];
+	uchar index_j = hash[257];
 	int ind;
 
 	for( ind = 0; ind < len; ind++)
 	{
-		unsigned char tc;
-		unsigned char t;
+		uchar tc;
+		uchar t;
 
 		index_i++;
 		index_j += hash[index_i];
@@ -203,7 +203,6 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 				RPC_AUTH_NTLMSSP_RESP *ntlmssp_resp)
 {
 	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *)l->auth_info;
-	uchar password[16];
 	uchar lm_owf[24];
 	uchar nt_owf[128];
 	size_t lm_owf_len;
@@ -222,7 +221,6 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	BOOL guest = False;
 
 	ZERO_STRUCT(info3);
-	memset(password, 0, sizeof(password));
 
 	DEBUG(5,("api_ntlmssp_verify: checking user details\n"));
 
@@ -325,37 +323,48 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 		/************************************************************/
 
 		uchar p24[24];
+		uchar j = 0;
+		int ind;
+		uchar password[16];
+		uchar k2[16];
+		int len;
+
+		ZERO_STRUCT(password);
+		memcpy(password, info3.padding, 8);
+
 		NTLMSSPOWFencrypt(password, lm_owf, p24);
+
+		if (True)
 		{
-			unsigned char j = 0;
-			int ind;
-
-			unsigned char k2[8];
-
+			len = 8;
 			memcpy(k2, p24, 5);
 			k2[5] = 0xe5;
 			k2[6] = 0x38;
 			k2[7] = 0xb0;
-
-			for (ind = 0; ind < 256; ind++)
-			{
-				a->ntlmssp_hash[ind] = (unsigned char)ind;
-			}
-
-			for( ind = 0; ind < 256; ind++)
-			{
-				unsigned char tc;
-
-				j += (a->ntlmssp_hash[ind] + k2[ind%8]);
-
-				tc = a->ntlmssp_hash[ind];
-				a->ntlmssp_hash[ind] = a->ntlmssp_hash[j];
-				a->ntlmssp_hash[j] = tc;
-			}
-
-			a->ntlmssp_hash[256] = 0;
-			a->ntlmssp_hash[257] = 0;
 		}
+		else
+		{
+			len = 16;
+			memcpy(k2, p24, 16);
+		}
+
+		for (ind = 0; ind < 256; ind++)
+		{
+			a->ntlmssp_hash[ind] = (uchar)ind;
+		}
+
+		for (ind = 0; ind < 256; ind++)
+		{
+			uchar tc;
+
+			j += (a->ntlmssp_hash[ind] + k2[ind%len]);
+			tc = a->ntlmssp_hash[ind];
+			a->ntlmssp_hash[ind] = a->ntlmssp_hash[j];
+			a->ntlmssp_hash[j] = tc;
+		}
+
+		a->ntlmssp_hash[256] = 0;
+		a->ntlmssp_hash[257] = 0;
 		a->ntlmssp_seq_num = 0;
 	}
 	else

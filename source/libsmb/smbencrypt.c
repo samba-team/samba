@@ -388,7 +388,8 @@ void ntv2_owf_gen(const uchar owf[16],
 }
 
 /* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
-void NTLMSSPOWFencrypt(uchar pwrd[8], uchar * ntlmchalresp, uchar p24[24])
+void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
+				uchar p24[24])
 {
 	uchar p21[21];
 

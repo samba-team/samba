@@ -59,7 +59,7 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 	                           lm_newpass, lm_oldhash);
 
 	/* turn parameters into data stream */
-	if(!samr_io_q_chgpasswd_user("", &q_e, &data, 0) &&
+	if (samr_io_q_chgpasswd_user("", &q_e, &data, 0) &&
 	    rpc_con_pipe_req(con, SAMR_CHGPASSWD_USER, &data, &rdata))
 	{
 		SAMR_R_CHGPASSWD_USER r_e;

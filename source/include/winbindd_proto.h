@@ -152,21 +152,6 @@ void pidfile_create(char *name);
 
 char *rep_inet_ntoa(struct in_addr ip);
 
-/*The following definitions come from  lib/set_uid.c  */
-
-const vuser_key *get_sec_ctx(void);
-void init_uid(void);
-BOOL become_uid(uid_t uid);
-BOOL become_gid(gid_t gid);
-BOOL unbecome_to_initial_uid(void);
-BOOL become_id(uid_t uid,gid_t gid);
-BOOL become_unix_sec_ctx(const vuser_key *k, connection_struct *conn,
-				uid_t new_uid, gid_t new_gid,
-				int n_groups, gid_t* groups);
-BOOL become_guest(void);
-void become_root(BOOL save_dir) ;
-void unbecome_root(BOOL restore_dir);
-
 /*The following definitions come from  lib/set_vuid.c  */
 
 void init_vuid(void);
@@ -207,6 +192,12 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 /*The following definitions come from  lib/snprintf.c  */
 
+
+/*The following definitions come from  lib/stub_uid.c  */
+
+void become_root(BOOL save_dir);
+void unbecome_root(BOOL restore_dir);
+const vuser_key *get_sec_ctx(void);
 
 /*The following definitions come from  lib/surs.c  */
 
@@ -873,7 +864,8 @@ void SMBgenclientchals(char *lm_cli_chal,
 		       const char *srv, const char *dom);
 void ntv2_owf_gen(const uchar owf[16],
 		  const char *user_n, const char *domain_n, uchar kr_buf[16]);
-void NTLMSSPOWFencrypt(uchar pwrd[8], uchar * ntlmchalresp, uchar p24[24]);
+void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
+				uchar p24[24]);
 BOOL make_oem_passwd_hash(uchar data[516],
 			  const char *pwrd, int new_pw_len,
 			  const uchar old_pw_hash[16], BOOL unicode);

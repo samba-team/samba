@@ -1090,7 +1090,8 @@ void SMBgenclientchals(char *lm_cli_chal,
 		       const char *srv, const char *dom);
 void ntv2_owf_gen(const uchar owf[16],
 		  const char *user_n, const char *domain_n, uchar kr_buf[16]);
-void NTLMSSPOWFencrypt(uchar pwrd[8], uchar * ntlmchalresp, uchar p24[24]);
+void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
+				uchar p24[24]);
 BOOL make_oem_passwd_hash(uchar data[516],
 			  const char *pwrd, int new_pw_len,
 			  const uchar old_pw_hash[16], BOOL unicode);
