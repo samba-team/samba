@@ -7,13 +7,23 @@
     <para>This parameter is only applicable if <link 
     linkend="PRINTING"><parameter moreinfo="none">printing</parameter></link> is 
     set to <constant>cups</constant>.  Its value is a free form string of options
-    passed directly to the cups library.  Frequently this is used to enable
-    raw printing for a queue without enabling the feature system wide in 
-    <filename>cupsd.conf</filename>.  
+    passed directly to the cups library.  
     </para>
+
+   <para>You can pass any generic print option known to CUPS (as listed
+   in the CUPS "Software Users' Manual").  You can also pass any printer
+   specific option (as listed in "lpoptions -d <printername> -l")
+   valid for the target queue(s).</para>
+
+   <para>You should set this parameter to <constant>raw</constant> if your CUPS server 
+   <filename>error_log</filename> file contains messages such as
+   "Unsupported format 'application/octet-stream'" when printing from a Windows client 
+   through Samba.  It is no longer necessary to enable
+   system wide raw printing in <filename>/etc/cups/mime.{convs,types}</filename>.
+   </para>
 
 </description>
 
 <value type="default">""</value>
-<value type="example">"raw"</value>
+<value type="example">"raw,media=a4,job-sheets=secret,secret"</value>
 </samba:parameter>
