@@ -47,7 +47,7 @@ RCSID("$Id$");
 #endif
 
 static int
-change_passwd(struct passwd *who)
+change_passwd(const struct passwd *who)
 {
     int status;
     pid_t pid;
@@ -66,7 +66,7 @@ change_passwd(struct passwd *who)
 }
 
 void 
-check_shadow(struct passwd *pw, struct spwd *sp)
+check_shadow(const struct passwd *pw, struct spwd *sp)
 {
   long today;
 
