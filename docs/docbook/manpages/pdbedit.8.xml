@@ -20,7 +20,7 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>pdbedit</command>
-		<arg choice="opt">-l</arg>	
+		<arg choice="opt">-L</arg>	
 		<arg choice="opt">-v</arg>	
 		<arg choice="opt">-w</arg>	
 		<arg choice="opt">-u username</arg>	
@@ -34,7 +34,6 @@
 		<arg choice="opt">-x</arg>	
 		<arg choice="opt">-i passdb-backend</arg>	
 		<arg choice="opt">-e passdb-backend</arg>   
-		<arg choice="opt">-g</arg>   
 		<arg choice="opt">-b passdb-backend</arg>
 		<arg choice="opt">-g</arg>
 		<arg choice="opt">-d debuglevel</arg>
@@ -67,12 +66,12 @@
 	<title>OPTIONS</title>
 	<variablelist>
 		<varlistentry>
-		<term>-l</term>
+		<term>-L</term>
 		<listitem><para>This option lists all the user accounts
 		present in the users database.
 		This option prints a list of user/uid pairs separated by
 		the ':' character.</para>
-		<para>Example: <command>pdbedit -l</command></para>
+		<para>Example: <command>pdbedit -L</command></para>
 		<para><screen>
 sorce:500:Simo Sorce
 samba:45:Test User
@@ -152,8 +151,6 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX  
 		</listitem>
 		</varlistentry>
 		
-		
-		
 		<varlistentry>
 		<term>-h homedir</term>
 		<listitem><para>This option can be used while adding or
@@ -199,8 +196,40 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX  
 		</para>
 		</listitem>
 		</varlistentry>
-		
-		
+
+		<varlistentry>
+		<term>-G SID|rid</term>
+		<listitem><para>
+		This option can be used while adding or modifying a user account. It 
+		will specify the users' new primary group SID (Security Identifier) or 
+		rid. </para>
+
+		<para>Example: <command>-G S-1-5-21-2447931902-1787058256-3961074038-1201</command></para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-U SID|rid</term>
+		<listitem><para>
+		This option can be used while adding or modifying a user account. It 
+		will specify the users' new SID (Security Identifier) or 
+		rid. </para>
+
+		<para>Example: <command>-U S-1-5-21-2447931902-1787058256-3961074038-5004</command></para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-c account-control</term>
+		<listitem><para>This option can be used while adding or modifying a user
+		account. It will specify the users' account control property. Possible
+		flags that can be set are: N, D, H, L, X.				
+		</para>
+
+		<para>Example: <command>-c "[X          ]"</command></para>
+		</listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>-a</term>
 		<listitem><para>This option is used to add a user into the
@@ -216,8 +245,16 @@ retype new password
 		</listitem>
 		</varlistentry>
 		
-		
-		
+		<varlistentry>
+		<term>-r</term>
+		<listitem><para>This option is used to modify an existing user 
+		in the database. This command needs a user name specified with the -u 
+		switch. Other options can be specified to modify the properties of 
+		the specified user. This flag is kept for backwards compatibility, but 
+		it is no longer necessary to specify it.
+		</para></listitem>
+		</varlistentry>
+			
 		<varlistentry>
 		<term>-m</term>
 		<listitem><para>This option may only be used in conjunction 
@@ -281,18 +318,6 @@ retype new password
 		</varlistentry>
 
 		<varlistentry>
-		<term>-g</term>
-		<listitem><para>If you specify <parameter>-g</parameter>,
-		then <parameter>-i in-backend -e out-backend</parameter>
-		applies to the group mapping instead of the user database.</para>
-
-		<para>This option will ease migration from one passdb backend to
-		another and will ease backing up.</para>
-		
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>-b passdb-backend</term>
 		<listitem><para>Use a different default passdb backend. </para>
 
@@ -314,6 +339,7 @@ account policy value for bad lockout attempt is 0
 
 		</listitem>
 		</varlistentry>
+
 
 		<varlistentry>
 		<term>-C account-policy-value</term>
@@ -347,7 +373,7 @@ account policy value for bad lockout attempt is now 3
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 
@@ -365,14 +391,7 @@ account policy value for bad lockout attempt is now 3
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</para>
-	
-	<para>The original Samba man pages were written by Karl Auer. 
-	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
-	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
-	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
-	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</para>
+
 </refsect1>
 
 </refentry>
