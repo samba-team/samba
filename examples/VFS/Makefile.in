@@ -6,7 +6,7 @@ LDSHFLAGS	= -shared
 srcdir		= @builddir@
 FLAGS		=  $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  -I. $(CPPFLAGS) -I$(srcdir)
 
-VFS_OBJS	= audit.so recycle.so
+VFS_OBJS	= audit.so recycle.so netatalk.so
 
 # Default target
 
