@@ -2319,7 +2319,6 @@ if test x"$samba_cv_REALPATH_TAKES_NULL" = x"yes"; then
     AC_DEFINE(REALPATH_TAKES_NULL,1,[Whether the realpath function allows NULL])
 fi
 
-A
 #################################################
 # check for smbwrapper support
 AC_MSG_CHECKING(whether to use smbwrapper)
