@@ -1,6 +1,8 @@
 #ifndef __KAFS_H
 #define __KAFS_H
 
+#include <sys/bitypes.h>
+#include <sys/cdefs.h>
 /*
  */
 #define AFSCALL_PIOCTL 20
