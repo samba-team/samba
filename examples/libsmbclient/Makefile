@@ -11,7 +11,15 @@ CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
 
 LDFLAGS = -L/usr/local/samba/lib
 
-all: testsmbc tree testacl testbrowse teststat smbsh
+TESTS=	testsmbc \
+	tree \
+	testacl \
+	testbrowse \
+	teststat \
+	testchmod \
+	testutime
+
+all:	$(TESTS) smbsh
 
 testsmbc: testsmbc.o 
 	@echo Linking testsmbc
@@ -33,9 +41,17 @@ teststat: teststat.o
 	@echo Linking teststat
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
 
+testchmod: testchmod.o
+	@echo Linking testchmod
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
+
+testutime: testutime.o
+	@echo Linking testutime
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
+
 smbsh:
 	make -C smbwrapper
 
 clean:
-	@rm -f *.o *~ testsmbc tree testacl testbrowse teststat
+	@rm -f *.o *~ $(TESTS)
 	@make -C smbwrapper clean
