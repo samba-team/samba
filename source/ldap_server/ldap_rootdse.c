@@ -128,9 +128,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
 		int num_currentTime = 1;
 		DATA_BLOB *currentTime = talloc_array_p(mem_ctx, DATA_BLOB, num_currentTime);
 		char *str = ldap_timestring(mem_ctx, time(NULL));
-		if (!str) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		ALLOC_CHECK(str);
 		currentTime[0].data = str;
 		currentTime[0].length = strlen(str);
 		ATTR_SINGLE_NOVAL(mem_ctx, attrs, currentTime, num_currentTime, "currentTime");
@@ -307,7 +305,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
 	struct ldb_message **res;
-	int result = 0;
+	int result = LDAP_SUCCESS;
 	struct ldapsrv_reply *ent_r, *done_r;
 	struct	rootdse_db_context *rootdsedb;
 	const char *errstr = NULL;
@@ -340,9 +338,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 
 	if (count == 1) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
-		if (!ent_r) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		ALLOC_CHECK(ent_r);
 
 		ent = &ent_r->msg.r.SearchResultEntry;
 		ent->dn = "";
@@ -361,9 +357,9 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 			ent->attributes[j].num_values = res[0]->elements[j].num_values;
 			if (ent->attributes[j].num_values == 1 &&
 				strncmp(res[0]->elements[j].values[0].data, "_DYNAMIC_", 9) == 0) {
-				fill_dynamic_values(ent->attributes, &(ent->attributes[j]));
-				if (ent->attributes[j].values[0].data == NULL) {
-					DEBUG (10, ("ARRGHH!\n"));
+				status = fill_dynamic_values(ent->attributes, &(ent->attributes[j]));
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
 				}
 			} else {
 				ent->attributes[j].values = talloc_array_p(ent->attributes,
@@ -384,32 +380,30 @@ queue_reply:
 	}
 
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
-	if (!done_r) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ALLOC_CHECK(done_r);
 
 	if (count == 1) {
 		DEBUG(10,("rootdse_Search: results: [%d]\n",count));
-		result = 0;
+		result = LDAP_SUCCESS;
 		errstr = NULL;
-	} else if (count > 1) {
-		DEBUG(10,("rootdse_Search: too many results[%d]\n", count));
-		result = 80; /* nosuchobject */
-		errstr = talloc_strdup(done_r, "internal error");	
 	} else if (count == 0) {
 		DEBUG(10,("rootdse_Search: no results\n"));
-		result = 32; /* nosuchobject */
-		errstr = talloc_strdup(done_r, ldb_errstring(rootdsedb->ldb));
+		result = LDAP_NO_SUCH_OBJECT;
+		errstr = ldb_errstring(rootdsedb->ldb);
+	} else if (count > 1) {
+		DEBUG(10,("rootdse_Search: too many results[%d]\n", count));
+		result = LDAP_OTHER; 
+		errstr = "internal error";	
 	} else if (count == -1) {
 		DEBUG(10,("rootdse_Search: error\n"));
-		result = 1;
-		errstr = talloc_strdup(done_r, ldb_errstring(rootdsedb->ldb));
+		result = LDAP_OTHER;
+		errstr = ldb_errstring(rootdsedb->ldb);
 	}
 
 	done = &done_r->msg.r.SearchResultDone;
-	done->resultcode = result;
 	done->dn = NULL;
-	done->errormessage = NULL;
+	done->resultcode = result;
+	done->errormessage = (errstr?talloc_strdup(done_r,errstr):NULL);;
 	done->referral = NULL;
 
 	talloc_free(local_ctx);
