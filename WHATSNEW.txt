@@ -1,5 +1,38 @@
-                    WHATS NEW IN Samba 3 Trunk
-                  ==============================
+                 =============================
+                 Release Notes for Samba 3.1.0
+                           Sept 24, 2004
+                 =============================
 
-This file is NOT maintained but will be created from new when this
-branch is released.
+Welcome to the first release of the 3.1.0 development branch.  
+This is an unstable release series intended only for use by 
+testers and developers.  We make no claims as to whether it even 
+works.
+
+The purpose of the 3.1.x releases is similar to what we've used 
+the 'alpha' tag for in the past.  These are unstable, development 
+releases that may beat you up and take your lunch money.  We make 
+no guarantees. But the 3.1 tree will also has some new experimental 
+features that may entice you to take a look (we hope).
+
+Samba 3.1.0 will include changes to winbindd (for scalability), 
+code for implementing NT privileges, some proposed fixes to 
+the printing code's background queue update daemon, and others.
+
+So invariably, the question will arise what is the relationship 
+between Samba 3.1 and Samba 4?  The answer is that Samba 3.1 is 
+continuation of the Samba 3.x series in an effort to foster further 
+development.  Team members are still working on Samba 4 and we will 
+ship that once it is ready.
+
+Samba 3.1.x is just a platform for implementing newer features 
+that could potentially destabilize the 3.0.x tree (and delay 
+the necessary bug fix releases).  Once features stabilize in 
+Samba 3.1, they will be considered for back porting to the Samba 
+3.0 tree.  If 3.1.x gets a large number of new features that are 
+not suitable for back porting to 3.0, then we will create a stable 
+3.2 series of releases and start the process over again.
+
+Our code, Our Bugs, Our Responsibility.
+
+				Sincerely,
+				-- The Samba Team
