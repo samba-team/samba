@@ -786,8 +786,11 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 	if (attribute == NULL || *attribute == '\0')
 		return;
 
-	if (value == NULL || *value == '\0')
+#if 0
+	/* Why do we need this??? -- vl */
+       	if (value == NULL || *value == '\0')
 		return;
+#endif
 
 	if (mods == NULL) 
 	{
@@ -1987,6 +1990,495 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
+static const char *group_attr[] = {"gid", "ntSid", "ntGroupType",
+				   "gidNumber",
+				   "displayName", "description",
+				   NULL };
+				   
+static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
+				     const char *filter,
+				     LDAPMessage ** result)
+{
+	int scope = LDAP_SCOPE_SUBTREE;
+	int rc;
+
+	DEBUG(2, ("ldapsam_search_one_group: searching for:[%s]\n", filter));
+
+	rc = ldapsam_search(ldap_state, lp_ldap_suffix (), scope,
+			    filter, group_attr, 0, result);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0, ("ldapsam_search_one_group: "
+			  "Problem during the LDAP search: %s\n",
+			  ldap_err2string(rc)));
+		DEBUG(3, ("ldapsam_search_one_group: Query was: %s, %s\n",
+			  lp_ldap_suffix(), filter));
+	}
+
+	return rc;
+}
+
+static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
+				 GROUP_MAP *map, LDAPMessage *entry)
+{
+	pstring temp;
+
+	if (ldap_state == NULL || map == NULL || entry == NULL ||
+	    ldap_state->ldap_struct == NULL) {
+		DEBUG(0, ("init_group_from_ldap: NULL parameters found!\n"));
+		return False;
+	}
+
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "gidNumber",
+				  temp)) {
+		DEBUG(0, ("Mandatory attribute gidNumber not found\n"));
+		return False;
+	}
+	DEBUG(2, ("Entry found for group: %s\n", temp));
+
+	map->gid = (uint32)atol(temp);
+
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "ntSid",
+				  temp)) {
+		DEBUG(0, ("Mandatory attribute ntSid not found\n"));
+		return False;
+	}
+	string_to_sid(&map->sid, temp);
+
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "ntGroupType",
+				  temp)) {
+		DEBUG(0, ("Mandatory attribute ntGroupType not found\n"));
+		return False;
+	}
+	map->sid_name_use = (uint32)atol(temp);
+
+	if ((map->sid_name_use < SID_NAME_USER) ||
+	    (map->sid_name_use > SID_NAME_UNKNOWN)) {
+		DEBUG(0, ("Unknown Group type: %d\n", map->sid_name_use));
+		return False;
+	}
+
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "displayName",
+				  temp)) {
+		DEBUG(3, ("Attribute displayName not found\n"));
+		temp[0] = '\0';
+	}
+	fstrcpy(map->nt_name, temp);
+
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "description",
+				  temp)) {
+		DEBUG(3, ("Attribute description not found\n"));
+		temp[0] = '\0';
+	}
+	fstrcpy(map->comment, temp);
+
+	map->systemaccount = 0;
+	init_privilege(&map->priv_set);
+
+	return True;
+}
+
+static BOOL init_ldap_from_group(struct ldapsam_privates *ldap_state,
+				 LDAPMod ***mods, int ldap_op,
+				 const GROUP_MAP *map)
+{
+	pstring tmp;
+
+	if (mods == NULL || map == NULL) {
+		DEBUG(0, ("init_ldap_from_group: NULL parameters found!\n"));
+		return False;
+	}
+
+	*mods = NULL;
+
+	sid_to_string(tmp, &map->sid);
+	make_a_mod(mods, ldap_op, "ntSid", tmp);
+
+	snprintf(tmp, sizeof(tmp)-1, "%i", map->sid_name_use);
+	make_a_mod(mods, ldap_op, "ntGroupType", tmp);
+
+	make_a_mod(mods, ldap_op, "displayName", map->nt_name);
+	make_a_mod(mods, ldap_op, "description", map->comment);
+
+	return True;
+}
+
+static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
+				 const char *filter,
+				 GROUP_MAP *map)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAPMessage *result;
+	LDAPMessage *entry;
+	int count;
+
+	if (ldapsam_search_one_group(ldap_state, filter, &result)
+	    != LDAP_SUCCESS) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	count = ldap_count_entries(ldap_state->ldap_struct, result);
+
+	if (count < 1) {
+		DEBUG(4, ("Did not find group for filter %s\n", filter));
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	if (count > 1) {
+		DEBUG(1, ("Duplicate entries for filter %s: count=%d\n",
+			  filter, count));
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, result);
+
+	if (!entry) {
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!init_group_from_ldap(ldap_state, map, entry)) {
+		DEBUG(1, ("init_group_from_ldap failed for group filter %s\n",
+			  filter));
+		ldap_msgfree(result);
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	ldap_msgfree(result);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+				 DOM_SID sid, BOOL with_priv)
+{
+	pstring filter;
+
+	snprintf(filter, sizeof(filter)-1,
+		 "(&(objectClass=sambaGroupMapping)(ntSid=%s))",
+		 sid_string_static(&sid));
+
+	return ldapsam_getgroup(methods, filter, map);
+}
+
+static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+				 gid_t gid, BOOL with_priv)
+{
+	pstring filter;
+
+	snprintf(filter, sizeof(filter)-1,
+		 "(&(objectClass=sambaGroupMapping)(gidNumber=%d))",
+		 gid);
+
+	return ldapsam_getgroup(methods, filter, map);
+}
+
+static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+				 char *name, BOOL with_priv)
+{
+	pstring filter;
+
+	/* TODO: Escaping of name? */
+
+	snprintf(filter, sizeof(filter)-1,
+		 "(&(objectClass=sambaGroupMapping)(displayName=%s))",
+		 name);
+
+	return ldapsam_getgroup(methods, filter, map);
+}
+
+static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
+					   gid_t gid,
+					   LDAPMessage **result)
+{
+	pstring filter;
+
+	snprintf(filter, sizeof(filter)-1,
+		 "(&(objectClass=posixGroup)(gidNumber=%i))", gid);
+
+	return ldapsam_search_one_group(ldap_state, filter, result);
+}
+
+static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
+						GROUP_MAP *map)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAPMessage *result = NULL;
+	LDAPMod **mods = NULL;
+
+	char *tmp;
+	pstring dn;
+	LDAPMessage *entry;
+
+	GROUP_MAP dummy;
+
+	int rc;
+
+	if (NT_STATUS_IS_OK(ldapsam_getgrgid(methods, &dummy,
+					     map->gid, False))) {
+		DEBUG(0, ("Group %i already exists in LDAP\n", map->gid));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ldapsam_search_one_group_by_gid(ldap_state, map->gid, &result);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (ldap_count_entries(ldap_state->ldap_struct, result) != 1) {
+		DEBUG(2, ("Group %i must exist exactly once in LDAP\n",
+			  map->gid));
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, result);
+	tmp = ldap_get_dn(ldap_state->ldap_struct, entry);
+	pstrcpy(dn, tmp);
+	ldap_memfree(tmp);
+	ldap_msgfree(result);
+
+	if (!init_ldap_from_group(ldap_state, &mods, LDAP_MOD_ADD, map)) {
+		DEBUG(0, ("init_ldap_from_group failed!\n"));
+		ldap_mods_free(mods, 1);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (mods == NULL) {
+		DEBUG(0, ("mods is empty\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	make_a_mod(&mods, LDAP_MOD_ADD, "objectClass",
+		   "sambaGroupMapping");
+
+	rc = ldapsam_modify(ldap_state, dn, mods);
+	ldap_mods_free(mods, 1);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0, ("failed to modify group %i\n", map->gid));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(2, ("successfully modified group %i in LDAP\n", map->gid));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
+						   GROUP_MAP *map)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	int rc;
+	char *dn;
+	LDAPMessage *result;
+	LDAPMessage *entry;
+	LDAPMod **mods;
+
+	if (!init_ldap_from_group(ldap_state, &mods, LDAP_MOD_REPLACE, map)) {
+		DEBUG(0, ("init_ldap_from_group failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (mods == NULL) {
+		DEBUG(4, ("mods is empty: nothing to do\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ldapsam_search_one_group_by_gid(ldap_state, map->gid, &result);
+
+	if (rc != LDAP_SUCCESS) {
+		ldap_mods_free(mods, 1);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (ldap_count_entries(ldap_state->ldap_struct, result) == 0) {
+		DEBUG(0, ("No group to modify!\n"));
+		ldap_msgfree(result);
+		ldap_mods_free(mods, 1);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, result);
+	dn = ldap_get_dn(ldap_state->ldap_struct, entry);
+        ldap_msgfree(result);
+
+	rc = ldapsam_modify(ldap_state, dn, mods);
+
+	ldap_mods_free(mods, 1);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0, ("failed to modify group %i\n", map->gid));
+	}
+
+	DEBUG(2, ("successfully modified group %i in LDAP\n", map->gid));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
+						   DOM_SID sid)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	pstring sidstring, filter;
+	int rc;
+	char *dn;
+	LDAPMessage *result;
+	LDAPMessage *entry;
+	LDAPMod **mods;
+
+	sid_to_string(sidstring, &sid);
+	snprintf(filter, sizeof(filter)-1,
+		 "(&(objectClass=sambaGroupMapping)(ntSid=%s))", sidstring);
+
+	rc = ldapsam_search_one_group(ldap_state, filter, &result);
+
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (ldap_count_entries(ldap_state->ldap_struct, result) != 1) {
+		DEBUG(0, ("Group must exist exactly once\n"));
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, result);
+	dn = ldap_get_dn(ldap_state->ldap_struct, entry);
+        ldap_msgfree(result);
+
+	mods = NULL;
+	make_a_mod(&mods, LDAP_MOD_DELETE, "objectClass", "sambaGroupMapping");
+	make_a_mod(&mods, LDAP_MOD_DELETE, "ntSid", NULL);
+	make_a_mod(&mods, LDAP_MOD_DELETE, "ntGroupType", NULL);
+	make_a_mod(&mods, LDAP_MOD_DELETE, "description", NULL);
+	make_a_mod(&mods, LDAP_MOD_DELETE, "displayName", NULL);
+	
+	rc = ldapsam_modify(ldap_state, dn, mods);
+
+	ldap_mods_free(mods, 1);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0, ("failed to delete group %s\n", sidstring));
+	}
+
+	DEBUG(2, ("successfully delete group mapping %s in LDAP\n",
+		  sidstring));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
+				    BOOL update)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)my_methods->private_data;
+	const char *filter = "(objectClass=sambaGroupMapping)";
+	int rc;
+
+	rc = ldapsam_search(ldap_state, lp_ldap_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter,
+			    group_attr, 0, &ldap_state->result);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0, ("LDAP search failed: %s\n", ldap_err2string(rc)));
+		DEBUG(3, ("Query was: %s, %s\n", lp_ldap_suffix(), filter));
+		ldap_msgfree(ldap_state->result);
+		ldap_state->result = NULL;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base!\n",
+		  ldap_count_entries(ldap_state->ldap_struct,
+				     ldap_state->result)));
+
+	ldap_state->entry = ldap_first_entry(ldap_state->ldap_struct,
+				 ldap_state->result);
+	ldap_state->index = 0;
+
+	return NT_STATUS_OK;
+}
+
+static void ldapsam_endsamgrent(struct pdb_methods *my_methods)
+{
+	return ldapsam_endsampwent(my_methods);
+}
+
+static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
+				    GROUP_MAP *map)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	BOOL bret = False;
+
+	/* The rebind proc needs this *HACK*.  We are not multithreaded, so
+	   this will work, but it's not nice. */
+	static_ldap_state = ldap_state;
+
+	while (!bret) {
+		if (!ldap_state->entry)
+			return ret;
+		
+		ldap_state->index++;
+		bret = init_group_from_ldap(ldap_state, map, ldap_state->entry);
+		
+		ldap_state->entry = ldap_next_entry(ldap_state->ldap_struct,
+					    ldap_state->entry);	
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
+					   enum SID_NAME_USE sid_name_use,
+					   GROUP_MAP **rmap, int *num_entries,
+					   BOOL unix_only, BOOL with_priv)
+{
+	GROUP_MAP map;
+	GROUP_MAP *mapt;
+	int entries = 0;
+	NTSTATUS nt_status;
+
+	*num_entries = 0;
+	*rmap = NULL;
+
+	if (!NT_STATUS_IS_OK(ldapsam_setsamgrent(methods, False))) {
+		DEBUG(0, ("Unable to open passdb\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	while (NT_STATUS_IS_OK(nt_status = ldapsam_getsamgrent(methods, &map))) {
+		if (sid_name_use != SID_NAME_UNKNOWN &&
+		    sid_name_use != map.sid_name_use) {
+			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));
+			continue;
+		}
+		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1) {
+			DEBUG(11,("enum_group_mapping: group %s is non mapped\n", map.nt_name));
+			continue;
+		}
+
+		mapt=(GROUP_MAP *)Realloc((*rmap), (entries+1)*sizeof(GROUP_MAP));
+		if (!mapt) {
+			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
+			SAFE_FREE(*rmap);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		else
+			(*rmap) = mapt;
+
+		mapt[entries] = map;
+
+		entries += 1;
+
+	}
+	ldapsam_endsamgrent(methods);
+
+	*num_entries = entries;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
@@ -2006,6 +2498,14 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->add_sam_account = ldapsam_add_sam_account;
 	(*pdb_method)->update_sam_account = ldapsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = ldapsam_delete_sam_account;
+
+	(*pdb_method)->getgrsid = ldapsam_getgrsid;
+	(*pdb_method)->getgrgid = ldapsam_getgrgid;
+	(*pdb_method)->getgrnam = ldapsam_getgrnam;
+	(*pdb_method)->add_group_mapping_entry = ldapsam_add_group_mapping_entry;
+	(*pdb_method)->update_group_mapping_entry = ldapsam_update_group_mapping_entry;
+	(*pdb_method)->delete_group_mapping_entry = ldapsam_delete_group_mapping_entry;
+	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
 
 	/* TODO: Setup private data and free */
 
