@@ -57,7 +57,7 @@ uint_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas)
   put a ea_list into a pre-allocated buffer - buffer must be at least
   of size ea_list_size()
 */
-void ea_put_list(char *data, uint_t num_eas, struct ea_struct *eas)
+void ea_put_list(void *data, uint_t num_eas, struct ea_struct *eas)
 {
 	int i;
 	uint32_t ea_size;
@@ -83,7 +83,7 @@ void ea_put_list(char *data, uint_t num_eas, struct ea_struct *eas)
   put a chained ea_list into a pre-allocated buffer - buffer must be
   at least of size ea_list_size()
 */
-void ea_put_list_chained(char *data, uint_t num_eas, struct ea_struct *eas)
+void ea_put_list_chained(void *data, uint_t num_eas, struct ea_struct *eas)
 {
 	int i;
 
