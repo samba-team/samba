@@ -7,6 +7,6 @@ dnl
 AC_DEFUN(AC_KRB_PROG_YACC,
 [AC_CHECK_PROGS(YACC, byacc yacc 'bison -y')
 if test "$YACC" = ""; then
-  AC_MSG_WARNING([yacc not found - some stuff will not build])
+  AC_MSG_WARN([yacc not found - some stuff will not build])
 fi
 ])
