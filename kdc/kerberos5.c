@@ -61,7 +61,7 @@ as_rep(krb5_context context,
     const char *e_text = NULL;
     int i;
 
-    Key *ckey, *skey;
+    Key *ckey, *skey, *ekey;
 
     if(b->sname == NULL){
 	server_name = "<unknown server>";
@@ -162,12 +162,15 @@ as_rep(krb5_context context,
 		    goto out;
 		}
 
+		ekey = unseal_key(ckey);
+
 		ret = krb5_decrypt (context,
 				    enc_data.cipher.data,
 				    enc_data.cipher.length,
 				    enc_data.etype,
-				    &ckey->key,
+				    &ekey->key,
 				    &ts_data);
+		free_key(ekey);
 		free_EncryptedData(&enc_data);
 		if(ret){
 		    e_text = "Failed to decrypt PA-DATA";
@@ -391,12 +394,14 @@ as_rep(krb5_context context,
 	    goto out;
 	}
 	
+	ekey = unseal_key(skey);
 	krb5_encrypt_EncryptedData(context, 
 				   buf + sizeof(buf) - len,
 				   len,
 				   etype,
-				   &skey->key,
+				   &ekey->key,
 				   &rep.ticket.enc_part);
+	free_key(ekey);
 	
 	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
 				  &ek, &len);
@@ -405,12 +410,14 @@ as_rep(krb5_context context,
 	    kdc_log(0, "Failed to encode KDC-REP -- %s", client_name);
 	    goto out;
 	}
+	ekey = unseal_key(ckey);
 	krb5_encrypt_EncryptedData(context,
 				   buf + sizeof(buf) - len,
 				   len,
 				   etype,
-				   &ckey->key,
+				   &ekey->key,
 				   &rep.enc_part);
+	free_key(ekey);
 	if(ckey->salt){
 	    ALLOC(rep.padata);
 	    rep.padata->len = 1;
@@ -574,7 +581,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
     krb5_error_code ret;
     int i;
     krb5_enctype etype;
-    Key *skey;
+    Key *skey, *ekey;
     
     /* Find appropriate key */
     for(i = 0; i < b->etype.len; i++){
@@ -697,10 +704,12 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 		    krb5_get_err_text(context, ret));
 	    goto out;
 	}
+	ekey = unseal_key(skey);
 	krb5_encrypt_EncryptedData(context, buf + sizeof(buf) - len, len,
 				   etype,
-				   &skey->key,
+				   &ekey->key,
 				   &rep.ticket.enc_part);
+	free_key(ekey);
 		
 	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
 				   sizeof(buf), &ek, &len);
@@ -815,6 +824,7 @@ tgs_rep2(krb5_context context,
 
     hdb_entry *krbtgt;
     EncTicketPart *tgt;
+    Key *ekey;
 
     ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
     if(ret){
@@ -845,13 +855,15 @@ tgs_rep2(krb5_context context,
 	goto out;
     }
     
+    ekey = unseal_key(&krbtgt->keys.val[0]); /* XXX */
     ret = krb5_verify_ap_req(context,
 			     &ac,
 			     &ap_req,
 			     princ,
-			     &krbtgt->keys.val[0].key, /* XXX */
+			     &ekey->key,
 			     &ap_req_options,
 			     &ticket);
+    free_key(ekey);
 			     
     krb5_free_principal(context, princ);
     if(ret) {
