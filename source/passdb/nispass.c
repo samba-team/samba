@@ -382,6 +382,12 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_maxcol;
 	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_val = calloc(new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len, sizeof(entry_col));
 
+	if (new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_val == NULL)
+	{
+		DEBUG(0, "Memory allocation failure in add_nisp21pwd_entry()\n");
+		return False;
+	}
+
 	pdb_sethexpwd(smb_passwd   , newpwd->smb_passwd   , newpwd->acct_ctrl);
 	pdb_sethexpwd(smb_nt_passwd, newpwd->smb_nt_passwd, newpwd->acct_ctrl);
 
