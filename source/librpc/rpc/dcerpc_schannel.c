@@ -448,8 +448,8 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 	dce_schan_state = p->conn->security_state.generic_state->private_data;
 	dce_schan_state->creds = talloc_reference(dce_schan_state, creds);
 
-	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_SCHANNEL, dcerpc_auth_level(p->conn),
-				   uuid, version);
+	status = dcerpc_bind_auth(p, DCERPC_AUTH_TYPE_SCHANNEL, dcerpc_auth_level(p->conn),
+				  uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to bind to pipe with SCHANNEL: %s\n", nt_errstr(status)));

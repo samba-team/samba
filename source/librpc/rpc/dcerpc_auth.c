@@ -30,45 +30,33 @@
 NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 			       const char *uuid, uint_t version)
 {
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_new(p);
 	NTSTATUS status;
 
-	mem_ctx = talloc_init("dcerpc_bind_auth_ntlm");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcerpc_bind_byuuid(p, mem_ctx, uuid, version);
-	talloc_destroy(mem_ctx);
+	status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
+	talloc_free(tmp_ctx);
 
 	return status;
 }
 
-NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth_level,
+/*
+  perform a multi-part authenticated bind
+*/
+NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth_level,
 			   const char *uuid, uint_t version)
 {
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_new(p);
 	DATA_BLOB credentials;
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 
-	mem_ctx = talloc_init("dcerpc_bind_auth");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
 	if (!p->conn->security_state.generic_state) {
 		status = gensec_client_start(p, &p->conn->security_state.generic_state);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		if (!NT_STATUS_IS_OK(status)) goto done;
 
 		status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 
 						       auth_type, auth_level);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		if (!NT_STATUS_IS_OK(status)) goto done;
 	}
 
 	p->conn->security_state.auth_info = talloc(p, struct dcerpc_auth);
@@ -84,34 +72,44 @@ NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t aut
 	p->conn->security_state.auth_info->auth_context_id = random();
 	p->conn->security_state.auth_info->credentials = null_data_blob;
 
-	status = gensec_update(p->conn->security_state.generic_state, mem_ctx,
+	status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
 			       null_data_blob,
 			       &credentials);
-	
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	}
 
 	p->conn->security_state.auth_info->credentials = credentials;
 
-	status = dcerpc_bind_byuuid(p, mem_ctx, uuid, version);
+	status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = gensec_update(p->conn->security_state.generic_state, mem_ctx,
+	status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
 			       p->conn->security_state.auth_info->credentials,
 			       &credentials);
-
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	}
 
-	p->conn->security_state.auth_info->credentials = credentials;
-	
-	status = dcerpc_auth3(p->conn, mem_ctx);
+	do {
+		p->conn->security_state.auth_info->credentials = credentials;
+
+		if (auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
+			status = dcerpc_alter_context(p, tmp_ctx, &p->syntax, &p->transfer_syntax);
+			if (NT_STATUS_IS_OK(status)) {
+				status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
+						       p->conn->security_state.auth_info->credentials,
+						       &credentials);
+			}
+		} else {
+			status = dcerpc_auth3(p->conn, tmp_ctx);
+		}
+	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
+
 done:
-	talloc_destroy(mem_ctx);
+	talloc_free(tmp_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(p->conn->security_state.generic_state);
@@ -123,3 +121,4 @@ done:
 
 	return status;
 }
+

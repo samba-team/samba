@@ -119,16 +119,20 @@ struct dcerpc_pipe {
 #define DCERPC_SCHANNEL_ANY            (DCERPC_SCHANNEL_BDC| \
 					DCERPC_SCHANNEL_DOMAIN| \
 					DCERPC_SCHANNEL_WORKSTATION)
-/* use a 128 bit session key */
-#define DCERPC_SCHANNEL_128            (1<<12)
 
 #define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL_ANY)
+
+/* use a 128 bit session key */
+#define DCERPC_SCHANNEL_128            (1<<12)
 
 /* check incoming pad bytes */
 #define DCERPC_DEBUG_PAD_CHECK         (1<<13)
 
 /* set LIBNDR_FLAG_REF_ALLOC flag when decoding NDR */
 #define DCERPC_NDR_REF_ALLOC           (1<<14)
+
+/* enable spnego auth */
+#define DCERPC_AUTH_SPNEGO             (1<<15)
 
 /*
   this is used to find pointers to calls

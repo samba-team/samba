@@ -24,21 +24,20 @@
 
 #include "includes.h"
 
-#if 0
-/*
-  metze, can you tell me what you're trying to do with this?
-*/
-
 /*
   do spnego style authentication on a gensec pipe
 */
 NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
-			       const char *uuid, uint_t version,
-			       const char *domain,
-			       const char *username,
-			       const char *password)
+				 const char *uuid, uint_t version,
+				 const char *domain,
+				 const char *username,
+				 const char *password)
 {
 	NTSTATUS status;
+
+	if (!(p->conn->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
+		p->conn->flags |= DCERPC_CONNECT;
+	}
 
 	status = gensec_client_start(p, &p->conn->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -84,10 +83,9 @@ NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
 		return status;
 	}
 	
-	status = dcerpc_bind_alter(p, DCERPC_AUTH_TYPE_SPNEGO, 
-				   dcerpc_auth_level(p->conn),
-				   uuid, version);
-
+	status = dcerpc_bind_auth(p, DCERPC_AUTH_TYPE_SPNEGO,
+				  dcerpc_auth_level(p->conn),
+				  uuid, version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("Failed to bind to pipe with SPNEGO: %s\n", nt_errstr(status)));
 		return status;
@@ -95,4 +93,3 @@ NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
 
 	return status;
 }
-#endif
