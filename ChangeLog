@@ -1,3 +1,15 @@
+<<<<<<< ChangeLog
+2004-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/acache.c (make_cred_from_ccred): the address isn't a
+	sockaddr but rather a kerberos address, deal with that.  Based on
+	bug report from Jakob Schlyter <jakob@rfc.se>.
+
+2004-10-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/connect.c: Make sure argument passed to ctype isn't signed
+	char
+
 2004-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: match new error names
