@@ -3,6 +3,7 @@ AC_REVISION($Revision$)
 AC_PREREQ(2.53)
 test -z "$CFLAGS" && CFLAGS="-g"
 AC_INIT(Heimdal, 0.4f, heimdal-bugs@pdc.kth.se)
+AC_CONFIG_SRCDIR([kuser/kinit.c])
 AM_CONFIG_HEADER(include/config.h)
 
 dnl Checks for programs.
