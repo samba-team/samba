@@ -736,6 +736,12 @@ uint32 cmd_spoolss_addprinterdriver(struct client_info *info, int argc, char *ar
 		report( out_hnd, "spoolss_addprinterdriver: Add Printer failed [%d]\n",
 			result);
 	}
+	else
+	{
+		fstring driver_name;
+		unistr_to_ascii (driver_name, info3.name.buffer, sizeof(driver_name)-1);
+		report( out_hnd, "cmd_spoolss_addprinterdriver: Printer Driver [%s] added successfully\n", driver_name);
+	}
 	
 	free_drv_info_3(&info3);
 	

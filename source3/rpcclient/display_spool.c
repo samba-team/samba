@@ -737,7 +737,8 @@ static void display_print_driver_3(FILE *out_hnd, DRIVER_INFO_3 *i1)
 	fstring monitorname;
 	fstring defaultdatatype;
 	
-	int longueur=0;
+	int length=0;
+	BOOL valid = True;
 	
 	if (i1 == NULL)
 		return;
@@ -760,12 +761,20 @@ static void display_print_driver_3(FILE *out_hnd, DRIVER_INFO_3 *i1)
 	report(out_hnd, "\tconfigfile:[%s]\n", configfile);
 	report(out_hnd, "\thelpfile:[%s]\n\n", helpfile);
 
-	do {
-		unistr_to_ascii(dependentfiles, i1->dependentfiles+longueur, sizeof(dependentfiles)-1);
-		longueur+=strlen(dependentfiles)+1;
+	while (valid)
+	{
+		unistr_to_ascii(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles)-1);
+		length+=strlen(dependentfiles)+1;
 		
-		report(out_hnd, "\tdependentfiles:[%s]\n", dependentfiles);
-	} while (dependentfiles[0]!='\0');
+		if (strlen(dependentfiles) > 0)
+		{
+			report(out_hnd, "\tdependentfiles:[%s]\n", dependentfiles);
+		}
+		else
+		{
+			valid = False;
+		}
+	}
 	
 	report(out_hnd, "\n\tmonitorname:[%s]\n", monitorname);
 	report(out_hnd, "\tdefaultdatatype:[%s]\n", defaultdatatype);
