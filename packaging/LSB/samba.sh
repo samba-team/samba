@@ -74,5 +74,4 @@ esac
 exit 0
 
 #
-# End of "$Id: samba.sh,v 1.2.2.2 2001/07/06 01:27:44 jra Exp $".
 #
