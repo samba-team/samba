@@ -137,6 +137,9 @@ for logging. See the
 manual page for a list of defined destinations.
 .El
 .El
+.Sh ENVIRONMENT
+.Ev KRB5_CONFIG
+points to the configuration file to read.
 .Sh EXAMPLE
 .Bd -literal -offset indent
 [lib_defaults]
@@ -161,6 +164,7 @@ manual page for a list of defined destinations.
 	default = SYSLOG:INFO:USER
 .Ed
 .Sh SEE ALSO
+.Xr verify_krb5_conf 8 ,
 .Xr krb5_openlog 3 ,
 .Xr krb5_425_conv_principal 3 ,
 .Xr strftime 3 ,
