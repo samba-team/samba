@@ -3091,8 +3091,10 @@ int reply_echo(connection_struct * conn,
 {
 	int smb_reverb = SVAL(inbuf, smb_vwv0);
 	int seq_num;
-	int data_len = smb_buflen(inbuf);
+	unsigned int data_len = smb_buflen(inbuf);
 	int outsize = set_message(outbuf, 1, data_len, True);
+
+	data_len = MIN(data_len, (sizeof(inbuf)-(smb_buf(inbuf)-inbuf)));
 
 	/* copy any incoming data back out */
 	if (data_len > 0)
