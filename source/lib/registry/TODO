@@ -24,6 +24,9 @@ reg_backend_wine.c:
 
 regshell:
  - support for security descriptors
+
+ regdiff:
+  - fix
  
 gregedit.c:
  - support for editing values / adding values / deleting values

@@ -5,6 +5,7 @@
 
 
 SOURCEPATH=../source
+DOCSPATH=../docs
 
 package=samba4
 
@@ -24,18 +25,21 @@ configure:
 		--with-syslog \
 		--with-readline \
 		--with-ldap 
-
+	cd $(DOCSPATH) && autoreconf
+	cd $(DOCSPATH) && ./configure
 	touch configure
 
 build: configure
 	$(checkdir)
 	cd $(SOURCEPATH) && $(MAKE) proto all
+	cd $(DOCSPATH) && $(MAKE) htmlman manpages
 	touch build
 
 clean:
 	$(checkdir)
 	rm -f build
 	-cd $(SOURCEPATH) && $(MAKE) clean
+	-cd $(DOCSPATH) && $(MAKE) clean
 	rm -f `find . -name "*~"`
 	rm -rf debian/tmp `find debian/* -type d ! -name CVS` debian/files* core
 	rm -f debian/*substvars
@@ -52,6 +56,10 @@ binary-arch: checkroot build
 	install -d debian/tmp
 	cd debian/tmp && install -d `cat ../dirs`
 	cd $(SOURCEPATH) && $(MAKE) install DESTDIR=`pwd`/../packaging/debian/tmp
+	mkdir -p debian/tmp/usr/share/man/man1 
+	mkdir -p debian/tmp/usr/share/man/man7 
+	cp $(DOCSPATH)/output/manpages/*.1 debian/tmp/usr/share/man/man1
+	cp $(DOCSPATH)/output/manpages/*.7 debian/tmp/usr/share/man/man7
 	debstd 
 	dpkg-gencontrol -isp -psamba4
 	chown -R root:root debian/tmp
