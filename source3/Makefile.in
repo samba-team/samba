@@ -87,7 +87,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
-          lib/util.o lib/genrand.o lib/username.o
+          lib/util.o lib/genrand.o lib/username.o lib/access.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
@@ -119,7 +119,7 @@ LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o
 
-SMBD_OBJ1 = smbd/server.o smbd/access.o smbd/chgpasswd.o smbd/connection.o \
+SMBD_OBJ1 = smbd/server.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o \
             smbd/groupname.o smbd/ipc.o smbd/ldap.o smbd/mangle.o \
             smbd/message.o smbd/nispass.o smbd/nttrans.o \
@@ -164,7 +164,6 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
-               smbd/access.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(UBIQX_OBJ) \
