@@ -191,7 +191,7 @@ typedef struct  {                               /*  POP parameter block */
                                                     daemon program */
     char                myhost[MaxHostNameLen]; /*  The name of our host 
                                                     computer */
-    char            *   client;                 /*  Canonical name of client 
+    const char      *   client;                 /*  Canonical name of client 
                                                     computer */
     char            *   ipaddr;                 /*  Dotted-notation format of 
                                                     client IP address */
