@@ -425,13 +425,13 @@ static int net_getdomainsid(int argc, const char **argv)
 	sid_to_string(sid_str, &domain_sid);
 	d_printf("SID for domain %s is: %s\n", global_myname(), sid_str);
 
-	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+	if (!secrets_fetch_domain_sid(opt_workgroup, &domain_sid)) {
 		d_printf("Could not fetch domain SID\n");
 		return 1;
 	}
 
 	sid_to_string(sid_str, &domain_sid);
-	d_printf("SID for domain %s is: %s\n", lp_workgroup(), sid_str);
+	d_printf("SID for domain %s is: %s\n", opt_workgroup, sid_str);
 
 	return 0;
 }
