@@ -436,7 +436,7 @@ krb5_verify_ap_req2(krb5_context context,
 	int i;
 
 	for (i = 0; i < etypes.len; i++) {
-	    if (!krb5_enctype_is_disabled(context, etypes.val[i])) {
+	    if (krb5_enctype_valid(context, etypes.val[i]) == 0) {
 		ac->keytype = etypes.val[i];
 		break;
 	    }

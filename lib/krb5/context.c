@@ -68,7 +68,7 @@ set_etypes (krb5_context context,
 	    krb5_enctype e;
 	    if(krb5_string_to_enctype(context, etypes_str[j], &e) != 0)
 		continue;
-	    if (krb5_enctype_is_disabled(context, e))
+	    if (krb5_enctype_valid(context, e) != 0)
 		continue;
 	    etypes[k++] = e;
 	}
@@ -436,7 +436,7 @@ default_etypes(krb5_context context, krb5_enctype **etype)
     int i, n = 0;
 
     for (i = 0; i < sizeof(p)/sizeof(p[0]); i++) {
-	if (krb5_enctype_is_disabled(context, p[i]))
+	if (krb5_enctype_valid(context, p[i]) != 0)
 	    continue;
 	ep = realloc(e, (n + 2) * sizeof(*e));
 	if (ep == NULL) {
