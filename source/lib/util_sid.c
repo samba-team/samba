@@ -25,7 +25,7 @@
 /* NOTE! the global_sam_sid is the SID of our local SAM. This is only
    equal to the domain SID when we are a DC, otherwise its our
    workstation SID */
-DOM_SID global_sam_sid;
+extern DOM_SID global_sam_sid;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -48,56 +48,6 @@ DOM_SID global_sid_Anonymous;				/* Anonymous login */
 
 const DOM_SID *global_sid_everyone = &global_sid_World;
 
-typedef struct _known_sid_users {
-	uint32 rid;
-	enum SID_NAME_USE sid_name_use;
-	char *known_user_name;
-} known_sid_users;
-
-/* static known_sid_users no_users[] = {{0, 0, NULL}}; */
-
-static known_sid_users everyone_users[] = {
-	{ 0, SID_NAME_WKN_GRP, "Everyone" },
-	{0, (enum SID_NAME_USE)0, NULL}};
-
-static known_sid_users creator_owner_users[] = {
-	{ 0, SID_NAME_ALIAS, "Creator Owner" },
-	{0, (enum SID_NAME_USE)0, NULL}};
-
-static known_sid_users nt_authority_users[] = {
-	{  1, SID_NAME_ALIAS, "Dialup" },
-	{  2, SID_NAME_ALIAS, "Network"},
-	{  3, SID_NAME_ALIAS, "Batch"},
-	{  4, SID_NAME_ALIAS, "Interactive"},
-	{  6, SID_NAME_ALIAS, "Service"},
-	{  7, SID_NAME_ALIAS, "AnonymousLogon"},
-	{  8, SID_NAME_ALIAS, "Proxy"},
-	{  9, SID_NAME_ALIAS, "ServerLogon"},
-	{ 11, SID_NAME_ALIAS, "Authenticated Users"},
-	{ 18, SID_NAME_ALIAS, "SYSTEM"},
-	{  0, (enum SID_NAME_USE)0, NULL}};
-
-static known_sid_users builtin_groups[] = {
-	{ BUILTIN_ALIAS_RID_ADMINS, SID_NAME_ALIAS, "Administrators" },
-	{ BUILTIN_ALIAS_RID_USERS, SID_NAME_ALIAS, "Users" },
-	{ BUILTIN_ALIAS_RID_GUESTS, SID_NAME_ALIAS, "Guests" },
-	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS, SID_NAME_ALIAS, "Account Operators" },
-	{ BUILTIN_ALIAS_RID_SYSTEM_OPS, SID_NAME_ALIAS, "Server Operators" },
-	{ BUILTIN_ALIAS_RID_PRINT_OPS, SID_NAME_ALIAS, "Print Operators" },
-	{ BUILTIN_ALIAS_RID_BACKUP_OPS, SID_NAME_ALIAS, "Backup Operators" },
-	{  0, (enum SID_NAME_USE)0, NULL}};
-
-#define MAX_SID_NAMES	7
-
-static struct sid_name_map_info
-{
-	DOM_SID *sid;
-	char *name;
-	known_sid_users *known_users;
-} sid_name_map[MAX_SID_NAMES];
-
-static BOOL sid_name_map_initialized = False;
-
 /*
  * An NT compatible anonymous token.
  */
@@ -108,65 +58,6 @@ NT_USER_TOKEN anonymous_token = {
     3,
     anon_sid_array
 };
-
-/**************************************************************************
- quick init function
- *************************************************************************/
-static void init_sid_name_map (void)
-{
-	int i = 0;
-	
-	if (sid_name_map_initialized) return;
-	
-
-	if ((lp_security() == SEC_USER) && lp_domain_logons()) {
-		sid_name_map[i].sid = &global_sam_sid;
-		sid_name_map[i].name = global_myworkgroup;
-		sid_name_map[i].known_users = NULL;
-		i++;
-		sid_name_map[i].sid = &global_sam_sid;
-		sid_name_map[i].name = global_myname;
-		sid_name_map[i].known_users = NULL;
-		i++;
-	}
-	else {
-		sid_name_map[i].sid = &global_sam_sid;
-		sid_name_map[i].name = global_myname;
-		sid_name_map[i].known_users = NULL;
-		i++;
-	}
-
-	sid_name_map[i].sid = &global_sid_Builtin;
-	sid_name_map[i].name = "BUILTIN";
-	sid_name_map[i].known_users = &builtin_groups[0];
-	i++;
-	
-	sid_name_map[i].sid = &global_sid_World_Domain;
-	sid_name_map[i].name = "";
-	sid_name_map[i].known_users = &everyone_users[0];
-	i++;
-
-	sid_name_map[i].sid = &global_sid_Creator_Owner_Domain;
-	sid_name_map[i].name = "";
-	sid_name_map[i].known_users = &creator_owner_users[0];
-	i++;
-		
-	sid_name_map[i].sid = &global_sid_NT_Authority;
-	sid_name_map[i].name = "NT Authority";
-	sid_name_map[i].known_users = &nt_authority_users[0];
-	i++;
-		
-
-	/* end of array */
-	sid_name_map[i].sid = NULL;
-	sid_name_map[i].name = NULL;
-	sid_name_map[i].known_users = NULL;
-	
-	sid_name_map_initialized = True;
-		
-	return;
-
-}
 
 /****************************************************************************
  Creates some useful well known sids
@@ -191,115 +82,6 @@ void generate_wellknown_sids(void)
 	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
 	sid_copy( &anonymous_token.user_sids[1], &global_sid_Network);
 	sid_copy( &anonymous_token.user_sids[2], &global_sid_Anonymous);
-}
-
-/**************************************************************************
- Turns a domain SID into a name, returned in the nt_domain argument.
-***************************************************************************/
-
-BOOL map_domain_sid_to_name(DOM_SID *sid, fstring nt_domain)
-{
-	fstring sid_str;
-	int i = 0;
-	
-	sid_to_string(sid_str, sid);
-
-	if (!sid_name_map_initialized) 
-		init_sid_name_map();
-
-	DEBUG(5,("map_domain_sid_to_name: %s\n", sid_str));
-
-	if (nt_domain == NULL)
-		return False;
-
-	while (sid_name_map[i].sid != NULL) {
-		sid_to_string(sid_str, sid_name_map[i].sid);
-		DEBUG(5,("map_domain_sid_to_name: compare: %s\n", sid_str));
-		if (sid_equal(sid_name_map[i].sid, sid)) {		
-			fstrcpy(nt_domain, sid_name_map[i].name);
-			DEBUG(5,("map_domain_sid_to_name: found '%s'\n", nt_domain));
-			return True;
-		}
-		i++;
-	}
-
-	DEBUG(5,("map_domain_sid_to_name: mapping for %s not found\n", sid_str));
-
-    return False;
-}
-
-/**************************************************************************
- Looks up a known username from one of the known domains.
-***************************************************************************/
-
-BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
-{
-	int i = 0;
-	struct sid_name_map_info *psnm;
-
-	if (!sid_name_map_initialized) 
-		init_sid_name_map();
-
-	for(i = 0; sid_name_map[i].sid != NULL; i++) {
-		psnm = &sid_name_map[i];
-		if(sid_equal(psnm->sid, sid)) {
-			int j;
-			for(j = 0; psnm->known_users && psnm->known_users[j].known_user_name != NULL; j++) {
-				if(rid == psnm->known_users[j].rid) {
-					DEBUG(5,("lookup_builtin_rid: rid = %u, domain = '%s', user = '%s'\n",
-						(unsigned int)rid, psnm->name, psnm->known_users[j].known_user_name ));
-					fstrcpy( name, psnm->known_users[j].known_user_name);
-					*psid_name_use = psnm->known_users[j].sid_name_use;
-					return True;
-				}
-			}
-		}
-	}
-
-	return False;
-}
-
-/**************************************************************************
- Turns a domain name into a SID.
- *** side-effect: if the domain name is NULL, it is set to our domain ***
-***************************************************************************/
-
-BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
-{
-	int i = 0;
-
-	if (nt_domain == NULL) {
-		DEBUG(5,("map_domain_name_to_sid: mapping NULL domain to our SID.\n"));
-		sid_copy(sid, &global_sam_sid);
-		return True;
-	}
-
-	if (nt_domain[0] == 0) {
-		fstrcpy(nt_domain, global_myname);
-		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n", nt_domain));
-		sid_copy(sid, &global_sam_sid);
-		return True;
-	}
-
-	DEBUG(5,("map_domain_name_to_sid: %s\n", nt_domain));
-
-	if (!sid_name_map_initialized) 
-		init_sid_name_map();
-
-	while (sid_name_map[i].name != NULL) {
-		DEBUG(5,("map_domain_name_to_sid: compare: %s\n", sid_name_map[i].name));
-		if (strequal(sid_name_map[i].name, nt_domain)) {
-			fstring sid_str;
-			sid_copy(sid, sid_name_map[i].sid);
-			sid_to_string(sid_str, sid_name_map[i].sid);
-			DEBUG(5,("map_domain_name_to_sid: found %s\n", sid_str));
-			return True;
-		}
-		i++;
-	}
-
-	DEBUG(0,("map_domain_name_to_sid: mapping to %s not found.\n", nt_domain));
-	return False;
 }
 
 /**************************************************************************
@@ -626,14 +408,6 @@ BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 }
 
 
-/*****************************************************************
- Check if the SID is our domain SID (S-1-5-21-x-y-z).
-*****************************************************************/  
-BOOL sid_check_is_domain(const DOM_SID *sid)
-{
-	return sid_equal(sid, &global_sam_sid);
-}
-
 
 /*****************************************************************
  Check if the SID is the builtin SID (S-1-5-32).
@@ -643,20 +417,6 @@ BOOL sid_check_is_builtin(const DOM_SID *sid)
 	return sid_equal(sid, &global_sid_Builtin);
 }
 
-
-/*****************************************************************
- Check if the SID is our domain SID (S-1-5-21-x-y-z).
-*****************************************************************/  
-BOOL sid_check_is_in_our_domain(const DOM_SID *sid)
-{
-	DOM_SID dom_sid;
-	uint32 rid;
-
-	sid_copy(&dom_sid, sid);
-	sid_split_rid(&dom_sid, &rid);
-	
-	return sid_equal(&dom_sid, &global_sam_sid);
-}
 
 /*****************************************************************
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
