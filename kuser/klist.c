@@ -346,8 +346,11 @@ static int do_test	= 0;
 #ifdef KRB4
 static int do_tokens	= 0;
 #endif
+static char *cred_cache;
 
 static struct getargs args[] = {
+    { "cache",			'c', arg_string, &cred_cache,
+      "credentials cache to list", "cache" },
     { "test",			't', arg_flag, &do_test,
       "test for having tickets", NULL },
 #ifdef KRB4
@@ -405,9 +408,15 @@ main (int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_init_context");
 
-    ret = krb5_cc_default (context, &ccache);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_default");
+    if(cred_cache) {
+	ret = krb5_cc_resolve(context, cred_cache, &ccache);
+	if (ret)
+	    krb5_err (context, 1, ret, "%s", cred_cache);
+    } else {
+	ret = krb5_cc_default (context, &ccache);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_cc_resolve");
+    }
 
     ret = krb5_cc_get_principal (context, ccache, &principal);
     if (ret) {
