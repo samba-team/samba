@@ -146,7 +146,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 /*
   rescan our domains looking for new trusted domains
  */
-void rescan_trusted_domains(void)
+void rescan_trusted_domains(BOOL force)
 {
 	struct winbindd_domain *domain;
 	TALLOC_CTX *mem_ctx;
@@ -157,11 +157,12 @@ void rescan_trusted_domains(void)
 	if (!lp_allow_trusted_domains()) {
 		return;
 	}
-	
-	/* ony rescan every few minutes */
-	if ((unsigned)(t - last_scan) < WINBINDD_RESCAN_FREQ) {
+
+	/* Only rescan every few minutes but force if necessary */
+
+	if (((unsigned)(t - last_scan) < WINBINDD_RESCAN_FREQ) && !force)
 		return;
-	}
+
 	last_scan = t;
 
 	DEBUG(1, ("scanning trusted domain list\n"));
@@ -220,7 +221,7 @@ BOOL init_domain_list(void)
 	cache_methods.alternate_name(domain);
 
 	/* do an initial scan for trusted domains */
-	rescan_trusted_domains();
+	rescan_trusted_domains(True);
 
 	return True;
 }
