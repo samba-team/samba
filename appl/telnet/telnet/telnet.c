@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-#define	strip(x) ((my_want_state_is_wont(TELOPT_BINARY)) ? ((x)&0x7f) : (x))
+#define	strip(x) (eight ? (x) : ((x) & 0x7f))
 
 static unsigned char	subbuffer[SUBBUFSIZE],
 			*subpointer, *subend;	 /* buffer for sub-options */
@@ -56,6 +56,7 @@ char	will_wont_resp[256];
 
 int
 	eight = 3,
+	binary = 0,
 	autologin = 0,	/* Autologin anyone? */
 	skiprc = 0,
 	connected,
@@ -1594,9 +1595,9 @@ telrcv(void)
 		telrcv_state = TS_IAC;
 		break;
 	    }
-		    /*
+		    /* 
 		     * The 'crmod' hack (see following) is needed
-		     * since we can't * set CRMOD on output only.
+		     * since we can't set CRMOD on output only.
 		     * Machines like MULTICS like to send \r without
 		     * \n; since we must turn off CRMOD to get proper
 		     * input, the mapping is done here (sigh).
@@ -2026,8 +2027,8 @@ telnet(char *user)
 	send_do(TELOPT_STATUS, 1);
 	if (env_getvalue((unsigned char *)"DISPLAY"))
 	    send_will(TELOPT_XDISPLOC, 1);
-	if (eight)
-	    tel_enter_binary(eight);
+	if (binary)
+	    tel_enter_binary(binary);
     }
 
     for (;;) {

@@ -56,6 +56,7 @@ extern int
     autologin,		/* Autologin enabled */
     skiprc,		/* Don't process the ~/.telnetrc file */
     eight,		/* use eight bit mode (binary in and/or out */
+    binary,
     flushout,		/* flush output */
     connected,		/* Are we connected to the other side? */
     globalmode,		/* Mode tty should be in */

@@ -127,6 +127,9 @@ main(int argc, char **argv)
 		case '7':
 			eight = 0;
 			break;
+		case 'b':
+		    binary = 3;
+		    break;
 		case 'D': {
 		    /* sometimes we don't want a mangled display */
 		    char *p;
