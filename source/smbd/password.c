@@ -160,27 +160,6 @@ char *validated_domain(uint16 vuid)
 
 
 /****************************************************************************
- Initialize the groups a user belongs to.
-****************************************************************************/
-
-BOOL initialize_groups(char *user, uid_t uid, gid_t gid)
-{
-	become_root();
-	if (initgroups(user,gid) == -1) {
-		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
-		if (getuid() == 0) {
-			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
-				DEBUG(0,("This is probably a problem with the account %s\n", user));
-			}
-		}
-		unbecome_root();
-		return False;
-	}
-	unbecome_root();
-	return True;
-}
-
-/****************************************************************************
  Create the SID list for this user.
 ****************************************************************************/
 
@@ -188,7 +167,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 {
 	NT_USER_TOKEN *token;
 	DOM_SID *psids;
-	int i;
+	int i, psid_ndx = 0;
 
 	if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
 		return NULL;
@@ -202,13 +181,18 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 
 	psids = token->user_sids;
 
-	token->num_sids = ngroups + 2;
+	token->num_sids = 2;
 
 	uid_to_sid( &psids[0], uid);
 	gid_to_sid( &psids[1], gid);
 
-	for (i = 0; i < ngroups; i++)
-		gid_to_sid( &psids[i+2], groups[i]);
+	for (i = 0; i < ngroups; i++) {
+		if (groups[i] != gid) {
+			gid_to_sid( &psids[psid_ndx+2], groups[i]);
+			psid_ndx++;
+			token->num_sids++;
+		}
+	}
 
 	return token;
 }
@@ -254,7 +238,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
-  initialize_groups(unix_name, uid, gid);
+  initialise_groups(unix_name, uid, gid);
   get_current_groups( &vuser->n_groups, &vuser->groups);
 
   /* Create an NT_USER_TOKEN struct for this user. */
