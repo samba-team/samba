@@ -294,6 +294,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"lsaenumdomains",
+		cmd_lsa_enum_trust_dom,
+		"Enumerate Trusted Domains",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"lookupsids",
 		cmd_lsa_lookup_sids,
 		"Resolve names from SIDs",

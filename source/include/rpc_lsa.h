@@ -94,7 +94,7 @@ typedef struct obj_attr_info
 typedef struct lsa_q_open_pol_info
 {
 	uint32 ptr;         /* undocumented buffer pointer */
-	uint16 system_name; /* 0x5c - system name */
+	uint16 system_name; /* system name BUG!!! (should be \\server!) */
 	LSA_OBJ_ATTR attr ; /* object attributes */
 
 	uint32 des_access; /* desired access attributes */
@@ -214,10 +214,12 @@ typedef struct lsa_r_query_secret_info
 typedef struct lsa_enum_trust_dom_info
 {
 	POLICY_HND pol; /* policy handle */
-    uint32 enum_context; /* enumeration context handle */
-    uint32 preferred_len; /* preferred maximum length */
+	uint32 enum_context; /* enumeration context handle */
+	uint32 preferred_len; /* preferred maximum length */
 
 } LSA_Q_ENUM_TRUST_DOM;
+
+#define MAX_TRUSTED_DOMS 10
 
 /* LSA_R_ENUM_TRUST_DOM - response to LSA enumerate trusted domains */
 typedef struct lsa_r_enum_trust_dom_info
@@ -227,12 +229,12 @@ typedef struct lsa_r_enum_trust_dom_info
 	uint32 ptr_enum_domains; /* buffer pointer to num domains */
 
 	/* this lot is only added if ptr_enum_domains is non-NULL */
-		uint32 num_domains2; /* number of domains */
-		UNIHDR2 hdr_domain_name;
-		UNISTR2 uni_domain_name;
-		DOM_SID2 other_domain_sid;
+	uint32 num_domains2; /* number of domains */
+	UNIHDR2 hdr_domain_name[MAX_TRUSTED_DOMS];
+	UNISTR2 uni_domain_name[MAX_TRUSTED_DOMS];
+	DOM_SID2 domain_sid[MAX_TRUSTED_DOMS];
 
-    uint32 status; /* return code */
+	uint32 status; /* return code */
 
 } LSA_R_ENUM_TRUST_DOM;
 

@@ -38,6 +38,72 @@ extern struct cli_state *smb_cli;
 extern int smb_tidx;
 
 /****************************************************************************
+nt enumerate trusted domains
+****************************************************************************/
+void cmd_lsa_enum_trust_dom(struct client_info *info)
+{
+	uint16 nt_pipe_fnum;
+	fstring srv_name;
+	uint32 num_doms = 0;
+	char **domains = NULL;
+	DOM_SID **sids = NULL;
+	uint32 enum_ctx = 0;
+
+	BOOL res = True;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_lsa_enum_trust_dom: server:%s\n", srv_name));
+
+	/* open LSARPC session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(smb_cli, nt_pipe_fnum,
+				srv_name,
+				&info->dom.lsa_info_pol, False) : False;
+
+	do
+	{
+		/* send enum trusted domains query */
+		res = res ? lsa_enum_trust_dom(smb_cli, nt_pipe_fnum, 
+	                                  &info->dom.lsa_info_pol,
+	                                  &enum_ctx,
+	                                  &num_doms, &domains, &sids) : False;
+
+	} while (res && enum_ctx != 0);
+
+	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	if (res)
+	{
+		uint32 i;
+		DEBUG(5,("cmd_lsa_enum_trust_dom: query succeeded\n"));
+
+		report(out_hnd, "LSA Enumerate Trusted Domains\n");
+		for (i = 0; i < num_doms; i++)
+		{
+			fstring sid;
+			sid_to_string(sid, sids[i]);
+			report(out_hnd, "Domain:\t%s\tSID:\t%s\n",
+			      domains[i], sid);
+		}
+	}
+	else
+	{
+		DEBUG(5,("cmd_lsa_enum_trust_dom: query failed\n"));
+	}
+
+	free_char_array(num_doms, domains);
+	free_sid_array(num_doms, sids);
+}
+
+/****************************************************************************
 nt lsa query
 ****************************************************************************/
 void cmd_lsa_query_info(struct client_info *info)
@@ -332,7 +398,7 @@ void cmd_lsa_query_secret(struct client_info *info)
 	}
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
@@ -341,14 +407,14 @@ void cmd_lsa_query_secret(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(smb_cli, nt_pipe_fnum,
+	res = res ? lsa_open_policy2(smb_cli, nt_pipe_fnum,
 				srv_name,
 				&info->dom.lsa_info_pol, True) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret(smb_cli, nt_pipe_fnum,
 				&info->dom.lsa_info_pol,
-				secret_name, 0x02000000, &hnd_secret) : False;
+				secret_name, 0x020003, &hnd_secret) : False;
 
 	res2 = res1 ? lsa_query_secret(smb_cli, nt_pipe_fnum,
 			       &hnd_secret, &enc_secret, &last_update) : False;
