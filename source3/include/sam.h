@@ -259,13 +259,20 @@ typedef struct sam_methods
 	void (*free_private_data)(void **);
 } SAM_METHODS;
 
-typedef NTSTATUS (*sam_init_function)(const SAM_CONTEXT *, SAM_METHODS **, const char *);
+typedef NTSTATUS (*sam_init_function)(const SAM_CONTEXT *, SAM_METHODS **, const DOM_SID *domain, const char *);
 
 struct sam_init_function_entry {
-	char *name;
+	char *module_name;
 	/* Function to create a member of the sam_methods list */
 	sam_init_function init;
 };
+
+typedef struct sam_backend_entry {
+	char    *module_name;
+	char    *module_params;
+	char    *domain_name;
+	DOM_SID *domain_sid;
+} SAM_BACKEND_ENTRY;
 
 
 #endif /* _SAM_H */
