@@ -1305,7 +1305,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		}
 	} else {
 		void *dirptr = NULL;
-		char *dname;
+		const char *dname;
 		
 		if (check_name(directory,conn))
 			dirptr = OpenDir(conn, directory, True);
@@ -2861,7 +2861,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 {
-	char *dname = NULL;
+	const char *dname = NULL;
 	BOOL ret = False;
 	void *dirptr = OpenDir(conn, directory, False);
 
@@ -2926,7 +2926,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		 * do a recursive delete) then fail the rmdir.
 		 */
 		BOOL all_veto_files = True;
-		char *dname;
+		const char *dname;
 		void *dirptr = OpenDir(conn, directory, False);
 
 		if(dirptr != NULL) {
@@ -3285,7 +3285,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 		 * Wildcards - process each file that matches.
 		 */
 		void *dirptr = NULL;
-		char *dname;
+		const char *dname;
 		pstring destname;
 		
 		if (check_name(directory,conn))
@@ -3574,7 +3574,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		}
 	} else {
 		void *dirptr = NULL;
-		char *dname;
+		const char *dname;
 		pstring destname;
 
 		if (check_name(directory,conn))
