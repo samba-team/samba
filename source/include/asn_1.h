@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _ASN_1_H
+#define _ASN_1_H
 
 struct nesting {
 	off_t start;
@@ -52,3 +54,5 @@ typedef struct {
 #define OID_NTLMSSP "1 3 6 1 4 1 311 2 2 10"
 #define OID_KERBEROS5_OLD "1 2 840 48018 1 2 2"
 #define OID_KERBEROS5 "1 2 840 113554 1 2 2"
+
+#endif /* _ASN_1_H */
