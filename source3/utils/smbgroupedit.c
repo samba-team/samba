@@ -87,9 +87,10 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 	else
 		fstrcpy(comment, ntcomment);
 
-	if(add_initial_entry(gid, string_sid, sid_type, group, comment, se_priv))
-		return 0;
+	if(!add_initial_entry(gid, string_sid, sid_type, group, comment, se_priv))
+		return -1;
 
+	return 0;
 }
 
 /*********************************************************
@@ -144,20 +145,22 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 		return -1;
 	}
 
+	return 0;
 }
 
 /*********************************************************
- List the groups.
+ Delete the group.
 **********************************************************/
-int deletegroup(char *group)
+BOOL deletegroup(char *group)
 {
-	uint32 se_priv;
+	DOM_SID sid;
 	
-/*	convert_priv(&se_priv, privilege);*/
+	string_to_sid(&sid, group);
 
-/*	if(add_initial_entry(gid, sid, type, ntgroup, "", se_priv))
-		return 0;
-*/
+	if(!group_map_remove(sid))
+		return False;
+
+	return True;
 }
 
 /*********************************************************
@@ -173,8 +176,8 @@ int listgroup(enum SID_NAME_USE sid_type)
 
 	printf("Unix\tSID\ttype\tnt name\tnt comment\tprivilege\n");
 		
-	if (enum_group_mapping(sid_type, &map, &entries)==False)
-		return 0;
+	if (!enum_group_mapping(sid_type, &map, &entries))
+		return -1;
 	
 	for (i=0; i<entries; i++) {
 		decode_sid_name_use(group_type, (map[i]).sid_name_use);
@@ -185,7 +188,7 @@ int listgroup(enum SID_NAME_USE sid_type)
 					             group_type, map[i].comment, priv_text);
 	}
 
-
+	return 0;
 }
 
 /*********************************************************
