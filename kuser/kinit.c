@@ -112,6 +112,9 @@ main (int argc, char **argv)
     argc -= optind;
     argv += optind;
 
+    if (argc > 1)
+	usage (1);
+
     ret = krb5_cc_default (context, &ccache);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_default");

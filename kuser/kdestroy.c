@@ -79,6 +79,12 @@ main (int argc, char **argv)
 	exit(0);
     }
   
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0)
+	usage (1);
+
     ret = krb5_init_context (&context);
     if (ret)
 	errx (1, "krb5_init_context: %s", krb5_get_err_text(context, ret));

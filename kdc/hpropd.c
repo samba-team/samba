@@ -137,6 +137,12 @@ int main(int argc, char **argv)
     if(version_flag)
 	krb5_errx(context, 0, "%s (%s)\n", __progname, heimdal_version);
     
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0)
+	usage(1);
+
     if(from_stdin)
 	fd = STDIN_FILENO;
     else{

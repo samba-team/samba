@@ -94,6 +94,13 @@ int main(int argc, char **argv)
 	fprintf(stderr, "string2key (%s-%s)\n", PACKAGE, VERSION);
 	exit(0);
     }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc > 1)
+	usage(1);
+
     if(version5 && principal == NULL){
 	printf("Kerberos v5 principal: ");
 	fgets(buf, sizeof(buf), stdin);
