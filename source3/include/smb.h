@@ -565,11 +565,7 @@ typedef struct lsa_r_lookup_sids
 typedef struct dom_name_info
 {
     uint32 uni_str_len;
-#if 1 /* don't know if buffer is null-terminated */
-	UNISTR buffer;
-#else /* or length indicated by uni_str_len member */
-    uint16 buffer[MAX_UNISTRLEN];
-#endif
+	UNISTR str;
 
 } DOM_NAME;
 

@@ -628,6 +628,7 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
+char *dom_sid_to_string(DOM_SID *sid);
 
 /*The following definitions come from  predict.c  */
 
@@ -648,6 +649,7 @@ void printjob_decode(int jobid, int *snum, int *job);
 
 /*The following definitions come from  quotas.c  */
 
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
@@ -1040,6 +1042,7 @@ BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch();
 char *skip_unicode_string(char *buf,int n);
+char *unistr2(uint16 *buf);
 char *unistr(char *buf);
 int unistrncpy(char *dst, char *src, int len);
 int unistrcpy(char *dst, char *src);

@@ -4216,7 +4216,27 @@ char *skip_unicode_string(char *buf,int n)
 
 /*******************************************************************
 Return a ascii version of a unicode string
-Hack alert: uses fixed buffer and only handles ascii strings
+Hack alert: uses fixed buffer(s) and only handles ascii strings
+********************************************************************/
+#define MAXUNI 1024
+char *unistr2(uint16 *buf)
+{
+	static char lbufs[8][MAXUNI];
+	static int nexti;
+	char *lbuf = lbufs[nexti];
+	char *p;
+	nexti = (nexti+1)%8;
+	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf++)
+	{
+		*p = *buf;
+	}
+	*p = 0;
+	return lbuf;
+}
+
+/*******************************************************************
+Return a ascii version of a unicode string
+Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 #define MAXUNI 1024
 char *unistr(char *buf)
@@ -4225,9 +4245,13 @@ char *unistr(char *buf)
 	static int nexti;
 	char *lbuf = lbufs[nexti];
 	char *p;
+
 	nexti = (nexti+1)%8;
-	for (p = lbuf; *buf && p -lbuf < MAXUNI-2; p++, buf += 2)
+
+	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf += 2)
+	{
 		*p = *buf;
+	}
 	*p = 0;
 	return lbuf;
 }

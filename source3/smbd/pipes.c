@@ -370,6 +370,20 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
    fragment length. I've decided to do it based on operation number :-)
 */
 
+/* RID username mapping function.  just for fun, it maps to the unix uid */
+static uint32 name_to_rid(char *user_name)
+{
+    struct passwd *pw = Get_Pwnam(user_name, False);
+    if (!pw)
+	{
+      DEBUG(1,("Username %s is invalid on this system\n", user_name));
+      return (uint32)(-1);
+    }
+
+    return (uint32)(pw->pw_uid);
+}
+
+
 /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 char *dom_sid_to_string(DOM_SID *sid)
 {
@@ -504,6 +518,14 @@ static void make_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
 	str->buffer[len] = (uint16)terminate;
 }
 
+static void make_dom_rid2(DOM_RID2 *rid2, uint32 rid)
+{
+	rid2->type    = 0x5;
+	rid2->undoc   = 0x5;
+	rid2->rid     = rid;
+	rid2->rid_idx = 0;
+}
+
 static void make_dom_sid2(DOM_SID2 *sid2, char *sid_str)
 {
 	int len_sid_str = strlen(sid_str);
@@ -585,6 +607,28 @@ static void make_dom_ref(DOM_R_REF *ref,
 	make_dom_sid(&(ref->ref_dom[3]), other_sid3);
 }
 
+static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
+				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
+				char *dom_name, char *dom_sid,
+				char *other_sid1, char *other_sid2, char *other_sid3)
+{
+	int i;
+
+	make_dom_ref(&(r_l->dom_ref), dom_name, dom_sid,
+	             other_sid1, other_sid2, other_sid3);
+
+	r_l->num_entries = num_entries;
+	r_l->undoc_buffer = 1;
+	r_l->num_entries2 = num_entries;
+
+	for (i = 0; i < num_entries; i++)
+	{
+		make_dom_rid2(&(r_l->dom_rid[i]), dom_rids[i]);
+	}
+
+	r_l->num_entries3 = num_entries;
+}
+
 static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 				int num_entries, fstring dom_sids[MAX_LOOKUP_SIDS],
 				char *dom_name, char *dom_sid,
@@ -622,6 +666,26 @@ static int lsa_reply_lookup_sids(char *q, char *base,
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_lookup_sids(False, &r_l, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
+static int lsa_reply_lookup_rids(char *q, char *base,
+				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
+				char *dom_name, char *dom_sid,
+				char *other_sid1, char *other_sid2, char *other_sid3)
+{
+	char *start = q;
+	LSA_R_LOOKUP_RIDS r_l;
+
+	/* set up the LSA Lookup RIDs response */
+	make_reply_lookup_rids(&r_l, num_entries, dom_rids,
+				dom_name, dom_sid, other_sid1, other_sid2, other_sid3);
+	r_l.status = 0x0;
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_lookup_rids(False, &r_l, q, base, 4);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -952,6 +1016,129 @@ static void api_lsa_lookup_sids( char *param, char *data,
 	*rdata_len = reply_len + 0x18;
 }
 
+static void api_lsa_lookup_names( char *param, char *data,
+                                  char **rdata, int *rdata_len )
+{
+	int reply_len;
+
+	int i;
+	LSA_Q_LOOKUP_RIDS q_l;
+	pstring dom_name;
+	pstring dom_sid;
+	uint32 dom_rids[MAX_LOOKUP_SIDS];
+
+	/* grab the info class and policy handle */
+	lsa_io_q_lookup_rids(True, &q_l, data + 0x18, data + 0x18, 4);
+
+	pstrcpy(dom_name, lp_workgroup());
+	pstrcpy(dom_sid , lp_domainsid());
+
+	/* convert received RIDs to strings, so we can do them. */
+	for (i = 0; i < q_l.num_entries; i++)
+	{
+		char *user_name = unistr2(q_l.lookup_name[i].str.buffer);
+		dom_rids[i] = name_to_rid(user_name);
+	}
+
+	/* construct reply.  return status is always 0x0 */
+	reply_len = lsa_reply_lookup_rids(*rdata + 0x18, *rdata + 0x18,
+	            q_l.num_entries, dom_rids, /* text-converted SIDs */
+				dom_name, dom_sid, /* domain name, domain SID */
+				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
+
+	/* construct header, now that we know the reply length */
+	make_rpc_reply(data, *rdata, reply_len);
+	*rdata_len = reply_len + 0x18;
+}
+
+#if 0
+  q = data + 0x18;
+  policyhandle = q; q += 20;
+  nentries = qIVAL;
+  DEBUG(4,("lookupnames entries %d\n",nentries));
+  q += 4; /* skip second count */
+  q += 8 * nentries; /* skip pointers */
+  for (nnames = 0; nnames < nentries; nnames++)
+  {
+	  names[nnames] = q; /* set name string to unicode header */
+	  q += IVAL(q,0)*2; /* guessing here */
+  }
+  /* There's a translated sids structure next but it looks fals */
+
+  DEBUG(4,("lookupnames line %d\n",__LINE__));
+  /* formulate reply */
+  q = *rdata + 0x18;
+  qSIVAL(2); /* bufptr */
+  qSIVAL(4); /* number of referenced domains
+		 - need one per each identifier authority in call */
+  qSIVAL(2); /* dom bufptr */
+  qSIVAL(32); /* max entries */
+  qSIVAL(4); /* number of reference domains? */
+
+  qunihdr(lp_workgroup()); /* reference domain */
+  qSIVAL(2); /* sid bufptr */
+
+  qunihdr("S-1-1");
+  qSIVAL(2); /* sid bufptr */
+
+  qunihdr("S-1-5");
+  qSIVAL(2); /* sid bufptr */
+
+  qunihdr("S-1-3");
+  qSIVAL(2); /* sid bufptr */
+
+  qunistr(lp_workgroup());
+  DEBUG(4,("lookupnames line %d\n",__LINE__));
+
+  strcpy(domsid,lp_domainsid());
+  p = strtok(domsid+2,"-");
+  revision = atoi(p);
+  identauth = atoi(strtok(0,"-"));
+  numsubauths = 0;
+  while (p = strtok(0, "-"))
+	subauths[numsubauths++] = atoi(p);
+  qSIVAL(numsubauths);
+  qSCVAL(revision);
+  qSCVAL(numsubauths);
+  qRSSVAL(0); /* PAXX: FIX! first 2 bytes identifier authority */
+  qRSIVAL(identauth); /* next 4 bytes */
+  DEBUG(4,("lookupsid line %d\n",__LINE__));
+  for (i = 0; i < numsubauths; i++)
+  {
+qSIVAL(subauths[i]);
+  }
+  DEBUG(4,("lookupsid line %d\n",__LINE__));
+
+  qunistr("S-1-1");
+  qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(1); /* S-1-1 */
+  DEBUG(4,("lookupsid line %d\n",__LINE__));
+
+  qunistr("S-1-5");
+  qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(5); /* S-1-5 */
+
+  qunistr("S-1-3");
+  qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(3); /* S-1-3 */
+
+  qSIVAL(nentries);
+  qSIVAL(2); /* bufptr */
+  qSIVAL(nentries);
+  DEBUG(4,("lookupnames line %d\n",__LINE__));
+  for (i = 0; i < nentries; i++)
+  {
+qSSVAL(5); /* SID name use  5 == well known sid, 1 == user sid see showacls */
+qSSVAL(5); /* undocumented */
+  DEBUG(4,("lookupnames line %d\n",__LINE__));
+qSIVAL(name_to_rid(names[i]));
+  DEBUG(4,("lookupnames name_to_rid %d\n",name_to_rid(names[i])));
+qSIVAL(0); /* domain index out of above reference domains */
+  }
+  qSIVAL(nentries); /* mapped count */
+  endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+  break;
+
+#endif
+
+
 /* space in front of this function so that make proto doesn't pick it up */
  void _dummy_function(void)
 {
@@ -971,5 +1158,6 @@ static void api_lsa_lookup_sids( char *param, char *data,
 	lsa_reply_sam_logoff(NULL,NULL,NULL,NULL,t,0);
 	api_lsa_open_policy(NULL,NULL,NULL,NULL);
 	api_lsa_query_info(NULL,NULL,NULL,NULL);
-	api_lsa_lookup_sids(NULL,NULL,NULL,NULL);
+	api_lsa_lookup_sids (NULL,NULL,NULL,NULL);
+	api_lsa_lookup_names(NULL,NULL,NULL,NULL);
 }

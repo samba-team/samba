@@ -59,7 +59,7 @@ Input:
 Output:
       8 byte credential
 ****************************************************************************/
-void cred_create(char *session_key, char *stored_cred, uint32 time, 
+void cred_create(char *session_key, char *stored_cred, UTIME timestamp, 
 		 char *cred)
 {
 	char key2[7];
@@ -67,7 +67,7 @@ void cred_create(char *session_key, char *stored_cred, uint32 time,
 	char timecred[8];
 
 	memcpy(timecred, stored_cred, 8);
-	SIVAL(timecred, 0, IVAL(stored_cred, 0) + time);
+	SIVAL(timecred, 0, IVAL(stored_cred, 0) + timestamp.time);
 
 	E1(session_key, timecred, buf);
 	memset(key2, 0, 7);
@@ -90,11 +90,11 @@ Output:
       returns 0 otherwise
 ****************************************************************************/
 int cred_assert(char *cred, char *session_key, char *stored_cred,
-		uint32 time)
+		NTTIME timestamp)
 {
 	char cred2[8];
 
-	cred_create(session_key, stored_cred, time, cred2);
+	cred_create(session_key, stored_cred, timestamp, cred2);
 
 	return memcmp(cred, cred2, 8) == 0;
 }
