@@ -396,11 +396,11 @@ SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
 
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) \
-	     lib/dummyroot.o
+	     lib/dummyroot.o libsmb/errormap.o
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
 	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) \
-	printing/notify.o printing/printing_db.o lib/dummyroot.o
+	printing/notify.o printing/printing_db.o lib/dummyroot.o libsmb/errormap.o
 
 SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) \
