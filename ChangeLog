@@ -1,8 +1,22 @@
+Sat Jul 12 15:03:16 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/fcache.c: Save ticket flags.
+
+	* lib/krb5/get_in_tkt.c (extract_ticket): Extract addresses and
+ 	flags.
+
+	* lib/krb5/krb5.h: Add ticket_flags to krb5_creds.
+
 Sat Jul 12 13:12:48 1997  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: Call `AC_KRB_PROG_LN_S'
 
 	* acinclude.m4: Add `AC_KRB_PROG_LN_S' from krb4
+
+Sat Jul 12 00:57:01 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/get_in_tkt.c: Use union of krb5_flags and KDCOptions to
+ 	pass options.
 
 Fri Jul 11 15:04:22 1997  Assar Westerlund  <assar@sics.se>
 
