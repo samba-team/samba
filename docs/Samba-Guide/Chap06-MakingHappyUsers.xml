@@ -15,6 +15,11 @@
 	may occur:
 	</para>
 
+	<indexterm><primary>PDC</primary></indexterm>
+	<indexterm><primary>network bandwidth</primary><secondary>utilization</secondary></indexterm>
+	<indexterm><primary>BDC</primary></indexterm>
+	<indexterm><primary>user account</primary></indexterm>
+	<indexterm><primary>PDC/BDC ratio</primary></indexterm>
 <caution><para>
 Notice: A significant number of network administrators have responded to the guidance given
 below. It should be noted that there are sites that have a single PDC for many hundreds of
@@ -209,11 +214,16 @@ clients is conservative and if followed will minimize problems - but it is not a
 <title>Regarding LDAP Directories and Windows Computer Accounts</title>
 
 	<para>
+	<indexterm><primary>LDAP</primary><secondary>directory</secondary></indexterm>
 	Computer (machine) accounts can be placed where ever you like in an LDAP directory subject to some 
 	constraints that are described in this section.
 	</para>
 
 	<para>
+	<indexterm><primary>POSIX</primary></indexterm>
+	<indexterm><primary>SambaSAMAccount</primary></indexterm>
+	<indexterm><primary>machine account</primary></indexterm>
+	<indexterm><primary>trust account</primary></indexterm>
 	The POSIX and SambaSAMAccount components of computer (machine) accounts are both used by Samba. 
 	i.e.: Machine  accounts are treated inside Samba in the same way that Windows NT4/200X treats 
 	them. A user account and a machine account are indistinquishable from each other, except that
@@ -221,13 +231,17 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 	<para>
-	The need for Windows user, group, machine, trust, etc. accounts to be tied to a valid UNIX uid
+	<indexterm><primary>account</primary></indexterm>
+	<indexterm><primary>UID</primary></indexterm>
+	The need for Windows user, group, machine, trust, etc. accounts to be tied to a valid UNIX UID
 	is a design decision that was made a long way back in the history of Samba development. It is 
 	unlikely that this decision will be reversed of changed during the remaining life of the 
 	Samba-3.x series. 
 	</para>
 
 	<para>
+	<indexterm><primary>SID</primary></indexterm>
+	<indexterm><primary>NSS</primary></indexterm>
 	The resolution of a UID from the Windows SID is achieved within Samba through a mechanism that
 	must refer back to the host operating system on which Samba is running. The Name Service
 	Switcher (NSS) is the preferred mechanism that shields applications (like Samba) from the
@@ -244,6 +258,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 	<para>
+	<indexterm><primary>nss_ldap</primary></indexterm>
 	For many the weapon of choice is to use the PADL nss_ldap utility. This utility must
 	be configured so that computer accounts can be resolved to a POSIX/UNIX account UID. That
 	is fundamentally an LDAP design question.  The information provided on the Samba list and
