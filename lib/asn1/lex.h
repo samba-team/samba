@@ -33,6 +33,8 @@
 
 /* $Id$ */
 
+#include <roken.h>
+
 void error_message (const char *, ...)
 __attribute__ ((format (printf, 1, 2)));
 
