@@ -69,15 +69,20 @@ BOOL reghook_cache_add( REGISTRY_HOOK *hook )
 REGISTRY_HOOK* reghook_cache_find( char *keyname )
 {
 	char *key;
+	int len;
 	
 	if ( !keyname )
 		return NULL;
-		
-	if ( (key = strdup( keyname )) == NULL ) {
-		DEBUG(0,("reghook_cache_find: strdup() failed for string [%s] !?!?!\n",
+	
+	len = strlen( keyname );
+	if ( !(key = malloc( len + 2 )) ) {
+		DEBUG(0,("reghook_cache_find: malloc failed for string [%s] !?!?!\n",
 			keyname));
 		return NULL;
 	}
+
+	*key = '\\';
+	strncpy( key+1, keyname, len+1);
 	
 	string_sub( key, "\\", "/", 0 );
 		

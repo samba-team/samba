@@ -420,6 +420,8 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 	} while ( base && current );
 	
 	/* result should be the data_p from the lowest match node in the tree */
+	if ( result )
+		DEBUG(10,("sorted_tree_find: Found data_p!\n"));
 	
 	SAFE_FREE( keystr );
 	
