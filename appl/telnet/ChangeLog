@@ -1,3 +1,8 @@
+2000-12-09  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/sys_term.c (scrub_env): add supporting non-file TERMCAP
+	variables
+
 2000-12-07  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c (scrub_env): remove some const-ness
