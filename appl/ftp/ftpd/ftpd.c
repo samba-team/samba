@@ -102,6 +102,10 @@ extern int optind, opterr;
 #define LOG_FTP LOG_DAEMON
 #endif
 
+#ifndef LOG_DAEMON
+#define openlog(id,option,facility) openlog((id),(option))
+#endif
+
 static char version[] = "Version 6.00";
 
 extern	off_t restart_point;

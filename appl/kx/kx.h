@@ -38,6 +38,10 @@
 #define SOMAXCONN 5
 #endif
 
+#ifndef LOG_DAEMON
+#define openlog(id,option,facility) openlog((id),(option))
+#endif
+
 extern char *prog;
 
 int copy_encrypted (int fd1, int fd2, des_cblock *iv,
