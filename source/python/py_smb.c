@@ -160,7 +160,7 @@ static PyObject *py_smb_nt_create_andx(PyObject *self, PyObject *args,
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "si|iiii", kwlist, &filename, &desired_access,
+		    args, kw, "si|iii", kwlist, &filename, &desired_access,
 		    &file_attributes, &share_access, &create_disposition,
 		    &create_options))
 		return NULL;
