@@ -1,5 +1,9 @@
 2004-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/hdb-ldap.c: Allow the objectClass to be
+	"sambaSamAccount" or structural_object when searching for uid
+	entries.
+
 	* lib/krb5/krb5.conf.5: document [kdc]hdb-ldap-create-base
 	
 	* lib/hdb/hdb-ldap.c: add creation base that defaults to the
