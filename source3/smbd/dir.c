@@ -533,6 +533,9 @@ void *OpenDir(char *name)
 
   while ((n = readdirname(p))) {
     int l = strlen(n)+1;
+    /* If it's a vetoed file, pretend it doesn't even exist */
+    if(is_vetoed_name(n))
+      continue;
     if (used + l > dirp->mallocsize) {
       int s = MAX(used+l,used+2000);
       char *r;
