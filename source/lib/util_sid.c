@@ -43,7 +43,6 @@ DOM_SID global_sid_Network;					/* Network rids */
 static DOM_SID global_sid_Creator_Owner;    		/* Creator Owner */
 static DOM_SID global_sid_Creator_Group;              /* Creator Group */
 static DOM_SID global_sid_Anonymous;				/* Anonymous login */
-static const DOM_SID *global_sid_everyone = &global_sid_World;
 
 /*
  * An NT compatible anonymous token.
@@ -55,6 +54,43 @@ NT_USER_TOKEN anonymous_token = {
     3,
     anon_sid_array
 };
+
+/****************************************************************************
+ Lookup string names for SID types.
+****************************************************************************/
+
+const static struct {
+	enum SID_NAME_USE sid_type;
+	char *string;
+} sid_name_type[] = {
+	{SID_NAME_USER, "user"},
+	{SID_NAME_DOM_GRP, "domain group"},
+	{SID_NAME_DOMAIN, "domain"},
+	{SID_NAME_ALIAS, "local group"},
+	{SID_NAME_WKN_GRP, "well-known group"},
+	{SID_NAME_DELETED, "deleted account"},
+	{SID_NAME_INVALID, "invalid account"},
+	{SID_NAME_UNKNOWN, "UNKNOWN"},
+
+ 	{SID_NAME_USE_NONE, NULL}
+};
+
+const char *sid_type_lookup(uint32 sid_type) 
+{
+	int i = 0;
+
+	/* Look through list */
+	while(sid_name_type[i].sid_type != 0) {
+		if (sid_name_type[i].sid_type == sid_type)
+			return sid_name_type[i].string;
+		i++;
+	}
+
+	/* Default return */
+	return "SID *TYPE* is INVALID";
+	
+}
+
 
 /****************************************************************************
  Creates some useful well known sids
