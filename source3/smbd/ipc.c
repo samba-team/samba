@@ -3215,7 +3215,7 @@ static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
 		return False;
 	}
 
-	send_trans_reply(outbuf, NULL, 0, rdata, data_len, (int)prs_offset(&p->out_data.rdata) > data_len);
+	send_trans_reply(outbuf, NULL, 0, rdata, data_len, p->out_data.current_pdu_len > data_len);
 
 	free(rdata);
 	return True;
