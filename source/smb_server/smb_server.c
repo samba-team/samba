@@ -746,7 +746,7 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 
 	/* this is the size that w2k uses, and it appears to be important for
 	   good performance */
-	smb->negotiate.max_recv = 4356;
+	smb->negotiate.max_recv = lp_max_xmit();
 
 	smb->users.next_vuid = VUID_OFFSET;
 	
