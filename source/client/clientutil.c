@@ -463,9 +463,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
       outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
     }
 
-#if AJT
   if (strstr(service,"IPC$")) connect_as_ipc = True;
-#endif
 
   pstrcpy(dev,"A:");
   if (connect_as_printer)
