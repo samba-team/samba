@@ -30,6 +30,9 @@ RCSID("$Id$");
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
 
 #ifdef KRB5
 #include <krb5.h>
