@@ -1782,19 +1782,21 @@ BOOL ms_has_wild(char *s)
  *******************************************************************/
 BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 {
+	extern int Protocol;
 	fstring p2, s2;
+
 	if (strcmp(string,"..") == 0) string = ".";
 	if (strcmp(pattern,".") == 0) return False;
 	
 	if (is_case_sensitive) {
-		return ms_fnmatch(pattern, string) == 0;
+		return ms_fnmatch(pattern, string, Protocol) == 0;
 	}
 
 	fstrcpy(p2, pattern);
 	fstrcpy(s2, string);
 	strlower(p2); 
 	strlower(s2);
-	return ms_fnmatch(p2, s2) == 0;
+	return ms_fnmatch(p2, s2, Protocol) == 0;
 }
 
 /*******************************************************************
@@ -1804,12 +1806,13 @@ BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 BOOL wild_match(char *string, char *pattern)
 {
 	pstring p2, s2;
+	extern int Protocol;
 
 	pstrcpy(p2, pattern);
 	pstrcpy(s2, string);
 	strlower(p2);
 	strlower(s2);
-	return ms_fnmatch(p2, s2) == 0;
+	return ms_fnmatch(p2, s2, Protocol) == 0;
 }
 
 #ifdef __INSURE__

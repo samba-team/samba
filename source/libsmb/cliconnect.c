@@ -414,7 +414,6 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
 
-
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);

@@ -121,7 +121,6 @@ extern int max_xmit;
 extern pstring cur_dir;
 extern int get_total_time_ms;
 extern int get_total_size;
-extern int Protocol;
 
 int blocksize=20;
 int tarhandle;

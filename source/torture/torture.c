@@ -168,7 +168,7 @@ static BOOL close_connection(struct cli_state *c)
 
 
 /* check if the server produced the expected error code */
-static BOOL check_error(struct cli_state *c, 
+static BOOL check_error(int line, struct cli_state *c, 
 			uint8 eclass, uint32 ecode, uint32 nterr)
 {
         if (cli_is_dos_error(c)) {
@@ -182,8 +182,8 @@ static BOOL check_error(struct cli_state *c,
                 if (eclass != class || ecode != num) {
                         printf("unexpected error code class=%d code=%d\n", 
                                (int)class, (int)num);
-                        printf(" expected %d/%d %d\n", 
-                               (int)eclass, (int)ecode, (int)nterr);
+                        printf(" expected %d/%d %d (line=%d)\n", 
+                               (int)eclass, (int)ecode, (int)nterr, line);
                         return False;
                 }
 
@@ -196,7 +196,7 @@ static BOOL check_error(struct cli_state *c,
 
                 if (nterr != status) {
                         printf("unexpected error code 0x%08x\n", status);
-                        printf(" expected 0x%08x\n", nterr);
+                        printf(" expected 0x%08x (line=%d)\n", nterr, line);
                         return False;
                 }
         }
@@ -208,7 +208,7 @@ static BOOL check_error(struct cli_state *c,
 static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
 	while (!cli_lock(c, fnum, offset, len, -1, WRITE_LOCK)) {
-		if (!check_error(c, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, c, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 	return True;
 }
@@ -802,7 +802,8 @@ static BOOL run_locktest1(int dummy)
 		printf("lock2 succeeded! This is a locking bug\n");
 		return False;
 	} else {
-		if (!check_error(&cli2, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, &cli2, ERRDOS, ERRlock, 
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 
@@ -812,7 +813,8 @@ static BOOL run_locktest1(int dummy)
 		printf("lock3 succeeded! This is a locking bug\n");
 		return False;
 	} else {
-		if (!check_error(&cli2, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, &cli2, ERRDOS, ERRlock, 
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 	t2 = time(NULL);
 
@@ -829,7 +831,8 @@ static BOOL run_locktest1(int dummy)
 		printf("lock4 succeeded! This is a locking bug\n");
 		return False;
 	} else {
-		if (!check_error(&cli2, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, &cli2, ERRDOS, ERRlock, 
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
@@ -996,21 +999,24 @@ static BOOL run_locktest2(int dummy)
 		printf("WRITE lock1 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
-		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, &cli, ERRDOS, ERRlock, 
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 	if (cli_lock(&cli, fnum2, 0, 4, 0, WRITE_LOCK)) {
 		printf("WRITE lock2 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
-		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, &cli, ERRDOS, ERRlock, 
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 	if (cli_lock(&cli, fnum2, 0, 4, 0, READ_LOCK)) {
 		printf("READ lock2 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
-		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, &cli, ERRDOS, ERRlock, 
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 
 	if (!cli_lock(&cli, fnum1, 100, 4, 0, WRITE_LOCK)) {
@@ -1026,21 +1032,25 @@ static BOOL run_locktest2(int dummy)
 		printf("unlock1 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
-		if (!check_error(&cli, ERRDOS, ERRnotlocked, 0)) return False;
+		if (!check_error(__LINE__, &cli, 
+				 ERRDOS, ERRnotlocked, 
+				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
 	if (cli_unlock(&cli, fnum1, 0, 8)) {
 		printf("unlock2 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
-		if (!check_error(&cli, ERRDOS, ERRnotlocked, 0)) return False;
+		if (!check_error(__LINE__, &cli, 
+				 ERRDOS, ERRnotlocked, 
+				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
 	if (cli_lock(&cli, fnum3, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
-		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return False;
+		if (!check_error(__LINE__, &cli, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 	cli_setpid(&cli, 1);
@@ -1790,7 +1800,7 @@ static BOOL run_maxfidtest(int dummy)
 	static struct cli_state cli;
 	char *template = "\\maxfid.%d.%d";
 	fstring fname;
-	int fnum;
+	int fnums[0x11000], i;
 	int retries=4;
 	BOOL correct = True;
 
@@ -1803,27 +1813,24 @@ static BOOL run_maxfidtest(int dummy)
 
 	cli_sockopt(&cli, sockops);
 
-	fnum = 0;
-	while (1) {
-		slprintf(fname,sizeof(fname)-1,template, fnum,(int)getpid());
-		if (cli_open(&cli, fname, 
-			     O_RDWR|O_CREAT|O_TRUNC, DENY_NONE) ==
+	for (i=0; i<0x11000; i++) {
+		slprintf(fname,sizeof(fname)-1,template, i,(int)getpid());
+		if ((fnums[i] = cli_open(&cli, fname, 
+					O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) ==
 		    -1) {
 			printf("open of %s failed (%s)\n", 
 			       fname, cli_errstr(&cli));
-			printf("maximum fnum is %d\n", fnum);
+			printf("maximum fnum is %d\n", i);
 			break;
 		}
-		fnum++;
-		if (fnum % 100 == 0) printf("%d\r", fnum);
+		if (i % 100 == 0) printf("%d\r", i);
 	}
-	printf("%d\n", fnum);
+	printf("%d\n", i);
 
 	printf("cleaning up\n");
-	while (fnum > 0) {
-		fnum--;
-		slprintf(fname,sizeof(fname)-1,template, fnum,(int)getpid());
-		cli_close(&cli, fnum);
+	for (;i>=0;i--) {
+		slprintf(fname,sizeof(fname)-1,template, i,(int)getpid());
+		cli_close(&cli, fnums[i]);
 		if (!cli_unlink(&cli, fname)) {
 			printf("unlink of %s failed (%s)\n", 
 			       fname, cli_errstr(&cli));
@@ -2844,7 +2851,8 @@ static BOOL run_opentest(int dummy)
 	/* This will fail - but the error should be ERRnoaccess, not ERRbadshare. */
 	fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
 	
-        if (check_error(&cli1, ERRDOS, ERRnoaccess, 0)) {
+        if (check_error(__LINE__, &cli1, ERRDOS, ERRnoaccess, 
+			NT_STATUS_ACCESS_DENIED)) {
 		printf("correct error code ERRDOS/ERRnoaccess returned\n");
 	}
 	
@@ -2865,7 +2873,8 @@ static BOOL run_opentest(int dummy)
 	/* This will fail - but the error should be ERRshare. */
 	fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
 	
-	if (check_error(&cli1, ERRDOS, ERRbadshare, 0)) {
+	if (check_error(__LINE__, &cli1, ERRDOS, ERRbadshare, 
+			NT_STATUS_SHARING_VIOLATION)) {
 		printf("correct error code ERRDOS/ERRbadshare returned\n");
 	}
 	

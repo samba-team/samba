@@ -1196,7 +1196,7 @@ static int file_find(struct file_list **list, const char *directory,
 		}
 
 		isdir = False;
-		if (!match || !ms_fnmatch(expression, dname)) {
+		if (!match || !gen_fnmatch(expression, dname)) {
 			if (recurse) {
 				ret = stat(path, &statbuf);
 				if (ret == 0) {

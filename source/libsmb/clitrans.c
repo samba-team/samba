@@ -171,16 +171,19 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	 * be treated as such.
 	 */
 
-	if (cli_is_dos_error(cli)) {
-		cli_dos_error(cli, &eclass, &ecode);
+	if (cli_is_error(cli)) {
+		if (cli_is_dos_error(cli)) {
+			cli_dos_error(cli, &eclass, &ecode);
 
-		if(cli->nt_pipe_fnum == 0)
-			return(False);
-
-		if(!(eclass == ERRDOS && ecode == ERRmoredata)) {
-			if (eclass != 0 && (ecode != (0x80000000 | STATUS_BUFFER_OVERFLOW)))
+			if(cli->nt_pipe_fnum == 0)
 				return(False);
+
+			if(!(eclass == ERRDOS && ecode == ERRmoredata)) {
+				if (eclass != 0 && (ecode != (0x80000000 | STATUS_BUFFER_OVERFLOW)))
+					return(False);
+			}
 		}
+		return False;
 	}
 
 	/* parse out the lengths */
