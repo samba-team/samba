@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: authorgroup.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+|	$Id: authorgroup.mod.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 |- #############################################################################
-|	$Author: ab $												
+|	$Author: jelmer $												
 |														
 |   PURPOSE: Manage Authorgroups 
 + ############################################################################## -->
@@ -19,7 +19,7 @@
     <doc:reference id="authorgroup" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: authorgroup.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+		$Id: authorgroup.mod.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 	    </releaseinfo>
 		<authorgroup>
 	    	<author><firstname>Ramon</firstname> <surname>Casellas</surname></author>

@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: mathelem.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $		
+|	$Id: mathelem.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $		
 |- #############################################################################
-|	$Author: ab $												
+|	$Author: jelmer $												
 |														
 |   PURPOSE: Math Elements as theorems, lemmas, propositions, etc.
 |	Note: these elements are not part of the DocBook DTD. I have extended
@@ -22,7 +22,7 @@
     <doc:reference id="mathelems" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: mathelem.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+		$Id: mathelem.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
