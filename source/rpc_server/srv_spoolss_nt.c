@@ -6255,11 +6255,11 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return WERR_ACCESS_DENIED;
 	}
 
-	free_a_printer(&printer,2);
-
 	update_c_setprinter(False);
 
 	srv_spoolss_sendnotify(printer->info_2->printername, 0, PRINTER_CHANGE_ADD_PRINTER, 0x0);
+
+	free_a_printer(&printer,2);
 
 	return WERR_OK;
 }
