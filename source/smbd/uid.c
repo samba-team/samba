@@ -289,15 +289,13 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 	for (i = 0; i < ptok->num_sids; i++) {
 		enum SID_NAME_USE sid_type;
 
-		if (sid_to_gid(&ptok->user_sids[i], &final_groups[current_n_groups + i], &sid_type)) {
-			SAFE_FREE(final_groups);
-			return;
-		}
+		if (sid_to_gid(&ptok->user_sids[i], &final_groups[current_n_groups], &sid_type))
+			current_n_groups++;
 	}
 
 	SAFE_FREE(*pp_groups);
 	*pp_groups = final_groups;
-	*n_groups = total_groups;
+	*n_groups = current_n_groups;
 }
 
 /*****************************************************************
