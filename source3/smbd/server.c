@@ -4925,6 +4925,9 @@ static void init_structs(void )
       fd_ptr->real_open_flags = -1;
     }
 
+  /* for RPC pipes */
+  init_rpc_pipe_hnd();
+
   init_dptrs();
 }
 

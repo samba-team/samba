@@ -2916,7 +2916,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   /* Get the file handle and hence the file name. */
   fd = setup[1];
   subcommand = setup[0];
-  pipe_name = get_pipe_name(fd);
+  pipe_name = get_rpc_pipe_hnd_name(fd);
 
   if (pipe_name == NULL)
   {

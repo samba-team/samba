@@ -38,30 +38,15 @@
 extern int Protocol;
 extern int DEBUGLEVEL;
 extern char magic_char;
-static int chain_pnum = -1;
 extern BOOL case_sensitive;
 extern pstring sesssetup_user;
 extern int Client;
 extern fstring myworkgroup;
 
-#ifndef MAX_OPEN_PIPES
-#define MAX_OPEN_PIPES 50
-#endif
-
-static struct
-{
-  int cnum;
-  BOOL open;
-  fstring name;
-
-} Pipes[MAX_OPEN_PIPES];
-
 #define VALID_PNUM(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PIPES))
 #define OPEN_PNUM(pnum)    (VALID_PNUM(pnum) && Pipes[pnum].open)
 #define PNUM_OK(pnum,c) (OPEN_PNUM(pnum) && (c)==Pipes[pnum].cnum)
 
-#define CHECK_PNUM(pnum,c) if (!PNUM_OK(pnum,c)) \
-                               return(ERROR(ERRDOS,ERRbadfid))
 /* this macro should always be used to extract an pnum (smb_fid) from
    a packet to ensure chaining works correctly */
 #define GETPNUM(buf,where) (chain_pnum!= -1?chain_pnum:SVAL(buf,where))
@@ -75,49 +60,6 @@ char * known_pipes [] =
 #endif
   NULL
 };
-
-/****************************************************************************
-  find first available file slot
-****************************************************************************/
-static int find_free_pipe(void )
-{
-  int i;
-  /* we start at 1 here for an obscure reason I can't now remember,
-     but I think is important :-) */
-  for (i = 1; i < MAX_OPEN_PIPES; i++)
-    if (!Pipes[i].open)
-      return(i);
-
-  DEBUG(1,("ERROR! Out of pipe structures - perhaps increase MAX_OPEN_PIPES?\n"));
-
-  return(-1);
-}
-
-/****************************************************************************
-  gets the name of a pipe
-****************************************************************************/
-char *get_pipe_name(int pnum)
-{
-	DEBUG(6,("get_pipe_name: "));
-
-	if (VALID_PNUM(pnum - 0x800))
-	{
-		DEBUG(6,("name: %s cnum: %d open: %s ",
-		          Pipes[pnum - 0x800].name,
-		          Pipes[pnum - 0x800].cnum,
-		          BOOLSTR(Pipes[pnum - 0x800].open)));
-	}
-	if (OPEN_PNUM(pnum - 0x800))
-	{
-		DEBUG(6,("OK\n"));
-		return Pipes[pnum - 0x800].name;
-	}
-	else
-	{
-		DEBUG(6,("NOT\n"));
-		return NULL;
-	}
-}
 
 /****************************************************************************
   reply to an open and X on a named pipe
@@ -161,12 +103,8 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   DEBUG(3,("Known pipe %s opening.\n",fname));
   smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-  pnum = find_free_pipe();
+  pnum = open_rpc_pipe_hnd(fname, cnum);
   if (pnum < 0) return(ERROR(ERRSRV,ERRnofids));
-
-  Pipes[pnum].open = True;
-  Pipes[pnum].cnum = cnum;
-  fstrcpy(Pipes[pnum].name, fname);
 
   /* Prepare the reply */
   set_message(outbuf,15,0,True);
@@ -188,11 +126,6 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   SSVAL(outbuf,smb_vwv8,rmode);
   SSVAL(outbuf,smb_vwv11,0);
 
-  DEBUG(4,("Opened pipe %s with handle %x name %s.\n",
-	   fname, pnum + 0x800, Pipes[pnum].name));
-  
-  chain_pnum = pnum;
-
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -202,18 +135,11 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_pipe_close(char *inbuf,char *outbuf)
 {
-  int pnum = GETPNUM(inbuf,smb_vwv0);
+  int pnum = get_rpc_pipe_num(inbuf,smb_vwv0);
   int cnum = SVAL(inbuf,smb_tid);
   int outsize = set_message(outbuf,0,0,True);
 
-  /* mapping is 0x800 up... */
-
-  CHECK_PNUM(pnum-0x800,cnum);
-
-  DEBUG(3,("%s Closed pipe name %s pnum=%d cnum=%d\n",
-	   timestring(),Pipes[pnum-0x800].name, pnum,cnum));
-  
-  Pipes[pnum-0x800].open = False;
+  if (!close_rpc_pipe_hnd(pnum, cnum)) return(ERROR(ERRDOS,ERRbadfid));
 
   return(outsize);
 }

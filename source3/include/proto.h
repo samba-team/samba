@@ -655,6 +655,19 @@ BOOL server_validate(char *user, char *domain,
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)());
 
+/*The following definitions come from  pipes.c  */
+
+int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize);
+int reply_pipe_close(char *inbuf,char *outbuf);
+BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+
 /*The following definitions come from  predict.c  */
 
 int read_predict(int fd,int offset,char *buf,char **ptr,int num);
