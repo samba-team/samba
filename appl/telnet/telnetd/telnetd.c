@@ -117,7 +117,7 @@ int debug = 0;
 int keepalive = 1;
 char *progname;
 
-extern void usage (void);
+static void usage (void);
 
 /*
  * The string to pass to getopt().  We do it this way so
@@ -136,12 +136,14 @@ char valid_opts[] = "Bd:hklnS:u:UL:y"
 #endif
 		    ;
 
-void doit(struct sockaddr_in*);
+static void doit(struct sockaddr*, int);
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
-    struct sockaddr_in from;
-    int on = 1, fromlen;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
+    int on = 1, sa_size;
     int ch;
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
     int tos = -1;
@@ -406,14 +408,14 @@ int main(int argc, char **argv)
 #endif	/* _SC_CRAY_SECURE_SYS */
 
     roken_openlog("telnetd", LOG_PID | LOG_ODELAY, LOG_DAEMON);
-    fromlen = sizeof (from);
-    if (getpeername(STDIN_FILENO, (struct sockaddr *)&from, &fromlen) < 0) {
+    sa_size = sizeof (__ss);
+    if (getpeername(STDIN_FILENO, sa, &sa_size) < 0) {
 	fprintf(stderr, "%s: ", progname);
 	perror("getpeername");
 	_exit(1);
     }
     if (keepalive &&
-	setsockopt(0, SOL_SOCKET, SO_KEEPALIVE,
+	setsockopt(STDIN_FILENO, SOL_SOCKET, SO_KEEPALIVE,
 		   (void *)&on, sizeof (on)) < 0) {
 	syslog(LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
     }
@@ -428,20 +430,21 @@ int main(int argc, char **argv)
 	if (tos < 0)
 	    tos = 020;	/* Low Delay bit */
 	if (tos
-	    && (setsockopt(0, IPPROTO_IP, IP_TOS,
+	    && sa->sa_family == AF_INET
+	    && (setsockopt(STDIN_FILENO, IPPROTO_IP, IP_TOS,
 			   (void *)&tos, sizeof(tos)) < 0)
 	    && (errno != ENOPROTOOPT) )
 	    syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
     }
 #endif	/* defined(IPPROTO_IP) && defined(IP_TOS) */
-    net = 0;
-    doit(&from);
+    net = STDIN_FILENO;
+    doit(sa, sa_size);
     /* NOTREACHED */
     return 0;
 }  /* end of main */
 
-void
-usage()
+static void
+usage(void)
 {
     fprintf(stderr, "Usage: telnetd");
 #ifdef	AUTHENTICATION
@@ -656,14 +659,21 @@ char remote_host_name[MaxHostNameLen];
 /*
  * Get a pty, scan input lines.
  */
-void
-doit(struct sockaddr_in *who)
+static void
+doit(struct sockaddr *who, int who_len)
 {
     char *host = NULL;
     struct hostent *hp;
     int level;
     int ptynum;
     char user_name[256];
+    int error;
+    char host_addr[256];
+    void *addr;
+    int addr_sz;
+    const char *tmp;
+    int af;
+    struct sockaddr_in mapped_sin;
 
     /*
      * Find an available pty to use.
@@ -688,24 +698,51 @@ doit(struct sockaddr_in *who)
     }
 #endif	/* _SC_CRAY_SECURE_SYS */
 
-    /* get name of connected client */
-    hp = roken_gethostbyaddr((const char *)&who->sin_addr,
-		       sizeof (struct in_addr),
-		       who->sin_family);
+    af = who->sa_family;
+    switch (af) {
+    case AF_INET : {
+	struct sockaddr_in *sin = (struct sockaddr_in *)who;
+
+	addr    = &sin->sin_addr;
+	addr_sz = sizeof(sin->sin_addr);
+	break;
+    }
+#ifdef HAVE_IPV6
+    case AF_INET6 : {
+	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)who;
+
+	addr    = &sin6->sin6_addr;
+	addr_sz = sizeof(sin6->sin6_addr);
+	break;
+    }
+#endif
+    default :
+	fatal (net, "Unknown address family\r\n");
+	break;
+    }
+
+    hp = getipnodebyaddr (addr, addr_sz, af, &error);
 
     if (hp == NULL && registerd_host_only) {
 	fatal(net, "Couldn't resolve your address into a host name.\r\n\
 Please contact your net administrator");
-    } else if (hp) {
+    } else if (hp != NULL) {
 	host = hp->h_name;
-    } else {
-	host = inet_ntoa(who->sin_addr);
     }
+
+    tmp = inet_ntop(af, addr, host_addr, sizeof(host_addr));
+    if (tmp == NULL)
+	strcpy_truncate (host_addr, "unknown address", sizeof(host_addr));
+
+    if (host == NULL)
+	host = host_addr;
+
     /*
      * We must make a copy because Kerberos is probably going
      * to also do a gethost* and overwrite the static data...
      */
     strcpy_truncate(remote_host_name, host, sizeof(remote_host_name));
+    freehostent (hp);
     host = remote_host_name;
 
     /* XXX - should be k_gethostname? */
@@ -726,8 +763,8 @@ Please contact your net administrator");
      */
     if (strlen(remote_host_name) > abs(utmp_len))
 	strcpy_truncate(remote_host_name,
-		inet_ntoa(who->sin_addr),
-		sizeof(remote_host_name));
+			host_addr,
+			sizeof(remote_host_name));
 
 #ifdef AUTHENTICATION
     auth_encrypt_init(hostname, host, "TELNETD", 1);
