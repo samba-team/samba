@@ -1121,4 +1121,8 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
 
+#if defined(VALGRIND)
+#define strlen(x) valgrind_strlen(x)
+#endif
+
 #endif /* _INCLUDES_H */

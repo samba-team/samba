@@ -1613,3 +1613,14 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 	
 	return True;
 }
+
+#ifdef VALGRIND
+size_t valgrind_strlen(const char *s)
+{
+	size_t count;
+	for(count = 0; *s++; count++)
+		;
+	return count;
+}
+#endif
+
