@@ -1024,7 +1024,7 @@ typedef struct spool_q_enumjobs
 
 } SPOOL_Q_ENUMJOBS;
 
-typedef struct job_info_info
+typedef struct job_info_ctr_info
 {
 	union {
 		JOB_INFO_1 **job_info_1;
@@ -1095,16 +1095,23 @@ typedef struct spool_r_enumports
 #define JOB_CONTROL_RESTART            4
 #define JOB_CONTROL_DELETE             5
 
+typedef struct job_info_info
+{
+	union {
+		JOB_INFO_1 job_info_1;
+		JOB_INFO_2 job_info_2;
+	} job;
+
+} JOB_INFO;
+
 typedef struct spool_q_setjob
 {
 	POLICY_HND handle;
 	uint32 jobid;
 	uint32 level;
-	union {
-		JOB_INFO_1 job_info_1;
-		JOB_INFO_2 job_info_2;
-	} job;
+	JOB_INFO ctr;
 	uint32 command;
+
 } SPOOL_Q_SETJOB;
 
 typedef struct spool_r_setjob

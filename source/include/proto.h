@@ -4923,7 +4923,11 @@ uint32 _spoolss_enumjobs( const POLICY_HND *handle,
 				uint32 *buf_size,
 				uint32 *numofjobs);
 uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid);
-uint32 _spoolss_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata);
+uint32 _spoolss_setjob( const POLICY_HND *handle,
+				uint32 jobid,
+				uint32 level,
+				JOB_INFO *ctr,
+				uint32 command);
 uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *rdata);
 uint32 _spoolss_enumforms(SPOOL_Q_ENUMFORMS *q_u, prs_struct *rdata);
 uint32 _spoolss_enumports(SPOOL_Q_ENUMPORTS *q_u, prs_struct *rdata);

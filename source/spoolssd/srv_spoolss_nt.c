@@ -1448,7 +1448,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd,
 		{
 			construct_notify_jobs_info(&(queue[j]), info, pnum, snum, i, queue[j].job);
 		}
-		if (queue) free(queue);
+		safe_free(queue);
 		break;
 	   }
 	 }
@@ -1553,7 +1553,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	printer->unknown22    = 0x0;
 	printer->unknown23    = 0x5;
 
-	if (queue) free(queue);
+	safe_free(queue);
 
 	free_a_printer(ntprinter, 2);
 	return (True);	
@@ -1707,7 +1707,7 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
 	construct_dev_mode(devmode, snum, servername);			
 	printer->devmode=devmode;
 	
-	if (queue) free(queue);
+	safe_free(queue);
 	free_a_printer(ntprinter, 2);
 	return (True);
 }
@@ -2706,62 +2706,71 @@ uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid)
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata)
+uint32 _spoolss_setjob( const POLICY_HND *handle,
+				uint32 jobid,
+				uint32 level,
+				JOB_INFO *ctr,
+				uint32 command)
+
 {
-	SPOOL_R_SETJOB r_u;
 	int snum;
 	print_queue_struct *queue=NULL;
-	print_status_struct status;
+	print_status_struct prt_status;
 	int i=0;
 	BOOL found=False;
 	int count;
 		
-	bzero(&status,sizeof(status));
+	bzero(&prt_status,sizeof(prt_status));
 
-	if (get_printer_snum(handle, &snum))
+	if (!get_printer_snum(handle, &snum))
 	{
-		count=get_printqueue(snum, NULL, &queue, &status);		
-		while ( (i<count) && found==False )
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	count=get_printqueue(snum, NULL, &queue, &prt_status);		
+
+	while ( (i<count) && found==False )
+	{
+		if ( jobid == queue[i].job )
 		{
-			if ( jobid == queue[i].job )
-			{
-				found=True;
-			}
-			i++;
+			found=True;
 		}
-		
-		if (found==True)
+		i++;
+	}
+	
+	if (found==True)
+	{
+		switch (command)
 		{
-			switch (command)
+			case JOB_CONTROL_CANCEL:
+			case JOB_CONTROL_DELETE:
 			{
-				case JOB_CONTROL_CANCEL:
-				case JOB_CONTROL_DELETE:
-				{
-					del_printqueue(NULL, snum, jobid);
-					break;
-				}
-				case JOB_CONTROL_PAUSE:
-				{
-					status_printjob(NULL, snum, jobid, LPQ_PAUSED);
-					break;
-				}
-				case JOB_CONTROL_RESUME:
-				{
-					status_printjob(NULL, snum, jobid, LPQ_QUEUED);
-					break;
-				}
+				del_printqueue(NULL, snum, jobid);
+				safe_free(queue);
+				return 0x0;
+			}
+			case JOB_CONTROL_PAUSE:
+			{
+				status_printjob(NULL, snum, jobid, LPQ_PAUSED);
+				safe_free(queue);
+				return 0x0;
+			}
+			case JOB_CONTROL_RESUME:
+			{
+				status_printjob(NULL, snum, jobid, LPQ_QUEUED);
+				safe_free(queue);
+				return 0x0;
 			}
 		}
 	}
-	status=0x0;
-	spoolss_io_r_setjob("",&r_u,rdata,0);
-	if (queue) free(queue);
+	safe_free(queue);
+	return NT_STATUS_INVALID_INFO_CLASS;
 
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
@@ -3449,7 +3458,7 @@ uint32 _spoolss_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata)
 			break;
 		}
 	}
-	if (queue) free(queue);
+	safe_free(queue);
 
 }
 

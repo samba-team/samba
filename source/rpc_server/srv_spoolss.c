@@ -997,69 +997,19 @@ static void api_spoolss_schedulejob(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata)
-{
-	SPOOL_R_SETJOB r_u;
-	int snum;
-	print_queue_struct *queue=NULL;
-	print_status_struct status;
-	int i=0;
-	BOOL found=False;
-	int count;
-		
-	bzero(&status,sizeof(status));
-
-	if (get_printer_snum(&(q_u->handle), &snum))
-	{
-		count=get_printqueue(snum, NULL, &queue, &status);		
-		while ( (i<count) && found==False )
-		{
-			if ( q_u->jobid == queue[i].job )
-			{
-				found=True;
-			}
-			i++;
-		}
-		
-		if (found==True)
-		{
-			switch (q_u->command)
-			{
-				case JOB_CONTROL_CANCEL:
-				case JOB_CONTROL_DELETE:
-				{
-					del_printqueue(NULL, snum, q_u->jobid);
-					break;
-				}
-				case JOB_CONTROL_PAUSE:
-				{
-					status_printjob(NULL, snum, q_u->jobid, LPQ_PAUSED);
-					break;
-				}
-				case JOB_CONTROL_RESUME:
-				{
-					status_printjob(NULL, snum, q_u->jobid, LPQ_QUEUED);
-					break;
-				}
-			}
-		}
-	}
-	r_u.status=0x0;
-	spoolss_io_r_setjob("",&r_u,rdata,0);
-	if (queue) free(queue);
-
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_setjob(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_SETJOB q_u;
+	SPOOL_R_SETJOB r_u;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_setjob("", &q_u, data, 0);
-
-	spoolss_reply_setjob(&q_u, rdata);
+	r_u.status = _spoolss_setjob(&q_u.handle, q_u.jobid,
+				q_u.level, &q_u.ctr, q_u.command);
+	spoolss_io_r_setjob("",&r_u,rdata,0);
 }
 
 /****************************************************************************
