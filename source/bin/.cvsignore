@@ -18,6 +18,7 @@ smbpasswd
 smbsh
 smbspool
 smbstatus
+smbtree
 smbumount
 swat
 testparm
