@@ -23,7 +23,7 @@
  */
 
 #define BASE_MACHINE_UID 60000
-#define MAX_MACHINE_UID 65500 /* 5500 trust acconts aren't enough? */
+#define MAX_MACHINE_UID 65500 /* 5500 trust accounts aren't enough? */
 
 #include "includes.h"
 
@@ -715,5 +715,3 @@ int main (int argc, char **argv)
 
 	return 0;
 }
-
-
