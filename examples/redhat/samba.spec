@@ -2,7 +2,7 @@ Summary: SMB client and server
 Name: samba
 %define	version 1.9.17
 Version: %{version}
-Release: 2
+Release: 3
 Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-%{version}.tar.gz
@@ -37,9 +37,9 @@ make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
-
 mkdir -p $RPM_BUILD_ROOT/etc
 mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
+mkdir -p $RPM_BUILD_ROOT/etc/pam.d
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc0.d
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc1.d
@@ -47,12 +47,16 @@ mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc2.d
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc3.d
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc5.d
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc6.d
+mkdir -p $RPM_BUILD_ROOT/home/samba
 mkdir -p $RPM_BUILD_ROOT/usr/bin
 mkdir -p $RPM_BUILD_ROOT/usr/sbin
 mkdir -p $RPM_BUILD_ROOT/usr/man/man1
 mkdir -p $RPM_BUILD_ROOT/usr/man/man5
 mkdir -p $RPM_BUILD_ROOT/usr/man/man7
 mkdir -p $RPM_BUILD_ROOT/usr/man/man8
+mkdir -p $RPM_BUILD_ROOT/var/lock/samba
+mkdir -p $RPM_BUILD_ROOT/var/log/samba
+mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
 cd source
 cd ..
@@ -84,6 +88,9 @@ install -m644 examples/simple/smb.conf $RPM_BUILD_ROOT/etc/smb.conf.sampl
 install -m644 examples/redhat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
 install -m644 examples/redhat/smbprint $RPM_BUILD_ROOT/usr/bin
 install -m755 examples/redhat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
+install -m644 examples/redhat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+install -m644 examples/redhat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
+
 ln -sf /etc/rc.d/init.d/smb $RPM_BUILD_ROOT/etc/rc.d/rc0.d/K35smb
 ln -sf /etc/rc.d/init.d/smb $RPM_BUILD_ROOT/etc/rc.d/rc1.d/K35smb
 ln -sf /etc/rc.d/init.d/smb $RPM_BUILD_ROOT/etc/rc.d/rc2.d/K35smb
@@ -91,24 +98,12 @@ ln -sf /etc/rc.d/init.d/smb $RPM_BUILD_ROOT/etc/rc.d/rc3.d/S91smb
 ln -sf /etc/rc.d/init.d/smb $RPM_BUILD_ROOT/etc/rc.d/rc5.d/S91smb
 ln -sf /etc/rc.d/init.d/smb $RPM_BUILD_ROOT/etc/rc.d/rc6.d/K35smb
 
-mkdir -p $RPM_BUILD_ROOT/home/samba
-mkdir -p $RPM_BUILD_ROOT/var/lock/samba
-chmod 775 $RPM_BUILD_ROOT/home/samba
-install -m 644 examples/redhat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
-if [ -d /etc/pam.d ]; then
-install -m 644 examples/redhat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
-else
-/sbin/pamconfig --add --service=samba --password=none --sesslist=none
-fi
-
-if [ ! -f /var/log/samba ]; then
-	touch /var/log/samba
-	chmod 600 /var/log/samba
+if [ "$1" = 0 ] ; then
+      /sbin/pamconfig --add --service=samba --password=none --sesslist=none
 fi
 
 %postun
@@ -119,6 +114,9 @@ if [ "$1" = 0 ] ; then
     if [ -x /etc/pam.conf ]; then
       /sbin/pamconfig --remove --service=samba --password=none --sesslist=none
     fi
+  fi
+  if [ -e /var/log/samba ]; then
+    rm -rf /var/log/samba
   fi
 fi
 
@@ -151,9 +149,7 @@ fi
 %attr(-,root,root) %config /etc/rc.d/rc6.d/K35smb
 %attr(-,root,root) %config /etc/rc.d/rc2.d/K35smb
 %attr(-,root,root) %config /etc/logrotate.d/samba
-if [ -x /etc/pam.d/samba ]; then
- %attr(-,root,root) %config /etc/pam.d/samba
-fi
+%attr(-,root,root) %config /etc/pam.d/samba
 %attr(-,root,root) /usr/man/man1/smbstatus.1
 %attr(-,root,root) /usr/man/man1/smbclient.1
 %attr(-,root,root) /usr/man/man1/smbrun.1
@@ -166,3 +162,5 @@ fi
 %attr(-,root,root) /usr/man/man8/nmbd.8
 %attr(-,root,nobody) %dir /home/samba
 %attr(-,root,root) %dir /var/lock/samba
+%attr(-,root,root) %dir /var/log/samba
+%attr(777,root,root) %dir /var/spool/samba
