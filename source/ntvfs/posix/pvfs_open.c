@@ -103,6 +103,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	int fnum;
 	NTSTATUS status;
 	uint32_t create_action;
+	uint32_t access_mask = io->generic.in.access_mask;
 
 	if (name->stream_name) {
 		return NT_STATUS_NOT_A_DIRECTORY;
@@ -152,6 +153,14 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
+	if (name->exists) {
+		/* check the security descriptor */
+		status = pvfs_access_check(pvfs, req, name, &access_mask);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
 	f->fnum          = fnum;
 	f->session       = req->session;
 	f->smbpid        = req->smbpid;
@@ -160,6 +169,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->lock_count    = 0;
 	f->share_access  = io->generic.in.share_access;
 	f->impersonation = io->generic.in.impersonation;
+	f->access_mask   = access_mask;
 
 	f->handle->pvfs              = pvfs;
 	f->handle->name              = talloc_steal(f->handle, name);
