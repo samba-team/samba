@@ -27,7 +27,7 @@ dnl arg2: program executable name
 dnl arg3: target that requires it
 
 AC_DEFUN(DOCS_TARGET_REQUIRE_PROGRAM, [
-	AC_PATH_PROG([$1], [$2])
+	AC_CHECK_PROGS([$1], [$2])
 	if test x"$$1" = x; then
 		if test x"$$3_REQUIRES" = x; then
 			$3_REQUIRES="$2"
