@@ -229,11 +229,11 @@ AC_OUTPUT(Makefile 		\
 	lib/roken/Makefile	\
 	lib/editline/Makefile	\
 	lib/sl/Makefile		\
+	lib/error/Makefile	\
+	lib/error/compile_et	\
 	lib/asn1/Makefile	\
 	lib/des/Makefile	\
 	lib/krb5/Makefile	\
-	lib/krb5/error/Makefile	\
-	lib/krb5/error/compile_et \
 	lib/hdb/Makefile	\
 	lib/gssapi/Makefile	\
 	kuser/Makefile		\
