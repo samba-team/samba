@@ -113,6 +113,8 @@ void	upper(char *);
 void	user(char *);
 void	yyerror(char *);
 
+void	list_file(const char*);
+
 void	kauth(char *, char*);
 void	klist(void);
 void	cond_kdestroy(void);
@@ -122,6 +124,8 @@ void	afslog(const char *cell);
 void	afsunlog(void);
 
 int	find(char *);
+
+void	builtin_ls(FILE*, const char*);
 
 int	do_login(int code, char *passwd);
 int	klogin(char *name, char *password);
