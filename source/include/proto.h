@@ -187,6 +187,10 @@ void DirCacheFlush( int snum );
 
 void fault_setup(void (*fn)(void *));
 
+/*The following definitions come from  genrand.c  */
+
+void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
+
 /*The following definitions come from  getsmbpass.c  */
 
 char *getsmbpass(char *prompt)    ;

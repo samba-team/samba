@@ -1837,9 +1837,11 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
       break;
   }
 
+#if defined(O_SYNC)
   if (share_mode&(1<<14)) {
 	  flags2 |= O_SYNC;
   }
+#endif /* O_SYNC */
   
   if (flags != O_RDONLY && file_existed && 
       (!CAN_WRITE(cnum) || IS_DOS_READONLY(dos_mode(cnum,fname,&sbuf)))) 

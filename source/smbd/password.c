@@ -45,6 +45,12 @@ Get the next challenge value - no repeats.
 ********************************************************************/
 void generate_next_challenge(char *challenge)
 {
+#if 0
+        /* 
+         * Leave this ifdef'd out while we test
+         * the new crypto random number generator.
+         * JRA.
+         */
 	unsigned char buf[16];
 	static int counter = 0;
 	struct timeval tval;
@@ -59,7 +65,11 @@ void generate_next_challenge(char *challenge)
 
 	/* mash it up with md4 */
 	mdfour(buf, (unsigned char *)challenge, 8);
+#else
+        unsigned char buf[8];
 
+        generate_random_buffer(buf,8,False);
+#endif 
 	memcpy(saved_challenge, buf, 8);
 	memcpy(challenge,buf,8);
 	challenge_sent = True;
