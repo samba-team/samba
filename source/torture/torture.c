@@ -158,11 +158,12 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
         return status;
 }
 
-/* open a rpc connection to a named pipe */
-NTSTATUS torture_rpc_connection_smb(struct dcerpc_pipe **p, 
-				    const char *pipe_name,
-				    const char *pipe_uuid, 
-				    uint32_t pipe_version)
+/* open a rpc connection to a specific transport */
+NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p, 
+					  const char *pipe_name,
+					  const char *pipe_uuid, 
+					  uint32_t pipe_version,
+					  enum dcerpc_transport_t transport)
 {
         NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -181,7 +182,7 @@ NTSTATUS torture_rpc_connection_smb(struct dcerpc_pipe **p,
 		return status;
 	}
 
-	b.transport = NCACN_NP;
+	b.transport = transport;
 
 	status = dcerpc_pipe_connect_b(p, &b, pipe_uuid, pipe_version,
 				       lp_parm_string(-1, "torture", "userdomain"), 
