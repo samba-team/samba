@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -31,90 +31,14 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#include <stdio.h>
-#include <string.h>
-#include <histedit.h>
+/* $Id$ */
 
-#include "edit_compat.h"
+#ifndef _EDIT_COMPAT_H
+#define _EDIT_COMPAT_H
 
-RCSID("$Id$");
+void rl_reset_terminal(char *p);
+void rl_initialize(void);
+char *readline(const char *prompt);
+void add_history(char *p);
 
-void
-rl_reset_terminal(char *p)
-{
-}
-
-void
-rl_initialize(void)
-{
-}
-
-static const char *pr;
-static const char* ret_prompt(EditLine *e)
-{
-    return pr;
-}
-
-static History *h;
-
-#ifdef H_SETSIZE
-#define EL_INIT_FOUR 1
-#else
-#ifdef H_SETMAXSIZE
-/* backwards compatibility */
-#define H_SETSIZE H_SETMAXSIZE
-#endif
-#endif
-
-char *
-readline(const char* prompt)
-{
-    static EditLine *e;
-#ifdef H_SETSIZE
-    HistEvent ev;
-#endif
-    int count;
-    const char *str;
-
-    if(e == NULL){
-#ifdef EL_INIT_FOUR
-	e = el_init("", stdin, stdout, stderr);
-#else
-	e = el_init("", stdin, stdout);
-#endif
-	el_set(e, EL_PROMPT, ret_prompt);
-	h = history_init();
-#ifdef H_SETSIZE
-	history(h, &ev, H_SETSIZE, 25);
-#else
-	history(h, H_EVENT, 25);
-#endif
-	el_set(e, EL_HIST, history, h);
-	el_set(e, EL_EDITOR, "emacs"); /* XXX? */
-    }
-    pr = prompt ? prompt : "";
-    str = el_gets(e, &count);
-    if (str && count > 0) {
-	char *ret = strdup (str);
-
-	if (ret == NULL)
-	    return NULL;
-
-	if (ret[strlen(ret) - 1] == '\n')
-	    ret[strlen(ret) - 1] = '\0';
-	return ret;
-    } 
-    return NULL;
-}
-
-void
-add_history(char *p)
-{
-#ifdef H_SETSIZE
-    HistEvent ev;
-    history(h, &ev, H_ENTER, p);
-#else
-    history(h, H_ENTER, p);
-#endif
-}
+#endif /* _EDIT_COMPAT_H */
