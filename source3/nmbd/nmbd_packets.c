@@ -1203,6 +1203,16 @@ an error packet of type %x\n", nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip),
 		return;
 	}
 
+	/* Ensure we have a large enough packet before looking inside. */
+	if (dgram->datasize < (smb_vwv12 - 2)) {
+		/* That's the offset minus the 4 byte length + 2 bytes of offset. */
+		DEBUG(0,("process_dgram: ignoring too short dgram packet (%u) sent to name %s from IP %s\n",
+			(unsigned int)dgram->datasize,
+			nmb_namestr(&dgram->dest_name),
+			inet_ntoa(p->ip) ));
+		return;
+	}
+
 	buf = &dgram->data[0];
 	buf -= 4; /* XXXX for the pseudo tcp length - someday I need to get rid of this */
 
@@ -1212,14 +1222,36 @@ an error packet of type %x\n", nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip),
 	len = SVAL(buf,smb_vwv11);
 	buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 
-	if (len <= 0)
+	if (len <= 0 || len > dgram->datasize) {
+		DEBUG(0,("process_dgram: ignoring malformed1 (datasize = %d, len = %d) datagram \
+packet sent to name %s from IP %s\n",
+			dgram->datasize,
+			len,
+			nmb_namestr(&dgram->dest_name),
+			inet_ntoa(p->ip) ));
 		return;
+	}
 
-	if (buf2 + len > buf + sizeof(dgram->data)) {
-		DEBUG(2,("process_dgram: datagram from %s to %s IP %s for %s len=%d too long.\n",
-			nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
-			inet_ntoa(p->ip), smb_buf(buf),len));
-		len = (buf + sizeof(dgram->data)) - buf;
+	if (buf2 < dgram->data || (buf2 >= dgram->data + dgram->datasize)) {
+		DEBUG(0,("process_dgram: ignoring malformed2 (datasize = %d, len=%d, off=%d) datagram \
+packet sent to name %s from IP %s\n",
+			dgram->datasize,
+			len,
+			PTR_DIFF(buf2, dgram->data),
+			nmb_namestr(&dgram->dest_name),
+			inet_ntoa(p->ip) ));
+		return;
+	}
+
+	if ((buf2 + len < dgram->data) || (buf2 + len > dgram->data + dgram->datasize)) {
+		DEBUG(0,("process_dgram: ignoring malformed3 (datasize = %d, len=%d, off=%d) datagram \
+packet sent to name %s from IP %s\n",
+			dgram->datasize,
+			len,
+			PTR_DIFF(buf2, dgram->data),
+			nmb_namestr(&dgram->dest_name),
+			inet_ntoa(p->ip) ));
+		return;
 	}
 
 	DEBUG(4,("process_dgram: datagram from %s to %s IP %s for %s of type %d len=%d\n",
