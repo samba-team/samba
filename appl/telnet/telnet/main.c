@@ -137,11 +137,13 @@ main(argc, argv)
 	user = NULL;
 
 	rlogin = (strncmp(prompt, "rlog", 4) == 0) ? '~' : _POSIX_VDISABLE;
-#ifdef	AUTHENTICATION
-	autologin = 1;
-#else
+
+	/* 
+	 * if AUTHENTICATION and ENCRYPTION is set autologin will be
+	 * se to true after the getopt switch; unless the -K option is
+	 * passed 
+	 */
 	autologin = -1;
-#endif
 
 	while ((ch = getopt(argc, argv, "8EKLS:X:acde:fFk:l:n:rt:x")) != EOF) {
 		switch(ch) {
@@ -287,7 +289,7 @@ main(argc, argv)
 		}
 	}
 
-	if (autologin == -1) {		/* esc@magic.fi; force */
+	if (autologin == -1) {		/* esc@magic.fi; force  */
 #if defined(AUTHENTICATION)
 		autologin = 1;
 #endif
