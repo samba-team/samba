@@ -117,6 +117,7 @@ NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	}
 	
 	(*pdb_method)->name = "unixsam";
+	(*pdb_method)->update_sam_account = unixsam_update_sam_account;
 	(*pdb_method)->getsampwnam = unixsam_getsampwnam;
 	(*pdb_method)->getsampwsid = unixsam_getsampwsid;
 	
