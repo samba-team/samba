@@ -54,23 +54,28 @@ union: property_list(s?) 'union' <commit> '{' union_element(s?) '}'
 	 }}
 	 | <error?>
 
-union_element: '[' 'case' '(' constant ')' ']' base_element ';'
+union_element: 
+         '[' 'case' '(' constant ')' ']' base_element ';'
 	 {{
 		"TYPE" => "UNION_ELEMENT",
 		"CASE" => $item{constant},
 		"DATA" => $item{base_element}
 	 }}
-         | 'case' '(' constant ')' base_element ';'
+         | '[' 'case' '(' constant ')' ']' ';'
 	 {{
-		"TYPE" => "UNION_ELEMENT",
+		"TYPE" => "EMPTY",
 		"CASE" => $item{constant},
-		"DATA" => $item{base_element}
 	 }}
-         | 'default' base_element ';'
+         | '[' 'default' ']' base_element ';'
 	 {{
 		"TYPE" => "UNION_ELEMENT",
 		"CASE" => "default",
 		"DATA" => $item{base_element}
+	 }}
+         | '[' 'default' ']' ';'
+	 {{
+		"TYPE" => "EMPTY",
+		"CASE" => "default",
 	 }}
 
 base_element: property_list(s?) type pointer(s?) identifier array_len(?) 

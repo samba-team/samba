@@ -7,6 +7,7 @@
 package IdlParser;
 
 use Data::Dumper;
+use strict;
 
 my($res);
 
@@ -69,7 +70,7 @@ sub find_size_var($$)
 	if ($size =~ /ndr->/) {
 		return $size;
 	}
-	
+
 	if ($fn->{TYPE} ne "FUNCTION") {
 		return "r->$size";
 	}
@@ -574,7 +575,6 @@ sub ParseStructPush($)
 	$res .= "\tNDR_CHECK(ndr_push_align(ndr, $align));\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		$e->{PARENT} = $struct;
 		ParseElementPushScalar($e, "r->", "NDR_SCALARS");
 	}	
 
@@ -631,7 +631,6 @@ sub ParseStructPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		$e->{PARENT} = $struct;
 		if (util::need_wire_pointer($e)) {
 			$res .= "\tuint32 _ptr_$e->{NAME};\n";
 		}
@@ -685,7 +684,9 @@ sub ParseUnionPush($)
 		} else {
 			$res .= "\tcase $el->{CASE}:\n";
 		}
-		ParseElementPushScalar($el->{DATA}, "r->", "NDR_SCALARS");		
+		if ($el->{TYPE} eq "UNION_ELEMENT") {
+			ParseElementPushScalar($el->{DATA}, "r->", "NDR_SCALARS");
+		}
 		$res .= "\tbreak;\n\n";
 	}
 	if (! $have_default) {
@@ -703,7 +704,9 @@ sub ParseUnionPush($)
 		} else {
 			$res .= "\tcase $el->{CASE}:\n";
 		}
-		ParseElementPushBuffer($el->{DATA}, "r->", "ndr_flags");
+		if ($el->{TYPE} eq "UNION_ELEMENT") {
+			ParseElementPushBuffer($el->{DATA}, "r->", "ndr_flags");
+		}
 		$res .= "\tbreak;\n\n";
 	}
 	if (! $have_default) {
@@ -729,7 +732,9 @@ sub ParseUnionPrint($)
 		} else {
 			$res .= "\tcase $el->{CASE}:\n";
 		}
-		ParseElementPrintScalar($el->{DATA}, "r->");
+		if ($el->{TYPE} eq "UNION_ELEMENT") {
+			ParseElementPrintScalar($el->{DATA}, "r->");
+		}
 		$res .= "\tbreak;\n\n";
 	}
 	if (! $have_default) {
@@ -760,11 +765,13 @@ sub ParseUnionPull($)
 		} else {
 			$res .= "\tcase $el->{CASE}: {\n";
 		}
-		my $e2 = $el->{DATA};
-		if ($e2->{POINTERS}) {
-			$res .= "\t\tuint32 _ptr_$e2->{NAME};\n";
+		if ($el->{TYPE} eq "UNION_ELEMENT") {
+			my $e2 = $el->{DATA};
+			if ($e2->{POINTERS}) {
+				$res .= "\t\tuint32 _ptr_$e2->{NAME};\n";
+			}
+			ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");
 		}
-		ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");		
 		$res .= "\tbreak; }\n\n";
 	}
 	if (! $have_default) {
@@ -782,7 +789,9 @@ sub ParseUnionPull($)
 		} else {
 			$res .= "\tcase $el->{CASE}:\n";
 		}
-		ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
+		if ($el->{TYPE} eq "UNION_ELEMENT") {
+			ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
+		}
 		$res .= "\tbreak;\n\n";
 	}
 	if (! $have_default) {
@@ -970,7 +979,6 @@ sub ParseFunctionPush($)
 
 	foreach my $e (@{$function->{DATA}}) {
 		if (util::has_property($e, "in")) {
-			$e->{PARENT} = $function;
 			if (util::array_size($e)) {
 				if (util::need_wire_pointer($e)) {
 					$res .= "\tNDR_CHECK(ndr_push_ptr(ndr, r->in.$e->{NAME}));\n";
@@ -1010,7 +1018,6 @@ sub ParseFunctionPull($)
 
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
-			$e->{PARENT} = $fn;
 			if (util::array_size($e)) {
 				if (util::need_wire_pointer($e)) {
 					$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, _ptr_$e->{NAME}));\n";
@@ -1082,6 +1089,7 @@ sub NeededFunction($)
 	$needed{"pull_$fn->{NAME}"} = 1;
 	$needed{"push_$fn->{NAME}"} = 1;
 	foreach my $e (@{$fn->{DATA}}) {
+		$e->{PARENT} = $fn;
 		if (util::has_property($e, "out")) {
 			$needed{"pull_$e->{TYPE}"} = 1;
 		}
@@ -1100,21 +1108,25 @@ sub NeededTypedef($)
 	}
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
-				if ($needed{"pull_$t->{NAME}"}) {
-					$needed{"pull_$e->{TYPE}"} = 1;
-				}
-				if ($needed{"push_$t->{NAME}"}) {
-					$needed{"push_$e->{TYPE}"} = 1;
-				}
-			}
-		}
-	if ($t->{DATA}->{TYPE} eq "UNION") {
-		for my $e (@{$t->{DATA}->{DATA}}) {
+			$e->{PARENT} = $t->{DATA};
 			if ($needed{"pull_$t->{NAME}"}) {
-				$needed{"pull_$e->{DATA}->{TYPE}"} = 1;
+				$needed{"pull_$e->{TYPE}"} = 1;
 			}
 			if ($needed{"push_$t->{NAME}"}) {
-				$needed{"push_$e->{DATA}->{TYPE}"} = 1;
+				$needed{"push_$e->{TYPE}"} = 1;
+			}
+		}
+	}
+	if ($t->{DATA}->{TYPE} eq "UNION") {
+		for my $e (@{$t->{DATA}->{DATA}}) {
+			$e->{PARENT} = $t->{DATA};
+			if ($e->{TYPE} eq "UNION_ELEMENT") {
+				if ($needed{"pull_$t->{NAME}"}) {
+					$needed{"pull_$e->{DATA}->{TYPE}"} = 1;
+				}
+				if ($needed{"push_$t->{NAME}"}) {
+					$needed{"push_$e->{DATA}->{TYPE}"} = 1;
+				}
 			}
 		}
 	}
