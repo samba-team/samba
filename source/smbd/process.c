@@ -107,7 +107,30 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 {
-  return push_message(&smb_oplock_queue, buf, msg_len);
+	return push_message(&smb_oplock_queue, buf, msg_len);
+}
+
+/****************************************************************************
+do all async processing in here. This includes UDB oplock messages, kernel
+oplock messages, change notify events etc.
+****************************************************************************/
+static void async_processing(fd_set *fds, char *buffer, int buffer_len)
+{
+	/* check for oplock messages (both UDP and kernel) */
+	if (receive_local_message(fds, buffer, buffer_len, 0)) {
+		process_local_message(buffer, buffer_len);
+	}
+
+	/* check for async change notify events */
+	process_pending_change_notify_queue(0);
+
+	/* check for sighup processing */
+	if (reload_after_sighup) {
+		unbecome_user();
+		DEBUG(1,("Reloading services after SIGHUP\n"));
+		reload_services(False);
+		reload_after_sighup = False;
+	}
 }
 
 /****************************************************************************
@@ -115,7 +138,7 @@ BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 
   If a local udp message has been pushed onto the
   queue (this can only happen during oplock break
-  processing) return this first.
+  processing) call async_processing()
 
   If a pending smb message has been pushed onto the
   queue (this can only happen during oplock break
@@ -131,8 +154,7 @@ BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 The timeout is in milli seconds
 ****************************************************************************/
 
-static BOOL receive_message_or_smb(char *buffer, int buffer_len, 
-                                   int timeout, BOOL *got_smb)
+static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 {
 	fd_set fds;
 	int selrtn;
@@ -141,30 +163,28 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len,
 
 	smb_read_error = 0;
 
-	*got_smb = False;
-
 	/*
 	 * Check to see if we already have a message on the smb queue.
 	 * If so - copy and return it.
 	 */
-  
-	if(ubi_slCount(&smb_oplock_queue) != 0) {
+  	if(ubi_slCount(&smb_oplock_queue) != 0) {
 		pending_message_list *msg = (pending_message_list *)ubi_slRemHead(&smb_oplock_queue);
 		memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
   
 		/* Free the message we just copied. */
 		free((char *)msg->msg_buf);
 		free((char *)msg);
-		*got_smb = True;
 		
 		DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
 		return True;
 	}
 
+
 	/*
 	 * Setup the select read fd set.
 	 */
 
+ again:
 	FD_ZERO(&fds);
 	FD_SET(smbd_server_fd(),&fds);
 	maxfd = setup_oplock_select_set(&fds);
@@ -175,16 +195,16 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len,
 	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,timeout>0?&to:NULL);
 
 	/* if we get EINTR then maybe we have received an oplock
-	signal - treat this as select returning 1. This is ugly, but
-	is the best we can do until the oplock code knows more about
-	signals */
+	   signal - treat this as select returning 1. This is ugly, but
+	   is the best we can do until the oplock code knows more about
+	   signals */
 	if (selrtn == -1 && errno == EINTR) {
-		FD_ZERO(&fds);
-		selrtn = 1;
+		async_processing(&fds, buffer, buffer_len);
+		goto again;
 	}
 
 	/* Check if error */
-	if(selrtn == -1 && errno != EINTR) {
+	if (selrtn == -1) {
 		/* something is wrong. Maybe the socket is dead? */
 		smb_read_error = READ_ERROR;
 		return False;
@@ -195,13 +215,13 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len,
 		smb_read_error = READ_TIMEOUT;
 		return False;
 	}
-	
-	if (FD_ISSET(smbd_server_fd(),&fds)) {
-		*got_smb = True;
-		return receive_smb(smbd_server_fd(), buffer, 0);
-	} else {
-		return receive_local_message(&fds, buffer, buffer_len, 0);
+
+	if (!FD_ISSET(smbd_server_fd(),&fds) || selrtn > 1) {
+		async_processing(&fds, buffer, buffer_len);
+		if (!FD_ISSET(smbd_server_fd(),&fds)) goto again;
 	}
+	
+	return receive_smb(smbd_server_fd(), buffer, 0);
 }
 
 /****************************************************************************
@@ -210,30 +230,16 @@ Get the next SMB packet, doing the local message processing automatically.
 
 BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
 {
-  BOOL got_smb = False;
-  BOOL ret;
+	BOOL got_keepalive;
+	BOOL ret;
 
-  do
-  {
-    ret = receive_message_or_smb(inbuf,bufsize,timeout,&got_smb);
+	do {
+		ret = receive_message_or_smb(inbuf,bufsize,timeout);
+		
+		got_keepalive = (ret && (CVAL(inbuf,0) == 0x85));
+	} while (ret && got_keepalive);
 
-    if(ret && !got_smb)
-    {
-      /* Deal with oplock break requests from other smbd's. */
-      process_local_message(inbuf, bufsize);
-      continue;
-    }
-
-    if(ret && (CVAL(inbuf,0) == 0x85))
-    {
-      /* Keepalive packet. */
-      got_smb = False;
-    }
-
-  }
-  while(ret && !got_smb);
-
-  return ret;
+	return ret;
 }
 
 /****************************************************************************
@@ -270,13 +276,12 @@ void respond_to_all_remaining_local_messages(void)
    * Keep doing receive_local_message with a 1 ms timeout until
    * we have no more messages.
    */
-
   while(receive_local_message(&fds, buffer, sizeof(buffer), 1)) {
-    /* Deal with oplock break requests from other smbd's. */
-    process_local_message(buffer, sizeof(buffer));
+	  /* Deal with oplock break requests from other smbd's. */
+	  process_local_message(buffer, sizeof(buffer));
 
-    FD_ZERO(&fds);
-    (void)setup_oplock_select_set(&fds);
+	  FD_ZERO(&fds);
+	  (void)setup_oplock_select_set(&fds);
   }
 
   return;
@@ -1008,98 +1013,80 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
 void smbd_process(void)
 {
-  extern int smb_echo_count;
-  time_t last_timeout_processing_time = time(NULL);
-  unsigned int num_smbs = 0;
+	extern int smb_echo_count;
+	time_t last_timeout_processing_time = time(NULL);
+	unsigned int num_smbs = 0;
 
-  InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  if ((InBuffer == NULL) || (OutBuffer == NULL)) 
-    return;
+	InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+	OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
+		return;
 
-  InBuffer += SMB_ALIGNMENT;
-  OutBuffer += SMB_ALIGNMENT;
+	InBuffer += SMB_ALIGNMENT;
+	OutBuffer += SMB_ALIGNMENT;
 
-  max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
+	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
-  /* re-initialise the timezone */
-  TimeInit();
+	/* re-initialise the timezone */
+	TimeInit();
 
-  while (True)
-  {
-    int deadtime = lp_deadtime()*60;
-    BOOL got_smb = False;
-    int select_timeout = setup_select_timeout();
+	while (True) {
+		int deadtime = lp_deadtime()*60;
+		int select_timeout = setup_select_timeout();
+		int num_echos;
 
-    if (deadtime <= 0)
-      deadtime = DEFAULT_SMBD_TIMEOUT;
+		if (deadtime <= 0)
+			deadtime = DEFAULT_SMBD_TIMEOUT;
 
-    errno = 0;      
+		errno = 0;      
+		
+		/* free up temporary memory */
+		lp_talloc_free();
 
-    /* free up temporary memory */
-    lp_talloc_free();
+		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout)) {
+			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+				return;
+			num_smbs = 0; /* Reset smb counter. */
+		}
 
-    /*
-     * If reload_after_sighup == True then we got a SIGHUP
-     * and are being asked to reload. Fix from <branko.cibej@hermes.si>
-     */
-    if (reload_after_sighup) {
-	    /* become root */
-	    unbecome_user();
-	    DEBUG(1,("Reloading services after SIGHUP\n"));
-	    reload_services(False);
-	    reload_after_sighup = False;
-    }
+		/*
+		 * Ensure we do timeout processing if the SMB we just got was
+		 * only an echo request. This allows us to set the select
+		 * timeout in 'receive_message_or_smb()' to any value we like
+		 * without worrying that the client will send echo requests
+		 * faster than the select timeout, thus starving out the
+		 * essential processing (change notify, blocking locks) that
+		 * the timeout code does. JRA.
+		 */ 
+		num_echos = smb_echo_count;
 
-    while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
-    {
-      if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
-        return;
-      num_smbs = 0; /* Reset smb counter. */
-    }
+		process_smb(InBuffer, OutBuffer);
 
-    if(got_smb) {
-      /*
-       * Ensure we do timeout processing if the SMB we just got was
-       * only an echo request. This allows us to set the select
-       * timeout in 'receive_message_or_smb()' to any value we like
-       * without worrying that the client will send echo requests
-       * faster than the select timeout, thus starving out the
-       * essential processing (change notify, blocking locks) that
-       * the timeout code does. JRA.
-       */ 
-      int num_echos = smb_echo_count;
+		if (smb_echo_count != num_echos) {
+			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+				return;
+			num_smbs = 0; /* Reset smb counter. */
+		}
 
-      process_smb(InBuffer, OutBuffer);
+		num_smbs++;
 
-      if(smb_echo_count != num_echos) {
-        if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
-          return;
-        num_smbs = 0; /* Reset smb counter. */
-      }
-
-      num_smbs++;
-
-      /*
-       * If we are getting smb requests in a constant stream
-       * with no echos, make sure we attempt timeout processing
-       * every select_timeout milliseconds - but only check for this
-       * every 200 smb requests.
-       */
-
-      if((num_smbs % 200) == 0) {
-        time_t new_check_time = time(NULL);
-        if(last_timeout_processing_time - new_check_time >= (select_timeout/1000)) {
-          if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
-            return;
-          num_smbs = 0; /* Reset smb counter. */
-          last_timeout_processing_time = new_check_time; /* Reset time. */
-        }
-      }
-    }
-    else
-      process_local_message(InBuffer, BUFFER_SIZE);
-  }
+		/*
+		 * If we are getting smb requests in a constant stream
+		 * with no echos, make sure we attempt timeout processing
+		 * every select_timeout milliseconds - but only check for this
+		 * every 200 smb requests.
+		 */
+		
+		if ((num_smbs % 200) == 0) {
+			time_t new_check_time = time(NULL);
+			if(last_timeout_processing_time - new_check_time >= (select_timeout/1000)) {
+				if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+					return;
+				num_smbs = 0; /* Reset smb counter. */
+				last_timeout_processing_time = new_check_time; /* Reset time. */
+			}
+		}
+	}
 }
 
 #undef OLD_NTDOMAIN

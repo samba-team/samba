@@ -29,7 +29,7 @@ extern int DEBUGLEVEL;
 
 static unsigned signals_received;
 static unsigned signals_processed;
-static int fd_pending; /* the fd of the current pending SIGIO */
+static int fd_pending; /* the fd of the current pending signal */
 
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
@@ -43,14 +43,19 @@ static int fd_pending; /* the fd of the current pending SIGIO */
 #define CAP_LEASE 28
 #endif
 
+#ifndef RT_SIGNAL_LEASE
+#define RT_SIGNAL_LEASE 33
+#endif
+
 /****************************************************************************
-handle a SIGIO, incrementing the signals_received and blocking SIGIO
+handle a LEASE signal, incrementing the signals_received and blocking the signal
 ****************************************************************************/
-static void sigio_handler(int signal, siginfo_t *info, void *unused)
+static void signal_handler(int signal, siginfo_t *info, void *unused)
 {
+	BlockSignals(True, signal);
 	fd_pending = info->si_fd;
 	signals_received++;
-	BlockSignals(True, SIGIO);
+	sys_select_signal();
 }
 
 /****************************************************************************
@@ -150,7 +155,7 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 	/* now we can receive more signals */
 	fd_pending = -1;
 	signals_processed++;
-	BlockSignals(False, SIGIO);
+	BlockSignals(False, RT_SIGNAL_LEASE);
      
 	return True;
 }
@@ -213,16 +218,16 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
 {
 	/* Ensure that the msg length is correct. */
 	if (msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN) {
-		DEBUG(0,("process_local_message: incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, \
-should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
+		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %d).\n", 
+			 msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
 		return False;
 	}
 
         memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
         memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 
-        DEBUG(5,("process_local_message: kernel oplock break request for \
-file dev = %x, inode = %.0f\n", (unsigned int)*dev, (double)*inode));
+        DEBUG(5,("kernel oplock break request for file dev = %x, inode = %.0f\n", 
+		 (unsigned int)*dev, (double)*inode));
 
 	return True;
 }
@@ -264,10 +269,10 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	}
 
         act.sa_handler = NULL;
-        act.sa_sigaction = sigio_handler;
+        act.sa_sigaction = signal_handler;
         act.sa_flags = SA_SIGINFO;
-        if (sigaction(SIGIO, &act, NULL) != 0) {
-		DEBUG(0,("Failed to setup SIGIO handler\n"));
+        if (sigaction(RT_SIGNAL_LEASE, &act, NULL) != 0) {
+		DEBUG(0,("Failed to setup RT_SIGNAL_LEASE handler\n"));
 		return NULL;
         }
 

@@ -5,6 +5,7 @@
 #define ERROR_INVALID_PARAMETER		 (87)
 #define ERROR_INSUFFICIENT_BUFFER	(122)
 #define STATUS_1804	               (1804)
+#define STATUS_NOTIFY_ENUM_DIR (0x10C)
 
 
 /* these are the NT error codes less than 1000. They are here for when
@@ -514,5 +515,4 @@
 #define NT_STATUS_TOO_MANY_LINKS (0xC0000000 | 613)
 #define NT_STATUS_QUOTA_LIST_INCONSISTENT (0xC0000000 | 614)
 #define NT_STATUS_FILE_IS_OFFLINE (0xC0000000 | 615)
-#define NT_STATUS_NOTIFY_ENUM_DIR (0xC0000000 | 0x10C)
 #define NT_STATUS_NO_SUCH_JOB (0xC0000000 | 0xEDE) /* scheduler */

@@ -544,6 +544,9 @@
 /* Define if you have the pipe function.  */
 #undef HAVE_PIPE
 
+/* Define if you have the poll function.  */
+#undef HAVE_POLL
+
 /* Define if you have the pread function.  */
 #undef HAVE_PREAD
 

@@ -350,12 +350,7 @@ static void sig_hup(int sig)
 	BlockSignals(True,SIGHUP);
 	DEBUG(0,("Got SIGHUP\n"));
 
-	/*
-	 * Fix from <branko.cibej@hermes.si> here.
-	 * We used to reload in the signal handler - this
-	 * is a *BIG* no-no.
-	 */
-
+	sys_select_signal();
 	reload_after_sighup = True;
 	BlockSignals(False,SIGHUP);
 }
@@ -755,6 +750,11 @@ static void usage(char *pname)
 
 	/* Setup oplocks */
 	if (!init_oplocks()) {
+		exit(1);
+	}
+
+	/* Setup change notify */
+	if (!init_change_notify()) {
 		exit(1);
 	}
 
