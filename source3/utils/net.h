@@ -63,6 +63,8 @@ extern BOOL opt_domaingroup;
 extern const char *opt_newntname;
 extern int opt_rid;
 extern int opt_acls;
+extern int opt_attrs;
+extern int opt_timestamps;
 extern const char *opt_exclude;
 
 extern BOOL opt_have_ip;
