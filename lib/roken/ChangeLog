@@ -1,3 +1,8 @@
+2002-02-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* mini_inetd.c: mini_inetd_addrinfo that takes an addrinfo instead
+	of a port number
+
 2001-11-30  Assar Westerlund  <assar@sics.se>
 
 	* getifaddrs.c: support SIOCGLIFCONF and SIOCGLIFFLAGS which are
