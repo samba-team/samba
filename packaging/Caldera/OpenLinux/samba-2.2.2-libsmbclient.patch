@@ -1,33 +1,12 @@
---- samba-2.2.2/source/Makefile.in.orig	Mon Sep 24 18:31:20 2001
-+++ samba-2.2.2/source/Makefile.in	Mon Sep 24 18:35:14 2001
-@@ -49,7 +49,7 @@
- CONFIGFILE = $(CONFIGDIR)/smb.conf
- LMHOSTSFILE = $(CONFIGDIR)/lmhosts
- DRIVERFILE = $(CONFIGDIR)/printers.def
--PASSWD_PROGRAM = /bin/passwd
-+PASSWD_PROGRAM = /usr/bin/passwd
- # This is where smbpasswd et al go
- PRIVATEDIR = @privatedir@
+--- samba-2.2.2/source/Makefile.in.orig	Wed Oct 10 08:13:13 2001
++++ samba-2.2.2/source/Makefile.in	Wed Oct 10 08:16:46 2001
+@@ -608,7 +608,8 @@
  
-@@ -98,6 +98,9 @@
- 
- QUOTAOBJS=@QUOTAOBJS@
- 
-+LIBSMBCLIENT_MAJOR=0
-+LIBSMBCLIENT_MINOR=1
-+
- ######################################################################
- # object file lists
- ######################################################################
-@@ -605,7 +608,10 @@
  libsmbclient: $(LIBSMBCLIENT_PICOBJS)
- 	if [ $(BLDSHARED) = true ]; then \
- 	  echo Linking libsmbclient shared library bin/$@@SHLIBEXT@; \
--	  $(CC) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ $(LIBSMBCLIENT_PICOBJS) $(LIBS); \
-+	  $(CC) @LDSHFLAGS@ -o \
-+	  	bin/$@.@SHLIBEXT@.$(LIBSMBCLIENT_MAJOR).$(LIBSMBCLIENT_MINOR) \
-+		-Wl,-soname,libsmbclient.so.$(LIBSMBCLIENT_MAJOR) \
-+		$(LIBSMBCLIENT_PICOBJS) $(LIBS); \
- 	fi
+ 	@echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@
+-	@$(SHLD) @LDSHFLAGS@ -o  bin/$@.@SHLIBEXT@ \
++        @$(SHLD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ \
++                -Wl,-soname,libsmbclient.so.$(LIBSMBCLIENT_MAJOR) \
+ 		$(LIBSMBCLIENT_PICOBJS) $(LIBS)
  	@echo Linking libsmbclient non-shared library bin/$@.a
- 	@$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
+ 	@-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
