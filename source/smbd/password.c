@@ -52,7 +52,7 @@ void generate_next_challenge(char *challenge)
   v2 = (counter++) * getpid() + tval.tv_usec;
   SIVAL(challenge,0,v1);
   SIVAL(challenge,4,v2);
-  E1(challenge,"SAMBA",saved_challenge);
+  E1(challenge,"SAMBA",(char *)saved_challenge);
   memcpy(challenge,saved_challenge,8);
   challenge_sent = True;
 }
@@ -684,7 +684,9 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd, BOOL 
 		if(smb_pass->smb_nt_passwd != NULL)
 		{
 		  DEBUG(4,("Checking NT MD4 password\n"));
-	      if(smb_password_check(password, smb_pass->smb_nt_passwd, challenge))
+		  if(smb_password_check(password, 
+					smb_pass->smb_nt_passwd, 
+					(char *)challenge))
    		  {
 	      	update_protected_database(user,True);
 	        return(True);
@@ -696,11 +698,12 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd, BOOL 
 
 	/* Try against the lanman password */
 
-      if(smb_password_check(password, smb_pass->smb_passwd, challenge))
-	{
-	  update_protected_database(user,True);
-	  return(True);
-	}
+      if (smb_password_check(password, 
+			     smb_pass->smb_passwd,
+			     (char *)challenge)) {
+	update_protected_database(user,True);
+	return(True);
+      }
 
 	DEBUG(3,("Error smb_password_check failed\n"));
     }

@@ -262,7 +262,7 @@ get_smbpwnam(char *name)
 		if (!strncasecmp((char *) p, "NO PASSWORD", 11)) {
 			pw_buf.smb_passwd = NULL;
 		} else {
-			if(!gethexpwd(p,smbpwd)) {
+			if(!gethexpwd((char *)p,(char *)smbpwd)) {
 				DEBUG(0, ("Malformed Lanman password entry (non hex chars)\n"));
 				fclose(fp);
 				pw_file_unlock(lockfd);
@@ -280,7 +280,7 @@ get_smbpwnam(char *name)
 					the lanman password. */
 		if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
 			if (*p != '*' && *p != 'X') {
-				if(gethexpwd(p,smbntpwd))
+				if(gethexpwd((char *)p,(char *)smbntpwd))
 					pw_buf.smb_nt_passwd = smbntpwd;
 			}
 		}
