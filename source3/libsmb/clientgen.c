@@ -2794,14 +2794,14 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 	if (cli->pwd.cleartext || cli->pwd.null_pwd)
 	{
-		fstring passwd;
-		int pass_len;
+		fstring passwd, ntpasswd;
+		int pass_len, ntpass_len;
 
 		if (cli->pwd.null_pwd)
 		{
 			/* attempt null session */
-			passwd[0] = 0;
-			pass_len = 1;
+			passwd[0] = ntpasswd[0] = 0;
+			pass_len = ntpass_len = 1;
 		}
 		else
 		{
@@ -2813,7 +2813,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		/* attempt clear-text session */
 		if (!cli_session_setup(cli, cli->user_name,
 	                       passwd, pass_len,
-	                       NULL, 0,
+	                       ntpasswd, ntpass_len,
 	                       cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));
