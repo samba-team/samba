@@ -127,7 +127,7 @@ void init_modules(void)
 /*************************************************************************
  * This functions /path/to/foobar.so -> foobar
  ************************************************************************/
-void module_path_get_name(char *path, pstring name)
+void module_path_get_name(const char *path, pstring name)
 {
 	char *s;
 
