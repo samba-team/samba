@@ -1,3 +1,11 @@
+Wed Jan 21 06:20:40 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/kadm5/init_s.c (kadm5_s_init_with_password_ctx): initialize
+ 	`log_context.socket_name' and `log_context.socket_fd'
+
+	* lib/kadm5/log.c (kadm5_log_flush): send a unix domain datagram
+ 	to inform the possible running ipropd of an update.
+
 Wed Jan 21 01:34:09 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c: Add some support for using enctypes instead of
@@ -16,6 +24,12 @@ Wed Jan 21 01:34:09 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/init_creds_pw.c: Return some error if prompter
  	functions return failure.
+
+Wed Jan 21 01:16:13 1998  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswd.c: detect bad password.  use krb5_err.
+
+	* kadmin/util.c (edit_entry): remove unused variables
 
 Tue Jan 20 22:58:31 1998  Assar Westerlund  <assar@sics.se>
 
