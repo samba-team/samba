@@ -1,5 +1,7 @@
 2003-04-16  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kx.c (doit_{passive,active}): use kc->thataddr directly
+
 	* kx.h: don't directly use sockaddr_storage, since we can't always
 	know what it looks like
 
