@@ -128,7 +128,12 @@ void close_file(files_struct *fsp, BOOL normal_close)
 
 	/* NT uses smbclose to start a print - weird */
 	if (normal_close && fsp->print_file)
-		print_file(conn, fsp->vuid, SNUM(conn), fsp);
+	{
+		vuser_key key;
+		key.pid = getpid();
+		key.vuid = fsp->vuid;
+		print_file(conn, &key, SNUM(conn), fsp);
+	}
 
 	/* check for magic scripts */
 	if (normal_close) {
