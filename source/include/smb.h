@@ -1664,5 +1664,6 @@ typedef struct {
 /* Common popt structures */
 
 extern struct poptOption popt_common_debug[];
+extern struct poptOption popt_common_configfile[];
 
 #endif /* _SMB_H */

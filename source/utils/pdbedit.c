@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-#define BIT_CONFIGFILE	0x00000001
-#define BIT_DEBUGLEVEL	0x00000002
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008
 #define BIT_SPSTYLE	0x00000010
@@ -53,7 +51,6 @@
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00001F00
 extern pstring global_myname;
-extern BOOL AllowDebugChange;
 
 /*********************************************************
  Add all currently available users to another db
@@ -450,8 +447,6 @@ int main (int argc, char **argv)
 	static char *backend_out = NULL;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
-	static char *config_file = dyn_CONFIGFILE;
-	static char *new_debuglevel = NULL;
 	static char *account_policy = NULL;
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
@@ -468,8 +463,8 @@ int main (int argc, char **argv)
 		{"user",	'u', POPT_ARG_STRING, &user_name, 0, "use username", "USER" },
 		{"fullname",	'f', POPT_ARG_STRING, &full_name, 0, "set full name", NULL},
 		{"homedir",	'h', POPT_ARG_STRING, &home_dir, 0, "set home directory", NULL},
-		{"drive",	'd', POPT_ARG_STRING, &home_drive, 0, "set home drive", NULL},
-		{"script",	's', POPT_ARG_STRING, &logon_script, 0, "set logon script", NULL},
+		{"drive",	'D', POPT_ARG_STRING, &home_drive, 0, "set home drive", NULL},
+		{"script",	'S', POPT_ARG_STRING, &logon_script, 0, "set logon script", NULL},
 		{"profile",	'p', POPT_ARG_STRING, &profile_path, 0, "set profile path", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
@@ -478,10 +473,10 @@ int main (int argc, char **argv)
 		{"backend",	'b', POPT_ARG_STRING, &backend, 0, "use different passdb backend as default backend", NULL},
 		{"import",	'i', POPT_ARG_STRING, &backend_in, 0, "import user accounts from this backend", NULL},
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
-		{"debuglevel",  'D', POPT_ARG_STRING, &new_debuglevel, 0,"set debuglevel",NULL},
-		{"configfile",  'c', POPT_ARG_STRING, &config_file, 0,"use different configuration file",NULL},
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
 		{"value",       'V', POPT_ARG_LONG, &account_policy_value, 'V',"set the account policy to this value", NULL},
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{0,0,0,0}
 	};
 	
@@ -498,13 +493,8 @@ int main (int argc, char **argv)
 		}
 	}
 	
-	if (new_debuglevel) {
-		debug_parse_levels(new_debuglevel);
-		AllowDebugChange = False;
-	}
-	
-	if (!lp_load(config_file,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", config_file);
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 		exit(1);
 	}
 
@@ -519,9 +509,7 @@ int main (int argc, char **argv)
 	
 	strupper(global_myname);
 
-	setparms =	(config_file ? BIT_CONFIGFILE : 0) +
-			(new_debuglevel ? BIT_DEBUGLEVEL : 0) +
-			(backend ? BIT_BACKEND : 0) +
+	setparms =	(backend ? BIT_BACKEND : 0) +
 			(verbose ? BIT_VERBOSE : 0) +
 			(spstyle ? BIT_SPSTYLE : 0) +
 			(full_name ? BIT_FULLNAME : 0) +
