@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
  /*******************************************************************
 ftruncate for operating systems that don't have it
 ********************************************************************/
- int ftruncate(int f,long l)
+ int ftruncate(int f,SMB_OFF_T l)
 {
       struct  flock   fl;
 

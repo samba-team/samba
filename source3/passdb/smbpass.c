@@ -434,7 +434,7 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
   int fd;
   int new_entry_length;
   char *new_entry;
-  long offpos;
+  SMB_OFF_T offpos;
   char *p;
 
   /* Open the smbpassword file - for update. */
@@ -466,8 +466,8 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
    */
   fd = fileno(fp);
 
-  if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
-    DEBUG(0, ("add_smbfilepwd_entry(lseek): Failed to add entry for user %s to file %s. \
+  if((offpos = sys_lseek(fd, 0, SEEK_END)) == -1) {
+    DEBUG(0, ("add_smbfilepwd_entry(sys_lseek): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     endsmbfilepwent(fp);
     return False;
@@ -531,7 +531,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 Error was %s\n", wr_len, newpwd->smb_name, pfile, strerror(errno)));
 
     /* Remove the entry we just wrote. */
-    if(ftruncate(fd, offpos) == -1) {
+    if(sys_ftruncate(fd, offpos) == -1) {
       DEBUG(0, ("add_smbfilepwd_entry: ERROR failed to ftruncate file %s. \
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
              newpwd->smb_name, strerror(errno)));
@@ -572,7 +572,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   BOOL found_entry = False;
   BOOL got_pass_last_set_time = False;
 
-  long pwd_seekpos = 0;
+  SMB_OFF_T pwd_seekpos = 0;
 
   int i;
   int wr_len;
@@ -609,7 +609,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
    * Scan the file, a line at a time and check if the name matches.
    */
   while (!feof(fp)) {
-    pwd_seekpos = ftell(fp);
+    pwd_seekpos = (SMB_OFF_T)ftell(fp);
 
     linebuf[0] = '\0';
 
@@ -818,7 +818,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 
   fd = fileno(fp);
 
-  if (lseek(fd, pwd_seekpos - 1, SEEK_SET) != pwd_seekpos - 1) {
+  if (sys_lseek(fd, pwd_seekpos - 1, SEEK_SET) != pwd_seekpos - 1) {
     DEBUG(0, ("mod_smbfilepwd_entry: seek fail on file %s.\n", pfile));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);

@@ -1058,7 +1058,7 @@ int get_printqueue(int snum,
 
 	slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
   
-	if (!lpq_cache_reset[snum] && cachetime && !stat(outfile,&sbuf)) {
+	if (!lpq_cache_reset[snum] && cachetime && !sys_stat(outfile,&sbuf)) {
 		if (time(NULL) - sbuf.st_mtime < cachetime) {
 			DEBUG(3,("Using cached lpq output\n"));
 			dorun = False;

@@ -94,7 +94,7 @@ int ntalk_mkresdir(const char *fname)
   }
   lastslash++;
   fdir[lastslash] = 0;
-  lstat(fdir, &dirstats);
+  sys_lstat(fdir, &dirstats);
 
   /* append .AppleDouble */
   for (i = 0; (appledouble[i] != 0) && (lastslash <= 254); i++) {

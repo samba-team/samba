@@ -173,7 +173,7 @@ int do_compile(int codepage, char *input_file, char *output_file)
   SMB_STRUCT_STAT st;
 
   /* Get the size of the input file. Read the entire thing into memory. */
-  if(stat((char *)input_file, &st)!= 0)
+  if(sys_stat((char *)input_file, &st)!= 0)
   {
     fprintf(stderr, "%s: failed to get the file size for file %s. Error was %s\n",
             prog_name, input_file, strerror(errno));
@@ -318,7 +318,7 @@ int do_decompile( int codepage, char *input_file, char *output_file)
   int i = 0;
 
   /* Get the size of the input file. Read the entire thing into memory. */
-  if(stat((char *)input_file, &st)!= 0)
+  if(sys_stat((char *)input_file, &st)!= 0)
   {
     fprintf(stderr, "%s: failed to get the file size for file %s. Error was %s\n",
             prog_name, input_file, strerror(errno));

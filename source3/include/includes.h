@@ -318,7 +318,7 @@
 #endif
 
 /*
- * Type for device and inodes.
+ * Types for devices, inodes and offsets.
  */
 
 #ifndef SMB_DEV_T
@@ -329,15 +329,35 @@
 #define SMB_INO_T uint32
 #endif
 
+#ifndef SMB_OFF_T
+#ifdef HAVE_OFF64_T
+#define SMB_OFF_T off64_t
+#else
+#define SMB_OFF_T off_t
+#endif
+#endif
+
 /*
- * Type for stat structure. This will
- * soon change to a user defined type
- * once we wrap stat(), fstat() and lstat()
- * for 64 bit file sizes. JRA.
+ * Set the define that tells us if we can do 64 bit
+ * NT SMB calls.
+ */
+
+#ifndef LARGE_SMB_OFF_T
+#if defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
+#define LARGE_SMB_OFF_T 1
+#endif
+#endif
+
+/*
+ * Type for stat structure.
  */
 
 #ifndef SMB_STRUCT_STAT
+#if defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
+#define SMB_STRUCT_STAT struct stat64
+#else
 #define SMB_STRUCT_STAT struct stat
+#endif
 #endif
 
 #ifndef MIN

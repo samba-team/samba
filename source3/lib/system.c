@@ -139,6 +139,70 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 #endif /* USE_POLL */
 #endif /* NO_SELECT */
 
+/*******************************************************************
+A stat() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_stat(char *fname,SMB_STRUCT_STAT *sbuf)
+{
+#if defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
+  return stat64(fname, sbuf);
+#else
+  return stat(fname, sbuf);
+#endif
+}
+
+/*******************************************************************
+ An fstat() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
+{
+#if defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
+  return fstat64(fd, sbuf);
+#else
+  return fstat(fd, sbuf);
+#endif
+}
+
+/*******************************************************************
+ An lstat() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
+{
+#if defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
+  return lstat64(fname, sbuf);
+#else
+  return lstat(fname, sbuf);
+#endif
+}
+
+/*******************************************************************
+ An ftruncate() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_ftruncate(int fd, SMB_OFF_T offset)
+{
+#if defined(HAVE_OFF64_T) && defined(HAVE_FTRUNCATE64)
+  return ftruncate64(fd, offset);
+#else
+  return ftruncate(fd, offset);
+#endif
+}
+
+/*******************************************************************
+ An lseek() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_lseek(int fd, SMB_OFF_T offset, int whence)
+{
+#if defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
+  return lseek64(fd, offset, whence);
+#else
+  return lseek(fd, offset, whence);
+#endif
+}
 
 /*******************************************************************
 just a unlink wrapper that calls dos_to_unix.
@@ -166,13 +230,12 @@ DIR *dos_opendir(char *dname)
 	return(opendir(dos_to_unix(dname,False)));
 }
 
-
 /*******************************************************************
 and a stat() wrapper that calls dos_to_unix.
 ********************************************************************/
 int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf)
 {
-  return(stat(dos_to_unix(fname,False),sbuf));
+  return(sys_stat(dos_to_unix(fname,False),sbuf));
 }
 
 /*******************************************************************
@@ -192,9 +255,8 @@ don't forget lstat() that calls dos_to_unix.
 ********************************************************************/
 int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 {
-  return(lstat(dos_to_unix(fname,False),sbuf));
+  return(sys_lstat(dos_to_unix(fname,False),sbuf));
 }
-
 
 /*******************************************************************
 mkdir() gets a wrapper that calls dos_to_unix.
@@ -204,7 +266,6 @@ int dos_mkdir(char *dname,int mode)
   return(mkdir(dos_to_unix(dname,False),mode));
 }
 
-
 /*******************************************************************
 do does rmdir() - call dos_to_unix
 ********************************************************************/
@@ -213,7 +274,6 @@ int dos_rmdir(char *dname)
   return(rmdir(dos_to_unix(dname,False)));
 }
 
-
 /*******************************************************************
 I almost forgot chdir() - call dos_to_unix.
 ********************************************************************/
@@ -221,7 +281,6 @@ int dos_chdir(char *dname)
 {
   return(chdir(dos_to_unix(dname,False)));
 }
-
 
 /*******************************************************************
 now for utime() - call dos_to_unix.
@@ -253,64 +312,57 @@ static int copy_reg(char *source, const char *dest)
   char *buf;
   int len;                      /* Number of bytes read into `buf'. */
 
-  lstat (source, &source_stats);
+  sys_lstat (source, &source_stats);
   if (!S_ISREG (source_stats.st_mode))
-    {
-      return 1;
-    }
+    return 1;
 
   if (unlink (dest) && errno != ENOENT)
-    {
-      return 1;
-    }
+    return 1;
 
   if((ifd = open (source, O_RDONLY, 0)) < 0)
-    {
-      return 1;
-    }
+    return 1;
+
   if((ofd = open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0 )
-    {
-      close (ifd);
-      return 1;
-    }
+  {
+    close (ifd);
+    return 1;
+  }
 
   if((buf = malloc( COPYBUF_SIZE )) == NULL)
-    {
-      close (ifd);  
-      close (ofd);  
-      unlink (dest);
-      return 1;
-    }
+  {
+    close (ifd);  
+    close (ofd);  
+    unlink (dest);
+    return 1;
+  }
 
   while ((len = read(ifd, buf, COPYBUF_SIZE)) > 0)
-    {
-      if (write_data(ofd, buf, len) < 0)
-        {
-          close (ifd);
-          close (ofd);
-          unlink (dest);
-          free(buf);
-          return 1;
-        }
-    }
-  free(buf);
-  if (len < 0)
+  {
+    if (write_data(ofd, buf, len) < 0)
     {
       close (ifd);
       close (ofd);
       unlink (dest);
+      free(buf);
       return 1;
     }
+  }
+  free(buf);
+  if (len < 0)
+  {
+    close (ifd);
+    close (ofd);
+    unlink (dest);
+    return 1;
+  }
 
   if (close (ifd) < 0)
-    {
-      close (ofd);
-      return 1;
-    }
+  {
+    close (ofd);
+    return 1;
+  }
   if (close (ofd) < 0)
-    {
-      return 1;
-    }
+    return 1;
 
   /* chown turns off set[ug]id bits for non-root,
      so do the chmod last.  */
@@ -322,23 +374,18 @@ static int copy_reg(char *source, const char *dest)
     tv.actime = source_stats.st_atime;
     tv.modtime = source_stats.st_mtime;
     if (utime (dest, &tv))
-      {
-        return 1;
-      }
+      return 1;
   }
 
   /* Try to preserve ownership.  For non-root it might fail, but that's ok.
      But root probably wants to know, e.g. if NFS disallows it.  */
   if (chown (dest, source_stats.st_uid, source_stats.st_gid)
       && (errno != EPERM))
-    {
-      return 1;
-    }
+    return 1;
 
   if (chmod (dest, source_stats.st_mode & 07777))
-    {
-      return 1;
-    }
+    return 1;
+
   unlink (source);
   return 0;
 }
@@ -356,10 +403,10 @@ int dos_rename(char *from, char *to)
     rcode = rename (zfrom, zto);
 
     if (errno == EXDEV) 
-      {
-        /* Rename across filesystems needed. */
-        rcode = copy_reg (zfrom, zto);        
-      }
+    {
+      /* Rename across filesystems needed. */
+      rcode = copy_reg (zfrom, zto);        
+    }
     return rcode;
 }
 
@@ -372,9 +419,10 @@ int dos_chmod(char *fname,int mode)
 }
 
 /*******************************************************************
-for getwd
+for getwd - takes a UNIX directory name and returns the name
+in dos format.
 ********************************************************************/
-char *sys_getwd(char *s)
+char *dos_getwd(char *s)
 {
 	char *wd;
 #ifdef HAVE_GETCWD
@@ -459,4 +507,3 @@ struct hostent *sys_gethostbyname(char *name)
   return(gethostbyname(name));
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
-

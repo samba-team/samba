@@ -165,6 +165,11 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_stat(char *fname,SMB_STRUCT_STAT *sbuf);
+int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
+int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
+int sys_ftruncate(int fd, SMB_OFF_T offset);
+int sys_lseek(int fd, SMB_OFF_T offset, int whence);
 int dos_unlink(char *fname);
 int dos_open(char *fname,int flags,int mode);
 DIR *dos_opendir(char *dname);
@@ -177,7 +182,7 @@ int dos_chdir(char *dname);
 int dos_utime(char *fname,struct utimbuf *times);
 int dos_rename(char *from, char *to);
 int dos_chmod(char *fname,int mode);
-char *sys_getwd(char *s);
+char *dos_getwd(char *s);
 int sys_chown(char *fname,int uid,int gid);
 int sys_chroot(char *dname);
 struct hostent *sys_gethostbyname(char *name);
@@ -230,7 +235,7 @@ int name_mangle( char *In, char *Out, char name_type );
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
-uint32 file_size(char *file_name);
+SMB_OFF_T file_size(char *file_name);
 char *attrib_string(int mode);
 int StrCaseCmp(char *s, char *t);
 int StrnCaseCmp(char *s, char *t, int n);
@@ -265,7 +270,7 @@ void expand_mask(char *Mask,BOOL doext);
 BOOL strhasupper(char *s);
 BOOL strhaslower(char *s);
 int count_chars(char *s,char c);
-void make_dir_struct(char *buf,char *mask,char *fname,unsigned int size,int mode,time_t date);
+void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
 void close_low_fds(void);
 int set_blocking(int fd, BOOL set);
 int write_socket(int fd,char *buf,int len);
@@ -276,7 +281,7 @@ int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew);
 BOOL send_keepalive(int client);
 int read_data(int fd,char *buffer,int N);
 int write_data(int fd,char *buffer,int N);
-int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align);
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
 int read_smb_length(int fd,char *inbuf,int timeout);
 BOOL receive_smb(int fd,char *buffer, int timeout);
 BOOL client_receive_smb(int fd,char *buffer, int timeout);
@@ -301,7 +306,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
-int set_filelen(int fd, long len);
+int set_filelen(int fd, SMB_OFF_T len);
 int byte_checksum(char *buf,int len);
 char *dirname_dos(char *path,char *buf);
 void *Realloc(void *p,int size);
@@ -1977,7 +1982,8 @@ BOOL dptr_zero(char *buf);
 void *dptr_fetch(char *buf,int *num);
 void *dptr_fetch_lanman2(int dptr_num);
 BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int dirtype);
-BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend);
+BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
+                   SMB_OFF_T *size,int *mode,time_t *date,BOOL check_descend);
 void *OpenDir(connection_struct *conn, char *name, BOOL use_veto);
 void CloseDir(void *p);
 char *ReadDirName(void *p);
@@ -2003,7 +2009,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 
 /*The following definitions come from  smbd/fileio.c  */
 
-int seek_file(files_struct *fsp,uint32 pos);
+SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
 int read_file(files_struct *fsp,char *data,uint32 pos,int n);
 int write_file(files_struct *fsp,char *data,int n);
 void sync_file(connection_struct *conn, files_struct *fsp);
@@ -2144,7 +2150,7 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 
 /*The following definitions come from  smbd/predict.c  */
 
-int read_predict(int fd,int offset,char *buf,char **ptr,int num);
+int read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,int num);
 void do_read_prediction(void);
 void invalidate_read_prediction(int fd);
 

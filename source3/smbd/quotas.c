@@ -54,12 +54,12 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   SMB_STRUCT_STAT S;
   FILE *fp;
   struct mntent *mnt;
-  int devno;
+  SMB_DEV_T devno;
   int found;
   
   /* find the block device file */
   
-  if ( stat(path, &S) == -1 ) {
+  if ( sys_stat(path, &S) == -1 ) {
     return(False) ;
   }
 
@@ -69,7 +69,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   found = False ;
   
   while ((mnt = getmntent(fp))) {
-    if ( stat(mnt->mnt_dir,&S) == -1 )
+    if ( sys_stat(mnt->mnt_dir,&S) == -1 )
       continue ;
     if (S.st_dev == devno) {
       found = True ;
@@ -136,15 +136,15 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   struct mntent *mnt;
   FILE *fd;
   SMB_STRUCT_STAT sbuf;
-  dev_t devno ;
-  static dev_t devno_cached = 0 ;
+  SMB_DEV_T devno ;
+  static SMB_DEV_T devno_cached = 0 ;
   static pstring name;
   struct q_request request ;
   struct qf_header header ;
   static int quota_default = 0 ;
   int found ;
   
-  if ( stat(path,&sbuf) == -1 )
+  if ( sys_stat(path,&sbuf) == -1 )
     return(False) ;
   
   devno = sbuf.st_dev ;
@@ -160,7 +160,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     
     while ((mnt = getmntent(fd)) != NULL) {
       
-      if ( stat(mnt->mnt_dir,&sbuf) == -1 )
+      if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
 	continue ;
       
       if (sbuf.st_dev == devno) {
@@ -256,11 +256,11 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 #endif
   FILE *fd;
   SMB_STRUCT_STAT sbuf;
-  dev_t devno ;
-  static dev_t devno_cached = 0 ;
+  SMB_DEV_T devno ;
+  static SMB_DEV_T devno_cached = 0 ;
   int found ;
   
-  if ( stat(path,&sbuf) == -1 )
+  if ( sys_stat(path,&sbuf) == -1 )
     return(False) ;
   
   devno = sbuf.st_dev ;
@@ -273,7 +273,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     
     found = False ;
     while (getmntent(fd, &mnt) == 0) {
-      if ( stat(mnt.mnt_mountp,&sbuf) == -1 )
+      if ( sys_stat(mnt.mnt_mountp,&sbuf) == -1 )
 	continue ;
       DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", 
 	       mnt.mnt_mountp,sbuf.st_dev));
@@ -292,7 +292,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     
     found = False ;
     while ((mnt = getmntent(fd)) != NULL) {
-      if ( stat(mnt->mnt_dir,&sbuf) == -1 )
+      if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
 	continue ;
       DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", 
 	       mnt->mnt_dir,sbuf.st_dev));
@@ -436,12 +436,12 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   SMB_STRUCT_STAT S;
   FILE *fp;
   struct mntent *mnt;
-  int devno;
+  SMB_DEV_T devno;
   int found;
   
   /* find the block device file */
   
-  if ( stat(path, &S) == -1 ) {
+  if ( sys_stat(path, &S) == -1 ) {
     return(False) ;
   }
 
@@ -451,7 +451,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   found = False ;
   
   while ((mnt = getmntent(fp))) {
-    if ( stat(mnt->mnt_dir,&S) == -1 )
+    if ( sys_stat(mnt->mnt_dir,&S) == -1 )
       continue ;
     if (S.st_dev == devno) {
       found = True ;
@@ -575,7 +575,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   char dev_disk[256];
   SMB_STRUCT_STAT S;
   /* find the block device file */
-  if ((stat(path, &S)<0) ||
+  if ((sys_stat(path, &S)<0) ||
       (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) return (False);
 #endif
 

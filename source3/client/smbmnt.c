@@ -197,7 +197,7 @@ main(int argc, char *argv[])
         argv += 1;
         argc -= 1;
 
-        if (stat(mount_point, &st) == -1) {
+        if (sys_stat(mount_point, &st) == -1) {
                 fprintf(stderr, "could not find mount point %s: %s\n",
                         mount_point, strerror(errno));
                 exit(1);

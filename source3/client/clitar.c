@@ -446,7 +446,7 @@ static void dotareof(int f)
   (void) dozerobuf(f, TBLOCK);
   (void) dozerobuf(f, TBLOCK);
 
-  if (fstat(f, &stbuf) == -1)
+  if (sys_fstat(f, &stbuf) == -1)
     {
       DEBUG(0, ("Couldn't stat file handle\n"));
       return;

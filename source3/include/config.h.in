@@ -59,6 +59,7 @@
 #undef HAVE_ERRNO_DECL
 #undef HAVE_LONGLONG
 #undef HAVE_OFF64_T
+#undef SIZEOF_OFF_T
 #undef HAVE_REMSH
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
@@ -157,6 +158,21 @@
 
 /* Define if you have the ftruncate function.  */
 #undef HAVE_FTRUNCATE
+
+/* Define if you have the stat64 function.  */
+#undef HAVE_STAT64
+
+/* Define if you have the fstat64 function.  */
+#undef HAVE_FSTAT64
+
+/* Define if you have the lstat64 function.  */
+#undef HAVE_LSTAT64
+
+/* Define if you have the lseek64 function.  */
+#undef HAVE_LSEEK64
+
+/* Define if you have the ftruncate64 function.  */
+#undef HAVE_FTRUNCATE64
 
 /* Define if you have the getauthuid function.  */
 #undef HAVE_GETAUTHUID

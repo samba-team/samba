@@ -82,7 +82,7 @@ void load_groupname_map(void)
   if (!*groupname_map_file)
     return;
 
-  if(stat(groupname_map_file, &st) != 0) {
+  if(sys_stat(groupname_map_file, &st) != 0) {
     DEBUG(0, ("load_groupname_map: Unable to stat file %s. Error was %s\n",
                groupname_map_file, strerror(errno) ));
     return;

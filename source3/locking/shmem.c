@@ -314,9 +314,9 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    int smb_shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
-   int seek_back = -((int)sizeof(other_pid));
-   int free_slot = -1;
-   int erased_slot;   
+   SMB_OFF_T seek_back = -((SMB_OFF_T)sizeof(other_pid));
+   SMB_OFF_T free_slot = -1;
+   SMB_OFF_T erased_slot;   
    
    smb_shm_processes_fd = open(processreg_file, 
 			       read_only?O_RDONLY:(O_RDWR|O_CREAT), 
@@ -339,10 +339,15 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
 	 else
 	 {
 	    /* erase old pid */
+#ifdef LARGE_SMB_OFF_T
+            DEBUG(5,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %.0f)\n",
+                      (int)other_pid, (double)seek_back));
+#else
             DEBUG(5,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %d)\n",
                       (int)other_pid, seek_back));
+#endif
 	    other_pid = (pid_t)0;
-	    erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
+	    erased_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
 	    write(smb_shm_processes_fd, &other_pid, sizeof(other_pid));
 	    if(free_slot < 0)
 	       free_slot = erased_slot;
@@ -350,7 +355,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
       }
       else 
 	 if(free_slot < 0)
-	    free_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
+	    free_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
    }
    if (nb_read < 0)
    {
@@ -360,11 +365,17 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    }
    
    if(free_slot < 0)
-      free_slot = lseek(smb_shm_processes_fd, 0, SEEK_END);
+      free_slot = sys_lseek(smb_shm_processes_fd, 0, SEEK_END);
 
+#ifdef LARGE_SMB_OFF_T
+   DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %.0f\n",
+         (int)pid, (double)free_slot));
+#else /* LARGE_SMB_OFF_T */
    DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %d\n",
          (int)pid,free_slot));
-   lseek(smb_shm_processes_fd, free_slot, SEEK_SET);
+#endif /* LARGE_SMB_OFF_T */
+
+   sys_lseek(smb_shm_processes_fd, free_slot, SEEK_SET);
    if(write(smb_shm_processes_fd, &pid, sizeof(pid)) < 0)
    {
       DEBUG(0,("ERROR smb_shm_register_process : processreg_file write failed with code %s\n",strerror(errno)));
@@ -382,8 +393,8 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    int smb_shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
-   int seek_back = -((int)sizeof(other_pid));
-   int erased_slot;
+   SMB_OFF_T seek_back = -((SMB_OFF_T)sizeof(other_pid));
+   SMB_OFF_T erased_slot;
    BOOL found = False;
    
    
@@ -399,20 +410,25 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
       DEBUG(5,("smb_shm_unregister_process : read record for pid %d\n",(int)other_pid));
       if(other_pid == pid)
       {
-	 /* erase pid */
-         DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
+        /* erase pid */
+#ifdef LARGE_SMB_OFF_T
+        DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %.0f)\n",
+                     (int)other_pid, (double)seek_back));
+#else /* LARGE_SMB_OFF_T */
+        DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
                      (int)other_pid, seek_back));
-	 other_pid = (pid_t)0;
-	 erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
-	 if(write(smb_shm_processes_fd, &other_pid, sizeof(other_pid)) < 0)
-	 {
-	    DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file write failed with code %s\n",strerror(errno)));
-	    close(smb_shm_processes_fd);
-	    return False;
-	 }
+#endif /* LARGE_SMB_OFF_T */
+        other_pid = (pid_t)0;
+        erased_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
+        if(write(smb_shm_processes_fd, &other_pid, sizeof(other_pid)) < 0)
+        {
+          DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file write failed with code %s\n",strerror(errno)));
+          close(smb_shm_processes_fd);
+          return False;
+        }
 	 
-	 found = True;
-	 break;
+        found = True;
+        break;
       }
    }
    if (nb_read < 0)
@@ -750,10 +766,10 @@ static struct shmem_ops shmops = {
 struct shmem_ops *smb_shm_open(int ronly)
 {
 	pstring file_name;
-	int filesize;
+	SMB_OFF_T filesize;
 	BOOL created_new = False;
 	BOOL other_processes = True;
-	int size = lp_shmem_size();
+	SMB_OFF_T size = (SMB_OFF_T)lp_shmem_size();
 
 	read_only = ronly;
 
@@ -766,7 +782,11 @@ struct shmem_ops *smb_shm_open(int ronly)
 	if (!*file_name) return(False);
 	pstrcat(file_name, "/SHARE_MEM_FILE");
    
+#ifdef LARGE_SMB_OFF_T
+   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %.0f\n",file_name,(double)size));
+#else /* LARGE_SMB_OFF_T */
    DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
+#endif /* LARGE_SMB_OFF_T */
 
    smb_shm_fd = open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
 		     SHM_FILE_MODE);
@@ -783,7 +803,7 @@ struct shmem_ops *smb_shm_open(int ronly)
       return NULL;
    }
    
-   if( (filesize = lseek(smb_shm_fd, 0, SEEK_END)) < 0)
+   if( (filesize = sys_lseek(smb_shm_fd, 0, SEEK_END)) < 0)
    {
       DEBUG(0,("ERROR smb_shm_open : lseek failed with code %s\n",strerror(errno)));
       smb_shm_global_unlock();
@@ -792,7 +812,7 @@ struct shmem_ops *smb_shm_open(int ronly)
    }
 
    /* return the file offset to 0 to save on later seeks */
-   lseek(smb_shm_fd,0,SEEK_SET);
+   sys_lseek(smb_shm_fd,0,SEEK_SET);
 
    if (filesize == 0)
    {
@@ -819,17 +839,17 @@ struct shmem_ops *smb_shm_open(int ronly)
    if (!read_only && (created_new || !other_processes))
    {
       /* we just created a new one, or are the first opener, lets set it size */
-      if( ftruncate(smb_shm_fd, size) <0)
+      if( sys_ftruncate(smb_shm_fd, size) <0)
       {
-         DEBUG(0,("ERROR smb_shm_open : ftruncate failed with code %s\n",strerror(errno)));
-	 smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-	 smb_shm_global_unlock();
-	 close(smb_shm_fd);
-	 return NULL;
+        DEBUG(0,("ERROR smb_shm_open : ftruncate failed with code %s\n",strerror(errno)));
+        smb_shm_unregister_process(smb_shm_processreg_name, getpid());
+        smb_shm_global_unlock();
+        close(smb_shm_fd);
+        return NULL;
       }
 
       /* paranoia */
-      lseek(smb_shm_fd,0,SEEK_SET);
+      sys_lseek(smb_shm_fd,0,SEEK_SET);
 
       filesize = size;
    }
@@ -838,7 +858,14 @@ struct shmem_ops *smb_shm_open(int ronly)
    {
       /* the existing file has a different size and we are not the first opener.
 	 Since another process is still using it, we will use the file size */
-      DEBUG(0,("WARNING smb_shm_open : filesize (%d) != expected size (%d), using filesize\n",filesize,size));
+#ifdef LARGE_SMB_OFF_T
+      DEBUG(0,("WARNING smb_shm_open : filesize (%.0f) != expected size (%.0f), using filesize\n",
+            (double)filesize, (double)size));
+#else /* LARGE_SMB_OFF_T */
+      DEBUG(0,("WARNING smb_shm_open : filesize (%d) != expected size (%d), using filesize\n",
+            filesize,size));
+#endif /* LARGE_SMB_OFF_T */
+
       size = filesize;
    }
    

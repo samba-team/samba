@@ -27,14 +27,14 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 seek a file. Try to avoid the seek if possible
 ****************************************************************************/
-int seek_file(files_struct *fsp,uint32 pos)
+SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 {
-  uint32 offset = 0;
+  SMB_OFF_T offset = 0;
 
   if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
 
-  fsp->pos = (int)(lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET) - offset);
+  fsp->pos = (sys_lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET) - offset);
   return(fsp->pos);
 }
 
@@ -104,7 +104,7 @@ int write_file(files_struct *fsp,char *data,int n)
   if (!fsp->modified) {
     SMB_STRUCT_STAT st;
     fsp->modified = True;
-    if (fstat(fsp->fd_ptr->fd,&st) == 0) {
+    if (sys_fstat(fsp->fd_ptr->fd,&st) == 0) {
       int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
       if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode)) {	
         file_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
