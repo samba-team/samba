@@ -90,7 +90,7 @@ loop (int s, int errsock)
 
 #ifdef KRB5
     if(auth_method == AUTH_KRB5 && protocol_version == 2)
-	init_ivecs(1);
+	init_ivecs(1, errsock != -1);
 #endif
 
     if (s >= FD_SETSIZE || (errsock != -1 && errsock >= FD_SETSIZE))
