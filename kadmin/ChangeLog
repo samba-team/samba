@@ -1,3 +1,8 @@
+2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadm_conn.c: make the parent process wait for children and
+	terminate after receiving a signal, also terminate on SIGINT
+
 2000-07-22  Assar Westerlund  <assar@sics.se>
 
 	* version4.c: map both princ_expire_time and pw_expiration to v4
