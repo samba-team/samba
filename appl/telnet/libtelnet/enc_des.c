@@ -411,7 +411,8 @@ static void fb64_session(Session_Key *key, int server, struct fb *fbp)
 #endif
 		fbp->once = 1;
 	}
-	DES_key_sched(&fbp->krbdes_key, &fbp->krbdes_sched);
+	DES_set_key_checked((DES_cblock *)&fbp->krbdes_key,
+			    &fbp->krbdes_sched);
 	/*
 	 * Now look to see if krbdes_start() was was waiting for
 	 * the key to show up.  If so, go ahead an call it now
@@ -514,7 +515,7 @@ void fb64_stream_iv(DES_cblock seed, struct stinfo *stp)
 	memcpy(stp->str_iv, seed,sizeof(DES_cblock));
 	memcpy(stp->str_output, seed, sizeof(DES_cblock));
 
-	DES_key_sched(&stp->str_ikey, &stp->str_sched);
+	DES_set_key_checked(&stp->str_ikey, &stp->str_sched);
 
 	stp->str_index = sizeof(DES_cblock);
 }
@@ -522,7 +523,7 @@ void fb64_stream_iv(DES_cblock seed, struct stinfo *stp)
 void fb64_stream_key(DES_cblock key, struct stinfo *stp)
 {
 	memcpy(stp->str_ikey, key, sizeof(DES_cblock));
-	DES_key_sched((DES_cblock*)key, &stp->str_sched);
+	DES_set_key_checked((DES_cblock*)key, &stp->str_sched);
 
 	memcpy(stp->str_output, stp->str_iv, sizeof(DES_cblock));
 
