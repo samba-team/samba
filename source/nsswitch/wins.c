@@ -31,6 +31,39 @@ extern int DEBUGLEVEL;
 #define INADDRSZ 4
 #endif
 
+/* Use our own create socket code so we don't recurse.... */
+
+static int wins_lookup_open_socket_in(void)
+{
+	struct sockaddr_in sock;
+	int val=1;
+	int res;
+
+	memset((char *)&sock,'\0',sizeof(sock));
+
+#ifdef HAVE_SOCK_SIN_LEN
+	sock.sin_len = sizeof(sock);
+#endif
+	sock.sin_port = 0;
+	sock.sin_family = AF_INET;
+	sock.sin_addr.s_addr = interpret_addr("0.0.0.0");
+	res = socket(AF_INET, SOCK_DGRAM, 0);
+	if (res == -1)
+		return -1;
+
+	setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val));
+#ifdef SO_REUSEPORT
+	setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val));
+#endif /* SO_REUSEPORT */
+
+	/* now we've got a socket - we need to bind it */
+
+	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0)
+		return(-1);
+
+	return res;
+}
+
 struct in_addr *lookup_backend(const char *name, int *count)
 {
 	int fd;
@@ -51,8 +84,9 @@ struct in_addr *lookup_backend(const char *name, int *count)
 
 	*count = 0;
 
-	fd = open_socket_in(SOCK_DGRAM,0, 3, interpret_addr("0.0.0.0"), True);
-	if (fd == -1) return NULL;
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1)
+		return NULL;
 
 	set_socket_options(fd,"SO_BROADCAST");
 
@@ -85,6 +119,7 @@ struct in_addr *lookup_backend(const char *name, int *count)
 	}
 
  out:
+
 	close(fd);
 	return ret;
 }
@@ -131,6 +166,10 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 	}
 
 	if (ip_list) free(ip_list);
+
+	if (he->h_name == NULL) {
+		he->h_name = name;
+	}
 
 	return NSS_STATUS_SUCCESS;
 }
