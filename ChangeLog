@@ -1,3 +1,10 @@
+2004-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: document default_cc_name
+	
+	* lib/krb5/cache.c (krb5_cc_set_default_name):
+	s/libdefault/libdefaults/
+
 2004-08-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/acache.c: replace magic 3 with ccapi_version_3
