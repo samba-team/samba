@@ -121,12 +121,18 @@ struct winbindd_methods {
 				   uint32 *num_entries, 
 				   WINBIND_USERINFO **info);
 
-	/* get a list of groups */
+	/* get a list of domain groups */
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *num_entries, 
 				    struct acct_info **info);
 
+	/* get a list of domain local groups */
+	NTSTATUS (*enum_local_groups)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 *num_entries, 
+				    struct acct_info **info);
+				    
 	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
 				const char *name,

@@ -333,7 +333,16 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	
 	if ( !cli_nt_session_open (new_conn->cli, pipe_index) ) {
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;
-		add_failed_connection_entry(new_conn, result);
+		/* 
+		 * only cache a failure if we are not trying to open the 
+		 * **win2k** specific lsarpc UUID.  This could be an NT PDC 
+		 * and therefore a failure is normal.  This should probably
+		 * be abstracted to a check for 2k specific pipes and wondering
+		 * if the PDC is an NT4 box.   but since there is only one 2k 
+		 * specific UUID right now, i'm not going to bother.  --jerry
+		 */
+		if ( !is_win2k_pipe(pipe_index) )
+			add_failed_connection_entry(new_conn, result);
 		cli_shutdown(new_conn->cli);
 		return result;
 	}
@@ -433,7 +442,7 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 	
 	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) 
 	{
-		DEBUG(3, ("cm_check_for_native_mode_win2k: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
+		DEBUG(5, ("cm_check_for_native_mode_win2k: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
 			  domain, nt_errstr(result)));
 		return False;
 	}

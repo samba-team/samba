@@ -396,7 +396,7 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 static BOOL get_sam_group_entries(struct getent_state *ent, NTSTATUS *status)
 {
 	uint32 num_entries;
-	struct acct_info *name_list = NULL;
+	struct acct_info *name_list = NULL, *tmp_name_list = NULL;
 	TALLOC_CTX *mem_ctx;
 	BOOL result = False;
 	struct acct_info *sam_grp_entries = NULL;
@@ -422,8 +422,9 @@ static BOOL get_sam_group_entries(struct getent_state *ent, NTSTATUS *status)
 		goto done;
 	}
 
-	nt_status = domain->methods->enum_dom_groups(
-		domain, mem_ctx, &num_entries, &sam_grp_entries);
+	/* always get the domain global groups */
+	
+	nt_status = domain->methods->enum_dom_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
 	
 	if (status && !NT_STATUS_IS_OK(nt_status))
 		*status = nt_status;
@@ -431,12 +432,54 @@ static BOOL get_sam_group_entries(struct getent_state *ent, NTSTATUS *status)
 	/* Copy entries into return buffer */
 
 	if (num_entries) {
-		name_list = malloc(sizeof(struct acct_info) * num_entries);
-		memcpy(name_list, sam_grp_entries, 
-		       num_entries * sizeof(struct acct_info));
+		if ( !(name_list = malloc(sizeof(struct acct_info) * num_entries)) ) {
+			DEBUG(0,("get_sam_group_entries: Failed to malloc memory for %d domain groups!\n", 
+				num_entries));
+			*status = NT_STATUS_NO_MEMORY;
+			result = False;
+			goto done;
+		}
+		memcpy( name_list, sam_grp_entries, num_entries * sizeof(struct acct_info) );
 	}
 	
 	ent->num_sam_entries = num_entries;
+	
+	/* get the domain local groups if we are a member of 
+	   a native win2k domain */
+	   
+	if ( domain->native_mode )
+	{
+		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
+		
+		nt_status = domain->methods->enum_local_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
+		
+		if ( !NT_STATUS_IS_OK(nt_status) )
+			*status = nt_status;
+
+		DEBUG(4,("get_sam_group_entries: Returned %d local groups\n", num_entries));
+		
+		/* Copy entries into return buffer */
+
+		if ( num_entries ) {
+			if ( !(tmp_name_list = Realloc( name_list, sizeof(struct acct_info) * (ent->num_sam_entries+num_entries))) )
+			{
+				DEBUG(0,("get_sam_group_entries: Failed to realloc more memory for %d local groups!\n", 
+					num_entries));
+				*status = NT_STATUS_NO_MEMORY;
+				result = False;
+				SAFE_FREE( name_list );
+				goto done;
+			}
+			
+			name_list = tmp_name_list;
+				
+			memcpy( &name_list[ent->num_sam_entries], sam_grp_entries, 
+				num_entries * sizeof(struct acct_info) );
+		}
+	
+		ent->num_sam_entries += num_entries;
+	}
+	
 		
 	/* Fill in remaining fields */
 
