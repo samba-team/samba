@@ -97,103 +97,111 @@ struct server_context *server_service_startup(const char *model)
 }
 
 /*
-  setup a single listener of any type
-  if you pass *port == 0, then a port < 1024 is used
+  setup a listen stream socket
+  if you pass *port == 0, then a port > 1024 is used
  */
 struct server_socket *service_setup_socket(struct server_service *service,
-			 const struct model_ops *model_ops,
-			 struct socket_context *socket_ctx,
- 			 struct in_addr *ifip, uint16_t *port)
+                        const struct model_ops *model_ops,
+                        const char *sock_addr,
+                        uint16_t *port)
 {
-	TALLOC_CTX *mem_ctx;
-	struct server_socket *sock;
+	NTSTATUS status;
+	struct server_socket *srv_sock;
+	struct socket_context *socket_ctx;
 	struct fd_event fde;
 	int i;
 
-	mem_ctx = talloc_init("struct server_socket");
-
-	sock = talloc_p(mem_ctx, struct server_socket);
-	if (!sock) {
-		DEBUG(0,("talloc_p(mem_ctx, struct server_socket) failed\n"));
-		return NULL;	
-	}
-
 	if (*port == 0) {
-		fde.fd = -1;
 		for (i=SERVER_TCP_LOW_PORT;i<= SERVER_TCP_HIGH_PORT;i++) {
-			fde.fd = open_socket_in(SOCK_STREAM, i, 0, ifip->s_addr, True);			
-			if (fde.fd != -1) break;
-		}
-		if (fde.fd != -1) {
-			*port = i;
+			status = socket_create("ipv4", SOCKET_TYPE_STREAM, &socket_ctx, 0);
+			if (NT_STATUS_IS_OK(status)) {
+				*port = i;
+				break;
+			}
 		}
 	} else {
-		fde.fd = open_socket_in(SOCK_STREAM, *port, 0, ifip->s_addr, True);
+		status = socket_create("ipv4", SOCKET_TYPE_STREAM, &socket_ctx, 0);
 	}
 
-	if (fde.fd == -1) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
-			 inet_ntoa(*ifip), *port, strerror(errno)));
+			sock_addr, *port, nt_errstr(status)));
 		return NULL;
 	}
 
 	/* ready to listen */
-	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
-	set_socket_options(fde.fd, lp_socket_options());
-      
-	if (listen(fde.fd, SERVER_LISTEN_BACKLOG) == -1) {
+	status = socket_set_option(socket_ctx, "SO_KEEPALIVE", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("socket_set_option(socket_ctx, SO_KEEPALIVE, NULL): %s\n",
+			nt_errstr(status)));
+		socket_destroy(socket_ctx);
+		return NULL;
+	}
+	status = socket_set_option(socket_ctx, lp_socket_options(), NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("socket_set_option(socket_ctx, lp_socket_options(), NULL): %s\n",
+			nt_errstr(status)));
+		socket_destroy(socket_ctx);
+		return NULL;
+	}
+
+	/* TODO: set socket ACL's here when they're implemented */
+
+	status = socket_listen(socket_ctx, sock_addr, *port, SERVER_LISTEN_BACKLOG, 0);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to listen on %s:%u - %s\n",
-			 inet_ntoa(*ifip), *port, strerror(errno)));
-		close(fde.fd);
+			sock_addr, *port, nt_errstr(status)));
+		socket_destroy(socket_ctx);
+		return NULL;
+	}
+
+	srv_sock = talloc_p(NULL, struct server_socket);
+	if (!srv_sock) {
+		DEBUG(0,("talloc_p(mem_ctx, struct server_socket) failed\n"));
+		socket_destroy(socket_ctx);
 		return NULL;
 	}
 
 	/* we are only interested in read events on the listen socket */
-	fde.flags = EVENT_FD_READ;
-	fde.private = sock;
-	fde.handler = model_ops->accept_connection;
+	fde.fd          = socket_get_fd(socket_ctx);
+	fde.flags       = EVENT_FD_READ;
+	fde.private     = srv_sock;
+	fde.handler     = model_ops->accept_connection;
 
-	ZERO_STRUCTP(sock);
-	sock->mem_ctx	= mem_ctx;
-	sock->service	= service;
-	sock->socket	= socket_ctx;
-	sock->event.ctx = service->srv_ctx->events;
-	sock->event.fde = event_add_fd(sock->event.ctx, &fde);
-	if (!sock->event.fde) {
-		DEBUG(0,("event_add_fd(sock->event.ctx, &fde) failed\n"));
+	ZERO_STRUCTP(srv_sock);
+	srv_sock->mem_ctx       = srv_sock;
+	srv_sock->service       = service;
+	srv_sock->socket        = socket_ctx;
+	srv_sock->event.ctx     = service->srv_ctx->events;
+	srv_sock->event.fde     = event_add_fd(srv_sock->event.ctx, &fde);
+	if (!srv_sock->event.fde) {
+		DEBUG(0,("event_add_fd(srv_sock->event.ctx, &fde) failed\n"));
+		socket_destroy(socket_ctx);
 		return NULL;
 	}
 
-	DLIST_ADD(service->socket_list, sock);
+	DLIST_ADD(service->socket_list, srv_sock);
 
-	return sock;
+	return srv_sock;
 }
 
-struct server_connection *server_setup_connection(struct event_context *ev, struct server_socket *server_socket, int accepted_fd, time_t t)
+struct server_connection *server_setup_connection(struct event_context *ev, struct server_socket *server_socket, struct socket_context *sock, time_t t)
 {
 	struct fd_event fde;
 	struct timed_event idle;
 	struct server_connection *srv_conn;
-	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("server_service_connection");
-	if (!mem_ctx) {
-		DEBUG(0,("talloc_init(server_service_connection) failed\n"));
-		return NULL;
-	}
-
-	srv_conn = talloc_p(mem_ctx, struct server_connection);
+	srv_conn = talloc_p(NULL, struct server_connection);
 	if (!srv_conn) {
 		DEBUG(0,("talloc_p(mem_ctx, struct server_service_connection) failed\n"));
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
 	ZERO_STRUCTP(srv_conn);
-	srv_conn->mem_ctx = mem_ctx;
+	srv_conn->mem_ctx = srv_conn;
 
 	fde.private 	= srv_conn;
-	fde.fd		= accepted_fd;
+	fde.fd		= socket_get_fd(sock);
 	fde.flags	= EVENT_FD_READ;
 	fde.handler	= server_io_handler;
 
@@ -208,9 +216,7 @@ struct server_connection *server_setup_connection(struct event_context *ev, stru
 
 	srv_conn->server_socket		= server_socket;
 	srv_conn->service		= server_socket->service;
-
-	/* TODO: we need a generic socket subsystem */
-	srv_conn->socket		= NULL;
+	srv_conn->socket		= sock;
 
 	/* create a smb server context and add it to out event
 	   handling */
@@ -234,7 +240,7 @@ void server_terminate_connection(struct server_connection *srv_conn, const char 
 
 void server_destroy_connection(struct server_connection *srv_conn)
 {
-	close(srv_conn->event.fde->fd);
+	socket_destroy(srv_conn->socket);
 
 	event_remove_fd(srv_conn->event.ctx, srv_conn->event.fde);
 	srv_conn->event.fde = NULL;
