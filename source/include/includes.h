@@ -1218,7 +1218,6 @@ extern char *sys_errlist[];
 #include "version.h"
 #include "smb.h"
 #include "nameserv.h"
-#include "ubiqx/ubi_dLinkList.h"
 
 #include "byteorder.h"
 
