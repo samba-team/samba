@@ -225,11 +225,11 @@ socket_set_port (struct sockaddr *sa, int port)
  * Set the range of ports to use when binding with port = 0.
  */
 void
-socket_set_portrange (int sock, int restrict, int af)
+socket_set_portrange (int sock, int restr, int af)
 {
 #if defined(IP_PORTRANGE)
 	if (af == AF_INET) {
-		int on = restrict ? IP_PORTRANGE_HIGH : IP_PORTRANGE_DEFAULT;
+		int on = restr ? IP_PORTRANGE_HIGH : IP_PORTRANGE_DEFAULT;
 		if (setsockopt (sock, IPPROTO_IP, IP_PORTRANGE, &on,
 		    sizeof(on)) < 0)
 			warn ("setsockopt IP_PORTRANGE (ignored)");
@@ -237,7 +237,7 @@ socket_set_portrange (int sock, int restrict, int af)
 #endif
 #if defined(IPV6_PORTRANGE)
 	if (af == AF_INET6) {
-		int on = restrict ? IPV6_PORTRANGE_HIGH : 
+		int on = restr ? IPV6_PORTRANGE_HIGH : 
 		    IPV6_PORTRANGE_DEFAULT;
 		if (setsockopt (sock, IPPROTO_IPV6, IPV6_PORTRANGE, &on,
 		    sizeof(on)) < 0)
