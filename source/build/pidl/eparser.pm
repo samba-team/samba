@@ -478,10 +478,10 @@ sub ParseStructPull($)
 
 	start_flags($struct);
 
-	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
-
 	pidl "\titem = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$struct->{PARENT}{NAME}\");\n";
 	pidl "\tsubtree = proto_item_add_subtree(item, ett_$struct->{PARENT}{NAME});\n";
+
+	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
 	pidl "\tndr_pull_struct_start(ndr);\n";
 
@@ -517,6 +517,9 @@ sub ParseUnionPull($)
 	my $have_default = 0;
 
 	start_flags($e);
+
+	pidl "\titem = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$e->{PARENT}{NAME}\");\n";
+	pidl "\tsubtree = proto_item_add_subtree(item, ett_$e->{PARENT}{NAME});\n";	
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
@@ -637,6 +640,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
+  	        pidl "static gint ett_$e->{NAME} = -1;\n\n";
 		pidl $static . "void ndr_pull_$e->{NAME}(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags, int level)";
 		pidl "\n{\n";
 		pidl "\tproto_item *item = NULL;\n";
@@ -860,8 +864,6 @@ sub NeededTypedef($)
 
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 
-	    print "ett_$t->{NAME}\n";
-
 	    $needed{"ett_$t->{NAME}"} = 1;
 
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
@@ -880,6 +882,9 @@ sub NeededTypedef($)
 		}
 	}
 	if ($t->{DATA}->{TYPE} eq "UNION") {
+
+	    $needed{"ett_$t->{NAME}"} = 1;
+
 		for my $e (@{$t->{DATA}->{DATA}}) {
 			$e->{PARENT} = $t->{DATA};
 			if ($e->{TYPE} eq "UNION_ELEMENT") {
@@ -1047,9 +1052,6 @@ sub Parse($$)
 	}
 	
 	pidl "\t};\n\n";
-
-	use Data::Dumper;
-	print Dumper(%needed);
 
 	pidl "\tstatic gint *ett[] = {\n";
 	pidl "\t\t&ett_dcerpc_$module,\n";
