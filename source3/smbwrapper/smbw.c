@@ -207,7 +207,7 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 {
 	static pstring s;
 	char *p, *p2;
-	int len;
+	int len = strlen(SMBW_PREFIX)-1;
 
 	*server = *share = *path = 0;
 
@@ -221,9 +221,12 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 	DEBUG(5,("cleaned %s (fname=%s cwd=%s)\n", 
 		 s, fname, smb_cwd));
 
-	if (strncmp(s,SMBW_PREFIX,strlen(SMBW_PREFIX))) return s;
+	if (strncmp(s,SMBW_PREFIX,len) || 
+	    (s[len] != '/' && s[len] != 0)) return s;
 
-	p = s + strlen(SMBW_PREFIX);
+	p = s + len;
+	if (*p == '/') p++;
+
 	p2 = strchr(p,'/');
 
 	if (p2) {
@@ -239,6 +242,11 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 
 	p = p2;
 	if (!p) {
+		if (len == 0) {
+			char *workgroup = getenv("SMBW_WORKGROUP");
+			if (!workgroup) workgroup = lp_workgroup();
+			slprintf(server,sizeof(fstring)-1, "%s#1D", workgroup);
+		}
 		fstrcpy(share,"IPC$");
 		pstrcpy(path,"");
 		goto ok;
@@ -336,6 +344,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 	char *password;
 	char *workgroup;
 	struct nmb_name called, calling;
+	char *p, *server_n = server;
+	fstring group;
 
 	ZERO_STRUCT(c);
 
@@ -364,8 +374,21 @@ struct smbw_server *smbw_server(char *server, char *share)
 	make_nmb_name(&called , server, 0x20, "");
 
  again:
+	if ((p=strchr(server_n,'#'))) {
+		struct in_addr ip;
+		fstrcpy(group, server_n);
+		p = strchr(group,'#');
+		*p = 0;
+		if (!find_master(group, &ip)) {
+			errno = ENOENT;
+			return NULL;
+		}
+		fstrcpy(group, inet_ntoa(ip));
+		server_n = group;
+	}
+
 	/* have to open a new connection */
-	if (!cli_initialise(&c) || !cli_connect(&c, server, NULL)) {
+	if (!cli_initialise(&c) || !cli_connect(&c, server_n, NULL)) {
 		errno = ENOENT;
 		return NULL;
 	}

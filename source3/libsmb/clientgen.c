@@ -535,7 +535,7 @@ The callback function takes 3 arguments: the machine name, the server type and
 the comment.
 ****************************************************************************/
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(char *, uint32, char *))
+		       void (*fn)(const char *, uint32, const char *))
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
