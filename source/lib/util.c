@@ -3281,7 +3281,6 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 char *get_trusted_serverlist(const char* domain)
 {
 	pstring tmp;
-	static char *server_list = NULL;
 	static pstring srv_list;
 	char *trusted_list = lp_trusted_domains();
 
@@ -3289,8 +3288,8 @@ char *get_trusted_serverlist(const char* domain)
 	    strequal(domain, "") ||
 	    strequal(lp_workgroup(), domain))
 	{
-		DEBUG(10,("local domain server list: %s\n", server_list));
 		pstrcpy(srv_list, lp_passwordserver());
+		DEBUG(10,("local domain server list: %s\n", srv_list));
 		return srv_list;
 	}
 
@@ -3306,8 +3305,8 @@ char *get_trusted_serverlist(const char* domain)
 
 		if (strequal(domain, trust_dom))
 		{
+			DEBUG(10,("trusted: %s\n", srv_list));
 			return srv_list;
-			DEBUG(10,("trusted: %s\n", server_list));
 		}
 
 	} while (next_token(NULL, tmp, NULL, sizeof(tmp)));
