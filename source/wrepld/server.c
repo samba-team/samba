@@ -166,23 +166,6 @@ void exit_server(const char *reason)
 static void usage(char *pname)
 {
 
-	d_printf("Usage: %s [-DFSaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
-	d_printf("       [-O socket options] [-s services file]\n");
-	d_printf("\t-D                    Become a daemon (default)\n");
-	d_printf("\t-F                    Run daemon in foreground (for daemontools, etc)\n");
-	d_printf("\t-S                    Log to stdout\n");
-	d_printf("\t-a                    Append to log file (default)\n");
-	d_printf("\t-i                    Run interactive (not a daemon)\n" );
-	d_printf("\t-o                    Overwrite log file, don't append\n");
-	d_printf("\t-h                    Print usage\n");
-	d_printf("\t-?                    Print usage\n");
-	d_printf("\t-V                    Print version\n");
-	d_printf("\t-d debuglevel         Set the debuglevel\n");
-	d_printf("\t-l log basename.      Basename for log/debug files\n");
-	d_printf("\t-p port               Listen on the specified port\n");
-	d_printf("\t-O socket options     Socket options\n");
-	d_printf("\t-s services file.     Filename of services file\n");
-	d_printf("\n");
 }
 
 /****************************************************************************
@@ -520,84 +503,47 @@ static void process(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	extern char *optarg;
 	/* shall I run as a daemon */
-	BOOL is_daemon = False;
-	BOOL interactive = False;
-	BOOL specified_logfile = False;
-	BOOL Fork = True;
-	BOOL log_stdout = False;
+	static BOOL is_daemon = False;
+	static BOOL interactive = False;
+	static BOOL Fork = True;
+	static BOOL log_stdout = False;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
+		{ "daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
+		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools, etc)" },
+		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
+		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Run interactive (not a daemon)" },
+		{ "port", 'p', POPT_ARG_INT, &wins_port, 'p', "Listen on the specified port" },
+		{ 0, 0, 0, 0 }
+	};
 	int opt;
-	pstring logfile;
+	poptContext pc;
 
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
 
-	/* this is for people who can't start the program correctly */
-	while (argc > 1 && (*argv[1] != '-')) {
-		argv++;
-		argc--;
-	}
+	pc = poptGetContext("wrepld", argc, (const char **)argv, long_options, 
+						POPT_CONTEXT_KEEP_FIRST);
 
-	while ( EOF != (opt = getopt(argc, argv, "FSO:l:s:d:Dp:h?Vaiof:")) )
+	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt)  {
-		case 'F':
-			Fork = False;
-			break;
-		case 'S':
-			log_stdout = True;
-			break;
-		case 'O':
-			pstrcpy(user_socket_options,optarg);
-			break;
-
-		case 's':
-			pstrcpy(dyn_CONFIGFILE,optarg);
-			break;
-
-		case 'l':
-			specified_logfile = True;
-			slprintf(logfile, sizeof(logfile)-1, "%s/log.wrepld", optarg);
-			lp_set_logfile(logfile);
-			break;
-
 		case 'i':
 			interactive = True;
 			Fork = False;
 			log_stdout = True;
 			break;
-
-		case 'D':
-			is_daemon = True;
-			break;
-
-		case 'd':
-			if (*optarg == 'A')
-				DEBUGLEVEL = 10000;
-			else
-				DEBUGLEVEL = atoi(optarg);
-			break;
-
-		case 'p':
-			wins_port = atoi(optarg);
-			break;
-
-		case 'h':
-		case '?':
-			usage(argv[0]);
-			exit(0);
-			break;
-
-		case 'V':
-			d_printf("Version %s\n",VERSION);
-			exit(0);
-			break;
-		default:
-			DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
-			usage(argv[0]);
-			exit(1);
 		}
+	}
+
+	poptFreeContext(pc);
+
 	if (log_stdout && Fork) {
 		d_printf("Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n");
 		usage(argv[0]);
@@ -612,12 +558,6 @@ static void process(void)
 	sec_init();
 
 	load_case_tables();
-
-	if(!specified_logfile) {
-		slprintf(logfile, sizeof(logfile)-1, "%s/log.wrepld",
-			 dyn_LOGFILEBASE);
-		lp_set_logfile(logfile);
-	}
 
 	set_remote_machine_name("wrepld", False);
 
