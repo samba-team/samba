@@ -23,9 +23,10 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <sys/time.h>
 #include <libsmbclient.h>
 
-void auth_fn(char *server, char *share,
+void auth_fn(const char *server, const char *share,
 	     char *workgroup, int wgmaxlen, char *username, int unmaxlen,
 	     char *password, int pwmaxlen)
 {
@@ -59,18 +60,29 @@ void auth_fn(char *server, char *share,
 
 }
 
+int global_id = 0;
+
+void print_list_fn(struct print_job_info *pji)
+{
+
+  fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %u, User: %s, Name: %s\n",
+	  pji->id, pji->priority, pji->size, pji->user, pji->name);
+
+  global_id = pji->id;
+
+}
+
 int main(int argc, char *argv[])
 {
   int err, fd, dh1, dh2, dh3, dsize, dirc;
   const char *file = "smb://samba/public/testfile.txt";
   const char *file2 = "smb://samba/public/testfile2.txt";
-  const char *workgroup = "sambanet";
   char buff[256];
   char dirbuf[512];
   struct smbc_dirent *dirp;
   struct stat st1, st2;
 
-  err = smbc_init(auth_fn, workgroup,  10); /* Initialize things */
+  err = smbc_init(auth_fn,  10); /* Initialize things */
 
   if (err < 0) {
 
@@ -79,6 +91,52 @@ int main(int argc, char *argv[])
   }
 
   if (argc > 1) {
+
+    /* Try to list the print jobs ... */
+
+    if (smbc_list_print_jobs("smb://samba/pclp", print_list_fn) < 0) {
+
+      fprintf(stderr, "Could not list print jobs: %s, %d\n", strerror(errno), errno);
+      exit(1);
+
+    }
+
+    /* Try to delete the last job listed */
+
+    if (global_id > 0) {
+
+      fprintf(stdout, "Trying to delete print job %u\n", global_id);
+
+      if (smbc_unlink_print_job("smb://samba/pclp", global_id) < 0) {
+
+	fprintf(stderr, "Failed to unlink job id %u, %s, %u\n", global_id, 
+		strerror(errno), errno);
+
+	exit(1);
+
+      }
+
+    }
+
+    /* Try to print a file ... */
+
+    if (smbc_print_file("smb://samba/public/testfile2.txt", "smb://samba/pclp") < 0) {
+
+      fprintf(stderr, "Failed to print job: %s %u\n", strerror(errno), errno);
+      exit(1);
+
+    }
+
+    /* Try to delete argv[1] as a file ... */
+    
+    if (smbc_unlink(argv[1]) < 0) {
+
+      fprintf(stderr, "Could not unlink: %s, %s, %d\n",
+	      argv[1], strerror(errno), errno);
+
+      exit(0);
+
+    }
 
     if ((dh1 = smbc_opendir("smb://"))<1) {
 
@@ -341,4 +399,45 @@ int main(int argc, char *argv[])
 	  st1.st_size, st1.st_mode);
   fprintf(stdout, "    time: %s\n", ctime(&st1.st_atime));
 
+  /* Now, make a directory ... */
+
+  fprintf(stdout, "Making directory smb://samba/public/make-dir\n");
+
+  if (smbc_mkdir("smb://samba/public/make-dir", 0666) < 0) {
+
+    fprintf(stderr, "Error making directory: smb://samba/public/make-dir: %s\n", 
+	    strerror(errno));
+
+    if (errno == EEXIST) { /* Try to delete the directory */
+
+      fprintf(stdout, "Trying to delete directory: smb://samba/public/make-dir\n");
+
+      if (smbc_rmdir("smb://samba/public/make-dir") < 0) { /* Error */
+
+	fprintf(stderr, "Error removing directory: smb://samba/public/make-dir: %s\n", strerror(errno));
+
+	exit(0);
+
+      }
+
+      fprintf(stdout, "Making directory: smb://samba/public/make-dir\n");
+
+      if (smbc_mkdir("smb://samba/public/make-dir", 666) < 0) {
+
+	fprintf(stderr, "Error making directory: smb://samba/public/make-dir: %s\n",
+		strerror(errno));
+
+	fprintf(stderr, "I give up!\n");
+
+	exit(1);
+
+      }
+
+    }
+
+    exit(0);
+    
+  }
+
+  fprintf(stdout, "Made dir: make-dir\n");
 }
