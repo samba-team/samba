@@ -200,7 +200,6 @@ static int Continuation( char *line, int pos )
 		pos--;
 
 	return (((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
-	return (-1);
 }
 
 
