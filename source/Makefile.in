@@ -14,6 +14,7 @@ CFLAGS=@CFLAGS@
 CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 AWK=@AWK@
+
 LIBTOOL=@LIBTOOL@ --quiet
 LIBTOOL_DEPS=@LIBTOOL_DEPS@
 LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
@@ -39,7 +40,8 @@ SBINDIR = @sbindir@
 LIBDIR = @libdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
-SYSCONFDIR = @sysconfdir@
+sysconfdir = @sysconfdir@
+sambaconfdir = @sambaconfdir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -50,12 +52,13 @@ INSTALLPERMS = 0755
 LOGFILEBASE = $(VARDIR)
 SMBLOGFILE = $(LOGFILEBASE)/log.smb
 NMBLOGFILE = $(LOGFILEBASE)/log.nmb
-CONFIGFILE = $(LIBDIR)/smb.conf
-LMHOSTSFILE = $(LIBDIR)/lmhosts
+CONFIGFILE = $(sambaconfdir)/smb.conf
+LMHOSTSFILE = $(sambaconfdir)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
 FORMSFILE = $(LIBDIR)/ntforms.def
 NTDRIVERSDIR = $(LIBDIR)
 PASSWD_PROGRAM = /bin/passwd
+# This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
 
 SMB_PASSWD_FILE  = $(PRIVATEDIR)/smbpasswd
@@ -119,7 +122,7 @@ PROGS4 = @WRAP@ @WRAP32@
 #MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
-SCRIPTS = script/smbtar script/addtosmbpass script/convert_smbpasswd
+SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd
 
 QUOTAOBJS=@QUOTAOBJS@
 
