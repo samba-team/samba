@@ -22,6 +22,18 @@ dnl		1:name,
 dnl		2:subsystem,
 dnl		3:default_build,
 dnl		4:config_mk_file
+dnl			[MODULE::test]
+dnl			INIT_OBJ_FILES = \
+dnl					test.o 
+dnl			ADD_OBJ_FILES = \
+dnl					test_utils1.o \
+dnl					test_utils2.o
+dnl			REQUIRED_LIBRARIES = \
+dnl					LIB_EXT_TEST1 \
+dnl					LIB_EXT_TEST2
+dnl			REQUIRED_SUBSYSTEMS = \
+dnl					OTHER_SUBSYSTEM1 \
+dnl					OTHER_SUBSYSTEM2
 dnl		)
 dnl
 dnl SMB_SUBSYSTEM_ENABLE(
@@ -40,6 +52,18 @@ dnl
 dnl SMB_SUBSYSTEM_MK(
 dnl		1:name,
 dnl		2:config_mk_file
+dnl			[SUBSYSTEM::test]
+dnl			INIT_OBJ_FILES = \
+dnl					test.o 
+dnl			ADD_OBJ_FILES = \
+dnl					test_utils1.o \
+dnl					test_utils2.o
+dnl			REQUIRED_LIBRARIES = \
+dnl					LIB_EXT_TEST1 \
+dnl					LIB_EXT_TEST2
+dnl			REQUIRED_SUBSYSTEMS = \
+dnl					OTHER_SUBSYSTEM1 \
+dnl					OTHER_SUBSYSTEM2
 dnl		)
 dnl
 dnl SMB_EXT_LIB_ENABLE(
@@ -78,6 +102,19 @@ dnl
 dnl SMB_LIBRARY_MK(
 dnl		1:name,
 dnl		2:config_mk_file
+dnl			[LIBRARY::test]
+dnl			MAJOR_VERSION = 0
+dnl			MINOR_VERSION = 0
+dnl			RELEASE_VERSION = 1
+dnl			OBJ_FILES = \
+dnl					test1.o \
+dnl					test2.o
+dnl			REQUIRED_LIBRARIES = \
+dnl					LIB_EXT_TEST1 \
+dnl					LIB_EXT_TEST2
+dnl			REQUIRED_SUBSYSTEMS = \
+dnl					OTHER_SUBSYSTEM1 \
+dnl					OTHER_SUBSYSTEM2
 dnl		)
 dnl
 dnl SMB_BINARY_ENABLE(
@@ -97,6 +134,18 @@ dnl
 dnl SMB_BINARY_MK(
 dnl		1:name,
 dnl		2:config_mk_file
+dnl			[BINARY::test]
+dnl			BUILD_TARGETS =
+dnl			INSTALL_PATH =
+dnl			OBJ_FILES = \
+dnl					test1.o \
+dnl					test2.o
+dnl			REQUIRED_LIBRARIES = \
+dnl					LIB_EXT_TEST1 \
+dnl					LIB_EXT_TEST2
+dnl			REQUIRED_SUBSYSTEMS = \
+dnl					OTHER_SUBSYSTEM1 \
+dnl					OTHER_SUBSYSTEM2
 dnl		)
 dnl
 dnl SMB_MAKE_TARGET(
