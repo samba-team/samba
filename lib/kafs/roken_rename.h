@@ -46,6 +46,8 @@
 #define dns_lookup _kafs_dns_lookup
 #define dns_string_to_type _kafs_dns_string_to_type
 #define dns_type_to_string _kafs_dns_type_to_string
-#define dns_srv_order _krb_dns_srv_order
+#define dns_srv_order _kafs_dns_srv_order
+
+#define strtok_r _kafs_strtok_r
 
 #endif /* __roken_rename_h__ */
