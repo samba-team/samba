@@ -457,7 +457,6 @@ krb5_get_init_creds_password(krb5_context context,
 	    if(kdc_reply.error.e_data){
 		METHOD_DATA md;
 		int i;
-		krb5_preauthtype *pt = pre_auth_types;		
 		decode_METHOD_DATA(kdc_reply.error.e_data->data, 
 				   kdc_reply.error.e_data->length, 
 				   &md, 

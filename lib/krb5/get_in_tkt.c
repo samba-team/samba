@@ -342,7 +342,7 @@ add_padata(krb5_context context,
 	   krb5_data *salt)
 {
     krb5_error_code ret;
-    PA_DATA pa, *pa2;
+    PA_DATA *pa2;
     krb5_keyblock *key;
     krb5_enctype etype;
     krb5_data salt2;
@@ -385,7 +385,6 @@ init_as_req (krb5_context context,
 {
     krb5_error_code ret;
     krb5_data salt;
-    krb5_keyblock *key;
     krb5_enctype etype;
 
     memset(a, 0, sizeof(*a));
