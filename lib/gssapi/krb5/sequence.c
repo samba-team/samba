@@ -55,7 +55,8 @@ gssapi_msg_order_create(OM_uint32 *minor_status,
 			struct gss_msg_order **o, 
 			OM_uint32 flags, 
 			OM_uint32 seq_num, 
-			OM_uint32 jitter_window)
+			OM_uint32 jitter_window,
+			int use_64)
 {
     size_t len;
 
