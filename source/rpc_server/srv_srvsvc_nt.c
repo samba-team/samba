@@ -95,6 +95,16 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 }
 
 /*******************************************************************
+ What to do when smb.conf is updated.
+ ********************************************************************/
+
+static void smb_conf_updated(int msg_type, pid_t src, void *buf, size_t len)
+{
+	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
+	reload_services(False);
+}
+
+/*******************************************************************
  Create the share security tdb.
  ********************************************************************/
 
@@ -123,6 +133,8 @@ BOOL share_info_db_init(void)
         tdb_store_int(share_tdb, vstring, SHARE_DATABASE_VERSION);
     }
     tdb_unlock_bystring(share_tdb, vstring);
+
+	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated);
  
     return True;
 }
@@ -1288,8 +1300,9 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 			return ERROR_ACCESS_DENIED;
 		}
 
-		/* Send SIGHUP to process group. */
-		kill(0, SIGHUP);
+		/* Tell everyone we updated smb.conf. */
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False);
+
 	} else {
 		DEBUG(10,("_srv_net_share_set_info: No change to share name (%s)\n", share_name ));
 	}
@@ -1407,11 +1420,11 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 				share_name ));
 	}
 
-	/* Send SIGHUP to process group. */
-	kill(0, SIGHUP);
+	/* Tell everyone we updated smb.conf. */
+	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False);
 
 	/*
-	 * We don't call reload_services() here, the SIGHUP will
+	 * We don't call reload_services() here, the message will
 	 * cause this to be done before the next packet is read
 	 * from the client. JRA.
 	 */
@@ -1470,8 +1483,8 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	/* Delete the SD in the database. */
 	delete_share_security(snum);
 
-	/* Send SIGHUP to process group. */
-	kill(0, SIGHUP);
+	/* Tell everyone we updated smb.conf. */
+	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False);
 
 	lp_killservice(snum);
 

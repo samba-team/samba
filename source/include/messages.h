@@ -38,4 +38,6 @@
 /* rpc messages */
 #define MSG_PRINTER_NOTIFY 2001
 
+#define MSG_SMB_CONF_UPDATED 3001
+
 #endif
