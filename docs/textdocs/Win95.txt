@@ -1,5 +1,5 @@
 !==
-!== Win95.txt for Samba release 1.9.18alpha10 02 Nov 1997
+!== Win95.txt for Samba release 1.9.18alpha11 03 Nov 1997
 !==
 Copyright (C) 1997 - Samba-Team
 Contributed Date:	August 20, 1997
