@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -68,5 +68,6 @@ OM_uint32 gss_display_name
     free (buf);
     if (output_name_type)
 	*output_name_type = GSS_KRB5_NT_PRINCIPAL_NAME;
+    *minor_status = 0;
     return GSS_S_COMPLETE;
 }
