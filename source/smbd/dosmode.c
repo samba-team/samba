@@ -249,9 +249,8 @@ BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
 
   if (file_utime(conn, fname, &times)) {
     DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
+    return False;
   }
   
   return(True);
 } 
-
-
