@@ -211,6 +211,66 @@ BOOL ldap_check_trust(LDAP *ldap_struct, LDAPMessage *entry)
 /*******************************************************************
  retrieve the user's info and contruct a smb_passwd structure.
 ******************************************************************/
+static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry, 
+                          struct smb_passwd *user)
+{	
+	static pstring user_name;
+	static pstring user_pass;
+	static pstring temp;
+	static unsigned char smblmpwd[16];
+	static unsigned char smbntpwd[16];
+
+	user->smb_name = NULL;
+	user->smb_passwd = NULL;
+	user->smb_nt_passwd = NULL;
+	user->smb_userid = 0;
+	user->pass_last_set_time    = (time_t)-1;
+
+	get_single_attribute(ldap_struct, entry, "cn", user_name);
+	DEBUG(2,("ldap_get_smb_passwd: user: %s\n",user_name));
+		
+#ifdef LDAP_PLAINTEXT_PASSWORD
+	get_single_attribute(ldap_struct, entry, "userPassword", temp);
+	nt_lm_owf_gen(temp, user->smb_nt_passwd, user->smb_passwd);
+	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
+#else
+	get_single_attribute(ldap_struct, entry, "ntPasswordHash", temp);
+	gethexpwd(temp, user->smb_nt_passwd);		
+
+	get_single_attribute(ldap_struct, entry, "lmPasswordHash", temp);
+	gethexpwd(temp, user->smb_passwd);		
+	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
+#endif
+			
+	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);
+	user->acct_ctrl=decode_acct_ctrl(temp);
+
+	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
+
+	get_single_attribute(ldap_struct, entry, "rid", temp);
+
+	/* the smb (unix) ids are not stored: they are created */
+	user->smb_userid = user_rid_to_uid (atoi(temp));
+
+	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
+	{
+		DEBUG(0,("Inconsistency in the LDAP database\n"));
+	}
+	if (user->acct_ctrl & ACB_NORMAL)
+	{
+		user->smb_name      = user_name;
+		user->smb_passwd    = smblmpwd;
+		user->smb_nt_passwd = smbntpwd;
+	}
+}
+
+/*******************************************************************
+ retrieve the user's info and contruct a sam_passwd structure.
+
+ calls ldap_get_smb_passwd function first, though, to save code duplication.
+
+******************************************************************/
 static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry, 
                           struct sam_passwd *user)
 {	
@@ -223,13 +283,16 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	static pstring acct_desc;
 	static pstring workstations;
 	static pstring temp;
+	static struct smb_passwd pw_buf;
+
+	ldap_get_smb_passwd(ldap_struct, entry, &pw_buf);
 	
 	bzero(user, sizeof(*user));
 
 	user->logon_time            = (time_t)-1;
 	user->logoff_time           = (time_t)-1;
 	user->kickoff_time          = (time_t)-1;
-	user->pass_last_set_time    = (time_t)-1;
+	user->pass_last_set_time    = pw_buf.pass_last_set_time;
 	user->pass_can_change_time  = (time_t)-1;
 	user->pass_must_change_time = (time_t)-1;
 
@@ -251,8 +314,7 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	get_single_attribute(ldap_struct, entry, "pwdMustChange", temp);
 	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
 
-	get_single_attribute(ldap_struct, entry, "cn", user_name);
-	user->smb_name = user_name;
+	user->smb_name = pw_buf.smb_name;
 
 	DEBUG(2,("ldap_get_sam_passwd: user: %s\n", user_name));
 		
@@ -277,14 +339,9 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
 	user->workstations = workstations;
 
-	
 	user->unknown_str = NULL; /* don't know, yet! */
 	user->munged_dial = NULL; /* "munged" dial-back telephone number */
 
-	get_single_attribute(ldap_struct, entry, "userPassword", temp);
-	nt_lm_owf_gen(temp, user->smb_nt_passwd, user->smb_passwd);
-	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
-			
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 	user->user_rid=atoi(temp);
 
@@ -292,18 +349,17 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	user->group_rid=atoi(temp);
 
 	/* the smb (unix) ids are not stored: they are created */
-	user->smb_userid = user_rid_to_uid (user->user_rid);
+	user->smb_userid = pw_buf.smb_userid;
 	user->smb_grpid  = group_rid_to_uid(user->group_rid);
 
-	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);
-	user->acct_ctrl=atoi(temp);
+	user->acct_ctrl = pw_buf.acct_ctrl;
 
-	user->unknown_3 = 0xffffff; /* don't know */
+	user->unknown_3  = 0xffffff; /* don't know */
 	user->logon_divs = 168; /* hours per week */
-	user->hours_len = 21; /* 21 times 8 bits = 168 */
+	user->hours_len  = 21; /* 21 times 8 bits = 168 */
 	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
-	user->unknown_5 = 0x00020000; /* don't know */
-	user->unknown_5 = 0x000004ec; /* don't know */
+	user->unknown_5  = 0x00020000; /* don't know */
+	user->unknown_5  = 0x000004ec; /* don't know */
 
 	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
 	{
@@ -315,91 +371,6 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 		DEBUG(0,("User's acct_ctrl bits not set to ACT_NORMAL in LDAP database\n"));
 		return;
 	}
-
-}
-
-/*******************************************************************
- retrieve the user's info and contruct a smb_passwd structure.
-******************************************************************/
-static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry, 
-                          struct smb_passwd *user)
-{	
-	static pstring user_name;
-	static pstring user_pass;
-	static pstring temp;
-	static unsigned char smblmpwd[16];
-	static unsigned char smbntpwd[16];
-
-	user->smb_name = NULL;
-	user->smb_passwd = NULL;
-	user->smb_nt_passwd = NULL;
-	user->smb_userid = 0;
-	user->pass_last_set_time    = (time_t)-1;
-
-	get_single_attribute(ldap_struct, entry, "cn", user_name);
-	DEBUG(2,("ldap_get_smb_passwd: user: %s\n",user_name));
-		
-	get_single_attribute(ldap_struct, entry, "userPassword", user_pass);
-	nt_lm_owf_gen(user_pass, smbntpwd, smblmpwd);
-	bzero(user_pass, sizeof(user_pass)); /* destroy local copy of the password */
-			
-	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);
-	user->acct_ctrl=decode_acct_ctrl(temp);
-
-	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
-	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
-
-	get_single_attribute(ldap_struct, entry, "rid", temp);
-
-	/* the smb (unix) ids are not stored: they are created */
-	user->smb_userid = user_rid_to_uid (atoi(temp));
-
-	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
-	{
-		DEBUG(0,("Inconsistency in the LDAP database\n"));
-			 
-	}
-	if (user->acct_ctrl & ACB_NORMAL)
-	{
-		user->smb_name      = user_name;
-		user->smb_passwd    = smblmpwd;
-		user->smb_nt_passwd = smbntpwd;
-	}
-}
-
-/*******************************************************************
- retrieve the trust's info and contruct a smb_passwd structure.
-******************************************************************/
-static void ldap_get_trust(LDAP *ldap_struct,LDAPMessage *entry, 
-                             struct smb_passwd *trust)
-{	
-	static pstring  user_name;
-	static unsigned char smbntpwd[16];
-	static pstring temp;
-	
-	get_single_attribute(ldap_struct, entry, "cn", user_name);
-	DEBUG(2,("ldap_get_trust: trust: %s\n", user_name));
-		
-	get_single_attribute(ldap_struct, entry, "trustPassword", temp);
-	gethexpwd(temp,smbntpwd);		
-			
-	get_single_attribute(ldap_struct, entry, "rid", temp);
-
-	/* the smb (unix) ids are not stored: they are created */
-	trust->smb_userid = user_rid_to_uid(atoi(temp));
-
-	get_single_attribute(ldap_struct, entry, "trustAccountControl", temp);
-	trust->acct_ctrl=decode_acct_ctrl(temp);
-
-	if (trust->acct_ctrl == 0)
-	{
-		/* by default it's a workstation (or stand-alone server) */
-		trust->acct_ctrl = ACB_WSTRUST;
-	}
-
-	trust->smb_name      = user_name;
-	trust->smb_passwd    = NULL;
-	trust->smb_nt_passwd = smbntpwd;
 }
 
 /************************************************************************
@@ -410,7 +381,8 @@ static void ldap_get_trust(LDAP *ldap_struct,LDAPMessage *entry,
 *************************************************************************/
 BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 {
-  return True;
+	DEBUG(0,("add_ldappwd_entry - currently not supported\n"));
+	return True;
 }
 
 /************************************************************************
@@ -426,6 +398,7 @@ BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 ************************************************************************/
 BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
 {
+	DEBUG(0,("mod_ldappwd_entry - currently not supported\n"));
     return False;
 }
 
