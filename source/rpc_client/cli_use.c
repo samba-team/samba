@@ -265,8 +265,8 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 		return NULL;
 	}
 
-	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20, scope);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0, scope);
+	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
+	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
 
 	/*
 	 * connect

@@ -26,7 +26,6 @@ extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
 extern fstring remote_machine;
-extern pstring myhostname;
 extern dfs_internal dfs_struct;
 
 /****************************************************************************
@@ -369,7 +368,7 @@ int reply_negprot(connection_struct *conn,
   reload_services(True);      
     
   /* a special case to stop password server loops */
-  if (Index == 1 && strequal(remote_machine,myhostname) && 
+  if (Index == 1 && strequal(remote_machine,myhostname()) && 
       (lp_security()==SEC_SERVER || lp_security()==SEC_DOMAIN))
     exit_server("Password server loop!");
   

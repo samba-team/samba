@@ -158,6 +158,8 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/util_sock.o lib/util_sec.o lib/util_array.o \
 		lib/vagent.o \
 		lib/talloc.o \
+		lib/fnmatch.o \
+		lib/interfaces.o \
 		tdb/tdb.o
 
 STUB_UID_OBJ = lib/stub_uid.o

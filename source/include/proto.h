@@ -252,6 +252,10 @@ char *dos_GetWd(char *path);
 
 void fault_setup(void (*fn)(void *));
 
+/*The following definitions come from  lib/fnmatch.c  */
+
+int fnmatch (const char *pattern, const char *string, int flags);
+
 /*The following definitions come from  lib/genrand.c  */
 
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
@@ -272,16 +276,21 @@ void hmac_md5( uchar key[16], uchar* data, int data_len, uchar* digest);
 /*The following definitions come from  lib/interface.c  */
 
 void load_interfaces(void);
-void iface_set_default(char *ip,char *bcast,char *nmask);
+BOOL interfaces_changed(void);
 BOOL ismyip(struct in_addr ip);
 BOOL is_local_net(struct in_addr from);
 int iface_count(void);
 BOOL we_are_multihomed(void);
 struct interface *get_interface(int n);
 struct in_addr *iface_n_ip(int n);
+struct in_addr *iface_n_bcast(int n);
 unsigned iface_hash(void);
 struct in_addr *iface_bcast(struct in_addr ip);
 struct in_addr *iface_ip(struct in_addr ip);
+
+/*The following definitions come from  lib/interfaces.c  */
+
+int get_interfaces(struct iface_struct *ifaces, int max_interfaces);
 
 /*The following definitions come from  lib/kanji.c  */
 
@@ -520,10 +529,10 @@ BOOL deal_with_creds(uchar sess_key[8],
 /*The following definitions come from  libsmb/namequery.c  */
 
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname,
-		 void (*fn)(struct packet_struct *));
-struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOOL recurse,
-         struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *));
+		 struct in_addr to_ip,char *master,char *rname);
+struct in_addr *name_query(int fd,const char *name,int name_type, 
+			   BOOL bcast,BOOL recurse,
+			   struct in_addr to_ip, int *count);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
@@ -532,6 +541,8 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
 				struct in_addr *ip);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
+BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name);
+BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count);
 
 /*The following definitions come from  libsmb/nmblib.c  */
 
@@ -540,14 +551,18 @@ char *nmb_namestr(struct nmb_name *n);
 void nmb_safe_namestr(struct nmb_name *n, char *str, size_t len);
 struct packet_struct *copy_packet(struct packet_struct *packet);
 void free_packet(struct packet_struct *packet);
+struct packet_struct *parse_packet(char *buf,int length,
+				   enum packet_type packet_type);
 struct packet_struct *read_packet(int fd,enum packet_type packet_type);
-void make_nmb_name( struct nmb_name *n, const char *name, int type, const char *this_scope );
+void make_nmb_name( struct nmb_name *n, const char *name, int type);
 BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
+int build_packet(char *buf, struct packet_struct *p);
 BOOL send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
+struct packet_struct *receive_nmb_packet(int fd, int t, int trn_id);
+struct packet_struct *receive_dgram_packet(int fd, int t, char *mailslot_name);
+BOOL match_mailslot_name(struct packet_struct *p, char *mailslot_name);
 void sort_query_replies(char *data, int n, struct in_addr ip);
-BOOL read_nmb_sock(int c, struct nmb_state *con);
-int get_nmb_sock(void);
 char *dns_to_netbios_name(char *dns_name);
 int name_mangle( char *In, char *Out, char name_type );
 int name_extract(char *buf,int ofs,char *name);
@@ -650,6 +665,13 @@ char *smb_err_msg(uint8 class, uint32 num);
 BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
 BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
+
+/*The following definitions come from  libsmb/unexpected.c  */
+
+void unexpected_packet(struct packet_struct *p);
+void clear_unexpected(time_t t);
+struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
+					 char *mailslot_name);
 
 /*The following definitions come from  lib/snprintf.c  */
 
@@ -878,6 +900,7 @@ void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const uchar * pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 * acct_ctrl);
 void *memdup(const void *p, size_t size);
+char *myhostname(void);
 char *passdb_path(char *name);
 char *lock_path(char *name);
 const char *get_sid_name_use_str(uint32 sid_name_use);
@@ -1059,9 +1082,11 @@ void split_at_first_component(char *path, char *front, char sep, char *back);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *bit_field_to_str(uint32 type, struct field_info *bs);
 char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default);
+char *string_truncate(char *s, int length);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
+int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
 char *ascii_to_unibuf(char *dest, const char *src, int maxlen);
 const char* unibuf_to_ascii(char *dest, const char *src, int maxlen);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
@@ -1624,6 +1649,7 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  param/loadparm.c  */
 
+void lp_talloc_free(void);
 struct vfs_options *lp_vfsoptions(int i) ;
 char *lp_logfile(void);
 char *lp_smbrun(void);
@@ -2207,21 +2233,21 @@ BOOL event_readeventlog(POLICY_HND *hnd,
 
 uint32 cli_nt_setup_creds(const char *srv_name,
 			  const char *domain,
-			  const char *myhostname,
+			  const char *cli_hostname,
 			  const char *trust_acct,
 			  const uchar trust_pwd[16], uint16 sec_chan,
 			  uint16 * validation_level);
-BOOL cli_nt_srv_pwset(const char *srv_name, const char *myhostname,
+BOOL cli_nt_srv_pwset(const char *srv_name, const char *cli_hostname,
 		      const char *trust_acct,
 		      const uchar * new_hashof_trust_pwd, uint16 sec_chan);
-BOOL cli_nt_login_general(const char *srv_name, const char *myhostname,
+BOOL cli_nt_login_general(const char *srv_name, const char *cli_hostname,
 			  const char *domain, const char *username,
 			  uint32 luid_low,
 			  const char *general,
 			  NET_ID_INFO_CTR * ctr,
 			  uint16 validation_level,
 			  NET_USER_INFO_3 * user_info3);
-uint32 cli_nt_login_interactive(const char *srv_name, const char *myhostname,
+uint32 cli_nt_login_interactive(const char *srv_name, const char *cli_hostname,
 				const char *domain, const char *username,
 				uint32 luid_low,
 				const uchar * lm_owf_user_pwd,
@@ -2229,7 +2255,7 @@ uint32 cli_nt_login_interactive(const char *srv_name, const char *myhostname,
 				NET_ID_INFO_CTR * ctr,
 				uint16 validation_level,
 				NET_USER_INFO_3 * user_info3);
-uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
+uint32 cli_nt_login_network(const char *srv_name, const char *cli_hostname,
 			    const char *domain, const char *username,
 			    uint32 luid_low, const char lm_chal[8],
 			    const char *lm_chal_resp,
@@ -2239,11 +2265,11 @@ uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
 			    NET_ID_INFO_CTR * ctr,
 			    uint16 validation_level,
 			    NET_USER_INFO_3 * user_info3);
-BOOL cli_nt_logoff(const char *srv_name, const char *myhostname,
+BOOL cli_nt_logoff(const char *srv_name, const char *cli_hostname,
 		   NET_ID_INFO_CTR * ctr);
 BOOL net_sam_sync(const char *srv_name,
 		  const char *domain,
-		  const char *myhostname,
+		  const char *cli_hostname,
 		  const char *trust_acct,
 		  uchar trust_passwd[16],
 		  SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
@@ -2290,17 +2316,17 @@ uint32 cli_net_auth2(const char *srv_name,
 		     const char *trust_acct,
 		     const char *acct_name,
 		     uint16 sec_chan, uint32 * neg_flags, DOM_CHAL * srv_chal);
-uint32 cli_net_req_chal(const char *srv_name, const char *myhostname,
+uint32 cli_net_req_chal(const char *srv_name, const char *cli_hostname,
 			DOM_CHAL * clnt_chal, DOM_CHAL * srv_chal);
 BOOL cli_net_srv_pwset(const char *srv_name,
-		       const char *myhostname,
+		       const char *cli_hostname,
 		       const char *trust_acct,
 		       const uint8 hashed_trust_pwd[16], uint16 sec_chan_type);
-uint32 cli_net_sam_logon(const char *srv_name, const char *myhostname,
+uint32 cli_net_sam_logon(const char *srv_name, const char *cli_hostname,
 			 NET_ID_INFO_CTR * idc, NET_USER_INFO_CTR * ctr);
-BOOL cli_net_sam_logoff(const char *srv_name, const char *myhostname,
+BOOL cli_net_sam_logoff(const char *srv_name, const char *cli_hostname,
 			NET_ID_INFO_CTR * ctr);
-BOOL cli_net_sam_sync(const char *srv_name, const char *myhostname,
+BOOL cli_net_sam_sync(const char *srv_name, const char *cli_hostname,
 		      uint32 database_id,
 		      uint32 * num_deltas,
 		      SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas);

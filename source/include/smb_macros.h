@@ -56,6 +56,9 @@
 /* zero a structure given a pointer to the structure */
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
 
+/* zero a structure given a pointer to the structure - no zero check */
+#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
+
 /* zero an array - note that sizeof(array) must work - ie. it must not be a 
    pointer */
 #define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))

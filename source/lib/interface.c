@@ -21,230 +21,225 @@
 
 #include "includes.h"
 
+#define MAX_INTERFACES 128
+
+static struct iface_struct *probed_ifaces;
+static int total_probed;
+
 extern int DEBUGLEVEL;
 
 struct in_addr ipzero;
 struct in_addr allones_ip;
 struct in_addr loopback_ip;
-static struct in_addr default_ip;
-static struct in_addr default_bcast;
-static struct in_addr default_nmask;
-static BOOL got_ip=False;
-static BOOL got_bcast=False;
-static BOOL got_nmask=False;
 
 static struct interface *local_interfaces  = NULL;
 
-struct interface *last_iface;
-
 #define ALLONES  ((uint32)0xFFFFFFFF)
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
+#define MKNETADDR(_IP, _NM) (_IP & _NM)
+
 /****************************************************************************
-calculate the default netmask for an address
-****************************************************************************/
-static void default_netmask(struct in_addr *inm, struct in_addr *iad)
+Try and find an interface that matches an ip. If we cannot, return NULL
+  **************************************************************************/
+static struct interface *iface_find(struct in_addr ip)
 {
-	/*
-	** Guess a netmask based on the class of the IP address given.
-	*/
-	switch((ntohl(iad->s_addr) & 0xE0000000)) {
-        case 0x00000000:     /* Class A addr */
-        case 0x20000000:
-        case 0x40000000:
-        case 0x60000000:
-		inm->s_addr = htonl(0xFF000000);
-		break;
-		
-	case 0x80000000:	/* Class B addr */
-        case 0xA0000000:
-		inm->s_addr = htonl(0xFFFF0000);
-		break;
-		
-	case 0xC0000000:	/* Class C addr */
-		inm->s_addr = htonl(0xFFFFFF00);
-		break;
-		
-	default:		/* ??? */
-		inm->s_addr = htonl(0xFFFFFFF0);
-        }
+	struct interface *i;
+	if (zero_ip(ip)) return local_interfaces;
+
+	for (i=local_interfaces;i;i=i->next)
+		if (same_net(i->ip,ip,i->nmask)) return i;
+
+	return NULL;
 }
 
 
 /****************************************************************************
-  get the broadcast address for our address 
-(troyer@saifr00.ateng.az.honeywell.com)
+add an interface to the linked list of interfaces
 ****************************************************************************/
-static void get_broadcast(struct in_addr *if_ipaddr,
-			  struct in_addr *if_bcast,
-			  struct in_addr *if_nmask)
-{  
-	uint32 nm;
-	short onbc;
-	short offbc;
+static void add_interface(struct in_addr ip, struct in_addr nmask)
+{
+	struct interface *iface;
+	if (iface_find(ip)) {
+		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
+		return;
+	}
 
-	/* get a default netmask and broadcast */
-	default_netmask(if_nmask, if_ipaddr);
+	if (ip_equal(nmask, allones_ip)) {
+		DEBUG(3,("not adding non-broadcast interface %s\n",inet_ntoa(ip)));
+		return;
+	}
 
-	get_netmask(if_ipaddr, if_nmask);
+	iface = (struct interface *)malloc(sizeof(*iface));
+	if (!iface) return;
+	
+	ZERO_STRUCTPN(iface);
 
-	/* sanity check on the netmask */
-	nm = ntohl(if_nmask->s_addr);
-	onbc = 0;
-	offbc = 0;
-	while((onbc + offbc) < 32) {
-		if(nm & 0x80000000) {
-			onbc++;
-			if(offbc) {
-				/* already found an off bit, so mask
-                                   is wrong */
-				onbc = 34;
-			}
-		} else {
-			offbc++;
+	iface->ip = ip;
+	iface->nmask = nmask;
+	iface->bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
+
+	DLIST_ADD(local_interfaces, iface);
+
+	DEBUG(2,("added interface ip=%s ",inet_ntoa(iface->ip)));
+	DEBUG(2,("bcast=%s ",inet_ntoa(iface->bcast)));
+	DEBUG(2,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
+}
+
+
+
+/****************************************************************************
+interpret a single element from a interfaces= config line 
+
+This handles the following different forms:
+
+1) wildcard interface name
+2) DNS name
+3) IP/masklen
+4) ip/mask
+5) bcast/mask
+****************************************************************************/
+static void interpret_interface(char *token)
+{
+	struct in_addr ip, nmask;
+	char *p;
+	int i, added=0;
+
+	ip = ipzero;
+	nmask = ipzero;
+	
+	/* first check if it is an interface name */
+	for (i=0;i<total_probed;i++) {
+		if (fnmatch(token, probed_ifaces[i].name, 0) == 0) {
+			add_interface(probed_ifaces[i].ip,
+				      probed_ifaces[i].netmask);
+			added = 1;
 		}
-		nm <<= 1;
 	}
-	if ((onbc < 8)||(onbc == 34)) {
-		DEBUG(0,("Impossible netmask %s - using defaults\n",
-			 inet_ntoa(*if_nmask)));
-		default_netmask(if_nmask, if_ipaddr);      
+	if (added) return;
+
+	/* maybe it is a DNS name */
+	p = strchr(token,'/');
+	if (!p) {
+		ip = *interpret_addr2(token);
+		for (i=0;i<total_probed;i++) {
+			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
+			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
+				add_interface(probed_ifaces[i].ip,
+					      probed_ifaces[i].netmask);
+				return;
+			}
+		}
+		DEBUG(2,("can't determine netmask for %s\n", token));
+		return;
 	}
 
-	/* derive the broadcast assuming a 1's broadcast, as this is what
-	   all MS operating systems do, we have to comply even if the unix
-	   box is setup differently */
-	if_bcast->s_addr = MKBCADDR(if_ipaddr->s_addr, if_nmask->s_addr);
-  
-	DEBUG(4,("Derived broadcast address %s\n", inet_ntoa(*if_bcast)));
-}
+	/* parse it into an IP address/netmasklength pair */
+	*p++ = 0;
 
+	ip = *interpret_addr2(token);
 
+	if (strlen(p) > 2) {
+		nmask = *interpret_addr2(p);
+	} else {
+		nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
+	}
 
-/****************************************************************************
-load a list of network interfaces
-****************************************************************************/
-static void interpret_interfaces(char *s, struct interface **interfaces,
-		char *description)
-{
-  char *ptr;
-  fstring token;
-  struct interface *iface;
-  struct in_addr ip;
+	/* maybe the first component was a broadcast address */
+	if (ip.s_addr == MKBCADDR(ip.s_addr, nmask.s_addr) ||
+	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
+		for (i=0;i<total_probed;i++) {
+			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
+				add_interface(probed_ifaces[i].ip, nmask);
+				return;
+			}
+		}
+		DEBUG(2,("Can't determine ip for broadcast address %s\n", token));
+		return;
+	}
 
-  ptr = s;
-  ipzero = *interpret_addr2("0.0.0.0");
-  allones_ip = *interpret_addr2("255.255.255.255");
-  loopback_ip = *interpret_addr2("127.0.0.1");
-
-  while (next_token(&ptr,token,NULL,sizeof(token))) {
-    /* parse it into an IP address/netmasklength pair */
-    char *p = strchr(token,'/');
-    if (p) *p++ = 0;
-
-    ip = *interpret_addr2(token);
-
-    /* maybe we already have it listed */
-    {
-      struct interface *i;
-      for (i=(*interfaces);i;i=i->next)
-	if (ip_equal(ip,i->ip)) break;
-      if (i) continue;
-    }
-
-    iface = (struct interface *)malloc(sizeof(*iface));
-    if (!iface) return;
-
-    iface->ip = ip;
-
-    if (p) {
-      if (strlen(p) > 2)
-       iface->nmask = *interpret_addr2(p);
-      else
-       iface->nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
-    } else {
-      default_netmask(&iface->nmask,&iface->ip);
-    }
-    iface->bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
-    iface->next = NULL;
-
-    if (!(*interfaces)) {
-      (*interfaces) = iface;
-    } else {
-      last_iface->next = iface;
-    }
-    last_iface = iface;
-    DEBUG(2,("Added %s ip=%s ",description,inet_ntoa(iface->ip)));
-    DEBUG(2,("bcast=%s ",inet_ntoa(iface->bcast)));
-    DEBUG(2,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
-  }
-
-  if (*interfaces) return;
-
-  /* setup a default interface */
-  iface = (struct interface *)malloc(sizeof(*iface));
-  if (!iface) return;
-
-  iface->next = NULL;
-
-  if (got_ip) {
-    iface->ip = default_ip;
-  } else {
-    get_myname(NULL,&iface->ip);
-  }
-
-  if (got_bcast) {
-    iface->bcast = default_bcast;
-  } else {
-    get_broadcast(&iface->ip,&iface->bcast,&iface->nmask);
-  }
-
-  if (got_nmask) {
-    iface->nmask = default_nmask;
-    iface->bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
-  }
-
-  if (iface->bcast.s_addr != MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr)) {
-    DEBUG(2,("Warning: inconsistant interface %s\n",inet_ntoa(iface->ip)));
-  }
-
-  iface->next = NULL;
-  (*interfaces) = last_iface = iface;
-
-  DEBUG(2,("Added interface ip=%s ",inet_ntoa(iface->ip)));
-  DEBUG(2,("bcast=%s ",inet_ntoa(iface->bcast)));
-  DEBUG(2,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
+	add_interface(ip, nmask);
 }
 
 
 /****************************************************************************
-load the remote and local interfaces
+load the list of network interfaces
 ****************************************************************************/
 void load_interfaces(void)
 {
-  /* add the machine's interfaces to local interface structure*/
-  interpret_interfaces(lp_interfaces(), &local_interfaces,"interface");
+	char *ptr;
+	fstring token;
+	int i;
+	struct iface_struct ifaces[MAX_INTERFACES];
+
+	ptr = lp_interfaces();
+
+	ipzero = *interpret_addr2("0.0.0.0");
+	allones_ip = *interpret_addr2("255.255.255.255");
+	loopback_ip = *interpret_addr2("127.0.0.1");
+
+	if (probed_ifaces) {
+		free(probed_ifaces);
+		probed_ifaces = NULL;
+	}
+
+	/* dump the current interfaces if any */
+	while (local_interfaces) {
+		struct interface *iface = local_interfaces;
+		DLIST_REMOVE(local_interfaces, local_interfaces);
+		ZERO_STRUCTPN(iface);
+		free(iface);
+	}
+
+	/* probe the kernel for interfaces */
+	total_probed = get_interfaces(ifaces, MAX_INTERFACES);
+
+	if (total_probed > 0) {
+		probed_ifaces = memdup(ifaces, sizeof(ifaces[0])*total_probed);
+	}
+
+	/* if we don't have a interfaces line then use all broadcast capable 
+	   interfaces except loopback */
+	if (!ptr || !*ptr) {
+		if (total_probed <= 0) {
+			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
+			exit(1);
+		}
+		for (i=0;i<total_probed;i++) {
+			if (probed_ifaces[i].netmask.s_addr != allones_ip.s_addr &&
+			    probed_ifaces[i].ip.s_addr != loopback_ip.s_addr) {
+				add_interface(probed_ifaces[i].ip, 
+					      probed_ifaces[i].netmask);
+			}
+		}
+		return;
+	}
+
+	while (next_token(&ptr,token,NULL,sizeof(token))) {
+		interpret_interface(token);
+	}
+
+	if (!local_interfaces) {
+		DEBUG(0,("WARNING: no network interfaces found\n"));
+	}
 }
 
 
 /****************************************************************************
-  override the defaults
-  **************************************************************************/
-void iface_set_default(char *ip,char *bcast,char *nmask)
+return True if the list of probed interfaces has changed
+****************************************************************************/
+BOOL interfaces_changed(void)
 {
-  if (ip) {
-    got_ip = True;
-    default_ip = *interpret_addr2(ip);
-  }
+	int n;
+	struct iface_struct ifaces[MAX_INTERFACES];
 
-  if (bcast) {
-    got_bcast = True;
-    default_bcast = *interpret_addr2(bcast);
-  }
+	n = get_interfaces(ifaces, MAX_INTERFACES);
 
-  if (nmask) {
-    got_nmask = True;
-    default_nmask = *interpret_addr2(nmask);
-  }
+	if (n != total_probed ||
+	    memcmp(ifaces, probed_ifaces, sizeof(ifaces[0])*n)) {
+		return True;
+	}
+	
+	return False;
 }
 
 
@@ -253,10 +248,10 @@ void iface_set_default(char *ip,char *bcast,char *nmask)
   **************************************************************************/
 BOOL ismyip(struct in_addr ip)
 {
-  struct interface *i;
-  for (i=local_interfaces;i;i=i->next)
-    if (ip_equal(i->ip,ip)) return True;
-  return False;
+	struct interface *i;
+	for (i=local_interfaces;i;i=i->next)
+		if (ip_equal(i->ip,ip)) return True;
+	return False;
 }
 
 /****************************************************************************
@@ -264,11 +259,13 @@ BOOL ismyip(struct in_addr ip)
   **************************************************************************/
 BOOL is_local_net(struct in_addr from)
 {
-  struct interface *i;
-  for (i=local_interfaces;i;i=i->next)
-    if((from.s_addr & i->nmask.s_addr) == (i->ip.s_addr & i->nmask.s_addr))
-      return True;
-  return False;
+	struct interface *i;
+	for (i=local_interfaces;i;i=i->next) {
+		if((from.s_addr & i->nmask.s_addr) == 
+		   (i->ip.s_addr & i->nmask.s_addr))
+			return True;
+	}
+	return False;
 }
 
 /****************************************************************************
@@ -276,12 +273,12 @@ BOOL is_local_net(struct in_addr from)
   **************************************************************************/
 int iface_count(void)
 {
-  int ret = 0;
-  struct interface *i;
+	int ret = 0;
+	struct interface *i;
 
-  for (i=local_interfaces;i;i=i->next)
-    ret++;
-  return ret;
+	for (i=local_interfaces;i;i=i->next)
+		ret++;
+	return ret;
 }
 
 /****************************************************************************
@@ -289,12 +286,12 @@ int iface_count(void)
   **************************************************************************/
 BOOL we_are_multihomed(void)
 {
-  static int multi = -1;
+	static int multi = -1;
 
-  if(multi == -1)
-    multi = (iface_count() > 1 ? True : False);
-
-  return multi;
+	if(multi == -1)
+		multi = (iface_count() > 1 ? True : False);
+	
+	return multi;
 }
 
 /****************************************************************************
@@ -302,13 +299,13 @@ BOOL we_are_multihomed(void)
   **************************************************************************/
 struct interface *get_interface(int n)
 { 
-  struct interface *i;
+	struct interface *i;
   
-  for (i=local_interfaces;i && n;i=i->next)
-    n--;
+	for (i=local_interfaces;i && n;i=i->next)
+		n--;
 
-  if (i) return i;
-  return NULL;
+	if (i) return i;
+	return NULL;
 }
 
 /****************************************************************************
@@ -316,27 +313,27 @@ struct interface *get_interface(int n)
   **************************************************************************/
 struct in_addr *iface_n_ip(int n)
 {
-  struct interface *i;
+	struct interface *i;
   
-  for (i=local_interfaces;i && n;i=i->next)
-    n--;
+	for (i=local_interfaces;i && n;i=i->next)
+		n--;
 
-  if (i) return &i->ip;
-  return NULL;
+	if (i) return &i->ip;
+	return NULL;
 }
 
 /****************************************************************************
-Try and find an interface that matches an ip. If we cannot, return NULL
+  return bcast of the Nth interface
   **************************************************************************/
-static struct interface *iface_find(struct in_addr ip)
+struct in_addr *iface_n_bcast(int n)
 {
-  struct interface *i;
-  if (zero_ip(ip)) return local_interfaces;
+	struct interface *i;
+  
+	for (i=local_interfaces;i && n;i=i->next)
+		n--;
 
-  for (i=local_interfaces;i;i=i->next)
-    if (same_net(i->ip,ip,i->nmask)) return i;
-
-  return NULL;
+	if (i) return &i->bcast;
+	return NULL;
 }
 
 
@@ -368,15 +365,12 @@ unsigned iface_hash(void)
 
 struct in_addr *iface_bcast(struct in_addr ip)
 {
-  struct interface *i = iface_find(ip);
-  return(i ? &i->bcast : &local_interfaces->bcast);
+	struct interface *i = iface_find(ip);
+	return(i ? &i->bcast : &local_interfaces->bcast);
 }
 
 struct in_addr *iface_ip(struct in_addr ip)
 {
-  struct interface *i = iface_find(ip);
-  return(i ? &i->ip : &local_interfaces->ip);
+	struct interface *i = iface_find(ip);
+	return(i ? &i->ip : &local_interfaces->ip);
 }
-
-
-

@@ -49,7 +49,6 @@ extern int dcelogin_atmost_once;
 
 extern fstring remote_machine;
 extern pstring OriginalDir;
-extern pstring myhostname;
 
 
 /****************************************************************************
@@ -639,8 +638,6 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	get_myname(myhostname,NULL);
-
 	if (!reload_services(False))
 		return(-1);	
 
@@ -659,7 +656,7 @@ static void usage(char *pname)
 	 */
 	if (!*global_myname)
 	{
-		fstrcpy(global_myname, dns_to_netbios_name(myhostname));
+		fstrcpy(global_myname, dns_to_netbios_name(myhostname()));
 	}
 	strupper(global_myname);
 

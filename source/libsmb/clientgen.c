@@ -916,7 +916,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 }
 
 static BOOL cli_calc_session_pwds(struct cli_state *cli,
-				char *myhostname,
+				char *my_hostname,
 				char *pword, char *ntpword,
 				char *pass, int *passlen,
 				char *ntpass, int *ntpasslen,
@@ -1002,7 +1002,7 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
 			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
-			           cli->usr.user_name, myhostname,
+			           cli->usr.user_name, my_hostname,
 			           cli->usr.domain, sess_key);
 		}
 		else
@@ -3481,7 +3481,6 @@ BOOL cli_connect_auth(struct cli_state *cli,
 				const struct ntuser_creds *usr)
 {
 	extern pstring global_myname;
-	extern pstring scope;
 	struct nmb_name calling, called;
 
 	ZERO_STRUCTP(cli);
@@ -3491,8 +3490,8 @@ BOOL cli_connect_auth(struct cli_state *cli,
 		return False;
 	}
 
-	make_nmb_name(&calling, global_myname, 0x0 , scope);
-	make_nmb_name(&called , desthost     , 0x20, scope);
+	make_nmb_name(&calling, global_myname, 0x0 );
+	make_nmb_name(&called , desthost     , 0x20);
 
 	cli_init_creds(cli, usr);
 

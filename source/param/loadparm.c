@@ -71,6 +71,7 @@ BOOL bLoaded = False;
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
 extern pstring global_myname;
+pstring global_scope;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -545,6 +546,7 @@ static struct parm_struct parm_table[] =
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC},
   {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC},
   {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  0},
+  {"netbios scope",    P_UGSTRING,  P_GLOBAL, global_scope,  NULL,   NULL,  0},
   {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL,   NULL,  FLAG_BASIC},
   {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL,  0},
@@ -1211,6 +1213,18 @@ static char *lp_user_string(const user_struct *vuser, char *s)
 
   standard_sub_vuser(vuser, ret);
   return(ret);
+}
+
+static TALLOC_CTX *lp_talloc;
+
+/******************************************************************* a
+free up temporary memory - called from the main loop
+********************************************************************/
+void lp_talloc_free(void)
+{
+	if (!lp_talloc) return;
+	talloc_destroy(lp_talloc);
+	lp_talloc = NULL;
 }
 
 /******************************************************************* a

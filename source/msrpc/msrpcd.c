@@ -38,7 +38,6 @@ extern pstring scope;
 extern int DEBUGLEVEL;
 
 extern fstring remote_machine;
-extern pstring myhostname;
 extern pstring pipe_name;
 
 extern pstring OriginalDir;
@@ -468,8 +467,6 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	get_myname(myhostname,NULL);
-
 	if (!fn->reload_services(False))
 		return(-1);	
 
@@ -488,7 +485,7 @@ static void usage(char *pname)
 	 */
 	if (!*global_myname)
 	{
-		fstrcpy(global_myname, dns_to_netbios_name(myhostname));
+		fstrcpy(global_myname, dns_to_netbios_name(myhostname()));
 	}
 	strupper(global_myname);
 

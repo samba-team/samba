@@ -1209,3 +1209,15 @@ char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default)
 
 	return NULL;
 }
+
+/****************************************************************************
+truncate a string at a specified length
+****************************************************************************/
+char *string_truncate(char *s, int length)
+{
+	if (s && strlen(s) > length) {
+		s[length] = 0;
+	}
+	return s;
+}
+

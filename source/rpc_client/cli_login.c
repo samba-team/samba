@@ -32,7 +32,7 @@ Initialize domain session credentials.
 
 uint32 cli_nt_setup_creds(const char *srv_name,
 			  const char *domain,
-			  const char *myhostname,
+			  const char *cli_hostname,
 			  const char *trust_acct,
 			  const uchar trust_pwd[16], uint16 sec_chan,
 			  uint16 * validation_level)
@@ -51,7 +51,7 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 
 	/* send a client challenge; receive a server challenge */
 	status =
-		cli_net_req_chal(srv_name, myhostname, &clnt_chal, &srv_chal);
+		cli_net_req_chal(srv_name, cli_hostname, &clnt_chal, &srv_chal);
 	if (status != 0)
 	{
 		DEBUG(1, ("cli_nt_setup_creds: request challenge failed\n"));
@@ -79,7 +79,7 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 	 * Send client auth-2 challenge.
 	 * Receive an auth-2 challenge response and check it.
 	 */
-	status = cli_net_auth2(srv_name, trust_acct, myhostname,
+	status = cli_net_auth2(srv_name, trust_acct, cli_hostname,
 			       sec_chan, &neg_flags, &srv_chal);
 	if (status != 0x0)
 	{
@@ -104,7 +104,7 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 		struct netsec_creds creds;
 
 		safe_strcpy(creds.domain, domain, sizeof(creds.myname) - 1);
-		safe_strcpy(creds.myname, myhostname,
+		safe_strcpy(creds.myname, cli_hostname,
 			    sizeof(creds.myname) - 1);
 		memcpy(creds.sess_key, sess_key, sizeof(creds.sess_key));
 
@@ -137,7 +137,7 @@ uint32 cli_nt_setup_creds(const char *srv_name,
  Set machine password.
  ****************************************************************************/
 
-BOOL cli_nt_srv_pwset(const char *srv_name, const char *myhostname,
+BOOL cli_nt_srv_pwset(const char *srv_name, const char *cli_hostname,
 		      const char *trust_acct,
 		      const uchar * new_hashof_trust_pwd, uint16 sec_chan)
 {
@@ -148,7 +148,7 @@ BOOL cli_nt_srv_pwset(const char *srv_name, const char *myhostname,
 #endif
 
 	/* send client srv_pwset challenge */
-	return cli_net_srv_pwset(srv_name, myhostname, trust_acct,
+	return cli_net_srv_pwset(srv_name, cli_hostname, trust_acct,
 				 new_hashof_trust_pwd, sec_chan);
 }
 
@@ -158,7 +158,7 @@ NT login - general.
 password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
-BOOL cli_nt_login_general(const char *srv_name, const char *myhostname,
+BOOL cli_nt_login_general(const char *srv_name, const char *cli_hostname,
 			  const char *domain, const char *username,
 			  uint32 luid_low,
 			  const char *general,
@@ -191,10 +191,10 @@ BOOL cli_nt_login_general(const char *srv_name, const char *myhostname,
 
 	/* Create the structure needed for SAM logon. */
 	make_id_info4(&ctr->auth.id4, domain, 0,
-		      luid_low, 0, username, myhostname, general);
+		      luid_low, 0, username, cli_hostname, general);
 
 	/* Send client sam-logon request - update credentials on success. */
-	status = cli_net_sam_logon(srv_name, myhostname, ctr, &user_ctr);
+	status = cli_net_sam_logon(srv_name, cli_hostname, ctr, &user_ctr);
 	if (!net_user_info_3_copy_from_ctr(user_info3, &user_ctr))
 	{
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -209,7 +209,7 @@ NT login - interactive.
 password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
-uint32 cli_nt_login_interactive(const char *srv_name, const char *myhostname,
+uint32 cli_nt_login_interactive(const char *srv_name, const char *cli_hostname,
 				const char *domain, const char *username,
 				uint32 luid_low,
 				const uchar * lm_owf_user_pwd,
@@ -241,11 +241,11 @@ uint32 cli_nt_login_interactive(const char *srv_name, const char *myhostname,
 	/* Create the structure needed for SAM logon. */
 	make_id_info1(&ctr->auth.id1, domain, 0,
 		      luid_low, 0,
-		      username, myhostname,
+		      username, cli_hostname,
 		      (char *)sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
 
 	/* Send client sam-logon request - update credentials on success. */
-	status = cli_net_sam_logon(srv_name, myhostname, ctr, &user_ctr);
+	status = cli_net_sam_logon(srv_name, cli_hostname, ctr, &user_ctr);
 	if (!net_user_info_3_copy_from_ctr(user_info3, &user_ctr))
 	{
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -266,7 +266,7 @@ NT login - network.
 password equivalents over the network. JRA.
 ****************************************************************************/
 
-uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
+uint32 cli_nt_login_network(const char *srv_name, const char *cli_hostname,
 			    const char *domain, const char *username,
 			    uint32 luid_low, const char lm_chal[8],
 			    const char *lm_chal_resp,
@@ -297,12 +297,12 @@ uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
 	/* Create the structure needed for SAM logon. */
 	make_id_info2(&ctr->auth.id2, domain, 0,
 		      luid_low, 0,
-		      username, myhostname,
+		      username, cli_hostname,
 		      lm_chal,
 		      lm_chal_resp, lm_chal_len, nt_chal_resp, nt_chal_len);
 
 	/* Send client sam-logon request - update credentials on success. */
-	status = cli_net_sam_logon(srv_name, myhostname, ctr, &user_ctr);
+	status = cli_net_sam_logon(srv_name, cli_hostname, ctr, &user_ctr);
 
 	if (!net_user_info_3_copy_from_ctr(user_info3, &user_ctr))
 	{
@@ -326,13 +326,13 @@ uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
 /****************************************************************************
 NT Logoff.
 ****************************************************************************/
-BOOL cli_nt_logoff(const char *srv_name, const char *myhostname,
+BOOL cli_nt_logoff(const char *srv_name, const char *cli_hostname,
 		   NET_ID_INFO_CTR * ctr)
 {
 	DEBUG(5, ("cli_nt_logoff: %d\n", __LINE__));
 
 	/* Send client sam-logoff request - update credentials on success. */
-	return cli_net_sam_logoff(srv_name, myhostname, ctr);
+	return cli_net_sam_logoff(srv_name, cli_hostname, ctr);
 }
 
 /****************************************************************************
@@ -340,7 +340,7 @@ NT SAM database sync
 ****************************************************************************/
 BOOL net_sam_sync(const char *srv_name,
 		  const char *domain,
-		  const char *myhostname,
+		  const char *cli_hostname,
 		  const char *trust_acct,
 		  uchar trust_passwd[16],
 		  SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
@@ -353,7 +353,7 @@ BOOL net_sam_sync(const char *srv_name,
 
 	DEBUG(5, ("Attempting SAM sync with PDC: %s\n", srv_name));
 
-	res = res ? cli_nt_setup_creds(srv_name, domain, myhostname,
+	res = res ? cli_nt_setup_creds(srv_name, domain, cli_hostname,
 				       trust_acct,
 				       trust_passwd,
 				       SEC_CHAN_BDC,
@@ -361,7 +361,7 @@ BOOL net_sam_sync(const char *srv_name,
 
 	memset(trust_passwd, 0, 16);
 
-	res = res ? cli_net_sam_sync(srv_name, myhostname,
+	res = res ? cli_net_sam_sync(srv_name, cli_hostname,
 				     0, num_deltas, hdr_deltas,
 				     deltas) : False;
 

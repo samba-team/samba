@@ -232,7 +232,7 @@ LSA Request Challenge. Sends our challenge to server, then gets
 server response. These are used to generate the credentials.
 ****************************************************************************/
 
-uint32 cli_net_req_chal(const char *srv_name, const char *myhostname,
+uint32 cli_net_req_chal(const char *srv_name, const char *cli_hostname,
 			DOM_CHAL * clnt_chal, DOM_CHAL * srv_chal)
 {
 	prs_struct rbuf;
@@ -257,10 +257,10 @@ uint32 cli_net_req_chal(const char *srv_name, const char *myhostname,
 
 	DEBUG(4,
 	      ("cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
-	       srv_name, myhostname, credstr(clnt_chal->data)));
+	       srv_name, cli_hostname, credstr(clnt_chal->data)));
 
 	/* store the parameters */
-	make_q_req_chal(&q_c, srv_name, myhostname, clnt_chal);
+	make_q_req_chal(&q_c, srv_name, cli_hostname, clnt_chal);
 
 	/* turn parameters into data stream */
 	if (net_io_q_req_chal("", &q_c, &buf, 0) &&
@@ -304,7 +304,7 @@ LSA Server Password Set.
 ****************************************************************************/
 
 BOOL cli_net_srv_pwset(const char *srv_name,
-		       const char *myhostname,
+		       const char *cli_hostname,
 		       const char *trust_acct,
 		       const uint8 hashed_trust_pwd[16], uint16 sec_chan_type)
 {
@@ -341,13 +341,13 @@ BOOL cli_net_srv_pwset(const char *srv_name,
 
 	DEBUG(4,
 	      ("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
-	       srv_name, trust_acct, sec_chan_type, myhostname,
+	       srv_name, trust_acct, sec_chan_type, cli_hostname,
 	       credstr(new_clnt_cred.challenge.data),
 	       new_clnt_cred.timestamp.time));
 
 	/* store the parameters */
 	make_q_srv_pwset(&q_s, srv_name, trust_acct, sec_chan_type,
-			 myhostname, &new_clnt_cred,
+			 cli_hostname, &new_clnt_cred,
 			 (char *)processed_new_pwd);
 
 	/* turn parameters into data stream */
@@ -392,7 +392,7 @@ BOOL cli_net_srv_pwset(const char *srv_name,
 LSA SAM Logon.
 ****************************************************************************/
 
-uint32 cli_net_sam_logon(const char *srv_name, const char *myhostname,
+uint32 cli_net_sam_logon(const char *srv_name, const char *cli_hostname,
 			 NET_ID_INFO_CTR * idc, NET_USER_INFO_CTR * ctr)
 {
 	DOM_CRED new_clnt_cred;
@@ -417,13 +417,13 @@ uint32 cli_net_sam_logon(const char *srv_name, const char *myhostname,
 	/* create and send a MSRPC command with api NET_SAMLOGON */
 
 	DEBUG(4, ("cli_net_sam_logon: srv:%s mc:%s ll: %d\n",
-		  srv_name, myhostname, idc->switch_value));
+		  srv_name, cli_hostname, idc->switch_value));
 
 	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
 	dummy_rtn_creds.timestamp.time = time(NULL);
 
 	/* store the parameters */
-	make_sam_info(&(q_s.sam_id), srv_name, myhostname,
+	make_sam_info(&(q_s.sam_id), srv_name, cli_hostname,
 		      &new_clnt_cred, &dummy_rtn_creds, idc->switch_value,
 		      idc);
 
@@ -507,7 +507,7 @@ send a different info level. Right now though, I'm not sure
 what that needs to be (I need to see one on the wire before
 I can be sure). JRA.
 ****************************************************************************/
-BOOL cli_net_sam_logoff(const char *srv_name, const char *myhostname,
+BOOL cli_net_sam_logoff(const char *srv_name, const char *cli_hostname,
 			NET_ID_INFO_CTR * ctr)
 {
 	DOM_CRED new_clnt_cred;
@@ -532,14 +532,14 @@ BOOL cli_net_sam_logoff(const char *srv_name, const char *myhostname,
 	/* create and send a MSRPC command with api NET_SAMLOGOFF */
 
 	DEBUG(4, ("cli_net_sam_logoff: srv:%s mc:%s clnt %s %x ll: %d\n",
-		  srv_name, myhostname,
+		  srv_name, cli_hostname,
 		  credstr(new_clnt_cred.challenge.data),
 		  new_clnt_cred.timestamp.time, ctr->switch_value));
 
 	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
 
 	/* store the parameters */
-	make_sam_info(&(q_s.sam_id), srv_name, myhostname,
+	make_sam_info(&(q_s.sam_id), srv_name, cli_hostname,
 		      &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value,
 		      ctr);
 
@@ -584,7 +584,7 @@ BOOL cli_net_sam_logoff(const char *srv_name, const char *myhostname,
 /***************************************************************************
 Synchronise SAM Database (requires SEC_CHAN_BDC).
 ****************************************************************************/
-BOOL cli_net_sam_sync(const char *srv_name, const char *myhostname,
+BOOL cli_net_sam_sync(const char *srv_name, const char *cli_hostname,
 		      uint32 database_id,
 		      uint32 * num_deltas,
 		      SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas)
@@ -615,7 +615,7 @@ BOOL cli_net_sam_sync(const char *srv_name, const char *myhostname,
 
 	/* create and send a MSRPC command with api NET_SAM_SYNC */
 
-	make_q_sam_sync(&q_s, srv_name, myhostname,
+	make_q_sam_sync(&q_s, srv_name, cli_hostname,
 			&new_clnt_cred, database_id);
 
 	/* turn parameters into data stream */

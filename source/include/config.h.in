@@ -18,6 +18,9 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef gid_t
 
+/* Define if your system has a working fnmatch function.  */
+#undef HAVE_FNMATCH
+
 /* Define if you have a working `mmap' system call.  */
 #undef HAVE_MMAP
 

@@ -247,6 +247,16 @@ typedef char fstring[FSTRING_LEN];
 #define _PSTRING
 #endif
 
+/*
+ * SMB UCS2 (16-bit unicode) internal type.
+ */
+
+typedef uint16 smb_ucs2_t;
+
+/* ucs2 string types. */
+typedef smb_ucs2_t wpstring[1024];
+typedef smb_ucs2_t wfstring[128];
+
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 #define PIPE_BROWSER  "\\PIPE\\browser"
@@ -650,7 +660,7 @@ struct server_info_struct
 /* used for network interfaces */
 struct interface
 {
-	struct interface *next;
+	struct interface *next, *prev;
 	struct in_addr ip;
 	struct in_addr bcast;
 	struct in_addr nmask;
@@ -1386,6 +1396,9 @@ struct bitmap
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
 
+/* we don't allow server strings to be longer than 48 characters as
+   otherwise NT will not honour the announce packets */
+#define MAX_SERVER_STRING_LENGTH 48
 
 #define SMB_SUCCESS 0		/* The request was successful. */
 #define ERRDOS 0x01		/*  Error is from the core DOS operating system set. */

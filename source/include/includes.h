@@ -579,6 +579,13 @@ extern int errno;
 #include "dlinklist.h"
 #include "../tdb/tdb.h"
 #include "talloc.h"
+#include "interfaces.h"
+
+#ifdef HAVE_FNMATCH
+#include <fnmatch.h>
+#else
+#include "fnmatch.h"
+#endif
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"

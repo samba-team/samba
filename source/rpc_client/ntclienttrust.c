@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
  check workstation trust account status
  ************************************************************************/
 BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
-				char *myhostname, char *domain, fstring mach_acct,
+				char *hostname, char *domain, fstring mach_acct,
 				fstring new_mach_pwd)
 {
 	pstring tmp;
@@ -53,7 +53,7 @@ BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 	char *change_mach_pwd;
 
 	/* initial machine password */
-	fstrcpy(mach_pwd, myhostname);
+	fstrcpy(mach_pwd, hostname);
 	strlower(mach_pwd);
 
 	slprintf(tmp, sizeof(tmp) - 1,"Enter Workstation Trust Account password for [%s].\nDefault is [%s].\nPassword:",
@@ -91,7 +91,7 @@ BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 
 	DEBUG(1,("server connect for cli_trust\n"));
 
-	if (!server_connect_init(&cli_trust, myhostname, dest_ip, dest_host))
+	if (!server_connect_init(&cli_trust, hostname, dest_ip, dest_host))
 	{
 		cli_error(&cli_trust, &err_cls, &err_num);
 		DEBUG(1,("server_connect_init failed (%s)\n", cli_errstr(&cli_trust)));

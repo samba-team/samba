@@ -1128,7 +1128,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	}
 
 	while ((opt = getopt(argc, argv,
-			     "Rs:B:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) !=
+			     "Rs:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) !=
 	       EOF)
 	{
 		switch (opt)
@@ -1164,13 +1164,6 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 				cmd_set_options |= CMD_HOST;
 				pstrcpy(cli_info.dest_host, optarg);
 				strupper(cli_info.dest_host);
-				break;
-			}
-
-			case 'B':
-			{
-				cmd_set_options |= CMD_IFACE;
-				iface_set_default(NULL, optarg, NULL);
 				break;
 			}
 
