@@ -238,12 +238,12 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	const char *user_dn, *domain_dn = NULL;
 	int ret;
 	struct ldb_message **res, mod;
-	const char * const attrs[] = { "objectSid", "ntPwdHash", NULL };
+	const char * const attrs[] = { "objectSid", "ntPwdHash", "unicodePwd", NULL };
 	const char * const dom_attrs[] = { "minPwdLength", "pwdHistoryLength", 
 					   "pwdProperties", "minPwdAge", "maxPwdAge", 
 					   NULL };
 	const char *domain_sid;
-	struct samr_Hash *ntPwdHash;
+	uint8 *nt_pwd;
 	struct samr_DomInfo1 *dominfo;
 	struct samr_ChangeReject *reject;
 	uint32_t reason = 0;
@@ -278,14 +278,13 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 	user_dn = res[0]->dn;
 
-	ret = samdb_result_hashes(mem_ctx, res[0], "ntPwdHash", &ntPwdHash);
-	if (ret != 1) {
-		status = NT_STATUS_WRONG_PASSWORD;
+	status = samdb_result_passwords(mem_ctx, res[0], NULL, &nt_pwd);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
 	/* decrypt the password we have been given */
-	SamOEMhash(r->in.nt_password->data, ntPwdHash->hash, 516);
+	SamOEMhash(r->in.nt_password->data, nt_pwd, 516);
 
 	if (!decode_pw_buffer(r->in.nt_password->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_UNICODE)) {
@@ -338,18 +337,25 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 
 failed:
+	ret = samdb_search(sam_ctx, 
+			   mem_ctx, NULL, &res, dom_attrs,
+			   "dn=%s", domain_dn);
 	if (sam_ctx) {
 		samdb_close(sam_ctx);
+	}
+
+	if (ret != 1) {
+		return status;
 	}
 
 	/* on failure we need to fill in the reject reasons */
 	dominfo = talloc_p(mem_ctx, struct samr_DomInfo1);
 	if (dominfo == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 	reject = talloc_p(mem_ctx, struct samr_ChangeReject);
 	if (reject == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	ZERO_STRUCTP(dominfo);
@@ -362,14 +368,6 @@ failed:
 
 	if (!domain_dn) {
 		return status;
-	}
-
-	ret = samdb_search(sam_ctx, 
-			   mem_ctx, NULL, &res, dom_attrs,
-			   "dn=%s", domain_dn);
-	if (ret != 1) {
-		status = NT_STATUS_NO_SUCH_USER;
-		goto failed;
 	}
 
 	dominfo->min_pwd_len         = samdb_result_uint (res[0], "minPwdLength", 0);
