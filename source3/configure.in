@@ -2795,6 +2795,18 @@ if test x"$with_ads_support" != x"no"; then
 
   LIBS="$KRB5_LIBS $LIBS"
   
+  AC_CACHE_CHECK([for krb5_encrypt_block type],
+                samba_cv_HAVE_KRB5_ENCRYPT_BLOCK,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_encrypt_block block;],
+      samba_cv_HAVE_KRB5_ENCRYPT_BLOCK=yes,
+      samba_cv_HAVE_KRB5_ENCRYPT_BLOCK=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_ENCRYPT_BLOCK" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_ENCRYPT_BLOCK,1,
+               [Whether the type krb5_encrypt_block exists])
+  fi
+
   AC_CACHE_CHECK([for addrtype in krb5_address],
                 samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
     AC_TRY_COMPILE([#include <krb5.h>],
