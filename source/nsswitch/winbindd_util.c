@@ -895,6 +895,5 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 	}
 	
 	/* Failure */
-	return False;
 }
 
