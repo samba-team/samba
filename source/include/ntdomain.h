@@ -27,6 +27,5 @@
 #include "rpc_creds.h"
 #include "rpc_secdes.h"
 #include "rpc_lsa.h"
-#include "rpc_netlogon.h"
 
 #endif /* _NT_DOMAIN_H */

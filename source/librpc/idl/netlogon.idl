@@ -258,6 +258,11 @@ interface netlogon
 	/*****************/
 	/* Function 0x05 */
 
+	/* secure channel types */
+	const int SEC_CHAN_WKSTA   = 2;
+	const int SEC_CHAN_DOMAIN  = 4;
+	const int SEC_CHAN_BDC     = 6;
+
 	NTSTATUS netr_ServerAuthenticate(
 		[in]        unistr *server_name,
 		[in]        unistr username,
