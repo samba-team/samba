@@ -12,7 +12,7 @@ test_torture() {
 	if [ $status = 0 ]; then
 		echo "smbtorture test $torture_test worked"
 	else
-		echo "smbtorture test $torture_test FAILED!"
+		echo "smbtorture test $torture_test FAILED (status $status)!"
 		return 1
 	fi
 	return 0
