@@ -118,7 +118,7 @@ static char * realloc_expand_env_var(char *str, char *p)
 
 	r = p + 3;
 	copylen = q - r;
-	envname = (char *)malloc(copylen + 1 + 4); // reserve space for use later add %$() chars
+	envname = (char *)malloc(copylen + 1 + 4); /* reserve space for use later add %$() chars */
 	if (envname == NULL) return NULL;
 	strncpy(envname,r,copylen);
 	envname[copylen] = '\0';
