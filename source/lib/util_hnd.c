@@ -28,7 +28,7 @@
 extern int DEBUGLEVEL;
 
 #ifndef MAX_OPEN_POLS
-#define MAX_OPEN_POLS 50
+#define MAX_OPEN_POLS 64
 #endif
 
 struct reg_info
@@ -45,23 +45,21 @@ struct samr_info
     uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 };
 
-static struct
+static struct policy
 {
-  BOOL open;
-  POLICY_HND pol_hnd;
+	struct policy *next, *prev;
+	int pnum;
+	BOOL open;
+	POLICY_HND pol_hnd;
 
-  union
-  {
-    struct samr_info samr;
-	struct reg_info reg;
+	union {
+		struct samr_info samr;
+		struct reg_info reg;
+	} dev;
+} *Policy;
 
-  } dev;
+static struct bitmap *bmap;
 
-} Policy[MAX_OPEN_POLS];
-
-
-#define VALID_POL(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_POLS))
-#define OPEN_POL(pnum)    (VALID_POL(pnum) && Policy[pnum].open)
 
 /****************************************************************************
   create a unique policy handle
@@ -89,13 +87,10 @@ void create_pol_hnd(POLICY_HND *hnd)
 ****************************************************************************/
 void init_lsa_policy_hnd(void)
 {
-	int i;
-	for (i = 0; i < MAX_OPEN_POLS; i++)
-	{
-		Policy[i].open = False;
+	bmap = bitmap_allocate(MAX_OPEN_POLS);
+	if (!bmap) {
+		exit_server("out of memory in init_lsa_policy_hnd\n");
 	}
-
-	return;
 }
 
 /****************************************************************************
@@ -104,31 +99,65 @@ void init_lsa_policy_hnd(void)
 BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 {
 	int i;
+	struct policy *p;
 
-	for (i = 0; i < MAX_OPEN_POLS; i++)
-	{
-		if (!Policy[i].open)
-		{
-			Policy[i].open = True;
-				
-			create_pol_hnd(hnd);
-			memcpy(&(Policy[i].pol_hnd), hnd, sizeof(*hnd));
+	i = bitmap_find(bmap, 1);
 
-			DEBUG(4,("Opened policy hnd[%x] ", i));
+	if (i == -1) {
+		DEBUG(0,("ERROR: out of Policy Handles!\n"));
+		return False;
+	}
+
+	p = (struct policy *)malloc(sizeof(*p));
+	if (!p) {
+		DEBUG(0,("ERROR: out of memory!\n"));
+		return False;
+	}
+
+	memset(p, 0, sizeof(*p));
+
+	p->open = True;				
+	p->pnum = i;
+
+	create_pol_hnd(hnd);
+	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
+
+	bitmap_set(bmap, i);
+
+	/* hook into the front of the list */
+	if (!Policy) {
+		Policy = p;
+	} else {
+		Policy->prev = p;
+		p->next = Policy;
+		Policy = p;
+	}
+	
+	DEBUG(4,("Opened policy hnd[%x] ", i));
+	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+
+	return True;
+}
+
+/****************************************************************************
+  find policy by handle
+****************************************************************************/
+static struct policy *find_lsa_policy(POLICY_HND *hnd)
+{
+	struct policy *p;
+
+	for (p=Policy;p;p=p->next) {
+		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0) {
+			DEBUG(4,("Found policy hnd[%x] ", p->pnum));
 			dump_data(4, (char *)hnd->data, sizeof(hnd->data));
-
-			return True;
+			return p;
 		}
 	}
 
-	/* i love obscure error messages. */
-#if TERRY_PRATCHET_INTERESTING_TIMES
-	DEBUG(1,("+++ OUT OF CHEESE ERROR +++ REDO FROM START ... @?!*@@\n"));
-#else
-	DEBUG(1,("ERROR - open_lsa_policy_hnd: out of Policy Handles!\n"));
-#endif
+	DEBUG(4,("Policy not found: "));
+	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
 
-	return False;
+	return NULL;
 }
 
 /****************************************************************************
@@ -136,23 +165,9 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 ****************************************************************************/
 int find_lsa_policy_by_hnd(POLICY_HND *hnd)
 {
-	int i;
+	struct policy *p = find_lsa_policy(hnd);
 
-	for (i = 0; i < MAX_OPEN_POLS; i++)
-	{
-		if (memcmp(&(Policy[i].pol_hnd), hnd, sizeof(*hnd)) == 0)
-		{
-			DEBUG(4,("Found policy hnd[%x] ", i));
-			dump_data(4, (char *)hnd->data, sizeof(hnd->data));
-
-			return i;
-		}
-	}
-
-	DEBUG(4,("Policy not found: "));
-	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
-
-	return -1;
+	return p?p->pnum:-1;
 }
 
 /****************************************************************************
@@ -160,45 +175,39 @@ int find_lsa_policy_by_hnd(POLICY_HND *hnd)
 ****************************************************************************/
 BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid)
 {
-	int pnum = find_lsa_policy_by_hnd(hnd);
+	struct policy *p = find_lsa_policy(hnd);
 
-	if (OPEN_POL(pnum))
-	{
-		DEBUG(3,("%s Setting policy device rid=%x pnum=%x\n",
-		          timestring(), rid, pnum));
+	if (p && p->open) {
+		DEBUG(3,("Setting policy device rid=%x pnum=%x\n",
+			 rid, p->pnum));
 
-		Policy[pnum].dev.samr.rid = rid;
+		p->dev.samr.rid = rid;
 		return True;
 	}
-	else
-	{
-		DEBUG(3,("%s Error setting policy rid=%x (pnum=%x)\n",
-		          timestring(), rid, pnum));
-		return False;
-	}
+
+	DEBUG(3,("Error setting policy rid=%x\n",rid));
+	return False;
 }
+
 
 /****************************************************************************
   set samr pol status.  absolutely no idea what this is.
 ****************************************************************************/
 BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
 {
-	int pnum = find_lsa_policy_by_hnd(hnd);
+	struct policy *p = find_lsa_policy(hnd);
 
-	if (OPEN_POL(pnum))
-	{
-		DEBUG(3,("%s Setting policy status=%x pnum=%x\n",
-		          timestring(), pol_status, pnum));
+	if (p && p->open) {
+		DEBUG(3,("Setting policy status=%x pnum=%x\n",
+		          pol_status, p->pnum));
 
-		Policy[pnum].dev.samr.status = pol_status;
+		p->dev.samr.status = pol_status;
 		return True;
-	}
-	else
-	{
-		DEBUG(3,("%s Error setting policy status=%x (pnum=%x)\n",
-		          timestring(), pol_status, pnum));
-		return False;
-	}
+	} 
+
+	DEBUG(3,("Error setting policy status=%x\n",
+		 pol_status));
+	return False;
 }
 
 /****************************************************************************
@@ -206,23 +215,20 @@ BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
 ****************************************************************************/
 BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 {
-  pstring sidstr;
-  int pnum = find_lsa_policy_by_hnd(hnd);
+	pstring sidstr;
+	struct policy *p = find_lsa_policy(hnd);
 
-  if (OPEN_POL(pnum))
-  {
-    DEBUG(3,("%s Setting policy sid=%s pnum=%x\n",
-          timestring(), sid_to_string(sidstr, sid), pnum));
+	if (p && p->open) {
+		DEBUG(3,("Setting policy sid=%s pnum=%x\n",
+			 sid_to_string(sidstr, sid), p->pnum));
 
-    memcpy(&(Policy[pnum].dev.samr.sid), sid, sizeof(*sid));
-    return True;
-  }
-  else
-  {
-    DEBUG(3,("%s Error setting policy sid=%s (pnum=%x)\n",
-          timestring(), sid_to_string(sidstr, sid), pnum));
-    return False;
-  }
+		memcpy(&p->dev.samr.sid, sid, sizeof(*sid));
+		return True;
+	}
+
+	DEBUG(3,("Error setting policy sid=%s\n",
+		  sid_to_string(sidstr, sid)));
+	return False;
 }
 
 /****************************************************************************
@@ -230,22 +236,18 @@ BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 ****************************************************************************/
 uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd)
 {
-	int pnum = find_lsa_policy_by_hnd(hnd);
+	struct policy *p = find_lsa_policy(hnd);
 
-	if (OPEN_POL(pnum))
-	{
-		uint32 rid = Policy[pnum].dev.samr.rid;
-		DEBUG(3,("%s Getting policy device rid=%x pnum=%x\n",
-		          timestring(), rid, pnum));
+	if (p && p->open) {
+		uint32 rid = p->dev.samr.rid;
+		DEBUG(3,("Getting policy device rid=%x pnum=%x\n",
+		          rid, p->pnum));
 
 		return rid;
 	}
-	else
-	{
-		DEBUG(3,("%s Error getting policy (pnum=%x)\n",
-		          timestring(), pnum));
-		return 0xffffffff;
-	}
+
+	DEBUG(3,("Error getting policy\n"));
+	return 0xffffffff;
 }
 
 /****************************************************************************
@@ -253,46 +255,38 @@ uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd)
 ****************************************************************************/
 BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
 {
-	int pnum = find_lsa_policy_by_hnd(hnd);
+	struct policy *p = find_lsa_policy(hnd);
 
-	if (OPEN_POL(pnum))
-	{
-		DEBUG(3,("%s Setting policy pnum=%x name=%s\n",
-		          timestring(), pnum, name));
+	if (p && p->open) {
+		DEBUG(3,("Setting policy pnum=%x name=%s\n",
+			 p->pnum, name));
 
-		fstrcpy(Policy[pnum].dev.reg.name, name);
+		fstrcpy(p->dev.reg.name, name);
 		return True;
 	}
-	else
-	{
-		DEBUG(3,("%s Error setting policy (pnum=%x) name=%s\n",
-		          timestring(), pnum, name));
-		return False;
-	}
+
+	DEBUG(3,("Error setting policy name=%s\n", name));
+	return False;
 }
 
 /****************************************************************************
   get reg name 
 ****************************************************************************/
-BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
+BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, char *name)
 {
-	int pnum = find_lsa_policy_by_hnd(hnd);
+	struct policy *p = find_lsa_policy(hnd);
 
-	if (OPEN_POL(pnum))
-	{
-		fstrcpy(name, Policy[pnum].dev.reg.name);
+	if (p && p->open) {
+		fstrcpy(name, p->dev.reg.name);
 
-		DEBUG(3,("%s Getting policy pnum=%x name=%s\n",
-		          timestring(), pnum, name));
+		DEBUG(3,("Getting policy pnum=%x name=%s\n",
+			 p->pnum, name));
 
 		return True;
 	}
-	else
-	{
-		DEBUG(3,("%s Error getting policy (pnum=%x)\n",
-		          timestring(), pnum));
-		return False;
-	}
+
+	DEBUG(3,("Error getting policy\n"));
+	return False;
 }
 
 /****************************************************************************
@@ -300,18 +294,29 @@ BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
 ****************************************************************************/
 BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 {
-	int pnum = find_lsa_policy_by_hnd(hnd);
+	struct policy *p = find_lsa_policy(hnd);
 
-	if (OPEN_POL(pnum))
-	{
-		DEBUG(3,("%s Closed policy name pnum=%x\n", timestring(), pnum));
-		Policy[pnum].open = False;
-		return True;
-	}
-	else
-	{
-		DEBUG(3,("%s Error closing policy pnum=%x\n", timestring(), pnum));
+	if (!p) {
+		DEBUG(3,("Error closing policy\n"));
 		return False;
 	}
+
+	DEBUG(3,("Closed policy name pnum=%x\n",  p->pnum));
+
+	if (p == Policy) {
+		Policy = p->next;
+		if (Policy) Policy->prev = NULL;
+	} else {
+		p->prev->next = p->next;
+		if (p->next) p->next->prev = p->prev;
+	}
+
+	bitmap_clear(bmap, p->pnum);
+
+	memset(p, 0, sizeof(*p));
+
+	free(p);
+
+	return True;
 }
 
