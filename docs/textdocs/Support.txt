@@ -27,7 +27,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                25
+    AMERICA - USA                                26
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
@@ -258,6 +258,28 @@ We have been supporting Samba in commercial installations for several years
 on a variety of client and server platforms. We have extensive experience 
 in all aspects of UNIX-Windows connectivity solutions for mixed platform 
 corporate setups. We are a contributor to Samba source code.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+NORTH CAROLINA - USA
+
+Whole Systems Solutions, Inc.
+
+        Whole Systems Solutions, Inc. has been running Samba since the
+1.6 release.  We specialize in small to medium sized business network
+solutions. Whole Systems Solutions, Inc. provides outsourcing of IT to
+enhance employee abilities therefore improving productivity.  Through
+software beta testing and development network of NT, NetWare, Unix, and
+Win clients we have developed a vast knowledge base for support.  Our
+clients choose us for service and support that exceeds their
+expectations.  Your business depends on your computers.  Your computers
+should depend on WSS.
+
+Jay M. Eisenberg                Whole Systems Solutions, Inc.
+President
+Web:                            http://www.wss.net
+Phone:                          (910) 297-4977
+Email:                          jay@wss.net   
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
