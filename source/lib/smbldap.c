@@ -103,7 +103,7 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_LIST_END,		NULL 			}
 };
 
-/* attributes used for alalocating RIDs */
+/* attributes used for allocating RIDs */
 
 ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
 	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
