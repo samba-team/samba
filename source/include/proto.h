@@ -3334,6 +3334,7 @@ BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd);
 BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
+BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */

@@ -271,15 +271,37 @@ BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
 {
 	struct policy *p = find_lsa_policy(hnd);
 
-	if (p && p->open) {
-		DEBUG(3,("Setting policy pnum=%x name=%s\n",
-			 p->pnum, name));
+	if (p && p->open)
+	{
+		DEBUG(3,("Getting policy pnum=%x\n",
+			 p->pnum));
 
 		fstrcpy(p->dev.reg.name, name);
 		return True;
 	}
 
 	DEBUG(3,("Error setting policy name=%s\n", name));
+	return False;
+}
+
+/****************************************************************************
+  set reg name 
+****************************************************************************/
+BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
+{
+	struct policy *p = find_lsa_policy(hnd);
+
+	if (p && p->open)
+	{
+		DEBUG(3,("Setting policy pnum=%x name=%s\n",
+			 p->pnum, name));
+
+		fstrcpy(name, p->dev.reg.name);
+		DEBUG(5,("getting policy reg name=%s\n", name));
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy reg name\n"));
 	return False;
 }
 

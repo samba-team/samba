@@ -187,23 +187,32 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	uint32 status     = 0;
 
 	REG_R_INFO r_u;
-	uint32 type = 1;
+	uint32 type = 0xcafeface;
 	BUFFER2 buf;
+	fstring name;
+
+	ZERO_STRUCT(buf);
 
 	DEBUG(5,("reg_info: %d\n", __LINE__));
 
-	if (status == 0 && find_lsa_policy_by_hnd(&(q_u->pol)) == -1)
+	if (status == 0x0 && !get_lsa_policy_reg_name(&q_u->pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0)
+	if (status == 0 &&
+	   strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
 	{
 		char *key = "LanmanNT";
 		make_buffer2(&buf, key, strlen(key));
-		make_reg_r_info(&r_u, &type, &buf, status);
+		type = 0x1;
+	}
+	else
+	{
+		status = 0x2; /* Win32 status code.  ick */
 	}
 
+	make_reg_r_info(&r_u, &type, &buf, status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_info("", &r_u, rdata, 0);
