@@ -77,6 +77,12 @@
 #ifdef HAVE_SYS_CATEGORY_H
 #include <sys/category.h>
 #endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+#ifdef HAVE_SHADOW_H
+#include <shadow.h>
+#endif
 #ifdef KRB4
 #include <krb.h>
 #endif
@@ -116,15 +122,33 @@
 #define _PATH_LOGACCESS "/etc/login.access"
 #endif /* _PATH_LOGACCESS */
 
+/* osf2.c */
+
 int   do_osfc2_magic(uid_t);
+
+/* tty.c */
+
 char *clean_ttyname (char*);
 char *make_id (char*);
+
+/* utmp_login.c */
+
 void  prepare_utmp (struct utmp*, char*, const char*, const char*);
 int   read_string (const char*, char*, size_t, int);
 void  stty_default (void);
 void  utmp_login (char*, const char*, const char*);
+
+/* utmpx_login.c */
+
 int   utmpx_login (char*, const char*, const char*);
 
+/* login_access.c */
+
 int login_access(struct passwd *user, char *from);
+
+/* shadow.c */
+
+void 
+check_shadow(struct passwd *pw, struct spwd *sp);
 
 #endif /* __LOGIN_LOCL_H__ */
