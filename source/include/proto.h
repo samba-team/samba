@@ -43,6 +43,8 @@ void cmd_help(void);
 /*The following definitions come from  clientgen.c  */
 
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
+BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
+		       void (*fn)(char *, uint32, char *));
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
 		       char *pass, int passlen,
@@ -632,9 +634,8 @@ int main(int argc,char *argv[]);
 
 /*The following definitions come from  nmbsync.c  */
 
-char *getsmbpass(char *pass);
 void sync_browse_lists(struct subnet_record *d, struct work_record *work,
-		char *name, int nm_type, struct in_addr ip, BOOL local);
+		       char *name, int nm_type, struct in_addr ip, BOOL local);
 
 /*The following definitions come from  ntclient.c  */
 
@@ -928,12 +929,12 @@ void make_arc4_owf(ARC4_OWF *hash, char data[16]);
 char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, int depth);
 void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *workgroup_name,
+				char *user_name, char *wksta_name,
 				char arc4_lm_owf[16], char arc4_nt_owf[16]);
 char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align, int depth);
 void make_sam_info(DOM_SAM_INFO *sam,
 				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
-				DOM_CRED *rtn_cred, uint16 switch_value, uint16 logon_level,
+				DOM_CRED *rtn_cred, uint16 logon_level, uint16 switch_value,
 				DOM_ID_INFO_1 *id1);
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);

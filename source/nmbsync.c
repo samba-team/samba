@@ -20,117 +20,33 @@
    
 */
 
-/* We *must have REPLACE_GETPASS defined here before the includes. */
-#define REPLACE_GETPASS
 #include "includes.h"
 
 extern int DEBUGLEVEL;
 
-extern pstring myname;
+static struct work_record *call_w;
+static struct subnet_record *call_d;
 
-extern int name_type;
-extern int max_protocol;
-extern struct in_addr dest_ip;
-extern int pid;
-extern int gid;
-extern int uid;
-extern int mid;
-extern BOOL got_pass;
-extern BOOL have_ip;
-extern pstring workgroup;
-extern pstring service;
-extern pstring desthost;
-extern BOOL connect_as_ipc;
-
-/****************************************************************************
-fudge for getpass function
-****************************************************************************/
-char *getsmbpass(char *pass)
+/*******************************************************************
+  This is the NetServerEnum callback
+  ******************************************************************/
+static void callback(char *sname, uint32 stype, char *comment)
 {
-	return "dummy"; /* return anything: it should be ignored anyway */
-}
+	struct work_record *w = call_w;
 
-/****************************************************************************
-adds information retrieved from a NetServerEnum call
-****************************************************************************/
-static BOOL add_info(struct subnet_record *d, struct work_record *work, int servertype)
-{
-  char *rparam = NULL;
-  char *rdata = NULL;
-  int rdrcnt,rprcnt;
-  char *p;
-  pstring param;
-  int uLevel = 1;
-  int count = -1;
-  
-  /* now send a SMBtrans command with api ServerEnum? */
-  p = param;
-  SSVAL(p,0,0x68); /* api number */
-  p += 2;
-  strcpy(p,"WrLehDz");
-  p = skip_string(p,1);
-  
-  strcpy(p,"B16BBDz");
-  
-  p = skip_string(p,1);
-  SSVAL(p,0,uLevel);
-  SSVAL(p,2,BUFFER_SIZE - SAFETY_MARGIN); /* buf length */
-  p += 4;
-  SIVAL(p,0,servertype);
-  p += 4;
-  
-  pstrcpy(p, work->work_group);
-  p = skip_string(p,1);
-  
-  if (cli_call_api(PIPE_LANMAN,
-           PTR_DIFF(p,param), /* param count */
-           8, /*data count */
-           0, /* setup count */
-           0, /* mprcount - whatever that is */
-           BUFFER_SIZE - SAFETY_MARGIN, /* mdrcount - whatever that is */
-		   &rprcnt,&rdrcnt,
-           param,NULL, NULL,
-		   &rparam,&rdata))
-    {
-      int res = SVAL(rparam,0);
-      int converter=SVAL(rparam,2);
-      int i;
-      
-      if (res == 0)
-	{
-	  count=SVAL(rparam,4);
-	  p = rdata;
-	  
-	  for (i = 0;i < count;i++, p += 26)
-	    {
-	      char *sname = p;
-	      uint32 stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
-	      int comment_offset = IVAL(p,22) & 0xFFFF;
-	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-	      
-	      struct work_record *w = work;
-	      
-	      DEBUG(4, ("\t%-16.16s     %08x    %s\n", sname, stype, cmnt));
-	      
-	      if (stype & SV_TYPE_DOMAIN_ENUM)
-		{
-		  /* creates workgroup on remote subnet */
-		  if ((w = find_workgroupstruct(d,sname,True)))
-		    {
-		      announce_request(w, d->bcast_ip);
-		    }
+	stype &= ~SV_TYPE_LOCAL_LIST_ONLY;
+
+	if (stype & SV_TYPE_DOMAIN_ENUM) {
+		/* creates workgroup on remote subnet */
+		if ((w = find_workgroupstruct(call_d,sname,True))) {
+			announce_request(w, call_d->bcast_ip);
 		}
-	      
-          if (w)
-	        add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
-	    }
 	}
-    }
-  
-  if (rparam) free(rparam);
-  if (rdata) free(rdata);
-  
-  return(True);
+	      
+	if (w) {
+		add_server_entry(call_d,w,sname,stype,
+				 lp_max_ttl(),comment,False);
+	}
 }
 
 
@@ -141,54 +57,64 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   do a NetServerEnum and update our server and workgroup databases.
   ******************************************************************/
 void sync_browse_lists(struct subnet_record *d, struct work_record *work,
-		char *name, int nm_type, struct in_addr ip, BOOL local)
+		       char *name, int nm_type, struct in_addr ip, BOOL local)
 {
-  uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
+	extern fstring local_machine;
+	fstring share;
+	static struct cli_state cli;
+	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
-  if (!d || !work ) return;
+	if (!d || !work ) return;
 
-  if(d != wins_client_subnet) {
-      DEBUG(0,
-        ("sync_browse_lists: ERROR sync requested on non-WINS subnet.\n"));
-      return;
-  }
+	if(d != wins_client_subnet) {
+		DEBUG(0,("sync_browse_lists: ERROR sync requested on non-WINS subnet.\n"));
+		return;
+	}
 
-  pid = getpid();
-  uid = getuid();
-  gid = getgid();
-  mid = pid + 100;
-  name_type = nm_type;
-  
-  got_pass = True;
-  
-  DEBUG(0,("sync_browse_lists: Sync browse lists with %s for %s %s\n",
-	    name, work->work_group, inet_ntoa(ip)));
-  
-  strcpy(workgroup,work->work_group);
-  fstrcpy(desthost,name);
-  dest_ip = ip;
-  
-  if (zero_ip(dest_ip)) return;
-  have_ip = True;
-  
-  connect_as_ipc = True;
-  
-  /* connect as server and get domains, then servers */
-  
-  sprintf(service,"\\\\%s\\IPC$", name);
-  strupper(service);
-  
-  if (cli_open_sockets(SMB_PORT))
-    {
-      if (cli_send_login(NULL,NULL,True,True))
-      {
-	    add_info(d, work, local_type|SV_TYPE_DOMAIN_ENUM);
-        if(local)
-          add_info(d, work, SV_TYPE_LOCAL_LIST_ONLY);
-        else
-          add_info(d, work, SV_TYPE_ALL);
-      }
-      
-    close_sockets();
-  }
+	DEBUG(2,("sync_browse_lists: Sync browse lists with %s for %s %s\n",
+		 name, work->work_group, inet_ntoa(ip)));
+
+	if (!cli_initialise(&cli) || !cli_connect(&cli, name, &ip)) {
+		DEBUG(1,("Failed to start browse sync with %s\n", name));
+	}
+
+	if (!cli_session_request(&cli, name, nm_type, local_machine)) {
+		DEBUG(1,("%s rejected the browse sync session\n",name));
+		cli_shutdown(&cli);
+		return;
+	}
+
+	if (!cli_negprot(&cli)) {
+		DEBUG(1,("%s rejected the negprot\n",name));
+		cli_shutdown(&cli);
+		return;
+	}
+
+	if (!cli_session_setup(&cli, "", "", 1, "", 0, work->work_group)) {
+		DEBUG(1,("%s rejected the browse sync sessionsetup\n", 
+			 name));
+		cli_shutdown(&cli);
+		return;
+	}
+
+	sprintf(share,"\\\\%s\\IPC$", name);
+
+	if (!cli_send_tconX(&cli, share, "IPC", "", 1)) {
+		DEBUG(1,("%s refused browse sync IPC$ connect\n", name));
+		cli_shutdown(&cli);
+		return;
+	}
+
+	call_w = work;
+	call_d = d;
+	
+	cli_NetServerEnum(&cli, work->work_group, 
+			  local_type|SV_TYPE_DOMAIN_ENUM,
+			  callback);
+
+	cli_NetServerEnum(&cli, work->work_group, 
+			  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
+			  callback);
+
+	cli_shutdown(&cli);
 }
