@@ -11,7 +11,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 mandir=@mandir@
 
-LIBS=@LIBS@ 
+LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
 CFLAGS=@CFLAGS@
@@ -596,7 +596,7 @@ WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_GET_SET_OBJ) \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
+		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(IDMAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o $(POPT_LIB_OBJ)
@@ -948,7 +948,7 @@ nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(IDMAP_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS)
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS)
 
 nsswitch/libns_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
