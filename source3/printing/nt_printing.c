@@ -645,18 +645,14 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 			driverpath, cversion));
 
 	close_file(fsp, True);
-	file_free(fsp);
 	close_cnum(conn, user->vuid);
 	pop_sec_ctx();
 	return cversion;
 
 
 	error_exit:
-		if(fsp) {
-			if(fsp->fd != -1)
-				close_file(fsp, True);
-			file_free(fsp);
-		}
+		if(fsp)
+			close_file(fsp, True);
 
 		close_cnum(conn, user->vuid);
 		pop_sec_ctx();
@@ -1139,8 +1135,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 		}
 	}
 	close_file(fsp, True);
-	file_free(fsp);
-
 
 	/* Get file version info (if available) for new file */
 	pstrcpy(filepath, new_file);
@@ -1170,7 +1164,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 		}
 	}
 	close_file(fsp, True);
-	file_free(fsp);
 
 	if (use_version) {
 		/* Compare versions and choose the larger version number */
@@ -1198,11 +1191,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	}
 
 	error_exit:
-		if(fsp) {
-			file_free(fsp);
-			if(fsp->fd != -1)
-				close_file(fsp, True);
-		}
+		if(fsp)
+			close_file(fsp, True);
 		return -1;
 }
 
