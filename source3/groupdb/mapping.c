@@ -294,7 +294,7 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
@@ -331,7 +331,7 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
@@ -404,7 +404,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
 			continue;
