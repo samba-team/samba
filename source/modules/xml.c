@@ -554,7 +554,7 @@ NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 
 	data = talloc(pdb_context->mem_ctx, sizeof(pdb_xml));
 	data->location =
-		(location ? talloc_strdup(pdb_context->mem_ctx, location) : "-");
+		(location ? talloc_strdup(pdb_context->mem_ctx, location) : "passdb.xml");
 	data->pwent = NULL;
 	data->written = 0;
 	(*pdb_method)->private_data = data;
