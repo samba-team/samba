@@ -212,7 +212,7 @@ sub _generate_binaries($)
 		}
 
 		# Export all symbols...
-		push(@LINK_FLAGS,"\@DYNEXP\@");
+		push(@LINK_FLAGS,@{$CTX->{BUILD_ENV}{LD}{DYNEXP}});
 
 		#
 		# set the lists
