@@ -1,3 +1,7 @@
+2001-02-07  Assar Westerlund  <assar@sics.se>
+
+	* telnet/Makefile.am, telnetd/Makefile.am: add LIB_kdfs
+
 2001-01-09  Assar Westerlund  <assar@sics.se>
 
 	* libtelnet/kerberos5.c (kerberos5_is): use krb5_rd_cred2 instead
