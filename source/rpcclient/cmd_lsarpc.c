@@ -38,7 +38,7 @@ struct sid_name {
 	{ SID_NAME_WKN_GRP, "Well-known Group" },
 	{ SID_NAME_DELETED, "Deleted" },
 	{ SID_NAME_INVALID, "Invalid" },
-	{ 0, NULL }
+	{ SID_NAME_USE_NONE, NULL }
 };
 
 static char *get_sid_name_type_str(enum SID_NAME_USE name_type)
@@ -129,7 +129,7 @@ uint32 cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 
 			report(out_hnd, "SID: %s -> %s (%d: %s)\n",
 			       temp, names[i] ? names[i] : "(null)", 
-			       types[i], get_sid_name_type_str(types[i]));
+			       types[i], get_sid_name_type_str((enum SID_NAME_USE)types[i]));
 
 			if (names[i] != NULL) {
 				free(names[i]);
@@ -215,7 +215,7 @@ uint32 cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 			sid_to_string(temp, &sids[i]);
 			report(out_hnd, "Name: %s -> %s (%d: %s)\n",
 			       names[i], temp, types[i],
-			       get_sid_name_type_str(types[i]));
+			       get_sid_name_type_str((enum SID_NAME_USE)types[i]));
 #if 0
 			if (sids[i] != NULL) {
 				free(sids[i]);
