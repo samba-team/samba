@@ -83,6 +83,14 @@ NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
 	return NT_STATUS_OK;
 }
 
+/*
+  push a NTSTATUS
+*/
+NTSTATUS ndr_push_NTSTATUS(struct ndr_push *ndr, NTSTATUS status)
+{
+	return ndr_push_uint32(ndr, NT_STATUS_V(status));
+}
+
 void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS *r)
 {
 	ndr->print(ndr, "%-25s: %s", name, nt_errstr(*r));
@@ -97,6 +105,14 @@ NTSTATUS ndr_pull_WERROR(struct ndr_pull *ndr, WERROR *status)
 	NDR_CHECK(ndr_pull_uint32(ndr, &v));
 	*status = W_ERROR(v);
 	return NT_STATUS_OK;
+}
+
+/*
+  push a WERROR
+*/
+NTSTATUS ndr_push_WERROR(struct ndr_push *ndr, WERROR status)
+{
+	return ndr_push_uint32(ndr, W_ERROR_V(status));
 }
 
 void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR *r)
@@ -340,7 +356,9 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
 		NDR_CHECK(ndr_pull_uint32(ndr, &len2));
 		if (len2 > len1) {
-			return NT_STATUS_INVALID_PARAMETER;
+			return ndr_pull_error(ndr, NDR_ERR_STRING, 
+					      "Bad string lengths len1=%u ofs=%u len2=%u\n", 
+					      len1, ofs, len2);
 		}
 		if (len2 == 0) {
 			*s = talloc_strdup(ndr->mem_ctx, "");
@@ -395,7 +413,9 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
 		NDR_CHECK(ndr_pull_uint32(ndr, &len2));
 		if (len2 > len1) {
-			return NT_STATUS_INVALID_PARAMETER;
+			return ndr_pull_error(ndr, NDR_ERR_STRING, 
+					      "Bad ascii string lengths len1=%u ofs=%u len2=%u\n", 
+					      len1, ofs, len2);
 		}
 		NDR_ALLOC_N(ndr, as, (len2+1));
 		NDR_CHECK(ndr_pull_bytes(ndr, as, len2));

@@ -81,7 +81,9 @@ NTSTATUS ndr_pull_limit_size(struct ndr_pull *ndr, uint32 size, uint32 ofs)
 	new_size = ndr->offset + size - ofs;
 
 	if (new_size > ndr->data_size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
+				      "ndr_pull_limit_size %s %u failed",
+				      size, ofs);
 	}
 	ndr->data_size = new_size;
 
@@ -96,7 +98,9 @@ NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32 size)
 {
 	ndr->offset += size;
 	if (ndr->offset > ndr->data_size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
+				      "ndr_pull_advance by %u failed",
+				      size);
 	}
 	return NT_STATUS_OK;
 }
@@ -108,7 +112,9 @@ NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32 ofs)
 {
 	ndr->offset = ofs;
 	if (ndr->offset > ndr->data_size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
+				      "ndr_pull_set_offset %u failed",
+				      ofs);
 	}
 	return NT_STATUS_OK;
 }
@@ -128,18 +134,13 @@ void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save)
 }
 
 
-
-
 /* create a ndr_push structure, ready for some marshalling */
-struct ndr_push *ndr_push_init(void)
+struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 {
 	struct ndr_push *ndr;
-	TALLOC_CTX *mem_ctx = talloc_init("ndr_push_init");
-	if (!mem_ctx) return NULL;
 
 	ndr = talloc(mem_ctx, sizeof(*ndr));
 	if (!ndr) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
@@ -148,12 +149,27 @@ struct ndr_push *ndr_push_init(void)
 	ndr->alloc_size = NDR_BASE_MARSHALL_SIZE;
 	ndr->data = talloc(ndr->mem_ctx, ndr->alloc_size);
 	if (!ndr->data) {
-		ndr_push_free(ndr);
 		return NULL;
 	}
 	ndr->offset = 0;
 	ndr->ptr_count = 0;
+	ndr->relative_list = NULL;
+	ndr->relative_list_end = NULL;
 	
+	return ndr;
+}
+
+
+/* create a ndr_push structure, ready for some marshalling */
+struct ndr_push *ndr_push_init(void)
+{
+	struct ndr_push *ndr;
+	TALLOC_CTX *mem_ctx = talloc_init("ndr_push_init");
+	if (!mem_ctx) return NULL;
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		talloc_destroy(mem_ctx);
+	}
 	return ndr;
 }
 
@@ -189,7 +205,8 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32 size)
 	}
 	ndr->data = talloc_realloc(ndr->mem_ctx, ndr->data, ndr->alloc_size);
 	if (!ndr->data) {
-		return NT_STATUS_NO_MEMORY;
+		return ndr_push_error(ndr, NDR_ERR_ALLOC, "Failed to push_expand to %u",
+				      ndr->alloc_size);
 	}
 
 	return NT_STATUS_OK;
@@ -358,6 +375,20 @@ void ndr_print_function_debug(void (*fn)(struct ndr_print *, const char *, int ,
 	talloc_destroy(ndr.mem_ctx);
 }
 
+
+static NTSTATUS ndr_map_error(enum ndr_err_code err)
+{
+	switch (err) {
+	case NDR_ERR_BUFSIZE:
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	case NDR_ERR_ALLOC:
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* we should all error codes to different status codes */
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
 /*
   return and possibly log an NDR error
 */
@@ -373,8 +404,8 @@ NTSTATUS ndr_pull_error(struct ndr_pull *ndr, enum ndr_err_code err, const char 
 	DEBUG(3,("ndr_pull_error(%u): %s\n", err, s));
 
 	free(s);
-	/* we should map to different status codes */
-	return NT_STATUS_INVALID_PARAMETER;
+
+	return ndr_map_error(err);
 }
 
 /*
@@ -392,8 +423,8 @@ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char 
 	DEBUG(3,("ndr_push_error(%u): %s\n", err, s));
 
 	free(s);
-	/* we should map to different status codes */
-	return NT_STATUS_INVALID_PARAMETER;
+
+	return ndr_map_error(err);
 }
 
 
@@ -494,6 +525,92 @@ NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr,
 
 
 /*
+  push a subcontext header 
+*/
+static NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr, 
+					   size_t sub_size,
+					   struct ndr_push *ndr2)
+{
+	switch (sub_size) {
+	case 0: 
+		break;
+
+	case 2: 
+		NDR_CHECK(ndr_push_uint16(ndr, ndr2->offset));
+		break;
+
+	case 4: 
+		NDR_CHECK(ndr_push_uint32(ndr, ndr2->offset));
+		break;
+
+	default:
+		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext size %d", 
+				      sub_size);
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  handle subcontext buffers, which in midl land are user-marshalled, but
+  we use magic in pidl to make them easier to cope with
+*/
+NTSTATUS ndr_push_subcontext_fn(struct ndr_push *ndr, 
+				size_t sub_size,
+				void *base,
+				NTSTATUS (*fn)(struct ndr_push *, void *))
+{
+	struct ndr_push *ndr2;
+
+	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
+	if (!ndr2) return NT_STATUS_NO_MEMORY;
+
+	NDR_CHECK(fn(ndr2, base));
+	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
+	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
+	return NT_STATUS_OK;
+}
+
+/*
+  handle subcontext buffers for function that take a flags arg
+*/
+NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr, 
+				      size_t sub_size,
+				      void *base,
+				      NTSTATUS (*fn)(struct ndr_push *, int, void *))
+{
+	struct ndr_push *ndr2;
+
+	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
+	if (!ndr2) return NT_STATUS_NO_MEMORY;
+
+	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, base));
+	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
+	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
+	return NT_STATUS_OK;
+}
+
+/*
+  handle subcontext buffers for function that take a union
+*/
+NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr, 
+				      size_t sub_size,
+				      uint32 level,
+				      void *base,
+				      NTSTATUS (*fn)(struct ndr_push *, int, uint32, void *))
+{
+	struct ndr_push *ndr2;
+
+	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
+	if (!ndr2) return NT_STATUS_NO_MEMORY;
+
+	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
+	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
+	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
+	return NT_STATUS_OK;
+}
+
+
+/*
   mark the start of a structure
 */
 NTSTATUS ndr_pull_struct_start(struct ndr_pull *ndr)
@@ -520,7 +637,7 @@ void ndr_pull_struct_end(struct ndr_pull *ndr)
 NTSTATUS ndr_push_struct_start(struct ndr_push *ndr)
 {
 	struct ndr_ofs_list *ofs;
-	NDR_ALLOC(ndr, ofs);
+	NDR_PUSH_ALLOC(ndr, ofs);
 	ofs->offset = ndr->offset;
 	ofs->next = ndr->ofs_list;
 	ndr->ofs_list = ofs;
@@ -579,12 +696,17 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 			NDR_CHECK(ndr_push_uint32(ndr, 0));
 			return NT_STATUS_OK;
 		}
-		NDR_ALLOC(ndr, ofs);
+		NDR_PUSH_ALLOC(ndr, ofs);
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		ofs->offset = ndr->offset;
 		NDR_CHECK(ndr_push_uint32(ndr, 0xFFFFFFFF));
-		ofs->next = ndr->relative_list;
-		ndr->relative_list = ofs;
+		ofs->next = NULL;
+		if (ndr->relative_list_end) {
+			ndr->relative_list_end->next = ofs;
+		} else {
+			ndr->relative_list = ofs;
+		}
+		ndr->relative_list_end = ofs;
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		struct ndr_push_save save;
@@ -596,6 +718,9 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 			return ndr_push_error(ndr, NDR_ERR_RELATIVE, "Empty relative stack");
 		}
 		ndr->relative_list = ndr->relative_list->next;
+		if (ndr->relative_list == NULL) {
+			ndr->relative_list_end = NULL;
+		}
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		ndr_push_save(ndr, &save);
 		ndr->offset = ofs->offset;

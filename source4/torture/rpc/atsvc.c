@@ -159,6 +159,8 @@ BOOL torture_rpc_atsvc(int dummy)
 		return False;
 	}
 
+	talloc_destroy(mem_ctx);
+
         torture_rpc_close(p);
 
 	return ret;

@@ -88,3 +88,53 @@ void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid2
 	ndr_print_dom_sid(ndr, name, sid);
 }
 
+
+/*
+  return the wire size of a security_ace
+*/
+size_t ndr_size_security_ace(struct security_ace *ace)
+{
+	if (!ace) return 0;
+	return 8 + ndr_size_dom_sid(&ace->trustee);
+}
+
+
+/*
+  return the wire size of a security_acl
+*/
+size_t ndr_size_security_acl(struct security_acl *acl)
+{
+	size_t ret;
+	int i;
+	if (!acl) return 0;
+	ret = 8;
+	for (i=0;i<acl->num_aces;i++) {
+		ret += ndr_size_security_ace(&acl->aces[i]);
+	}
+	return ret;
+}
+
+/*
+  return the wire size of a dom_sid
+*/
+size_t ndr_size_dom_sid(struct dom_sid *sid)
+{
+	if (!sid) return 0;
+	return 8 + 4*sid->num_auths;
+}
+
+/*
+  return the wire size of a security descriptor
+*/
+size_t ndr_size_security_descriptor(struct security_descriptor *sd)
+{
+	size_t ret;
+	if (!sd) return 0;
+	
+	ret = 20;
+	ret += ndr_size_dom_sid(sd->owner_sid);
+	ret += ndr_size_dom_sid(sd->group_sid);
+	ret += ndr_size_security_acl(sd->dacl);
+	ret += ndr_size_security_acl(sd->sacl);
+	return ret;
+}

@@ -29,9 +29,9 @@ NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *
 	}
 
 	status = dcerpc_ndr_request(p, DCERPC_$uname, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_$name,
-				    (ndr_pull_fn_t) ndr_pull_$name,
-				    r);
+				    (ndr_push_flags_fn_t) ndr_push_$name,
+				    (ndr_pull_flags_fn_t) ndr_pull_$name,
+				    r, sizeof(*r));
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);		

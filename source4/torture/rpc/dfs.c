@@ -196,6 +196,8 @@ BOOL torture_rpc_dfs(int dummy)
 		ret = False;
 	}
 
+	talloc_destroy(mem_ctx);
+
         torture_rpc_close(p);
 
 	return ret;

@@ -285,9 +285,18 @@ sub ParseArrayPull($$$)
 		pidl "\t}\n";
 	}
 
-	if (util::need_alloc($e) && !util::is_fixed_array($e)) {
+	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
+	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
+		}
+	}
+
+	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
+		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
+			pidl "\tif (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
+			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
+			pidl "\t}\n";
 		}
 	}
 
@@ -321,6 +330,7 @@ sub ParseElementPushScalar($$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
+	my $sub_size = util::has_property($e, "subcontext");
 
 	start_flags($e);
 
@@ -334,8 +344,16 @@ sub ParseElementPushScalar($$$)
 		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $e->{VALUE}));\n";
 	} elsif (util::need_wire_pointer($e)) {
 		pidl "\tNDR_CHECK(ndr_push_ptr(ndr, $var_prefix$e->{NAME}));\n";
+	} elsif (util::need_alloc($e)) {
+		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPushSwitch($e, $var_prefix, $ndr_flags, $switch);
+	} elsif (defined $sub_size) {
+		if (util::is_builtin_type($e->{TYPE})) {
+			pidl "\tNDR_CHECK(ndr_push_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_fn_t) ndr_pull_$e->{TYPE}));\n";
+		} else {
+			pidl "\tNDR_CHECK(ndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE}));\n";
+		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
@@ -494,6 +512,7 @@ sub ParseElementPushBuffer($$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
+	my $sub_size = util::has_property($e, "subcontext");
 
 	if (util::is_pure_scalar($e)) {
 		return;
@@ -516,6 +535,14 @@ sub ParseElementPushBuffer($$$)
 			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS|NDR_SCALARS", $switch);
 		} else {
 			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
+		}
+	} elsif (defined $sub_size) {
+		if ($e->{POINTERS}) {
+			if (util::is_builtin_type($e->{TYPE})) {
+				pidl "\tNDR_CHECK(ndr_push_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_fn_t) ndr_push_$e->{TYPE}));\n";
+			} else {
+				pidl "\tNDR_CHECK(ndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE}));\n";
+			}
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
@@ -652,13 +679,13 @@ sub ParseStructPush($)
 		ParseElementPushScalar($e, "r->", "NDR_SCALARS");
 	}	
 
-	pidl "\tndr_push_struct_end(ndr);\n";
-
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPushBuffer($e, "r->", "NDR_BUFFERS");
 	}
+
+	pidl "\tndr_push_struct_end(ndr);\n";
 
 	pidl "done:\n";
 
@@ -715,13 +742,13 @@ sub ParseStructPull($)
 		}
 	}
 
+	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+
 	pidl "\tNDR_CHECK(ndr_pull_struct_start(ndr));\n";
 
 	if (defined $conform_e) {
 		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &$conform_e->{CONFORMANT_SIZE}));\n";
 	}
-
-	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
 	my $align = struct_alignment($struct);
 	pidl "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
@@ -730,13 +757,13 @@ sub ParseStructPull($)
 		ParseElementPullScalar($e, "r->", "NDR_SCALARS");
 	}	
 
-	pidl "\tndr_pull_struct_end(ndr);\n";
-
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPullBuffer($e, "r->", "NDR_BUFFERS");
 	}
+
+	pidl "\tndr_pull_struct_end(ndr);\n";
 
 	pidl "done:\n";
 
@@ -754,6 +781,7 @@ sub ParseUnionPush($)
 	start_flags($e);
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+
 	pidl "\tNDR_CHECK(ndr_push_struct_start(ndr));\n";
 
 #	my $align = union_alignment($e);
@@ -777,7 +805,6 @@ sub ParseUnionPush($)
 		pidl "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
 	}
 	pidl "\t}\n";
-	pidl "\tndr_push_struct_end(ndr);\n";
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	pidl "\tswitch (level) {\n";
@@ -797,6 +824,7 @@ sub ParseUnionPush($)
 		pidl "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
 	}
 	pidl "\t}\n";
+	pidl "\tndr_push_struct_end(ndr);\n";
 	pidl "done:\n";
 	end_flags($e);
 }
@@ -865,7 +893,6 @@ sub ParseUnionPull($)
 		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
 	}
 	pidl "\t}\n";
-	pidl "\tndr_pull_struct_end(ndr);\n";
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	pidl "\tswitch (level) {\n";
@@ -885,6 +912,7 @@ sub ParseUnionPull($)
 		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
 	}
 	pidl "\t}\n";
+	pidl "\tndr_pull_struct_end(ndr);\n";
 	pidl "done:\n";
 	end_flags($e);
 }
@@ -1056,33 +1084,91 @@ sub ParseFunctionPrint($)
 
 
 #####################################################################
+# parse a function element
+sub ParseFunctionElementPush($$)
+{ 
+	my $e = shift;
+	my $inout = shift;
+
+	if (util::array_size($e)) {
+		if (util::need_wire_pointer($e)) {
+			pidl "\tNDR_CHECK(ndr_push_ptr(ndr, r->$inout.$e->{NAME}));\n";
+		}
+		pidl "\tif (r->$inout.$e->{NAME}) {\n";
+		ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		pidl "\t}\n";
+	} else {
+		ParseElementPushScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		if ($e->{POINTERS}) {
+			ParseElementPushBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		}
+	}
+}	
+
+#####################################################################
 # parse a function
 sub ParseFunctionPush($)
 { 
-	my($function) = shift;
+	my($fn) = shift;
 
-	# Input function
-	pidl "NTSTATUS ndr_push_$function->{NAME}(struct ndr_push *ndr, struct $function->{NAME} *r)\n{\n";
+	pidl "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, struct $fn->{NAME} *r)\n{\n";
 
-	foreach my $e (@{$function->{DATA}}) {
+	pidl "\n\tif (!(flags & NDR_IN)) goto ndr_out;\n\n";
+	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "in")) {
-			if (util::array_size($e)) {
-				if (util::need_wire_pointer($e)) {
-					pidl "\tNDR_CHECK(ndr_push_ptr(ndr, r->in.$e->{NAME}));\n";
-				}
-				pidl "\tif (r->in.$e->{NAME}) {\n";
-				ParseArrayPush($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
-				pidl "\t}\n";
-			} else {
-				ParseElementPushScalar($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
-				if ($e->{POINTERS}) {
-					ParseElementPushBuffer($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
-				}
-			}
-		}
+			ParseFunctionElementPush($e, "in");
+		}		
+	}
+
+	pidl "\nndr_out:\n";
+	pidl "\tif (!(flags & NDR_OUT)) goto done;\n\n";
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "out")) {
+			ParseFunctionElementPush($e, "out");
+		}		
+	}
+
+	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
+		pidl "\tNDR_CHECK(ndr_push_$fn->{RETURN_TYPE}(ndr, r->out.result));\n";
 	}
     
+	pidl "\ndone:\n";
 	pidl "\n\treturn NT_STATUS_OK;\n}\n\n";
+}
+
+#####################################################################
+# parse a function element
+sub ParseFunctionElementPull($$)
+{ 
+	my $e = shift;
+	my $inout = shift;
+
+	if (util::array_size($e)) {
+		if (util::need_wire_pointer($e)) {
+			pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, _ptr_$e->{NAME}));\n";
+			pidl "\tif (_ptr_$e->{NAME}) {\n";
+		} elsif ($inout eq "in" && util::has_property($e, "ref")) {
+			pidl "\t{\n";
+		} else {
+			pidl "\tif (r->$inout.$e->{NAME}) {\n";
+		}
+		ParseArrayPull($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		pidl "\t}\n";
+	} else {
+		if ($inout eq "out" && util::has_property($e, "ref")) {
+			pidl "\tif (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {\n";
+			pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";
+			pidl "\t}\n";
+		}
+		if ($inout eq "in" && util::has_property($e, "ref")) {
+			pidl "\tNDR_ALLOC(ndr, r->in.$e->{NAME});\n";
+		}
+
+		ParseElementPullScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		if ($e->{POINTERS}) {
+			ParseElementPullBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		}
+	}
 }
 
 #####################################################################
@@ -1092,34 +1178,27 @@ sub ParseFunctionPull($)
 	my($fn) = shift;
 
 	# pull function args
-	pidl "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, struct $fn->{NAME} *r)\n{\n";
+	pidl "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)\n{\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
-		if (util::has_property($e, "out")) {
-			if (util::need_wire_pointer($e)) {
-				pidl "\tuint32 _ptr_$e->{NAME};\n";
-			}
+		if (util::need_wire_pointer($e)) {
+			pidl "\tuint32 _ptr_$e->{NAME};\n";
 		}
 	}
 
+	pidl "\n\tif (!(flags & NDR_IN)) goto ndr_out;\n\n";
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "in")) {
+			ParseFunctionElementPull($e, "in");
+		}
+	}
+
+	pidl "\nndr_out:\n";
+	pidl "\tif (!(flags & NDR_OUT)) goto done;\n\n";
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
-			if (util::array_size($e)) {
-				if (util::need_wire_pointer($e)) {
-					pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, _ptr_$e->{NAME}));\n";
-					pidl "\tif (_ptr_$e->{NAME}) {\n";
-				} else {
-					pidl "\tif (r->out.$e->{NAME}) {\n";
-				}
-				ParseArrayPull($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
-				pidl "\t}\n";
-			} else {
-				ParseElementPullScalar($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
-				if ($e->{POINTERS}) {
-					ParseElementPullBuffer($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
-				}
-			}
+			ParseFunctionElementPull($e, "out");
 		}
 	}
 
@@ -1127,7 +1206,7 @@ sub ParseFunctionPull($)
 		pidl "\tNDR_CHECK(ndr_pull_$fn->{RETURN_TYPE}(ndr, &r->out.result));\n";
 	}
 
-    
+	pidl "\ndone:\n";
 	pidl "\n\treturn NT_STATUS_OK;\n}\n\n";
 }
 
@@ -1177,12 +1256,8 @@ sub NeededFunction($)
 	$needed{"push_$fn->{NAME}"} = 1;
 	foreach my $e (@{$fn->{DATA}}) {
 		$e->{PARENT} = $fn;
-		if (util::has_property($e, "out")) {
-			$needed{"pull_$e->{TYPE}"} = 1;
-		}
-		if (util::has_property($e, "in")) {
-			$needed{"push_$e->{TYPE}"} = 1;
-		}
+		$needed{"pull_$e->{TYPE}"} = 1;
+		$needed{"push_$e->{TYPE}"} = 1;
 	}
 }
 
