@@ -762,6 +762,12 @@ uint32 cli_spoolss_enumprinterdrivers (
 	uint32			*returned,
 	PRINTER_DRIVER_CTR  	*ctr
 );
+uint32 cli_spoolss_getprinterdriverdir (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	char* 			env,
+	DRIVER_DIRECTORY_CTR  	*ctr
+);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 
