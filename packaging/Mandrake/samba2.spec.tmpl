@@ -348,6 +348,7 @@ mkdir -p $RPM_BUILD_ROOT/%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOT/%{_mandir}/{man1,man5,man7,man8}
 mkdir -p $RPM_BUILD_ROOT/var/cache/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
+mkdir -p $RPM_BUILD_ROOT/var/run/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/{netlogon,profiles,printers}
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/printers/{W32X86,WIN40,W32ALPHA,W32MIPS,W32PPC}
@@ -712,6 +713,7 @@ fi
 %attr(775,root,root) %dir /var/lib/samba/profiles
 %attr(775,root,root) %dir /var/lib/samba/printers/*
 %dir /var/log/samba
+%dir /var/run/samba
 %attr(1777,root,root) %dir /var/spool/samba
 
 %files doc
