@@ -1058,7 +1058,7 @@ int set_blocking(int fd, BOOL set);
 ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
 						ssize_t (*write_fn)(int, const void *, size_t));
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n);
-void msleep(int t);
+void msleep(unsigned int t);
 void become_daemon(void);
 BOOL yesno(char *p);
 void *Realloc(void *p,size_t size);
