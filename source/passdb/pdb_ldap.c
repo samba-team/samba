@@ -1921,9 +1921,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
 
 	if (pdb_get_init_flags(sampass, PDB_USERSID) == PDB_DEFAULT) {
-		if (!IS_SAM_DEFAULT(sampass, PDB_UID)) {
-			rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(sampass));
-		} else if (ldap_state->permit_non_unix_accounts) {
+		if (ldap_state->permit_non_unix_accounts) {
 			if (!NT_STATUS_IS_OK(ldapsam_next_rid(ldap_state, &rid, USER_RID_TYPE))) {
 				DEBUG(0, ("NO user RID specified on account %s, and "
 					  "finding next available NUA RID failed, "
