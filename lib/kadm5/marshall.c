@@ -107,39 +107,176 @@ kadm5_ret_tl_data(krb5_storage *sp,
     return 0;
 }
 
+static kadm5_ret_t
+store_principal_ent(krb5_storage *sp,
+		    kadm5_principal_ent_t princ,
+		    u_int32_t mask)
+{
+    int i;
+
+    if (mask & KADM5_PRINCIPAL)
+	krb5_store_principal(sp, princ->principal);
+    if (mask & KADM5_PRINC_EXPIRE_TIME)
+	krb5_store_int32(sp, princ->princ_expire_time);
+    if (mask & KADM5_LAST_PWD_CHANGE)
+	krb5_store_int32(sp, princ->last_pwd_change);
+    if (mask & KADM5_PW_EXPIRATION)
+	krb5_store_int32(sp, princ->pw_expiration);
+    if (mask & KADM5_MAX_LIFE)
+	krb5_store_int32(sp, princ->max_life);
+    if (mask & KADM5_MOD_NAME) {
+	krb5_store_int32(sp, princ->mod_name != NULL);
+	if(princ->mod_name)
+	    krb5_store_principal(sp, princ->mod_name);
+    }
+    if (mask & KADM5_MOD_TIME)
+	krb5_store_int32(sp, princ->mod_date);
+    if (mask & KADM5_ATTRIBUTES)
+	krb5_store_int32(sp, princ->attributes);
+    if (mask & KADM5_KVNO)
+	krb5_store_int32(sp, princ->kvno);
+    if (mask & KADM5_MKVNO)
+	krb5_store_int32(sp, princ->mkvno);
+    if (mask & KADM5_POLICY) {
+	krb5_store_int32(sp, princ->policy != NULL);
+	if(princ->policy)
+	    krb5_store_string(sp, princ->policy);
+    }
+    if (mask & KADM5_AUX_ATTRIBUTES)
+	krb5_store_int32(sp, princ->aux_attributes);
+    if (mask & KADM5_MAX_RLIFE)
+	krb5_store_int32(sp, princ->max_renewable_life);
+    if (mask & KADM5_LAST_SUCCESS)
+	krb5_store_int32(sp, princ->last_success);
+    if (mask & KADM5_LAST_FAILED)
+	krb5_store_int32(sp, princ->last_failed);
+    if (mask & KADM5_FAIL_AUTH_COUNT)
+	krb5_store_int32(sp, princ->fail_auth_count);
+    if (mask & KADM5_KEY_DATA) {
+	krb5_store_int32(sp, princ->n_key_data);
+	for(i = 0; i < princ->n_key_data; i++)
+	    kadm5_store_key_data(sp, &princ->key_data[i]);
+    }
+    if (mask & KADM5_TL_DATA) {
+	krb5_tl_data *tp;
+
+	krb5_store_int32(sp, princ->n_tl_data);
+	for(tp = princ->tl_data; tp; tp = tp->tl_data_next)
+	    kadm5_store_tl_data(sp, tp);
+    }
+    return 0;
+}
+
+
 kadm5_ret_t
 kadm5_store_principal_ent(krb5_storage *sp,
 			  kadm5_principal_ent_t princ)
 {
+    return store_principal_ent (sp, princ, ~0);
+}
+
+kadm5_ret_t
+kadm5_store_principal_ent_mask(krb5_storage *sp,
+			       kadm5_principal_ent_t princ,
+			       u_int32_t mask)
+{
+    krb5_store_int32(sp, mask);
+    return store_principal_ent (sp, princ, mask);
+}
+
+static kadm5_ret_t
+ret_principal_ent(krb5_storage *sp,
+		  kadm5_principal_ent_t princ,
+		  u_int32_t mask)
+{
     int i;
-    krb5_store_principal(sp, princ->principal);
-    krb5_store_int32(sp, princ->princ_expire_time);
-    krb5_store_int32(sp, princ->last_pwd_change);
-    krb5_store_int32(sp, princ->pw_expiration);
-    krb5_store_int32(sp, princ->max_life);
-    krb5_store_int32(sp, princ->mod_name != NULL);
-    if(princ->mod_name)
-	krb5_store_principal(sp, princ->mod_name);
-    krb5_store_int32(sp, princ->mod_date);
-    krb5_store_int32(sp, princ->attributes);
-    krb5_store_int32(sp, princ->kvno);
-    krb5_store_int32(sp, princ->mkvno);
-    krb5_store_int32(sp, princ->policy != NULL);
-    if(princ->policy)
-	krb5_store_string(sp, princ->policy);
-    krb5_store_int32(sp, princ->aux_attributes);
-    krb5_store_int32(sp, princ->max_renewable_life);
-    krb5_store_int32(sp, princ->last_success);
-    krb5_store_int32(sp, princ->last_failed);
-    krb5_store_int32(sp, princ->fail_auth_count);
-    krb5_store_int32(sp, princ->n_key_data);
-    for(i = 0; i < princ->n_key_data; i++)
-	kadm5_store_key_data(sp, &princ->key_data[i]);
-    krb5_store_int32(sp, princ->n_tl_data);
-    {
-	krb5_tl_data *tp;
-	for(tp = princ->tl_data; tp; tp = tp->tl_data_next)
-	    kadm5_store_tl_data(sp, tp);
+    int32_t tmp;
+
+    if (mask & KADM5_PRINCIPAL)
+	krb5_ret_principal(sp, &princ->principal);
+    
+    if (mask & KADM5_PRINC_EXPIRE_TIME) {
+	krb5_ret_int32(sp, &tmp);
+	princ->princ_expire_time = tmp;
+    }
+    if (mask & KADM5_PW_EXPIRATION) {
+	krb5_ret_int32(sp, &tmp);
+	princ->pw_expiration = tmp;
+    }
+    if (mask & KADM5_LAST_PWD_CHANGE) {
+	krb5_ret_int32(sp, &tmp);
+	princ->last_pwd_change = tmp;
+    }
+    if (mask & KADM5_MAX_LIFE) {
+	krb5_ret_int32(sp, &tmp);
+	princ->max_life = tmp;
+    }
+    if (mask & KADM5_MOD_NAME) {
+	krb5_ret_int32(sp, &tmp);
+	if(tmp)
+	    krb5_ret_principal(sp, &princ->mod_name);
+	else
+	    princ->mod_name = NULL;
+    }
+    if (mask & KADM5_MOD_TIME) {
+	krb5_ret_int32(sp, &tmp);
+	princ->mod_date = tmp;
+    }
+    if (mask & KADM5_ATTRIBUTES) {
+	krb5_ret_int32(sp, &tmp);
+	princ->attributes = tmp;
+    }
+    if (mask & KADM5_KVNO) {
+	krb5_ret_int32(sp, &tmp);
+	princ->kvno = tmp;
+    }
+    if (mask & KADM5_MKVNO) {
+	krb5_ret_int32(sp, &tmp);
+	princ->mkvno = tmp;
+    }
+    if (mask & KADM5_POLICY) {
+	krb5_ret_int32(sp, &tmp);
+	if(tmp)
+	    krb5_ret_string(sp, &princ->policy);
+	else
+	    princ->policy = NULL;
+    }
+    if (mask & KADM5_AUX_ATTRIBUTES) {
+	krb5_ret_int32(sp, &tmp);
+	princ->aux_attributes = tmp;
+    }
+    if (mask & KADM5_MAX_RLIFE) {
+	krb5_ret_int32(sp, &tmp);
+	princ->max_renewable_life = tmp;
+    }
+    if (mask & KADM5_LAST_SUCCESS) {
+	krb5_ret_int32(sp, &tmp);
+	princ->last_success = tmp;
+    }
+    if (mask & KADM5_LAST_FAILED) {
+	krb5_ret_int32(sp, &tmp);
+	princ->last_failed = tmp;
+    }
+    if (mask & KADM5_FAIL_AUTH_COUNT) {
+	krb5_ret_int32(sp, &tmp);
+	princ->fail_auth_count = tmp;
+    }
+    if (mask & KADM5_KEY_DATA) {
+	krb5_ret_int32(sp, &tmp);
+	princ->n_key_data = tmp;
+	princ->key_data = malloc(princ->n_key_data * sizeof(*princ->key_data));
+	for(i = 0; i < princ->n_key_data; i++)
+	    kadm5_ret_key_data(sp, &princ->key_data[i]);
+    }
+    if (mask & KADM5_TL_DATA) {
+	krb5_ret_int32(sp, &tmp);
+	princ->tl_data = NULL;
+	for(i = 0; i < princ->n_tl_data; i++){
+	    krb5_tl_data *tp = malloc(sizeof(*tp));
+	    kadm5_ret_tl_data(sp, tp);
+	    tp->tl_data_next = princ->tl_data;
+	    princ->tl_data = tp;
+	}
     }
     return 0;
 }
@@ -148,59 +285,17 @@ kadm5_ret_t
 kadm5_ret_principal_ent(krb5_storage *sp,
 			kadm5_principal_ent_t princ)
 {
-    int i;
-    int32_t tmp;
-    krb5_ret_principal(sp, &princ->principal);
-    
-    krb5_ret_int32(sp, &tmp);
-    princ->princ_expire_time = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->last_pwd_change = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->pw_expiration = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->max_life = tmp;
-    krb5_ret_int32(sp, &tmp);
-    if(tmp)
-	krb5_ret_principal(sp, &princ->mod_name);
-    else
-	princ->mod_name = NULL;
-    krb5_ret_int32(sp, &tmp);
-    princ->mod_date = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->attributes = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->kvno = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->mkvno = tmp;
-    krb5_ret_int32(sp, &tmp);
-    if(tmp)
-	krb5_ret_string(sp, &princ->policy);
-    else
-	princ->policy = NULL;
-    krb5_ret_int32(sp, &tmp);
-    princ->aux_attributes = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->max_renewable_life = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->last_success = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->last_failed = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->fail_auth_count = tmp;
-    krb5_ret_int32(sp, &tmp);
-    princ->n_key_data = tmp;
-    princ->key_data = malloc(princ->n_key_data * sizeof(*princ->key_data));
-    for(i = 0; i < princ->n_key_data; i++)
-	kadm5_ret_key_data(sp, &princ->key_data[i]);
-    krb5_ret_int32(sp, &tmp);
-    princ->tl_data = NULL;
-    for(i = 0; i < princ->n_tl_data; i++){
-	krb5_tl_data *tp = malloc(sizeof(*tp));
-	kadm5_ret_tl_data(sp, tp);
-	tp->tl_data_next = princ->tl_data;
-	princ->tl_data = tp;
-    }
-    return 0;
+    return ret_principal_ent (sp, princ, ~0);
 }
 
+kadm5_ret_t
+kadm5_ret_principal_ent_mask(krb5_storage *sp,
+			     kadm5_principal_ent_t princ,
+			     u_int32_t *mask)
+{
+    int32_t tmp;
+
+    krb5_ret_int32 (sp, &tmp);
+    *mask = tmp;
+    return ret_principal_ent (sp, princ, *mask);
+}
