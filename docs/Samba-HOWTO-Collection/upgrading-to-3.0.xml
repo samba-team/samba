@@ -500,6 +500,13 @@ complete descriptions of new or modified parameters.
 		</para>
 
 		<para>
+		Under Samba-2.x the Domain SID can be obtained by executing:
+<screen>
+&prompt;<userinput>smbpasswd -S 'Domain_Name'</userinput>
+</screen>
+		</para>
+
+		<para>
 		The old sambaAccount schema may still be used by specifying the
 		<parameter>ldapsam_compat</parameter> passdb backend. However, the sambaAccount and
 		associated attributes have been moved to the historical section of
