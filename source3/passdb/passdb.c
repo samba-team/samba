@@ -592,9 +592,6 @@ struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
 	return &pw_buf;
 }
 
-#if 0
-
-  COMMENTED OUT UNTIL SOMETHING ACTUALLY USES THEM. JRA.
 
 /*******************************************************************
  gets password-database-format time from a string.
@@ -652,8 +649,6 @@ void pdb_set_last_set_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "LCT", t);
 }
-
-#endif /* 0 */
 
 /**********************************************************
  Encode the account control bits into a string.
