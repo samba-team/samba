@@ -94,6 +94,7 @@ setup(
                          samba_srcdir + "python/py_spoolss_drivers_conv.c",
                          samba_srcdir + "python/py_spoolss_printers.c",
                          samba_srcdir + "python/py_spoolss_printers_conv.c",
+                         samba_srcdir + "python/py_spoolss_printerdata.c",
                          samba_srcdir + "python/py_spoolss_ports.c",
                          samba_srcdir + "python/py_spoolss_ports_conv.c",
                          samba_srcdir + "python/py_spoolss_jobs.c",
@@ -131,5 +132,14 @@ setup(
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list,
               extra_compile_args = flags_list),
-    ]
+
+    # WINREG pipe module
+
+    Extension(name = "winreg",
+              sources = [samba_srcdir + "python/py_winreg.c",
+                         samba_srcdir + "python/py_common.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_objects = obj_list),
+    ],
 )
