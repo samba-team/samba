@@ -29,7 +29,13 @@ int net_ads_usage(void)
 "\nnet ads join"\
 "\n\tjoins the local machine to a ADS realm\n"\
 "\nnet ads leave"\
-"\n\tremoves the local machine from a ADS realm\n"
+"\n\tremoves the local machine from a ADS realm\n"\
+"\nnet ads user"\
+"\n\tlist users in the realm\n"\
+"\nnet ads group"\
+"\n\tlist groups in the realm\n"\
+"\nnet ads status"\
+"\n\tdump the machine account details to stdout\n"
 		);
 	return -1;
 }
