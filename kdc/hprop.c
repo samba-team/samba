@@ -45,11 +45,12 @@
 
 RCSID("$Id$");
 
-static getarg_strings slaves;
 static int version_flag;
 static int help_flag;
 static char *ktname = HPROP_KEYTAB;
 static char *database;
+static char *mkeyfile;
+static int to_stdout;
 static int verbose_flag;
 #ifdef KRB4
 static int v4_db;
@@ -92,7 +93,7 @@ struct prop_data{
 int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
 
 krb5_error_code
-func(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
+v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 {
     krb5_error_code ret;
     struct prop_data *pd = appdata;
@@ -101,18 +102,25 @@ func(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     ret = hdb_entry2value(context, entry, &data);
     if(ret) return ret;
 
-    ret = send_priv(context, pd->auth_context, &data, pd->sock);
+    if(to_stdout)
+	ret = send_clear(context, STDOUT_FILENO, data);
+    else
+	ret = send_priv(context, pd->auth_context, &data, pd->sock);
     krb5_data_free(&data);
     return ret;
 }
 
 #ifdef KRB4
-static des_cblock mkey;
-static des_key_schedule msched;
+EncryptionKey mkey5;
+krb5_data msched5;
+int use_master_key = 0;
+
+static des_cblock mkey4;
+static des_key_schedule msched4;
 static char realm[REALM_SZ];
 
 static int
-conv_db(void *arg, Principal *p)
+v4_prop(void *arg, Principal *p)
 {
     struct prop_data *pd = arg;
     hdb_entry ent;
@@ -147,13 +155,14 @@ conv_db(void *arg, Principal *p)
 	unsigned char *key = ent.keys.val[0].key.keyvalue.data;
 	memcpy(key, &p->key_low, 4);
 	memcpy(key + 4, &p->key_high, 4);
-	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey, msched, 0);
+	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey4, msched4, 0);
     }
-    hdb_seal_key(&ent.keys.val[0], msched);
+    if(use_master_key)
+	hdb_seal_key(&ent.keys.val[0], msched5);
 
     ALLOC(ent.max_life);
     *ent.max_life = krb_life_to_time(0, p->max_life);
-    if(*ent.max_life == (1U << 31) - 1){
+    if(*ent.max_life == NEVERDATE){
 	free(ent.max_life);
 	ent.max_life = NULL;
     }
@@ -178,29 +187,24 @@ conv_db(void *arg, Principal *p)
     ent.flags.client = 1;
     ent.flags.server = 1;
 
-    {
-	krb5_data data;
-	ret = hdb_entry2value(pd->context, &ent, &data);
-	if(ret) return ret;
-	
-	ret = send_priv(pd->context, pd->auth_context, &data, pd->sock);
-	krb5_data_free(&data);
-	return ret;
-    }
+    ret = v5_prop(pd->context, NULL, &ent, pd);
+    hdb_free_entry(pd->context, &ent);
+    return ret;
 }
 
 #endif
 
 
 struct getargs args[] = {
-#if 0
-    { "slave",    's',	arg_strings, &slaves, "slave server", "host" },
+    { "master-key", 'm', arg_string, &mkeyfile, "v5 master key file", "file" },
+#ifdef KRB4
 #endif
     { "database", 'd',	arg_string, &database, "database", "file" },
 #ifdef KRB4
     { "v4-db",    '4',	arg_flag, &v4_db, "use version 4 database" },
 #endif
     { "keytab",   'k',	arg_string, &ktname, "keytab to use for authentication", "keytab" },
+    { "stdout",	  'n',  arg_flag,   &to_stdout, "dump to stdout" },
     { "verbose",  'v',	arg_flag, &verbose_flag },
     { "version",   0,	arg_flag, &version_flag },
     { "help",     'h',	arg_flag, &help_flag }
@@ -214,21 +218,52 @@ void usage(int ret)
     exit (ret);
 }
 
+void
+get_creds(krb5_context context, krb5_ccache *cache)
+{
+    krb5_keytab keytab;
+    krb5_principal client;
+    krb5_error_code ret;
+    krb5_get_init_creds_opt init_opts;
+    krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
+    krb5_creds creds;
+    
+    ret = krb5_kt_resolve(context, ktname, &keytab);
+    if(ret) krb5_err(context, 1, ret, "krb5_kt_resolve");
+    
+    ret = krb5_make_principal(context, &client, NULL, 
+			      "kadmin", HPROP_NAME, NULL);
+    if(ret) krb5_err(context, 1, ret, "krb5_make_principal");
+
+    krb5_get_init_creds_opt_init(&init_opts);
+    krb5_get_init_creds_opt_set_preauth_list(&init_opts, &preauth, 1);
+
+    ret = krb5_get_init_creds_keytab(context, &creds, client, keytab, 0, NULL, &init_opts);
+    if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
+    
+    ret = krb5_kt_close(context, keytab);
+    if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
+    
+    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, cache);
+    if(ret) krb5_err(context, 1, ret, "krb5_cc_gen_new");
+
+    ret = krb5_cc_initialize(context, *cache, client);
+    if(ret) krb5_err(context, 1, ret, "krb5_cc_initialize");
+
+    ret = krb5_cc_store_cred(context, *cache, &creds);
+    if(ret) krb5_err(context, 1, ret, "krb5_cc_store_cred");
+}
+
 int main(int argc, char **argv)
 {
     krb5_error_code ret;
     int e;
     krb5_context context;
     krb5_auth_context ac;
-    krb5_principal client;
     krb5_principal server;
-    krb5_creds creds;
     krb5_ccache ccache;
-    krb5_keytab keytab;
     int fd;
     HDB *db;
-    krb5_get_init_creds_opt init_opts;
-    krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
     int optind = 0;
     int i;
 
@@ -249,35 +284,24 @@ int main(int argc, char **argv)
     if(ret)
 	exit(1);
 
-    ret = krb5_kt_resolve(context, ktname, &keytab);
-    if(ret) krb5_err(context, 1, ret, "krb5_kt_resolve");
-    
-    ret = krb5_make_principal(context, &client, NULL, "kadmin", HPROP_NAME, NULL);
-    if(ret) krb5_err(context, 1, ret, "krb5_make_principal");
-
-    krb5_get_init_creds_opt_init(&init_opts);
-    krb5_get_init_creds_opt_set_preauth_list(&init_opts, &preauth, 1);
-
-    ret = krb5_get_init_creds_keytab(context, &creds, client, keytab, 0, NULL, &init_opts);
-    if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
-    
-    ret = krb5_kt_close(context, keytab);
-    if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
-    
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
-    if(ret) krb5_err(context, 1, ret, "krb5_cc_gen_new");
-
-    ret = krb5_cc_initialize(context, ccache, client);
-    if(ret) krb5_err(context, 1, ret, "krb5_cc_initialize");
-
-    ret = krb5_cc_store_cred(context, ccache, &creds);
-    if(ret) krb5_err(context, 1, ret, "krb5_cc_store_cred");
+    if(!to_stdout)
+	get_creds(context, &ccache);
     
 #ifdef KRB4
     if(v4_db){
+	ret = hdb_read_master_key(context, mkeyfile, &mkey5);
+	if(ret != ENOENT)
+	    krb5_err(context, 1, ret, "hdb_read_master_key");
+	if(!ret){
+	    ret = hdb_process_master_key(context, mkey5, &msched5);
+	    if(ret)
+		krb5_err(context, 1, ret, "hdb_process_master_key");
+	    use_master_key = 1;
+	}
+    
 	e = kerb_db_set_name (database);
 	if(e) krb5_errx(context, 1, "kerb_db_set_name: %s", krb_get_err_text(e));
-	e = kdb_get_master_key(0, &mkey, msched);
+	e = kdb_get_master_key(0, &mkey4, msched4);
 	if(e) krb5_errx(context, 1, "kdb_get_master_key: %s", krb_get_err_text(e));
 	e = krb_get_lrealm(realm, 1);
 	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
@@ -288,74 +312,94 @@ int main(int argc, char **argv)
 	    if(ret) krb5_err(context, 1, ret, "hdb_open");
 	}
 
-    
-
-    for(i = optind; i < argc; i++){
-	fd = open_socket(context, argv[i]);
-	if(fd < 0)
-	    continue;
-
-	ret = krb5_sname_to_principal(context, argv[i], HPROP_NAME, KRB5_NT_SRV_HST, &server);
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_sname_to_principal(%s)", argv[i]);
-	    close(fd);
-	    continue;
-	}
-    
-	ac = NULL;
-	ret = krb5_sendauth(context,
-			    &ac,
-			    &fd,
-			    HPROP_VERSION,
-			    NULL,
-			    server,
-			    AP_OPTS_MUTUAL_REQUIRED,
-			    NULL, /* in_data */
-			    NULL, /* in_creds */
-			    ccache,
-			    NULL,
-			    NULL,
-			    NULL);
-
-	if(ret){
-	    krb5_warn(context, ret, "krb5_sendauth");
-	    close(fd);
-	    continue;
-	}
-
-	{
-	    struct prop_data pd;
-	    pd.context = context;
-	    pd.auth_context = ac;
-	    pd.sock = fd;
+    if(to_stdout){
+	struct prop_data pd;
+	pd.context = context;
+	pd.auth_context = ac;
+	pd.sock = fd;
 	
 #ifdef KRB4
-	    if(v4_db)
-		e = kerb_db_iterate ((k_iter_proc_t)conv_db, &pd);
-	    else
+	if(v4_db){
+	    e = kerb_db_iterate ((k_iter_proc_t)v4_prop, &pd);
+	    if(e)
+		krb5_errx(context, 1, "kerb_db_iterate: %s", 
+			  krb_get_err_text(e));
+	} else {
 #endif
-		ret = hdb_foreach(context, db, func, &pd);
+	    ret = hdb_foreach(context, db, v5_prop, &pd);
+	    if(ret)
+		krb5_err(context, 1, ret, "hdb_foreach");
 	}
-	if(ret)
-	    krb5_warn(context, ret, "krb5_sendauth");
-	else {
-	    krb5_data data;
-	    data.data = NULL;
-	    data.length = 0;
-	    ret = send_priv(context, ac, &data, fd);
-	}
+    }else{
 
-	{
-	    krb5_data data;
-	    ret = recv_priv(context, ac, fd, &data);
-	    if(ret) krb5_warn(context, ret, "recv_priv");
-	    if(data.length != 0)
-		krb5_data_free(&data); /* XXX */
-	}
+	for(i = optind; i < argc; i++){
+	    fd = open_socket(context, argv[i]);
+	    if(fd < 0)
+		continue;
+
+	    ret = krb5_sname_to_principal(context, argv[i], 
+					  HPROP_NAME, KRB5_NT_SRV_HST, &server);
+	    if(ret) {
+		krb5_warn(context, ret, "krb5_sname_to_principal(%s)", argv[i]);
+		close(fd);
+		continue;
+	    }
+    
+	    ac = NULL;
+	    ret = krb5_sendauth(context,
+				&ac,
+				&fd,
+				HPROP_VERSION,
+				NULL,
+				server,
+				AP_OPTS_MUTUAL_REQUIRED,
+				NULL, /* in_data */
+				NULL, /* in_creds */
+				ccache,
+				NULL,
+				NULL,
+				NULL);
+
+	    if(ret){
+		krb5_warn(context, ret, "krb5_sendauth");
+		close(fd);
+		continue;
+	    }
+
+	    {
+		struct prop_data pd;
+		pd.context = context;
+		pd.auth_context = ac;
+		pd.sock = fd;
 	
-	if(ret) krb5_warn(context, ret, "send_priv");
-	krb5_auth_con_free(context, ac);
-	close(fd);
+#ifdef KRB4
+		if(v4_db)
+		    e = kerb_db_iterate ((k_iter_proc_t)v4_prop, &pd);
+		else
+#endif
+		    ret = hdb_foreach(context, db, v5_prop, &pd);
+	    }
+	    if(ret)
+		krb5_warn(context, ret, "krb5_sendauth");
+	    else {
+		krb5_data data;
+		data.data = NULL;
+		data.length = 0;
+		ret = send_priv(context, ac, &data, fd);
+	    }
+
+	    {
+		krb5_data data;
+		ret = recv_priv(context, ac, fd, &data);
+		if(ret) krb5_warn(context, ret, "recv_priv");
+		if(data.length != 0)
+		    krb5_data_free(&data); /* XXX */
+	    }
+	
+	    if(ret) krb5_warn(context, ret, "send_priv");
+	    krb5_auth_con_free(context, ac);
+	    close(fd);
+	}
     }
     exit(0);
 }
