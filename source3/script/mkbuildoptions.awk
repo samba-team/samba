@@ -242,14 +242,14 @@ END {
 	# add code to display the various type sizes
 	print "       /* Output the sizes of the various types */";
 	print "       output(screen, \"\\nType sizes:\\n\");";
-	print "       output(screen, \"   sizeof(char):    %d\\n\",sizeof(char));";
-	print "       output(screen, \"   sizeof(int):     %d\\n\",sizeof(int));";
-	print "       output(screen, \"   sizeof(long):    %d\\n\",sizeof(long));";
-	print "       output(screen, \"   sizeof(uint8):   %d\\n\",sizeof(uint8));";
-	print "       output(screen, \"   sizeof(uint16):  %d\\n\",sizeof(uint16));";
-	print "       output(screen, \"   sizeof(uint32):  %d\\n\",sizeof(uint32));";
-	print "       output(screen, \"   sizeof(short):   %d\\n\",sizeof(short));";
-	print "       output(screen, \"   sizeof(void*):   %d\\n\",sizeof(void*));";
+	print "       output(screen, \"   sizeof(char):    %u\\n\",sizeof(char));";
+	print "       output(screen, \"   sizeof(int):     %u\\n\",sizeof(int));";
+	print "       output(screen, \"   sizeof(long):    %u\\n\",sizeof(long));";
+	print "       output(screen, \"   sizeof(uint8):   %u\\n\",sizeof(uint8));";
+	print "       output(screen, \"   sizeof(uint16):  %u\\n\",sizeof(uint16));";
+	print "       output(screen, \"   sizeof(uint32):  %u\\n\",sizeof(uint32));";
+	print "       output(screen, \"   sizeof(short):   %u\\n\",sizeof(short));";
+	print "       output(screen, \"   sizeof(void*):   %u\\n\",sizeof(void*));";
 
 	##################################################
 	# add code to give information about modules
