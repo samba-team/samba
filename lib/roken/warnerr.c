@@ -61,7 +61,7 @@ setprogname(const char *argv0)
 	return;
     p = strrchr(argv0, '/');
     if(p == NULL)
-	p = argv0;
+	p = (char *)argv0;
     else
 	p++;
     __progname = p;
