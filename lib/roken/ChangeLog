@@ -1,3 +1,7 @@
+2003-03-19  Love  <lha@stacken.kth.se>
+
+	* getarg.3: spelling, from <jmc@prioris.mini.pw.edu.pl>
+	
 2003-03-07  Love  <lha@stacken.kth.se>
 
 	* parse_bytes.c: use struct units instead of units

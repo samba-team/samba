@@ -1,5 +1,7 @@
 2003-03-19  Love Hörquist Åstrand <lha@it.su.se>
 
+	* kafs.3: spelling, from <jmc@prioris.mini.pw.edu.pl>
+	
 	* kafs.3: document the kafs_settoken functions write about the
 	krb5_appdefault option for kerberos 5 afs tokens fix prototypes
 	
