@@ -74,9 +74,12 @@ char *smb_readline(char *prompt, void (*callback)(void),
 
 	if (completion_fn) {
 		/* The callback prototype has changed slightly between
-		   different versions of Readline, so the same
-		   function works in all of them to date, but we get
-		   compiler warnings in some. */
+                   different versions of Readline, so the same function
+                   works in all of them to date, but we get compiler
+                   warnings in some.  NOTE: that not all versions of
+                   readline have rl_completion_func_t so attempting to cast
+                   the statement below to get rid of the warning will not
+                   compile for everyone. */
 		rl_attempted_completion_function = completion_fn;
 	}
 
