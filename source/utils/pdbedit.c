@@ -305,6 +305,8 @@ static int new_machine (char *machinename)
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST);
 	
+	pdb_set_group_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS);
+	
 	if (pdb_add_sam_account (sam_pwent)) {
 		print_user_info (name, True, False);
 	} else {

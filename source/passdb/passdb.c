@@ -173,7 +173,9 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
 	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
 	
+	/* let the backends set the rid!!
 	pdb_set_user_rid(*new_sam_acct, pdb_uid_to_user_rid(pwd->pw_uid));
+	-- simo */
 
 	/* call the mapping code here */
 	if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
@@ -397,6 +399,7 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
 	return (True);
 }
 
+#if 0 /* seem it is not used by anyone */
 /*******************************************************************
  Group and User RID username mapping function
  ********************************************************************/
@@ -416,7 +419,7 @@ BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
 
 	/* turn the unix UID into a Domain RID.  this is what the posix
 	   sub-system does (adds 1000 to the uid) */
-	*u_rid = pdb_uid_to_user_rid(pw->pw_uid);
+	*u_rid = fallback_pdb_uid_to_user_rid(pw->pw_uid);
 
 	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
 	/* map it ! */
@@ -427,12 +430,13 @@ BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
 
 	return True;
 }
+#endif /* seem it is not used by anyone */
 
 /*******************************************************************
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
 
-uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
+static uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
 {
 	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
 }
@@ -442,7 +446,7 @@ uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
  converts UNIX uid to an NT User RID.
  ********************************************************************/
 
-uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
+static uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
 {
 	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
 }
@@ -559,7 +563,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 				return True;
 			}
 			
-			uid = pdb_user_rid_to_uid(rid);
+			uid = fallback_pdb_user_rid_to_uid(rid);
 			pass = getpwuid_alloc(uid);
 			
 			*psid_name_use = SID_NAME_USER;
@@ -683,7 +687,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	pdb_free_sam(&sam_account);
 
 	if (!found && (pass = Get_Pwnam(user))) {
-		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
+		sid_append_rid( &local_sid, fallback_pdb_uid_to_user_rid(pass->pw_uid));
 		*psid_name_use = SID_NAME_USER;
 		pdb_free_sam(&sam_account);
 
@@ -745,9 +749,27 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	extern DOM_SID global_sam_sid;
+	struct passwd *pass;
+	SAM_ACCOUNT *sam_user;
 
 	sid_copy(psid, &global_sam_sid);
-	sid_append_rid(psid, pdb_uid_to_user_rid(uid));
+
+	if(!(pass = getpwuid_alloc(uid)))
+		return NULL;
+
+	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
+		return NULL;
+	
+	if (!pdb_getsampwnam(sam_user, pass->pw_name)) {
+		pdb_free_sam(&sam_user);
+		return NULL;
+	}
+
+	passwd_free(&pass);
+
+	sid_append_rid(psid, pdb_get_user_rid(sam_user));
+
+	pdb_free_sam(&sam_user);
 
 	return psid;
 }
@@ -764,6 +786,7 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	uint32 rid;
 	fstring str;
 	struct passwd *pass;
+	SAM_ACCOUNT *sam_user;
 
 	*name_type = SID_NAME_UNKNOWN;
 
@@ -780,7 +803,19 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	if (!sid_equal(&global_sam_sid, &dom_sid))
 		return False;
 
-	*puid = pdb_user_rid_to_uid(rid);
+	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
+		return False;
+	
+	if (!pdb_getsampwrid(sam_user, rid)) {
+		pdb_free_sam(&sam_user);
+		return False;
+	}
+	
+	*puid = pdb_get_uid(sam_user);
+	if (*puid == -1)
+		return False;
+
+	pdb_free_sam(&sam_user);
 
 	/*
 	 * Ensure this uid really does exist.
