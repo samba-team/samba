@@ -374,25 +374,25 @@
 #endif
 #endif
 
-#if HAVE_KRB5_H
+#ifdef HAVE_KRB5_H
 #include <krb5.h>
 #else
 #undef HAVE_KRB5
 #endif
 
-#if HAVE_GSSAPI_H
+#ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
 #endif
 
-#if HAVE_GSSAPI_GSSAPI_H
+#ifdef HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
 #endif
 
-#if HAVE_GSSAPI_GSSAPI_GENERIC_H
+#ifdef HAVE_GSSAPI_GSSAPI_GENERIC_H
 #include <gssapi/gssapi_generic.h>
 #endif
 
-#if HAVE_COM_ERR_H
+#ifdef HAVE_COM_ERR_H
 #include <com_err.h>
 #endif
 
