@@ -156,6 +156,7 @@ static int binary_net(int argc, const char **argv)
 	const char **argv_new;
 	TALLOC_CTX *mem_ctx;
 	struct net_context *ctx;
+	const char *domain;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -171,16 +172,6 @@ static int binary_net(int argc, const char **argv)
 #ifdef HAVE_SETBUFFER
 	setbuffer(stdout, NULL, 0);
 #endif
-
-	mem_ctx = talloc_init("net_context");
-	ctx = talloc_p(mem_ctx, struct net_context);
-	if (!ctx) {
-		d_printf("talloc_init(net_context) failed\n");
-		exit(1);
-	}
-
-	ZERO_STRUCTP(ctx);
-	ctx->mem_ctx = mem_ctx;
 
 	pc = poptGetContext("net", argc, (const char **) argv, long_options, 
 				POPT_CONTEXT_KEEP_FIRST);
@@ -212,6 +203,25 @@ static int binary_net(int argc, const char **argv)
 		d_printf("Usage: TODO\n");
 		return 1;
 	}
+
+	if (cmdline_auth_info.domain[0]) {
+		domain = cmdline_auth_info.domain;
+	} else {
+		domain = lp_workgroup();
+	}
+
+	mem_ctx = talloc_init("net_context");
+	ctx = talloc_p(mem_ctx, struct net_context);
+	if (!ctx) {
+		d_printf("talloc_init(net_context) failed\n");
+		exit(1);
+	}
+
+	ZERO_STRUCTP(ctx);
+	ctx->mem_ctx = mem_ctx;
+	ctx->user.account_name = talloc_strdup(ctx->mem_ctx, cmdline_auth_info.username);
+	ctx->user.domain_name = talloc_strdup(ctx->mem_ctx, domain);
+	ctx->user.password = talloc_strdup(ctx->mem_ctx, cmdline_auth_info.password);
 
 	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable, net_usage);
 
