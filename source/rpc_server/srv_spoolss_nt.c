@@ -4847,7 +4847,8 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 			get_called_name());
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
-
+	standard_sub_basic(remote_machine);
+	
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
