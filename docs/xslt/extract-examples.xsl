@@ -5,7 +5,7 @@ Extract examples out of DocBook/XML file
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:exsl="http://exslt.org/common"
-                xmlns:samba="http://samba.org/common"
+				xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"
 		version="1.1"
                 extension-element-prefixes="exsl">
 
