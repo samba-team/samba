@@ -309,6 +309,7 @@ struct smbc_server *smbc_server(char *server, char *share,
 
 	/* have to open a new connection */
 	if (!cli_initialise(&c) || !cli_connect(&c, server_n, &ip)) {
+		if (c.initialised) cli_shutdown(&c);
 		errno = ENOENT;
 		return NULL;
 	}
