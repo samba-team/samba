@@ -463,13 +463,14 @@ get_new_tickets(krb5_context context,
 	if (pk_use_dh == 1)
 	    flags |= 1;
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
+						 principal,
 						 pk_user_id,
 						 pk_x509_anchors,
 						 flags,
 						 NULL,
 						 NULL);
 	if (ret)
-	    krb5_err(context, 1, ret, "set_pkinit");
+	    krb5_err(context, 1, ret, "krb5_get_init_creds_opt_set_pkinit");
     }
 
     if (!addrs_flag) {
