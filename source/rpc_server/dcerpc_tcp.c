@@ -79,7 +79,7 @@ static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde,
 	NTSTATUS status;
 
 	status = dcesrv_output(r->dce_conn, fde, dcerpc_write_fn);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		/* TODO: destroy fd_event? */
 	}
 
