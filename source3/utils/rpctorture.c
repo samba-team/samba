@@ -97,6 +97,36 @@ static void rpcclient_stop(void)
 /****************************************************************************
   log in as an nt user, log out again. 
 ****************************************************************************/
+void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state *cli)
+{
+	int i;
+
+	/* establish connections.  nothing to stop these being re-established. */
+	rpcclient_connect(cli_info);
+
+	DEBUG(5,("rpcclient_connect: cli->fd:%d\n", cli->fd));
+	if (cli->fd <= 0)
+	{
+		fprintf(out_hnd, "warning: connection could not be established to %s<%02x>\n",
+		                 cli_info->dest_host, cli_info->name_type);
+		return;
+	}
+	
+	for (i = 0; i < num_ops; i++)
+	{
+		cmd_srv_enum_sess(cli_info);
+		cmd_srv_enum_shares(cli_info);
+		cmd_srv_enum_files(cli_info);
+		cmd_srv_enum_conn(cli_info);
+	}
+
+	rpcclient_stop();
+
+}
+
+/****************************************************************************
+  log in as an nt user, log out again. 
+****************************************************************************/
 void run_ntlogin_test(int num_ops, struct client_info *cli_info, struct cli_state *cli)
 {
 	pstring cmd;
@@ -508,6 +538,8 @@ enum client_action
 		safe_strcpy(password, pwd, sizeof(password));
 		pwd_make_lm_nt_16(&(smb_cli->pwd), password); /* generate 16 byte hashes */
 	}
+
+	create_procs(nprocs, numops, &cli_info, smb_cli, run_enums_test);
 
 	if (password[0] != 0)
 	{
