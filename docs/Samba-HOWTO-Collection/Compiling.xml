@@ -227,10 +227,22 @@ example of what you would not want to see would be:
 <sect1>
 	<title>Building the Binaries</title>
 	
+	<para>
+	<indexterm><primary>autogen.sh</primary></indexterm>
+	After the source tarball has been unpacked, the next step ivolves
+	configuration to match Samba to your operating system platform.
+	First it is necessary to build the <command>configure</command> script.
+	This can be done by executing the following:
+<scree>
+&rootprompt; cd samba-3.0.0
+&rootprompt; ./autogen.sh
+</screen>
+	</para>
+	
 
 	<para>
-<indexterm><primary>configure</primary></indexterm>
-		To build the binaries, first run the program <userinput>./configure
+	<indexterm><primary>configure</primary></indexterm>
+	To build the binaries, run the program <userinput>./configure
 	</userinput> in the source directory. This should automatically 
 	configure Samba for your operating system. If you have unusual 
 	needs, then you may wish to run</para>
