@@ -1182,7 +1182,7 @@ if test "$enable_shared" = "yes"; then
 			LDSHFLAGS=""
 			;;
 
-		darwin*)   AC_DEFINE(DARWINOS,1,[Whether the host os is Darwin/MacOSX])
+		*darwin*)   AC_DEFINE(DARWINOS,1,[Whether the host os is Darwin/MacOSX])
 			BLDSHARED="true"
 			LDSHFLAGS="-bundle -flat_namespace -undefined suppress"
 			SHLIBEXT="dylib"
