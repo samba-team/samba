@@ -545,7 +545,7 @@ an Active Directory environment.
 <!ENTITY problems SYSTEM "../howto/Problems.xml">
 <!ENTITY unicode SYSTEM "../howto/Unicode.xml">
 <!ENTITY attributions SYSTEM "../howto/attributions.xml">
-<!ENTITY attributions-dev SYSTEM "../devdoc/attributions.xml">
+<!ENTITY attributions-dev SYSTEM "../devel/attributions.xml">
 <!ENTITY glossary SYSTEM "../howto/glossary.xml">
 <!ENTITY foreword-tridge SYSTEM "../howto/foreword-tridge.xml">
 
