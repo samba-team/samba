@@ -629,23 +629,6 @@ static BOOL resolve_hosts(const char *name,
 }
 
 /********************************************************
- Resolve a name into an IP address. Use this function if
- the string is either an IP address, DNS or host name
- or NetBIOS name. This uses the name switch in the
- smb.conf to determine the order of name resolution.
-*********************************************************/
-BOOL is_ip_address(const char *name)
-{
-  int i;
-  for (i=0; name[i]; i++)
-    if (!(isdigit((int)name[i]) || name[i] == '.'))
-        return False;
-
-  return True;
-}
-
-
-/********************************************************
  Internal interface to resolve a name into an IP address.
  Use this function if the string is either an IP address, DNS
  or host name or NetBIOS name. This uses the name switch in the
@@ -775,7 +758,7 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
                 ret = resolve_name(dest_host, ip, 0x20);
         }
         
-        if (is_ip_address(dest_host))
+        if (is_ipaddress(dest_host))
         {
                 fstrcpy(dest_host, "*SMBSERVER");
         }
