@@ -380,7 +380,7 @@ krb5_cc_destroy(krb5_context context,
 
   ret = erase_file(f);
   
-  krb5_free_ccache(id);
+  krb5_free_ccache(context, id);
   return ret;
 }
 
