@@ -71,9 +71,6 @@
 #define FALSE           0
 #define NEWLINE         '\n'
 
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN  256
-#endif
 #define MAXUSERNAMELEN  65
 #define MAXDROPLEN      64
 #define MAXLINELEN      1024
@@ -190,7 +187,7 @@ typedef struct  {                               /*  POP parameter block */
     int                 debug;                  /*  Debugging requested */
     char            *   myname;                 /*  The name of this POP 
                                                     daemon program */
-    char                myhost[MAXHOSTNAMELEN]; /*  The name of our host 
+    char                myhost[MaxHostNameLen]; /*  The name of our host 
                                                     computer */
     char            *   client;                 /*  Canonical name of client 
                                                     computer */

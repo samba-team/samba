@@ -48,7 +48,7 @@ RCSID("$Id$");
 
 #ifdef	NEWINIT
 #include <initreq.h>
-int	utmp_len = MAXHOSTNAMELEN;	/* sizeof(init_request.host) */
+int	utmp_len = MaxHostNameLen;	/* sizeof(init_request.host) */
 #else	/* NEWINIT*/
 # ifdef	HAVE_UTMPX_H
 # include <utmpx.h>

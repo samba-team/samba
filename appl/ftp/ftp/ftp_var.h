@@ -72,8 +72,8 @@ extern int	passivemode;		/* passive mode enabled */
 extern char	*altarg;		/* argv[1] with no shell-like preprocessing  */
 extern char	ntin[17];		/* input translation table */
 extern char	ntout[17];		/* output translation table */
-extern char	mapin[MAXPATHLEN];	/* input map template */
-extern char	mapout[MAXPATHLEN];	/* output map template */
+extern char	mapin[MaxPathLen];	/* input map template */
+extern char	mapout[MaxPathLen];	/* output map template */
 extern char	typename[32];		/* name of file transfer type */
 extern int	type;			/* requested file transfer type */
 extern int	curtype;		/* current file transfer type */

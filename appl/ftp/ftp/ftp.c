@@ -1269,7 +1269,7 @@ pswitch(int flag)
 	sighand oldintr;
 	static struct comvars {
 		int connect;
-		char name[MAXHOSTNAMELEN];
+		char name[MaxHostNameLen];
 		struct sockaddr_in mctl;
 		struct sockaddr_in hctl;
 		FILE *in;
@@ -1284,8 +1284,8 @@ pswitch(int flag)
 		char nti[17];
 		char nto[17];
 		int mapflg;
-		char mi[MAXPATHLEN];
-		char mo[MAXPATHLEN];
+		char mi[MaxPathLen];
+		char mo[MaxPathLen];
 	} proxstruct, tmpstruct;
 	struct comvars *ip, *op;
 
@@ -1342,10 +1342,10 @@ pswitch(int flag)
 	(void) strcpy(ntout, op->nto);
 	ip->mapflg = mapflag;
 	mapflag = op->mapflg;
-	(void) strncpy(ip->mi, mapin, MAXPATHLEN - 1);
+	(void) strncpy(ip->mi, mapin, MaxPathLen - 1);
 	(ip->mi)[strlen(ip->mi)] = '\0';
 	(void) strcpy(mapin, op->mi);
-	(void) strncpy(ip->mo, mapout, MAXPATHLEN - 1);
+	(void) strncpy(ip->mo, mapout, MaxPathLen - 1);
 	(ip->mo)[strlen(ip->mo)] = '\0';
 	(void) strcpy(mapout, op->mo);
 	(void) signal(SIGINT, oldintr);
@@ -1508,7 +1508,7 @@ reset(int argc, char **argv)
 char *
 gunique(char *local)
 {
-	static char new[MAXPATHLEN];
+	static char new[MaxPathLen];
 	char *cp = strrchr(local, '/');
 	int d, count=0;
 	char ext = '1';

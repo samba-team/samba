@@ -137,8 +137,8 @@ off_t	byte_count;
 #endif
 int	defumask = CMASK;		/* default umask value */
 char	tmpline[10240];
-char	hostname[MAXHOSTNAMELEN];
-char	remotehost[MAXHOSTNAMELEN];
+char	hostname[MaxHostNameLen];
+char	remotehost[MaxHostNameLen];
 static char ttyline[20];
 char	*tty = ttyline;		/* for klogin */
 
@@ -206,7 +206,7 @@ static struct passwd * sk_getpwnam (char *);
 static char *
 curdir(void)
 {
-	static char path[MAXPATHLEN+1+1];	/* path + '/' + '\0' */
+	static char path[MaxPathLen+1+1];	/* path + '/' + '\0' */
 
 	if (getcwd(path, sizeof(path)-2) == NULL)
 		return ("");
@@ -1447,7 +1447,7 @@ removedir(char *name)
 void
 pwd(void)
 {
-    char path[MAXPATHLEN + 1];
+    char path[MaxPathLen + 1];
     char *ret;
 
     /* SunOS has a broken getcwd that does popen(pwd) (!!!), this
@@ -1624,7 +1624,7 @@ pasv_error:
 static char *
 gunique(char *local)
 {
-	static char new[MAXPATHLEN];
+	static char new[MaxPathLen];
 	struct stat st;
 	int count;
 	char *cp;
@@ -1740,7 +1740,7 @@ send_file_list(char *whichf)
 			continue;
 
 		while ((dir = readdir(dirp)) != NULL) {
-			char nbuf[MAXPATHLEN];
+			char nbuf[MaxPathLen];
 
 			if (!strcmp(dir->d_name, "."))
 				continue;

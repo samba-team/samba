@@ -72,8 +72,8 @@ RCSID("$Id$");
 #include <netinet/ip.h>
 
 
-#ifndef	MAXHOSTNAMELEN
-#define	MAXHOSTNAMELEN 64
+#ifndef	MaxHostNameLen
+#define	MaxHostNameLen 64
 #endif
 
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
@@ -81,7 +81,7 @@ int tos = -1;
 #endif	/* defined(IPPROTO_IP) && defined(IP_TOS) */
 
 char	*hostname;
-static char _hostname[MAXHOSTNAMELEN];
+static char _hostname[MaxHostNameLen];
 
 extern char *getenv();
 

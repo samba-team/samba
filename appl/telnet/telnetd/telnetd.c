@@ -789,13 +789,10 @@ terminaltypeok(s)
     return(1);
 }
 
-#ifndef	MAXHOSTNAMELEN
-#define	MAXHOSTNAMELEN 64
-#endif	/* MAXHOSTNAMELEN */
 
 char *hostname;
-char host_name[MAXHOSTNAMELEN];
-char remote_host_name[MAXHOSTNAMELEN];
+char host_name[MaxHostNameLen];
+char remote_host_name[MaxHostNameLen];
 
 #ifndef	convex
 extern void telnet P((int, int));

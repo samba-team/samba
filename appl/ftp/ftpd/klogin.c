@@ -16,7 +16,7 @@ klogin(char *name, char *password)
     int kerror;
     KTEXT_ST tkt;
     AUTH_DAT ad;
-    char hostname[MAXHOSTNAMELEN];
+    char hostname[MaxHostNameLen];
     char realm[REALM_SZ];
     
     char *phost;

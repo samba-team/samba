@@ -8,7 +8,7 @@ RCSID("$Id$");
 char*
 getcwd(char *path, int size)
 {
-    char xxx[MAXPATHLEN];
+    char xxx[MaxPathLen];
     char *ret;
     ret = getwd(xxx);
     if(ret)

@@ -423,7 +423,7 @@ mput(int argc, char **argv)
 	oldintr = signal(SIGINT, mabort);
 	(void) setjmp(jabort);
 	if (proxy) {
-		char *cp, *tp2, tmpbuf[MAXPATHLEN];
+		char *cp, *tp2, tmpbuf[MaxPathLen];
 
 		while ((cp = remglob(argv,0)) != NULL) {
 			if (*cp == 0) {
@@ -566,7 +566,7 @@ usage:
 		return (0);
 	}
 	if (loc && mcase) {
-		char *tp = argv[1], *tp2, tmpbuf[MAXPATHLEN];
+		char *tp = argv[1], *tp2, tmpbuf[MaxPathLen];
 
 		while (*tp && !islower(*tp)) {
 			tp++;
@@ -672,7 +672,7 @@ mget(int argc, char **argv)
 {
 	sighand oldintr;
 	int ch, ointer;
-	char *cp, *tp, *tp2, tmpbuf[MAXPATHLEN];
+	char *cp, *tp, *tp2, tmpbuf[MaxPathLen];
 
 	if (argc < 2 && !another(&argc, &argv, "remote-files")) {
 		printf("usage: %s remote-files\n", argv[0]);
@@ -722,7 +722,7 @@ char *
 remglob(char **argv, int doswitch)
 {
 	char temp[16];
-	static char buf[MAXPATHLEN];
+	static char buf[MaxPathLen];
 	static FILE *ftemp = NULL;
 	static char **args;
 	int oldverbose, oldhash;
@@ -990,7 +990,7 @@ cd(int argc, char **argv)
 void
 lcd(int argc, char **argv)
 {
-	char buf[MAXPATHLEN];
+	char buf[MaxPathLen];
 
 	if (argc < 2)
 		argc++, argv[1] = home;
@@ -1656,7 +1656,7 @@ setntrans(int argc, char **argv)
 char *
 dotrans(char *name)
 {
-	static char new[MAXPATHLEN];
+	static char new[MaxPathLen];
 	char *cp1, *cp2 = new;
 	int i, ostop, found;
 
@@ -1707,16 +1707,16 @@ setnmap(int argc, char **argv)
 		cp = strchr(altarg, ' ');
 	}
 	*cp = '\0';
-	(void) strncpy(mapin, altarg, MAXPATHLEN - 1);
+	(void) strncpy(mapin, altarg, MaxPathLen - 1);
 	while (*++cp == ' ')
 		continue;
-	(void) strncpy(mapout, cp, MAXPATHLEN - 1);
+	(void) strncpy(mapout, cp, MaxPathLen - 1);
 }
 
 char *
 domap(char *name)
 {
-	static char new[MAXPATHLEN];
+	static char new[MaxPathLen];
 	char *cp1 = name, *cp2 = mapin;
 	char *tp[9], *te[9];
 	int i, toks[9], toknum = 0, match = 1;

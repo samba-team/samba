@@ -77,8 +77,8 @@ __ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser, const char *ruser)
 {
 	register char *user, *p;
 	int ch;
-	char buf[MAXHOSTNAMELEN + 128];		/* host + login */
-	char hname[MAXHOSTNAMELEN];
+	char buf[MaxHostNameLen + 128];		/* host + login */
+	char hname[MaxHostNameLen];
 	struct hostent *hp;
 	/* Presumed guilty until proven innocent. */
 	int userok = 0, hostok = 0;
