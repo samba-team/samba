@@ -22,6 +22,8 @@ if {$output != ""} {
 set output [util_start "getent" "passwd" ""]
 set got_entries 0
 
+verbose $output
+
 foreach {line} [split $output "\n"] {
 
     # Process user
@@ -41,10 +43,15 @@ foreach {line} [split $output "\n"] {
         # Test lookup of uid succeeds
 
         set output [util_start "$srcdir/$subdir/getpwuid" "$uid" ""]
+
+	verbose $output
+
+	set test_desc "getpwuid $uid ($user)"
+
         if {[regexp "PASS:" $output]} {
-            pass "getpwuid $uid ($user)"
+            pass $test_desc
         } else {
-            fail "getpwuid $uid ($user)"
+            fail $test_desc
         }            
     }
 }
