@@ -2855,7 +2855,73 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 	else
 		AC_MSG_RESULT(no);
 	fi
+	;;
 
+	*solaris*)
+		LIBS="$LIBS -lsendfile"
+		AC_CACHE_CHECK([for solaris sendfilev64 support],samba_cv_HAVE_SENDFILEV64,[
+		AC_TRY_LINK([\
+#include <sys/sendfile.h>],
+[\
+        int sfvcnt;
+        size_t xferred;
+        struct sendfilevec vec[2];
+	ssize_t nwritten;
+
+	sfvcnt = 2;
+
+	vec[0].sfv_fd = SFV_FD_SELF;
+	vec[0].sfv_flag = 0;
+	vec[0].sfv_off = 0;
+	vec[0].sfv_len = 0;
+
+	vec[1].sfv_fd = 0;
+	vec[1].sfv_flag = 0;
+	vec[1].sfv_off = 0;
+	vec[1].sfv_len = 0;
+	nwritten = sendfilev64(tofd, vec, sfvcnt, &xferred);
+],
+samba_cv_HAVE_SENDFILEV64=yes,samba_cv_HAVE_SENDFILEV64=no)])
+
+	if test x"$samba_cv_HAVE_SENDFILEV64" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILEV64)
+		AC_DEFINE(SOLARIS_SENDFILE_API)
+		AC_DEFINE(WITH_SENDFILE)
+	else
+		AC_MSG_RESULT(no);
+	fi
+
+		AC_CACHE_CHECK([for solaris sendfilev support],samba_cv_HAVE_SENDFILEV,[
+		AC_TRY_LINK([\
+#include <sys/sendfile.h>],
+[\
+        int sfvcnt;
+        size_t xferred;
+        struct sendfilevec vec[2];
+	ssize_t nwritten;
+
+	sfvcnt = 2;
+
+	vec[0].sfv_fd = SFV_FD_SELF;
+	vec[0].sfv_flag = 0;
+	vec[0].sfv_off = 0;
+	vec[0].sfv_len = 0;
+
+	vec[1].sfv_fd = 0;
+	vec[1].sfv_flag = 0;
+	vec[1].sfv_off = 0;
+	vec[1].sfv_len = 0;
+	nwritten = sendfilev(tofd, vec, sfvcnt, &xferred);
+],
+samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
+
+	if test x"$samba_cv_HAVE_SENDFILEV" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILEV)
+		AC_DEFINE(SOLARIS_SENDFILE_API)
+		AC_DEFINE(WITH_SENDFILE)
+	else
+		AC_MSG_RESULT(no);
+	fi
 	;;
 
 	*)
