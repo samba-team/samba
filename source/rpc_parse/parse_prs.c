@@ -37,6 +37,16 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 }
 
 /*******************************************************************
+ debug a parse structure
+ ********************************************************************/
+void prs_debug_out(prs_struct *ps, int level)
+{
+	DEBUG(level,("ps: io %s align %d offset %d err %d data %p len %d\n",
+		BOOLSTR(ps->io), ps->align, ps->offset, ps->error, ps->data,
+		ps->data != NULL ? mem_buf_len(ps->data) : 0));
+}
+
+/*******************************************************************
  initialise a parse structure
  ********************************************************************/
 void prs_init(prs_struct *ps, uint32 size,

@@ -83,6 +83,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	int i;
 	pipes_struct *p;
 	static int next_pipe;
+	struct msrpc_state *m = NULL;
 
 	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
@@ -108,6 +109,16 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
 	}
 
+	if (strequal(pipe_name, "lsarpc"))
+	{
+		m = msrpc_use_add(pipe_name, NULL, False);
+		if (m == NULL)
+		{
+			DEBUG(5,("open pipes: msrpc redirect failed\n"));
+			return NULL;
+		}
+	}
+
 	p = (pipes_struct *)malloc(sizeof(*p));
 	if (!p) return NULL;
 
@@ -120,6 +131,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	pipes_open++;
 
 	p->pnum = i;
+	p->m = m;
 
 	p->open = True;
 	p->device_state = 0;
@@ -358,6 +370,19 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		 p->name, p->pnum, pipes_open));  
 
 	DLIST_REMOVE(Pipes, p);
+
+	if (p->m != NULL)
+	{
+		DEBUG(4,("closed msrpc redirect: "));
+		if (msrpc_use_del(p->m->pipe_name, &p->m->usr, False, NULL))
+		{
+			DEBUG(4,("OK\n"));
+		}
+		else
+		{
+			DEBUG(4,("FAILED\n"));
+		}
+	}
 
 	ZERO_STRUCTP(p);
 

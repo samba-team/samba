@@ -254,8 +254,9 @@ void start_msrpc_agent(char *pipe_name)
 		0
 	};
 	
-	CatchChild();
-
-	start_agent(&va);
+	if (fork() == 0)
+	{
+		start_agent(&va);
+	}
 }
 

@@ -37,6 +37,7 @@ INSTALLPERMS = 0755
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
 SMBLOGFILE = $(VARDIR)/log.smb
+LSARPCLOGFILE = $(VARDIR)/log.lsarpc
 NMBLOGFILE = $(VARDIR)/log.nmb
 CONFIGFILE = $(LIBDIR)/smb.conf
 LMHOSTSFILE = $(LIBDIR)/lmhosts
@@ -77,14 +78,21 @@ PASSWD_FLAGS = \
 		-DSMB_PASSGRP_FILE=\"$(SMB_PASSGRP_FILE)\"       \
 		-DSMB_GROUP_FILE=\"$(SMB_GROUP_FILE)\"           \
 		-DSMB_ALIAS_FILE=\"$(SMB_ALIAS_FILE)\" 
-FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
+FLAGS1 = $(CFLAGS)	\
+		-Iinclude -I$(srcdir)/include \
+		-I$(srcdir)/ubiqx \
+		-I$(srcdir)/smbwrapper \
+		$(CPPFLAGS) \
+		-DLSARPCLOGFILE=\"$(LSARPCLOGFILE)\" \
+		-DSMBLOGFILE=\"$(SMBLOGFILE)\" \
+		-DNMBLOGFILE=\"$(NMBLOGFILE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" -DFORMSFILE=\"$(FORMSFILE)\" -DNTDRIVERSDIR=\"$(NTDRIVERSDIR)\"
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
 FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
 
-SPROGS = bin/smbd bin/nmbd bin/swat
+SPROGS = bin/smbd bin/lsarpcd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
 PROGS3 = @WRAP@ @WRAP32@
@@ -107,6 +115,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/doscalls.o lib/time.o \
 		  lib/ufc.o lib/util.o lib/genrand.o lib/username.o \
+		lib/vuser.o \
 		lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/util_sid.o lib/snprintf.o \
 		lib/util_str.o lib/util_unistr.o \
@@ -114,7 +123,8 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/util_sock.o lib/unix_sec_ctxt.o \
 		lib/util_array.o \
 		lib/vagent.o \
-		lib/util_hnd.o
+		lib/util_hnd.o \
+		lib/passcheck.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
@@ -126,19 +136,23 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/passchange.o 
 
-RPC_SERVER_OBJ = \
+RPC_SRVUTIL_OBJ = \
+		rpc_server/srv_pipe_hnd.o \
+		rpc_server/srv_lookup.o \
+		rpc_server/srv_pipe.o 
+
+RPC_SERVER_OBJ1 = \
 		rpc_server/srv_lsa.o \
 		rpc_server/srv_netlog.o \
-		rpc_server/srv_pipe_hnd.o \
 		rpc_server/srv_reg.o \
 		rpc_server/srv_samr.o \
 		rpc_server/srv_srvsvc.o \
 		rpc_server/srv_svcctl.o \
-		rpc_server/srv_pipe.o \
-		rpc_server/srv_lookup.o \
 		rpc_server/srv_wkssvc.o \
 		rpc_server/srv_brs.o \
 		rpc_server/srv_spoolss.o
+
+RPC_SERVER_OBJ = $(RPC_SERVER_OBJ1) $(RPC_SRVUTIL_OBJ)
 
 RPC_PARSE_OBJ1 = rpc_parse/parse_lsa.o \
                 rpc_parse/parse_net.o \
@@ -204,15 +218,27 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o smbd/vfs.o \
-	    smbd/vfs-wrap.o printing/nt_printing.o smbd/dfs.o
+	    smbd/vfs-wrap.o printing/nt_printing.o smbd/dfs.o \
+		smbd/challenge.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
+
+LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
+		lsarpcd/lsarpcd_process.o \
+		rpc_server/srv_lsa.o \
+		smbd/uid.o
 
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) 
 
+
+LSARPCD_OBJ = $(LSARPCD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
+		$(UBIQX_OBJ) \
+           $(RPC_SRVUTIL_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -331,7 +357,7 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
 		$(PASSDB_OBJ) 
 
-PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
+PROTO_OBJ = $(LSARPCD_OBJ) $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
 	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
@@ -420,6 +446,10 @@ bin/.dummy:
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LIBS) 
+
+bin/lsarpcd: $(LSARPCD_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LSARPCD_OBJ) $(LDFLAGS) $(LIBS) 
 
 bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@

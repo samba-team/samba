@@ -287,6 +287,8 @@ void start_msrpc_agent(char *pipe_name);
 /*The following definitions come from  lib/msrpc-client.c  */
 
 BOOL msrpc_receive(struct msrpc_state *msrpc);
+BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps);
+BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps);
 BOOL msrpc_send(struct msrpc_state *msrpc, BOOL show);
 BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
 void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_credentials *usr);
@@ -316,6 +318,18 @@ void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);
 /*The following definitions come from  lib/netmask.c  */
 
 int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
+
+/*The following definitions come from  lib/passcheck.c  */
+
+BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
+				const char *user, const char *domain,
+				uchar *lm_pass, size_t lm_pwd_len,
+				uchar *nt_pass, size_t nt_pwd_len,
+				uchar sess_key[16]);
+BOOL pass_check_smb(struct smb_passwd *smb_pass, char *domain, uchar *chal,
+		uchar *lm_pwd, size_t lm_pwd_len,
+		uchar *nt_pwd, size_t nt_pwd_len,
+		struct passwd *pwd, uchar user_sess_key[16]);
 
 /*The following definitions come from  lib/pidfile.c  */
 
@@ -429,6 +443,7 @@ char *uidtoname(uid_t uid);
 char *get_home_dir(char *user);
 BOOL map_username(char *user);
 const struct passwd *Get_Pwnam(char *user,BOOL allow_change);
+BOOL user_ok(char *user,int snum);
 BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  lib/util.c  */
@@ -715,6 +730,13 @@ void unistr2_free(UNISTR2 *name);
 void init_sock_redir(struct vagent_ops*va);
 void free_sock_redir(struct vagent_ops*va);
 void start_agent(struct vagent_ops *va);
+
+/*The following definitions come from  lib/vuser.c  */
+
+user_struct *get_valid_user_struct(uint16 vuid);
+void invalidate_vuid(uint16 vuid);
+char *validated_username(uint16 vuid);
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16]);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -1015,6 +1037,17 @@ struct shmem_ops *smb_shm_open(int ronly);
 /*The following definitions come from  locking/shmem_sysv.c  */
 
 struct shmem_ops *sysv_shm_open(int ronly);
+
+/*The following definitions come from  lsarpcd/lsarpcd.c  */
+
+BOOL reload_services(BOOL test);
+void exit_server(char *reason);
+
+/*The following definitions come from  lsarpcd/lsarpcd_process.c  */
+
+BOOL receive_next_smb(char *inbuf, int bufsize, int timeout);
+void process_smb(char *inbuf, char *outbuf);
+void lsarpcd_process(void);
 
 /*The following definitions come from  mem_man/mem_man.c  */
 
@@ -2697,6 +2730,7 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
+void prs_debug_out(prs_struct *ps, int level);
 void prs_init(prs_struct *ps, uint32 size,
 				uint8 align, uint32 margin,
 				BOOL io);
@@ -3622,6 +3656,10 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 
 BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end);
+void close_msrpc_command_processor(void);
+void add_msrpc_command_processor(char* pipe_name,
+				char* process_name,
+				BOOL (*fn) (pipes_struct *, prs_struct *));
 BOOL rpc_command(pipes_struct *p, prs_struct *pd);
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
 				prs_struct *data);
@@ -3977,6 +4015,12 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp);
 void remove_pending_lock_requests_by_mid(int mid);
 void process_blocking_lock_queue(time_t t);
 
+/*The following definitions come from  smbd/challenge.c  */
+
+void generate_next_challenge(char *challenge);
+BOOL set_challenge(unsigned char *challenge);
+BOOL last_challenge(unsigned char *challenge);
+
 /*The following definitions come from  smbd/chgpasswd.c  */
 
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
@@ -4181,25 +4225,9 @@ void check_kernel_oplocks(void);
 
 /*The following definitions come from  smbd/password.c  */
 
-void generate_next_challenge(char *challenge);
-BOOL set_challenge(unsigned char *challenge);
-user_struct *get_valid_user_struct(uint16 vuid);
-void invalidate_vuid(uint16 vuid);
-char *validated_username(uint16 vuid);
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16]);
 void add_session_user(char *user);
-BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
-				const char *user, const char *domain,
-				uchar *lm_pass, size_t lm_pwd_len,
-				uchar *nt_pass, size_t nt_pwd_len,
-				uchar sess_key[16]);
-BOOL pass_check_smb(struct smb_passwd *smb_pass, char *domain, uchar *chal,
-		uchar *lm_pwd, size_t lm_pwd_len,
-		uchar *nt_pwd, size_t nt_pwd_len,
-		struct passwd *pwd, uchar user_sess_key[16]);
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
 		uchar user_sess_key[16]);
-BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
 BOOL check_hosts_equiv(char *user);

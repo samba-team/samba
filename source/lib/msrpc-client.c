@@ -37,6 +37,54 @@ BOOL msrpc_receive(struct msrpc_state *msrpc)
 /****************************************************************************
   send an smb to a fd and re-establish if necessary
 ****************************************************************************/
+BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps)
+{
+	size_t len = mem_buf_len(ps->data);
+
+	_smb_setlen(msrpc->outbuf, len);
+	mem_buf_copy(&msrpc->outbuf[4], ps->data, 0, len);
+
+	if (msrpc_send(msrpc, True))
+	{
+		prs_mem_free(ps);
+		return True;
+	}
+	return False;
+}
+
+/****************************************************************************
+  receive msrpc packet
+****************************************************************************/
+BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps)
+{
+	int len;
+	char *data;
+
+	if (!msrpc_receive(msrpc))
+	{
+		return False;
+	}
+
+	len = smb_len(msrpc->inbuf);
+
+	dump_data(10, msrpc->inbuf, len+4);
+
+	prs_init(ps, len, 4, 0, False);
+	ps->offset = len;
+	data = mem_data(&ps->data, 0);
+	if (data == NULL || len <= 0)
+	{
+		return False;
+	}
+
+	memcpy(data, smb_base(msrpc->inbuf), len);
+
+	return True;
+}
+
+/****************************************************************************
+  send an smb to a fd and re-establish if necessary
+****************************************************************************/
 BOOL msrpc_send(struct msrpc_state *msrpc, BOOL show)
 {
 	size_t len;
@@ -61,8 +109,6 @@ BOOL msrpc_send(struct msrpc_state *msrpc, BOOL show)
 	
 	return True;
 }
-
-
 
 /****************************************************************************
 open the msrpcent sockets
@@ -115,7 +161,7 @@ void msrpc_sockopt(struct msrpc_state *msrpc, char *options)
 }
 
 
-static int msrpc_init_redirect(struct msrpc_state *msrpc,
+static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 				const char* pipe_name, 
 				const struct user_credentials *usr)
 {
@@ -135,7 +181,7 @@ static int msrpc_init_redirect(struct msrpc_state *msrpc,
 
 	if (sock < 0)
 	{
-		return sock;
+		return False;
 	}
 
 	ZERO_STRUCT(data);
@@ -196,7 +242,7 @@ static int msrpc_init_redirect(struct msrpc_state *msrpc,
 	msrpc->fd = sock;
 	msrpc->usr.reuse = False;
 
-	return sock;
+	return True;
 }
 
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,

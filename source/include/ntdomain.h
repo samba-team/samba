@@ -74,6 +74,8 @@ typedef struct pipes_struct
 	fstring name;
 	fstring pipe_srv_name;
 
+	struct msrpc_state *m;
+
 	prs_struct rhdr; /* output header */
 	prs_struct rfault; /* fault */
 	prs_struct rdata; /* output data */
