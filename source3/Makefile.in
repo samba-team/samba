@@ -122,7 +122,7 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
 	  lib/md5.o lib/hmacmd5.o lib/iconv.o lib/smbpasswd.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
-	  intl/lang_tdb.o $(TDB_OBJ) 
+	  intl/lang_tdb.o lib/account_pol.o $(TDB_OBJ) 
 
 READLINE_OBJ = lib/readline.o
 

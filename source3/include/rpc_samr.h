@@ -481,13 +481,10 @@ typedef struct q_samr_query_domain_info
 
 typedef struct sam_unknown_info_3_info
 {
-	uint32 unknown_0; /* 0x0000 0000 */
-	uint32 unknown_1; 
-	
+	NTTIME logout;	
 	/* 0x8000 0000 */ /* DON'T forcibly disconnect remote users from server when logon hours expire*/
 
 	/* 0x0000 0000 */ /* forcibly disconnect remote users from server when logon hours expire*/
-
 
 } SAM_UNK_INFO_3;
 

@@ -166,6 +166,9 @@ BOOL init_group_mapping(void)
 	}
 	tdb_unlock_bystring(tdb, vstring);
 
+	/* write a list of default groups */
+	if(!default_group_mapping())
+		return False;
 
 	return True;
 }

@@ -1907,53 +1907,84 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR_R_QUERY_DOMAIN_INFO *r_u)
 {
-    SAM_UNK_CTR *ctr;
+	SAM_UNK_CTR *ctr;
+	uint32 min_pass_len,pass_hist,flag;
+	time_t u_expire, u_min_age;
+	NTTIME nt_expire, nt_min_age;
+
+	time_t u_lock_duration, u_reset_time;
+	NTTIME nt_lock_duration, nt_reset_time;
+	uint32 lockout;
+	
+	time_t u_logout;
+	NTTIME nt_logout;
+
 
 	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-    ZERO_STRUCTP(ctr);
+	ZERO_STRUCTP(ctr);
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 
-    /* find the policy handle.  open a policy on it. */
-    if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
-        return NT_STATUS_INVALID_HANDLE;
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
 
-    switch (q_u->switch_value) {
-        case 0x01:
-            init_unk_info1(&ctr->info.inf1);
-            break;
-        case 0x02:
+	switch (q_u->switch_value) {
+		case 0x01:
+			account_policy_get(AP_MIN_PASSWORD_LEN, &min_pass_len);
+			account_policy_get(AP_PASSWORD_HISTORY, &pass_hist);
+			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &flag);
+			account_policy_get(AP_MAX_PASSWORD_AGE, (int *)&u_expire);
+			account_policy_get(AP_MIN_PASSWORD_AGE, (int *)&u_min_age);
+
+			unix_to_nt_time_abs(&nt_expire, u_expire);
+			unix_to_nt_time_abs(&nt_min_age, u_min_age);
+
+			init_unk_info1(&ctr->info.inf1, (uint16)min_pass_len, (uint16)pass_hist, 
+			               flag, nt_expire, nt_min_age);
+			break;
+		case 0x02:
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-            init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
-            break;
-        case 0x03:
-            init_unk_info3(&ctr->info.inf3);
-            break;
-        case 0x05:
-            init_unk_info5(&ctr->info.inf5, global_myname);
-            break;
-        case 0x06:
-            init_unk_info6(&ctr->info.inf6);
-            break;
-        case 0x07:
-            init_unk_info7(&ctr->info.inf7);
-            break;
-        case 0x0c:
-            init_unk_info12(&ctr->info.inf12);
-            break;
-        default:
-            return NT_STATUS_INVALID_INFO_CLASS;
-    }
+			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
+			break;
+		case 0x03:
+			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
+			unix_to_nt_time_abs(&nt_logout, u_logout);
+			
+			init_unk_info3(&ctr->info.inf3, nt_logout);
+			break;
+		case 0x05:
+			init_unk_info5(&ctr->info.inf5, global_myname);
+			break;
+		case 0x06:
+			init_unk_info6(&ctr->info.inf6);
+			break;
+		case 0x07:
+			init_unk_info7(&ctr->info.inf7);
+			break;
+		case 0x0c:
+			account_policy_get(AP_LOCK_ACCOUNT_DURATION, (int *)&u_lock_duration);
+			account_policy_get(AP_RESET_COUNT_TIME, (int *)&u_reset_time);
+			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &lockout);
+	
+			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
+			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);
+	
+            		init_unk_info12(&ctr->info.inf12, nt_lock_duration, nt_reset_time, (uint16)lockout);
+            		break;
+        	default:
+            		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
-    init_samr_r_query_dom_info(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
+	init_samr_r_query_dom_info(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
 
-    DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -3460,53 +3491,83 @@ NTSTATUS _samr_unknown_2d(pipes_struct *p, SAMR_Q_UNKNOWN_2D *q_u, SAMR_R_UNKNOW
 
 NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOWN_2E *r_u)
 {
-    SAM_UNK_CTR *ctr;
+	SAM_UNK_CTR *ctr;
+	uint32 min_pass_len,pass_hist,flag;
+	time_t u_expire, u_min_age;
+	NTTIME nt_expire, nt_min_age;
+
+	time_t u_lock_duration, u_reset_time;
+	NTTIME nt_lock_duration, nt_reset_time;
+	uint32 lockout;
+	
+	time_t u_logout;
+	NTTIME nt_logout;
 
 	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-    ZERO_STRUCTP(ctr);
+	ZERO_STRUCTP(ctr);
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
+	DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
 
-    /* find the policy handle.  open a policy on it. */
-    if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
-        return NT_STATUS_INVALID_HANDLE;
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
 
-    switch (q_u->switch_value) {
-        case 0x01:
-            init_unk_info1(&ctr->info.inf1);
-            break;
-        case 0x02:
+	switch (q_u->switch_value) {
+		case 0x01:
+			account_policy_get(AP_MIN_PASSWORD_LEN, &min_pass_len);
+			account_policy_get(AP_PASSWORD_HISTORY, &pass_hist);
+			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &flag);
+			account_policy_get(AP_MAX_PASSWORD_AGE, (int *)&u_expire);
+			account_policy_get(AP_MIN_PASSWORD_AGE, (int *)&u_min_age);
+
+			unix_to_nt_time_abs(&nt_expire, u_expire);
+			unix_to_nt_time_abs(&nt_min_age, u_min_age);
+
+			init_unk_info1(&ctr->info.inf1, (uint16)min_pass_len, (uint16)pass_hist, 
+			               flag, nt_expire, nt_min_age);
+			break;
+		case 0x02:
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-            init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
-            break;
-        case 0x03:
-            init_unk_info3(&ctr->info.inf3);
-            break;
-        case 0x05:
-            init_unk_info5(&ctr->info.inf5, global_myname);
-            break;
-        case 0x06:
-            init_unk_info6(&ctr->info.inf6);
-            break;
-        case 0x07:
-            init_unk_info7(&ctr->info.inf7);
-            break;
-        case 0x0c:
-            init_unk_info12(&ctr->info.inf12);
-            break;
-        default:
-            return NT_STATUS_INVALID_INFO_CLASS;
-    }
+			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
+			break;
+		case 0x03:
+			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
+			unix_to_nt_time_abs(&nt_logout, u_logout);
+			
+			init_unk_info3(&ctr->info.inf3, nt_logout);
+			break;
+		case 0x05:
+			init_unk_info5(&ctr->info.inf5, global_myname);
+			break;
+		case 0x06:
+			init_unk_info6(&ctr->info.inf6);
+			break;
+		case 0x07:
+			init_unk_info7(&ctr->info.inf7);
+			break;
+		case 0x0c:
+			account_policy_get(AP_LOCK_ACCOUNT_DURATION, (int *)&u_lock_duration);
+			account_policy_get(AP_RESET_COUNT_TIME, (int *)&u_reset_time);
+			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &lockout);
+	
+			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
+			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);
+	
+            		init_unk_info12(&ctr->info.inf12, nt_lock_duration, nt_reset_time, (uint16)lockout);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
-    init_samr_r_samr_unknown_2e(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
+	init_samr_r_samr_unknown_2e(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
 
-    DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
+	DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -3515,6 +3576,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R_SET_DOMAIN_INFO *r_u)
 {
+	time_t u_expire, u_min_age;
+	time_t u_logout;
+	time_t u_lock_duration, u_reset_time;
+
 	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
@@ -3523,25 +3588,41 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	DEBUG(0,("_samr_set_dom_info: switch_value: %d\n", q_u->switch_value));
+	DEBUG(5,("_samr_set_dom_info: switch_value: %d\n", q_u->switch_value));
 
 	switch (q_u->switch_value) {
-        case 0x01:
-            break;
-        case 0x02:
-            break;
-        case 0x03:
-           break;
-        case 0x05:
-            break;
-        case 0x06:
-            break;
-        case 0x07:
-           break;
-        case 0x0c:
-             break;
-        default:
-            return NT_STATUS_INVALID_INFO_CLASS;
+        	case 0x01:
+			u_expire=nt_time_to_unix_abs(&q_u->ctr->info.inf1.expire);
+			u_min_age=nt_time_to_unix_abs(&q_u->ctr->info.inf1.min_passwordage);
+			
+			account_policy_set(AP_MIN_PASSWORD_LEN, (uint32)q_u->ctr->info.inf1.min_length_password);
+			account_policy_set(AP_PASSWORD_HISTORY, (uint32)q_u->ctr->info.inf1.password_history);
+			account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, (uint32)q_u->ctr->info.inf1.flag);
+			account_policy_set(AP_MAX_PASSWORD_AGE, (int)u_expire);
+			account_policy_set(AP_MIN_PASSWORD_AGE, (int)u_min_age);
+            		break;
+        	case 0x02:
+			break;
+		case 0x03:
+			u_logout=nt_time_to_unix_abs(&q_u->ctr->info.inf3.logout);
+			account_policy_set(AP_TIME_TO_LOGOUT, (int)u_logout);
+			break;
+		case 0x05:
+			break;
+		case 0x06:
+			break;
+		case 0x07:
+			break;
+		case 0x0c:
+			u_lock_duration=nt_time_to_unix_abs(&q_u->ctr->info.inf12.duration);
+			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count);
+			
+			account_policy_set(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
+			account_policy_set(AP_RESET_COUNT_TIME, (int)u_reset_time);
+			account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, (uint32)q_u->ctr->info.inf12.bad_attempt_lockout);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	init_samr_r_set_domain_info(r_u, NT_STATUS_OK);

@@ -631,6 +631,20 @@ typedef struct sam_passwd
 } SAM_ACCOUNT;
 
 /*
+ * Flags for account policy.
+ */
+#define AP_MIN_PASSWORD_LEN 		1
+#define AP_PASSWORD_HISTORY		2
+#define AP_USER_MUST_LOGON_TO_CHG_PASS	3
+#define AP_MAX_PASSWORD_AGE		4
+#define AP_MIN_PASSWORD_AGE		5
+#define AP_LOCK_ACCOUNT_DURATION	6
+#define AP_RESET_COUNT_TIME		7
+#define AP_BAD_ATTEMPT_LOCKOUT		8
+#define AP_TIME_TO_LOGOUT		9
+
+
+/*
  * Flags for local user manipulation.
  */
 

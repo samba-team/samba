@@ -246,6 +246,16 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 	
+	if(pdb_generate_sam_sid()==False) {
+		printf("Can not read machine SID\n");
+		return 0;
+	}
+
+	if (init_group_mapping()==False) {
+		printf("Could not open tdb mapping file.\n");
+		return 0;
+	}
+	
 	while ((ch = getopt(argc, argv, "a:c:d:ln:p:st:u:vx:")) != EOF) {
 		switch(ch) {
 		case 'a':
@@ -325,18 +335,6 @@ int main (int argc, char **argv)
 				break;
 		}
 	}
-		
-	if (init_group_mapping()==False) {
-		printf("Could not open tdb mapping file.\n");
-		return 0;
-	}
-	
-	if(pdb_generate_sam_sid()==False) {
-		printf("Can not read machine SID\n");
-		return 0;
-	}
-
-	default_group_mapping();
 
 	if (add_group)
 		return addgroup(group, sid_type, ntgroup, group_desc, privilege);
