@@ -74,12 +74,10 @@
 #undef HAVE_SOCKLEN_T_TYPE
 #undef ssize_t
 #undef ino_t
-#undef ssize_t
 #undef loff_t
 #undef offset_t
 #undef aclent_t
 #undef wchar_t
-#undef HAVE_CONNECT
 #undef HAVE_SHORT_INO_T
 #undef WITH_SMBWRAPPER
 #undef WITH_AFS
@@ -97,7 +95,6 @@
 #undef OSF1
 #undef NEXT2
 #undef RELIANTUNIX
-#undef HAVE_MMAP
 #undef HAVE_FCNTL_LOCK
 #undef HAVE_FTRUNCATE_EXTEND
 #undef FTRUNCATE_NEEDS_ROOT
@@ -112,13 +109,9 @@
 #undef STAT_STATFS3_OSF1
 #undef STAT_STATFS4
 #undef STAT_STATVFS
-#undef STAT_STATVFS64
 #undef HAVE_IFACE_AIX
 #undef HAVE_IFACE_IFCONF
 #undef HAVE_IFACE_IFREQ
-#undef HAVE_CRYPT
-#undef HAVE_PUTPRPWNAM
-#undef HAVE_SET_AUTH_PARAMETERS
 #undef WITH_SYSLOG
 #undef WITH_PROFILE
 #undef WITH_SSL
@@ -159,17 +152,8 @@
 #undef KRB5_AUTH
 #undef SEEKDIR_RETURNS_VOID
 #undef HAVE_DIRENT_D_OFF
-#undef HAVE_GETSPNAM
-#undef HAVE_BIGCRYPT
-#undef HAVE_GETPRPWNAM
-#undef HAVE_FSTAT64
-#undef HAVE_LSTAT64
-#undef HAVE_STAT64
 #undef HAVE_SETRESGID
 #undef HAVE_SETRESGID_DECL
-#undef HAVE_SHADOW_H
-#undef HAVE_MEMSET
-#undef HAVE_STRCASECMP
 #undef HAVE_STRUCT_DIRENT64
 #undef HAVE_TRUNCATED_SALT
 #undef BROKEN_NISPLUS_INCLUDE_FILES
@@ -198,7 +182,6 @@
 #undef HAVE_UX_UT_SYSLEN
 #undef PUTUTLINE_RETURNS_UTMP
 #undef COMPILER_SUPPORTS_LL
-#undef HAVE_YP_GET_DEFAULT_DOMAIN
 #undef USE_SPINLOCKS
 #undef SPARC_SPINLOCKS
 #undef INTEL_SPINLOCKS
@@ -964,9 +947,6 @@
 /* Define if you have the <sys/vfs.h> header file.  */
 #undef HAVE_SYS_VFS_H
 
-/* Define if you have the <sys/wait.h> header file.  */
-#undef HAVE_SYS_WAIT_H
-
 /* Define if you have the <syscall.h> header file.  */
 #undef HAVE_SYSCALL_H
 
@@ -1023,4 +1003,3 @@
 
 /* Define if you have working AF_LOCAL sockets */
 #undef HAVE_WORKING_AF_LOCAL
-
