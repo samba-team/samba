@@ -43,6 +43,7 @@ copy_hostname(krb5_context context,
     *new_hostname = strdup (orig_hostname);
     if (*new_hostname == NULL)
 	return ENOMEM;
+    strlwr (*new_hostname);
     return 0;
 }
 
@@ -92,6 +93,7 @@ krb5_expand_hostname_realms (krb5_context context,
 {
     struct addrinfo *ai, *a, hints;
     int error;
+    krb5_error_code ret = 0;
 
     memset (&hints, 0, sizeof(hints));
     hints.ai_flags = AI_CANONNAME;
@@ -101,17 +103,18 @@ krb5_expand_hostname_realms (krb5_context context,
 	return copy_hostname (context, orig_hostname, new_hostname);
     for (a = ai; a != NULL; a = a->ai_next) {
 	if (a->ai_canonname != NULL) {
-	    krb5_error_code ret = krb5_get_host_realm (context,
-						       a->ai_canonname,
-						       realms);
-
-	    if (ret == 0) {
-		ret = copy_hostname (context, a->ai_canonname, new_hostname);
-		freeaddrinfo (ai);
-		return ret;
-	    }
+	    ret = copy_hostname (context, orig_hostname, new_hostname);
+	    if (ret)
+		goto out;
+	    strlwr (*new_hostname);
+	    ret = krb5_get_host_realm (context, *new_hostname, realms);
+	    if (ret == 0)
+		goto out;
+	    free (*new_hostname);
 	}
     }
+    ret = copy_hostname (context, orig_hostname, new_hostname);
+ out:
     freeaddrinfo (ai);
-    return copy_hostname (context, orig_hostname, new_hostname);
+    return ret;
 }
