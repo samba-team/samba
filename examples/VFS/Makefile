@@ -1,7 +1,6 @@
-CC		= @CC@
-CFLAGS		= @CFLAGS@
-CPPFLAGS	= @CPPFLAGS@
-LDFLAGS		= @LDFLAGS@
+CFLAGS		= 
+CPPFLAGS	=
+LDFLAGS		=
 LDSHFLAGS	= -shared
 srcdir		= ../../source/
 FLAGS		=  $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  -I. $(CPPFLAGS) -I$(srcdir)
