@@ -2,6 +2,17 @@
 # global configuration options
 dn: cn=Global,cn=Config,cn=Samba
 objectclass: globalconfig
+LocalConfigCn: cn=%U,cn=Config,cn=Samba
+LocalConfigCn;1: cn=%U,cn=Config,cn=Samba
+LocalConfigCn;2: cn=%I,cn=Config,cn=Samba
+LocalConfigCn;3: cn=%M,cn=Config,cn=Samba
+
+#############
+dn: cn=Protocol,cn=Global,cn=Config,cn=Samba
+maxXmit: 7000
+
+################################
+dn: cn=Volker,cn=Config,cn=Samba
 Workgroup: VNET3
 UnixCharset: UTF8
 Security: user
@@ -9,6 +20,17 @@ Interfaces: vmnet* eth*
 NetbiosName: blu
 GuestAccount: tridge
 
+#################################
+dn: cn=Volker,cn=Config,cn=Samba
+Workgroup: VNET3
+UnixCharset: UTF8
+Security: user
+Interfaces: vmnet* eth*
+NetbiosName: blu
+GuestAccount: tridge
+Include: cn=%U,cn=MyConfig,cn=Config,cn=Samba
+
+####   ((objectClass=fileshare)(cn=test))
 ##############################
 # [test] share
 dn: cn=test,cn=Shares,cn=Config,cn=Samba
