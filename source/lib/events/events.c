@@ -66,8 +66,6 @@
 #endif
 
 #if WITH_EPOLL
-/* this #undef is needed on my SuSE 9.2 Box with glibc-devel-2.3.3-118 */
-#undef u32
 #include <sys/epoll.h>
 #endif
 

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "lib/tdb/include/tdbutil.h"
 
 static TDB_CONTEXT *tdb;
 

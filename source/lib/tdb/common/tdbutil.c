@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "lib/tdb/include/tdbutil.h"
 #include "system/glob.h"
 #include "system/wait.h"
 #include "dlinklist.h"

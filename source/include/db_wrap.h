@@ -29,7 +29,7 @@ struct ldb_wrap {
 
 
 struct tdb_wrap {
-	TDB_CONTEXT *tdb;
+	struct tdb_context *tdb;
 
 	const char *name;
 	struct tdb_wrap *next, *prev;

@@ -21,6 +21,8 @@
 #ifndef __TDBUTIL_H__
 #define __TDBUTIL_H__
 
+#include "tdb.h"
+
 
 /* single node of a list returned by tdb_search_keys */
 typedef struct keys_node 

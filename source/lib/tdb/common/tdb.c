@@ -63,9 +63,9 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include "tdb.h"
-#include "spinlock.h"
 #else
 #include "includes.h"
+#include "lib/tdb/include/tdb.h"
 #include "system/time.h"
 #include "system/shmem.h"
 #include "system/filesys.h"

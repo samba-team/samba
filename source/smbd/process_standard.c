@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "lib/tdb/include/tdb.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 

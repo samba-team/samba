@@ -154,4 +154,6 @@ extern TDB_DATA tdb_null;
 }
 #endif
 
+#include "spinlock.h"
+
 #endif /* tdb.h */

@@ -37,6 +37,7 @@
 #else
 
 #include "includes.h"
+#include "lib/tdb/include/tdb.h"
 #include "system/iconv.h"
 
 #endif
