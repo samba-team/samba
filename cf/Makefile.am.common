@@ -4,9 +4,9 @@ AUTOMAKE_OPTIONS = foreign no-dependencies
 
 SUFFIXES = .et .h
 
-INCLUDES = -I$(top_builddir)/include
+INCLUDES = -I$(top_builddir)/include $(INCLUDES_roken)
 
-AM_CFLAGS += $(WFLAGS) $(CPPFLAGS_roken)
+AM_CFLAGS += $(WFLAGS)
 
 CP	= cp
 
