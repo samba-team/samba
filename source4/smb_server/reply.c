@@ -1369,12 +1369,16 @@ void reply_echo(struct smbsrv_request *req)
 	memcpy(req->out.data, req->in.data, req->in.data_size);
 
 	for (i=1; i <= count;i++) {
+		struct smbsrv_request *this_req;
+		
 		if (i != count) {
-			talloc_increase_ref_count(req);
+			this_req = req_setup_secondary(req);
+		} else {
+			this_req = req;
 		}
 
-		SSVAL(req->out.vwv, VWV(0), i);
-		req_send_reply(req);
+		SSVAL(this_req->out.vwv, VWV(0), i);
+		req_send_reply(this_req);
 	}
 }
 

@@ -155,6 +155,37 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 	}
 }
 
+
+/*
+  setup a copy of a request, used when the server needs to send
+  more than one reply for a single request packet
+*/
+struct smbsrv_request *req_setup_secondary(struct smbsrv_request *old_req)
+{
+	struct smbsrv_request *req;
+	ptrdiff_t diff;
+
+	req = talloc_memdup(old_req, old_req, sizeof(struct smbsrv_request));
+	if (req == NULL) {
+		return NULL;
+	}
+
+	req->out.buffer = talloc_memdup(req, req->out.buffer, req->out.allocated);
+	if (req->out.buffer == NULL) {
+		talloc_free(req);
+		return NULL;
+	}
+
+	diff = req->out.buffer - old_req->out.buffer;
+
+	req->out.hdr  += diff;
+	req->out.vwv  += diff;
+	req->out.data += diff;
+	req->out.ptr  += diff;
+
+	return req;
+}
+
 /*
   work out the maximum data size we will allow for this reply, given
   the negotiated max_xmit. The basic reply packet must be setup before
