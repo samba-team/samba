@@ -587,21 +587,21 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	BOOL self_referral = False;
 	pstring buf;
 	int reply_size = 0;
+	char *pathnamep = pathname;
 
 	ZERO_STRUCT(junction);
 
 	/* get the junction entry */
-	if (!pathname)
+	if (!pathnamep)
 		return -1;
 
-	/* Some buggy Dfs clients (seen in Win9X) can't handle replies
-	 containing the exact pathnames they send for referrals. They screw up
-	 if there are two backslashes in front. - kalele 2002.3.21
+	/* Trim pathname sent by client so it begins with only one backslash.
+	   Two backslashes confuse some dfs clients
 	 */
-	while (strlen(pathname) > 1 && pathname[1] == '\\')
-		safe_strcpy(pathname, &pathname[1], strlen(pathname) - 1);
+	while (strlen(pathnamep) > 1 && pathnamep[1] == '\\')
+		pathnamep++;
 
-	safe_strcpy(buf, pathname, sizeof(buf));
+	safe_strcpy(buf, pathnamep, sizeof(buf));
 	if (!get_referred_path(buf, &junction, &consumedcnt,
 			       &self_referral))
 		return -1;
@@ -610,7 +610,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	{
 		if( DEBUGLVL( 3 ) ) {
 			int i=0;
-			dbgtext("setup_dfs_referral: Path %s to alternate path(s):",pathname);
+			dbgtext("setup_dfs_referral: Path %s to alternate path(s):",pathnamep);
 			for(i=0;i<junction.referral_count;i++)
 				dbgtext(" %s",junction.referral_list[i].alternate_path);
 			dbgtext(".\n");
@@ -625,14 +625,14 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	switch(max_referral_level) {
 	case 2:
 		{
-		reply_size = setup_ver2_dfs_referral(pathname, ppdata, &junction, 
+		reply_size = setup_ver2_dfs_referral(pathnamep, ppdata, &junction, 
 						     consumedcnt, self_referral);
 		SAFE_FREE(junction.referral_list);
 		break;
 		}
 	case 3:
 		{
-		reply_size = setup_ver3_dfs_referral(pathname, ppdata, &junction, 
+		reply_size = setup_ver3_dfs_referral(pathnamep, ppdata, &junction, 
 						     consumedcnt, self_referral);
 		SAFE_FREE(junction.referral_list);
 		break;
