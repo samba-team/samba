@@ -948,19 +948,11 @@ NTSTATUS ntvfs_simple_init(void)
 	ops.trans = svfs_trans;
 
 	/* register ourselves with the NTVFS subsystem. We register
-	   under two names 'simple' and 'default' 
+	   under names 'simple' 
 	*/
 	ops.name = "simple";
 	ret = register_backend("ntvfs", &ops);
 
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register simple backend with name: %s!\n",
-			 ops.name));
-	}
-
-	/* also register as "default" */
-	ops.name = "default";
-	ret = register_backend("ntvfs", &ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register simple backend with name: %s!\n",
 			 ops.name));
