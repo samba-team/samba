@@ -340,6 +340,7 @@ sub _prepare_shared_library_rule($)
 	my $tmpshflag;
 	my $tmprules;
 	my $output;
+	my $outname = $ctx->{OUTPUT};
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
@@ -374,11 +375,15 @@ bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} bin/.dummy
 bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} bin/.dummy
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
-library_$ctx->{NAME}: basics $ctx->{LIBRARY_SONAME}
+";
+		$outname = $ctx->{LIBRARY_NAME};
+	}
+
+	$output .= "
+library_$ctx->{NAME}: basics bin/$outname
 # End Library $ctx->{NAME}
 ###################################
 ";
-	}
 
 	return $output;
 }
