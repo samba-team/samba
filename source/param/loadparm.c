@@ -2442,3 +2442,11 @@ int lp_minor_announce_version(void)
   return minor_version;
 }  
 
+/***********************************************************
+ Set the global name resolution order (used in smbclient).
+************************************************************/
+
+void lp_set_name_resolve_order(char *new_order)
+{
+  Globals.szNameResolveOrder = new_order;
+}

@@ -20,6 +20,9 @@ smbclient \- ftp-like Lan Manager client program
 .B \-I
 .I IP number
 ] [
+.B \-R
+.I name resolve order
+] [
 .B \-N
 ] [
 .B \-P
@@ -117,6 +120,15 @@ on an uppercase password. Lowercase or mixed case passwords may be
 rejected by these servers.
 
 Be cautious about including passwords in scripts.
+.RE
+
+.B \-R name resolve order
+
+.RS 3
+This parameter will override the default name resolution order of the
+server listed in the "name resolve order" parameter in smb.conf. This
+is useful to force name resolution to take place by a particular method.
+This command line parameter only exists in Samba 1.9.18p4 and above.
 .RE
 
 .B \-A
