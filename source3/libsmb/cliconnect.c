@@ -810,9 +810,6 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE|STR_ASCII);
 
-	if (strcasecmp(share,"IPC$")==0)
-		fstrcpy(cli->dev, "IPC");
-
 	if (cli->protocol >= PROTOCOL_NT1 &&
 	    smb_buflen(cli->inbuf) == 3) {
 		/* almost certainly win95 - enable bug fixes */
