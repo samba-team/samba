@@ -73,13 +73,14 @@ void E_md4hash(const char *passwd, uchar p16[16])
  
 void E_deshash(const char *passwd, uchar p16[16])
 {
-	uchar dospwd[15]; /* Password must not be > 14 chars long. */
+	fstring dospwd; 
 	ZERO_STRUCT(dospwd);
 	ZERO_STRUCTP(p16);
 	
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
 	push_ascii(dospwd, (const char *)passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
 
+	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
 	E_P16(dospwd, p16);
 
 	ZERO_STRUCT(dospwd);	
