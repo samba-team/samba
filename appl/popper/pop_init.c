@@ -86,7 +86,7 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
         pop_log(p, POP_PRIORITY, "%s: (%s.%s@%s) %s", p->client, 
                 p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
 		krb_get_err_text(auth));
-        exit (1);
+	return -1;
     }
 
 #ifdef DEBUG
@@ -105,6 +105,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
     krb5_auth_context auth_context = NULL;
     u_int32_t len;
     krb5_ticket *ticket;
+    char *server;
 
     if (memcmp (buf, "\x00\x00\x00\x13", 4) != 0)
 	return -1;
@@ -124,29 +125,35 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 			 KRB5_RECVAUTH_IGNORE_VERSION,
 			 NULL,
 			 &ticket);
-    if (ret == 0) {
-	char *server;
-
-	ret = krb5_unparse_name(p->context, ticket->server, &server);
-	if(ret) {
-	    pop_log(p, POP_PRIORITY, "krb5_unparse_name: %s", 
-		    krb5_get_err_text(p->context, ret));
-	    exit(1);
-	}
-	/* does this make sense? */
-	if(strncmp(server, "pop/", 4) != 0) {
-	    pop_log(p, POP_PRIORITY,
-		    "Got ticket for service `%s'", server);
-	    exit(1);
-	} else if(p->debug)
-	    pop_log(p, POP_DEBUG, 
-		    "Accepted ticket for service `%s'", server);
-	free(server);
-	krb5_auth_con_free (p->context, auth_context);
-	krb5_copy_principal (p->context, ticket->client, &p->principal);
-	krb5_free_ticket (p->context, ticket);
-
+    if (ret) {
+	pop_log(p, POP_PRIORITY, "krb5_recvauth: %s",
+		krb5_get_err_text(p->context, ret));
+	return -1;
     }
+
+
+    ret = krb5_unparse_name(p->context, ticket->server, &server);
+    if(ret) {
+	pop_log(p, POP_PRIORITY, "krb5_unparse_name: %s", 
+		krb5_get_err_text(p->context, ret));
+	ret = -1;
+	goto out;
+    }
+    /* does this make sense? */
+    if(strncmp(server, "pop/", 4) != 0) {
+	pop_log(p, POP_PRIORITY,
+		"Got ticket for service `%s'", server);
+	ret = -1;
+	goto out;
+    } else if(p->debug)
+	pop_log(p, POP_DEBUG, 
+		"Accepted ticket for service `%s'", server);
+    free(server);
+ out:
+    krb5_auth_con_free (p->context, auth_context);
+    krb5_copy_principal (p->context, ticket->client, &p->principal);
+    krb5_free_ticket (p->context, ticket);
+
     return ret;
 }
 #endif
