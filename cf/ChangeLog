@@ -1,5 +1,6 @@
 1999-12-21  Assar Westerlund  <assar@sics.se>
 
+	* krb-ipv6.m4: try linking, not only compiling
 	* krb-ipv6.m4: add --without-ipv6 make sure we have `in6addr_any'
  	which we use in the code.  This test avoids false positives on
  	OpenBSD
