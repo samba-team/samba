@@ -438,55 +438,56 @@ if [ $0 != 0 ]; then
 fi
 
 %files
+%defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
 %doc docs
 %doc swat/README
 %doc examples
-%attr(-,root,root) %{prefix}/sbin/smbd
-%attr(-,root,root) %{prefix}/sbin/nmbd
-%attr(-,root,root) %{prefix}/sbin/swat
-%attr(-,root,root) %{prefix}/sbin/smbmnt
-%attr(-,root,root) %{prefix}/sbin/smbmount
-%attr(-,root,root) %{prefix}/sbin/smbumount
-%attr(-,root,root) /sbin/mount.smbfs
-%attr(-,root,root) /sbin/mount.smb
-%attr(-,root,root) %{prefix}/bin/mksmbpasswd.sh
-%attr(-,root,root) %{prefix}/bin/smbclient
-%attr(-,root,root) %{prefix}/bin/smbspool
-%attr(-,root,root) %{prefix}/bin/rpcclient
-%attr(-,root,root) %{prefix}/bin/testparm
-%attr(-,root,root) %{prefix}/bin/testprns
-%attr(-,root,root) %{prefix}/bin/findsmb
-%attr(-,root,root) %{prefix}/bin/smbstatus
-%attr(-,root,root) %{prefix}/bin/nmblookup
-%attr(-,root,root) %{prefix}/bin/make_smbcodepage
-%attr(-,root,root) %{prefix}/bin/make_unicodemap
-%attr(-,root,root) %{prefix}/bin/make_printerdef
-%attr(-,root,root) %{prefix}/bin/smbpasswd
-%attr(-,root,root) %{prefix}/bin/smbtar
-%attr(-,root,root) %{prefix}/bin/smbprint
-%attr(-,root,root) %{prefix}/bin/smbcontrol
-%attr(-,root,root) %{prefix}/bin/smbcacls
+%{prefix}/sbin/smbd
+%{prefix}/sbin/nmbd
+%{prefix}/sbin/swat
+%{prefix}/sbin/smbmnt
+%{prefix}/sbin/smbmount
+%{prefix}/sbin/smbumount
+/sbin/mount.smbfs
+/sbin/mount.smb
+%{prefix}/bin/mksmbpasswd.sh
+%{prefix}/bin/smbclient
+%{prefix}/bin/smbspool
+%{prefix}/bin/rpcclient
+%{prefix}/bin/testparm
+%{prefix}/bin/testprns
+%{prefix}/bin/findsmb
+%{prefix}/bin/smbstatus
+%{prefix}/bin/nmblookup
+%{prefix}/bin/make_smbcodepage
+%{prefix}/bin/make_unicodemap
+%{prefix}/bin/make_printerdef
+%{prefix}/bin/smbpasswd
+%{prefix}/bin/smbtar
+%{prefix}/bin/smbprint
+%{prefix}/bin/smbcontrol
+%{prefix}/bin/smbcacls
 %attr(755,root,root) /lib/libnss_wins.s*
-%attr(-,root,root) %{prefix}/share/swat/help/*
-%attr(-,root,root) %{prefix}/share/swat/images/*
-%attr(-,root,root) %{prefix}/share/swat/include/header.html
-%attr(-,root,root) %{prefix}/share/swat/include/footer.html
-%attr(-,root,root) %{prefix}/share/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
-%attr(-,root,root) /etc/samba/samba.stack
-%attr(-,root,root) /etc/samba/samba.xinetd
-%attr(-,root,root) /etc/rc.d/init.d/smb
-%attr(-,root,root) /etc/logrotate.d/samba
-%attr(-,root,root) %config(noreplace) /etc/pam.d/samba
-%attr(-,root,root) MANDIR_MACRO/man1/*
-%attr(-,root,root) MANDIR_MACRO/man5/*
-%attr(-,root,root) MANDIR_MACRO/man7/*
-%attr(-,root,root) MANDIR_MACRO/man8/*
-%attr(-,root,root) %dir /etc/codepages/*
+%{prefix}/share/swat/help/*
+%{prefix}/share/swat/images/*
+%{prefix}/share/swat/include/header.html
+%{prefix}/share/swat/include/footer.html
+%{prefix}/share/swat/using_samba/*
+%config(noreplace) /etc/samba/lmhosts
+%config(noreplace) /etc/samba/smb.conf
+%config(noreplace) /etc/samba/smbusers
+/etc/samba/samba.stack
+/etc/samba/samba.xinetd
+/etc/rc.d/init.d/smb
+/etc/logrotate.d/samba
+%config(noreplace) /etc/pam.d/samba
+MANDIR_MACRO/man1/*
+MANDIR_MACRO/man5/*
+MANDIR_MACRO/man7/*
+MANDIR_MACRO/man8/*
+%dir /etc/codepages/*
 %attr(755,root,root) %dir /var/cache/samba
-%attr(-,root,root) %dir /var/log/samba
+%dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
