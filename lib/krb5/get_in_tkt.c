@@ -515,19 +515,12 @@ init_as_req (krb5_context context,
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    goto fail;
 	}
+	a->padata->val = NULL;
+	a->padata->len = 0;
 	for(i = 0; i < preauth->len; i++) {
 	    if(preauth->val[i].type == KRB5_PADATA_ENC_TIMESTAMP){
 		int j;
-		PA_DATA *tmp = realloc(a->padata->val, 
-				       (a->padata->len + 
-					preauth->val[i].info.len) * 
-				       sizeof(*a->padata->val));
-		if(tmp == NULL) {
-		    ret = ENOMEM;
-		    krb5_set_error_string(context, "malloc: out of memory");
-		    goto fail;
-		}
-		a->padata->val = tmp;
+
 		for(j = 0; j < preauth->val[i].info.len; j++) {
 		    krb5_salt *sp = &salt;
 		    if(preauth->val[i].info.val[j].salttype)
