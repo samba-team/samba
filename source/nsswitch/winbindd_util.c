@@ -168,9 +168,7 @@ void rescan_trusted_domains( void )
 	if ( (now > last_scan) && ((now-last_scan) < WINBINDD_RESCAN_FREQ) )
 		return;
 		
-	/* get the handle for our domain (it is always the first in the list) */
-	
-	if ( (mydomain = domain_list()) == NULL ) {
+	if ( (mydomain = find_our_domain()) == NULL ) {
 		DEBUG(0,("rescan_trusted_domains: Can't find my own domain!\n"));
 		return;
 	}
@@ -272,6 +270,8 @@ BOOL init_domain_list(void)
 	
 	domain = add_trusted_domain( lp_workgroup(), lp_realm(), &cache_methods, NULL);
 	
+	domain->primary = True;
+
 	/* get any alternate name for the primary domain */
 	
 	cache_methods.alternate_name(domain);
@@ -333,6 +333,24 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		if (sid_compare_domain(sid, &domain->sid) == 0)
+			return domain;
+	}
+
+	/* Not found */
+
+	return NULL;
+}
+
+/* Given a domain sid, return the struct winbindd domain info for it */
+
+struct winbindd_domain *find_our_domain()
+{
+	struct winbindd_domain *domain;
+
+	/* Search through list */
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		if (domain->primary)
 			return domain;
 	}
 
