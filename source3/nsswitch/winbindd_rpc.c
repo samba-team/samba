@@ -187,7 +187,6 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	NTSTATUS status;
 	DOM_SID *sids = NULL;
 	uint32 *types = NULL;
-	int num_sids;
 	const char *full_name;
 
 	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc] for [%s]\\[%s]", domain->name, name))) {
@@ -209,7 +208,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	}
 
 	status = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 1, 
-				      &full_name, &sids, &types, &num_sids);
+				      &full_name, &sids, &types);
         
 	/* Return rid and type if lookup successful */        
 	if (NT_STATUS_IS_OK(status)) {
@@ -234,15 +233,13 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	char **domains;
 	char **names;
 	uint32 *types;
-	int num_names;
 	NTSTATUS status;
 
 	if (!(hnd = cm_get_lsa_handle(domain->name)))
 		return NT_STATUS_UNSUCCESSFUL;
         
 	status = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
-				     1, sid, &domains, &names, &types, 
-				     &num_names);
+				     1, sid, &domains, &names, &types);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*type = types[0];
