@@ -35,7 +35,7 @@ typedef struct keys_node
 TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT*, const char*);
 void tdb_search_list_free(TDB_LIST_NODE*);
 int32_t tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32_t *oldval, int32_t change_val);
-int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, uint_t timeout);
+int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval);
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval);
 int32_t tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr);
 int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32_t v);
