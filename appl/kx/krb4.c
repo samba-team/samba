@@ -50,12 +50,21 @@ struct krb4_kx_context {
 
 typedef struct krb4_kx_context krb4_kx_context;
 
+/*
+ * Destroy the krb4 context in `c'.
+ */
+
 static void
 krb4_destroy (kx_context *c)
 {
     memset (c->data, 0, sizeof(krb4_kx_context));
     free (c->data);
 }
+
+/*
+ * Read the authentication information from `s' and return 0 if
+ * succesful, else -1.
+ */
 
 static int
 krb4_authenticate (kx_context *kc, int s)
@@ -78,6 +87,11 @@ krb4_authenticate (kx_context *kc, int s)
     memcpy (c->key, cred.session, sizeof(des_cblock));
     return 0;
 }
+
+/*
+ * Read a krb4 priv packet from `fd' into `buf' (of size `len').
+ * Return the number of bytes read or 0 on EOF or -1 on error.
+ */
 
 static ssize_t
 krb4_read (kx_context *kc,
@@ -109,6 +123,11 @@ krb4_read (kx_context *kc,
     memmove (buf, msg.app_data, msg.app_length);
     return msg.app_length;
 }
+
+/*
+ * Write a krb4 priv packet on `fd' with the data in `buf, len'.
+ * Return len or -1 on error
+ */
 
 static ssize_t
 krb4_write(kx_context *kc,
@@ -174,6 +193,11 @@ do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
      return 1;
 }
 
+/*
+ * Copy data between fd1 and fd2, encrypting one way and decrypting
+ * the other.
+ */
+
 static int
 krb4_copy_encrypted (kx_context *kc,
 		     int fd1, int fd2)
@@ -210,6 +234,11 @@ krb4_copy_encrypted (kx_context *kc,
     }
 }
 
+/*
+ * Return 0 if the user authenticated on `kc' is allowed to login as
+ * `user'.
+ */
+
 static int
 krb4_userok (kx_context *kc, char *user)
 {
@@ -227,6 +256,10 @@ krb4_userok (kx_context *kc, char *user)
     return kuserok (&c->auth, user);
 }
 
+/*
+ * Create an instance of an krb4 context.
+ */
+
 void
 krb4_make_context (kx_context *kc)
 {
@@ -242,6 +275,11 @@ krb4_make_context (kx_context *kc)
     if (kc->data == NULL)
 	err (1, "malloc");
 }
+
+/*
+ * Receive authentication information on `sock' (first four bytes
+ * in `buf').
+ */
 
 int
 recv_v4_auth (kx_context *kc, int sock, u_char *buf)
@@ -292,8 +330,11 @@ recv_v4_auth (kx_context *kc, int sock, u_char *buf)
 
 	     krb_net_read (sock, user, sizeof(user));
 	     krb_net_write (sock, old_errmsg, strlen(old_errmsg) + 1);
-	 } else
+	     exit (1);
+	 } else {
 	     syslog (LOG_ERR, "bad version: %s", version);
+	     exit (1);
+	 }
     }
 
     krb4_make_context (kc);
