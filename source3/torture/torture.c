@@ -2984,8 +2984,10 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 		return -1;
 	}
 
-	memset((void *)child_status, 0, sizeof(pid_t)*nprocs);
-	memset((void *)child_status_out, True, sizeof(BOOL)*nprocs);
+	for (i = 0; i < nprocs; i++) {
+		child_status[i] = 0;
+		child_status_out[i] = True;
+	}
 
 	start_timer();
 
@@ -3054,7 +3056,6 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 	}
 	return end_timer();
 }
-
 
 #define FLAG_MULTIPROC 1
 
