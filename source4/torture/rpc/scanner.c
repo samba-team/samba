@@ -134,14 +134,28 @@ BOOL torture_rpc_scanner(int dummy)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	int i;
-	char *host = lp_parm_string(-1, "torture", "host");
-	uint32 port;
+	char *binding = lp_parm_string(-1, "torture", "binding");
+	struct dcerpc_binding b;
 
 	mem_ctx = talloc_init("torture_rpc_scanner");
 
-	for (i=0;dcerpc_pipes[i];i++) {		
-		char *transport = lp_parm_string(-1, "torture", "transport");
+	if (!binding) {
+		printf("You must supply a ncacn binding string\n");
+		return False;
+	}
+	
+	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to parse binding '%s'\n", binding);
+		return False;
+	}
 
+	b.options = talloc_array_p(mem_ctx, const char *, 2);
+	if (!b.options) {
+		return False;
+	}
+
+	for (i=0;dcerpc_pipes[i];i++) {		
 		/* some interfaces are not mappable */
 		if (dcerpc_pipes[i]->num_calls == 0 ||
 		    strcmp(dcerpc_pipes[i]->name, "mgmt") == 0) {
@@ -150,20 +164,23 @@ BOOL torture_rpc_scanner(int dummy)
 
 		printf("\nTesting pipe '%s'\n", dcerpc_pipes[i]->name);
 
-		/* on TCP we need to find the right endpoint */
-		if (strcasecmp(transport, "ncacn_ip_tcp") == 0) {
-			status = dcerpc_epm_map_tcp_port(host, 
-							 dcerpc_pipes[i]->uuid, 
-							 dcerpc_pipes[i]->if_version, 
+		if (b.transport == NCACN_IP_TCP) {
+			uint32 port;
+			status = dcerpc_epm_map_tcp_port(b.host, 
+							 dcerpc_pipes[i]->uuid,
+							 dcerpc_pipes[i]->if_version,
 							 &port);
 			if (!NT_STATUS_IS_OK(status)) {
-				ret = False;
+				printf("Failed to map port for uuid %s\n", dcerpc_pipes[i]->uuid);
 				continue;
 			}
-
-			lp_set_cmdline("torture:share", 
-				       talloc_asprintf(mem_ctx, "%u", port));
+			b.options[0] = talloc_asprintf(mem_ctx, "%u", port);
+		} else {
+			b.options[0] = dcerpc_pipes[i]->name;
 		}
+		b.options[1] = NULL;
+
+		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, &b));
 
 		status = torture_rpc_connection(&p, 
 						dcerpc_pipes[i]->name,
