@@ -318,6 +318,11 @@ k_afsklog_uid(const char *cell, const char *krealm, uid_t uid)
       ct.BeginTimestamp = 1 + c.issue_date;
       ct.EndTimestamp = krb_life_to_time(c.issue_date, c.lifetime);
 
+#define ODD(x) ((x) & 1)
+      /* If we don't know the numerical ID lifetime should be even? */
+      if (uid == 0 && ODD(ct.EndTimestamp - ct.BeginTimestamp))
+	ct.BeginTimestamp--;
+
       t = buf;
       /*
        * length of secret token followed by secret token
