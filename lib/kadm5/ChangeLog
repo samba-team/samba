@@ -1,3 +1,8 @@
+1999-12-26  Assar Westerlund  <assar@sics.se>
+
+	* get_s.c (kadm5_s_get_principal): handle modified_by->principal
+ 	== NULL
+
 1999-12-20  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5clnt_la_LDFLAGS): bump version to 4:1:0

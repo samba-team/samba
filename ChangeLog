@@ -1,3 +1,8 @@
+1999-12-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/hdb/print.c (event2string): handle events without principal.
+  	From Luke Howard <lukeh@PADL.COM>
+
 1999-12-25  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2j
