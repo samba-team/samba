@@ -322,7 +322,9 @@ duplicate a string
 	return(ret);
 }
 #endif /* HAVE_STRDUP */
-#if 0  /* REWRITE: not thread safe */
+
+#ifndef WITH_PTHREADS
+/* REWRITE: not thread safe */
 #ifdef REPLACE_INET_NTOA
 char *rep_inet_ntoa(struct in_addr ip)
 {
@@ -334,6 +336,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 }
 #endif /* REPLACE_INET_NTOA */
 #endif
+
 #ifndef HAVE_STRTOUL
 #ifndef ULONG_MAX
 #define	ULONG_MAX	((unsigned long)(~0L))		/* 0xFFFFFFFF */
