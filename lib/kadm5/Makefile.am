@@ -3,8 +3,8 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
-libkadm5srv_la_LDFLAGS = -version-info 7:2:0
-libkadm5clnt_la_LDFLAGS = -version-info 6:0:2
+libkadm5srv_la_LDFLAGS = -version-info 7:3:0
+libkadm5clnt_la_LDFLAGS = -version-info 6:1:2
 sbin_PROGRAMS = dump_log replay_log truncate_log
 
 libexec_PROGRAMS = ipropd-master ipropd-slave
