@@ -39,7 +39,7 @@ TALLOC_CTX *ctx;
    than going via LSA calls to resolve them */
 static int numeric;
 
-enum acl_mode {ACL_SET, ACL_DELETE, ACL_MODIFY, ACL_ADD };
+enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
@@ -600,7 +600,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 
 	/* the logic here is rather more complex than I would like */
 	switch (mode) {
-	case ACL_DELETE:
+	case SMB_ACL_DELETE:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
 			BOOL found = False;
 
@@ -632,7 +632,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 		}
 		break;
 
-	case ACL_MODIFY:
+	case SMB_ACL_MODIFY:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
 			BOOL found = False;
 
@@ -654,13 +654,13 @@ static int cacl_set(struct cli_state *cli, char *filename,
 
 		break;
 
-	case ACL_ADD:
+	case SMB_ACL_ADD:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
 			add_ace(&old->dacl, &sd->dacl->ace[i]);
 		}
 		break;
 
-	case ACL_SET:
+	case SMB_ACL_SET:
  		old = sd;
 		break;
 	}
@@ -879,22 +879,22 @@ You can string acls together with spaces, commas or newlines\n\
 
 		case 'S':
 			the_acl = optarg;
-			mode = ACL_SET;
+			mode = SMB_ACL_SET;
 			break;
 
 		case 'D':
 			the_acl = optarg;
-			mode = ACL_DELETE;
+			mode = SMB_ACL_DELETE;
 			break;
 
 		case 'M':
 			the_acl = optarg;
-			mode = ACL_MODIFY;
+			mode = SMB_ACL_MODIFY;
 			break;
 
 		case 'A':
 			the_acl = optarg;
-			mode = ACL_ADD;
+			mode = SMB_ACL_ADD;
 			break;
 
 		case 'C':
