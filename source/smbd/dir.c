@@ -644,7 +644,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
       *size = sbuf.st_size;
       *date = sbuf.st_mtime;
 
-      DEBUG(0,("get_dir_entry mask=[%s] found %s fname=%s\n",mask, pathreal,fname));
+      DEBUG(3,("get_dir_entry mask=[%s] found %s fname=%s\n",mask, pathreal,fname));
 	  
       found = True;
     }
