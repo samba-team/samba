@@ -1616,8 +1616,8 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		*/
 		
 		if (dirptr) {
-			error = NT_STATUS_NO_SUCH_FILE;
 			long offset = 0;
+			error = NT_STATUS_NO_SUCH_FILE;
 
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
