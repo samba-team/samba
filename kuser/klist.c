@@ -203,7 +203,7 @@ main (int argc, char **argv)
 	}else{
 	    print_cred(context, &creds);
 	}
-	krb5_free_creds (context, &creds);
+	krb5_free_creds_contents (context, &creds);
     }
     ret = krb5_cc_end_seq_get (context, ccache, &cursor);
     if (ret)
