@@ -362,14 +362,14 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 
 		calc_ntlmv2_hash(ntlmssp_state->recv_sign_hash, 
 				 ntlmssp_state->recv_sign_const, 
-				 ntlmssp_state->session_key, send_sign_const);
+				 ntlmssp_state->session_key, recv_sign_const);
 		dump_data_pw("NTLMSSP receive sign hash:\n", 
 			     ntlmssp_state->recv_sign_hash, 
 			     sizeof(ntlmssp_state->recv_sign_hash));
 
 		calc_ntlmv2_hash(ntlmssp_state->recv_seal_hash, 
 				 ntlmssp_state->recv_seal_const, 
-				 ntlmssp_state->session_key, send_seal_const);
+				 ntlmssp_state->session_key, recv_seal_const);
 		dump_data_pw("NTLMSSP receive seal hash:\n", 
 			     ntlmssp_state->recv_sign_hash, 
 			     sizeof(ntlmssp_state->recv_sign_hash));
