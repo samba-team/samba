@@ -1,1 +1,3 @@
 Makefile.in
+hdb-protos.h
+hdb-private.h
