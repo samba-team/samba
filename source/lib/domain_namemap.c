@@ -172,10 +172,11 @@ static BOOL get_uid(DOM_NAME_MAP * gmep, int type)
 }
 
 /**************************************************************************
- makes a group sid out of an nt domain, nt group name or a unix group name.
+ Get the SID for a well known User/Group/Alias (uga)
+ in either the Builtin or the SAM-domain
 ***************************************************************************/
-static BOOL map_wk_name_to_sid(const char *domain, const char *name,
-			       DOM_SID *sid, uint32 *type)
+static BOOL map_uga_name_to_sid(const char *domain, const char *name,
+				DOM_SID *sid, uint32 *type)
 {
 	uint32 status = NT_STATUS_NONE_MAPPED;
 
@@ -189,6 +190,9 @@ static BOOL map_wk_name_to_sid(const char *domain, const char *name,
 	return (status == 0x0);
 }
 
+/**************************************************************************
+ makes a group sid out of an nt domain, nt group name or a unix group name.
+***************************************************************************/
 static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP * map, DOM_MAP_TYPE type)
 {
 	DOM_SID dom_sid;
@@ -250,8 +254,8 @@ static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP * map, DOM_MAP_TYPE type)
 
 	/* first see, if it's a well known name */
 
-	if (map_wk_name_to_sid(map->nt_domain, map->nt_name,
-			       &map->sid, &map->type))
+	if (map_uga_name_to_sid(map->nt_domain, map->nt_name,
+				&map->sid, &map->type))
 	{
 		if (map->type != sid_type)
 		{
@@ -445,7 +449,7 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 		pstring nt_name;
 		fstring nt_domain;
 		fstring ntname;
-		char *p;
+		/* char *p; */
 
 		DEBUG(10, ("Read line |%s|\n", s));
 
