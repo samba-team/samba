@@ -1989,6 +1989,7 @@ BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
 BOOL smb_io_dom_query_3(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
 BOOL smb_io_dom_query_5(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc, UNISTR3 *name, prs_struct *ps, int depth);
+BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
@@ -2069,6 +2070,7 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
+void prs_dump(char *name, int level, prs_struct *ps);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
@@ -2553,6 +2555,8 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
                                           prs_struct *ps, int depth);
+BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
+                                          prs_struct *ps, int depth);
 BOOL uniarray_2_ascarray(BUFFER5 *buf5, char ***ar);
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
@@ -2560,6 +2564,8 @@ BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, pr
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
                                 NT_PRINTER_DRIVER_INFO_LEVEL_3 **asc);
+BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
+                                NT_PRINTER_DRIVER_INFO_LEVEL_6 **asc);
 BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
                               NT_PRINTER_INFO_LEVEL_2  **asc);
 BOOL spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *ps, int depth);

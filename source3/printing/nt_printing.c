@@ -381,6 +381,75 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 /****************************************************************************
 ****************************************************************************/
+static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
+{
+	int fd;
+	pstring file;
+	fstring architecture;
+	fstring driver_name;
+	char **dependentfiles;
+
+	/* create a file in the dir lp_nt_driver_file */
+	/* with the full printer DRIVER name */
+	/* eg: "/usr/local/samba/lib/NTdriver_HP LaserJet 6MP" */
+	/* each name is really defining an *unique* printer model */
+	/* I don't want to mangle the name to find it back when enumerating */
+
+	/* il faut substituer les / par 1 autre caractere d'abord */
+	/* dans le nom de l'imprimante par un # ???*/
+
+	StrnCpy(driver_name, driver->name, sizeof(driver_name)-1);
+
+	all_string_sub(driver_name, "/", "#", 0);
+
+	get_short_archi(architecture, driver->environment);
+		
+	slprintf(file, sizeof(file)-1, "%s/NTdriver_%s_%s",
+	         lp_nt_drivers_file(), architecture, driver_name);
+
+	unlink(file);
+	if((fd = sys_open(file, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644)) == -1)
+	{
+		DEBUG(0, ("add_a_printer_driver_3: Cannot create driver file [%s]. Error was %s\n", file, strerror(errno) ));
+		return(2);
+	}
+
+	/*
+	 * cversion must be 2.
+	 * when adding a printer ON the SERVER
+	 * rpcAddPrinterDriver defines it to zero
+	 * which is wrong !!!
+	 *
+	 * JFM, 4/14/99
+	 */
+	driver->version=2;
+	
+	fdprintf(fd, "version:         %d\n", driver->version);
+	fdprintf(fd, "name:            %s\n", driver->name);
+	fdprintf(fd, "environment:     %s\n", driver->environment);
+	fdprintf(fd, "driverpath:      %s\n", driver->driverpath);
+	fdprintf(fd, "datafile:        %s\n", driver->datafile);
+	fdprintf(fd, "configfile:      %s\n", driver->configfile);
+	fdprintf(fd, "helpfile:        %s\n", driver->helpfile);
+	fdprintf(fd, "monitorname:     %s\n", driver->monitorname);
+	fdprintf(fd, "defaultdatatype: %s\n", driver->defaultdatatype);
+
+	/* and the dependants files */
+	
+	dependentfiles=driver->dependentfiles;
+	
+	while ( **dependentfiles != '\0' )
+	{
+		fdprintf(fd, "dependentfile:   %s\n", *dependentfiles);
+		dependentfiles++;
+	}
+	
+	close(fd);	
+	return(0);
+}
+
+/****************************************************************************
+****************************************************************************/
 static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch)
 {
 	char **lines;
@@ -1307,6 +1376,12 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 			success=add_a_printer_driver_3(driver.info_3);
 			break;
 		}
+
+		case 6: 
+		{
+			success=add_a_printer_driver_6(driver.info_6);
+			break;
+		}
 		default:
 			success=1;
 			break;
@@ -1335,7 +1410,7 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 			break;
 	}
 	
-	dump_a_printer_driver(*driver, level);
+	if (success == 0) dump_a_printer_driver(*driver, level);
 	return (success);
 }
 

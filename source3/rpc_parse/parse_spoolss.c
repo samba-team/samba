@@ -3575,6 +3575,146 @@ BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 
 
 /*******************************************************************
+parse a SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure
+********************************************************************/  
+BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
+                                          prs_struct *ps, int depth)
+{	
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *il;
+	
+	prs_debug(ps, depth, desc, "spool_io_printer_driver_info_level_6");
+	depth++;
+		
+	/* reading */
+	if (UNMARSHALLING(ps)) {
+		il=(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *)malloc(sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6));
+		if(il == NULL)
+			return False;
+		ZERO_STRUCTP(il);
+		*q_u=il;
+	}
+	else {
+		il=*q_u;
+	}
+	
+	if(!prs_align(ps))
+		return False;
+
+
+	/* parse the main elements the packet */
+
+	if(!prs_uint32("dummy1", ps, depth, &il->dummy1))
+		return False;
+	if(!prs_uint32("version", ps, depth, &il->version))
+		return False;
+	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
+		return False;
+	if(!prs_uint32("environment_ptr", ps, depth, &il->environment_ptr))
+		return False;
+	if(!prs_uint32("driverpath_ptr", ps, depth, &il->driverpath_ptr))
+		return False;
+	if(!prs_uint32("datafile_ptr", ps, depth, &il->datafile_ptr))
+		return False;
+	if(!prs_uint32("configfile_ptr", ps, depth, &il->configfile_ptr))
+		return False;
+	if(!prs_uint32("helpfile_ptr", ps, depth, &il->helpfile_ptr))
+		return False;
+	if(!prs_uint32("monitorname_ptr", ps, depth, &il->monitorname_ptr))
+		return False;
+	if(!prs_uint32("defaultdatatype_ptr", ps, depth, &il->defaultdatatype_ptr))
+		return False;
+	if(!prs_uint32("dependentfiles_len", ps, depth, &il->dependentfiles_len))
+		return False;
+	if(!prs_uint32("dependentfiles_ptr", ps, depth, &il->dependentfiles_ptr))
+		return False;
+	if(!prs_uint32("previousnames_len", ps, depth, &il->previousnames_len))
+		return False;
+	if(!prs_uint32("previousnames_ptr", ps, depth, &il->previousnames_ptr))
+		return False;
+	if(!smb_io_time("driverdate", &il->driverdate, ps, depth))
+		return False;
+	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
+		return False;
+	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+		return False;
+	if(!prs_uint32("mfgname_ptr", ps, depth, &il->mfgname_ptr))
+		return False;
+	if(!prs_uint32("oemurl_ptr", ps, depth, &il->oemurl_ptr))
+		return False;
+	if(!prs_uint32("hardwareid_ptr", ps, depth, &il->hardwareid_ptr))
+		return False;
+	if(!prs_uint32("provider_ptr", ps, depth, &il->provider_ptr))
+		return False;
+
+	/* parse the structures in the packet */
+
+	if(!smb_io_unistr2("name", &il->name, il->name_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("environment", &il->environment, il->environment_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("driverpath", &il->driverpath, il->driverpath_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("datafile", &il->datafile, il->datafile_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("configfile", &il->configfile, il->configfile_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("helpfile", &il->helpfile, il->helpfile_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("monitorname", &il->monitorname, il->monitorname_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("defaultdatatype", &il->defaultdatatype, il->defaultdatatype_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+        if (il->dependentfiles_ptr) {
+	if(!smb_io_buffer5("dependentfiles", &il->dependentfiles, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+        }
+        if (il->previousnames_ptr) {
+	if(!smb_io_buffer5("previousnames", &il->previousnames, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+        }
+	if(!smb_io_unistr2("mfgname", &il->mfgname, il->mfgname_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("oemurl", &il->oemurl, il->oemurl_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("hardwareid", &il->hardwareid, il->hardwareid_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("provider", &il->provider, il->provider_ptr, ps, depth))
+		return False;
+	if(!prs_align(ps))
+		return False;
+
+
+	return True;
+}
+
+
+/*******************************************************************
  convert a buffer of UNICODE strings null terminated
  the buffer is terminated by a NULL
  
@@ -3680,6 +3820,13 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
 			if(!spool_io_printer_driver_info_level_3("", &(il->info_3), ps, depth))
 				return False;
 			break;		
+		case 6:
+			if(!spool_io_printer_driver_info_level_6("", &(il->info_6), ps, depth))
+				return False;
+			break;		
+	default:
+		prs_dump("spool_io_printer_driver_info_level", il->level, ps);
+		return False;
 	}
 
 	return True;
@@ -3766,6 +3913,52 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
 	uniarray_2_ascarray(&(uni->dependentfiles), &(d->dependentfiles) );
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
+                                NT_PRINTER_DRIVER_INFO_LEVEL_6 **asc)
+{
+	NT_PRINTER_DRIVER_INFO_LEVEL_6 *d;
+	
+	DEBUG(7,("uni_2_asc_printer_driver_6: Converting from UNICODE to ASCII\n"));
+	
+	if (*asc==NULL)
+	{
+		*asc=(NT_PRINTER_DRIVER_INFO_LEVEL_6 *)malloc(sizeof(NT_PRINTER_DRIVER_INFO_LEVEL_6));
+		if(*asc == NULL)
+			return False;
+		ZERO_STRUCTP(*asc);
+	}	
+
+	d=*asc;
+
+	d->version=uni->version;
+
+	unistr2_to_ascii(d->name,            &(uni->name),            sizeof(d->name)-1);
+	unistr2_to_ascii(d->environment,     &(uni->environment),     sizeof(d->environment)-1);
+	unistr2_to_ascii(d->driverpath,      &(uni->driverpath),      sizeof(d->driverpath)-1);
+	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
+	unistr2_to_ascii(d->configfile,      &(uni->configfile),      sizeof(d->configfile)-1);
+	unistr2_to_ascii(d->helpfile,        &(uni->helpfile),        sizeof(d->helpfile)-1);
+	unistr2_to_ascii(d->monitorname,     &(uni->monitorname),     sizeof(d->monitorname)-1);
+	unistr2_to_ascii(d->defaultdatatype, &(uni->defaultdatatype), sizeof(d->defaultdatatype)-1);
+
+	DEBUGADD(8,( "version:         %d\n", d->version));
+	DEBUGADD(8,( "name:            %s\n", d->name));
+	DEBUGADD(8,( "environment:     %s\n", d->environment));
+	DEBUGADD(8,( "driverpath:      %s\n", d->driverpath));
+	DEBUGADD(8,( "datafile:        %s\n", d->datafile));
+	DEBUGADD(8,( "configfile:      %s\n", d->configfile));
+	DEBUGADD(8,( "helpfile:        %s\n", d->helpfile));
+	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
+	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
+
+	uniarray_2_ascarray(&(uni->dependentfiles), &(d->dependentfiles) );
+	uniarray_2_ascarray(&(uni->previousnames), &(d->previousnames) );
 
 	return True;
 }
