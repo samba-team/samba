@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#define WINS_LIST "wins.tdb"
+#define WINS_LIST "wins.dat"
 #define WINS_VERSION 1
 
 /****************************************************************************
@@ -221,123 +221,177 @@ Load or create the WINS database.
 
 BOOL initialise_wins(void)
 {
-	time_t time_now = time(NULL);
-	TDB_CONTEXT *tdb;
-	TDB_DATA kbuf, dbuf, newkey;
-	struct name_record *namerec = NULL;
-	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
+  time_t time_now = time(NULL);
+  XFILE *fp;
+  pstring line;
 
-	DEBUG(2,("initialise_wins: started\n"));
+  if(!lp_we_are_a_wins_server())
+    return True;
 
-	if(!lp_we_are_a_wins_server())
-		return True;
+  add_samba_names_to_subnet(wins_server_subnet);
 
-	add_samba_names_to_subnet(wins_server_subnet);
+  if((fp = x_fopen(lock_path(WINS_LIST),O_RDONLY,0)) == NULL)
+  {
+    DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
+           WINS_LIST, strerror(errno) ));
+    return True;
+  }
 
-	tdb = tdb_open_log(lock_path(WINS_LIST), 0, TDB_DEFAULT, O_RDONLY, 0600);
-	if (!tdb) {
-		DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n", WINS_LIST, strerror(errno) ));
-		return True;
-	}
+  while (!x_feof(fp))
+  {
+    pstring name_str, ip_str, ttl_str, nb_flags_str;
+    unsigned int num_ips;
+    pstring name;
+    struct in_addr *ip_list;
+    int type = 0;
+    int nb_flags;
+    int ttl;
+    const char *ptr;
+    char *p;
+    BOOL got_token;
+    BOOL was_ip;
+    int i;
+    unsigned hash;
+    int version;
 
-	if (tdb_fetch_int32(tdb, INFO_VERSION) != WINS_VERSION) {
-		DEBUG(0,("Discarding invalid wins.tdb file\n"));
-		tdb_close(tdb);
-		return True;
-	}
+    /* Read a line from the wins.dat file. Strips whitespace
+       from the beginning and end of the line.
+     */
+    if (!fgets_slash(line,sizeof(pstring),fp))
+      continue;
+      
+    if (*line == '#')
+      continue;
 
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+    if (strncmp(line,"VERSION ", 8) == 0) {
+	    if (sscanf(line,"VERSION %d %u", &version, &hash) != 2 ||
+		version != WINS_VERSION) {
+		    DEBUG(0,("Discarding invalid wins.dat file [%s]\n",line));
+		    x_fclose(fp);
+		    return True;
+	    }
+	    continue;
+    }
 
-		fstring name_type;
-		pstring name, ip_str;
-		char *p;
-		int type = 0;
-		int nb_flags;
-		int ttl;
-		unsigned int num_ips;
-		int high, low;
-		struct in_addr wins_ip;
-		struct in_addr *ip_list;
-		int wins_flags;
-		int len,i;
+    ptr = line;
 
-		if (strncmp(kbuf.dptr, ENTRY_PREFIX, strlen(ENTRY_PREFIX)) != 0)
-			continue;
-				
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr)
-			continue;
+    /* 
+     * Now we handle multiple IP addresses per name we need
+     * to iterate over the line twice. The first time to
+     * determine how many IP addresses there are, the second
+     * time to actually parse them into the ip_list array.
+     */
 
-		fstrcpy(name_type, kbuf.dptr+strlen(ENTRY_PREFIX));
+    if (!next_token(&ptr,name_str,NULL,sizeof(name_str))) 
+    {
+      DEBUG(0,("initialise_wins: Failed to parse name when parsing line %s\n", line ));
+      continue;
+    }
 
- 		pstrcpy(name, name_type);
+    if (!next_token(&ptr,ttl_str,NULL,sizeof(ttl_str)))
+    {
+      DEBUG(0,("initialise_wins: Failed to parse time to live when parsing line %s\n", line ));
+      continue;
+    }
 
-		if((p = strchr(name,'#')) != NULL) {
-			*p = 0;
-			sscanf(p+1,"%x",&type);
-		}
+    /*
+     * Determine the number of IP addresses per line.
+     */
+    num_ips = 0;
+    do
+    {
+      got_token = next_token(&ptr,ip_str,NULL,sizeof(ip_str));
+      was_ip = False;
 
-		len = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddfddd",
-				&nb_flags, &high, &low,
-				ip_str, &ttl, &num_ips, &wins_flags);
+      if(got_token && strchr(ip_str, '.'))
+      {
+        num_ips++;
+        was_ip = True;
+      }
+    } while( got_token && was_ip);
 
-		wins_ip=*interpret_addr2(ip_str);
+    if(num_ips == 0)
+    {
+      DEBUG(0,("initialise_wins: Missing IP address when parsing line %s\n", line ));
+      continue;
+    }
 
-		/* Don't reload replica records */
-		if (!ip_equal(wins_ip, our_fake_ip)) {
-			SAFE_FREE(dbuf.dptr);
-			continue;
-		}
+    if(!got_token)
+    {
+      DEBUG(0,("initialise_wins: Missing nb_flags when parsing line %s\n", line ));
+      continue;
+    }
 
-		/* Don't reload released or tombstoned records */
-		if ((wins_flags&WINS_STATE_MASK) != WINS_ACTIVE) {
-			SAFE_FREE(dbuf.dptr);
-			continue;
-		}
+    /* Allocate the space for the ip_list. */
+    if((ip_list = (struct in_addr *)malloc( num_ips * sizeof(struct in_addr))) == NULL)
+    {
+      DEBUG(0,("initialise_wins: Malloc fail !\n"));
+      return False;
+    }
+ 
+    /* Reset and re-parse the line. */
+    ptr = line;
+    next_token(&ptr,name_str,NULL,sizeof(name_str)); 
+    next_token(&ptr,ttl_str,NULL,sizeof(ttl_str));
+    for(i = 0; i < num_ips; i++)
+    {
+      next_token(&ptr, ip_str, NULL, sizeof(ip_str));
+      ip_list[i] = *interpret_addr2(ip_str);
+    }
+    next_token(&ptr,nb_flags_str,NULL, sizeof(nb_flags_str));
 
- 		/* Allocate the space for the ip_list. */
-		if((ip_list = (struct in_addr *)malloc( num_ips * sizeof(struct in_addr))) == NULL) {
-			SAFE_FREE(dbuf.dptr);
-			DEBUG(0,("initialise_wins: Malloc fail !\n"));
-			return False;
-		}
+    /* 
+     * Deal with SELF or REGISTER name encoding. Default is REGISTER
+     * for compatibility with old nmbds.
+     */
 
-		for (i = 0; i < num_ips; i++) {
-			len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f", ip_str);
-			ip_list[i] = *interpret_addr2(ip_str);
-		}
+    if(nb_flags_str[strlen(nb_flags_str)-1] == 'S')
+    {
+      DEBUG(5,("initialise_wins: Ignoring SELF name %s\n", line));
+      SAFE_FREE(ip_list);
+      continue;
+    }
+      
+    if(nb_flags_str[strlen(nb_flags_str)-1] == 'R')
+      nb_flags_str[strlen(nb_flags_str)-1] = '\0';
+      
+    /* Netbios name. # divides the name from the type (hex): netbios#xx */
+    pstrcpy(name,name_str);
+      
+    if((p = strchr(name,'#')) != NULL)
+    {
+      *p = 0;
+      sscanf(p+1,"%x",&type);
+    }
+      
+    /* Decode the netbios flags (hex) and the time-to-live (in seconds). */
+    sscanf(nb_flags_str,"%x",&nb_flags);
+    sscanf(ttl_str,"%d",&ttl);
 
-		/* add all entries that have 60 seconds or more to live */
-		if ((ttl - 60) > time_now || ttl == PERMANENT_TTL) {
-			if(ttl != PERMANENT_TTL)
-				ttl -= time_now;
+    /* add all entries that have 60 seconds or more to live */
+    if ((ttl - 60) > time_now || ttl == PERMANENT_TTL)
+    {
+      if(ttl != PERMANENT_TTL)
+        ttl -= time_now;
     
-			DEBUG( 4, ("initialise_wins: add name: %s#%02x ttl = %d first IP %s flags = %2x\n",
-			    	   name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
+      DEBUG( 4, ("initialise_wins: add name: %s#%02x ttl = %d first IP %s flags = %2x\n",
+           name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
 
-			namerec=add_name_to_subnet( wins_server_subnet, name, type, nb_flags, 
-					  	ttl, REGISTER_NAME, num_ips, ip_list);
-			if (namerec!=NULL) {
-				update_wins_owner(namerec, wins_ip);
-				update_wins_flag(namerec, wins_flags);
-				/* we don't reload the ID, on startup we restart at 1 */
-				get_global_id_and_update(&namerec->data.id, True);
-			}
+      (void)add_name_to_subnet( wins_server_subnet, name, type, nb_flags, 
+                                    ttl, REGISTER_NAME, num_ips, ip_list );
 
-		} else {
-			DEBUG(4, ("initialise_wins: not adding name (ttl problem) %s#%02x ttl = %d first IP %s flags = %2x\n",
-				  name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
-		}
+    }
+    else
+    {
+      DEBUG(4, ("initialise_wins: not adding name (ttl problem) %s#%02x ttl = %d first IP %s flags = %2x\n",
+             name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
+    }
 
-		SAFE_FREE(dbuf.dptr);
-		SAFE_FREE(ip_list);
-	}
+    SAFE_FREE(ip_list);
+  } 
     
-	tdb_close(tdb);
-	DEBUG(2,("initialise_wins: done\n"));
-	return True;
+  x_fclose(fp);
+  return True;
 }
 
 /****************************************************************************
@@ -1765,113 +1819,87 @@ we are not the wins owner !\n", nmb_namestr(&namerec->name)));
 ******************************************************************/
 void wins_write_database(BOOL background)
 {
-	struct name_record *namerec;
-	pstring fname, fnamenew;
-	TDB_CONTEXT *tdb;
-	TDB_DATA kbuf, dbuf;
-	pstring key, buf;
-	int len;
-	int num_record=0;
-	SMB_BIG_UINT id;
+  struct name_record *namerec;
+  pstring fname, fnamenew;
 
-	if(!lp_we_are_a_wins_server())
-		return;
+  XFILE *fp;
+   
+  if(!lp_we_are_a_wins_server())
+    return;
 
-	/* we will do the writing in a child process to ensure that the parent
-	  doesn't block while this is done */
-	if (background) {
-		CatchChild();
-		if (sys_fork()) {
-			return;
-		}
-	}
+  /* we will do the writing in a child process to ensure that the parent
+     doesn't block while this is done */
+  if (background) {
+	  CatchChild();
+	  if (sys_fork()) {
+		  return;
+	  }
+  }
 
-	slprintf(fname,sizeof(fname)-1,"%s/%s", lp_lockdir(), WINS_LIST);
-	all_string_sub(fname,"//", "/", 0);
-	slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
+  slprintf(fname,sizeof(fname)-1,"%s/%s", lp_lockdir(), WINS_LIST);
+  all_string_sub(fname,"//", "/", 0);
+  slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
 
-	tdb = tdb_open_log(fnamenew, 0, TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0644);
-	if (!tdb) {
-		DEBUG(0,("wins_write_database: Can't open %s. Error was %s\n", fnamenew, strerror(errno)));
-		if (background)
-			_exit(0);
-		return;
-	}
+  if((fp = x_fopen(fnamenew,O_WRONLY|O_CREAT,0644)) == NULL)
+  {
+    DEBUG(0,("wins_write_database: Can't open %s. Error was %s\n", fnamenew, strerror(errno)));
+    if (background) {
+	    _exit(0);
+    }
+    return;
+  }
 
-	DEBUG(3,("wins_write_database: Dump of WINS name list.\n"));
+  DEBUG(4,("wins_write_database: Dump of WINS name list.\n"));
 
-	tdb_store_int32(tdb, INFO_VERSION, WINS_VERSION);
+  x_fprintf(fp,"VERSION %d %u\n", WINS_VERSION, 0);
+ 
+  for( namerec 
+           = (struct name_record *)ubi_trFirst( wins_server_subnet->namelist );
+       namerec;
+       namerec = (struct name_record *)ubi_trNext( namerec ) )
+  {
+    int i;
+    struct tm *tm;
 
-	for (namerec = (struct name_record *)ubi_trFirst( wins_server_subnet->namelist );
-	     namerec;
-	     namerec = (struct name_record *)ubi_trNext( namerec ) ) {
+    DEBUGADD(4,("%-19s ", nmb_namestr(&namerec->name) ));
 
-		int i;
-		struct tm *tm;
+    if( namerec->data.death_time != PERMANENT_TTL )
+    {
+      char *ts, *nl;
 
-		DEBUGADD(3,("%-19s ", nmb_namestr(&namerec->name) ));
+      tm = LocalTime(&namerec->data.death_time);
+      ts = asctime(tm);
+      nl = strrchr( ts, '\n' );
+      if( NULL != nl )
+        *nl = '\0';
+      DEBUGADD(4,("TTL = %s  ", ts ));
+    }
+    else
+      DEBUGADD(4,("TTL = PERMANENT                 "));
 
-		if( namerec->data.death_time != PERMANENT_TTL ) {
-			char *ts, *nl;
+    for (i = 0; i < namerec->data.num_ips; i++)
+      DEBUGADD(4,("%15s ", inet_ntoa(namerec->data.ip[i]) ));
+    DEBUGADD(4,("%2x\n", namerec->data.nb_flags ));
 
-			tm = LocalTime(&namerec->data.death_time);
-			ts = asctime(tm);
-			nl = strrchr_m( ts, '\n' );
-			if( NULL != nl )
-				*nl = '\0';
+    if( namerec->data.source == REGISTER_NAME )
+    {
+      x_fprintf(fp, "\"%s#%02x\" %d ",
+		namerec->name.name,namerec->name.name_type, /* Ignore scope. */
+		(int)namerec->data.death_time);
 
-			DEBUGADD(3,("TTL = %s  ", ts ));
-		} else
-			DEBUGADD(3,("TTL = PERMANENT                 "));
-
-		for (i = 0; i < namerec->data.num_ips; i++)
-			DEBUGADD(0,("%15s ", inet_ntoa(namerec->data.ip[i]) ));
-
-		DEBUGADD(3,("0x%2x 0x%2x %15s\n", namerec->data.nb_flags, namerec->data.wins_flags, inet_ntoa(namerec->data.wins_ip)));
-
-		if( namerec->data.source == REGISTER_NAME ) {
-		
-			/* store the type in the key to make the name unique */
-			slprintf(key, sizeof(key), "%s%s#%02x", ENTRY_PREFIX, namerec->name.name, namerec->name.name_type);
-
-			len = tdb_pack(buf, sizeof(buf), "dddfddd",
-					(int)namerec->data.nb_flags,
-					(int)(namerec->data.id>>32),
-					(int)(namerec->data.id&0xffffffff),
-					inet_ntoa(namerec->data.wins_ip),
-					(int)namerec->data.death_time, 
-					namerec->data.num_ips,
-					namerec->data.wins_flags);
-
-			for (i = 0; i < namerec->data.num_ips; i++)
-				len += tdb_pack(buf+len, sizeof(buf)-len, "f", inet_ntoa(namerec->data.ip[i]));
-			
-			kbuf.dsize = strlen(key)+1;
-			kbuf.dptr = key;
-			dbuf.dsize = len;
-			dbuf.dptr = buf;
-			if (tdb_store(tdb, kbuf, dbuf, TDB_INSERT) != 0) return;
-
-			num_record++;
-		}
-	}
-
-	/* store the number of records */
-	tdb_store_int32(tdb, INFO_COUNT, num_record);
-
-	/* get and store the last used ID */
-	get_global_id_and_update(&id, False);
-	tdb_store_int32(tdb, INFO_ID_HIGH, id>>32);
-	tdb_store_int32(tdb, INFO_ID_LOW, id&0xffffffff);
-
-	tdb_close(tdb);
-
-	chmod(fnamenew,0644);
-	unlink(fname);
-	rename(fnamenew,fname);
-
-	if (background)
-		_exit(0);
+      for (i = 0; i < namerec->data.num_ips; i++)
+        x_fprintf( fp, "%s ", inet_ntoa( namerec->data.ip[i] ) );
+      x_fprintf( fp, "%2xR\n", namerec->data.nb_flags );
+    }
+  }
+  
+  x_fclose(fp);
+  chmod(fnamenew,0644);
+  unlink(fname);
+  rename(fnamenew,fname);
+  if (background) {
+	  _exit(0);
+  }
 }
 
 /****************************************************************************
