@@ -1114,7 +1114,9 @@ machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
     return False; 
   }
 
-  if(cli_nt_setup_creds(&cli, nt_pipe_fnum, trust_passwd) == False) {
+  if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
+     cli.mach_acct, trust_passwd, SEC_CHAN_WKSTA) == False)
+  {
     DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
     cli_nt_session_close(&cli, nt_pipe_fnum);
