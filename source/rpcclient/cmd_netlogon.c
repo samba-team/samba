@@ -174,7 +174,8 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, trust_passwd);
+        result = new_cli_nt_setup_creds(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
@@ -237,7 +238,8 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, trust_passwd);
+        result = new_cli_nt_setup_creds(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
@@ -299,7 +301,8 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, trust_passwd);
+        result = new_cli_nt_setup_creds(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
