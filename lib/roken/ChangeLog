@@ -1,3 +1,7 @@
+Tue Sep  8 05:18:31 1998  Assar Westerlund  <assar@sics.se>
+
+	* recvmsg.c (recvmsg): patch from bpreece@unity.ncsu.edu
+
 Tue Aug 18 22:25:52 1998  Assar Westerlund  <assar@sics.se>
 
 	* getarg.h (arg_printusage): new signature
