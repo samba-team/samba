@@ -11,6 +11,8 @@
 
 extern char *__progname;
 
+void warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap);
+
 void verr(int eval, const char *fmt, va_list ap);
 void err(int eval, const char *fmt, ...);
 void verrx(int eval, const char *fmt, va_list ap);

@@ -46,7 +46,7 @@ SOURCES = \
 
 OBJECTS = k_getpwuid.o k_getpwnam.o signal.o tm2time.o \
 	  verify.o inaddr2str.o mini_inetd.o get_window_size.o \
-	  @LIBOBJS@
+	  warnerr.o @LIBOBJS@
 
 all: $(LIB)
 

@@ -44,10 +44,22 @@ RCSID("$Id$");
 #include "err.h"
 
 void
-warn(const char *fmt, ...)
+warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap)
 {
-  va_list ap;
-  va_start(ap, fmt);
-  vwarn(fmt, ap);
-  va_end(ap);
+    int sverrno = errno;
+#ifdef HAVE___PROGNAME
+    fprintf(stderr, "%s", __progname);
+    if(fmt != NULL || doerrno)
+	fprintf(stderr, ": ");
+#endif
+    if (fmt != NULL){
+	vfprintf(stderr, fmt, ap);
+	if(doerrno)
+	    fprintf(stderr, ": ");
+    }
+    if(doerrno)
+	fprintf(stderr, "%s", strerror(sverrno));
+    fprintf(stderr, "\n");
+    if(doexit)
+	exit(eval);
 }
