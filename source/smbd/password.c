@@ -1095,7 +1095,8 @@ use this machine as the password server.\n"));
  key from the workstation trust account password.
 ************************************************************************/
 
-BOOL domain_client_validate( char *user, char *domain, 
+BOOL domain_client_validate( char *user, char *domain, char *server_list,
+				char *acct_name, uint16 acct_type,
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen)
 {
@@ -1108,6 +1109,10 @@ BOOL domain_client_validate( char *user, char *domain,
 	NET_USER_INFO_3 info3;
 	struct cli_state cli;
 	uint32 smb_uid_low;
+	fstring trust_acct;
+
+	fstrcpy(trust_acct, acct_name);
+	fstrcat(trust_acct, "$");
 
 	/* 
 	* Check that the requested domain is not our own machine name.
@@ -1126,7 +1131,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	*/
 
 	if(((smb_apasslen  != 24) && (smb_apasslen  != 0)) || 
-	   ((smb_ntpasslen != 24) && (smb_ntpasslen != 0)))
+	   ((smb_ntpasslen <= 24) && (smb_ntpasslen != 0)))
 	{
 		/*
 		 * Not encrypted - do so.
@@ -1158,7 +1163,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	/*
 	 * Get the workstation trust account password.
 	 */
-	if (!trust_get_passwd( trust_passwd, global_myworkgroup, global_myname))
+	if (!trust_get_passwd( trust_passwd, domain, acct_name))
 	{
 		return False;
 	}
@@ -1171,7 +1176,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	 * see if they were valid.
 	 */
 
-	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
+	if (!cli_connect_serverlist(&cli, server_list))
 	{
 		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
 		return False;
@@ -1192,7 +1197,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	}
 
 	if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
-	   cli.mach_acct, global_myname, trust_passwd, SEC_CHAN_WKSTA) != 0x0)
+	   trust_acct, global_myname, trust_passwd, acct_type) != 0x0)
 	{
 		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 		%s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));

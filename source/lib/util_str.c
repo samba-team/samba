@@ -1066,6 +1066,38 @@ void all_string_sub(char *s,const char *pattern,const char *insert)
 /****************************************************************************
  splits out the front and back at a separator.
 ****************************************************************************/
+void split_at_first_component(char *path, char *front, char sep, char *back)
+{
+	char *p = strchr(path, sep);
+
+	if (p != NULL)
+	{
+		*p = 0;
+	}
+	if (front != NULL)
+	{
+		pstrcpy(front, path);
+	}
+	if (p != NULL)
+	{
+		if (back != NULL)
+		{
+			pstrcpy(back, p+1);
+		}
+		*p = sep;
+	}
+	else
+	{
+		if (back != NULL)
+		{
+			back[0] = 0;
+		}
+	}
+}
+
+/****************************************************************************
+ splits out the front and back at a separator.
+****************************************************************************/
 void split_at_last_component(char *path, char *front, char sep, char *back)
 {
 	char *p = strrchr(path, sep);
@@ -1084,7 +1116,7 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 		{
 			pstrcpy(back, p+1);
 		}
-		*p = '\\';
+		*p = sep;
 	}
 	else
 	{

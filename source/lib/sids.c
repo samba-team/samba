@@ -139,7 +139,8 @@ BOOL get_member_domain_sid(void)
 		}
 	}
 
-	return get_domain_sids(NULL, &global_member_sid, lp_passwordserver());
+	return get_domain_sids(global_myname, NULL,
+	                       &global_member_sid, lp_passwordserver());
 }
 
 

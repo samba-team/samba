@@ -624,6 +624,7 @@ void string_free(char **s);
 BOOL string_set(char **dest,const char *src);
 void string_sub(char *s,const char *pattern,const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert);
+void split_at_first_component(char *path, char *front, char sep, char *back);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *bit_field_to_str(uint32 type, struct field_info *bs);
 char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default);
@@ -4027,7 +4028,8 @@ struct cli_state *server_cryptkey(void);
 BOOL server_validate(char *user, char *domain, 
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen);
-BOOL domain_client_validate( char *user, char *domain, 
+BOOL domain_client_validate( char *user, char *domain, char *server_list,
+				char *acct_name, uint16 acct_type,
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen);
 

@@ -626,6 +626,7 @@ BOOL check_oem_password(char *user,
 	uchar new_p16[16];
 	uchar unenc_old_pw[16];
 	char no_pw[2];
+	uint32 len;
 
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
@@ -682,7 +683,7 @@ BOOL check_oem_password(char *user,
 	 */
 	SamOEMhash( (uchar *)lmdata, (uchar *)smbpw->smb_passwd, True);
 
-	if (!decode_pw_buffer(lmdata, new_passwd, new_passwd_size, nt_pass_set))
+	if (!decode_pw_buffer(lmdata, new_passwd, new_passwd_size, &len))
 	{
 		return False;
 	}
