@@ -10,6 +10,7 @@ securely forward X conections
 .Sh SYNOPSIS
 .Ar kx
 .Op Fl l Ar username
+.Op Fl k
 .Op Fl d
 .Op Fl t
 .Op Fl p Ar port
@@ -24,8 +25,10 @@ through an authenticated and encrypted stream.  Options supported by
 .It Fl l
 Log in on remote the host as user
 .Ar username .
+.It Fl k
+Do not enable keep-alives on the TCP connections.
 .It Fl d
-Do not fork.
+Do not fork. This is mainly useful for debugging.
 .It Fl t
 Listen not only on a UNIX-domain socket but on a TCP socket as well.
 .It Fl p

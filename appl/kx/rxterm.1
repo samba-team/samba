@@ -10,9 +10,11 @@ start a secure remote xterm
 .Sh SYNOPSIS
 .Nm rxterm
 .Op Fl l Ar username
+.Op Fl k
 .Op Fl r Ar rsh_args
 .Op Fl x Ar xterm_args
 .Ar host
+.Op Ar port
 .Sh DESCRIPTION
 The
 .Nm
@@ -21,13 +23,17 @@ program starts a
 window on host
 .Ar host .
 From this window you will also be able to run X clients that will be
-able to connect securily to your X server.
+able to connect securily to your X server. If
+.Ar port
+is given, that port will be used instead of the default.
 .Pp
 The supported options are:
 .Bl -tag -width Ds
 .It Fl l
 Log in on the remote host as user
 .Ar username
+.It Fl k
+Disable keep-alives
 .It Fl r
 Send
 .Ar rsh_args
@@ -60,6 +66,7 @@ In this window you will be able to start X clients.
 .El
 .Sh SEE ALSO
 .Xr rxtelnet 1 ,
+.Xr tenletxr 1 ,
 .Xr kx 1 ,
 .Xr kxd 8 ,
 .Xr rsh 1
