@@ -108,7 +108,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^vuser_key|^UNISTR2|^LOCAL_GRP|^DOMAIN_GRP|^SMB_STRUCT_DIRENT|^SEC_ACL|^SEC_DESC|^SEC_DESC_BUF|^DOM_SID/ ) {
+  if( $0 ~ /^vuser_key|^UNISTR2|^LOCAL_GRP|^DOMAIN_GRP|^SMB_STRUCT_DIRENT|^SEC_ACL|^SEC_DESC|^SEC_DESC_BUF|^DOM_SID|^RPC_HND_NODE/ ) {
     gotstart = 1;
   }
 
