@@ -220,7 +220,7 @@ static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
 		fprintf(stderr, "Usage is : %s [-a] [username] [password]\n\
-%s: [-r machine] [username] [password]\n%s: [-h]", name, name, name);
+%s: [-r machine] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
 		fprintf(stderr, "Usage is : %s [-h] [-r machine] [password]\n", name);
 	exit(1);
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
   user_name[0] = '\0';
 
   memset(old_passwd, '\0', sizeof(old_passwd));
-  memset(new_passwd, '\0', sizeof(old_passwd));
+  memset(new_passwd, '\0', sizeof(new_passwd));
 
   prog_name = argv[0];
 
