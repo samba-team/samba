@@ -280,7 +280,7 @@ krb5_auth_setcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_cksumtype cksumtype)
 {
-    abort();
+    krb5_abortx(context, "unimplemented krb5_auth_setcksumtype called");
 }
 
 krb5_error_code
@@ -288,7 +288,7 @@ krb5_auth_getcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_cksumtype *cksumtype)
 {
-    abort();
+    krb5_abortx(context, "unimplemented krb5_auth_getcksumtype called");
 }
 
 krb5_error_code
@@ -310,7 +310,7 @@ krb5_auth_getenctype(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_enctype *etype)
 {
-    abort();
+    krb5_abortx(context, "unimplemented krb5_auth_getenctype called");
 }
 
 krb5_error_code
@@ -391,7 +391,7 @@ krb5_error_code
 krb5_auth_con_initivector(krb5_context context,
 			  krb5_auth_context auth_context)
 {
-    abort ();
+    krb5_abortx(context, "unimplemented krb5_auth_con_initivector called");
 }
 
 
@@ -400,7 +400,7 @@ krb5_auth_con_setivector(krb5_context context,
 			 krb5_auth_context auth_context,
 			 krb5_pointer ivector)
 {
-    abort ();
+    krb5_abortx(context, "unimplemented krb5_auth_con_setivector called");
 }
 
 
@@ -409,7 +409,7 @@ krb5_auth_con_setrcache(krb5_context context,
 			krb5_auth_context auth_context,
 			krb5_rcache rcache)
 {
-    abort ();
+    krb5_abortx(context, "unimplemented krb5_auth_con_setrcache called");
 }
 
 #endif /* not implemented */
