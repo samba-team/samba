@@ -588,7 +588,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
 	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
-	SMB_BIG_UINT allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	/* Breakout the oplock request bits so we can set the
@@ -931,25 +930,27 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	} 
 	
 	/* Save the requested allocation size. */
-	allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
+	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
+		allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
-	if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
-		if (fsp->is_directory) {
-			close_file(fsp,False);
-			END_PROFILE(SMBntcreateX);
-			/* Can't set allocation size on a directory. */
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+			if (fsp->is_directory) {
+				close_file(fsp,False);
+				END_PROFILE(SMBntcreateX);
+				/* Can't set allocation size on a directory. */
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+			}
+			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+				close_file(fsp,False);
+				END_PROFILE(SMBntcreateX);
+				return ERROR_NT(NT_STATUS_DISK_FULL);
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
 		}
-		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-			close_file(fsp,False);
-			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
-		}
-	} else {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
 	}
 
 	/* 
@@ -1224,7 +1225,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 sd_len;
 	uint32 ea_len;
 	uint16 root_dir_fid;
-	SMB_BIG_UINT allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	time_t c_time;
@@ -1585,24 +1585,26 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	restore_case_semantics(conn, file_attributes);
 
 	/* Save the requested allocation size. */
-	allocation_size = (SMB_BIG_UINT)IVAL(params,12);
+	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(params,12);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
+		allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
 #endif
-	if (allocation_size && (allocation_size > file_len)) {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
-		if (fsp->is_directory) {
-			close_file(fsp,False);
-			END_PROFILE(SMBntcreateX);
-			/* Can't set allocation size on a directory. */
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		if (allocation_size && (allocation_size > file_len)) {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+			if (fsp->is_directory) {
+				close_file(fsp,False);
+				END_PROFILE(SMBntcreateX);
+				/* Can't set allocation size on a directory. */
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+			}
+			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+				close_file(fsp,False);
+				return ERROR_NT(NT_STATUS_DISK_FULL);
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn, (SMB_BIG_UINT)file_len);
 		}
-		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-			close_file(fsp,False);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
-		}
-	} else {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn, (SMB_BIG_UINT)file_len);
 	}
 
 	/* Realloc the size of parameters and data we will return */
