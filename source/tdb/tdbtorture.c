@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -21,6 +22,15 @@
 #define DATALEN 100
 
 static TDB_CONTEXT *db;
+
+static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+{
+	va_list ap;
+    
+	va_start(ap, format);
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+}
 
 static void fatal(char *why)
 {
@@ -86,7 +96,7 @@ static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
 #endif
 
 #ifndef NLOOPS
-#define NLOOPS 50000
+#define NLOOPS 5000000
 #endif
 
 int main(int argc, char *argv[])
@@ -103,6 +113,7 @@ int main(int argc, char *argv[])
 	if (!db) {
 		fatal("db open failed");
 	}
+	tdb_logging_function(db, tdb_log);
 
 	srand(seed + getpid());
 	for (i=0;i<loops;i++) addrec_db();
