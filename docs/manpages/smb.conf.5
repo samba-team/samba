@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "03 October 2002" "" ""
+.TH "SMB.CONF" "5" "09 October 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1011,9 +1011,6 @@ each parameter for details. Note that some are synonyms.
 \fIuse rhosts\fR
 .TP 0.2i
 \(bu
-\fIuse sendfile\fR
-.TP 0.2i
-\(bu
 \fIusername level\fR
 .TP 0.2i
 \(bu
@@ -1345,6 +1342,9 @@ each parameter for details. Note that some are synonyms.
 \fIprinting\fR
 .TP 0.2i
 \(bu
+\fIprofile acls\fR
+.TP 0.2i
+\(bu
 \fIpublic\fR
 .TP 0.2i
 \(bu
@@ -1397,6 +1397,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIuse client driver\fR
+.TP 0.2i
+\(bu
+\fIuse sendfile\fR
 .TP 0.2i
 \(bu
 \fIuser\fR
@@ -5649,6 +5652,34 @@ commands when using the various options use the testparm(1) program.
 This option can be set on a per printer basis
 
 See also the discussion in the  [printers] section.
+.TP
+\fBprofile acls (S)\fR
+This boolean parameter was added to fix the problems that people have been
+having with storing user profiles on Samba shares from Windows 2000 or
+Windows XP clients. New versions of Windows 2000 or Windows XP service
+packs do security ACL checking on the owner and ability to write of the
+profile directory stored on a local workstation when copied from a Samba
+share. When not in domain mode with winbindd then the security info copied
+onto the local workstation has no meaning to the logged in user (SID) on
+that workstation so the profile storing fails. Adding this parameter
+onto a share used for profile storage changes two things about the
+returned Windows ACL. Firstly it changes the owner and group owner
+of all reported files and directories to be BUILTIN\\Administrators,
+BUILTIN\\Users respectively (SIDs S-1-5-32-544, S-1-5-32-545). Secondly
+it adds an ACE entry of "Full Control" to the SID BUILTIN\\Users to
+every returned ACL. This will allow any Windows 2000 or XP workstation
+user to access the profile. Note that if you have multiple users logging
+on to a workstation then in order to prevent them from being able to access
+each others profiles you must remove the "Bypass traverse checking" advanced
+user right. This will prevent access to other users profile directories as
+the top level profile directory (named after the user) is created by the
+workstation profile code and has an ACL restricting entry to the directory
+tree to the owning user.
+
+If you didn't understand the above text, you probably should not set
+this parameter :-).
+
+Default \fBprofile acls = no\fR
 .TP
 \fBprotocol (G)\fR
 Synonym for  \fImax protocol\fR.

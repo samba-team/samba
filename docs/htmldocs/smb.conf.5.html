@@ -2850,18 +2850,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#USESENDFILE"
-><TT
-CLASS="PARAMETER"
-><I
->use sendfile</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#USERNAMELEVEL"
 ><TT
 CLASS="PARAMETER"
@@ -3080,7 +3068,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN996"
+NAME="AEN992"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4185,6 +4173,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#PROFILEACLS"
+><TT
+CLASS="PARAMETER"
+><I
+>profile acls</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#PUBLIC"
 ><TT
 CLASS="PARAMETER"
@@ -4401,6 +4401,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#USESENDFILE"
+><TT
+CLASS="PARAMETER"
+><I
+>use sendfile</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#USER"
 ><TT
 CLASS="PARAMETER"
@@ -4583,7 +4595,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1496"
+NAME="AEN1500"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -15161,6 +15173,43 @@ HREF="#AEN79"
 ></DD
 ><DT
 ><A
+NAME="PROFILEACLS"
+></A
+>profile acls (S)</DT
+><DD
+><P
+>		This boolean parameter was added to fix the problems that people have been
+		having with storing user profiles on Samba shares from Windows 2000 or
+		Windows XP clients. New versions of Windows 2000 or Windows XP service
+		packs do security ACL checking on the owner and ability to write of the
+		profile directory stored on a local workstation when copied from a Samba
+		share. When not in domain mode with winbindd then the security info copied
+		onto the local workstation has no meaning to the logged in user (SID) on
+		that workstation so the profile storing fails. Adding this parameter
+		onto a share used for profile storage changes two things about the
+		returned Windows ACL. Firstly it changes the owner and group owner
+		of all reported files and directories to be BUILTIN\Administrators,
+		BUILTIN\Users respectively (SIDs S-1-5-32-544, S-1-5-32-545). Secondly
+		it adds an ACE entry of "Full Control" to the SID BUILTIN\Users to
+		every returned ACL. This will allow any Windows 2000 or XP workstation
+		user to access the profile. Note that if you have multiple users logging
+		on to a workstation then in order to prevent them from being able to access
+		each others profiles you must remove the "Bypass traverse checking" advanced
+		user right. This will prevent access to other users profile directories as
+		the top level profile directory (named after the user) is created by the
+		workstation profile code and has an ACL restricting entry to the directory
+		tree to the owning user.</P
+><P
+>If you didn't understand the above text, you probably should not set
+		this parameter :-).</P
+><P
+>Default <B
+CLASS="COMMAND"
+>profile acls = no</B
+></P
+></DD
+><DT
+><A
 NAME="PROTOCOL"
 ></A
 >protocol (G)</DT
@@ -19682,7 +19731,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6223"
+NAME="AEN6235"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19712,7 +19761,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6229"
+NAME="AEN6241"
 ></A
 ><H2
 >VERSION</H2
@@ -19723,7 +19772,7 @@ NAME="AEN6229"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6232"
+NAME="AEN6244"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19802,7 +19851,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6252"
+NAME="AEN6264"
 ></A
 ><H2
 >AUTHOR</H2
