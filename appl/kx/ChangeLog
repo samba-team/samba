@@ -1,3 +1,12 @@
+1999-09-29  Assar Westerlund  <assar@sics.se>
+
+	* common.c (match_local_auth): only look for FamilyLocal (and
+ 	FamilyWild) cookies.  This will not work when we start talking tcp
+ 	to the local X-server but `connect_local_xsocket' and the rest of
+ 	the code doesn't handle it anyway and the old code could (and did)
+ 	pick up the wrong cookie sometimes.  If we have to match
+ 	FamilyInternet cookies, the search order has to be changed anyway
+
 1999-09-02  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (childhandler): watch for child `wait_on_pid' to die.
