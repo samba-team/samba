@@ -204,32 +204,22 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	DEBUG(5, ("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
 	      client_domain, smb_name, wksta_name));
 	
-	if (lp_allow_trusted_domains() && *client_domain) {
-
-		/* the client could have given us a workstation name
-		   or other crap for the workgroup - we really need a
-		   way of telling if this domain name is one of our
-		   trusted domain names 
-
-		   Also don't allow "" as a domain, fixes a Win9X bug 
+	/* don't allow "" as a domain, fixes a Win9X bug 
 		   where it doens't supply a domain for logon script
-		   'net use' commands.
+	   'net use' commands.*/
 
-		   Finally, we do this by looking up a cache of trusted domains!
-		*/
-
+	if ( *client_domain )
 		domain = client_domain;
-
-		if (is_trusted_domain(domain)) {
-			return make_user_info(user_info, smb_name, internal_username,
-			                      client_domain, domain, wksta_name,
-			                      lm_pwd, nt_pwd, plaintext, ntlmssp_flags,
-			                      encrypted);
-		}
-
-	} else {
+	else
 		domain = lp_workgroup();
-	}
+
+	/* do what win2k does.  Always map unknown domains to our own
+	   and let the "passdb backend" handle unknown users */
+
+	if ( !is_trusted_domain(domain) )
+		domain = lp_workgroup();
+	
+	/* we know that it is a trusted domain (and we are allowing them) or it is our domain */
 	
 	return make_user_info(user_info, 
 			      smb_name, internal_username,
@@ -238,7 +228,6 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 			      lm_pwd, nt_pwd,
 			      plaintext, 
 			      ntlmssp_flags, encrypted);
-	
 }
 
 /****************************************************************************
