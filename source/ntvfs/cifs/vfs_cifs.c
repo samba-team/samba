@@ -32,7 +32,7 @@ struct cvfs_private {
 	struct smbcli_tree *tree;
 	struct smbcli_transport *transport;
 	struct smbsrv_tcon *tcon;
-	/*const struct ntvfs_ops *ops;*/
+	BOOL map_generic;
 };
 
 
@@ -152,6 +152,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	private->transport->event.ctx = event_context_merge(tcon->smb_conn->connection->event.ctx,
 							    private->transport->event.ctx);
 	talloc_reference(private, private->transport->event.ctx);
+	private->map_generic = lp_parm_bool(req->tcon->service, 
+					    "cifs", "mapgeneric", False);
 
 	return NT_STATUS_OK;
 }
@@ -370,6 +372,11 @@ static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	if (io->generic.level != RAW_OPEN_GENERIC &&
+	    private->map_generic) {
+		return ntvfs_map_open(req, io, ntvfs);
+	}
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_open(private->tree, req, io);
 	}
@@ -461,6 +468,11 @@ static NTSTATUS cvfs_read(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	if (rd->generic.level != RAW_READ_GENERIC &&
+	    private->map_generic) {
+		return ntvfs_map_read(req, rd, ntvfs);
+	}
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_read(private->tree, rd);
 	}
@@ -490,6 +502,11 @@ static NTSTATUS cvfs_write(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	if (wr->generic.level != RAW_WRITE_GENERIC &&
+	    private->map_generic) {
+		return ntvfs_map_write(req, wr, ntvfs);
+	}
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_write(private->tree, wr);
 	}
@@ -503,18 +520,36 @@ static NTSTATUS cvfs_write(struct ntvfs_module_context *ntvfs,
   seek in a file
 */
 static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs, 
-				struct smbsrv_request *req, struct smb_seek *io)
+			  struct smbsrv_request *req, struct smb_seek *io)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	struct cvfs_private *private = ntvfs->private_data;
+	struct smbcli_request *c_req;
+
+	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+		return smb_raw_seek(private->tree, io);
+	}
+
+	c_req = smb_raw_seek_send(private->tree, io);
+
+	SIMPLE_ASYNC_TAIL;
 }
 
 /*
   flush a file
 */
 static NTSTATUS cvfs_flush(struct ntvfs_module_context *ntvfs, 
-				struct smbsrv_request *req, struct smb_flush *io)
+			   struct smbsrv_request *req, struct smb_flush *io)
 {
-	return NT_STATUS_OK;
+	struct cvfs_private *private = ntvfs->private_data;
+	struct smbcli_request *c_req;
+
+	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+		return smb_raw_flush(private->tree, io);
+	}
+
+	c_req = smb_raw_flush_send(private->tree, io);
+
+	SIMPLE_ASYNC_TAIL;
 }
 
 /*
@@ -525,6 +560,11 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	if (io->generic.level != RAW_CLOSE_GENERIC &&
+	    private->map_generic) {
+		return ntvfs_map_close(req, io, ntvfs);
+	}
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_close(private->tree, io);
@@ -581,6 +621,11 @@ static NTSTATUS cvfs_lock(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	if (lck->generic.level != RAW_LOCK_GENERIC &&
+	    private->map_generic) {
+		return ntvfs_map_lock(req, lck, ntvfs);
+	}
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_lock(private->tree, lck);
