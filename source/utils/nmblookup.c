@@ -100,6 +100,7 @@ int main(int argc,char *argv[])
   int i;
   static pstring servicesf = CONFIGFILE;
   struct in_addr bcast_addr;
+  BOOL use_bcast = True;
   BOOL got_bcast = False;
   BOOL lookup_by_ip = False;
   
@@ -112,13 +113,20 @@ int main(int argc,char *argv[])
 
   charset_initialise();
 
-  while ((opt = getopt(argc, argv, "d:B:i:s:SMrhA")) != EOF)
+  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhA")) != EOF)
     switch (opt)
       {
       case 'B':
 	iface_set_default(NULL,optarg,NULL);
 	bcast_addr = *interpret_addr2(optarg);
 	got_bcast = True;
+	use_bcast = True;
+	break;
+      case 'U':
+	iface_set_default(NULL,optarg,NULL);
+	bcast_addr = *interpret_addr2(optarg);
+	got_bcast = True;
+	use_bcast = False;
 	break;
       case 'i':
 	fstrcpy(scope,optarg);
@@ -172,7 +180,6 @@ int main(int argc,char *argv[])
 
   for (i=optind;i<argc;i++)
   {
-      BOOL bcast = True;
       int retries = 2;
       char *p;
       struct in_addr ip;
@@ -203,12 +210,11 @@ int main(int argc,char *argv[])
       if (p) {
 	*p = 0;
 	sscanf(p+1,"%x",&lookup_type);
-	bcast = False;
 	retries = 1;
       }
 
-      if (name_query(ServerFD,lookup,lookup_type,bcast,True,
-		   bcast_addr,&ip,NULL)) 
+      if (name_query(ServerFD,lookup,lookup_type,use_bcast,True,
+		     bcast_addr,&ip,NULL)) 
       {
         printf("%s %s\n",inet_ntoa(ip),lookup);
 
