@@ -1,3 +1,7 @@
+2000-07-08  Assar Westerlund  <assar@sics.se>
+
+	* roken.m4: set CPPFLAGS_roken and call AC_CONFIG_SUBDIRS
+
 2000-07-02  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am.common (CP): set and use

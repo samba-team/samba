@@ -1,3 +1,9 @@
+2000-07-08  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (INCLUDES): add ../lib/krb5
+	* kadmin_locl.h: add krb5_locl.h (since we just use some stuff
+	from there)
+
 2000-06-07  Assar Westerlund  <assar@sics.se>
 
 	* add-random-users.c: new testing program that adds a number of
