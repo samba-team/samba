@@ -187,7 +187,7 @@ static void trans2_append_data_string(struct request_context *req,
 	const int max_bytes_per_char = 3;
 
 	offset = trans->out.data.length;
-	trans2_grow_data(req, trans, offset + (2+strlen(str->s))*max_bytes_per_char);
+	trans2_grow_data(req, trans, offset + (2+strlen_m(str->s))*max_bytes_per_char);
 	ret = trans2_push_data_string(req, trans, len_offset, offset, str, -1, flags);
 	trans2_grow_data(req, trans, offset + ret);
 }
