@@ -240,6 +240,26 @@ get_cred_cache(krb5_context context,
 	    if(ret) {
 		krb5_cc_close(context, id);
 		id = NULL;
+	    } else {
+		const char *name, *inst;
+		krb5_principal tmp;
+		name = krb5_principal_get_comp_string(context, 
+						      default_client, 0);
+		inst = krb5_principal_get_comp_string(context, 
+						      default_client, 1);
+		if(inst == NULL || strcmp(inst, "admin") != 0) {
+		    ret = krb5_make_principal(context, &tmp, NULL, 
+					      name, "admin", NULL);
+		    if(ret != 0) {
+			krb5_free_principal(context, default_client);
+			krb5_cc_close(context, id);
+			return ret;
+		    }
+		    krb5_free_principal(context, default_client);
+		    default_client = tmp;
+		    krb5_cc_close(context, id);
+		    id = NULL;
+		}
 	    }
 	}
 	
