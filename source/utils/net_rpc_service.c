@@ -20,55 +20,93 @@
 #include "includes.h"
 #include "utils/net.h"
 
+
+/********************************************************************
+********************************************************************/
+
+static WERROR open_scmanager( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hSCM )
+{
+	SVCCTL_Q_OPEN_SCMANAGER in;
+	SVCCTL_R_OPEN_SCMANAGER out;
+	WERROR result;
+	fstring server;
+	
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
+	
+	/* leave the database name NULL to get the default service db */
+
+	in.database = NULL;
+
+	/* set the server name */
+
+	if ( !(in.servername = TALLOC_P( mem_ctx, UNISTR2 )) )
+		return WERR_NOMEM;
+	fstr_sprintf( server, "\\\\%s", cli->desthost );
+	init_unistr2( in.servername, server, UNI_STR_TERMINATE );
+
+	in.access = SC_MANAGER_ALL_ACCESS;
+	
+	result = cli_svcctl_open_scm( cli, mem_ctx, &in, &out );
+	
+	if ( !W_ERROR_IS_OK( result ) )
+		return result;
+
+	memcpy( hSCM, &out.handle, sizeof(POLICY_HND) );
+	
+	return WERR_OK;
+}
+
+
+/********************************************************************
+********************************************************************/
+
+static WERROR close_service_handle( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
+{
+	SVCCTL_Q_CLOSE_SERVICE in;
+	SVCCTL_R_CLOSE_SERVICE out;
+	WERROR result;
+	
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
+	
+	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
+	
+	result = cli_svcctl_close_service( cli, mem_ctx, &in, &out );
+	
+	if ( !W_ERROR_IS_OK( result ) )
+		return result;
+	
+	return WERR_OK;
+}
+
+
+
 /********************************************************************
 ********************************************************************/
 
 static NTSTATUS rpc_service_list_internal( const DOM_SID *domain_sid, const char *domain_name, 
-                              struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                              int argc, const char **argv )
+                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv )
 {
-#if 0
-	POLICY_HND dom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DOM_SID sid;
-
-	if (argc < 2 ) {
-		d_printf("Usage: net rpc rights revoke <name|SID> <rights...>\n");
+	POLICY_HND hSCM;
+	WERROR result = WERR_GENERAL_FAILURE;
+	
+	if (argc != 0 ) {
+		d_printf("Usage: net rpc service list\n");
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
-	if (!NT_STATUS_IS_OK(result))
-		return result;	
-
-	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;	
-
-	result = cli_lsa_remove_account_rights(cli, mem_ctx, &dom_pol, sid, 
-					       False, argc-1, argv+1);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	d_printf("Successfully revoked rights.\n");
-
-done:
-	if ( !NT_STATUS_IS_OK(result) ) {
-		d_printf("Failed to revoke privileges for %s (%s)", 
-			argv[0], nt_errstr(result));
+	if ( !W_ERROR_IS_OK(result = open_scmanager( cli, mem_ctx, &hSCM )) ) {
+		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		return werror_to_ntstatus(result);
 	}
 	
-	cli_lsa_close(cli, mem_ctx, &dom_pol);
-
-	return result;
-#else
+	d_printf("Successfully opened Service Control Manager.\n");
+	
+	close_service_handle( cli, mem_ctx, &hSCM  );
+		
 	return NT_STATUS_OK;
-#endif
 }	
 
 
@@ -77,7 +115,7 @@ done:
 
 static int rpc_service_list( int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_LSARPC, 0, 
+	return run_rpc_command( NULL, PI_SVCCTL, 0, 
 		rpc_service_list_internal, argc, argv );
 }
 
