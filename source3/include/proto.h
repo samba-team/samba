@@ -834,9 +834,10 @@ BOOL smb_shm_get_usage(int *bytes_free,
 /*The following definitions come from  smbdes.c  */
 
 void str_to_key(unsigned char *str,unsigned char *key);
-void smbhash(unsigned char *out, unsigned char *in, unsigned char *key);
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
+void cred_hash1(char *out, char *in, char *key);
+void cred_hash2(char *out, char *in, char *key);
 
 /*The following definitions come from  smbencrypt.c  */
 
@@ -889,9 +890,11 @@ struct smb_passwd *get_smbpwnam(char *name);
 
 /*The following definitions come from  srvparse.c  */
 
+char* srv_io_share_info1_str(BOOL io, SH_INFO_1_STR *sh1, char *q, char *base, int align, int depth);
+char* srv_io_share_info1(BOOL io, SH_INFO_1 *sh1, char *q, char *base, int align, int depth);
+char* srv_io_share_1_ctr(BOOL io, SHARE_INFO_1_CTR *ctr, char *q, char *base, int align, int depth);
 char* srv_io_q_net_share_enum(BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, char *q, char *base, int align, int depth);
 char* srv_io_r_net_share_enum(BOOL io, SRV_R_NET_SHARE_ENUM *r_n, char *q, char *base, int align, int depth);
-char* srv_io_q_net_share_enum(BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  status.c  */
 
