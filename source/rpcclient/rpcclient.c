@@ -755,14 +755,32 @@ static BOOL process( struct client_info *info, char *cmd_str)
 	}
 	else while (!feof(stdin))
 	{
-#ifdef HAVE_LIBREADLINE
-	        pstring promptline;
-#endif
+	        pstring pline;
+		BOOL at_sym = False;
+		pline[0] = 0;
+		if (usr.domain[0] != 0)
+		{
+			safe_strcat(pline, usr.domain, sizeof(pline)-1);
+			safe_strcat(pline, "\\", sizeof(pline)-1);
+			at_sym = True;
+		}
+		if (usr.user_name[0] != 0)
+		{
+			safe_strcat(pline, usr.user_name, sizeof(pline)-1);
+			at_sym = True;
+		}
+		if (at_sym)
+		{
+			safe_strcat(pline, "@", sizeof(pline)-1);
+		}
+	
+		safe_strcat(pline, cli_info.dest_host, sizeof(pline)-1);
+		safe_strcat(pline, "$ ", sizeof(pline)-1);
 
 #ifndef HAVE_LIBREADLINE
 
 		/* display a prompt */
-		fprintf(out_hnd, "%s$ ", CNV_LANG(cli_info.dest_host));
+		fprintf(out_hnd, "%s", CNV_LANG(promptline));
 		fflush(out_hnd);
 
 		cli_net_wait_keyboard();
@@ -775,10 +793,7 @@ static BOOL process( struct client_info *info, char *cmd_str)
 
 #else /* HAVE_LIBREADLINE */
 
-		slprintf(promptline, sizeof(promptline) - 1, "%s$ ",
-			 CNV_LANG(cli_info.dest_host));
-
-		if (!readline(promptline))
+		if (!readline(pline))
 		    break;
 
 		/* Copy read line to samba buffer */

@@ -159,7 +159,9 @@ void cli_connection_free(struct cli_connection *con)
 	{
 		for (i = 0; i < num_cons; i++)
 		{
-			if (con != con_list[i] && con_list[i]->cli == con->cli)
+			if (con_list[i] != NULL &&
+			    con != con_list[i] &&
+			    con_list[i]->cli == con->cli)
 			{
 				/* WHOOPS! fnum already open: too bad!!! */
 				con_list[i]->cli = NULL;
