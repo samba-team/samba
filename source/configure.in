@@ -2721,17 +2721,23 @@ samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)]
 #include <sys/socket.h>
 #include <sys/uio.h>],
 [\
-	int fromfd, tofd;
+#define NULL (void *)0
+	int fromfd, tofd, ret, total;
 	off_t offset, nwritten;
-	struct sf_hdtr hdr;
+	struct sf_hdtr {
+                struct iovec *headers;
+                int hdr_cnt;
+                struct iovec *trailers;
+                int trl_cnt;
+	} hdr;
 	struct iovec hdtrl;
-	hdr->headers = &hdtrl;
-	hdr->hdr_cnt = 1;
-	hdr->trailers = NULL;
-	hdr->trl_cnt = 0;
+	hdr.headers = &hdtrl;
+	hdr.hdr_cnt = 1;
+	hdr.trailers = NULL;
+	hdr.trl_cnt = 0;
 	hdtrl.iov_base = NULL;
 	hdtrl.iov_len = 0;
-	int ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
+	ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
 ],
 samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 
