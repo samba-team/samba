@@ -233,7 +233,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 			dump_data(5, sig->data, sig->length);
 			
 			DEBUG(0, ("NTLMSSP NTLM2 packet check failed due to invalid signature!\n"));
-			return NT_STATUS_OK;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
 		if (local_sig.length != sig->length ||
@@ -346,9 +346,6 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 	dump_data_pw("ntlmssp clear data\n", data, length);
 
 	return ntlmssp_check_packet(ntlmssp_state, sig_mem_ctx, data, length, sig);
-
-	/* increment counter on recv */
-	ntlmssp_state->ntlmssp_seq_num++;
 }
 
 /**
@@ -439,7 +436,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		calc_ntlmv2_key(ntlmssp_state->recv_seal_key, 
 				weak_session_key, recv_seal_const);
 		dump_data_pw("NTLMSSP recv seal key:\n",
-			     ntlmssp_state->recv_sign_key, 
+			     ntlmssp_state->recv_seal_key, 
 			     sizeof(ntlmssp_state->recv_seal_key));
 		calc_hash(ntlmssp_state->recv_seal_hash, 
 			  ntlmssp_state->recv_seal_key, 
