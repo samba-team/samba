@@ -1105,20 +1105,37 @@ interface netlogon
 		NETR_TRUST_FLAG_INBOUND   = 0x00000020
 	} netr_TrustFlags;
 
+	typedef [v1_enum] enum {
+		NETR_TRUST_TYPE_DOWNLEVEL	= 1,
+		NETR_TRUST_TYPE_UPLEVEL		= 2,
+		NETR_TRUST_TYPE_MIT		= 3,
+		NETR_TRUST_TYPE_DCE		= 4
+	} netr_TrustType;
+
+	typedef bitmap {
+		NETR_TRUST_ATTRIBUTE_NON_TRANSITIVE	= 0x00000001,
+		NETR_TRUST_ATTRIBUTE_UPLEVEL_ONLY       = 0x00000002,
+		NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN = 0x00000004,
+		NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE  = 0x00000008,
+		NETR_TRUST_ATTRIBUTE_CROSS_ORGANIZATION = 0x00000010,
+		NETR_TRUST_ATTRIBUTE_WITHIN_FOREST      = 0x00000020,
+		NETR_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL  = 0x00000040
+	} netr_TrustAttributes;
+
 	typedef struct {
-		unistr *netbios_name;
-		unistr *dns_name;
-		netr_TrustFlags trust_flags;
-		uint32 parent_index;
-		uint32 trust_type;
-		uint32 trust_attributes;
-		dom_sid2 *sid;
-		GUID   guid;
+		unistr			*netbios_name;
+		unistr			*dns_name;
+		netr_TrustFlags		trust_flags;
+		uint32			parent_index;
+		netr_TrustType		trust_type;
+		netr_TrustAttributes	trust_attributes;
+		dom_sid2		*sid;
+		GUID			guid;
 	} netr_DomainTrust;
 
 	WERROR netr_DsrEnumerateDomainTrusts(
 		[in]                 unistr           *server_name,
-		[in]                 uint32           trust_flags,
+		[in]                 netr_TrustFlags  trust_flags,
 		[out]                uint32           count,
 		[out,size_is(count)] netr_DomainTrust *trusts
 		);
