@@ -3827,6 +3827,10 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if ( (grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_NO_SUCH_GROUP;
 
+	/* delete mapping first */
+	if(!pdb_delete_group_mapping_entry(group_sid))
+		return NT_STATUS_ACCESS_DENIED;
+		
 	/* we can delete the UNIX group */
 	smb_delete_group(grp->gr_name);
 
@@ -3834,8 +3838,6 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if ( (grp=getgrgid(gid)) != NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
-	if(!pdb_delete_group_mapping_entry(group_sid))
-		return NT_STATUS_ACCESS_DENIED;
 
 	if (!close_policy_hnd(p, &q_u->group_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
