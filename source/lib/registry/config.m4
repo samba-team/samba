@@ -18,7 +18,7 @@ SMB_MODULE(registry_nt4, REGISTRY, STATIC, lib/registry/reg_backend_nt4/reg_back
 SMB_MODULE(registry_w95, REGISTRY, STATIC, lib/registry/reg_backend_w95/reg_backend_w95.o)
 SMB_MODULE(registry_dir, REGISTRY, STATIC, lib/registry/reg_backend_dir/reg_backend_dir.o)
 SMB_MODULE(registry_rpc, REGISTRY, STATIC, lib/registry/reg_backend_rpc/reg_backend_rpc.o,[],[],[LIBSMB])
-SMB_MODULE(registry_gconf, REGISTRY, NOT, lib/registry/reg_backend_gconf/reg_backend_gconf.o])
+SMB_MODULE(registry_gconf, REGISTRY, NOT, lib/registry/reg_backend_gconf/reg_backend_gconf.o)
 SMB_MODULE(registry_ldb, REGISTRY, NOT, lib/registry/reg_backend_ldb/reg_backend_ldb.o,[],[],[LIBLDB])
 SMB_SUBSYSTEM(REGISTRY,lib/registry/common/reg_interface.o,
 	[lib/registry/common/reg_objects.o lib/registry/common/reg_util.o],
