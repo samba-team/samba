@@ -2845,20 +2845,21 @@ samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)]
 		AC_CACHE_CHECK([for freebsd sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([\
 #include <sys/types.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/uio.h>],
 [\
-	int fromfd, tofd;
+	int fromfd, tofd, ret, total=0;
 	off_t offset, nwritten;
 	struct sf_hdtr hdr;
 	struct iovec hdtrl;
-	hdr->headers = &hdtrl;
-	hdr->hdr_cnt = 1;
-	hdr->trailers = NULL;
-	hdr->trl_cnt = 0;
+	hdr.headers = &hdtrl;
+	hdr.hdr_cnt = 1;
+	hdr.trailers = NULL;
+	hdr.trl_cnt = 0;
 	hdtrl.iov_base = NULL;
 	hdtrl.iov_len = 0;
-	int ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
+	ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
 ],
 samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 
