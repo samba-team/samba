@@ -280,26 +280,14 @@ cmd
 		}
 	| LIST CRLF check_login
 		{
-#ifdef HAVE_LS_A
-		  char *cmd = "/bin/ls -lA";
-#else
-		  char *cmd = "/bin/ls -la";
-#endif
-			if ($3)
-				retrieve(cmd, "");
-			
+		    if($3)
+			list_file(".");
 		}
 	| LIST SP pathname CRLF check_login
 		{
-#ifdef HAVE_LS_A
-		  char *cmd = "/bin/ls -lA %s";
-#else
-		  char *cmd = "/bin/ls -la %s";
-#endif
-			if ($5 && $3 != NULL)
-				retrieve(cmd, $3);
-			if ($3 != NULL)
-				free($3);
+		    if($5)
+			list_file($3);
+		    free($3);
 		}
 	| sTAT SP pathname CRLF check_login
 		{
