@@ -37,8 +37,26 @@ NTSTATUS ndr_push_samr_Shutdown(struct ndr_push *ndr, struct samr_Shutdown *r)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ndr_push_samr_Name(struct ndr_push *ndr, int ndr_flags, struct samr_Name *r)
+{
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
+	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
+	NDR_CHECK(ndr_push_ptr(ndr, r->name));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->name) {
+		NDR_CHECK(ndr_push_unistr_noterm(ndr, r->name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_push_samr_LookupDomain(struct ndr_push *ndr, struct samr_LookupDomain *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.domain));
 
 	return NT_STATUS_OK;
 }
@@ -382,7 +400,7 @@ NTSTATUS ndr_push_samr_CONNECT3(struct ndr_push *ndr, struct samr_CONNECT3 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_CONNECT4(struct ndr_push *ndr, struct samr_CONNECT4 *r)
+NTSTATUS ndr_push_samr_Connect4(struct ndr_push *ndr, struct samr_Connect4 *r)
 {
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.system_name));
 	if (r->in.system_name) {
@@ -460,13 +478,6 @@ NTSTATUS ndr_pull_samr_Shutdown(struct ndr_pull *ndr, struct samr_Shutdown *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, struct samr_LookupDomain *r)
-{
-	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS ndr_pull_samr_Name(struct ndr_pull *ndr, int ndr_flags, struct samr_Name *r)
 {
 	uint32 _ptr_name;
@@ -489,11 +500,28 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, struct samr_LookupDomain *r)
+{
+	uint32 _ptr_sid;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sid));
+	if (_ptr_sid) {
+		NDR_ALLOC(ndr, r->out.sid);
+	} else {
+		r->out.sid = NULL;
+	}
+	if (r->out.sid) {
+		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->out.sid));
+	}
+	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS ndr_pull_samr_SamEntry(struct ndr_pull *ndr, int ndr_flags, struct samr_SamEntry *r)
 {
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->rid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->idx));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -935,7 +963,7 @@ NTSTATUS ndr_pull_samr_CONNECT3(struct ndr_pull *ndr, struct samr_CONNECT3 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_CONNECT4(struct ndr_pull *ndr, struct samr_CONNECT4 *r)
+NTSTATUS ndr_pull_samr_Connect4(struct ndr_pull *ndr, struct samr_Connect4 *r)
 {
 	NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.handle));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
@@ -997,7 +1025,7 @@ void ndr_print_samr_SamEntry(struct ndr_print *ndr, const char *name, struct sam
 {
 	ndr_print_struct(ndr, name, "samr_SamEntry");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "rid", r->rid);
+	ndr_print_uint32(ndr, "idx", r->idx);
 	ndr_print_samr_Name(ndr, "name", &r->name);
 	ndr->depth--;
 }
