@@ -284,9 +284,9 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 	}
 #endif /* 0 */
 
-	become_root(True);
+	become_root();
 	smb_pass = getsmbpwnam(mach_acct);
-	unbecome_root(True);
+	unbecome_root();
 
 	if ((smb_pass) != NULL && !(smb_pass->acct_ctrl & ACB_DISABLED) &&
         (smb_pass->smb_nt_passwd != NULL))
@@ -453,9 +453,9 @@ static BOOL api_net_srv_pwset(pipes_struct *p)
 
 		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
-		become_root(True);
+		become_root();
 		smb_pass = getsmbpwnam(mach_acct);
-		unbecome_root(True);
+		unbecome_root();
 
 		if (smb_pass != NULL) {
 			unsigned char pwd[16];
@@ -473,9 +473,9 @@ static BOOL api_net_srv_pwset(pipes_struct *p)
 			smb_pass->smb_nt_passwd = pwd;
 			smb_pass->acct_ctrl     = ACB_WSTRUST;
 
-			become_root(True);
+			become_root();
 			ret = mod_smbpwd_entry(smb_pass,False);
-			unbecome_root(True);
+			unbecome_root();
 
 			if (ret) {
 				/* hooray! */
@@ -718,9 +718,9 @@ static BOOL api_net_sam_logon(pipes_struct *p)
          */
         pw=Get_Pwnam(nt_username, True);
         
-        become_root(True);
+        become_root();
         smb_pass = getsmbpwnam(nt_username);
-        unbecome_root(True);
+        unbecome_root();
         
         if (smb_pass == NULL)
             status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;

@@ -270,9 +270,9 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 	}
 
 	/* ok, it's a user.  find the user account */
-	become_root(True);
+	become_root();
 	disp_info = getsamdisprid(rid);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (disp_info != NULL)
 	{
@@ -332,9 +332,9 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid)
 	(*rid) = 0;
 
 	/* find the user account */
-	become_root(True);
+	become_root();
 	sam_pass = getsam21pwnam(user_name);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (sam_pass != NULL)
 	{

@@ -144,9 +144,9 @@ static void attempt_remote_rpc_connect(pipes_struct *p)
 	make_creds_nt_sec(&usr.nts);
 	*/
 
-	become_root(False); /* to connect to pipe */
+	become_root(); /* to connect to pipe */
 	p->m = msrpc_use_add(p->name, sys_getpid(), &usr, False);
-	unbecome_root(False);
+	unbecome_root();
 
 	if (p->m == NULL)
 		DEBUG(10,("attempt_remote_rpc_connect: msrpc redirect failed - using local implementation.\n"));
