@@ -64,5 +64,5 @@
 %typemap(in) struct cli_credentials * {
 	$1 = cli_credentials_init(arg1);
 	cli_credentials_set_anonymous($1);
-//	cli_credentials_set_workstation($1, "FROGURT", CRED_SPECIFIED);
+	cli_credentials_set_conf($1);
 }
