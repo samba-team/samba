@@ -152,8 +152,11 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 					 ntc, reuse,
 					 &is_new_connection);
 
-		if (con->msrpc.smb == NULL)
+		if (con->msrpc.smb == NULL) 
+		{
+			cli_connection_free(con);
 			return NULL;
+		}
 
 		key = con->msrpc.smb->smb->nt.key;
 		con->msrpc.smb->smb->nt.key.pid = 0;
@@ -228,7 +231,6 @@ terminate client connection
 void cli_connection_free(struct cli_connection *con)
 {
 	BOOL closed = False;
-	void *oldcli = NULL;
 	int i;
 
 	DEBUG(10, ("cli_connection_free: %d\n", __LINE__));
@@ -243,7 +245,6 @@ void cli_connection_free(struct cli_connection *con)
 				ncalrpc_l_use_del(con->pipe_name,
 						  &con->msrpc.local->nt.key,
 						  False, &closed);
-				oldcli = con->msrpc.local;
 				con->msrpc.local = NULL;
 				break;
 			}
@@ -254,7 +255,6 @@ void cli_connection_free(struct cli_connection *con)
 						 con->pipe_name,
 						 &con->msrpc.smb->smb->nt.key,
 						 False, &closed);
-				oldcli = con->msrpc.local;
 				con->msrpc.smb = NULL;
 				break;
 			}
@@ -262,34 +262,6 @@ void cli_connection_free(struct cli_connection *con)
 	}
 
 	DEBUG(10, ("cli_connection_free: closed: %s\n", BOOLSTR(closed)));
-
-	if (closed)
-	{
-		for (i = 0; i < num_cons; i++)
-		{
-			struct cli_connection *c = con_list[i];
-			if (c != NULL && con != c && c->msrpc.cli == oldcli)
-			{
-				/* WHOOPS! fnum already open: too bad!!!
-				   get rid of all other connections that
-				   were using that connection
-				 */
-				switch (c->type)
-				{
-					case MSRPC_LOCAL:
-					{
-						c->msrpc.local = NULL;
-						break;
-					}
-					case MSRPC_SMB:
-					{
-						c->msrpc.smb = NULL;
-						break;
-					}
-				}
-			}
-		}
-	}
 
 	if (con->msrpc.cli != NULL)
 	{
