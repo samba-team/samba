@@ -353,31 +353,3 @@ BOOL secrets_store_ldap_pw(char* dn, char* pw)
 	return secrets_store(key, pw, strlen(pw));
 }
 
-BOOL fetch_ldap_pw(char *dn, char* pw, int len)
-{
-	fstring key;
-	char *p;
-	void *data = NULL;
-	size_t size;
-	
-	pstrcpy(key, dn);
-	for (p=key; *p; p++)
-		if (*p == ',') *p = '/';
-	
-	data=secrets_fetch(key, &size);
-	if (!size) {
-		DEBUG(0,("fetch_ldap_pw: no ldap secret retrieved!\n"));
-		return False;
-	}
-	
-	if (size > len-1)
-	{
-		DEBUG(0,("fetch_ldap_pw: ldap secret is too long (%d > %d)!\n", size, len-1));
-		return False;
-	}
-
-	memcpy(pw, data, size);
-	pw[size] = '\0';
-	
-	return True;
-}

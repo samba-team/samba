@@ -27,8 +27,9 @@ const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 	{ "smbpasswd_nua", pdb_init_smbpasswd_nua },
 	{ "tdbsam", pdb_init_tdbsam },
 	{ "tdbsam_nua", pdb_init_tdbsam_nua },
+	{ "ldapsam", pdb_init_ldapsam },
+	{ "ldapsam_nua", pdb_init_ldapsam_nua },
 #if 0
-	{ "ldap", pdb_init_ldap },
 	{ "nisplus", pdb_init_nisplus },	
 	{ "unix", pdb_init_unix },
 #endif
@@ -252,7 +253,7 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 	return pdb_context;
 }
 
-#if !defined(WITH_LDAP_SAM) && !defined(WITH_NISPLUS_SAM)
+#if !defined(WITH_NISPLUS_SAM)
 
 /******************************************************************
  Backward compatability functions for the original passdb interface
@@ -346,7 +347,7 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 	return pdb_context->pdb_delete_sam_account(pdb_context, sam_acct);
 }
 
-#endif /* !defined(WITH_LDAP_SAM) && !defined(WITH_NISPLUS_SAM) */
+#endif /* !defined(WITH_NISPLUS_SAM) */
 
 /***************************************************************
  Initialize the static context (at smbd startup etc). 

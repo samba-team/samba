@@ -157,11 +157,11 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		pdb_set_gid(sampass, gid);
 	}
 
-	pdb_set_logon_time(sampass, logon_time);
-	pdb_set_logoff_time(sampass, logoff_time);
-	pdb_set_kickoff_time(sampass, kickoff_time);
-	pdb_set_pass_can_change_time(sampass, pass_can_change_time);
-	pdb_set_pass_must_change_time(sampass, pass_must_change_time);
+	pdb_set_logon_time(sampass, logon_time, True);
+	pdb_set_logoff_time(sampass, logoff_time, True);
+	pdb_set_kickoff_time(sampass, kickoff_time, True);
+	pdb_set_pass_can_change_time(sampass, pass_can_change_time, True);
+	pdb_set_pass_must_change_time(sampass, pass_must_change_time, True);
 	pdb_set_pass_last_set_time(sampass, pass_last_set_time);
 
 	pdb_set_username     (sampass, username);

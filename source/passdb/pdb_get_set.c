@@ -321,48 +321,68 @@ BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
 	return False;
 }
 
-BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime)
+BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime, BOOL store)
 {
 	if (!sampass)
 		return False;
 
 	sampass->private.logon_time = mytime;
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_LOGONTIME); 
+
 	return True;
 }
 
-BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime)
+BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime, BOOL store)
 {
 	if (!sampass)
 		return False;
 
 	sampass->private.logoff_time = mytime;
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_LOGOFFTIME); 
+
 	return True;
 }
 
-BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime)
+BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime, BOOL store)
 {
 	if (!sampass)
 		return False;
 
 	sampass->private.kickoff_time = mytime;
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_KICKOFFTIME); 
+
 	return True;
 }
 
-BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime)
+BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime, BOOL store)
 {
 	if (!sampass)
 		return False;
 
 	sampass->private.pass_can_change_time = mytime;
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_CANCHANGETIME); 
+
 	return True;
 }
 
-BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t mytime)
+BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t mytime, BOOL store)
 {
 	if (!sampass)
 		return False;
 
 	sampass->private.pass_must_change_time = mytime;
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_MUSTCHANGETIME); 
+
 	return True;
 }
 
@@ -372,6 +392,7 @@ BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t mytime)
 		return False;
 
 	sampass->private.pass_last_set_time = mytime;
+
 	return True;
 }
 
@@ -876,12 +897,12 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 	account_policy_get(AP_MAX_PASSWORD_AGE, &expire);
 
 	if (expire==(uint32)-1) {
-		if (!pdb_set_pass_must_change_time (sampass, 0))
+		if (!pdb_set_pass_must_change_time (sampass, get_time_t_max(), False))
 			return False;
 	} else {
 		if (!pdb_set_pass_must_change_time (sampass, 
 					    pdb_get_pass_last_set_time(sampass)
-					    + expire))
+					    + expire, True))
 			return False;
 	}
 	

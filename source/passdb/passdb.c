@@ -904,12 +904,13 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	if (from == NULL || to == NULL) 
 		return;
 
-	pdb_set_logon_time(to,nt_time_to_unix(&from->logon_time));
-	pdb_set_logoff_time(to,nt_time_to_unix(&from->logoff_time));
-	pdb_set_kickoff_time(to, nt_time_to_unix(&from->kickoff_time));
+	pdb_set_logon_time(to,nt_time_to_unix(&from->logon_time), True);
+	pdb_set_logoff_time(to,nt_time_to_unix(&from->logoff_time), True);
+	pdb_set_kickoff_time(to, nt_time_to_unix(&from->kickoff_time), True);
+	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time), True);
+	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time), True);
+
 	pdb_set_pass_last_set_time(to, nt_time_to_unix(&from->pass_last_set_time));
-	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time));
-	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time));
 
 	if (from->uni_user_name.buffer)
 		pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
@@ -958,12 +959,13 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	if (from == NULL || to == NULL) 
 		return;
 
-	pdb_set_logon_time(to,nt_time_to_unix(&from->logon_time));
-	pdb_set_logoff_time(to,nt_time_to_unix(&from->logoff_time));
-	pdb_set_kickoff_time(to, nt_time_to_unix(&from->kickoff_time));
+	pdb_set_logon_time(to,nt_time_to_unix(&from->logon_time), True);
+	pdb_set_logoff_time(to,nt_time_to_unix(&from->logoff_time), True);
+	pdb_set_kickoff_time(to, nt_time_to_unix(&from->kickoff_time), True);
+	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time), True);
+	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time), True);
+
 	pdb_set_pass_last_set_time(to, nt_time_to_unix(&from->pass_last_set_time));
-	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time));
-	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time));
 
 	if (from->uni_user_name.buffer)
 		pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
