@@ -43,6 +43,18 @@ struct smbc_dirent {
 
 };
 
+#ifndef _CLIENT_H
+typedef unsigned short uint16;
+struct print_job_info {
+  uint16 id;
+  uint16 priority;
+  size_t size;
+  char user[128];
+  char name[128];
+  time_t t;
+};
+#endif
+
 /*
  * Entity types
  */

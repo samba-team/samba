@@ -2149,8 +2149,104 @@ int smbc_fstatdir(int fd, struct stat *st)
 
 int smbc_print_file(const char *fname, const char *printq)
 {
+  int fid1, fid2, bytes, saverr, tot_bytes = 0;
+  char buf[4096];
 
+  if (!smbc_initialized) {
 
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (!fname && !printq) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+
+  /* Try to open the file for reading ... */
+
+  if ((fid1 = smbc_open(fname, O_RDONLY, 0666)) < 0) {
+
+    return -1;  /* smbc_open sets errno */
+
+  }
+
+  /* Now, try to open the printer file for writing */
+
+  if ((fid2 = smbc_open_print_job(printq)) < 0) {
+
+    saverr = errno;  /* Save errno */
+    smbc_close(fid1);
+    errno = saverr;
+    return -1;
+
+  }
+
+  while ((bytes = smbc_read(fid1, buf, sizeof(buf))) > 0) {
+
+    tot_bytes += bytes;
+
+    if ((smbc_write(fid2, buf, bytes)) < 0) {
+
+      saverr = errno;
+      smbc_close(fid1);
+      smbc_close(fid2);
+      errno = saverr;
+
+    }
+
+  }
+
+  saverr = errno;
+
+  smbc_close(fid1);  /* We have to close these anyway */
+  smbc_close(fid2);
+
+  if (bytes < 0) {
+
+    errno = saverr;
+    return -1;
+
+  }
+
+  return tot_bytes;
+
+}
+
+/*
+ * Open a print file to be written to by other calls
+ */
+
+int smbc_open_print_job(const char *fname)
+{
+  struct smbc_server *srv;
+  fstring server, share, user, password;
+  pstring path;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (!fname) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+  
+  DEBUG(4, ("smbc_open_print_job(%s)\n", fname));
+
+  smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+
+  /* What if the path is empty, or the file exists? */
+
+  return smbc_open(fname, O_WRONLY, 666);
 
 }
 
