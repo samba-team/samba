@@ -217,8 +217,12 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#ifdef WITH_SYSLOG
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#else
+#ifdef HAVE_SYS_SYSLOG_H
+#include <sys/syslog.h>
+#endif
 #endif
 
 #include <sys/file.h>

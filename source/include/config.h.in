@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -1090,6 +1090,9 @@
 /* Define if you have the <sys/syscall.h> header file.  */
 #undef HAVE_SYS_SYSCALL_H
 
+/* Define if you have the <sys/syslog.h> header file.  */
+#undef HAVE_SYS_SYSLOG_H
+
 /* Define if you have the <sys/termio.h> header file.  */
 #undef HAVE_SYS_TERMIO_H
 
@@ -1107,6 +1110,9 @@
 
 /* Define if you have the <syscall.h> header file.  */
 #undef HAVE_SYSCALL_H
+
+/* Define if you have the <syslog.h> header file.  */
+#undef HAVE_SYSLOG_H
 
 /* Define if you have the <termio.h> header file.  */
 #undef HAVE_TERMIO_H
