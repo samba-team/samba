@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -46,6 +46,8 @@ RCSID("$Id$");
 #include <pwd.h>
 
 #include <krb5.h>
+
+#include <com_err.h>
 
 #ifdef SIAD_GET_GROUPS /* >= 4.0 */
 #define POSIX_GETPWNAM_R
@@ -172,7 +174,6 @@ common_auth(sia_collect_func_t *collect,
 	    int pkgind)
 {
     prompt_t prompts[2], *pr;
-    krb5_principal princ;
     
     if((siastat == SIADSUCCESS) && (geteuid() == 0))
 	return SIADSUCCESS;
@@ -216,8 +217,8 @@ common_auth(sia_collect_func_t *collect,
 	krb5_principal principal;
 	krb5_ccache ccache;
 	krb5_error_code ret;
-	struct passwd pw, *pwd,  fpw, *fpwd;
-	char pwbuf[1024],  fpwbuf[1024];
+	struct passwd pw, *pwd;
+	char pwbuf[1024];
 	struct state *s = (struct state*)entity->mech[pkgind];
 
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
@@ -281,7 +282,6 @@ siad_ses_launch(sia_collect_func_t *collect,
 		SIAENTITY *entity,
 		int pkgind)
 {
-    char buf[MaxPathLen];
     char env[1024];
     struct state *s = (struct state*)entity->mech[pkgind];
     if(s->valid){
@@ -346,7 +346,7 @@ siad_chg_finger (sia_collect_func_t *collect,
 }
 
 int
-siad_chg_passwd (sia_collect_func_t *collect,
+siad_chg_password (sia_collect_func_t *collect,
 		     const char *username, 
 		     int argc, 
 		     char *argv[])
