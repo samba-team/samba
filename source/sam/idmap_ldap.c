@@ -833,6 +833,5 @@ static struct idmap_methods ldap_methods = {
 
 NTSTATUS idmap_ldap_init(void)
 {
-	DEBUG(0,("idmap_reg_ldap: no LDAP support\n"));
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "ldap", &ldap_methods);
 }
