@@ -82,8 +82,11 @@
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
+#include <base64.h>
+#include <parse_units.h>
 #include <krb5.h>
 #include <hdb_err.h>
+#include <der.h>
 
 #ifdef KRB4
 #include <krb.h>

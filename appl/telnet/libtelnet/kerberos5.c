@@ -59,6 +59,9 @@ RCSID("$Id$");
 
 #include <arpa/telnet.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <netdb.h>
 #include <ctype.h>
 #include <pwd.h>
@@ -68,6 +71,8 @@ RCSID("$Id$");
 #ifdef SOCKS
 #include <socks.h>
 #endif
+
+#include <roken.h>
 
 #include "encrypt.h"
 #include "auth.h"
