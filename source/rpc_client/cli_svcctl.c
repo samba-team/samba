@@ -580,7 +580,7 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 /****************************************************************************
 do a SVC unknown 3
 ****************************************************************************/
-BOOL svc_unknown_3(const POLICY_HND *scman_hnd)
+BOOL svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -606,9 +606,39 @@ BOOL svc_unknown_3(const POLICY_HND *scman_hnd)
 
 	/* turn parameters into data stream */
 	if (svc_io_q_unknown_3("", &q_c, &buf, 0) &&
-	    rpc_con_pipe_req(con, SVC_CLOSE, &buf, &rbuf))
+	    rpc_con_pipe_req(con, SVC_UNKNOWN_3, &buf, &rbuf))
 	{
-		;
+		SVC_R_UNKNOWN_3 r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		p = svc_io_r_unknown_3("", &r_o, &rbuf, 0);
+
+		if (p) p = (rbuf.offset != 0);
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(1,("SVC_OPEN_SC_MAN: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			*hnd = r_o.hnd;
+			valid_req = register_policy_hnd(get_global_hnd_cache(),
+			                                cli_con_sec_ctx(con),
+			                                hnd, 0x0) &&
+			            set_policy_con(get_global_hnd_cache(), hnd, con, 
+			                                 cli_connection_unlink);
+			if (valid_req)
+			{
+				policy_hnd_set_name(get_global_hnd_cache(),
+						    hnd, "unknown 3 handle");
+			}
+		}
 	}
 
 	prs_free_data(&rbuf);

@@ -228,6 +228,29 @@ static BOOL api_svc_query_disp_name( rpcsrv_struct *p, prs_struct *data,
 }
 
 /*******************************************************************
+ api_svc_unknown_3
+ ********************************************************************/
+static BOOL api_svc_unknown_3(rpcsrv_struct *p, prs_struct *data,
+			      prs_struct *rdata)
+{
+	SVC_Q_UNKNOWN_3 q_u;
+	SVC_R_UNKNOWN_3 r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!svc_io_q_unknown_3("", &q_u, data, 0))
+	{
+		return False;
+	}
+
+	r_u.status = _svc_unknown_3(&q_u.scman_hnd, &r_u.hnd);
+
+	/* store the response in the SMB stream */
+	return svc_io_r_unknown_3("", &r_u, rdata, 0);
+}
+
+/*******************************************************************
  array of \PIPE\svcctl operations
  ********************************************************************/
 static const struct api_struct api_svc_cmds[] =
@@ -239,6 +262,7 @@ static const struct api_struct api_svc_cmds[] =
 	{ "SVC_QUERY_DISP_NAME" , SVC_QUERY_DISP_NAME , api_svc_query_disp_name  },
 	{ "SVC_START_SERVICE"   , SVC_START_SERVICE   , api_svc_start_service    },
 	{ "SVC_STOP_SERVICE"    , SVC_STOP_SERVICE    , api_svc_stop_service     },
+	{ "SVC_UNKNOWN_3"       , SVC_UNKNOWN_3       , api_svc_unknown_3        },
 	{ NULL                  , 0                   , NULL                     }
 };
 

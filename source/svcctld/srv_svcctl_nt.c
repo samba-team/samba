@@ -337,3 +337,24 @@ uint32 _svc_query_disp_name(const POLICY_HND *scman_pol,
 
 	return NT_STATUS_NOPROBLEMO;
 }
+
+/*******************************************************************
+ _svc_open_service
+ ********************************************************************/
+uint32 _svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd)
+{
+	if (find_policy_by_hnd(get_global_hnd_cache(), scman_hnd) == -1)
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+				  scman_hnd, hnd, 0x0))
+	{
+		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+	}
+
+	policy_hnd_set_name(get_global_hnd_cache(), hnd, "unknown 3 handle");
+
+	return NT_STATUS_NOPROBLEMO;
+}

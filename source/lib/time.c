@@ -298,6 +298,13 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 {
 	double d;
 
+	if (t==0)
+	{
+		nt->low = 0;
+		nt->high = 0;
+		return;
+	}
+
 	/* this converts GMT to kludge-GMT */
 	t -= LocTimeDiff(t) - serverzone; 
 
@@ -497,6 +504,8 @@ char *http_timestring(time_t t)
   else
 #ifndef HAVE_STRFTIME
   fstrcpy(buf, asctime(tm));
+  if(buf[strlen(buf)-1] == '\n')
+    buf[strlen(buf)-1] = 0;
 #else /* !HAVE_STRFTIME */
   strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
 #endif /* !HAVE_STRFTIME */
@@ -506,7 +515,7 @@ char *http_timestring(time_t t)
 
 
 /****************************************************************************
-  return the date and time as a string
+ Return the date and time as a string
 ****************************************************************************/
 char *timestring(void )
 {

@@ -55,11 +55,11 @@ NTDRIVERSDIR = $(LIBDIR)
 PASSWD_PROGRAM = /bin/passwd
 PRIVATEDIR = @privatedir@
 
-SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
+SMB_PASSWD_FILE  = $(PRIVATEDIR)/smbpasswd
+SMB_PASSGRP_FILE = $(PRIVATEDIR)/smbpassgrp
+SMB_GROUP_FILE   = $(PRIVATEDIR)/smbgroup
+SMB_ALIAS_FILE   = $(PRIVATEDIR)/smbalias
 SAM_DIR = $(BASEDIR)/sam
-SMB_PASSGRP_FILE = $(BASEDIR)/private/smbpassgrp
-SMB_GROUP_FILE = $(BASEDIR)/private/smbgroup
-SMB_ALIAS_FILE = $(BASEDIR)/private/smbalias
 SMB_PASSWD_PROGRAM = $(BINDIR)/smbpasswd
 
 # This is where SWAT images and help files go

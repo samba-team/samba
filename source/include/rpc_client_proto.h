@@ -446,7 +446,7 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 				char* dependencies, char* service_start_name,
 				char* password,
 				char* disp_name);
-BOOL svc_unknown_3(const POLICY_HND *scman_hnd);
+BOOL svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_use.c  */
 

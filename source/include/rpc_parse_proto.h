@@ -1233,6 +1233,8 @@ BOOL make_svc_r_change_svc_config(SVC_R_CHANGE_SVC_CONFIG *r_c,
 BOOL svc_io_r_change_svc_config(char *desc,  SVC_R_CHANGE_SVC_CONFIG *r_u, prs_struct *ps, int depth);
 BOOL svc_io_q_unknown_3(char *desc, SVC_Q_UNKNOWN_3 *q_u,
 			prs_struct *ps, int depth);
+BOOL svc_io_r_unknown_3(char *desc, SVC_R_UNKNOWN_3 *r_u,
+			prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 

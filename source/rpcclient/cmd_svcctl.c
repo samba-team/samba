@@ -413,6 +413,7 @@ void cmd_svc_unk3(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	BOOL res1 = True;
 	POLICY_HND pol_scm;
+	POLICY_HND unkhnd;
 	
 	fstring srv_name;
 
@@ -423,12 +424,13 @@ void cmd_svc_unk3(struct client_info *info, int argc, char *argv[])
 	DEBUG(4,("cmd_svc_unk3: server:%s\n", srv_name));
 
 	/* open service control manager receive a policy handle */
-	res = res ? svc_open_sc_man(srv_name, NULL, 0x80000000,
+	res = res ? svc_open_sc_man(srv_name, NULL, 0x000f0009,
 				    &pol_scm) : False;
 
-	res1 = res ? svc_unknown_3(&pol_scm) : False;
+	res1 = res ? svc_unknown_3(&pol_scm, &unkhnd) : False;
+	if (res1) svc_close(&unkhnd);
 
-	res  = res  ? svc_close(&pol_scm) : False;
+	res  = res ? svc_close(&pol_scm) : False;
 
 	if (res1)
 	{

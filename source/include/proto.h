@@ -1426,72 +1426,98 @@ BOOL node_status(struct subnet_record *subrec, struct nmb_name *nmbname,
 
 uint16 get_nb_flags(char *buf);
 void set_nb_flags(char *buf, uint16 nb_flags);
-struct response_record *queue_register_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          register_name_success_function success_fn,
-                          register_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname,
-                          uint16 nb_flags);
-struct response_record *queue_register_multihomed_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          register_name_success_function success_fn,
-                          register_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname,
-                          uint16 nb_flags,
-                          struct in_addr register_ip);
-struct response_record *queue_release_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          release_name_success_function success_fn,
-                          release_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname,
-                          uint16 nb_flags,
-                          struct in_addr release_ip);
-struct response_record *queue_refresh_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          refresh_name_success_function success_fn,
-                          refresh_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct name_record *namerec,
-                          struct in_addr refresh_ip);
-struct response_record *queue_query_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          query_name_success_function success_fn,
-                          query_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname);
-struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          query_name_success_function success_fn,
-                          query_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname);
-struct response_record *queue_node_status( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          node_status_success_function success_fn,
-                          node_status_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname,
-                          struct in_addr send_ip);
+struct response_record *queue_register_name(struct subnet_record *subrec,
+					    response_function resp_fn,
+					    timeout_response_function
+					    timeout_fn,
+					    register_name_success_function
+					    success_fn,
+					    register_name_fail_function
+					    fail_fn,
+					    struct userdata_struct *userdata,
+					    struct nmb_name *nmbname,
+					    uint16 nb_flags);
+struct response_record *queue_register_multihomed_name(struct subnet_record
+						       *subrec,
+						       response_function
+						       resp_fn,
+						       timeout_response_function
+						       timeout_fn,
+						       register_name_success_function
+						       success_fn,
+						       register_name_fail_function
+						       fail_fn,
+						       struct userdata_struct
+						       *userdata,
+						       struct nmb_name
+						       *nmbname,
+						       uint16 nb_flags,
+						       struct in_addr
+						       register_ip);
+struct response_record *queue_release_name(struct subnet_record *subrec,
+					   response_function resp_fn,
+					   timeout_response_function
+					   timeout_fn,
+					   release_name_success_function
+					   success_fn,
+					   release_name_fail_function fail_fn,
+					   struct userdata_struct *userdata,
+					   struct nmb_name *nmbname,
+					   uint16 nb_flags,
+					   struct in_addr release_ip);
+struct response_record *queue_refresh_name(struct subnet_record *subrec,
+					   response_function resp_fn,
+					   timeout_response_function
+					   timeout_fn,
+					   refresh_name_success_function
+					   success_fn,
+					   refresh_name_fail_function fail_fn,
+					   struct userdata_struct *userdata,
+					   struct name_record *namerec,
+					   struct in_addr refresh_ip);
+struct response_record *queue_query_name(struct subnet_record *subrec,
+					 response_function resp_fn,
+					 timeout_response_function timeout_fn,
+					 query_name_success_function
+					 success_fn,
+					 query_name_fail_function fail_fn,
+					 struct userdata_struct *userdata,
+					 struct nmb_name *nmbname);
+struct response_record *queue_query_name_from_wins_server(struct in_addr
+							  to_ip,
+							  response_function
+							  resp_fn,
+							  timeout_response_function
+							  timeout_fn,
+							  query_name_success_function
+							  success_fn,
+							  query_name_fail_function
+							  fail_fn,
+							  struct
+							  userdata_struct
+							  *userdata,
+							  struct nmb_name
+							  *nmbname);
+struct response_record *queue_node_status(struct subnet_record *subrec,
+					  response_function resp_fn,
+					  timeout_response_function
+					  timeout_fn,
+					  node_status_success_function
+					  success_fn,
+					  node_status_fail_function fail_fn,
+					  struct userdata_struct *userdata,
+					  struct nmb_name *nmbname,
+					  struct in_addr send_ip);
 void reply_netbios_packet(struct packet_struct *orig_packet,
-                          int rcode, enum netbios_reply_type_code rcv_code, int opcode,
-                          int ttl, char *data,int len);
+			  int rcode, enum netbios_reply_type_code rcv_code,
+			  int opcode, int ttl, char *data, int len);
 void run_packet_queue(void);
 void retransmit_or_expire_response_records(time_t t);
 BOOL listen_for_packets(BOOL run_election);
-BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
-                   char *srcname, int src_type,
-                   char *dstname, int dest_type,
-                   struct in_addr dest_ip,struct in_addr src_ip,
+BOOL send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
+		   char *srcname, int src_type,
+		   char *dstname, int dest_type,
+		   struct in_addr dest_ip, struct in_addr src_ip,
 		   int dest_port);
 
 /*The following definitions come from  nmbd/nmbd_processlogon.c  */
@@ -1677,6 +1703,9 @@ BOOL lp_client_schannel(void);
 BOOL lp_server_schannel(void);
 BOOL lp_syslog_only(void);
 BOOL lp_timestamp_logs(void);
+BOOL lp_debug_hires_timestamp(void);
+BOOL lp_debug_pid(void);
+BOOL lp_debug_uid(void);
 BOOL lp_browse_list(void);
 BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
@@ -2529,7 +2558,7 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 				char* dependencies, char* service_start_name,
 				char* password,
 				char* disp_name);
-BOOL svc_unknown_3(const POLICY_HND *scman_hnd);
+BOOL svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_use.c  */
 
@@ -4845,6 +4874,7 @@ uint32 _svc_query_disp_name(const POLICY_HND *scman_pol,
 				    uint32 buf_size,
 				    UNISTR2 *uni_disp_name,
 				    uint32 *pbuf_size);
+uint32 _svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd);
 
 /*The following definitions come from  svcctld/svcctld.c  */
 

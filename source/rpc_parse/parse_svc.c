@@ -901,3 +901,22 @@ BOOL svc_io_q_unknown_3(char *desc, SVC_Q_UNKNOWN_3 *q_u,
 
 	return smb_io_pol_hnd("scman_hnd", &(q_u->scman_hnd), ps, depth);
 }
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL svc_io_r_unknown_3(char *desc, SVC_R_UNKNOWN_3 *r_u,
+			prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "svc_io_r_unknown_3");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("", &(r_u->hnd), ps, depth);
+	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
+}

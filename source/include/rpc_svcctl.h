@@ -286,10 +286,17 @@ typedef struct r_svc_change_svc_cfg_info
 
 
 /* SVC_Q_UNKNOWN_3 */
-typedef struct _svc_unknown_3
+typedef struct _svc_q_unknown_3
 {
 	POLICY_HND scman_hnd;
 } SVC_Q_UNKNOWN_3;
+
+/* SVC_R_UNKNOWN_3 */
+typedef struct _svc_r_unknown_3
+{
+	POLICY_HND hnd;
+	uint32 status; /* 0x5 seems to mean access denied... */
+} SVC_R_UNKNOWN_3;
 
 
 

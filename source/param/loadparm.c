@@ -257,6 +257,9 @@ typedef struct
   char *sMysqlHost;
   char *sMysqlPassFile;
 #endif
+  BOOL bDebugHiresTimestamp;
+  BOOL bDebugPid;
+  BOOL bDebugUid;
 } global;
 
 static global Globals;
@@ -640,6 +643,9 @@ static struct parm_struct parm_table[] =
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL,   NULL,  0},
   {"timestamp logs",   P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
   {"debug timestamp",  P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
+  {"debug hires timestamp",  P_BOOL,    P_GLOBAL, &Globals.bDebugHiresTimestamp,    NULL,   NULL,  0},
+  {"debug pid",        P_BOOL,    P_GLOBAL, &Globals.bDebugPid,         NULL,   NULL,  0},
+  {"debug uid",        P_BOOL,    P_GLOBAL, &Globals.bDebugUid,         NULL,   NULL,  0},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL,  FLAG_GLOBAL},
 
   {"Protocol Options", P_SEP, P_SEPARATOR},
@@ -953,6 +959,9 @@ static void init_globals(void)
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
   Globals.bTimestampLogs = False;
+  Globals.bDebugHiresTimestamp = False;
+  Globals.bDebugPid = False;
+  Globals.bDebugUid = False;
   Globals.os_level = 32;
   Globals.max_ttl = 60*60*24*3; /* 3 days default. */
   Globals.max_wins_ttl = 60*60*24*6; /* 6 days default. */
@@ -1101,7 +1110,7 @@ static void init_locals(void)
       string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
       string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
       break;
-      
+
     case PRINT_LPRNG:
       string_initial(&sDefault.szLpqcommand,"lpq -P%p");
       string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
@@ -1174,7 +1183,8 @@ static char *lp_user_string(const user_struct *vuser, char *s)
 
   if (buflen[next] != len) {
     buflen[next] = len;
-    if (bufs[next]) free(bufs[next]);
+    if (bufs[next])
+      free(bufs[next]);
     bufs[next] = (char *)malloc(len);
     if (!bufs[next]) {
       DEBUG(0,("out of memory in lp_string()"));
@@ -1377,6 +1387,9 @@ FN_GLOBAL_BOOL(lp_client_schannel,&Globals.bClientSChannel)
 FN_GLOBAL_BOOL(lp_server_schannel,&Globals.bServerSChannel)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_timestamp_logs,&Globals.bTimestampLogs)
+FN_GLOBAL_BOOL(lp_debug_hires_timestamp,&Globals.bDebugHiresTimestamp)
+FN_GLOBAL_BOOL(lp_debug_pid,&Globals.bDebugPid)
+FN_GLOBAL_BOOL(lp_debug_uid,&Globals.bDebugUid)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
