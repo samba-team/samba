@@ -992,6 +992,26 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 }
 
 /********************************************************************
+ * _spoolss_enddocprinter_internal.
+ ********************************************************************/
+
+static uint32 _spoolss_enddocprinter_internal(POLICY_HND *handle)
+{
+	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_enddocprinter_internal: Invalid handle (%s)\n", OUR_HANDLE(handle)));
+		return ERROR_INVALID_HANDLE;
+	}
+	
+	Printer->document_started=False;
+	print_job_end(Printer->jobid,True);
+	/* error codes unhandled so far ... */
+
+	return 0x0;
+}
+
+/********************************************************************
  * api_spoolss_closeprinter
  ********************************************************************/
 
@@ -1002,7 +1022,7 @@ uint32 _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 
 	if (Printer && Printer->document_started)
-		_spoolss_enddocprinter(handle);          /* print job was not closed */
+		_spoolss_enddocprinter_internal(handle);          /* print job was not closed */
 
 	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
@@ -1025,7 +1045,7 @@ uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 	uint32 result;
 
 	if (Printer && Printer->document_started)
-		_spoolss_enddocprinter(handle);  /* print job was not closed */
+		_spoolss_enddocprinter_internal(handle);  /* print job was not closed */
 
 	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
@@ -3898,38 +3918,36 @@ uint32 _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-uint32 _spoolss_enddocprinter(POLICY_HND *handle)
-{
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
-	
-	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(0,("_spoolss_enddocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
-	}
-	
-	Printer->document_started=False;
-	print_job_end(Printer->jobid,True);
-	/* error codes unhandled so far ... */
 
-	return 0x0;
+uint32 _spoolss_enddocprinter(pipes_struct *p, SPOOL_Q_ENDDOCPRINTER *q_u, SPOOL_R_ENDDOCPRINTER *r_u)
+{
+	POLICY_HND *handle = &q_u->handle;
+
+	return _spoolss_enddocprinter_internal(handle);
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_writeprinter( POLICY_HND *handle,
-				uint32 buffer_size,
-				uint8 *buffer,
-				uint32 *buffer_written)
+
+uint32 _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R_WRITEPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	uint32 buffer_size = q_u->buffer_size;
+	uint8 *buffer = q_u->buffer;
+	uint32 *buffer_written = &q_u->buffer_size2;
+
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
 	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(0,("_spoolss_writeprinter: Invalid handle (%s)\n",OUR_HANDLE(handle)));
+		r_u->buffer_written = q_u->buffer_size2;
 		return ERROR_INVALID_HANDLE;
 	}
 
-	(*buffer_written) = print_job_write(Printer->jobid, (char *)buffer,
-					    buffer_size);
+	(*buffer_written) = print_job_write(Printer->jobid, (char *)buffer, buffer_size);
+
+
+	r_u->buffer_written = q_u->buffer_size2;
 
 	return 0x0;
 }
@@ -4530,12 +4548,16 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
-			   const SPOOL_PRINTER_INFO_LEVEL *info,
-			   DEVMODE_CTR devmode_ctr,
-			   SEC_DESC_BUF *secdesc_ctr,
-			   uint32 command, pipes_struct *p)
+
+uint32 _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SETPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	uint32 level = q_u->level;
+	SPOOL_PRINTER_INFO_LEVEL *info = &q_u->info;
+	DEVMODE_CTR devmode_ctr = q_u->devmode_ctr;
+	SEC_DESC_BUF *secdesc_ctr = q_u->secdesc_ctr;
+	uint32 command = q_u->command;
+
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
 	if (!OPEN_HANDLE(Printer)) {
@@ -4559,8 +4581,11 @@ uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_fcpn(POLICY_HND *handle)
+
+uint32 _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+
 	Printer_entry *Printer= find_printer_index_by_hnd(handle);
 	
 	if (!OPEN_HANDLE(Printer)) {
@@ -4587,11 +4612,13 @@ uint32 _spoolss_fcpn(POLICY_HND *handle)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addjob(POLICY_HND *handle, uint32 level,
-		       NEW_BUFFER *buffer, uint32 offered,
-		       uint32 *needed)
+
+uint32 _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u)
 {
-	*needed = 0;
+	/* that's an [in out] buffer (despite appearences to the contrary) */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+
+	r_u->needed = 0;
 	return ERROR_INVALID_PARAMETER; /* this is what a NT server
                                            returns for AddJob. AddJob
                                            must fail on non-local
@@ -4779,13 +4806,25 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 /****************************************************************************
  Enumjobs.
 ****************************************************************************/
-uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			
-			  NEW_BUFFER *buffer, uint32 offered,
-			  uint32 *needed, uint32 *returned)
+
+uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJOBS *r_u)
 {	
+	POLICY_HND *handle = &q_u->handle;
+/*	uint32 firstjob = q_u->firstjob; - notused. */
+/*	uint32 numofjobs = q_u->numofjobs; - notused. */
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+	uint32 *returned = &r_u->returned;
+
 	int snum;
 	print_queue_struct *queue=NULL;
 	print_status_struct prt_status;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumjobs\n"));
 
@@ -4817,19 +4856,25 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	}
 }
 
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid)
+
+uint32 _spoolss_schedulejob( pipes_struct *p, SPOOL_Q_SCHEDULEJOB *q_u, SPOOL_R_SCHEDULEJOB *r_u)
 {
 	return 0x0;
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
-		       pipes_struct *p, JOB_INFO *ctr, uint32 command)
+
+uint32 _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	uint32 jobid = q_u->jobid;
+/*	uint32 level = q_u->level; - notused. */
+/*	JOB_INFO *ctr = &q_u->ctr; - notused. */
+	uint32 command = q_u->command;
+
 	struct current_user user;
 	print_status_struct prt_status;
 	int snum, errcode = ERROR_INVALID_FUNCTION;
@@ -5104,13 +5149,24 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 /****************************************************************************
  Enumerates all printer drivers.
 ****************************************************************************/
-uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered,
-				    uint32 *needed, uint32 *returned)
+
+uint32 _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u)
 {
+/*	UNISTR2 *name = &q_u->name; - notused. */
+	UNISTR2 *environment = &q_u->environment;
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+	uint32 *returned = &r_u->returned;
+
 	fstring *list = NULL;
 	fstring servername;
 	fstring architecture;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
 	fstrcpy(servername, global_myname);

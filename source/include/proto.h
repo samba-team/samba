@@ -3423,30 +3423,16 @@ uint32 _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 uint32 _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u, SPOOL_R_STARTPAGEPRINTER *r_u);
 uint32 _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPOOL_R_ENDPAGEPRINTER *r_u);
 uint32 _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, SPOOL_R_STARTDOCPRINTER *r_u);
-uint32 _spoolss_enddocprinter(POLICY_HND *handle);
-uint32 _spoolss_writeprinter( POLICY_HND *handle,
-				uint32 buffer_size,
-				uint8 *buffer,
-				uint32 *buffer_written);
+uint32 _spoolss_enddocprinter(pipes_struct *p, SPOOL_Q_ENDDOCPRINTER *q_u, SPOOL_R_ENDDOCPRINTER *r_u);
+uint32 _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R_WRITEPRINTER *r_u);
 uint32 _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R_ABORTPRINTER *r_u);
-uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
-			   const SPOOL_PRINTER_INFO_LEVEL *info,
-			   DEVMODE_CTR devmode_ctr,
-			   SEC_DESC_BUF *secdesc_ctr,
-			   uint32 command, pipes_struct *p);
-uint32 _spoolss_fcpn(POLICY_HND *handle);
-uint32 _spoolss_addjob(POLICY_HND *handle, uint32 level,
-		       NEW_BUFFER *buffer, uint32 offered,
-		       uint32 *needed);
-uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			
-			  NEW_BUFFER *buffer, uint32 offered,
-			  uint32 *needed, uint32 *returned);
-uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
-uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
-		       pipes_struct *p, JOB_INFO *ctr, uint32 command);
-uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered,
-				    uint32 *needed, uint32 *returned);
+uint32 _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SETPRINTER *r_u);
+uint32 _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u);
+uint32 _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u);
+uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJOBS *r_u);
+uint32 _spoolss_schedulejob( pipes_struct *p, SPOOL_Q_SCHEDULEJOB *q_u, SPOOL_R_SCHEDULEJOB *r_u);
+uint32 _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u);
+uint32 _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u);
 uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 			       NEW_BUFFER *buffer, uint32 offered,
 			       uint32 *needed, uint32 *numofforms);
