@@ -651,13 +651,6 @@ extern int errno;
 #include "md5.h"
 #include "hmacmd5.h"
 
-#include "libcli/auth/ntlmssp.h"
-#include "libcli/auth/credentials.h"
-#include "libcli/auth/kerberos.h"
-#include "libcli/auth/gensec.h"
-#include "libcli/auth/spnego.h"
-
-#include "auth/auth.h"
 
 #include "module.h"
 
@@ -665,8 +658,21 @@ extern int errno;
 
 #include "mutex.h"
 
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/ndr/ndr_sec.h"
+#include "librpc/gen_ndr/tables.h"
 
+#include "libcli/auth/ntlmssp.h"
+#include "libcli/auth/credentials.h"
+#include "libcli/auth/kerberos.h"
+#include "libcli/auth/gensec.h"
+#include "libcli/auth/spnego.h"
+#include "auth/auth.h"
+
+#include "smb_interfaces.h"
 #include "smbd/server.h"
 #include "smbd/service.h"
 #include "rpc_server/dcerpc_server.h"
