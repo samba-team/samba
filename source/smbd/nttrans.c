@@ -1605,6 +1605,8 @@ BOOL process_pending_change_notify_queue(time_t t)
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
                   SVAL(cnbp->request_buf,smb_uid);
 
+    ZERO_STRUCT(change_data);
+
     /*
      * Ensure we don't have any old chain_fsp values
      * sitting around....
