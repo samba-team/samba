@@ -100,10 +100,6 @@ int ldb_next_named_lock(struct ldb_module *module, const char *lockname);
 int ldb_next_named_unlock(struct ldb_module *module, const char *lockname);
 const char *ldb_next_errstring(struct ldb_module *module);
 
-/* The following definitions come from lib/ldb/common/util.c  */
-int ldb_list_find(const void *needle, 
-	      const void *base, size_t nmemb, size_t size, comparison_fn_t comp_fn);
-
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 
