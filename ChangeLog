@@ -1,8 +1,13 @@
-2002-08-21  Johan Danielsson  <joda@pdc.kth.se>
+2002-08-21  Assar Westerlund  <assar@kth.se>
+	
+	* lib/asn1/asn1_print.c: print OIDs too, based on a patch from
+	Love <lha@stacken.kth.se>
 
+2002-08-21  Johan Danielsson  <joda@pdc.kth.se>
+	
 	* kuser/kinit.c (do_v4_fallback): don't use krb_get_pw_in_tkt2
 	since it might not exist, and we don't actually care about the key
-
+	
 2002-08-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.conf.5: correct documentation for
