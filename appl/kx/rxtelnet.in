@@ -1,0 +1,13 @@
+#!/bin/sh
+# $Id$
+if test $# -ne 1; then
+  echo "Usage: $0 host"
+  exit 1
+fi
+host=$1
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+set `@bindir@/kx $host`
+disp=$1
+auth=$2
+xterm -T $host -n $host -e "env DISPLAY=$disp XAUTHORITY=$auth @bindir@/telnet -D $host" &
