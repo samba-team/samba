@@ -628,8 +628,20 @@ static void run_locktest2(int dummy)
 		return;
 	}
 
+	if (cli_lock(&cli, fnum1, 0, 4, 0, WRITE_LOCK)) {
+		printf("WRITE lock1 succeeded! This is a locking bug\n");
+	} else {
+		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
+	}
+
 	if (cli_lock(&cli, fnum2, 0, 4, 0, WRITE_LOCK)) {
-		printf("lock2 succeeded! This is a locking bug\n");
+		printf("WRITE lock2 succeeded! This is a locking bug\n");
+	} else {
+		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
+	}
+
+	if (cli_lock(&cli, fnum2, 0, 4, 0, READ_LOCK)) {
+		printf("READ lock2 succeeded! This is a locking bug\n");
 	} else {
 		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
 	}
@@ -936,6 +948,109 @@ static void run_locktest4(int dummy)
 	close_connection(&cli2);
 
 	printf("finished locktest4\n");
+}
+
+/*
+  looks at lock upgrade/downgrade.
+*/
+static void run_locktest5(int dummy)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\lockt5.lck";
+	int fnum1, fnum2, fnum3;
+	BOOL ret;
+	char buf[1000];
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting locktest5\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	fnum2 = cli_open(&cli2, fname, O_RDWR, DENY_NONE);
+	fnum3 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
+
+	memset(buf, 0, sizeof(buf));
+
+	if (cli_write(&cli1, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
+		printf("Failed to create file\n");
+		goto fail;
+	}
+
+	ret = cli_lock(&cli1, fnum1, 0, 4, 0, WRITE_LOCK) &&
+	      cli_lock(&cli1, fnum1, 0, 4, 0, READ_LOCK);
+	EXPECTED(ret, True);
+	printf("the same process %s overlay a write with a read lock\n", ret?"can":"cannot");
+
+	ret = cli_lock(&cli2, fnum2, 0, 4, 0, READ_LOCK);
+	EXPECTED(ret, False);
+
+	printf("a different processs %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
+
+	/* Unlock the process 2 lock. */
+	cli_unlock(&cli2, fnum2, 0, 4);
+
+	ret = cli_lock(&cli1, fnum3, 0, 4, 0, READ_LOCK);
+	EXPECTED(ret, False);
+
+	printf("the same processs on a different fnum %s get a read lock\n", ret?"can":"cannot");
+
+	/* Unlock the process 1 fnum3 lock. */
+	cli_unlock(&cli1, fnum3, 0, 4);
+
+	/* Stack 2 more locks here. */
+	ret = cli_lock(&cli1, fnum1, 0, 4, 0, READ_LOCK) &&
+		  cli_lock(&cli1, fnum1, 0, 4, 0, READ_LOCK);
+
+	EXPECTED(ret, True);
+	printf("the same process %s stack read locks\n", ret?"can":"cannot");
+
+	/* Unlock the first process lock, then check this was the WRITE lock that was
+		removed. */
+
+	ret = cli_unlock(&cli1, fnum1, 0, 4) &&
+			cli_lock(&cli2, fnum2, 0, 4, 0, READ_LOCK);
+
+	EXPECTED(ret, True);
+	printf("the first unlock removes the %s lock\n", ret?"WRITE":"READ");
+
+	/* Unlock the process 2 lock. */
+	cli_unlock(&cli2, fnum2, 0, 4);
+
+	/* We should have 3 stacked locks here. Ensure we need to do 3 unlocks. */
+
+	ret = cli_unlock(&cli1, fnum1, 0, 4) &&
+		  cli_unlock(&cli1, fnum1, 0, 4) &&
+		  cli_unlock(&cli1, fnum1, 0, 4);
+
+	EXPECTED(ret, True);
+	printf("the same process %s unlock the stack of 4 locks\n", ret?"can":"cannot"); 
+
+	/* Ensure the next unlock fails. */
+	ret = cli_unlock(&cli1, fnum1, 0, 4);
+	EXPECTED(ret, False);
+	printf("the same process %s count the lock stack\n", !ret?"can":"cannot"); 
+
+	/* Ensure connection 2 can get a write lock. */
+	ret = cli_lock(&cli2, fnum2, 0, 4, 0, WRITE_LOCK);
+	EXPECTED(ret, True);
+
+	printf("a different processs %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
+
+ fail:
+	cli_close(&cli1, fnum1);
+	cli_close(&cli2, fnum2);
+	cli_unlink(&cli1, fname);
+	close_connection(&cli1);
+	close_connection(&cli2);
+
+	printf("finished locktest5\n");
 }
 
 
@@ -1698,6 +1813,7 @@ static struct {
 	{"LOCK2",  run_locktest2,  0},
 	{"LOCK3",  run_locktest3,  0},
 	{"LOCK4",  run_locktest4,  0},
+	{"LOCK5",  run_locktest5,  0},
 	{"UNLINK", run_unlinktest, 0},
 	{"BROWSE", run_browsetest, 0},
 	{"ATTR",   run_attrtest,   0},
