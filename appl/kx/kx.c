@@ -689,8 +689,10 @@ main(int argc, char **argv)
     if (optind != argc - 1)
 	usage (1);
 
+#ifdef KRB5
     if (forwardable_flag)
 	forward_flag = 1;
+#endif
 
     host = argv[optind];
 
