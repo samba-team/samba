@@ -18,6 +18,14 @@ error_code EOF,			"End of file"
 error_code BAD_MKEY,		"Failed to get the master key"
 error_code SERVICE_NOMATCH,	"Unacceptable service used"
 
+index 64
+prefix HEIM_PKINIT
+error_code NO_CERTIFICATE,	"Certificate missing"
+error_code NO_PRIVATE_KEY,	"Private key missing"
+error_code NO_VALID_CA,		"No valid certificate authority"
+error_code CERTIFICATE_INVALID,	"Certificate invalid"
+error_code PRIVATE_KEY_INVALID,	"Private key invalid"
+
 index 128
 prefix HEIM_EAI
 #error_code NOERROR,		"no error"
