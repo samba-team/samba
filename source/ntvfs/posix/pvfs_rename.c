@@ -141,21 +141,18 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	status = pvfs_resolve_partial(pvfs, mem_ctx, 
 				      dir_path, fname1, &name1);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
+		goto failed;
 	}
 
 	/* make sure its matches the given attributes */
 	status = pvfs_match_attrib(pvfs, name1, attrib, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
+		goto failed;
 	}
 
 	status = pvfs_can_rename(pvfs, name1);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
+		goto failed;
 	}
 
 	/* get a pvfs_filename dest object */
@@ -164,15 +161,11 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	if (NT_STATUS_IS_OK(status)) {
 		status = pvfs_can_delete(pvfs, req, name2);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(mem_ctx);
-			return status;
+			goto failed;
 		}
 	}
 
-	status = pvfs_access_check_create(pvfs, req, name2);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	status = NT_STATUS_OK;
 
 	fname2 = talloc_asprintf(mem_ctx, "%s/%s", dir_path, fname2);
 	if (fname2 == NULL) {
@@ -184,9 +177,9 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		return pvfs_map_errno(pvfs, errno);
 	}
 
+failed:
 	talloc_free(mem_ctx);
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 
