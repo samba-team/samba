@@ -404,16 +404,16 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
 	return True;
 }
 
-/****************************************************************************
- for a domain name, find any domain controller (PDC, BDC, don't care) name.
-****************************************************************************/
-BOOL get_any_dc_name(char *domain, fstring srv_name)
-{
-	struct in_addr *ip_list = NULL, *dc_ip = NULL;
-	BOOL connected_ok = False;
-	int i, count = 0;
+/***********************************************************************
+ We have been asked to dynamcially determine the IP addresses of
+ the PDC and BDC's for this DOMAIN, and query them in turn.
+************************************************************************/
 
-	DEBUG(3, ("looking up dc name for domain %s\n", domain));
+static BOOL find_connect_pdc(char *domain, struct in_addr *dc_ip)
+{
+	struct in_addr *ip_list = NULL;
+	BOOL connected_ok = False;
+	int count, i;
 
 	/* Get list of possible domain controllers */
 
@@ -423,68 +423,26 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
                 return False;
 	}
 
-	/* If we are using a non-wildcard dc, nix out any entries that
-	   aren't in the password server list. */
-
-	if (!lp_wildcard_dc()) {
-		fstring desthost;
-		char *p = lp_passwordserver();
-		struct in_addr dest_ip, *new_ip_list = NULL;
-
-		new_ip_list = (struct in_addr *)
-			malloc(count * sizeof(struct in_addr));
-
-		if (!new_ip_list) goto done;
-
-		memset(new_ip_list, 0, count * sizeof(struct in_addr));
-
-		/* Iterate over list of addresses in password server param */
-
-		while(next_token(&p, desthost, LIST_SEP, sizeof(desthost))) {
-
-			/* Resolve to IP */
-			
-			if(!resolve_name(desthost, &dest_ip, 0x20)) {
-				DEBUG(1, ("get_any_dc_name(): Can't resolve address for %s\n", desthost));
-				continue;
-			}
-
-			/* Copy across matching entries to domain list */
-
-			for (i = 0; i < count; i++) {
-				if (ip_equal(ip_list[i], dest_ip)) {
-					memcpy(&new_ip_list[i],
-					       &ip_list[i], 
-					       sizeof(struct in_addr));
-				}
-			}
-		}
-
-		/* Replace resolve DC list with the filtered one */
-
-		memcpy(ip_list, new_ip_list, count * sizeof(struct in_addr));
-	done:
-		safe_free(new_ip_list);
-	}
-
 	/* Find a DC on the local network */
 
 	for (i = 0; i < count; i++) {
 
-		if (!is_local_net(ip_list[i])) continue;
+		if (!is_local_net(ip_list[i])) 
+			continue;
 
 		/* Try to contact DC */
 
 		if ((connected_ok = 
 		     attempt_connect_dc(domain, ip_list[i]))) {
-			dc_ip = &ip_list[i];
-			break;
+			*dc_ip = ip_list[i];
+			goto done;
 		}
 		    
 		ip_list[i] = ipzero;   /* Tried and failed */
 	}
 
-	/* Try a random DC elsewhere on the network */
+	/* Try a random DC elsewhere on the network.  Zero out the address
+	   if it didn't work to avoid contacting it again. */
 
 	if (!connected_ok) {
 
@@ -492,8 +450,6 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 
 		if (!(connected_ok = attempt_connect_dc(domain, ip_list[i]))) {
 			ip_list[i] = ipzero;
-		} else {
-			dc_ip = &ip_list[i];
 		}
 	}
 
@@ -505,23 +461,68 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 		for(i = 0; i < count; i++) {
 			if ((connected_ok = 
 			     attempt_connect_dc(domain, ip_list[i]))) {
-				dc_ip = &ip_list[i];
-				break;
+				*dc_ip = ip_list[i];
+				goto done;
 			}
 		}
 	}
 
-	/* Return DC name to caller */
+ done:
+	safe_free((char *)ip_list);
 
-	if (connected_ok) {
-		lookup_pdc_name(global_myname, domain, dc_ip, srv_name);
-		DEBUG(3, ("found dc %s\n", srv_name));
-	} else {
-		DEBUG(3, ("no domain controllers found for domain %s\n",
-			  domain));
+	return connected_ok;
+}
+
+/****************************************************************************
+ for a domain name, find any domain controller (PDC, BDC, don't care) name.
+****************************************************************************/
+BOOL get_any_dc_name(char *domain, fstring srv_name)
+{
+	BOOL connected_ok = False;
+	struct in_addr dest_ip;
+	pstring remote_machine;
+	char *p;
+
+	DEBUG(3, ("looking up dc name for domain %s\n", domain));
+
+	p = lp_passwordserver();
+
+	if (!*p) 
+		p = "*";
+
+	/* Iterate over password server list */
+
+	while(!connected_ok && next_token(&p, remote_machine, LIST_SEP, 
+					  sizeof(remote_machine))) {
+		if (strequal(remote_machine, "*")) {
+
+			/* Connect to a random DC on the network */
+
+			connected_ok = find_connect_pdc(domain, &dest_ip);
+
+		} else {
+
+			/* Connect to specific DC */
+
+			if (!resolve_name(remote_machine, &dest_ip, 0x20)) {
+				DEBUG(1, ("get_any_dc_name(): Can't resolve "
+					  "address for %s\n", remote_machine));
+				continue;
+			}
+
+			connected_ok = attempt_connect_dc(domain, dest_ip);
+		}
 	}
 
-	safe_free((char *)ip_list);
+	/* Return server name to caller */
+
+ 	if (connected_ok) {
+ 		lookup_pdc_name(global_myname, domain, &dest_ip, srv_name);
+ 		DEBUG(3, ("found dc %s for domain %s\n", srv_name, domain));
+ 	} else {
+ 		DEBUG(3, ("no domain controllers found for domain %s\n",
+ 			  domain));
+  	}
 
 	return connected_ok;
 }
