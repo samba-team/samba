@@ -319,6 +319,15 @@ if test "$ac_cv_header_netinfo_ni_h" = yes -a "$enable_netinfo" = yes; then
                [Define if you want to use Netinfo instead of krb5.conf.])
 fi
 
+AC_ARG_ENABLE(kcm,
+	AC_HELP_STRING([--enable-kcm],[enable Kerberos Credentials Manager]))
+
+if test "$ac_cv_header_sys_un_h" = yes -a "$enable_kcm" = yes; then
+       AC_DEFINE(HAVE_KCM, 1,
+               [Define if you want to use the Kerberos Credentials Manager.])
+fi
+AM_CONDITIONAL(KCM, test "$enable_kcm" = yes)
+
 dnl export symbols
 rk_WIN32_EXPORT(BUILD_KRB5_LIB, KRB5_LIB_FUNCTION)
 
