@@ -1058,6 +1058,77 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 }
 
 /****************************************************************************
+ Internal fn to set security descriptors.
+****************************************************************************/
+
+static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_info_sent, int *pdef_class,uint32 *pdef_code)
+{
+	prs_struct pd;
+	SEC_DESC *psd = NULL;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret;
+
+	if (sd_len == 0) {
+		*pdef_class = ERRDOS;
+		*pdef_code = ERRbadaccess;
+		return False;
+	}
+
+	/*
+	 * Init the parse struct we will unmarshall from.
+	 */
+
+	if ((mem_ctx = talloc_init()) == NULL) {
+		DEBUG(0,("set_sd: talloc_init failed.\n"));
+		*pdef_class = ERRDOS;
+		*pdef_code = ERRnomem;
+		return False;
+	}
+
+	prs_init(&pd, 0, 4, mem_ctx, UNMARSHALL);
+
+	/*
+	 * Setup the prs_struct to point at the memory we just
+	 * allocated.
+	 */
+	
+	prs_give_memory( &pd, data, sd_len, False);
+
+	/*
+	 * Finally, unmarshall from the data buffer.
+	 */
+
+	if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
+		free_sec_desc(&psd);
+		DEBUG(0,("set_sd: Error in unmarshalling security descriptor.\n"));
+		/*
+		 * Return access denied for want of a better error message..
+		 */ 
+		talloc_destroy(mem_ctx);
+		*pdef_class = ERRDOS;
+		*pdef_code = ERRnomem;
+		return False;
+	}
+
+	ret = set_nt_acl( fsp, security_info_sent, psd);
+
+	if (!ret) {
+		free_sec_desc(&psd);
+		talloc_destroy(mem_ctx);
+		*pdef_class = ERRDOS;
+		*pdef_code = ERRnoaccess;
+		return False;
+	}
+
+	free_sec_desc(&psd);
+	talloc_destroy(mem_ctx);
+
+	*pdef_class = 0;
+	*pdef_code = 0;
+	return True;
+}
+
+/****************************************************************************
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
 
@@ -1068,6 +1139,7 @@ static int call_nt_transact_create(connection_struct *conn,
 {
   pstring fname;
   char *params = *ppparams;
+  char *data = *ppdata;
   int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
@@ -1088,10 +1160,13 @@ static int call_nt_transact_create(connection_struct *conn,
   uint32 create_disposition;
   uint32 create_options;
   uint32 fname_len;
+  uint32 sd_len;
   uint16 root_dir_fid;
   int smb_ofun;
   int smb_open_mode;
   int smb_attr;
+  int error_class;
+  uint32 error_code;
 
   DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1122,6 +1197,7 @@ static int call_nt_transact_create(connection_struct *conn,
   share_access = IVAL(params,24);
   create_disposition = IVAL(params,28);
   create_options = IVAL(params,32);
+  sd_len = IVAL(params,36);
   fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
   root_dir_fid = (uint16)IVAL(params,4);
   smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
@@ -1334,6 +1410,16 @@ static int call_nt_transact_create(connection_struct *conn,
   
       if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
+  }
+
+  /*
+   * Now try and apply the desired SD.
+   */
+
+  if (!set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION, &error_class, &error_code)) {
+    close_file(fsp,False);
+    restore_case_semantics(file_attributes);
+    return(ERROR(error_class, error_code));
   }
 
   restore_case_semantics(file_attributes);
@@ -1621,13 +1707,11 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   uint32 total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
   char *params= *ppparams;
   char *data = *ppdata;
-  prs_struct pd;
-  SEC_DESC *psd = NULL;
   uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
   files_struct *fsp = NULL;
   uint32 security_info_sent = 0;
-  TALLOC_CTX *mem_ctx;
-  BOOL ret;
+  int error_class;
+  uint32 error_code;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1643,49 +1727,9 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
        (unsigned int)security_info_sent ));
 
-  /*
-   * Init the parse struct we will unmarshall from.
-   */
+  if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
+		return (ERROR(error_class, error_code));
 
-  if ((mem_ctx = talloc_init()) == NULL) {
-    DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
-    return(ERROR(ERRDOS,ERRnomem));
-  }
-
-  prs_init(&pd, 0, 4, mem_ctx, UNMARSHALL);
-
-  /*
-   * Setup the prs_struct to point at the memory we just
-   * allocated.
-   */
-	
-  prs_give_memory( &pd, data, total_data_count, False);
-
-  /*
-   * Finally, unmarshall from the data buffer.
-   */
-
-  if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
-    free_sec_desc(&psd);
-    DEBUG(0,("call_nt_transact_set_security_desc: Error in unmarshalling \
-security descriptor.\n"));
-    /*
-     * Return access denied for want of a better error message..
-     */ 
-    talloc_destroy(mem_ctx);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  ret = set_nt_acl( fsp, security_info_sent, psd);
-
-  if (!ret) {
-	free_sec_desc(&psd);
-    talloc_destroy(mem_ctx);
-	return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  free_sec_desc(&psd);
-  talloc_destroy(mem_ctx);
   send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
   return -1;
 }
@@ -1774,6 +1818,9 @@ due to being in oplock break state.\n" ));
  
   if ((total_parameter_count && !params)  || (total_data_count && !data) ||
       (setup_count && !setup)) {
+	safe_free(setup);
+	safe_free(params);
+	safe_free(data);
     DEBUG(0,("reply_nttrans : Out of memory\n"));
     END_PROFILE(SMBnttrans);
     return(ERROR(ERRDOS,ERRnomem));

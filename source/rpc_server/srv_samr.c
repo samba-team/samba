@@ -217,7 +217,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 	if (pw_buf == NULL) return False;
 
 	if (current_idx == 0) {
-		setpwent();
+		sys_setpwent();
 	}
 
 	/* These two cases are inefficient, but should be called very rarely */
@@ -230,7 +230,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 			char *unmap_name;
 
 			if(!orig_done) {
-				if ((pwd = getpwent()) == NULL) break;
+				if ((pwd = sys_getpwent()) == NULL) break;
 				current_idx++;
 				orig_done = True;
 			}
@@ -248,8 +248,8 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		}
 	} else if (start_idx < current_idx) {
 		/* We are already too far; start over and advance to start_idx */
-		endpwent();
-		setpwent();
+		sys_endpwent();
+		sys_setpwent();
 		current_idx = 0;
 		mapped_idx = 0;
 		orig_done = False;
@@ -257,7 +257,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 			char *unmap_name;
 
 			if(!orig_done) {
-				if ((pwd = getpwent()) == NULL) break;
+				if ((pwd = sys_getpwent()) == NULL) break;
 				current_idx++;
 				orig_done = True;
 			}
@@ -284,7 +284,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 		/* This does the original UNIX user itself */
 		if(!orig_done) {
-			if ((pwd = getpwent()) == NULL) break;
+			if ((pwd = sys_getpwent()) == NULL) break;
 
 			/* Don't enumerate winbind users as they are not local */
 

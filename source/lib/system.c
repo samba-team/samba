@@ -611,6 +611,13 @@ static struct passwd *setup_pwret(struct passwd *pass)
    getpw[nam|uid]() call.  Patch by "Richard Bollinger" 
    <rabollinger@home.com> */
 
+/*
+ * This next static pointer is used to cache the results
+ * from the real getpwXX calls. It is never returned to 
+ * the caller, only the output from calling setup_pwret with
+ * this is returned. JRA.
+ */
+
 static struct passwd *sv_pw_ret; /* implicitly initialized to NULL */
 static int num_lookups; /* Counter so we don't always use cache. */
 #ifndef PW_RET_CACHE_MAX_LOOKUPS
@@ -618,13 +625,33 @@ static int num_lookups; /* Counter so we don't always use cache. */
 #endif
 
 /**************************************************************************
+ Wrappers for setpwent(), getpwent() and endpwent()
+****************************************************************************/
+
+void sys_setpwent(void)
+{
+	sv_pw_ret = NULL;
+	setpwent();
+}
+
+struct passwd *sys_getpwent(void)
+{
+	sv_pw_ret = getpwent();
+	return setup_pwret(sv_pw_ret);
+}
+
+void sys_endpwent(void)
+{
+	sv_pw_ret = NULL;
+	endpwent();
+}
+
+/**************************************************************************
  Wrapper for getpwnam(). Always returns a static that can be modified.
 ****************************************************************************/
 
 struct passwd *sys_getpwnam(const char *name)
 {
-	struct passwd *pw_ret;
-
 	if (!name || !name[0])
 		return NULL;
 
@@ -634,17 +661,17 @@ struct passwd *sys_getpwnam(const char *name)
 		DEBUG(2,("getpwnam(%s) avoided - using cached results\n",name));
 		num_lookups++;
 		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
-		return sv_pw_ret;
+		return setup_pwret(sv_pw_ret);
 	}
 
 	/* no cache hit--use old lookup instead */
 	DEBUG(2,("getpwnam(%s) called\n",name));
-	if (!(pw_ret = getpwnam(name)))
-		return NULL;
 
 	num_lookups = 1;
 
-	return (sv_pw_ret = setup_pwret(pw_ret));
+	sv_pw_ret = getpwnam(name);
+
+	return setup_pwret(sv_pw_ret);
 }
 
 /**************************************************************************
@@ -653,23 +680,21 @@ struct passwd *sys_getpwnam(const char *name)
 
 struct passwd *sys_getpwuid(uid_t uid)
 {
-	struct passwd *pw_ret;
-
 	if (num_lookups && sv_pw_ret && (uid == sv_pw_ret->pw_uid))
 	{
 		DEBUG(2,("getpwuid(%d) avoided - using cached results\n",uid));
 		num_lookups++;
 		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
-		return sv_pw_ret;
+		return setup_pwret(sv_pw_ret);
 	}
 	
 	DEBUG(2,("getpwuid(%d) called\n",uid));
-	if (!(pw_ret = getpwuid(uid)))
-		return NULL;
 
 	num_lookups = 1;
 
-  	return (sv_pw_ret = setup_pwret(pw_ret));
+	sv_pw_ret = getpwuid(uid);
+
+  	return setup_pwret(sv_pw_ret);
 }
 
 /**************************************************************************
