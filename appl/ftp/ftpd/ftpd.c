@@ -1757,19 +1757,19 @@ dolog(struct sockaddr_in *sin)
 void
 dologout(int status)
 {
-
-	if (logged_in) {
-		seteuid((uid_t)0);
-		logwtmp(ttyline, "", "");
-		dest_tkt();
-		if(k_hasafs())
-		    k_unlog();
-	}
-	/* beware of flushing buffers after a SIGPIPE */
+    transflag = 0;
+    if (logged_in) {
+	seteuid((uid_t)0);
+	logwtmp(ttyline, "", "");
+	dest_tkt();
+	if(k_hasafs())
+	    k_unlog();
+    }
+    /* beware of flushing buffers after a SIGPIPE */
 #ifdef XXX
-	exit(status);
+    exit(status);
 #else
-	_exit(status);
+    _exit(status);
 #endif	
 }
 
