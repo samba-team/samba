@@ -94,7 +94,7 @@
 #define LDAP_ATTR_LOGON_COUNT		36
 #define LDAP_ATTR_MUNGED_DIAL		37
 #define LDAP_ATTR_BAD_PASSWORD_TIME	38
-#define LDAP_ATTR_MOD_TIMESTAMP		39
+
 #define LDAP_ATTR_SID_LIST		40
 
 typedef struct _attrib_map_entry {
