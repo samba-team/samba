@@ -126,7 +126,7 @@ int  edit_timet (const char *prompt, krb5_timestamp *value, int *mask,
 		 int bit);
 
 void deltat2str(unsigned t, char *str, size_t len);
-int  str2deltat(const char *str, unsigned *delta);
+int  str2deltat(const char *str, krb5_deltat *delta);
 int  parse_deltat (const char *resp, krb5_deltat *value, int *mask, int bit);
 int  edit_deltat (const char *prompt, krb5_deltat *value, int *mask, int bit);
 
