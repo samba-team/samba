@@ -311,15 +311,17 @@ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
 	}
 	if (strlen(name) > 15) {
 		const char *p = strchr(name, '.');
+		char *s;
 		if (p - name > 15) {
 			n->name = "*SMBSERVER";
 			return;
 		}
-		n->name = talloc_strndup(mem_ctx, name, PTR_DIFF(p, name));
+		s = talloc_strndup(mem_ctx, name, PTR_DIFF(p, name));
+		n->name = strupper_talloc(mem_ctx, s);
 		return;
 	}
 
-	n->name = talloc_strdup(mem_ctx, name);
+	n->name = strupper_talloc(mem_ctx, name);
 }
 
 
