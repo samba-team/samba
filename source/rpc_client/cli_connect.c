@@ -328,7 +328,7 @@ BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
 			      struct cli_connection **con,
 			      cli_auth_fns * auth, void *auth_creds)
 {
-	BOOL reuse = False;
+        BOOL reuse = True;
 
 	/*
 	 * allocate
