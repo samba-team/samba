@@ -88,10 +88,6 @@ struct spoolss_PrinterInfo5 {
 	uint32 transmission_retry_timeout;
 };
 
-struct spoolss_PrinterInfo6 {
-	uint32 foo;
-};
-
 struct spoolss_PrinterInfo7 {
 	const char * guid;
 	uint32 action;
@@ -103,7 +99,6 @@ union spoolss_PrinterInfo {
 /* [case(3)] */ struct spoolss_PrinterInfo3 info3;
 /* [case(4)] */ struct spoolss_PrinterInfo4 info4;
 /* [case(5)] */ struct spoolss_PrinterInfo5 info5;
-/* [case(6)] */ struct spoolss_PrinterInfo6 info6;
 /* [case(7)] */ struct spoolss_PrinterInfo7 info7;
 };
 
@@ -218,7 +213,7 @@ struct spoolss_GetPrinter {
 	} in;
 
 	struct {
-		DATA_BLOB *buffer;
+		union spoolss_PrinterInfo *info;
 		uint32 *buf_size;
 		WERROR result;
 	} out;

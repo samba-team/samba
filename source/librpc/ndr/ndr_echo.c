@@ -40,6 +40,10 @@ NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, struct echo_SourceData *
 
 NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
 {
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.s));
+	if (r->in.s) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->in.s));
+	}
 
 	return NT_STATUS_OK;
 }
@@ -90,172 +94,9 @@ NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum1 *r)
-{
-	uint32 _ptr_count;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_count));
-	if (_ptr_count) {
-		NDR_ALLOC(ndr, r->count);
-	} else {
-		r->count = NULL;
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->count) {
-		NDR_CHECK(ndr_pull_uint32(ndr, r->count));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum3 *r)
-{
-	uint32 _ptr_count;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_count));
-	if (_ptr_count) {
-		NDR_ALLOC(ndr, r->count);
-	} else {
-		r->count = NULL;
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->count) {
-		NDR_CHECK(ndr_pull_uint32(ndr, r->count));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_echo_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_EnumInfo *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
-	case 1: {
-	NDR_CHECK(ndr_pull_echo_Enum1(ndr, NDR_SCALARS, &r->enum1));
-	break; }
-
-	case 3: {
-	NDR_CHECK(ndr_pull_echo_Enum3(ndr, NDR_SCALARS, &r->enum3));
-	break; }
-
-	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
-	case 1:
-		NDR_CHECK(ndr_pull_echo_Enum1(ndr, NDR_BUFFERS, &r->enum1));
-	break;
-
-	case 3:
-		NDR_CHECK(ndr_pull_echo_Enum3(ndr, NDR_BUFFERS, &r->enum3));
-	break;
-
-	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Struct1 *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_SCALARS, &_level, &r->e));
-	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_BUFFERS, &_level, &r->e));
-	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
-	}
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
 {
-	uint32 _ptr_s1;
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_s1));
-	if (_ptr_s1) {
-		NDR_ALLOC(ndr, r->out.s1);
-	} else {
-		r->out.s1 = NULL;
-	}
-	if (r->out.s1) {
-		NDR_CHECK(ndr_pull_Struct1(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.s1));
-	}
 
 	return NT_STATUS_OK;
-}
-
-void ndr_print_echo_Enum1(struct ndr_print *ndr, const char *name, struct echo_Enum1 *r)
-{
-	ndr_print_struct(ndr, name, "echo_Enum1");
-	ndr->depth++;
-	ndr_print_ptr(ndr, "count", r->count);
-	ndr->depth++;
-	if (r->count) {
-		ndr_print_uint32(ndr, "count", *r->count);
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
-
-void ndr_print_echo_Enum3(struct ndr_print *ndr, const char *name, struct echo_Enum3 *r)
-{
-	ndr_print_struct(ndr, name, "echo_Enum3");
-	ndr->depth++;
-	ndr_print_ptr(ndr, "count", r->count);
-	ndr->depth++;
-	if (r->count) {
-		ndr_print_uint32(ndr, "count", *r->count);
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
-
-void ndr_print_echo_EnumInfo(struct ndr_print *ndr, const char *name, uint16 level, union echo_EnumInfo *r)
-{
-	ndr_print_union(ndr, name, level, "echo_EnumInfo");
-	switch (level) {
-	case 1:
-	ndr_print_echo_Enum1(ndr, "enum1", &r->enum1);
-	break;
-
-	case 3:
-	ndr_print_echo_Enum3(ndr, "enum3", &r->enum3);
-	break;
-
-	default:
-		ndr_print_bad_level(ndr, name, level);
-	}
-}
-
-void ndr_print_Struct1(struct ndr_print *ndr, const char *name, struct Struct1 *r)
-{
-	ndr_print_struct(ndr, name, "Struct1");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->level);
-	ndr_print_echo_EnumInfo(ndr, "e", r->level, &r->e);
-	ndr->depth--;
 }
 

@@ -170,6 +170,9 @@ static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct TestCall r;
+	char *s = "foo!";
+
+	r.in.s = s;
 
 	printf("\nTesting TestCall\n");
 	status = dcerpc_TestCall(p, mem_ctx, &r);
@@ -177,8 +180,6 @@ static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("TestCall failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_DEBUG(Struct1, r.out.s1);	
 
 	return True;
 }

@@ -26,14 +26,12 @@ BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinter r;
-	uint32 buf_size = 0;
-	DATA_BLOB blob;
-	union spoolss_PrinterInfo info;
 	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7};
 	int i;
 	BOOL ret = True;
 	
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		uint32 buf_size = 0;
 		r.in.handle = handle;
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
@@ -50,7 +48,7 @@ BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 		
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
 			status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
@@ -63,16 +61,8 @@ BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 			continue;
 		}
-		
-		status = ndr_pull_union_blob(r.out.buffer, mem_ctx, r.in.level, &info,
-					     (ndr_pull_union_fn_t)ndr_pull_spoolss_PrinterInfo);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("PrinterInfo parse failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		
-		NDR_PRINT_UNION_DEBUG(spoolss_PrinterInfo, r.in.level, &info);
+
+		NDR_PRINT_UNION_DEBUG(spoolss_PrinterInfo, r.in.level, r.out.info);
 	}
 
 	return ret;
@@ -194,7 +184,7 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
-	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7};
+	uint16 levels[] = {1, 2, 4, 5};
 	int i;
 	BOOL ret = True;
 

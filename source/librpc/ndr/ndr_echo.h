@@ -45,30 +45,12 @@ struct echo_SourceData {
 
 };
 
-struct echo_Enum1 {
-	uint32 *count;
-};
-
-struct echo_Enum3 {
-	uint32 *count;
-};
-
-union echo_EnumInfo {
-/* [case(1)] */ struct echo_Enum1 enum1;
-/* [case(3)] */ struct echo_Enum3 enum3;
-};
-
-struct Struct1 {
-	uint32 level;
-	union echo_EnumInfo e;
-};
-
 struct TestCall {
 	struct {
+		const char *s;
 	} in;
 
 	struct {
-		struct Struct1 *s1;
 	} out;
 
 };
