@@ -771,74 +771,62 @@ static BOOL talk_to_smbpasswd(char *old, char *new)
 }
 
 /****************************************************************************
-  become the specified uid
+  become the specified uid - permanently !
 ****************************************************************************/
-static BOOL become_uid(uid_t uid)
+
+BOOL become_user_permanently(uid_t uid, gid_t gid)
 {
-#ifdef HAVE_TRAPDOOR_UID
-#ifdef HAVE_SETUIDX
-	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
-	if (setuidx(ID_EFFECTIVE, uid) != 0) {
-		if (seteuid(uid) != 0) {
-			printf("<p> Can't set uid %d (setuidx)\n", (int)uid);
-			return False;
-		}
-	}
-#endif
-#endif
+
+    if (geteuid() != 0) {
+        return(True);
+    }
+
+    /* now completely lose our privilages. This is a fairly paranoid
+    way of doing it, but it does work on all systems that I know of */
 
 #ifdef HAVE_SETRESUID
-	if (setresuid(-1,uid,-1) != 0)
+	/*
+	 * Firstly ensure all our uids are set to root.
+	 */
+    setresgid(0,0,0);
+    setresuid(0,0,0);
+
+	/*
+	 * Now ensure we change all our gids.
+	 */
+    setresgid(gid,gid,gid);
+
+	/*
+	 * Now ensure all the uids are the user.
+	 */
+    setresuid(uid,uid,uid);
 #else
-	if ((seteuid(uid) != 0) && (setuid(uid) != 0))
+	/*
+	 * Firstly ensure all our uids are set to root.
+	 */
+    setuid(0);
+    seteuid(0);
+
+	/*
+	 * Now ensure we change all our gids.
+	 */
+    setgid(gid);
+    setegid(gid);
+
+	/*
+	 * Now ensure all the uids are the user.
+	 */
+    setuid(uid);
+    seteuid(uid);
 #endif
-	{
-		printf("<p> Couldn't set uid %d currently set to (uid %d, euid %d)\n",
-			(int)uid,(int)getuid(), (int)geteuid());
-		if (uid > (uid_t)32000) {
-			printf("<p> Looks like your OS doesn't like high uid values - try using a different account\n");
 
-		}
-		return(False);
-	}
-
-	if (((uid == (uid_t)-1) || ((sizeof(uid_t) == 2) && (uid == 65535))) &&
-            (geteuid() != uid)) {
-		printf("<p> Invalid uid -1. perhaps you have a account with uid 65535?\n");
-		return(False);
-	}
+    if (getuid() != uid || geteuid() != uid ||
+        getgid() != gid || getegid() != gid) {
+        /* We failed to lose our privilages. */
+        return False;
+    }
 
 	return(True);
-}
-
-/****************************************************************************
-  become the specified gid
-****************************************************************************/
-static BOOL become_gid(gid_t gid)
-{
-#ifdef HAVE_SETRESUID
-	if (setresgid(-1,gid,-1) != 0)
-#else
-	if (setgid(gid) != 0)
-#endif
-	{
-		printf("<p> Couldn't set gid %d currently set to (gid %d, egid %d)\n",
-                 (int)gid,(int)getgid(),(int)getegid());
-		if (gid > 32000) {
-			printf("<p> Looks like your OS doesn't like high gid values - try using a different account\n");
-		}
-		return(False);
-	}
-
-	return(True);
-}
-
-/****************************************************************************
-  become the specified uid and gid
-****************************************************************************/
-static BOOL become_id(uid_t uid,gid_t gid)
-{
-	return(become_gid(gid) && become_uid(uid));
 }
 
 /****************************************************************************
@@ -878,19 +866,6 @@ static void chg_passwd(void)
 		if (strcmp(cgi_variable(new_pswd), cgi_variable(new2_pswd)) != 0) {
 			printf("<p> Re-typed password didn't match new password\n");
 			return;
-		}
-	}
-
-	/* Get the UID/GID of the user, and become that user  */
-	if (am_root() == False) {
-		pass = Get_Pwnam(cgi_variable(user),True);
-		if (pass == NULL) {
-			printf("<p> User uid unknown     \n");
-		} else {
-			if (become_id(pass->pw_uid, pass->pw_gid) == False) {
-				printf("<p> uid/gid set failed \n");
-				return;
-			}
 		}
 	}
 
@@ -1138,4 +1113,3 @@ static void printers_page(void)
 	print_footer();
 	return 0;
 }
-

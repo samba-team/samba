@@ -2657,4 +2657,5 @@ void status_page(void);
 
 /*The following definitions come from  web/swat.c  */
 
+BOOL become_user_permanently(uid_t uid, gid_t gid);
 #endif /* _PROTO_H_ */
