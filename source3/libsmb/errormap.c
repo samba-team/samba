@@ -1484,7 +1484,6 @@ WERROR ntstatus_to_werror(NTSTATUS error)
 	return W_ERROR(NT_STATUS_V(error) & 0xffff);
 }
 
-
 /* Mapping between Unix, DOS and NT error numbers */
 
 const struct unix_error_map unix_dos_nt_errmap[] = {

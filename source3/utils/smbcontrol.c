@@ -470,7 +470,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 				JOB_STATUS_DELETED,
 				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 		}
-
+		
 		/* printer change notify */
 		
 		if (strequal(cmd, "printer")) {

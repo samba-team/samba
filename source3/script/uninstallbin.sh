@@ -34,8 +34,8 @@ cat << EOF
 ======================================================================
 The binaries have been uninstalled. You may restore the binaries using
 the command "make installbin" or "make install" to install binaries, 
-man pages and shell scripts. You can restore a previous version of the
-binaries (if there were any) using "make revert".
+man pages, modules and shell scripts. You can restore a previous
+version of the binaries (if there were any) using "make revert".
 ======================================================================
 EOF
 
