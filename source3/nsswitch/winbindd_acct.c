@@ -174,6 +174,158 @@ static char* passwd2string( const WINBINDD_PW *pw )
 	return string;	
 }
 
+static void
+add_member(const char *domain, const char *user,
+	   char ***members, int *num_members)
+{
+	fstring name;
+
+	fill_domain_username(name, domain, user);
+
+	*members = Realloc(*members, (*num_members+1) * sizeof(char **));
+
+	if (members == NULL) {
+		DEBUG(10, ("Realloc failed\n"));
+		return;
+	}
+
+	(*members)[*num_members] = strdup(name);
+	*num_members += 1;
+}
+
+/**********************************************************************
+ Add member users resulting from sid. Expand if it is a domain group.
+**********************************************************************/
+
+static void
+add_expanded_sid(DOM_SID *sid, char ***members, int *num_members)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+	struct winbindd_domain *domain;
+	int i;
+
+	char *name = NULL;
+	enum SID_NAME_USE type;
+
+	uint32 num_names;
+	DOM_SID **sid_mem;
+	char **names;
+	uint32 *types;
+
+	NTSTATUS result;
+
+	TALLOC_CTX *mem_ctx = talloc_init("add_expanded_sid");
+
+	if (mem_ctx == NULL) {
+		DEBUG(1, ("talloc_init failed\n"));
+		return;
+	}
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+
+	domain = find_domain_from_sid(&dom_sid);
+
+	if (domain == NULL) {
+		DEBUG(3, ("Could not find domain for sid %s\n",
+			  sid_string_static(sid)));
+		goto done;
+	}
+
+	result = domain->methods->sid_to_name(domain, mem_ctx, sid,
+					      &name, &type);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3, ("sid_to_name failed for sid %s\n",
+			  sid_string_static(sid)));
+		goto done;
+	}
+
+	DEBUG(10, ("Found name %s, type %d\n", name, type));
+
+	if (type == SID_NAME_USER) {
+		add_member(domain->name, name, members, num_members);
+		goto done;
+	}
+
+	if (type != SID_NAME_DOM_GRP) {
+		DEBUG(10, ("Alias member %s neither user nor group, ignore\n",
+			   name));
+		goto done;
+	}
+
+	/* Expand the domain group */
+
+	result = domain->methods->lookup_groupmem(domain, mem_ctx,
+						  sid, &num_names,
+						  &sid_mem, &names,
+						  &types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("Could not lookup group members for %s: %s\n",
+			   name, nt_errstr(result)));
+		goto done;
+	}
+
+	for (i=0; i<num_names; i++) {
+		DEBUG(10, ("Adding group member SID %s\n",
+			   sid_string_static(sid_mem[i])));
+
+		if (types[i] != SID_NAME_USER) {
+			DEBUG(1, ("Hmmm. Member %s of group %s is no user. "
+				  "Ignoring.\n", names[i], name));
+			continue;
+		}
+
+		add_member(domain->name, names[i], members, num_members);
+	}
+
+ done:
+	talloc_destroy(mem_ctx);
+	return;
+}
+
+/**********************************************************************
+ Add alias members. Expand them if they are domain groups.
+**********************************************************************/
+
+static void
+add_expanded_alias_members(gid_t gid, char ***members, int *num_members)
+{
+	GROUP_MAP map;
+	DOM_SID *sids = NULL;
+	int i, num_sids;
+	
+	if (!pdb_getgrgid(&map, gid)) {
+		DEBUG(10, ("No mapping for group %d\n", gid));
+		return;
+	}
+
+	if ( (map.sid_name_use != SID_NAME_WKN_GRP) &&
+	     (map.sid_name_use != SID_NAME_ALIAS) ) {
+		DEBUG(10, ("Group %d is no alias\n", gid));
+		return;
+	}
+
+	if (!pdb_enum_aliasmem(&map.sid, &sids, &num_sids)) {
+		DEBUG(10, ("Could not enum aliases for group sid %s\n",
+			   sid_string_static(&map.sid)));
+		return;
+	}
+
+	for (i=0; i<num_sids; i++) {
+		DEBUG(10, ("additional SID: %s\n",
+			   sid_string_static(&sids[i])));
+
+		add_expanded_sid(&sids[i], members, num_members);
+	}
+
+	SAFE_FREE(sids);
+	return;
+}
+
+
 /**********************************************************************
  Convert a string in /etc/group format to a struct group* entry
 **********************************************************************/
@@ -236,6 +388,8 @@ static WINBINDD_GR* string2group( char *string )
 	fstrcpy( grp.gr_name,   fields[0] );
 	fstrcpy( grp.gr_passwd, fields[1] );
 	grp.gr_gid = atoi(      fields[2] );
+
+	add_expanded_alias_members(grp.gr_gid, &gr_members, &num_gr_members);
 	
 	grp.num_gr_mem = num_gr_members;
 	grp.gr_mem     = gr_members;
