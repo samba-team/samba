@@ -568,6 +568,13 @@ static int join_domain(char *domain, char *remote)
 	pstrcpy(pdc_name, remote ? remote : "");
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
+
+	/* 
+	 * Machine names can be 15 characters, but the max length on
+	 * a password is 14.  --jerry
+	 */
+	trust_passwd[14] = '\0';
+
 	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
 	/* Ensure that we are not trying to join a
