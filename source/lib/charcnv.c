@@ -41,15 +41,6 @@
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 static BOOL conv_silent; /* Should we do a debug if the conversion fails ? */
-/* Unsafe unix charsets which could contain '\\' as second byte of mb character */
-static const char *conv_unsafe_charsets[] = {
-	    "CP932",
-	    "EUC-JP",
-	    NULL};
-/* Global variable which is set to True in init_iconv() if unix charset is unsafe
-   w.r.t. '\\' in second byte of mb character. Otherwise it is set to False.
-*/
-BOOL is_unix_charset_unsafe;
 
 /**
  * Return the name of a charset to give to iconv().
@@ -114,7 +105,6 @@ void init_iconv(void)
 {
 	int c1, c2;
 	BOOL did_reload = False;
-	const char **unsafe_charset = conv_unsafe_charsets;
 
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
@@ -155,16 +145,6 @@ void init_iconv(void)
 		init_doschar_table();
 		init_valid_table();
 		conv_silent = False;
-	}
-	
-	while(*unsafe_charset && strcmp(*unsafe_charset, conv_handles[CH_UCS2][CH_UNIX]->to_name)) {
-		unsafe_charset++;
-	}
-	
-	if (*unsafe_charset) {
-		is_unix_charset_unsafe = True;
-	} else {
-		is_unix_charset_unsafe = False;
 	}
 }
 
@@ -1330,6 +1310,10 @@ size_t next_mb_char_size(const char *s)
 	for ( i = 1; i <=4; i++ ) {
 		smb_ucs2_t uc;
 		if (convert_string(CH_UNIX, CH_UCS2, s, i, &uc, 2, False) == 2) {
+#if 0 /* JRATEST */
+			DEBUG(10,("next_mb_char_size: size %u at string %s\n",
+				(unsigned int)i, s));
+#endif
 			return i;
 		}
 	}

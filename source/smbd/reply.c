@@ -34,7 +34,6 @@ extern char magic_char;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
-extern BOOL is_unix_charset_unsafe;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 
@@ -88,6 +87,8 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 				return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			}
 			/* Go back one level... */
+			/* We know this is safe as '/' cannot be part of a mb sequence. */
+			/* NOTE - if this assumption is invalid we are not in good shape... */
 			while (d > destname) {
 				if (*d == '/')
 					break;
@@ -112,31 +113,20 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			}
 			s++;
 		} else {
-			/* Activate this codepath only if we know that Unix charset may contain unsafe '\\' */
-			if ((is_unix_charset_unsafe == True) && ((*s & 0x80) && IS_DIRECTORY_SEP(s[1]))) {
-				/* 
-				 * Potential mb char with second char a directory separator.
-				 * All the encodings we care about are 2 byte only, so do a
-				 * conversion to unicode. If the one byte char converts then
-				 * it really is a directory separator following. Otherwise if
-				 * the two byte character converts (and it should or our assumption
-				 * about character sets is broken and we return an error) then copy both
-				 * bytes as it's a MB character, not a directory separator.
-				 */
-
-				uint16 ucs2_val;
-
-				if (convert_string(CH_UNIX, CH_UCS2, s, 1, &ucs2_val, 2, False) == 2) {
-					;
-				} else if (convert_string(CH_UNIX, CH_UCS2, s, 2, &ucs2_val, 2, False) == 2) {
+			switch(next_mb_char_size(s)) {
+				case 4:
 					*d++ = *s++;
-				} else {
-					DEBUG(0,("check_path_syntax: directory separator assumptions invalid !\n"));
+				case 3:
+					*d++ = *s++;
+				case 2:
+					*d++ = *s++;
+				case 1:
+					*d++ = *s++;
+					break;
+				default:
+					DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
 					return NT_STATUS_INVALID_PARAMETER;
-				}
 			}
-			/* Just copy the char (or the second byte of the mb char). */
-			*d++ = *s++;
 		}
 	}
 	*d = '\0';
