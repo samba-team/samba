@@ -60,7 +60,8 @@ static struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
-int srvconv(int argc, char **argv)
+int
+srvconv(int argc, char **argv)
 {
     krb5_error_code ret;
     int optind = 0;
@@ -76,6 +77,14 @@ int srvconv(int argc, char **argv)
     if(help_flag){
 	arg_printusage(args, num_args, "");
 	return 0;
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0) {
+	arg_printusage(args, num_args, "");
+	return 1;
     }
 
     if(keytab == NULL){
