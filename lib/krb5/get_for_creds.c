@@ -37,37 +37,34 @@ RCSID("$Id$");
 
 static krb5_error_code
 add_addrs(krb5_context context,
-	  krb5_addresses *a,
-	  struct hostent *hostent, int af)
+	  krb5_addresses *addr,
+	  struct addrinfo *ai)
 {
     krb5_error_code ret;
-    char **h;
     unsigned n, i;
     void *tmp;
+    struct addrinfo *a;
 
-    if (hostent == NULL)
-	return 0;
-    
     n = 0;
-    for (h = hostent->h_addr_list; *h != NULL; ++h)
+    for (a = ai; a != NULL; a = a->ai_next)
 	++n;
 
-    i = a->len;
-    a->len += n;
-    tmp = realloc(a->val, a->len * sizeof(*a->val));
+    i = addr->len;
+    addr->len += n;
+    tmp = realloc(addr->val, addr->len * sizeof(*addr->val));
     if (tmp == NULL) {
 	ret = ENOMEM;
 	goto fail;
     }
-    a->val = tmp;
-    for (h = hostent->h_addr_list; *h != NULL; ++h) {
-	ret = krb5_h_addr2addr (af, *h, &a->val[i++]);
+    addr->val = tmp;
+    for (a = ai; a != NULL; a = a->ai_next) {
+	ret = krb5_sockaddr2address (a->ai_addr, &addr->val[i++]);
 	if (ret)
 	    goto fail;
     }
     return 0;
 fail:
-    krb5_free_addresses (context, a);
+    krb5_free_addresses (context, addr);
     return ret;
 }
 
@@ -133,26 +130,19 @@ krb5_get_forwarded_creds (krb5_context	    context,
     int32_t sec, usec;
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
+    struct addrinfo *ai;
 
     addrs.len = 0;
     addrs.val = NULL;
 
-#ifdef HAVE_GETHOSTBYNAME2
-#ifdef HAVE_IPV6
-    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET6),
-		     AF_INET6);
+    ret = getaddrinfo (hostname, NULL, NULL, &ai);
     if (ret)
 	return ret;
-#endif
-    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET),
-		     AF_INET);
+
+    ret = add_addrs (context, &addrs, ai);
+    freeaddrinfo (ai);
     if (ret)
 	return ret;
-#else
-    ret = add_addrs (context, &addrs, roken_gethostbyname(hostname), AF_INET);
-    if (ret)
-	return ret;
-#endif
 
     kdc_flags.i = flags;
 
