@@ -2370,7 +2370,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->max_mux = SVAL(cli->inbuf, smb_vwv1+1);
 		cli->max_xmit = IVAL(cli->inbuf,smb_vwv3+1);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv7+1);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1)*60;
+		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1);
+		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
 		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
@@ -2383,7 +2384,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv10)*60;
+		cli->serverzone = SVALS(cli->inbuf,smb_vwv10);
+		cli->serverzone *= 60;
 		/* this time is converted to GMT by make_unix_date */
 		cli->servertime = make_unix_date(cli->inbuf+smb_vwv8);
 		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);

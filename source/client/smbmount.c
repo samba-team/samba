@@ -42,7 +42,7 @@
 	it does not close the stdout pipe back to the automount
 	process, which automount depends on.  This will cause automount
 	to hang!  Use with caution! */
-#define SMBFS_DEBUG 1 
+/* #define SMBFS_DEBUG 1 */
 
 extern struct in_addr ipzero;
 extern int DEBUGLEVEL;
@@ -326,7 +326,7 @@ static void send_fs_socket(char *service, char *mount_point)
 		conn_options.sesskey = c->sesskey;
 		conn_options.maxraw = 0;
 		conn_options.capabilities = c->capabilities;
-		conn_options.serverzone = c->serverzone;
+		conn_options.serverzone = c->serverzone/60;
 
 		res = ioctl(fd, SMB_IOC_NEWCONN, &conn_options);
 		if (res != 0) {
