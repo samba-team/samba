@@ -276,7 +276,7 @@ main(int argc, char **argv)
 	ret = sl_loop (cmd, "kadmin> ") != 0;
 
     kadm5_destroy(kadm_handle);
-    krb5_config_file_free (cf);
+    krb5_config_file_free (context, cf);
     krb5_free_context(context);
     return ret;
 }
