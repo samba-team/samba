@@ -389,7 +389,8 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 				       mod,
 				       NULL, /* Don't have plaintext */
 				       NULL, &r->in.new_password,
-				       False /* This is not considered a password change */,
+				       False, /* This is not considered a password change */
+				       False, /* don't restrict this password change (match w2k3) */
 				       NULL);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -1097,7 +1098,8 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 				       msgs_domain[0]->dn,
 				       mod, new_pass, /* we have plaintext */
 				       NULL, NULL,
-				       False /* This is not considered a password change */,
+				       False, /* This is not considered a password change */
+				       False, /* don't restrict this password change (match w2k3) */
 				       NULL);
 	ZERO_ARRAY(new_pass);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
