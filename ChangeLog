@@ -10,6 +10,9 @@
 
 Sun Apr 11 02:35:58 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* lib/krb5/principal.c (krb5_524_conv_principal): make it actually
+ 	work, and check built-in list of host-type first-components
+
 	* lib/krb5/krbhst.c: lookup SRV-records to find a kdc for a realm
 
 	* lib/krb5/context.c: add srv_* flags to context
