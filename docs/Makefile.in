@@ -60,7 +60,7 @@ MANPAGES_HTML = $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES_SOUR
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES)) $(PLUCKERDIR)/smb.conf.5.pdb
 
 HOWTODIR_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
-GUIDEDOC_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
+GUIDEDOC_IMAGES_PNG = $(wildcard $(IMAGEGUIDEDIR)/*.png)
 HOWTODIR_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
 HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 DEVDOCDIR_DEPS = $(DEVDOCDIR)/*.xml $(DEVDOCDIR)/attributions.xml
@@ -89,7 +89,7 @@ all: @TARGETS@
 
 everything: manpages pdf html-single html htmlman txt ps
 
-release: manpages htmlman html sg-html html-single pdf guide
+release: manpages htmlman howto-html sg-html html-single pdf guide
 
 # Global rules
 
@@ -103,25 +103,22 @@ txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-G
 
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 
-html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
+html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html $(HTMLDIR)/Samba-Guide.html
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
 	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
 
-html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml $(HTMLDIR)/Samba-Developers-Guide.html
-	$(XSLTPROC) -o "$(HTMLDIR)/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
-	@if [ ! -d $(HTMLDIR)/images/ ]; then \
-		mkdir $(HTMLDIR)/images/; \
-	fi \
-	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
+html: howto-html guide-html dev-html
+	
+howto-html: $(HTMLDIR) $(HTMLDIR)/howto CSS Samba-HOWTO-Collection.xml
+	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/howto/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
 
-sg-html: $(HTMLDIR) CSS Samba-Guide.xml
-	$(XSLTPROC) -o "$(HTMLDIR)/" xslt/html-chunk.xsl Samba-Guide.xml
-	@if [ ! -d $(HTMLDIR)/images/ ]; then \
-		mkdir $(HTMLDIR)/images/; \
-	fi \
-	&& cp -p $(IMAGEGUIDEDIR)/*png $(HTMLDIR)/images/
+dev-html: $(HTMLDIR) $(HTMLDIR)/devel CSS $(HTMLDIR)/Samba-Developers-Guide.xml
+	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/devel/" xslt/html-chunk.xsl Samba-Developers-Guide.xml
+
+sg-html: $(HTMLDIR) $(HTMLDIR)/guide CSS Samba-Guide.xml
+	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/guide" xslt/html-chunk.xsl Samba-Guide.xml
 
 manpages: $(MANDIR) $(MANPAGES)
 
@@ -207,6 +204,19 @@ xslt/figures/%.pdf: xslt/figures/%.eps
 $(HTMLDIR):
 	mkdir $(HTMLDIR)
 	mkdir $(HTMLDIR)/images
+
+$(HTMLDIR)/guide:
+	mkdir $(HTMLDIR)/guide
+	mkdir $(HTMLDIR)/guide/images
+	cp -R $(GUIDEDOC_IMAGES_PNG) $(HTMLDIR)/guide/images
+
+$(HTMLDIR)/devel:
+	mkdir $(HTMLDIR)/devel
+
+$(HTMLDIR)/howto:
+	mkdir $(HTMLDIR)/howto
+	mkdir $(HTMLDIR)/howto/images
+	cp -R $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/howto/images
 
 $(PLUCKERDIR):
 	mkdir $(PLUCKERDIR)
