@@ -113,13 +113,6 @@
 					PROTECTED_SACL_SECURITY_INFORMATION|\
 					PROTECTED_DACL_SECURITY_INFORMATION)
 
-/* Globally Unique ID */
-#define  GUID_SIZE 16
-typedef struct guid_info
-{
-	uint8 info[GUID_SIZE];
-} GUID;
-
 /* SEC_ACCESS */
 typedef struct security_info_info
 {
@@ -138,8 +131,8 @@ typedef struct security_ace_info
 
 	/* this stuff may be present when type is XXXX_TYPE_XXXX_OBJECT */
 	uint32  obj_flags; /* xxxx_ACE_OBJECT_xxxx e.g present/inherited present etc */
-	GUID    obj_guid;  /* object GUID */
-	GUID    inh_guid;  /* inherited object GUID */		
+	struct uuid obj_guid;  /* object GUID */
+	struct uuid inh_guid;  /* inherited object GUID */		
         /* eof object stuff */
 
 	DOM_SID trustee;

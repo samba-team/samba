@@ -3,7 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2000,
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Gerald Carter		       2000-2003,
  *  Copyright (C) Tim Potter                   2001-2002.
@@ -4283,10 +4283,11 @@ static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *p
 static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
 {
 	char *guid_str = NULL;
-	GUID guid;
+	UUID_FLAT guid;
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
-		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));
+		asprintf(&guid_str, "{%s}", 
+			 smb_uuid_string_static(smb_uuid_unpack_static(guid)));
 		strupper_m(guid_str);
 		init_unistr(&printer->guid, guid_str);
 		printer->action = SPOOL_DS_PUBLISH;

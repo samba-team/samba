@@ -64,7 +64,7 @@ typedef struct
 	uint32		dnsname_ptr;
 	uint32		forestname_ptr;
 	
-	GUID		domain_guid;
+	struct uuid	domain_guid;
 	
 	UNISTR2	netbios_domain;
 
@@ -110,7 +110,7 @@ typedef struct {
 	uint32		trust_type;
 	uint32		trust_attributes;
 	uint32		sid_ptr;
-	GUID		guid;
+	struct uuid	guid;
 	
 	UNISTR2		netbios_domain;
 	UNISTR2		dns_domain;
@@ -124,7 +124,7 @@ struct ds_domain_trust {
 	uint32		parent_index;
 	uint32		trust_type;
 	uint32		trust_attributes;
-	GUID		guid;
+	struct uuid	guid;
 	
 	DOM_SID	sid;
 	char *netbios_domain;

@@ -440,8 +440,8 @@ static void send_wins_name_registration_response(int rcode, int ttl, struct pack
  Deal with a name refresh request to a WINS server.
 ************************************************************************/
 
-void wins_process_name_refresh_request(struct subnet_record *subrec,
-                                            struct packet_struct *p)
+void wins_process_name_refresh_request( struct subnet_record *subrec,
+                                        struct packet_struct *p )
 {
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
@@ -453,28 +453,36 @@ void wins_process_name_refresh_request(struct subnet_record *subrec,
 	struct in_addr from_ip;
 	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
 
-	putip((char *)&from_ip,&nmb->additional->rdata[2]);
+	putip( (char *)&from_ip, &nmb->additional->rdata[2] );
 
 	if(bcast) {
 		/*
 		 * We should only get unicast name refresh packets here.
-		 * Anyone trying to refresh broadcast should not be going to a WINS
-		 * server. Log an error here.
+		 * Anyone trying to refresh broadcast should not be going
+		 * to a WINS server.  Log an error here.
 		 */
-
-		DEBUG(0,("wins_process_name_refresh_request: broadcast name refresh request \
-received for name %s from IP %s on subnet %s. Error - should not be sent to WINS server\n",
-			nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+		if( DEBUGLVL( 0 ) ) {
+			dbgtext( "wins_process_name_refresh_request: " );
+			dbgtext( "Broadcast name refresh request received " );
+			dbgtext( "for name %s ", nmb_namestr(question) );
+			dbgtext( "from IP %s ", inet_ntoa(from_ip) );
+			dbgtext( "on subnet %s.  ", subrec->subnet_name );
+			dbgtext( "Error - Broadcasts should not be sent " );
+			dbgtext( "to a WINS server\n" );
+		}
 		return;
 	}
 
-	DEBUG(3,("wins_process_name_refresh_request: Name refresh for name %s \
-IP %s\n", nmb_namestr(question), inet_ntoa(from_ip) ));
+	if( DEBUGLVL( 3 ) ) {
+		dbgtext( "wins_process_name_refresh_request: " );
+		dbgtext( "Name refresh for name %s IP %s\n",
+			 nmb_namestr(question), inet_ntoa(from_ip) );
+	}
 
 	/* 
 	 * See if the name already exists.
+	 * If not, handle it as a name registration and return.
 	 */
-
 	namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
 
 	/*
@@ -482,48 +490,62 @@ IP %s\n", nmb_namestr(question), inet_ntoa(from_ip) ));
 	 * treat it like a registration request. This allows us to recover 
 	 * from errors (tridge)
 	 */
-
 	if(namerec == NULL) {
-		DEBUG(3,("wins_process_name_refresh_request: Name refresh for name %s and \
-the name does not exist. Treating as registration.\n", nmb_namestr(question) ));
+		if( DEBUGLVL( 3 ) ) {
+			dbgtext( "wins_process_name_refresh_request: " );
+			dbgtext( "Name refresh for name %s ",
+				 nmb_namestr( question ) );
+			dbgtext( "and the name does not exist.  Treating " );
+			dbgtext( "as registration.\n" );
+		}
 		wins_process_name_registration_request(subrec,p);
 		return;
 	}
 
 	/*
-	 * if the name is present but not active,
-	 * simply remove it and treat the request
-	 * as a registration
+	 * if the name is present but not active, simply remove it
+	 * and treat the refresh request as a registration & return.
 	 */
 	if (namerec != NULL && !WINS_STATE_ACTIVE(namerec)) {
-		DEBUG(5,("wins_process_name_refresh_request: Name (%s) in WINS was \
-not active - removing it.\n", nmb_namestr(question) ));
+		if( DEBUGLVL( 5 ) ) {
+			dbgtext( "wins_process_name_refresh_request: " );
+			dbgtext( "Name (%s) in WINS ", nmb_namestr(question) );
+			dbgtext( "was not active - removing it.\n" );
+		}
 		remove_name_from_namelist( subrec, namerec );
 		namerec = NULL;
-		wins_process_name_registration_request(subrec,p);
+		wins_process_name_registration_request( subrec, p );
 		return;
 	}
 
 	/*
 	 * Check that the group bits for the refreshing name and the
-	 * name in our database match.
+	 * name in our database match.  If not, refuse the refresh.
+	 * [crh:  Why RFS_ERR instead of ACT_ERR? Is this what MS does?]
 	 */
-
-	if((namerec != NULL) && ((group && !NAME_GROUP(namerec)) || (!group && NAME_GROUP(namerec))) ) {
-		DEBUG(3,("wins_process_name_refresh_request: Name %s group bit = %s \
-does not match group bit in WINS for this name.\n", nmb_namestr(question), group ? "True" : "False" ));
+	if( (namerec != NULL) &&
+	    ( (group && !NAME_GROUP(namerec))
+	   || (!group && NAME_GROUP(namerec)) ) ) {
+		if( DEBUGLVL( 3 ) ) {
+			dbgtext( "wins_process_name_refresh_request: " );
+			dbgtext( "Name %s ", nmb_namestr(question) );
+			dbgtext( "group bit = %s does not match ",
+				 group ? "True" : "False" );
+			dbgtext( "group bit in WINS for this name.\n" );
+		}
 		send_wins_name_registration_response(RFS_ERR, 0, p);
 		return;
 	}
 
 	/*
-	 * For a unique name check that the person refreshing the name is one of the registered IP
-	 * addresses. If not - fail the refresh. Do the same for group names with a type of 0x1c.
-	 * Just return success for unique 0x1d refreshes. For normal group names update the ttl
-	 * and return success.
+	 * For a unique name check that the person refreshing the name is
+	 * one of the registered IP addresses. If not - fail the refresh.
+	 * Do the same for group names with a type of 0x1c.
+	 * Just return success for unique 0x1d refreshes. For normal group
+	 * names update the ttl and return success.
 	 */
-
-	if((!group || (group && (question->name_type == 0x1c))) && find_ip_in_name_record(namerec, from_ip )) {
+	if( (!group || (group && (question->name_type == 0x1c)))
+	 && find_ip_in_name_record(namerec, from_ip) ) {
 		/*
 		 * Update the ttl.
 		 */
@@ -541,10 +563,25 @@ does not match group bit in WINS for this name.\n", nmb_namestr(question), group
 		send_wins_name_registration_response(0, ttl, p);
 		wins_hook("refresh", namerec, ttl);
 		return;
+	} else if((group && (question->name_type == 0x1c))) {
+		/*
+		 * Added by crh for bug #1079.
+		 * Fix from Bert Driehuis
+		 */
+		if( DEBUGLVL( 3 ) ) {
+			dbgtext( "wins_process_name_refresh_request: " );
+			dbgtext( "Name refresh for name %s, ",
+				 nmb_namestr(question) );
+			dbgtext( "but IP address %s ", inet_ntoa(from_ip) );
+			dbgtext( "is not yet associated with " );
+			dbgtext( "that name. Treating as registration.\n" );
+		}
+		wins_process_name_registration_request(subrec,p);
+		return;
 	} else if(group) {
 		/* 
-		 * Normal groups are all registered with an IP address of 255.255.255.255 
-		 * so we can't search for the IP address.
+		 * Normal groups are all registered with an IP address of
+		 * 255.255.255.255  so we can't search for the IP address.
 	 	 */
 		update_name_ttl(namerec, ttl);
 		send_wins_name_registration_response(0, ttl, p);
@@ -559,9 +596,12 @@ does not match group bit in WINS for this name.\n", nmb_namestr(question), group
 		/*
 		 * Fail the refresh.
 		 */
-
-		DEBUG(3,("wins_process_name_refresh_request: Name refresh for name %s with IP %s and \
-is IP is not known to the name.\n", nmb_namestr(question), inet_ntoa(from_ip) ));
+		if( DEBUGLVL( 3 ) ) {
+			dbgtext( "wins_process_name_refresh_request: " );
+			dbgtext( "Name refresh for name %s with IP %s ",
+				 nmb_namestr(question), inet_ntoa(from_ip) );
+			dbgtext( "and is IP is not known to the name.\n" );
+		}
 		send_wins_name_registration_response(RFS_ERR, 0, p);
 		return;
 	}
