@@ -135,10 +135,10 @@ main(int argc, char **argv)
     {
 	int fd = 0;
 	struct sockaddr sa;
-	size_t sa_len;
+	size_t sa_size;
 	krb5_auth_context ac = NULL;
 	int debug_port;
-	sa_len = sizeof(sa);
+	sa_size = sizeof(sa);
 	if(debug_flag) {
 	    if(port_str == NULL)
 		debug_port = krb5_getportbyname (context, "kerberos-adm", 
@@ -146,7 +146,7 @@ main(int argc, char **argv)
 	    else
 		debug_port = htons(atoi(port_str));
 	    mini_inetd(debug_port);
-	} else if(getsockname(STDIN_FILENO, &sa, &sa_len) < 0 && 
+	} else if(getsockname(STDIN_FILENO, &sa, &sa_size) < 0 && 
 		   errno == ENOTSOCK) {
 	    parse_ports(context, port_str ? port_str : "+");
 	    start_server(context);

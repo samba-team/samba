@@ -124,13 +124,13 @@ spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
 {
     int e, i;
     struct sockaddr sa;
-    size_t sa_len;
+    size_t sa_size;
     int s;
     pid_t pid;
     krb5_address addr;
     char buf[128];
     size_t buf_len;
-    s = accept(socks[this_sock], &sa, &sa_len);
+    s = accept(socks[this_sock], &sa, &sa_size);
     if(s < 0) {
 	krb5_warn(context, errno, "accept");
 	return 1;
