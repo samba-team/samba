@@ -475,7 +475,7 @@ siad_chg_password (sia_collect_func_t *collect,
     int ret;
     char new_pw1[MAX_KPW_LEN+1];
     char new_pw2[MAX_KPW_LEN+1];
-    static struct error_table *et_list;
+    static struct et_list *et_list;
 
     set_progname(argv[0]);
 
