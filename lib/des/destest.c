@@ -31,10 +31,22 @@
  * SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+RCSID("$Id$");
+#endif
+
+#ifdef KRB5
+#include <krb5-types.h>
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
 #include <err.h>
 
 #include "des.h"
