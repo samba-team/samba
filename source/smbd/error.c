@@ -25,6 +25,9 @@
 int unix_ERR_class=SMB_SUCCESS;
 int unix_ERR_code=0;
 
+/* From lib/error.c */
+extern struct unix_error_map unix_dos_nt_errmap[];
+
 /****************************************************************************
  Create an error packet from a cached error.
 ****************************************************************************/
@@ -41,45 +44,16 @@ int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file
 	return error_packet(outbuf,NT_STATUS_OK,eclass,err,line,file);
 }
 
-struct
-{
-  int unixerror;
-  int smbclass;
-  int smbcode;
-} unix_smb_errmap[] =
-{
-  {EPERM,ERRDOS,ERRnoaccess},
-  {EACCES,ERRDOS,ERRnoaccess},
-  {ENOENT,ERRDOS,ERRbadfile},
-  {ENOTDIR,ERRDOS,ERRbadpath},
-  {EIO,ERRHRD,ERRgeneral},
-  {EBADF,ERRSRV,ERRsrverror},
-  {EINVAL,ERRSRV,ERRsrverror},
-  {EEXIST,ERRDOS,ERRfilexists},
-  {ENFILE,ERRDOS,ERRnofids},
-  {EMFILE,ERRDOS,ERRnofids},
-  {ENOSPC,ERRHRD,ERRdiskfull},
-#ifdef EDQUOT
-  {EDQUOT,ERRHRD,ERRdiskfull},
-#endif
-#ifdef ENOTEMPTY
-  {ENOTEMPTY,ERRDOS,ERRnoaccess},
-#endif
-#ifdef EXDEV
-  {EXDEV,ERRDOS,ERRdiffdevice},
-#endif
-  {EROFS,ERRHRD,ERRnowrite},
-  {0,0,0}
-};
-
 /****************************************************************************
-  create an error packet from errno
+ Create an error packet from errno.
 ****************************************************************************/
+
 int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 		      int line, const char *file)
 {
 	int eclass=def_class;
 	int ecode=def_code;
+	NTSTATUS ntstatus = NT_STATUS_OK;
 	int i=0;
 
 	if (unix_ERR_class != SMB_SUCCESS) {
@@ -88,23 +62,25 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 		unix_ERR_class = SMB_SUCCESS;
 		unix_ERR_code = 0;
 	} else {
-		while (unix_smb_errmap[i].smbclass != 0) {
-			if (unix_smb_errmap[i].unixerror == errno) {
-				eclass = unix_smb_errmap[i].smbclass;
-				ecode = unix_smb_errmap[i].smbcode;
+		while (unix_dos_nt_errmap[i].dos_class != 0) {
+			if (unix_dos_nt_errmap[i].unix_error == errno) {
+				eclass = unix_dos_nt_errmap[i].dos_class;
+				ecode = unix_dos_nt_errmap[i].dos_code;
+				ntstatus = unix_dos_nt_errmap[i].nt_error;
 				break;
 			}
 			i++;
 		}
 	}
 
-	return error_packet(outbuf,NT_STATUS_OK,eclass,ecode,line,file);
+	return error_packet(outbuf,ntstatus,eclass,ecode,line,file);
 }
 
 
 /****************************************************************************
-  create an error packet. Normally called using the ERROR() macro
+ Create an error packet. Normally called using the ERROR() macro.
 ****************************************************************************/
+
 int error_packet(char *outbuf,NTSTATUS ntstatus,
 		 uint8 eclass,uint32 ecode,int line, const char *file)
 {

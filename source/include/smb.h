@@ -1603,6 +1603,13 @@ typedef struct user_struct
 	int session_id; /* used by utmp and pam session code */
 } user_struct;
 
+struct unix_error_map {
+	int unix_error;
+	int dos_class;
+	int dos_code;
+	NTSTATUS nt_error;
+};
+
 #include "ntdomain.h"
 
 #include "client.h"
