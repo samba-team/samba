@@ -19,9 +19,23 @@ RCSID("$Id$");
 int
 pop_user (POP *p)
 {
-    /*  Save the user name */
-    (void)strcpy(p->user, p->pop_parm[1]);
+#ifdef SKEY
+    char ss[256], msg[256];
+#endif
 
+    /*  Save the user name */
+    strcpy(p->user, p->pop_parm[1]);
+
+#ifdef SKEY
+    p->permit_passwd = skeyaccess(k_getpwnam (p->user), NULL,
+				  p->client, NULL);
+    if (skeychallenge (&p->sk, p->user, ss) == 0) {
+	return pop_msg(p, POP_SUCCESS, "Password [%s] required for %s.",
+		       ss, p->user);
+    } else if (!p->permit_passwd)
+	return pop_msg(p, POP_FAILURE, "Access unauthorized for %s.",
+		       p->user);
+#endif
     /*  Tell the user that the password is required */
-    return (pop_msg(p,POP_SUCCESS,"Password required for %s.",p->user));
+    return pop_msg(p, POP_SUCCESS, "Password required for %s.", p->user);
 }
