@@ -118,13 +118,13 @@ char	*egdsocket, *entropyfile;
     if(lp_ssl_compatibility()){
         SSL_CTX_set_options(sslContext, SSL_OP_ALL);
     }
-    certfile = isServer ? lp_ssl_cert() : lp_ssl_client_cert();
+    certfile = isServer ? lp_ssl_server_cert() : lp_ssl_client_cert();
     if((certfile == NULL || *certfile == 0) && isServer){
         fprintf(stderr, "SSL: No cert file specified in config file!\n");
         fprintf(stderr, "The server MUST have a certificate!\n");
         exit(1);
     }
-    keyfile = isServer ? lp_ssl_privkey() : lp_ssl_client_privkey();
+    keyfile = isServer ? lp_ssl_server_privkey() : lp_ssl_client_privkey();
     if(keyfile == NULL || *keyfile == 0)
         keyfile = certfile;
     if(certfile != NULL && *certfile != 0){
