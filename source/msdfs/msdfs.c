@@ -613,6 +613,8 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	
 	if (!self_referral)
 	{
+		pathnamep[consumedcnt] = '\0';
+
 		if( DEBUGLVL( 3 ) ) {
 			int i=0;
 			dbgtext("setup_dfs_referral: Path %s to alternate path(s):",pathnamep);
@@ -620,8 +622,6 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 				dbgtext(" %s",junction.referral_list[i].alternate_path);
 			dbgtext(".\n");
 		}
-		
-		/* pathnamep[consumedcnt] = '\0'; */
 	}
 	
 	/* create the referral depeding on version */
