@@ -1,3 +1,7 @@
+Mon Mar 29 16:11:33 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* telnetd/sys_term.c: _CRAY -> HAVE_STRUCT_UTMP_UT_ID
+
 Sat Mar 20 00:12:54 1999  Assar Westerlund  <assar@sics.se>
 
 	* telnet/authenc.c (telnet_gets): remove old extern declarations
