@@ -825,7 +825,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
 void wins_process_name_release_request(struct subnet_record *subrec,
                                        struct packet_struct *p);
 void initiate_wins_processing(time_t t);
-void wins_write_database(void);
+void wins_write_database(BOOL background);
 
 /*The following definitions come from  nmbd/nmbd_workgroupdb.c  */
 
@@ -1743,11 +1743,6 @@ files_struct *file_fsp(char *buf, int where);
 void file_chain_reset(void);
 void file_chain_save(void);
 void file_chain_restore(void);
-
-/*The following definitions come from  smbd/groupname.c  */
-
-void load_groupname_map(void);
-void map_gid_to_sid( gid_t gid, DOM_SID *psid);
 
 /*The following definitions come from  smbd/ipc.c  */
 

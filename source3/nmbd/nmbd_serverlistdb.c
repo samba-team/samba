@@ -321,6 +321,8 @@ void write_browse_list(time_t t, BOOL force_write)
       return;
   }
 
+  lasttime = t;
+
   dump_workgroups(force_write);
  
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
@@ -335,7 +337,6 @@ void write_browse_list(time_t t, BOOL force_write)
   if(!list_changed)
     return;
 
-  lasttime = t;
   updatecount++;
     
   pstrcpy(fname,lp_lockdir());

@@ -1535,7 +1535,7 @@ void initiate_wins_processing(time_t t)
   expire_names_on_subnet(wins_server_subnet, t);
 
   if(wins_server_subnet->namelist_changed)
-    wins_write_database();
+    wins_write_database(True);
 
   wins_server_subnet->namelist_changed = False;
 }
@@ -1543,7 +1543,7 @@ void initiate_wins_processing(time_t t)
 /*******************************************************************
  Write out the current WINS database.
 ******************************************************************/
-void wins_write_database(void)
+void wins_write_database(BOOL background)
 {
   struct name_record *namerec;
   pstring fname, fnamenew;
@@ -1556,16 +1556,15 @@ void wins_write_database(void)
 
   /* we will do the writing in a child process to ensure that the parent
      doesn't block while this is done */
-  if ((child_pid=fork())) {
-	  return;
+  if (background) {
+	  CatchChild();
+	  if ((child_pid=fork())) {
+		  return;
+	  }
   }
 
-  pstrcpy(fname,lp_lockdir());
-  trim_string(fname,NULL,"/");
-  pstrcat(fname,"/");
-  pstrcat(fname,WINS_LIST);
-  pstrcpy(fnamenew,fname);
-  pstrcat(fnamenew,".");
+  slprintf(fname,sizeof(fname),"%s/%s.%d", lp_lockdir(), WINS_LIST, getpid());
+  string_sub(s->fname,"//", "/");
 
   if((fp = fopen(fnamenew,"w")) == NULL)
   {
@@ -1612,7 +1611,7 @@ void wins_write_database(void)
   }
   
   fclose(fp);
-  unlink(fname);
   chmod(fnamenew,0644);
+  unlink(fname);
   rename(fnamenew,fname);
 }
