@@ -188,34 +188,47 @@ in the data and bss columns in "size" anyway (it will be included in
 "text"). So you can have constant tables of protocol data.
 
 
-Memory Contexts
----------------
+How to use talloc
+-----------------
 
-We introduced the talloc() system for memory contexts during the 2.2
-development cycle and it has been a great success. It has greatly
-simplified a lot of our code, particularly with regard to error
-handling. 
+If you are used to talloc from Samba3 then please read this carefully,
+as talloc has changed rather a lot.
 
-In Samba4 we use talloc even more extensively to give us much finer
-grained memory management. The really important thing to remember
-about talloc in Samba4 is:
+The new talloc is a hierarchical, reference counted memory pool system
+with destructors. Quite a mounthful really, but not too bad once you
+get used to it.
 
-  "don't just use the first talloc context that comes to hand - use
-  the RIGHT talloc context"
+Perhaps the biggest change from Samba3 is that there is no distinction
+between a "talloc context" and a "talloc pointer". Any pointer
+returned from talloc() is itself a valid talloc context. This means
+you can do this:
 
-Just using the first talloc context that comes to hand is probably the
-most common systematic bug I have seen so far from programmers that
-have worked on the Samba4 code base. The reason this is vital is that
-different talloc contexts have vastly different lifetimes, so if you
-use a talloc context that has a long lifetime (such as one associated
-with a tree connection) for data that is very short lived (such as
-parsing an individual packet) then you have just introduced a huge
-memory leak.
+  struct foo *a = talloc(mem_ctx, sizeof(*s));
+  a->name = talloc(a, strlen("foo")+1);
 
-In fact, it is quite common that the correct thing to do is to create
-a new talloc context for some little function and then destroy it when
-you are done. That will give you a memory context that has exactly the
-right lifetime.
+and the pointer a->name would be a "child" of the talloc context "a"
+which is itself a child of mem_ctx. So if you do talloc_free(mem_ctx)
+then it is all destroyed, whereas if you do talloc_free(a) then just a
+and a->name are destroyed.
+
+If you think about this, then what this effectively gives you is an
+n-ary tree, where you can free any part of the tree with
+talloc_free().
+
+The next big change with the new talloc is reference counts. A talloc
+pointer starts with a reference count of 1. You can call
+talloc_increase_ref_count() on any talloc pointer and that increases
+the reference count by 1. If you then call talloc_free() on a pointer
+that has a reference count greater than 1, then the reference count is
+decreased, but the memory is not released.
+
+Finally, talloc now has destructors. You can set a destructor on any
+talloc pointer using talloc_set_destructor(). Your destructor will
+then be called before the memory is released. An interesting feature
+of these destructors is that they can return a error. If the
+destructor returns -1 then that is interpreted as a refusal to release
+the memory, and the talloc_free() will return. It will also prevent
+the release of all memory "below" that memory in the tree.
 
 You should also go and look at a new talloc function in Samba4 called
 talloc_steal(). By using talloc_steal() you can move a lump of memory
@@ -756,4 +769,50 @@ docs
 
 svn instructions
 
-test commit
+Ideas
+-----
+
+ - store all config in config.ldb
+
+ - load from smb.conf if modtime changes
+
+ - dump full system config with ldbsearch
+
+ - will need the ability to form a ldif difference file
+
+ - advanced web admin via a web ldb editor
+
+ - normal web admin via web forms -> ldif
+
+ - config.ldb will replace smb.conf, secrets.tdb, shares.tdb etc
+
+ - subsystems in smbd will load config parameters for a share
+   using ldbsearch at tconx time
+
+ - need a loadparm equivalent module that provides parameter defaults
+
+ - start smbd like this:  "smbd -C tdb://etc/samba/config.ldb" or
+   "smbd -C ldapi://var/run/ldapi"
+
+ - write a tool that generates a template ldap schema from an existing
+   ldb+tdb file
+
+ - no need to HUP smbd to reload config
+
+ - how to handle configuration comments? same problem as SWAT
+
+
+BUGS:
+  non-signed non-sealed RPC (level == 2 == "connect")
+  add a test case for last_entry_offset in trans2 find interfaces
+  conn refused
+  connect -> errno
+  no 137 resolution not possible
+  should not fallback to anon when pass supplied
+  should check pass-thu cap bit, and skip lots of tests
+  possibly allow the test suite to say "allow oversized replies" for
+     trans2 and other calls
+  handle servers that don't have the setattre call in torture
+  add max file coponent length test and max path len test
+
+
