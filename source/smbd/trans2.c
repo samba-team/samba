@@ -1652,7 +1652,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		}
 #endif
 
-	case 1021:
+	case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 		/* Last component of pathname. */
 		{
 			size_t byte_len = dos_PutUniCode(pdata+4,fname,max_data_bytes,False);
