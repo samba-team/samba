@@ -82,7 +82,7 @@ foreach(krb5_context context, HDB *db, hdb_entry *ent, void *data)
 
 kadm5_ret_t
 kadm5_s_get_principals(void *server_handle, 
-		       char *exp,
+		       const char *exp,
 		       char ***princs, 
 		       int *count)
 {
@@ -105,6 +105,6 @@ kadm5_s_get_principals(void *server_handle,
 	*princs = d.princs;
 	*count = d.count - 1;
     }else
-	kadm5_free_name_list(context, d.princs, d.count);
+	kadm5_free_name_list(context, d.princs, &d.count);
     return _kadm5_error_code(ret);
 }
