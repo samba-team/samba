@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -111,6 +111,7 @@ static void
 print_entry_long(kadm5_principal_ent_t princ)
 {
     char buf[1024];
+    int i;
     
     krb5_unparse_name_fixed(context, princ->principal, buf, sizeof(buf));
     printf("%24s: %s\n", "Principal", buf);
@@ -142,9 +143,33 @@ print_entry_long(kadm5_principal_ent_t princ)
     printf("%24s: %s\n", "Modifier", buf);
     attr2str (princ->attributes, buf, sizeof(buf));
     printf("%24s: %s\n", "Attributes", buf);
-    printf("\n");
-}
 
+    printf("%24s: ", "Keytypes(salts)");
+
+    for (i = 0; i < princ->n_key_data; ++i) {
+	krb5_key_data *k = &princ->key_data[i];
+	krb5_error_code ret;
+	char *e_string, *s_string;
+
+	ret = krb5_enctype_to_string (context,
+				      k->key_data_type[0],
+				      &e_string);
+	if (ret)
+	    asprintf (&e_string, "unknown(%d)", k->key_data_type[0]);
+
+	ret = krb5_salttype_to_string (context,
+				       k->key_data_type[0],
+				       k->key_data_type[1],
+				       &s_string);
+	if (ret)
+	    asprintf (&s_string, "unknown(%d)", k->key_data_type[1]);
+
+	printf ("%s%s(%s)", (i != 0) ? ", " : "", e_string, s_string);
+	free (e_string);
+	free (s_string);
+    }
+    printf("\n\n");
+}
 
 static int
 do_get_entry(krb5_principal principal, void *data)
@@ -155,7 +180,8 @@ do_get_entry(krb5_principal principal, void *data)
     
     memset(&princ, 0, sizeof(princ));
     ret = kadm5_get_principal(kadm_handle, principal, 
-			      &princ, KADM5_PRINCIPAL_NORMAL_MASK);
+			      &princ,
+			      KADM5_PRINCIPAL_NORMAL_MASK|KADM5_KEY_DATA);
     if(ret)
 	return ret;
     else {
