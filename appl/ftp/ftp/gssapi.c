@@ -42,6 +42,7 @@
 RCSID("$Id$");
 
 int ftp_do_gss_bindings = 0;
+int ftp_do_gss_delegate = 1;
 
 struct gss_data {
     gss_ctx_id_t context_hdl;
@@ -344,6 +345,7 @@ gss_auth(void *app_data, char *host)
     int n;
     gss_channel_bindings_t bindings;
     struct gss_data *d = app_data;
+    OM_uint32 mech_flags = GSS_C_MUTUAL_FLAG | GSS_C_SEQUENCE_FLAG;
 
     const char *knames[] = { "ftp", "host", NULL }, **kname = knames;
 	    
@@ -371,14 +373,16 @@ gss_auth(void *app_data, char *host)
     } else
 	bindings = GSS_C_NO_CHANNEL_BINDINGS;
 
+    if (ftp_do_gss_delegate)
+	mech_flags |= GSS_C_DELEG_FLAG;
+
     while(!context_established) {
 	maj_stat = gss_init_sec_context(&min_stat,
 					GSS_C_NO_CREDENTIAL,
 					&d->context_hdl,
 					target_name,
 					GSS_C_NO_OID,
-                                        GSS_C_MUTUAL_FLAG | GSS_C_SEQUENCE_FLAG
-                                          | GSS_C_DELEG_FLAG,
+                                        mech_flags,
 					0,
 					bindings,
 					&input,
