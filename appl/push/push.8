@@ -40,7 +40,7 @@ can have any of the following formats:
 .It Ql hostname
 .It Ql po:username
 .El
-
+.Pp
 If no username is specified,
 .Nm
 assumes that it's the same as on the local machine; 
@@ -48,7 +48,7 @@ assumes that it's the same as on the local machine;
 defaults to the value of the
 .Ev MAILHOST
 environment variable.
-
+.Pp
 Supported options:
 .Bl -tag -width Ds
 .It Xo
@@ -93,11 +93,10 @@ use this port instead of the default
 or
 .Ql 1109 .
 .El
-
+.Pp
 The default is to first try Kerberos 5 authentication and then, if
 that fails, Kerberos 4.
 .Sh ENVIRONMENT
-
 .Bl -tag -width Ds
 .It Ev MAILHOST
 points to the post office, if no other hostname is specified.
@@ -107,7 +106,7 @@ points to the post office, if no other hostname is specified.
 .Bd -literal -offset indent
 $ push cornfield:roosta ~/.gnus-crash-box
 .Ed
-
+.Pp
 tries to fetch mail for the user
 .Ar roosta
 from the post office at
@@ -118,7 +117,7 @@ and stores the mail in
 .Bd -literal -offset indent
 $ push --from -5 havregryn
 .Ed
-
+.Pp
 tries to fetch 
 .Nm From: 
 lines for current user at post office
