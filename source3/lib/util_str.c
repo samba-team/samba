@@ -1194,7 +1194,7 @@ char *strchr_m(const char *src, char c)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
-			return s;
+			return (char *)s;
 	}
 
 	if (!*s)
@@ -1242,7 +1242,7 @@ char *strrchr_m(const char *s, char c)
 					break;
 				}
 				/* No - we have a match ! */
-			       	return cp;
+			       	return (char *)cp;
 			}
 		} while (cp-- != s);
 		if (!got_mb)
