@@ -428,8 +428,6 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		/* Believe it or not, but LDAP will deny a delete and
 		   an add at the same time if the values are the
 		   same... */
-
-		ldap_value_free(values);
 		return;
 	}
 
