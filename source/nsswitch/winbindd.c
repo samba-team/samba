@@ -55,7 +55,7 @@ static BOOL reload_services_file(BOOL test)
 	return(ret);
 }
 
-void winbindd_dump_status(void)
+static void winbindd_dump_status(void)
 {
 	struct winbindd_cli_state *tmp;
 
