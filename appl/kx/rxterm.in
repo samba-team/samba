@@ -1,7 +1,8 @@
 #!/bin/sh
 # $Id$
 #
-usage="Usage: $0 [-l username] [-k] [-r rsh_args] [-x xterm_args] host"
+usage="Usage: $0 [-l username] [-k] [-r rsh_args] [-x xterm_args] [-w term_emulator] host"
+term=xterm
 while true
 do
   case $1 in
@@ -9,12 +10,13 @@ do
   -r) rsh_args="${rsh_args} $2 "; shift 2;;
   -x) xterm_args="${xterm_args} $2 "; shift 2;;
   -k) kx_args="${kx_args} -k"; shift;;
+  -w) term=$2; shift 2;;
   -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
   *) break;;
   esac
 done
 if test $# -lt 1; then
-  echo "Usage: $0 host [arguments to xterm]"
+  echo "Usage: $0 host [arguments to $term]"
   exit 1
 fi
 host=$1
@@ -32,4 +34,4 @@ pid=$1
 disp=${2}${screen}
 auth=$3
 kill -USR1 $pid
-rsh -n $rsh_args $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $title -n $title $xterm_args &"
+rsh -n $rsh_args $host "env DISPLAY=$disp XAUTHORITY=$auth $term -T $title -n $title $xterm_args &"
