@@ -37,7 +37,7 @@
 #define TDB_VERSION (0x26011967 + 1)
 #define TDB_MAGIC (0x26011999U)
 #define TDB_FREE_MAGIC (~TDB_MAGIC)
-#define TDB_ALIGN 32
+#define TDB_ALIGN 4
 #define MIN_REC_SIZE (2*sizeof(struct list_struct) + TDB_ALIGN)
 #define DEFAULT_HASH_SIZE 512
 #define TDB_PAGE_SIZE 0x2000
