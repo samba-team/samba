@@ -269,8 +269,6 @@ static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_ans
 	int i;
  	gid_t *groups = NULL;
  	gid_t gid;
- 	DOM_SID g_sid;
- 	enum SID_NAME_USE name_type;
  	BOOL ret = False;
  
  	*winbind_answered = False;
