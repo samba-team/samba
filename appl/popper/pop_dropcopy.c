@@ -70,8 +70,8 @@ struct passwd	*	pwp;
     /* Now give this file to the user	*/
     if (pwp) {
     	(void) chown(template,pwp->pw_uid, pwp->pw_gid);
-    	(void) chmod(template,0600);
     }
+    (void) chmod(template,0600);
 
     /* Now link this file to the temporary maildrop.  If this fails it
      * is probably because the temporary maildrop already exists.  If so,
