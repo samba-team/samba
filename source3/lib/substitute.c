@@ -160,9 +160,11 @@ static char *automount_server(const char *user_name)
 
 /****************************************************************************
  Do some standard substitutions in a string.
+ len is the length in bytes of the space allowed in string str. If zero means
+ don't allow expansions.
 ****************************************************************************/
 
-void standard_sub_basic(const char *smb_name, char *str)
+void standard_sub_basic(const char *smb_name, char *str,size_t len)
 {
 	char *p, *s;
 	fstring pidstr;
@@ -171,7 +173,10 @@ void standard_sub_basic(const char *smb_name, char *str)
 	for (s=str; (p=strchr_m(s, '%'));s=p) {
 		fstring tmp_str;
 
-		int l = sizeof(pstring) - (int)(p-str);
+		int l = (int)len - (int)(p-str);
+
+		if (l < 0)
+			l = 0;
 		
 		switch (*(p+1)) {
 		case 'U' : 
@@ -192,26 +197,43 @@ void standard_sub_basic(const char *smb_name, char *str)
 			strupper(tmp_str);
 			string_sub(p,"%D", tmp_str,l);
 			break;
-		case 'I' : string_sub(p,"%I", client_addr(),l); break;
-		case 'L' : 
-			if (*local_machine) {
-				string_sub(p,"%L", local_machine,l); 
-			} else {
-				string_sub(p,"%L", global_myname,l); 
-			}
+		case 'I' :
+			string_sub(p,"%I", client_addr(),l);
 			break;
-		case 'M' : string_sub(p,"%M", client_name(),l); break;
-		case 'R' : string_sub(p,"%R", remote_proto,l); break;
-		case 'T' : string_sub(p,"%T", timestring(False),l); break;
-		case 'a' : string_sub(p,"%a", remote_arch,l); break;
+		case 'L' : 
+			if (*local_machine)
+				string_sub(p,"%L", local_machine,l); 
+			else
+				string_sub(p,"%L", global_myname,l); 
+			break;
+		case 'M' :
+			string_sub(p,"%M", client_name(),l);
+			break;
+		case 'R' :
+			string_sub(p,"%R", remote_proto,l);
+			break;
+		case 'T' :
+			string_sub(p,"%T", timestring(False),l);
+			break;
+		case 'a' :
+			string_sub(p,"%a", remote_arch,l);
+			break;
 		case 'd' :
 			slprintf(pidstr,sizeof(pidstr)-1, "%d",(int)sys_getpid());
 			string_sub(p,"%d", pidstr,l);
 			break;
-		case 'h' : string_sub(p,"%h", myhostname(),l); break;
-		case 'm' : string_sub(p,"%m", remote_machine,l); break;
-		case 'v' : string_sub(p,"%v", VERSION,l); break;
-		case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
+		case 'h' :
+			string_sub(p,"%h", myhostname(),l);
+			break;
+		case 'm' :
+			string_sub(p,"%m", remote_machine,l);
+			break;
+		case 'v' :
+			string_sub(p,"%v", VERSION,l);
+			break;
+		case '$' :
+			p += expand_env_var(p,l);
+			break; /* Expand environment variables */
 		case '\0': 
 			p++; 
 			break; /* don't run off the end of the string */
@@ -228,30 +250,32 @@ void standard_sub_basic(const char *smb_name, char *str)
 
 static void standard_sub_advanced(int snum, const char *user, 
 				  const char *connectpath, gid_t gid, 
-				  const char *smb_name, char *str)
+				  const char *smb_name, char *str, size_t len)
 {
 	char *p, *s, *home;
 
 	for (s=str; (p=strchr_m(s, '%'));s=p) {
-		int l = sizeof(pstring) - (int)(p-str);
-		
+		int l = (int)len - (int)(p-str);
+	
+		if (l < 0)
+			l = 0;
+	
 		switch (*(p+1)) {
-		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
+		case 'N' :
+			string_sub(p,"%N", automount_server(user),l);
+			break;
 		case 'H':
-			if ((home = get_user_home_dir(user))) {
+			if ((home = get_user_home_dir(user)))
 				string_sub(p,"%H",home, l);
-			} else {
+			else
 				p += 2;
-			}
 			break;
 		case 'P': 
 			string_sub(p,"%P", connectpath, l); 
 			break;
-			
 		case 'S': 
 			string_sub(p,"%S", lp_servicename(snum), l); 
 			break;
-			
 		case 'g': 
 			string_sub(p,"%g", gidtoname(gid), l); 
 			break;
@@ -278,7 +302,7 @@ static void standard_sub_advanced(int snum, const char *user,
 		}
 	}
 
-	standard_sub_basic(smb_name, str);
+	standard_sub_basic(smb_name, str, len);
 }
 
 const char *standard_sub_specified(TALLOC_CTX *mem_ctx, const char *input_string,
@@ -328,8 +352,7 @@ const char *standard_sub_specified(TALLOC_CTX *mem_ctx, const char *input_string
 		}
 	}
 
-	standard_sub_basic(username, input_pstring);
-	
+	standard_sub_basic(username, input_pstring, sizeof(pstring));
 	return talloc_strdup(mem_ctx, input_pstring);
 }
 
@@ -337,16 +360,17 @@ const char *standard_sub_specified(TALLOC_CTX *mem_ctx, const char *input_string
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub_conn(connection_struct *conn, char *str)
+void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 {
-	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, current_user_info.smb_name, str);
+	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
+			conn->gid, current_user_info.smb_name, str, len);
 }
 
 /****************************************************************************
  Like standard_sub but by snum.
 ****************************************************************************/
 
-void standard_sub_snum(int snum, char *str)
+void standard_sub_snum(int snum, char *str, size_t len)
 {
 	extern struct current_user current_user;
 	static uid_t cached_uid = -1;
@@ -359,6 +383,6 @@ void standard_sub_snum(int snum, char *str)
 		cached_uid = current_user.uid;
 	}
 
-	standard_sub_advanced(snum, cached_user, "", -1, current_user_info.smb_name, str);
+	standard_sub_advanced(snum, cached_user, "", -1,
+		current_user_info.smb_name, str, len);
 }
-

@@ -80,13 +80,12 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
  Fake up a connection struct for the VFS layer.
 *********************************************************/
 
-static BOOL create_conn_struct( connection_struct *conn, int snum,
-				char *path)
+static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 {
 	ZERO_STRUCTP(conn);
 	conn->service = snum;
 	conn->connectpath = path;
-	pstring_sub(conn->connectpath, "%S", lp_servicename(snum));
+	pstring_sub(conn->connectpath , "%S", lp_servicename(snum));
 
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
@@ -335,6 +334,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 
 	struct connection_struct conns;
 	struct connection_struct* conn = &conns;
+	pstring conn_path;
 	int snum;
 
 	BOOL self_referral = False;
@@ -371,7 +371,8 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 			return False;
 	}
 	
-	if (!create_conn_struct(conn, snum, lp_pathname(snum)))
+	pstrcpy(conn_path, lp_pathname(snum));
+	if (!create_conn_struct(conn, snum, conn_path))
 		return False;
 	
 	if (!lp_msdfs_root(SNUM(conn))) {
@@ -701,10 +702,12 @@ BOOL create_junction(char* pathname, struct junction_map* jn)
 /**********************************************************************
  Forms a valid Unix pathname from the junction 
  **********************************************************************/
+
 static BOOL junction_to_local_path(struct junction_map* jn, char* path,
 				   int max_pathlen, connection_struct *conn)
 {
 	int snum;
+	pstring conn_path;
 
 	if(!path || !jn)
 		return False;
@@ -718,7 +721,8 @@ static BOOL junction_to_local_path(struct junction_map* jn, char* path,
 	strlower(jn->volume_name);
 	safe_strcat(path, jn->volume_name, max_pathlen-1);
 
-	if (!create_conn_struct(conn, snum, lp_pathname(snum)))
+	pstrcpy(conn_path, lp_pathname(snum));
+	if (!create_conn_struct(conn, snum, conn_path))
 		return False;
 
 	return True;

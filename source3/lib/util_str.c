@@ -650,23 +650,30 @@ This routine looks for pattern in s and replaces it with
 insert. It may do multiple replacements.
 
 any of " ; ' $ or ` in the insert string are replaced with _
-if len==0 then no length check is performed
+if len==0 then the string cannot be extended. This is different from the old
+use of len==0 which was for no length checks to be done.
 ****************************************************************************/
+
 void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
 
-	if (!insert || !pattern || !s) return;
+	if (!insert || !pattern || !s)
+		return;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 
-	if (!*pattern) return;
+	if (!*pattern)
+		return;
+
+	if (len == 0)
+		len = ls;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (len && (ls + (li-lp) >= len)) {
+		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
@@ -709,23 +716,30 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
 /****************************************************************************
 similar to string_sub() but allows for any character to be substituted. 
 Use with caution!
-if len==0 then no length check is performed
+if len==0 then the string cannot be extended. This is different from the old
+use of len==0 which was for no length checks to be done.
 ****************************************************************************/
+
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li;
 
-	if (!insert || !pattern || !s) return;
+	if (!insert || !pattern || !s)
+		return;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 
-	if (!*pattern) return;
+	if (!*pattern)
+		return;
+	
+	if (len == 0)
+		len = ls;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (len && (ls + (li-lp) >= len)) {
+		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
@@ -743,10 +757,8 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 /****************************************************************************
 similar to all_string_sub but for unicode strings.
 return a new allocate unicode string.
-len is the number of bytes, not chars
   similar to string_sub() but allows for any character to be substituted.
   Use with caution!
-  if len==0 then no length check is performed
 ****************************************************************************/
 
 smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,

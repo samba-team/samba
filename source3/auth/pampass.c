@@ -186,7 +186,7 @@ static void special_char_sub(char *buf)
 
 static void pwd_sub(char *buf, const char *username, const char *oldpass, const char *newpass)
 {
-	pstring_sub(buf, "%u", username);
+	fstring_sub(buf, "%u", username);
 	all_string_sub(buf, "%o", oldpass, sizeof(fstring));
 	all_string_sub(buf, "%n", newpass, sizeof(fstring));
 }

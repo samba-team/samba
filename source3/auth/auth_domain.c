@@ -69,7 +69,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		fstrcpy(remote_machine, server);
 	}
 
-	standard_sub_basic(current_user_info.smb_name, remote_machine);
+	standard_sub_basic(current_user_info.smb_name, remote_machine, sizeof(remote_machine));
 	strupper(remote_machine);
 
 	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {

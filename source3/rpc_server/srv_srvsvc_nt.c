@@ -41,7 +41,7 @@ static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int sn
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark);
+	standard_sub_conn(p->conn, remark,sizeof(remark));
 	len_net_name = strlen(net_name);
 
 	/* work out the share type */
@@ -73,7 +73,7 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark);
+	standard_sub_conn(p->conn, remark,sizeof(remark));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 
@@ -357,7 +357,7 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark);
+	standard_sub_conn(p->conn, remark, sizeof(remark));
 
 	len_net_name = strlen(net_name);
 
@@ -396,7 +396,7 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark);
+	standard_sub_conn(p->conn, remark,sizeof(remark));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 

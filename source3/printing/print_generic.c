@@ -78,7 +78,7 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	p = PRINTERNAME(snum);
   
 	pstring_sub(syscmd, "%p", p);
-	standard_sub_snum(snum,syscmd);
+	standard_sub_snum(snum,syscmd,sizeof(syscmd));
 
 	ret = smbrun(syscmd,outfd);
 
