@@ -457,10 +457,10 @@ recv_krb5_auth (int s, u_char *buf,
 #endif /* KRB5 */
 
 static void
-loop (int from0, int to0,
-      int to1,   int from1,
-      int to2,   int from2,
-      int have_errsock)
+rshd_loop (int from0, int to0,
+	   int to1,   int from1,
+	   int to2,   int from2,
+	   int have_errsock)
 {
     fd_set real_readset;
     int max_fd;
@@ -581,7 +581,7 @@ setup_copier (int have_errsock)
 	if (net_write (STDOUT_FILENO, "", 1) != 1)
 	    fatal (STDOUT_FILENO, "net_write", "Write failure.");
 
-	loop (STDIN_FILENO, p0[1],
+	rshd_loop (STDIN_FILENO, p0[1],
 	      STDOUT_FILENO, p1[0],
 	      STDERR_FILENO, p2[0],
 	      have_errsock);
