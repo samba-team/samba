@@ -772,13 +772,17 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 				      &io, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 1);
-
+	
 	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 	io2.t2fnext.in.max_count = num_files/2 - 1;
 	io2.t2fnext.in.resume_key = 0;
 	io2.t2fnext.in.flags = 0;
-	io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
+	if (result.count == 0) {
+		io2.t2fnext.in.last_name = "";
+	} else {
+		io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
+	}
 
 	status = smb_raw_search_next(cli->tree, mem_ctx,
 				     &io2, &result, multiple_search_callback);
