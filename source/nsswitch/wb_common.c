@@ -86,7 +86,7 @@ void init_response(struct winbindd_response *response)
 
 /* Close established socket */
 
-void close_sock(void)
+static void close_sock(void)
 {
 	if (winbindd_fd != -1) {
 		close(winbindd_fd);

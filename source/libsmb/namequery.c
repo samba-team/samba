@@ -207,97 +207,6 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	return result;
 }
 
-/****************************************************************************
- Do a NetBIOS name registation to try to claim a name ...
-***************************************************************************/
-BOOL name_register(int fd, const char *name, int name_type,
-		   struct in_addr name_ip, int opcode,
-		   BOOL bcast, 
-		   struct in_addr to_ip, int *count)
-{
-  int retries = 3;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
-  struct in_addr register_ip;
-
-  DEBUG(4, ("name_register: %s as %s on %s\n", name, inet_ntoa(name_ip), inet_ntoa(to_ip)));
-
-  register_ip.s_addr = name_ip.s_addr;  /* Fix this ... */
-  
-  memset((char *)&p, '\0', sizeof(p));
-
-  *count = 0;
-
-  nmb->header.name_trn_id = generate_trn_id();
-  nmb->header.opcode = opcode;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = True;  /* ? */
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = True;
-
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 1;
-
-  make_nmb_name(&nmb->question.question_name, name, name_type);
-
-  nmb->question.question_type = 0x20;
-  nmb->question.question_class = 0x1;
-
-  /* Now, create the additional stuff for a registration request */
-
-  if ((nmb->additional = (struct res_rec *)malloc(sizeof(struct res_rec))) == NULL) {
-
-    DEBUG(0, ("name_register: malloc fail for additional record.\n"));
-    return False;
-
-  }
-
-  memset((char *)nmb->additional, '\0', sizeof(struct res_rec));
-
-  nmb->additional->rr_name  = nmb->question.question_name;
-  nmb->additional->rr_type  = RR_TYPE_NB;
-  nmb->additional->rr_class = RR_CLASS_IN;
-
-  /* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
-  if (nmb->header.nm_flags.bcast)
-    nmb->additional->ttl = PERMANENT_TTL;
-  else
-    nmb->additional->ttl = lp_max_ttl();
-
-  nmb->additional->rdlength = 6;
-
-  nmb->additional->rdata[0] = NB_MFLAG & 0xFF;
-
-  /* Set the address for the name we are registering. */
-  putip(&nmb->additional->rdata[2], &register_ip);
-
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p))
-    return False;
-
-  retries--;
-
-  if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
-    debug_nmb_packet(p2);
-    SAFE_FREE(p2);  /* No memory leaks ... */
-  }
-
-  return True;
-}
-
 
 /*
   comparison function used by sort_ip_list
@@ -1248,14 +1157,6 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 #endif /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 }
 
-/********************************************************
-  Get the IP address list of the Local Master Browsers
- ********************************************************/ 
-
-BOOL get_lmb_list(struct in_addr **ip_list, int *count)
-{
-    return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
-}
 
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.

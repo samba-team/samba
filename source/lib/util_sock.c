@@ -50,7 +50,7 @@ typedef struct smb_socket_option {
 	int opttype;
 } smb_socket_option;
 
-smb_socket_option socket_options[] = {
+static const smb_socket_option socket_options[] = {
   {"SO_KEEPALIVE",      SOL_SOCKET,    SO_KEEPALIVE,    0,                 OPT_BOOL},
   {"SO_REUSEADDR",      SOL_SOCKET,    SO_REUSEADDR,    0,                 OPT_BOOL},
   {"SO_BROADCAST",      SOL_SOCKET,    SO_BROADCAST,    0,                 OPT_BOOL},
@@ -189,7 +189,7 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 /*******************************************************************
  checks if read data is outstanding.
  ********************************************************************/
-int read_data_outstanding(int fd, unsigned int time_out)
+static int read_data_outstanding(int fd, unsigned int time_out)
 {
 	int selrtn;
 	fd_set fds;
@@ -365,20 +365,6 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 }
 
 /****************************************************************************
-send a keepalive packet (rfc1002)
-****************************************************************************/
-
-BOOL send_keepalive(int client)
-{
-	unsigned char buf[4];
-
-	buf[0] = SMBkeepalive;
-	buf[1] = buf[2] = buf[3] = 0;
-
-	return(write_socket_data(client,(char *)buf,4) == 4);
-}
-
-/****************************************************************************
   read data from the client, reading exactly N bytes. 
 ****************************************************************************/
 
@@ -466,7 +452,7 @@ ssize_t write_data(int fd,char *buffer,size_t N)
  Write data to a socket - use send rather than write.
 ****************************************************************************/
 
-ssize_t write_socket_data(int fd,char *buffer,size_t N)
+static ssize_t write_socket_data(int fd,char *buffer,size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
@@ -504,6 +490,21 @@ ssize_t write_socket(int fd,char *buf,size_t len)
 
 	return(ret);
 }
+
+/****************************************************************************
+send a keepalive packet (rfc1002)
+****************************************************************************/
+
+BOOL send_keepalive(int client)
+{
+	unsigned char buf[4];
+
+	buf[0] = SMBkeepalive;
+	buf[1] = buf[2] = buf[3] = 0;
+
+	return(write_socket_data(client,(char *)buf,4) == 4);
+}
+
 
 /****************************************************************************
 read 4 bytes of a smb packet and return the smb length of the packet
@@ -653,45 +654,6 @@ BOOL send_smb(int fd,char *buffer)
 	}
 
 	return True;
-}
-
-/****************************************************************************
-send a single packet to a port on another machine
-****************************************************************************/
-
-BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
-{
-  BOOL ret;
-  int out_fd;
-  struct sockaddr_in sock_out;
-
-  /* create a socket to write to */
-  out_fd = socket(AF_INET, type, 0);
-  if (out_fd == -1) 
-    {
-      DEBUG(0,("socket failed"));
-      return False;
-    }
-
-  /* set the address and port */
-  memset((char *)&sock_out,'\0',sizeof(sock_out));
-  putip((char *)&sock_out.sin_addr,(char *)&ip);
-  sock_out.sin_port = htons( port );
-  sock_out.sin_family = AF_INET;
-  
-  if (DEBUGLEVEL > 0)
-    DEBUG(3,("sending a packet of len %d to (%s) on port %d of type %s\n",
-	     len,inet_ntoa(ip),port,type==SOCK_DGRAM?"DGRAM":"STREAM"));
-	
-  /* send it */
-  ret = (sys_sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
-
-  if (!ret)
-    DEBUG(0,("Packet send to %s(%d) failed ERRNO=%s\n",
-	     inet_ntoa(ip),port,strerror(errno)));
-
-  close(out_fd);
-  return(ret);
 }
 
 /****************************************************************************
@@ -1002,37 +964,6 @@ char *get_socket_addr(int fd)
 	return addr_buf;
 }
 
-/*******************************************************************
- opens and connects to a unix pipe socket
- ******************************************************************/
-int open_pipe_sock(char *path)
-{
-	int sock;
-	struct sockaddr_un sa;
-
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (sock < 0)
-	{
-		DEBUG(0, ("unix socket open failed\n"));
-		return sock;
-	}
-
-	ZERO_STRUCT(sa);
-	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
-
-	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
-
-	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
-	{
-		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
-		close(sock);
-		return -1;
-	}
-
-	return sock;
-}
 
 /*******************************************************************
  Create protected unix domain socket.

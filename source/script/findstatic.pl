@@ -45,6 +45,7 @@ for (my($i)=0; $i <= $#{@lines}; $i++) {
 # are defined
 foreach my $f (keys %def) {
 	print "Checking $f\n";
+	my($found_one) = 0;
 	foreach my $s (@{$def{$f}}) {
 		my($found) = 0;
 		foreach my $f2 (keys %undef) {
@@ -52,6 +53,7 @@ foreach my $f (keys %def) {
 				foreach my $s2 (@{$undef{$f2}}) {
 					if ($s2 eq $s) {
 						$found = 1;
+						$found_one = 1;
 					}
 				}
 			}
@@ -60,6 +62,9 @@ foreach my $f (keys %def) {
 			my($t) = $typemap{$stype{$s}};
 			print "  '$s' is unique to $f  ($t)\n";
 		}
+	}
+	if ($found_one == 0) {
+		print "  all symbols in '$f' are unused (main program?)\n";
 	}
 }
 

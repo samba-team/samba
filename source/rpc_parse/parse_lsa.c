@@ -192,7 +192,7 @@ static BOOL lsa_io_sec_qos(char *desc,  LSA_SEC_QOS *qos, prs_struct *ps,
  Inits an LSA_OBJ_ATTR structure.
 ********************************************************************/
 
-void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos)
+static void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos)
 {
 	DEBUG(5, ("init_lsa_obj_attr\n"));
 
@@ -729,7 +729,7 @@ static BOOL lsa_io_dom_query_3(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int
  Reads or writes a dom query structure.
 ********************************************************************/
 
-BOOL lsa_io_dom_query_5(char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_5(char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth)
 {
 	return lsa_io_dom_query("", d_q, ps, depth);
 }
@@ -808,7 +808,7 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
  Inits a LSA_SID_ENUM structure.
 ********************************************************************/
 
-void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
+static void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
 		       int num_entries, DOM_SID *sids)
 {
 	int i;
@@ -1753,7 +1753,7 @@ BOOL lsa_io_q_enum_privsaccount(char *desc, LSA_Q_ENUMPRIVSACCOUNT *r_c, prs_str
  Reads or writes an LUID structure.
 ********************************************************************/
 
-BOOL lsa_io_luid(char *desc, LUID *r_c, prs_struct *ps, int depth)
+static BOOL lsa_io_luid(char *desc, LUID *r_c, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_luid");
 	depth++;
@@ -1774,7 +1774,7 @@ BOOL lsa_io_luid(char *desc, LUID *r_c, prs_struct *ps, int depth)
  Reads or writes an LUID_ATTR structure.
 ********************************************************************/
 
-BOOL lsa_io_luid_attr(char *desc, LUID_ATTR *r_c, prs_struct *ps, int depth)
+static BOOL lsa_io_luid_attr(char *desc, LUID_ATTR *r_c, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_luid_attr");
 	depth++;
@@ -1795,7 +1795,7 @@ BOOL lsa_io_luid_attr(char *desc, LUID_ATTR *r_c, prs_struct *ps, int depth)
  Reads or writes an PRIVILEGE_SET structure.
 ********************************************************************/
 
-BOOL lsa_io_privilege_set(char *desc, PRIVILEGE_SET *r_c, prs_struct *ps, int depth)
+static BOOL lsa_io_privilege_set(char *desc, PRIVILEGE_SET *r_c, prs_struct *ps, int depth)
 {
 	uint32 i;
 

@@ -1824,7 +1824,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
  "Nigel Williams" <nigel@veritas.com>.
 ***********************************************************************************/
 
-const char *server_disks[] = {"C:"};
+static const char *server_disks[] = {"C:"};
 
 static uint32 get_server_disk_count(void)
 {
