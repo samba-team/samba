@@ -90,29 +90,6 @@ void invalidate_all_vuids(void)
 }
 
 /****************************************************************************
-return a validated username
-****************************************************************************/
-char *validated_username(uint16 vuid)
-{
-	user_struct *vuser = get_valid_user_struct(vuid);
-	if (vuser == NULL)
-		return 0;
-	return(vuser->user.unix_name);
-}
-
-/****************************************************************************
-return a validated domain
-****************************************************************************/
-char *validated_domain(uint16 vuid)
-{
-	user_struct *vuser = get_valid_user_struct(vuid);
-	if (vuser == NULL)
-		return 0;
-	return(vuser->user.domain);
-}
-
-
-/****************************************************************************
  Create the SID list for this user.
 ****************************************************************************/
 
