@@ -186,7 +186,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 				prs_struct *rdata)
 {
 	uint32 status     = 0;
-	fstring key = "ServerNT"; /* always a non-PDC */
+	char *key;
 	uint32 type=0x1; /* key type: REG_SZ */
 
 	UNISTR2 uni_key;
@@ -201,6 +201,25 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 		status = NT_STATUS_INVALID_HANDLE;
 	}
 
+	switch (lp_server_role())
+	{
+		case ROLE_DOMAIN_PDC:
+		case ROLE_DOMAIN_BDC:
+		{
+			key = "LanmanNT";
+			break;
+		}
+		case ROLE_STANDALONE:
+		{
+			key = "ServerNT";
+			break;
+		}
+		case ROLE_DOMAIN_MEMBER:
+		{
+			key = "WinNT";
+			break;
+		}
+	}
 	/* This makes the server look like a member server to clients */
 	/* which tells clients that we have our own local user and    */
 	/* group databases and helps with ACL support.                */

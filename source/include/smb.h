@@ -34,6 +34,7 @@
 
 #define False (0)
 #define True (1)
+#define Auto (2)
 
 #ifndef _BOOL
 typedef int BOOL;
@@ -1460,6 +1461,15 @@ enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANM
 
 /* security levels */
 enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN};
+
+/* server roles */
+enum server_types
+{
+	ROLE_STANDALONE,
+	ROLE_DOMAIN_MEMBER,
+	ROLE_DOMAIN_BDC,
+	ROLE_DOMAIN_PDC
+};
 
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
