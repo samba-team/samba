@@ -57,6 +57,8 @@ txt-chunks: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%/,$(MAIN_DOCS))
 fo: $(patsubst $(DOCBOOKDIR)/%.xml,$(FODIR)/%.fo,$(MAIN_DOCS))
 fo-pdf: $(patsubst $(DOCBOOKDIR)/%.xml,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
 tex: $(patsubst $(DOCBOOKDIR)/%.xml,%.tex,$(MAIN_DOCS))
+texi: $(patsubst $(DOCBOOKDIR)/%.xml,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
+texiinfo: $(patsubst $(DOCBOOKDIR)/%.xml,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
 manpages: $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES)) 
 pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
 pearson-verify: $(PEARSONDIR)/Samba-HOWTO-Collection.report.html
@@ -104,18 +106,9 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $(@D)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
+# Attributions
 %-attributions.xml: 
 	$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
-
-clobber: clean
-	rm Makefile.settings settings.xsl config.status config.log configure
-
-clean: 
-	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	rm -f *.xml
-	rm -f xslt/figures/*pdf
-	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
-	rm -f $(patsubst $(DOCBOOKDIR)/%.xml,%.*,$(MAIN_DOCS))
 
 # Text files
 $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
@@ -172,10 +165,6 @@ $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
 xslt/figures/%.pdf: xslt/figures/%.eps
 	$(EPSTOPDF) $<
 
-# RTF files
-$(RTFDIR)/%.rtf: $(DOCBOOKDIR)/%.xml
-	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
-
 # Fo
 $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
 	mkdir -p $(@D)
@@ -195,6 +184,14 @@ $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
 $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html 
 	mkdir -p $(@D)
 	$(PLUCKERBUILD) -v -V 2 --stayonhost --zlib-compression -f $* -p $(PLUCKERDIR) file:$< 
+
+# Texinfo docs
+$(TEXINFODIR)/%.texi: $(DOCBOOKDIR)/%.xml
+	mkdir -p $(@D)
+	cd $(@D) && $(DB2TEXI) $(shell pwd)/$<
+
+$(TEXINFODIR)/%.info: $(TEXINFODIR)/%.texi
+	$(MAKEINFO) --no-validate --force -o $@ "$<"
 
 # Manpages
 $(MANPAGEDIR)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
@@ -220,7 +217,6 @@ $(HTMLDIR)/smb.conf/%.html: $(SMBDOTCONFDOC)/%.xml
 	$(XSLTPROC) --output $@ xslt/smb.conf-html.xsl $<
 
 # Pearson compatible XML
-
 $(PEARSONDIR)/%.xml: %/index.xml xslt/pearson.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --output $@ xslt/sambadoc2pearson.xsl $<
@@ -230,7 +226,6 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
 # Validation verification
-
 $(VALIDATEDIR)/%.report.html: %/index.xml
 	mkdir -p $(@D)
 	$(XMLLINT) --xinclude --postvalid --noout --htmlout $< 2> $@
@@ -238,13 +233,11 @@ $(VALIDATEDIR)/%.report.html: %/index.xml
 validate: $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
 
 # Find undocumented parameters
-
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
 	@$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
 	@$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
 
 # Examples and the like
-
 files: Samba-HOWTO-Collection/index.xml xslt/extract-smbfiles.xsl
 	$(XSLTPROC) xslt/extract-smbfiles.xsl $< > /dev/null
 
@@ -268,4 +261,15 @@ xslt/generate-attributions.xsl:
 xslt/man.xsl:
 xslt/pearson.xsl:
 
+clobber: clean
+	rm Makefile.settings settings.xsl config.status config.log configure
+
+clean: 
+	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
+	rm -f *.xml
+	rm -f xslt/figures/*pdf
+	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
+	rm -f $(patsubst $(DOCBOOKDIR)/%.xml,%.*,$(MAIN_DOCS))
+
+# Always keep intermediate files if we can
 .SECONDARY:
