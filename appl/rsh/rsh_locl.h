@@ -147,7 +147,7 @@ extern des_cblock iv;
 #define KCMD_NEW_VERSION "KCMDV0.2"
 
 #define USERNAME_SZ 16
-#define COMMAND_SZ 1024
+#define COMMAND_SZ (NCARGS+1)
 
 #define RSH_BUFSIZ (5 * 1024) /* MIT kcmd can't handle larger buffers */
 
