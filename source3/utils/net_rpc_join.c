@@ -70,7 +70,7 @@ int net_rpc_join_ok(const char *domain)
 	/* ensure that schannel uses the right domain */
 	fstrcpy(cli->domain, domain);
 	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, channel, stored_md4_trust_password))) {
-		DEBUG(0,("Error in domain join verfication\n"));
+		DEBUG(0,("Error in domain join verfication (fresh connection)\n"));
 		goto done;
 	}
 	
@@ -282,7 +282,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	ctr.info.id24 = &p24;
 
 	CHECK_RPC_ERR(cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24, 
-					    cli->user_session_key, &ctr),
+					    &cli->user_session_key, &ctr),
 		      "error setting trust account password");
 
 	/* Why do we have to try to (re-)set the ACB to be the same as what
@@ -304,7 +304,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	   as a normal user with "Add workstation to domain" privilege. */
 
 	result = cli_samr_set_userinfo2(cli, mem_ctx, &user_pol, 0x10, 
-					cli->user_session_key, &ctr);
+					&cli->user_session_key, &ctr);
 
 	/* Now check the whole process from top-to-bottom */
 	cli_samr_close(cli, mem_ctx, &user_pol);
@@ -322,7 +322,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 					   md4_trust_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("Error domain join verification: %s\n\n",
+		DEBUG(0, ("Error domain join verification (reused connection): %s\n\n",
 			  nt_errstr(result)));
 
 		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
