@@ -105,7 +105,7 @@ typedef struct dom_query_info
 
 } DOM_QUERY;
 
-/* level 5 is same as level 3.  we hope. */
+/* level 5 is same as level 3. */
 typedef DOM_QUERY DOM_QUERY_3;
 typedef DOM_QUERY DOM_QUERY_5;
 
