@@ -2759,6 +2759,7 @@ BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, i
 BOOL new_smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) ;
 BOOL new_smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) ;
 BOOL new_smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 *info, int depth);
+BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_6 *info, int depth);
 BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int depth);
 BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth);
 BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth);
@@ -2780,6 +2781,7 @@ uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info);
 uint32 spoolss_size_printer_driver_info_1(DRIVER_INFO_1 *info);
 uint32 spoolss_size_printer_driver_info_2(DRIVER_INFO_2 *info);
 uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info);
+uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info);
 uint32 spoolss_size_job_info_1(JOB_INFO_1 *info);
 uint32 spoolss_size_job_info_2(JOB_INFO_2 *info);
 uint32 spoolss_size_form_1(FORM_1 *info);
