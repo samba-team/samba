@@ -48,7 +48,7 @@
 
 /* assume headers already included */
 
-#if defined(__NetBSD__) && __NetBSD_Version__ >= 106120000
+#if defined(__NetBSD__) && __NetBSD_Version__ >= 106120000 && defined(ENABLE_PTHREAD_SUPPORT)
 
 /* 
  * NetBSD have a thread lib that we can use that part of libc that
