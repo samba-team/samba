@@ -194,12 +194,11 @@ OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 
-PLAINTEXT_AUTH_OBJ = passdb/pampass.o passdb/pass_check.o
+PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
-AUTH_OBJ = smbd/auth.o smbd/auth_smbpasswd.o smbd/auth_server.o smbd/auth_domain.o \
-	   smbd/auth_rhosts.o smbd/auth_unix.o smbd/auth_util.o	smbd/auth_winbind.o \
-	   smbd/auth_info.o smbd/auth_builtin.o $(PLAINTEXT_AUTH_OBJ) \
-	   libsmb/domain_client_validate.o 
+AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
+	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
+	   auth/auth_info.o auth/auth_builtin.o $(PLAINTEXT_AUTH_OBJ)
 
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
@@ -416,7 +415,7 @@ WINBINDD_OBJ1 = \
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
 		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
-		smbd/auth_util.o
+		auth/auth_util.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \
