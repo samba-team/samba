@@ -71,7 +71,9 @@ static struct charset_functions *find_charset_functions(const char *name)
 	module_path_get_name(name, stripped);
 	
 	while(c) {
-		if (strequal(stripped, c->name) == 0)return c;
+		if (strcasecmp(stripped, c->name) == 0) {
+			return c;
+		}
 		c = c->next;
 	}
 
@@ -100,7 +102,7 @@ BOOL smb_register_charset(struct charset_functions *funcs)
 
 void lazy_initialize_iconv(void)
 {
-	static BOOL initialized = False;
+	static BOOL initialized;
 	int i;
 
 	if (!initialized) {
