@@ -570,7 +570,7 @@ verify(char *password)
      * Try to verify as user with kerberos.
      */
 
-    ret = krb_verify_user(name, inst, realm, password);
+    ret = krb_verify_user(name, inst, realm, password, 0);
     
     if(ret == KSUCCESS){
 	if(k_hasafs())
