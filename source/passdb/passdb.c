@@ -27,6 +27,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
+static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data,
+				 const struct passwd *pwd);
+
 /******************************************************************
  get the default domain/netbios name to be used when 
  testing authentication.  For example, if you connect
