@@ -86,7 +86,7 @@ static int find_handle(int handle)
 	for (i=0;i<MAX_FILES;i++) {
 		if (ftable[i].handle == handle) return i;
 	}
-	printf("ERROR: handle %d was not found\n", 
+	printf("(%d) ERROR: handle %d was not found\n", 
 	       line_count, handle);
 	exit(1);
 }
@@ -128,11 +128,17 @@ void nb_createx(char *fname,
 		unsigned create_options, unsigned create_disposition, int handle)
 {
 	int fd, i;
-	static int count;
+	uint32 desired_access;
+
+	if (create_options & FILE_DIRECTORY_FILE) {
+		desired_access = FILE_READ_DATA;
+	} else {
+		desired_access = FILE_READ_DATA | FILE_WRITE_DATA;
+	}
 
 	fd = cli_nt_create_full(c, fname, 
-				FILE_READ_DATA | FILE_WRITE_DATA,
-				0,
+				desired_access,
+				0x0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, 
 				create_disposition, 
 				create_options);
