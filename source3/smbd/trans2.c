@@ -1413,6 +1413,20 @@ static int call_trans2setfsinfo(connection_struct *conn,
 }
 
 /****************************************************************************
+ *  Utility function to set bad path error.
+ ****************************************************************************/
+
+NTSTATUS set_bad_path_error(int err, BOOL bad_path)
+{
+	if((err == ENOENT) && bad_path) {
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRbadpath;
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
  file name or file id).
 ****************************************************************************/
