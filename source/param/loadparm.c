@@ -1980,8 +1980,6 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 			 "Home directory of %s", pszHomename);
 		string_set(&ServicePtrs[i]->comment, comment);
 	}
-	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3,
 	      ("adding home directory %s at %s\n", pszHomename, pszHomedir));
@@ -2051,7 +2049,7 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	/* the printer name is set to the service name. */
 	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
 	string_set(&ServicePtrs[i]->comment, comment);
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = False;
 	/* No oplocks on printer services. */
