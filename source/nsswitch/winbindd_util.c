@@ -581,7 +581,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 /* Lookup user information from a rid */
 
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
-                              uint32 user_rid, SAM_USERINFO_CTR *user_info)
+                              uint32 user_rid, SAM_USERINFO_CTR **user_info)
 {
 	return wb_get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, 
 					  user_rid, user_info);

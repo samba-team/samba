@@ -95,7 +95,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 						 *state) 
 {
 	uint32 name_type, user_rid, group_rid;
-	SAM_USERINFO_CTR user_info;
+	SAM_USERINFO_CTR *user_info;
 	DOM_SID user_sid;
 	fstring name_domain, name_user, name, gecos_name;
 	struct winbindd_domain *domain;
@@ -157,19 +157,15 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	
 	/* The following costs 3 packets */
 
-	ZERO_STRUCT(user_info);
-
 	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
 		return WINBINDD_ERROR;
 	}
     
-	group_rid = user_info.info.id21->group_rid;
-	unistr2_to_ascii(gecos_name, &user_info.info.id21->uni_full_name,
+	group_rid = user_info->info.id21->group_rid;
+	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
-	
-	wb_free_samr_userinfo_ctr(&user_info);
 	
 	/* Now take all this information and fill in a passwd structure */
 	
@@ -195,7 +191,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	uint32 user_rid, group_rid;
 	fstring user_name, gecos_name;
 	enum SID_NAME_USE name_type;
-	SAM_USERINFO_CTR user_info;
+	SAM_USERINFO_CTR *user_info;
 	gid_t gid;
 	
 	/* Bug out if the uid isn't in the winbind range */
@@ -255,11 +251,9 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 		return WINBINDD_ERROR;
 	}
 	
-	group_rid = user_info.info.id21->group_rid;
-	unistr2_to_ascii(gecos_name, &user_info.info.id21->uni_full_name,
+	group_rid = user_info->info.id21->group_rid;
+	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
-
-	wb_free_samr_userinfo_ctr(&user_info);
 
 	/* Resolve gid number */
 
