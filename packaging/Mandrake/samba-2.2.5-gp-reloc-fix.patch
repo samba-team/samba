@@ -1,0 +1,12 @@
+diff -ur samba-2.2.5.orig/examples/VFS/Makefile.in samba-2.2.5/examples/VFS/Makefile.in
+--- samba-2.2.5.orig/examples/VFS/Makefile.in	2002-06-17 20:35:09.000000000 +0200
++++ samba-2.2.5/examples/VFS/Makefile.in	2002-06-30 16:43:15.000000000 +0200
+@@ -4,7 +4,7 @@
+ 
+ CC=@CC@
+ LIBTOOL=@LIBTOOL@
+-CFLAGS=@CFLAGS@
++CFLAGS=@CFLAGS@ -DPIC -fPIC
+ LDFLAGS=@LDFLAGS@
+ 
+ VFS_OBJS=audit.so skel.so block/block.so recycle/recycle.so

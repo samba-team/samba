@@ -282,9 +282,10 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	status = do_lock_spin( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
 			  (SMB_BIG_UINT)startpos, READ_LOCK);
 	if (NT_STATUS_V(status)) {
-		if ((errno != EACCES) && (errno != EAGAIN)) {
+		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
+			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
 			/*
-			 * We have other than a "can't get lock" POSIX
+			 * We have other than a "can't get lock"
 			 * error. Send an error.
 			 * Return True so we get dequeued.
 			 */
@@ -348,9 +349,10 @@ static BOOL process_lock(blocking_lock_record *blr)
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, 
 			 (SMB_BIG_UINT)offset, WRITE_LOCK);
 	if (NT_STATUS_IS_ERR(status)) {
-		if((errno != EACCES) && (errno != EAGAIN)) {
+		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
+			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
 			/*
-			 * We have other than a "can't get lock" POSIX
+			 * We have other than a "can't get lock"
 			 * error. Send an error.
 			 * Return True so we get dequeued.
 			 */
@@ -432,12 +434,13 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 
 		reply_lockingX_success(blr);
 		return True;
-	} else if ((errno != EACCES) && (errno != EAGAIN)) {
-		/*
-		 * We have other than a "can't get lock" POSIX
-		 * error. Free any locks we had and return an error.
-		 * Return True so we get dequeued.
-		 */
+	} else if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
+			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
+			/*
+			 * We have other than a "can't get lock"
+			 * error. Free any locks we had and return an error.
+			 * Return True so we get dequeued.
+			 */
 		
 		blocking_lock_reply_error(blr, status);
 		return True;
@@ -528,13 +531,34 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 }
 
 /****************************************************************************
- Return True if the blocking lock queue has entries.
+ Return the number of seconds to the next blocking locks timeout, or default_timeout.
 *****************************************************************************/
 
-BOOL blocking_locks_pending(void)
+BOOL blocking_locks_timeout(unsigned default_timeout)
 {
-  blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
-  return (blr == NULL ? False : True);
+	unsigned timeout = default_timeout;
+	time_t t;
+	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst(&blocking_lock_queue);
+
+	/* note that we avoid the time() syscall if there are no blocking locks */
+	if (!blr) {
+		return timeout;
+	}
+
+	t = time(NULL);
+
+	while (blr) {
+		if (timeout > (blr->expire_time - t)) {
+			timeout = blr->expire_time - t;
+		}
+		blr = (blocking_lock_record *)ubi_slNext(blr);
+	}
+
+	if (timeout < 1) {
+		timeout = 1;
+	}
+
+	return timeout;
 }
 
 /****************************************************************************
@@ -573,7 +597,7 @@ void process_blocking_lock_queue(time_t t)
     DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
           fsp->fnum, fsp->fsp_name ));
 
-    if((blr->expire_time != -1) && (blr->expire_time > t)) {
+    if((blr->expire_time != -1) && (blr->expire_time <= t)) {
       /*
        * Lock expired - throw away all previously
        * obtained locks and return lock error.
@@ -581,7 +605,7 @@ void process_blocking_lock_queue(time_t t)
       DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
           fsp->fnum, fsp->fsp_name ));
 
-      blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
+      blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;

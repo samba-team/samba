@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
+   Copyright (C) Gerald Carter                2001-2002.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -396,6 +397,8 @@ PRINTER_MESSAGE_INFO;
 #define PRINTER_ENUM_ICON7		0x00400000
 #define PRINTER_ENUM_ICON8		0x00800000
 
+#define DRIVER_ANY_VERSION		0xffffffff
+#define DRIVER_MAX_VERSION		4
 /* this struct is undocumented */
 /* thanks to the ddk ... */
 typedef struct spool_user_1

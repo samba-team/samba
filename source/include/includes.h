@@ -661,6 +661,7 @@ extern int errno;
 #include "hash.h"
 #include "trans2.h"
 #include "nterr.h"
+#include "ntioctl.h"
 #include "secrets.h"
 #include "messages.h"
 
@@ -751,6 +752,14 @@ typedef struct smb_wpasswd {
 #if (defined(STAT_STATVFS) || defined(STAT_STATVFS64)) && !defined(SYSV)
 #define SYSV 1
 #endif
+
+/*
+ * Veritas File System.  Often in addition to native.
+ * Quotas different.
+ */
+#if defined(HAVE_SYS_FS_VX_QUOTA_H)
+#define VXFS_QUOTA
+#endif  
 
 #ifndef DEFAULT_PRINTING
 #ifdef HAVE_CUPS

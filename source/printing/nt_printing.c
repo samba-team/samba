@@ -3527,31 +3527,102 @@ BOOL printer_driver_in_use (char *arch, char *driver)
  Remove a printer driver from the TDB.  This assumes that the the driver was
  previously looked up.
  ***************************************************************************/
-WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
+
+static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
+                              uint32 version, BOOL delete_files )
 {
 	pstring 	key;
 	fstring		arch;
-	TDB_DATA 	kbuf;
+	TDB_DATA 	kbuf, dbuf;
+	NT_PRINTER_DRIVER_INFO_LEVEL	ctr;
 
+	/* delete the tdb data first */
 
 	get_short_archi(arch, i->environment);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
-		arch, i->cversion, i->name); 
-	DEBUG(5,("delete_printer_driver: key = [%s]\n", key));
+		arch, version, i->name);
+
+	DEBUG(5,("delete_printer_driver: key = [%s] delete_files = %s\n",
+		key, delete_files ? "TRUE" : "FALSE" ));
+
+	ctr.info_3 = i;
+	dump_a_printer_driver( ctr, 3 );
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
 
+	/* check if the driver actually exists for this environment */
+	
+	dbuf = tdb_fetch( tdb_drivers, kbuf );
+	if ( !dbuf.dptr ) {
+		DEBUG(8,("delete_printer_driver_internal: Driver unknown [%s]\n", key));
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
+		
+	SAFE_FREE( dbuf.dptr );
+	
+	/* ok... the driver exists so the delete should return success */
+		
 	if (tdb_delete(tdb_drivers, kbuf) == -1) {
-		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
+		DEBUG (0,("delete_printer_driver_internal: fail to delete %s!\n", key));
 		return WERR_ACCESS_DENIED;
 	}
-	
-	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
-		i->name));
-	
+
+#if 0	/* JERRY - no used in Samba 2.2.x */
+	/*
+	 * now delete any associated files if delete_files == True
+	 * even if this part failes, we return succes because the
+	 * driver doesn not exist any more
+	 */
+
+	if ( delete_files )
+		delete_driver_files( i, user );
+
+#endif
+
+	DEBUG(5,("delete_printer_driver_internal: driver delete successful [%s]\n", key));
+
 	return WERR_OK;
 }
+
+/****************************************************************************
+ Remove a printer driver from the TDB.  This assumes that the the driver was
+ previously looked up.
+ ***************************************************************************/
+
+WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
+                              uint32 version, BOOL delete_files )
+
+{
+	WERROR err;
+
+	/*
+	 * see if we should delete all versions of this driver 
+	 * (DRIVER_ANY_VERSION uis only set for "Windows NT x86")
+	 */
+
+	if ( version == DRIVER_ANY_VERSION ) 
+	{
+		/* Windows NT 4.0 */
+		
+		err = delete_printer_driver_internal(i, user, 2, delete_files );
+		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
+			return err;
+			
+		/* Windows 2000/XP  */
+		
+		err = delete_printer_driver_internal(i, user, 3, delete_files );
+		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
+				return err;
+
+	return WERR_OK;
+	}
+	
+	/* just delete what they asked for */
+	
+	return delete_printer_driver_internal(i, user, version, delete_files );
+}
+
 /****************************************************************************
 ****************************************************************************/
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,

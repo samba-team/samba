@@ -47,6 +47,9 @@ struct unix_error_map unix_dos_nt_errmap[] = {
 #ifdef EROFS
 	{ EROFS, ERRHRD, ERRnowrite, NT_STATUS_ACCESS_DENIED },
 #endif
+#ifdef ENAMETOOLONG
+	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
+#endif
 	{ 0, 0, 0, NT_STATUS_OK }
 };
 

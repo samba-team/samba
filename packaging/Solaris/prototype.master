@@ -34,6 +34,7 @@ d none samba/var 0711 root other
 d none samba/bin 0755 root other
 d none samba/lib 0755 root other
 d none samba/docs 0755 root other
+d none samba/private 0700 root other
 #
 # Stuff that goes into lib
 #

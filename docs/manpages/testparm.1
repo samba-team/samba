@@ -8,7 +8,7 @@
 testparm \- check an smb.conf configuration file for  internal correctness
 .SH SYNOPSIS
 .sp
-\fBtestparm\fR [ \fB-s\fR ]  [ \fB-h\fR ]  [ \fB-L <servername>\fR ]  \fBconfig filename\fR [ \fBhostname hostIP\fR ] 
+\fBtestparm\fR [ \fB-s\fR ]  [ \fB-h\fR ] [\fB-x\fR]  [ \fB-L <servername>\fR ]  \fBconfig filename\fR [ \fBhostname hostIP\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -45,6 +45,9 @@ Print usage message
 Sets the value of the %L macro to \fIservername\fR.
 This is useful for testing include files specified with the 
 %L macro. 
+.TP
+\fB-x\fR
+Exclude from parameter list all parameters with values set at default.
 .TP
 \fBconfigfilename\fR
 This is the name of the configuration file 

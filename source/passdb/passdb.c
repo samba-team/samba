@@ -541,6 +541,20 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 			gr ? "succeeded" : "failed" ));
 
 		if(!gr) {
+			switch (rid) {
+			case DOMAIN_GROUP_RID_ADMINS:
+				fstrcpy(name, "Domain Admins");
+				return True;
+			case DOMAIN_GROUP_RID_USERS:
+				fstrcpy(name, "Domain Users");
+				return True;
+			case DOMAIN_GROUP_RID_GUESTS:
+				fstrcpy(name, "Domain Guests");
+				return True;
+			case BUILTIN_ALIAS_RID_USERS:
+				fstrcpy(name, "Users");
+				return True;
+			}
 			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
 			return True;
 		}

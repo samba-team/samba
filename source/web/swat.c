@@ -1,8 +1,9 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
+   Version 2.2.6
    Samba Web Administration Tool
-   Copyright (C) Andrew Tridgell 1997-1998
+   Copyright (C) Andrew Tridgell 1997-2002
+   Copyright (C) John H Terpstra 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -320,7 +321,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 /****************************************************************************
   display a set of parameters for a service 
 ****************************************************************************/
-static void show_parameters(int snum, int allparameters, int advanced, int printers)
+static void show_parameters(int snum, int allparameters, unsigned int parm_filter, int printers)
 {
 	int i = 0;
 	struct parm_struct *parm;
@@ -339,7 +340,7 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			if (printers & !(parm->flags & FLAG_PRINT)) continue;
 			if (!printers & !(parm->flags & FLAG_SHARE)) continue;
 		}
-		if (!advanced) {
+		if (parm_filter == FLAG_BASIC) {
 			if (!(parm->flags & FLAG_BASIC)) {
 				void *ptr = parm->ptr;
 
@@ -384,6 +385,9 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			}
 			if (printers && !(parm->flags & FLAG_PRINT)) continue;
 		}
+		if (parm_filter == FLAG_WIZARD) {
+			if (!((parm->flags & FLAG_WIZARD))) continue;
+		}
 		if (heading && heading != last_heading) {
 			printf("<tr><td></td></tr><tr><td><b><u>%s</u></b></td></tr>\n", heading);
 			last_heading = heading;
@@ -415,7 +419,7 @@ static void write_config(FILE *f, BOOL show_defaults, char *(*dos_to_ext)(const 
 }
 
 /****************************************************************************
-  save and reoad the smb.conf config file 
+  save and reload the smb.conf config file 
 ****************************************************************************/
 static int save_reload(int snum)
 {
@@ -523,6 +527,7 @@ static void show_main_buttons(void)
 		image_link("Globals", "globals", "images/globals.gif");
 		image_link("Shares", "shares", "images/shares.gif");
 		image_link("Printers", "printers", "images/printers.gif");
+		image_link("Wizard", "wizard", "images/wizard.gif");
 	}
 	if (have_read_access) {
 		image_link("Status", "status", "images/status.gif");
@@ -568,16 +573,215 @@ static void viewconfig_page(void)
 }
 
 /****************************************************************************
+  second screen of the wizard ... Fetch Configuration Parameters
+****************************************************************************/
+static void wizard_params_page(void)
+{
+	unsigned int parm_filter = FLAG_WIZARD;
+
+	/* Here we first set and commit all the parameters that were selected
+ 	   in the previous screen. */
+
+	printf("<H2>Wizard Parameter Edit Page ...</H2>\n");
+
+	if (cgi_variable("Commit")) {
+		commit_parameters(GLOBALS_SNUM);
+		save_reload(0);
+	}
+
+	printf("<form name=\"swatform\" method=post action=wizard_params>\n");
+
+	if (have_write_access) {
+		printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+	}
+
+	printf("<input type=reset name=\"Reset Values\" value=\"Reset\">\n");
+	printf("<p>\n");
+	
+	printf("<table>\n");
+	show_parameters(GLOBALS_SNUM, 1, parm_filter, 0);
+	printf("</table>\n");
+	printf("</form>\n");
+}
+
+/****************************************************************************
+  Utility to just rewrite the smb.conf file - effectively just cleans it up
+****************************************************************************/
+static void rewritecfg_file(void)
+{
+	commit_parameters(GLOBALS_SNUM);
+	save_reload(0);
+	printf("<H2>Note: smb.conf file has been read and rewritten</H2>\n");
+}
+
+/****************************************************************************
+  wizard to create/modify the smb.conf file
+****************************************************************************/
+static void wizard_page(void)
+{
+	/* Set some variables to collect data from smb.conf */
+	int role = 0;
+	int winstype = 0;
+	int have_home = -1;
+	int HomeExpo = 0;
+	int SerType = 0;
+
+	if (cgi_variable("Rewrite")) {
+		(void) rewritecfg_file();
+		return;
+	}
+
+	if (cgi_variable("GetWizardParams")){
+		(void) wizard_params_page();
+		return;
+	}
+
+	if (cgi_variable("Commit")){
+		SerType = atoi(cgi_variable("ServerType"));
+		winstype = atoi(cgi_variable("WINSType"));
+		have_home = lp_servicenumber(HOMES_NAME);
+		HomeExpo = atoi(cgi_variable("HomeExpo"));
+
+		/* Plain text passwords are too badly broken - use encrypted passwords only */
+		lp_do_parameter( GLOBALS_SNUM, "encrypt passwords", "Yes");
+		
+		switch ( SerType ){
+			case 0:
+				/* Stand-alone Server */
+				lp_do_parameter( GLOBALS_SNUM, "security", "USER" );
+				lp_do_parameter( GLOBALS_SNUM, "domain logons", "No" );
+				break;
+			case 1:
+				/* Domain Member */
+				lp_do_parameter( GLOBALS_SNUM, "security", "DOMAIN" );
+				lp_do_parameter( GLOBALS_SNUM, "domain logons", "No" );
+				break;
+			case 2:
+				/* Domain Controller */
+				lp_do_parameter( GLOBALS_SNUM, "security", "USER" );
+				lp_do_parameter( GLOBALS_SNUM, "domain logons", "Yes" );
+				break;
+		}
+		switch ( winstype ) {
+			case 0:
+				lp_do_parameter( GLOBALS_SNUM, "wins support", "No" );
+				lp_do_parameter( GLOBALS_SNUM, "wins server", "" );
+				break;
+			case 1:
+				lp_do_parameter( GLOBALS_SNUM, "wins support", "Yes" );
+				lp_do_parameter( GLOBALS_SNUM, "wins server", "" );
+				break;
+			case 2:
+				lp_do_parameter( GLOBALS_SNUM, "wins support", "No" );
+				lp_do_parameter( GLOBALS_SNUM, "wins server", cgi_variable("WINSAddr"));
+				break;
+		}
+
+		/* Have to create Homes share? */
+		if ((HomeExpo == 1) && (have_home == -1)) {
+			pstring unix_share;
+			
+			pstrcpy(unix_share, dos_to_unix_static(HOMES_NAME));
+			load_config(False);
+			lp_copy_service(GLOBALS_SNUM, unix_share);
+			iNumNonAutoPrintServices = lp_numservices();
+			have_home = lp_servicenumber(HOMES_NAME);
+			lp_do_parameter( have_home, "read only", "No");
+			lp_do_parameter( have_home, "valid users", "%S");
+			lp_do_parameter( have_home, "browseable", "No");
+			commit_parameters(have_home);
+		}
+
+		/* Need to Delete Homes share? */
+		if ((HomeExpo == 0) && (have_home != -1)) {
+			lp_remove_service(have_home);
+			have_home = -1;
+		}
+
+		commit_parameters(GLOBALS_SNUM);
+		save_reload(0);
+	}
+	else
+	{
+		/* Now determine smb.conf WINS settings */
+		if (lp_wins_support())
+			winstype = 1;
+		if (strlen(lp_wins_server()) != 0 )
+			winstype = 2;
+
+		/* Do we have a homes share? */
+		have_home = lp_servicenumber(HOMES_NAME);
+	}
+	if ((winstype == 2) && lp_wins_support())
+		winstype = 3;
+
+	role = lp_server_role();
+	
+	/* Here we go ... */
+	printf("<H2>Samba Configuration Wizard</H2>\n");
+	printf("<form method=post action=wizard>\n");
+
+	if (have_write_access) {
+		printf("The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments.\n");
+		printf("The same will happen if you press the commit button.");
+		printf("<br><br>");
+		printf("<center>");
+		printf("<input type=submit name=\"Rewrite\" value=\"Rewrite smb.conf file\"> &nbsp;&nbsp;");
+		printf("<input type=submit name=\"Commit\" value=\"Commit\"> &nbsp;&nbsp;");
+		printf("<input type=submit name=\"GetWizardParams\" value=\"Edit Parameter Values\">");
+		printf("</center>");
+	}
+
+	printf("<hr>");
+	printf("<center><table border=0>");
+	printf("<tr><td><b>%s</b></td>\n", "Server Type:&nbsp;");
+	printf("<td><input type=radio name=\"ServerType\" value=0 %s> Stand Alone&nbsp;</td>", (role == ROLE_STANDALONE) ? "checked" : "");
+	printf("<td><input type=radio name=\"ServerType\" value=1 %s> Domain Member&nbsp;</td>", (role == ROLE_DOMAIN_MEMBER) ? "checked" : ""); 
+	printf("<td><input type=radio name=\"ServerType\" value=2 %s> Domain Controller&nbsp;</td>", (role == ROLE_DOMAIN_PDC) ? "checked" : "");
+	printf("</tr>");
+	if (role == ROLE_DOMAIN_BDC) {
+		printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Unusual Type in smb.conf - Please Select New Mode</font></td></tr>");
+	}
+	printf("<tr><td><b>%s</b></td>\n", "Configure WINS As:&nbsp;");
+	printf("<td><input type=radio name=\"WINSType\" value=0 %s> Not Used&nbsp;</td>", (winstype == 0) ? "checked" : "");
+	printf("<td><input type=radio name=\"WINSType\" value=1 %s> Server for client use&nbsp;</td>", (winstype == 1) ? "checked" : "");
+	printf("<td><input type=radio name=\"WINSType\" value=2 %s> Client of another WINS server&nbsp;</td>", (winstype == 2) ? "checked" : "");
+	printf("<tr><td></td><td></td><td></td><td>Remote WINS Server&nbsp;<input type=text size=\"16\" name=\"WINSAddr\" value=\"\%s\"></td></tr>",lp_wins_server());
+	if (winstype == 3) {
+		printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Error: WINS Server Mode and WINS Support both set in smb.conf</font></td></tr>");
+		printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Please Select desired WINS mode above.</font></td></tr>");
+	}
+	printf("</tr>");
+	printf("<tr><td><b>%s</b></td>\n","Expose Home Directories:&nbsp;");
+	printf("<td><input type=radio name=\"HomeExpo\" value=1 %s> Yes</td>", (have_home == -1) ? "" : "checked ");
+	printf("<td><input type=radio name=\"HomeExpo\" value=0 %s> No</td>", (have_home == -1 ) ? "checked" : "");
+	printf("<td></td></tr>");
+	
+	/* Enable this when we are ready ....
+	 * printf("<tr><td><b>%s</b></td>\n","Is Print Server:&nbsp;");
+	 * printf("<td><input type=radio name=\"PtrSvr\" value=1 %s> Yes</td>");
+	 * printf("<td><input type=radio name=\"PtrSvr\" value=0 %s> No</td>");
+	 * printf("<td></td></tr>");
+	 */
+	
+	printf("</table></center>");
+	printf("<hr>");
+
+	printf("The above configuration options will set multiple parameters and will generally assist with rapid Samba deployment.\n");
+	printf("</form>\n");
+}
+
+/****************************************************************************
   display a globals editing page  
 ****************************************************************************/
 static void globals_page(void)
 {
-	int advanced = 0;
+	unsigned int parm_filter = FLAG_BASIC;
 
 	printf("<H2>Global Variables</H2>\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
-		advanced = 1;
+		parm_filter = FLAG_ADVANCED;
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBALS_SNUM);
@@ -591,7 +795,7 @@ static void globals_page(void)
 	}
 
 	printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
-	if (advanced == 0) {
+	if (parm_filter != FLAG_ADVANCED) {
 		printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 	} else {
 		printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");
@@ -599,10 +803,10 @@ static void globals_page(void)
 	printf("<p>\n");
 	
 	printf("<table>\n");
-	show_parameters(GLOBALS_SNUM, 1, advanced, 0);
+	show_parameters(GLOBALS_SNUM, 1, parm_filter, 0);
 	printf("</table>\n");
 
-	if (advanced) {
+	if (parm_filter == FLAG_ADVANCED) {
 		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
@@ -619,7 +823,7 @@ static void shares_page(void)
 	char *s;
 	int snum=-1;
 	int i;
-	int advanced = 0;
+	unsigned int parm_filter = FLAG_BASIC;
 
 	if (share)
 		snum = lp_servicenumber(share);
@@ -627,7 +831,7 @@ static void shares_page(void)
 	printf("<H2>Share Parameters</H2>\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
-		advanced = 1;
+		parm_filter = FLAG_ADVANCED;
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -690,7 +894,7 @@ static void shares_page(void)
 		}
 
 		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
-		if (advanced == 0) {
+		if (parm_filter != FLAG_ADVANCED) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
 			printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");
@@ -700,11 +904,11 @@ static void shares_page(void)
 
 	if (snum >= 0) {
 		printf("<table>\n");
-		show_parameters(snum, 1, advanced, 0);
+		show_parameters(snum, 1, parm_filter, 0);
 		printf("</table>\n");
 	}
 
-	if (advanced) {
+	if (parm_filter == FLAG_ADVANCED) {
 		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
@@ -949,7 +1153,7 @@ static void printers_page(void)
 	char *s;
 	int snum=-1;
 	int i;
-	int advanced = 0;
+	unsigned int parm_filter = FLAG_BASIC;
 
 	if (share)
 		snum = lp_servicenumber(share);
@@ -963,7 +1167,7 @@ static void printers_page(void)
 	printf("Attempting to delete these printers from SWAT will have no effect.\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
-		advanced = 1;
+		parm_filter = FLAG_ADVANCED;
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -1034,7 +1238,7 @@ static void printers_page(void)
 			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 		}
 		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
-		if (advanced == 0) {
+		if (parm_filter != FLAG_ADVANCED) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
 			printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");
@@ -1044,11 +1248,11 @@ static void printers_page(void)
 
 	if (snum >= 0) {
 		printf("<table>\n");
-		show_parameters(snum, 1, advanced, 1);
+		show_parameters(snum, 1, parm_filter, 1);
 		printf("</table>\n");
 	}
 
-	if (advanced) {
+	if (parm_filter == FLAG_ADVANCED) {
 		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
@@ -1093,10 +1297,10 @@ static void printers_page(void)
 			break;	  
 		case 'a':
 			demo_mode = True;
-			break;	  
+			break;
 		}
 	}
-
+	
 	setup_logging(argv[0],False);
 	charset_initialise();
 	load_config(True);
@@ -1135,10 +1339,16 @@ static void printers_page(void)
 		shares_page();
 	} else if (have_read_access && strcmp(page,"printers")==0) {
 		printers_page();
+	} else if (have_read_access && strcmp(page,"wizard")==0) {
+		wizard_page();
+	} else if (have_read_access && strcmp(page,"wizard_params")==0) {
+		wizard_params_page();
 	} else if (have_read_access && strcmp(page,"status")==0) {
 		status_page();
 	} else if (have_read_access && strcmp(page,"viewconfig")==0) {
 		viewconfig_page();
+	} else if (have_read_access && strcmp(page,"rewritecfg")==0) {
+		rewritecfg_file();
 	} else if (strcmp(page,"passwd")==0) {
 		passwd_page();
 	} else {

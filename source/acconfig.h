@@ -180,6 +180,9 @@
 #undef HAVE_GETGROUPS_TOO_MANY_EGIDS
 #undef HAVE_PASSWD_PW_COMMENT
 #undef HAVE_PASSWD_PW_AGE
+#undef HAVE_STAT_ST_BLKSIZE
+#undef WITH_WINBIND_AUTH_CRAP
+
 /*
  * Add these definitions to allow VFS modules to
  * see the CPPFLAGS defines.

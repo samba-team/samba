@@ -28,11 +28,6 @@ Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
 BuildRoot   	: /tmp/%{Name}-%{Version}
 
 Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
-#Patch0: %{Name}-%{Version}-smbmount.patch
-#Patch1: %{Name}-%{Version}-install.patch
-#Patch2: %{Name}-%{Version}-smbconf.patch
-#Patch6: %{Name}-2.2.2-libsmbclient.patch
-Patch7:  kanji-makefile.patch
 
 %Package doc
 Group       	: Server/Network
@@ -282,9 +277,6 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-utmp \
 	--with-winbind \
 	--with-syslog 
-#	--with-tdbsam 
-
-#%patch7 -p1
 
 make LOGFILEBASE=/var/log/samba.d everything nsswitch/libnss_wins.so
 

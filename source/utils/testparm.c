@@ -174,6 +174,7 @@ static void usage(char *pname)
 {
 	printf("Usage: %s [-sh] [-L servername] [configfilename] [hostname hostIP]\n", pname);
 	printf("\t-s                  Suppress prompt for enter\n");
+	printf("\t-x                  Print only smb.conf parameters with values that are non-default\n");
 	printf("\t-h                  Print usage\n");
 	printf("\t-L servername       Set %%L macro to servername\n");
 	printf("\t-t encoding         Print parameters with encoding\n");
@@ -192,6 +193,7 @@ int main(int argc, char *argv[])
   pstring configfile;
   int opt;
   int s;
+  BOOL show_defaults=True;
   BOOL silent_mode = False;
   int ret = 0;
   pstring term_code;
@@ -204,7 +206,7 @@ int main(int argc, char *argv[])
   
   charset_initialise();
 
-  while ((opt = getopt(argc, argv,"shL:t:")) != EOF) {
+  while ((opt = getopt(argc, argv,"shL:t:x")) != EOF) {
   switch (opt) {
     case 's':
       silent_mode = True;
@@ -218,6 +220,9 @@ int main(int argc, char *argv[])
       break;
     case 't':
       pstrcpy(term_code,optarg);
+      break;
+    case 'x':
+      show_defaults=False;
       break;
     default:
       printf("Incorrect program usage\n");
@@ -298,7 +303,7 @@ Level II oplocks can only be set if oplocks are also set.\n",
       getc(stdin);
     }
     memcpy(DEBUGLEVEL_CLASS,parsed_debuglevel_class,sizeof(parsed_debuglevel_class));
-    lp_dump(stdout,True, lp_numservices(), _dos_to_unix_static);
+    lp_dump(stdout,show_defaults, lp_numservices(), _dos_to_unix_static);
   }
   
   if (argc >= 3) {

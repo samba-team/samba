@@ -3484,7 +3484,7 @@ uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 	
 	/* uint32(offset) + uint32(length) + length) */
 	size += (size_of_uint32(&p->value_len)*2) + p->value_len;
-	size += (size_of_uint32(&p->data_len)*2) + p->data_len;
+	size += (size_of_uint32(&p->data_len)*2) + p->data_len + (p->data_len%2) ;
 	
 	size += size_of_uint32(&p->type);
 		       
@@ -6833,8 +6833,10 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	if (!prs_uint32("size", ps, depth, &ctr->size))
 		return False;
 	
-	/* offset data begins at 20 bytes per structure * size_of_array.
-	   Don't forget the uint32 at the beginning */
+	/* 
+	 * offset data begins at 20 bytes per structure * size_of_array.
+	 * Don't forget the uint32 at the beginning 
+	 * */
 	
 	current_offset = basic_unit * ctr->size_of_array;
 	
@@ -6853,18 +6855,22 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 			return False;
 	
 		data_offset = ctr->values[i].value_len + valuename_offset;
+		
 		if (!prs_uint32("data_offset", ps, depth, &data_offset))
 			return False;
 
 		if (!prs_uint32("data_len", ps, depth, &ctr->values[i].data_len))
 			return False;
 			
-		current_offset = data_offset + ctr->values[i].data_len - basic_unit;
+		current_offset  = data_offset + ctr->values[i].data_len - basic_unit;
+		/* account for 2 byte alignment */
+		current_offset += (current_offset % 2);
 	}
 
-	/* loop #2 for writing the dynamically size objects
-	   while viewing conversations between Win2k -> Win2k,
-	   4-byte alignment does not seem to matter here   --jerry */
+	/* 
+	 * loop #2 for writing the dynamically size objects; pay 
+	 * attention to 2-byte alignment here....
+	 */
 	
 	for (i=0; i<ctr->size_of_array; i++) 
 	{
@@ -6874,9 +6880,10 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 		
 		if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
 			return False;
+			
+		if ( !prs_align_uint16(ps) )
+			return False;
 	}
-
-		
 
 	return True;	
 }

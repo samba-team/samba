@@ -880,7 +880,14 @@ case "$host_os" in
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 		;;
-		*bsd*)  BLDSHARED="true"
+		*freebsd*)  BLDSHARED="true"
+			LDSHFLAGS="-shared"
+			DYNEXP="-Wl,--export-dynamic"
+			SONAMEFLAG="-Wl,-soname,"
+			PICFLAG="-fPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+		;;
+		*openbsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
@@ -1762,6 +1769,16 @@ samba_cv_HAVE_STAT_ST_BLOCKS=yes,samba_cv_HAVE_STAT_ST_BLOCKS=no,samba_cv_HAVE_S
 if test x"$samba_cv_HAVE_STAT_ST_BLOCKS" = x"yes"; then
     AC_DEFINE(HAVE_STAT_ST_BLOCKS)
 fi 
+
+AC_CACHE_CHECK([for st_blksize in struct stat],samba_cv_HAVE_STAT_ST_BLKSIZE,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>],
+[struct stat st;  st.st_blksize = 0;],
+samba_cv_HAVE_STAT_ST_BLKSIZE=yes,samba_cv_HAVE_STAT_ST_BLKSIZE=no,samba_cv_HAVE_STAT_ST_BLKSIZE=cross)])
+if test x"$samba_cv_HAVE_STAT_ST_BLKSIZE" = x"yes"; then
+    AC_DEFINE(HAVE_STAT_ST_BLKSIZE)
+fi
 
 case "$host_os" in
 *linux*)

@@ -1104,6 +1104,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 	if (ldap_op == LDAP_MOD_REPLACE) {
 		rc = ldap_modify_s(ldap_struct, dn, mods);
 	} else {
+		make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "account");
 		rc = ldap_add_s(ldap_struct, dn, mods);
 	}
 

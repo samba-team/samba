@@ -606,7 +606,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
-		DEBUG(10,("receive_smb: length < 0!\n"));
+		DEBUG(10,("receive_smb: length < 0 !\n"));
 
 		/*
 		 * Correct fix. smb_read_error may have already been

@@ -326,7 +326,7 @@ static BOOL recycle_create_dir(connection_struct *conn, const char *dname)
 	pstrcpy(tempstr,dname);
 	y=tempstr;
 	/* Create directory tree if neccessary */
-	while((c=strsep(&y,"/"))) {
+	for(c = strtok(y,"/"); c; c= strtok(NULL,"/")) {
 		pstrcat(newdir,c);
 		if (recycle_directory_exist(conn,newdir))
 			DEBUG(3, ("dir %s already exists\n",newdir));

@@ -998,7 +998,7 @@ again:
 		DEBUG(1,("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(cli)));
 		cli_shutdown(cli);
-		if ((p=strchr(called.name, '.'))) {
+		if ((p=strchr(called.name, '.')) && !is_ipaddress(called.name)) {
 			*p = 0;
 			goto again;
 		}

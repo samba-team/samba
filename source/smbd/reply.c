@@ -922,7 +922,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     /* Work out who's who */
 
     slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
-               dos_to_unix_static(domain), lp_winbind_separator(), user);
+               domain, lp_winbind_separator(), user);
 
     if (sys_getpwnam(dom_user) != NULL) {
       pstrcpy(user, dom_user);
@@ -3470,6 +3470,8 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  
 	pstrcpy(directory,smb_buf(inbuf) + 1);
 
+	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
+
 	status = mkdir_internal(conn, directory);
 	if (!NT_STATUS_IS_OK(status))
 		return ERROR_NT(status);
@@ -4550,7 +4552,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 
 	/* Setup the timeout in seconds. */
 
-	lock_timeout = ((lock_timeout == -1) ? -1 : lock_timeout/1000);
+	lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+999)/1000);
 
 	/* Now do any requested locks */
 	data += ((large_file_format ? 20 : 10)*num_ulocks);

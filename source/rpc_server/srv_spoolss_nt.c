@@ -968,7 +968,58 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 /********************************************************************
  * spoolss_open_printer
  *
- * called from the spoolss dispatcher
+ * If the openprinterex rpc call contains a devmode,
+ * it's a per-user one. This per-user devmode is derivated
+ * from the global devmode. Openprinterex() contains a per-user 
+ * devmode for when you do EMF printing and spooling.
+ * In the EMF case, the NT workstation is only doing half the job
+ * of rendering the page. The other half is done by running the printer
+ * driver on the server.
+ * The EMF file doesn't contain the page description (paper size, orientation, ...).
+ * The EMF file only contains what is to be printed on the page.
+ * So in order for the server to know how to print, the NT client sends
+ * a devicemode attached to the openprinterex call.
+ * But this devicemode is short lived, it's only valid for the current print job.
+ *
+ * If Samba would have supported EMF spooling, this devicemode would
+ * have been attached to the handle, to sent it to the driver to correctly
+ * rasterize the EMF file.
+ *
+ * As Samba only supports RAW spooling, we only receive a ready-to-print file,
+ * we just act as a pass-thru between windows and the printer.
+ *
+ * In order to know that Samba supports only RAW spooling, NT has to call
+ * getprinter() at level 2 (attribute field) or NT has to call startdoc()
+ * and until NT sends a RAW job, we refuse it.
+ *
+ * But to call getprinter() or startdoc(), you first need a valid handle,
+ * and to get an handle you have to call openprintex(). Hence why you have
+ * a devicemode in the openprinterex() call.
+ *
+ *
+ * Differences between NT4 and NT 2000.
+ * NT4:
+ * ---
+ * On NT4, you only have a global devicemode. This global devicemode can be changed
+ * by the administrator (or by a user with enough privs). Everytime a user
+ * wants to print, the devicemode is resetted to the default. In Word, everytime
+ * you print, the printer's characteristics are always reset to the global devicemode.
+ *
+ * NT 2000:
+ * -------
+ * In W2K, there is the notion of per-user devicemode. The first time you use
+ * a printer, a per-user devicemode is build from the global devicemode.
+ * If you change your per-user devicemode, it is saved in the registry, under the
+ * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
+ * printer preferences available.
+ *
+ * To change the per-user devicemode: it's the "Printing Preferences ..." button
+ * on the General Tab of the printer properties windows.
+ *
+ * To change the global devicemode: it's the "Printing Defaults..." button
+ * on the Advanced Tab of the printer properties window.
+ *
+ * JFM.
  ********************************************************************/
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
@@ -1007,39 +1058,36 @@ Can't find printer handle we created for printer %s\n", name ));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	/*
-	   First case: the user is opening the print server:
-
-	   Disallow MS AddPrinterWizard if parameter disables it. A Win2k
-	   client 1st tries an OpenPrinterEx with access==0, MUST be allowed.
-
-	   Then both Win2k and WinNT clients try an OpenPrinterEx with
-	   SERVER_ALL_ACCESS, which we allow only if the user is root (uid=0)
-	   or if the user is listed in the smb.conf printer admin parameter.
-
-	   Then they try OpenPrinterEx with SERVER_READ which we allow. This lets the
-	   client view printer folder, but does not show the MSAPW.
-
-	   Note: this test needs code to check access rights here too. Jeremy
-	   could you look at this?
-	   
-	   
-	   Second case: the user is opening a printer:
-	   NT doesn't let us connect to a printer if the connecting user
-	   doesn't have print permission.
-
-	*/
-
 	get_current_user(&user, p);
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
+	/*
+	 * First case: the user is opening the print server:
+	 *
+	 * Disallow MS AddPrinterWizard if parameter disables it. A Win2k
+	 * client 1st tries an OpenPrinterEx with access==0, MUST be allowed.
+	 *
+	 * Then both Win2k and WinNT clients try an OpenPrinterEx with
+	 * SERVER_ALL_ACCESS, which we allow only if the user is root (uid=0)
+	 * or if the user is listed in the smb.conf printer admin parameter.
+	 *
+	 * Then they try OpenPrinterEx with SERVER_READ which we allow. This lets the
+	 * client view printer folder, but does not show the MSAPW.
+	 *
+	 * Note: this test needs code to check access rights here too. Jeremy
+	 * could you look at this?
+	 * 
+	 * Second case: the user is opening a printer:
+	 * NT doesn't let us connect to a printer if the connecting user
+	 * doesn't have print permission.
+	 */
 
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) 
+	{
 		/* Printserver handles use global struct... */
 
 		snum = -1;
 
-		/* Map standard access rights to object specific access
-		   rights */
+		/* Map standard access rights to object specific access rights */
 		
 		se_map_standard(&printer_default->access_required, 
 				&printserver_std_mapping);
@@ -1058,23 +1106,32 @@ Can't find printer handle we created for printer %s\n", name ));
 
 		/* Allow admin access */
 
-		if (printer_default->access_required & 
-		    SERVER_ACCESS_ADMINISTER) {
-
+		if ( printer_default->access_required & SERVER_ACCESS_ADMINISTER ) 
+		{
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
 			}
 
-			if (user.uid == 0 || 
-			    user_in_list(uidtoname(user.uid),
-					 lp_printer_admin(snum)))
-				return WERR_OK;
+			/* if the user is not root and not a printer admin, then fail */
 			
-			close_printer_handle(p, handle);
-			return WERR_ACCESS_DENIED;
+			if ( user.uid != 0
+			     && !user_in_list(uidtoname(user.uid), lp_printer_admin(snum)) )
+			{
+				close_printer_handle(p, handle);
+				return WERR_ACCESS_DENIED;
+			}
+			
+			printer_default->access_required = SERVER_ACCESS_ADMINISTER;
+		}
+		else
+		{
+			printer_default->access_required = SERVER_ACCESS_ENUMERATE;
 		}
 
+		DEBUG(4,("Setting print server access = %s\n", (printer_default->access_required == SERVER_ACCESS_ADMINISTER) 
+			? "SERVER_ACCESS_ADMINISTER" : "SERVER_ACCESS_ENUMERATE" ));
+			
 		/* We fall through to return WERR_OK */
 		
 	}
@@ -1123,84 +1180,11 @@ Can't find printer handle we created for printer %s\n", name ));
 		else
 			printer_default->access_required = PRINTER_ACCESS_USE;
 
-		DEBUG(4,("Setting printer access=%x\n", printer_default->access_required));
-		Printer->access_granted = printer_default->access_required;
-
-		/*
-		 * If we have a default device pointer in the
-		 * printer_default struct, then we need to get
-		 * the printer info from the tdb and if there is
-	 	 * no default devicemode there then we do a *SET*
-		 * here ! This is insanity.... JRA.
-		 */
-
-		/*
-		 * If the openprinterex rpc call contains a devmode,
-		 * it's a per-user one. This per-user devmode is derivated
-		 * from the global devmode. Openprinterex() contains a per-user 
-		 * devmode for when you do EMF printing and spooling.
-		 * In the EMF case, the NT workstation is only doing half the job
-		 * of rendering the page. The other half is done by running the printer
-		 * driver on the server.
-		 * The EMF file doesn't contain the page description (paper size, orientation, ...).
-		 * The EMF file only contains what is to be printed on the page.
-		 * So in order for the server to know how to print, the NT client sends
-		 * a devicemode attached to the openprinterex call.
-		 * But this devicemode is short lived, it's only valid for the current print job.
-		 *
-		 * If Samba would have supported EMF spooling, this devicemode would
-		 * have been attached to the handle, to sent it to the driver to correctly
-		 * rasterize the EMF file.
-		 *
-		 * As Samba only supports RAW spooling, we only receive a ready-to-print file,
-		 * we just act as a pass-thru between windows and the printer.
-		 *
-		 * In order to know that Samba supports only RAW spooling, NT has to call
-		 * getprinter() at level 2 (attribute field) or NT has to call startdoc()
-		 * and until NT sends a RAW job, we refuse it.
-		 *
-		 * But to call getprinter() or startdoc(), you first need a valid handle,
-		 * and to get an handle you have to call openprintex(). Hence why you have
-		 * a devicemode in the openprinterex() call.
-		 *
-		 *
-		 * Differences between NT4 and NT 2000.
-		 * NT4:
-		 * ---
-		 * On NT4, you only have a global devicemode. This global devicemode can be changed
-		 * by the administrator (or by a user with enough privs). Everytime a user
-		 * wants to print, the devicemode is resetted to the default. In Word, everytime
-		 * you print, the printer's characteristics are always reset to the global devicemode.
-		 *
-		 * NT 2000:
-		 * -------
-		 * In W2K, there is the notion of per-user devicemode. The first time you use
-		 * a printer, a per-user devicemode is build from the global devicemode.
-		 * If you change your per-user devicemode, it is saved in the registry, under the
-		 * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
-		 * printer preferences available.
-		 *
-		 * To change the per-user devicemode: it's the "Printing Preferences ..." button
-		 * on the General Tab of the printer properties windows.
-		 *
-		 * To change the global devicemode: it's the "Printing Defaults..." button
-		 * on the Advanced Tab of the printer properties window.
-		 *
-		 * JFM.
-		 */
-
-
-
-#if 0
-		if (printer_default->devmode_cont.devmode != NULL) {
-			result = printer_write_default_dev( snum, printer_default);
-			if (result != 0) {
-				close_printer_handle(p, handle);
-				return result;
-			}
-		}
-#endif
+		DEBUG(4,("Setting printer access = %s\n", (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
+			? "PRINTER_ACCESS_ADMINISTER" : "PRINTER_ACCESS_USE" ));
 	}
+	
+	Printer->access_granted = printer_default->access_required;	
 
 	return WERR_OK;
 }
@@ -1449,6 +1433,11 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		return WERR_INVALID_ENVIRONMENT;
 	}
 		
+	/* if they said "Windows NT x86", then try for version 2 & 3 */
+	
+	if ( version == 2 )
+		version = DRIVER_ANY_VERSION;
+		
 	ZERO_STRUCT(info);
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
@@ -1460,7 +1449,7 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		return WERR_PRINTER_DRIVER_IN_USE;
 	}
 
-	return delete_printer_driver(info.info_3);	 
+	return delete_printer_driver(info.info_3, NULL, version, False);
 }
 
 /********************************************************************
@@ -7107,40 +7096,52 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		DEBUG(2,("_spoolss_addform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+	
+	
+	/* forms can be added on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (!get_printer_snum(p,handle, &snum))
-                return WERR_BADFID;
-
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
 		DEBUG(2,("_spoolss_addform: denied by handle permissions.\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
-		
+	
 	/* can't add if builtin */
+	
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_ALREADY_EXISTS;
+		status = WERR_ALREADY_EXISTS;
+		goto done;
 	}
 
-	count=get_ntforms(&list);
-	if(!add_a_form(&list, form, &count))
-		return WERR_NOMEM;
+	count = get_ntforms(&list);
+	
+	if(!add_a_form(&list, form, &count)) {
+		status =  WERR_NOMEM;
+		goto done;
+	}
+	
 	write_ntforms(&list, count);
 	
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
-	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
 	return status;
@@ -7155,7 +7156,6 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	UNISTR2 *form_name = &q_u->name;
 	nt_forms_struct tmpForm;
 	int count=0;
-	WERROR ret = WERR_OK;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	int snum;
@@ -7169,40 +7169,49 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 		return WERR_BADFID;
 	}
 
- 	if (!get_printer_snum(p, handle, &snum))
-		return WERR_BADFID;
+	/* forms can be deleted on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(2,("_spoolss_deleteform: denied by handle permissions\n"));
-		return WERR_ACCESS_DENIED;
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
+		DEBUG(2,("_spoolss_deleteform: denied by handle permissions.\n"));
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't delete if builtin */
+	
 	if (get_a_builtin_ntform(form_name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	count = get_ntforms(&list);
-	if(!delete_a_form(&list, form_name, &count, &ret))
-		return WERR_INVALID_PARAM;
+	
+	if ( !delete_a_form(&list, form_name, &count, &status ))
+		goto done;
 
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
-	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
-	return ret;
+	return status;
 }
 
 /****************************************************************************
@@ -7230,40 +7239,48 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
-		return WERR_BADFID;
+	/* forms can be modified on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
 		DEBUG(2,("_spoolss_setform: denied by handle permissions\n"));
-		return WERR_ACCESS_DENIED;
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't set if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 
-	count=get_ntforms(&list);
+	count = get_ntforms(&list);
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
 
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
-	return WERR_OK;
+	return status;
 }
 
 /****************************************************************************
@@ -7914,7 +7931,6 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	while (get_specific_param_by_index(*printer, 2, param_index, value, &data, &type, &data_len)) 
 	{
 		PRINTER_ENUM_VALUES	*ptr;
-		uint32			add_len = 0;
 
 		DEBUG(10,("retrieved value number [%d] [%s]\n", num_entries, value));
 
@@ -7925,19 +7941,26 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 			goto done;
 		}
 		enum_values = ptr;
+		
+		ZERO_STRUCTP( &enum_values[num_entries] );
 
 		/* copy the data */
+		
 		init_unistr(&enum_values[num_entries].valuename, value);
 		enum_values[num_entries].value_len = (strlen(value)+1) * 2;
 		enum_values[num_entries].type      = type;
 		
-		if (!(enum_values[num_entries].data=talloc_zero(p->mem_ctx, data_len+add_len))) {
-			DEBUG(0,("talloc_realloc failed to allocate more memory for data!\n"));
-			result = WERR_NOMEM;
-			goto done;
+		if ( data_len )
+		{
+			if ( !(enum_values[num_entries].data = talloc_zero(p->mem_ctx, data_len)) ) {
+				DEBUG(0,("talloc_realloc failed to allocate more memory [data_len=%d] for data!\n", data_len ));
+				result = WERR_NOMEM;
+				goto done;
+			}
+			memcpy(enum_values[num_entries].data, data, data_len);
 		}
-		memcpy(enum_values[num_entries].data, data, data_len);
-		enum_values[num_entries].data_len = data_len + add_len;
+
+		enum_values[num_entries].data_len = data_len;
 
 		/* keep track of the size of the array in bytes */
 		

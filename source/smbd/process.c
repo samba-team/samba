@@ -46,8 +46,8 @@ extern int last_message;
 extern int global_oplock_break;
 extern userdom_struct current_user_info;
 extern int smb_read_error;
-SIG_ATOMIC_T reload_after_sighup;
-SIG_ATOMIC_T got_sig_term;
+extern SIG_ATOMIC_T reload_after_sighup;
+extern SIG_ATOMIC_T got_sig_term;
 extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
@@ -640,8 +640,9 @@ static void smb_dump(char *name, int type, char *data, ssize_t len)
 
 
 /****************************************************************************
-do a switch on the message type, and return the response size
+ Do a switch on the message type, and return the response size.
 ****************************************************************************/
+
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
   static pid_t pid= (pid_t)-1;
@@ -657,9 +658,9 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   last_message = type;
 
   /* make sure this is an SMB packet */
-  if (strncmp(smb_base(inbuf),"\377SMB",4) != 0)
-  {
-    DEBUG(2,("Non-SMB packet of length %d\n",smb_len(inbuf)));
+  if ((strncmp(smb_base(inbuf),"\377SMB",4) != 0) || (size - 4 < smb_size)) {
+    DEBUG(0,("Non-SMB packet of length %d. Terminating server\n",smb_len(inbuf)));
+    exit_server("Non-SMB packet");
     return(-1);
   }
 
@@ -1052,13 +1053,8 @@ static int setup_select_timeout(void)
 	int select_timeout;
 	int t;
 
-	/*
-	 * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
-	 * have removed any blocking locks. JRA.
-	 */
-
-	select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
-		SMBD_SELECT_TIMEOUT*1000;
+	select_timeout = blocking_locks_timeout(SMBD_SELECT_TIMEOUT);
+	select_timeout *= 1000;
 
 	t = change_notify_timeout();
 	if (t != -1) select_timeout = MIN(select_timeout, t*1000);

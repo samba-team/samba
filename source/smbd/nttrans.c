@@ -448,7 +448,7 @@ static int map_share_mode( char *fname, uint32 create_options,
 
 	if (smb_open_mode == -1) {
 
-		if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
+		if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS|
 				FILE_EXECUTE|FILE_READ_ATTRIBUTES|
 				FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
 				FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
@@ -629,6 +629,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
 			       ((uint32)sizeof(fname)-1));
 	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
+	SMB_OFF_T allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
@@ -644,7 +645,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	files_struct *fsp=NULL;
 	char *p = NULL;
 	time_t c_time;
+	BOOL extended_oplock_granted = False;
+
 	START_PROFILE(SMBntcreateX);
+
+	DEBUG(10,("reply_ntcreateX: flags = 0x%x, desired_access = 0x%x \
+file_attributes = 0x%x, share_access = 0x%x, create_disposition = 0x%x \
+create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attributes,
+			share_access, create_disposition,
+			root_dir_fid, create_options ));
 
 	/* If it's an IPC, use the pipe handler. */
 
@@ -654,10 +663,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return do_ntcreate_pipe_open(conn,inbuf,outbuf,length,bufsize);
 		} else {
 			END_PROFILE(SMBntcreateX);
-			return(ERROR_DOS(ERRDOS,ERRbadaccess));
+			return(ERROR_DOS(ERRDOS,ERRnoaccess));
 		}
 	}
 			
+	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	}
 
 	/* 
 	 * We need to construct the open_and_X ofun value from the
@@ -666,7 +679,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+		return(ERROR_DOS(ERRDOS,ERRnoaccess));
 	}
 
 	/*
@@ -756,7 +769,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
@@ -785,6 +798,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
+		/* Can't open a temp directory. IFS kit test. */
+		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
 		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
@@ -884,6 +903,22 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	} 
 	
+	/* Save the requested allocation size. */
+	allocation_size = IVAL(inbuf,smb_ntcreate_AllocationSize);
+#ifdef LARGE_SMB_OFF_T
+	allocation_size |= (((SMB_OFF_T)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
+#endif
+	if (allocation_size && (allocation_size > file_len)) {
+		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
+		}
+	} else {
+		fsp->initial_allocation_size = SMB_ROUNDUP(file_len,SMB_ROUNDUP_ALLOCATION_SIZE);
+	}
+
 	/* 
 	 * If the caller set the extended oplock request bit
 	 * and we granted one (by whatever means) - set the
@@ -891,10 +926,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 */
 	
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
-		smb_action |= EXTENDED_OPLOCK_GRANTED;
+		extended_oplock_granted = True;
 	
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-		smb_action |= EXTENDED_OPLOCK_GRANTED;
+		extended_oplock_granted = True;
 
 #if 0 
 	/* W2K sends back 42 words here ! If we do the same it breaks offline sync. Go figure... ? JRA. */
@@ -910,7 +945,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * exclusive & batch here.
 	 */
 
-	if (smb_action & EXTENDED_OPLOCK_GRANTED) {
+	if (extended_oplock_granted) {
 		if (flags & REQUEST_BATCH_OPLOCK) {
 			SCVAL(p,0, BATCH_OPLOCK_RETURN);
 		} else {
@@ -948,7 +983,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, SMB_ROUNDUP_ALLOCATION(file_len));
+	SOFF_T(p, 0, get_allocation_size(fsp, &sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 12;
@@ -984,7 +1019,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 
 	if(total_parameter_count < 54) {
 		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
@@ -1129,6 +1164,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp = NULL;
 	char *p = NULL;
+	BOOL extended_oplock_granted = False;
 	uint32 flags;
 	uint32 desired_access;
 	uint32 file_attributes;
@@ -1138,6 +1174,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	uint32 fname_len;
 	uint32 sd_len;
 	uint16 root_dir_fid;
+	SMB_OFF_T allocation_size;
 	int smb_ofun;
 	int smb_open_mode;
 	int smb_attr;
@@ -1156,7 +1193,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
 					bufsize, ppsetup, ppparams, ppdata);
 		else
-			return ERROR_DOS(ERRDOS,ERRbadaccess);
+			return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	/*
@@ -1165,7 +1202,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 	if(total_parameter_count < 54) {
 		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	flags = IVAL(params,0);
@@ -1178,6 +1215,11 @@ static int call_nt_transact_create(connection_struct *conn,
 	fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
 	root_dir_fid = (uint16)IVAL(params,4);
 	smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
+
+	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	}
 
 	/* 
 	 * We need to construct the open_and_X ofun value from the
@@ -1262,7 +1304,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 	if((smb_open_mode = map_share_mode( fname, create_options, &desired_access,
 					share_access, file_attributes)) == -1)
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
@@ -1284,6 +1326,12 @@ static int call_nt_transact_create(connection_struct *conn,
 	 */
 
 	if(create_options & FILE_DIRECTORY_FILE) {
+
+		/* Can't open a temp directory. IFS kit test. */
+		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 
 		oplock_request = 0;
 
@@ -1359,10 +1407,10 @@ static int call_nt_transact_create(connection_struct *conn,
 		 */
     
 		if (oplock_request && lp_fake_oplocks(SNUM(conn)))
-			smb_action |= EXTENDED_OPLOCK_GRANTED;
+			extended_oplock_granted = True;
   
 		if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-			smb_action |= EXTENDED_OPLOCK_GRANTED;
+			extended_oplock_granted = True;
 	}
 
 	/*
@@ -1377,6 +1425,22 @@ static int call_nt_transact_create(connection_struct *conn,
 
 	restore_case_semantics(file_attributes);
 
+	/* Save the requested allocation size. */
+	allocation_size = IVAL(params,12);
+#ifdef LARGE_SMB_OFF_T
+	allocation_size |= (((SMB_OFF_T)IVAL(params,16)) << 32);
+#endif
+	if (allocation_size && (allocation_size > file_len)) {
+		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
+		}
+	} else {
+		fsp->initial_allocation_size = SMB_ROUNDUP(file_len,SMB_ROUNDUP_ALLOCATION_SIZE);
+	}
+
 	/* Realloc the size of parameters and data we will return */
 	params = Realloc(*ppparams, 69);
 	if(params == NULL)
@@ -1387,7 +1451,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	memset((char *)params,'\0',69);
 
 	p = params;
-	if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+	if (extended_oplock_granted)
 		SCVAL(p,0, BATCH_OPLOCK_RETURN);
 	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
@@ -1420,7 +1484,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, SMB_ROUNDUP_ALLOCATION(file_len));
+	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 
@@ -1435,6 +1499,7 @@ static int call_nt_transact_create(connection_struct *conn,
 /****************************************************************************
  Reply to a NT CANCEL request.
 ****************************************************************************/
+
 int reply_ntcancel(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize)
 {
@@ -1456,6 +1521,7 @@ int reply_ntcancel(connection_struct *conn,
 /****************************************************************************
  Reply to an unsolicited SMBNTtranss - just ignore it!
 ****************************************************************************/
+
 int reply_nttranss(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize)
 {
@@ -1708,7 +1774,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 		(unsigned int)security_info_sent ));
 
 	if (total_data_count == 0)
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_DOS(ERRDOS, ERRnoaccess);
 
 	if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
 		return ERROR_DOS(error_class, error_code);
@@ -1720,20 +1786,47 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 }
    
 /****************************************************************************
- Reply to IOCTL - not implemented - no plans.
+ Reply to IOCTL.
 ****************************************************************************/
-static int call_nt_transact_ioctl(connection_struct *conn,
-				  char *inbuf, char *outbuf, int length,
-                                  int bufsize, 
-                                  char **ppsetup, char **ppparams, char **ppdata)
-{
-	static BOOL logged_message = False;
 
-	if(!logged_message) {
-		DEBUG(2,("call_nt_transact_ioctl: Currently not implemented.\n"));
-		logged_message = True; /* Only print this once... */
+static int call_nt_transact_ioctl(connection_struct *conn,
+				char *inbuf, char *outbuf, int length,
+				int bufsize, 
+				char **ppsetup, int setup_count,
+				char **ppparams, int parameter_count,
+				char **ppdata, int data_count)
+{
+	unsigned fnum, control;
+	static BOOL logged_message;
+ 
+	if (setup_count != 8) {
+		DEBUG(3,("call_nt_transact_ioctl: invalid setup count %d\n", setup_count));
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 	}
-	return ERROR_DOS(ERRSRV,ERRnosupport);
+ 
+	fnum = SVAL(*ppsetup, 4);
+	control = IVAL(*ppsetup, 0);
+ 
+	DEBUG(6,("call_nt_transact_ioctl: fnum=%d control=0x%x\n",
+		fnum, control));
+ 
+	switch (control) {
+	case NTIOCTL_SET_SPARSE:
+		/* pretend this succeeded - tho strictly we should
+			mark the file sparse (if the local fs supports it)
+			so we can know if we need to pre-allocate or not */
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+		return -1;
+ 
+	default:
+		if (!logged_message) {
+			logged_message = True; /* Only print this once... */
+			DEBUG(3,("call_nt_transact_ioctl(0x%x): Currently not implemented.\n",
+				control));
+		}
+	}
+ 
+	return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 }
    
 /****************************************************************************
@@ -1892,9 +1985,11 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
       break;
     case NT_TRANSACT_IOCTL:
       START_PROFILE_NESTED(NT_transact_ioctl);
-      outsize = call_nt_transact_ioctl(conn, 
-				       inbuf, outbuf, length, bufsize, 
-                                       &setup, &params, &data);
+      outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
+							length, bufsize, 
+							&setup, setup_count,
+							&params, parameter_count,
+							&data, data_count);
       END_PROFILE_NESTED(NT_transact_ioctl);
       break;
     case NT_TRANSACT_SET_SECURITY_DESC:
