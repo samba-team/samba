@@ -252,7 +252,8 @@ static NTSTATUS dcerpc_pull_bind_ack(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		NTSTATUS status;
 
 		BLOB_CHECK_BOUNDS(blob, *offset, 24);
-		pkt->ctx_list[i].result = IVAL(blob->data, *offset);
+		pkt->ctx_list[i].result = SVAL(blob->data, *offset);
+		pkt->ctx_list[i].reason = SVAL(blob->data, 2 + *offset);
 		(*offset) += 4;
 		status = dcerpc_pull_syntax_id(blob, mem_ctx, offset, &pkt->ctx_list[i].syntax);
 		if (!NT_STATUS_IS_OK(status)) {
