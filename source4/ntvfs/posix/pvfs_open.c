@@ -643,9 +643,11 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	unix_times.actime = 0;
-	unix_times.modtime = io->close.in.write_time;
-	utime(f->name->full_name, &unix_times);
+	if (!null_time(io->close.in.write_time)) {
+		unix_times.actime = 0;
+		unix_times.modtime = io->close.in.write_time;
+		utime(f->name->full_name, &unix_times);
+	}
 	
 	if (f->fd != -1 && 
 	    close(f->fd) == -1) {
