@@ -1252,6 +1252,7 @@ int name_len(char *s1);
 /*The following definitions come from  libsmb/nterr.c  */
 
 char *get_nt_error_msg(NTSTATUS nt_code);
+char *get_nt_error_c_code(NTSTATUS nt_code);
 
 /*The following definitions come from  libsmb/passchange.c  */
 
@@ -1304,6 +1305,8 @@ void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16]);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
+char *smb_dos_err_name(uint8 class, uint16 num);
+char *smb_dos_err_class(uint8 class);
 char *smb_dos_errstr(char *inbuf);
 char *werror_str(WERROR status);
 WERROR map_werror_from_unix(int error);

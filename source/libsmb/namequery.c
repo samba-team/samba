@@ -411,7 +411,6 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
 			if (!tmp_ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
-				if (ip_list)
 					SAFE_FREE(ip_list);
 			}
 
@@ -892,7 +891,6 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 		SAFE_FREE(ip_list);
 		return True;
 	}
-	if(ip_list != NULL)
 		SAFE_FREE(ip_list);
 	return False;
 }

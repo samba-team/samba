@@ -117,6 +117,10 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 {
 	uint32 capabilities = CAP_NT_SMBS;
 
+	if (!cli->force_dos_errors) {
+		capabilities |= CAP_STATUS32;
+	}
+
 	if (cli->use_level_II_oplocks) {
 		capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
