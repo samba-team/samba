@@ -643,7 +643,7 @@ AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/i
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
+AC_CHECK_HEADERS(sys/sysmacros.h security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
 
@@ -1427,6 +1427,18 @@ main() { dev_t dev; int i = minor(dev); return 0; }],
 samba_cv_HAVE_DEVICE_MINOR_FN=yes,samba_cv_HAVE_DEVICE_MINOR_FN=no,samba_cv_HAVE_DEVICE_MINOR_FN=cross)])
 if test x"$samba_cv_HAVE_DEVICE_MINOR_FN" = x"yes"; then
     AC_DEFINE(HAVE_DEVICE_MINOR_FN,1,[Whether the minor macro for dev_t is available])
+fi
+
+AC_CACHE_CHECK([for makedev macro],samba_cv_HAVE_MAKEDEV,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+main() { dev_t dev = makedev(1,2); return 0; }],
+samba_cv_HAVE_MAKEDEV=yes,samba_cv_HAVE_MAKEDEV=no,samba_cv_HAVE_MAKEDEV=cross)])
+if test x"$samba_cv_HAVE_MAKEDEV" = x"yes"; then
+    AC_DEFINE(HAVE_MAKEDEV,1,[Whether the macro for makedev is available])
 fi
 
 AC_CACHE_CHECK([for unsigned char],samba_cv_HAVE_UNSIGNED_CHAR,[
