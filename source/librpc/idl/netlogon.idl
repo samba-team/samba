@@ -71,8 +71,8 @@ interface netlogon
 	typedef [flag(NDR_PAHEX)] struct {
 		uint8 session_key[8];
 		uint32 sequence;
-		netr_Credential client_cred;
-		netr_Credential server_cred;
+		netr_Credential cred1;
+		netr_Credential cred2;
 	} netr_CredentialState;
 
 	typedef struct {
@@ -229,11 +229,11 @@ interface netlogon
 		[out] uint32 authoritative
 		);
 
-	WERROR netr_LogonSamLogoff(
+	NTSTATUS netr_LogonSamLogoff(
 		[in] unistr *server_name,
 		[in] unistr *computer_name,
-		[in] netr_Authenticator credential,
-		[in] netr_Authenticator return_authenticator,
+		[in]      netr_Authenticator *credential,
+		[in][out] netr_Authenticator *return_authenticator,
 		[in] uint16 logon_level,
 		[in] [switch_is(logon_level)] netr_LogonLevel logon
 		);
