@@ -1008,7 +1008,7 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
 
   DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->fsp_name));
 
-  if (fsp->open && fsp->granted_oplock && !fsp->sent_oplock_break) {
+  if (fsp->open && fsp->granted_oplock && !fsp->sent_oplock_break && (fsp->fd_ptr != NULL)) {
 
     /* Try and break the oplock. */
     file_fd_struct *fd_ptr = fsp->fd_ptr;
