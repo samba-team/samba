@@ -63,6 +63,12 @@ krb5_error_code hdb_open(krb5_context, HDB**, const char*, int, mode_t);
 
 krb5_error_code hdb_etype2key(krb5_context, hdb_entry*, 
 			      krb5_enctype, Key**);
+krb5_error_code hdb_next_etype2key(krb5_context, hdb_entry*, 
+				   krb5_enctype, Key**);
+krb5_error_code hdb_keytype2key(krb5_context, hdb_entry*, 
+				krb5_keytype, Key**);
+krb5_error_code hdb_next_keytype2key(krb5_context, hdb_entry*, 
+				     krb5_keytype, Key**);
 
 #define HDB_DEFAULT_DB "heimdal"
 
