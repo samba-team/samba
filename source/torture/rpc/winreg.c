@@ -265,34 +265,37 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
-#if 0
 	struct winreg_EnumValue r;
-    struct winreg_Uint8buf vb;
-    struct winreg_EnumValueName vn;
-	uint32_t type = 0, requested_len = max_valbufsize, returned_len = 0;
-	NTSTATUS status;
+	struct EnumValueIn buf_name;
+	struct EnumValueIn buf_val;
+	uint32 type;
+	uint32 len1 = max_valbufsize, len2 = 0;
 
-    r.in.handle = handle;
-    r.in.enum_index = 0;
-    r.in.type = &type;
-    r.in.requested_len = &requested_len;
-    r.in.returned_len = &returned_len;
-    vn.max_len = 0;
-    vn.len = 0;
-    vn.buf = NULL;
-    r.in.name = r.out.name = &vn;
-    vb.max_len = max_valbufsize;
-    vb.offset = 0x0;
-    vb.len = 0x0;
-    vb.buffer = NULL;
-    r.in.value = &vb;
+	printf("testing EnumValue\n");
 
+	r.in.handle = handle;
+	r.in.enum_index = 0;
+	r.in.name_in.len = 0;
+	r.in.name_in.max_len = max_valnamelen * 2;
+	buf_name.max_len = max_valnamelen;
+	buf_name.offset = 0;
+	buf_name.len = 0;
+	r.in.name_in.buffer = &buf_name;
+	r.in.type = &type;
+	buf_val.max_len = max_valbufsize;
+	buf_val.offset = 0;
+	buf_val.len = 0;
+	r.in.value_in = &buf_val;
+	r.in.value_len1 = &len1;
+	r.in.value_len2 = &len2;
+	
 	do {
-		status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
+		NTSTATUS status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
 		if(NT_STATUS_IS_ERR(status)) {
 			printf("EnumValue failed - %s\n", nt_errstr(status));
 			return False;
 		}
+
 		r.in.enum_index++;
 	} while (W_ERROR_IS_OK(r.out.result));
 
@@ -300,7 +303,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("EnumValue failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
-#endif 
+
 	return True;
 }
 
@@ -470,10 +473,8 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!test_EnumKey(p, mem_ctx, handle, depth)) {
 	}
 
-	if (!test_EnumValue(p, mem_ctx, handle, 200, 200)) {
+	if (!test_EnumValue(p, mem_ctx, handle, 0xFF, 0xFFFF)) {
 	}
-
-	/* Enumerate values */
 
 	test_CloseKey(p, mem_ctx, handle);
 
