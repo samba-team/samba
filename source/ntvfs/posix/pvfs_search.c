@@ -54,8 +54,9 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	if (!pvfs_match_attrib(pvfs, name, search->search_attrib, search->must_attrib)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	status = pvfs_match_attrib(pvfs, name, search->search_attrib, search->must_attrib);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	switch (level) {

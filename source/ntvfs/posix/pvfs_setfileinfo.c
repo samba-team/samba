@@ -34,37 +34,64 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	struct utimbuf unix_times;
 	struct pvfs_file *f;
 	uint32_t create_options;
+	struct pvfs_filename newstats;
+	NTSTATUS status;
 
 	f = pvfs_find_fd(pvfs, req, info->generic.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	/* update the file information */
+	status = pvfs_resolve_name_fd(pvfs, f->fd, f->name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* we take a copy of the current file stats, then update
+	   newstats in each of the elements below. At the end we
+	   compare, and make any changes needed */
+	newstats = *f->name;
+
 	switch (info->generic.level) {
-	case RAW_SFILEINFO_END_OF_FILE_INFO:
-	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
-		if (ftruncate(f->fd,
-			      info->end_of_file_info.in.size) == -1) {
-			return pvfs_map_errno(pvfs, errno);
+	case RAW_SFILEINFO_SETATTR:
+		if (!null_time(info->setattr.in.write_time)) {
+			unix_to_nt_time(&newstats.dos.write_time, info->setattr.in.write_time);
 		}
-		break;
+		if (info->setattr.in.attrib != FILE_ATTRIBUTE_NORMAL) {
+			newstats.dos.attrib = info->setattr.in.attrib;
+		}
+  		break;
 
 	case RAW_SFILEINFO_SETATTRE:
-		unix_times.actime = info->setattre.in.access_time;
-		unix_times.modtime = info->setattre.in.write_time;
-	
-		if (unix_times.actime == 0 && unix_times.modtime == 0) {
-			break;
-		} 
-
-		/* set modify time = to access time if modify time was 0 */
-		if (unix_times.actime != 0 && unix_times.modtime == 0) {
-			unix_times.modtime = unix_times.actime;
+	case RAW_SFILEINFO_STANDARD:
+		if (!null_time(info->setattre.in.create_time)) {
+			unix_to_nt_time(&newstats.dos.create_time, info->setattre.in.create_time);
 		}
+		if (!null_time(info->setattre.in.access_time)) {
+			unix_to_nt_time(&newstats.dos.access_time, info->setattre.in.access_time);
+		}
+		if (!null_time(info->setattre.in.write_time)) {
+			unix_to_nt_time(&newstats.dos.write_time, info->setattre.in.write_time);
+		}
+  		break;
 
-		/* Set the date on this file */
-		if (utime(f->name->full_name, &unix_times) == -1) {
-			return pvfs_map_errno(pvfs, errno);
+	case RAW_SFILEINFO_BASIC_INFO:
+	case RAW_SFILEINFO_BASIC_INFORMATION:
+		if (info->basic_info.in.create_time) {
+			newstats.dos.create_time = info->basic_info.in.create_time;
+		}
+		if (info->basic_info.in.access_time) {
+			newstats.dos.access_time = info->basic_info.in.access_time;
+		}
+		if (info->basic_info.in.write_time) {
+			newstats.dos.write_time = info->basic_info.in.write_time;
+		}
+		if (info->basic_info.in.change_time) {
+			newstats.dos.change_time = info->basic_info.in.change_time;
+		}
+		if (info->basic_info.in.attrib != FILE_ATTRIBUTE_NORMAL) {
+			newstats.dos.attrib = info->basic_info.in.attrib;
 		}
   		break;
 
@@ -81,10 +108,53 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		}
 		return pvfs_change_create_options(pvfs, req, f, create_options);
 
+	case RAW_SFILEINFO_ALLOCATION_INFO:
+	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
+		newstats.dos.alloc_size = info->allocation_info.in.alloc_size;
+		break;
+
+	case RAW_SFILEINFO_END_OF_FILE_INFO:
+	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
+		newstats.st.st_size = info->end_of_file_info.in.size;
+		break;
+
 	case RAW_SFILEINFO_POSITION_INFORMATION:
 		f->position = info->position_information.in.position;
 		break;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
+
+	/* possibly change the file size */
+	if (newstats.st.st_size != f->name->st.st_size) {
+		if (ftruncate(f->fd, newstats.st.st_size) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+	}
+
+	/* possibly change the file timestamps */
+	ZERO_STRUCT(unix_times);
+	if (newstats.dos.access_time != f->name->dos.access_time) {
+		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
+	}
+	if (newstats.dos.write_time != f->name->dos.write_time) {
+		unix_times.modtime = nt_time_to_unix(newstats.dos.write_time);
+	}
+	if (unix_times.actime != 0 || unix_times.modtime != 0) {
+		if (utime(f->name->full_name, &unix_times) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+	}
+
+	/* possibly change the attribute */
+	if (newstats.dos.attrib != f->name->dos.attrib) {
+		mode_t mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
+		if (fchmod(f->fd, mode) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+	}
+
 
 	return NT_STATUS_OK;
 }
@@ -98,6 +168,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_filename *name;
+	struct pvfs_filename newstats;
 	NTSTATUS status;
 	struct utimbuf unix_times;
 
@@ -112,42 +183,102 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+
+	/* we take a copy of the current file stats, then update
+	   newstats in each of the elements below. At the end we
+	   compare, and make any changes needed */
+	newstats = *name;
+
 	switch (info->generic.level) {
-	case RAW_SFILEINFO_END_OF_FILE_INFO:
-	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
-		if (truncate(name->full_name,
-			      info->end_of_file_info.in.size) == -1) {
-			return pvfs_map_errno(pvfs, errno);
+	case RAW_SFILEINFO_SETATTR:
+		if (!null_time(info->setattr.in.write_time)) {
+			unix_to_nt_time(&newstats.dos.write_time, info->setattr.in.write_time);
 		}
-		break;
-
-	case RAW_SFILEINFO_SETATTRE:
-		unix_times.actime = info->setattre.in.access_time;
-		unix_times.modtime = info->setattre.in.write_time;
-	
-		if (unix_times.actime == 0 && unix_times.modtime == 0) {
-			break;
-		} 
-
-		/* set modify time = to access time if modify time was 0 */
-		if (unix_times.actime != 0 && unix_times.modtime == 0) {
-			unix_times.modtime = unix_times.actime;
-		}
-
-		/* Set the date on this file */
-		if (utime(name->full_name, &unix_times) == -1) {
-			return NT_STATUS_ACCESS_DENIED;
+		if (info->setattr.in.attrib != FILE_ATTRIBUTE_NORMAL) {
+			newstats.dos.attrib = info->setattr.in.attrib;
 		}
   		break;
 
+	case RAW_SFILEINFO_SETATTRE:
+	case RAW_SFILEINFO_STANDARD:
+		if (!null_time(info->setattre.in.create_time)) {
+			unix_to_nt_time(&newstats.dos.create_time, info->setattre.in.create_time);
+		}
+		if (!null_time(info->setattre.in.access_time)) {
+			unix_to_nt_time(&newstats.dos.access_time, info->setattre.in.access_time);
+		}
+		if (!null_time(info->setattre.in.write_time)) {
+			unix_to_nt_time(&newstats.dos.write_time, info->setattre.in.write_time);
+		}
+  		break;
+
+	case RAW_SFILEINFO_BASIC_INFO:
+	case RAW_SFILEINFO_BASIC_INFORMATION:
+		if (info->basic_info.in.create_time) {
+			newstats.dos.create_time = info->basic_info.in.create_time;
+		}
+		if (info->basic_info.in.access_time) {
+			newstats.dos.access_time = info->basic_info.in.access_time;
+		}
+		if (info->basic_info.in.write_time) {
+			newstats.dos.write_time = info->basic_info.in.write_time;
+		}
+		if (info->basic_info.in.change_time) {
+			newstats.dos.change_time = info->basic_info.in.change_time;
+		}
+		if (info->basic_info.in.attrib != FILE_ATTRIBUTE_NORMAL) {
+			newstats.dos.attrib = info->basic_info.in.attrib;
+		}
+  		break;
+
+	case RAW_SFILEINFO_ALLOCATION_INFO:
+	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
+		newstats.dos.alloc_size = info->allocation_info.in.alloc_size;
+		break;
+
+	case RAW_SFILEINFO_END_OF_FILE_INFO:
+	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
+		newstats.st.st_size = info->end_of_file_info.in.size;
+		break;
+
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
-		return NT_STATUS_INVALID_PARAMETER;
-
 	case RAW_SFILEINFO_POSITION_INFORMATION:
 		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	return NT_STATUS_INVALID_LEVEL;
+	/* possibly change the file size */
+	if (newstats.st.st_size != name->st.st_size) {
+		if (truncate(name->full_name, newstats.st.st_size) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+	}
+
+	/* possibly change the file timestamps */
+	ZERO_STRUCT(unix_times);
+	if (newstats.dos.access_time != name->dos.access_time) {
+		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
+	}
+	if (newstats.dos.write_time != name->dos.write_time) {
+		unix_times.modtime = nt_time_to_unix(newstats.dos.write_time);
+	}
+	if (unix_times.actime != 0 || unix_times.modtime != 0) {
+		if (utime(name->full_name, &unix_times) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+	}
+
+	/* possibly change the attribute */
+	if (newstats.dos.attrib != name->dos.attrib) {
+		mode_t mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
+		if (chmod(name->full_name, mode) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
