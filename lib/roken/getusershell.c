@@ -132,7 +132,7 @@ initshells()
 	}
 	sp = shells;
 	cp = strings;
-	while (fgets(cp, MAXPATHLEN + 1, fp) != NULL) {
+	while (fgets(cp, MaxPathLen + 1, fp) != NULL) {
 		while (*cp != '#' && *cp != '/' && *cp != '\0')
 			cp++;
 		if (*cp == '#' || *cp == '\0')
