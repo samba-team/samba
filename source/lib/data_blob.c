@@ -56,6 +56,11 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 
 	if (ret.data) {
 		ret.data = talloc_steal(mem_ctx, ret.data);
+	} else {
+		/* this ensures the blob has the context attached, so a zero length call
+		   to data_blob_talloc followed by a realloc doesn't cause the memory to come
+		   from the NULL context */
+		ret.data = talloc(mem_ctx, 0);
 	}
 	return ret;
 }
