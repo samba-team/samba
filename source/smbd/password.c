@@ -1607,15 +1607,13 @@ BOOL domain_client_validate( char *user, char *domain,
 
   if (!NT_STATUS_IS_OK(status)) {
 
-    NTSTATUS nt_rpc_err = cli_nt_error(&cli);
-
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
+%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, get_nt_error_msg(status) ));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
 
-    if((NT_STATUS_V(nt_rpc_err) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
+    if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
       *user_exists = False;
 
     return False;
