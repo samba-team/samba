@@ -260,8 +260,10 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 	 * Ensure pending modtime is set after close.
 	 */
 
-	if(fsp->pending_modtime) {
+	if(fsp->pending_modtime && fsp->pending_modtime_owner) {
 		set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
+	} else if (fsp->last_write_time) {
+		set_filetime(conn, fsp->fsp_name, fsp->last_write_time);
 	}
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
