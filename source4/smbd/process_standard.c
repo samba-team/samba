@@ -115,7 +115,7 @@ static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde
 }
 
 /* called when a SMB connection goes down */
-static void terminate_connection(struct server_context *server, const char *reason) 
+static void terminate_connection(struct smbsrv_context *server, const char *reason) 
 {
 	server_terminate(server);
 	/* terminate this process */
@@ -132,10 +132,10 @@ static void terminate_rpc_connection(void *r, const char *reason)
 
 static int get_id(struct request_context *req)
 {
-	return (int)req->smb->pid;
+	return (int)req->smb_ctx->pid;
 }
 
-static void standard_exit_server(struct server_context *smb, const char *reason)
+static void standard_exit_server(struct smbsrv_context *smb, const char *reason)
 {
 	DEBUG(1,("standard_exit_server: reason[%s]\n",reason));
 }

@@ -53,7 +53,7 @@ struct tcon_context {
 	struct tcon_context *next, *prev;
 
 	/* the server context that this was created on */
-	struct server_context *smb;
+	struct smbsrv_context *smb_ctx;
 
 	/* a talloc context for all data in this structure */
 	TALLOC_CTX *mem_ctx;
@@ -81,7 +81,7 @@ struct tcon_context {
    functions */
 struct request_context {
 	/* the server_context contains all context specific to this SMB socket */
-	struct server_context *smb;
+	struct smbsrv_context *smb_ctx;
 
 	/* conn is only set for operations that have a valid TID */
 	struct tcon_context *conn;
@@ -338,9 +338,9 @@ struct signing_context {
 
 #include "smbd/process_model.h"
 
-/* smb context structure. This should contain all the state
+/* smb server context structure. This should contain all the state
  * information associated with a SMB server */
-struct server_context {
+struct smbsrv_context {
 	/* a talloc context for all data in this structure */
 	TALLOC_CTX *mem_ctx;
 
@@ -373,5 +373,3 @@ struct server_context {
 	/* process model specific operations */
 	const struct model_ops *model_ops;
 };
-
-

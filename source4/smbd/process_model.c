@@ -110,7 +110,7 @@ const struct process_model_critical_sizes *process_model_version(void)
 	static const struct process_model_critical_sizes critical_sizes = {
 		PROCESS_MODEL_VERSION,
 		sizeof(struct model_ops),
-		sizeof(struct server_context),
+		sizeof(struct smbsrv_context),
 		sizeof(struct event_context),
 		sizeof(struct fd_event)
 	};
