@@ -315,7 +315,6 @@ BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr);
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
 int interpret_protocol(char *str,int def);
-int interpret_security(char *str,int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
