@@ -491,8 +491,8 @@ main (int argc, char **argv)
 					       NULL,
 					       get_v4_tgt,
 					       "realms",
-					       krb5_princ_realm(context,
-								principal),
+					       *krb5_princ_realm(context,
+								 principal),
 					       "krb4_get_tickets",
 					       NULL);
 #endif
