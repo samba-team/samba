@@ -93,7 +93,7 @@ usr2handler (int sig)
 }
 
 /*
- * Establish authenticated connection
+ * Establish authenticated connection.  Return socket or -1.
  */
 
 static int
@@ -147,7 +147,8 @@ connect_host (kx_context *kc)
 
 /*
  * Get rid of the cookie that we were sent and get the correct one
- * from our own cookie file instead.
+ * from our own cookie file instead and then just copy data in both
+ * directions.
  */
 
 static int
@@ -167,6 +168,11 @@ active_session (int xserver, int fd, kx_context *kc)
     else
 	return copy_encrypted (kc, xserver, fd);
 }
+
+/*
+ * fork (unless debugp) and print the output that will be used by the
+ * script to capture the display, xauth cookie and pid.
+ */
 
 static void
 status_output (int debugp)
@@ -189,9 +195,9 @@ status_output (int debugp)
 }
 
 /*
- * Obtain an authenticated connection to `host' on `port'.  Send a kx
- * message saying we are `user' and want to use passive mode.  Wait
- * for answer on that connection and fork of a child for every new
+ * Obtain an authenticated connection on `kc'.  Send a kx message
+ * saying we are `kc->user' and want to use passive mode.  Wait for
+ * answer on that connection and fork of a child for every new
  * connection we have to make.
  */
 
@@ -528,7 +534,7 @@ doit_active (kx_context *kc)
 }
 
 /*
- *
+ * Should we interpret `disp' as this being a passive call?
  */
 
 static int
@@ -545,6 +551,10 @@ check_for_passive (const char *disp)
 	 || strncmp(disp, local_hostname, strlen(local_hostname)) == 0);
 }
 
+/*
+ * Set up signal handlers and then call the functions.
+ */
+
 static int
 doit (kx_context *kc, int passive_flag)
 {
@@ -558,6 +568,11 @@ doit (kx_context *kc, int passive_flag)
 }
 
 #ifdef KRB4
+
+/*
+ * Start a v4-authenticatated kx connection.
+ */
+
 static int
 doit_v4 (char *host, int port, char *user, 
 	 int passive_flag, int debug_flag, int keepalive_flag, int tcp_flag)
@@ -577,6 +592,10 @@ doit_v4 (char *host, int port, char *user,
 
 #ifdef KRB5
 
+/*
+ * Start a v5-authenticatated kx connection.
+ */
+
 static int
 doit_v5 (char *host, int port, char *user,
 	 int passive_flag, int debug_flag, int keepalive_flag, int tcp_flag)
@@ -592,11 +611,10 @@ doit_v5 (char *host, int port, char *user,
     context_destroy (&context);
     return ret;
 }
-
-#endif
+#endif /* KRB5 */
 
 /*
- * 
+ * Variables set from the arguments
  */
 
 #ifdef KRB4
@@ -605,8 +623,6 @@ static int krb_debug_flag	= 0;
 #endif
 #ifdef KRB5
 static int use_v5		= 0;
-static int forward_flag		= 0;
-static int forwardable_flag	= 0;
 #endif
 static char *port_str		= NULL;
 static char *user		= NULL;
@@ -627,10 +643,6 @@ struct getargs args[] = {
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
-    { "forward", 'f', arg_flag,		&forward_flag,	"Forward credentials",
-      NULL },
-    { "forwardable", 'F', arg_flag,	&forwardable_flag,
-      "Forward forwardable credentials", NULL },
 #endif
     { "port",	'p', arg_string,	&port_str,	"Use this port",
       "number-of-service" },
@@ -661,7 +673,7 @@ usage(int ret)
 }
 
 /*
- * kx - forward x connection over a kerberos-encrypted channel.
+ * kx - forward an x-connection over a kerberos-encrypted channel.
  */
 
 int
@@ -688,11 +700,6 @@ main(int argc, char **argv)
 
     if (optind != argc - 1)
 	usage (1);
-
-#ifdef KRB5
-    if (forwardable_flag)
-	forward_flag = 1;
-#endif
 
     host = argv[optind];
 
