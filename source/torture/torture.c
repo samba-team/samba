@@ -707,9 +707,9 @@ static BOOL run_netbench(int client)
 
 		if (!strcmp(params[0],"NTCreateX")) {
 			nb_createx(params[1], ival(params[2]), ival(params[3]), 
-				   ival(params[4]));
+				   ival(params[4]),ival(params[5]));
 		} else if (!strcmp(params[0],"Close")) {
-			nb_close(ival(params[1]));
+			nb_close(ival(params[1]),ival(params[2]));
 		} else if (!strcmp(params[0],"Rename")) {
 			nb_rename(params[1], params[2]);
 		} else if (!strcmp(params[0],"Unlink")) {
