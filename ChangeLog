@@ -1,3 +1,12 @@
+2004-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: document --random-key and the need to do backup
+	of the master key
+
+	* kdc/kstash.8: add --random-key
+	
+	* kdc/kstash.c: add --random-key
+	
 2004-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/verify_krb5_conf.8: spelling, from openbsd
