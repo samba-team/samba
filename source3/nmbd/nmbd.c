@@ -296,6 +296,7 @@ static void load_hosts_file(char *fname)
       struct subnet_record *d = find_subnet(ipaddr);
       if (d)
       {
+	    add_netbios_entry(d,name,0x00,NB_ACTIVE,0,source,ipaddr,True,True);
 	    add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True,True);
       }
 	}

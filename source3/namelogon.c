@@ -38,6 +38,10 @@ extern pstring myname;
 
 /****************************************************************************
    process a domain logon packet
+
+   08aug96 lkcl@pires.co.uk
+   reply_code == 0xC courtesy of jim@oxfordcc.co.uk forwarded by
+                                 lewis2@server.uwindsor.ca
    **************************************************************************/
 void process_logon_packet(struct packet_struct *p,char *buf,int len)
 {
@@ -87,11 +91,11 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
       reply_code = 7;
       reply_name = lp_domain_controller();
       if (!*reply_name) {
- 	DEBUG(3,("No domain controller configured\n"));
- 	return;
+        reply_name = myname;
+        reply_code = 0xC;
       }
-      DEBUG(3,("GETDC request from %s(%s)\n",
- 	       machine,inet_ntoa(p->ip)));
+      DEBUG(3,("GETDC request from %s(%s), reporting %s 0x%2x\n",
+ 	       machine,inet_ntoa(p->ip), reply_name, reply_code));
     }
     break;
   default:
@@ -110,6 +114,28 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
   StrnCpy(q,reply_name,16);
   strupper(q);
   q = skip_string(q,1);
+
+  if (reply_code == 0xC)
+  {
+   if ( PTR_DIFF (q,outbuf) & 1 )
+   {
+       q++;
+   }
+
+   StrnCpy(q,reply_name,16);
+   strupper(q);
+   q = skip_string(q,1);
+
+   StrnCpy(q,lp_workgroup(),16);
+   strupper(q);
+   q = skip_string(q,1);
+
+   SIVAL(q,0,1);
+   q += 4;
+   SSVAL(q,0,0xFFFF);
+   q += 2;
+  }
+
   SSVAL(q,0,0xFFFF);
   q += 2;
   
