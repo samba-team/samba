@@ -423,6 +423,10 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
 	
 	/* cli_nt_setup_creds() not called */
 	
+	cli_nt_session_close(&cli, fnum);
+	cli_ulogoff(&cli);
+	cli_shutdown(&cli);
+
 	return True;
 }
 
