@@ -13,7 +13,7 @@
 
 <refnamediv>
 	<refname>editreg</refname>
-	<refpurpose>A utility to report and change SIDs in registry files
+	<refpurpose>A utility for printing and editing NT4 registry files
 	</refpurpose>
 </refnamediv>
 
