@@ -134,6 +134,97 @@ done:
 }
 
 
+/*
+  test using NTTRANS CREATE to create a file with an initial ACL set
+*/
+static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\acl2.txt";
+	BOOL ret = True;
+	int fnum = -1;
+	union smb_fileinfo q;
+	struct security_ace ace;
+	struct security_descriptor *sd;
+	struct dom_sid *test_sid;
+
+	printf("TESTING NTTRANS CREATE WITH SEC_DESC\n");
+
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ | 
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.sec_desc = NULL;
+	io.ntcreatex.in.ea_list = NULL;
+
+	printf("creating normal file\n");
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+
+	printf("querying ACL\n");
+
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags = 
+		OWNER_SECURITY_INFORMATION | 
+		GROUP_SECURITY_INFORMATION | 
+		DACL_SECURITY_INFORMATION;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd = q.query_secdesc.out.sd;
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	printf("adding a new ACE\n");
+	test_sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-54321");
+
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.flags = 0;
+	ace.access_mask = STD_RIGHT_ALL_ACCESS;
+	ace.trustee = *test_sid;
+
+	status = security_descriptor_dacl_add(sd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	
+	printf("creating a file with an initial ACL\n");
+
+	io.ntcreatex.in.sec_desc = sd;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	
+	q.query_secdesc.in.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (!security_descriptor_equal(q.query_secdesc.out.sd, sd)) {
+		printf("security descriptors don't match!\n");
+		printf("got:\n");
+		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+		printf("expected:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+	}
+
+done:
+	smbcli_close(cli->tree, fnum);
+	return ret;
+}
+
+
 /* 
    basic testing of security descriptor calls
 */
@@ -154,6 +245,7 @@ BOOL torture_raw_acls(void)
 	}
 
 	ret &= test_sd(cli, mem_ctx);
+	ret &= test_nttrans_create(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
