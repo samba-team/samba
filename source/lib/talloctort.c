@@ -56,6 +56,8 @@ int main(void)
 		       talloc_pool_size(ctx[i]) >> 10);
 	}
 
+	printf("%s", talloc_describe_all(ctx[0]));
+
 	for (i = NCTX - 1; i >= 0; i--)
 		talloc_destroy(ctx[i]);
 
