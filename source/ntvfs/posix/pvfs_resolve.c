@@ -33,9 +33,19 @@
 /*
   compare two filename components. This is where the name mangling hook will go
 */
-static int component_compare(const char *c1, const char *c2)
+static int component_compare(struct pvfs_state *pvfs, const char *comp, const char *name)
 {
-	return StrCaseCmp(c1, c2);
+	char *shortname;
+	int ret;
+
+	if (StrCaseCmp(comp, name) == 0) return 0;
+
+	shortname = pvfs_short_name_component(pvfs, name);
+
+	ret = StrCaseCmp(comp, shortname);
+
+	talloc_free(shortname);
+	return ret;
 }
 
 /*
@@ -110,7 +120,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 		}
 
 		while ((de = readdir(dir))) {
-			if (component_compare(components[i], de->d_name) == 0) {
+			if (component_compare(pvfs, components[i], de->d_name) == 0) {
 				break;
 			}
 		}
