@@ -11,7 +11,7 @@ if test -z "$WFLAGS" -a "$GCC" = "yes"; then
   #   -Wcast-align doesn't work well on alpha osf/1
   #   -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast
   #   -Wmissing-declarations -Wnested-externs
-  WFLAGS="ifelse($#, 0,-Wall -Wno-return-type, $1)"
+  WFLAGS="ifelse($#, 0,-Wall, $1)"
   WFLAGS_NOUNUSED="-Wno-unused"
   WFLAGS_NORETURNTYPE="-Wno-return-type"
 fi
