@@ -138,7 +138,7 @@ sub ParseElementPrintScalar($$)
 
 	if (defined $e->{VALUE}) {
 		$res .= "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $e->{VALUE});\n";
-	} elsif (util::need_wire_pointer($e)) {
+	} elsif (util::has_direct_buffers($e)) {
 		$res .= "\tndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});\n";
 		$res .= "\tndr->depth++;\n";
 		ParseElementPrintBuffer($e, "r->");
@@ -343,8 +343,6 @@ sub ParseStructPrint($)
 {
 	my($struct) = shift;
 
-	$res .= "\tndr_print_struct(ndr, name);\n";
-
 	if (! defined $struct->{ELEMENTS}) {
 		return;
 	}
@@ -430,7 +428,15 @@ sub ParseUnionPush($)
 sub ParseUnionPrint($)
 {
 	my $e = shift;
-	print "WARNING! union print not done\n";	
+
+	$res .= "\tswitch (level) {\n";
+	foreach my $el (@{$e->{DATA}}) {
+		$res .= "\tcase $el->{CASE}:\n";
+		ParseElementPrintScalar($el->{DATA}, "r->");
+		$res .= "\tbreak;\n\n";
+	}
+	$res .= "\tdefault:\n\t\tndr_print_bad_level(ndr, name, level);\n";
+	$res .= "\t}\n";
 }
 
 #####################################################################
@@ -438,7 +444,6 @@ sub ParseUnionPrint($)
 sub ParseUnionPull($)
 {
 	my $e = shift;
-	print "union pull not done\n";	
 
 	$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
@@ -572,6 +577,7 @@ sub ParseTypedefPrint($)
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
 		$res .= "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
 		$res .= "\n{\n";
+		$res .= "\tndr_print_struct(ndr, name, \"$e->{NAME}\");\n";
 		ParseTypePrint($e->{DATA});
 		$res .= "}\n\n";
 	}
@@ -579,6 +585,7 @@ sub ParseTypedefPrint($)
 	if ($e->{DATA}->{TYPE} eq "UNION") {
 		$res .= "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, uint16 level, union $e->{NAME} *r)";
 		$res .= "\n{\n";
+		$res .= "\tndr_print_union(ndr, name, level, \"$e->{NAME}\");\n";
 		ParseTypePrint($e->{DATA});
 		$res .= "}\n\n";
 	}

@@ -307,5 +307,15 @@ sub c_pull_prefix($)
 	return "";
 }
 
+# determine if an element has a direct buffers component
+sub has_direct_buffers($)
+{
+	my $e = shift;
+	if ($e->{POINTERS} || array_size($e)) {
+		return 1;
+	}
+	return 0;
+}
+
 1;
 
