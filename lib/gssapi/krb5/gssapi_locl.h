@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -104,6 +104,14 @@ gssapi_krb5_verify_header(u_char **str,
 			  char *type);
 
 OM_uint32
+gss_verify_mic_internal(OM_uint32 * minor_status,
+			const gss_ctx_id_t context_handle,
+			const gss_buffer_t message_buffer,
+			const gss_buffer_t token_buffer,
+			gss_qop_t * qop_state,
+			char * type);
+
+OM_uint32
 gss_krb5_get_remotekey(const gss_ctx_id_t context_handle,
 		       krb5_keyblock **key);
 
@@ -124,6 +132,9 @@ gss_address_to_krb5addr(OM_uint32 gss_addr_type,
 #define SC_KEYBLOCK	  0x04
 #define SC_LOCAL_SUBKEY	  0x08
 #define SC_REMOTE_SUBKEY  0x10
+
+int
+gss_oid_equal(const gss_OID a, const gss_OID b);
 
 void
 gssapi_krb5_set_error_string (void);
