@@ -33,6 +33,7 @@
 <!ENTITY NT4Migration SYSTEM "NT4Migration.sgml">
 <!ENTITY SWAT SYSTEM "SWAT.sgml">
 <!ENTITY Trusts SYSTEM "InterdomainTrusts.sgml">
+<!ENTITY problems SYSTEM "Problems.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -129,12 +130,13 @@ for various environments.
 
 <part id="Appendixes">
 <title>Appendixes</title>
-&SWAT;
+&Compiling;
 &NT4Migration;
-&SPEED;
 &Portability;
 &Other-Clients;
-&Compiling;
-&BUGS;
+&SWAT;
+&SPEED;
 &Diagnosis;
+&problems;
+&BUGS;
 </part>
