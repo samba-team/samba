@@ -39,9 +39,9 @@ docs/docbook/manpages/ntlm_auth.1.sgml - Is very basic at the moment, parameters
 
 Stuff that needs to be documented:
 wrepld
- - not yet reviewed - needs attention
-Windows NT 4.0 Style Trust Relationship
  - I will do this - jht
+Windows NT 4.0 Style Trust Relationship
+ - Done (mimir / jht) - not finished.
 Winbind in a samba controlled domain
  - I will do this - Jelmer
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
