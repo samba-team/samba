@@ -235,14 +235,25 @@ int net_rpc_changetrustpw(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cli_state *cli, 
+static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid, struct cli_state *cli, 
 					    TALLOC_CTX *mem_ctx, 
 					    int argc, const char **argv) {
 	
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
 	NTSTATUS result;
+	uint32 sec_channel_type;
 
+	/* 
+	   check what type of join - if the user want's to join as
+	   a BDC, the server must agree that we are a BDC.
+	*/
+	if (argc >= 0) {
+		sec_channel_type = get_sec_channel_type(argv[0]);
+	} else {
+		sec_channel_type = get_sec_channel_type(NULL);
+	}
+	
 	fstrcpy(trust_passwd, global_myname());
 	strlower(trust_passwd);
 
@@ -257,11 +268,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 	result = trust_pw_change_and_store_it(cli, mem_ctx, opt_target_workgroup,
 					      orig_trust_passwd_hash,
-					      SEC_CHAN_WKSTA);
-
-	/* SEC_CHAN_WKSTA specified specifically, as you cannot use this
-	   to join a BDC to the domain (MS won't allow it, and is *really*
-	   insecure) */
+					      sec_channel_type);
 
 	if (NT_STATUS_IS_OK(result))
 		printf("Joined domain %s.\n",opt_target_workgroup);
@@ -285,40 +292,11 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
  * @return A shell status integer (0 for success)
  **/
 
-static int net_rpc_join_oldstyle(int argc, const char **argv) 
-{
-	uint32 sec_channel_type;
-	/* check what type of join */
-	if (argc >= 0) {
-		sec_channel_type = get_sec_channel_type(argv[0]);
-	} else {
-		sec_channel_type = get_sec_channel_type(NULL);
-	}
-	
-	if (sec_channel_type != SEC_CHAN_WKSTA) 
-		return 1;
-
-	return run_rpc_command(NULL, PI_NETLOGON, 
-			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
-			       rpc_join_oldstyle_internals,
-			       argc, argv);
-}
-
-/** 
- * Join a domain, the old way.
- *
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
- *
- * @return A shell status integer (0 for success)
- **/
-
 static int net_rpc_oldjoin(int argc, const char **argv) 
 {
 	return run_rpc_command(NULL, PI_NETLOGON, 
 			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
-			       rpc_join_oldstyle_internals,
+			       rpc_oldjoin_internals,
 			       argc, argv);
 }
 
@@ -351,13 +329,13 @@ static int rpc_join_usage(int argc, const char **argv)
  *
  * Main 'net_rpc_join()' (where the admain username/password is used) is 
  * in net_rpc_join.c
- * Assume if a -U is specified, it's the new style, otherwise it's the
- * old style.  If 'oldstyle' is specfied explicity, do it and don't prompt.
+ * Try to just change the password, but if that doesn't work, use/prompt
+ * for a username/password.
  **/
 
 int net_rpc_join(int argc, const char **argv) 
 {
-	if ((net_rpc_join_oldstyle(argc, argv) == 0))
+	if ((net_rpc_oldjoin(argc, argv) == 0))
 		return 0;
 	
 	return net_rpc_join_newstyle(argc, argv);

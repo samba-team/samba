@@ -280,7 +280,7 @@ NTSTATUS cli_nt_setup_creds(struct cli_state *cli,
 	}
 
 	if (!NT_STATUS_IS_OK(result))
-                DEBUG(1,("cli_nt_setup_creds: auth%d challenge failed %s\n", level, nt_errstr(result)));
+                DEBUG(3,("cli_nt_setup_creds: auth%d challenge failed %s\n", level, nt_errstr(result)));
 
         return result;
 }

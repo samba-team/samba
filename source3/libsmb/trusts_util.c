@@ -40,7 +40,7 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 	result = cli_nt_setup_creds(cli, sec_channel_type, orig_trust_passwd_hash, &neg_flags, 2);
 	
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(1,("just_change_the_password: unable to setup creds (%s)!\n",
+		DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
 			 nt_errstr(result)));
 		return result;
 	}
