@@ -65,6 +65,8 @@ static NTSTATUS svfs_connect(struct request_context *req, const char *sharename)
 	conn->fs_type = talloc_strdup(conn->mem_ctx, "NTFS");
 	conn->dev_type = talloc_strdup(conn->mem_ctx, "A:");
 
+	DEBUG(0,("WARNING: ntvfs simple: connect to share [%s] with ROOT privileges!!!\n",sharename));
+
 	return NT_STATUS_OK;
 }
 
