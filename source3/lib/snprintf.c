@@ -57,6 +57,27 @@
  *    got rid of fcvt code (twas buggy and made testing harder)
  *    added C99 semantics
  *
+ * date: 2002/12/19 19:56:31;  author: herb;  state: Exp;  lines: +2 -0
+ * actually print args for %g and %e
+ * 
+ * date: 2002/06/03 13:37:52;  author: jmcd;  state: Exp;  lines: +8 -0
+ * Since includes.h isn't included here, VA_COPY has to be defined here.  I don't
+ * see any include file that is guaranteed to be here, so I'm defining it
+ * locally.  Fixes AIX and Solaris builds.
+ * 
+ * date: 2002/06/03 03:07:24;  author: tridge;  state: Exp;  lines: +5 -13
+ * put the ifdef for HAVE_VA_COPY in one place rather than in lots of
+ * functions
+ * 
+ * date: 2002/05/17 14:51:22;  author: jmcd;  state: Exp;  lines: +21 -4
+ * Fix usage of va_list passed as an arg.  Use __va_copy before using it
+ * when it exists.
+ * 
+ * date: 2002/04/16 22:38:04;  author: idra;  state: Exp;  lines: +20 -14
+ * Fix incorrect zpadlen handling in fmtfp.
+ * Thanks to Ollie Oldham <ollie.oldham@metro-optix.com> for spotting it.
+ * few mods to make it easier to compile the tests.
+ * addedd the "Ollie" test to the floating point ones.
  **************************************************************/
 
 #ifndef NO_CONFIG_H /* for some tests */
