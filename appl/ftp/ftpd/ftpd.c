@@ -1238,6 +1238,7 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 			munmap(chunk, st.st_size);
 			auth_write(fileno(outstr), NULL, 0);
 			cnt = st.st_size;
+			byte_count = cnt;
 			transflag = 0;
 		    }
 		}
