@@ -1,9 +1,0 @@
-build_env.h
-config.h
-config.h.in
-includes.h.gch
-proto.h
-stamp-h
-tdbsam2_parse_info.h
-wrepld_proto.h
-version.h
