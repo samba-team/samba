@@ -90,8 +90,6 @@ BOOL dos_file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 BOOL dos_directory_exist(char *dname,SMB_STRUCT_STAT *st);
 time_t dos_file_modtime(char *fname);
 SMB_OFF_T dos_file_size(char *file_name);
-int dos_ChDir(char *path);
-char *dos_GetWd(char *path);
 
 /*The following definitions come from  lib/error.c  */
 
@@ -328,7 +326,6 @@ void smb_setlen(char *buf,int len);
 int set_message(char *buf,int num_words,int num_bytes,BOOL zero);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
-BOOL reduce_name(char *s,char *dir,BOOL widelinks);
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
 void close_low_fds(void);
 int set_blocking(int fd, BOOL set);
@@ -2633,8 +2630,8 @@ void init_sam_user_info21(SAM_USER_INFO_21 *usr,
 void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
 BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
-BOOL samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, int depth);
+BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
+BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
 void init_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				char *srv_name, uint32 unknown_0);
 BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
@@ -3161,7 +3158,7 @@ uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
 uint32 _spoolss_setjob( POLICY_HND *handle,
 				uint32 jobid,
 				uint32 level,
-		                pipes_struct *p,
+                pipes_struct *p,
 				JOB_INFO *ctr,
 				uint32 command);
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
@@ -3822,23 +3819,35 @@ int vfswrap_lstat(char *path,
 		  SMB_STRUCT_STAT *sbuf);
 int vfswrap_unlink(char *path);
 int vfswrap_chmod(char *path, mode_t mode);
+int vfswrap_chown(char *path, uid_t uid, gid_t gid);
+int vfswrap_chdir(char *path);
+char *vfswrap_getwd(char *path);
 int vfswrap_utime(char *path, struct utimbuf *times);
 int vfswrap_ftruncate(int fd, SMB_OFF_T offset);
 BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+size_t vfswrap_get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
+BOOL vfswrap_set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs.c  */
 
 int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
-BOOL vfs_directory_exist(connection_struct *conn, char *dname,
-                         SMB_STRUCT_STAT *st);
+int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st);
+BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_unlink(connection_struct *conn, char *fname);
+int vfs_chmod(connection_struct *conn, char *fname,mode_t mode);
+int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid);
+int vfs_chdir(connection_struct *conn, char *fname);
+char *vfs_getwd(connection_struct *conn, char *unix_path);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 
 			    int out_fd, files_struct *out_fsp,
 			    SMB_OFF_T n, char *header, int headlen, int align);
 char *vfs_readdirname(connection_struct *conn, void *p);
+int vfs_ChDir(connection_struct *conn, char *path);
+char *vfs_GetWd(connection_struct *conn, char *path);
+BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks);
 
 /*The following definitions come from  smbwrapper/realcalls.c  */
 

@@ -732,7 +732,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
    */
   saved_conn = fsp->conn;
   saved_vuid = current_user.vuid;
-  dos_GetWd(saved_dir);
+  vfs_GetWd(saved_conn,saved_dir);
   unbecome_user();
   /* Save the chain fnum. */
   file_chain_save();
@@ -814,7 +814,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
     exit_server("unable to re-become user");
   }
   /* Including the directory. */
-  dos_ChDir(saved_dir);
+  vfs_ChDir(saved_conn,saved_dir);
 
   /* Restore the chain fnum. */
   file_chain_restore();

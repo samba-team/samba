@@ -64,9 +64,16 @@ struct vfs_ops default_vfs_ops = {
     vfswrap_lstat,
     vfswrap_unlink,
     vfswrap_chmod,
+    vfswrap_chown,
+    vfswrap_chdir,
+    vfswrap_getwd,
     vfswrap_utime,
     vfswrap_ftruncate,
-	vfswrap_lock
+	vfswrap_lock,
+#if 0
+	vfswrap_get_nt_acl,
+	vfswrap_set_nt_acl
+#endif
 };
 
 /****************************************************************************
@@ -208,6 +215,10 @@ BOOL vfs_init_custom(connection_struct *conn)
 	conn->vfs_ops.chmod = default_vfs_ops.chmod;
     }
     
+    if (conn->vfs_ops.chown == NULL) {
+	conn->vfs_ops.chown = default_vfs_ops.chown;
+    }
+    
     if (conn->vfs_ops.utime == NULL) {
 	conn->vfs_ops.utime = default_vfs_ops.utime;
     }
@@ -224,20 +235,33 @@ BOOL vfs_init_custom(connection_struct *conn)
 }
 #endif
 
-BOOL vfs_directory_exist(connection_struct *conn, char *dname,
-                         SMB_STRUCT_STAT *st)
+/*******************************************************************
+ vfs stat wrapper that calls dos_to_unix.
+********************************************************************/
+
+int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st)
 {
-  SMB_STRUCT_STAT st2;
-  BOOL ret;
+	return(conn->vfs_ops.stat(dos_to_unix(fname,False),st));
+} 
 
-  if (!st) st = &st2;
+/*******************************************************************
+ Check if directory exists.
+********************************************************************/
 
-  if (conn->vfs_ops.stat(dos_to_unix(dname,False),st) != 0) 
-    return(False);
+BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st)
+{
+	SMB_STRUCT_STAT st2;
+	BOOL ret;
 
-  ret = S_ISDIR(st->st_mode);
-  if(!ret)
-    errno = ENOTDIR;
+	if (!st)
+		st = &st2;
+
+	if (vfs_stat(conn,dname,st) != 0) 
+		return(False);
+
+	ret = S_ISDIR(st->st_mode);
+	if(!ret)
+		errno = ENOTDIR;
 
   return ret;
 }
@@ -248,26 +272,70 @@ BOOL vfs_directory_exist(connection_struct *conn, char *dname,
 
 int vfs_unlink(connection_struct *conn, char *fname)
 {
-  return(conn->vfs_ops.unlink(dos_to_unix(fname,False)));
+	return(conn->vfs_ops.unlink(dos_to_unix(fname,False)));
 } 
 
 /*******************************************************************
-  check if a vfs file exists
+ vfs chmod wrapper that calls dos_to_unix.
 ********************************************************************/
+
+int vfs_chmod(connection_struct *conn, char *fname,mode_t mode)
+{
+	return(conn->vfs_ops.chmod(dos_to_unix(fname,False), mode));
+} 
+
+/*******************************************************************
+ vfs chown wrapper that calls dos_to_unix.
+********************************************************************/
+
+int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid)
+{
+	return(conn->vfs_ops.chown(dos_to_unix(fname,False), uid, gid));
+} 
+
+/*******************************************************************
+ A wrapper for vfs_chdir().
+********************************************************************/
+
+int vfs_chdir(connection_struct *conn, char *fname)
+{
+	return(conn->vfs_ops.chdir(dos_to_unix(fname,False)));
+} 
+
+/*******************************************************************
+ vfs getwd wrapper that calls dos_to_unix.
+********************************************************************/
+
+char *vfs_getwd(connection_struct *conn, char *unix_path)
+{
+    char *wd;
+    wd = conn->vfs_ops.getwd(unix_path);
+    if (wd)
+        unix_to_dos(wd, True);
+    return wd;
+}
+
+/*******************************************************************
+ Check if a vfs file exists.
+********************************************************************/
+
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
 {
-  SMB_STRUCT_STAT st;
-  if (!sbuf) sbuf = &st;
-  
-  if (conn->vfs_ops.stat(dos_to_unix(fname,False),sbuf) != 0) 
-    return(False);
+	SMB_STRUCT_STAT st;
 
-  return(S_ISREG(sbuf->st_mode));
+	if (!sbuf)
+		sbuf = &st;
+ 
+	if (vfs_stat(conn,fname,sbuf) != 0) 
+		return(False);
+
+	return(S_ISREG(sbuf->st_mode));
 }
 
 /****************************************************************************
-  write data to a fd on the vfs
+ Write data to a fd on the vfs.
 ****************************************************************************/
+
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 {
   size_t total=0;
@@ -286,8 +354,9 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 }
 
 /****************************************************************************
-transfer some data between two file_struct's
+ Transfer some data between two file_struct's.
 ****************************************************************************/
+
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 
 			    int out_fd, files_struct *out_fsp,
 			    SMB_OFF_T n, char *header, int headlen, int align)
@@ -376,22 +445,26 @@ SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
 }
 
 /*******************************************************************
-a vfs_readdir wrapper which just returns the file name
+ A vfs_readdir wrapper which just returns the file name.
 ********************************************************************/
+
 char *vfs_readdirname(connection_struct *conn, void *p)
 {
 	struct dirent *ptr;
 	char *dname;
 
-	if (!p) return(NULL);
+	if (!p)
+		return(NULL);
   
 	ptr = (struct dirent *)conn->vfs_ops.readdir(p);
-	if (!ptr) return(NULL);
+	if (!ptr)
+		return(NULL);
 
 	dname = ptr->d_name;
 
 #ifdef NEXT2
-	if (telldir(p) < 0) return(NULL);
+	if (telldir(p) < 0)
+		return(NULL);
 #endif
 
 #ifdef HAVE_BROKEN_READDIR
@@ -474,3 +547,293 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
 
 #endif
 
+
+/*******************************************************************
+ A wrapper for vfs_chdir().
+********************************************************************/
+
+int vfs_ChDir(connection_struct *conn, char *path)
+{
+	int res;
+	static pstring LastDir="";
+
+	if (strcsequal(path,"."))
+		return(0);
+
+	if (*path == '/' && strcsequal(LastDir,path))
+		return(0);
+
+	DEBUG(3,("vfs_ChDir to %s\n",path));
+
+	res = vfs_chdir(conn,path);
+	if (!res)
+		pstrcpy(LastDir,path);
+	return(res);
+}
+
+/* number of list structures for a caching GetWd function. */
+#define MAX_GETWDCACHE (50)
+
+struct
+{
+  SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
+  SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
+  char *dos_path; /* The pathname in DOS format. */
+  BOOL valid;
+} ino_list[MAX_GETWDCACHE];
+
+extern BOOL use_getwd_cache;
+
+/****************************************************************************
+ Prompte a ptr (to make it recently used)
+****************************************************************************/
+
+static void array_promote(char *array,int elsize,int element)
+{
+	char *p;
+	if (element == 0)
+		return;
+
+	p = (char *)malloc(elsize);
+
+	if (!p) {
+		DEBUG(5,("array_promote: malloc fail\n"));
+		return;
+	}
+
+	memcpy(p,array + element * elsize, elsize);
+	memmove(array + elsize,array,elsize*element);
+	memcpy(array,p,elsize);
+	free(p);
+}
+
+/*******************************************************************
+ Return the absolute current directory path - given a UNIX pathname.
+ Note that this path is returned in DOS format, not UNIX
+ format. Note this can be called with conn == NULL.
+********************************************************************/
+
+char *vfs_GetWd(connection_struct *conn, char *path)
+{
+  pstring s;
+  static BOOL getwd_cache_init = False;
+  SMB_STRUCT_STAT st, st2;
+  int i;
+
+  *s = 0;
+
+  if (!use_getwd_cache)
+    return(vfs_getwd(conn,path));
+
+  /* init the cache */
+  if (!getwd_cache_init)
+  {
+    getwd_cache_init = True;
+    for (i=0;i<MAX_GETWDCACHE;i++)
+    {
+      string_set(&ino_list[i].dos_path,"");
+      ino_list[i].valid = False;
+    }
+  }
+
+  /*  Get the inode of the current directory, if this doesn't work we're
+      in trouble :-) */
+
+  if (vfs_stat(conn, ".",&st) == -1)
+  {
+    DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
+    return(vfs_getwd(conn,path));
+  }
+
+
+  for (i=0; i<MAX_GETWDCACHE; i++)
+    if (ino_list[i].valid)
+    {
+
+      /*  If we have found an entry with a matching inode and dev number
+          then find the inode number for the directory in the cached string.
+          If this agrees with that returned by the stat for the current
+          directory then all is o.k. (but make sure it is a directory all
+          the same...) */
+
+      if (st.st_ino == ino_list[i].inode &&
+          st.st_dev == ino_list[i].dev)
+      {
+        if (vfs_stat(conn,ino_list[i].dos_path,&st2) == 0)
+        {
+          if (st.st_ino == st2.st_ino &&
+              st.st_dev == st2.st_dev &&
+              (st2.st_mode & S_IFMT) == S_IFDIR)
+          {
+            pstrcpy (path, ino_list[i].dos_path);
+
+            /* promote it for future use */
+            array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
+            return (path);
+          }
+          else
+          {
+            /*  If the inode is different then something's changed,
+                scrub the entry and start from scratch. */
+            ino_list[i].valid = False;
+          }
+        }
+      }
+    }
+
+
+  /*  We don't have the information to hand so rely on traditional methods.
+      The very slow getcwd, which spawns a process on some systems, or the
+      not quite so bad getwd. */
+
+  if (!vfs_getwd(conn,s))
+  {
+    DEBUG(0,("vfs_GetWd: vfs_getwd call failed, errno %s\n",strerror(errno)));
+    return (NULL);
+  }
+
+  pstrcpy(path,s);
+
+  DEBUG(5,("vfs_GetWd %s, inode %.0f, dev %.0f\n",s,(double)st.st_ino,(double)st.st_dev));
+
+  /* add it to the cache */
+  i = MAX_GETWDCACHE - 1;
+  string_set(&ino_list[i].dos_path,s);
+  ino_list[i].dev = st.st_dev;
+  ino_list[i].inode = st.st_ino;
+  ino_list[i].valid = True;
+
+  /* put it at the top of the list */
+  array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
+
+  return (path);
+}
+
+/*******************************************************************
+ Reduce a file name, removing .. elements and checking that 
+ it is below dir in the heirachy. This uses vfs_GetWd() and so must be run
+ on the system that has the referenced file system.
+ Widelinks are allowed if widelinks is true.
+********************************************************************/
+
+BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
+{
+#ifndef REDUCE_PATHS
+  return True;
+#else
+  pstring dir2;
+  pstring wd;
+  pstring base_name;
+  pstring newname;
+  char *p=NULL;
+  BOOL relative = (*s != '/');
+
+  *dir2 = *wd = *base_name = *newname = 0;
+
+  if (widelinks)
+  {
+    unix_clean_name(s);
+    /* can't have a leading .. */
+    if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
+    {
+      DEBUG(3,("Illegal file name? (%s)\n",s));
+      return(False);
+    }
+
+    if (strlen(s) == 0)
+      pstrcpy(s,"./");
+
+    return(True);
+  }
+  
+  DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
+
+  /* remove any double slashes */
+  all_string_sub(s,"//","/",0);
+
+  pstrcpy(base_name,s);
+  p = strrchr(base_name,'/');
+
+  if (!p)
+    return(True);
+
+  if (!vfs_GetWd(conn,wd))
+  {
+    DEBUG(0,("couldn't vfs_GetWd for %s %s\n",s,dir));
+    return(False);
+  }
+
+  if (vfs_ChDir(conn,dir) != 0)
+  {
+    DEBUG(0,("couldn't vfs_ChDir to %s\n",dir));
+    return(False);
+  }
+
+  if (!vfs_GetWd(conn,dir2))
+  {
+    DEBUG(0,("couldn't vfs_GetWd for %s\n",dir));
+    vfs_ChDir(conn,wd);
+    return(False);
+  }
+
+  if (p && (p != base_name))
+  {
+    *p = 0;
+    if (strcmp(p+1,".")==0)
+      p[1]=0;
+    if (strcmp(p+1,"..")==0)
+      *p = '/';
+  }
+
+  if (vfs_ChDir(conn,base_name) != 0)
+  {
+    vfs_ChDir(conn,wd);
+    DEBUG(3,("couldn't vfs_ChDir for %s %s basename=%s\n",s,dir,base_name));
+    return(False);
+  }
+
+  if (!vfs_GetWd(conn,newname))
+  {
+    vfs_ChDir(conn,wd);
+    DEBUG(2,("couldn't get vfs_GetWd for %s %s\n",s,dir2));
+    return(False);
+  }
+
+  if (p && (p != base_name))
+  {
+    pstrcat(newname,"/");
+    pstrcat(newname,p+1);
+  }
+
+  {
+    size_t l = strlen(dir2);    
+    if (dir2[l-1] == '/')
+      l--;
+
+    if (strncmp(newname,dir2,l) != 0)
+    {
+      vfs_ChDir(conn,wd);
+      DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
+      return(False);
+    }
+
+    if (relative)
+    {
+      if (newname[l] == '/')
+        pstrcpy(s,newname + l + 1);
+      else
+        pstrcpy(s,newname+l);
+    }
+    else
+      pstrcpy(s,newname);
+  }
+
+  vfs_ChDir(conn,wd);
+
+  if (strlen(s) == 0)
+    pstrcpy(s,"./");
+
+  DEBUG(3,("reduced to %s\n",s));
+  return(True);
+#endif
+}

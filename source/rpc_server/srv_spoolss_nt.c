@@ -3041,10 +3041,10 @@ uint32 _spoolss_endpageprinter(POLICY_HND *handle)
 static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
 {
 	if (p->ntlmssp_auth_validated) {
-		memcpy(user, &p->pipe_user, sizeof(user));
+		memcpy(user, &p->pipe_user, sizeof(struct current_user));
 	} else {
 		extern struct current_user current_user;
-		memcpy(user, &current_user, sizeof(user));
+		memcpy(user, &current_user, sizeof(struct current_user));
 	}
 
 	return user;

@@ -92,7 +92,7 @@ pstring global_scope = "";
 #define VALID(i) iSERVICE(i).valid
 
 int keepalive = DEFAULT_KEEPALIVE;
-extern BOOL use_getwd_cache;
+BOOL use_getwd_cache;
 
 extern int extra_time_offset;
 
