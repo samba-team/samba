@@ -4,6 +4,7 @@
 RCSID("$Id$");
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -140,7 +141,13 @@ int aix_setup(void)
     Setpag = aix_setpag;
 #else
     void *ptr;
-    ptr = dlopen(LIBDIR "/afslib.so", 0);
+    char path[MaxPathLen], *p;
+    if((p = getenv("AFSLIBPATH")) != NULL)
+	strcpy(path, p);
+    else
+	sprintf(path, "%s/afslib.so", LIBDIR);
+	
+    ptr = dlopen(path, 0);
     if(ptr){
 	Setpag = (int (*)(void))dlsym(ptr, "aix_setpag");
 	Pioctl = (int (*)(char*, int, void*, int))dlsym(ptr, "aix_pioctl");
