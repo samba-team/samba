@@ -1501,31 +1501,31 @@ FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
 #ifdef WITH_LDAP
-FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer);
-FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix);
-FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter);
-FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot);
-FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword);
+FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
+FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
+FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
+FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot)
+FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword)
 #endif /* WITH_LDAP */
-FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand);
-FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand);
-FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand);
+FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
+FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
+FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
 
 #ifdef WITH_SSL
-FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion);
-FN_GLOBAL_STRING(lp_ssl_hosts, &Globals.sslHostsRequire);
-FN_GLOBAL_STRING(lp_ssl_hosts_resign, &Globals.sslHostsResign);
-FN_GLOBAL_STRING(lp_ssl_cacertdir, &Globals.sslCaCertDir);
-FN_GLOBAL_STRING(lp_ssl_cacertfile, &Globals.sslCaCertFile);
-FN_GLOBAL_STRING(lp_ssl_cert, &Globals.sslCert);
-FN_GLOBAL_STRING(lp_ssl_privkey, &Globals.sslPrivKey);
-FN_GLOBAL_STRING(lp_ssl_client_cert, &Globals.sslClientCert);
-FN_GLOBAL_STRING(lp_ssl_client_privkey, &Globals.sslClientPrivKey);
-FN_GLOBAL_STRING(lp_ssl_ciphers, &Globals.sslCiphers);
-FN_GLOBAL_BOOL(lp_ssl_enabled, &Globals.sslEnabled);
-FN_GLOBAL_BOOL(lp_ssl_reqClientCert, &Globals.sslReqClientCert);
-FN_GLOBAL_BOOL(lp_ssl_reqServerCert, &Globals.sslReqServerCert);
-FN_GLOBAL_BOOL(lp_ssl_compatibility, &Globals.sslCompatibility);
+FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion)
+FN_GLOBAL_STRING(lp_ssl_hosts, &Globals.sslHostsRequire)
+FN_GLOBAL_STRING(lp_ssl_hosts_resign, &Globals.sslHostsResign)
+FN_GLOBAL_STRING(lp_ssl_cacertdir, &Globals.sslCaCertDir)
+FN_GLOBAL_STRING(lp_ssl_cacertfile, &Globals.sslCaCertFile)
+FN_GLOBAL_STRING(lp_ssl_cert, &Globals.sslCert)
+FN_GLOBAL_STRING(lp_ssl_privkey, &Globals.sslPrivKey)
+FN_GLOBAL_STRING(lp_ssl_client_cert, &Globals.sslClientCert)
+FN_GLOBAL_STRING(lp_ssl_client_privkey, &Globals.sslClientPrivKey)
+FN_GLOBAL_STRING(lp_ssl_ciphers, &Globals.sslCiphers)
+FN_GLOBAL_BOOL(lp_ssl_enabled, &Globals.sslEnabled)
+FN_GLOBAL_BOOL(lp_ssl_reqClientCert, &Globals.sslReqClientCert)
+FN_GLOBAL_BOOL(lp_ssl_reqServerCert, &Globals.sslReqServerCert)
+FN_GLOBAL_BOOL(lp_ssl_compatibility, &Globals.sslCompatibility)
 #endif /* WITH_SSL */
 
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
