@@ -248,7 +248,6 @@ void unbecome_local_master_browser(struct subnet_record *subrec, struct work_rec
   struct name_record *namerec;
   struct nmb_name nmbname;
   struct userdata_struct *userdata;
-  char ud[sizeof(struct userdata_struct) + sizeof(fstring)+1];
 
   /* Sanity check. */
 
@@ -268,9 +267,11 @@ in workgroup %s on subnet %s\n",
   work->mst_state = MST_UNBECOMING_MASTER;
 
   /* Setup the userdata for the MSBROWSE name release. */
-  /* Setup the userdata_struct - this is copied so we can use
-     a stack variable for this. */
-  userdata = (struct userdata_struct *)ud;
+  if((userdata = (struct userdata_struct *)malloc( sizeof(struct userdata_struct) + sizeof(fstring)+1)) == NULL)
+  {
+    DEBUG(0,("unbecome_local_master_browser: malloc fail.\n"));
+    return;
+  }
 
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
@@ -286,6 +287,8 @@ in workgroup %s on subnet %s\n",
                  release_msbrowse_name_fail,
                  userdata);
   }
+
+  free((char *)userdata);
 }
 
 /****************************************************************************
@@ -481,7 +484,6 @@ void become_local_master_browser(struct subnet_record *subrec, struct work_recor
 {
   struct server_record *servrec;
   struct userdata_struct *userdata;
-  char ud[sizeof(struct userdata_struct) + sizeof(fstring)+1];
 
   /* Sanity check. */
   if (!lp_local_master())
@@ -516,9 +518,12 @@ in workgroup %s on subnet %s\n",
   /* Tell the namelist writer to write out a change. */
   subrec->work_changed = True;
 
-  /* Setup the userdata_struct - this is copied so we can use
-     a stack variable for this. */
-  userdata = (struct userdata_struct *)ud;
+  /* Setup the userdata_struct. */
+  if((userdata = (struct userdata_struct *)malloc(sizeof(struct userdata_struct) + sizeof(fstring)+1)) == NULL)
+  {
+    DEBUG(0,("become_local_master_browser: malloc fail.\n"));
+    return;
+  }
 
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
@@ -530,6 +535,8 @@ in workgroup %s on subnet %s\n",
                 become_local_master_stage1,
                 become_local_master_fail1,
                 userdata);
+
+  free((char *)userdata);
 }
 
 /***************************************************************

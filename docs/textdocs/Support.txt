@@ -37,7 +37,7 @@ Region                             Number of entries
     AMERICA - USA                                36
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
-    CANADA                                        9
+    CANADA                                        8
     EUROPE                                       36
     MIDDLE EAST                                   1
 
@@ -1096,17 +1096,6 @@ FAX:  (905) 332-5535
 Information Systems Sales and Consulting.
 Specializing in Turnkey Windows NT Network environments with emphasis on
 Legacy UNIX System integration using Samba.
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
-ONTARIO - CANADA
-
- Bilyana Aleksic          |Email: baleksic@atitech.ca  |
-                          |                            |
-ATI Technologies Inc.     |Phone: 905-882-2600 x3179   |
-75 Tiverton Court         |Fax  : 905-475-3930         | 
-Unionville, Ontario       |                            |
-Canada, L3R 9S3           |                            |
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
