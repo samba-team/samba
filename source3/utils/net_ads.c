@@ -68,7 +68,7 @@ static int net_ads_lookup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 
-	ads = ads_init(NULL, NULL, opt_host);
+	ads = ads_init(NULL, opt_target_workgroup, opt_host);
 	if (ads) {
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
@@ -89,7 +89,7 @@ static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 
-	ads = ads_init(NULL, NULL, opt_host);
+	ads = ads_init(NULL, opt_target_workgroup, opt_host);
 
 	if (ads) {
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
@@ -129,7 +129,7 @@ static ADS_STRUCT *ads_startup(void)
 	BOOL second_time = False;
        char *cp;
 	
-	ads = ads_init(NULL, NULL, opt_host);
+	ads = ads_init(NULL, opt_target_workgroup, opt_host);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
