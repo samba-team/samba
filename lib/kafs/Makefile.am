@@ -40,6 +40,7 @@ endif # AIX
 
 
 lib_LTLIBRARIES = $(AFSLIBS)
+libkafs_la_LDFLAGS = -version-info 0:0:0
 foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
 # EXTRA_DATA = afslib.so

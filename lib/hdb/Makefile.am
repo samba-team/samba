@@ -20,6 +20,7 @@ LDADD = libhdb.la \
 	$(DBLIB)
 
 lib_LTLIBRARIES = libhdb.la
+libhdb_la_LDFLAGS = -version-info 1:0:0
 
 libhdb_la_SOURCES = hdb.c common.c db.c ndbm.c $(BUILT_SOURCES)
 
