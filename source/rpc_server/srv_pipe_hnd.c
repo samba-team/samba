@@ -497,13 +497,13 @@ authentication failed. Denying the request.\n", p->name));
     }
 
 	/*
-	 * Check the data length doesn't go over the 10Mb limit.
+	 * Check the data length doesn't go over the 15Mb limit.
 	 * increased after observing a bug in the Windows NT 4.0 SP6a
 	 * spoolsv.exe when the response to a GETPRINTERDRIVER2 RPC
 	 * will not fit in the initial buffer of size 0x1068   --jerry 22/01/2002
 	 */
 	
-	if(prs_data_size(&p->in_data.data) + data_len > 15*1024*1024) {
+	if(prs_offset(&p->in_data.data) + data_len > 15*1024*1024) {
 		DEBUG(0,("process_request_pdu: rpc data buffer too large (%u) + (%u)\n",
 				(unsigned int)prs_data_size(&p->in_data.data), (unsigned int)data_len ));
 		set_incoming_fault(p);
