@@ -32,12 +32,12 @@ static char *sockops="";
 
 static struct timeval tp1,tp2;
 
-static void start_timer()
+static void start_timer(void)
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer()
+static double end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
@@ -191,7 +191,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 
 static void usage(void)
 {
-	printf("Usage: smbtorture \\\\server\\share <options>\n");
+	printf("Usage: smbtorture //server/share <options>\n");
 
 	printf("\t-U user%%pass\n");
 	printf("\t-N numprocs\n");
@@ -841,12 +841,16 @@ static void create_procs(int nprocs, int numops)
 		usage();
 	}
 
-	if (strncmp(argv[1], "\\\\", 2)) {
+        for(p = argv[1]; *p; p++)
+          if(*p == '\\')
+            *p = '/';
+ 
+	if (strncmp(argv[1], "//", 2)) {
 		usage();
 	}
 
 	fstrcpy(host, &argv[1][2]);
-	p = strchr(&host[2],'\\');
+	p = strchr(&host[2],'/');
 	if (!p) {
 		usage();
 	}
