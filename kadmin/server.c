@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,98 +40,8 @@
 
 RCSID("$Id$");
 
-kadm5_ret_t
-kadm5_server_send_sp(krb5_context context, krb5_auth_context ac, 
-		     krb5_storage *sp, int fd)
-{
-    unsigned char buf[1024];
-    size_t len;
-    krb5_data in;
-
-    len = sp->seek(sp, 0, SEEK_CUR);
-    sp->seek(sp, 0, SEEK_SET);
-    if(len > sizeof(buf))
-	return ENOMEM;
-    sp->fetch(sp, buf, len);
-    in.data = buf;
-    in.length = len;
-    return kadm5_server_send(context, ac, &in, fd);
-}
-
-kadm5_ret_t
-kadm5_server_send(krb5_context context, krb5_auth_context ac, 
-		  krb5_data *data, int fd)
-{
-    unsigned char buf[4];
-    kadm5_ret_t ret;
-    krb5_data out;
-
-    ret = krb5_mk_priv(context, ac, data, &out, NULL);
-    if(ret)
-	return ret;
-    buf[0] = (out.length >> 24) & 0xff;
-    buf[1] = (out.length >> 16) & 0xff;
-    buf[2] = (out.length >> 8) & 0xff;
-    buf[3] = out.length & 0xff;
-    krb5_net_write(context, &fd, buf, 4);
-    krb5_net_write(context, &fd, out.data, out.length);
-    krb5_data_free(&out);
-    return 0;
-}
-
-kadm5_ret_t
-kadm5_server_recv(krb5_context context, krb5_auth_context ac, 
-		  krb5_data *out, int fd)
-{
-    unsigned char buf[1024];
-    size_t len;
-    krb5_data in;
-    kadm5_ret_t ret;
-
-    ret = krb5_net_read(context, &fd, buf, 4);
-    if(ret == 0)
-	exit(1);
-    if(ret < 0)
-	krb5_err(context, 1, errno, "krb5_net_read");
-    if(ret != 4)
-	krb5_errx(context, 1, "krb5_net_read(4) = %d", ret);
-    len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-    if(len > sizeof(buf))
-	return ENOMEM;
-    ret = krb5_net_read(context, &fd, buf, len);
-    if(ret < 0)
-	krb5_err(context, 1, errno, "krb5_net_read");
-    if(ret != len)
-	krb5_errx(context, 1, "krb5_net_read(%d) = %d", len, ret);
-	
-    in.data = buf;
-    in.length = len;
-    ret = krb5_rd_priv(context, ac, &in, out, NULL);
-    if(ret)
-	return ret;
-    else
-	return 0;
-}
-
-kadm5_ret_t
-kadm5_server_recv_sp(krb5_context context, krb5_auth_context ac, 
-		     krb5_storage *sp, int fd)
-{
-    kadm5_ret_t ret;
-    krb5_data data;
-
-    ret = kadm5_server_recv (context, ac, &data, fd);
-    if (ret)
-	return ret;
-
-    sp->store(sp, data.data, data.length);
-    sp->seek(sp, 0, SEEK_SET);
-    krb5_data_free(&data);
-    return 0;
-}
-
-kadm5_ret_t
-kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
+static kadm5_ret_t
+kadmind_dispatch(void *kadm_handle, krb5_data *in, krb5_data *out)
 {
     kadm5_ret_t ret;
     int32_t cmd, mask, tmp;
@@ -145,10 +55,13 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
     int n_keys;
     char **princs;
     int n_princs;
+    krb5_storage *sp;
     
     krb5_unparse_name_fixed(context->context, context->caller, 
 			    client, sizeof(client));
     
+    sp = krb5_storage_from_data(in);
+
     krb5_ret_int32(sp, &cmd);
     switch(cmd){
     case kadm_get:{
@@ -169,7 +82,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	    goto fail;
 	}
 	ret = kadm5_get_principal(kadm_handle, princ, &ent, mask);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	if(ret == 0){
 	    kadm5_store_principal_ent(sp, &ent);
@@ -192,7 +106,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	}
 	ret = kadm5_delete_principal(kadm_handle, princ);
 	krb5_free_principal(context->context, princ);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	break;
     }
@@ -226,7 +141,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	kadm5_free_principal_ent(kadm_handle, &ent);
 	memset(password, 0, strlen(password));
 	free(password);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	break;
     }
@@ -250,7 +166,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	}
 	ret = kadm5_modify_principal(kadm_handle, &ent, mask);
 	kadm5_free_principal_ent(kadm_handle, &ent);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	break;
     }
@@ -269,7 +186,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	krb5_warnx(context->context, "%s: %s %s -> %s", 
 		   client, op, name, name2);
 	ret = _kadm5_acl_check_permission(context, 
-					 KADM5_PRIV_ADD|KADM5_PRIV_DELETE);
+					  KADM5_PRIV_ADD|KADM5_PRIV_DELETE);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -277,7 +194,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	ret = kadm5_rename_principal(kadm_handle, princ, princ2);
 	krb5_free_principal(context->context, princ);
 	krb5_free_principal(context->context, princ2);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	break;
     }
@@ -310,7 +228,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	krb5_free_principal(context->context, princ);
 	memset(password, 0, strlen(password));
 	free(password);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	break;
     }
@@ -337,7 +256,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	ret = kadm5_randkey_principal(kadm_handle, princ, 
 				      &new_keys, &n_keys);
 	krb5_free_principal(context->context, princ);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	if(ret == 0){
 	    int i;
@@ -351,7 +271,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
     }
     case kadm_get_privs:{
 	ret = kadm5_get_privs(kadm_handle, &mask);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	if(ret == 0)
 	    krb5_store_int32(sp, mask);
@@ -376,7 +297,8 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	}
 	ret = kadm5_get_principals(kadm_handle, exp, &princs, &n_princs);
 	free(exp);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	if(ret == 0){
 	    int i;
@@ -389,14 +311,91 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
     }
     default:
 	krb5_warnx(context->context, "%s: UNKNOWN OP %d", client, cmd);
-	sp->seek(sp, 0, SEEK_SET);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
 	krb5_store_int32(sp, KADM5_FAILURE);
 	break;
     }
+    krb5_storage_to_data(sp, out);
+    krb5_storage_free(sp);
     return 0;
 fail:
-    krb5_warnx(context->context, "%s", op);
+    krb5_warn(context->context, ret, "%s", op);
     sp->seek(sp, 0, SEEK_SET);
     krb5_store_int32(sp, ret);
+    krb5_storage_to_data(sp, out);
+    krb5_storage_free(sp);
     return 0;
+}
+
+krb5_error_code
+kadmind_loop(krb5_context context,
+	     krb5_auth_context ac,
+	     const char *client,
+	     int fd)
+{
+    krb5_error_code ret;
+    void *kadm_handle;
+    ret = kadm5_init_with_password_ctx(context, 
+				       client, 
+				       "password", 
+				       "service",
+				       NULL, 0, 0, 
+				       &kadm_handle);
+    if(ret) {
+	abort();
+    }
+	
+    while(1){
+	krb5_data in, out, msg, reply;
+	unsigned char tmp[4];
+	unsigned long len;
+	ssize_t n;
+	struct iovec iov[2];
+	krb5_boolean krb4_packet = 0;
+	
+	n = krb5_net_read(context, &fd, tmp, 4);
+	if(n == 0)
+	    exit(0);
+	if(n < 0)
+	    krb5_errx(context, 1, "read error: %d", errno);
+	if(n < 4)
+	    krb5_errx(context, 1, "short read (%ld)", (long int)n);
+	k_get_int(tmp, &len, 4);
+	if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
+	    len = len << 16;
+	    krb4_packet = 1;
+	    krb5_errx(context, 1, "packet appears to be version 4");
+	}
+	in.length = len;
+	in.data = malloc(in.length);
+	n = krb5_net_read(context, &fd, in.data, in.length);
+	if(n < 0)
+	    krb5_errx(context, 1, "read error: %d", errno);
+	if(n < in.length)
+	    krb5_errx(context, 1, "short read (%ld)", (long int)n);
+	if(!krb4_packet) {
+	    ret = krb5_rd_priv(context, ac, &in, &out, NULL);
+	    krb5_data_free(&in);
+	    kadmind_dispatch(kadm_handle, &out, &msg);
+	    krb5_data_free(&out);
+	}
+	ret = krb5_mk_priv(context, ac, &msg, &reply, NULL);
+	krb5_data_free(&msg);
+	if(ret) 
+	    krb5_err(context, 1, ret, "krb5_mk_priv");
+
+	k_put_int(tmp, reply.length, 4);
+
+	iov[0].iov_base = tmp;
+	iov[0].iov_len = 4;
+	iov[1].iov_base = reply.data;
+	iov[1].iov_len = reply.length;
+	n = writev(fd, iov, 2);
+	krb5_data_free(&reply);
+	if(n < 0)
+	    krb5_err(context, 1, errno, "writev");
+	if(n < iov[0].iov_len + iov[1].iov_len)
+	    krb5_errx(context, 1, "short write");
+    }
 }
