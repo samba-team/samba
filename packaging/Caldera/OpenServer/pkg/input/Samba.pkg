@@ -280,18 +280,53 @@ group = sys
 flags = 
 exportPath = /usr/lib/samba/sbin/smbfilter
 
-DIR:Samba:SHARED:usr/lib/samba/lib:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-
 FILE:Samba:SHARED:etc/samba.d/smb.conf.default:
 mode  = 0644
 owner = root
 group = sys
 flags = 
 exportPath = /etc/samba.d/smb.conf.default
+
+FILE:Samba:SHARED:etc/samba.d/example.block.smb.conf:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /etc/samba.d/example.block.smb.conf
+
+DIR:Samba:SHARED:usr/lib/samba/lib:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:Samba:SHARED:usr/lib/samba/lib/audit.so:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/lib/audit.so
+
+FILE:Samba:SHARED:usr/lib/samba/lib/block.so:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/lib/block.so
+
+FILE:Samba:SHARED:usr/lib/samba/lib/recycle.so:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/lib/recycle.so
+
+FILE:Samba:SHARED:usr/lib/samba/lib/skel.so:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/lib/skel.so
 
 DIR:Samba:SHARED:usr/lib/samba/lib/codepages:
 mode  = 0755
