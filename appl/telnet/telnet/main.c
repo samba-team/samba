@@ -103,7 +103,11 @@ static void
 krb5_init(void)
 {
     krb5_context context;
-    krb5_init_context(&context);
+    krb5_error_code ret;
+
+    ret = krb5_init_context(&context);
+    if (ret)
+	return;
 
 #if defined(AUTHENTICATION) && defined(KRB5) && defined(FORWARD)
     if (krb5_config_get_bool (context, NULL,
