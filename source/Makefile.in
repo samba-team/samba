@@ -594,7 +594,7 @@ bin/.dummy:
 
 bin/libmsrpc.so: $(LIBMSRPCPICOBJS)
 	@echo Linking libmsrpc shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBMSRPCPICOBJS) $(LIBS)
+	@$(LD) @LDSHFLAGS@ -o $@ $(LIBMSRPCPICOBJS) $(LDFLAGS) $(LIBS)
 
 bin/libmsrpc.32.so: $(LIBMSRPCPICOBJS32)
 	@echo Linking libmsrpc shared library $@
@@ -602,7 +602,7 @@ bin/libmsrpc.32.so: $(LIBMSRPCPICOBJS32)
 
 bin/libnmb.so: $(LIBNMBPICOBJS)
 	@echo Linking libnmb shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBNMBPICOBJS) $(LIBS)
+	@$(LD) @LDSHFLAGS@ -o $@ $(LIBNMBPICOBJS) $(LDFLAGS) $(LIBS)
 
 bin/libnmb.32.so: $(LIBNMBPICOBJS32)
 	@echo Linking libnmb shared library $@
@@ -610,7 +610,7 @@ bin/libnmb.32.so: $(LIBNMBPICOBJS32)
 
 bin/libsmb.so: $(LIBSMBPICOBJS)
 	@echo Linking libsmb shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSMBPICOBJS) $(LIBS)
+	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSMBPICOBJS) $(LDFLAGS) $(LIBS)
 
 bin/libsmb.32.so: $(LIBSMBPICOBJS32)
 	@echo Linking libsmb shared library $@
@@ -618,7 +618,7 @@ bin/libsmb.32.so: $(LIBSMBPICOBJS32)
 
 bin/libsamba.so: $(LIBSAMBAPICOBJS)
 	@echo Linking libsamba shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSAMBAPICOBJS) $(LIBS)
+	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSAMBAPICOBJS) $(LDFLAGS) $(LIBS)
 
 bin/libsamba.32.so: $(LIBSAMBAPICOBJS32)
 	@echo Linking libsamba shared library $@
