@@ -98,8 +98,8 @@ static BOOL map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (value->type != REG_SZ)
 		return False;
 
-	if (value->size && *((smb_ucs2_t *) value->data_p)) {
-		pull_ucs2_talloc(ctx, &str_value, (const smb_ucs2_t *) value->data_p);
+	if (value->size && SVAL(value->data_p, 0)) {
+		pull_ucs2_talloc(ctx, &str_value, value->data_p);
 		status = ads_mod_str(ctx, mods, value->valuename, str_value);
 		return ADS_ERR_OK(status);
 	}
@@ -147,29 +147,28 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			 const REGISTRY_VALUE *value)
 {
 	char **str_values = NULL;
-	smb_ucs2_t *cur_str = (smb_ucs2_t *) value->data_p;
+	char *cur_str = value->data_p;
         uint32_t size = 0, num_vals = 0, i=0;
 	ADS_STATUS status;
 
 	if (value->type != REG_MULTI_SZ)
 		return False;
 
-	while(cur_str && *cur_str && (size < value->size)) {		
-		size += 2 * (strlen_w(cur_str) + 1);
-		cur_str += strlen_w(cur_str) + 1;
+	while (cur_str && *cur_str && (size < value->size)) {		
+		size_t this_size = utf16_len(cur_str);
+		cur_str += this_size;
+		size += this_size;
 		num_vals++;
 	};
 
 	if (num_vals) {
-		str_values = talloc(ctx, 
-				    (num_vals + 1) * sizeof(smb_ucs2_t *));
-		memset(str_values, '\0', 
-		       (num_vals + 1) * sizeof(smb_ucs2_t *));
-
-		cur_str = (smb_ucs2_t *) value->data_p;
-		for (i=0; i < num_vals; i++)
-			cur_str += pull_ucs2_talloc(ctx, &str_values[i],
-			                            cur_str);
+		str_values = talloc_array_p(ctx, char *, num_vals + 1);
+		cur_str = value->data_p;
+		for (i=0; i < num_vals; i++) {
+			pull_ucs2_talloc(ctx, &str_values[i], cur_str);
+			cur_str += utf16_len(cur_str);
+		}
+		str_values[i] = NULL;
 
 		status = ads_mod_strlist(ctx, mods, value->valuename, 
 					 (const char **) str_values);

@@ -454,13 +454,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 		}
 	}
 
-	src_len2 = strnlen_w((const smb_ucs2_t *)src, src_len/2) * 2;
-
-	if (src_len2 <= src_len - 2) {
-		/* include the termination if we didn't reach the end of the packet */
-		src_len2 += 2;
-	}
-
+	src_len2 = utf16_len_n(src, src_len);
 	ret = convert_string_talloc(req, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {

@@ -22,7 +22,6 @@
 #define _SAFE_STRING_H
 
 #ifndef _SPLINT_ /* http://www.splint.org */
-
 /* Some macros to ensure people don't use buffer overflow vulnerable string
    functions. */
 
@@ -48,39 +47,10 @@
 
 #endif /* !_SPLINT_ */
 
-char * __unsafe_string_function_usage_here__(void);
-
-#if 0 && defined __GNUC__ && __GNUC__ >= 2 && defined __OPTIMIZE__
-
-#define pstrcpy(d,s) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcpy((d), (s),sizeof(pstring)-1))
-#define pstrcat(d,s) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcat((d), (s),sizeof(pstring)-1))
-#define fstrcpy(d,s) ((sizeof(d) != sizeof(fstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcpy((d),(s),sizeof(fstring)-1))
-#define fstrcat(d,s) ((sizeof(d) != sizeof(fstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcat((d),(s),sizeof(fstring)-1))
-
-#define fstrterminate(d) ((sizeof(d) != sizeof(fstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : (((d)[sizeof(fstring)-1]) = '\0'))
-#define pstrterminate(d) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : (((d)[sizeof(pstring)-1]) = '\0'))
-
-#define wpstrcpy(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcpy_w((d),(s),sizeof(wpstring)))
-#define wpstrcat(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcat_w((d),(s),sizeof(wpstring)))
-#define wfstrcpy(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcpy_w((d),(s),sizeof(wfstring)))
-#define wfstrcat(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcat_w((d),(s),sizeof(wfstring)))
-
-#else
-
 #define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
 #define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
 #define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
-
-#define fstrterminate(d) (((d)[sizeof(fstring)-1]) = '\0')
-#define pstrterminate(d) (((d)[sizeof(pstring)-1]) = '\0')
-
-#define wpstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wpstring))
-#define wpstrcat(d,s) safe_strcat_w((d),(s),sizeof(wpstring))
-#define wfstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wfstring))
-#define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
-
-#endif
 
 /* replace some string functions with multi-byte
    versions */

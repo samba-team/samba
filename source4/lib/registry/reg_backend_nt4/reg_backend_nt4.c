@@ -1029,7 +1029,7 @@ static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk
 	uint_t nk_id;
 	SK_HDR *sk_hdr;
 	int type;
-	char key_name[1024], cls_name[1024];
+	char key_name[1024];
 
 	if (!nk_hdr) return WERR_INVALID_PARAM;
 
@@ -1086,16 +1086,16 @@ static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk
 	 */
 
 	if (clsname_len) { /* Just print in Ascii for now */
-		smb_ucs2_t *clsnamep;
+		void *clsnamep;
 		int clsnam_off;
 
 		clsnam_off = IVAL(&nk_hdr->clsnam_off,0);
-		clsnamep = (smb_ucs2_t *)LOCN(regf->base, clsnam_off);
+		clsnamep = LOCN(regf->base, clsnam_off);
 		DEBUG(2, ("Class Name Offset: %0X\n", clsnam_off));
 
 		pull_ucs2_talloc(mem_ctx, &tmp->class_name, clsnamep);
 
-		DEBUGADD(2,("  Class Name: %s\n", cls_name));
+		DEBUGADD(2,("  Class Name: %s\n", tmp->class_name));
 
 	}
 

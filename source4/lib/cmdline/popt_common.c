@@ -391,8 +391,8 @@ static void popt_common_credentials_callback(poptContext con,
 				d_printf("ERROR: Unable to fetch machine password\n");
 				exit(1);
 			}
-			pstr_sprintf(cmdline_auth_info.username, "%s$", 
-				     lp_netbios_name());
+			snprintf(cmdline_auth_info.username, sizeof(cmdline_auth_info.username), 
+				 "%s$", lp_netbios_name());
 			pstrcpy(cmdline_auth_info.password,opt_password);
 			SAFE_FREE(opt_password);
 
@@ -451,17 +451,21 @@ const char *cmdline_get_userdomain(void)
 
 const char *cmdline_get_userpassword(void)
 {
-	pstring prompt;
+	char *prompt;
+	char *ret;
 
 	if (cmdline_auth_info.got_pass) {
 		return cmdline_auth_info.password;
 	}
 
-	pstr_sprintf(prompt, "Password for [%s\\%s]:", 
-			cmdline_get_userdomain(),
-			cmdline_get_username());
+	prompt = talloc_asprintf(NULL, "Password for [%s\\%s]:", 
+				 cmdline_get_userdomain(),
+				 cmdline_get_username());
 
-	return getpass(prompt);
+	ret = getpass(prompt);
+
+	talloc_free(prompt);
+	return ret;
 }
 
 void cmdline_set_userpassword(const char *pass)

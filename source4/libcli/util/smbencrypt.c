@@ -61,17 +61,15 @@ BOOL SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 void E_md4hash(const char *passwd, uint8_t p16[16])
 {
 	int len;
-	smb_ucs2_t *wpwd;
-	
-	TALLOC_CTX *mem_ctx = talloc_init("E_md4hash");
-	SMB_ASSERT(mem_ctx);
+	void *wpwd;
 
-	len = push_ucs2_talloc(mem_ctx, &wpwd, passwd);
+	len = push_ucs2_talloc(NULL, &wpwd, passwd);
 	SMB_ASSERT(len >= 2);
 	
 	len -= 2;
-	mdfour(p16, (uint8_t *)wpwd, len);
-	talloc_free(mem_ctx);
+	mdfour(p16, wpwd, len);
+
+	talloc_free(wpwd);
 }
 
 /**
@@ -109,9 +107,8 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 		  BOOL upper_case_domain, /* Transform the domain into UPPER case */
 		  uint8_t kr_buf[16])
 {
-	smb_ucs2_t *user;
-	smb_ucs2_t *domain;
-	
+	void *user;
+	void *domain;	
 	size_t user_byte_len;
 	size_t domain_byte_len;
 
@@ -119,6 +116,20 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
 	if (!mem_ctx) {
 		return False;
+	}
+
+	user_in = strupper_talloc(mem_ctx, user_in);
+	if (user_in == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	if (upper_case_domain) {
+		domain_in = strupper_talloc(mem_ctx, domain_in);
+		if (domain_in == NULL) {
+			talloc_free(mem_ctx);
+			return False;
+		}
 	}
 
 	user_byte_len = push_ucs2_talloc(mem_ctx, &user, user_in);
@@ -135,11 +146,6 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 		return False;
 	}
 
-	strupper_w(user);
-
-	if (upper_case_domain)
-		strupper_w(domain);
-
 	SMB_ASSERT(user_byte_len >= 2);
 	SMB_ASSERT(domain_byte_len >= 2);
 
@@ -148,14 +154,14 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 	domain_byte_len = domain_byte_len - 2;
 	
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
-	hmac_md5_update((const uint8_t *)user, user_byte_len, &ctx);
-	hmac_md5_update((const uint8_t *)domain, domain_byte_len, &ctx);
+	hmac_md5_update(user, user_byte_len, &ctx);
+	hmac_md5_update(domain, domain_byte_len, &ctx);
 	hmac_md5_final(kr_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
-	dump_data(100, (const char *)user, user_byte_len);
-	dump_data(100, (const char *)domain, domain_byte_len);
+	dump_data(100, user, user_byte_len);
+	dump_data(100, domain, domain_byte_len);
 	dump_data(100, owf, 16);
 	dump_data(100, kr_buf, 16);
 #endif
