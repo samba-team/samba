@@ -164,7 +164,7 @@ NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
 
 
 /*************************************************************
- Alloc memory and initialises a struct sam_passwd.
+ Allocates memory and initialises a struct sam_passwd.
  ************************************************************/
 
 NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
