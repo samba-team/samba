@@ -563,7 +563,7 @@ static struct enum_list enum_printing[] = {
 	{PRINT_LPROS2, "os2"},
 #ifdef DEVELOPER
 	{PRINT_TEST, "test"},
-	{PRINT_TEST, "vlp"},
+	{PRINT_VLP, "vlp"},
 #endif /* DEVELOPER */
 	{-1, NULL}
 };
