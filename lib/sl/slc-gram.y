@@ -335,7 +335,7 @@ gen_name(char *str)
 {
     char *p;
     for(p = str; *p != '\0'; p++)
-	if(!isalnum(*p))
+	if(!isalnum((unsigned char)*p))
 	    *p = '_';
 }
 
