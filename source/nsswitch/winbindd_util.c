@@ -114,55 +114,54 @@ BOOL get_domain_info(void)
 	uint32 enum_ctx = 0, num_doms = 0;
 	char **domains = NULL;
 	DOM_SID *sids = NULL, domain_sid;
-        NTSTATUS result;
-        CLI_POLICY_HND *hnd;
+	NTSTATUS result;
+	CLI_POLICY_HND *hnd;
 	int i;
-        fstring level5_dom;
-        BOOL rv = False;
-        TALLOC_CTX *mem_ctx;
+	fstring level5_dom;
+	BOOL rv = False;
+	TALLOC_CTX *mem_ctx;
 	
 	DEBUG(1, ("getting trusted domain list\n"));
 
-        if (!(mem_ctx = talloc_init()))
-                return False;
+	if (!(mem_ctx = talloc_init()))
+		return False;
 
 	/* Add our workgroup - keep handle to look up trusted domains */
 
-        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-                goto done;
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
 
-        result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
-                                           &hnd->pol, 0x05, level5_dom,
-                                           &domain_sid);
+	result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
+					&hnd->pol, 0x05, level5_dom, &domain_sid);
 
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	add_trusted_domain(lp_workgroup(), &domain_sid);
 	
 	/* Enumerate list of trusted domains */	
 
-        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-                goto done;
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
 
-        result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-                                        &hnd->pol, &enum_ctx, &num_doms, 
-                                        &domains, &sids);
+	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
+						&hnd->pol, &enum_ctx, &num_doms, &domains, &sids);
 	
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 	
-        /* Add each domain to the trusted domain list */
+	/* Add each domain to the trusted domain list */
 
 	for(i = 0; i < num_doms; i++)
 		add_trusted_domain(domains[i], &sids[i]);
 
-        rv = True;	
+	rv = True;	
 
  done:
-        talloc_destroy(mem_ctx);
 
-        return rv;
+	talloc_destroy(mem_ctx);
+
+	return rv;
 }
 
 /* Free global domain info */

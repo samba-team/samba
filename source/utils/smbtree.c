@@ -182,7 +182,7 @@ static BOOL find_master_ip_bcast(pstring workgroup, struct in_addr *server_ip)
 	for (i = 0; i < count; i++) {
 		static fstring name;
 
-		if (!name_status_find(0x1d, ip_list[i], name))
+		if (!name_status_find("*", 0, 0x1d, ip_list[i], name))
 			continue;
 
                 if (!find_master_ip(name, server_ip))
