@@ -2864,7 +2864,7 @@ static BOOL api_WPrintPortEnum(int cnum,uint16 vuid, char *param,char *data,
 }
 
 
-struct
+static struct
 {
   char * name;
   char * pipe_clnt_name;
@@ -2873,15 +2873,17 @@ struct
 #endif
   int subcommand;
   BOOL (*fn) ();
-} api_fd_commands [] =
-  {
+}
+api_fd_commands [] =
+{
 #ifdef NTDOMAIN
-    { "TransactNmPipe",     "lsarpc",	"lsass",	0x26,	api_ntLsarpcTNP },
-    { "TransactNmPipe",     "samr",	"lsass",	0x26,	api_samrTNP },
-    { "TransactNmPipe",     "srvsvc",	"lsass",	0x26,	api_srvsvcTNP },
-    { "TransactNmPipe",     "wkssvc",	"ntsvcs",	0x26,	api_wkssvcTNP },
-    { "TransactNmPipe",     "NETLOGON",	"lsass",	0x26,	api_netlogrpcTNP },
-    { NULL,		            NULL,       NULL,	-1,	(BOOL (*)())api_Unsupported }
+    { "ntLsarpcTNP" , "lsarpc",   "lsass",   0x26, api_ntLsarpcTNP },
+    { "samrTNP"     , "samr",     "lsass",   0x26, api_samrTNP },
+    { "srvsvcTNP"   , "srvsvc",   "lsass",   0x26, api_srvsvcTNP },
+    { "wkssvcTNP"   , "wkssvc",   "ntsvcs",  0x26, api_wkssvcTNP },
+    { "netlogrpcTNP", "NETLOGON", "lsass",   0x26, api_netlogrpcTNP },
+    { "winregTNP"   , "winreg",   "winreg",  0x26, api_regTNP },
+    { NULL,		      NULL,       NULL,      -1,   (BOOL (*)())api_Unsupported }
 #else
     { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },
     { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }

@@ -51,17 +51,7 @@ extern fstring myworkgroup;
    a packet to ensure chaining works correctly */
 #define GETPNUM(buf,where) (chain_pnum!= -1?chain_pnum:SVAL(buf,where))
 
-char * known_pipes [] =
-{
-  "lsarpc",
-#if NTDOMAIN
-  "NETLOGON",
-  "srvsvc",
-  "wkssvc",
-  "samr",
-#endif
-  NULL
-};
+extern struct pipe_id_info pipe_names[];
 
 /****************************************************************************
   reply to an open and X on a named pipe
@@ -89,16 +79,16 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   DEBUG(4,("Opening pipe %s.\n", fname));
 
-  /* Strip \PIPE\ off the name. */
-  pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
-
   /* See if it is one we want to handle. */
-  for( i = 0; known_pipes[i] ; i++ )
-    if( strcmp(fname,known_pipes[i]) == 0 )
+  for( i = 0; pipe_names[i].client_pipe ; i++ )
+    if( strcmp(fname,pipe_names[i].client_pipe) == 0 )
       break;
 
-  if ( known_pipes[i] == NULL )
+  if ( pipe_names[i].client_pipe == NULL )
     return(ERROR(ERRSRV,ERRaccess));
+
+  /* Strip \PIPE\ off the name. */
+  pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
 
   /* Known pipes arrive with DIR attribs. Remove it so a regular file */
   /* can be opened and add it in after the open. */

@@ -880,6 +880,8 @@ BOOL set_lsa_policy_samr_rid(LSA_POL_HND *hnd, uint32 rid);
 BOOL set_lsa_policy_samr_pol_status(LSA_POL_HND *hnd, uint32 pol_status);
 BOOL set_lsa_policy_samr_sid(LSA_POL_HND *hnd, DOM_SID *sid);
 uint32 get_lsa_policy_samr_rid(LSA_POL_HND *hnd);
+BOOL set_lsa_policy_reg_name(LSA_POL_HND *hnd, fstring name);
+BOOL get_lsa_policy_reg_name(LSA_POL_HND *hnd, fstring name);
 BOOL close_lsa_policy_hnd(LSA_POL_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/lsaparse.c  */
@@ -1027,10 +1029,6 @@ BOOL do_samr_open_secret(struct cli_state *cli, uint16 fnum,
 				LSA_POL_HND *query_pol, uint32 rid,
 				char *sid, LSA_POL_HND *rtn_pol);
 
-/*The following definitions come from  rpc_pipes/ntclientstatus.c  */
-
-BOOL do_nt_status_check(struct in_addr dest_ip, char *dest_host, char *myhostname);
-
 /*The following definitions come from  rpc_pipes/ntclienttrust.c  */
 
 BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
@@ -1057,6 +1055,13 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 /*The following definitions come from  rpc_pipes/pipentlsa.c  */
 
 BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+
+/*The following definitions come from  rpc_pipes/pipereg.c  */
+
+BOOL api_regTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
@@ -1094,6 +1099,34 @@ BOOL api_wkssvcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
 
+/*The following definitions come from  rpc_pipes/regparse.c  */
+
+void make_reg_q_open_policy(REG_Q_OPEN_POLICY *r_q,
+				uint16 unknown_0, uint32 level, uint16 unknown_1);
+char* reg_io_q_open_policy(BOOL io, REG_Q_OPEN_POLICY *r_q, char *q, char *base, int align, int depth);
+void make_reg_r_open_policy(REG_R_OPEN_POLICY *r_r,
+				LSA_POL_HND *pol, uint32 status);
+char* reg_io_r_open_policy(BOOL io, REG_R_OPEN_POLICY *r_r, char *q, char *base, int align, int depth);
+char* reg_io_q_close(BOOL io, REG_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
+char* reg_io_r_close(BOOL io, REG_R_CLOSE *r_u, char *q, char *base, int align, int depth);
+void make_reg_q_info(REG_Q_INFO *r_q,
+				LSA_POL_HND *pol, char *product_type,
+				NTTIME *prod_time, uint8 major_version, uint8 minor_version,
+				uint32 unknown);
+char* reg_io_q_info(BOOL io, REG_Q_INFO *r_q, char *q, char *base, int align, int depth);
+void make_reg_r_info(REG_R_INFO *r_r,
+				uint32 level, char *os_type,
+				uint32 unknown_0, uint32 unknown_1,
+				uint32 status);
+char* reg_io_r_info(BOOL io, REG_R_INFO *r_r, char *q, char *base, int align, int depth);
+void make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q,
+				LSA_POL_HND *pol, char *name,
+				uint32 unknown_0, uint32 unknown_1, uint16 unknown_2);
+char* reg_io_q_open_entry(BOOL io, REG_Q_OPEN_ENTRY *r_q, char *q, char *base, int align, int depth);
+void make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
+				LSA_POL_HND *pol, uint32 status);
+char* reg_io_r_open_entry(BOOL io, REG_R_OPEN_ENTRY *r_r, char *q, char *base, int align, int depth);
+
 /*The following definitions come from  rpc_pipes/samrparse.c  */
 
 char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
@@ -1130,14 +1163,16 @@ char* samr_io_r_open_policy(BOOL io, SAMR_R_OPEN_POLICY *r_u, char *q, char *bas
 
 char* smb_io_utime(BOOL io, UTIME *t, char *q, char *base, int align, int depth);
 char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align, int depth);
-void make_dom_sid(DOM_SID *sid, char *domsid);
+void make_dom_sid(DOM_SID *sid, char *str_sid);
 char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int depth);
-void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate);
+void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer);
 char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int depth);
 void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
 char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align, int depth);
 void make_unistr(UNISTR *str, char *buf);
 char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int depth);
+void make_uninotstr2(UNINOTSTR2 *str, char *buf, int len);
+char* smb_io_uninotstr2(BOOL io, UNINOTSTR2 *uni2, uint32 buffer, char *q, char *base, int align, int depth);
 void make_unistr2(UNISTR2 *str, char *buf, int len);
 char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, uint32 buffer, char *q, char *base, int align, int depth);
 void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);

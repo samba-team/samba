@@ -260,6 +260,7 @@ implemented */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
 #define PIPE_SAMR     "\\PIPE\\samr"
+#define PIPE_WINREG   "\\PIPE\\winreg"
 #define PIPE_WKSSVC   "\\PIPE\\wkssvc"
 #define PIPE_NETLOGON "\\PIPE\\NETLOGON"
 #define PIPE_NTLSA    "\\PIPE\\ntlsa"

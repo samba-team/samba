@@ -54,6 +54,11 @@ enum RPC_PKT_TYPE
 #define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
 
+#define REG_OPEN_POLICY     0x02
+#define REG_OPEN_ENTRY      0x0f
+#define REG_INFO            0x11
+#define REG_CLOSE           0x05
+
 #define SAMR_CLOSE          0x01
 #define SAMR_OPEN_SECRET    0x07
 #define SAMR_LOOKUP_RIDS    0x11
@@ -79,7 +84,7 @@ enum RPC_PKT_TYPE
 
 /* XXXX these are here to get a compile! */
 
-#define LSA_OPENSECRET      0xFF
+#define LSA_OPENSECRET      0x1C
 #define LSA_LOOKUPSIDS      0xFE
 #define LSA_LOOKUPRIDS      0xFD
 #define LSA_LOOKUPNAMES     0xFC
@@ -182,7 +187,19 @@ typedef struct unistr_info
 
 } UNISTR;
 
-/* UNISTR2 - unicode string size and buffer */
+/* UNINOTSTR2 - unicode string, size (in uint8 ascii chars) and buffer */
+/* pathetic.  some stupid team of \PIPE\winreg writers got the concept */
+/* of a unicode string different from the other \PIPE\ writers */
+typedef struct uninotstr2_info
+{
+  uint32 uni_max_len;
+  uint32 undoc;
+  uint32 uni_buf_len;
+  uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. **NOT** necessarily null-terminated */
+
+} UNINOTSTR2;
+
+/* UNISTR2 - unicode string size (in uint16 unicode chars) and buffer */
 typedef struct unistr2_info
 {
   uint32 uni_max_len;
@@ -1238,9 +1255,115 @@ typedef struct q_samr_open_policy_info
 typedef struct r_samr_open_policy_info
 {
     LSA_POL_HND pol;       /* policy handle */
-	uint32 status;             /* return status */
+	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_POLICY;
+
+
+
+/* REG_Q_OPEN_POLICY */
+typedef struct q_reg_open_policy_info
+{
+	uint32 ptr;
+	uint16 unknown_0; /* 0x5da0      - 16 bit unknown */
+	uint32 level;     /* 0x0000 0001 - 32 bit unknown */
+	uint16 unknown_1; /* 0x0200      - 16 bit unknown */
+
+} REG_Q_OPEN_POLICY;
+
+/* REG_R_OPEN_POLICY */
+typedef struct r_reg_open_policy_info
+{
+    LSA_POL_HND pol;       /* policy handle */
+	uint32 status;         /* return status */
+
+} REG_R_OPEN_POLICY;
+
+
+/* REG_Q_CLOSE */
+typedef struct reg_q_close_info
+{
+	LSA_POL_HND pol; /* policy handle */
+
+} REG_Q_CLOSE;
+
+/* REG_R_CLOSE */
+typedef struct reg_r_close_info
+{
+	LSA_POL_HND pol; /* policy handle.  should be all zeros. */
+
+	uint32 status; /* return code */
+
+} REG_R_CLOSE;
+
+
+/* REG_Q_INFO */
+typedef struct q_reg_info_info
+{
+    LSA_POL_HND pol;        /* policy handle */
+
+	UNIHDR  hdr_type;       /* unicode product type header */
+	UNISTR2 uni_type;       /* unicode product type - "ProductType" */
+
+	uint32 ptr1;            /* pointer */
+	NTTIME time;            /* current time? */
+	uint8  major_version1;  /* 0x4 - os major version? */
+	uint8  minor_version1;  /* 0x1 - os minor version? */
+	uint8  pad1[10];        /* padding - zeros */
+
+	uint32 ptr2;            /* pointer */
+	uint8  major_version2;  /* 0x4 - os major version? */
+	uint8  minor_version2;  /* 0x1 - os minor version? */
+	uint8  pad2[2];         /* padding - zeros */
+
+	uint32 ptr3;            /* pointer */
+	uint32 unknown;         /* 0x0000 0000 */
+
+} REG_Q_INFO;
+
+/* REG_R_INFO */
+typedef struct r_reg_info_info
+{ 
+	uint32 ptr1;            /* buffer pointer */
+	uint32 level;          /* 0x1 - info level? */
+
+	uint32     ptr_type;       /* pointer to o/s type */
+	UNINOTSTR2 uni_type;      /* unicode string o/s type - "LanmanNT" */
+
+	uint32 ptr2;           /* pointer to unknown_0 */
+	uint32 unknown_0;      /* 0x12 */
+
+	uint32 ptr3;           /* pointer to unknown_1 */
+	uint32 unknown_1;      /* 0x12 */
+
+	uint32 status;         /* return status */
+
+} REG_R_INFO;
+
+
+/* REG_Q_OPEN_ENTRY */
+typedef struct q_reg_open_entry_info
+{
+    LSA_POL_HND pol;        /* policy handle */
+
+	UNIHDR  hdr_name;       /* unicode registry string header */
+	UNISTR2 uni_name;       /* unicode registry string name */
+
+	uint32 unknown_0;       /* 32 bit unknown - 0x0000 0000 */
+	uint16 unknown_1;       /* 16 bit unknown - 0x0000 */
+	uint16 unknown_2;       /* 16 bit unknown - 0x0200 */
+
+} REG_Q_OPEN_ENTRY;
+
+
+
+/* REG_R_OPEN_ENTRY */
+typedef struct r_reg_open_entry_info
+{
+    LSA_POL_HND pol;       /* policy handle */
+	uint32 status;         /* return status */
+
+} REG_R_OPEN_ENTRY;
 
 
 /* WKS_Q_UNKNOWN_0 - probably a capabilities request */
