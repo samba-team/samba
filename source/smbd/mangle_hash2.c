@@ -76,6 +76,8 @@
 /* these tables are used to provide fast tests for characters */
 static unsigned char char_flags[256];
 
+#define FLAG_CHECK(c, flag) (char_flags[(unsigned char)(c)] & (flag))
+
 /* we will use a very simple direct mapped prefix cache. The big
    advantage of this cache structure is speed and low memory usage 
 
@@ -183,12 +185,41 @@ static const char *cache_lookup(u32 hash)
 */
 static BOOL is_mangled(const char *name)
 {
+	int len, i;
+
+	M_DEBUG(0,("is_mangled %s\n", name));
+
 	/* the best distinguishing characteristic is the ~ */
 	if (name[6] != '~') return False;
 
+	/* check the length */
+	len = strlen(name);
+	if (len > 12 || len < 8) return False;
+
 	/* check extension */
+	if (len > 8) {
+		if (name[8] != '.') return False;
+		for (i=9; name[i]; i++) {
+			if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
+				return False;
+			}
+		}
+	}
+	
 	/* check first character */
+	if (! FLAG_CHECK(name[0], FLAG_ASCII)) {
+		return False;
+	}
+	
 	/* check rest of hash */
+	if (! FLAG_CHECK(name[7], FLAG_BASECHAR)) {
+		return False;
+	}
+	for (i=1;i<6;i++) {
+		if (! FLAG_CHECK(name[i], FLAG_BASECHAR)) {
+			return False;
+		}
+	}
 
 	return True;
 }
@@ -251,7 +282,8 @@ static BOOL is_8_3(const char *name, BOOL check_case)
 
 	/* the length are all OK. Now check to see if the characters themselves are OK */
 	for (i=0; name[i]; i++) {
-		if (!(char_flags[(unsigned)(name[i])] & (FLAG_ASCII|FLAG_WILDCARD))) {
+		/* note that we allow wildcard petterns! */
+		if (!FLAG_CHECK(name[i], FLAG_ASCII|FLAG_WILDCARD)) {
 			return False;
 		}
 	}
@@ -324,10 +356,10 @@ static BOOL check_cache(char *name)
 */
 static BOOL is_reserved_name(const char *name)
 {
-	if ((char_flags[(unsigned char)name[0]] & FLAG_POSSIBLE1) &&
-	    (char_flags[(unsigned char)name[1]] & FLAG_POSSIBLE2) &&
-	    (char_flags[(unsigned char)name[2]] & FLAG_POSSIBLE3) &&
-	    (char_flags[(unsigned char)name[3]] & FLAG_POSSIBLE4)) {
+	if (FLAG_CHECK(name[0], FLAG_POSSIBLE1) &&
+	    FLAG_CHECK(name[1], FLAG_POSSIBLE2) &&
+	    FLAG_CHECK(name[2], FLAG_POSSIBLE3) &&
+	    FLAG_CHECK(name[3], FLAG_POSSIBLE4)) {
 		/* a likely match, scan the lot */
 		int i;
 		for (i=0; reserved_names[i]; i++) {
@@ -349,7 +381,7 @@ static BOOL is_reserved_name(const char *name)
 static BOOL is_legal_name(const char *name)
 {
 	while (*name) {
-		if (char_flags[(unsigned char)*name] & FLAG_ILLEGAL) {
+		if (FLAG_CHECK(name[0], FLAG_ILLEGAL)) {
 			return False;
 		}
 		name++;
@@ -402,7 +434,7 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	   otherwise '_' is used
 	*/
 	lead_char = name[0];
-	if (! (char_flags[(unsigned char)lead_char] & FLAG_ASCII)) {
+	if (! FLAG_CHECK(lead_char, FLAG_ASCII)) {
 		lead_char = '_';
 	}
 	lead_char = toupper(lead_char);
@@ -420,7 +452,7 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	if (dot_p) {
 		for (i=1; extension_length < 3 && dot_p[i]; i++) {
 			char c = dot_p[i];
-			if (char_flags[(unsigned char)c] & FLAG_ASCII) {
+			if (FLAG_CHECK(c, FLAG_ASCII)) {
 				extension[extension_length++] = toupper(c);
 			}
 		}
