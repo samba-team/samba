@@ -452,7 +452,7 @@ handle_v5(krb5_context context,
 	_kadm5_unmarshal_params(context, &params, &realm_params);
     }
 
-    ticket->ticket.flags.initial;
+    ticket->ticket.flags.initial; /* XXX ? */
     ret = krb5_unparse_name(context, ticket->client, &client);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
