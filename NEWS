@@ -1,5 +1,7 @@
 Changes in release 0.4c
 
+ * fix buffer overrun in telnetd
+
  * repair some of the v4 fallback code in kinit
 
  * add more shared library dependencies
