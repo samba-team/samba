@@ -25,9 +25,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SAM
 
-NTSTATUS sam_get_domain_sid(SAM_DOMAIN_HANDLE *domain, DOM_SID **sid)
+NTSTATUS sam_get_domain_sid(SAM_DOMAIN_HANDLE *domain, const DOM_SID **sid)
 {
-	if (!domain || !sid) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&sid);
 
 	*sid = &(domain->private.sid);
 
@@ -36,7 +36,7 @@ NTSTATUS sam_get_domain_sid(SAM_DOMAIN_HANDLE *domain, DOM_SID **sid)
 
 NTSTATUS sam_get_domain_num_accounts(SAM_DOMAIN_HANDLE *domain, uint32 *num_accounts)
 {
-	if (!domain || !num_accounts) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&num_accounts);
 
 	*num_accounts = domain->private.num_accounts;
 
@@ -45,7 +45,7 @@ NTSTATUS sam_get_domain_num_accounts(SAM_DOMAIN_HANDLE *domain, uint32 *num_acco
 
 NTSTATUS sam_get_domain_num_groups(SAM_DOMAIN_HANDLE *domain, uint32 *num_groups)
 {
-	if (!domain || !num_groups) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&num_groups);
 
 	*num_groups = domain->private.num_groups;
 
@@ -54,25 +54,25 @@ NTSTATUS sam_get_domain_num_groups(SAM_DOMAIN_HANDLE *domain, uint32 *num_groups
 
 NTSTATUS sam_get_domain_num_aliases(SAM_DOMAIN_HANDLE *domain, uint32 *num_aliases)
 {
-	if (!domain || !num_aliases) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&num_aliases);
 
 	*num_aliases = domain->private.num_aliases;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_domain_name(SAM_DOMAIN_HANDLE *domain, char **domain_name)
+NTSTATUS sam_get_domain_name(SAM_DOMAIN_HANDLE *domain, const char **domain_name)
 {
-	if (!domain || !domain_name) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&domain_name);
 
 	*domain_name = domain->private.name;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_domain_server(SAM_DOMAIN_HANDLE *domain, char **server_name)
+NTSTATUS sam_get_domain_server(SAM_DOMAIN_HANDLE *domain, const char **server_name)
 {
-	if (!domain || !server_name) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&server_name);
 
 	*server_name = domain->private.servername;
 
@@ -81,7 +81,7 @@ NTSTATUS sam_get_domain_server(SAM_DOMAIN_HANDLE *domain, char **server_name)
 
 NTSTATUS sam_get_domain_max_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME *max_passwordage)
 {
-	if (!domain || !max_passwordage) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&max_passwordage);
 
 	*max_passwordage = domain->private.max_passwordage;
 
@@ -90,7 +90,7 @@ NTSTATUS sam_get_domain_max_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME *max_passwo
 
 NTSTATUS sam_get_domain_min_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME *min_passwordage)
 {
-	if (!domain || !min_passwordage) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&min_passwordage);
 
 	*min_passwordage = domain->private.min_passwordage;
 
@@ -99,7 +99,7 @@ NTSTATUS sam_get_domain_min_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME *min_passwo
 
 NTSTATUS sam_get_domain_lockout_duration(SAM_DOMAIN_HANDLE *domain, NTTIME *lockout_duration)
 {
-	if (!domain || !lockout_duration) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&lockout_duration);
 
 	*lockout_duration = domain->private.lockout_duration;
 
@@ -108,7 +108,7 @@ NTSTATUS sam_get_domain_lockout_duration(SAM_DOMAIN_HANDLE *domain, NTTIME *lock
 
 NTSTATUS sam_get_domain_reset_count(SAM_DOMAIN_HANDLE *domain, NTTIME *reset_lockout_count)
 {
-	if (!domain || !reset_lockout_count) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&reset_lockout_count);
 	
 	*reset_lockout_count = domain->private.reset_count;
 
@@ -117,7 +117,7 @@ NTSTATUS sam_get_domain_reset_count(SAM_DOMAIN_HANDLE *domain, NTTIME *reset_loc
 
 NTSTATUS sam_get_domain_min_pwdlength(SAM_DOMAIN_HANDLE *domain, uint16 *min_passwordlength)
 {
-	if (!domain || !min_passwordlength) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&min_passwordlength);
 
 	*min_passwordlength = domain->private.min_passwordlength;
 
@@ -126,7 +126,7 @@ NTSTATUS sam_get_domain_min_pwdlength(SAM_DOMAIN_HANDLE *domain, uint16 *min_pas
 
 NTSTATUS sam_get_domain_pwd_history(SAM_DOMAIN_HANDLE *domain, uint16 *password_history)
 {
-	if (!domain || !password_history) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&password_history);
 
 	*password_history = domain->private.password_history;
 
@@ -135,7 +135,7 @@ NTSTATUS sam_get_domain_pwd_history(SAM_DOMAIN_HANDLE *domain, uint16 *password_
 
 NTSTATUS sam_get_domain_lockout_count(SAM_DOMAIN_HANDLE *domain, uint16 *lockout_count)
 {
-	if (!domain || !lockout_count) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&lockout_count);
 
 	*lockout_count = domain->private.lockout_count;
 
@@ -144,7 +144,7 @@ NTSTATUS sam_get_domain_lockout_count(SAM_DOMAIN_HANDLE *domain, uint16 *lockout
 
 NTSTATUS sam_get_domain_force_logoff(SAM_DOMAIN_HANDLE *domain, BOOL *force_logoff)
 {
-	if (!domain || !force_logoff) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain &&force_logoff);
 
 	*force_logoff = domain->private.force_logoff;
 
@@ -154,7 +154,7 @@ NTSTATUS sam_get_domain_force_logoff(SAM_DOMAIN_HANDLE *domain, BOOL *force_logo
 
 NTSTATUS sam_get_domain_login_pwdchange(SAM_DOMAIN_HANDLE *domain, BOOL *login_pwdchange)
 {
-	if (!domain || !login_pwdchange) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain && login_pwdchange);
 
 	*login_pwdchange = domain->private.login_pwdchange;
 
@@ -163,9 +163,9 @@ NTSTATUS sam_get_domain_login_pwdchange(SAM_DOMAIN_HANDLE *domain, BOOL *login_p
 
 /* Set */
 
-NTSTATUS sam_set_domain_name(SAM_DOMAIN_HANDLE *domain, char *domain_name)
+NTSTATUS sam_set_domain_name(SAM_DOMAIN_HANDLE *domain, const char *domain_name)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.name = talloc_strdup(domain->mem_ctx, domain_name);
 
@@ -175,7 +175,7 @@ NTSTATUS sam_set_domain_name(SAM_DOMAIN_HANDLE *domain, char *domain_name)
 
 NTSTATUS sam_set_domain_max_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME max_passwordage)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.max_passwordage = max_passwordage;
 
@@ -184,7 +184,7 @@ NTSTATUS sam_set_domain_max_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME max_passwor
 
 NTSTATUS sam_set_domain_min_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME min_passwordage)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.min_passwordage = min_passwordage;
 
@@ -193,7 +193,7 @@ NTSTATUS sam_set_domain_min_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME min_passwor
 
 NTSTATUS sam_set_domain_lockout_duration(SAM_DOMAIN_HANDLE *domain, NTTIME lockout_duration)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.lockout_duration = lockout_duration;
 
@@ -201,7 +201,7 @@ NTSTATUS sam_set_domain_lockout_duration(SAM_DOMAIN_HANDLE *domain, NTTIME locko
 }
 NTSTATUS sam_set_domain_reset_count(SAM_DOMAIN_HANDLE *domain, NTTIME reset_lockout_count)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.reset_count = reset_lockout_count;
 
@@ -210,7 +210,7 @@ NTSTATUS sam_set_domain_reset_count(SAM_DOMAIN_HANDLE *domain, NTTIME reset_lock
 
 NTSTATUS sam_set_domain_min_pwdlength(SAM_DOMAIN_HANDLE *domain, uint16 min_passwordlength)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.min_passwordlength = min_passwordlength;
 
@@ -219,7 +219,7 @@ NTSTATUS sam_set_domain_min_pwdlength(SAM_DOMAIN_HANDLE *domain, uint16 min_pass
 
 NTSTATUS sam_set_domain_pwd_history(SAM_DOMAIN_HANDLE *domain, uint16 password_history)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.password_history = password_history;
 
@@ -228,7 +228,7 @@ NTSTATUS sam_set_domain_pwd_history(SAM_DOMAIN_HANDLE *domain, uint16 password_h
 
 NTSTATUS sam_set_domain_lockout_count(SAM_DOMAIN_HANDLE *domain, uint16 lockout_count)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.lockout_count = lockout_count;
 
@@ -237,7 +237,7 @@ NTSTATUS sam_set_domain_lockout_count(SAM_DOMAIN_HANDLE *domain, uint16 lockout_
 
 NTSTATUS sam_set_domain_force_logoff(SAM_DOMAIN_HANDLE *domain, BOOL force_logoff)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.force_logoff = force_logoff;
 
@@ -246,16 +246,16 @@ NTSTATUS sam_set_domain_force_logoff(SAM_DOMAIN_HANDLE *domain, BOOL force_logof
 
 NTSTATUS sam_set_domain_login_pwdchange(SAM_DOMAIN_HANDLE *domain, BOOL login_pwdchange)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.login_pwdchange = login_pwdchange;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_domain_server(SAM_DOMAIN_HANDLE *domain, char *server_name)
+NTSTATUS sam_set_domain_server(SAM_DOMAIN_HANDLE *domain, const char *server_name)
 {
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(domain);
 
 	domain->private.servername = talloc_strdup(domain->mem_ctx, server_name);
 

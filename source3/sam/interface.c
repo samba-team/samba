@@ -48,11 +48,8 @@ NTSTATUS sam_get_methods_by_sid(const SAM_CONTEXT *context, SAM_METHODS **sam_me
 
 	DEBUG(5,("sam_get_methods_by_sid: %d\n", __LINE__));
 
-	if ((!context) || (!context->methods))
-	{
-		DEBUG(2,("sam_get_methods_by_sid: invalid sam_context specified!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	/* invalid sam_context specified */
+	SAM_ASSERT(context && context->methods)
 
 	tmp_methods = context->methods;
 
@@ -77,11 +74,8 @@ NTSTATUS sam_get_methods_by_name(const SAM_CONTEXT *context, SAM_METHODS **sam_m
 
 	DEBUG(5,("sam_get_methods_by_name: %d\n", __LINE__));
 
-	if ((!context) || (!context->methods))
-	{
-		DEBUG(2,("sam_get_methods_by_sid: invalid sam_context specified!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	/* invalid sam_context specified */
+	SAM_ASSERT(context && context->methods)
 
 	tmp_methods = context->methods;
 
@@ -229,10 +223,8 @@ NTSTATUS context_sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKE
 
 	DEBUG(5,("context_sam_enum_domains: %d\n", __LINE__));
 
-	if ((!context)|| (!context->methods)) {
-		DEBUG(2,("context_sam_enum_domains: invalid sam_context specified!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	/* invalid sam_context specified */
+	SAM_ASSERT(context && context->methods)
 
 	if (!NT_STATUS_IS_OK(nt_status = samr_make_sam_obj_sd(context->mem_ctx, &sd, &sd_size))) {
 		DEBUG(4,("samr_make_sam_obj_sd failed\n"));
@@ -298,10 +290,8 @@ NTSTATUS context_sam_lookup_domain(const SAM_CONTEXT *context, const NT_USER_TOK
 
 	DEBUG(5,("context_sam_lookup_domain: %d\n", __LINE__));
 
-	if ((!context)|| (!context->methods)) {
-		DEBUG(2,("context_sam_lookup_domain: invalid sam_context specified!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	/* invalid sam_context specified */
+	SAM_ASSERT(context && context->methods)
 
 	if (!NT_STATUS_IS_OK(nt_status = samr_make_sam_obj_sd(context->mem_ctx, &sd, &sd_size))) {
 		DEBUG(4,("samr_make_sam_obj_sd failed\n"));
@@ -354,7 +344,7 @@ NTSTATUS context_sam_get_domain_by_sid(const SAM_CONTEXT *context, const NT_USER
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, DOM_SID *domainsid, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -371,7 +361,7 @@ NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TO
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_account(tmp_methods, access_token, access_desired, account))) {
+	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_account(tmp_methods, access_token, access_desired, account_name, acct_ctrl, account))) {
 		DEBUG(4,("context_sam_create_account in backend %s failed\n",
 				 tmp_methods->backendname));
 		return nt_status;
@@ -383,7 +373,7 @@ NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TO
 NTSTATUS context_sam_add_account(const SAM_CONTEXT *context, const SAM_ACCOUNT_HANDLE *account)
 {
 	DOM_SID		domainsid;
-	DOM_SID		*accountsid;
+	const DOM_SID		*accountsid;
 	SAM_METHODS	*tmp_methods;
 	uint32		rid;
 	NTSTATUS	nt_status;
@@ -422,7 +412,7 @@ NTSTATUS context_sam_update_account(const SAM_CONTEXT *context, const SAM_ACCOUN
 {
 	DOM_SID		domainsid;
 	SAM_METHODS	*tmp_methods;
-	DOM_SID		*accountsid;
+	const DOM_SID		*accountsid;
 	uint32		rid;
 	NTSTATUS	nt_status;
 
@@ -460,7 +450,7 @@ NTSTATUS context_sam_delete_account(const SAM_CONTEXT *context, const SAM_ACCOUN
 {
 	DOM_SID		domainsid;
 	SAM_METHODS	*tmp_methods;
-	DOM_SID		*accountsid;
+	const DOM_SID	*accountsid;
 	uint32		rid;
 	NTSTATUS	nt_status;
 
@@ -494,7 +484,7 @@ NTSTATUS context_sam_delete_account(const SAM_CONTEXT *context, const SAM_ACCOUN
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_enum_accounts(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, int32 *account_count, SAM_ACCOUNT_ENUM **accounts)
+NTSTATUS context_sam_enum_accounts(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, uint16 acct_ctrl, int32 *account_count, SAM_ACCOUNT_ENUM **accounts)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -511,7 +501,7 @@ NTSTATUS context_sam_enum_accounts(const SAM_CONTEXT *context, const NT_USER_TOK
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_enum_accounts(tmp_methods, access_token, account_count, accounts))) {
+	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_enum_accounts(tmp_methods, access_token, acct_ctrl, account_count, accounts))) {
 		DEBUG(4,("context_sam_enum_accounts for domain %s in backend %s failed\n",
 				 tmp_methods->domain->private.name, tmp_methods->backendname));
 		return nt_status;
@@ -582,14 +572,14 @@ NTSTATUS context_sam_get_account_by_name(const SAM_CONTEXT *context, const NT_US
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_create_group(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const uint32 type, DOM_SID *sid, SAM_GROUP_HANDLE **group)
+NTSTATUS context_sam_create_group(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, const char *group_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
 
 	DEBUG(5,("context_sam_create_group: %d\n", __LINE__));
 
-	if (!NT_STATUS_IS_OK(nt_status = sam_get_methods_by_sid(context, &tmp_methods, sid))) {
+	if (!NT_STATUS_IS_OK(nt_status = sam_get_methods_by_sid(context, &tmp_methods, domainsid))) {
 		DEBUG(4,("sam_get_methods_by_sid failed\n"));
 		return nt_status;
 	}
@@ -599,7 +589,7 @@ NTSTATUS context_sam_create_group(const SAM_CONTEXT *context, const NT_USER_TOKE
 		return NT_STATUS_UNSUCCESSFUL; 
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_group(tmp_methods, access_token, access_desired, type, group))) {
+	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_group(tmp_methods, access_token, access_desired, group_name, group_ctrl, group))) {
 		DEBUG(4,("context_sam_create_group in backend %s failed\n",
 				 tmp_methods->backendname));
 		return nt_status;
@@ -611,7 +601,7 @@ NTSTATUS context_sam_create_group(const SAM_CONTEXT *context, const NT_USER_TOKE
 NTSTATUS context_sam_add_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group)
 {
 	DOM_SID		domainsid;
-	DOM_SID		*groupsid;
+	const DOM_SID		*groupsid;
 	SAM_METHODS	*tmp_methods;
 	uint32		rid;
 	NTSTATUS	nt_status;
@@ -649,7 +639,7 @@ NTSTATUS context_sam_add_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDL
 NTSTATUS context_sam_update_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group)
 {
 	DOM_SID		domainsid;
-	DOM_SID		*groupsid;
+	const DOM_SID		*groupsid;
 	struct sam_methods *tmp_methods;
 	uint32		rid;
 	NTSTATUS nt_status;
@@ -688,7 +678,7 @@ NTSTATUS context_sam_delete_group(const SAM_CONTEXT *context, const SAM_GROUP_HA
 {
 	DOM_SID		domainsid;
 	SAM_METHODS 	*tmp_methods;
-	DOM_SID		*groupsid;
+	const DOM_SID	*groupsid;
 	uint32		rid;
 	NTSTATUS	nt_status;
 
@@ -722,7 +712,7 @@ NTSTATUS context_sam_delete_group(const SAM_CONTEXT *context, const SAM_GROUP_HA
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_enum_groups(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, const uint32 type, uint32 *groups_count, SAM_GROUP_ENUM **groups)
+NTSTATUS context_sam_enum_groups(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, uint16 group_ctrl, uint32 *groups_count, SAM_GROUP_ENUM **groups)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -739,7 +729,7 @@ NTSTATUS context_sam_enum_groups(const SAM_CONTEXT *context, const NT_USER_TOKEN
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_enum_groups(tmp_methods, access_token, type, groups_count, groups))) {
+	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_enum_groups(tmp_methods, access_token, group_ctrl, groups_count, groups))) {
 		DEBUG(4,("context_sam_enum_groups for domain %s in backend %s failed\n",
 				 tmp_methods->domain->private.name, tmp_methods->backendname));
 		return nt_status;
@@ -823,7 +813,7 @@ NTSTATUS context_sam_enum_groupmembers(const SAM_CONTEXT *context, const SAM_GRO
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS context_sam_get_groups_of_account(const SAM_CONTEXT *context, const SAM_ACCOUNT_HANDLE *account, const uint32 type, uint32 *group_count, SAM_GROUP_ENUM **groups)
+NTSTATUS context_sam_get_groups_of_sid(const SAM_CONTEXT *context, const DOM_SID **sids, uint16 group_ctrl, uint32 *group_count, SAM_GROUP_ENUM **groups)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

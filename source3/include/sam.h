@@ -25,7 +25,18 @@
 #ifndef _SAM_H
 #define _SAM_H
 
-#define SAM_INTERFACE_VERSION 1
+/* We want to track down bugs early */
+#if 1
+#define SAM_ASSERT(x) SMB_ASSERT(x)
+#else
+#define SAM_ASSERT(x) while (0) { \
+	if (!(x)) return NT_STATUS_FAIL_CHECK;\
+        }
+#endif
+
+
+/* let it be 0 until we have a stable interface --metze */
+#define SAM_INTERFACE_VERSION 0
 
 /* use this inside a passdb module */
 #define SAM_MODULE_VERSIONING_MAGIC \
@@ -104,12 +115,11 @@ typedef struct sam_group_handle {
 	struct sam_methods *current_sam_methods; /* sam_methods creating this handle */
 	void (*free_fn)(struct sam_group_handle **);
 	struct sam_group_data {
-		char *name;
-		char *comment;
+		char *group_name;
+		char *group_desc;
 		DOM_SID sid;
-		int32 flags; /* specifies if the group is a local group or a global group */
+		uint16 group_ctrl; /* specifies if the group is a local group or a global group */
 		uint32 num_members;
-		PRIVILEGE_SET privileges;
 	} private;
 } SAM_GROUP_HANDLE;
 
@@ -117,7 +127,6 @@ typedef struct sam_group_handle {
 typedef struct sam_group_member {
 	DOM_SID sid; 
 	BOOL group; /* specifies if it is a group or a account */ 
-
 } SAM_GROUP_MEMBER;
 
 typedef struct sam_account_enum {
@@ -125,14 +134,22 @@ typedef struct sam_account_enum {
 	char *account_name; 
 	char *full_name; 
 	char *account_desc; 
-	uint16 acc_ctrl; 
+	uint16 acct_ctrl; 
 } SAM_ACCOUNT_ENUM;
 
 typedef struct sam_group_enum {
 	DOM_SID sid;
-	char *groupname;
-	char *comment;
+	char *group_name;
+	char *group_desc;
+	uint16 group_ctrl;
 } SAM_GROUP_ENUM;
+
+
+/* bits for group_ctrl: to spezify if the group is global group or alias */
+#define GCB_LOCAL_GROUP	0x0001
+#define GCB_ALIAS_GROUP	GCB_LOCAL_GROUP
+#define GCB_GLOBAL_GROUP	0x0002
+
 
 typedef struct sam_context 
 {
@@ -155,36 +172,35 @@ typedef struct sam_context
 	NTSTATUS (*sam_enum_domains) (const struct sam_context *, const NT_USER_TOKEN *access_token, int32 *domain_count, DOM_SID **domains, char **domain_names);
 	NTSTATUS (*sam_lookup_domain) (const struct sam_context *, const NT_USER_TOKEN * access_token, const char *domain, DOM_SID **domainsid);
 
-	NTSTATUS (*sam_get_domain_by_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, SAM_DOMAIN_HANDLE **domain);
+	NTSTATUS (*sam_get_domain_by_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, SAM_DOMAIN_HANDLE **domain);
 
 
 	/* Account API */
 
-	NTSTATUS (*sam_create_account) (const struct sam_context *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_create_account) (const struct sam_context *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account);
 	NTSTATUS (*sam_add_account) (const struct sam_context *, const DOM_SID *domainsid, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_update_account) (const struct sam_context *, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_delete_account) (const struct sam_context *, const SAM_ACCOUNT_HANDLE *account);
-	NTSTATUS (*sam_enum_accounts) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID *domain, int32 *account_count, SAM_ACCOUNT_ENUM **accounts);
+	NTSTATUS (*sam_enum_accounts) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID *domain, uint16 acct_ctrl, uint32 *account_count, SAM_ACCOUNT_ENUM **accounts);
 
-	NTSTATUS (*sam_get_account_by_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account);
-	NTSTATUS (*sam_get_account_by_name) (const struct sam_context *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *domain, const char *name, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_get_account_by_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_get_account_by_name) (const struct sam_context *, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *domain, const char *name, SAM_ACCOUNT_HANDLE **account);
 
 	/* Group API */
 
-
+	NTSTATUS (*sam_create_group) (const struct sam_context *, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, const char *group_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group);
 	NTSTATUS (*sam_add_group) (const struct sam_context *, const DOM_SID *domainsid, const SAM_GROUP_HANDLE *group);
 	NTSTATUS (*sam_update_group) (const struct sam_context *, const SAM_GROUP_HANDLE *group);
 	NTSTATUS (*sam_delete_group) (const struct sam_context *, const SAM_GROUP_HANDLE *group);
-	NTSTATUS (*sam_enum_groups) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, const uint32 type, uint32 *groups_count, SAM_GROUP_ENUM **groups);
-	NTSTATUS (*sam_get_group_by_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group);
-	NTSTATUS (*sam_get_group_by_name) (const struct sam_context *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *domain, const char *name, SAM_GROUP_HANDLE **group);
+	NTSTATUS (*sam_enum_groups) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, const uint16 group_ctrl, uint32 *groups_count, SAM_GROUP_ENUM **groups);
+	NTSTATUS (*sam_get_group_by_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group);
+	NTSTATUS (*sam_get_group_by_name) (const struct sam_context *, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *domain, const char *name, SAM_GROUP_HANDLE **group);
 
 	NTSTATUS (*sam_add_member_to_group) (const struct sam_context *, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member);
 	NTSTATUS (*sam_delete_member_from_group) (const struct sam_context *, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member);
 	NTSTATUS (*sam_enum_groupmembers) (const struct sam_context *, const SAM_GROUP_HANDLE *group, uint32 *members_count, SAM_GROUP_MEMBER **members);
 
-	NTSTATUS (*sam_get_groups_of_account) (const struct sam_context *, const SAM_ACCOUNT_HANDLE *account, const uint32 type, uint32 *group_count, SAM_GROUP_ENUM **groups);
-
+	NTSTATUS (*sam_get_groups_of_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID **sids, uint16 group_ctrl, uint32 *group_count, SAM_GROUP_ENUM **groups);
 	void (*free_fn)(struct sam_context **);
 } SAM_CONTEXT;
 
@@ -208,34 +224,34 @@ typedef struct sam_methods
 	/* Domain API */
 
 	NTSTATUS (*sam_update_domain) (const struct sam_methods *, const SAM_DOMAIN_HANDLE *domain);
-	NTSTATUS (*sam_get_domain_handle) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 access_desired, SAM_DOMAIN_HANDLE **domain);
+	NTSTATUS (*sam_get_domain_handle) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, SAM_DOMAIN_HANDLE **domain);
 
 	/* Account API */
 
-	NTSTATUS (*sam_create_account) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 access_desired, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_create_account) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account);
 	NTSTATUS (*sam_add_account) (const struct sam_methods *, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_update_account) (const struct sam_methods *, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_delete_account) (const struct sam_methods *, const SAM_ACCOUNT_HANDLE *account);
-	NTSTATUS (*sam_enum_accounts) (const struct sam_methods *, const NT_USER_TOKEN *access_token, int32 *account_count, SAM_ACCOUNT_ENUM **accounts);
+	NTSTATUS (*sam_enum_accounts) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint16 acct_ctrl, uint32 *account_count, SAM_ACCOUNT_ENUM **accounts);
 
-	NTSTATUS (*sam_get_account_by_sid) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account);
-	NTSTATUS (*sam_get_account_by_name) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *name, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_get_account_by_sid) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_get_account_by_name) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *name, SAM_ACCOUNT_HANDLE **account);
 
 	/* Group API */
 
-	NTSTATUS (*sam_create_group) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const uint32 type, SAM_GROUP_HANDLE **group);
+	NTSTATUS (*sam_create_group) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *group_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group);
 	NTSTATUS (*sam_add_group) (const struct sam_methods *, const SAM_GROUP_HANDLE *group);
 	NTSTATUS (*sam_update_group) (const struct sam_methods *, const SAM_GROUP_HANDLE *group);
 	NTSTATUS (*sam_delete_group) (const struct sam_methods *, const SAM_GROUP_HANDLE *group);
-	NTSTATUS (*sam_enum_groups) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 type, uint32 *groups_count, SAM_GROUP_ENUM **groups);
-	NTSTATUS (*sam_get_group_by_sid) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group);
-	NTSTATUS (*sam_get_group_by_name) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *name, SAM_GROUP_HANDLE **group);
+	NTSTATUS (*sam_enum_groups) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint16 group_ctrl, uint32 *groups_count, SAM_GROUP_ENUM **groups);
+	NTSTATUS (*sam_get_group_by_sid) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group);
+	NTSTATUS (*sam_get_group_by_name) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *name, SAM_GROUP_HANDLE **group);
 
 	NTSTATUS (*sam_add_member_to_group) (const struct sam_methods *, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member);
 	NTSTATUS (*sam_delete_member_from_group) (const struct sam_methods *, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member);
 	NTSTATUS (*sam_enum_groupmembers) (const struct sam_methods *, const SAM_GROUP_HANDLE *group, uint32 *members_count, SAM_GROUP_MEMBER **members);
 
-	NTSTATUS (*sam_get_groups_of_account) (const struct sam_methods *, const SAM_ACCOUNT_HANDLE *account, const uint32 type, uint32 *group_count, SAM_GROUP_ENUM **groups);
+	NTSTATUS (*sam_get_groups_of_sid) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const DOM_SID **sids, uint16 group_ctrl, uint32 *group_count, SAM_GROUP_ENUM **groups);
 
 	void (*free_private_data)(void **);
 } SAM_METHODS;

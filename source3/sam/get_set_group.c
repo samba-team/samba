@@ -27,97 +27,80 @@
 
 /* sam group get functions */
 
-NTSTATUS sam_get_group_sid(const SAM_GROUP_HANDLE *group, DOM_SID **sid)
+NTSTATUS sam_get_group_sid(const SAM_GROUP_HANDLE *group, const DOM_SID **sid)
 {
-	if (!group || !sid) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group && sid);
 
 	*sid = &(group->private.sid);
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_group_typ(const SAM_GROUP_HANDLE *group, uint32 *typ)
+NTSTATUS sam_get_group_ctrl(const SAM_GROUP_HANDLE *group, uint32 *group_ctrl)
 {
-	if (!group || !typ) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group && group_ctrl);
 
-	*typ = group->private.flags;
+	*group_ctrl = group->private.group_ctrl;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_group_name(const SAM_GROUP_HANDLE *group, char **group_name)
+NTSTATUS sam_get_group_name(const SAM_GROUP_HANDLE *group, const char **group_name)
 {
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group);
 
-	*group_name = group->private.name;
+	*group_name = group->private.group_name;
 
 	return NT_STATUS_OK;
 
 }
-NTSTATUS sam_get_group_comment(const SAM_GROUP_HANDLE *group, char **comment)
+NTSTATUS sam_get_group_comment(const SAM_GROUP_HANDLE *group, const char **group_desc)
 {
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group);
 
-	*comment = group->private.comment;
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS sam_get_group_priv_set(const SAM_GROUP_HANDLE *group, PRIVILEGE_SET *priv_set)
-{
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
-
-	*priv_set = group->private.privileges;
+	*group_desc = group->private.group_desc;
 
 	return NT_STATUS_OK;
 }
 
 /* sam group set functions */
 
-NTSTATUS sam_set_group_sid(SAM_GROUP_HANDLE *group, DOM_SID *sid)
+NTSTATUS sam_set_group_sid(SAM_GROUP_HANDLE *group, const DOM_SID *sid)
 {
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group);
 
-	if (!sid) ZERO_STRUCT(group->private.sid);
-	else sid_copy(&(group->private.sid), sid);
+	if (!sid) 
+		ZERO_STRUCT(group->private.sid);
+	else 
+		sid_copy(&(group->private.sid), sid);
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_group_typ(SAM_GROUP_HANDLE *group, uint32 typ)
+NTSTATUS sam_set_group_group_ctrl(SAM_GROUP_HANDLE *group, uint32 group_ctrl)
 {
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group);
 
-	group->private.flags = typ;
+	group->private.group_ctrl = group_ctrl;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_group_name(SAM_GROUP_HANDLE *group, char *group_name)
+NTSTATUS sam_set_group_name(SAM_GROUP_HANDLE *group, const char *group_name)
 {
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group);
 
-	group->private.name = talloc_strdup(group->mem_ctx, group_name);
+	group->private.group_name = talloc_strdup(group->mem_ctx, group_name);
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_group_comment(SAM_GROUP_HANDLE *group, char *comment)
+NTSTATUS sam_set_group_description(SAM_GROUP_HANDLE *group, const char *group_desc)
 {
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(group);
 
-	group->private.comment = talloc_strdup(group->mem_ctx, comment);
+	group->private.group_desc = talloc_strdup(group->mem_ctx, group_desc);
 
 	return NT_STATUS_OK;
 
-}
-
-NTSTATUS sam_set_group_priv_set(SAM_GROUP_HANDLE *group, PRIVILEGE_SET *priv_set)
-{
-	if (!group) return NT_STATUS_UNSUCCESSFUL;
-
-	if (!priv_set) ZERO_STRUCT(group->private.privileges);
-	else memcpy(&(group->private.privileges), priv_set, sizeof(PRIVILEGE_SET));
-
-	return NT_STATUS_OK;
 }
