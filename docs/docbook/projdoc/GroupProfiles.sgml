@@ -1,0 +1,240 @@
+<chapter id="GroupProfiles">
+<chapterinfo>
+	<author>
+		<firstname>John</firstname><surname>Terpstra</surname>
+	</author>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+	</author>
+	<author>
+		<firstname>John</firstname><surname>Russell</surname>
+		<affiliation>
+			<address><email>apca72@dsl.pipex.com</email></address>
+		</affiliation>
+	</author>
+</chapterinfo>
+
+<title>Creating Group Profiles</title>
+
+<sect1>
+<title>Windows '9x</title>
+<para>
+You need the Win98 Group Policy Editor to
+set Group Profiles up under Windows '9x. It can be found on the Original
+full product Win98 installation CD under 
+<filename>tools/reskit/netadmin/poledit</filename>.  You install this
+using the Add/Remove Programs facility and then click on the 'Have Disk'
+tab.
+</para>
+
+<para>
+Use the Group Policy Editor to create a policy file that specifies the
+location of user profiles and/or the <filename>My Documents</filename> etc.
+stuff. You then save these settings in a file called
+<filename>Config.POL</filename> that needs to be placed in
+the root of the [NETLOGON] share. If your Win98 is configured to log onto
+the Samba Domain, it will automatically read this file and update the
+Win98 registry of the machine that is logging on.
+</para>
+
+<para>
+All of this is covered in the Win98 Resource Kit documentation.
+</para>
+
+<para>
+If you do not do it this way, then every so often Win98 will check the
+integrity of the registry and will restore it's settings from the back-up
+copy of the registry it stores on each Win98 machine. Hence, you will notice
+things changing back to the original settings.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Windows NT 4</title>
+
+<para>
+Unfortunately, the Resource Kit info is Win NT4/2K version specific.
+</para>
+
+<para>
+Here is a quick guide:
+</para>
+
+1. On your NT4 Domain Controller, right click on 'My Computer', then
+select the tab labelled 'User Profiles'.
+
+2. Select a user profile you want to migrate and click on it.
+
+<note>I am using the term "migrate" lossely. You can copy a profile to
+create a group profile. You can give the user 'Everyone' rights to the
+profile you copy this to. That is what you need to do, since your samba
+domain is not a member of a trust relationship with your NT4 PDC.</note>
+
+3. Click the 'Copy To' button.
+
+4. In the box labelled 'Copy Profile to' add your new path, eg:
+c:\temp\foobar
+
+5. Click on the button labelled 'Change' in the "Permitted to use" box.
+
+6. Click on the group 'Everyone' and then click OK. This closes the
+'chose user' box.
+
+7. Now click OK.
+
+<para>
+Follow the above for every profile you need to migrate.
+</para>
+
+<sect2>
+<title>Side bar Notes</title>
+
+<para>
+You should obtain the SID of your NT4 domain. You can use smbpasswd to do
+this. Read the man page.</para>
+
+<para>
+With Samba-3.0.0 alpha code you can import all you NT4 domain accounts
+using the net samsync method. This way you can retain your profile
+settings as well as all your users.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Mandatory profiles</title>
+
+<para>
+The above method can be used to create mandatory profiles also. To convert
+a group profile into a mandatory profile simply locate the NTUser.DAT file
+in the copied profile and rename it to NTUser.MAN.
+</para>
+
+</sect2>
+
+<sect2>
+<title>moveuser.exe</title>
+
+<para>
+The W2K professional resource kit has moveuser.exe. moveuser.exe changes
+the security of a profile from one user to another.  This allows the account 
+domain to change, and/or the user name to change.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Get SID</title>
+
+<para>
+You can identify the SID by using GetSID.exe from the Windows NT Server 4.0
+Resource Kit.
+</para>
+
+<para>
+Windows NT 4.0 stores the local profile information in the registry under
+the following key:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList
+</para>
+
+<para>
+Under the ProfileList key, there will be subkeys named with the SIDs of the
+users who have logged on to this computer. (To find the profile information
+for the user whose locally cached profile you want to move, find the SID for
+the user with the GetSID.exe utility.) Inside of the appropriate user's
+subkey, you will see a string value named ProfileImagePath.
+</para>
+
+</sect2>
+
+</sect1>
+
+<sect1>
+<title>Windows 2000/XP</title>
+
+<para>
+You must first convert the profile from a local profile to a domain
+profile on the MS Windows workstation as follows:
+</para>
+
+1. Log on as the LOCAL workstation administrator.
+
+2. Right click on the 'My Computer' Icon, select 'Properties'
+
+3. Click on the 'User Profiles' tab
+
+4. Select the profile you wish to convert (click on it once)
+
+5. Click on the button 'Copy To'
+
+6. In the "Permitted to use" box, click on the 'Change' button.
+
+7. Click on the 'Look in" area that lists the machine name, when you click
+here it will open up a selection box. Click on the domain to which the
+profile must be accessible.
+
+<note>You will need to log on if a logon box opens up. Eg: In the connect
+as: MIDEARTH\root, password: mypassword.</note>
+
+8. To make the profile capable of being used by anyone select 'Everyone'
+
+9. Click OK. The Selection box will close.
+
+10. Now click on the 'Ok' button to create the profile in the path you
+nominated.
+
+Done. You now have a profile that can be editted using the samba-3.0.0
+profiles tool.
+
+<note>
+Under NT/2K the use of mandotory profiles forces the use of MS Exchange
+storage of mail data. That keeps desktop profiles usable.
+</note>
+
+<note>
+This is a security check new to Windows XP (or maybe only
+Windows XP service pack 1).  It can be disabled via a group policy in
+Active Directory.  The policy is:
+
+"Computer Configuration\Administrative Templates\System\User
+Profiles\Do not check for user ownership of Roaming Profile Folders"
+
+...and it should be set to "Enabled".
+Does the new version of samba have an Active Directory analogue?  If so,
+then you may be able to set the policy through this.
+
+If you cannot set group policies in samba, then you may be able to set
+the policy locally on each machine.  If you want to try this, then do
+the following (N.B. I don't know for sure that this will work in the
+same way as a domain group policy):
+
+On the XP workstation log in with an Administrator account.
+
+Click: "Start", "Run"
+Type: "mmc"
+Click: "OK"
+
+A Microsoft Management Console should appear.
+Click: File, "Add/Remove Snap-in...", "Add"
+Double-Click: "Group Policy"
+Click: "Finish", "Close"
+Click: "OK"
+
+In the "Console Root" window:
+Expand: "Local Computer Policy", "Computer Configuration",
+"Administrative Templates", "System", "User Profiles"
+Double-Click: "Do not check for user ownership of Roaming Profile
+Folders"
+Select: "Enabled"
+Click: OK"
+
+Close the whole console.  You do not need to save the settings (this
+refers to the console settings rather than the policies you have
+changed).
+
+Reboot.
+</note>
+
+</sect1>
+</chapter>
