@@ -98,7 +98,7 @@ krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*,
 krb5_error_code encode_v4_ticket (void*, size_t, EncTicketPart*, 
 				  PrincipalName*, size_t*);
 krb5_error_code encrypt_v4_ticket (void*, size_t, des_cblock*, EncryptedData*);
-krb5_error_code get_des_key(hdb_entry*, Key**);
+krb5_error_code get_des_key(hdb_entry*, krb5_boolean, Key**);
 int maybe_version4 (unsigned char*, int);
 #endif
 
