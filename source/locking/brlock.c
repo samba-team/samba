@@ -196,7 +196,7 @@ void brl_shutdown(int read_only)
 {
 	BOOL check_self = True;
 
-	if (tdb)
+	if (!tdb)
 		return;
 
 	/* delete any dead locks */
