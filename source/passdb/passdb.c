@@ -208,7 +208,12 @@ struct smb_passwd *getsmbpwent(void *vp)
 
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 {
- 	return pwdb_ops->add_smbpwd_entry(pwdb_smb_map_names(newpwd));
+ 	struct smb_passwd *mapped = pwdb_smb_map_names(newpwd);
+	if (mapped)
+	{
+		return pwdb_ops->add_smbpwd_entry(mapped);
+	}
+	return False;
 }
 
 /************************************************************************
@@ -222,7 +227,12 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
- 	return pwdb_ops->mod_smbpwd_entry(pwdb_smb_map_names(pwd), override);
+ 	struct smb_passwd *mapped = pwdb_smb_map_names(pwd);
+	if (mapped)
+	{
+		return pwdb_ops->mod_smbpwd_entry(mapped, override);
+	}
+	return False;
 }
 
 /************************************************************************
