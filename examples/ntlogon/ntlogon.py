@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 """
-ntlogon.py written by Timothy Grant
+ntlogon.py written by Timothy (rhacer) Grant
 
-Copyright 1999 by Avalon Technology Group, Inc.
+Copyright 1999 - 2002 by Timothy Grant 
 
-This programme is copyright 1999 by Avalon Technology Group, Inc. it
 is distributed under the terms of the GNU Public License.
-
 
 The format for the configuration file is as follows:
 
@@ -17,7 +15,7 @@ sense.
 
 # Everything in the Global section applies to all users logging on to the
 # network
-[Global
+[Global]
 @ECHO "Welcome to our network!!!"
 NET TIME \\\\servername /SET /YES
 NET USE F: \\\\servername\\globalshare /YES
@@ -85,11 +83,11 @@ def buildScript(buf, sections, group, user, ostype, machine, debug, pause):
     and creating a list object that contains each line contained in each
     included section.  The list object is then returned to the calling 
     routine.
-   
+
     All comments (#) are removed. A REM is inserted to show
     which section of the configuration file each line comes from.
     We leave blanklines as they are sometimes useful for debugging
-   
+
     We also replace all of the Samba macros (e.g., %U, %G, %a, %m) with their
     expanded versions which have been passed to us by smbd
     """
@@ -109,18 +107,18 @@ def buildScript(buf, sections, group, user, ostype, machine, debug, pause):
                 'a': ostype,
                 'm': machine
              }
-    
+
     #
     # Process each section defined in the list sections
     #
     for s in sections:
         # print 'searching for: ' + s
-        
+
         idx = 0
-        
+
         while idx < len(buf):
             ln = buf[idx]
-            
+
             #
             # We need to set up a regex for each possible section we
             # know about. This is slightly complicated due to the fact
@@ -143,29 +141,29 @@ def buildScript(buf, sections, group, user, ostype, machine, debug, pause):
             if re.search(r'(?i)' + hdrstring, ln):
                 idx = idx + 1   # increment the counter to move to the next
                                 # line.
-                
+
                 x = re.match(r'([^#\r\n]*)', ln)    # Determine the section
                                                     # name and strip out CR/LF
                                                     # and comment information
-                
+
                 if debug:
                     print 'rem ' + x.group(1) + ' commands'
                 else:
                     # create the rem at the beginning of each section of the
                     # logon script.
                     script.append('rem ' + x.group(1) + ' commands') 
-                
+
                 #
                 # process each line until we have found another section
                 # header
                 #
                 while not re.search(r'.*\[.*\].*', buf[idx]):
-                    
+
                     #
                     # strip comments and line endings
                     #
                     x = re.match(r'([^#\r\n]*)', buf[idx])
-                    
+
                     if string.strip(x.group(1)) != '' :
                         # if there is still content  after stripping comments and
                         # line endings then this is a line to process
@@ -184,18 +182,18 @@ def buildScript(buf, sections, group, user, ostype, machine, debug, pause):
                             if varname == '':
                                 print "Error: No substition name specified line: %d" % idx
                                 sys.exit(1)
-                                
+
                             if varsub == '':
                                 print "Error: No substitution text provided line: %d" % idx
                                 sys.exit(1)
-                            
+
                             if macros.has_key(varname):
                                 print "Warning: macro %s redefined line: %d" % (varname, idx)
 
                             macros[varname] = varsub
                             idx = idx + 1
                             continue
-                        
+
                         #
                         # Replace all the  macros that we currently
                         # know about.
@@ -209,31 +207,31 @@ def buildScript(buf, sections, group, user, ostype, machine, debug, pause):
                         for varname in macros.keys():
                             line = re.sub(r'%' + varname + r'(\W)',
                                           macros[varname] + r'\1', line)
-                            
+
                         if debug:
                             print line
                             if pause:
                                 print 'pause'
                         else:
                             script.append(line)
-                    
+
                     idx = idx + 1
-                    
+
                     if idx == len(buf):
                         break   # if we have reached the end of the file
                                 # stop processing.
-                    
+
             idx = idx + 1   # increment the line counter
-        
+
         if debug:
             print ''
         else:
             script.append('')
-        
+
     return script
-    
+
 # End buildScript()
-    
+
 def run():
     """
     run() everything starts here. The main routine reads the command line
@@ -254,7 +252,7 @@ def run():
     sections    = ['Global', 'Machine', 'OS', 'Group', 'User'] # Currently supported
                                                     # configuration file 
                                                     # sections
-   
+
     options, args = getopt.getopt(sys.argv[1:], 'd:f:g:ho:u:m:v', 
                                  ['templatefile=', 
                                   'group=',
@@ -266,7 +264,7 @@ def run():
                                   'version',
                                   'pause',
                                   'debug'])
-                                  
+
     #
     # Process the command line arguments
     #
@@ -275,17 +273,17 @@ def run():
         if (i[0] == '-f') or (i[0] == '--templatefile'):
             configfile = i[1]
             # print 'configfile = ' + configfile
-      
+
         # define the group to be used
         elif (i[0] == '-g') or (i[0] == '--group'):
             group = i[1]
             # print 'group = ' + group
-         
+
         # define the os type
         elif (i[0] == '-o') or (i[0] == '--os'):
             ostype = i[1]
             # print 'os = ' + os
-         
+
         # define the user
         elif (i[0] == '-u') or (i[0] == '--user'):
             user = i[1]
@@ -295,7 +293,7 @@ def run():
         # define the machine
         elif (i[0] == '-m') or (i[0] == '--machine'):
             machine = i[1]
-        
+
         # define the netlogon directory
         elif (i[0] == '-d') or (i[0] == '--dir'):
             outdir = i[1]
@@ -310,7 +308,7 @@ def run():
         elif (i[0] == '--pause'):
             pause = 1
             # print 'pause = ' + pause
-      
+
         # if we are asked for the version number, print it.
         elif (i[0] == '-v') or (i[0] == '--version'):
             print version
@@ -329,8 +327,8 @@ def run():
     except IOError:
         print 'Unable to open configuration file: ' + configfile
         sys.exit(1)
-        
-    
+
+
     #
     # open the output file
     #    
@@ -340,9 +338,9 @@ def run():
         except IOError:
             print 'Unable to open logon script file: ' + outdir + outfile
             sys.exit(1)
-      
+
     buf = iFile.readlines() # read in the entire configuration file
-    
+
     #
     # call the script building routine
     #
@@ -355,11 +353,11 @@ def run():
         for ln in script:
             oFile.write(ln + '\r\n')
             if pause:
-                if string.strip(ln) != '':			# Because whitespace is
+                if string.strip(ln) != '':			# Because whitespace
                     oFile.write('pause' + '\r\n')	# is a useful tool, we
                     								# don't put pauses after
                                                     # an empty line.
-               
+
 
 # End run()
 
@@ -372,7 +370,7 @@ else:
     print "Module ntlogon.py imported."
     print "To run, type: ntlogon.run()"
     print "To reload after changes to the source, type: reload(ntlogon)"
-   
+
 #
 # End NTLogon.py
 #
