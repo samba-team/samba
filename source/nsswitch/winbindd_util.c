@@ -808,7 +808,7 @@ void free_getent_state(struct getent_state *state)
 		struct getent_state *next;
 
 		/* Close SAMR cache handle. */
-		close_samr_domain_handle(state->domain, &state->dom_pol);
+		close_samr_domain_handle(temp->domain, &temp->dom_pol);
 
 		/* Free sam entries then list entry */
 
