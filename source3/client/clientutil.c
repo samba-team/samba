@@ -583,6 +583,9 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   else
     pass = (char *)getpass("Password: ");
 
+  if(!pass)
+    pass = "";
+
   pstrcpy(smb_login_passwd, pass);
 
   /* use a blank username for the 2nd try with a blank password */
