@@ -273,12 +273,11 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	pstring user;
 	pstring password;
 	pstring devicename;
-	BOOL doencrypt = SMBENCRYPT();
 	int ecode = -1;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
-	char *path;
-	char *p;
+	pstring path;
+	char *p, *q;
 	START_PROFILE(SMBtconX);
 	
 	*service = *user = *password = *devicename = 0;
@@ -294,7 +293,8 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
  
 	memcpy(password,smb_buf(inbuf),passlen);
 	password[passlen]=0;    
-	path = smb_buf(inbuf) + passlen;
+	p = smb_buf(inbuf) + passlen;
+	p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE|STR_CONVERT);
 
 	if (passlen != 24) {
 		if (strequal(password," "))
@@ -302,27 +302,20 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		passlen = strlen(password);
 	}
 	
-	p = strchr(path+2,'\\');
-	if (!p) {
+	q = strchr(path+2,'\\');
+	if (!q) {
 		END_PROFILE(SMBtconX);
 		return(ERROR(ERRDOS,ERRnosuchshare));
 	}
-	fstrcpy(service,p+1);
-	p = strchr(service,'%');
-	if (p) {
-		*p++ = 0;
-		fstrcpy(user,p);
+	fstrcpy(service,q+1);
+	q = strchr(service,'%');
+	if (q) {
+		*q++ = 0;
+		fstrcpy(user,q);
 	}
-	StrnCpy(devicename,path + strlen(path) + 1,6);
+	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_CONVERT);
+
 	DEBUG(4,("Got device type %s\n",devicename));
-
-	/*
-	 * Ensure the user and password names are in UNIX codepage format.
-	 */
-
-	dos_to_unix(user,True);
-	if (!doencrypt)
-		dos_to_unix(password,True);
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -349,13 +342,13 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	} else {
 		char *fsname = lp_fstype(SNUM(conn));
 
-		set_message(outbuf,3,3,True);
+		set_message(outbuf,3,0,True);
 
 		p = smb_buf(outbuf);
-		pstrcpy(p,devicename); p = skip_string(p,1); /* device name */
-		pstrcpy(p,fsname); p = skip_string(p,1); /* filesystem type e.g NTFS */
+		p += srvstr_push(inbuf, outbuf, p, devicename, -1, STR_CONVERT|STR_TERMINATE);
+		p += srvstr_push(inbuf, outbuf, p, fsname, -1, STR_CONVERT|STR_TERMINATE);
 		
-		set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
+		set_message_end(outbuf,p);
 		
 		/* what does setting this bit do? It is set by NT4 and
 		   may affect the ability to autorun mounted cdroms */
@@ -703,10 +696,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   BOOL valid_lm_password = False;
   pstring user;
   pstring orig_user;
+  fstring domain;
+  fstring native_os;
+  fstring native_lanman;
   BOOL guest=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
-  char *domain = "";
   START_PROFILE(SMBsesssetupX);
 
   *smb_apasswd = 0;
@@ -835,17 +830,19 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     }
     
     p += passlen1 + passlen2;
-    fstrcpy(user,p);
-    p = skip_string(p,1);
+    p += srvstr_pull(inbuf, user, p, sizeof(user), -1, STR_CONVERT|STR_TERMINATE);
     /*
      * Incoming user and domain are in DOS codepage format. Convert
      * to UNIX.
      */
-    dos_to_unix(user,True);
-    domain = p;
-    dos_to_unix(domain, True);
+    p += srvstr_pull(inbuf, domain, p, sizeof(domain), 
+		     -1, STR_CONVERT|STR_TERMINATE);
+    p += srvstr_pull(inbuf, native_os, p, sizeof(native_os), 
+		     -1, STR_CONVERT|STR_TERMINATE);
+    p += srvstr_pull(inbuf, native_lanman, p, sizeof(native_lanman),
+		     -1, STR_CONVERT|STR_TERMINATE);
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
-	     domain,skip_string(p,1),skip_string(p,2)));
+	     domain,native_os,native_lanman));
   }
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
@@ -1027,12 +1024,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     set_message(outbuf,3,0,True);
   } else {
     char *p;
-    set_message(outbuf,3,3,True);
+    set_message(outbuf,3,0,True);
     p = smb_buf(outbuf);
-    pstrcpy(p,"Unix"); p = skip_string(p,1);
-    pstrcpy(p,"Samba "); pstrcat(p,VERSION); p = skip_string(p,1);
-    pstrcpy(p,global_myworkgroup); unix_to_dos(p, True); p = skip_string(p,1);
-    set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
+    p += srvstr_push(inbuf, outbuf, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
+    p += srvstr_push(inbuf, outbuf, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
+    p += srvstr_push(inbuf, outbuf, p, global_myworkgroup, -1, STR_TERMINATE|STR_CONVERT);
+    set_message_end(outbuf,p);
     /* perhaps grab OS version here?? */
   }
 
