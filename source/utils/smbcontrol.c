@@ -82,6 +82,14 @@ static void wait_replies(BOOL multiple_replies)
 	} while (timeout - (time(NULL) - start_time) > 0);
 }
 
+/* Message handler callback that displays the PID and a string on stdout */
+
+static void print_pid_string_cb(int msg_type, pid_t pid, void *buf, size_t len)
+{
+	printf("PID %u: %.*s", (unsigned int)pid, (int)len, (const char *)buf);
+	num_replies++;
+}
+
 /* Message handler callback that displays a string on stdout */
 
 static void print_string_cb(int msg_type, pid_t pid, void *buf, size_t len)
@@ -281,7 +289,7 @@ static BOOL do_debuglevel(const pid_t pid, const int argc, const char **argv)
 	if (!send_message(pid, MSG_REQ_DEBUGLEVEL, NULL, 0, False))
 		return False;
 
-	message_register(MSG_DEBUGLEVEL, print_string_cb);
+	message_register(MSG_DEBUGLEVEL, print_pid_string_cb);
 
 	wait_replies(pid == 0);
 
