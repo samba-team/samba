@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000, 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -43,6 +43,6 @@ RCSID("$Id$");
 void
 esetenv(const char *var, const char *val, int rewrite)
 {
-    if (setenv (var, val, rewrite))
+    if (setenv ((char *)var, val, rewrite))
 	errx (1, "failed setting environment variable %s", var);
 }
