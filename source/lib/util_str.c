@@ -299,7 +299,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
 	}
 	
 	if (back_len) {
-		while (strncmp(s+len-back_len,back,back_len)==0) {
+		while ((len >= back_len) && strncmp(s+len-back_len,back,back_len)==0) {
 			s[len-back_len]='\0';
 			len -= back_len;
 			ret=True;
