@@ -281,8 +281,8 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 			}
 			dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
-			DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
-				  "referenced list.\n", dom_name, name ));
+			DEBUG(10,("init_lsa_trans_names: added %s '%s\\%s' (%d) to referenced list.\n", 
+				sid_type_lookup(sid_name_use), dom_name, name, sid_name_use ));
 
 		}
 

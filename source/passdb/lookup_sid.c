@@ -76,6 +76,13 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 	/* Check if this is our own sid.  This should perhaps be done by
 	   winbind?  For the moment handle it here. */
 
+	if (sid->num_auths == 4 && sid_equal(get_global_sam_sid(), sid)) {
+		DOM_SID tmp_sid;
+		sid_copy(&tmp_sid, sid);
+		return map_domain_sid_to_name(&tmp_sid, dom_name) && 
+			local_lookup_sid(sid, name, name_type);
+	}
+
 	if (sid->num_auths == 5) {
 		DOM_SID tmp_sid;
 		uint32 rid;
