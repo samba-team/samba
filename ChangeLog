@@ -1,3 +1,12 @@
+2004-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c (krb5kdcentry_attrs): ask for attribute uid
+	too
+
+	* lib/hdb/hdb-ldap.c (LDAP_message2entry): if the entry is missing
+	both krb5PrincipalName and uid, it must be broken, ignore it and
+	return it doesn't exists.
+
 2004-12-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/hpropd.8: spelling, from OpenBSD
