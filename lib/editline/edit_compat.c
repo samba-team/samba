@@ -38,6 +38,7 @@
 
 #include <config.h>
 #include <stdio.h>
+#include <string.h>
 #include <histedit.h>
 
 RCSID("$Id$");
@@ -64,13 +65,20 @@ char *
 readline(const char* prompt)
 {
     static EditLine *e;
+#ifdef H_SETMAXSIZE
+    HistEvent ev;
+#endif
     int count;
     char *ret;
     if(e == NULL){
 	e = el_init("", stdin, stdout);
 	el_set(e, EL_PROMPT, ret_prompt);
 	h = history_init();
+#ifdef H_SETMAXSIZE
+	history(h, &ev, H_SETMAXSIZE, 25);
+#else
 	history(h, H_EVENT, 25);
+#endif
 	el_set(e, EL_HIST, history, h);
 	el_set(e, EL_EDITOR, "emacs"); /* XXX? */
     }
@@ -87,5 +95,10 @@ readline(const char* prompt)
 void
 add_history(char *p)
 {
+#ifdef H_SETMAXSIZE
+    HistEvent ev;
+    history(h, &ev, H_ENTER, p);
+#else
     history(h, H_ENTER, p);
+#endif
 }
