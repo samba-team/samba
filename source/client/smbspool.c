@@ -36,7 +36,7 @@ extern BOOL		in_client;	/* Boolean for client library */
  */
 
 static void		list_devices(void);
-static struct cli_state	*smb_connect(const char *, const char *, const char *, const char *, const char *);
+static struct cli_state	*smb_connect(const char *, const char *, int, const char *, const char *, const char *);
 static int		smb_print(struct cli_state *, char *, FILE *);
 
 
@@ -50,6 +50,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 {
   int		i;		/* Looping var */
   int		copies;		/* Number of copies */
+  int 		port;		/* Port number */
   char		uri[1024],	/* URI */
 		*sep,		/* Pointer to separator */
 		*password;	/* Password */
@@ -87,7 +88,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     fputs("       The DEVICE_URI environment variable can also contain the\n", stderr);
     fputs("       destination printer:\n", stderr);
     fputs("\n", stderr);
-    fputs("           smb://[username:password@][workgroup/]server/printer\n", stderr);
+    fputs("           smb://[username:password@][workgroup/]server[:port]/printer\n", stderr);
     return (1);
   }
 
@@ -179,7 +180,17 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   }
   else
     workgroup = NULL;
+  
+  if ((sep = strrchr_m(server, ':')) != NULL)
+  {
+    *sep++ = '\0';
 
+    port=atoi(sep);
+  }
+  else
+  	port=0;
+	
+ 
  /*
   * Setup the SAMBA server state...
   */
@@ -201,7 +212,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   do
   {
-    if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
+    if ((cli = smb_connect(workgroup, server, port, printer, username, password)) == NULL)
     {
       if (getenv("CLASS") == NULL)
       {
@@ -267,6 +278,7 @@ list_devices(void)
 static struct cli_state *		/* O - SMB connection */
 smb_connect(const char *workgroup,		/* I - Workgroup */
             const char *server,		/* I - Server */
+            const int port,		/* I - Port */
             const char *share,		/* I - Printer */
             const char *username,		/* I - Username */
             const char *password)		/* I - Password */
@@ -281,7 +293,7 @@ smb_connect(const char *workgroup,		/* I - Workgroup */
 
   get_myname(myname);  
   	
-  nt_status = cli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
+  nt_status = cli_full_connection(&c, myname, server, NULL, port, share, "?????", 
 				  username, workgroup, password, 0, Undefined, NULL);
   
   if (!NT_STATUS_IS_OK(nt_status)) {
