@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 20, 2004
+.Dd March 21, 2004
 .Dt KRB5 3
 .Os
 .Sh NAME
@@ -47,9 +47,10 @@ These functions constitute the Kerberos 5 library,
 .Sh LIST OF FUNCTIONS
 .sp 2
 .nf
-.ta \w'krb5_checksum_is_collision_proof.3'u+2n +\w'Description goes here'u
+.ta \w'krb5_ticket_get_authorization_data_type.3'u+2n +\w'Description goes here'u
 \fIName/Page\fP	\fIDescription\fP
-.ta \w'krb5_checksum_is_collision_proof.3'u+2n +\w'Description goes here'u+6nC
+.ta \w'krb5_ticket_get_authorization_data_type.3'u+2n +\w'Description goes here'u+6nC
+       
 .sp 5p
 krb524_convert_creds_kdc.3
 krb524_convert_creds_kdc_cache.3
@@ -194,8 +195,10 @@ krb5_copy_checksum.3
 krb5_copy_data.3
 krb5_copy_keyblock.3
 krb5_copy_keyblock_contents.3
+krb5_copy_principal.3
 krb5_copy_ticket.3
 krb5_create_checksum.3
+krb5_creds.3
 krb5_crypto_destroy.3
 krb5_crypto_get_checksum_type.3
 krb5_crypto_getblocksize.3
@@ -250,6 +253,26 @@ krb5_get_in_tkt.3
 krb5_get_in_tkt_with_keytab.3
 krb5_get_in_tkt_with_password.3
 krb5_get_in_tkt_with_skey.3
+krb5_get_init_creds.3
+krb5_get_init_creds_keytab.3
+krb5_get_init_creds_opt_alloc.3
+krb5_get_init_creds_opt_free.3
+krb5_get_init_creds_opt_free_pkinit.3
+krb5_get_init_creds_opt_init.3
+krb5_get_init_creds_opt_set_address_list.3
+krb5_get_init_creds_opt_set_anonymous.3
+krb5_get_init_creds_opt_set_default_flags.3
+krb5_get_init_creds_opt_set_etype_list.3
+krb5_get_init_creds_opt_set_forwardable.3
+krb5_get_init_creds_opt_set_pa_password.3
+krb5_get_init_creds_opt_set_paq_request.3
+krb5_get_init_creds_opt_set_pkinit.3
+krb5_get_init_creds_opt_set_preauth_list.3
+krb5_get_init_creds_opt_set_proxiable.3
+krb5_get_init_creds_opt_set_renew_life.3
+krb5_get_init_creds_opt_set_salt.3
+krb5_get_init_creds_opt_set_tkt_life.3
+krb5_get_init_creds_password.3
 krb5_get_krb524hst.3
 krb5_get_krb_admin_hst.3
 krb5_get_krb_changepw_hst.3
@@ -374,6 +397,7 @@ krb5_store_stringz.3
 krb5_store_times.3
 krb5_string_to_enctype.3
 krb5_ticket.3
+krb5_ticket_get_authorization_data_type.3
 krb5_ticket_get_client.3
 krb5_ticket_get_server.3
 krb5_timeofday.3
