@@ -3,6 +3,7 @@
    
    Copyright (C) Andrew Tridgell              2003
    Copyright (C) James J Myers 		      2003 <myersjj@samba.org>
+   Copyright (C) Stefan Metzmacher            2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
