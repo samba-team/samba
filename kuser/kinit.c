@@ -290,9 +290,12 @@ renew_validate(krb5_context context,
     flags.i = 0;
     flags.b.renewable         = flags.b.renew = renew;
     flags.b.validate          = validate;
-    flags.b.forwardable       = forwardable_flag;
-    flags.b.proxiable         = proxiable_flag;
-    flags.b.request_anonymous = anonymous_flag;
+    if (forwardable_flag != -1)
+	flags.b.forwardable       = forwardable_flag;
+    if (proxiable_flag != -1)
+	flags.b.proxiable         = proxiable_flag;
+    if (anonymous_flag != -1)
+	flags.b.request_anonymous = anonymous_flag;
     if(life)
 	in.times.endtime = time(NULL) + life;
 
