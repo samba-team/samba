@@ -949,7 +949,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(nt_status);
 	}
 
-	RESOLVE_DFSPATH(path, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH_WCARD(path, conn, inbuf, outbuf);
   
 	p++;
 	status_len = SVAL(p, 0);
@@ -1823,7 +1823,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
@@ -4293,8 +4293,8 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
 	
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 	
@@ -4453,8 +4453,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
 
 	rc = unix_convert(name,conn,0,&bad_path1,&sbuf1);
 	unix_convert(newname,conn,0,&bad_path2,&sbuf2);
