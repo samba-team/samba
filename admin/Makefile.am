@@ -4,6 +4,8 @@ include $(top_srcdir)/Makefile.am.common
 
 AM_CPPFLAGS += $(INCLUDE_readline) $(INCLUDE_des)
 
+SLC = $(top_builddir)/lib/sl/slc
+
 man_MANS = ktutil.8
 
 sbin_PROGRAMS = ktutil
@@ -17,7 +19,15 @@ ktutil_SOURCES =				\
 	list.c					\
 	purge.c					\
 	remove.c				\
+	ktutil-commands.c			\
 	rename.c
+
+$(ktutil_OBJECTS): ktutil-commands.h
+
+CLEANFILES = ktutil-commands.h ktutil-commands.c
+
+ktutil-commands.c ktutil-commands.h: ktutil-commands.in
+	$(SLC) $(srcdir)/ktutil-commands.in
 
 LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
