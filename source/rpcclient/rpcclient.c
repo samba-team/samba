@@ -501,9 +501,9 @@ struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 
 
 /* Print usage information */
-static void usage(char *pname)
+static void usage(void)
 {
-	printf("Usage: %s server [options]\n", pname);
+	printf("Usage: rpcclient server [options]\n");
 
 	printf("\t-A authfile           file containing user credentials\n");
 	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
@@ -542,17 +542,6 @@ static void usage(char *pname)
 	setlinebuf(stdout);
 
 	DEBUGLEVEL = 1;
-
-	/* Parse options */
-	if (argc < 2) {
-		usage(argv[0]);
-		return 0;
-	}
-
-	pstrcpy(server, argv[1]);
-
-	argv++;
-	argc--;
 
 	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:")) != EOF) {
 		switch (opt) {
@@ -602,11 +591,25 @@ static void usage(char *pname)
 			
 		case 'h':
 		default:
-			usage(argv[0]);
+			usage();
 			exit(1);
 		}
 	}
 	
+	argv += optind;
+	argc -= optind;
+ 
+	/* Parse options */
+	if (argc == 0) {
+		usage();
+		return 0;
+	}
+ 
+	if (strncmp("//", argv[0], 2) == 0 || strncmp("\\\\", argv[0], 2) == 0)
+		argv[0] += 2;
+ 
+	pstrcpy(server, argv[0]);
+
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
 	setup_logging (argv[0], interactive);
@@ -643,7 +646,7 @@ static void usage(char *pname)
 	else {
 		init_rpcclient_creds (&creds, username, domain, password);
 	}
-	memset(password,'X',strlen(password));
+	memset(password,'X',sizeof(password));
 
 	/* open a connection to the specified server */
 	ZERO_STRUCTP (&cli);
