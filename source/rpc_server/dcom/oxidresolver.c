@@ -68,7 +68,7 @@ static WERROR SimplePing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 static WERROR ComplexPing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ComplexPing *r)
 {
-	struct PingSet *ps;
+	/* struct PingSet *ps; */
 	
 	/* If r->in.SetId == 0, create new PingSet */
 	
