@@ -158,7 +158,7 @@ as_rep(krb5_context context,
 					   &len);
 		if (ret) {
 		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-		    kdc_log(0, "Failed to decode PA-DATA -- %s", client_name);
+		    kdc_log(5, "Failed to decode PA-DATA -- %s", client_name);
 		    goto out;
 		}
 
@@ -171,6 +171,8 @@ as_rep(krb5_context context,
 		free_EncryptedData(&enc_data);
 		if(ret){
 		    e_text = "Failed to decrypt PA-DATA";
+		    kdc_log (5, "Failed to decrypt PA-DATA -- %s",
+			     client_name);
 		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		    continue;
 		}
@@ -182,6 +184,8 @@ as_rep(krb5_context context,
 		if(ret){
 		    e_text = "Failed to decode PA-ENC-TS-ENC";
 		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		    kdc_log (5, "Failed to decode PA-ENC-TS_ENC -- %s",
+			     client_name);
 		    continue;
 		}
 		patime = p.patimestamp;
