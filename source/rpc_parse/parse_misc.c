@@ -475,7 +475,7 @@ BOOL smb_io_unihdr2(char *desc, UNIHDR2 *hdr2, prs_struct *ps, int depth)
  Inits a UNISTR structure.
 ********************************************************************/
 
-void init_unistr(UNISTR *str, char *buf)
+void init_unistr(UNISTR *str, const char *buf)
 {
 	/* store the string (null-terminated copy) */
 	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));
