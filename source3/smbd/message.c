@@ -78,7 +78,7 @@ static void msg_deliver(void)
       string_sub(s,"%s",name);
       string_sub(s,"%f",msgfrom);
       string_sub(s,"%t",msgto);
-      standard_sub(-1,s);
+      standard_sub(-1,s,UID_FIELD_INVALID);
       smbrun(s,NULL,False);
     }
 

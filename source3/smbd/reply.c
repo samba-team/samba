@@ -689,7 +689,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
-  sess_vuid = register_vuid(uid,gid,user,guest);
+  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest);
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);

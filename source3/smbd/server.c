@@ -3537,7 +3537,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   {
     pstring s;
     pstrcpy(s,lp_pathname(snum));
-    standard_sub(cnum,s);
+    standard_sub(cnum,s,vuid);
     string_set(&pcon->connectpath,s);
     DEBUG(3,("Connect path is %s\n",s));
   }
@@ -3574,7 +3574,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       pstring cmd;
       pstrcpy(cmd,lp_rootpreexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       DEBUG(5,("cmd=%s\n",cmd));
       smbrun(cmd,NULL,False);
     }
@@ -3628,7 +3628,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       pstring cmd;
       pstrcpy(cmd,lp_preexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       smbrun(cmd,NULL,False);
     }
   
@@ -4222,7 +4222,7 @@ void close_cnum(int cnum, uint16 vuid)
     {
       pstring cmd;
       strcpy(cmd,lp_postexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       smbrun(cmd,NULL,False);
       unbecome_user();
     }
@@ -4233,7 +4233,7 @@ void close_cnum(int cnum, uint16 vuid)
     {
       pstring cmd;
       strcpy(cmd,lp_rootpostexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       smbrun(cmd,NULL,False);
     }
 
@@ -4338,8 +4338,10 @@ void exit_server(char *reason)
 /****************************************************************************
 do some standard substitutions in a string
 ****************************************************************************/
-void standard_sub(int cnum,char *str)
+void standard_sub(int cnum,char *str,uint16 vuid)
 {
+  user_struct *vuser = get_valid_user_struct(vuid);
+
   if (VALID_CNUM(cnum)) {
     char *p, *s, *home;
 
@@ -4368,6 +4370,9 @@ void standard_sub(int cnum,char *str)
       }
     }
   }
+  if(vuser != NULL)
+    pstrcpy( sesssetup_user, vuser->requested_name);
+
   standard_sub_basic(str);
 }
 

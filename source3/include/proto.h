@@ -1554,7 +1554,7 @@ char *validated_username(uint16 vuid);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
 		 int **p_igroups, gid_t **p_groups,
          int **p_attrs);
-uint16 register_vuid(int uid,int gid, char *name,BOOL guest);
+uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest);
 void add_session_user(char *user);
 BOOL update_smbpassword_file( char *user, fstring password);
 void dfs_unlogin(void);
@@ -1726,7 +1726,7 @@ int reply_lanman2(char *outbuf);
 int reply_nt1(char *outbuf);
 void close_cnum(int cnum, uint16 vuid);
 void exit_server(char *reason);
-void standard_sub(int cnum,char *str);
+void standard_sub(int cnum,char *str,uint16 vuid);
 char *smb_fn_name(int type);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
