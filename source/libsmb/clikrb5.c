@@ -156,7 +156,7 @@ failed:
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
- DATA_BLOB krb5_get_ticket(char *principal, time_t time_offset)
+ DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
  {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return data_blob(NULL, 0);
