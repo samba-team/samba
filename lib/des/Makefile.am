@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 lib_LTLIBRARIES = libdes.la
 libdes_la_LDFLAGS = -version-info 3:1:0
 
-include_HEADERS = des.h md4.h md5.h sha.h rc4.h
+include_HEADERS = des.h md4.h md5.h sha.h rc4.h aes.h
 
 build_HEADERZ = $(include_HEADERS)
 
@@ -20,6 +20,7 @@ des_SOURCES = des.c des_ver.h
 LDADD = $(lib_LTLIBRARIES)
 
 libdes_la_SOURCES =	\
+	aes.c		\
 	cbc3_enc.c	\
 	cbc_cksm.c	\
 	cbc_enc.c	\
@@ -48,6 +49,7 @@ libdes_la_SOURCES =	\
 	rc4_skey.c	\
 	rc4_enc.c	\
 	read_pwd.c	\
+	rijndael-alg-fst.c \
 	rnd_keys.c	\
 	set_key.c	\
 	sha.c		\
