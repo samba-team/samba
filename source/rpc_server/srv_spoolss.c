@@ -1424,18 +1424,25 @@ static void api_spoolss_rfnpcnex(pipes_struct *p, prs_struct *data,
  * construct_printer_info_0
  * fill a printer_info_1 struct
  ********************************************************************/
-static void construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring servername, connection_struct *conn)
+static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring servername, connection_struct *conn)
 {
 	pstring chaine;
 	int count;
+	NT_PRINTER_INFO_LEVEL ntprinter;
 	
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
 	bzero(&status,sizeof(status));	
+
+	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
+	{
+		return (False);
+	}
+
 	count=get_printqueue(snum, conn ,&queue,&status);
 	
 	/* the description and the name are of the form \\server\share */
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, lp_servicename(snum));
+	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, ntprinter.info_2->printername);
 							    
 	make_unistr(&(printer->printername), chaine);
 	
@@ -1472,8 +1479,11 @@ static void construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	printer->unknown21    = 0x0648;
 	printer->unknown22    = 0x0;
 	printer->unknown23    = 0x5;
+
 	if (queue) free(queue);
-	
+
+	free_a_printer(ntprinter, 2);
+	return (True);	
 }
 
 /********************************************************************
@@ -1729,12 +1739,19 @@ static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number,
 
 /****************************************************************************
 ****************************************************************************/
+static void free_devmode(DEVICEMODE *devmode)
+{
+	if (devmode->private!=NULL)
+		free(devmode->private);
+	if (devmode!=NULL)
+		free(devmode);
+}
+
+/****************************************************************************
+****************************************************************************/
 static void free_printer_info_2(PRINTER_INFO_2 *printer)
 {
-	if (printer->devmode->private!=NULL)
-		free(printer->devmode->private);
-	if (printer->devmode!=NULL)
-		free(printer->devmode);
+	free_devmode(printer->devmode);
 	if (printer!=NULL)
 		free(printer);
 }
@@ -2024,6 +2041,40 @@ static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum,
 }
 
 /********************************************************************
+ * copy a strings array and convert to UNICODE
+ ********************************************************************/
+static void make_unistr_array(UNISTR ***uni_array, char **char_array)
+{
+	int i=0;
+	char *v;
+
+	DEBUG(6,("make_unistr_array\n"));
+
+	for (v=char_array[i]; *v!='\0'; v=char_array[i])
+	{
+		DEBUGADD(6,("i:%d:", i));
+		DEBUGADD(6,("%s:%d:", v, strlen(v)));
+	
+		*uni_array=(UNISTR **)Realloc(*uni_array, sizeof(UNISTR *)*(i+1));
+		DEBUGADD(7,("realloc:[%p],", *uni_array));
+			
+		(*uni_array)[i]=(UNISTR *)malloc( sizeof(UNISTR) );
+		DEBUGADD(7,("alloc:[%p],", (*uni_array)[i]));
+
+		make_unistr( (*uni_array)[i], v );
+		DEBUGADD(7,("copy\n"));
+			
+		i++;
+	}
+	DEBUGADD(7,("last one\n"));
+	
+	*uni_array=(UNISTR **)Realloc(*uni_array, sizeof(UNISTR *)*(i+1));
+	(*uni_array)[i]=(UNISTR *)malloc( sizeof(UNISTR));
+	(*uni_array)[i]=0x0000;
+	DEBUGADD(6,("last one:done\n"));
+}
+
+/********************************************************************
  * construct_printer_info_3
  * fill a printer_info_3 struct
  ********************************************************************/
@@ -2062,7 +2113,8 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	make_unistr( &(info->monitorname), driver.info_3->monitorname );	
 	make_unistr( &(info->defaultdatatype), driver.info_3->defaultdatatype );
 
-	make_unistr( &(info->dependentfiles), "" );
+	info->dependentfiles=NULL;
+	make_unistr_array(&(info->dependentfiles), driver.info_3->dependentfiles);
 }
 
 /********************************************************************
@@ -2227,26 +2279,6 @@ static void api_spoolss_endpageprinter(pipes_struct *p, prs_struct *data,
 	spoolss_reply_endpageprinter(&q_u, rdata);
 }
 
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_STARTDOCPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(&(q_u->handle));
-
-	if (OPEN_HANDLE(pnum))
-	{		
-		r_u.jobid=Printer[pnum].current_jobid;
-		r_u.status=0x0;
-
-		spoolss_io_r_startdocprinter("",&r_u,rdata,0);		
-	}
-	else
-	{
-		DEBUG(3,("Error in startdocprinter printer handle (pnum=%x)\n",pnum));
-	}
-}
-
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
@@ -2256,8 +2288,12 @@ static void api_spoolss_startdocprinter(pipes_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_STARTDOCPRINTER q_u;
+	SPOOL_R_STARTDOCPRINTER r_u;
+	DOC_INFO_1 *info_1;
+	
 	pstring fname;
 	pstring tempname;
+	pstring datatype;
 	int fd = -1;
 	int snum;
 	int pnum;
@@ -2265,9 +2301,29 @@ static void api_spoolss_startdocprinter(pipes_struct *p, prs_struct *data,
 	/* decode the stream and fill the struct */
 	spoolss_io_q_startdocprinter("", &q_u, data, 0);
 	
+	info_1=&(q_u.doc_info_container.docinfo.doc_info_1);
+	r_u.status=0x0;
 	pnum = find_printer_index_by_hnd(&(q_u.handle));
 
-	if (OPEN_HANDLE(pnum))
+	/*
+	 * a nice thing with NT is it doesn't listen to what you tell it.
+	 * when asked to send _only_ RAW datas, it tries to send datas
+	 * in EMF format.
+	 *
+	 * So I add checks like in NT Server ...
+	 */
+	
+	if (info_1->p_datatype != 0)
+	{
+		unistr2_to_ascii(datatype, &(info_1->docname), sizeof(datatype));
+		if (strcmp(datatype, "RAW") != 0)
+		{
+			r_u.jobid=0;
+			r_u.status=1804;
+		}		
+	}		 
+	
+	if (r_u.status==0 && OPEN_HANDLE(pnum))
 	{
 		/* get the share number of the printer */
 		get_printer_snum(&(q_u.handle),&snum);
@@ -2291,8 +2347,12 @@ static void api_spoolss_startdocprinter(pipes_struct *p, prs_struct *data,
 		
  		Printer[pnum].document_fd=fd;
 		Printer[pnum].document_started=True;
-	}	
-	spoolss_reply_startdocprinter(&q_u, rdata);
+		r_u.jobid=Printer[pnum].current_jobid;
+		r_u.status=0x0;
+
+	}
+		
+	spoolss_io_r_startdocprinter("",&r_u,rdata,0);		
 }
 
 /****************************************************************************
@@ -2665,19 +2725,30 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 
 /****************************************************************************
 ****************************************************************************/
-static void fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
+static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
                             int position, int snum)
 {
 	pstring temp_name;
+	DEVICEMODE *devmode;
+	NT_PRINTER_INFO_LEVEL ntprinter;
+	pstring chaine;
 
 	struct tm *t;
 	time_t unixdate = time(NULL);
+
+	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
+	{
+		return (False);
+	}	
 	
 	t=gmtime(&unixdate);
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;
-	make_unistr(&(job_info->printername), lp_servicename(snum));
+	
+	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter.info_2->printername);
+	make_unistr(&(job_info->printername), chaine);
+	
 	make_unistr(&(job_info->machinename), temp_name);
 	make_unistr(&(job_info->username), queue->user);
 	make_unistr(&(job_info->document), queue->file);
@@ -2685,9 +2756,6 @@ static void fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	make_unistr(&(job_info->datatype), "RAW");
 	make_unistr(&(job_info->printprocessor), "winprint");
 	make_unistr(&(job_info->parameters), "");
-
-/* here the devicemode should be filled up */
-
 	make_unistr(&(job_info->text_status), "");
 	
 /* and here the security descriptor */
@@ -2702,6 +2770,14 @@ static void fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	make_systemtime(&(job_info->submitted), t);
 	job_info->timeelapsed=0;
 	job_info->pagesprinted=0;
+
+	devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE));
+	ZERO_STRUCTP(devmode);	
+	construct_dev_mode(devmode, snum, global_myname);			
+	job_info->devmode=devmode;
+
+	free_a_printer(ntprinter, 2);
+	return (True);
 }
 
 /****************************************************************************
@@ -2772,6 +2848,7 @@ static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata, con
 		}
 		case 2:
 		{
+			free_devmode(job_info_2->devmode);
 			free(job_info_2);
 			break;
 		}
@@ -3470,7 +3547,6 @@ static void api_spoolss_addform(pipes_struct *p, prs_struct *data,
        spoolss_reply_addform(&q_u, rdata);
 }
 
-
 /****************************************************************************
 ****************************************************************************/
 static void spoolss_reply_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
@@ -3510,6 +3586,187 @@ static void api_spoolss_setform(pipes_struct *p, prs_struct *data,
 	spoolss_reply_setform(&q_u, rdata);
 }
 
+/****************************************************************************
+****************************************************************************/
+static void spoolss_reply_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *rdata)
+{
+	SPOOL_R_ENUMPRINTPROCESSORS r_u;
+	PRINTPROCESSOR_1 *info_1;
+	
+ 	DEBUG(5,("spoolss_reply_enumprintprocessors\n"));
+
+	/* 
+	 * Enumerate the print processors ...
+	 *
+	 * Just reply with "winprint", to keep NT happy
+	 * and I can use my nice printer checker.
+	 */
+	
+	r_u.status = 0x0;
+	r_u.offered = q_u->buf_size;
+	r_u.level = q_u->level;
+	
+	r_u.numofprintprocessors = 0x1;
+	
+	info_1 = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1));
+	
+	make_unistr(&(info_1->name), "winprint");
+	
+	r_u.info_1=info_1;
+	
+	spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0);
+}
+
+/****************************************************************************
+****************************************************************************/
+static void api_spoolss_enumprintprocessors(pipes_struct *p, prs_struct *data,
+				            prs_struct *rdata)
+{
+	SPOOL_Q_ENUMPRINTPROCESSORS q_u;
+
+	spoolss_io_q_enumprintprocessors("", &q_u, data, 0);
+
+	spoolss_reply_enumprintprocessors(&q_u, rdata);
+}
+
+/****************************************************************************
+****************************************************************************/
+static void spoolss_reply_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *rdata)
+{
+	SPOOL_R_ENUMPRINTMONITORS r_u;
+	PRINTMONITOR_1 *info_1;
+	
+ 	DEBUG(5,("spoolss_reply_enumprintmonitors\n"));
+
+	/* 
+	 * Enumerate the print monitors ...
+	 *
+	 * Just reply with "Local Port", to keep NT happy
+	 * and I can use my nice printer checker.
+	 */
+	
+	r_u.status = 0x0;
+	r_u.offered = q_u->buf_size;
+	r_u.level = q_u->level;
+	
+	r_u.numofprintmonitors = 0x1;
+	
+	info_1 = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1));
+	
+	make_unistr(&(info_1->name), "Local Port");
+	
+	r_u.info_1=info_1;
+	
+	spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0);
+}
+
+/****************************************************************************
+****************************************************************************/
+static void api_spoolss_enumprintmonitors(pipes_struct *p, prs_struct *data,
+				          prs_struct *rdata)
+{
+	SPOOL_Q_ENUMPRINTMONITORS q_u;
+
+	spoolss_io_q_enumprintmonitors("", &q_u, data, 0);
+
+	spoolss_reply_enumprintmonitors(&q_u, rdata);
+}
+
+/****************************************************************************
+****************************************************************************/
+static void spoolss_reply_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata, connection_struct *conn)
+{
+	SPOOL_R_GETJOB r_u;
+	int snum;
+	int count;
+	int i;
+	print_queue_struct *queue=NULL;
+	print_status_struct status;
+	JOB_INFO_1 *job_info_1=NULL;
+	JOB_INFO_2 *job_info_2=NULL;
+
+	DEBUG(4,("spoolss_reply_getjob\n"));
+	
+	bzero(&status,sizeof(status));
+
+	r_u.offered=q_u->buf_size;
+
+	if (get_printer_snum(&(q_u->handle), &snum))
+	{
+		count=get_printqueue(snum, conn, &queue, &status);
+		
+		r_u.level=q_u->level;
+		
+		DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", count, status.status, status.message));
+		
+		switch (r_u.level)
+		{
+			case 1:
+			{
+				job_info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
+
+				for (i=0; i<count; i++)
+				{
+					if (queue[i].job==(int)q_u->jobid)
+					{
+						fill_job_info_1(job_info_1, &(queue[i]), i, snum);
+					}
+				}
+				r_u.job.job_info_1=job_info_1;
+				break;
+			}
+			case 2:
+			{
+				job_info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
+
+				for (i=0; i<count; i++)
+				{
+					if (queue[i].job==(int)q_u->jobid)
+					{
+						fill_job_info_2(job_info_2, &(queue[i]), i, snum);
+					}
+				}
+				r_u.job.job_info_2=job_info_2;
+				break;
+			}
+		}
+	}
+
+	r_u.status=0x0;
+
+	spoolss_io_r_getjob("",&r_u,rdata,0);
+	switch (r_u.level)
+	{
+		case 1:
+		{
+			free(job_info_1);
+			break;
+		}
+		case 2:
+		{
+			free_devmode(job_info_2->devmode);
+			free(job_info_2);
+			break;
+		}
+	}
+	if (queue) free(queue);
+
+}
+
+/****************************************************************************
+****************************************************************************/
+static void api_spoolss_getjob(pipes_struct *p, prs_struct *data,
+                               prs_struct *rdata)
+{
+	SPOOL_Q_GETJOB q_u;
+	
+	spoolss_io_q_getjob("", &q_u, data, 0);
+
+	spoolss_reply_getjob(&q_u, rdata, p->conn);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
+}
+
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
@@ -3544,6 +3801,9 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_SETPRINTERDATA",            SPOOLSS_SETPRINTERDATA,            api_spoolss_setprinterdata            },
  {"SPOOLSS_ADDFORM",                   SPOOLSS_ADDFORM,                   api_spoolss_addform                   },
  {"SPOOLSS_SETFORM",                   SPOOLSS_SETFORM,                   api_spoolss_setform                   },
+ {"SPOOLSS_ENUMPRINTPROCESSORS",       SPOOLSS_ENUMPRINTPROCESSORS,       api_spoolss_enumprintprocessors       },
+ {"SPOOLSS_ENUMMONITORS",              SPOOLSS_ENUMMONITORS,              api_spoolss_enumprintmonitors         },
+ {"SPOOLSS_GETJOB",                    SPOOLSS_GETJOB,                    api_spoolss_getjob                    },
  { NULL,                               0,                                 NULL                                  }
 };
 
