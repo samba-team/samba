@@ -729,13 +729,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,file_size); 
 			SOFF_T(p,8,allocation_size);
 			p += 16;
-			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,nt_extmode);
 			p += 4;
-			SIVAL(p,0,0); p += 4;
 
-			len = srvstr_push(outbuf, p, fname, -1, 0);
-			SIVAL(p, -4, len);
-			p += len;
+			SIVAL(p,4,0); /* ea size */
+			len = srvstr_push(outbuf, p+8, fname, -1, 0);
+			SIVAL(p, 0, len);
+			p += 8 + len;
 
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
