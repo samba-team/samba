@@ -435,7 +435,7 @@ static WERROR cmd_spoolss_enum_ports(struct cli_state *cli,
 	WERROR         		result;
 	uint32                  needed, info_level = 1;
 	PORT_INFO_CTR 		ctr;
-	int 			returned;
+	uint32 			returned;
 	
 	if (argc > 2) {
 		printf("Usage: %s [level]\n", argv[0]);
