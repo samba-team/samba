@@ -26,24 +26,14 @@ RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpm"
 echo The RPM Version on this machine is: $RPMVER
 
+##
+## fix the mandir macro
+##
 case $RPMVER in
-    2*)
-       echo Building for RPM v2.x or v3.x
+    [23]*)
        sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
        ;;
-    4.0*)
-       ## catch rpm v4.0.x first
-       echo Building for RPM v4.0
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
-       ;;
-    4.1*)
-       echo Building for RPM v4.1
-       RPM="rpmbuild"
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
-       ;;
-    4.2*)
-       echo Building for RPM v4.2
-       RPM="rpmbuild"
+    4*)
        sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
     *)
@@ -52,6 +42,17 @@ case $RPMVER in
        ;;
 esac
 
+##
+## now catch the right command to build an RPM (defaults ro 'rpm'
+##
+case $RPMVER in
+    4.[12]*)
+       RPM="rpmbuild"
+       ;;
+esac
+
+echo "RPM build command is \"$RPM\""
+
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
 
@@ -59,11 +60,13 @@ esac
 
 /bin/cp -p filter-requires-samba_rh8.sh ${SRCDIR}
 /bin/cp -p filter-requires-samba_rh9.sh ${SRCDIR}
+chmod 755 ${SRCDIR}/filter-requires-samba_rh?.sh
 /bin/cp -av $SPECFILE ${SPECDIR}
 
 echo Getting Ready to build release package
 cd ${SPECDIR}
-${RPM} --define="rpm_version $RPMVER" -ba -v --clean --rmsource $SPECFILE
+#${RPM} -ba --clean --rmsource $SPECFILE
+${RPM} -ba -vv $SPECFILE
 
 echo Done.
 
