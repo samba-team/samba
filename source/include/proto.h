@@ -1041,7 +1041,6 @@ void sys_srandom(unsigned int seed);
 int groups_max(void);
 int sys_getgroups(int setlen, gid_t *gidset);
 int sys_setgroups(int setlen, gid_t *gidset);
-int sys_setgroups(int setlen, gid_t *gidset);
 void sys_setpwent(void);
 struct passwd *sys_getpwent(void);
 void sys_endpwent(void);
@@ -1472,9 +1471,7 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size,
-		BOOL remove_pending_locks_only,
-		void (*pre_unlock_fn)(void *),
-		void *pre_unlock_data);
+		BOOL remove_pending_locks_only);
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
@@ -1500,7 +1497,6 @@ void unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode);
 BOOL lock_share_entry_fsp(files_struct *fsp);
 void unlock_share_entry_fsp(files_struct *fsp);
-char *share_mode_str(int num, share_mode_entry *e);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **pp_shares);

@@ -187,8 +187,6 @@ AC_PROG_AWK
 dnl Check if we use GNU ld
 LD=ld
 AC_PROG_LD_GNU
-dnl look for executable suffix
-AC_EXEEXT
 AC_PATH_PROG(passwd_program, passwd, /bin/passwd)
 AC_SUBST(passwd_program)
 
@@ -255,7 +253,6 @@ case "$host_os" in
 				AC_DEFINE(_HPUX_SOURCE)
 				AC_DEFINE(_POSIX_SOURCE)
 				AC_DEFINE(_LARGEFILE64_SOURCE)
-				AC_DEFINE(POSIX_ACL_NEEDS_MASK)
 				AC_DEFINE(_ALIGNMENT_REQUIRED,1)
 				AC_DEFINE(_MAX_ALIGNMENT,4)
 		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS)
@@ -739,7 +736,7 @@ fi
 # Check if we have execl, if not we need to compile smbrun.
 AC_CHECK_FUNCS(execl)
 if test x"$ac_cv_func_execl" = x"no"; then
-    RUNPROG="bin/smbrun\$(EXEEXT)"
+    RUNPROG="bin/smbrun"
 else
     RUNPROG=""
 fi
@@ -898,7 +895,6 @@ case "$host_os" in
 				PICSUFFIX="po.o"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			AC_DEFINE(BROKEN_GETGRNAM)
 		;;
 		*sunos*) AC_DEFINE(SUNOS4)
 			BLDSHARED="true"
@@ -906,7 +902,6 @@ case "$host_os" in
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			AC_DEFINE(BROKEN_GETGRNAM)
 		;;
 		*freebsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
@@ -914,7 +909,6 @@ case "$host_os" in
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC -DPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			AC_DEFINE(BROKEN_GETGRNAM)
 		;;
 		*openbsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
@@ -922,7 +916,6 @@ case "$host_os" in
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			AC_DEFINE(BROKEN_GETGRNAM)
 		;;
 		*irix*) AC_DEFINE(IRIX)
 			case "$host_os" in
@@ -965,7 +958,6 @@ case "$host_os" in
 			fi
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192)
-			AC_DEFINE(POSIX_ACL_NEEDS_MASK)
 			;;
 		*qnx*) AC_DEFINE(QNX)
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
@@ -976,7 +968,6 @@ case "$host_os" in
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			AC_DEFINE(BROKEN_GETGRNAM)
 		;;
 		*sco*) AC_DEFINE(SCO)
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
@@ -1868,7 +1859,7 @@ AC_ARG_WITH(smbwrapper,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SMBWRAPPER)
-	WRAPPROG="bin/smbsh\$(EXEEXT)"
+	WRAPPROG="bin/smbsh"
 	WRAP="bin/smbwrapper.$SHLIBEXT"
 
 	if test x$ATTEMPT_WRAP32_BUILD = x; then
@@ -2196,7 +2187,7 @@ if test $with_smbpasswd_sam = yes; then
 	PDBEDIT=""
 else
 	AC_MSG_RESULT(no)
-	PDBEDIT="bin/pdbedit\$(EXEEXT)"
+	PDBEDIT=bin/pdbedit
 fi
 
 ########################################################################################
@@ -3030,8 +3021,8 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
 # Check for FreeBSD problem with getgroups
 
-	WINBIND_TARGETS="bin/wbinfo\$(EXEEXT)"
-	WINBIND_STARGETS="bin/winbindd\$(EXEEXT)"
+	WINBIND_TARGETS="bin/wbinfo"
+	WINBIND_STARGETS="bin/winbindd"
 	case "$host_os" in
         *irix*)
 		WINBIND_LTARGETS="nsswitch/libns_winbind.so"

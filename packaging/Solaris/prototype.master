@@ -20,9 +20,6 @@ d none /etc/init.d ? ? ?
 f none /etc/init.d/samba.server=packaging/Solaris/samba.server 0744 root sys
 d initscript /etc/rc3.d ? ? ?
 s initscript /etc/rc3.d/S99samba.server=../init.d/samba.server
-d none /usr/local/ ? ? ?
-d none /usr/local/lib ? ? ?
-d none /usr/local/include ? ? ?
 #
 # Stuff to set up SWAT
 #

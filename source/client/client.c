@@ -2085,9 +2085,6 @@ static void readline_callback(void)
 	last_t = t;
 
  again:
-	if (cli->fd == -1)
-		return;
-
 	FD_ZERO(&fds);
 	FD_SET(cli->fd,&fds);
 

@@ -817,7 +817,7 @@ int main(int argc, char **argv)
 	}
 
 	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
-	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2003\n" ) );
+	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
 
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));

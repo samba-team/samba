@@ -742,12 +742,7 @@ int sys_setgroups(int setlen, gid_t *gidset)
 	return 0 ;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
-#else /* No setgroups. */
-int sys_setgroups(int setlen, gid_t *gidset)
-{
-	errno = ENOSYS;
-	return -1;
-}
+
 #endif /* HAVE_SETGROUPS */
 
 /*

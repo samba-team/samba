@@ -71,15 +71,12 @@
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
+#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
-#define CHECK_FSP(fsp,conn) do {\
-			extern struct current_user current_user;\
-			if (!FNUM_OK(fsp,conn)) \
+#define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
 			else if((fsp)->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
-			} while(0)
+				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
 				return(ERROR_DOS(ERRDOS,ERRbadaccess))
@@ -177,8 +174,8 @@
 #define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
 
 #define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
-#define _smb_setlen(buf,len) do { buf[0] = 0; buf[1] = (len&0x10000)>>16; \
-        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF; } while (0)
+#define _smb_setlen(buf,len) buf[0] = 0; buf[1] = (len&0x10000)>>16; \
+        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF;
 
 /*******************************************************************
 find the difference in milliseconds between two struct timeval

@@ -292,11 +292,6 @@ int winbind_initgroups(char *user, gid_t gid)
 		return initgroups(user, gid);
 	}
 
-	/* We need setgroups for this call to work. */
-#if !defined(HAVE_SETGROUPS)
-	return ENOSYS;
-#endif
-
 	result = wb_getgroups(user, &groups);
 
 	DEBUG(10,("winbind_getgroups: %s: result = %s\n", user, 
@@ -331,6 +326,7 @@ int winbind_initgroups(char *user, gid_t gid)
 		}
 
 		/* Set the groups */
+
 		if (sys_setgroups(ngroups, groups) == -1) {
 			errno = EPERM;
 			result = -1;

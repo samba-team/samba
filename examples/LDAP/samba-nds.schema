@@ -11,7 +11,7 @@ BEGIN
 "lmPassword" ATTRIBUTE ::=
 {
 	Operation		ADD,
-	SyntaxID		SYN_CI_STRING,
+	SyntaxID		SYN_INTEGER,
 	Flags			{ DS_SINGLE_VALUED_ATTR },
 	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 1 }
 }
@@ -19,7 +19,7 @@ BEGIN
 "ntPassword" ATTRIBUTE ::=
 {
 	Operation		ADD,
-	SyntaxID		SYN_CI_STRING,
+	SyntaxID		SYN_INTEGER,
 	Flags			{ DS_SINGLE_VALUED_ATTR },
 	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 2 }
 }

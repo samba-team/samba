@@ -1,5 +1,5 @@
 PKG=samba
-NAME=SMB/CIFS based file/printer sharing
+NAME=SMB based file/printer sharing
 ARCH=__ARCH__
 VERSION=__VERSION__
 CATEGORY=system

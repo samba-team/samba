@@ -414,9 +414,7 @@ static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pe
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size,
-		BOOL remove_pending_locks_only,
-		void (*pre_unlock_fn)(void *),
-		void *pre_unlock_data)
+		BOOL remove_pending_locks_only)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i, j;
@@ -452,10 +450,6 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		    lock->fnum == fnum &&
 		    lock->start == start &&
 		    lock->size == size) {
-
-			if (pre_unlock_fn)
-				(*pre_unlock_fn)(pre_unlock_data);
-
 			/* found it - delete it */
 			if (count == 1) {
 				tdb_delete(tdb, kbuf);
@@ -489,11 +483,6 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 				continue;
 
 			if (lock->lock_type != PENDING_LOCK) {
-
-				/* Do any POSIX unlocks needed. */
-				if (pre_unlock_fn)
-					(*pre_unlock_fn)(pre_unlock_data);
-
 				/* Send unlock messages to any pending waiters that overlap. */
 				for (j=0; j<count; j++) {
 					struct lock_struct *pend_lock = &locks[j];

@@ -17,7 +17,6 @@ CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 AWK=@AWK@
 DYNEXP=@DYNEXP@
-EXEEXT=@EXEEXT@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -97,15 +96,13 @@ WINBIND_SPROGS = @WINBIND_STARGETS@
 WINBIND_PAM_PROGS = @WINBIND_PAM_TARGETS@
 WINBIND_LPROGS = @WINBIND_LTARGETS@
 
-SPROGS = bin/smbd$(EXEEXT) bin/nmbd$(EXEEXT) bin/swat$(EXEEXT)
-PROGS1 = bin/smbclient$(EXEEXT) bin/smbspool$(EXEEXT) bin/testparm$(EXEEXT) bin/testprns$(EXEEXT) bin/smbstatus$(EXEEXT) \
-	bin/smbcontrol$(EXEEXT) bin/tdbbackup$(EXEEXT) bin/make_printerdef$(EXEEXT) @RUNPROG@ 
-PROGS2 = bin/smbpasswd$(EXEEXT) bin/make_smbcodepage$(EXEEXT) bin/rpcclient$(EXEEXT) bin/make_unicodemap$(EXEEXT) \
-	bin/smbcacls$(EXEEXT) @WRAPPROG@ @WRAP@ @WRAP32@ @PAM_MOD@ @PDBEDIT@ @LIBSMBCLIENT@
+SPROGS = bin/smbd bin/nmbd bin/swat
+PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/tdbbackup bin/make_printerdef @RUNPROG@ 
+PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAPPROG@ @WRAP@ @WRAP32@ @PAM_MOD@ @PDBEDIT@ @LIBSMBCLIENT@
 MPROGS = @MPROGS@
 LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
-PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup$(EXEEXT)
-TORTURE_PROGS = bin/smbtorture$(EXEEXT) bin/msgtest$(EXEEXT) bin/masktest$(EXEEXT) bin/locktest$(EXEEXT) bin/locktest2$(EXEEXT)
+PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
+TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest bin/locktest2
 SHLIBS = @LIBSMBCLIENT@
 
 SCRIPTS = $(srcdir)/script/smbtar  $(srcdir)/script/findsmb
@@ -441,28 +438,27 @@ libsmbclient : CHECK bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 
 torture : CHECK $(TORTURE_PROGS)
 
-smbtorture : CHECK bin/smbtorture$(EXEEXT)
-bin/smbtorture : CHECK bin/smbtorture$(EXEEXT)
+smbtorture : CHECK bin/smbtorture
 
-masktest : CHECK bin/masktest$(EXEEXT)
+masktest : CHECK bin/masktest
 
-msgtest : CHECK bin/msgtest$(EXEEXT)
+msgtest : CHECK bin/msgtest
 
-locktest : CHECK bin/locktest$(EXEEXT)
+locktest : CHECK bin/locktest
 
-smbcacls : CHECK bin/smbcacls$(EXEEXT)
+smbcacls : CHECK bin/smbcacls
 
-locktest2 : CHECK bin/locktest2$(EXEEXT)
+locktest2 : CHECK bin/locktest2
 
-rpctorture : CHECK bin/rpctorture$(EXEEXT)
+rpctorture : CHECK bin/rpctorture
 
-bin/rpccheck$(EXEEXT): $(RPCCHECK_OBJ) bin/.dummy
+bin/rpccheck: $(RPCCHECK_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCCHECK_OBJ) $(LDFLAGS) $(LIBS)
 
-debug2html : CHECK bin/debug2html$(EXEEXT)
+debug2html : CHECK bin/debug2html
 
-smbfilter : CHECK bin/smbfilter$(EXEEXT)
+smbfilter : CHECK bin/smbfilter
 
 nsswitch : CHECK $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
@@ -516,127 +512,128 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/smbd$(EXEEXT): $(SMBD_OBJ) bin/.dummy
+bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
-bin/nmbd$(EXEEXT): $(NMBD_OBJ) bin/.dummy
+bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/swat$(EXEEXT): $(SWAT_OBJ) bin/.dummy
+bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS) 
 
-bin/rpcclient$(EXEEXT): $(RPCCLIENT_OBJ) bin/.dummy
+bin/rpcclient: $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) $(LDAPLIBS)
 
-bin/smbclient$(EXEEXT): $(CLIENT_OBJ) bin/.dummy
+bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
 
-bin/smbspool$(EXEEXT): $(CUPS_OBJ) bin/.dummy
+bin/smbspool: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmount$(EXEEXT): $(MOUNT_OBJ) bin/.dummy
+bin/smbmount: $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmnt$(EXEEXT): $(MNT_OBJ) bin/.dummy
+bin/smbmnt: $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbumount$(EXEEXT): $(UMOUNT_OBJ) bin/.dummy
+bin/smbumount: $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/testparm$(EXEEXT): $(TESTPARM_OBJ) bin/.dummy
+bin/testparm: $(TESTPARM_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/testprns$(EXEEXT): $(TESTPRNS_OBJ) bin/.dummy
+bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbstatus$(EXEEXT): $(STATUS_OBJ) bin/.dummy
+bin/smbstatus: $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbcontrol$(EXEEXT): $(SMBCONTROL_OBJ) bin/.dummy
+bin/smbcontrol: $(SMBCONTROL_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbpasswd$(EXEEXT): $(SMBPASSWD_OBJ) bin/.dummy
+bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
-bin/pdbedit$(EXEEXT): $(PDBEDIT_OBJ) bin/.dummy
+bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
-bin/make_smbcodepage$(EXEEXT): $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
+bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_unicodemap$(EXEEXT): $(MAKE_UNICODEMAP_OBJ) bin/.dummy
+bin/make_unicodemap: $(MAKE_UNICODEMAP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MAKE_UNICODEMAP_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nmblookup$(EXEEXT): $(NMBLOOKUP_OBJ) bin/.dummy
+bin/nmblookup: $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_printerdef$(EXEEXT): $(MAKE_PRINTERDEF_OBJ) bin/.dummy
+bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbtorture$(EXEEXT): $(SMBTORTURE_OBJ) bin/.dummy
+bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/masktest$(EXEEXT): $(MASKTEST_OBJ) bin/.dummy
+bin/masktest: $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/msgtest$(EXEEXT): $(MSGTEST_OBJ) bin/.dummy
+bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbcacls$(EXEEXT): $(SMBCACLS_OBJ) bin/.dummy
+bin/smbcacls: $(SMBCACLS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
-bin/locktest$(EXEEXT): $(LOCKTEST_OBJ) bin/.dummy
+bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/locktest2$(EXEEXT): $(LOCKTEST2_OBJ) bin/.dummy
+bin/locktest2: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nsstest$(EXEEXT): $(NSSTEST_OBJ) bin/.dummy
+bin/nsstest: $(NSSTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/rpctorture$(EXEEXT): $(RPCTORTURE_OBJ) bin/.dummy
+bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
-bin/debug2html$(EXEEXT): $(DEBUG2HTML_OBJ) bin/.dummy
+bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbfilter$(EXEEXT): $(SMBFILTER_OBJ) bin/.dummy
+bin/smbfilter: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbw_sample$(EXEEXT): $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
+
+bin/smbw_sample: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS)
 
-bin/smbsh$(EXEEXT): $(SMBSH_OBJ) bin/.dummy
+bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
@@ -669,7 +666,7 @@ nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@$(SHLD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/winbindd$(EXEEXT): $(WINBINDD_OBJ) bin/.dummy
+bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
@@ -688,46 +685,46 @@ nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ)
 	@$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_WINBIND_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/wbinfo$(EXEEXT): $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
+bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 			$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 		$(UBIQX_OBJ) $(LIBS) @BUILD_POPT@
 
-bin/tdbbackup$(EXEEXT): $(TDBBACKUP_OBJ) bin/.dummy
+bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
 
-bin/tdbdump$(EXEEXT): $(TDBDUMP_OBJ)  bin/.dummy
+bin/tdbdump: $(TDBDUMP_OBJ)  bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBDUMP_OBJ)
 
 install: installbin installman installscripts installcp installswat
 
 installdirs:
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(BASEDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(SBINDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(BINDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(LIBDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(VARDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(PIDDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(CODEPAGEDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(BASEDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(SBINDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(BINDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(LIBDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(VARDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(PIDDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(CODEPAGEDIR)
 
 installservers: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
 
 installbin: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(PROGS) $(WINBIND_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS) $(WINBIND_PROGS)
 
 installscripts: installdirs
-	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 installcp: installdirs installbin
-	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(CODEPAGEDIR) $(DESTDIR)$(BINDIR) $(CODEPAGELIST)
+	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
 
 installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@
@@ -737,26 +734,26 @@ installclientlib:
 
 # revert to the previously installed version
 revert:
-	@$(SHELL) $(srcdir)/script/revert.sh $(DESTDIR)$(SBINDIR) $(SPROGS) ${WINBIND_SPROGS}
-	@$(SHELL) $(srcdir)/script/revert.sh $(DESTDIR)$(BINDIR) $(PROGS) $(SCRIPTS) ${WINBIND_PROGS}
+	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) ${WINBIND_SPROGS}
+	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS) ${WINBIND_PROGS}
 
 installman:
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) "@ROFF@"
+	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir) "@ROFF@"
 
 uninstall: uninstallman uninstallbin uninstallscripts uninstallcp
 
 uninstallman:
-	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/uninstallman.sh $(MANDIR) $(srcdir)
 
 uninstallbin:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(PROGS) $(WINBIND_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS) $(WINBIND_PROGS)
 
 uninstallscripts:
-	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 uninstallcp:
-	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(DESTDIR)$(CODEPAGEDIR) $(CODEPAGELIST)
+	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@* */*.a

@@ -637,7 +637,7 @@ Samba for seemless integration</title>
 
 <para>
 MS Windows clients may use encrypted passwords as part of a 
-challenge/response authentication model (a.k.a. NTLMv1) or 
+challenege/response authentication model (a.k.a. NTLMv1) or 
 alone, or clear text strings for simple password based 
 authentication. It should be realized that with the SMB 
 protocol the password is passed over the network either 

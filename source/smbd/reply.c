@@ -662,7 +662,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
       smb_create_user(unix_user, NULL);
     }
 
-    if(lp_adduser_script() && *lp_adduser_script() && pwd) {
+    if(lp_adduser_script() && pwd) {
       SMB_STRUCT_STAT st;
 
       /*
@@ -765,7 +765,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     }
 
     username_str = smb_buf(inbuf)+smb_apasslen;
-    fstrcpy( native_lanman, skip_string(username_str, 4));
+    fstrcpy( native_lanman, skip_string(username_str, 3));
     
     /* 
      * we distinguish between 2K and XP by the "Native Lan Manager" 
@@ -1162,9 +1162,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   if (check_name(name,conn)) {
     if (VALID_STAT(sbuf) || vfs_stat(conn,name,&sbuf) == 0)
-      if (!(ok = S_ISDIR(sbuf.st_mode)))
-        errno = ENOTDIR;
-      
+      ok = S_ISDIR(sbuf.st_mode);
   }
 
   if (!ok) {
@@ -2264,7 +2262,6 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
-	extern struct current_user current_user;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
@@ -3150,7 +3147,6 @@ int reply_exit(connection_struct *conn,
 int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
                 int dum_buffsize)
 {
-	extern struct current_user current_user;
 	int outsize = 0;
 	time_t mtime;
 	files_struct *fsp = NULL;
@@ -3170,7 +3166,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if(!fsp || (fsp->conn != conn) || (fsp->vuid != current_user.vuid)) {
+	if(!fsp || (fsp->conn != conn)) {
 		END_PROFILE(SMBclose);
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}

@@ -104,15 +104,11 @@ static void print_socket_options(int s)
 	socklen_t vlen = 4;
 	smb_socket_option *p = &socket_options[0];
 
-	/* wrapped in if statement to prevent streams leak in SCO Openserver 5.0 */
-	/* reported on samba-technical  --jerry */
-	if ( DEBUGLEVEL >= 5 ) {
-		for (; p->name != NULL; p++) {
-			if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {
-				DEBUG(5,("Could not test socket option %s.\n", p->name));
-			} else {
-				DEBUG(5,("socket option %s = %d\n",p->name,value));
-			}
+	for (; p->name != NULL; p++) {
+		if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {
+			DEBUG(5,("Could not test socket option %s.\n", p->name));
+		} else {
+			DEBUG(5,("socket option %s = %d\n",p->name,value));
 		}
 	}
  }

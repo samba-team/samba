@@ -416,7 +416,7 @@ NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_QUERY_USERALIASES q;
 	SAMR_R_QUERY_USERALIASES r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 ptr=1;
+	uint ptr=1;
 	
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);

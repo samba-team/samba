@@ -523,7 +523,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
       brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
 		blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
-		blr->offset, blr->count, True, NULL, NULL);
+		blr->offset, blr->count, True);
 
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
@@ -554,7 +554,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
       blocking_lock_reply_error(blr,NT_STATUS_CANCELLED);
       brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
 		blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
-		blr->offset, blr->count, True, NULL, NULL);
+		blr->offset, blr->count, True);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
@@ -651,7 +651,7 @@ void process_blocking_lock_queue(time_t t)
 
       brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 		blr->lock_pid, sys_getpid(), conn->cnum,
-		blr->offset, blr->count, True, NULL, NULL);
+		blr->offset, blr->count, True);
 
       blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
@@ -669,7 +669,7 @@ void process_blocking_lock_queue(time_t t)
 
       brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 		blr->lock_pid, sys_getpid(), conn->cnum,
-		blr->offset, blr->count, True, NULL, NULL);
+		blr->offset, blr->count, True);
 
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
@@ -685,7 +685,7 @@ void process_blocking_lock_queue(time_t t)
 
       brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 		blr->lock_pid, sys_getpid(), conn->cnum,
-		blr->offset, blr->count, True, NULL, NULL);
+		blr->offset, blr->count, True);
 
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
@@ -703,7 +703,7 @@ void process_blocking_lock_queue(time_t t)
 
       brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 		blr->lock_pid, sys_getpid(), conn->cnum,
-		blr->offset, blr->count, True, NULL, NULL);
+		blr->offset, blr->count, True);
 
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));

@@ -34,7 +34,7 @@ extern int optind;
 
 /* forced running in root-mode */
 static BOOL local_mode;
-static BOOL joining_domain = False, got_pass = False, got_username = False, changing_trust_pw = False, changing_trust_pw_secrets_only = False; 
+static BOOL joining_domain = False, got_pass = False, got_username = False, changing_trust_pw = False; 
 static int local_flags = 0;
 static BOOL stdin_passwd_get = False;
 static fstring user_name, user_password;
@@ -97,7 +97,6 @@ static void usage(void)
 	printf("  -x                   delete user\n");
 	printf("  -j DOMAIN            join domain name\n");
 	printf("  -t DOMAIN            change trust account password on domain\n");
-	printf("  -T DOMAIN            change trust account password in secrets database only\n");
 	printf("  -S DOMAIN            Retrieve the domain SID for DOMAIN\n");
 	printf("  -R ORDER             name resolve order\n");
 	printf("  -W S-1-5-...	       Write the SID S-1-5-... to the secrets file\n");
@@ -122,7 +121,7 @@ static void process_options(int argc, char **argv, BOOL amroot)
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehmnj:t:T:r:sw:R:D:U:LSW:X:")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehmnj:t:r:sw:R:D:U:LSW:X:")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = amroot = True;
@@ -169,12 +168,6 @@ static void process_options(int argc, char **argv, BOOL amroot)
                         strupper(new_domain);
 			changing_trust_pw = True;
                         break;
-		case 'T':
-		    if (!amroot) goto bad_args;
-		    new_domain = optarg;
-		    strupper(new_domain);
-				changing_trust_pw_secrets_only = True;
-		    break;
 		case 'r':
 			remote_machine = optarg;
 			break;
@@ -939,7 +932,7 @@ static int process_root(void)
 			/* Get administrator password if not specified */
 
 			if (!got_pass) {
-				char *pass = get_pass("Password: ",stdin_passwd_get);
+				char *pass = getpass("Password: ");
 
 				if (pass)
 					pstrcpy(user_password, pass);
@@ -965,29 +958,6 @@ static int process_root(void)
 		return 1;
         }
 
-    /* Change trust password in secrets database only */
-    if (changing_trust_pw_secrets_only)
-    {
-        char *trust_pw;
-        char trust_pw_hash[16];
-         
-        trust_pw = get_pass("Trust account password: ",stdin_passwd_get);
-
-        E_md4hash(trust_pw,trust_pw_hash);
-
-        if(!secrets_store_trust_account_password(new_domain,trust_pw_hash))
-        {              
-		    fprintf(stderr, "Unable to write the machine account password for \
-                    machine %s in domain %s.\n", global_myname, new_domain);
-		    return 1;
-        }
-        else
-        {
-            fprintf(stdout, "Modified trust account password in secrets database\n");
-        }
-        
-        return 0;
-    }
 
 	/* 
 	 * get the domain sid from a PDC and store it in secrets.tdb 

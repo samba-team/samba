@@ -254,16 +254,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 				return(False);
 			}
 
-			if (!end) {
-				/*
-				 * We just scanned for, and found the end of the path.
-				 * We must return the valid stat struct.
-				 * JRA.
-				 */
-
-				*pst = st;
-			}
-
 		} else {
 			pstring rest;
 
@@ -386,6 +376,14 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 
 	if(!component_was_mangled && !name_has_wildcard)
 		stat_cache_add(orig_path, name);
+
+	/*
+	 * If we ended up resolving the entire path then return a valid
+	 * stat struct if we got one.
+	 */
+
+	if (VALID_STAT(st) && (strlen(orig_path) == strlen(name)))
+		*pst = st;
 
 	/* 
 	 * The name has been resolved.

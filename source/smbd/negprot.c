@@ -74,10 +74,8 @@ static int reply_lanman1(char *outbuf)
   set_message(outbuf,13,doencrypt?8:0,True);
   SSVAL(outbuf,smb_vwv1,secword); 
   /* Create a token value and add it to the outgoing packet. */
-  if (doencrypt) {
+  if (doencrypt) 
     generate_next_challenge(smb_buf(outbuf));
-    SSVAL(outbuf,smb_vwv11, 8);
-  }
 
   Protocol = PROTOCOL_LANMAN1;
 
@@ -135,10 +133,8 @@ static int reply_lanman2(char *outbuf)
   set_message(outbuf,13,crypt_len,True);
   SSVAL(outbuf,smb_vwv1,secword); 
   SIVAL(outbuf,smb_vwv6,sys_getpid());
-  if (doencrypt) {
+  if (doencrypt) 
 	  memcpy(smb_buf(outbuf), cryptkey, 8);
-	  SSVAL(outbuf,smb_vwv11, 8);
-  }
 
   Protocol = PROTOCOL_LANMAN2;
 

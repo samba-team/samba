@@ -40,7 +40,7 @@ static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
 #endif
 
 #ifndef RT_SIGNAL_LEASE
-#define RT_SIGNAL_LEASE (SIGRTMIN+1)
+#define RT_SIGNAL_LEASE 33
 #endif
 
 #ifndef F_SETSIG

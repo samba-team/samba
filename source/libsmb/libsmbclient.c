@@ -2423,7 +2423,7 @@ int smbc_print_file(const char *fname, const char *printq)
 
 	/* Try to open the file for reading ... */
 
-	if ((int)(fid1 = smbc_open(fname, O_RDONLY, 0666)) < 0) {
+	if ((fid1 = smbc_open(fname, O_RDONLY, 0666)) < 0) {
 		
 		DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
 		return -1;  /* smbc_open sets errno */
@@ -2432,7 +2432,7 @@ int smbc_print_file(const char *fname, const char *printq)
 
 	/* Now, try to open the printer file for writing */
 
-	if ((int)(fid2 = smbc_open_print_job(printq)) < 0) {
+	if ((fid2 = smbc_open_print_job(printq)) < 0) {
 
 		saverr = errno;  /* Save errno */
 		smbc_close(fid1);

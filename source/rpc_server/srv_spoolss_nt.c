@@ -4,8 +4,8 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
- *  Copyright (C) Jeremy Allison               2001-2002,
- *  Copyright (C) Gerald Carter		       2000-2003,
+ *  Copyright (C) Jeremy Allison		    2001,
+ *  Copyright (C) Gerald Carter		       2000-2001,
  *  Copyright (C) Tim Potter                   2001-2002.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -499,16 +499,16 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 
 	ZERO_STRUCTP(new_printer);
 	
-	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
-		SAFE_FREE(new_printer);
-		return False;
-	}
+	new_printer->notify.option=NULL;
 				
 	/* Add to the internal list. */
 	DLIST_ADD(printers_list, new_printer);
 
-	new_printer->notify.option=NULL;
-	
+	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
+		SAFE_FREE(new_printer);
+		return False;
+	}
+
 	if (!set_printer_hnd_printertype(new_printer, name)) {
 		close_printer_handle(p, hnd);
 		return False;
@@ -1154,10 +1154,8 @@ Can't find printer handle we created for printer %s\n", name ));
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
-		if (!get_printer_snum(p, handle, &snum)) {
-			close_printer_handle(p, handle);
+		if (!get_printer_snum(p, handle, &snum))
 			return WERR_BADFID;
-		}
 
 		se_map_standard(&printer_default->access_required, &printer_std_mapping);
 		

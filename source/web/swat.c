@@ -435,11 +435,7 @@ static int save_reload(int snum)
 	/* just in case they have used the buggy xinetd to create the file */
 	if (fstat(fileno(f), &st) == 0 &&
 	    (st.st_mode & S_IWOTH)) {
-#if defined HAVE_FCHMOD
 		fchmod(fileno(f), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-#else
-		chmod(servicesf, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-#endif
 	}
 
 	write_config(f, False, _dos_to_unix_static);

@@ -532,7 +532,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
    */
 
   if ( isdaemon )
-    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,interpret_addr(lp_socket_address()),True);
+    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0,True);
   else
     ClientNMB = 0;
   
@@ -793,7 +793,7 @@ static void usage(char *pname)
   reopen_logs();
 
   DEBUG( 0, ( "Netbios nameserver version %s started.\n", VERSION ) );
-  DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2003\n" ) );
+  DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2002\n" ) );
 
   if ( !reload_nmbd_services(False) )
     return(-1);

@@ -441,8 +441,8 @@
 		<term>%a</term>
 		<listitem><para>the architecture of the remote
 		machine. Only some are recognized, and those may not be 
-		100% reliable. It currently recognizes Samba, "WfWg", "Win95",
-		"WinNT", "Win2K", WinXP, and "Win2K3". Anything else will be known as 
+		100% reliable. It currently recognizes Samba, WfWg, Win95,
+		WinNT and Win2k. Anything else will be known as 
 		"UNKNOWN". If it gets it wrong then sending a level 
 		3 log to <ulink url="mailto:samba@samba.org">samba@samba.org
 		</ulink> should allow it to be fixed.</para></listitem>
@@ -1265,14 +1265,6 @@
 		<parameter>interfaces</parameter> list.  IP Source address spoofing
 		does defeat this simple check, however so it must not be used
 		seriously as a security feature for <command>nmbd</command>.</para>
-
-		<para>If <parameter>bind interfaces only</parameter> is set and the
-		<link linkend="INTERFACES">interfaces</link> parameter only contains
-		a virtual interface like for example <parameter>eth0:1</parameter>,
-		then you also need to set the <link linkend="SOCKETADDRESS">socket
-		address</link> parameter to its IP address. Otherwise <command>nmbd
-		</command> as a local master browser will not be able to communicate
-		with the domain master browser for browse list replication.</para>
 
 		<para>For file service it causes <ulink url="smbd.8.html">smbd(8)</ulink>
 		to bind only to the interface list given in the <link linkend="INTERFACES">

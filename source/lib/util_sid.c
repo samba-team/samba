@@ -65,7 +65,6 @@ static known_sid_users everyone_users[] = {
 
 static known_sid_users creator_owner_users[] = {
 	{ 0, SID_NAME_ALIAS, "Creator Owner" },
-	{ 1, SID_NAME_ALIAS, "Creator Group" },
 	{0, (enum SID_NAME_USE)0, NULL}};
 
 static known_sid_users nt_authority_users[] = {

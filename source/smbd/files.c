@@ -232,20 +232,12 @@ files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_i
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		/* We can have a fsp->fd == -1 here as it could be a stat open. */
-		if (fsp->dev == dev && 
+		if (fsp->fd != -1 &&
+		    fsp->dev == dev && 
 		    fsp->inode == inode &&
 		    fsp->file_id == file_id ) {
 			if (count > 10) {
 				DLIST_PROMOTE(Files, fsp);
-			}
-			/* Paranoia check. */
-			if (fsp->fd == -1 && fsp->oplock_type != NO_OPLOCK) {
-				DEBUG(0,("file_find_dif: file %s dev = %x, inode = %.0f, file_id = %u \
-oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, (unsigned int)fsp->dev,
-						(double)fsp->inode, (unsigned int)fsp->file_id,
-						(unsigned int)fsp->oplock_type ));
-				smb_panic("file_find_dif\n");
 			}
 			return fsp;
 		}

@@ -80,7 +80,6 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
 	int rparam_count=0, rdata_count=0;
-	uint32 sec_info = 0;
 	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
 	BOOL ret = False;
@@ -99,14 +98,7 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 	}
 
 	SIVAL(param, 0, fnum);
-
-	if (sd->off_dacl)
-		sec_info |= DACL_SECURITY_INFORMATION;
-	if (sd->off_owner_sid)
-		sec_info |= OWNER_SECURITY_INFORMATION;
-	if (sd->off_grp_sid)
-		sec_info |= GROUP_SECURITY_INFORMATION;
-	SSVAL(param, 4, sec_info);
+	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
 			       NT_TRANSACT_SET_SECURITY_DESC, 

@@ -215,7 +215,7 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 		      BOOL* self_referralp, int* consumedcntp)
 {
 	fstring localpath;
-	int consumed_level = 1;
+
 	char *p;
 	fstring reqpath;
 
@@ -250,10 +250,10 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 		}
 	} 
 
-	/* redirect if any component in the path is a link */
+	/* also redirect if the parent directory is a dfs link */
 	fstrcpy(reqpath, dp->reqpath);
 	p = strrchr(reqpath, '/');
-	while (p) {
+	if (p) {
 		*p = '\0';
 		fstrcpy(localpath, conn->connectpath);
 		fstrcat(localpath, "/");
@@ -271,18 +271,15 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 				pstring buf;
 				pstrcpy(buf, dfspath);
 				trim_string(buf, NULL, "\\");
-				for (; consumed_level; consumed_level--) {
-					q = strrchr(buf, '\\');
-					if (q) *q = 0;
-				}
+				q = strrchr(buf, '\\');
+				if (q) 
+					*q = '\0';
 				*consumedcntp = strlen(buf);
-				DEBUG(10, ("resolve_dfs_path: Path consumed: %s (%d)\n", buf, *consumedcntp));
+				DEBUG(10, ("resolve_dfs_path: Path consumed: %d\n", *consumedcntp));
 			}
 			
 			return True;
 		}
-		p = strrchr(reqpath, '/');
-		consumed_level++;
 	}
 	
 	return False;
@@ -609,7 +606,8 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	/* Trim pathname sent by client so it begins with only one backslash.
 	   Two backslashes confuse some dfs clients
 	 */
-	while (pathnamep[0] == '\\' && pathnamep[1] == '\\')
+	while (strlen(pathnamep) > 1 && pathnamep[0] == '\\'
+	       && pathnamep[1] == '\\')
 		pathnamep++;
 
 	pstrcpy(buf, pathnamep);

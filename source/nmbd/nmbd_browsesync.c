@@ -321,15 +321,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
     zero_ip(&work->dmb_addr);
 
   /* Now initiate the node status request. */
-
-  /* We used to use the name "*",0x0 here, but some Windows
-   * servers don't answer that name. However we *know* they
-   * have the name workgroup#1b (as we just looked it up).
-   * So do the node status request on this name instead.
-   * Found at LBL labs. JRA.
-   */
-
-  make_nmb_name(&nmbname,work->work_group,0x1b);
+  make_nmb_name(&nmbname,"*",0x0);
 
   /* Put the workgroup name into the userdata so we know
      what workgroup we're talking to when the reply comes
