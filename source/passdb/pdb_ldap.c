@@ -5,7 +5,7 @@
    Copyright (C) Gerald Carter			2001-2003
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
-   Copyright (C) Stefan (metze) Metzmacher	2002
+   Copyright (C) Stefan (metze) Metzmacher	2002-2003
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -258,7 +258,7 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 				     char **attrs)
 {
 	int rc;
-	LDAPMessage *entry;
+	LDAPMessage *entry = NULL;
 	LDAPMod **mods = NULL;
 	char *name, *dn;
 	BerElement *ptr = NULL;
@@ -1017,8 +1017,8 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
-	LDAPMessage *result;
-	LDAPMessage *entry;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
 	int count;
 	char ** attr_list;
 	int rc;
@@ -1099,8 +1099,8 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
-	LDAPMessage *result;
-	LDAPMessage *entry;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
 	int count;
 	int rc;
 	fstring sid_string;
@@ -1264,7 +1264,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	const char *sname;
 	int rc;
-	LDAPMessage *result;
+	LDAPMessage *result = NULL;
 	NTSTATUS ret;
 	char **attr_list;
 	fstring objclass;
@@ -1328,9 +1328,9 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc = 0;
 	char *dn;
-	LDAPMessage *result;
-	LDAPMessage *entry;
-	LDAPMod **mods;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	LDAPMod **mods = NULL;
 	char **attr_list;
 
 	result = pdb_get_backend_private_data(newpwd, my_methods);
@@ -1361,13 +1361,14 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 				element_is_changed)) {
 		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
 		SAFE_FREE(dn);
+		if (mods != NULL)
+			ldap_mods_free(mods,True);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	if (mods == NULL) {
 		DEBUG(4,("ldapsam_update_sam_account: mods is empty: nothing to update for user: %s\n",
 			 pdb_get_username(newpwd)));
-		ldap_mods_free(mods, True);
 		SAFE_FREE(dn);
 		return NT_STATUS_OK;
 	}
@@ -1458,6 +1459,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 				DEBUG(0,("ldapsam_add_sam_account: SID '%s' already in the base, with samba attributes\n", 
 					 sid_to_string(sid_string, sid)));
 				free_attr_list( attr_list );
+				ldap_msgfree(result);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			ldap_msgfree(result);
@@ -1514,6 +1516,11 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 			 LDAP_OBJ_IDMAP_ENTRY,
 			 LDAP_OBJ_SID_ENTRY);
 		
+		/* free old result before doing a new search */
+		if (result != NULL) {
+			ldap_msgfree(result);
+			result = NULL;
+		}
 		rc = smbldap_search_suffix(ldap_state->smbldap_state, 
 					   filter, attr_list, &result);
 			
@@ -1566,6 +1573,8 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 				element_is_set_or_changed)) {
 		DEBUG(0, ("ldapsam_add_sam_account: init_ldap_from_sam failed!\n"));
 		ldap_msgfree(result);
+		if (mods != NULL)
+			ldap_mods_free(mods,True);
 		return NT_STATUS_UNSUCCESSFUL;		
 	}
 	
@@ -1626,9 +1635,9 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(0, ("ldapsam_search_one_group: "
-			  "Problem during the LDAP search: LDAP error: %s (%s)",
+			  "Problem during the LDAP search: LDAP error: %s (%s)\n",
 			  ld_error?ld_error:"(unknown)", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_search_one_group: Query was: %s, %s\n",
+		DEBUGADD(3, ("ldapsam_search_one_group: Query was: %s, %s\n",
 			  lp_ldap_group_suffix(), filter));
 		SAFE_FREE(ld_error);
 	}
@@ -1745,8 +1754,8 @@ static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
-	LDAPMessage *result;
-	LDAPMessage *entry;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
 	int count;
 
 	if (ldapsam_search_one_group(ldap_state, filter, &result)
@@ -1957,10 +1966,10 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 	int rc;
-	char *dn;
-	LDAPMessage *result;
-	LDAPMessage *entry;
-	LDAPMod **mods;
+	char *dn = NULL;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	LDAPMod **mods = NULL;
 
 	rc = ldapsam_search_one_group_by_gid(ldap_state, map->gid, &result);
 
@@ -1980,6 +1989,8 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 				  result, &mods, map)) {
 		DEBUG(0, ("ldapsam_update_group_mapping_entry: init_ldap_from_group failed\n"));
 		ldap_msgfree(result);
+		if (mods != NULL)
+			ldap_mods_free(mods,True);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2022,7 +2033,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
 	pstring sidstring, filter;
-	LDAPMessage *result;
+	LDAPMessage *result = NULL;
 	int rc;
 	NTSTATUS ret;
 	char **attr_list;
@@ -2175,6 +2186,11 @@ static void free_private_data(void **vp)
 	struct ldapsam_privates **ldap_state = (struct ldapsam_privates **)vp;
 
 	smbldap_free_struct(&(*ldap_state)->smbldap_state);
+
+	if ((*ldap_state)->result != NULL) {
+		ldap_msgfree((*ldap_state)->result);
+		(*ldap_state)->result = NULL;
+	}
 
 	*ldap_state = NULL;
 
@@ -2342,8 +2358,8 @@ and will risk BDCs having inconsistant SIDs\n"));
 				 alg_rid_base_string)) {
 		alg_rid_base = (uint32)atol(alg_rid_base_string);
 		if (alg_rid_base != algorithmic_rid_base()) {
-			DEBUG(0, ("pdb_init_ldapsam: The value of 'algorithmic RID base' has changed since the LDAP\n\
-database was initialised.  Aborting. \n"));
+			DEBUG(0, ("The value of 'algorithmic RID base' has changed since the LDAP\n"
+				  "database was initialised.  Aborting. \n"));
 			ldap_msgfree(result);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
