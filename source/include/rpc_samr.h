@@ -314,9 +314,6 @@ SamrTestPrivateFunctionsUser
 #define ALIAS_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
                              ALIAS_ACCESS_LOOKUP_INFO )
 
-/* A flag for the user info 21 and 23 structs */
-#define PASS_MUST_CHANGE_AT_NEXT_LOGON 1
-
 typedef struct _DISP_USER_INFO {
 	SAM_ACCOUNT *sam;
 } DISP_USER_INFO;
