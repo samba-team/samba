@@ -1014,7 +1014,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
  Internal fn to set security descriptors.
 ****************************************************************************/
 
-static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_info_sent, int *pdef_class,uint32 *pdef_code)
+static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security_info_sent, int *pdef_class,uint32 *pdef_code)
 {
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
