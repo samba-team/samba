@@ -438,6 +438,12 @@ gsskrb5_accept_sec_context
 				      seq_number, 0);
 	if (ret)
 	    goto failure;
+	
+	if ((flags & GSS_C_MUTUAL_FLAG) == 0 && gssapi_msg_order_f(flags)) {
+	    krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
+					     (*context_handle)->auth_context,
+					     seq_number);
+	}
     }
 
     *minor_status = 0;
