@@ -117,8 +117,7 @@ parse_ports(char *str)
 	} else {
 	    char *q = strchr(p, '/');
 	    if(q){
-		*q = 0;
-		*q++;
+		*q++ = 0;
 #if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
 		add_port(AF_INET6, p, q);
 #else
@@ -153,7 +152,7 @@ init_socket(struct descr *d, int family, int type, int port)
 {
     krb5_error_code ret;
     struct sockaddr *sa;
-    char *sa_buf;
+    void *sa_buf;
     int sa_size;
 
     sa_size = krb5_max_sockaddr_size ();
@@ -311,7 +310,7 @@ handle_udp(struct descr *d)
 {
     unsigned char *buf;
     struct sockaddr *sa;
-    char *sa_buf;
+    void *sa_buf;
     int sa_size;
     int from_len;
     size_t n;
@@ -365,7 +364,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 {
     unsigned char buf[1024];
     char addr[32];
-    char *sa_buf;
+    void *sa_buf;
     struct sockaddr *sa;
     int sa_size;
     int from_len;
