@@ -1176,3 +1176,11 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 {
 	return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
 }
+
+/********************************************************
+  Get the IP address list of the Domain Master Browsers
+ ********************************************************/ 
+BOOL get_dmb_list(struct in_addr **ip_list, int *count)
+{
+    return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
+}
