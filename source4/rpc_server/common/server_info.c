@@ -29,33 +29,51 @@
 /* This hardcoded value should go into a ldb database! */
 uint32_t dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return 500;
+	return lp_parm_int(-1, "server_info", "platform_id", 500);
 }
 
-const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc)
 {
-	return lp_netbios_name();
+	const char *p = server_unc;
+
+	/* if there's no string return our NETBIOS name */
+	if (!p) {
+		return talloc_strdup(mem_ctx, lp_netbios_name());
+	}
+
+	/* if there're '\\\\' in front remove them otherwise just pass the string */
+	if (p[0] == '\\' && p[1] == '\\') {
+		p += 2;
+	}
+
+	return talloc_strdup(mem_ctx, p);
 }
 
 const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_workgroup();
+	return talloc_strdup(mem_ctx, lp_workgroup());
 }
 
 /* This hardcoded value should go into a ldb database! */
 uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return 5;
+	return lp_parm_int(-1, "server_info", "version_major", 5);
 }
 
 /* This hardcoded value should go into a ldb database! */
 uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return 2;
+	return lp_parm_int(-1, "server_info", "version_minor", 2);
+}
+
+/* This hardcoded value should go into a ldb database! */
+uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return lp_default_server_announce();
 }
 
 /* This hardcoded value should go into a ldb database! */
 const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return "";
+	return talloc_strdup(mem_ctx, "");
 }
