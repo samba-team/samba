@@ -1,5 +1,7 @@
 Sun Aug 16 18:34:30 1998  Assar Westerlund  <assar@sics.se>
 
+	* kxd.c (doit_passive): conditionalize stream pipe code
+
 	* implement support for Solaris's named-pipe X transport
 
 Thu May 28 17:20:39 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
