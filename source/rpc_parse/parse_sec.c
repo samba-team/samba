@@ -59,14 +59,15 @@ void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth)
 	
 	old_offset = ps->offset;
 
-	prs_uint16("unknown_1", ps, depth, &(t->unknown_1));
-	prs_uint16_pre("ace_size ", ps, depth, &(t->ace_size ), &offset_ace_size);
+	prs_uint8     ("type ", ps, depth, &(t->type));
+	prs_uint8     ("flags", ps, depth, &(t->flags));
+	prs_uint16_pre("size ", ps, depth, &(t->size ), &offset_ace_size);
 
-	sec_io_info   ("info", &t->info, ps, depth);
+	sec_io_info   ("info ", &t->info, ps, depth);
 	prs_align(ps);
-	smb_io_dom_sid("sid ", &t->sid , ps, depth);
+	smb_io_dom_sid("sid  ", &t->sid , ps, depth);
 
-	prs_uint16_post("ace_size ", ps, depth, &t->ace_size, offset_ace_size, old_offset);
+	prs_uint16_post("size ", ps, depth, &t->size, offset_ace_size, old_offset);
 }
 
 /*******************************************************************
@@ -88,8 +89,8 @@ void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 	
 	old_offset = ps->offset;
 
-	prs_uint16("unknown_1", ps, depth, &(t->unknown_1));
-	prs_uint16_pre("acl_size ", ps, depth, &(t->acl_size ), &offset_acl_size);
+	prs_uint16("revision", ps, depth, &(t->revision));
+	prs_uint16_pre("size     ", ps, depth, &(t->size     ), &offset_acl_size);
 	prs_uint32("num_aces ", ps, depth, &(t->num_aces ));
 
 	for (i = 0; i < MIN(t->num_aces, MAX_SEC_ACES); i++)
@@ -101,19 +102,19 @@ void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 
 	prs_align(ps);
 
-	prs_uint16_post("acl_size ", ps, depth, &t->acl_size, offset_acl_size, old_offset);
+	prs_uint16_post("size     ", ps, depth, &t->size    , offset_acl_size, old_offset);
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
+static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 {
 	uint32 off_owner_sid;
-	uint32 off_pnt_sid  ;
-	uint32 off_unknown  ;
-	uint32 off_acl      ;
+	uint32 off_grp_sid  ;
+	uint32 off_sacl     ;
+	uint32 off_dacl      ;
 	uint32 old_offset;
 
 	if (t == NULL) return;
@@ -126,27 +127,65 @@ void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = ps->offset;
 
-	prs_uint32("unknown_1", ps, depth, &(t->unknown_1));
+	prs_uint16("revision ", ps, depth, &(t->revision ));
+	prs_uint16("type     ", ps, depth, &(t->type     ));
 
 	prs_uint32_pre("off_owner_sid", ps, depth, &(t->off_owner_sid), &off_owner_sid);
-	prs_uint32_pre("off_pnt_sid  ", ps, depth, &(t->off_pnt_sid  ), &off_pnt_sid  );
-	prs_uint32_pre("off_unknown  ", ps, depth, &(t->off_unknown  ), &off_unknown  );
-	prs_uint32_pre("off_acl      ", ps, depth, &(t->off_acl      ), &off_acl      );
+	prs_uint32_pre("off_grp_sid  ", ps, depth, &(t->off_grp_sid  ), &off_grp_sid  );
+	prs_uint32_pre("off_sacl     ", ps, depth, &(t->off_sacl     ), &off_sacl     );
+	prs_uint32_pre("off_dacl     ", ps, depth, &(t->off_dacl     ), &off_dacl     );
 
-	prs_uint32_post("off_acl     ", ps, depth, &(t->off_acl      ), off_acl      , old_offset);
-	sec_io_acl    ("acl"       , &t->acl       , ps, depth);
-	prs_align(ps);
+	if (IS_BITS_SET_ALL(t->type, SEC_DESC_DACL_PRESENT))
+	{
+		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , old_offset);
+		sec_io_acl     ("dacl"        , &t->dacl       , ps, depth);
+		prs_align(ps);
+	}
+	else
+	{
+		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , old_offset);
+	}
 
-	prs_uint32_post("off_unknown  ", ps, depth, &(t->off_unknown  ), off_unknown  , ps->offset);
+	if (IS_BITS_SET_ALL(t->type, SEC_DESC_SACL_PRESENT))
+	{
+		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , old_offset);
+		sec_io_acl     ("sacl"      , &t->sacl       , ps, depth);
+		prs_align(ps);
+	}
+	else
+	{
+		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , ps->offset);
+	}
 
 	prs_uint32_post("off_owner_sid", ps, depth, &(t->off_owner_sid), off_owner_sid, old_offset);
-	smb_io_dom_sid("owner_sid ", &t->owner_sid , ps, depth);
-	prs_align(ps);
+	if (t->off_owner_sid != 0)
+	{
+		smb_io_dom_sid("owner_sid ", &t->owner_sid , ps, depth);
+		prs_align(ps);
+	}
 
-	prs_uint32_post("off_pnt_sid  ", ps, depth, &(t->off_pnt_sid  ), off_pnt_sid  , old_offset);
-	smb_io_dom_sid("parent_sid", &t->parent_sid, ps, depth);
-	prs_align(ps);
+	prs_uint32_post("off_grp_sid  ", ps, depth, &(t->off_grp_sid  ), off_grp_sid  , old_offset);
+	if (t->off_grp_sid != 0)
+	{
+		smb_io_dom_sid("grp_sid", &t->grp_sid, ps, depth);
+		prs_align(ps);
+	}
 }
+
+/*******************************************************************
+creates a SEC_DESC_BUF structure.
+********************************************************************/
+void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data)
+{
+	ZERO_STRUCTP(buf);
+
+	/* max buffer size (allocated size) */
+	buf->max_len = len;
+	buf->undoc       = 0;
+	buf->len = data != NULL ? len : 0;
+	buf->sec = data;
+}
+
 
 /*******************************************************************
 reads or writes a SEC_DESC_BUF structure.

@@ -37,6 +37,7 @@
 #define REG_DELETE_VALUE    0x08
 #define REG_CREATE_VALUE    0x16
 #define REG_GET_KEY_SEC     0x0c
+#define REG_SET_KEY_SEC     0x15
 #define REG_ENUM_VALUE      0x0a
 #define REG_OPEN_ENTRY      0x0f
 #define REG_INFO            0x11
@@ -96,6 +97,27 @@ typedef struct r_reg_open_flush_key_info
 	uint32 status;         /* return status */
 
 } REG_R_FLUSH_KEY;
+
+
+/* REG_Q_SET_KEY_SEC */
+typedef struct q_reg_set_key_sec_info
+{
+	POLICY_HND pol;         /* policy handle */
+
+	uint32 unknown;       /* 0x0000 0004 */
+
+	uint32 ptr;       /* pointer */
+	BUFHDR hdr_sec;    /* header for security data */
+	SEC_DESC_BUF *data;    /* security data */
+	
+} REG_Q_SET_KEY_SEC;
+
+/* REG_R_SET_KEY_SEC */
+typedef struct r_reg_set_key_sec_info
+{
+	uint32 status;
+	
+} REG_R_SET_KEY_SEC;
 
 
 /* REG_Q_GET_KEY_SEC */

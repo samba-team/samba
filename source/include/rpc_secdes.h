@@ -38,6 +38,31 @@
 #define SEC_RIGHTS_READ           0x00020019
 #define SEC_RIGHTS_FULL_CONTROL   0x000f003f
 
+
+#define SEC_ACE_TYPE_ACCESS_ALLOWED	0x0
+#define SEC_ACE_TYPE_ACCESS_DENIED	0x1
+#define SEC_ACE_TYPE_SYSTEM_AUDIT	0x2
+#define SEC_ACE_TYPE_SYSTEM_ALARM	0x3
+
+#define SEC_ACE_FLAG_OBJECT_INHERIT	0x1
+#define SEC_ACE_FLAG_CONTAINER_INHERIT	0x2
+#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT	0x4
+#define SEC_ACE_FLAG_INHERIT_ONLY	0x8
+#define SEC_ACE_FLAG_VALID_INHERIT	0xf
+#define SEC_ACE_FLAG_SUCCESSFUL_ACCESS	0x40
+#define SEC_ACE_FLAG_FAILED_ACCESS	0x80
+
+#define SEC_DESC_OWNER_DEFAULTED	0x0001
+#define SEC_DESC_GROUP_DEFAULTED	0x0002
+#define SEC_DESC_DACL_PRESENT		0x0004
+#define SEC_DESC_DACL_DEFAULTED		0x0008
+#define SEC_DESC_SACL_PRESENT		0x0010
+#define SEC_DESC_SACL_DEFAULTED		0x0020
+#define SEC_DESC_SELF_RELATIVE		0x8000
+
+
+
+
 /* SEC_INFO */
 typedef struct security_info_info
 {
@@ -48,8 +73,9 @@ typedef struct security_info_info
 /* SEC_ACE */
 typedef struct security_ace_info
 {
-	uint16 unknown_1; /* 0x2000 */
-	uint16 ace_size;
+	uint8 type;
+	uint8 flags;
+	uint16 size;
 
 	SEC_INFO info;
 	DOM_SID sid;
@@ -62,27 +88,30 @@ typedef struct security_ace_info
 /* SEC_ACL */
 typedef struct security_acl_info
 {
-	uint16 unknown_1; /* 0x0002 */
-	uint16 acl_size; /* size in bytes of the entire ACL structure */
+	uint16 revision; /* 0x0002 */
+	uint16 size; /* size in bytes of the entire ACL structure */
 	uint32 num_aces; /* number of Access Control Entries */
 
 	SEC_ACE ace[MAX_SEC_ACES];
 
 } SEC_ACL;
 
+
 /* SEC_DESC */
 typedef struct security_descriptor_info
 {
-	uint32 unknown_1; /* 0x8004 0001 */
+	uint16 revision; /* 0x0001 */
+	uint16 type;     /* SEC_DESC_xxxx flags */
 
 	uint32 off_owner_sid; /* offset to owner sid */
-	uint32 off_pnt_sid  ; /* offset to parent? sid */
-	uint32 off_unknown  ; /* 0x0000 0000 */
-	uint32 off_acl      ; /* offset to list of permissions */
+	uint32 off_grp_sid  ; /* offset to group sid */
+	uint32 off_sacl     ; /* offset to system list of permissions */
+	uint32 off_dacl     ; /* offset to list of permissions */
 
-	SEC_ACL acl;
-	DOM_SID owner_sid;
-	DOM_SID parent_sid;
+	SEC_ACL dacl; /* user ACL */
+	SEC_ACL sacl; /* system ACL */
+	DOM_SID owner_sid; 
+	DOM_SID grp_sid;
 
 } SEC_DESC;
 
