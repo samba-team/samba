@@ -120,7 +120,6 @@ QUOTAOBJS=@QUOTAOBJS@
 
 VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ 
 PDB_MODULES = @MODULE_MYSQL@ @MODULE_XML@
-MODULES = bin/developer.@SHLIBEXT@ 
 
 ######################################################################
 # object file lists
@@ -569,7 +568,7 @@ nsswitch : SHOWFLAGS bin/winbindd bin/wbinfo nsswitch/libnss_winbind.so nsswitch
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
-modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES) $(MODULES)
+modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES)
 
 everything: all libsmbclient debug2html smbfilter talloctort modules
 
@@ -995,7 +994,6 @@ uninstallbin:
 uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(DESTDIR)$(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(MODULES)
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
@@ -1005,7 +1003,7 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) .headers.stamp
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(VFS_MODULES) $(PDB_MODULES) .headers.stamp
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
@@ -1082,7 +1080,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
-	-rm -f config.log $(BIN_PROGS) $(MODULES) $(SBIN_PROGS) bin/.dummy script/findsmb
+	-rm -f config.log $(BIN_PROGS) $(SBIN_PROGS) bin/.dummy script/findsmb
 
 distclean: realclean
 	-rm -f include/stamp-h
