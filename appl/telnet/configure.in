@@ -148,7 +148,8 @@ AC_REPLACE_FUNCS(getent herror memmove setenv strdup strerror)
 
 AC_CHECK_FUNCS(cgetent uname vfork vhangup)
 
-AC_CHECK_FUNCS(tgetent)
+AC_CHECK_FUNCS(tgetent setupterm)
+
 if test $ac_cv_func_tgetent = no; then
   # tgetent is not in the default libraries.  See if it's in some other.
   for lib in termcap; do
@@ -157,7 +158,13 @@ if test $ac_cv_func_tgetent = no; then
   done
 fi
 
-AC_CHECK_FUNCS(setupterm)
+if test $ac_cv_func_setupterm = no; then
+  # setupterm is not in the default libraries.  See if it's in some other.
+  for lib in curses; do
+    AC_CHECK_LIB($lib, setupterm, [AC_DEFINE(HAVE_SETUPTERM)
+      LIBS="$LIBS -l$lib"; break])
+  done
+fi
 
 
 # these two are mainly here for solaris

@@ -60,6 +60,9 @@
 /* Used with login -p */
 #undef LOGIN_ARGS
 
+/* Define if you have setupterm() */
+#undef HAVE_SETUPTERM
+
 
 /* */
 #undef STREAMSPTY

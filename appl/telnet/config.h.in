@@ -41,6 +41,9 @@
 /*  */
 #undef OLD_ENVIRON
 
+/* Define if you have setupterm() */
+#undef HAVE_SETUPTERM
+
 /* */
 #undef STREAMSPTY
 
