@@ -3295,16 +3295,12 @@ static BOOL get_memberuids(gid_t gid, uid_t **uids, int *num)
 
 	/* Secondary group members */
 
-	gr = grp->gr_mem;
-	while ((*gr != NULL) && ((*gr)[0] != '\0')) {
+	for (gr = grp->gr_mem; (*gr != NULL) && ((*gr)[0] != '\0'); gr += 1) {
 		struct passwd *pw = getpwnam(*gr);
 
 		if (pw == NULL)
 			continue;
-
 		add_uid_to_array_unique(pw->pw_uid, uids, num);
-
-		gr += 1;
 	}
 
 	winbind_on();
