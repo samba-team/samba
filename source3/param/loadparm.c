@@ -203,7 +203,6 @@ typedef struct
        char *szLdapUserSuffix;
 	int ldap_port;
 	int ldap_ssl;
-	char *szLdapServer;
 	char *szLdapSuffix;
 	char *szLdapFilter;
 	char *szLdapAdminDn;
