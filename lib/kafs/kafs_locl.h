@@ -120,6 +120,7 @@ typedef int (*get_cred_func_t)(struct kafs_data*, const char*, const char*,
 typedef char* (*get_realm_func_t)(struct kafs_data*, const char*);
 
 typedef struct kafs_data {
+    const char *name;
     afslog_uid_func_t afslog_uid;
     get_cred_func_t get_cred;
     get_realm_func_t get_realm;
@@ -131,6 +132,8 @@ struct kafs_token {
     void *ticket;
     size_t ticket_len;
 };
+
+void _kafs_foldup(char *, const char *);
 
 int _kafs_afslog_all_local_cells(kafs_data*, uid_t, const char*);
 
