@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "sids.h"
 
 #ifdef USE_SMBUNIX_DB
 
@@ -29,10 +30,6 @@ struct unix_entries
 	int num_grps;
 	int grp_idx;
 };
-
-extern DOM_SID global_sid_S_1_5_20;
-extern DOM_SID global_sam_sid;
-extern fstring global_sam_name;
 
 /***************************************************************
  Start to enumerate the bltpasswd list. Returns a void pointer

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "sids.h"
 
 
 extern int DEBUGLEVEL;

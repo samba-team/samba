@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "sids.h"
 
 #ifdef USE_SMBGROUP_DB
 
@@ -25,9 +26,6 @@ static int gp_file_lock_depth = 0;
 extern int DEBUGLEVEL;
 
 static char s_readbuf[1024];
-
-extern DOM_SID global_sam_sid;
-extern fstring global_sam_name;
 
 /***************************************************************
  Start to enumerate the grppasswd list. Returns a void pointer

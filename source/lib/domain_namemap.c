@@ -47,13 +47,11 @@
 
 
 #include "includes.h"
+#include "sids.h"
+
 extern int DEBUGLEVEL;
 
 extern fstring global_myworkgroup;
-extern DOM_SID global_member_sid;
-extern fstring global_sam_name;
-extern DOM_SID global_sam_sid;
-extern DOM_SID global_sid_S_1_5_20;
 
 /*******************************************************************
  converts a RID to a UNIX ID. NOTE: IS SOMETHING SPECIFIC TO SAMBA

@@ -22,15 +22,11 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "sids.h"
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_sam_sid;
-extern fstring global_sam_name;
 
-extern DOM_SID global_member_sid;
 extern fstring global_myworkgroup;
-
-extern DOM_SID global_sid_S_1_5_20;
 
 extern pstring global_myname;
 

@@ -22,9 +22,9 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "sids.h"
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_sam_sid;
 
 /*
  * NOTE. All these functions are abstracted into a structure

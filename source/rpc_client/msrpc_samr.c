@@ -43,6 +43,11 @@ uint32 lookup_sam_domainname(const char *srv_name,
 	BOOL res = True;
 	BOOL res1 = True;
 
+	if (srv_name == NULL)
+	{
+		srv_name = "\\\\.";
+	}
+
 	/* establish a connection. */
 	res  = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
 
@@ -57,6 +62,86 @@ uint32 lookup_sam_domainname(const char *srv_name,
 	return 0x0;
 }
 
+
+/****************************************************************************
+lookup in a sam database
+****************************************************************************/
+uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
+			uint32 num_names, char **names,
+			uint32 *num_rids, uint32 **rids, uint8 **types)
+{
+	fstring srv_name;
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 *my_types = NULL;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	if (domain == NULL)
+	{
+		fstrcpy(srv_name, "\\\\.");
+	}
+	else if (!get_any_dc_name(domain, srv_name))
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	if (num_rids)
+	{
+		*num_rids = 0;
+	}
+	if (rids)
+	{
+		*rids = NULL;
+	}
+	if (types)
+	{
+		*types = NULL;
+	}
+
+	if (!num_names || !names || !num_rids || (!types && !rids))
+	{
+		/* Not sure, wether that's a good error-code */
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	/* establish a connection. */
+	res =  res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+
+	/* connect to the domain */
+	res  = res ? samr_open_domain(&sam_pol, ace_perms, sid, &pol_dom) : False;
+
+	res1 = res ? samr_query_lookup_names(&pol_dom, 0x000003e8,
+					num_names, names,
+					num_rids, rids, &my_types) : False;
+
+	res  = res ? samr_close(&pol_dom) : False;
+	res  = res ? samr_close(&sam_pol) : False;
+
+	if (! res1)
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+	if (types) 
+	{
+		uint32 i, num;
+		num = *num_rids;
+		*types = g_new(uint8, num);
+		if (*types == NULL)
+		{
+			safe_free(my_types);
+			return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		}
+		for(i = 0; i < num; i++)
+		{
+			(*types)[i] = my_types[i];
+		}
+	}
+	safe_free(my_types);
+
+	return 0x0;
+}
 
 /****************************************************************************
 lookup in a sam database

@@ -25,12 +25,11 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "sids.h"
 
 extern int DEBUGLEVEL;
 
 extern pstring global_myname;
-extern DOM_SID global_sam_sid;
-extern fstring global_sam_name;
 
 /*************************************************************************
  make_net_r_req_chal:

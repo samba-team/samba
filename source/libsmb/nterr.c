@@ -10,7 +10,7 @@ typedef struct
 
 } nt_err_code_struct;
 
-nt_err_code_struct nt_errs[] =
+static nt_err_code_struct nt_errs[] =
 {
 	{ "NT_STATUS_UNSUCCESSFUL", NT_STATUS_UNSUCCESSFUL },
 	{ "NT_STATUS_NOT_IMPLEMENTED", NT_STATUS_NOT_IMPLEMENTED },
@@ -543,7 +543,7 @@ void get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len)
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-char *get_nt_error_msg(uint32 nt_code)
+const char *get_nt_error_msg(uint32 nt_code)
 {
 	static pstring msg;
 	get_safe_nt_error_msg(nt_code, msg, sizeof(msg));

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "sids.h"
 
 #ifdef WITH_LDAP
 
@@ -28,7 +29,6 @@
 #include <ldap.h>
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_sam_sid;
 
 /* Internal state */
 extern LDAP *ldap_struct;

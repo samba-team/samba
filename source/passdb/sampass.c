@@ -18,14 +18,13 @@
  */
 
 #include "includes.h"
+#include "sids.h"
 
 #ifdef USE_SMBPASS_DB
 
 extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
-
-extern DOM_SID global_sam_sid;
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer

@@ -18,11 +18,11 @@
  */
 
 #include "includes.h"
+#include "sids.h"
 
 #ifdef USE_SMBUNIX_DB
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_sam_sid;
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer

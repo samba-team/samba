@@ -45,12 +45,10 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "sids.h"
 
 extern int DEBUGLEVEL;
 
-extern fstring global_sam_name;
-extern DOM_SID global_sam_sid;
-extern DOM_SID global_sid_S_1_5_20;
 
 uint32 make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids)
 {
