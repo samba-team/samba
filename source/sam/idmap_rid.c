@@ -159,6 +159,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	DOM_SID *trusted_domain_sids;
 	uint32 enum_ctx = 0;
 	DOM_SID builtin_sid;
+	int own_domains = 2;
 
 	/* put the results together */
 	*num_domains = 1;
@@ -270,7 +271,6 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 					i, trusted_domain_names[i], sid_str));
 	}
 
-	int own_domains = 2;
 	if (!sid_equal(domain_sid, get_global_sam_sid()))
 		++own_domains;
 
