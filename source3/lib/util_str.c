@@ -557,10 +557,16 @@ size_t count_chars(const char *s,char c)
 {
 	smb_ucs2_t *ptr;
 	int count;
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(count=0,ptr=tmpbuf;*ptr;ptr++)
+	smb_ucs2_t *alloc_tmpbuf;
+
+	if (push_ucs2_allocate(&alloc_tmpbuf, s) == (size_t)-1) {
+		return 0;
+	}
+
+	for(count=0,ptr=alloc_tmpbuf;*ptr;ptr++)
 		if(*ptr==UCS2_CHAR(c))
 			count++;
+
 	return(count);
 }
 
