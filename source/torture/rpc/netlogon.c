@@ -1706,7 +1706,9 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 		/* even with this flush per request a w2k3 server seems to 
 		   clag with multiple outstanding requests. bleergh. */
-		event_loop_once(dcerpc_event_context(p));
+		if (event_loop_once(dcerpc_event_context(p)) != 0) {
+			return False;
+		}
 	}
 
 	for (i=0;i<ASYNC_COUNT;i++) {
