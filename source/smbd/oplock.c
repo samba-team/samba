@@ -50,6 +50,20 @@ int32 get_number_of_exclusive_open_oplocks(void)
   return exclusive_oplocks_open;
 }
 
+/****************************************************************************
+ Return True if an oplock message is pending.
+****************************************************************************/
+
+BOOL oplock_message_waiting(fd_set *fds)
+{
+     if (koplocks && koplocks->msg_waiting(fds))
+             return True;
+
+     if (FD_ISSET(oplock_sock, fds))
+             return True;
+
+     return False;
+}
 
 /****************************************************************************
  Read an oplock break message from either the oplock UDP fd or the

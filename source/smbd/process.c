@@ -208,6 +208,11 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	   signals */
 	if (selrtn == -1 && errno == EINTR) {
 		async_processing(&fds, buffer, buffer_len);
+		/*   
+		 * After async processing we must go and do the select again, as
+		 * the state of the flag in fds for the server file descriptor is
+		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
+		 */
 		goto again;
 	}
 
@@ -224,9 +229,21 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		return False;
 	}
 
-	if (!FD_ISSET(smbd_server_fd(),&fds) || selrtn > 1) {
+	/*
+	 * Ensure we process oplock break messages by preference.
+	 * This is IMPORTANT ! Otherwise we can starve other processes
+	 * sending us an oplock break message. JRA.
+	 */
+
+	if (oplock_message_waiting(&fds)) {
 		async_processing(&fds, buffer, buffer_len);
-		if (!FD_ISSET(smbd_server_fd(),&fds)) goto again;
+		/*
+		 * After async processing we must go and do the select again, as
+		 * the state of the flag in fds for the server file descriptor is
+		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
+		 */
+		goto again;
+
 	}
 	
 	return receive_smb(smbd_server_fd(), buffer, 0);
@@ -1248,7 +1265,7 @@ void smbd_process(void)
 		
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
-			if(last_timeout_processing_time - new_check_time >= (select_timeout/1000)) {
+			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
 				if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 					return;
 				num_smbs = 0; /* Reset smb counter. */
