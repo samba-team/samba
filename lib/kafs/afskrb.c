@@ -36,50 +36,9 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "protos.h"
+#include "kafs_locl.h"
 
 RCSID("$Id$");
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
-#endif
-
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
-
-#include <krb.h>
-#include <kafs.h>
-
-#include <resolve.h>
-
-#include "afssysdefs.h"
 
 #define AUTH_SUPERUSER "afs"
 
@@ -172,40 +131,37 @@ dns_find_cell(char *cell, char *dbserver)
 static char*
 realm_of_cell(char *cell)
 {
-  FILE *F;
-  char buf[1024];
-  u_int32_t addr;
-  struct hostent *hp;
-  char *realm = NULL;
+    FILE *F;
+    char buf[1024];
+    u_int32_t addr;
+    struct hostent *hp;
+    char *realm = NULL;
 
-  F = fopen(_PATH_CELLSERVDB, "r");
-  while(F && !feof(F)){
-    fgets(buf, 1024, F);
-    if(buf[0] != '>')
-      continue;
-    if(strncmp(buf+1, cell, strlen(cell)) == 0){
-      fgets(buf, 1024, F);
-      if(feof(F))
-	break;
-      addr = ip_aton(buf);
-      if(addr == 0)
-	break;
-      hp = gethostbyaddr((char*)&addr, 4, AF_INET);
-      if(hp == NULL)
-	break;
-      strcpy(buf, hp->h_name);
-      realm = krb_realmofhost(buf);
-      break;
+    if((F = fopen(_PATH_CELLSERVDB, "r"))){
+	while(fgets(buf, sizeof(buf), F)){
+	    if(buf[0] != '>')
+		continue;
+	    if(strncmp(buf + 1, cell, strlen(cell)) == 0){
+		if(fgets(buf, sizeof(buf), F) == NULL)
+		    break;
+		addr = ip_aton(buf);
+		if(addr == 0)
+		    break;
+		hp = gethostbyaddr((char*)&addr, 4, AF_INET);
+		if(hp == NULL)
+		    break;
+		strcpy(buf, hp->h_name);
+		realm = krb_realmofhost(buf);
+		break;
+	    }
+	}
+	fclose(F);
     }
-  }
-  if(F)
-    fclose(F);
-
-  if(realm == NULL){
-      if(dns_find_cell(cell, buf) == 0)
-	  realm = krb_realmofhost(buf);
-  }
-  return realm;
+    if(realm == NULL){
+	if(dns_find_cell(cell, buf) == 0)
+	    realm = krb_realmofhost(buf);
+    }
+    return realm;
 }
 
 /*

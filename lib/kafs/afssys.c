@@ -36,38 +36,9 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "protos.h"
+#include "kafs_locl.h"
 
 RCSID("$Id$");
-
-#include <string.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <errno.h>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
-#endif
-#ifdef HAVE_SYS_SYSCALL_H
-#include <sys/syscall.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#include <kafs.h>
-
-#include "afssysdefs.h"
 
 /* Magic to get AIX syscalls to work */
 #ifdef _AIX
@@ -77,8 +48,7 @@ static int (*Setpag)(void);
 
 #include "dlfcn.h"
 
-static
-int
+static int
 isSuid()
 {
   int uid = getuid();
@@ -88,8 +58,7 @@ isSuid()
   return (uid != euid) || (gid != egid);
 }
 
-static
-int
+static int
 aix_setup(void)
 {
 #ifdef STATIC_AFS_SYSCALLS
@@ -123,6 +92,7 @@ aix_setup(void)
 #define AIX_ENTRY_POINTS	5
 #define UNKNOWN_ENTRY_POINT	6
 static int afs_entry_point = UNKNOWN_ENTRY_POINT;
+
 
 int
 k_pioctl(char *a_path,

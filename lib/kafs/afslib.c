@@ -40,14 +40,9 @@
  * This file is only used with AIX 
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-RCSID("$Id$");
-#endif
+#include "kafs_locl.h"
 
-#include <sys/types.h>
-#include "kafs.h"
-#include "afssysdefs.h"
+RCSID("$Id$");
 
 int
 aix_pioctl(char *a_path,
