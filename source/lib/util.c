@@ -796,7 +796,7 @@ char *attrib_string(int mode)
 /*******************************************************************
   case insensitive string compararison
 ********************************************************************/
-int StrCaseCmp(char const *s, char const *t)
+int StrCaseCmp(const char *s, const char *t)
 {
   /* compare until we run out of string, either t or s, or find a difference */
   while (*s && *t && tolower(*s) == tolower(*t))
@@ -810,7 +810,7 @@ int StrCaseCmp(char const *s, char const *t)
 /*******************************************************************
   case insensitive string compararison, length limited
 ********************************************************************/
-int StrnCaseCmp(char const *s, char const *t, int n)
+int StrnCaseCmp(const char *s, const char *t, int n)
 {
   /* compare until we run out of string, either t or s, or chars */
   while (n-- && *s && *t && tolower(*s) == tolower(*t))
