@@ -620,6 +620,7 @@
 		<listitem><para><parameter>domain logons</parameter></para></listitem>
 		<listitem><para><parameter>domain master</parameter></para></listitem>
 		<listitem><para><parameter>encrypt passwords</parameter></para></listitem>
+		<listitem><para><parameter>enumports command</parameter></para></listitem>
 		<listitem><para><parameter>getwd cache</parameter></para></listitem>
 		<listitem><para><parameter>hide local users</parameter></para></listitem>
 		<listitem><para><parameter>homedir map</parameter></para></listitem>
@@ -929,7 +930,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="ADDPRINTERCOMMAND">addprinter command</term>
+		<term><anchor id="ADDPRINTERCOMMAND">addprinter command (G)</term>
 		<listitem><para>With the introduction of MS-RPC based printing
 		support for Windows NT/2000 clients in Samba 2.2, The MS Add
 		Printer Wizard (APW) icon is now also available in the 
@@ -1792,7 +1793,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="DELETEPRINTERCOMMAND">deleteprinter command</term>
+		<term><anchor id="DELETEPRINTERCOMMAND">deleteprinter command (G)</term>
 		<listitem><para>With the introduction of MS-RPC based printer
 		support for Windows NT/2000 clients in Samba 2.2, it is now 
 		possible to delete printer at run time by issuing the 
@@ -2250,7 +2251,30 @@
 		<para>Default: <command>encrypt passwords = no</command></para></listitem>
 		</varlistentry>
 		
+
+
+		<varlistentry>
+		<term><anchor id="ENUMPORTSCOMMAND">enumports command (G)</term>
+		<listitem><para>The concept of a "port" is fairly foreign
+		to UNIX hosts.  Under Windows NT/2000 print servers, a port
+		is associated with a port monitor and generally takes the form of
+		a local port (i.e. LPT1:, COM1:, FILE:) or a remote port
+		(i.e. LPD Port Monitor, etc...).  By default, Samba has only one
+		port defined--<constant>"Samba Printer Port"</constant>.  Under 
+		Windows NT/2000, all printers must have a valid port name.  
+		If you wish to have a list of ports displayed (<command>smbd
+		</command> does not use a port name for anything) other than 
+		the default <constant>"Samba Printer Port"</constant>, you 
+		can define <parameter>enumports command</parameter> to point to
+		a program which should generate a list of ports, one per line,
+		to standard output.  This listing will then be used in response
+		to the level 1 and 2 EnumPorts() RPC.</para>
 		
+		<para>Default: <emphasis>no enumports command</emphasis></para>
+		<para>Example: <command>enumports command = /usr/bin/listports
+		</command></para>
+		</listitem>
+		</varlistentry>
 		
 		<varlistentry>
 		<term><anchor id="EXEC">exec (S)</term>

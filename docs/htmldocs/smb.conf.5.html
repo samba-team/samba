@@ -1141,6 +1141,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>enumports command</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >getwd cache</I
 ></TT
 ></P
@@ -2230,7 +2239,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN722"
+NAME="AEN725"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3271,7 +3280,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1068"
+NAME="AEN1071"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -3432,7 +3441,7 @@ CLASS="COMMAND"
 ><A
 NAME="ADDPRINTERCOMMAND"
 ></A
->addprinter command</DT
+>addprinter command (G)</DT
 ><DD
 ><P
 >With the introduction of MS-RPC based printing
@@ -5347,7 +5356,7 @@ CLASS="COMMAND"
 ><A
 NAME="DELETEPRINTERCOMMAND"
 ></A
->deleteprinter command</DT
+>deleteprinter command (G)</DT
 ><DD
 ><P
 >With the introduction of MS-RPC based printer
@@ -6265,6 +6274,53 @@ CLASS="COMMAND"
 >Default: <B
 CLASS="COMMAND"
 >encrypt passwords = no</B
+></P
+></DD
+><DT
+><A
+NAME="ENUMPORTSCOMMAND"
+></A
+>enumports command (G)</DT
+><DD
+><P
+>The concept of a "port" is fairly foreign
+		to UNIX hosts.  Under Windows NT/2000 print servers, a port
+		is associated with a port monitor and generally takes the form of
+		a local port (i.e. LPT1:, COM1:, FILE:) or a remote port
+		(i.e. LPD Port Monitor, etc...).  By default, Samba has only one
+		port defined--<TT
+CLASS="CONSTANT"
+>"Samba Printer Port"</TT
+>.  Under 
+		Windows NT/2000, all printers must have a valid port name.  
+		If you wish to have a list of ports displayed (<B
+CLASS="COMMAND"
+>smbd
+		</B
+> does not use a port name for anything) other than 
+		the default <TT
+CLASS="CONSTANT"
+>"Samba Printer Port"</TT
+>, you 
+		can define <TT
+CLASS="PARAMETER"
+><I
+>enumports command</I
+></TT
+> to point to
+		a program which should generate a list of ports, one per line,
+		to standard output.  This listing will then be used in response
+		to the level 1 and 2 EnumPorts() RPC.</P
+><P
+>Default: <I
+CLASS="EMPHASIS"
+>no enumports command</I
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>enumports command = /usr/bin/listports
+		</B
 ></P
 ></DD
 ><DT
@@ -16677,7 +16733,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5253"
+NAME="AEN5269"
 ></A
 ><H2
 >WARNINGS</H2
@@ -16707,7 +16763,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5259"
+NAME="AEN5275"
 ></A
 ><H2
 >VERSION</H2
@@ -16718,7 +16774,7 @@ NAME="AEN5259"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5262"
+NAME="AEN5278"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -16797,7 +16853,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5282"
+NAME="AEN5298"
 ></A
 ><H2
 >AUTHOR</H2

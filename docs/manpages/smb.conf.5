@@ -605,6 +605,9 @@ each parameter for details. Note that some are synonyms.
 \fIencrypt passwords\fR
 .TP 0.2i
 \(bu
+\fIenumports command\fR
+.TP 0.2i
+\(bu
 \fIgetwd cache\fR
 .TP 0.2i
 \(bu
@@ -1356,7 +1359,7 @@ Default: \fBadd user script = <empty string>
 Example: \fBadd user script = /usr/local/samba/bin/add_user 
 %u\fR
 .TP
-\fBaddprinter command\fR
+\fBaddprinter command (G)\fR
 With the introduction of MS-RPC based printing
 support for Windows NT/2000 clients in Samba 2.2, The MS Add
 Printer Wizard (APW) icon is now also available in the 
@@ -2072,7 +2075,7 @@ Default: \fBdelete user script = <empty string>
 Example: \fBdelete user script = /usr/local/samba/bin/del_user 
 %u\fR
 .TP
-\fBdeleteprinter command\fR
+\fBdeleteprinter command (G)\fR
 With the introduction of MS-RPC based printer
 support for Windows NT/2000 clients in Samba 2.2, it is now 
 possible to delete printer at run time by issuing the 
@@ -2424,6 +2427,26 @@ server.
 
 Default: \fBencrypt passwords = no\fR
 .TP
+\fBenumports command (G)\fR
+The concept of a "port" is fairly foreign
+to UNIX hosts. Under Windows NT/2000 print servers, a port
+is associated with a port monitor and generally takes the form of
+a local port (i.e. LPT1:, COM1:, FILE:) or a remote port
+(i.e. LPD Port Monitor, etc...). By default, Samba has only one
+port defined--"Samba Printer Port". Under 
+Windows NT/2000, all printers must have a valid port name. 
+If you wish to have a list of ports displayed (\fBsmbd
+\fRdoes not use a port name for anything) other than 
+the default "Samba Printer Port", you 
+can define \fIenumports command\fR to point to
+a program which should generate a list of ports, one per line,
+to standard output. This listing will then be used in response
+to the level 1 and 2 EnumPorts() RPC.
+
+Default: \fBno enumports command\fR
+
+Example: \fBenumports command = /usr/bin/listports
+\fR.TP
 \fBexec (S)\fR
 This is a synonym for  \fIpreexec\fR.
 .TP
