@@ -387,7 +387,11 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
 		r.in.database_id = database_ids[i];
 		r.in.sequence_num = sequence_nums[r.in.database_id];
+
+		if (r.in.sequence_num.low == 0) continue;
+
 		r.in.sequence_num.low -= 1;
+
 
 		printf("Testing DatabaseDeltas of id %d at %d\n", 
 		       r.in.database_id, r.in.sequence_num.low);
