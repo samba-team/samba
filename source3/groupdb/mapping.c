@@ -530,11 +530,10 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 	ret += tdb_unpack(dbuf.dptr+ret, dbuf.dsize-ret, "d", &set->count);
 
 	DEBUG(10,("get_group_map_from_sid: %d privileges\n", map->priv_set.count));
-	
-	set->set=(LUID_ATTR *)malloc(set->count*sizeof(LUID_ATTR));
-	if (set->set==NULL) {
-		DEBUG(0,("get_group_map_from_sid: could not allocate memory for privileges\n"));
-		return False;
+
+	set->set = NULL;
+	if (set->count) {
+		set->set=(LUID_ATTR *)smb_xmalloc(set->count*sizeof(LUID_ATTR));
 	}
 
 	for (i=0; i<set->count; i++)
@@ -591,11 +590,9 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 
 		set=&map->priv_set;
 		ret += tdb_unpack(dbuf.dptr+ret, dbuf.dsize-ret, "d", &set->count);
-	
-		set->set=(LUID_ATTR *)malloc(set->count*sizeof(LUID_ATTR));
-		if (set->set==NULL) {
-			DEBUG(0,("get_group_map_from_gid: could not allocate memory for privileges\n"));
-			return False;
+		set->set = NULL;
+		if (set->count) {
+			set->set=(LUID_ATTR *)smb_xmalloc(set->count*sizeof(LUID_ATTR));
 		}
 
 		for (i=0; i<set->count; i++)
