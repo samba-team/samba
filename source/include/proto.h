@@ -2122,6 +2122,7 @@ int lp_minprintspace(int );
 int lp_maxprintjobs(int );
 int lp_printing(int );
 int lp_oplock_contention_limit(int );
+int lp_csc_policy(int );
 int lp_write_cache_size(int );
 char lp_magicchar(int );
 int lp_winbind_cache_time(void);
@@ -3828,6 +3829,8 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd);
+void init_srv_share_info501(SH_INFO_501 *sh501, char *net_name, uint32 type, char *remark, uint32 csc_policy);
+void init_srv_share_info501_str(SH_INFO_501_STR *sh501, char *net_name, char *remark);
 void init_srv_share_info502(SH_INFO_502 *sh502,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,

@@ -356,6 +356,7 @@ typedef struct
 	int iDefaultCase;
 	int iPrinting;
 	int iOplockContentionLimit;
+	int iCSCPolicy;
 	BOOL bAlternatePerm;
 	BOOL bPreexecClose;
 	BOOL bRootpreexecClose;
@@ -474,6 +475,7 @@ static service sDefault = {
 	CASE_LOWER,		/* iDefaultCase */
 	DEFAULT_PRINTING,	/* iPrinting */
 	2,			/* iOplockContentionLimit */
+	0,			/* iCSCPolicy */
 	False,			/* bAlternatePerm */
 	False,			/* bPreexecClose */
 	False,			/* bRootpreexecClose */
@@ -527,8 +529,6 @@ static service sDefault = {
 
 	""			/* dummy */
 };
-
-
 
 /* local variables */
 static service **ServicePtrs = NULL;
@@ -642,6 +642,19 @@ static struct enum_list enum_bool_auto[] = {
 	{True, "1"},
 	{Auto, "Auto"},
 	{-1, NULL}
+};
+
+/* Client-side offline caching policy types */
+#define CSC_POLICY_MANUAL 0
+#define CSC_POLICY_DOCUMENTS 1
+#define CSC_POLICY_PROGRAMS 2
+#define CSC_POLICY_DISABLE 3
+
+static struct enum_list enum_csc_policy[] = {
+	{CSC_POLICY_MANUAL, "manual"},
+	{CSC_POLICY_DOCUMENTS, "documents"},
+	{CSC_POLICY_PROGRAMS, "programs"},
+	{CSC_POLICY_DISABLE, "disable"}
 };
 
 /* 
@@ -975,6 +988,7 @@ static struct parm_struct parm_table[] = {
 	{"Locking Options", P_SEP, P_SEPARATOR},
 	
 	{"blocking locks", P_BOOL, P_LOCAL, &sDefault.bBlockingLocks, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"csc policy", P_ENUM, P_LOCAL, &sDefault.iCSCPolicy, NULL, enum_csc_policy, FLAG_SHARE | FLAG_GLOBAL},
 	{"fake oplocks", P_BOOL, P_LOCAL, &sDefault.bFakeOplocks, NULL, NULL, FLAG_SHARE},
 	{"kernel oplocks", P_BOOL, P_GLOBAL, &Globals.bKernelOplocks, NULL, NULL, FLAG_GLOBAL},
 	{"locking", P_BOOL, P_LOCAL, &sDefault.bLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -1757,6 +1771,7 @@ FN_LOCAL_INTEGER(lp_minprintspace, iMinPrintSpace)
 FN_LOCAL_INTEGER(lp_maxprintjobs, iMaxPrintJobs)
 FN_LOCAL_INTEGER(lp_printing, iPrinting)
 FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
+FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)

@@ -385,7 +385,8 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		
 		/* what does setting this bit do? It is set by NT4 and
 		   may affect the ability to autorun mounted cdroms */
-		SSVAL(outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS); 
+		SSVAL(outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS|
+				(lp_csc_policy(SNUM(conn)) << 2));
 		
 		init_dfsroot(conn, inbuf, outbuf);
 	}
