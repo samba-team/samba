@@ -1564,6 +1564,173 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 }
 
 /***********************************************************************************
+ Win9x NT tools get security descriptor.
+***********************************************************************************/
+
+uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC *q_u,
+			SRV_R_NET_FILE_QUERY_SECDESC *r_u)
+{
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	fstring null_pw;
+	pstring filename;
+	pstring qualname;
+	files_struct *fsp = NULL;
+	SMB_STRUCT_STAT st;
+	BOOL bad_path;
+	int access_mode;
+	int action;
+	int ecode;
+	struct current_user user;
+	fstring user_name;
+	connection_struct *conn = NULL;
+
+	ZERO_STRUCT(st);
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
+
+	/* Null password is ok - we are already an authenticated user... */
+	*null_pw = '\0';
+
+	get_current_user(&user, p);
+	fstrcpy(user_name, uidtoname(user.uid));
+
+	conn = make_connection(qualname, user_name, "", 0, "A:", user.vuid, &ecode);
+
+	if (conn == NULL) {
+		DEBUG(3,("_srv_net_file_query_secdesc: Unable to connect to %s\n", qualname));
+		r_u->status = (uint32)ecode;
+		goto error_exit;
+	}
+
+	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
+	unix_convert(filename, conn, NULL, &bad_path, &st);
+	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDONLY),
+				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
+
+	if (!fsp) {
+		DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
+		r_u->status = ERROR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	sd_size = conn->vfs_ops.get_nt_acl(fsp, fsp->fsp_name, &psd);
+
+	if (sd_size == 0) {
+		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
+		r_u->status = ERROR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	r_u->ptr_response = 1;
+	r_u->size_response = sd_size;
+	r_u->ptr_secdesc = 1;
+	r_u->size_secdesc = sd_size;
+	r_u->sec_desc = psd;
+
+	psd->dacl->revision = (uint16) NT4_ACL_REVISION;
+
+	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	file_free(fsp);
+
+	close_cnum(conn, user.vuid);
+	return r_u->status;
+
+  error_exit:
+
+	if(fsp) {
+		fsp->conn->vfs_ops.close(fsp, fsp->fd);
+		file_free(fsp);
+	}
+
+	if (conn) 
+		close_cnum(conn, user.vuid);
+
+	return r_u->status;
+}
+
+/***********************************************************************************
+ Win9x NT tools set security descriptor.
+***********************************************************************************/
+
+uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
+									SRV_R_NET_FILE_SET_SECDESC *r_u)
+{
+	BOOL ret;
+	pstring filename;
+	pstring qualname;
+	fstring null_pw;
+	files_struct *fsp = NULL;
+	SMB_STRUCT_STAT st;
+	BOOL bad_path;
+	int access_mode;
+	int action;
+	int ecode;
+	struct current_user user;
+	fstring user_name;
+	connection_struct *conn = NULL;
+
+	ZERO_STRUCT(st);
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
+
+	/* Null password is ok - we are already an authenticated user... */
+	*null_pw = '\0';
+
+	get_current_user(&user, p);
+	fstrcpy(user_name, uidtoname(user.uid));
+
+	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+
+	if (conn == NULL) {
+		DEBUG(3,("_srv_net_file_set_secdesc: Unable to connect to %s\n", qualname));
+		r_u->status = (uint32)ecode;
+		goto error_exit;
+	}
+
+	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
+	unix_convert(filename, conn, NULL, &bad_path, &st);
+
+	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDWR),
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
+
+	if (!fsp) {
+		DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
+		r_u->status = ERROR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	ret = conn->vfs_ops.set_nt_acl(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
+
+	if (ret == False) {
+		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));
+		r_u->status = ERROR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	file_free(fsp);
+	close_cnum(conn, user.vuid);
+	return r_u->status;
+
+  error_exit:
+
+	if(fsp) {
+		fsp->conn->vfs_ops.close(fsp, fsp->fd);
+		file_free(fsp);
+	}
+
+	if (conn) 
+		close_cnum(conn, user.vuid);
+
+	return r_u->status;
+}
+
+/***********************************************************************************
  It may be that we want to limit users to creating shares on certain areas of the UNIX file area.
  We could define areas by mapping Windows style disks to points on the UNIX directory hierarchy.
  These disks would the disks listed by this function.

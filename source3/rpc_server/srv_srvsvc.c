@@ -405,6 +405,66 @@ static BOOL api_srv_net_name_validate(pipes_struct *p)
 }
 
 /*******************************************************************
+ NetFileQuerySecdesc (opnum 0x27)
+*******************************************************************/
+
+static BOOL api_srv_net_file_query_secdesc(pipes_struct *p)
+{
+	SRV_Q_NET_FILE_QUERY_SECDESC q_u;
+	SRV_R_NET_FILE_QUERY_SECDESC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net file get info from Win9x */
+	if(!srv_io_q_net_file_query_secdesc("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_file_query_secdesc: Failed to unmarshall SRV_Q_NET_FILE_QUERY_SECDESC.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_file_query_secdesc(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_file_query_secdesc("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_file_query_secdesc: Failed to marshall SRV_R_NET_FILE_QUERY_SECDESC.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ NetFileSetSecdesc (opnum 0x28)
+*******************************************************************/
+
+static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
+{
+	SRV_Q_NET_FILE_SET_SECDESC q_u;
+	SRV_R_NET_FILE_SET_SECDESC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net file set info from Win9x */
+	if(!srv_io_q_net_file_set_secdesc("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_file_set_secdesc: Failed to unmarshall SRV_Q_NET_FILE_SET_SECDESC.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_file_set_secdesc(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_file_set_secdesc("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_file_set_secdesc: Failed to marshall SRV_R_NET_FILE_SET_SECDESC.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
 \PIPE\srvsvc commands
 ********************************************************************/
 
@@ -423,6 +483,8 @@ struct api_struct api_srv_cmds[] =
 	{ "SRV_NET_REMOTE_TOD"    , SRV_NET_REMOTE_TOD    , api_srv_net_remote_tod   },
 	{ "SRV_NET_DISK_ENUM"     , SRV_NET_DISK_ENUM     , api_srv_net_disk_enum    },
 	{ "SRV_NET_NAME_VALIDATE" , SRV_NET_NAME_VALIDATE , api_srv_net_name_validate},
+	{ "SRV_NETFILEQUERYSECDESC",SRV_NETFILEQUERYSECDESC,api_srv_net_file_query_secdesc},
+	{ "SRV_NETFILESETSECDESC" , SRV_NETFILESETSECDESC , api_srv_net_file_set_secdesc},
 	{ NULL                    , 0                     , NULL                     }
 };
 
