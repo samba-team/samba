@@ -567,7 +567,7 @@ doit (int port)
 
     while(exit_flag == 0) {
 	int ret;
-	struct fd_set fdset = real_fdset;
+	fd_set fdset = real_fdset;
 
 	ret = select (maxfd + 1, &fdset, NULL, NULL, NULL);
 	if (ret < 0)

@@ -47,7 +47,7 @@ send_and_recv (int fd,
 	       const krb5_data *req,
 	       krb5_data *rep)
 {
-     struct fd_set fdset;
+     fd_set fdset;
      struct timeval timeout;
      int ret;
      int nbytes;

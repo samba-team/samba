@@ -316,7 +316,7 @@ krb5_change_password (krb5_context	context,
 			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
 
     for (i = 0; i < 5; ++i) {
-	struct fd_set fdset;
+	fd_set fdset;
 	struct timeval tv;
 
 	ret = send_request (context,

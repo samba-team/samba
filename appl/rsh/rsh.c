@@ -57,7 +57,7 @@ static int input;		/* Read from stdin */
 static int
 loop (int s, int errsock)
 {
-    struct fd_set real_readset;
+    fd_set real_readset;
     int count = 2;
 
     FD_ZERO(&real_readset);
@@ -69,7 +69,7 @@ loop (int s, int errsock)
 
     for (;;) {
 	int ret;
-	struct fd_set readset;
+	fd_set readset;
 	char buf[RSH_BUFSIZ];
 
 	readset = real_readset;
