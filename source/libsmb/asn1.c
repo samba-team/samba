@@ -21,17 +21,13 @@
 
 #include "includes.h"
 
+/* free an asn1 structure */
 void asn1_free(ASN1_DATA *data)
 {
-	free(data->data);
+	SAFE_FREE(data->data);
 }
 
-BOOL asn1_check_empty(ASN1_DATA *data)
-{
-	if (data->nesting) return False;
-	return True;
-}
-
+/* write to the ASN1 buffer, advancing the buffer pointer */
 BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 {
 	if (data->length < data->ofs+len) {
@@ -44,11 +40,13 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 	return True;
 }
 
+/* useful fn for writing a uint8 */
 BOOL asn1_write_uint8(ASN1_DATA *data, uint8 v)
 {
 	return asn1_write(data, &v, 1);
 }
 
+/* push a tag onto the asn1 data buffer. Used for nested structures */
 BOOL asn1_push_tag(ASN1_DATA *data, uint8 tag)
 {
 	struct nesting *nesting;
@@ -64,6 +62,7 @@ BOOL asn1_push_tag(ASN1_DATA *data, uint8 tag)
 	return True;
 }
 
+/* pop a tag */
 BOOL asn1_pop_tag(ASN1_DATA *data)
 {
 	struct nesting *nesting;
@@ -75,6 +74,9 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 		return False;
 	}
 	len = data->ofs - (nesting->start+1);
+	/* yes, this is ugly. We don't know in advance how many bytes the length
+	   of a tag will take, so we assumed 1 byte. If we were wrong then we 
+	   need to correct our mistake */
 	if (len > 127) {
 		data->data[nesting->start] = 0x82;
 		asn1_write_uint8(data, 0);
@@ -91,7 +93,7 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	return True;
 }
 
-
+/* write an object ID to a ASN1 buffer */
 BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
 {
 	unsigned v, v2;
@@ -114,6 +116,7 @@ BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
 	return True;
 }
 
+/* write an octet string */
 BOOL asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length)
 {
 	asn1_push_tag(data, ASN1_OCTET_STRING);
@@ -122,6 +125,7 @@ BOOL asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length)
 	return True;
 }
 
+/* write a general string */
 BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 {
 	asn1_push_tag(data, ASN1_GENERAL_STRING);
@@ -130,10 +134,34 @@ BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 	return True;
 }
 
+/* write a BOOLEAN */
 BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
 	asn1_write_uint8(data, ASN1_BOOLEAN);
 	asn1_write_uint8(data, v);
 	return True;
 }
+
+
+/* load a ASN1_DATA structure with a lump of data, ready to be parsed */
+BOOL asn1_load(ASN1_DATA *data, void *p, size_t length)
+{
+	ZERO_STRUCTP(data);
+	data->data = memdup(p, length);
+	if (!data->data) return False;
+	data->length = length;
+	return True;
+}
+
+/* read from a ASN1 buffer, advancing the buffer pointer */
+BOOL asn1_read(ASN1_DATA *data, void *p, int len)
+{
+	if (data->ofs + len > data->length) {
+		return False;
+	}
+	memcpy(p, data->data + data->ofs, len);
+	data->ofs += len;
+	return True;
+}
+
 
