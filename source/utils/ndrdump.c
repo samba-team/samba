@@ -89,6 +89,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	struct ndr_print *pr;
 	struct poptOption long_options[] = {
 		{"context-file", 'c', POPT_ARG_STRING, &ctx_filename, 0, "In-filename to parse first", "CTX-FILE" },
+		POPT_COMMON_SAMBA
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
