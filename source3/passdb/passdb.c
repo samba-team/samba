@@ -1061,6 +1061,24 @@ BOOL local_password_change(const char *user_name, int local_flags,
 }
 
 /****************************************************************************
+ Convert a uid to SID - algorithmic.
+****************************************************************************/
+
+static DOM_SID *algorithmic_uid_to_sid(DOM_SID *psid, uid_t uid)
+{
+	if ( !lp_enable_rid_algorithm() )
+		return NULL;
+
+	DEBUG(8,("algorithmic_uid_to_sid: falling back to RID algorithm\n"));
+	sid_copy( psid, get_global_sam_sid() );
+	sid_append_rid( psid, fallback_pdb_uid_to_user_rid(uid) );
+	DEBUG(10,("algorithmic_uid_to_sid:  uid (%d) -> SID %s.\n",
+		(unsigned int)uid, sid_string_static(psid) ));
+
+	return psid;
+}
+
+/****************************************************************************
  Convert a uid to SID - locally.
 ****************************************************************************/
 
@@ -1074,15 +1092,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 	if ( !unix_pw ) {
 		DEBUG(4,("local_uid_to_sid: host has no idea of uid %lu\n", (unsigned long)uid));
-
-		if ( !lp_enable_rid_algorithm() ) 
-			return NULL;
-
-		DEBUG(8,("local_uid_to_sid: falling back to RID algorithm\n"));
-		
-		sid_copy( psid, get_global_sam_sid() );
-		sid_append_rid( psid, fallback_pdb_uid_to_user_rid(uid) );
-		goto out;
+		return algorithmic_uid_to_sid( psid, uid);
 	}
 	
 	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
@@ -1099,18 +1109,10 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	else {
 		DEBUG(4,("local_uid_to_sid: User %s [uid == %lu] has no samba account\n",
 			unix_pw->pw_name, (unsigned long)uid));
-			
-		if ( !lp_enable_rid_algorithm() ) 
-			return NULL;
 
-		DEBUG(8,("local_uid_to_sid: falling back to RID algorithm\n"));
-		
-		sid_copy( psid, get_global_sam_sid() );
-		sid_append_rid( psid, fallback_pdb_uid_to_user_rid(uid) );
+		return algorithmic_uid_to_sid( psid, uid);
 	}
 
-out:
-	
 	DEBUG(10,("local_uid_to_sid:  uid (%d) -> SID %s (%s).\n", 
 		(unsigned int)uid, sid_string_static(psid), unix_pw->pw_name));
 	
