@@ -11,7 +11,7 @@ endif
 
 TDBDIR=../tdb
 
-CFLAGS=-Wall -g -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
+CFLAGS=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
 LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
 
 TDB_OBJ=$(TDBDIR)/tdb.o $(TDBDIR)/spinlock.o
@@ -28,7 +28,7 @@ OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
 
 LDB_LIB = lib/libldb.a
 
-BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbtest
 
 LIBS = $(LDB_LIB)($(OBJS))
 
@@ -71,5 +71,12 @@ proto:
 etags:
 	etags */*.[ch]
 
-test:
+test-tdb:
+	@echo "STARTING TDB BACKEND TEST"
 	tests/test-tdb.sh
+
+test-ldap:
+	@echo "STARTING LDAP BACKEND TEST"
+	tests/test-ldap.sh
+
+test: test-tdb test-ldap

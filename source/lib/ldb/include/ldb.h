@@ -124,7 +124,7 @@ typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *)
 struct ldb_backend_ops {
 	int (*close)(struct ldb_context *);
 	int (*search)(struct ldb_context *, const char *, enum ldb_scope,
-		      const char *, const char * const [], struct ldb_message ***);
+		      const char *, char * const [], struct ldb_message ***);
 	int (*search_free)(struct ldb_context *, struct ldb_message **);
 	int (*add_record)(struct ldb_context *, const struct ldb_message *);
 	int (*modify_record)(struct ldb_context *, const struct ldb_message *);
@@ -174,7 +174,7 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *base,
 	       enum ldb_scope scope,
 	       const char *expression,
-	       const char * const *attrs, struct ldb_message ***res);
+	       char * const *attrs, struct ldb_message ***res);
 
 /* 
    free a set of messages returned by ldb_search
@@ -223,3 +223,44 @@ struct ldb_ldif *ldif_read_file(FILE *f);
 struct ldb_ldif *ldif_read_string(const char *s);
 int ldif_write_file(FILE *f, const struct ldb_ldif *msg);
 
+
+/* useful functions for ldb_message structure manipulation */
+
+/* find an element within an message */
+struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, 
+						 const char *attr_name);
+
+/* compare two ldb_val values - return 0 on match */
+int ldb_val_equal_exact(const struct ldb_val *v1, const struct ldb_val *v2);
+
+/* find a value within an ldb_message_element */
+struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el, 
+				 struct ldb_val *val);
+
+/* add a new empty element to a ldb_message */
+int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags);
+
+/* add a element to a ldb_message */
+int ldb_msg_add(struct ldb_message *msg, 
+		const struct ldb_message_element *el, 
+		int flags);
+
+/* compare two message elements - return 0 on match */
+int ldb_msg_element_compare(struct ldb_message_element *el1, 
+			    struct ldb_message_element *el2);
+
+/* find elements in a message and convert to a specific type, with
+   a give default value if not found. Assumes that elements are
+   single valued */
+int ldb_msg_find_int(const struct ldb_message *msg, 
+		     const char *attr_name,
+		     int default_value);
+unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
+			       const char *attr_name,
+			       int default_value);
+double ldb_msg_find_double(const struct ldb_message *msg, 
+			   const char *attr_name,
+			   double default_value);
+const char *ldb_msg_find_string(const struct ldb_message *msg, 
+				const char *attr_name,
+				const char *default_value);
