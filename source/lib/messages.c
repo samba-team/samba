@@ -144,6 +144,9 @@ static TDB_DATA message_key_pid(pid_t pid)
 
 static BOOL message_notify(pid_t pid)
 {
+	/* Doing kill with a non-positive pid causes messages to be
+	 * sent to places we don't want. */
+	SMB_ASSERT(pid > 0);
 	if (kill(pid, SIGUSR1) == -1) {
 		if (errno == ESRCH) {
 			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
@@ -173,6 +176,10 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 	rec.dest = pid;
 	rec.src = sys_getpid();
 	rec.len = len;
+
+	/* Doing kill with a non-positive pid causes messages to be
+	 * sent to places we don't want. */
+	SMB_ASSERT(pid > 0);
 
 	kbuf = message_key_pid(pid);
 
