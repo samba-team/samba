@@ -52,7 +52,7 @@ libroken_la_SOURCES =		\
 
 EXTRA_libroken_la_SOURCES =	\
 	chown.c			\
-	copyhosten.c		\
+	copyhostent.c		\
 	daemon.c		\
 	err.c			\
 	err.h			\
