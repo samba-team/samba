@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 {
     FILE *f;
     int flag;
-    char *fn, *hb;
+    const char *fn, *hb;
     
     if(argc < 2){
 	fn = "bits.h";
@@ -121,9 +121,10 @@ int main(int argc, char **argv)
     } else {
 	char *p;
 	fn = argv[1];
-	hb = malloc(strlen(fn) + 5);
-	sprintf(hb, "__%s__", fn);
-	for(p = hb; *p; p++){
+	p = malloc(strlen(fn) + 5);
+	sprintf(p, "__%s__", fn);
+	hb = p;
+	for(; *p; p++){
 	    if(!isalnum((unsigned char)*p))
 		*p = '_';
 	}
