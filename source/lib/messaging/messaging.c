@@ -33,7 +33,7 @@
 #define MESSAGING_BACKOFF 250000
 
 struct messaging_context {
-	servid_t server_id;
+	uint32_t server_id;
 	struct socket_context *sock;
 	char *path;
 	struct dispatch_fn *dispatch;
@@ -51,7 +51,7 @@ struct dispatch_fn {
 	uint32_t msg_type;
 	void *private;
 	void (*fn)(struct messaging_context *msg, void *private, 
-		   uint32_t msg_type, servid_t server_id, DATA_BLOB *data);
+		   uint32_t msg_type, uint32_t server_id, DATA_BLOB *data);
 };
 
 /* an individual message */
@@ -64,8 +64,8 @@ struct messaging_rec {
 	struct {
 		uint32_t version;
 		uint32_t msg_type;
-		servid_t from;
-		servid_t to;
+		uint32_t from;
+		uint32_t to;
 		uint32_t length;
 	} header;
 
@@ -78,7 +78,7 @@ struct messaging_rec {
  A useful function for testing the message system.
 */
 static void ping_message(struct messaging_context *msg, void *private, 
-			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
+			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
 {
 	DEBUG(1,("INFO: Received PING message from server %u [%.*s]\n",
 		 (uint_t)src, data->length, data->data?(const char *)data->data:""));
@@ -88,7 +88,7 @@ static void ping_message(struct messaging_context *msg, void *private,
 /* 
    return the path to a messaging socket
 */
-static char *messaging_path(TALLOC_CTX *mem_ctx, servid_t server_id)
+static char *messaging_path(TALLOC_CTX *mem_ctx, uint32_t server_id)
 {
 	char *name = talloc_asprintf(mem_ctx, "messaging/msg.%u", (unsigned)server_id);
 	char *ret;
@@ -228,7 +228,7 @@ static void messaging_listen_handler(struct event_context *ev, struct fd_event *
 */
 void messaging_register(struct messaging_context *msg, void *private,
 			uint32_t msg_type, 
-			void (*fn)(struct messaging_context *, void *, uint32_t, servid_t, DATA_BLOB *))
+			void (*fn)(struct messaging_context *, void *, uint32_t, uint32_t, DATA_BLOB *))
 {
 	struct dispatch_fn *d;
 
@@ -365,7 +365,7 @@ static void messaging_backoff_handler(struct event_context *ev, struct timed_eve
 /*
   Send a message to a particular server
 */
-NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t msg_type, DATA_BLOB *data)
+NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server, uint32_t msg_type, DATA_BLOB *data)
 {
 	struct messaging_rec *rec;
 	NTSTATUS status;
@@ -429,7 +429,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t
 /*
   Send a message to a particular server, with the message containing a single pointer
 */
-NTSTATUS messaging_send_ptr(struct messaging_context *msg, servid_t server, 
+NTSTATUS messaging_send_ptr(struct messaging_context *msg, uint32_t server, 
 			    uint32_t msg_type, void *ptr)
 {
 	DATA_BLOB blob;
@@ -454,7 +454,7 @@ static int messaging_destructor(void *ptr)
 /*
   create the listening socket and setup the dispatcher
 */
-struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id, struct event_context *ev)
+struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id, struct event_context *ev)
 {
 	struct messaging_context *msg;
 	NTSTATUS status;
@@ -496,7 +496,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id
 	fde.flags	= EVENT_FD_READ;
 	fde.handler	= messaging_listen_handler;
 
-	msg->event.ev   = talloc_reference(msg,ev);
+	msg->event.ev   = talloc_reference(msg, ev);
 	msg->event.fde	= event_add_fd(ev, &fde, msg);
 
 	talloc_set_destructor(msg, messaging_destructor);

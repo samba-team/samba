@@ -64,7 +64,7 @@ BOOL secrets_init(void)
 	pstrcpy(fname, lp_private_dir());
 	pstrcat(fname,"/secrets.tdb");
 
-	tdb = tdb_wrap_open(NULL, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));

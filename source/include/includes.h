@@ -139,8 +139,6 @@ extern int errno;
 #include "lib/dcom/common/dcom.h"
 #include "librpc/gen_ndr/ndr_dcom.h"
 #include "smb_interfaces.h"
-#include "smbd/server.h"
-#include "smbd/service.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "nsswitch/winbind_client.h"

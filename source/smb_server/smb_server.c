@@ -24,6 +24,7 @@
 #include "events.h"
 #include "system/time.h"
 #include "dlinklist.h"
+#include "smbd/service_stream.h"
 #include "smb_server/smb_server.h"
 
 
@@ -506,7 +507,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		session_tag = req->session->vuid;
 	}
 
-	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), req->smb_conn->connection->connection.id));
+	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), req->smb_conn->connection->server_id));
 
 	/* does this protocol need a valid tree connection? */
 	if ((flags & AS_USER) && !req->tcon) {
@@ -646,69 +647,15 @@ error:
 */
 void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char *reason)
 {
-	server_terminate_connection(smb_conn->connection, reason);
-}
-
-static const struct server_stream_ops *smbsrv_stream_ops(void);
-
-/*
-  add a socket address to the list of events, one event per port
-*/
-static void smb_add_socket(struct server_service *service,
-			   struct ipv4_addr *ifip)
-{
-	const char **ports = lp_smb_ports();
-	int i;
-	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
-
-	for (i=0;ports[i];i++) {
-		uint16_t port = atoi(ports[i]);
-		if (port == 0) continue;
-		service_setup_stream_socket(service, smbsrv_stream_ops(), "ipv4", ip_str, &port);
-	}
-
-	talloc_free(ip_str);
-}
-
-/****************************************************************************
- Open the socket communication.
-****************************************************************************/
-static void smbsrv_init(struct server_service *service)
-{	
-	DEBUG(1,("smbsrv_init\n"));
-
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		int num_interfaces = iface_count();
-		int i;
-
-		/* We have been given an interfaces line, and been 
-		   told to only bind to those interfaces. Create a
-		   socket per interface and bind to only these.
-		*/
-		for(i = 0; i < num_interfaces; i++) {
-			struct ipv4_addr *ifip = iface_n_ip(i);
-
-			if (ifip == NULL) {
-				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
-				continue;
-			}
-
-			smb_add_socket(service, ifip);
-		}
-	} else {
-		struct ipv4_addr ifip;
-		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		ifip = interpret_addr2(lp_socket_address());
-		smb_add_socket(service, &ifip);
-	}
+	stream_terminate_connection(smb_conn->connection, reason);
 }
 
 /*
   called when a SMB socket becomes readable
 */
-static void smbsrv_recv(struct server_connection *conn, struct timeval t, uint16_t flags)
+static void smbsrv_recv(struct stream_connection *conn, struct timeval t, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = conn->connection.private_data;
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, struct smbsrv_connection);
 	NTSTATUS status;
 
 	DEBUG(10,("smbsrv_recv\n"));
@@ -727,9 +674,9 @@ static void smbsrv_recv(struct server_connection *conn, struct timeval t, uint16
 /*
   called when a SMB socket becomes writable
 */
-static void smbsrv_send(struct server_connection *conn, struct timeval t, uint16_t flags)
+static void smbsrv_send(struct stream_connection *conn, struct timeval t, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = conn->connection.private_data;
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, struct smbsrv_connection);
 
 	while (smb_conn->pending_send) {
 		struct smbsrv_request *req = smb_conn->pending_send;
@@ -767,39 +714,11 @@ static void smbsrv_send(struct server_connection *conn, struct timeval t, uint16
 	}
 }
 
-static void smbsrv_close(struct server_connection *conn, const char *reason)
-{
-	struct smbsrv_connection *smb_conn = conn->connection.private_data;
-
-	DEBUG(5,("smbsrv_close: %s\n",reason));
-
-	talloc_free(smb_conn);
-
-	return;
-}
-
-/*
-  process a message from an SMB socket while still processing a
-  previous message this is used by backends who need to ensure that
-  new messages from clients are still processed while they are
-  performing long operations
-*/
-void smbd_process_async(struct smbsrv_connection *smb_conn)
-{
-	NTSTATUS status;
-	
-	status = receive_smb_request(smb_conn, timeval_current());
-	if (NT_STATUS_IS_ERR(status)) {
-		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
-	}
-}
-
-
 /*
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
 */
-static void smbsrv_accept(struct server_connection *conn)
+static void smbsrv_accept(struct stream_connection *conn)
 {
 	struct smbsrv_connection *smb_conn;
 
@@ -825,37 +744,71 @@ static void smbsrv_accept(struct server_connection *conn)
 
 	smb_conn->connection = conn;
 
-	conn->connection.private_data = smb_conn;
-
-	return;
+	conn->private = smb_conn;
 }
 
-static const struct server_stream_ops smb_stream_ops = {
+
+static const struct stream_server_ops smb_stream_ops = {
 	.name			= "smb",
-	.socket_init		= NULL,
 	.accept_connection	= smbsrv_accept,
 	.recv_handler		= smbsrv_recv,
 	.send_handler		= smbsrv_send,
-	.idle_handler		= NULL,
-	.close_connection	= smbsrv_close
 };
 
-static const struct server_stream_ops *smbsrv_stream_ops(void)
+/*
+  setup a listening socket on all the SMB ports for a particular address
+*/
+static NTSTATUS smb_add_socket(struct event_context *event_context,
+			       const struct model_ops *model_ops,
+			       const char *address)
 {
-	return &smb_stream_ops;
+	const char **ports = lp_smb_ports();
+	int i;
+	NTSTATUS status;
+
+	for (i=0;ports[i];i++) {
+		uint16_t port = atoi(ports[i]);
+		if (port == 0) continue;
+		status = stream_setup_socket(event_context, model_ops, &smb_stream_ops, 
+					     "ipv4", address, &port, NULL);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	return NT_STATUS_OK;
 }
 
-static const struct server_service_ops smb_server_ops = {
-	.name			= "smb",
-	.service_init		= smbsrv_init,	
-};
+/*
+  called on startup of the smb server service It's job is to start
+  listening on all configured SMB server sockets
+*/
+static NTSTATUS smbsrv_init(struct event_context *event_context, const struct model_ops *model_ops)
+{	
+	NTSTATUS status;
 
-const struct server_service_ops *smbsrv_get_ops(void)
-{
-	return &smb_server_ops;
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		int num_interfaces = iface_count();
+		int i;
+
+		/* We have been given an interfaces line, and been 
+		   told to only bind to those interfaces. Create a
+		   socket per interface and bind to only these.
+		*/
+		for(i = 0; i < num_interfaces; i++) {
+			const char *address = sys_inet_ntoa(*iface_n_ip(i));
+			status = smb_add_socket(event_context, model_ops, address);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+	} else {
+		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
+		status = smb_add_socket(event_context, model_ops, lp_socket_address());
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	return NT_STATUS_OK;
 }
 
+/* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_smb_init(void)
 {
-	return NT_STATUS_OK;	
+	return register_server_service("smb", smbsrv_init);
 }

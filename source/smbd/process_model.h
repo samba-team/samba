@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
-   process model manager - main loop
-   Copyright (C) Andrew Tridgell 1992-2003
+
+   process model manager - structures
+
+   Copyright (C) Andrew Tridgell 1992-2005
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
    Copyright (C) Stefan (metze) Metzmacher 2004-2005
    
@@ -20,9 +22,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef SAMBA_PROCESS_MODEL_H
-#define SAMBA_PROCESS_MODEL_H
-
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct process_model_critical_sizes.
@@ -37,32 +36,22 @@ struct model_ops {
 	const char *name;
 
 	/* called at startup when the model is selected */
-	void (*model_init)(struct server_context *srv_ctx);
-	/* called at th eend of the main server process */
-	void (*model_exit)(struct server_context *srv_ctx, const char *reason);
-
+	void (*model_init)(struct event_context *);
 
 	/* function to accept new connection */
-	void (*accept_connection)(struct event_context *, struct fd_event *, 
-				  struct timeval t, uint16_t);
+	void (*accept_connection)(struct event_context *, struct socket_context *, 
+				  void (*)(struct event_context *, struct socket_context *, 
+					   uint32_t , void *), 
+				  void *);
+
 	/* function to terminate a connection */
-	void (*terminate_connection)(struct server_connection *srv_conn, 
-				     const char *reason);
-
-
-	/* function to create a new task event_context */
-	void (*create_task)(struct server_task *task);
-	/* function to exit this task */
-	void (*terminate_task)(struct server_task *task, const char *reason);
+	void (*terminate_connection)(struct event_context *, const char *reason);
 };
 
 /* this structure is used by modules to determine the size of some critical types */
 struct process_model_critical_sizes {
 	int interface_version;
 	int sizeof_model_ops;
-	int sizeof_server_context;
 	int sizeof_event_context;
 	int sizeof_fd_event;
 };
-
-#endif /* SAMBA_PROCESS_MODEL_H */

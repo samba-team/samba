@@ -54,8 +54,7 @@ sub smb_build_main($)
 		"client/config.mk",
 		"libcli/libsmb.mk",
 		"libcli/config.mk",
-		"libcli/security/config.mk",
-		"winbind/config.mk",
+		"libcli/security/config.mk"
 	);
 
 	$| = 1;

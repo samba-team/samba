@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    Main SMB server routines
-   Copyright (C) Andrew Tridgell		1992-1998
+
+   Copyright (C) Andrew Tridgell		1992-2005
    Copyright (C) Martin Pool			2002
    Copyright (C) Jelmer Vernooij		2002
    Copyright (C) James J Myers 			2003 <myersjj@samba.org>
@@ -23,56 +25,56 @@
 
 #include "includes.h"
 #include "version.h"
+#include "dynconfig.h"
 #include "lib/cmdline/popt_common.h"
+#include "system/dir.h"
 
-/****************************************************************************
- main server.
-****************************************************************************/
-static int binary_smbd_main(int argc,const char *argv[])
+
+/*
+  cleanup temporary files. This is the new alternative to
+  TDB_CLEAR_IF_FIRST. Unfortunately TDB_CLEAR_IF_FIRST is not
+  efficient on unix systems due to the lack of scaling of the byte
+  range locking system. So instead of putting the burden on tdb to
+  cleanup tmp files, this function deletes them. 
+*/
+static void cleanup_tmp_files(void)
 {
-	BOOL is_daemon = False;
-	BOOL interactive = False;
-	BOOL Fork = True;
-	BOOL log_stdout = False;
-	int opt;
-	poptContext pc;
-	struct server_context *server;
-	const char *model = "standard";
-	struct poptOption long_options[] = {
-	POPT_AUTOHELP
-	POPT_COMMON_SAMBA
-	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" , NULL },
-	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)", NULL},
-	{"foreground", 'F', POPT_ARG_VAL, &Fork, True, "Run daemon in foreground (for daemontools & etc)" , NULL },
-	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout", NULL },
-	{"port", 'p', POPT_ARG_STRING, NULL, 0, "Listen on the specified ports", "PORTS"},
-	{"model", 'M', POPT_ARG_STRING, &model, True, "Select process model", "MODEL"},
-	POPT_COMMON_VERSION
-	POPT_TABLEEND
-	};
-	
-	pc = poptGetContext("smbd", argc, argv, long_options, 0);
-	
-	while((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt)  {
-		case 'p':
-			lp_set_cmdline("smb ports", poptGetOptArg(pc));
-			break;
+	char *path;
+	DIR *dir;
+	struct dirent *de;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	path = smbd_tmp_path(mem_ctx, NULL);
+
+	dir = opendir(path);
+	if (!dir) {
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	for (de=readdir(dir);de;de=readdir(dir)) {
+		char *fname = talloc_asprintf(mem_ctx, "%s/%s", path, de->d_name);
+		int ret = unlink(fname);
+		if (ret == -1 &&
+		    errno != ENOENT &&
+		    errno != EISDIR &&
+		    errno != EISDIR) {
+			DEBUG(0,("Unabled to delete '%s' - %s\n", 
+				 fname, strerror(errno)));
+			smb_panic("unable to cleanup tmp files");
 		}
+		talloc_free(fname);
 	}
-	poptFreeContext(pc);
+	closedir(dir);
 
-	if (interactive) {
-		Fork = False;
-		log_stdout = True;
-	}
+	talloc_free(mem_ctx);
+}
 
-	if (log_stdout && Fork) {
-		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
-		exit(1);
-	}
-	setup_logging(argv[0], log_stdout?DEBUG_STDOUT:DEBUG_FILE);
-
+/*
+  setup signal masks
+*/
+static void setup_signals(void)
+{
 	fault_setup(NULL);
 	
 	/* we are never interested in SIGPIPE */
@@ -93,6 +95,39 @@ static int binary_smbd_main(int argc,const char *argv[])
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGTERM);
+}
+
+
+/*
+ main server.
+*/
+static int binary_smbd_main(int argc, const char *argv[])
+{
+	BOOL interactive = False;
+	int opt;
+	poptContext pc;
+	struct event_context *event_ctx;
+	NTSTATUS status;
+	const char *model = "standard";
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		{"interactive", 'i', POPT_ARG_VAL, &interactive, True, 
+		 "Run interactive (not a daemon)", NULL},
+		{"model", 'M', POPT_ARG_STRING, &model, True, 
+		 "Select process model", "MODEL"},
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
+	};
+	
+	pc = poptGetContext("smbd", argc, argv, long_options, 0);
+	
+	while((opt = poptGetNextOpt(pc)) != -1) /* noop */ ;
+
+	poptFreeContext(pc);
+
+	setup_logging(argv[0], interactive?DEBUG_STDOUT:DEBUG_FILE);
+	setup_signals();
 
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
@@ -108,49 +143,51 @@ static int binary_smbd_main(int argc,const char *argv[])
 		exit(1);
 	}
 
-	if (!reload_services(NULL, False))
-		return(-1);	
+	lp_load(dyn_CONFIGFILE, False, False, True);
 
-	if (!is_daemon && !is_a_socket(0)) {
-		if (!interactive)
-			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+	reopen_logs();
+	load_interfaces();
 
-		/*
-		 * Setting is_daemon here prevents us from eventually calling
-		 * the open_sockets_inetd()
-		 */
-
-		is_daemon = True;
-	}
-
-	if (is_daemon && !interactive) {
+	if (!interactive) {
 		DEBUG(3,("Becoming a daemon.\n"));
-		become_daemon(Fork);
+		become_daemon(True);
 	}
+
+	cleanup_tmp_files();
 
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);
 	}
 
-	if (is_daemon) {
-		pidfile_create("smbd");
+	pidfile_create("smbd");
+
+	/* Do *not* remove this, until you have removed
+	 * passdb/secrets.c, and proved that Samba still builds... */
+	/* Setup the SECRETS subsystem */
+	if (!secrets_init()) {
+		exit(1);
 	}
 
-	init_subsystems();
+	smbd_init_subsystems;
 
-	smbd_process_init();
+	/* the event context is the top level structure in smbd. Everything else
+	   should hang off that */
+	event_ctx = event_context_init(NULL);
 
 	DEBUG(0,("Using %s process model\n", model));
-	server = server_service_startup(model, lp_server_services());
-	if (!server) {
-		DEBUG(0,("Starting Services failed.\n"));
+	status = server_service_startup(event_ctx, model, lp_server_services());
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Starting Services failed - %s\n", nt_errstr(status)));
 		return 1;
 	}
 
-	/* wait for events */
-	event_loop_wait(server->event.ctx);
+	/* wait for events - this is where smbd sits for most of its
+	   life */
+	event_loop_wait(event_ctx);
 
-	server_service_shutdown(server, "exit");
+	/* as everything hangs off this event context, freeing it
+	   should initiate a clean shutdown of all services */
+	talloc_free(event_ctx);
 
 	return 0;
 }

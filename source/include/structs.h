@@ -151,3 +151,8 @@ struct nbt_name_socket;
 struct nbt_name_query;
 struct nbt_name_status;
 
+
+struct messaging_context;
+struct stream_connection;
+struct model_ops;
+struct stream_server_ops;

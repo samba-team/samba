@@ -30,6 +30,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "smb_server/smb_server.h"
+#include "smbd/service_stream.h"
 
 /* this is stored in ntvfs_private */
 struct cvfs_private {
@@ -47,22 +48,6 @@ struct async_info {
 };
 
 #define SETUP_PID private->tree->session->pid = SVAL(req->in.hdr, HDR_PID)
-
-/*
-  an idle function to cope with messages from the smbd client while 
-  waiting for a reply from the server
-  this function won't be needed once all of the cifs backend
-  and the core of smbd is converted to use async calls
-*/
-static void idle_func(struct smbcli_transport *transport, void *p_private)
-{
-	struct cvfs_private *private = p_private;
-	int fd = socket_get_fd(private->tcon->smb_conn->connection->socket);
-
-	if (socket_pending(fd)) {
-		smbd_process_async(private->tcon->smb_conn);
-	}
-}
 
 /*
   a handler for oplock break events from the server - these need to be passed
@@ -158,7 +143,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	
 	/* we need to receive oplock break requests from the server */
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
-	smbcli_transport_idle_handler(private->transport, idle_func, 50000, private);
 
 	private->transport->socket->event.fde->handler = cifs_socket_handler;
 	private->transport->socket->event.fde->private = private;

@@ -44,7 +44,7 @@
 
 struct odb_context {
 	struct tdb_wrap *w;
-	servid_t server;
+	uint32_t server;
 	struct messaging_context *messaging_ctx;
 };
 
@@ -53,7 +53,7 @@ struct odb_context {
    following form
 */
 struct odb_entry {
-	servid_t server;
+	uint32_t server;
 	void     *file_handle;
 	uint32_t stream_id;
 	uint32_t share_access;
@@ -78,7 +78,7 @@ struct odb_lock {
   talloc_free(). We need the messaging_ctx to allow for pending open
   notifications.
 */
-struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server, 
+struct odb_context *odb_init(TALLOC_CTX *mem_ctx, uint32_t server, 
 			     struct messaging_context *messaging_ctx)
 {
 	char *path;

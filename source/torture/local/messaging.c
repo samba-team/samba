@@ -25,7 +25,7 @@
 enum {MY_PING=1000, MY_PONG, MY_EXIT};
 
 static void ping_message(struct messaging_context *msg, void *private, 
-			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
+			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
 {
 	NTSTATUS status;
 	status = messaging_send(msg, src, MY_PONG, data);
@@ -35,14 +35,14 @@ static void ping_message(struct messaging_context *msg, void *private,
 }
 
 static void pong_message(struct messaging_context *msg, void *private, 
-			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
+			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
 {
 	int *count = private;
 	(*count)++;
 }
 
 static void exit_message(struct messaging_context *msg, void *private, 
-			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
+			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
 {
 	talloc_free(private);
 	exit(0);
