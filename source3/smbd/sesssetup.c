@@ -235,11 +235,13 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	char *OIDs[ASN1_MAX_OIDS];
 	DATA_BLOB secblob;
 	int i;
-	uint32 ntlmssp_command, neg_flags;
-	DATA_BLOB sess_key, chal, spnego_chal;
+	uint32 ntlmssp_command, neg_flags, chal_flags;
+	DATA_BLOB sess_key, chal, spnego_chal, extra_data;
+	char *workstation, *domain;
 	const uint8 *cryptkey;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
+	extern pstring global_myname;
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
@@ -274,18 +276,23 @@ static int reply_spnego_negotiate(connection_struct *conn,
 			 "NTLMSSP",
 			 &ntlmssp_command,
 			 &neg_flags,
-			 &sess_key)) {
+			 &extra_data)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
+       
+	DEBUG(5, ("Extra data: \n"));
+	dump_data(5, extra_data.data, extra_data.length);
 
 	data_blob_free(&secblob);
-	data_blob_free(&sess_key);
+	data_blob_free(&extra_data);
 
 	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
+	DEBUG(3,("Got neg_flags=0x%08x\n", neg_flags));
+
+	debug_ntlmssp_flags(neg_flags);
 
 	if (ntlmssp_auth_context) {
 		(ntlmssp_auth_context->free)(&ntlmssp_auth_context);
@@ -300,22 +307,47 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	/* Give them the challenge. For now, ignore neg_flags and just
 	   return the flags we want. Obviously this is not correct */
 	
-	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
+	chal_flags = NTLMSSP_NEGOTIATE_UNICODE | 
 		NTLMSSP_NEGOTIATE_LM_KEY | 
-		NTLMSSP_NEGOTIATE_NTLM;
+		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_CHAL_TARGET_INFO;
+	
+	{
+		DATA_BLOB domain_blob, netbios_blob, realm_blob, ident_info_blob;
+		
+		msrpc_gen(&domain_blob, 
+			  "U",
+			  lp_workgroup());
 
-	msrpc_gen(&chal, "Cddddbdddd",
-		  "NTLMSSP", 
-		  NTLMSSP_CHALLENGE,
-		  0,
-		  0x30, /* ?? */
-		  neg_flags,
-		  cryptkey, 8,
-		  0, 0, 0,
-		  0x3000); /* ?? */
+		msrpc_gen(&netbios_blob, 
+			  "U",
+			  global_myname);
+		
+		msrpc_gen(&realm_blob, 
+			  "U",
+			  lp_realm());
+		
+
+		msrpc_gen(&chal, "CddddbBBBB",
+			  "NTLMSSP", 
+			  NTLMSSP_CHALLENGE,
+			  0,
+			  0x30, /* ?? */
+			  chal_flags,
+			  cryptkey, 8,
+			  domain_blob.data, domain_blob.length,
+			  domain_blob.data, domain_blob.length,
+			  netbios_blob.data, netbios_blob.length,
+			  realm_blob.data, realm_blob.length);
+
+		data_blob_free(&domain_blob);
+		data_blob_free(&netbios_blob);
+		data_blob_free(&realm_blob);
+	}
 
 	if (!spnego_gen_challenge(&spnego_chal, &chal, &chal)) {
 		DEBUG(3,("Failed to generate challenge\n"));
+		data_blob_free(&chal);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
