@@ -911,14 +911,23 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	off_t start = 0;
 	off_t nread = 0;
 	int rc = 0;
+	struct cli_state *targetcli;
+	pstring targetname;
 
-	GetTimeOfDay(&tp_start);
 
 	if (lowercase) {
 		strlower_m(lname);
 	}
 
-	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
+	if ( !cli_resolve_path( cli, rname, &targetcli, targetname ) ) {
+		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
+		return 1;
+	}
+
+
+	GetTimeOfDay(&tp_start);
+	
+	fnum = cli_open(targetcli, targetname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
 		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
@@ -948,11 +957,11 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	}
 
 
-	if (!cli_qfileinfo(cli, fnum, 
+	if (!cli_qfileinfo(targetcli, fnum, 
 			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
-	    !cli_getattrE(cli, fnum, 
+	    !cli_getattrE(targetcli, fnum, 
 			  &attr, &size, NULL, NULL, NULL)) {
-		d_printf("getattrib: %s\n",cli_errstr(cli));
+		d_printf("getattrib: %s\n",cli_errstr(targetcli));
 		return 1;
 	}
 
@@ -961,12 +970,12 @@ static int do_get(char *rname, char *lname, BOOL reget)
 
 	if(!(data = (char *)SMB_MALLOC(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
-		cli_close(cli, fnum);
+		cli_close(targetcli, fnum);
 		return 1;
 	}
 
 	while (1) {
-		int n = cli_read(cli, fnum, data, nread + start, read_size);
+		int n = cli_read(targetcli, fnum, data, nread + start, read_size);
 
 		if (n <= 0)
 			break;
@@ -989,7 +998,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 
 	SAFE_FREE(data);
 	
-	if (!cli_close(cli, fnum)) {
+	if (!cli_close(targetcli, fnum)) {
 		d_printf("Error %s closing remote file\n",cli_errstr(cli));
 		rc = 1;
 	}
@@ -1319,25 +1328,32 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	char *buf = NULL;
 	int maxwrite = io_bufsize;
 	int rc = 0;
-	
 	struct timeval tp_start;
+	struct cli_state *targetcli;
+	pstring targetname;
+	
+	if ( !cli_resolve_path( cli, rname, &targetcli, targetname ) ) {
+		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
+		return 1;
+	}
+	
 	GetTimeOfDay(&tp_start);
 
 	if (reput) {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT, DENY_NONE);
+		fnum = cli_open(targetcli, targetname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum >= 0) {
-			if (!cli_qfileinfo(cli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
-			    !cli_getattrE(cli, fnum, NULL, &start, NULL, NULL, NULL)) {
+			if (!cli_qfileinfo(targetcli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
+			    !cli_getattrE(targetcli, fnum, NULL, &start, NULL, NULL, NULL)) {
 				d_printf("getattrib: %s\n",cli_errstr(cli));
 				return 1;
 			}
 		}
 	} else {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+		fnum = cli_open(targetcli, targetname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
 	}
   
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
+		d_printf("%s opening remote file %s\n",cli_errstr(targetcli),rname);
 		return 1;
 	}
 
@@ -1385,7 +1401,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 			break;
 		}
 
-		ret = cli_write(cli, fnum, 0, buf, nread + start, n);
+		ret = cli_write(targetcli, fnum, 0, buf, nread + start, n);
 
 		if (n != ret) {
 			d_printf("Error writing file: %s\n", cli_errstr(cli));
@@ -1396,7 +1412,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		nread += n;
 	}
 
-	if (!cli_close(cli, fnum)) {
+	if (!cli_close(targetcli, fnum)) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
 		x_fclose(f);
 		SAFE_FREE(buf);
