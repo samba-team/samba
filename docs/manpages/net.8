@@ -3,20 +3,138 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NET" "8" "01 October 2002" "" ""
+.TH "NET" "8" "03 October 2002" "" ""
 .SH NAME
 net \- Tool for administration of Samba and remote CIFS servers.
 .SH SYNOPSIS
 
-\fBnet\fR \fB<ads|rap|rpc>\fR
+\fBnet\fR \fB<ads|rap|rpc>\fR [ \fB-h\fR ] [ \fB-w workgroup\fR ] [ \fB-W myworkgroup\fR ] [ \fB-U user\fR ] [ \fB-I ip-address\fR ] [ \fB-p port\fR ] [ \fB-n myname\fR ] [ \fB-s conffile\fR ] [ \fB-S server\fR ] [ \fB-C comment\fR ] [ \fB-M maxusers\fR ] [ \fB-F flags\fR ] [ \fB-j jobid\fR ] [ \fB-l\fR ] [ \fB-r\fR ] [ \fB-f\fR ] [ \fB-t timeout\fR ] [ \fB-P\fR ] [ \fB-D debuglevel\fR ]
 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Samba suite.
+.PP
+The samba net utility is meant to work just like the net utility 
+available for windows and DOS.
 .SH "OPTIONS"
+.TP
+\fB-h\fR
+Display summary of all available options.
+.TP
+\fB-w target-workgroup\fR
+Sets target workgroup or domain. You have to specify either this option or the IP address or the name of a server.
+.TP
+\fB-W workgroup\fR
+Sets client workgroup or domain
+.TP
+\fB-U user\fR
+User name to use
+.TP
+\fB-I ip-address\fR
+IP address of target server to use. You have to specify either this option or a target workgroup or a target server.
+.TP
+\fB-p port\fR
+Port on the target server to connect to.
+.TP
+\fB-n myname\fR
+Sets name of the client.
+.TP
+\fB-s conffile\fR
+Specify alternative configuration file that should be loaded.
+.TP
+\fB-S server\fR
+Name of target server. You should specify either this option or a target workgroup or a target IP address.
+.TP
+\fB-C comment\fR
+FIXME
+.TP
+\fB-M maxusers\fR
+FIXME
+.TP
+\fB-F flags\fR
+FIXME
+.TP
+\fB-j jobid\fR
+FIXME
+.TP
+\fB-l\fR
+FIXME
+.TP
+\fB-r\fR
+FIXME
+.TP
+\fB-f\fR
+FIXME
+.TP
+\fB-t timeout\fR
+FIXME
+.TP
+\fB-P\fR
+Make queries to the external server using the machine account of the local server.
+.TP
+\fB-D debuglevel\fR
+set the debuglevel. Debug level 0 is the lowest
+and 100 being the highest. This should be set to 100 if you are
+planning on submitting a bug report to the Samba team (see
+\fIBUGS.txt\fR).
+.SH "TIME"
 .PP
-.SH "COMMANDS"
+The \fBNET TIME\fR command allows you to view the time on a remote server
+or synchronise the time on the local server with the time on the remote server.
+.TP
+\fB\fR
+Without any options, the \fBNET TIME\fR command 
+displays the time on the remote server.
+.TP
+\fBSYSTEM\fR
+Displays the time on the remote server in a format ready for /bin/date
+.TP
+\fBSET\fR
+Tries to set the date and time of the local server to that on 
+the remote server using /bin/date.
+.TP
+\fBZONE\fR
+Displays the timezone in hours from GMT on the remote computer.
+.SH "RPC"
 .PP
+The \fBNET RPC\fR command allows you to do various 
+NT4 operations.
+.TP
+\fBJOIN -U username[%password] [options]\fR
+Join a domain with specified username and password. Password 
+will be prompted if none is specified.
+.TP
+\fBJOIN [options except -U]\fR
+to join a domain created in server manager
+.TP
+\fBUSER [misc. options] [targets]\fR
+List users
+.TP
+\fBUSER DELETE <name> [misc options]\fR
+delete specified user
+.TP
+\fBUSER INFO <name> [misc options]\fR
+list the domain groups of the specified user
+.TP
+\fBUSER ADD <name> [password] [-F user flags] [misc. options\fR
+Add specified user
+.TP
+\fBGROUP [misc options] [targets]\fR
+List user groups
+.TP
+\fBGROUP DELETE <name> [misc. options] [targets]\fR
+Delete specified group
+.TP
+\fBGROUP ADD <name> [-C comment]\fR
+Create specified group
+.TP
+\fBSHARE [misc. options] [targets]\fR
+enumerates all exported resources (network shares) on target server
+.TP
+\fBSHARE ADD <name=serverpath> [misc. options] [targets]\fR
+Adds a share from a server (makes the export active)
+.TP
+\fBSHARE DELETE <sharenam\fR
 .SH "VERSION"
 .PP
 This man page is incomplete for version 3.0 of the Samba 

@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbstatus</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="SMBSTATUS"
->smbstatus</A
-></H1
+></A
+>smbstatus</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -36,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbstatus</B
->  [-P] [-b] [-d] [-L] [-p] [-S] [-s &#60;configuration file&#62;] [-u &#60;username&#62;]</P
+>  [-P] [-b] [-d &lt;debug level&gt;] [-v] [-L] [-B] [-p] [-S] [-s &lt;configuration file&gt;] [-u &lt;username&gt;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN19"
+NAME="AEN21"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -61,7 +62,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN25"
+NAME="AEN27"
 ></A
 ><H2
 >OPTIONS</H2
@@ -71,7 +72,7 @@ NAME="AEN25"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
->-P</DT
+>-P|--profile</DT
 ><DD
 ><P
 >If samba has been compiled with the 
@@ -79,25 +80,38 @@ CLASS="VARIABLELIST"
 		shared memory area.</P
 ></DD
 ><DT
->-b</DT
+>-b|--brief</DT
 ><DD
 ><P
 >gives brief output.</P
 ></DD
 ><DT
->-d</DT
+>-d|--debug=&lt;debuglevel&gt;</DT
+><DD
+><P
+>sets debugging to specified level</P
+></DD
+><DT
+>-v|--verbose</DT
 ><DD
 ><P
 >gives verbose output.</P
 ></DD
 ><DT
->-L</DT
+>-L|--locks</DT
 ><DD
 ><P
 >causes smbstatus to only list locks.</P
 ></DD
 ><DT
->-p</DT
+>-B|--byterange</DT
+><DD
+><P
+>causes smbstatus to include byte range locks.
+		</P
+></DD
+><DT
+>-p|--processes</DT
 ><DD
 ><P
 >print a list of <A
@@ -111,13 +125,13 @@ CLASS="COMMAND"
 		Useful for scripting.</P
 ></DD
 ><DT
->-S</DT
+>-S|--shares</DT
 ><DD
 ><P
 >causes smbstatus to only list shares.</P
 ></DD
 ><DT
->-s &#60;configuration file&#62;</DT
+>-s|--conf=&lt;configuration file&gt;</DT
 ><DD
 ><P
 >The default configuration file name is
@@ -133,7 +147,7 @@ CLASS="FILENAME"
 > for more information.</P
 ></DD
 ><DT
->-u &#60;username&#62;</DT
+>-u|--user=&lt;username&gt;</DT
 ><DD
 ><P
 >selects information relevant to 
@@ -150,18 +164,18 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN65"
+NAME="AEN75"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN68"
+NAME="AEN78"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -183,7 +197,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN74"
+NAME="AEN84"
 ></A
 ><H2
 >AUTHOR</H2

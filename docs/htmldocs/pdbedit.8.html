@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >pdbedit</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="PDBEDIT"
->pdbedit</A
-></H1
+></A
+>pdbedit</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -36,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >pdbedit</B
->  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-d drive] [-s script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-D debuglevel]</P
+>  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-d drive] [-s script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-D debuglevel]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN26"
+NAME="AEN27"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -53,11 +54,11 @@ TARGET="_top"
 > suite.</P
 ><P
 >The pdbedit program is used to manage the users accounts
-	stored in the sam database and can be run only by root.</P
+	stored in the sam database and can only be run by root.</P
 ><P
->The pdbedit tool use the passdb modular interface and is
+>The pdbedit tool uses the passdb modular interface and is
 	independent from the kind of users database used (currently there
-	are smbpasswd, ldap, nis+ and tdb based and more can be addedd
+	are smbpasswd, ldap, nis+ and tdb based and more can be added
 	without changing the tool).</P
 ><P
 >There are five main ways to use pdbedit: adding a user account,
@@ -67,7 +68,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN33"
+NAME="AEN34"
 ></A
 ><H2
 >OPTIONS</H2
@@ -80,7 +81,7 @@ CLASS="VARIABLELIST"
 >-l</DT
 ><DD
 ><P
->This option list all the user accounts
+>This option lists all the user accounts
 		present in the users database.
 		This option prints a list of user/uid pairs separated by
 		the ':' character.</P
@@ -90,28 +91,19 @@ CLASS="COMMAND"
 >pdbedit -l</B
 ></P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		sorce:500:Simo Sorce
 		samba:45:Test User
 		</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DD
 ><DT
 >-v</DT
 ><DD
 ><P
->This option sets the verbose listing format.
-		It will make pdbedit list the users in the database printing
+>This option enables the verbose listing format.
+		It causes pdbedit to list the users in the database, printing
 		out the account fields in a descriptive format.</P
 ><P
 >Example: <B
@@ -119,12 +111,6 @@ CLASS="COMMAND"
 >pdbedit -l -v</B
 ></P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		---------------
@@ -146,9 +132,6 @@ CLASS="PROGRAMLISTING"
 		Logon Script:   
 		Profile Path:   \\BERSERKER\profile
 		</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DD
 ><DT
@@ -156,7 +139,7 @@ CLASS="PROGRAMLISTING"
 ><DD
 ><P
 >This option sets the "smbpasswd" listing format.
-		It will make pdbedit list the users in the database printing
+		It will make pdbedit list the users in the database, printing
 		out the account fields in a format compatible with the
 		<TT
 CLASS="FILENAME"
@@ -175,33 +158,32 @@ CLASS="COMMAND"
 >pdbedit -l -w</B
 ></P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
 		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
 		</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DD
 ><DT
 >-u username</DT
 ><DD
 ><P
->This option specifies that the username to be
-		used for the operation requested (listing, adding, removing)
-		It is <EM
->required</EM
+>This option specifies the username to be
+		used for the operation requested (listing, adding, removing).
+		It is <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>required</I
+></SPAN
 > in add, remove and modify
-		operations and <EM
->optional</EM
+		operations and <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>optional</I
+></SPAN
 > in list
 		operations.</P
 ></DD
@@ -279,27 +261,18 @@ CLASS="COMMAND"
 ><DD
 ><P
 >This option is used to add a user into the
-		database. This command need the user name be specified with
-		the -u switch. When adding a new user pdbedit will also
-		ask for the password to be used</P
+		database. This command needs a user name specified with
+		the -u switch. When adding a new user, pdbedit will also
+		ask for the password to be used.</P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >pdbedit -a -u sorce</B
 >
-		<TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
-><PRE
+		<PRE
 CLASS="PROGRAMLISTING"
 >new password:
 		retype new password</PRE
-></TD
-></TR
-></TABLE
 >
                 </P
 ></DD
@@ -328,7 +301,7 @@ CLASS="COMMAND"
 ><DD
 ><P
 >This option causes pdbedit to delete an account
-		from the database. It need the username be specified with the
+		from the database. It needs a username specified with the
 		-u switch.</P
 ><P
 >Example: <B
@@ -340,28 +313,43 @@ CLASS="COMMAND"
 >-i passdb-backend</DT
 ><DD
 ><P
->Use a different passdb backend to retrieve users than the one specified in smb.conf.</P
+>Use a different passdb backend to retrieve users
+                than the one specified in smb.conf. Can be used to import data into
+                your local user database.</P
 ><P
->This option will ease migration from one passdb backend to another.
-		</P
+>This option will ease migration from one passdb backend to
+		another.</P
 ><P
 >Example: <B
 CLASS="COMMAND"
->pdbedit -i smbpasswd:/etc/smbpasswd.old -e tdbsam:/etc/samba/passwd.tdb</B
->
-		</P
+>pdbedit -i smbpasswd:/etc/smbpasswd.old
+                </B
+></P
 ></DD
 ><DT
 >-e passdb-backend</DT
 ><DD
 ><P
->Export all currently available users to the specified password database backend.</P
+>Exports all currently available users to the
+		specified password database backend.</P
 ><P
->This option will ease migration from one passdb backend to another and will ease backupping</P
+>This option will ease migration from one passdb backend to
+		another and will ease backing up.</P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >pdbedit -e smbpasswd:/root/samba-users.backup</B
+></P
+></DD
+><DT
+>-b passdb-backend</DT
+><DD
+><P
+>Use a different default passdb backend. </P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -b xml:/root/pdb-backup.xml -l</B
 ></P
 ></DD
 ></DL
@@ -370,7 +358,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN133"
+NAME="AEN140"
 ></A
 ><H2
 >NOTES</H2
@@ -380,7 +368,7 @@ NAME="AEN133"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN136"
+NAME="AEN143"
 ></A
 ><H2
 >VERSION</H2
@@ -391,7 +379,7 @@ NAME="AEN136"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN139"
+NAME="AEN146"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -411,7 +399,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN144"
+NAME="AEN151"
 ></A
 ><H2
 >AUTHOR</H2

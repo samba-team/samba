@@ -443,7 +443,13 @@ It's also possible that the server can't work out what user name to
 connect you as. To see if this is the problem add the line "user =
 USERNAME" to the [tmp] section of smb.conf where "USERNAME" is the
 username corresponding to the password you typed. If you find this
-fixes things you may need the username mapping option.
+fixes things you may need the username mapping option. 
+</para>
+
+<para>
+It might also be the case that your client only sends encrypted passwords 
+and you have <command>encrypt passwords = no</command> in <filename>smb.conf</filename>.
+Turn it back on to fix.
 </para>
 
 </sect2>

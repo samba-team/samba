@@ -18,12 +18,14 @@
 <!ENTITY SECURITY-LEVEL SYSTEM "security_level.sgml">
 <!ENTITY SPEED SYSTEM "Speed.sgml">
 <!ENTITY BROWSING SYSTEM "Browsing.sgml">
+<!ENTITY BROWSING-Quick SYSTEM "Browsing-Quickguide.sgml">
 <!ENTITY GROUP-MAPPING-HOWTO SYSTEM "GROUP-MAPPING-HOWTO.sgml">
 <!ENTITY Portability SYSTEM "Portability.sgml">
 <!ENTITY Other-Clients SYSTEM "Other-Clients.sgml">
+<!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
 ]>
 
-<book id="Samba-Project-Documentation">
+<book id="Samba-HOWTO-Collection">
 
 <title>SAMBA Project Documentation</title>
 
@@ -65,7 +67,6 @@ Cheers, jerry
 
 <!-- Chapters -->
 &UNIX-INSTALL;
-&Diagnosis;
 &IntegratingWithWindows;
 &Samba-PAM;
 &MS-Dfs-Setup;
@@ -78,12 +79,17 @@ Cheers, jerry
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;
 &Samba-LDAP;
+&ADS-HOWTO;
 &BROWSING;
+&BROWSING-Quick;
 &SPEED;
-&Other-Clients;
 &CVS-Access;
 &BUGS;
 &GROUP-MAPPING-HOWTO;
+
+<!-- Appendices -->
 &Portability;
+&Other-Clients;
+&Diagnosis;
 
 </book>

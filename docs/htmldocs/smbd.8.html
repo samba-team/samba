@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="SMBD"
->smbd</A
-></H1
+></A
+>smbd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -36,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbd</B
->  [-D] [-a] [-i] [-o] [-P] [-h] [-V] [-b] [-d &#60;debug level&#62;] [-l &#60;log directory&#62;] [-p &#60;port number&#62;] [-O &#60;socket option&#62;] [-s &#60;configuration file&#62;]</P
+>  [-D] [-a] [-i] [-o] [-P] [-h] [-V] [-b] [-d &lt;debug level&gt;] [-l &lt;log directory&gt;] [-p &lt;port number&gt;] [-O &lt;socket option&gt;] [-s &lt;configuration file&gt;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -205,7 +206,7 @@ CLASS="COMMAND"
 		Samba was built.</P
 ></DD
 ><DT
->-d &#60;debug level&#62;</DT
+>-d &lt;debug level&gt;</DT
 ><DD
 ><P
 ><TT
@@ -246,7 +247,7 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-l &#60;log directory&#62;</DT
+>-l &lt;log directory&gt;</DT
 ><DD
 ><P
 >If specified,
@@ -272,8 +273,12 @@ TARGET="_top"
 CLASS="FILENAME"
 >		smb.conf(5)</TT
 ></A
-> file. <EM
->Beware:</EM
+> file. <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Beware:</I
+></SPAN
 >
 		If the directory specified does not exist, <B
 CLASS="COMMAND"
@@ -286,7 +291,7 @@ CLASS="COMMAND"
 		compile time.</P
 ></DD
 ><DT
->-O &#60;socket options&#62;</DT
+>-O &lt;socket options&gt;</DT
 ><DD
 ><P
 >See the <A
@@ -305,7 +310,7 @@ CLASS="FILENAME"
 > file for details.</P
 ></DD
 ><DT
->-p &#60;port number&#62;</DT
+>-p &lt;port number&gt;</DT
 ><DD
 ><P
 ><TT
@@ -336,7 +341,7 @@ CLASS="REPLACEABLE"
 		in the above situation.</P
 ></DD
 ><DT
->-s &#60;configuration file&#62;</DT
+>-s &lt;configuration file&gt;</DT
 ><DD
 ><P
 >The file specified contains the 
@@ -544,8 +549,12 @@ TARGET="_top"
 ><UL
 ><LI
 ><P
-><EM
->Account Validation</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Account Validation</I
+></SPAN
 >:  All acccesses to a 
 	samba server are checked 
 	against PAM to see if the account is vaild, not disabled and is permitted to 
@@ -554,8 +563,12 @@ TARGET="_top"
 ></LI
 ><LI
 ><P
-><EM
->Session Management</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Session Management</I
+></SPAN
 >:  When not using share 
 	level secuirty, users must pass PAM's session checks before access 
 	is granted.  Note however, that this is bypassed in share level secuirty.  
@@ -624,8 +637,12 @@ CLASS="COMMAND"
 	that <B
 CLASS="COMMAND"
 >SIGKILL (-9)</B
-> <EM
->NOT</EM
+> <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>NOT</I
+></SPAN
 > 
 	be used, except as a last resort, as this may leave the shared
 	memory area in an inconsistent state. The safe way to terminate 
