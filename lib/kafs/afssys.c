@@ -160,7 +160,7 @@ k_pioctl(char *a_path,
     
     errno = ENOSYS;
 #ifdef SIGSYS
-    kill(getpid(), SIGSYS);	/* You loose! */
+    kill(getpid(), SIGSYS);	/* You lose! */
 #endif
 #endif /* NO_AFS */
     return -1;
@@ -208,7 +208,7 @@ k_setpag(void)
     
     errno = ENOSYS;
 #ifdef SIGSYS
-    kill(getpid(), SIGSYS);	/* You loose! */
+    kill(getpid(), SIGSYS);	/* You lose! */
 #endif
 #endif /* NO_AFS */
     return -1;
