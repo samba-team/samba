@@ -5084,7 +5084,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (info->info_2->devmode_ptr != 0) {
+	if (devmode) {
 		/* we have a valid devmode
 		   convert it and link it*/
 
@@ -7807,13 +7807,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)
 		return WERR_NOMEM;
 
-	/* Not sure what to return here - are UNC names valid here?.
-	   Windows returns the string: C:\WINNT\System32\spool\PRTPROCS\W32X86
-	   which is pretty bogus for a RPC. */
-
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", get_called_name(), short_archi);
-
-	DEBUG(4,("print processor directory: [%s]\n", path));
+	pstrcpy(path, "C:\\WINNT\\System32\\spool\\PRTPROCS\\W32X86");
 
 	fill_printprocessordirectory_1(info, path);
 	
