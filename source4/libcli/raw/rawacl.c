@@ -78,7 +78,7 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	query->out.sd = talloc(mem_ctx, sizeof(query->out.sd));
+	query->out.sd = talloc_p(mem_ctx, struct security_descriptor);
 	if (!query->out.sd) {
 		return NT_STATUS_NO_MEMORY;
 	}
