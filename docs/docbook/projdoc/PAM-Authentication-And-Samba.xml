@@ -244,7 +244,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 			token associated with the user. Typically, there is one module for each `challenge/response'
 			based authentication (auth) module-type.
 			</para></listitem>
-		</itemizedlist>
+		</itemizedlist></listitem>
 	</varlistentry>
 
 	<varlistentry><term>control-flag</term><listitem><para>-</para>
@@ -271,7 +271,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 
 		<itemizedlist>
 			<listitem><para>
-			<empahsis>required:</emphasis> this indicates that the success of the module is required for the
+			<emphasis>required:</emphasis> this indicates that the success of the module is required for the
 			module-type facility to succeed. Failure of this module will not be apparent to the user until all
 			of the remaining modules (of the same module-type) have been executed.
 			</para></listitem>
@@ -301,7 +301,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 			However, in the absence of any definite successes or failures of previous or subsequent stacked
 			modules this module will determine the nature of the response to the application. One example of
 			this latter case, is when the other modules return something like PAM_IGNORE.
-			</para>
+			</para></listitem>
 		</itemizedlist>
 
 		<para>
@@ -372,6 +372,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		terms of the [...] syntax. They are as follows:
 		</para>
 
+		<para>
 		<itemizedlist>
 			<listitem><para>
 			required is equivalent to [success=ok new_authtok_reqd=ok ignore=ignore default=bad]
@@ -389,6 +390,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 			optional is equivalent to [success=ok new_authtok_reqd=ok default=ignore]
 			</para></listitem>
 		</itemizedlist>
+		</para>
 
 		<para>
 		Just to get a feel for the power of this new syntax, here is a taste of what you can do with it. With Linux-PAM-0.63,
@@ -398,6 +400,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		to support binary prompts with compliant clients, but to gracefully fall over into an alternative authentication
 		mode for older, legacy, applications.
 		</para>
+		</listitem>
 	</varlistentry>
 
 	<varlistentry><term>module-path</term><listitem><para>-</para>
@@ -438,7 +441,7 @@ squid auth required pam_mysql.so user=passwd_query passwd=mada \
 		Any line in (one of) the configuration file(s), that is not formatted correctly, will generally tend (erring on the
 		side of caution) to make the authentication process fail. A corresponding error is written to the system log files
 		with a call to syslog(3). 
-		</para>
+		</para></listitem>
 	</varlistentry>
 </variablelist>
 
@@ -571,6 +574,8 @@ life though, every decision makes trade-offs, so you may want examine the
 PAM documentation for further helpful information.
 </para></note>
 
+</sect2>
+
 <sect2>
 <title>PAM Configuration in smb.conf</title>
 
@@ -640,7 +645,7 @@ to determine which user and group ids correspond to Windows NT user and group ri
 </sect2>
 
 <sect2>
-<title>Password Synchronisation using pam_smbpass.so</title>
+<title>Password Synchronization using pam_smbpass.so</title>
 
 <para>
 pam_smbpass is a PAM module which can be used on conforming systems to
@@ -664,7 +669,7 @@ recommended that you use pam_winbind instead.
 <para>
 Options recognized by this module are as follows:
 <table frame="all">
-	<title>Options recognized by pam_mkpass</title>
+	<title>Options recognized by pam_smbpass</title>
 	<tgroup cols="2" align="left">
 	<tbody>
 		<row><entry>debug</entry><entry>log more debugging info</entry></row>
@@ -800,9 +805,11 @@ password   optional    pam_smbpass.so nullok use_authtok try_first_pass
 password   required    pam_krb5.so use_authtok try_first_pass
 session    required    pam_krb5.so
 </screen></para>
+
 </sect3>
 
 </sect2>
+
 </sect1>
 
 <sect1>
