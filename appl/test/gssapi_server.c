@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,16 +37,81 @@
 RCSID("$Id$");
 
 static int
+process_it(int sock,
+	   gss_ctx_id_t context_hdl,
+	   gss_name_t client_name
+	   )
+{
+    OM_uint32 maj_stat, min_stat;
+    gss_buffer_desc name_token;
+    gss_buffer_desc real_input_token, real_output_token;
+    gss_buffer_t input_token = &real_input_token,
+	output_token = &real_output_token;
+
+    maj_stat = gss_display_name (&min_stat,
+				 client_name,
+				 &name_token,
+				 NULL);
+    if (GSS_ERROR(maj_stat))
+	gss_err (1, min_stat, "gss_display_name");
+
+    fprintf (stderr, "User is `%.*s'\n", (int)name_token.length,
+	    (char *)name_token.value);
+
+    gss_release_buffer (&min_stat, &name_token);
+
+    /* gss_verify_mic */
+
+    read_token (sock, input_token);
+    read_token (sock, output_token);
+
+    maj_stat = gss_verify_mic (&min_stat,
+			       context_hdl,
+			       input_token,
+			       output_token,
+			       NULL);
+    if (GSS_ERROR(maj_stat))
+	gss_err (1, min_stat, "gss_verify_mic");
+
+    fprintf (stderr, "gss_verify_mic: %.*s\n", (int)input_token->length,
+	    (char *)input_token->value);
+
+    gss_release_buffer (&min_stat, input_token);
+    gss_release_buffer (&min_stat, output_token);
+
+    /* gss_unwrap */
+
+    read_token (sock, input_token);
+
+    maj_stat = gss_unwrap (&min_stat,
+			   context_hdl,
+			   input_token,
+			   output_token,
+			   NULL,
+			   NULL);
+    if(GSS_ERROR(maj_stat))
+	gss_err (1, min_stat, "gss_unwrap");
+
+    fprintf (stderr, "gss_unwrap: %.*s\n", (int)output_token->length,
+	    (char *)output_token->value);
+
+    gss_release_buffer (&min_stat, input_token);
+    gss_release_buffer (&min_stat, output_token);
+
+    return 0;
+}
+
+static int
 proto (int sock, const char *service)
 {
     struct sockaddr_in remote, local;
     int addrlen;
     gss_ctx_id_t context_hdl = GSS_C_NO_CONTEXT;
-    gss_buffer_t input_token, output_token;
     gss_buffer_desc real_input_token, real_output_token;
+    gss_buffer_t input_token = &real_input_token,
+	output_token = &real_output_token;
     OM_uint32 maj_stat, min_stat;
     gss_name_t client_name;
-    gss_buffer_desc name_token;
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -57,9 +122,6 @@ proto (int sock, const char *service)
     if (getpeername (sock, (struct sockaddr *)&remote, &addrlen) < 0
 	|| addrlen != sizeof(remote))
 	err (1, "getpeername");
-
-    input_token = &real_input_token;
-    output_token = &real_output_token;
 
     do {
 	read_token (sock, input_token);
@@ -88,49 +150,7 @@ proto (int sock, const char *service)
 	}
     } while(maj_stat & GSS_S_CONTINUE_NEEDED);
 
-    maj_stat = gss_display_name (&min_stat,
-				 client_name,
-				 &name_token,
-				 NULL);
-    if (GSS_ERROR(maj_stat))
-	gss_err (1, min_stat, "gss_display_name");
-
-    fprintf (stderr, "User is `%.*s'\n", (int)name_token.length,
-	    (char *)name_token.value);
-
-    /* gss_verify_mic */
-
-    read_token (sock, input_token);
-    read_token (sock, output_token);
-
-    maj_stat = gss_verify_mic (&min_stat,
-			       context_hdl,
-			       input_token,
-			       output_token,
-			       NULL);
-    if (GSS_ERROR(maj_stat))
-	gss_err (1, min_stat, "gss_verify_mic");
-
-    fprintf (stderr, "gss_verify_mic: %.*s\n", (int)input_token->length,
-	    (char *)input_token->value);
-
-    /* gss_unwrap */
-
-    read_token (sock, input_token);
-
-    maj_stat = gss_unwrap (&min_stat,
-			   context_hdl,
-			   input_token,
-			   output_token,
-			   NULL,
-			   NULL);
-    if(GSS_ERROR(maj_stat))
-	gss_err (1, min_stat, "gss_unwrap");
-
-    fprintf (stderr, "gss_unwrap: %.*s\n", (int)output_token->length,
-	    (char *)output_token->value);
-
-    return 0;
+    return process_it (sock, context_hdl, client_name);
 }
 
 static int
