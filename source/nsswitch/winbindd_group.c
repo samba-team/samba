@@ -210,6 +210,11 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	if (!parse_domain_user(tmp, name_domain, name_group))
 		return WINBINDD_ERROR;
 
+	/* fail if we are a PDC and this is our domain; should be done by passdb */
+	
+	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( domain->name, lp_workgroup()) )
+		return WINBINDD_ERROR;
+
 	/* Get info for the domain */
 
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
@@ -404,6 +409,9 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	struct winbindd_domain *domain;
         
 	if (ent->got_sam_entries)
+		return False;
+		
+	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp(lp_workgroup(), ent->domain_name))
 		return False;
 
 	if (!(mem_ctx = talloc_init("get_sam_group_entries(%s)",
@@ -741,6 +749,11 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		struct getent_state groups;
+		
+		/* fail if we are a PDC and this is our domain; should be done by passdb */
+	
+		if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( domain->name, lp_workgroup()) )
+			continue;
 
 		ZERO_STRUCT(groups);
 
@@ -833,6 +846,11 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			  name_user))
 		goto done;
 
+	/* fail if we are a PDC and this is our domain; should be done by passdb */
+	
+	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( name_domain, lp_workgroup()) )
+		return WINBINDD_ERROR;
+		
 	/* Get info for the domain */
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
