@@ -53,7 +53,7 @@ struct getargs args[] = {
     { "lifetime",		'l', arg_string, &lifetime,
       "lifetime of tickets", "seconds"},
     { "version", 		0,   arg_flag, &version_flag, 
-      "print version", NULL },
+      NULL, NULL },
     { "help",			0,   arg_flag, &help_flag, 
       NULL, NULL}
 };
@@ -81,16 +81,18 @@ main (int argc, char **argv)
     set_progname (argv[0]);
     memset(&cred, 0, sizeof(cred));
     
+    ret = krb5_init_context (&context);
+    if (ret)
+	errx(1, "krb5_init_context failed: %u", ret);
+  
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
     
     if (help_flag)
 	usage (0);
 
-    if(version_flag){
-	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
-	exit(0);
-    }
+    if(version_flag)
+	krb5_errx(context, 0, "%s", heimdal_version);
 
     krb5_get_init_creds_opt_init (&opt);
     
@@ -110,18 +112,14 @@ main (int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    ret = krb5_init_context (&context);
-    if (ret)
-	errx (1, "krb5_init_context: %s", krb5_get_err_text(context, ret));
-  
     ret = krb5_cc_default (context, &ccache);
     if (ret)
-	errx (1, "krb5_cc_default: %s", krb5_get_err_text(context, ret));
+	krb5_err (context, 1, ret, "krb5_cc_default");
 
     if (argv[0]) {
 	ret = krb5_parse_name (context, argv[0], &principal);
 	if (ret)
-	    errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, ret));
+	    krb5_err (context, 1, ret, "krb5_parse_name");
     } else
 	principal = NULL;
 
@@ -134,17 +132,24 @@ main (int argc, char **argv)
 					0,
 					NULL,
 					&opt);
-    if (ret)
-	errx (1, "krb5_get_init_creds: %s", krb5_get_err_text(context, ret));
+    switch(ret){
+    case 0:
+	break;
+    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+    case KRB5KRB_AP_ERR_MODIFIED:
+	krb5_errx(context, 1, "Password incorrect");
+	break;
+    default:
+	krb5_err(context, 1, ret, "krb5_get_init_creds");
+    }
 
     ret = krb5_cc_initialize (context, ccache, cred.client);
     if (ret)
-	errx (1, "krb5_cc_initialize: %s",
-	      krb5_get_err_text(context, ret));
-  
+	krb5_err (context, 1, ret, "krb5_cc_initialize");
+    
     ret = krb5_cc_store_cred (context, ccache, &cred);
     if (ret)
-	errx (1, "krb5_cc_store_cred: %s", krb5_get_err_text(context, ret));
+	krb5_err (context, 1, ret, "krb5_cc_store_cred");
     krb5_free_creds_contents (context, &cred);
     krb5_cc_close (context, ccache);
     krb5_free_context (context);
