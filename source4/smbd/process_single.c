@@ -56,7 +56,7 @@ static void single_accept_connection(struct event_context *ev, struct fd_event *
 
 	conn = server_setup_connection(ev, server_socket, sock, t, socket_get_fd(sock));
 	if (!conn) {
-		DEBUG(0,("server_setup_connection failed\n"));
+		DEBUG(10,("server_setup_connection failed\n"));
 		return;
 	}
 
