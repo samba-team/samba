@@ -338,7 +338,7 @@ static NTSTATUS cmd_srvsvc_net_file_enum(struct cli_state *cli,
 	ZERO_STRUCT(ctr);
 
 	result = cli_srvsvc_net_file_enum(
-		cli, mem_ctx, 0, &ctr, preferred_len, &hnd);
+		cli, mem_ctx, info_level, &ctr, preferred_len, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
