@@ -1845,7 +1845,15 @@ from service ifrom.
 ***************************************************************************/
 BOOL lp_add_home(const char *pszHomename, int iDefaultService, const char *pszHomedir)
 {
-	int i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
+	int i;
+	SMB_STRUCT_STAT buf;
+
+	/* if the user's home directory doesn't exist, then don't
+	   add it to the list of available shares */
+	if (sys_stat(pszHomedir, &buf))
+		return False;
+
+	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
 		return (False);
@@ -3356,15 +3364,26 @@ does not copy the found service.
 int lp_servicenumber(const char *pszServiceName)
 {
 	int iService;
-
+        fstring serviceName;
+ 
+ 
 	for (iService = iNumServices - 1; iService >= 0; iService--)
-		if (VALID(iService) && ServicePtrs[iService]->szService &&
-				strequal(ServicePtrs[iService]->szService, pszServiceName))
-			break;
+	{
+		if (VALID(iService) && ServicePtrs[iService]->szService)
+		{
+			/*
+			 * The substitution here is used to support %U is
+			 * service names
+			 */
+			fstrcpy(serviceName, ServicePtrs[iService]->szService);
+			standard_sub_basic(serviceName);
+			if (strequal(serviceName, pszServiceName))
+				break;
+		}
+	}
+
 	if (iService < 0)
-		DEBUG(7,
-		      ("lp_servicenumber: couldn't find %s\n",
-		       pszServiceName));
+		DEBUG(7,("lp_servicenumber: couldn't find %s\n", pszServiceName));
 
 	return (iService);
 }
