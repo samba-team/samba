@@ -389,25 +389,6 @@ krb5_kt_free_entry(krb5_context context,
   return 0;
 }
 
-#if 0
-static int
-xxxlock(int fd, int write)
-{
-    if(flock(fd, (write ? LOCK_EX : LOCK_SH) | LOCK_NB) < 0) {
-	sleep(1);
-	if(flock(fd, (write ? LOCK_EX : LOCK_SH) | LOCK_NB) < 0) 
-	    return -1;
-    }
-    return 0;
-}
-
-static void
-xxxunlock(int fd)
-{
-    flock(fd, LOCK_UN);
-}
-#endif
-
 /*
  * Set `cursor' to point at the beginning of `id'.
  * Return 0 or an error.
