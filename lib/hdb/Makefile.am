@@ -17,7 +17,7 @@ CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h asn1_files
 
 lib_LIBRARIES = libhdb.a
 
-libhdb_a_SOURCES = hdb.c db.c ndbm.c $(BUILT_SOURCES)
+libhdb_a_SOURCES = hdb.c common.c db.c ndbm.c $(BUILT_SOURCES)
 
 include_HEADERS = hdb.h
 incdir = $(includedir)
