@@ -1,3 +1,7 @@
+2001-06-19  Assar Westerlund  <assar@sics.se>
+
+	* broken-glob.m4: try to handle FreeBSD's GLOB_MAXPATH
+
 2001-06-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: test for getaddrinfo needs netdb.h on Tru64
