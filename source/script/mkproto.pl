@@ -24,7 +24,7 @@ sub print_footer {
 
 sub handle_loadparm {
 	my $line = shift;
-	
+
 	if ($line =~ /^FN_GLOBAL_STRING/o) {
 		my $fnName = (split(/[\(,]/, $line))[1];
 		print "char *$fnName(void);\n";
@@ -114,11 +114,11 @@ sub process_files {
 			# I'm going to leave these as is for now - perl can probably handle larger regex, though -- vance
 			# I've also sort of put these in approximate order of most commonly called
 
-			elsif ( $line =~ /^NTSTATUS|^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR/o ) {
-				$gotstart = 1;
-			} elsif ( $line =~ /^long|^XFILE|^FILE|^unsigned|^DIR/o) {
-				$gotstart = 1;
-			} elsif ( $line =~ /^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME/o ) {
+			if ( $line =~ /
+			     ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
+			     ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
+			     ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME
+			     /x) {
 				$gotstart = 1;
 			}
 
