@@ -6,7 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Jeremy Allison                    2001,
  *  Copyright (C) Rafal Szczesniak                  2002,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -350,7 +350,7 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 
 static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 			      const char *dns_name, const char *forest_name,
-			      GUID *dom_guid, DOM_SID *dom_sid)
+			      struct uuid *dom_guid, DOM_SID *dom_sid)
 {
 	if (nb_name && *nb_name) {
 		init_unistr2(&r_l->uni_nb_dom_name, nb_name, UNI_FLAGS_NONE);
@@ -375,7 +375,7 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 
 	/* how do we init the guid ? probably should write an init fn */
 	if (dom_guid) {
-		memcpy(&r_l->dom_guid, dom_guid, sizeof(GUID));
+		memcpy(&r_l->dom_guid, dom_guid, sizeof(struct uuid));
 	}
 	
 	if (dom_sid) {
@@ -1105,7 +1105,6 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 		/* check if the privilege is already there */
 		if (check_priv_in_privilege(map.priv_set, *luid_attr)){
 			destroy_privilege(&map.priv_set);
-			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 		
 		add_privilege(map.priv_set, *luid_attr);
@@ -1240,7 +1239,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 	char *dns_name = NULL;
 	char *forest_name = NULL;
 	DOM_SID *sid = NULL;
-	GUID guid;
+	struct uuid guid;
 	fstring dnsdomname;
 
 	ZERO_STRUCT(guid);

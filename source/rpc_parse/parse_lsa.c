@@ -2142,7 +2142,7 @@ BOOL lsa_io_dns_dom_info(const char *desc, LSA_DNS_DOM_INFO *info,
 
 	if(!prs_align(ps))
 		return False;
-	if (!prs_uint8s(False, "dom_guid", ps, depth, info->dom_guid.info, GUID_SIZE))
+	if ( !smb_io_uuid("dom_guid", &info->dom_guid, ps, depth) )
 		return False;
 
 	if(!prs_align(ps))

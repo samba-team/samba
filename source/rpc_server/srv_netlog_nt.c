@@ -775,4 +775,21 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	return status;
 }
 
+/*************************************************************************
+ _ds_enum_dom_trusts
+ *************************************************************************/
+#if 0	/* JERRY -- not correct */
+NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
+			     DS_R_ENUM_DOM_TRUSTS *r_u)
+{
+	NTSTATUS status = NT_STATUS_OK;
 
+	/* TODO: According to MSDN, the can only be executed against a 
+	   DC or domain member running Windows 2000 or later.  Need
+	   to test against a standalone 2k server and see what it 
+	   does.  A windows 2000 DC includes its own domain in the 
+	   list.  --jerry */
+
+	return status;
+}
+#endif	/* JERRY */

@@ -5315,10 +5315,6 @@ static BOOL sam_io_user_info11(const char *desc, SAM_USER_INFO_11 * usr,
 
 /*************************************************************************
  init_sam_user_infoa
-
- unknown_5 = 0x0001 0000
- unknown_6 = 0x0000 04ec 
-
  *************************************************************************/
 
 void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516], uint16 pw_len)
