@@ -54,13 +54,6 @@ RCSID("$Id$");
 #include <rpcsvc/ypclnt.h>
 #endif
 
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-
 #include "roken.h"
 
 int     __check_rhosts_file = 1;
