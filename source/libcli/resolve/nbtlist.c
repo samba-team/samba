@@ -62,8 +62,13 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
 	} else {
-		c->state = SMBCLI_REQUEST_DONE;
-		state->reply_addr = talloc_steal(state, state->io_queries[i].out.reply_addr);
+		if (state->io_queries[i].out.num_addrs < 1) {
+			c->state = SMBCLI_REQUEST_ERROR;
+			c->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		} else {
+			c->state = SMBCLI_REQUEST_DONE;
+			state->reply_addr = talloc_steal(state, state->io_queries[i].out.reply_addrs[0]);
+		}
 	}
 
 done:
