@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -338,6 +338,8 @@ xyzprintf (struct snprintf_state *state, const char *char_format, va_list ap)
 	  flags |= alternate_flag;
 	else if(c == '0')
 	  flags |= zero_flag;
+	else if(c == '\'')
+	    ; /* just ignore */
 	else
 	  break;
       }
