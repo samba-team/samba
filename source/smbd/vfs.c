@@ -32,7 +32,7 @@ struct vfs_syminfo {
    very important.  They must be in the same order as defined in
    vfs.h.  Change at your own peril. */
 
-struct vfs_ops default_vfs_ops = {
+static struct vfs_ops default_vfs_ops = {
 
 	/* Disk operations */
 
