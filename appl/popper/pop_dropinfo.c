@@ -12,7 +12,7 @@ static char SccsId[] = "@(#)@(#)pop_dropinfo.c	2.1  2.1 3/18/91";
 #include <errno.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/file.h>
 #include "popper.h"

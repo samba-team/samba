@@ -12,9 +12,10 @@ static char SccsId[] = "@(#)@(#)pop_dropcopy.c	2.6  2.6 4/3/91";
 #include <errno.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/file.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include "popper.h"
 
@@ -114,7 +115,7 @@ struct passwd	*	pwp;
         }
     
     /* May have grown or shrunk between open and lock! */
-    offset = lseek(dfd,0,L_XTND);
+    offset = lseek(dfd,0, SEEK_END);
 
     /*  Open the user's maildrop, If this fails,  no harm in assuming empty */
     if ((mfd = open(p->drop_name,O_RDWR)) > 0) {
