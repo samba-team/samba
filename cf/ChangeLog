@@ -1,3 +1,7 @@
+2001-08-22  Assar Westerlund  <assar@sics.se>
+
+	* crypto.m4: SHA1_CTX should be SHA_CTX
+
 2001-08-21  Assar Westerlund  <assar@sics.se>
 
 	* roken-frag.m4: remove all winsock.h
