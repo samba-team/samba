@@ -382,6 +382,7 @@ fi
 %attr(-,root,root) %dir %{prefix}/lib/codepages
 %attr(-,root,root) %dir %{prefix}/lib/codepages/src
 %attr(-,root,root) %dir %{prefix}/var/locks
+%attr(-,root,root) %dir %{prefix}/private
 %attr(-,root,root) %{prefix}/bin/winbindd
 %attr(-,root,root) %{prefix}/bin/samedit
 %attr(-,root,root) /lib/libnss_winbind.so
