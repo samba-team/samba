@@ -160,7 +160,13 @@ krb5_verify_ap_req(krb5_context context,
     /* XXX - Xor sequence numbers */
 
     /* XXX - subkeys? */
-    
+    /* And where should it be stored? */
+
+    if (ac->authenticator->subkey) {
+	copy_EncryptionKey (ac->authenticator->subkey,
+			    &ac->remote_subkey);
+    }
+
     if (ap_req_options) {
 	*ap_req_options = 0;
 	if (ap_req->ap_options.use_session_key)
