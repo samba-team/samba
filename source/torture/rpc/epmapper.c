@@ -130,7 +130,8 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct GUID uuid;
 	const char *uuid_str;
 	struct policy_handle handle;
-	int i;
+	int i, j;
+	const char *test_bindings[] = { "ncacn_np:", "ncacn_ip_tcp:", "ncalrpc:", "ncadg_ip_udp:" };
 
 	ZERO_STRUCT(uuid);
 	ZERO_STRUCT(handle);
@@ -146,58 +147,34 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("epm_Map results for '%s':\n", 
 	       idl_pipe_name(uuid_str, twr->tower.floors[0].lhs.info.uuid.version));
 
-	twr->tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
-	twr->tower.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[2].rhs.ncacn.minor_version = 0;
+	for (i = 0; i < ARRAY_SIZE(test_bindings); i++) 
+	{
+		struct dcerpc_binding binding;
+		status = dcerpc_parse_binding(mem_ctx, test_bindings[i], &binding);
 
-	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
-	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[3].rhs.tcp.port = 0;
+		if (NT_STATUS_IS_ERR(status)) {
+			printf("Error parsing binding string '%s'\n", test_bindings[i]);
+			return False;
+		}
 
-	twr->tower.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
-	twr->tower.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[4].rhs.ip.address = 0;
+		binding.object = twr->tower.floors[0].lhs.info.uuid.uuid;
+		binding.object_version = twr->tower.floors[0].lhs.info.uuid.version;
 
-	status = dcerpc_epm_Map(p, mem_ctx, &r);
-	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
-		for (i=0;i<r.out.num_towers;i++) {
-			if (r.out.towers[i].twr) {
-				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
+		status = dcerpc_binding_build_tower(mem_ctx, &binding, &twr->tower);
+		if (NT_STATUS_IS_ERR(status)) {
+			printf("Error parsing binding string '%s'\n", test_bindings[i]);
+			return False;
+		}	
+
+		status = dcerpc_epm_Map(p, mem_ctx, &r);
+		if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
+			for (j=0;j<r.out.num_towers;j++) {
+				if (r.out.towers[j].twr) {
+					display_tower(mem_ctx, &r.out.towers[j].twr->tower);
+				}
 			}
 		}
 	}
-
-	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_HTTP;
-	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[3].rhs.http.port = 0;
-
-	status = dcerpc_epm_Map(p, mem_ctx, &r);
-	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
-		for (i=0;i<r.out.num_towers;i++) {
-			if (r.out.towers[i].twr) {
-				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
-			}
-		}
-	}
-
-	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
-	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[3].rhs.smb.unc = "";
-
-	twr->tower.floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
-	twr->tower.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[4].rhs.netbios.name = "";
-
-	status = dcerpc_epm_Map(p, mem_ctx, &r);
-	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
-		for (i=0;i<r.out.num_towers;i++) {
-			if (r.out.towers[i].twr) {
-				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
-			}
-		}
-	}
-
-	/* FIXME: Extend to do other protocols as well (ncacn_unix_stream, ncalrpc) */
 	
 	return True;
 }
