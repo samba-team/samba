@@ -4383,9 +4383,10 @@ will work for offsets of 0, 2 and 4...
 ********************************************************************/
 char *align_offset(char *q, char *base, int align_offset_len)
 {
-	if (align_offset_len != 0 && ((q - base) & (align_offset_len-1)))
+	int mod = ((q - base) & (align_offset_len-1));
+	if (align_offset_len != 0 && mod != 0)
 	{
-		q += align_offset_len - ((q - base) & (align_offset_len));
+		q += align_offset_len - mod;
 	}
 	return q;
 }
