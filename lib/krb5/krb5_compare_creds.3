@@ -31,89 +31,74 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 21, 2004
-.Dt KRB5_CREDS 3
+.Dd April 25, 2004
+.Dt KRB5_COMPARE_CREDS 3
 .Os HEIMDAL
 .Sh NAME
-.Nm krb5_creds ,
-.Nm krb5_copy_creds ,
-.Nm krb5_copy_creds_contents ,
-.Nm krb5_free_creds ,
-.Nm krb5_free_cred_contents
-.Nd kerberos 5 credential handling functions
+.Nm krb5_compare_creds
+.Nd compare Kerberos 5 credentials
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
-.Ft krb5_error_code
-.Fo krb5_copy_creds
+.Ft krb5_boolean
+.Fo krb5_compare_creds
 .Fa "krb5_context context"
-.Fa "const krb5_creds *incred"
-.Fa "krb5_creds **outcred"
-.Fc
-.Ft krb5_error_code
-.Fo krb5_copy_creds_contents
-.Fa "krb5_context context"
-.Fa "const krb5_creds *incred"
-.Fa "krb5_creds *outcred"
-.Fc
-.Ft krb5_error_code
-.Fo krb5_free_creds
-.Fa "krb5_context context"
-.Fa "krb5_creds *outcred"
-.Fc
-.Ft krb5_error_code
-.Fo krb5_free_cred_contents
-.Fa "krb5_context context"
-.Fa "krb5_creds *cred"
+.Fa "krb5_flags whichfields"
+.Fa "const krb5_creds *mcreds"
+.Fa "const krb5_creds *creds"
 .Fc
 .Sh DESCRIPTION
-.Vt krb5_creds
-holds Kerberos credentials:
-.Bd -literal -offset
-typedef struct krb5_creds {
-    krb5_principal	client;
-    krb5_principal	server;
-    krb5_keyblock	session;
-    krb5_times		times;
-    krb5_data		ticket;
-    krb5_data		second_ticket;
-    krb5_authdata	authdata;
-    krb5_addresses	addresses;
-    krb5_ticket_flags	flags;
-} krb5_creds;
-.Ed
-.Pp
-.Fn krb5_copy_creds
-makes a copy of
-.Fa incred
+.Fn krb5_compare_creds
+compares
+.Fa mcreds
+(usually filled in by the application)
 to
-.Fa outcred .
-.Fa outcred
-should be freed with
-.Fn krb5_free_creds
-by the caller.
+.Fa creds
+(most often from a credentials cache)
+and return
+.Dv TRUE
+if they are equal.
+Unless
+.Va mcreds-\*[Gt]server
+is
+.Dv NULL ,
+the service of the credentials are always compared.  If the client
+name in
+.Fa mcreds
+is present, the client names are also compared. This function is
+normally only called indirectly via
+.Xr krb5_cc_retrieve_cred 3 .
 .Pp
-.Fn krb5_copy_creds_contents
-makes a copy of the content of
-.Fa incred
-to
-.Fa outcreds .
-.Fa outcreds
-should be freed by the called with
-.Fn krb5_free_creds_contents .
-.Pp
-.Fn krb5_free_creds
-frees the content of the 
-.Fa cred
-structure and the structure itself.
-.Pp
-.Fn krb5_free_cred_contents
-frees the content of the
-.Fa cred
-structure.
+The following flags, set in
+.Fa whichfields ,
+affects the comparison:
+.Bl -tag -compact -offset indent
+.It KRB5_TC_MATCH_SRV_NAMEONLY
+Consider all realms equal when comparing the service principal.
+.It KRB5_TC_MATCH_KEYTYPE
+Compare enctypes.
+.It KRB5_TC_MATCH_FLAGS_EXACT
+Make sure that the ticket flags are identical.
+.It KRB5_TC_MATCH_FLAGS
+Make sure that all ticket flags set in
+.Fa mcreds
+are also present  in
+.Fa creds .
+.It KRB5_TC_MATCH_TIMES_EXACT
+Compares the ticket times exactly.
+.It KRB5_TC_MATCH_TIMES
+Compares only the expiration times of the creds.
+.It KRB5_TC_MATCH_AUTHDATA
+Compares the authdata fields.
+.It KRB5_TC_MATCH_2ND_TKT
+Compares the second tickets (used by user-to-user authentication).
+.It KRB5_TC_MATCH_IS_SKEY
+Compares the existance of the second ticket.
+.El
 .Sh SEE ALSO
 .Xr krb5 3 ,
-.Xr krb5_compare_creds 3 ,
+.Xr krb5_cc_retrieve_cred 3 ,
+.Xr krb5_creds 3 ,
 .Xr krb5_get_init_creds 3 ,
 .Xr kerberos 8
