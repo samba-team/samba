@@ -290,15 +290,21 @@ unwrap_des3
   p -= 28;
 
   ret = krb5_crypto_init(gssapi_krb5_context, key,
-			 ETYPE_DES3_CBC_NONE, &crypto);
+			 ETYPE_DES3_CBC_NONE_IVEC, &crypto);
   if (ret) {
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
-  ret = krb5_decrypt (gssapi_krb5_context,
-		      crypto,
-		      KRB5_KU_USAGE_SEQ,
-		      p, 8, &seq_data);
+  {
+      des_cblock ivec;
+
+      memcpy(&ivec, p + 8, 8);
+      ret = krb5_decrypt_ivec (gssapi_krb5_context,
+			       crypto,
+			       KRB5_KU_USAGE_SEQ,
+			       p, 8, &seq_data,
+			       &ivec);
+  }
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (ret) {
       *minor_status = ret;
