@@ -444,7 +444,7 @@ k_hasafs(void)
 
     if (try_proc("/proc/fs/openafs/afs_ioctl") == 0)
 	goto done;
-    if (try_proc("/proc/fs/arla/afs_ioctl") == 0)
+    if (try_proc("/proc/fs/nnpfs/afs_ioctl") == 0)
 	goto done;
     if (env && try_proc(env) == 0)
 	goto done;
