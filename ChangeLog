@@ -1,4 +1,12 @@
+2003-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/programming.texi: s/managment/management/, from jmc
+	<jmc@prioris.mini.pw.edu.pl>
+
 2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/context.c (default_etypes): also advertise that we
+	handle aes encryption types
 
 	* lib/krb5/Makefile.am: add krb5_c_ checksum related functions
 
