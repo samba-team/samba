@@ -26,7 +26,6 @@ struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status
 
 /* The following definitions come from nsswitch/winbindd_cm.c  */
 
-void cm_init_creds(struct ntuser_creds *creds);
 CLI_POLICY_HND *cm_get_lsa_handle(char *domain);
 CLI_POLICY_HND *cm_get_sam_handle(char *domain);
 CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid);
