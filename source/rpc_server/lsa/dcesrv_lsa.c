@@ -1501,11 +1501,6 @@ static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		       struct lsa_GetUserName *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	struct lsa_policy_state *state;
-	uint32_t atype;
-	struct dom_sid *account_sid;
-	struct dom_sid *authority_sid;
-	const char *account_sid_str;
 	const char *account_name;
 	const char *authority_name;
 	struct lsa_String *_account_name;
@@ -1527,39 +1522,20 @@ static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	/* TODO: this check should go and we should rely on the calling code that this is valid */
 	if (!dce_call->conn->auth_state.session_info ||
-	    !dce_call->conn->auth_state.session_info->security_token ||
-	    !dce_call->conn->auth_state.session_info->security_token->user_sid) {
+	    !dce_call->conn->auth_state.session_info->server_info ||
+	    !dce_call->conn->auth_state.session_info->server_info->account_name ||
+	    !dce_call->conn->auth_state.session_info->server_info->domain) {
 	    	return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	account_sid = dce_call->conn->auth_state.session_info->security_token->user_sid;
-
-	account_sid_str = dom_sid_string(mem_ctx, account_sid);
-	NTSTATUS_TALLOC_CHECK(account_sid_str);
-
-	status = lsa_get_policy_state(dce_call, mem_ctx, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = lsa_lookup_sid(state, mem_ctx,
-			        account_sid, account_sid_str,
-			        &account_name, &atype);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	account_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->account_name);
+	authority_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->domain);
 
 	_account_name = talloc_p(mem_ctx, struct lsa_String);
 	NTSTATUS_TALLOC_CHECK(_account_name);
 	_account_name->string = account_name;
 
 	if (r->in.authority_name) {
-		status = lsa_authority_name(state, mem_ctx, account_sid,
-					    &authority_name, &authority_sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
 		_authority_name = talloc_p(mem_ctx, struct lsa_StringPointer);
 		NTSTATUS_TALLOC_CHECK(_authority_name);
 		_authority_name->string = talloc_p(mem_ctx, struct lsa_String);
