@@ -80,8 +80,8 @@ add_one_principal (const char *name,
 		   const char *pw_expiration)
 {
     krb5_error_code ret;
-    kadm5_principal_ent_rec princ;
-    kadm5_principal_ent_rec *default_ent, defrec;
+    kadm5_principal_ent_rec princ, defrec;
+    kadm5_principal_ent_rec *default_ent = NULL;
     krb5_principal princ_ent = NULL;
     int mask = 0;
     int default_mask = 0;
