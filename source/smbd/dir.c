@@ -669,12 +669,12 @@ check to see if a user can read a file. This is only approximate,
 it is used as part of the "hide unreadable" option. Don't
 use it for anything security sensitive
 ********************************************************************/
-static BOOL user_can_read_file(connection_struct *conn, const char *name)
+static BOOL user_can_read_file(connection_struct *conn, char *name)
 {
-	struct stat ste;
+	SMB_STRUCT_STAT ste;
 
 	/* if we can't stat it does not show it */
-	if (stat(name, &ste) != 0) return False;
+	if (vfs_stat(conn, name, &ste) != 0) return False;
 
 	if (ste.st_uid == conn->uid) {
 		return (ste.st_mode & S_IRUSR) == S_IRUSR;
