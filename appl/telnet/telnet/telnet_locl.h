@@ -60,11 +60,12 @@
 #include <unistd.h>
 #endif
 
+/* termios.h *must* be included before curses.h */
+#include <termios.h>
+
 #ifdef HAVE_CURSES_H
 #include <curses.h>
 #endif
-
-#include <termios.h>
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
