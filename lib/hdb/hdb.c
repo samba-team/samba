@@ -311,6 +311,7 @@ hdb_set_master_key (krb5_context context,
 	return ret;
     des_set_random_generator_seed(key.keyvalue.data);
     db->master_key_set = 1;
+    db->master_key_version = 0; /* XXX */
     return 0;
 }
 
