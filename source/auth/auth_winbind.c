@@ -63,6 +63,9 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	snprintf(request.data.auth_crap.user, sizeof(request.data.auth_crap.user),
 		 "%s\\%s", user_info->domain.str, user_info->smb_name.str);
 
+	fstrcpy(request.data.auth_crap.user, user_info->smb_name.str);
+	fstrcpy(request.data.auth_crap.domain, user_info->domain.str);
+
 	memcpy(request.data.auth_crap.chal, auth_context->challenge.data, sizeof(request.data.auth_crap.chal));
 	
 	request.data.auth_crap.lm_resp_len = MIN(user_info->lm_resp.length, 
