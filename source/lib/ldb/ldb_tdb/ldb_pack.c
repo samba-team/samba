@@ -199,7 +199,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 		goto failed;
 	}
 
-	message->elements = talloc_array_p(ldb, struct ldb_message_element, message->num_elements);
+	message->elements = talloc_array_p(message, struct ldb_message_element, message->num_elements);
 	if (!message->elements) {
 		errno = ENOMEM;
 		goto failed;
