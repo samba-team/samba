@@ -534,7 +534,7 @@ BOOL lsa_io_r_query_sec_obj(char *desc,  LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *p
 /*******************************************************************
 makes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
-BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint8 info_class)
+BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint16 info_class)
 {
 	if (q_q == NULL || hnd == NULL)
 		return False;
@@ -562,8 +562,7 @@ BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO * q_q, prs_struct * ps,
 
 	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
 
-	prs_uint8("info_class", ps, depth, &q_q->info_class);
-	prs_align(ps);
+	prs_uint16("info_class", ps, depth, &q_q->info_class);
 
 	return True;
 }

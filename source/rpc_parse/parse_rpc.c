@@ -372,6 +372,7 @@ static BOOL smb_io_rpc_addr_str(char *desc, RPC_ADDR_STR * str,
 
 	prs_uint16("len", ps, depth, &(str->len));
 	prs_uint8s(True, "str", ps, depth, (uchar *) str->str, str->len);
+	prs_align(ps);
 
 	return True;
 }

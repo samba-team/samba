@@ -1712,7 +1712,7 @@ BOOL make_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ * q_q, const POLICY_HND *hnd,
 BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q, prs_struct * ps,
 		    int depth);
 BOOL lsa_io_r_query_sec_obj(char *desc,  LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
-BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint8 info_class);
+BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint16 info_class);
 BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO * q_q, prs_struct * ps,
 		    int depth);
 BOOL make_q_create_secret(LSA_Q_CREATE_SECRET * q_o,

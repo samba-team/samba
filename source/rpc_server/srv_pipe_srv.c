@@ -306,6 +306,11 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 		}
 	}
 
+	if (assoc_gid == 0)
+	{
+		assoc_gid = 0x1;
+	}
+
 	if (l->auth != NULL)
 	{
 		if (!l->auth->api_auth_chk(l, pkt_type))
