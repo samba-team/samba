@@ -574,7 +574,7 @@ WINBINDD_OBJ = \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ)
+		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o $(POPT_LIB_OBJ)
 
@@ -730,7 +730,7 @@ bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
-bin/editreg@EXEEXT@: utils/editreg.o @BUILD_POP@ bin/.dummy
+bin/editreg@EXEEXT@: utils/editreg.o @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ utils/editreg.o $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
@@ -922,9 +922,9 @@ nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) bin/.dummy
+bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS)
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 nsswitch/libns_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
