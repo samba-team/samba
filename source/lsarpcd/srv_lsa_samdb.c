@@ -543,16 +543,6 @@ uint32 _lsa_close(POLICY_HND *hnd)
 }
 
 /***************************************************************************
- _lsa_create_secret
- ***************************************************************************/
-uint32 _lsa_create_secret(const POLICY_HND *hnd,
-			const UNISTR2 *secret_name, uint32 des_access,
-			POLICY_HND *hnd_secret)
-{
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-}
-
-/***************************************************************************
  _lsa_query_secret
  ***************************************************************************/
 uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
@@ -618,6 +608,62 @@ uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 		}
 	}
 	safe_free(sec);
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/***************************************************************************
+ _lsa_create_secret
+ ***************************************************************************/
+uint32 _lsa_create_secret(const POLICY_HND *hnd,
+			const UNISTR2 *secret_name, uint32 des_access,
+			POLICY_HND *hnd_secret)
+{
+	TDB_CONTEXT *tdb;
+	LSA_SECRET sec;
+	NTTIME ntt;
+
+	ZERO_STRUCT(sec);
+
+	tdb = open_secret_db(O_RDWR);
+	if (tdb == NULL)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (tdb_lookup_secret(tdb, secret_name, NULL))
+	{
+		DEBUG(10,("_lsa_create_secret: secret exists\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		hnd, hnd_secret, des_access))
+	{
+		tdb_close(tdb);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!set_tdbsecname(get_global_hnd_cache(), hnd_secret, tdb, secret_name))
+	{
+		close_policy_hnd(get_global_hnd_cache(), hnd_secret);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	unix_to_nt_time(&ntt, time(NULL));
+
+	sec.curinfo.ptr_update = 1;
+	sec.curinfo.last_update = ntt;
+
+	sec.oldinfo.ptr_update = 1;
+	sec.oldinfo.last_update = ntt;
+
+	if (!tdb_store_secret(tdb, secret_name, &sec))
+	{
+		close_policy_hnd(get_global_hnd_cache(), hnd_secret);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	return NT_STATUS_NOPROBLEMO;
 }
 

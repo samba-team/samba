@@ -519,7 +519,7 @@ static void api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
- api_lsa_open_secret
+ api_lsa_create_secret
  ***************************************************************************/
 static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
@@ -548,8 +548,8 @@ static const struct api_struct api_lsa_cmds[] =
 	{ "LSA_ENUMTRUSTDOM"   , LSA_ENUMTRUSTDOM   , api_lsa_enum_trust_dom },
 	{ "LSA_CLOSE"          , LSA_CLOSE          , api_lsa_close          },
 	{ "LSA_OPENSECRET"     , LSA_OPENSECRET     , api_lsa_open_secret    },
-	{ "LSA_QUERYSECRET"    , LSA_QUERYSECRET    , api_lsa_query_secret   },
 	{ "LSA_CREATESECRET"   , LSA_CREATESECRET   , api_lsa_create_secret  },
+	{ "LSA_QUERYSECRET"    , LSA_QUERYSECRET    , api_lsa_query_secret   },
 	{ "LSA_LOOKUPSIDS"     , LSA_LOOKUPSIDS     , api_lsa_lookup_sids    },
 	{ "LSA_LOOKUPNAMES"    , LSA_LOOKUPNAMES    , api_lsa_lookup_names   },
 	{ NULL                 , 0                  , NULL                   }

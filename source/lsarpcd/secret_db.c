@@ -81,6 +81,18 @@ BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr)
 
 	prs_tdb_fetch(tdb, &key, &data);
 
+	if (prs_buf_len(&data) == 0x0)
+	{
+		if (usr != NULL)
+		{
+			safe_free((*usr));
+		}
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return False;
+	}
+		
+
 	if (usr != NULL)
 	{
 		if (!lsa_io_secret("usr", (*usr), &data, 0))
@@ -191,6 +203,9 @@ BOOL secret_init_db(void)
 		SIVAL(sec.curinfo.value.enc_secret.buffer, 0, 16);
 		SIVAL(sec.curinfo.value.enc_secret.buffer, 4, 0x01);
 		memcpy(sec.curinfo.value.enc_secret.buffer+8, trust_passwd, 16);
+
+		sec.oldinfo.ptr_update = 1;
+		sec.oldinfo.last_update = crt;
 
 		sec.curinfo.ptr_update = 1;
 		sec.curinfo.last_update = crt;
