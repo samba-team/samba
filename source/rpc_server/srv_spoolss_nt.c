@@ -649,23 +649,39 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 }
 
 /***************************************************************************
- receive the notify message
+ Receive the notify message.
 ****************************************************************************/
+
 void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	fstring printer;
 	uint32 status;
 	Printer_entry *find_printer;
+	char *msg = (char *)buf;
 
 	*printer = '\0';
-	fstrcpy(printer,buf);
 
-	if (len == 0) {
+	if (len < 5 + sizeof(POLICY_HND)) {
 		DEBUG(0,("srv_spoolss_receive_message: got null message !\n"));
 		return;
 	}
 
+    /*
+     * If this is a message to ourselves, just send a change notify with
+     * the given handle, we know it's still open.
+     */
+ 
+	fstrcpy(printer,&msg[4 + sizeof(POLICY_HND)]);
 	DEBUG(10,("srv_spoolss_receive_message: Got message about printer %s\n", printer ));
+ 
+	if (IVAL(buf,0) == (uint32)sys_getpid()) {
+		POLICY_HND sent_pol;
+ 
+		memcpy(&sent_pol, &msg[4], sizeof(POLICY_HND));
+		DEBUG(10,("srv_spoolss_receive_message: using our own handle.\n"));
+		cli_spoolss_reply_rrpcn(&cli, &sent_pol, PRINTER_CHANGE_ALL, 0x0, &status);
+		return;
+	}
 
 	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
 
@@ -688,29 +704,37 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 }
 
 /***************************************************************************
- send a notify event
+ Send a notify event.
 ****************************************************************************/
+
 static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 {
-	fstring printer;
-
+	pstring msg;
+	size_t msg_len;
+ 
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
-
-	if (!OPEN_HANDLE(Printer)) {
+ 
+	if (!Printer) {
 		DEBUG(0,("srv_spoolss_sendnotify: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return False;
 	}
-
-	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
-		fstrcpy(printer, Printer->dev.handlename);
-	else
-		fstrcpy(printer, "");
-
-	/*srv_spoolss_receive_message(printer);*/
-	DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", printer ));
-
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer, strlen(printer) + 1, False); /* Null terminate... */
-
+ 
+	memset(msg, '\0', sizeof(msg));
+ 
+	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTER) {
+		uint32 mypid = (uint32)sys_getpid();
+		SIVAL(msg,0,mypid);
+		memcpy(&msg[4], handle, sizeof(POLICY_HND));
+		fstrcpy(&msg[4+sizeof(POLICY_HND)], Printer->dev.handlename);
+		msg_len = 4 + sizeof(POLICY_HND) + strlen(Printer->dev.handlename) + 1;
+	} else {
+		fstrcpy(&msg[4+sizeof(POLICY_HND)], "");
+		msg_len = 4 + sizeof(POLICY_HND) + 1;
+	}
+ 
+	DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", &msg[4+sizeof(POLICY_HND)] ));
+ 
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, msg_len, False);
 	return True;
 }	
 
