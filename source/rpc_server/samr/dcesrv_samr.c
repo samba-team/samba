@@ -1721,6 +1721,13 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 						   a_state->domain_state->domain_dn,
 						   mem_ctx, msg, 
 						   &r->in.info->info23.password);
+		} else IFSET(SAMR_FIELD_PASSWORD2) {
+			status = samr_set_password(dce_call,
+						   a_state->sam_ctx,
+						   a_state->account_dn,
+						   a_state->domain_state->domain_dn,
+						   mem_ctx, msg, 
+						   &r->in.info->info23.password);
 		}
 #undef IFSET
 		break;
@@ -1760,6 +1767,13 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		IFSET(SAMR_FIELD_CODE_PAGE)    
 			SET_UINT  (msg, info25.info.code_page,         "codePage");
 		IFSET(SAMR_FIELD_PASSWORD) {
+			status = samr_set_password_ex(dce_call,
+						      a_state->sam_ctx,
+						      a_state->account_dn,
+						      a_state->domain_state->domain_dn,
+						      mem_ctx, msg, 
+						      &r->in.info->info25.password);
+		} else IFSET(SAMR_FIELD_PASSWORD2) {
 			status = samr_set_password_ex(dce_call,
 						      a_state->sam_ctx,
 						      a_state->account_dn,
