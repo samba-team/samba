@@ -466,10 +466,6 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	pdb_set_uid (user, uid);
 	pdb_set_gid (user, gid);
 
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
-
 	/* increment to next in line */
 	global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 
@@ -545,13 +541,6 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	pdb_set_uid (user, uid);
 	pdb_set_gid (user, gid);
 	
-	/* 21 days from present */
-	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
-	
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
-
 	/* cleanup */
 	tdb_close (pwd_tdb);
 
@@ -720,7 +709,7 @@ BOOL pdb_delete_sam_account(char *sname)
  Update the TDB SAM
 ****************************************************************************/
 
-static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
+static BOOL tdb_update_sam(const SAM_ACCOUNT* newpwd, BOOL override, int flag)
 {
 	TDB_CONTEXT 	*pwd_tdb = NULL;
 	TDB_DATA 	key, data;
@@ -733,15 +722,15 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
-	if ( (!newpwd->uid) || (!newpwd->gid) )
+	if ( (!pdb_get_uid(newpwd)) || (!pdb_get_gid(newpwd)) )
 		DEBUG (0,("tdb_update_sam: Storing a SAM_ACCOUNT for [%s] with uid %d and gid %d!\n",
-			newpwd->username, newpwd->uid, newpwd->gid));
+			pdb_get_username(newpwd), pdb_get_uid(newpwd), pdb_get_gid(newpwd)));
 				
-	/* if we don't have a RID, then generate one */
-	if (!newpwd->user_rid)
-		pdb_set_user_rid (newpwd, pdb_uid_to_user_rid (newpwd->uid));
-	if (!newpwd->group_rid)
-		pdb_set_group_rid (newpwd, pdb_gid_to_group_rid (newpwd->gid));
+	/* if we don't have a RID, then FAIL */
+	if (!pdb_get_user_rid(newpwd))
+		DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
+	if (!pdb_get_group_rid(newpwd))
+		DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
 
 	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
 	if ((data.dsize=init_buffer_from_sam (&buf, newpwd)) == -1) {

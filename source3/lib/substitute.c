@@ -29,6 +29,7 @@ pstring samlogon_user="";
 BOOL sam_logon_in_ssb = False;
 fstring remote_proto="UNKNOWN";
 fstring remote_machine="";
+extern pstring global_myname;
 
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
@@ -136,8 +137,12 @@ static char *automount_server(char *user_name)
 
 	/* use the local machine name as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	pstrcpy(server_name, local_machine);
-
+	if (*local_machine) {
+		pstrcpy(server_name, local_machine);
+	} else {
+		pstrcpy(server_name, global_myname);
+	}
+	
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
 	if (lp_nis_home_map())
@@ -193,7 +198,13 @@ void standard_sub_basic(char *str)
 			string_sub(p,"%D", tmp_str,l);
 			break;
 		case 'I' : string_sub(p,"%I", client_addr(),l); break;
-		case 'L' : string_sub(p,"%L", local_machine,l); break;
+		case 'L' : 
+			if (*local_machine) {
+				string_sub(p,"%L", local_machine,l); 
+			} else {
+				string_sub(p,"%L", global_myname,l); 
+			}
+			break;
 		case 'M' : string_sub(p,"%M", client_name(),l); break;
 		case 'R' : string_sub(p,"%R", remote_proto,l); break;
 		case 'T' : string_sub(p,"%T", timestring(False),l); break;

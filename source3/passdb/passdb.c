@@ -130,6 +130,10 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
 
 BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 {
+	pstring str;
+	extern BOOL sam_logon_in_ssb;
+	extern pstring samlogon_user;
+
 	if (!pwd) {
 		new_sam_acct = NULL;
 		return False;
@@ -144,10 +148,32 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
 	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
 	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
-	pdb_set_profile_path(*new_sam_acct, lp_logon_path());
-	pdb_set_homedir(*new_sam_acct, lp_logon_home());
-	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive());
-	pdb_set_logon_script(*new_sam_acct, lp_logon_script());
+
+	pdb_set_user_rid(*new_sam_acct, pdb_uid_to_user_rid(pwd->pw_uid));
+	pdb_set_group_rid(*new_sam_acct, pdb_gid_to_group_rid(pwd->pw_gid));
+
+	/* UGLY, UGLY HACK!!! */
+	pstrcpy(samlogon_user, pwd->pw_name);
+	
+	sam_logon_in_ssb = True;
+	
+	pstrcpy(str, lp_logon_path());
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	pdb_set_profile_path(*new_sam_acct, str);
+	
+	pstrcpy(str, lp_logon_home());
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	pdb_set_homedir(*new_sam_acct, str);
+	
+	pstrcpy(str, lp_logon_drive());
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	pdb_set_dir_drive(*new_sam_acct, str);
+
+	pstrcpy(str, lp_logon_script());
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	pdb_set_logon_script(*new_sam_acct, str);
+	
+	sam_logon_in_ssb = False;
 	return True;
 }
 

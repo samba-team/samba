@@ -870,16 +870,6 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   p += 33; /* Move to the first character of the line after
               the NT password. */
 
-  /*
-   * If both NT and lanman passwords are provided - reset password
-   * not required flag.
-   */
-
-  if(pwd->smb_passwd != NULL || pwd->smb_nt_passwd != NULL) {
-    /* Reqiure password in the future (should ACB_DISABLED also be reset?) */
-    pwd->acct_ctrl &= ~(ACB_PWNOTREQ);
-  }
-
   if (*p == '[') {
 
     i = 0;
@@ -898,15 +888,9 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
        */
       fstrcpy(encode_bits, pdb_encode_acct_ctrl(pwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
     } else {
-      /*
-       * If using the old format and the ACB_DISABLED or
-       * ACB_PWNOTREQ are set then set the lanman and NT passwords to NULL
-       * here as we have no space to encode the change.
-       */
-      if(pwd->acct_ctrl & (ACB_DISABLED|ACB_PWNOTREQ)) {
-        pwd->smb_passwd = NULL;
-        pwd->smb_nt_passwd = NULL;
-      }
+	    DEBUG(0,("mod_smbfilepwd_entry:  Using old smbpasswd format.  This is no longer supported.!\n"));
+	    DEBUG(0,("mod_smbfilepwd_entry:  No changes made, failing.!\n"));
+	    return False;
     }
 
     /* Go past the ']' */
@@ -968,8 +952,6 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 
   /* Add on the account info bits and the time of last
      password change. */
-
-  pwd->pass_last_set_time = time(NULL);
 
   if(got_pass_last_set_time) {
     slprintf(&ascii_p16[strlen(ascii_p16)], 
@@ -1151,7 +1133,7 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  We will not allocate any new memory.  The smb_passwd struct
  should only stay around as long as the SAM_ACCOUNT does.
  ********************************************************************/
-static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
+static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampass)
 {
 	if (sampass == NULL) 
 		return False;
@@ -1167,13 +1149,23 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
 	smb_pw->acct_ctrl=pdb_get_acct_ctrl(sampass);
 	smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
 
+	if (smb_pw->smb_userid != pdb_user_rid_to_uid(pdb_get_user_rid(sampass))) {
+		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
+		return False;
+	}
+
+	if (pdb_get_gid(sampass) != pdb_group_rid_to_gid(pdb_get_group_rid(sampass))) {
+		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-gid based primary group RID. \n"));
+		return False;
+	}
+
 	return True;
 }	
 
 /*********************************************************************
  Create a SAM_ACCOUNT from a smb_passwd struct
  ********************************************************************/
-static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
+static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw_buf)
 {
 	struct passwd *pwfile;
 	
@@ -1196,6 +1188,8 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	   --jerry */
 	pstrcpy(samlogon_user, pw_buf->smb_name);
 	
+	sam_logon_in_ssb = True;
+		
 	pdb_set_uid (sam_pass, pwfile->pw_uid);
 	pdb_set_gid (sam_pass, pwfile->pw_gid);
 	pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
@@ -1225,27 +1219,29 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	if (samlogon_user[strlen(samlogon_user)-1] != '$')
 	{
 		pstring 	str;
-		gid_t 		gid = getegid();
 		
-	        sam_logon_in_ssb = True;
-
-	        pstrcpy(str, lp_logon_script());
-       		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
-		pdb_set_logon_script(sam_pass, str);
-
-	        pstrcpy(str, lp_logon_path());
-       		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
+		pstrcpy(str, lp_logon_path());
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
 		pdb_set_profile_path(sam_pass, str);
-
-	        pstrcpy(str, lp_logon_home());
-        	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
+		
+		pstrcpy(str, lp_logon_home());
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
 		pdb_set_homedir(sam_pass, str);
- 		
-		sam_logon_in_ssb = False;
+		
+		pstrcpy(str, lp_logon_drive());
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
+		pdb_set_dir_drive(sam_pass, str);
+		
+		pstrcpy(str, lp_logon_script());
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
+		pdb_set_logon_script(sam_pass, str);
+		
 	} else {
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
 		pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
 	}
+
+	sam_logon_in_ssb = False;
 	
 	return True;
 }
@@ -1481,21 +1477,24 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct,uint32 rid)
 	return True;
 }
 
-BOOL pdb_add_sam_account(SAM_ACCOUNT *sampass)
+BOOL pdb_add_sam_account(const SAM_ACCOUNT *sampass)
 {
 	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
-	build_smb_pass(&smb_pw, sampass);
+	if (!build_smb_pass(&smb_pw, sampass)) {
+		return False;
+	}
 	
 	/* add the entry */
-	if(!add_smbfilepwd_entry(&smb_pw))
+	if(!add_smbfilepwd_entry(&smb_pw)) {
 		return False;
-	
+	}
+
 	return True;
 }
 
-BOOL pdb_update_sam_account(SAM_ACCOUNT *sampass, BOOL override)
+BOOL pdb_update_sam_account(const SAM_ACCOUNT *sampass, BOOL override)
 {
 	struct smb_passwd smb_pw;
 	
@@ -1518,3 +1517,4 @@ BOOL pdb_delete_sam_account (char* username)
  /* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
  void smbpass_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* WTH_SMBPASSWD_SAM*/
+
