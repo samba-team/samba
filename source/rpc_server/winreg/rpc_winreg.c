@@ -27,7 +27,7 @@ enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 
 static void winreg_destroy_hive(struct dcesrv_connection *c, struct dcesrv_handle *h)
 {
-	/* FIXME: Free ((struct registry_key *)h->data)->root->hive->reg_ctx */
+	reg_close(((struct registry_key *)h->data)->hive->reg_ctx);
 }
 
 static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, const char *hivename, struct policy_handle **outh)
@@ -208,7 +208,12 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static WERROR winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_FlushKey *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct dcesrv_handle *h;
+
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	DCESRV_CHECK_HANDLE(h);
+
+	return reg_key_flush(h->data);
 }
 
 
