@@ -29,9 +29,6 @@ Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
 BuildRoot   	: /tmp/%{Name}-%{Version}
 
 Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
-#Patch0: %{Name}-%{Version}-smbmount.patch
-#Patch1: %{Name}-%{Version}-install.patch
-#Patch2: %{Name}-%{Version}-smbconf.patch
 
 
 %Package doc
@@ -188,9 +185,6 @@ verificar rapidamente o efeite de qualquer alteração.
 
 %Prep
 %setup
-#%patch0 -p1
-#%patch1 -p1
-#%patch2 -p1
 
 # instead of patch (to help configuration) ...   ;^)
 %{fixUP} -vbT source/Makefile.in -e '
