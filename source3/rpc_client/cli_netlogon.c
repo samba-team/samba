@@ -378,6 +378,7 @@ static NTSTATUS cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CT
 	/* send the data on \PIPE\ */
 	if (!rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf)) {
 		DEBUG(0,("cli_net_sam_logon_internal: Error rpc_api_pipe_req failed.\n"));
+                retval = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 
