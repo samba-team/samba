@@ -71,6 +71,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate a;
 	struct netr_LogonSamLogon l;
+	struct netr_LogonSamLogoff lo;
 	const char *plain_pass;
 	uint8 mach_pwd[16];
 	struct netr_Authenticator auth, auth2;
@@ -83,8 +84,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.server_name = NULL;
 	r.in.computer_name = lp_netbios_name();
-	r.in.credentials.low = 1;
-	r.in.credentials.high = 2;
+	generate_random_buffer(r.in.credentials.data, sizeof(r.in.credentials.data), False);
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -100,13 +100,13 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	E_md4hash(plain_pass, mach_pwd);
 
-	creds_init(&creds, &r.in.credentials, &r.out.credentials, mach_pwd);
+	creds_init(&creds, &r.in.credentials, &r.out.credentials, mach_pwd,
+		   &a.in.credentials);
 
 	a.in.server_name = NULL;
 	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
 	a.in.secure_challenge_type = 2;
 	a.in.computer_name = lp_netbios_name();
-	a.in.credentials = creds.client_cred;
 
 	printf("Testing ServerAuthenticate\n");
 
@@ -116,12 +116,10 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_next(&creds, &a.out.credentials)) {
+	if (!creds_check(&creds, &a.out.credentials)) {
 		printf("Credential chaining failed\n");
+		return False;
 	}
-
-	auth.timestamp = 0;
-	auth.cred = creds.client_cred;
 
 	ninfo.logon_info.domain_name.string = lp_workgroup();
 	ninfo.logon_info.parameter_control = 0;
@@ -140,6 +138,8 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	ZERO_STRUCT(auth2);
 
+	creds_authenticator(&creds, &auth);
+
 	l.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	l.in.workstation = lp_netbios_name();
 	l.in.credential = &auth;
@@ -156,7 +156,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_next(&creds, &l.out.authenticator->cred)) {
+	if (!creds_check(&creds, &l.out.authenticator->cred)) {
 		printf("Credential chaining failed\n");
 	}
 
