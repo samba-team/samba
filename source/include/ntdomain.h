@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
+   Copyright (C) Jeremy Allison 200-2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,19 +24,17 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-struct uuid
-{
-  uint32 time_low;
-  uint16 time_mid;
-  uint16 time_hi_and_version;
-  uint8  clock_seq[2];
-  uint8  node[6];
+struct uuid {
+	uint32 time_low;
+	uint16 time_mid;
+	uint16 time_hi_and_version;
+	uint8  clock_seq[2];
+	uint8  node[6];
 };
 #define UUID_SIZE 16
 
 #define UUID_FLAT_SIZE 16
-typedef struct uuid_flat
-{
+typedef struct uuid_flat {
 	uint8 info[UUID_FLAT_SIZE];
 } UUID_FLAT;
 
@@ -54,8 +53,7 @@ typedef struct uuid_flat
  * in the NTDOM branch - it didn't belong there.
  */
  
-typedef struct _prs_struct 
-{
+typedef struct _prs_struct {
 	BOOL io; /* parsing in or out of data stream */
 	/* 
 	 * If the (incoming) data is big-endian. On output we are
@@ -109,49 +107,47 @@ typedef struct _output_data {
 } output_data;
 
 typedef struct _input_data {
-    /*
-     * This is the current incoming pdu. The data here
-     * is collected via multiple writes until a complete
-     * pdu is seen, then the data is copied into the in_data
-     * structure. The maximum size of this is 0x1630 (MAX_PDU_FRAG_LEN).
-     */
-    unsigned char current_in_pdu[MAX_PDU_FRAG_LEN];
+	/*
+	 * This is the current incoming pdu. The data here
+	 * is collected via multiple writes until a complete
+	 * pdu is seen, then the data is copied into the in_data
+	 * structure. The maximum size of this is 0x1630 (MAX_PDU_FRAG_LEN).
+	 */
+	unsigned char current_in_pdu[MAX_PDU_FRAG_LEN];
 
-    /*
-     * The amount of data needed to complete the in_pdu.
-     * If this is zero, then we are at the start of a new
-     * pdu.
-     */
-    uint32 pdu_needed_len;
+	/*
+	 * The amount of data needed to complete the in_pdu.
+	 * If this is zero, then we are at the start of a new
+	 * pdu.
+	 */
+	uint32 pdu_needed_len;
 
-    /*
-     * The amount of data received so far in the in_pdu.
-     * If this is zero, then we are at the start of a new
-     * pdu.
-     */
-    uint32 pdu_received_len;
+	/*
+	 * The amount of data received so far in the in_pdu.
+	 * If this is zero, then we are at the start of a new
+	 * pdu.
+	 */
+	uint32 pdu_received_len;
 
-    /*
-     * This is the collection of input data with all
-     * the rpc headers and auth footers removed.
-     * The maximum length of this (1Mb) is strictly enforced.
-     */
-    prs_struct data;
+	/*
+	 * This is the collection of input data with all
+	 * the rpc headers and auth footers removed.
+	 * The maximum length of this (1Mb) is strictly enforced.
+	 */
+	prs_struct data;
 } input_data;
 
 /*
  * Handle database - stored per pipe.
  */
 
-struct policy
-{
-    struct policy *next, *prev;
+struct policy {
+	struct policy *next, *prev;
 
-    POLICY_HND pol_hnd;
+	POLICY_HND pol_hnd;
 
-    void *data_ptr;
-    void (*free_fn)(void *);
-
+	void *data_ptr;
+	void (*free_fn)(void *);
 };
 
 struct handle_list {
@@ -161,8 +157,7 @@ struct handle_list {
 };
 
 /* Domain controller authentication protocol info */
-struct dcinfo
-{
+struct dcinfo {
 	DOM_CHAL clnt_chal; /* Initial challenge received from client */
 	DOM_CHAL srv_chal;  /* Initial server challenge */
 	DOM_CRED clnt_cred; /* Last client credential */
@@ -198,8 +193,7 @@ typedef struct pipe_rpc_fns {
  * NamedPipes.
  */
 
-typedef struct pipes_struct
-{
+typedef struct pipes_struct {
 	struct pipes_struct *next, *prev;
 
 	connection_struct *conn;
@@ -291,8 +285,7 @@ typedef struct pipes_struct
 
 } pipes_struct;
 
-typedef struct smb_np_struct
-{
+typedef struct smb_np_struct {
 	struct smb_np_struct *next, *prev;
 	int pnum;
 	connection_struct *conn;
@@ -368,18 +361,15 @@ typedef struct smb_np_struct
 
 } smb_np_struct;
 
-struct api_struct
-{  
-  const char *name;
-  uint8 opnum;
-  BOOL (*fn) (pipes_struct *);
+struct api_struct {  
+	const char *name;
+	uint8 opnum;
+	BOOL (*fn) (pipes_struct *);
 };
 
-typedef struct
-{  
+typedef struct {  
 	uint32 rid;
 	const char *name;
-
 } rid_name;
 
 /*

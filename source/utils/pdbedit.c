@@ -736,7 +736,12 @@ int main (int argc, char **argv)
 		uint32 value;
 		int field = account_policy_name_to_fieldnum(account_policy);
 		if (field == 0) {
+			char *apn = account_policy_names_list();
 			fprintf(stderr, "No account policy by that name\n");
+			if (apn) {
+				fprintf(stderr, "Account policy names are :\n%s\n", apn);
+			}
+			SAFE_FREE(apn);
 			exit(1);
 		}
 		if (!account_policy_get(field, &value)) {
