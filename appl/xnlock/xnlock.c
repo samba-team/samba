@@ -542,7 +542,8 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	/*
 	 * Password that log out user
 	 */
-	if ((time(0) - locked_at) > ALLOW_LOGOUT
+	if (getuid() != 0
+	    && (time(0) - locked_at) > ALLOW_LOGOUT
 	    && strncmp(passwd, LOGOUT_PASSWD, sizeof(LOGOUT_PASSWD)) == 0)
 	    kill(-1, SIGHUP);
 #ifdef KERBEROS
