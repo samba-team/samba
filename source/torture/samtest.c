@@ -73,7 +73,7 @@ static NTSTATUS cmd_conf(struct samtest_state *sam, TALLOC_CTX *mem_ctx,
 
 /* Display help on commands */
 static NTSTATUS cmd_help(struct samtest_state *st, TALLOC_CTX *mem_ctx,
-			 int argc, char **argv)
+			 int argc, const char **argv)
 {
 	struct cmd_list *tmp;
 	struct cmd_set *tmp_set;

@@ -1202,7 +1202,7 @@ BOOL make_spoolss_q_deleteprinterdriver(
 
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				   const POLICY_HND *handle,
-				   char *valuename, uint32 size)
+				   const char *valuename, uint32 size)
 {
         if (q_u == NULL) return False;
 
@@ -1221,7 +1221,8 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 
 BOOL make_spoolss_q_getprinterdataex(SPOOL_Q_GETPRINTERDATAEX *q_u,
 				     const POLICY_HND *handle,
-				     char *keyname, char *valuename, uint32 size)
+				     const char *keyname, 
+				     const char *valuename, uint32 size)
 {
         if (q_u == NULL) return False;
 
@@ -7503,7 +7504,7 @@ BOOL make_spoolss_q_addform(SPOOL_Q_ADDFORM *q_u, POLICY_HND *handle,
  ********************************************************************/
 
 BOOL make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle, 
-			    int level, char *form_name, FORM *form)
+			    int level, const char *form_name, FORM *form)
 {
 	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	q_u->level = level;
@@ -7518,7 +7519,8 @@ BOOL make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle,
  * init a structure.
  ********************************************************************/
 
-BOOL make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, char *form)
+BOOL make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, 
+			       const char *form)
 {
 	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	init_unistr2(&q_u->name, form, strlen(form) + 1);
@@ -7530,8 +7532,8 @@ BOOL make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, char
  ********************************************************************/
 
 BOOL make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle, 
-                            char *formname, uint32 level, NEW_BUFFER *buffer,
-			    uint32 offered)
+                            const char *formname, uint32 level, 
+			    NEW_BUFFER *buffer, uint32 offered)
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
         q_u->level = level;

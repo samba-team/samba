@@ -24,7 +24,7 @@
 
 static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx, int argc, 
-                                         char **argv)
+                                         const char **argv)
 {
 	uint32 query_level = 1;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -47,7 +47,7 @@ static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli,
 
 static NTSTATUS cmd_netlogon_logon_ctrl(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx, int argc, 
-                                        char **argv)
+                                        const char **argv)
 {
 #if 0
 	uint32 query_level = 1;
@@ -143,7 +143,7 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
 
 static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli, 
                                       TALLOC_CTX *mem_ctx, int argc,
-                                      char **argv)
+                                      const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         unsigned char trust_passwd[16];
@@ -204,7 +204,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
 
 static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx, int argc,
-                                        char **argv)
+                                        const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         unsigned char trust_passwd[16];
@@ -266,12 +266,12 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
 
 static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli, 
                                        TALLOC_CTX *mem_ctx, int argc,
-                                       char **argv)
+                                       const char **argv)
 {
         unsigned char trust_passwd[16];
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         int logon_type = NET_LOGON_TYPE;
-        char *username, *password;
+        const char *username, *password;
 	uint32 neg_flags = 0x000001ff;
 	int auth_level = 2;
 

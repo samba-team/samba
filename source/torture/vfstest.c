@@ -124,7 +124,7 @@ static NTSTATUS cmd_conf(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	
 /* Display help on commands */
 static NTSTATUS cmd_help(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
-			 int argc, char **argv)
+			 int argc, const char **argv)
 {
 	struct cmd_list *tmp;
 	struct cmd_set *tmp_set;
