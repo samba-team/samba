@@ -54,8 +54,9 @@ main(int argc, char **argv)
 	doglob = 1;
 	interactive = 1;
 	autologin = 1;
+	passivemode = 0; /* passive mode not active */
 
-	while ((ch = getopt(argc, argv, "dgintv")) != EOF) {
+	while ((ch = getopt(argc, argv, "dginptv")) != EOF) {
 		switch (ch) {
 		case 'd':
 			options |= SO_DEBUG;
@@ -74,6 +75,9 @@ main(int argc, char **argv)
 			autologin = 0;
 			break;
 
+		case 'p':
+		        passivemode = 1;
+			break;
 		case 't':
 			trace++;
 			break;
@@ -84,7 +88,7 @@ main(int argc, char **argv)
 
 		default:
 		    fprintf(stderr,
-			    "usage: ftp [-dgintv] [host [port]]\n");
+			    "usage: ftp [-dginptv] [host [port]]\n");
 		    exit(1);
 		}
 	}
@@ -96,7 +100,6 @@ main(int argc, char **argv)
 		verbose++;
 	cpend = 0;	/* no pending replies */
 	proxy = 0;	/* proxy not active */
-	passivemode = 0; /* passive mode not active */
 	crflag = 1;	/* strip c.r. on ascii gets */
 	sendport = -1;	/* not using ports */
 	/*
