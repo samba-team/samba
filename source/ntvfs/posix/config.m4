@@ -26,6 +26,7 @@ dnl use flistxattr as the key function for having
 dnl sufficient xattr support for posix xattr backend
 AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h)
 AC_SEARCH_LIBS(flistxattr, [attr])
+AC_CHECK_FUNCS(flistxattr)
 
 if test x"$ac_cv_func_flistxattr" = x"yes"; then
 	AC_DEFINE(HAVE_XATTR_SUPPORT,1,[Whether we have xattr support])
