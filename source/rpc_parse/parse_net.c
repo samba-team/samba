@@ -873,10 +873,12 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 		int number;
 		DOM_SID2 *sids;
 
-		/* Count the number of SIDs. */
-		for (count = 0, ptr = sids_str; 
-	   	  next_token(&ptr, s2, NULL, sizeof(s2)); count++)
-			;
+		/* Count the number of valid SIDs. */
+		for (count = 0, ptr = sids_str; next_token(&ptr, s2, NULL, sizeof(s2)); ) {
+			DOM_SID tmpsid;
+			if (string_to_sid(&tmpsid, s2))
+				count++;
+		}
 
 		/* Now allocate space for them. */
 		*ppsids = (DOM_SID2 *)talloc_zero(ctx, count * sizeof(DOM_SID2));
@@ -885,11 +887,13 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 
 		sids = *ppsids;
 
-		for (number = 0, ptr = sids_str; 
-	   	  next_token(&ptr, s2, NULL, sizeof(s2)); number++) {
+		for (number = 0, ptr = sids_str; next_token(&ptr, s2, NULL, sizeof(s2)); ) {
 			DOM_SID tmpsid;
-			string_to_sid(&tmpsid, s2);
-			init_dom_sid2(&sids[number], &tmpsid);
+			if (string_to_sid(&tmpsid, s2)) {
+				/* count only valid sids */
+				init_dom_sid2(&sids[number], &tmpsid);
+				number++;
+			}
 		}
 	}
 
