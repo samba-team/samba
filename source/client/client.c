@@ -2758,7 +2758,6 @@ static void remember_query_host(const char *arg,
 			got_pass = True;
 			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper(username);
 	}
 
 	/* modification to support PASSWD environmental var
@@ -2775,7 +2774,6 @@ static void remember_query_host(const char *arg,
 
 	if (*username == 0 && getenv("LOGNAME")) {
 		pstrcpy(username,getenv("LOGNAME"));
-		strupper(username);
 	}
 
 	if (*username == 0) {
