@@ -37,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >nmbd</B
->  [-D] [-a] [-o] [-P] [-h] [-V] [-d &#60;debug level&#62;] [-H &#60;lmhosts file&#62;] [-l &#60;log directory&#62;] [-n &#60;primary netbios name&#62;] [-p &#60;port number&#62;] [-s &#60;configuration file&#62;]</P
+>  [-D] [-a] [-i] [-o] [-P] [-h] [-V] [-d &#60;debug level&#62;] [-H &#60;lmhosts file&#62;] [-l &#60;log directory&#62;] [-n &#60;primary netbios name&#62;] [-p &#60;port number&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN23"
+NAME="AEN24"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -112,7 +112,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN40"
+NAME="AEN41"
 ></A
 ><H2
 >OPTIONS</H2
@@ -150,6 +150,17 @@ CLASS="COMMAND"
 >If this parameter is specified, each new 
 		connection will append log messages to the log file.  
 		This is the default.</P
+></DD
+><DT
+>-i</DT
+><DD
+><P
+>If this parameter is specified it causes the
+		server to run "interactively", not as a daemon, even if the
+		server is executed on the command line of a shell. Setting this
+		parameter negates the implicit deamon mode when run from the
+		command line.
+		</P
 ></DD
 ><DT
 >-o</DT
@@ -366,7 +377,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN125"
+NAME="AEN130"
 ></A
 ><H2
 >FILES</H2
@@ -513,7 +524,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN171"
+NAME="AEN176"
 ></A
 ><H2
 >SIGNALS</H2
@@ -574,7 +585,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN187"
+NAME="AEN192"
 ></A
 ><H2
 >VERSION</H2
@@ -585,7 +596,7 @@ NAME="AEN187"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN190"
+NAME="AEN195"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -650,7 +661,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN207"
+NAME="AEN212"
 ></A
 ><H2
 >AUTHOR</H2

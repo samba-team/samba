@@ -34,7 +34,7 @@ MANPAGES=$(MANDIR)/findsmb.1 $(MANDIR)/smbclient.1 \
 	$(MANDIR)/smbmount.8 $(MANDIR)/swat.8 $(MANDIR)/rpcclient.1	 \
 	$(MANDIR)/smbpasswd.5 $(MANDIR)/testparm.1 $(MANDIR)/samba.7 \
 	$(MANDIR)/smbpasswd.8 $(MANDIR)/testprns.1 \
-	$(MANDIR)/smb.conf.5 $(MANDIR)/wbinfo.1 \
+	$(MANDIR)/smb.conf.5 $(MANDIR)/wbinfo.1 $(MANDIR)/pdbedit.8 \
 	$(MANDIR)/smbcacls.1 $(MANDIR)/smbsh.1 $(MANDIR)/winbindd.8 \
 	$(MANDIR)/make_unicodemap.1
 
@@ -48,7 +48,7 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/rpcclient.1.sgml manpages/smbpasswd.5.sgml \
 	manpages/testparm.1.sgml manpages/samba.7.sgml \
 	manpages/smbpasswd.8.sgml manpages/testprns.1.sgml \
-	manpages/smb.conf.5.sgml \
+	manpages/smb.conf.5.sgml manpages/pdbedit.8.sgml \
 	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
 	manpages/smbsh.1.sgml manpages/winbindd.8.sgml \
 	manpages/make_unicodemap.1.sgml
@@ -58,29 +58,33 @@ HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
 	projdoc/UNIX_INSTALL.sgml projdoc/winbind.sgml projdoc/OS2-Client-HOWTO.sgml \
 	projdoc/Samba-PDC-HOWTO.sgml projdoc/ENCRYPTION.sgml \
 	projdoc/CVS-Access.sgml projdoc/Integrating-with-Windows.sgml \
-	projdoc/PAM-Authentication-And-Samba.sgml
-
-FAQSRC=faq/samba-pdc-faq.sgml
+	projdoc/PAM-Authentication-And-Samba.sgml projdoc/Samba-LDAP-HOWTO.sgml
 
 
 
 ######################################################################
 # Make instructions
 ######################################################################
-all: HOWTO proj-doc man-all man-html-all
+all: 
+	@echo "Possible options to the Makefile include:"
+	@echo "   all-docs  - Force a rebuild of all documentation"
+	@echo "   HOWTO     - Build all individual HOWTOs in html format"
+	@echo "   proj-doc  - Build the Samba-HOWTO-Collection.[pdf|html] file"
+	@echo "   man       - Rebuild html and nroff versions of man pages as necessary"
+	@echo "   syntax    - Check the SGML/DocBook syntax of all source files"
+
+all-docs: HOWTO proj-doc man-all man-html-all
+
+syntax: $(SGMLMANSRC) projdoc/samba-doc.sgml
+	@echo Checking syntax of all SGML/DocBook source files...
+	@(for i in $?; do \
+	   echo "$$i..."; \
+	   $(NSGMLS) -sv $$i 2>&1 | grep -v "DTDDECL catalog entries are not supported" ; \
+	done)
+	
+
 
 man: $(MANPAGES)
-
-FAQ: $(FAQSRC)
-	@echo Building SAMBA PDC FAQ...
-	@(for i in $?; do \
-	   htmlfile=`echo $$i | sed 's,.*/,,' | sed "s/\.sgml/\.html/g"`; \
-	   echo "Making $$htmlfile"; \
-	   $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl \
-	      -f /tmp/jade.log $$i > ../htmldocs/$$htmlfile; \
-	   cat /tmp/jade.log | grep -v DTDDECL; \
-	   /bin/rm -f /tmp/jade.log; \
-	done)
 
 HOWTO: $(HOWTOSRC)
 	@echo Building HOWTO pages...
@@ -110,9 +114,6 @@ proj-doc:
 	@(cd scripts; ./ldp_print ../samba-doc.html)
 	@mv -f samba-doc.pdf ../Samba-HOWTO-Collection.pdf
 	@/bin/mv -f samba-doc.html ../htmldocs/Samba-HOWTO-Collection.html
-
-
-
 
 
 ## generate all HTML man pages
@@ -355,6 +356,15 @@ $(MANDIR)/smbsh.1 : manpages/smbsh.1.sgml
 	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
 
 $(MANDIR)/winbindd.8: manpages/winbindd.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+
+$(MANDIR)/pdbedit.8: manpages/pdbedit.8.sgml
 	@echo "Making $@"
 	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
