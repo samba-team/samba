@@ -300,11 +300,16 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 		DEBUG(10,("load_group_domain_entries: already in memory\n"));
 		return NT_STATUS_OK;
 	}
+	
+
+	become_root();
 
 	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
 		DEBUG(1, ("load_group_domain_entries: pdb_enum_group_mapping() failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+	
+	unbecome_root();
 
 	info->disp_info.num_group_account=group_entries;
 
