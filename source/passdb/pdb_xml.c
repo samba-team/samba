@@ -410,7 +410,7 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 			   sid_to_string(sid_str, pdb_get_group_sid(u)));
 
 	if (pdb_get_init_flags(u, PDB_LOGONTIME) != PDB_DEFAULT)
-		xmlNewChild(user, data->ns, "login_time",
+		xmlNewChild(user, data->ns, "logon_time",
 					iota(pdb_get_logon_time(u)));
 
 	if (pdb_get_init_flags(u, PDB_LOGOFFTIME) != PDB_DEFAULT)
