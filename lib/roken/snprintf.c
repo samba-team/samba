@@ -222,7 +222,7 @@ append_string (struct state *state,
   if(prec != -1)
     width -= prec;
   else
-    width -= strlen(arg);
+    width -= strlen((char *)arg);
   if(!(flags & minus_flag))
     while(width-- > 0)
       if((*state->append_char) (state, ' '))
@@ -600,12 +600,13 @@ vsnprintf (char *str, size_t sz, const char *format, va_list args)
 {
   struct state state;
   int ret;
+  unsigned char *ustr = (unsigned char *)str;
 
   state.max_sz = 0;
   state.sz     = sz;
-  state.str    = str;
-  state.s      = str;
-  state.theend = str + sz - 1;
+  state.str    = ustr;
+  state.s      = ustr;
+  state.theend = ustr + sz - 1;
   state.append_char = sn_append_char;
   state.reserve     = sn_reserve;
 
