@@ -1,3 +1,8 @@
+Fri Oct 22 15:39:31 1999  Bjoern Groenvall  <bg@sics.se>
+
+	* k_getpwuid.c (k_getpwuid): getspuid() does not exist (even
+ 	though it should), use getspnam().
+
 1999-10-20  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: set version to 3:0:0
