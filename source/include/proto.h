@@ -3806,7 +3806,7 @@ BOOL check_name(char *name,connection_struct *conn);
 
 /*The following definitions come from  smbd/files.c  */
 
-files_struct *file_new(void );
+files_struct *file_new(connection_struct *conn);
 void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
@@ -3903,6 +3903,8 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 				int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action);
 files_struct *open_file_stat(connection_struct *conn, char *fname,
 							SMB_STRUCT_STAT *psbuf, int smb_ofun, int *action);
+files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf);
+int close_file_fchmod(files_struct *fsp);
 files_struct *open_directory(connection_struct *conn, char *fname,
 							SMB_STRUCT_STAT *psbuf, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
@@ -4159,7 +4161,9 @@ int vfswrap_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
 int vfswrap_lstat(connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf);
 int vfswrap_unlink(connection_struct *conn, char *path);
 int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode);
+int vfswrap_fchmod(files_struct *fsp, int fd, mode_t mode);
 int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid);
+int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid);
 int vfswrap_chdir(connection_struct *conn, char *path);
 char *vfswrap_getwd(connection_struct *conn, char *path);
 int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times);

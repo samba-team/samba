@@ -34,7 +34,7 @@ files_struct *print_fsp_open(connection_struct *conn,char *jobname)
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
 	extern struct current_user current_user;
-	files_struct *fsp = file_new();
+	files_struct *fsp = file_new(conn);
 
 	if(!fsp)
 		return NULL;
