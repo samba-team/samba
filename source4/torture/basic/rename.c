@@ -41,8 +41,11 @@ BOOL torture_test_rename(int dummy)
 	
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_READ, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      GENERIC_RIGHTS_FILE_READ, 
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("(%s) First open failed - %s\n", 
@@ -93,8 +96,11 @@ BOOL torture_test_rename(int dummy)
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, STD_RIGHT_READ_CONTROL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      STD_RIGHT_READ_CONTROL_ACCESS, 
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_NONE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("(%s) Third open failed - %s\n", __location__, smbcli_errstr(cli1->tree));
