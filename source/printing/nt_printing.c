@@ -682,6 +682,161 @@ uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
 }
 
 /****************************************************************************
+****************************************************************************/
+static uint32 validate_driver_hook(char *command) 
+{
+	int     ret;
+	char   *path;
+	pstring tmp_file;
+	pid_t   local_pid = sys_getpid();
+
+	/* build a result file... which we don't care about */
+	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
+		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
+	else
+		path = tmpdir();
+
+	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+	unlink(tmp_file);
+
+    /* Convert script args to unix-codepage */
+    dos_to_unix(command, True);
+	DEBUG(10,("validate_driver_hook: Running [%s > %s]\n", command, tmp_file));
+	ret = smbrun(command, tmp_file, False);
+	DEBUGADD(10,("validate_driver_hook: Returned [%d]\n", ret));
+
+	unlink(tmp_file);
+
+	return ret==0 ? NT_STATUS_NO_PROBLEMO : NT_STATUS_FILE_INVALID;
+}
+
+/* NB: pstrings are *not* big enough. E.g. "EPSOM Stylus Photo 2000P" copies
+ * 85 files... you do the math. BTW, many of these files are not really driver
+ * files, but other junk that is transfered during Point and Print. No wonder
+ * printer drivers get such a bad rap from sys admins. JRR */
+#define VALIDIDATE_DRIVER_COMMAND_SZ 2048
+
+/* Local convenience macros */
+#define VALIDATE_STRCAT(d,s) \
+{ \
+	safe_strcat(d, " ", VALIDIDATE_DRIVER_COMMAND_SZ-1); \
+	safe_strcat(d, s,   VALIDIDATE_DRIVER_COMMAND_SZ-1); \
+}
+#define VALIDATE_STRCAT_QUOTED(d,s) \
+{ \
+	safe_strcat(d, " \"", VALIDIDATE_DRIVER_COMMAND_SZ-1); \
+	safe_strcat(d, s,     VALIDIDATE_DRIVER_COMMAND_SZ-1); \
+	safe_strcat(d, "\"",  VALIDIDATE_DRIVER_COMMAND_SZ-1); \
+}
+
+/****************************************************************************
+****************************************************************************/
+static uint32 validate_driver_3(char *cmd, char *path,
+								NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
+{
+	int     i;
+	char    command[VALIDIDATE_DRIVER_COMMAND_SZ];
+	char    cversion[16];
+	fstring architecture;
+
+	/* build the command string */
+	safe_strcpy(command, cmd, sizeof(command)-1);
+	
+	VALIDATE_STRCAT_QUOTED(command, driver->name);
+
+	slprintf(cversion, sizeof(cversion)-1, "%d", driver->cversion);
+	VALIDATE_STRCAT(command, cversion);
+	
+	get_short_archi(architecture, driver->environment);
+	VALIDATE_STRCAT(command, architecture);
+	
+	VALIDATE_STRCAT_QUOTED(command, path);
+	
+	VALIDATE_STRCAT(command, driver->driverpath);
+	VALIDATE_STRCAT(command, driver->configfile);
+	VALIDATE_STRCAT(command, driver->datafile);
+	VALIDATE_STRCAT(command, driver->helpfile);
+	for (i=0; driver->dependentfiles[i][0]; i++)
+		VALIDATE_STRCAT(command, driver->dependentfiles[i]);
+
+	DEBUG(10, ("validate_driver_3: command = [%s]\n", command));
+	return validate_driver_hook(command);
+}
+
+/****************************************************************************
+****************************************************************************/
+static uint32 validate_driver_6(char *cmd, char *path,
+								NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
+{
+	int     i;
+	char    command[VALIDIDATE_DRIVER_COMMAND_SZ];
+	char    cversion[16];
+	fstring architecture;
+
+	/* build the command string */
+	safe_strcpy(command, cmd, sizeof(command)-1);
+	
+	VALIDATE_STRCAT_QUOTED(command, driver->name);
+
+	slprintf(cversion, sizeof(cversion)-1, "%d", driver->version);
+	VALIDATE_STRCAT(command, cversion);
+	
+	get_short_archi(architecture, driver->environment);
+	VALIDATE_STRCAT(command, architecture);
+	
+	VALIDATE_STRCAT_QUOTED(command, path);
+	
+	VALIDATE_STRCAT(command, driver->driverpath);
+	VALIDATE_STRCAT(command, driver->configfile);
+	VALIDATE_STRCAT(command, driver->datafile);
+	VALIDATE_STRCAT(command, driver->helpfile);
+	for (i=0; driver->dependentfiles[i][0]; i++)
+		VALIDATE_STRCAT(command, driver->dependentfiles[i]);
+
+	DEBUG(10, ("validate_driver_6: command = [%s]\n", command));
+	return validate_driver_hook(command);
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 validate_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver_abstract, 
+							uint32 level)
+{
+	int     ret;
+	char   *path = lp_pathname(lp_servicenumber("print$"));
+	char   *cmd  = lp_validatedriver_cmd();
+
+	/* if there is no path for drivers, what are we doing here? */
+	if (!path) {
+		DEBUG(10, ("validate_driver: Error - print$ not found\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	switch (level) {
+		case 3:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver = driver_abstract->info_3;
+			ret = validate_driver_3(cmd, path, driver);
+			break;
+		}
+		case 6:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver = driver_abstract->info_6;
+			ret = validate_driver_6(cmd, path, driver);
+			break;
+		}
+		default:
+		{
+			DEBUG(10, ("validate_driver: Error - invalid driver level = %d\n", level));
+			ret = NT_STATUS_INVALID_LEVEL;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+/****************************************************************************
  This function sucks and should be replaced. JRA.
 ****************************************************************************/
 

@@ -104,6 +104,7 @@ static BOOL defaults_saved = False;
 typedef struct
 {
 	char *szPrintcapname;
+	char *szValidateDriverCommand;
 	char *szEnumPortsCommand;
 	char *szAddPrinterCommand;
 	char *szDeletePrinterCommand;
@@ -834,6 +835,7 @@ static struct parm_struct parm_table[] = {
 	{"queuepause command", P_STRING, P_LOCAL, &sDefault.szQueuepausecommand, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
 	{"queueresume command", P_STRING, P_LOCAL, &sDefault.szQueueresumecommand, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
 
+	{"validate driver command", P_STRING, P_GLOBAL, &Globals.szValidateDriverCommand, NULL, NULL, 0},
 	{"enumports command", P_STRING, P_GLOBAL, &Globals.szEnumPortsCommand, NULL, NULL, 0},
 	{"addprinter command", P_STRING, P_GLOBAL, &Globals.szAddPrinterCommand, NULL, NULL, 0},
 	{"deleteprinter command", P_STRING, P_GLOBAL, &Globals.szDeletePrinterCommand, NULL, NULL, 0},
@@ -1403,6 +1405,7 @@ FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 /* #endif */
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
+FN_GLOBAL_STRING(lp_validatedriver_cmd, &Globals.szValidateDriverCommand)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)

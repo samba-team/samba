@@ -767,6 +767,9 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		}
 		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
+			/* Printserver handles use global struct... */
+			snum = -1;
+
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(handle);
 				return ERROR_ACCESS_DENIED;
@@ -5541,6 +5544,10 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	DEBUG(5,("Cleaning driver's information\n"));
 	if ((err = clean_up_driver_struct(driver, level, &user)) != NT_STATUS_NO_PROBLEMO )
 		goto done;
+
+	if (*lp_validatedriver_cmd())
+		if ((err=validate_driver(&driver, level)) != NT_STATUS_NO_PROBLEMO)
+			goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
 	if(!move_driver_to_download_area(driver, level, &user, &err)) {
