@@ -1,5 +1,7 @@
 Thu Mar 18 11:33:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* configure.in: condition KRB5; AC_CHECK_XAU
+
 	* Makefile.am: include Makefile.am.common
 
 	* include/kadm5/Makefile.am: include Makefile.am.common; don't
