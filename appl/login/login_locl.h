@@ -126,6 +126,8 @@
 #define _PATH_LOGIN_CONF "/etc/login.conf"
 #endif /* _PATH_LOGIN_CONF */
 
+struct spwd;
+
 #include "login_protos.h"
 
 #endif /* __LOGIN_LOCL_H__ */
