@@ -573,6 +573,39 @@ static BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p2;
+
+	/* only makes sense on SMB */
+	if (p->transport.transport != NCACN_NP) {
+		return True;
+	}
+
+	printf("testing close on secondary pipe\n");
+
+	status = dcerpc_secondary_smb(p, &p2, 
+				      DCERPC_SPOOLSS_NAME, 
+				      DCERPC_SPOOLSS_UUID, 
+				      DCERPC_SPOOLSS_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to create secondary connection\n");
+		return False;
+	}
+
+	if (test_ClosePrinter(p2, mem_ctx, handle)) {
+		printf("ERROR: Allowed close on secondary connection!\n");
+		dcerpc_pipe_close(p2);
+		return False;
+	}
+
+	dcerpc_pipe_close(p2);
+
+	return True;
+}
+
 static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			     const char *name)
 {
@@ -602,6 +635,10 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 	if (!test_GetPrinter(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_SecondaryClosePrinter(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
@@ -690,6 +727,10 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_SetPrinterData(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_SecondaryClosePrinter(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

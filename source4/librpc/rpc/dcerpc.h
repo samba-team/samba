@@ -29,6 +29,9 @@
   marshalling/unmarshalling routines in decrpc.c
 */
 
+enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
+
+
 struct dcerpc_pipe {
 	TALLOC_CTX *mem_ctx;
 	int reference_count;
@@ -38,8 +41,10 @@ struct dcerpc_pipe {
 	unsigned flags;
 	struct ntlmssp_state *ntlmssp_state;
 	struct dcerpc_auth *auth_info;
-
+	const char *binding_string;
+	
 	struct dcerpc_transport {
+		enum dcerpc_transport_t transport;
 		void *private;
 		NTSTATUS (*full_request)(struct dcerpc_pipe *, 
 					 TALLOC_CTX *, DATA_BLOB *, DATA_BLOB *);
@@ -93,8 +98,6 @@ struct dcerpc_interface_table {
 	const struct dcerpc_endpoint_list *endpoints;
 };
 
-
-enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
 
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {

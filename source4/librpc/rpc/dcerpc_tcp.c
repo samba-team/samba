@@ -183,6 +183,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	/*
 	  fill in the transport methods
 	*/
+	(*p)->transport.transport = NCACN_IP_TCP;
 	(*p)->transport.private = NULL;
 	(*p)->transport.full_request = tcp_full_request;
 	(*p)->transport.secondary_request = tcp_secondary_request;
