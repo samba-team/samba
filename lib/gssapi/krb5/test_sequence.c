@@ -75,14 +75,20 @@ OM_uint32 pattern7[] = {
     11, 12, 13
 };
 
+/* wrap around */
+OM_uint32 pattern8[] = {
+    4294967293U, 4294967294U, 4294967295U, 0, 1, 2
+};
+
 static int
-test_seq(int t, OM_uint32 flags, OM_uint32 *pattern, int pattern_len)
+test_seq(int t, OM_uint32 flags, OM_uint32 start_seq,
+	 OM_uint32 *pattern, int pattern_len)
 {
     struct gss_msg_order *o;
     OM_uint32 maj_stat, min_stat;
     int i;
 
-    maj_stat = gssapi_msg_order_create(&min_stat, &o, flags, 0, 20);
+    maj_stat = gssapi_msg_order_create(&min_stat, &o, flags, start_seq, 20);
     if (maj_stat)
 	err(1, "create: %d %d", maj_stat, min_stat);
 
@@ -101,6 +107,7 @@ struct {
     OM_uint32 *pattern;
     int pattern_len;
     OM_uint32 error_code;
+    OM_uint32 start_seq;
 } pl[] = {
     {
 	GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG,
@@ -145,6 +152,13 @@ struct {
 	GSS_S_GAP_TOKEN
     },
     {
+	GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG,
+	pattern8,
+	sizeof(pattern8)/sizeof(pattern8[0]),
+	GSS_S_COMPLETE,
+	4294967293U
+    },
+    {
 	0,
 	pattern1,
 	sizeof(pattern1)/sizeof(pattern1[0]),
@@ -185,6 +199,14 @@ struct {
 	pattern7,
 	sizeof(pattern7)/sizeof(pattern7[0]),
 	GSS_S_COMPLETE
+    },
+    {
+	0,
+	pattern8,
+	sizeof(pattern8)/sizeof(pattern8[0]),
+	GSS_S_COMPLETE,
+	4294967293U
+
     },
     {
 	GSS_C_REPLAY_FLAG,
@@ -230,6 +252,13 @@ struct {
     },
     {
 	GSS_C_SEQUENCE_FLAG,
+	pattern8,
+	sizeof(pattern8)/sizeof(pattern8[0]),
+	GSS_S_COMPLETE,
+	4294967293U
+    },
+    {
+	GSS_C_SEQUENCE_FLAG,
 	pattern1,
 	sizeof(pattern1)/sizeof(pattern1[0]),
 	0
@@ -270,6 +299,13 @@ struct {
 	sizeof(pattern7)/sizeof(pattern7[0]),
 	GSS_S_GAP_TOKEN
     },
+    {
+	GSS_C_REPLAY_FLAG,
+	pattern8,
+	sizeof(pattern8)/sizeof(pattern8[0]),
+	GSS_S_COMPLETE,
+	4294967293U
+    }
 };
 
 int
@@ -281,14 +317,19 @@ main(int argc, char **argv)
     for (i = 0; i < sizeof(pl)/sizeof(pl[0]); i++) {
 	maj_stat = test_seq(i,
 			    pl[i].flags,
+			    pl[i].start_seq,
 			    pl[i].pattern,
 			    pl[i].pattern_len);
 	if (maj_stat != pl[i].error_code) {
 	    printf("test pattern %d failed with %d (should have been %d)\n",
 		   i, maj_stat, pl[i].error_code);
-	    failed = 1;
+	    failed++;
 	} else
 	    printf("test %d success\n", i);
     }
-    return failed;
+    if (failed)
+	printf("FAILED %d tests\n", failed);
+    else
+	printf("no failure\n");
+    return failed != 0;
 }
