@@ -36,8 +36,8 @@ RCSID("$Id$");
 
 #ifdef OPENLDAP
 
-#include <ldap.h>
 #include <lber.h>
+#include <ldap.h>
 #include <ctype.h>
 #include <sys/un.h>
 
