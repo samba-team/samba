@@ -106,7 +106,6 @@ typedef struct krb5_context_data{
 
 typedef krb5_context_data *krb5_context;
 
-
 typedef time_t krb5_time;
 
 typedef struct krb5_times{
@@ -217,6 +216,13 @@ typedef struct krb5_kt_cursor {
     krb5_storage *sp;
 } krb5_kt_cursor;
 
+enum {
+  KRB5_AUTH_CONTEXT_DO_TIME      = 1,
+  KRB5_AUTH_CONTEXT_RET_TIME     = 2,
+  KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 3,
+  KRB5_AUTH_CONTEXT_RET_SEQUENCE = 4
+};
+
 typedef struct krb5_auth_context_data{
   int32_t flags;
   krb5_cksumtype cksumtype;
@@ -257,8 +263,7 @@ krb5_auth_con_init(krb5_context context,
 
 krb5_error_code
 krb5_auth_con_free(krb5_context context,
-		   krb5_auth_context auth_context,
-		   krb5_flags flags);
+		   krb5_auth_context auth_context);
 
 krb5_error_code
 krb5_auth_con_setflags(krb5_context context,
@@ -292,6 +297,16 @@ krb5_auth_con_getkey(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_keyblock **keyblock);
 
+krb5_error_code
+krb5_auth_con_getlocalsubkey(krb5_context context,
+			     krb5_auth_context auth_context,
+			     krb5_keyblock **keyblock);
+
+krb5_error_code
+krb5_auth_con_getremotesubkey(krb5_context context,
+			      krb5_auth_context auth_context,
+			      krb5_keyblock **keyblock);
+
 void
 krb5_free_keyblock(krb5_context context,
 		   krb5_keyblock *keyblock);
@@ -300,6 +315,11 @@ krb5_error_code
 krb5_auth_setcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_cksumtype cksumtype);
+
+krb5_error_code
+krb5_auth_getcksumtype(krb5_context context,
+		       krb5_auth_context auth_context,
+		       krb5_cksumtype *cksumtype);
 
 krb5_error_code
 krb5_auth_getlocalseqnumber(krb5_context context,
@@ -314,7 +334,31 @@ krb5_auth_getremoteseqnumber(krb5_context context,
 krb5_error_code
 krb5_auth_getauthenticator(krb5_context context,
 			   krb5_auth_context auth_context,
-			   krb5_authenticator **authenticator);
+			   krb5_authenticator *authenticator);
+
+krb5_boolean
+krb5_address_search(krb5_context context,
+		    const krb5_address *addr,
+		    krb5_address *const *addrlist);
+
+krb5_boolean
+krb5_address_compare(krb5_context context,
+		     const krb5_address *addr1,
+		     const krb5_address *addr2);
+
+int
+krb5_address_order(krb5_context context,
+		   const krb5_address *addr1,
+		   const krb5_address *addr2);
+
+krb5_error_code
+krb5_copy_addresses(krb5_context context,
+		    krb5_address *const *inaddr,
+		    krb5_address ***outaddr);
+
+krb5_error_code
+krb5_free_address(krb5_context context,
+		  krb5_address *address);
 
 void
 krb5_free_authenticator(krb5_authenticator *authenticator);
@@ -452,6 +496,32 @@ krb5_rd_priv(krb5_context context,
 	     const krb5_data *inbuf,
 	     krb5_data *outbuf,
 	     /*krb5_replay_data*/ void *outdata);
+
+krb5_error_code
+krb5_sendauth(krb5_context context,
+	      krb5_auth_context auth_context,
+	      krb5_pointer fd,
+	      char *appl_version,
+	      krb5_principal client,
+	      krb5_principal server,
+	      krb5_flags ap_req_options,
+	      krb5_data *in_data,
+	      krb5_creds *in_creds,
+	      krb5_ccache ccache,
+	      /*krb5_error*/ void **error,
+	      /*krb5_ap_rep_enc_part*/ void **rep_result,
+	      krb5_creds ** out_creds);
+
+krb5_error_code
+krb5_recvauth(krb5_context context,
+	      krb5_auth_context auth_context,
+	      krb5_pointer fd,
+	      char *appl_version,
+	      krb5_principal server,
+	      char *rc_type,
+	      int32_t flags,
+	      krb5_keytab keytab,
+	      krb5_ticket **ticket);
 
 krb5_error_code
 krb5_parse_name(krb5_context context,
