@@ -27,9 +27,10 @@ const
 int h_nerr = { sizeof h_errlist / sizeof h_errlist[0] };
 #else
 
+#ifdef NEED_H_ERRLIST_PROTO
 extern const char *h_errlist[];
-
 extern int h_nerr;
+#endif
 
 #endif
 
