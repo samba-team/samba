@@ -143,8 +143,12 @@ extern int Client;
 
 #define USENMB
 
+#ifdef KANJI
 extern int coding_system;
-static BOOL setup_term_code (char *code)
+#define CNV_LANG(s) (coding_system == DOSV_CODE?s:dos_to_unix(s, False))
+#define CNV_INPUT(s) (coding_system == DOSV_CODE?s:unix_to_dos(s, True))
+static BOOL
+setup_term_code (char *code)
 {
     int new;
     new = interpret_coding_system (code, UNKNOWN_CODE);
@@ -154,8 +158,10 @@ static BOOL setup_term_code (char *code)
     }
     return False;
 }
+#else
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
+#endif
 
 /****************************************************************************
 setup basics in a outgoing packet
@@ -3303,11 +3309,15 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
       int passlen = strlen(pass)+1;
       strcpy(pword,pass);      
 
+#ifdef SMB_PASSWD
       if (doencrypt && *pass) {
 	DEBUG(3,("Using encrypted passwords\n"));
 	passlen = 24;
 	SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
       }
+#else
+      doencrypt = False;
+#endif
 
       /* if in share level security then don't send a password now */
       if (!(sec_mode & 1)) {strcpy(pword, "");passlen=1;} 
@@ -3418,10 +3428,12 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
     fstring pword;
     strcpy(pword,pass);
 
+#ifdef SMB_PASSWD
     if (doencrypt && *pass) {
       passlen=24;
       SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);      
     }
+#endif
 
     /* if in user level security then don't send a password now */
     if ((sec_mode & 1)) {
@@ -4380,6 +4392,10 @@ static void usage(char *pname)
   DEBUG(0,("Usage: %s service <password> [-p port] [-d debuglevel] [-l log] ",
 	   pname));
 
+#ifdef KANJI
+  DEBUG(0,("[-t termcode] "));
+#endif /* KANJI */
+
   DEBUG(0,("\nVersion %s\n",VERSION));
   DEBUG(0,("\t-p port               listen on the specified port\n"));
   DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
@@ -4395,7 +4411,9 @@ static void usage(char *pname)
   DEBUG(0,("\t-U username           set the network username\n"));
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
   DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
+#ifdef KANJI
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
+#endif /* KANJI */
   DEBUG(0,("\t-T<c|x>IXgbNa          command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
   DEBUG(0,("\n"));
@@ -4417,14 +4435,6 @@ static void usage(char *pname)
   BOOL message = False;
   extern char tar_type;
   static pstring servicesf = CONFIGFILE;
-  pstring term_code;
-  char *p;
-
-#ifdef KANJI
-  strcpy(term_code, KANJI);
-#else /* KANJI */
-  *term_code = 0;
-#endif /* KANJI */
 
   *query_host = 0;
   *base_directory = 0;
@@ -4444,27 +4454,10 @@ static void usage(char *pname)
   umask(myumask);
 
   if (getenv("USER"))
-  {
-    strcpy(username,getenv("USER"));
-
-    /* modification to support userid%passwd syntax in the USER var
-       25.Aug.97, jdblair@uab.edu */
-
-    if ((p=strchr(username,'%')))
     {
-      *p = 0;
-      strcpy(password,p+1);
-      got_pass = True;
-      memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
+      strcpy(username,getenv("USER"));
+      strupper(username);
     }
-    strupper(username);
-  }
-
- /* modification to support PASSWD environmental var
-  25.Aug.97, jdblair@uab.edu */
-
-  if (getenv("PASSWD"))
-    strcpy(password,getenv("PASSWD"));
 
   if (*username == 0 && getenv("LOGNAME"))
     {
@@ -4513,6 +4506,9 @@ static void usage(char *pname)
 	}
     }
 
+#ifdef KANJI
+  setup_term_code (KANJI);
+#endif
   while ((opt = 
 	  getopt(argc, argv,"s:B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
     switch (opt)
@@ -4608,7 +4604,13 @@ static void usage(char *pname)
 	strcpy(servicesf, optarg);
 	break;
       case 't':
-        strcpy(term_code, optarg);
+#ifdef KANJI
+	if (!setup_term_code (optarg)) {
+	    DEBUG(0, ("%s: unknown terminal code name\n", optarg));
+	    usage (pname);
+	    exit (1);
+	}
+#endif
 	break;
       default:
 	usage(pname);
@@ -4631,18 +4633,6 @@ static void usage(char *pname)
 
   if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
-  }
-
-  codepage_initialise(lp_client_code_page());
-
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-        if (!setup_term_code (term_code))
-    {
-            DEBUG(0, ("%s: unknown terminal code name\n", optarg));
-            usage (pname);
-            exit (1);
-        }
   }
 
   if (*workgroup == 0)

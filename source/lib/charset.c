@@ -28,7 +28,6 @@ extern int DEBUGLEVEL;
  * Codepage definitions.
  */
 
-#if !defined(KANJI)
 /* lower->upper mapping for IBM Code Page 850 - MS-DOS Latin 1 */
 unsigned char cp_850[][4] = {
 /* dec col/row oct hex  description */
@@ -96,13 +95,74 @@ unsigned char cp_850[][4] = {
   {0x9C,0,0,0},     /* Pound        */
   {0,0,0,0}
 };
-#else /* KANJI */ 
+ 
+/* lower->upper mapping for IBM Code Page 437 - MS-DOS Latin US */
+unsigned char cp_437[][4] = {
+/* 135  08/07  207  87  c cedilla */
+/* 128  08/00  200  80  C cedilla */	{0x87,0x80,1,1},
+/* 129  08/01  201  81  u diaeresis */
+/* 154  09/10  232  9A  U diaeresis */	{0x81,0x9A,1,1},
+/* 130  08/02  202  82  e acute */
+/* 144  09/00  220  90  E acute */	{0x82,0x90,1,1},
+/* 131  08/03  203  83  a circumflex */ {0x83,0x41,1,0},
+/* 132  08/04  204  84  a diaeresis */
+/* 142  08/14  216  8E  A diaeresis */	{0x84,0x8E,1,1},
+/* 133  08/05  205  85  a grave */      {0x85,0x41,1,0},
+/* 134  08/06  206  86  a ring */       {0x86,0x8F,1,1},
+/* 136  08/08  210  88  e circumflex */ {0x88,0x45,1,0},
+/* 137  08/09  211  89  e diaeresis */  {0x89,0x45,1,0},
+/* 138  08/10  212  8A  e grave */      {0x8A,0x45,1,0},
+/* 139  08/11  213  8B  i diaeresis */  {0x8B,0x49,1,0},
+/* 140  08/12  214  8C  i circumflex */ {0x8C,0x49,1,0},
+/* 141  08/13  215  8D  i grave */      {0x8D,0x49,1,0},
+/* 145  09/01  221  91  ae diphthong */
+/* 146  09/02  222  92  AE diphthong */	{0x91,0x92,1,1},
+/* 147  09/03  223  93  o circumflex */ {0x93,0x4F,1,0},
+/* 148  09/04  224  94  o diaeresis */
+/* 153  09/09  231  99  O diaeresis */	{0x94,0x99,1,1},
+/* 149  09/05  225  95  o grave */      {0x95,0x4F,1,0},
+/* 150  09/06  226  96  u circumflex */ {0x96,0x55,1,0},
+/* 151  09/07  227  97  u grave */      {0x97,0x55,1,0},
+/* 152  ??/??  201  98  u diaeresis */
+  {0x9B,0,0,0},     /* Cent         */
+  {0x9C,0,0,0},     /* Pound        */
+  {0x9D,0,0,0},     /* Yen          */
+/* 160  10/00  240  A0  a acute */      {0xA0,0x41,1,0},
+/* 161  10/01  241  A1  i acute */      {0xA1,0x49,1,0},
+/* 162  10/02  242  A2  o acute */      {0xA2,0x4F,1,0},
+/* 163  10/03  243  A3  u acute */      {0xA3,0x55,1,0},
+/* 164  10/04  244  A4  n tilde */
+/* 165  10/05  245  A5  N tilde */	{0xA4,0xA5,1,1},
+/* Punctuation... */
+  {0xA8,0,0,0}, 
+  {0xAD,0,0,0},
+  {0xAE,0,0,0},
+  {0xAF,0,0,0},
+/* Greek character set */
+  {0xE0,0,0,0},
+  {0xE1,0,0,0},
+  {0xE2,0,0,0},
+  {0xE3,0,0,0},
+  {0xE4,0,0,0},
+  {0xE5,0,0,0},
+  {0xE6,0,0,0},
+  {0xE7,0,0,0},
+  {0xE8,0,0,0},
+  {0xE9,0,0,0},
+  {0xEA,0,0,0},
+  {0xEB,0,0,0},
+  {0xEC,0,0,0},
+  {0xED,0,0,0},
+  {0xEE,0,0,0},
+  {0xEF,0,0,0},
+  {0,0,0,0}
+};
+
 /* lower->upper mapping for IBM Code Page 932 - MS-DOS Japanese SJIS */
 unsigned char cp_932[][4] = {
   {0,0,0,0}
 };
-#endif /* KANJI */
-
+ 
 char xx_dos_char_map[256];
 char xx_upper_char_map[256];
 char xx_lower_char_map[256];
@@ -134,9 +194,9 @@ static void add_dos_char(int lower, BOOL map_lower_to_upper,
   if (upper) dos_char_map[upper] = 1;
   if (lower && upper) {
     if(map_upper_to_lower)
-    lower_char_map[upper] = (char)lower;
+      lower_char_map[upper] = (char)lower;
     if(map_lower_to_upper)
-    upper_char_map[lower] = (char)upper;
+      upper_char_map[lower] = (char)upper;
   }
 }
 
@@ -171,152 +231,12 @@ void charset_initialise()
 }
 
 /****************************************************************************
-load the client codepage.
-****************************************************************************/
-
-typedef unsigned char (*codepage_p)[4];
-
-static codepage_p load_client_codepage( int client_codepage )
-{
-  pstring codepage_file_name;
-  unsigned char buf[8];
-  FILE *fp = NULL;
-  unsigned int size;
-  codepage_p cp_p = NULL;
-  struct stat st;
-
-  DEBUG(5, ("load_client_codepage: loading codepage %d.\n", client_codepage));
-
-  if(strlen(CODEPAGEDIR) + 14 > sizeof(codepage_file_name))
-  {
-    DEBUG(0,("load_client_codepage: filename too long to load\n"));
-    return NULL;
-  }
-
-  strcpy(codepage_file_name, CODEPAGEDIR);
-  strcat(codepage_file_name, "/");
-  strcat(codepage_file_name, "codepage.");
-  sprintf( &codepage_file_name[strlen(codepage_file_name)], "%03d",
-           client_codepage);
-
-  if(!file_exist(codepage_file_name,&st))
-  {
-    DEBUG(0,("load_client_codepage: filename %s does not exist.\n",
-              codepage_file_name));
-    return NULL;
-  }
-
-  /* Check if it is at least big enough to hold the required
-     data. Should be 2 byte version, 2 byte codepage, 4 byte length, 
-     plus zero or more bytes of data. Note that the data cannot be more
-     than 512 bytes - giving a max size of 520.
-   */
-  size = (unsigned int)st.st_size;
-
-  if( size < CODEPAGE_HEADER_SIZE || size > (CODEPAGE_HEADER_SIZE + 256))
-  {
-    DEBUG(0,("load_client_codepage: file %s is an incorrect size for a \
-code page file.\n", codepage_file_name));
-    return NULL;
-  }
-
-  /* Read the first 8 bytes of the codepage file - check
-     the version number and code page number. All the data
-     is held in little endian format.
-   */
-
-  if((fp = fopen( codepage_file_name, "r")) == NULL)
-  {
-    DEBUG(0,("load_client_codepage: cannot open file %s. Error was %s\n",
-              codepage_file_name, strerror(errno)));
-    return NULL;
-  }
-
-  if(fread( buf, 1, CODEPAGE_HEADER_SIZE, fp)!=CODEPAGE_HEADER_SIZE)
-  {
-    DEBUG(0,("load_client_codepage: cannot read header from file %s. Error was %s\n",
-              codepage_file_name, strerror(errno)));
-    goto clean_and_exit;
-  }
-
-  /* Check the version value */
-  if(SVAL(buf,CODEPAGE_VERSION_OFFSET) != CODEPAGE_FILE_VERSION_ID)
-  {
-    DEBUG(0,("load_client_codepage: filename %s has incorrect version id. \
-Needed %hu, got %hu.\n", 
-          codepage_file_name, (uint16)CODEPAGE_FILE_VERSION_ID, 
-          SVAL(buf,CODEPAGE_VERSION_OFFSET)));
-    goto clean_and_exit;
-  }
-
-  /* Check the codepage matches */
-  if(SVAL(buf,CODEPAGE_CLIENT_CODEPAGE_OFFSET) != (uint16)client_codepage)
-  {
-    DEBUG(0,("load_client_codepage: filename %s has incorrect codepage. \
-Needed %hu, got %hu.\n", 
-           codepage_file_name, (uint16)client_codepage, 
-           SVAL(buf,CODEPAGE_CLIENT_CODEPAGE_OFFSET)));
-    goto clean_and_exit;
-  }
-
-  /* Check the length is correct. */
-  if(IVAL(buf,CODEPAGE_LENGTH_OFFSET) != 
-                 (unsigned int)(size - CODEPAGE_HEADER_SIZE))
-  {
-    DEBUG(0,("load_client_codepage: filename %s has incorrect size headers. \
-Needed %u, got %u.\n", codepage_file_name, size - CODEPAGE_HEADER_SIZE, 
-               IVAL(buf,CODEPAGE_LENGTH_OFFSET)));
-    goto clean_and_exit;
-  }
-
-  size -= CODEPAGE_HEADER_SIZE; /* Remove header */
-
-  /* Make sure the size is a multiple of 4. */
-  if((size % 4 ) != 0)
-  {
-    DEBUG(0,("load_client_codepage: filename %s has a codepage size not a \
-multiple of 4.\n", codepage_file_name));
-    goto clean_and_exit;
-  }
-
-  /* Allocate space for the code page file and read it all in. */
-  if((cp_p = (codepage_p)malloc( size  + 4 )) == NULL)
-  {
-    DEBUG(0,("load_client_codepage: malloc fail.\n"));
-    goto clean_and_exit;
-  }
-
-  if(fread( (char *)cp_p, 1, size, fp)!=size)
-  {
-    DEBUG(0,("load_client_codepage: read fail on file %s. Error was %s.\n",
-              codepage_file_name, strerror(errno)));
-    goto clean_and_exit;
-  }
-
-  /* Ensure array is correctly terminated. */
-  memset(((char *)cp_p) + size, '\0', 4);
-
-  fclose(fp);
-  return cp_p;
-
-clean_and_exit:
-
-  /* pseudo destructor :-) */
-
-  if(fp != NULL)
-    fclose(fp);
-  if(cp_p)
-    free((char *)cp_p);
-  return NULL;
-}
-
-/****************************************************************************
 initialise the client codepage.
 ****************************************************************************/
 void codepage_initialise(int client_codepage)
 {
   int i;
-  codepage_p cp = NULL;
+  unsigned char (*cp)[4] = NULL;
   static BOOL done = False;
 
   if(done == True) 
@@ -332,21 +252,30 @@ void codepage_initialise(int client_codepage)
   /*
    * Known client codepages - these can be added to.
    */
-  cp = load_client_codepage( client_codepage );
-
-  if(cp == NULL)
+  switch(client_codepage)
   {
+    case 850:
+      cp = cp_850;
+      break;
+    case 437:
+      cp = cp_437;
+      break;
+    case 932:
+      cp = cp_932;
+      break;
+    default:
 #ifdef KANJI
-    DEBUG(6,("codepage_initialise: loading dynamic codepage file %s/codepage.%d \
-for code page %d failed. Using default client codepage 932\n", 
-             CODEPAGEDIR, client_codepage, client_codepage));
-    cp = cp_932;
+      /* Use default codepage - currently 932 */
+      DEBUG(6,("codepage_initialise: Using default client codepage %d\n", 
+               932));
+      cp = cp_932;
 #else /* KANJI */
-    DEBUG(6,("codepage_initialise: loading dynamic codepage file %s/codepage.%d \
-for code page %d failed. Using default client codepage 850\n", 
-             CODEPAGEDIR, client_codepage, client_codepage));
-    cp = cp_850;
+      /* Use default codepage - currently 850 */
+      DEBUG(6,("codepage_initialise: Using default client codepage %d\n", 
+               850));
+      cp = cp_850;
 #endif /* KANJI */
+      break;
   }
 
   if(cp)

@@ -330,7 +330,6 @@ typedef struct
   BOOL share_mode;
   BOOL print_file;
   BOOL modified;
-  BOOL granted_oplock;
   char *name;
 } files_struct;
 
@@ -453,10 +452,6 @@ typedef struct
 {
   smb_shm_offset_t next_share_mode_entry;
   int pid;
-#ifdef USE_OPLOCKS
-  uint16 op_port;
-  uint16 op_type;
-#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } share_mode_entry;
@@ -465,10 +460,6 @@ typedef struct
 typedef struct
 {
   int pid;
-#ifdef USE_OPLOCKS
-  uint16 op_port;
-  uint16 op_type;
-#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } min_share_mode_entry;
@@ -493,48 +484,8 @@ struct connect_record
   time_t start;
 };
 
-#ifndef LOCKING_VERSION
-#ifdef USE_OPLOCKS
-#define LOCKING_VERSION 4
-#else /* USE_OPLOCKS */
+
 #define LOCKING_VERSION 3
-#endif /* USE_OPLOCKS */
-#endif /* LOCKING_VERSION */
-
-#if !defined(FAST_SHARE_MODES)
-/* 
- * Defines for slow share modes.
- */
-
-/* 
- * Locking file header lengths & offsets. 
- */
-#define SMF_VERSION_OFFSET 0
-#define SMF_NUM_ENTRIES_OFFSET 4
-#define SMF_FILENAME_LEN_OFFSET 8
-#define SMF_HEADER_LENGTH 10
-
-#ifdef USE_OPLOCKS
-#define SMF_ENTRY_LENGTH 20
-#else /* USE_OPLOCKS */
-#define SMF_ENTRY_LENGTH 16
-#endif /* USE_OPLOCKS */
-
-/*
- * Share mode record offsets.
- */
-
-#define SME_SEC_OFFSET 0
-#define SME_USEC_OFFSET 4
-#define SME_SHAREMODE_OFFSET 8
-#define SME_PID_OFFSET 12
-
-#ifdef USE_OPLOCKS
-#define SME_PORT_OFFSET 16
-#define SME_OPLOCK_TYPE_OFFSET 18
-#endif /* USE_OPLOCKS */
-
-#endif /* FAST_SHARE_MODES */
 
 /* these are useful macros for checking validity of handles */
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_OPEN_FILES))
@@ -575,7 +526,11 @@ struct connect_record
 #define IS_HIDDEN_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].hide_list))
 #define IS_VETO_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_list))
 
+#ifdef SMB_PASSWD
 #define SMBENCRYPT()       (lp_encrypted_passwords())
+#else
+#define SMBENCRYPT() (False)
+#endif
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
@@ -971,99 +926,18 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #endif 
 
-/* Defines needed for multi-codepage support. */
-#define KANJI_CODEPAGE 932
-
 #ifdef KANJI
-/* 
- * Default client code page - Japanese 
- */
-#define DEFAULT_CLIENT_CODE_PAGE KANJI_CODEPAGE
+/* Default client code page - 932 - Japanese */
+#define DEFAULT_CLIENT_CODE_PAGE 932
 #else /* KANJI */
-/* 
- * Default client code page - 850 - Western European 
- */
+/* Default client code page - 850 - Western European */
 #define DEFAULT_CLIENT_CODE_PAGE 850
 #endif /* KANJI */
 
-/* 
- * Size of buffer to use when moving files across filesystems. 
- */
+/* Size of buffer to use when moving files across filesystems. */
 #define COPYBUF_SIZE (8*1024)
 
-/* 
- * Integers used to override error codes. 
- */
+/* Integers used to override error codes. */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
-
-/*
- * Map the Core and Extended Oplock requesst bits down
- * to common bits (EXCLUSIVE_OPLOCK & BATCH_OPLOCK).
- */
-
-/*
- * Core protocol.
- */
-#define CORE_OPLOCK_REQUEST(inbuf) (((CVAL(inbuf,smb_flg)|(1<<5))>>5) | \
-                                    ((CVAL(inbuf,smb_flg)|(1<<6))>>5))
-
-/*
- * Extended protocol.
- */
-#define EXTENDED_OPLOCK_REQUEST(inbuf) (((SVAL(inbuf,smb_vwv2)|(1<<1))>>1) | \
-                                        ((SVAL(inbuf,smb_vwv2)|(1<<2))>>1))
-
-/* Lock types. */
-#define LOCKING_ANDX_SHARED_LOCK 0x1
-#define LOCKING_ANDX_OPLOCK_RELEASE 0x2
-#define LOCKING_ANDX_CHANGE_LOCKTYPE 0x4
-#define LOCKING_ANDX_CANCEL_LOCK 0x8
-#define LOCKING_ANDX_LARGE_FILES 0x10
-
-/* Oplock levels */
-#define OPLOCKLEVEL_NONE 0
-#define OPLOCKLEVEL_II 1
-
-/*
- * Bits we test with.
- */
-#define EXCLUSIVE_OPLOCK 1
-#define BATCH_OPLOCK 2
-
-#define CORE_OPLOCK_GRANTED (1<<5)
-#define EXTENDED_OPLOCK_GRANTED (1<<15)
-
-/*
- * Loopback command offsets.
- */
-
-#define UDP_CMD_LEN_OFFSET 0
-#define UDP_CMD_PORT_OFFSET 4
-#define UDP_CMD_HEADER_LEN 6
-
-#define UDP_MESSAGE_CMD_OFFSET 0
-
-/*
- * Oplock break command code to send over the udp socket.
- * 
- * Form of this is :
- *
- *  0     2       6        10       14      18       22
- *  +----+--------+--------+--------+-------+--------+
- *  | cmd| pid    | dev    | inode  | sec   |  usec  |
- *  +----+--------+--------+--------+-------+--------+
- */
-
-#define OPLOCK_BREAK_CMD 0x1
-#define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_DEV_OFFSET 6
-#define OPLOCK_BREAK_INODE_OFFSET 10
-#define OPLOCK_BREAK_SEC_OFFSET 14
-#define OPLOCK_BREAK_USEC_OFFSET 18
-#define OPLOCK_BREAK_MSG_LEN 22
-
-
-#define CMD_REPLY 0x8000
-
 /* _SMB_H */

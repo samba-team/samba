@@ -35,8 +35,6 @@ extern struct in_addr ipzero;
 
 int ServerFD= -1;
 
-int RootPort = 0;
-
 /****************************************************************************
   open the socket communication
   **************************************************************************/
@@ -51,10 +49,7 @@ static BOOL open_sockets(void)
       return False;
     }   
 
-  ServerFD = open_socket_in( SOCK_DGRAM,
-                             (RootPort ? 137 :0),
-                             3,
-                             interpret_addr(lp_socket_address()) );
+  ServerFD = open_socket_in(SOCK_DGRAM, 0,3,interpret_addr(lp_socket_address()));
 
   if (ServerFD == -1)
     return(False);
@@ -118,7 +113,7 @@ int main(int argc,char *argv[])
 
   charset_initialise();
 
-  while ((opt = getopt(argc, argv, "d:B:i:s:SMrh")) != EOF)
+  while ((opt = getopt(argc, argv, "p:d:B:i:s:SMh")) != EOF)
     switch (opt)
       {
       case 'B':
@@ -142,9 +137,6 @@ int main(int argc,char *argv[])
       case 's':
 	pstrcpy(servicesf, optarg);
 	break;
-      case 'r':
-        RootPort = -1;
-        break;
       case 'h':
 	usage();
 	exit(0);

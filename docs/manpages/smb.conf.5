@@ -282,9 +282,9 @@ substitutions and other smb.conf options.
 
 .SS NAME MANGLING
 
-Samba supports "name mangling" so that DOS and Windows clients can use
-files that don't conform to the 8.3 format. It can also be set to adjust
-the case of 8.3 format filenames.
+Samba supports "name mangling" so that older DOS and Windows 3 clients
+can use files that don't conform to the 8.3 format. It can also be set
+to adjust the case of 8.3 format filenames.
 
 There are several options that control the way mangling is performed,
 and they are grouped here rather than listed separately. For the
@@ -477,8 +477,6 @@ time server
 
 unix realname
 
-username level
-
 username map
 
 use rhosts
@@ -521,8 +519,6 @@ comment
 default case
 
 delete readonly
-
-delete veto files
 
 deny hosts
 
@@ -869,9 +865,11 @@ See also : "valid chars".
 	client code page = 437
 
 .SS comment (S)
-This is a text field that is seen when a client does a net view to
-list what shares are available. It will also be used when browsing is
-fully supported.
+This is a text field that is seen next to a share when a client does a
+net view to list what shares are available.
+
+If you want to set the string that is displayed next to the machine
+name then see the server string command.
 
 .B Default:
 	No comment string
@@ -1040,34 +1038,6 @@ override this one. Where the lists conflict, the 'allow' list takes precedence.
 
 .B Example:
   	deny hosts = 150.203.4. badhost.mynet.edu.au
-
-.SS delete veto files (S)
-
-This option is used when Samba is attempting to delete a directory
-that contains one or more vetoed directories (see the 'veto files' option).
-If this option is set to False (the default) then if a vetoed directory
-contains any non-vetoed files or directories then the directory delete 
-will fail. This is usually what you want. 
-
-If this option is set to True, then Samba will attempt
-to recursively delete any files and directories within the vetoed
-directory. This can be useful for integration with file serving
-systems such as Netatalk, which create meta-files within directories
-you might normally veto DOS/Windows users from seeing (eg. .AppleDouble)
-
-Setting 'delete veto files = True' allows these directories to be 
-transparently deleted when the parent directory is deleted (so long
-as the user has permissions to do so).
-
-.B Default:
-    delete veto files = False
-
-.B Example:
-    delete veto files = True
-
-See
-.B veto files
-
 .SS dfree command (G)
 The dfree command setting should only be used on systems where a
 problem occurs with the internal disk space calculations. This has
@@ -1236,12 +1206,11 @@ only one accessing the file and it will aggressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
-Samba does not support opportunistic locks because they are very
-difficult to do under Unix. Samba can fake them, however, by granting
-a oplock whenever a client asks for one. This is controlled using the
-smb.conf option "fake oplocks". If you set "fake oplocks = yes" then
-you are telling the client that it may aggressively cache the file
-data.
+Samba does not support opportunistic locks in this release. Samba can
+fake them, however, by granting a oplock whenever a client asks for
+one. This is controlled using the smb.conf option "fake oplocks". If
+you set "fake oplocks = yes" then you are telling the client that it
+may aggressively cache the file data.
 
 By enabling this option on all read-only shares or shares that you know
 will only be accessed from one client at a time you will see a big
@@ -1555,10 +1524,10 @@ A boolean variable that controls whether all printers in the printcap
 will be loaded for browsing by default. 
 
 .B Default:
-	load printers = yes
+	load printers = no
 
 .B Example:
-	load printers = no
+	load printers = yes
 
 .SS local master (G)
 This option allows the nmbd to become a local master browser on a
@@ -3201,26 +3170,6 @@ on how this parameter determines access to the services.
 .B Examples:
  	username = fred
  	username = fred, mary, jack, jane, @users, @pcgroup
-
-.SS username level (G)
-
-This option helps Samba to try and 'guess' at the real UNIX username,
-as many DOS clients send an all-uppercase username. By default Samba
-tries all lowercase, followed by the username with the first letter
-capitalized, and fails if the username is not found on the UNIX machine.
-
-If this parameter is set to non-zero the behaviour changes. This 
-parameter is a number that specifies the number of uppercase combinations 
-to try whilst trying to determine the UNIX user name. The higher the number
-the more combinations will be tried, but the slower the discovery
-of usernames will be. Use this parameter when you have strange
-usernames on your UNIX machine, such as 'AstrangeUser'.
-
-.B Default:
-    username level = 0
-
-.B Example:
-    username level = 5
 
 .SS username map (G)
 

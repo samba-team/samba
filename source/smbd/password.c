@@ -36,6 +36,7 @@ static char this_user[100]="";
 static char this_salt[100]="";
 static char this_crypted[100]="";
 
+#ifdef SMB_PASSWD
 /* Data to do lanman1/2 password challenge. */
 static unsigned char saved_challenge[8];
 static BOOL challenge_sent=False;
@@ -45,24 +46,17 @@ Get the next challenge value - no repeats.
 ********************************************************************/
 void generate_next_challenge(char *challenge)
 {
-	unsigned char buf[16];
-	static int counter = 0;
-	struct timeval tval;
-	int v1,v2;
-
-	/* get a sort-of random number */
-	GetTimeOfDay(&tval);
-	v1 = (counter++) + getpid() + tval.tv_sec;
-	v2 = (counter++) * getpid() + tval.tv_usec;
-	SIVAL(challenge,0,v1);
-	SIVAL(challenge,4,v2);
-
-	/* mash it up with md4 */
-	mdfour(buf, (unsigned char *)challenge, 8);
-
-	memcpy(saved_challenge, buf, 8);
-	memcpy(challenge,buf,8);
-	challenge_sent = True;
+  static int counter = 0;
+  struct timeval tval;
+  int v1,v2;
+  GetTimeOfDay(&tval);
+  v1 = (counter++) + getpid() + tval.tv_sec;
+  v2 = (counter++) * getpid() + tval.tv_usec;
+  SIVAL(challenge,0,v1);
+  SIVAL(challenge,4,v2);
+  E1((uchar *)challenge,(uchar *)"SAMBA",(uchar *)saved_challenge);
+  memcpy(challenge,saved_challenge,8);
+  challenge_sent = True;
 }
 
 /*******************************************************************
@@ -84,6 +78,7 @@ BOOL last_challenge(char *challenge)
   memcpy(challenge,saved_challenge,8);
   return(True);
 }
+#endif
 
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users = NULL;
@@ -406,7 +401,7 @@ static char *PAM_password;
  * echo off means password.
  */
 static int PAM_conv (int num_msg,
-                     struct pam_message **msg,
+                     const struct pam_message **msg,
                      struct pam_response **resp,
                      void *appdata_ptr) {
   int count = 0, replies = 0;
@@ -817,6 +812,7 @@ Hence we make a direct return to avoid a second chance!!!
 #endif
 }
 
+#ifdef SMB_PASSWD
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
@@ -858,6 +854,7 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 #endif
   return (memcmp(p24, password, 24) == 0);
 }
+#endif
 
 /****************************************************************************
 check if a username/password is OK
@@ -867,16 +864,21 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   pstring pass2;
   int level = lp_passwordlevel();
   struct passwd *pass;
+#ifdef SMB_PASSWD
   char challenge[8];
   struct smb_passwd *smb_pass;
   BOOL challenge_done = False;
+#endif
 
   if (password) password[pwlen] = 0;
 
+#ifdef SMB_PASSWD
   if (pwlen == 24)
     challenge_done = last_challenge(challenge);
+#endif
 
 #if DEBUG_PASSWORD
+#ifdef SMB_PASSWD
   if (challenge_done)
     {
       int i;      
@@ -884,9 +886,10 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
       for( i = 0; i < 24; i++)
 	DEBUG(100,("%0x ", (unsigned char)password[i]));
       DEBUG(100,("]\n"));
-    } else {
-	    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
     }
+  else
+#endif
+    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
 #endif
 
   if (!password)
@@ -902,6 +905,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
     } 
   else 
     pass = Get_Pwnam(user,True);
+
+#ifdef SMB_PASSWD
 
   DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
 
@@ -959,6 +964,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 
 	DEBUG(3,("Error smb_password_check failed\n"));
     }
+#endif 
 
   DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
 
@@ -1520,7 +1526,7 @@ BOOL server_cryptkey(char *buf)
   struct in_addr dest_ip;
   int port = SMB_PORT;
   BOOL ret;
-  
+
   if(secserver_inbuf == NULL) {
     secserver_inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
     if(secserver_inbuf == NULL) {
@@ -1590,12 +1596,12 @@ BOOL server_cryptkey(char *buf)
      and the remote machine name.
    */
   {
-    char buf2[32]; /* create name as PIDname */
-    sprintf(buf2,"%d", getpid());
-    strncpy(&buf2[strlen(buf2)], remote_machine, 31 - strlen(buf2));
-    buf2[31] = '\0';
-    DEBUG(1,("negprot w/password server as %s\n",buf2));
-    name_mangle(buf2,p,' ');
+    char buf[32]; /* create name as PIDname */
+    sprintf(buf,"%d", getpid());
+    strncpy(&buf[strlen(buf)], remote_machine, 31 - strlen(buf));
+    buf[31] = '\0';
+    DEBUG(1,("negprot w/password server as %s\n",buf));
+    name_mangle(buf,p,' ');
     len += name_len(p);
   }
 

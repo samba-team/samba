@@ -636,6 +636,7 @@ void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
     {
       work = find_workgroupstruct(d, myworkgroup, False);
 
+      announce_server(d, work, work->work_group, myname, 0, 0);
       /* Remove the name entry without any NetBIOS traffic as that's
          how it was registered. */
       remove_name_entry(d,work->work_group,0x1b);    
@@ -670,6 +671,8 @@ void unbecome_logon_server(struct subnet_record *d, struct work_record *work,
 
     work->log_state = LOGON_NONE;
 
+	/* announce ourselves as no longer active as a master browser. */
+    announce_server(d, work, work->work_group, myname, 0, 0);
     remove_name_entry(d,work->work_group,0x1c);    
   }
 }

@@ -43,10 +43,6 @@
 ; Use password server option only with security = server
 ;   password server = <NT-Server-Name>
 
-; Encrypted Password Support - Off by default. Requires smbpasswd file
-; Refer to docs/Encryption.txt
-   encrypt passwords = no
-
 ; Configuration Options ***** The location of this entry in your smb.conf
 ; heirachy determines  which parameters are overwritten - please watch out!
 ; Where %m is any SMBName (machine name, or computer name) for which a custom
@@ -56,6 +52,9 @@
 ; Performance Related Options
 ; Before setting socket options read the smb.conf man page!!
    socket options = TCP_NODELAY 
+; Socket Address is used to specify which socket Samba
+; will listen on (good for aliased systems)
+;   socket address = aaa.bbb.ccc.ddd
 ; Use keep alive only if really needed!!!!
 ;   keep alive = 60
 ; Configure Samba to use multiple interfaces
@@ -95,8 +94,8 @@
 
 ; run a specific logon batch file per workstation (machine)
 ;   logon script = %m.bat
-; run a specific logon batch file per session username (ie: Client User Name)
-;   logon script = %U.bat
+; run a specific logon batch file per username
+;   logon script = %u.bat
 
 ; Where to store roving profiles (only for Win95 and WinNT)
 ;        %L substitutes for the SMB name we are called, %U is username

@@ -43,7 +43,7 @@
 #define WORDMAX 0xFFFF
 
 /* the maximum password length before we declare a likely attack */
-#define MAX_PASSWORD_LENGTH 200
+#define MAX_PASS_LEN 200
 
 /* separators for lists */
 #define LIST_SEP " \t,;:\n\r"
@@ -158,10 +158,5 @@
 
 /* the directory to sit in when idle */
 /* #define IDLE_DIR "/" */
-
-/* Timout (in seconds) to wait for an oplock breal
-   message to return. */
-
-#define OPLOCK_BREAK_TIMEOUT 30
 
 #endif

@@ -82,7 +82,7 @@ extern int DEBUGLEVEL;
       printf("Press enter to see a dump of your service definitions\n");
       fflush(stdout);
       getc(stdin);
-      lp_dump(stdout);      
+      lp_dump();      
     }
   
   if (argc == 4)

@@ -31,8 +31,8 @@ extern pstring myname;
 extern struct in_addr ipzero;
 
 static struct opcode_names {
-	char *nmb_opcode_name;
-	int opcode;
+    const char *nmb_opcode_name;
+    int opcode;
 } nmb_header_opcode_names[] = {
       { "Query",           0 },
       {"Registration",      5 },
@@ -46,7 +46,7 @@ static struct opcode_names {
  * Lookup a nmb opcode name.
  ****************************************************************************/
 
-char *lookup_opcode_name( int opcode )
+const char *lookup_opcode_name( int opcode )
 {
   struct opcode_names *op_namep;
   int i;

@@ -1,16 +1,88 @@
-              WHATS NEW IN 1.9.17 - August 25th 1997
-              ======================================
+              WHATS NEW IN 1.9.17p2 - October 14th 1997
+              ===========================================
 
-New stable release of Samba.
-----------------------------
+Update release: Samba - version 1.9.17p3.
+-----------------------------------------
 
-This is the new stable release of Samba, superceding
+This is the latest stable release of Samba. This is the
+version that all production Samba servers should be running
+for all current bug-fixes.
+
+Here are a list of the fixes in this release (the fixes
+introduced between 1.9.17p2 and 1.9.17p3) :
+
+1). Removed truncation problem with long browse lists.
+2). Crash bug when dead share mode memory entries need removing.
+3). Race condition in slow share mode code.
+4). Potential buffer overflow from password server.
+5). Fix for read-prediction growing read-only files.
+6). Many quota code fixes.
+7). Fix for spelling mistake in attack warning :-).
+8). Removed 'ERRbaddirectory' error code - caused problem with
+    Visual Basic apps.
+9). Allow 'hosts allow/deny' to work before client packet parsed.
+10). Wrapping log file causes incorrect errors to be returned to
+     the clients.
+11). Crash fix for nmbd Get_Hostbyname bad return.
+12). 'become_root' 'unbecome_root' added to fix changing uid problems.
+13). No magic scripts or printing done on exceptional file close problems.
+
+Reporting bugs
+--------------
+    
+The Samba Team believes that this is a stable
+production release, but all software has bugs. 
+If you have problems, or think you have found a
+bug please email a report to :
+
+samba-bugs@samba.anu.edu.au
+
+Stating the version number of Samba that you
+are running, and *full details* of the steps  
+we need to reproduce the problem.
+
+As always, all bugs are our responsibility.
+
+Regards,
+
+    The Samba Team.
+
+-------------Previous release notes-------------------------
+
+Security fix release: Samba - version 1.9.17p2.
+----------------------------------------------
+
+This new stable release fixes a very important security hole in all
+versions of Samba.
+
+The security hole allows a remote user to obtain root access on the
+Samba server. A program which exploits this bug has been posted to the
+internet.
+
+The security hole is only known to affect Samba servers running on
+Intel based hardware, and has only been demonstrated for Intel
+Linux. It is likley that exploits for other architectures would be
+very difficult but the possibility cannot be excluded completely.
+
+This patch fixes the security hole for all platforms.
+
+This patch also adds a routine which will log a message when a user
+attempts to take advantage of the security hole.
+
+A number of other minor bugs have also been fixed in this release.
+
+The Samba Team.
+
+
+-------------Previous release notes-------------------------
+
+New stable release of Samba - 1.9.17
+------------------------------------
+
+This is the new stable release of Samba, superceeding
 the last stable release 1.9.16p11. All users are
 encouraged to upgrade to this new release as there have
 been many improvements to the code since that time.
-See the Frequently Asked Questions (under docs/faq) for
-an explanation of how the version numbering scheme works,
-distinguishing between stable and development releases.
 
 Changes since 1.9.16p11.
 ------------------------
@@ -66,10 +138,6 @@ Updated documentation
 All options are now documented in the smb.conf man page
 we believe. Much work has been done by Samba Team members
 to improve the quality and quantity of the Samba documentation.
-
-A draft new structure for documentation is being worked on: see
-docs/faq/Samba-meta-FAQ for details. This will soon be a master
-reference to all Samba documentation.
 
 Many bugfixes and improvements
 ------------------------------

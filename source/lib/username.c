@@ -22,9 +22,6 @@
 #include "includes.h"
 extern int DEBUGLEVEL;
 
-/* internal functions - modified versions of the ones in password.c */
-static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (), int N);
-static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (), int N);
 
 /****************************************************************************
 get a users home directory. tries as-is then lower case
@@ -144,8 +141,6 @@ Note that this changes user!
 struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 {
   fstring user2;
-  int last_char;
-  int usernamelevel = lp_usernamelevel();
 
   struct passwd *ret;  
 
@@ -175,19 +170,6 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   if (strlen(user) > 1)
     strlower(user+1);  
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
-
-  /* try with last letter capitalised */
-  strlower(user);
-  last_char = strlen(user)-1;
-  user[last_char] = toupper(user[last_char]);
-  DEBUG(3, ("Trying username %s\n", user));
-  ret = _Get_Pwnam(user);
-  if (ret) return(ret);
-
-  /* try all combinations up to usernamelevel */
-  strlower(user);
-  ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
   if (ret) return(ret);
 
   if (allow_change)
@@ -268,57 +250,4 @@ BOOL user_in_list(char *user,char *list)
   return(False);
 }
 
-/* The functions below have been taken from password.c and slightly modified */
-/****************************************************************************
-apply a function to upper/lower case combinations
-of a string and return true if one of them returns true.
-try all combinations with N uppercase letters.
-offset is the first char to try and change (start with 0)
-it assumes the string starts lowercased
-****************************************************************************/
-static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(),int N)
-{
-  int len = strlen(s);
-  int i;
-  struct passwd *ret;
 
-#ifdef PASSWORD_LENGTH
-  len = MIN(len,PASSWORD_LENGTH);
-#endif
-
-  if (N <= 0 || offset >= len)
-    return(fn(s));
-
-
-  for (i=offset;i<(len-(N-1));i++)
-
-    {
-      char c = s[i];
-      if (!islower(c)) continue;
-      s[i] = toupper(c);
-      ret = uname_string_combinations2(s,i+1,fn,N-1);
-      if(ret) return(ret);
-      s[i] = c;
-    }
-  return(NULL);
-}
-
-/****************************************************************************
-apply a function to upper/lower case combinations
-of a string and return true if one of them returns true.
-try all combinations with up to N uppercase letters.
-offset is the first char to try and change (start with 0)
-it assumes the string starts lowercased
-****************************************************************************/
-static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(),int N)
-{
-  int n;
-  struct passwd *ret;
-
-  for (n=1;n<=N;n++)
-  {
-    ret = uname_string_combinations2(s,0,fn,n);
-    if(ret) return(ret);
-  }
-  return(NULL);
-}

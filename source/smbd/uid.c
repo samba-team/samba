@@ -258,6 +258,8 @@ BOOL become_user(int cnum, uint16 vuid)
 	if (current_user.ngroups > 0)
 	  if (setgroups(current_user.ngroups,current_user.groups)<0)
 	    DEBUG(0,("setgroups call failed!\n"));
+      } else {
+	    current_user.ngroups = 0;  
       }
 #endif
 
@@ -318,7 +320,8 @@ BOOL unbecome_user(void )
 
   current_user.uid = initial_uid;
   current_user.gid = initial_gid;
-  
+  current_user.ngroups = 0;
+
   if (ChDir(OriginalDir) != 0)
     DEBUG(0,("%s chdir(%s) failed in unbecome_user\n",
 	     timestring(),OriginalDir));
@@ -476,3 +479,82 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 #endif
   return 1;
 }
+
+
+
+static struct current_user current_user_saved;
+static int become_root_depth;
+static pstring become_root_dir;
+
+/****************************************************************************
+This is used when we need to do a privilaged operation (such as mucking
+with share mode files) and temporarily need root access to do it. This
+call should always be paired with an unbecome_root() call immediately
+after the operation
+
+Set save_dir if you also need to save/restore the CWD 
+****************************************************************************/
+void become_root(int save_dir) 
+{
+	if (become_root_depth) {
+		DEBUG(0,("ERROR: become root depth is non zero\n"));
+	}
+	if (save_dir)
+		GetWd(become_root_dir);
+
+	current_user_saved = current_user;
+	become_root_depth = 1;
+
+	become_gid(0);
+	become_uid(0);
+}
+
+/****************************************************************************
+When the privilaged operation is over call this
+
+Set save_dir if you also need to save/restore the CWD 
+****************************************************************************/
+void unbecome_root(int restore_dir)
+{
+	if (become_root_depth != 1) {
+		DEBUG(0,("ERROR: unbecome root depth is %d\n",
+			 become_root_depth));
+	}
+
+	/* we might have done a become_user() while running as root,
+	   if we have then become root again in order to become 
+	   non root! */
+	if (current_user.uid != 0) {
+		become_uid(0);
+	}
+
+	/* restore our gid first */
+	if (!become_gid(current_user_saved.gid)) {
+		DEBUG(0,("ERROR: Failed to restore gid\n"));
+		exit_server("Failed to restore gid");
+	}
+
+#ifndef NO_SETGROUPS      
+	if (current_user_saved.ngroups > 0) {
+		if (setgroups(current_user_saved.ngroups,
+			      current_user_saved.groups)<0)
+			DEBUG(0,("ERROR: setgroups call failed!\n"));
+	}
+#endif
+
+	/* now restore our uid */
+	if (!become_uid(current_user_saved.uid)) {
+		DEBUG(0,("ERROR: Failed to restore uid\n"));
+		exit_server("Failed to restore uid");
+	}
+
+	if (restore_dir)
+		ChDir(become_root_dir);
+
+	current_user = current_user_saved;
+
+	become_root_depth = 0;
+}
+
+
+

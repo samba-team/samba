@@ -470,12 +470,12 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 	  if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
 	    continue;
 
-	  pstrcpy(fname,filename);
+	  strcpy(fname,filename);
 	  *path = 0;
-	  pstrcpy(path,Connections[cnum].dirpath);
+	  strcpy(path,Connections[cnum].dirpath);
           if(needslash)
   	    strcat(path,"/");
-	  pstrcpy(pathreal,path);
+	  strcpy(pathreal,path);
 	  strcat(path,fname);
 	  strcat(pathreal,dname);
 	  if (sys_stat(pathreal,&sbuf) != 0) 
