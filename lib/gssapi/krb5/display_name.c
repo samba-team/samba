@@ -59,12 +59,13 @@ OM_uint32 gss_display_name
     return GSS_S_FAILURE;
   len = strlen (buf);
   output_name_buffer->length = len;
-  output_name_buffer->value  = malloc(len);
+  output_name_buffer->value  = malloc(len + 1);
   if (output_name_buffer->value == NULL) {
     free (buf);
     return GSS_S_FAILURE;
   }
   memcpy (output_name_buffer->value, buf, len);
+  ((char *)output_name_buffer->value)[len] = '\0';
   free (buf);
   if (output_name_type)
       *output_name_type = GSS_KRB5_NT_PRINCIPAL_NAME;
