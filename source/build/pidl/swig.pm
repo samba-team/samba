@@ -11,6 +11,15 @@ use strict;
 
 eval("use Data::Dumper");
 
+my(%interfaces, %functions, %structs, %unions);
+
+sub isunion($)
+{
+    my($name) = shift;
+
+    return $unions{$name};
+}
+
 # Display properties of a structure field as commented out code
 
 sub DebugField($)
@@ -46,8 +55,6 @@ sub ArrayFromPython($$)
     my($e) = shift;
     my($prefix) = shift;
     my($result) = "";
-
-    $result .= "/* " . Dumper($e) . " */\n";
 
     my($size);
 
@@ -209,7 +216,7 @@ sub FieldToPython($$)
 	return $result;
     }
 
-    # Generate conversion for element
+    # Generate conversion for scalars and structures
 
     if (util::is_scalar_type($e->{TYPE})) {
 	if ($e->{POINTERS} == 0) {
@@ -227,17 +234,24 @@ sub FieldToPython($$)
 	    }
 	}
     } else {
+
+	my($extra_args) = "";
+
+	if (isunion($e->{TYPE})) {
+	    $extra_args = ", switch_is";
+	}
+
 	if ($e->{POINTERS} == 0) {
 	    if ($e->{ARRAY_LEN}) {
 		$result .= ArrayToPython($e, $prefix);
 	    } else {
-		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}));\n";
+		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}$extra_args));\n";
 	    }
 	} else {
 	    if ($e->{ARRAY_LEN} or util::has_property($e, "size_is")) {
 		$result .= ArrayToPython($e, $prefix);
 	    } else {
-		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
+		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}$extra_args));\n";
 	    }
 	}
     }
@@ -287,7 +301,15 @@ sub ParseFunction($)
 
     $result .= "/* Convert struct $fn->{NAME}.out to Python dict */\n\n";
 
-    $result .= "PyObject *$fn->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s)\n";
+    $result .= "PyObject *$fn->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s";
+
+    foreach my $e (@{$fn->{DATA}}) {
+	if (isunion($e->{TYPE})) {
+	    $result .= ", int switch_is";
+	}
+    }
+    $result .= ")\n";
+
     $result .= "{\n";
 
     $result .= "\tPyObject *obj = PyDict_New();\n\n";
@@ -306,6 +328,7 @@ sub ParseFunction($)
 
     $result .= "%typemap(in) struct $fn->{NAME} * {\n";
     $result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(int) $fn->{NAME}\");\n\n";
+
     $result .= "\t\$1 = $fn->{NAME}_ptr_from_python(mem_ctx, \$input, \"<function params>\");\n\n";
 
     $result .= "\tif (PyErr_Occurred()) return NULL;\n\n";
@@ -316,7 +339,16 @@ sub ParseFunction($)
 
     $result .= "%typemap(argout) struct $fn->{NAME} * {\n";
     $result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(argout) $fn->{NAME}\");\n\n";
-    $result .= "\tresultobj = $fn->{NAME}_ptr_to_python(mem_ctx, \$1);\n\n";
+
+    $result .= "\tresultobj = $fn->{NAME}_ptr_to_python(mem_ctx, \$1";
+
+    foreach my $e (@{$fn->{DATA}}) {
+	if ((my $switch_is = util::has_property($e, "switch_is"))) {
+	    $result .= ", \$1->in.$switch_is";
+	}
+    }
+
+    $result .= ");\n\n";
     $result .= "\ttalloc_free(mem_ctx);\n";
     $result .= "}\n\n";
 
@@ -399,13 +431,15 @@ sub ParseStruct($)
     $result .= "PyObject *$s->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s)\n";
     $result .= "{\n";
     
-    $result .= "\tPyObject *obj = PyDict_New();\n\n";
+    $result .= "\tPyObject *obj;\n\n";
 
     $result .= "\tif (s == NULL) {\n";
     $result .= "\t\tPy_INCREF(Py_None);\n";
     $result .= "\t\treturn Py_None;\n";
     $result .= "\t}\n\n";
     
+    $result .= "\tobj = PyDict_New();\n\n";
+
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
 	$result .= FieldToPython($e, "");
     }
@@ -505,15 +539,29 @@ sub ParseUnion($)
 
     $result .= "/* Convert union $u->{NAME} pointer to Python dict */\n\n";
 
-    $result .= "PyObject *$u->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u)\n";
+    $result .= "PyObject *$u->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u, int switch_is)\n";
     $result .= "{\n";
+    $result .= "\tPyObject *obj;\n\n";
 
     $result .= "\tif (u == NULL) {\n";
     $result .= "\t\tPy_INCREF(Py_None);\n";
     $result .= "\t\treturn Py_None;\n";
     $result .= "\t}\n\n";
 
-    $result .= "\treturn PyDict_New();\n";
+    $result .= "\tobj = PyDict_New();\n\n";
+
+    for my $e (@{$u->{DATA}{DATA}}) {
+	$result .= "\tif (switch_is == $e->{CASE}) {\n";
+	if ($e->{POINTERS} == 0) {
+	    $result .= "\t\tPyDict_SetItemString(obj, \"$e->{DATA}{NAME}\", $e->{DATA}{TYPE}_ptr_to_python(mem_ctx, &u->$e->{DATA}{NAME}));\n";
+	} else {
+	    $result .= "\t\tPyDict_SetItemString(obj, \"$e->{DATA}{NAME}\", $e->{DATA}{TYPE}_ptr_to_python(mem_ctx, u->$e->{DATA}{NAME}));\n";
+	}
+	$result .= "\t}\n";
+    }
+
+    $result .= "\treturn obj;\n";
+
     $result .= "}\n\n";
 
     $result .= "\n%}\n\n";    
@@ -572,16 +620,14 @@ sub Parse($)
 
     # Make index of functions, structs and unions.  Currently unused.
 
-    my(%interfaces, %functions, %structs, %unions);
-
     foreach my $x (@{$idl}) {
 	my($iname) = $x->{NAME};
 	$interfaces{$iname} = $x->{PROPERTIES};
 	foreach my $i (@{$x->{INHERITED_DATA}}) {
-	    $functions{$iname}{$i->{NAME}} = $i if $i->{TYPE} eq "FUNCTION";
+	    $functions{$i->{NAME}} = $i if $i->{TYPE} eq "FUNCTION";
 	    if ($i->{TYPE} eq "TYPEDEF") {
-		$structs{$iname}{$i->{NAME}} = $i->{DATA} if $i->{DATA}{TYPE} eq "STRUCT";
-		$unions{$iname}{$i->{NAME}} = $i->{DATA} if $i->{DATA}{TYPE} eq "UNION";
+		$structs{$i->{NAME}} = $i->{DATA} if $i->{DATA}{TYPE} eq "STRUCT";
+		$unions{$i->{NAME}} = $i->{DATA} if $i->{DATA}{TYPE} eq "UNION";
 	    }
 	}
     }
