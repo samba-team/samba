@@ -89,7 +89,7 @@ static char *form_name(int c)
 	char *p;
 	int len;
 
-	fstrcpy(fname, "\\utable\\x");
+	fstrcpy(fname, "\\utable\\");
 	p = fname+strlen(fname);
 	SSVAL(&c2, 0, c);
 
@@ -97,7 +97,6 @@ static char *form_name(int c)
 			     &c2, 2, 
 			     p, sizeof(fname)-strlen(fname));
 	p[len] = 0;
-	fstrcat(fname,"_a_long_extension");
 	return fname;
 }
 
@@ -106,46 +105,62 @@ BOOL torture_casetable(int dummy)
 	static struct cli_state cli;
 	char *fname;
 	int fnum;
-	int c;
-
-	printf("starting utable\n");
+	int c, i;
+#define MAX_EQUIVALENCE 8
+	smb_ucs2_t equiv[0x10000][MAX_EQUIVALENCE];
+	printf("starting casetable\n");
 
 	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
+	memset(equiv, 0, sizeof(equiv));
+
 	cli_mkdir(&cli, "\\utable");
 	cli_unlink(&cli, "\\utable\\*");
 
 	for (c=1; c < 0x10000; c++) {
+		size_t size;
+
+		if (c == '.') continue;
+
 		fname = form_name(c);
 		fnum = cli_nt_create_full(&cli, fname, 
 					  GENERIC_ALL_ACCESS, 
 					  FILE_ATTRIBUTE_NORMAL,
 					  FILE_SHARE_NONE,
-					  FILE_CREATE, 0);
+					  FILE_OPEN_IF, 0);
 
-		if (fnum == -1 && 
-		    NT_STATUS_EQUAL(cli_nt_error(&cli),NT_STATUS_OBJECT_NAME_COLLISION)) {
+		if (fnum == -1) continue;
+
+		size = 0;
+
+		if (!cli_qfileinfo(&cli, fnum, NULL, &size, 
+				   NULL, NULL, NULL, NULL, NULL)) continue;
+
+		if (size > 0) {
 			/* found a character equivalence! */
-			int c2;
-			
-			fnum = cli_nt_create_full(&cli, fname, 
-						  GENERIC_ALL_ACCESS, 
-						  FILE_ATTRIBUTE_NORMAL,
-						  FILE_SHARE_NONE,
-						  FILE_OPEN, 0);
-			if (fnum == -1 || 
-			    cli_read(&cli, fnum, (char *)&c2, 0, sizeof(c2)) != sizeof(c2)) {
-				continue;
+			int c2[MAX_EQUIVALENCE];
+
+			if (size/sizeof(int) >= MAX_EQUIVALENCE) {
+				printf("too many chars match?? size=%d c=0x%04x\n",
+				       size, c);
+				cli_close(&cli, fnum);
+				return False;
 			}
 
-			printf("%04x == %04x\n", c, c2);
-			cli_close(&cli, fnum);
-			continue;
+			cli_read(&cli, fnum, (char *)c2, 0, size);
+			printf("%04x: ", c);
+			equiv[c][0] = c;
+			for (i=0; i<size/sizeof(int); i++) {
+				printf("%04x ", c2[i]);
+				equiv[c][i+1] = c2[i];
+			}
+			printf("\n");
+			fflush(stdout);
 		}
 
-		cli_write(&cli, fnum, 0, (char *)&c, 0, sizeof(c));
+		cli_write(&cli, fnum, 0, (char *)&c, size, sizeof(c));
 		cli_close(&cli, fnum);
 	}
 
