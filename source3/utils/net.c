@@ -61,7 +61,10 @@ typedef struct _functable {
 #define GROUPF    8
 #define VALIDATEF 9
 #define GROUPMEMBERF 10
-#define HELPF     11
+#define ADMINF    11
+#define SERVICEF  12
+#define PASSWORDF 13
+#define HELPF     14
 
 const functable net_func[] = {
   { FILEF, "FILE"},
@@ -74,6 +77,9 @@ const functable net_func[] = {
   { GROUPF, "GROUP"},
   { VALIDATEF, "VALIDATE"},
   { GROUPMEMBERF, "GROUPMEMBER"},
+  { ADMINF, "ADMIN"},
+  { SERVICEF, "SERVICE"},
+  { PASSWORDF, "PASSWORD"},
   { HELPF, "HELP"}
 };
 
@@ -90,7 +96,8 @@ const functable net_subfunc[] = {
   { ADD_SF, "ADD" },
   { ADD_SF, "CREATE" },
   { DELETE_SF, "CLOSE" },
-  { DELETE_SF, "DELETE" }
+  { DELETE_SF, "DELETE" },
+  { INFO_SF, "INFO"}
 };
 
 const char share_type[][6] = {
@@ -110,6 +117,7 @@ const char share_type[][6] = {
     "  net file \tto list open files on a server \n"\
     "  net group \tto list user groups  \n"\
     "  net groupmember to list users in a group \n"\
+    "  net password to change the password of a user\n"\
     "  net printq \tto list the print queues on a server\n"\
     "  net server \tto list servers in a domain\n"\
     "  net session \tto list clients with open sessions to a server\n"\
@@ -232,7 +240,9 @@ const char share_type[][6] = {
     "\nnet user [misc. options] [targets]\n\tEnumerate users\n"\
     "\nnet user DELETE <name> [misc. options] [targets]"\
     "\n\tDelete specified user\n"\
-    "\nnet user ADD <user> [-M user flags] [misc. options] [targets]"\
+    "\nnet user INFO <name> [misc. options] [targets]"\
+    "\n\tList the domain groups of the specified user\n"\
+    "\nnet user ADD <name> [-F user flags] [misc. options] [targets]"\
     "\n\tAdd specified user\n"
 
 #define USER_ENUM_DISPLAY \
@@ -255,6 +265,24 @@ const char share_type[][6] = {
     "[targets]\n\t Delete sepcified user from specified group\n"\
     "\nnet groupmember ADD <group name> <user name> [misc. options] [targets]"\
     "\n\t Add specified user to specified group\n"
+
+            
+#define NET_ADMIN_USAGE \
+    "\nnet admin <remote command to execute> [cmd arguments [environment]] [misc_options] [targets]\n"\
+    "\texecutes a remote command on an os/2 target server\n"
+    
+#define NET_PASSWORD_USAGE \
+    "\nnet password <user> <old password> <new password> [misc_options] [targets]\n"\
+    "\tchanges the password for the specified user on a remote server\n"
+
+#define NET_SERVICE_USAGE \
+    "\nnet service [misc. options] [targets] \n"\
+    "\tenumerates all running service daemons on target server\n"\
+    "\nnet service ADD <name> [service startup arguments] [misc. options] [targets]"\
+    "\n\tStart named service on remote server\n"\
+    "\nnet service DELETE <name> [misc. options] [targets]\n"\
+    "\n\tStop named service on remote server\n"
+    
 
 #define NET_VALIDATE_USAGE \
     "\nnet validate <username> [password]\n"\
@@ -301,6 +329,7 @@ const char share_type[][6] = {
 #define COMMENT_STR   "Comment "
 #define USER_STR      "User name "
 #define GROUP_STR     "Group name "  
+#define SERVICE_STR   "Service name"
 #define HOMED_STR     "Home directory "
 #define LOGONS_STR    "Logon script "
 /************************************************************************************/
@@ -958,6 +987,11 @@ void long_user_fn(const char *user_name, const char *comment, const char * home_
    printf("%-21.21s %-47.47s %-35.35s %35.35s\n", user_name, comment, home_dir, logon_script);
 }
       		  
+void group_member_fn(const char *user_name, void *state)
+{
+   printf("%-21.21s\n", user_name);
+}
+
 int net_user(int subfunct, char * username, char * comment, int flags)
 {
   struct in_addr target_ip;
@@ -991,7 +1025,7 @@ int net_user(int subfunct, char * username, char * comment, int flags)
 	    return cli_RNetUserEnum(cli, long_user_fn, NULL);
       }
       else
-	  return cli_RNetUserEnum(cli, user_fn, NULL); 
+	    return cli_RNetUserEnum(cli, user_fn, NULL); 
   } else if (subfunct == ADD_SF) {
     if (username == NULL) {
       printf(ERRMSG_USERNAME_MISSING);
@@ -1011,7 +1045,17 @@ int net_user(int subfunct, char * username, char * comment, int flags)
 
       return cli_NetUserAdd(cli, &userinfo);
     }
-  } else
+  } else if (subfunct == INFO_SF) {
+    if (username == NULL) {
+      printf(ERRMSG_USERNAME_MISSING);
+      return -1;
+    } else {
+      /*  RAP_USER_INFO_1 userinfo;
+          cli_NetUserInfo (cli, &userinfo);     */  /* BB need to add call to get user info level 3 or 4 */
+        return  cli_NetUserGetGroups(cli, username, group_member_fn, NULL ); 
+    }
+  }
+  else
     printf(ERRMSG_NOT_IMPLEMENTED);
   return -1;
 
@@ -1120,11 +1164,6 @@ void groupmember_usage(void)
   printf(CONF_USAGE);
 }
 
-void group_member_fn(const char *user_name, void *state)
-{
-   printf("%-21.21s\n", user_name);
-}
-
 
 int net_groupmember(int subfunct, char * groupname, char * username)
 {
@@ -1191,6 +1230,130 @@ int net_validate(char * username)
 {
   printf(ERRMSG_NOT_IMPLEMENTED);
   return 0;
+}
+
+void service_usage(void)
+{
+  printf(NET_SERVICE_USAGE); /* command syntax */
+  
+  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  printf(SERVER_USAGE);
+  printf(IPADDRESS_USAGE);
+    
+  printf(MISC_OPT_USAGE); /* misc options */
+  printf(PORT_USAGE);
+  printf(MYWORKGROUP_USAGE);
+  printf(DEBUG_USAGE);
+  printf(MYNAME_USAGE);
+  printf(USER_USAGE);
+  printf(CONF_USAGE);
+}
+
+
+int net_service(int subfunct, char * servicename, char * srvc_args)
+{
+struct in_addr target_ip;
+
+if((have_ip == 0) && (host[0] == 0)) {
+  if (!resolve_name("localhost", &target_ip, 0x20)) {
+    DEBUG(1,("No remote server specified, unable to resolve connection to localhost via name lookup"));
+    return -1;
+  } else {
+    have_ip = True;
+    dest_ip = target_ip;
+  }
+}
+if(host[0] == 0)  
+  strncpy(host, inet_ntoa(dest_ip),16);
+cli = connect_to_ipc(host);
+if(!cli) {
+  printf(ERRMSG_NOCONN_TARGET_SRVR);
+  return -2;
+}
+
+if (subfunct == LIST_SF) {
+  if(long_list_entries) {
+    printf("%-15.15s %-50.50s\n", SERVICE_STR, COMMENT_STR); 
+    printf("-----------------------------\n");
+    return cli_RNetServiceEnum(cli, long_group_fn, NULL);
+  }
+  else
+    return cli_RNetServiceEnum(cli, group_fn, NULL); 
+} else
+  printf(ERRMSG_NOT_IMPLEMENTED);
+return -1;
+
+}
+
+int net_password(char * username, char * old_password, char * new_password)
+{
+    struct in_addr target_ip;
+
+    if((have_ip == 0) && (host[0] == 0)) {
+      if (!resolve_name("localhost", &target_ip, 0x20)) {
+        DEBUG(1,("No remote server specified, unable to resolve connection to localhost via name lookup"));
+        return -1;
+
+      } else {
+        have_ip = True;
+        dest_ip = target_ip;
+      }
+    }
+    if(host[0] == 0)  
+      strncpy(host, inet_ntoa(dest_ip),16);
+    cli = connect_to_ipc(host);
+    if(!cli) {
+      printf(ERRMSG_NOCONN_TARGET_SRVR);
+      return -2;
+    }
+
+    /* BB Add check for password lengths? */
+    return cli_oem_change_password(cli, username, new_password, old_password);
+}
+
+void password_usage(void)
+{
+  printf(NET_PASSWORD_USAGE); /* command syntax */
+  
+  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  printf(SERVER_USAGE);
+  printf(IPADDRESS_USAGE);
+  printf(WORKGROUP_USAGE);
+    
+  printf(MISC_OPT_USAGE); /* misc options */
+  printf(PORT_USAGE);
+  printf(MYWORKGROUP_USAGE);
+  printf(DEBUG_USAGE);
+  printf(MYNAME_USAGE);
+  printf(USER_USAGE);
+  printf(CONF_USAGE);
+}
+
+
+void admin_usage(void)
+{
+  printf(NET_ADMIN_USAGE); /* command syntax */
+  
+  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  printf(SERVER_USAGE);
+  printf(IPADDRESS_USAGE);
+  printf(WORKGROUP_USAGE);
+    
+  printf(MISC_OPT_USAGE); /* misc options */
+  printf(PORT_USAGE);
+  printf(MYWORKGROUP_USAGE);
+  printf(DEBUG_USAGE);
+  printf(MYNAME_USAGE);
+  printf(USER_USAGE);
+  printf(CONF_USAGE);
+}
+
+
+int net_admin(char * command, char * cmd_args, char * environment)
+{
+  printf(ERRMSG_NOT_IMPLEMENTED);
+  return 0;
+
 }
 
 /****************************************************************************
@@ -1277,17 +1440,18 @@ int main(int argc,char *argv[])
     }
   }
 
-  lp_load(servicesf,True,False,False);
+  lp_load(servicesf,True,False,False);       
 
   argv_new = (char **)poptGetArgs(pc);
 
+  argc_new = argc;
   for (i=0; i<argc; i++) {
     if (argv_new[i] == NULL) {
       argc_new = i;
       break;
     }
   }
-		 
+  	 
   if (argc_new < 2) {
     usage();
     return -1;
@@ -1310,43 +1474,52 @@ int main(int argc,char *argv[])
   }
         
   if (func == HELPF) {
-    switch(get_func(argv_new[2])) { 
+     switch(get_func(argv_new[2])) { 
       case FILEF:
-	file_usage();
-	break;
+	    file_usage();
+	    break;
       case SHAREF:
-	share_usage();
-	break;
+	    share_usage();
+	    break;
       case SESSIONF:
-	session_usage();
-	break;
+	    session_usage();
+	    break;
       case SERVERF:
-	server_usage();
-	break;
+	    server_usage();
+	    break;
       case DOMAINF:
-	domain_usage();
-	break;
+	    domain_usage();
+	    break;
       case PRINTQF:
-	printq_usage();
-	break;
+	    printq_usage();
+	    break;
       case USERF:
-	user_usage();
-	break;
+	    user_usage();
+	    break;
       case GROUPF:
-	group_usage();
-	break;
+	    group_usage();
+	    break;
       case VALIDATEF:
-	validate_usage();
-	break;
+	    validate_usage();
+	    break;
+      case SERVICEF:
+        service_usage();
+        break;
+      case ADMINF:
+        admin_usage();
+        break;
       case GROUPMEMBERF:
-	groupmember_usage();
-	break;
+	    groupmember_usage();
+	    break;
+      case PASSWORDF:
+        password_usage();
+        break;
       case HELPF:
-	usage();
-	break;
+	    usage();
+	    break;
       default:
-	printf(ERRMSG_INVALID_HELP_OPTION);
-	usage();
+	    printf(ERRMSG_INVALID_HELP_OPTION);
+	    usage();
     }
     return 0;
   }
@@ -1388,67 +1561,93 @@ int main(int argc,char *argv[])
   switch (func) {
     case FILEF:
       if(argc_new <= 3) {
-	if (subfunc == OTHER_SF)
-	  rc = net_file(subfunc, argv_new[2]);
-	else
-	  rc = net_file(subfunc,NULL);
+	    if (subfunc == OTHER_SF)
+	        rc = net_file(subfunc, argv_new[2]);
+	    else
+	        rc = net_file(subfunc,NULL);
       } else 
-	rc = net_file(subfunc,argv_new[3]);
+	    rc = net_file(subfunc,argv_new[3]);
       break;
     case SHAREF:
       if (argc_new == 2)
-	rc = net_share(subfunc, NULL, NULL, 0);
+	    rc = net_share(subfunc, NULL, NULL, 0);
       else
-	rc = net_share(subfunc,argv_new[3], comment, maxusers);
+	    rc = net_share(subfunc,argv_new[3], comment, maxusers);
       break;
     case SESSIONF:
       if (argc_new <= 3)
-	rc = net_session(subfunc,NULL);
+	    rc = net_session(subfunc,NULL);
       else
-	rc = net_session(subfunc,argv_new[3]);
+	    rc = net_session(subfunc,argv_new[3]);
       break;
     case SERVERF:
       rc = net_server(target_workgroup, subfunc);
       break;
     case DOMAINF:
       if(subfunc != LIST_SF)
-	printf(ERRMSG_INVALID_DOMAIN_ACTION);
+	    printf(ERRMSG_INVALID_DOMAIN_ACTION);
       rc = net_domain();
       break;
     case USERF:
       if (argc_new == 2)
-	rc = net_user(subfunc, NULL, NULL, -1);
+	    rc = net_user(subfunc, NULL, NULL, -1);
       else if(argc_new == 3)
-	rc = net_user(subfunc,NULL, NULL, -1);
+	    rc = net_user(subfunc,NULL, NULL, -1);
       else if(argc_new > 3)
-	rc = net_user(subfunc,argv_new[3], comment, flagsarg);
+	    rc = net_user(subfunc,argv_new[3], comment, flagsarg);
       break;
     case GROUPF:
       if (argc_new == 2)
-	rc = net_group(subfunc, NULL, NULL);
+	    rc = net_group(subfunc, NULL, NULL);
       else if(argc_new == 3)
-	rc = net_group(subfunc,NULL, NULL);
+	    rc = net_group(subfunc,NULL, NULL);
       else if(argc_new > 3)
-	rc = net_group(subfunc,argv_new[3], comment);
+	    rc = net_group(subfunc,argv_new[3], comment);
       break;
     case GROUPMEMBERF:
       if (argc_new == 4)
-	rc = net_groupmember(subfunc, argv_new[3], NULL);
+	    rc = net_groupmember(subfunc, argv_new[3], NULL);
       else if (argc_new == 5)
-	rc = net_groupmember(subfunc, argv_new[3], argv_new[4]);
+	    rc = net_groupmember(subfunc, argv_new[3], argv_new[4]);
       else {
-	groupmember_usage();
-	rc = -1;
+	    groupmember_usage();
+	    rc = -1;
       }
       break;
     case VALIDATEF:
       rc = net_validate(global_user_name);
       break;
+    case SERVICEF:
+      rc = net_service(subfunc, argv_new[3], argv_new[4]);
+      break;
+    case ADMINF:
+      if(argc_new < 3)
+      {
+          admin_usage();
+          rc = -1;
+      }
+      else if (argc_new == 3) {
+          rc = net_admin(argv_new[2], NULL, NULL);
+      } else if (argc_new == 4) {
+          rc = net_admin(argv_new[2], argv_new[3], NULL);
+      } else {
+          rc = net_admin(argv_new[2], argv_new[3], argv_new[4]);
+      }
+      break;
+    case PASSWORDF:
+      if(argc_new != 5)
+      {
+        password_usage();
+        rc = -1;
+      } else {
+        rc = net_password(argv_new[2], argv_new[3], argv_new[4]);
+      }
+      break;
     case PRINTQF:
       if (argc_new <= 3)
-	rc = net_printq(subfunc, NULL, jobid);
+	    rc = net_printq(subfunc, NULL, jobid);
       else
-	rc = net_printq(subfunc, argv_new[3], jobid);
+	    rc = net_printq(subfunc, argv_new[3], jobid);
       break;
     default:
       usage();
