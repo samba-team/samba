@@ -301,10 +301,12 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       else {
 	GUID domain_guid;
 	pstring domain;
+	pstring hostname;
 	char *component, *dc, *q1;
 	uint8 size;
 
-	safe_strcpy(domain, lp_realm(), sizeof(domain));
+	get_mydomname(domain);
+	get_myname(hostname);
 	
 	if (SVAL(uniuser, 0) == 0) {
 	  SSVAL(q, 0, SAMLOGON_AD_UNK_R);	/* user unknown */
@@ -341,14 +343,14 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 	q += 2;              /* it must follow the domain name. */
 
 	/* Push dns host name */
-	size = push_ascii(&q[1], global_myname(), -1, 0);
+	size = push_ascii(&q[1], hostname, -1, 0);
 	SCVAL(q, 0, size);
 	q += (size + 1);
 	SSVAL(q, 0, 0x18c0); /* not sure what this is for, but  */
 	q += 2;              /* it must follow the domain name. */
 
 	/* Push NETBIOS of domain */
-	size = push_ascii(&q[1], domain, -1, STR_UPPER);
+	size = push_ascii(&q[1], lp_workgroup(), -1, STR_UPPER);
 	SCVAL(q, 0, size);
 	q += (size + 1);
 	SCVAL(q, 0, 0); q++; /* is this a null terminator or empty field */
