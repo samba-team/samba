@@ -571,7 +571,7 @@ static BOOL is_client_monitoring_event(Printer_entry *p, uint32 flags)
  --jerry
  **************************************************************************/
  
-static WERROR srv_spoolss_routerreplyprinter (struct cli_state *pcli, TALLOC_CTX *mem_ctx,
+static WERROR srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, PRINTER_MESSAGE_INFO *info,
 					NT_PRINTER_INFO_LEVEL *printer)				
 {
@@ -581,7 +581,7 @@ static WERROR srv_spoolss_routerreplyprinter (struct cli_state *pcli, TALLOC_CTX
 	if (info->flags & PRINTER_MESSAGE_DRIVER)
 		condition = PRINTER_CHANGE_SET_PRINTER_DRIVER;
 	
-	result = cli_spoolss_routerreplyprinter(pcli, mem_ctx, pol, condition, 
+	result = cli_spoolss_routerreplyprinter(reply_cli, mem_ctx, pol, condition, 
 			printer->info_2->changeid);
 
 	return result;
@@ -593,7 +593,7 @@ static WERROR srv_spoolss_routerreplyprinter (struct cli_state *pcli, TALLOC_CTX
  **********************************************************************/
  
 static WERROR srv_spoolss_send_event_to_client(Printer_entry* Printer, 
-	struct cli_state *pcli,	PRINTER_MESSAGE_INFO *msg, 
+	struct cli_state *send_cli,	PRINTER_MESSAGE_INFO *msg, 
 	NT_PRINTER_INFO_LEVEL *info)
 {
 	WERROR result;
@@ -602,12 +602,13 @@ static WERROR srv_spoolss_send_event_to_client(Printer_entry* Printer,
 		/* This is a single call that can send information about multiple changes */
 		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
 			msg->flags |= PRINTER_MESSAGE_ATTRIBUTES;
-		result = cli_spoolss_reply_rrpcn(pcli, pcli->mem_ctx, &Printer->notify.client_hnd, 
+
+		result = cli_spoolss_reply_rrpcn(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
 				msg, info);
 	}
 	else {
 		/* This requires that the server send an individual event notification for each change */
-		result = srv_spoolss_routerreplyprinter(pcli, pcli->mem_ctx, &Printer->notify.client_hnd, 
+		result = srv_spoolss_routerreplyprinter(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
 				msg, info);
 	}
 	
@@ -631,7 +632,7 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 		return;
 	}
 	
-	for (find_printer = printers_list; find_printer; find_printer = find_printer->next) {
+	for(find_printer = printers_list; find_printer; find_printer = find_printer->next) {
 
 		/*
 		 * If the entry has a connected client we send the message. There should 
@@ -919,7 +920,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	Printer=find_printer_index_by_hnd(p, handle);
 	if (!Printer) {
 		DEBUG(0,(" _spoolss_open_printer_ex: logic error. \
-Can't find printer handle we created for priunter %s\n", name ));
+Can't find printer handle we created for printer %s\n", name ));
 		close_printer_handle(p,handle);
 		return WERR_INVALID_PRINTER_NAME;
 	}
@@ -1004,7 +1005,9 @@ Can't find printer handle we created for priunter %s\n", name ));
 
 		/* We fall through to return WERR_OK */
 		
-	} else {
+	}
+	else
+	{
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
@@ -1622,7 +1625,7 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 		dos_to_unix(unix_printer);
 
-		if (!spoolss_connect_to_client(&cli, unix_printer))
+		if(!spoolss_connect_to_client(&cli, unix_printer))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY, srv_spoolss_receive_message);
@@ -2944,7 +2947,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 
 	printer->global_counter = global_counter;
 	printer->total_pages = 0;
-#if 1	/* JERRY */
+#if 0	/* JERRY */
 	printer->major_version = 0x0004; 	/* NT 4 */
 	printer->build_version = 0x0565; 	/* build 1381 */
 #else
