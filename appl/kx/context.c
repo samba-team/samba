@@ -45,7 +45,7 @@ RCSID("$Id$");
  */
 
 void
-context_set (kx_context *kc, char *host, char *user, int port,
+context_set (kx_context *kc, const char *host, const char *user, int port,
 	     int debug_flag, int keepalive_flag, int tcp_flag)
 {
     kc->host		= host;
