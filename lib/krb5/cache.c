@@ -222,7 +222,8 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 }
 
 /*
- * Return a pointer to a context static string containing the default ccache name.
+ * Return a pointer to a context static string containing the default
+ * ccache name.
  */
 
 const char*
