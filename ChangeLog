@@ -1,3 +1,7 @@
+Mon Jul 14 12:08:25 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/rd_req.c (krb5_rd_req_with_keyblock): Split up.
+
 Sun Jul 13 03:07:44 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_safe.c, mk_safe.c: made bug-compatible with MIT
