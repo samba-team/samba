@@ -57,7 +57,7 @@ pam_krb4.so: $(OBJS)
 
 CLEANFILES = $(MOD) $(OBJS)
 
-SUFFIXES = .c .o
+SUFFIXES += .c .o
 
 .c.o:
 	$(COMPILE) -c $<
