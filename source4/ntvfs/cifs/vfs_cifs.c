@@ -42,6 +42,8 @@ struct async_info {
 	void *parms;
 };
 
+#define SETUP_PID private->tree->session->pid = SVAL(req->in.hdr, HDR_PID)
+
 /*
   an idle function to cope with messages from the smbd client while 
   waiting for a reply from the server
@@ -136,7 +138,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	private->transport = private->tree->session->transport;
-	private->tree->session->pid = SVAL(req->in.hdr, HDR_PID);
+	SETUP_PID;
 	private->tcon = req->tcon;
 
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
@@ -209,10 +211,12 @@ static void async_simple(struct smbcli_request *c_req)
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
 static NTSTATUS cvfs_unlink(struct ntvfs_module_context *ntvfs, 
-				struct smbsrv_request *req, struct smb_unlink *unl)
+			    struct smbsrv_request *req, struct smb_unlink *unl)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	/* see if the front end will allow us to perform this
 	   function asynchronously.  */
@@ -245,6 +249,8 @@ static NTSTATUS cvfs_ioctl(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	/* see if the front end will allow us to perform this
 	   function asynchronously.  */
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
@@ -264,6 +270,8 @@ static NTSTATUS cvfs_chkpath(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_chkpath(private->tree, cp);
@@ -294,6 +302,8 @@ static NTSTATUS cvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_pathinfo(private->tree, req, info);
 	}
@@ -323,6 +333,8 @@ static NTSTATUS cvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_fileinfo(private->tree, req, info);
 	}
@@ -341,6 +353,8 @@ static NTSTATUS cvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_setpathinfo(private->tree, st);
@@ -372,6 +386,8 @@ static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (io->generic.level != RAW_OPEN_GENERIC &&
 	    private->map_generic) {
 		return ntvfs_map_open(req, io, ntvfs);
@@ -395,6 +411,8 @@ static NTSTATUS cvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_mkdir(private->tree, md);
 	}
@@ -413,6 +431,8 @@ static NTSTATUS cvfs_rmdir(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_rmdir(private->tree, rd);
 	}
@@ -429,6 +449,8 @@ static NTSTATUS cvfs_rename(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_rename(private->tree, ren);
@@ -468,6 +490,8 @@ static NTSTATUS cvfs_read(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (rd->generic.level != RAW_READ_GENERIC &&
 	    private->map_generic) {
 		return ntvfs_map_read(req, rd, ntvfs);
@@ -502,6 +526,8 @@ static NTSTATUS cvfs_write(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (wr->generic.level != RAW_WRITE_GENERIC &&
 	    private->map_generic) {
 		return ntvfs_map_write(req, wr, ntvfs);
@@ -525,6 +551,8 @@ static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_seek(private->tree, io);
 	}
@@ -543,6 +571,8 @@ static NTSTATUS cvfs_flush(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_flush(private->tree, io);
 	}
@@ -560,6 +590,8 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	if (io->generic.level != RAW_CLOSE_GENERIC &&
 	    private->map_generic) {
@@ -583,6 +615,8 @@ static NTSTATUS cvfs_exit(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_exit(private->tree->session);
@@ -622,6 +656,8 @@ static NTSTATUS cvfs_lock(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (lck->generic.level != RAW_LOCK_GENERIC &&
 	    private->map_generic) {
 		return ntvfs_map_lock(req, lck, ntvfs);
@@ -644,6 +680,8 @@ static NTSTATUS cvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_setfileinfo(private->tree, info);
@@ -674,6 +712,8 @@ static NTSTATUS cvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	SETUP_PID;
+
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_fsinfo(private->tree, req, fs);
 	}
@@ -702,6 +742,8 @@ static NTSTATUS cvfs_search_first(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 
+	SETUP_PID;
+
 	return smb_raw_search_first(private->tree, req, io, search_private, callback);
 }
 
@@ -713,6 +755,8 @@ static NTSTATUS cvfs_search_next(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 
+	SETUP_PID;
+
 	return smb_raw_search_next(private->tree, req, io, search_private, callback);
 }
 
@@ -721,6 +765,8 @@ static NTSTATUS cvfs_search_close(struct ntvfs_module_context *ntvfs,
 				  struct smbsrv_request *req, union smb_search_close *io)
 {
 	struct cvfs_private *private = ntvfs->private_data;
+
+	SETUP_PID;
 
 	return smb_raw_search_close(private->tree, io);
 }
@@ -742,6 +788,8 @@ static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+
+	SETUP_PID;
 
 	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		return smb_raw_trans2(private->tree, req, trans2);
