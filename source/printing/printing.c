@@ -477,7 +477,7 @@ void print_open_file(files_struct *fsp,connection_struct *conn,char *fname)
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;
 	GetTimeOfDay(&fsp->open_time);
-	fsp->vuid = current_user.vuid;
+	fsp->vuid = current_user.key.vuid;
 	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->open = True;

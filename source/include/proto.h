@@ -2266,6 +2266,12 @@ struct passgrp_ops *unix_initialise_password_grp(void);
 /*The following definitions come from  passdb/smbpassnt5ldap.c  */
 
 
+/*The following definitions come from  printing/lpq_parse.c  */
+
+BOOL parse_lpq_entry(int snum,char *line,
+		     print_queue_struct *buf,
+		     print_status_struct *status,BOOL first);
+
 /*The following definitions come from  printing/nt_printing.c  */
 
 int get_ntforms(nt_forms_struct **list);

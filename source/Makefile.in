@@ -277,7 +277,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o \
-		printing/print_cups.o
+		printing/lpq_parse.o printing/print_cups.o
 
 MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o
 
