@@ -1,3 +1,15 @@
+2004-06-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rtbl.h: add protos and macros
+	
+	* rtbl.c: implement a bunch of stuff:
+	  - column separator (instead of global column prefix)
+	  - per column suffix
+	  - indexing columns by id-number instead of column header
+	  - optional header supression (via settable flags)
+	  - ability to end a row
+	  - don't extend last column to full width
+	
 2004-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.[ch]: add and use and bind9 version of rr type
