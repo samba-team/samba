@@ -35,13 +35,24 @@
 
 RCSID("$Id$");
 
+
+static krb5_boolean
+compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)
+{
+    if(a->keytype != b->keytype ||
+       a->keyvalue.length != b->keyvalue.length ||
+       memcmp(a->keyvalue.data, b->keyvalue.data, a->keyvalue.length) != 0)
+	return FALSE;
+    return TRUE;
+}
+
 static int
 kt_copy_int (const char *from, const char *to)
 {
     krb5_error_code ret;
     krb5_keytab src_keytab, dst_keytab;
     krb5_kt_cursor cursor;
-    krb5_keytab_entry entry;
+    krb5_keytab_entry entry, dummy;
 
     ret = krb5_kt_resolve (context, from, &src_keytab);
     if (ret) {
@@ -64,21 +75,53 @@ kt_copy_int (const char *from, const char *to)
 
     while((ret = krb5_kt_next_entry(context, src_keytab,
 				    &entry, &cursor)) == 0) {
-	char name_str[128];
-	krb5_unparse_name_fixed (context, entry.principal, 
-				 name_str, sizeof(name_str));
+	char *name_str;
+	char *etype_str;
+	krb5_unparse_name (context, entry.principal, &name_str);
+	krb5_enctype_to_string(context, entry.keyblock.keytype, &etype_str);
+	ret = krb5_kt_get_entry(context, dst_keytab, 
+				entry.principal, 
+				entry.vno, 
+				entry.keyblock.keytype,
+				&dummy);
+	if(ret == 0) {
+	    /* this entry is already in the new keytab, so no need to
+               copy it; if the keyblocks are not the same, something
+               is weird, so complain about that */
+	    if(!compare_keyblock(&entry.keyblock, &dummy.keyblock)) {
+		krb5_warnx(context, "entry with different keyvalue "
+			   "already exists for %s, keytype %s, kvno %d", 
+			   name_str, etype_str, entry.vno);
+	    }
+	    krb5_kt_free_entry(context, &dummy);
+	    krb5_kt_free_entry (context, &entry);
+	    free(name_str);
+	    free(etype_str);
+	    continue;
+	} else if(ret != KRB5_KT_NOTFOUND) {
+	    krb5_warn(context, ret, "krb5_kt_get_entry(%s)", name_str);
+	    krb5_kt_free_entry (context, &entry);
+	    free(name_str);
+	    free(etype_str);
+	    break;
+	}
 	if (verbose_flag)
-	    printf ("copying %s\n", name_str);
+	    fprintf (stderr, "copying %s, keytype %s, kvno %d\n", name_str, 
+		     etype_str, entry.vno);
 	ret = krb5_kt_add_entry (context, dst_keytab, &entry);
 	krb5_kt_free_entry (context, &entry);
 	if (ret) {
 	    krb5_warn (context, ret, "krb5_kt_add_entry(%s)", name_str);
+	    free(name_str);
+	    free(etype_str);
 	    break;
 	}
+	free(name_str);
+	free(etype_str);
     }
     krb5_kt_end_seq_get (context, src_keytab, &cursor);
 
-fail:
+  fail:
     krb5_kt_close (context, src_keytab);
     krb5_kt_close (context, dst_keytab);
     return 0;
