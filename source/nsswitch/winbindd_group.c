@@ -55,7 +55,7 @@ struct grent_mem_list {
 
 /* Name comparison function for qsort() */
 
-static int iface_comp(struct grent_mem_list *n1, struct grent_mem_list *n2)
+static int name_comp(struct grent_mem_list *n1, struct grent_mem_list *n2)
 {
     /* Silly cases */
 
@@ -90,8 +90,8 @@ static struct grent_mem_list *sort_groupmem_list(struct grent_mem_list *list,
 
     /* Sort array */
 
-    qsort(groupmem_array, num_gr_mem, sizeof(struct grent_mem_list),
-          iface_comp);
+    qsort(groupmem_array, num_gr_mem, sizeof(struct grent_mem_list), 
+          name_comp);
 
     /* Fix up resulting array to a linked list and return it */
 
@@ -318,41 +318,11 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
         /* Free memory allocated in winbindd_lookup_{alias,group}mem() */
 
-        if (name_types != NULL) { 
-            free(name_types);
-            name_types = NULL;
-        }
+        safe_free(name_types);
+        safe_free(rid_mem);
 
-        if (rid_mem != NULL) { 
-            free(rid_mem);
-            rid_mem = NULL;
-        }
-
-        if (names != NULL) { 
-            int j;
-            
-            for (j = 0; j < num_names; j++) {
-                if (names[j] != NULL) {
-                    free(names[j]);
-                }
-            }
-            
-            free(names); 
-            names = NULL;
-        }
-
-        if (sids != NULL) {
-            int j;
-
-            for (j = 0; j < num_names; j++) {
-                if (sids[j] != NULL) {
-                    free(sids[j]);
-                }
-            }
-
-            free(sids);
-            sids = NULL;
-        }
+        free_char_array(num_names, names);
+        free_sid_array(num_names, sids);
     }
     
     /* Free done groups list */
@@ -639,43 +609,53 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
         if (!ent->got_sam_entries) {
             uint32 status, start_ndx = 0, start_ndx2 = 0;
         
-            /* Get list of groups for this domain */
+            if (!winbindd_fetch_group_cache(ent->domain->name, 
+                                            &ent->sam_entries,
+                                            &ent->num_sam_entries)) {
 
-            if (!open_sam_handles(ent->domain)) goto cleanup;
+                /* Fetch group entries */
 
-            if (strcmp(ent->domain->name, "BUILTIN") == 0) {
+                if (!open_sam_handles(ent->domain)) goto cleanup;
 
-                /* Enumerate aliases */
+                if (strcmp(ent->domain->name, "BUILTIN") == 0) {
 
-                do {
-                    status =
-                        samr_enum_dom_aliases(&ent->domain->sam_blt_handle,
-                                              &start_ndx, 0x100000,
-                                              &ent->sam_entries,
-                                              &ent->num_sam_entries);
+                    /* Enumerate aliases */
+
+                    do {
+                        status =
+                            samr_enum_dom_aliases(&ent->domain->sam_blt_handle,
+                                                  &start_ndx, 0x100000,
+                                                  &ent->sam_entries,
+                                                  &ent->num_sam_entries);
                     } while (status == STATUS_MORE_ENTRIES);
-
-            } else {
-                        
-                /* Enumerate domain groups */
-                        
-                do {
-                    status =
-                        samr_enum_dom_groups(&ent->domain->sam_dom_handle,
-                                             &start_ndx, 0x100000,
-                                             &ent->sam_entries,
+                    
+                } else {
+                    
+                    /* Enumerate domain groups */
+                    
+                    do {
+                        status =
+                            samr_enum_dom_groups(&ent->domain->sam_dom_handle,
+                                                 &start_ndx, 0x100000,
+                                                 &ent->sam_entries,
                                              &ent->num_sam_entries);
-                } while (status == STATUS_MORE_ENTRIES);
+                    } while (status == STATUS_MORE_ENTRIES);
+                    
+                    /* Enumerate domain aliases */
+                    
+                    do {
+                        status = 
+                            samr_enum_dom_aliases(&ent->domain->sam_dom_handle,
+                                                  &start_ndx2, 0x100000,
+                                                  &ent->sam_entries,
+                                                  &ent->num_sam_entries);
+                    } while (status == STATUS_MORE_ENTRIES);
+                }
+                
+                /* Fill cache with received entries */
 
-                /* Enumerate domain aliases */
-
-                do {
-                    status = 
-                        samr_enum_dom_aliases(&ent->domain->sam_dom_handle,
-                                              &start_ndx2, 0x100000,
-                                              &ent->sam_entries,
-                                              &ent->num_sam_entries);
-                } while (status == STATUS_MORE_ENTRIES);
+                winbindd_fill_group_cache(ent->domain->name, ent->sam_entries,
+                                          ent->num_sam_entries);
             }
 
             ent->got_sam_entries = True;
@@ -717,7 +697,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
         
     cleanup:
 
-        /* Free mallocated memory for sam entries */
+        /* Free mallocated memory for sam entries.  The data stored here
+           may have been allocated from the cache. */
 
         if (ent->sam_entries != NULL) free(ent->sam_entries);
         ent->sam_entries = NULL;
