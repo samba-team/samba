@@ -192,6 +192,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 				return False;
 				
 			*server_name = strdup(dc_name);
+			*server_ip = pdc_ip;
 		}
 		
 	} else if (flags & NET_FLAGS_DMB) {
