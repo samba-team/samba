@@ -166,8 +166,10 @@ int net_time(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	if (!opt_host && !opt_have_ip) {
-		d_printf("You must specify a hostname or IP\n");
+	if (!opt_host && !opt_have_ip && 
+	    !find_master_ip(opt_target_workgroup, &opt_dest_ip)) {
+		d_printf("Could not locate a time server.  Try "\
+				 "specifying a target host.\n");
 		net_time_usage(argc,argv);
 		return -1;
 	}
