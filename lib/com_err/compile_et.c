@@ -64,13 +64,14 @@ char *filename;
 char hfn[128];
 char cfn[128];
 
-struct error_code *codes;
+struct error_code *codes = NULL;
 
 int
 generate_c(void)
 {
     int n;
     struct error_code *ec;
+
     FILE *c_file = fopen(cfn, "w");
     if(c_file == NULL)
 	return 1;
