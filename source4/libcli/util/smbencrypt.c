@@ -198,25 +198,6 @@ void SMBOWFencrypt(const uchar passwd[16], const uchar *c8, uchar p24[24])
 	E_P24(p21, c8, p24);
 }
 
-/* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
-void NTLMSSPOWFencrypt(const uchar passwd[8], const uchar *ntlmchalresp, uchar p24[24])
-{
-	uchar p21[21];
- 
-	memset(p21,'\0',21);
-	memcpy(p21, passwd, 8);    
-	memset(p21 + 8, 0xbd, 8);    
-
-	E_P24(p21, ntlmchalresp, p24);
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("NTLMSSPOWFencrypt: p21, c8, p24\n"));
-	dump_data(100, (char *)p21, 21);
-	dump_data(100, (const char *)ntlmchalresp, 8);
-	dump_data(100, (char *)p24, 24);
-#endif
-}
-
-
 /* Does the NT MD4 hash then des encryption. */
  
 void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
@@ -288,48 +269,25 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 #endif
 }
 
-void SMBsesskeygen_lmv1(const uchar lm_hash[16],
-			const uchar lm_resp[24], /* only uses 8 */ 
-			uint8 sess_key[16])
+void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
+			       const uchar lm_resp[24], /* only uses 8 */ 
+			       uint8 sess_key[16])
 {
 	/* Calculate the LM session key (effective length 40 bits,
 	   but changes with each session) */
-
 	uchar p24[24];
-	uchar partial_lm_hash[16];
-	
-	memcpy(partial_lm_hash, lm_hash, 8);
-	memset(partial_lm_hash + 8, 0xbd, 8);    
+	uchar p21[21];
+ 
+	memset(p21,'\0',21);
+	memcpy(p21, lm_hash, 8);    
+	memset(p21 + 8, 0xbd, 8);
 
-	SMBOWFencrypt(lm_hash, lm_resp, p24);
-	
-	memcpy(sess_key, p24, 16);
-	sess_key[5] = 0xe5;
-	sess_key[6] = 0x38;
-	sess_key[7] = 0xb0;
+	E_P24(p21, lm_resp, p24);
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("SMBsesskeygen_lmv1:\n"));
-	dump_data(100, sess_key, 16);
-#endif
-}
-
-void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
-			const uchar lm_resp[24], /* only uses 8 */ 
-			uint8 sess_key[16])
-{
-	uchar p24[24];
-	uchar partial_lm_hash[16];
-	
-	memcpy(partial_lm_hash, lm_hash, 8);
-	memset(partial_lm_hash + 8, 0xbd, 8);    
-
-	SMBOWFencrypt(partial_lm_hash, lm_resp, p24);
-	
 	memcpy(sess_key, p24, 16);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("SMBsesskeygen_lmv1_jerry:\n"));
+	DEBUG(100, ("SMBsesskeygen_lm_sess_key: \n"));
 	dump_data(100, sess_key, 16);
 #endif
 }
