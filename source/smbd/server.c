@@ -145,7 +145,6 @@ static BOOL open_sockets(BOOL is_daemon,int port,int port445)
 	/* Stop zombies */
 	CatchChild();
 		
-		
 	FD_ZERO(&listen_set);
 
 	if(lp_interfaces() && lp_bind_interfaces_only()) {
@@ -173,9 +172,11 @@ max can be %d\n",
 			s = fd_listenset[i * 2] = open_server_socket(port, ifip->s_addr);
 			if(s == -1) return False;
 			FD_SET(s,&listen_set);
+#if 0
 			s = fd_listenset[i * 2 + 1] = open_server_socket(port445, ifip->s_addr);
 			if(s == -1) return False;
 			FD_SET(s,&listen_set);
+#endif
 		}
 	} else {
 		/* Just bind to 0.0.0.0 - accept connections
@@ -229,6 +230,7 @@ max can be %d\n",
 					FD_CLR(fd_listenset[i * 2], &lfds);
 					break;
 				}
+#if 0
 				if(FD_ISSET(fd_listenset[i * 2 + 1],&lfds)) {
 					s = fd_listenset[i * 2 + 1];
 					ClientPort = SMB_PORT2;
@@ -238,6 +240,7 @@ max can be %d\n",
 					FD_CLR(fd_listenset[i * 2 + 1], &lfds);
 					break;
 				}
+#endif
 			}
 
 			Client = accept(s,&addr,&in_addrlen);

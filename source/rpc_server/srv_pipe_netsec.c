@@ -53,7 +53,6 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	RPC_HDR_RESP  hdr_resp;
 	RPC_HDR_AUTH  auth_info;
 	RPC_AUTH_NETSEC_CHK verf;
-	uchar chal[8];
 	uchar sign[8];
 
 	DEBUG(5,("api_netsec_create_pdu: data_start: %d data_end: %d max_tsize: %d\n",
@@ -129,15 +128,13 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	prs_init(&rauth , 8       , 4, False);
 	prs_init(&rverf, auth_len, 4, False);
 
-	make_rpc_hdr_auth(&auth_info, 0x44, 0x06, 0x08, 1);
+	make_rpc_hdr_auth(&auth_info, 0x44, 0x06, 0x0, 1);
 	smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &rauth, 0);
 
-	generate_random_buffer(chal, 8, False);
-
 	memset(sign, 0, sizeof(sign));
-	sign[4] = 0x80;
+	sign[3] = 0x01;
 
-	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, chal, sign, NULL);
+	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, NULL, sign, NULL);
 	ret = netsec_encode(a, &verf, data, data_len);
 
 	if (ret)
@@ -233,7 +230,6 @@ static BOOL api_netsec_verify(rpcsrv_struct *l)
 
 static BOOL api_netsec(rpcsrv_struct *l, uint32 msg_type)
 {
-	/* receive a negotiate; send a challenge; receive a response */
 	switch (msg_type)
 	{
 		case 0x3:
