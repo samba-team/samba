@@ -1,3 +1,7 @@
+Fri Apr 16 17:59:30 1999  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in: include strsep prototype if needed
+
 Thu Apr 15 14:04:03 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: make make-print-version.o depend on version.h

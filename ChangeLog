@@ -3,6 +3,11 @@ Sun Apr 18 15:46:53 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
 	* lib/krb5/cache.c: add krb5_cc_get_type that returns type of a
  	cache
 
+Fri Apr 16 17:58:51 1999  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: LIB_kdb: -L should be before -lkdb
+	test for prototype of strsep
+	
 Thu Apr 15 11:34:38 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/krb5/Makefile.am: update version
