@@ -24,7 +24,7 @@
 
 static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
-static char *sockops="TCP_NODELAY";
+static const char *sockops="TCP_NODELAY";
 static int nprocs=1;
 int torture_numops=100;
 static int procnum; /* records process count number when forking */
@@ -32,7 +32,7 @@ static struct cli_state current_cli;
 static fstring randomfname;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
-static char *client_txt = "client_oplocks.txt";
+static const char *client_txt = "client_oplocks.txt";
 static BOOL use_kerberos;
 
 BOOL torture_showall = False;
@@ -221,7 +221,7 @@ static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 
 static BOOL rw_torture(struct cli_state *c)
 {
-	char *lockfname = "\\torture.lck";
+	const char *lockfname = "\\torture.lck";
 	fstring fname;
 	int fnum;
 	int fnum2;
@@ -428,7 +428,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 
 static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 {
-	char *lockfname = "\\torture2.lck";
+	const char *lockfname = "\\torture2.lck";
 	int fnum1;
 	int fnum2;
 	int i;
@@ -554,7 +554,7 @@ static BOOL run_readwritelarge(int dummy)
 {
 	static struct cli_state cli1;
 	int fnum1;
-	char *lockfname = "\\large.dat";
+	const char *lockfname = "\\large.dat";
 	size_t fsize;
 	char buf[126*1024];
 	BOOL correct = True;
@@ -782,7 +782,7 @@ static BOOL run_nbench(int dummy)
 static BOOL run_locktest1(int dummy)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\lockt1.lck";
+	const char *fname = "\\lockt1.lck";
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
 	unsigned lock_timeout;
@@ -893,7 +893,7 @@ static BOOL run_locktest1(int dummy)
 static BOOL run_tcon_test(int dummy)
 {
 	static struct cli_state cli1;
-	char *fname = "\\tcontest.tmp";
+	const char *fname = "\\tcontest.tmp";
 	int fnum1;
 	uint16 cnum;
 	char buf[4];
@@ -976,7 +976,7 @@ static BOOL run_tcon_test(int dummy)
 static BOOL run_locktest2(int dummy)
 {
 	static struct cli_state cli;
-	char *fname = "\\lockt2.lck";
+	const char *fname = "\\lockt2.lck";
 	int fnum1, fnum2, fnum3;
 	BOOL correct = True;
 
@@ -1112,7 +1112,7 @@ static BOOL run_locktest2(int dummy)
 static BOOL run_locktest3(int dummy)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\lockt3.lck";
+	const char *fname = "\\lockt3.lck";
 	int fnum1, fnum2, i;
 	uint32 offset;
 	BOOL correct = True;
@@ -1237,7 +1237,7 @@ static BOOL run_locktest3(int dummy)
 static BOOL run_locktest4(int dummy)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\lockt4.lck";
+	const char *fname = "\\lockt4.lck";
 	int fnum1, fnum2, f;
 	BOOL ret;
 	char buf[1000];
@@ -1408,7 +1408,7 @@ static BOOL run_locktest4(int dummy)
 static BOOL run_locktest5(int dummy)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\lockt5.lck";
+	const char *fname = "\\lockt5.lck";
 	int fnum1, fnum2, fnum3;
 	BOOL ret;
 	char buf[1000];
@@ -1532,7 +1532,7 @@ static BOOL run_locktest5(int dummy)
 static BOOL run_locktest6(int dummy)
 {
 	static struct cli_state cli;
-	char *fname[1] = { "\\lock6.txt" };
+	const char *fname[1] = { "\\lock6.txt" };
 	int i;
 	int fnum;
 	NTSTATUS status;
@@ -1576,7 +1576,7 @@ security hole)
 static BOOL run_fdpasstest(int dummy)
 {
 	static struct cli_state cli1, cli2, cli3;
-	char *fname = "\\fdpass.tst";
+	const char *fname = "\\fdpass.tst";
 	int fnum1;
 	pstring buf;
 
@@ -1631,7 +1631,7 @@ static BOOL run_fdpasstest(int dummy)
 static BOOL run_unlinktest(int dummy)
 {
 	static struct cli_state cli;
-	char *fname = "\\unlink.tst";
+	const char *fname = "\\unlink.tst";
 	int fnum;
 	BOOL correct = True;
 
@@ -1680,7 +1680,7 @@ test how many open files this server supports on the one socket
 static BOOL run_maxfidtest(int dummy)
 {
 	static struct cli_state cli;
-	char *template = "\\maxfid.%d.%d";
+	const char *template = "\\maxfid.%d.%d";
 	fstring fname;
 	int fnums[0x11000], i;
 	int retries=4;
@@ -1866,7 +1866,7 @@ static BOOL run_attrtest(int dummy)
 	static struct cli_state cli;
 	int fnum;
 	time_t t, t2;
-	char *fname = "\\attrib.tst";
+	const char *fname = "\\attrib.tst";
 	BOOL correct = True;
 
 	printf("starting attrib test\n");
@@ -1931,9 +1931,9 @@ static BOOL run_trans2test(int dummy)
 	int fnum;
 	size_t size;
 	time_t c_time, a_time, m_time, w_time, m_time2;
-	char *fname = "\\trans2.tst";
-	char *dname = "\\trans2";
-	char *fname2 = "\\trans2\\trans2.tst";
+	const char *fname = "\\trans2.tst";
+	const char *dname = "\\trans2";
+	const char *fname2 = "\\trans2\\trans2.tst";
 	pstring pname;
 	BOOL correct = True;
 
@@ -2083,7 +2083,7 @@ static BOOL run_w2ktest(int dummy)
 {
 	static struct cli_state cli;
 	int fnum;
-	char *fname = "\\w2ktest\\w2k.tst";
+	const char *fname = "\\w2ktest\\w2k.tst";
 	int level;
 	BOOL correct = True;
 
@@ -2118,7 +2118,7 @@ static BOOL run_w2ktest(int dummy)
 static BOOL run_oplock1(int dummy)
 {
 	static struct cli_state cli1;
-	char *fname = "\\lockt1.lck";
+	const char *fname = "\\lockt1.lck";
 	int fnum1;
 	BOOL correct = True;
 
@@ -2167,7 +2167,7 @@ static BOOL run_oplock1(int dummy)
 static BOOL run_oplock2(int dummy)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\lockt2.lck";
+	const char *fname = "\\lockt2.lck";
 	int fnum1, fnum2;
 	int saved_use_oplocks = use_oplocks;
 	char buf[4];
@@ -2309,7 +2309,7 @@ static BOOL oplock3_handler(struct cli_state *cli, int fnum, unsigned char level
 static BOOL run_oplock3(int dummy)
 {
 	static struct cli_state cli;
-	char *fname = "\\oplockt3.dat";
+	const char *fname = "\\oplockt3.dat";
 	int fnum;
 	char buf[4] = "abcd";
 	BOOL correct = True;
@@ -2364,7 +2364,7 @@ static BOOL run_deletetest(int dummy)
 {
 	static struct cli_state cli1;
 	static struct cli_state cli2;
-	char *fname = "\\delete.file";
+	const char *fname = "\\delete.file";
 	int fnum1 = -1;
 	int fnum2 = -1;
 	BOOL correct = True;
@@ -2843,7 +2843,7 @@ static BOOL run_properties(int dummy)
 static BOOL run_xcopy(int dummy)
 {
 	static struct cli_state cli1;
-	char *fname = "\\test.txt";
+	const char *fname = "\\test.txt";
 	BOOL correct = True;
 	int fnum1, fnum2;
 
@@ -2885,8 +2885,8 @@ static BOOL run_xcopy(int dummy)
 static BOOL run_rename(int dummy)
 {
 	static struct cli_state cli1;
-	char *fname = "\\test.txt";
-	char *fname1 = "\\test1.txt";
+	const char *fname = "\\test.txt";
+	const char *fname1 = "\\test1.txt";
 	BOOL correct = True;
 	int fnum1;
 
@@ -3004,7 +3004,7 @@ static BOOL run_rename(int dummy)
 static BOOL run_pipe_number(int dummy)
 {
 	static struct cli_state cli1;
-	char *pipe_name = "\\SPOOLSS";
+	const char *pipe_name = "\\SPOOLSS";
 	int fnum;
 	int num_pipes = 0;
 
@@ -3037,7 +3037,7 @@ static BOOL run_opentest(int dummy)
 {
 	static struct cli_state cli1;
 	static struct cli_state cli2;
-	char *fname = "\\readonly.file";
+	const char *fname = "\\readonly.file";
 	int fnum1, fnum2;
 	char buf[20];
 	size_t fsize;
@@ -3884,7 +3884,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 #define FLAG_MULTIPROC 1
 
 static struct {
-	char *name;
+	const char *name;
 	BOOL (*fn)(int);
 	unsigned flags;
 } torture_ops[] = {
@@ -3935,7 +3935,7 @@ static struct {
 /****************************************************************************
 run a specified test or "ALL"
 ****************************************************************************/
-static BOOL run_test(char *name)
+static BOOL run_test(const char *name)
 {
 	BOOL ret = True;
 	BOOL result = True;

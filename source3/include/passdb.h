@@ -146,7 +146,7 @@ typedef NTSTATUS (*pdb_init_function)(struct pdb_context *,
 			 const char *);
 
 struct pdb_init_function_entry {
-	char *name;
+	const char *name;
 	/* Function to create a member of the pdb_methods list */
 	pdb_init_function init;
 	struct pdb_init_function_entry *prev, *next;

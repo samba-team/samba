@@ -645,7 +645,7 @@ static BOOL api_lsa_query_info2(pipes_struct *p)
  \PIPE\ntlsa commands
  ***************************************************************************/
 
-static struct api_struct api_lsa_cmds[] =
+static const struct api_struct api_lsa_cmds[] =
 {
 	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
 	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },

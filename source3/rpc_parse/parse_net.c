@@ -30,7 +30,7 @@
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL net_io_neg_flags(char *desc, NEG_FLAGS *neg, prs_struct *ps, int depth)
+static BOOL net_io_neg_flags(const char *desc, NEG_FLAGS *neg, prs_struct *ps, int depth)
 {
 	if (neg == NULL)
 		return False;
@@ -66,7 +66,7 @@ static void init_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_att
  Reads or writes a NETLOGON_INFO_3 structure.
 ********************************************************************/
 
-static BOOL net_io_netinfo_3(char *desc,  NETLOGON_INFO_3 *info, prs_struct *ps, int depth)
+static BOOL net_io_netinfo_3(const char *desc,  NETLOGON_INFO_3 *info, prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -110,7 +110,7 @@ static void init_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_statu
  Reads or writes a NETLOGON_INFO_1 structure.
 ********************************************************************/
 
-static BOOL net_io_netinfo_1(char *desc, NETLOGON_INFO_1 *info, prs_struct *ps, int depth)
+static BOOL net_io_netinfo_1(const char *desc, NETLOGON_INFO_1 *info, prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -152,7 +152,7 @@ static void init_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_statu
  Reads or writes a NETLOGON_INFO_2 structure.
 ********************************************************************/
 
-static BOOL net_io_netinfo_2(char *desc, NETLOGON_INFO_2 *info, prs_struct *ps, int depth)
+static BOOL net_io_netinfo_2(const char *desc, NETLOGON_INFO_2 *info, prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -187,7 +187,7 @@ static BOOL net_io_netinfo_2(char *desc, NETLOGON_INFO_2 *info, prs_struct *ps, 
  Reads or writes an NET_Q_LOGON_CTRL2 structure.
 ********************************************************************/
 
-BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth)
+BOOL net_io_q_logon_ctrl2(const char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth)
 {
 	if (q_l == NULL)
 		return False;
@@ -278,7 +278,7 @@ void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
  Reads or writes an NET_R_LOGON_CTRL2 structure.
 ********************************************************************/
 
-BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth)
+BOOL net_io_r_logon_ctrl2(const char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth)
 {
 	if (r_l == NULL)
 		return False;
@@ -322,7 +322,7 @@ BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, in
  Reads or writes an NET_Q_LOGON_CTRL structure.
 ********************************************************************/
 
-BOOL net_io_q_logon_ctrl(char *desc, NET_Q_LOGON_CTRL *q_l, prs_struct *ps, 
+BOOL net_io_q_logon_ctrl(const char *desc, NET_Q_LOGON_CTRL *q_l, prs_struct *ps, 
 			 int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_q_logon_ctrl");
@@ -395,7 +395,7 @@ void init_net_r_logon_ctrl(NET_R_LOGON_CTRL *r_l, uint32 query_level,
  Reads or writes an NET_R_LOGON_CTRL structure.
 ********************************************************************/
 
-BOOL net_io_r_logon_ctrl(char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps, 
+BOOL net_io_r_logon_ctrl(const char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps, 
 			 int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_r_logon_ctrl");
@@ -459,7 +459,7 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
  Reads or writes an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
 
-BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth)
+BOOL net_io_r_trust_dom(const char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth)
 {
 	uint32 value;
 
@@ -511,7 +511,7 @@ BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, i
  Reads or writes an NET_Q_TRUST_DOM_LIST structure.
 ********************************************************************/
 
-BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth)
+BOOL net_io_q_trust_dom(const char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth)
 {
 	if (q_l == NULL)
 		 return False;
@@ -551,7 +551,7 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
  Reads or writes an NET_Q_REQ_CHAL structure.
 ********************************************************************/
 
-BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth)
+BOOL net_io_q_req_chal(const char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth)
 {
 	if (q_c == NULL)
 		return False;
@@ -580,7 +580,7 @@ BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int dep
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth)
+BOOL net_io_r_req_chal(const char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth)
 {
 	if (r_c == NULL)
 		return False;
@@ -605,7 +605,7 @@ BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int dept
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
+BOOL net_io_q_auth(const char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
 {
 	if (q_a == NULL)
 		return False;
@@ -628,7 +628,7 @@ BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_r_auth(char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
+BOOL net_io_r_auth(const char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
 {
 	if (r_a == NULL)
 		return False;
@@ -669,7 +669,7 @@ void init_q_auth_2(NET_Q_AUTH_2 *q_a,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
+BOOL net_io_q_auth_2(const char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
 {
 	if (q_a == NULL)
 		return False;
@@ -694,7 +694,7 @@ BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
+BOOL net_io_r_auth_2(const char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 {
 	if (r_a == NULL)
 		return False;
@@ -737,7 +737,7 @@ void init_q_auth_3(NET_Q_AUTH_3 *q_a,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_q_auth_3(char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
+BOOL net_io_q_auth_3(const char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
 {
 	if (q_a == NULL)
 		return False;
@@ -762,7 +762,7 @@ BOOL net_io_q_auth_3(char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_r_auth_3(char *desc, NET_R_AUTH_3 *r_a, prs_struct *ps, int depth)
+BOOL net_io_r_auth_3(const char *desc, NET_R_AUTH_3 *r_a, prs_struct *ps, int depth)
 {
 	if (r_a == NULL)
 		return False;
@@ -812,7 +812,7 @@ void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth)
+BOOL net_io_q_srv_pwset(const char *desc, NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth)
 {
 	if (q_s == NULL)
 		return False;
@@ -835,7 +835,7 @@ BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET *q_s, prs_struct *ps, int de
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth)
+BOOL net_io_r_srv_pwset(const char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth)
 {
 	if (r_s == NULL)
 		return False;
@@ -967,7 +967,7 @@ void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
  Reads or writes an NET_ID_INFO_1 structure.
 ********************************************************************/
 
-static BOOL net_io_id_info1(char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int depth)
+static BOOL net_io_id_info1(const char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int depth)
 {
 	if (id == NULL)
 		return False;
@@ -1083,7 +1083,7 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
  Reads or writes an NET_ID_INFO_2 structure.
 ********************************************************************/
 
-static BOOL net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int depth)
+static BOOL net_io_id_info2(const char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int depth)
 {
 	if (id == NULL)
 		return False;
@@ -1169,7 +1169,7 @@ void init_sam_info(DOM_SAM_INFO *sam,
  Reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
 
-static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
+static BOOL net_io_id_info_ctr(const char *desc, NET_ID_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
 	NET_ID_INFO_CTR *ctr = *pp_ctr;
 
@@ -1212,7 +1212,7 @@ static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR **pp_ctr, prs_struct 
  Reads or writes a DOM_SAM_INFO structure.
  ********************************************************************/
 
-static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int depth)
+static BOOL smb_io_sam_info(const char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1544,7 +1544,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth)
+BOOL net_io_q_sam_logon(const char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth)
 {
 	if (q_l == NULL)
 		return False;
@@ -1568,7 +1568,7 @@ BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, int de
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth)
+BOOL net_io_r_sam_logon(const char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth)
 {
 	if (r_l == NULL)
 		return False;
@@ -1612,7 +1612,7 @@ BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int de
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth)
+BOOL net_io_q_sam_logoff(const char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth)
 {
 	if (q_l == NULL)
 		return False;
@@ -1633,7 +1633,7 @@ BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth)
+BOOL net_io_r_sam_logoff(const char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth)
 {
 	if (r_l == NULL)
 		return False;
@@ -1687,7 +1687,7 @@ BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct *ps,
+BOOL net_io_q_sam_sync(const char *desc, NET_Q_SAM_SYNC * q_s, prs_struct *ps,
 		       int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_q_sam_sync");
@@ -1719,7 +1719,7 @@ BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR * delta,
+static BOOL net_io_sam_delta_hdr(const char *desc, SAM_DELTA_HDR * delta,
 				 prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_delta_hdr");
@@ -1749,7 +1749,7 @@ static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR * delta,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_mod_count(char *desc, SAM_DELTA_MOD_COUNT *info,
+static BOOL net_io_sam_delta_mod_count(const char *desc, SAM_DELTA_MOD_COUNT *info,
                                    prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_delta_stamp");
@@ -1773,7 +1773,7 @@ static BOOL net_io_sam_delta_mod_count(char *desc, SAM_DELTA_MOD_COUNT *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO * info,
+static BOOL net_io_sam_domain_info(const char *desc, SAM_DOMAIN_INFO * info,
 				   prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_domain_info");
@@ -1828,7 +1828,7 @@ static BOOL net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_group_info(char *desc, SAM_GROUP_INFO * info,
+static BOOL net_io_sam_group_info(const char *desc, SAM_GROUP_INFO * info,
 				  prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_group_info");
@@ -1863,7 +1863,7 @@ static BOOL net_io_sam_group_info(char *desc, SAM_GROUP_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_passwd_info(char *desc, SAM_PWD * pwd,
+static BOOL net_io_sam_passwd_info(const char *desc, SAM_PWD * pwd,
 				   prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_passwd_info");
@@ -1973,7 +1973,7 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
+static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 				    SAM_ACCOUNT_INFO * info, prs_struct *ps,
 				    int depth)
 {
@@ -2164,7 +2164,7 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO * info,
+static BOOL net_io_sam_group_mem_info(const char *desc, SAM_GROUP_MEM_INFO * info,
 				      prs_struct *ps, int depth)
 {
 	uint32 i;
@@ -2248,7 +2248,7 @@ static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_alias_info(char *desc, SAM_ALIAS_INFO * info,
+static BOOL net_io_sam_alias_info(const char *desc, SAM_ALIAS_INFO * info,
 				  prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_alias_info");
@@ -2283,7 +2283,7 @@ static BOOL net_io_sam_alias_info(char *desc, SAM_ALIAS_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
+static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * info,
 				      prs_struct *ps, int depth)
 {
 	uint32 i;
@@ -2356,7 +2356,7 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_policy_info(char *desc, SAM_DELTA_POLICY *info,
+static BOOL net_io_sam_policy_info(const char *desc, SAM_DELTA_POLICY *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
@@ -2442,7 +2442,7 @@ static BOOL net_io_sam_policy_info(char *desc, SAM_DELTA_POLICY *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_trustdoms_info(char *desc, SAM_DELTA_TRUSTDOMS *info,
+static BOOL net_io_sam_trustdoms_info(const char *desc, SAM_DELTA_TRUSTDOMS *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
@@ -2490,7 +2490,7 @@ static BOOL net_io_sam_trustdoms_info(char *desc, SAM_DELTA_TRUSTDOMS *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_secret_info(char *desc, SAM_DELTA_SECRET *info,
+static BOOL net_io_sam_secret_info(const char *desc, SAM_DELTA_SECRET *info,
 				   prs_struct *ps, int depth)
 {
 	int i;
@@ -2577,7 +2577,7 @@ static BOOL net_io_sam_secret_info(char *desc, SAM_DELTA_SECRET *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_privs_info(char *desc, SAM_DELTA_PRIVS *info,
+static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
@@ -2664,7 +2664,7 @@ static BOOL net_io_sam_privs_info(char *desc, SAM_DELTA_PRIVS *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
+static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
 				 SAM_DELTA_CTR * delta, uint16 type,
 				 prs_struct *ps, int depth)
 {
@@ -2746,7 +2746,7 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
+BOOL net_io_r_sam_sync(const char *desc, uint8 sess_key[16],
 		       NET_R_SAM_SYNC * r_s, prs_struct *ps, int depth)
 {
 	uint32 i;
@@ -2859,7 +2859,7 @@ BOOL init_net_q_sam_deltas(NET_Q_SAM_DELTAS *q_s, const char *srv_name,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_sam_deltas(char *desc, NET_Q_SAM_DELTAS *q_s, prs_struct *ps,
+BOOL net_io_q_sam_deltas(const char *desc, NET_Q_SAM_DELTAS *q_s, prs_struct *ps,
                          int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_q_sam_deltas");
@@ -2888,7 +2888,7 @@ BOOL net_io_q_sam_deltas(char *desc, NET_Q_SAM_DELTAS *q_s, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_deltas(char *desc, uint8 sess_key[16],
+BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
                          NET_R_SAM_DELTAS *r_s, prs_struct *ps, int depth)
 {
         int i;

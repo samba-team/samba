@@ -797,7 +797,7 @@ typedef struct smb_wpasswd {
 
 /* used in net.c */
 struct functable {
-	char *funcname;
+	const char *funcname;
 	int (*fn)(int argc, const char **argv);
 };
 

@@ -34,7 +34,7 @@
 
 int main(int argc, char *argv[])
 {
-   char *pszTemp;
+   const char *pszTemp;
 
    setup_logging(argv[0],True);
 

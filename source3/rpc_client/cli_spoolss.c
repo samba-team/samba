@@ -275,8 +275,8 @@ static void decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
  ********************************************************************************/
 
 WERROR cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				char *printername, char *datatype, uint32 access_required,
-				char *station, char *username, POLICY_HND *pol)
+				const char *printername, const char *datatype, uint32 access_required,
+				const char *station, const char *username, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_OPEN_PRINTER_EX q;
@@ -720,7 +720,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 				    TALLOC_CTX *mem_ctx, 
 				    uint32 offered, uint32 *needed,
 				    POLICY_HND *pol, uint32 level, 
-				    char *env, PRINTER_DRIVER_CTR *ctr)
+				    const char *env, PRINTER_DRIVER_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDRIVER2 q;
@@ -799,7 +799,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx,
 				       uint32 offered, uint32 *needed,
-				       uint32 level, char *env,
+				       uint32 level, const char *env,
 				       uint32 *num_drivers,
 				       PRINTER_DRIVER_CTR *ctr)
 {
@@ -1067,8 +1067,8 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
  * the driver files
  */
 WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli, 
-					TALLOC_CTX *mem_ctx, char *arch,
-					char *driver)
+					TALLOC_CTX *mem_ctx, const char *arch,
+					const char *driver)
 {
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_DELETEPRINTERDRIVER	q;
@@ -2163,7 +2163,7 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				     uint32 offered, uint32 *needed,
-				     POLICY_HND *hnd, char *keyname, 
+				     POLICY_HND *hnd, const char *keyname, 
 				     REGVAL_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -2364,7 +2364,7 @@ WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ct
 
 WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				  uint32 offered, uint32 *needed,
-				  POLICY_HND *hnd, char *keyname,
+				  POLICY_HND *hnd, const char *keyname,
 				  uint16 **keylist, uint32 *len)
 {
 	prs_struct qbuf, rbuf;

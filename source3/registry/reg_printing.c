@@ -84,7 +84,7 @@ static char* trim_reg_path( char *path )
  
 static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 {
-	char *environments[] = {
+	const char *environments[] = {
 		"Windows 4.0",
 		"Windows NT x86",
 		"Windows NT R4000",

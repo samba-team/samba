@@ -31,7 +31,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 BOOL init_account_policy(void)
 {
 	static pid_t local_pid;
-	char *vstring = "INFO/version";
+	const char *vstring = "INFO/version";
 	uint32 version;
 
 	if (tdb && local_pid == sys_getpid())
@@ -67,7 +67,7 @@ BOOL init_account_policy(void)
 
 static const struct {
 	int field;
-	char *string;
+	const char *string;
 } account_policy_names[] = {
 	{AP_MIN_PASSWORD_LEN, "min password length"},
 	{AP_PASSWORD_HISTORY, "password history"},

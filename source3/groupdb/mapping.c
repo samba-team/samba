@@ -209,7 +209,7 @@ static BOOL default_group_mapping(void)
 static BOOL init_group_mapping(void)
 {
 	static pid_t local_pid;
-	char *vstring = "INFO/version";
+	const char *vstring = "INFO/version";
 	int32 vers_id;
 	
 	if (tdb && local_pid == sys_getpid())
@@ -293,8 +293,8 @@ BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 /****************************************************************************
 initialise first time the mapping list
 ****************************************************************************/
-BOOL add_initial_entry(gid_t gid, fstring sid, enum SID_NAME_USE sid_name_use,
-			      fstring nt_name, fstring comment, PRIVILEGE_SET priv_set, uint32 systemaccount)
+BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_use,
+		       const char *nt_name, const char *comment, PRIVILEGE_SET priv_set, uint32 systemaccount)
 {
 	GROUP_MAP map;
 

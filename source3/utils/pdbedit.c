@@ -231,7 +231,10 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
  Set User Info
 **********************************************************/
 
-static int set_user_info (struct pdb_context *in, char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
+static int set_user_info (struct pdb_context *in, const char *username, 
+			  const char *fullname, const char *homedir, 
+			  const char *drive, const char *script, 
+			  const char *profile)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
@@ -270,7 +273,7 @@ static int set_user_info (struct pdb_context *in, char *username, char *fullname
 /*********************************************************
  Add New User
 **********************************************************/
-static int new_user (struct pdb_context *in, char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
+static int new_user (struct pdb_context *in, const char *username, const char *fullname, const char *homedir, const char *drive, const char *script, const char *profile)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	struct passwd  *pwd = NULL;
@@ -339,26 +342,27 @@ static int new_user (struct pdb_context *in, char *username, char *fullname, cha
  Add New Machine
 **********************************************************/
 
-static int new_machine (struct pdb_context *in, char *machinename)
+static int new_machine (struct pdb_context *in, const char *machine_in)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
+	fstring machinename;
 	char name[16];
-	char *password = NULL;
 	
 	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 		return -1;
 	}
 
+	fstrcpy(machinename, machine_in); 
+
 	if (machinename[strlen (machinename) -1] == '$')
 		machinename[strlen (machinename) -1] = '\0';
 	
+	strlower_m(machinename);
+	
 	safe_strcpy (name, machinename, 16);
 	safe_strcat (name, "$", 16);
-	
-	string_set (&password, machinename);
-	strlower_m(password);
-	
-	pdb_set_plaintext_passwd (sam_pwent, password);
+
+	pdb_set_plaintext_passwd (sam_pwent, machinename);
 
 	pdb_set_username (sam_pwent, name, PDB_CHANGED);
 	
@@ -381,7 +385,7 @@ static int new_machine (struct pdb_context *in, char *machinename)
  Delete user entry
 **********************************************************/
 
-static int delete_user_entry (struct pdb_context *in, char *username)
+static int delete_user_entry (struct pdb_context *in, const char *username)
 {
 	SAM_ACCOUNT *samaccount = NULL;
 
@@ -401,7 +405,7 @@ static int delete_user_entry (struct pdb_context *in, char *username)
  Delete machine entry
 **********************************************************/
 
-static int delete_machine_entry (struct pdb_context *in, char *machinename)
+static int delete_machine_entry (struct pdb_context *in, const char *machinename)
 {
 	char name[16];
 	SAM_ACCOUNT *samaccount = NULL;
@@ -438,7 +442,7 @@ int main (int argc, char **argv)
 	uint32	setparms, checkparms;
 	int opt;
 	static char *full_name = NULL;
-	static char *user_name = NULL;
+	static const char *user_name = NULL;
 	static char *home_dir = NULL;
 	static char *home_drive = NULL;
 	static char *backend = NULL;

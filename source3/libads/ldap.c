@@ -1184,8 +1184,8 @@ static void dump_string(const char *field, char **values)
 
 static BOOL ads_dump_field(char *field, void **values, void *data_area)
 {
-	struct {
-		char *name;
+	const struct {
+		const char *name;
 		BOOL string;
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {

@@ -1442,7 +1442,7 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_sta
 				       int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        char *msg = "This machine will be shutdown shortly";
+        const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
 #if 0
 	poptContext pc;
@@ -1621,10 +1621,6 @@ static int rpc_trustdom_del(int argc, const char **argv)
  * @return Integer status (0 means success)
  **/
 
-extern char *opt_user_name;
-extern char *opt_password;
-extern char *opt_workgroup;
-
 static int rpc_trustdom_establish(int argc, const char **argv)
 {
 	struct cli_state *cli;
@@ -1660,7 +1656,6 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * hence it should be set to remote domain name instead of ours
 	 */
 	if (opt_workgroup) {
-		SAFE_FREE(opt_workgroup);
 		opt_workgroup = smb_xstrdup(domain_name);
 	};
 	
@@ -1861,18 +1856,13 @@ static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid, struct cli_state
 };
 
 
-extern char* opt_workgroup;
-extern char* opt_target_worgroup;
-extern char* opt_host;
-extern char* opt_password;
-
 static int rpc_trustdom_list(int argc, const char **argv)
 {
 	/* common variables */
 	TALLOC_CTX* mem_ctx;
 	struct cli_state *cli, *remote_cli;
 	NTSTATUS nt_status;
-	char *domain_name = NULL;
+	const char *domain_name = NULL;
 	DOM_SID queried_dom_sid;
 	fstring ascii_sid, padding;
 	int ascii_dom_name_len;
@@ -1900,15 +1890,13 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	 * set domain and pdc name to local samba server (default)
 	 * or to remote one given in command line
 	 */
-	strupper(opt_workgroup);
-	if (strcmp(opt_workgroup, lp_workgroup())) {
+	
+	if (StrCaseCmp(opt_workgroup, lp_workgroup())) {
 		domain_name = opt_workgroup;
-		if (opt_target_workgroup) SAFE_FREE(opt_target_workgroup);
 		opt_target_workgroup = opt_workgroup;
 	} else {
-		safe_strcpy(pdc_name, global_myname(), FSTRING_LEN);
+		fstrcpy(pdc_name, global_myname());
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
-		if (opt_target_workgroup) SAFE_FREE(opt_target_workgroup);
 		opt_target_workgroup = domain_name;
 	};
 
@@ -2060,7 +2048,6 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			/* set opt_* variables to remote domain */
 			strupper(trusting_dom_names[i]);
 			opt_workgroup = talloc_strdup(mem_ctx, trusting_dom_names[i]);
-			if (opt_target_workgroup) SAFE_FREE(opt_target_workgroup);
 			opt_target_workgroup = opt_workgroup;
 			
 			d_printf("%s%s", trusting_dom_names[i], padding);

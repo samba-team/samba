@@ -728,7 +728,7 @@ static int ldapsam_search_one_user_by_rid (struct ldapsam_privates *ldap_state,
 search an attribute and return the first value found.
 ******************************************************************/
 static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
-				  char *attribute, pstring value)
+				  const char *attribute, pstring value)
 {
 	char **values;
 

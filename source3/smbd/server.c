@@ -179,11 +179,12 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 	if (!smb_ports) {
 		ports = lp_smb_ports();
 		if (!ports || !*ports) {
-			ports = SMB_PORTS;
+			ports = smb_xstrdup(SMB_PORTS);
+		} else {
+			ports = smb_xstrdup(ports);
 		}
-		ports = strdup(ports);
 	} else {
-		ports = strdup(smb_ports);
+		ports = smb_xstrdup(smb_ports);
 	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
@@ -543,7 +544,7 @@ static void decrement_smbd_process_count(void)
  Exit the server.
 ****************************************************************************/
 
-void exit_server(char *reason)
+void exit_server(const char *reason)
 {
 	static int firsttime=1;
 	extern char *last_inbuf;

@@ -135,7 +135,7 @@ static BOOL dump_core(void)
 /****************************************************************************
 exit the server
 ****************************************************************************/
-void exit_server(char *reason)
+void exit_server(const char *reason)
 {
 	static int firsttime=1;
 

@@ -40,7 +40,7 @@ static int num_variables;
 static int content_length;
 static int request_post;
 static char *query_string;
-static char *baseurl;
+static const char *baseurl;
 static char *pathinfo;
 static char *C_user;
 static BOOL inetd_server;
@@ -205,7 +205,7 @@ void cgi_load_variables(void)
   browser. Also doesn't allow for variables[] containing multiple variables
   with the same name and the same or different values.
   ***************************************************************************/
-char *cgi_variable(char *name)
+const char *cgi_variable(const char *name)
 {
 	int i;
 
@@ -218,7 +218,7 @@ char *cgi_variable(char *name)
 /***************************************************************************
 tell a browser about a fatal error in the http processing
   ***************************************************************************/
-static void cgi_setup_error(char *err, char *header, char *info)
+static void cgi_setup_error(const char *err, const char *header, const char *info)
 {
 	if (!got_request) {
 		/* damn browsers don't like getting cut off before they give a request */
@@ -264,10 +264,10 @@ authenticate when we are running as a CGI
   ***************************************************************************/
 static void cgi_web_auth(void)
 {
-	char *user = getenv("REMOTE_USER");
+	const char *user = getenv("REMOTE_USER");
 	struct passwd *pwd;
-	char *head = "Content-Type: text/html\r\n\r\n<HTML><BODY><H1>SWAT installation Error</H1>\n";
-	char *tail = "</BODY></HTML>\r\n";
+	const char *head = "Content-Type: text/html\r\n\r\n<HTML><BODY><H1>SWAT installation Error</H1>\n";
+	const char *tail = "</BODY></HTML>\r\n";
 
 	if (!user) {
 		printf("%sREMOTE_USER not set. Not authenticated by web server.<br>%s\n",
@@ -296,7 +296,7 @@ decode a base64 string in-place - simple and slow algorithm
   ***************************************************************************/
 static void base64_decode(char *s)
 {
-	char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i, n;
 	unsigned char *d = (unsigned char *)s;
 	char *p;
@@ -570,7 +570,7 @@ void cgi_setup(const char *rootdir, int auth_required)
 /***************************************************************************
 return the current pages URL
   ***************************************************************************/
-char *cgi_baseurl(void)
+const char *cgi_baseurl(void)
 {
 	if (inetd_server) {
 		return baseurl;
@@ -581,7 +581,7 @@ char *cgi_baseurl(void)
 /***************************************************************************
 return the current pages path info
   ***************************************************************************/
-char *cgi_pathinfo(void)
+const char *cgi_pathinfo(void)
 {
 	char *r;
 	if (inetd_server) {

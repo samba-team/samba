@@ -128,7 +128,7 @@
   pull_ascii_pstring(s, off?(r+off-c):"");\
   } while(0)
 
-static char *make_header(char *param, uint16 apinum, char *reqfmt, char *datafmt)
+static char *make_header(char *param, uint16 apinum, const char *reqfmt, const char *datafmt)
 {
   PUTWORD(param,apinum);
   if (reqfmt) 

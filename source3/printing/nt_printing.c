@@ -77,7 +77,7 @@ STANDARD_MAPPING printserver_std_mapping = {
 forms it wants and in the ORDER it wants them (note: DEVMODE papersize is an
 array index). Letter is always first, so (for the current code) additions
 always put things in the correct order. */
-static nt_forms_struct default_forms[] = {
+static const nt_forms_struct default_forms[] = {
 	{"Letter",0x1,0x34b5c,0x44368,0x0,0x0,0x34b5c,0x44368},
 	{"Letter Small",0x1,0x34b5c,0x44368,0x0,0x0,0x34b5c,0x44368},
 	{"Tabloid",0x1,0x44368,0x696b8,0x0,0x0,0x44368,0x696b8},
@@ -264,7 +264,7 @@ static BOOL upgrade_to_version_3(void)
 BOOL nt_printing_init(void)
 {
 	static pid_t local_pid;
-	char *vstring = "INFO/version";
+	const char *vstring = "INFO/version";
 
 	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
 		return True;
@@ -635,7 +635,7 @@ get the nt drivers list
 
 traverse the database and look-up the matching names
 ****************************************************************************/
-int get_ntdrivers(fstring **list, char *architecture, uint32 version)
+int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 {
 	int total=0;
 	fstring short_archi;
@@ -668,11 +668,11 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 function to do the mapping between the long architecture name and
 the short one.
 ****************************************************************************/
-BOOL get_short_archi(char *short_archi, char *long_archi)
+BOOL get_short_archi(char *short_archi, const char *long_archi)
 {
 	struct table {
-		char *long_archi;
-		char *short_archi;
+		const char *long_archi;
+		const char *short_archi;
 	};
 	
 	struct table archi_table[]=
@@ -1714,7 +1714,7 @@ static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring driver, fstring arch)
+static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, const char *driver, const char *arch)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 info;
 
@@ -1741,7 +1741,7 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring drivername, fstring arch, uint32 version)
+static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring drivername, const char *arch, uint32 version)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA kbuf, dbuf;
@@ -2314,7 +2314,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
  allocate and initialize a new slot in 
  ***************************************************************************/
  
-static int add_new_printer_key( NT_PRINTER_DATA *data, char *name )
+static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 {
 	NT_PRINTER_KEY	*d;
 	int		key_index;
@@ -2348,7 +2348,7 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, char *name )
  search for a registry key name in the existing printer data
  ***************************************************************************/
  
-int lookup_printerkey( NT_PRINTER_DATA *data, char *name )
+int lookup_printerkey( NT_PRINTER_DATA *data, const char *name )
 {
 	int		key_index = -1;
 	int		i;
@@ -2376,7 +2376,7 @@ int lookup_printerkey( NT_PRINTER_DATA *data, char *name )
 /****************************************************************************
  ***************************************************************************/
 
-uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys )
+uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys )
 {
 	int	i, j;
 	int	key_len;
@@ -2505,7 +2505,8 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 {
 	REGVAL_CTR *ctr = NULL;
 	fstring longname;
-        char *ascii_str;
+	char *allocated_string = NULL;
+        const char *ascii_str;
 	int i;
 
 	if ((i = lookup_printerkey(&info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
@@ -2518,10 +2519,9 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	get_myfullname(longname);
 	map_sz_into_ctr(ctr, SPOOL_REG_SERVERNAME, longname);
 
-	asprintf(&ascii_str, "\\\\%s\\%s", longname, info2->sharename);
-	map_sz_into_ctr(ctr, SPOOL_REG_UNCNAME, ascii_str);
-	safe_free(ascii_str);
-
+	asprintf(&allocated_string, "\\\\%s\\%s", longname, info2->sharename);
+	map_sz_into_ctr(ctr, SPOOL_REG_UNCNAME, allocated_string);
+	SAFE_FREE(allocated_string);
 
 	map_dword_into_ctr(ctr, SPOOL_REG_VERSIONNUMBER, 4);
 	map_sz_into_ctr(ctr, SPOOL_REG_DRIVERNAME, info2->drivername);
@@ -2760,7 +2760,7 @@ BOOL is_printer_published(int snum, GUID *guid)
 /****************************************************************************
  ***************************************************************************/
  
-WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key )
+WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key )
 {
 	NT_PRINTER_DATA	*data;
 	int		i;
@@ -2858,7 +2858,7 @@ WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key )
 /****************************************************************************
  ***************************************************************************/
  
-WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value )
+WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value )
 {
 	WERROR 		result = WERR_OK;
 	int		key_index;
@@ -2885,7 +2885,7 @@ WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value 
 /****************************************************************************
  ***************************************************************************/
  
-WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value, 
+WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value, 
                            uint32 type, uint8 *data, int real_len )
 {
 	WERROR 		result = WERR_OK;
@@ -2917,7 +2917,7 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value,
 /****************************************************************************
  ***************************************************************************/
  
-REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value )
+REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value )
 {
 	int		key_index;
 
@@ -3901,7 +3901,7 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 /****************************************************************************
 ****************************************************************************/
 WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring drivername, fstring architecture, uint32 version)
+                            fstring drivername, const char *architecture, uint32 version)
 {
 	WERROR result;
 	

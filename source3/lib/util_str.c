@@ -576,7 +576,7 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	size_t i;
 	size_t num_chars = 0;
 	unsigned char   lonybble, hinybble;
-	char           *hexchars = "0123456789ABCDEF";
+	const char     *hexchars = "0123456789ABCDEF";
 	char           *p1 = NULL, *p2 = NULL;
 
 	for (i = 0; i < len && strhex[i] != 0; i++) {
@@ -958,7 +958,7 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
  Write an octal as a string.
 ****************************************************************************/
 
-char *octal_string(int i)
+const char *octal_string(int i)
 {
 	static char ret[64];
 	if (i == -1)

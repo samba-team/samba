@@ -29,12 +29,12 @@ static size_t ucs2hex_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ucs2hex_push(void *,char **, size_t *, char **, size_t *);
 static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
 
-struct charset_functions builtin_functions[] = {
-		{"UCS-2LE",  iconv_copy, iconv_copy},
-		{"UTF8",   utf8_pull,  utf8_push},
-		{"ASCII", ascii_pull, ascii_push},
-		{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
-		{NULL, NULL, NULL}
+static struct charset_functions builtin_functions[] = {
+	{"UCS-2LE",  iconv_copy, iconv_copy},
+	{"UTF8",   utf8_pull,  utf8_push},
+	{"ASCII", ascii_pull, ascii_push},
+	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
+	{NULL, NULL, NULL}
 };
 
 static struct charset_functions *charsets = NULL;

@@ -125,7 +125,7 @@ typedef struct {
 } REGISTRY_OPS;
 
 typedef struct {
-	char		*keyname;	/* full path to name of key */
+	const char	*keyname;	/* full path to name of key */
 	REGISTRY_OPS	*ops;		/* registry function hooks */
 } REGISTRY_HOOK;
 

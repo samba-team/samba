@@ -201,7 +201,7 @@ static int Continuation(char *line, int pos )
 }
 
 
-static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
+static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
   /* ------------------------------------------------------------------------ **
    * Scan a section name, and pass the name to function sfunc().
    *
@@ -219,7 +219,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
   int   c;
   int   i;
   int   end;
-  char *func  = "params.c:Section() -";
+  const char *func  = "params.c:Section() -";
 
   i = 0;      /* <i> is the offset of the next free byte in bufr[] and  */
   end = 0;    /* <end> is the current "end of string" offset.  In most  */
@@ -297,7 +297,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
   return( False );
   } /* Section */
 
-static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
+static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *), int c )
   /* ------------------------------------------------------------------------ **
    * Scan a parameter name and value, and pass these two fields to pfunc().
    *
@@ -325,7 +325,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
   int   i       = 0;    /* Position within bufr. */
   int   end     = 0;    /* bufr[end] is current end-of-string. */
   int   vstart  = 0;    /* Starting position of the parameter value. */
-  char *func    = "params.c:Parameter() -";
+  const char *func    = "params.c:Parameter() -";
 
   /* Read the parameter name. */
   while( 0 == vstart )  /* Loop until we've found the start of the value. */
@@ -445,8 +445,8 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
   } /* Parameter */
 
 static BOOL Parse( myFILE *InFile,
-                   BOOL (*sfunc)(char *),
-                   BOOL (*pfunc)(char *, char *) )
+                   BOOL (*sfunc)(const char *),
+                   BOOL (*pfunc)(const char *, const char *) )
   /* ------------------------------------------------------------------------ **
    * Scan & parse the input.
    *
@@ -505,7 +505,7 @@ static BOOL Parse( myFILE *InFile,
   return( True );
   } /* Parse */
 
-static myFILE *OpenConfFile( char *FileName )
+static myFILE *OpenConfFile( const char *FileName )
   /* ------------------------------------------------------------------------ **
    * Open a configuration file.
    *
@@ -516,7 +516,7 @@ static myFILE *OpenConfFile( char *FileName )
    * ------------------------------------------------------------------------ **
    */
   {
-  char *func = "params.c:OpenConfFile() -";
+  const char *func = "params.c:OpenConfFile() -";
   extern BOOL in_client;
   int lvl = in_client?1:0;
   myFILE *ret;
@@ -538,9 +538,9 @@ static myFILE *OpenConfFile( char *FileName )
   return( ret );
   } /* OpenConfFile */
 
-BOOL pm_process( char *FileName,
-                 BOOL (*sfunc)(char *),
-                 BOOL (*pfunc)(char *, char *) )
+BOOL pm_process( const char *FileName,
+                 BOOL (*sfunc)(const char *),
+                 BOOL (*pfunc)(const char *, const char *) )
   /* ------------------------------------------------------------------------ **
    * Process the named parameter file.
    *
@@ -557,7 +557,7 @@ BOOL pm_process( char *FileName,
   {
   int   result;
   myFILE *InFile;
-  char *func = "params.c:pm_process() -";
+  const char *func = "params.c:pm_process() -";
 
   InFile = OpenConfFile( FileName );          /* Open the config file. */
   if( NULL == InFile )

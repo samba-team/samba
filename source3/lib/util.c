@@ -676,7 +676,7 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
  Make a dir struct.
 ****************************************************************************/
 
-void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date)
+void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date)
 {  
 	char *p;
 	pstring mask2;
@@ -1398,7 +1398,7 @@ gid_t nametogid(const char *name)
  Something really nasty happened - panic !
 ********************************************************************/
 
-void smb_panic(char *why)
+void smb_panic(const char *why)
 {
 	char *cmd = lp_panic_action();
 	int result;
@@ -1463,7 +1463,7 @@ char *readdirname(DIR *p)
  of a path matches a (possibly wildcarded) entry in a namelist.
 ********************************************************************/
 
-BOOL is_in_path(char *name, name_compare_entry *namelist)
+BOOL is_in_path(const char *name, name_compare_entry *namelist)
 {
 	pstring last_component;
 	char *p;
@@ -2247,7 +2247,7 @@ BOOL ms_has_wild_w(const smb_ucs2_t *s)
  of the ".." name.
 *******************************************************************/
 
-BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
+BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 {
 	fstring p2, s2;
 

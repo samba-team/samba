@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-static BOOL ds_io_dominfobasic( char *desc, prs_struct *ps, int depth, DSROLE_PRIMARY_DOMAIN_INFO_BASIC **basic)
+static BOOL ds_io_dominfobasic( const char *desc, prs_struct *ps, int depth, DSROLE_PRIMARY_DOMAIN_INFO_BASIC **basic)
 {
 	DSROLE_PRIMARY_DOMAIN_INFO_BASIC *p = *basic;
 	
@@ -68,7 +68,7 @@ static BOOL ds_io_dominfobasic( char *desc, prs_struct *ps, int depth, DSROLE_PR
 		
 }
 
-BOOL ds_io_q_getprimdominfo( char *desc, DS_Q_GETPRIMDOMINFO *q_u, prs_struct *ps, int depth)
+BOOL ds_io_q_getprimdominfo( const char *desc, DS_Q_GETPRIMDOMINFO *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "ds_io_q_getprimdominfo");
 	depth++;
@@ -82,7 +82,7 @@ BOOL ds_io_q_getprimdominfo( char *desc, DS_Q_GETPRIMDOMINFO *q_u, prs_struct *p
 	return True;
 }
 
-BOOL ds_io_r_getprimdominfo( char *desc, DS_R_GETPRIMDOMINFO *r_u, prs_struct *ps, int depth)
+BOOL ds_io_r_getprimdominfo( const char *desc, DS_R_GETPRIMDOMINFO *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "ds_io_r_getprimdominfo");
 	depth++;

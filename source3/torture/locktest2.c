@@ -62,7 +62,7 @@ struct record {
 
 static struct record *recorded;
 
-static int try_open(struct cli_state *c, char *nfs, int fstype, char *fname, int flags)
+static int try_open(struct cli_state *c, char *nfs, int fstype, const char *fname, int flags)
 {
 	pstring path;
 
