@@ -1,3 +1,7 @@
+1999-06-27  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (bin_PROGRAMS): only include pagsh if KRB4
+
 1999-06-26  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: add pagsh
