@@ -127,12 +127,6 @@ done
 ln -sf %{prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 ln -sf %{prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
-# Install level 1 man pages
-for i in *.1
-do
-install -m644 docs/manpages/$i $RPM_BUILD_ROOT%{prefix}/share/man/man1
-done
-
 # Install codepage source files
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251; do
 	install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT%{prefix}/share/samba/codepages/src
@@ -173,10 +167,16 @@ done
 
 # Install the miscellany
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
+# Install level 1 man pages
+for i in *.1; do
+	install -m644 docs/manpages/$i $RPM_BUILD_ROOT%{prefix}/share/man/man1
+done
 install -m644 docs/manpages/smb.conf.5 $RPM_BUILD_ROOT%{prefix}/share/man/man5
 install -m644 docs/manpages/lmhosts.5 $RPM_BUILD_ROOT%{prefix}/share/man/man5
 install -m644 docs/manpages/smbpasswd.5 $RPM_BUILD_ROOT%{prefix}/share/man/man5
+
 install -m644 docs/manpages/samba.7 $RPM_BUILD_ROOT%{prefix}/share/man/man7
+
 install -m644 docs/manpages/smbd.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/nmbd.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
@@ -184,7 +184,10 @@ install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
+install -m644 docs/manpages/smbspool.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
+
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
+
 install -m644 packaging/Mandrake/smb.con* $RPM_BUILD_ROOT/etc/samba/
 install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m755 packaging/Mandrake/smbprint $RPM_BUILD_ROOT%{prefix}/bin
