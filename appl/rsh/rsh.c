@@ -739,7 +739,11 @@ struct getargs args[] = {
       NULL },
     { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection",
       NULL },
+    { "encrypt", 'z', arg_negative_flag,      &do_encrypt,
+      "Don't encrypt connection", NULL },
     { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials",
+      NULL },
+    { "forward", 'G', arg_negative_flag,&do_forward,	"Forward credentials",
       NULL },
     { "forwardable", 'F', arg_flag,	&do_forwardable,
       "Forward forwardable credentials", NULL },
@@ -803,14 +807,20 @@ main(int argc, char **argv)
     if (status)
         errx(1, "krb5_init_context failed: %u", status);
       
-    do_forwardable=krb5_config_get_bool (context, NULL,
-		    "libdefaults", "forwardable", NULL);
+    do_forwardable = krb5_config_get_bool (context, NULL,
+					   "libdefaults",
+					   "forwardable",
+					   NULL);
 	
-    do_forward=krb5_config_get_bool (context, NULL,
-                    "libdefaults", "forward", NULL);	    
+    do_forward = krb5_config_get_bool (context, NULL,
+				       "libdefaults",
+				       "forward",
+				       NULL);
 
-    do_encrypt=krb5_config_get_bool (context, NULL,
-                    "libdefaults", "encrypt", NULL);	    
+    do_encrypt = krb5_config_get_bool (context, NULL,
+				       "libdefaults",
+				       "encrypt",
+				       NULL);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
