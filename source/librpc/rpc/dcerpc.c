@@ -467,6 +467,9 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	DATA_BLOB blob, payload;
 	uint32 remaining, chunk_size;
 
+	/* allow the application to tell when a fault has happened */
+	p->last_fault_code = 0;
+
 	init_dcerpc_hdr(p, &pkt);
 
 	remaining = stub_data_in->length;

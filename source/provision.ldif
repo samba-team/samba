@@ -754,6 +754,11 @@ systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
+###
+# note! the template users must not match normal searches. Be careful
+# with what classes you put them in
+###
+
 dn: CN=TemplateUser,CN=Templates,${BASEDN}
 objectClass: top
 objectClass: person
@@ -778,7 +783,6 @@ sAMAccountType: 0x30000000
 
 dn: CN=TemplateMemberServer,CN=Templates,${BASEDN}
 objectClass: top
-objectClass: computer
 objectClass: Template
 objectClass: userTemplate
 cn: TemplateMemberServer
@@ -799,7 +803,6 @@ sAMAccountType: 0x30000001
 
 dn: CN=TemplateDomainController,CN=Templates,${BASEDN}
 objectClass: top
-objectClass: computer
 objectClass: Template
 objectClass: userTemplate
 cn: TemplateDomainController
