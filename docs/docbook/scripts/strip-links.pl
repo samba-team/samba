@@ -6,8 +6,9 @@
 
 while (<STDIN>) {
 
+	chomp ($_);
 	$_ =~ s/\s*<URL:.*html.*>\s*//g;
-	print "$_";
+	print "$_\n";
 
 }
 exit 0;
