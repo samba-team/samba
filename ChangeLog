@@ -2,11 +2,20 @@
 
 	* lib/krb5/auth_context.c: use krb5_generate_subkey_extended()
 
-	* lib/krb5/generate_subkey.c: add krb5_generate_subkey_extended(),
-	  set *subkey to NULL if key geneartion fails
+	* lib/krb5/appdefault.c: remove redundant KRB5_LIB_FUNCTION
 
 	* lib/krb5/build_auth.c: support for enctype negotiation
 	  (client sends EtypeList in Authenticator authz data)
+
+	* lib/krb5/context.c: mutex should be destroyed last in
+	  krb5_free_context()
+
+	* lib/krb5/generate_subkey.c: add krb5_generate_subkey_extended(),
+	  set *subkey to NULL if key geneartion fails
+
+	* lib/krb5/krb5.h: add KRB5_KU_PA_SERVER_REFERRAL_DATA
+
+	* lib/krb5/mk_req_ext.c: support ETYPE_ARCFOUR_HMAC_MD5_56
 
 	* lib/krb5/rd_req.c: support for enctype negotiation
 	  (client sends EtypeList in Authenticator authz data)
