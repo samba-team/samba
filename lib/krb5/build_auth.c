@@ -43,6 +43,7 @@ RCSID("$Id$");
 krb5_error_code
 krb5_build_authenticator (krb5_context context,
 			  krb5_auth_context auth_context,
+			  krb5_enctype enctype,
 			  krb5_creds *cred,
 			  Checksum *cksum,
 			  Authenticator **auth_result,
@@ -52,17 +53,6 @@ krb5_build_authenticator (krb5_context context,
   unsigned char buf[1024];
   size_t len;
   krb5_error_code ret;
-  krb5_enctype enctype;
-
-  if (auth_context->enctype)
-      enctype = auth_context->enctype;
-  else {
-      ret = krb5_keytype_to_etype(context,
-				  cred->session.keytype,
-				  &enctype);
-      if (ret)
-	  return ret;
-  }
 
   auth = malloc(sizeof(*auth));
   if (auth == NULL)
