@@ -838,8 +838,8 @@ When a new user first logs onto an MS Windows NT4 machine a new profile is creat
 </para>
 
 <itemizedlist>
-	<listitem>All Users settings</listitem>
-	<listitem>Default User settings (contains the default NTUser.DAT file)</listitem>
+	<listitem><para>All Users settings</para></listitem>
+	<listitem><para>Default User settings (contains the default NTUser.DAT file)</para></listitem>
 </itemizedlist>
 
 <para>
@@ -1178,9 +1178,9 @@ be either:
 </para>
 
 <itemizedlist>
-	<listitem>A profile unique to that user</listitem>
-	<listitem>A mandatory profile (one the user can not change)</listitem>
-	<listitem>A group profile (really should be mandatory ie:unchangable)</listitem>
+	<listitem><para>A profile unique to that user</para></listitem>
+	<listitem><para>A mandatory profile (one the user can not change)</para></listitem>
+	<listitem><para>A group profile (really should be mandatory ie:unchangable)</para></listitem>
 </itemizedlist>
 
 </sect2>

@@ -272,12 +272,12 @@ management requirements. Samba can act as a NT4-style DC in a Windows 2000/XP
 environment. However, there are certain compromises:
 
 <itemizedlist>
-	<listitem>No machine policy files</listitem>
-	<listitem>No Group Policy Objects</listitem>
-	<listitem>No synchronously executed AD logon scripts</listitem>
-	<listitem>Can't use ANY Active Directory management tools to manage users and machines</listitem>
-	<listitem>Registry changes tattoo the main registry, while with AD they do NOT. ie: Leave permanent changes in effect</listitem>
-	<listitem>Without AD you can not peprform the function of exporting specific applications to specific users or groups</listitem>
+	<listitem><para>No machine policy files</para></listitem>
+	<listitem><para>No Group Policy Objects</para></listitem>
+	<listitem><para>No synchronously executed AD logon scripts</para></listitem>
+	<listitem><para>Can't use ANY Active Directory management tools to manage users and machines</para></listitem>
+	<listitem><para>Registry changes tattoo the main registry, while with AD they do NOT. ie: Leave permanent changes in effect</para></listitem>
+	<listitem><para>Without AD you can not peprform the function of exporting specific applications to specific users or groups</para></listitem>
 </itemizedlist>
 </para>
 

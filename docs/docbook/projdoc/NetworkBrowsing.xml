@@ -92,12 +92,12 @@ The technologies (or methods) employed in making all of this work includes:
 </para>
 
 <itemizedlist>
-	<listitem>MS Windows machines register their presence to the network</listitem>
-	<listitem>Machines announce themselves to other machines on the network</listitem>
-	<listitem>One or more machine on the network collates the local announcements</listitem>
-	<listitem>The client machine finds the machine that has the collated list of machines</listitem>
-	<listitem>The client machine is able to resolve the machine names to IP addresses</listitem>
-	<listitem>The client machine is able to connect to a target machine</listitem>
+	<listitem><para>MS Windows machines register their presence to the network</para></listitem>
+	<listitem><para>Machines announce themselves to other machines on the network</para></listitem>
+	<listitem><para>One or more machine on the network collates the local announcements</para></listitem>
+	<listitem><para>The client machine finds the machine that has the collated list of machines</para></listitem>
+	<listitem><para>The client machine is able to resolve the machine names to IP addresses</para></listitem>
+	<listitem><para>The client machine is able to connect to a target machine</para></listitem>
 </itemizedlist>
 
 <para>
@@ -1093,17 +1093,17 @@ are:
 </para>
 
 <itemizedlist>
-	<listitem>WINS: the best tool!</listitem>
-	<listitem>LMHOSTS: is static and hard to maintain.</listitem>
-	<listitem>Broadcast: uses UDP and can not resolve names across remote segments.</listitem>
+	<listitem><para>WINS: the best tool!</para></listitem>
+	<listitem><para>LMHOSTS: is static and hard to maintain.</para></listitem>
+	<listitem><para>Broadcast: uses UDP and can not resolve names across remote segments.</para></listitem>
 </itemizedlist>
 
 <para>
 Alternative means of name resolution includes:
 </para>
 <itemizedlist>
-<listitem><filename>/etc/hosts</filename>: is static, hard to maintain, and lacks name_type info</listitem>
-<listitem>DNS: is a good choice but lacks essential name_type info.</listitem>
+<listitem><para><filename>/etc/hosts</filename>: is static, hard to maintain, and lacks name_type info</para></listitem>
+<listitem><para>DNS: is a good choice but lacks essential name_type info.</para></listitem>
 </itemizedlist>
 
 <para>

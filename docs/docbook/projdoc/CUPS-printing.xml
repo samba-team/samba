@@ -2551,9 +2551,9 @@ the Windows NT/2000/XP client:
 
 <para>
 	<itemizedlist>
-		<listitem>cups.hlp</listitem>
-		<listitem>cupsdrvr.dll</listitem>
-		<listitem>cupsui.dll</listitem>
+		<listitem><para>cups.hlp</para></listitem>
+		<listitem><para>cupsdrvr.dll</para></listitem>
+		<listitem><para>cupsui.dll</para></listitem>
 	</itemizedlist>
 </para>
 
@@ -2567,12 +2567,12 @@ different platforms.
 
 <para>
 	<itemizedlist>
-	<listitem>ADFONTS.MFM</listitem>
-	<listitem>ADOBEPS4.DRV</listitem>
-	<listitem>ADOBEPS4.HLP</listitem>
-	<listitem>DEFPRTR2.PPD</listitem>
-	<listitem>ICONLIB.DLL</listitem>
-	<listitem>PSMON.DLL</listitem>
+	<listitem><para>ADFONTS.MFM</para></listitem>
+	<listitem><para>ADOBEPS4.DRV</para></listitem>
+	<listitem><para>ADOBEPS4.HLP</para></listitem>
+	<listitem><para>DEFPRTR2.PPD</para></listitem>
+	<listitem><para>ICONLIB.DLL</para></listitem>
+	<listitem><para>PSMON.DLL</para></listitem>
 </itemizedlist>
 </para>
 
@@ -2580,9 +2580,9 @@ different platforms.
 
 <para>
 <itemizedlist>
-	<listitem>ADOBEPS5.DLL</listitem>
-	<listitem>ADOBEPSU.DLL</listitem>
-	<listitem>ADOBEPSU.HLP</listitem>
+	<listitem><para>ADOBEPS5.DLL</para></listitem>
+	<listitem><para>ADOBEPSU.DLL</para></listitem>
+	<listitem><para>ADOBEPSU.HLP</para></listitem>
 </itemizedlist>
 
 </para>
@@ -5091,9 +5091,9 @@ for: you can include the required parameters as part of the
 </para>
 
 <itemizedlist>
-	<listitem>smb://WORKGROUP/WINDOWSNETBIOSNAME/printersharename </listitem>
-	<listitem>smb://username:password@WORKGROUP/WINDOWSNETBIOSNAME/printersharename</listitem>
-	<listitem>smb://username:password@WINDOWSNETBIOSNAME/printersharename</listitem>
+	<listitem><para>smb://WORKGROUP/WINDOWSNETBIOSNAME/printersharename </para></listitem>
+	<listitem><para>smb://username:password@WORKGROUP/WINDOWSNETBIOSNAME/printersharename</para></listitem>
+	<listitem><para>smb://username:password@WINDOWSNETBIOSNAME/printersharename</para></listitem>
 </itemizedlist>
 
 <para>

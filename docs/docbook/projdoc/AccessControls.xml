@@ -1005,10 +1005,10 @@ Before using any of the following options please refer to the man page for &smb.
 		These are :
 
 		<itemizedlist>
-			<listitem><smbconfoption><name>security mask</name></smbconfoption></listitem>
-			<listitem><smbconfoption><name>force security mode</name></smbconfoption></listitem>
-			<listitem><smbconfoption><name>directory security mask</name></smbconfoption></listitem>
-			<listitem><smbconfoption><name>force directory security mode</name></smbconfoption></listitem>
+			<listitem><para><smbconfoption><name>security mask</name></smbconfoption></para></listitem>
+			<listitem><para><smbconfoption><name>force security mode</name></smbconfoption></para></listitem>
+			<listitem><para><smbconfoption><name>directory security mask</name></smbconfoption></para></listitem>
+			<listitem><para><smbconfoption><name>force directory security mode</name></smbconfoption></para></listitem>
 	</itemizedlist>
 
 		</para>
