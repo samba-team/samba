@@ -1757,7 +1757,6 @@ int smb_mkstemp(char *template)
 /**
  malloc that aborts with smb_panic on fail or zero size.
 **/
-
 void *smb_xmalloc(size_t size)
 {
 	void *p;
@@ -1771,7 +1770,6 @@ void *smb_xmalloc(size_t size)
 /**
  Memdup with smb_panic on fail.
 **/
-
 void *smb_xmemdup(const void *p, size_t size)
 {
 	void *p2;
@@ -1783,13 +1781,25 @@ void *smb_xmemdup(const void *p, size_t size)
 /**
  strdup that aborts on malloc fail.
 **/
-
 char *smb_xstrdup(const char *s)
 {
 	char *s1 = strdup(s);
 	if (!s1)
 		smb_panic("smb_xstrdup: malloc fail\n");
 	return s1;
+}
+
+/*
+  vasprintf that aborts on malloc fail
+*/
+int smb_xvasprintf(char **ptr, const char *format, va_list ap)
+{
+	int n;
+	n = vasprintf(ptr, format, ap);
+	if (n == -1 || ! *ptr) {
+		smb_panic("smb_xvasprintf: out of memory");
+	}
+	return n;
 }
 
 /*****************************************************************
