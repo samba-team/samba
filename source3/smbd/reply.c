@@ -41,6 +41,8 @@ extern pstring sesssetup_user;
 extern fstring global_myworkgroup;
 extern int Client;
 extern int global_oplock_break;
+uint32 global_client_caps = 0;
+
 
 /****************************************************************************
 report a possible attack via the password buffer overflow bug
@@ -489,10 +491,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   } else {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
-    uint32 client_caps = IVAL(inbuf,smb_vwv11);
     enum remote_arch_types ra_type = get_remote_arch();
-
     char *p = smb_buf(inbuf);    
+
+    global_client_caps = IVAL(inbuf,smb_vwv11);
 
     /* client_caps is used as final determination if client is NT or Win95. 
        This is needed to return the correct error codes in some
@@ -501,7 +503,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     
     if(ra_type == RA_WINNT || ra_type == RA_WIN95)
     {
-      if(client_caps & (CAP_NT_SMBS | CAP_STATUS32))
+      if(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))
         set_remote_arch( RA_WINNT);
       else
         set_remote_arch( RA_WIN95);

@@ -1069,7 +1069,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
   char *vname = volume_label(SNUM(conn));
   int snum = SNUM(conn);
   char *fstype = lp_fstype(SNUM(conn));
- 
+  extern uint32 global_client_caps;
+
   DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
   if(dos_stat(".",&st)!=0) {
@@ -1131,24 +1132,28 @@ static int call_trans2qfsinfo(connection_struct *conn,
       break;
     case SMB_QUERY_FS_VOLUME_INFO:      
 
-      /* NT4 always serves this up as unicode. JRA had noted this was
-       * not the case in an earlier comment. What is going on? I
-       * tested with Win95 -> NT and a sniff definately showed
-       * unicode. The volume label now shows up correctly under Win95
-       * with unicode here (tridge, Sep98)
-       */
-
-      data_len = 18 + 2*strlen(vname);
-
       /* 
        * Add volume serial number - hash of a combination of
        * the called hostname and the service name.
        */
-      SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
-      SIVAL(pdata,12,strlen(vname)*2);
-      PutUniCode(pdata+18,vname);      
-      DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", strlen(vname),
-	       vname));
+      SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
+	    (str_checksum(local_machine)<<16));
+
+      /* NT4 always serves this up as unicode but expects it to be
+       * delivered as ascii! (tridge && JRA)
+       */
+      if (global_client_caps & CAP_NT_SMBS) {
+	      data_len = 18 + strlen(vname);
+	      SIVAL(pdata,12,strlen(vname));
+	      pstrcpy(pdata+18,vname);      
+      } else {
+	      data_len = 18 + 2*strlen(vname);
+	      SIVAL(pdata,12,strlen(vname)*2);
+	      PutUniCode(pdata+18,vname);      
+      }
+
+      DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
+	       strlen(vname),vname));
       break;
     case SMB_QUERY_FS_SIZE_INFO:
     {
