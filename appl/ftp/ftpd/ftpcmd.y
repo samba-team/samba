@@ -106,7 +106,7 @@ static int		 yylex (void);
 	CONF	ENC
 
 	KAUTH	KLIST	KDESTROY KRBTKFILE AFSLOG
-	FIND	URL
+	LOCATE	URL
 
 	LEXERR
 
@@ -546,7 +546,8 @@ cmd
 		    reply(500, "Command not implemented.");
 #endif
 		}
-	| SITE SP FIND SP STRING CRLF check_login
+		}
+	| SITE SP LOCATE SP STRING CRLF check_login
 		{
 		    if($7 && $5 != NULL)
 			find($5);
@@ -986,7 +987,8 @@ struct tab sitetab[] = {
 	{ "KRBTKFILE", KRBTKFILE, STR1, 1, "<sp> ticket-file" },
 	{ "AFSLOG", AFSLOG, OSTR, 1,	"[<sp> cell]" },
 
-	{ "FIND", FIND, STR1, 1,	"<sp> globexpr" },
+	{ "LOCATE", LOCATE, STR1, 1,	"<sp> globexpr" },
+	{ "FIND", LOCATE, STR1, 1,	"<sp> globexpr" },
 
 	{ "URL",  URL,  ARGS, 1,	"?" },
 	
