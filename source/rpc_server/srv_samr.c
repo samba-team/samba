@@ -211,8 +211,6 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 {
 	SAMR_R_UNKNOWN_3 r_u;
 	DOM_SID3 sid[MAX_SAM_SIDS];
-	fstring user_sid;
-	fstring user_rid;
 	int pol_idx;
 	uint32 rid;
 	uint32 status;
@@ -233,14 +231,21 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 
 	if (status == 0x0)
 	{
-		sid_to_string(user_sid, &global_machine_sid);
-		slprintf(user_rid, sizeof(user_rid) - 1, "-%x", rid);
-		fstrcat(user_sid, user_rid);
+        DOM_SID user_sid;
+        DOM_SID other_sid;
+
+        user_sid = global_machine_sid;
+        /*
+         * Add the user RID.
+         */
+        user_sid.sub_auths[user_sid.num_auths++] = rid;
+        
+		string_to_sid(&other_sid, "S-1-1");
 
 		/* maybe need another 1 or 2 (S-1-5-20-0x220 and S-1-5-20-0x224) */
 		/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
-		make_dom_sid3(&(sid[0]), 0x035b, 0x0002, "S-1-1");
-		make_dom_sid3(&(sid[1]), 0x0044, 0x0002, user_sid);
+		make_dom_sid3(&(sid[0]), 0x035b, 0x0002, &other_sid);
+		make_dom_sid3(&(sid[1]), 0x0044, 0x0002, &user_sid);
 	}
 
 	make_samr_r_unknown_3(&r_u,

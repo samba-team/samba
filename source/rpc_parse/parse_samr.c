@@ -204,11 +204,11 @@ void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int
 
  calculate length by adding up the size of the components.
  ********************************************************************/
-void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, char *sidstr)
+void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid)
 {
 	if (sid3 == NULL) return;
 
-	string_to_sid(&(sid3->sid), sidstr);
+    sid3->sid = *sid;
 	sid3->len = 2 + 8 + sid3->sid.num_auths * 4;
 }
 
