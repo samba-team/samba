@@ -64,7 +64,8 @@ marked with ???? the rest of the first 4kb page is not important...
 
 the "hbin"-Block
 ================
-I don't know what "hbin" stands for, but this block is always a multiple
+hbin probably means hive-bin (what bin stands for I don't know)
+This block is always a multiple
 of 4kb in size.
 
 Inside these hbin-blocks the different records are placed. The memory-
@@ -419,7 +420,7 @@ typedef struct key_sec_desc_s {
 	int state;
 	int offset;
 	SK_HDR *sk_hdr;     /* This means we must keep the registry in memory */
-	SEC_DESC *sec_desc;
+	struct security_descriptor *sec_desc;
 } KEY_SEC_DESC; 
 
 /* A map of sk offsets in the regf to KEY_SEC_DESCs for quick lookup etc */
@@ -481,7 +482,7 @@ typedef struct regf_struct_s {
 	int sk_count, sk_map_size;
 	SK_MAP *sk_map;
 	const char *owner_sid_str;
-	SEC_DESC *def_sec_desc;
+	struct security_descriptor *def_sec_desc;
 	/*
 	 * These next pointers point to the blocks used to contain the 
 	 * keys when we are preparing to write them to a file

@@ -56,18 +56,19 @@ static int reg_close_ldb_key (void *data)
 	return 0;
 }
 
-static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *add)
+static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *from, const char *path, const char *add)
 {
 	char *ret = talloc_strdup(mem_ctx, "");
-	char *mypath = strdup(path);
-	char *end = mypath, *begin;
+	char *mypath = talloc_strdup(mem_ctx, path);
+	char *begin;
+	struct ldb_key_data *kd = from->backend_data;
 
 	if(add) 
 		ret = talloc_asprintf_append(ret, "%s", add);
 
-	while(end) {
+	while(mypath) {
 		char *keyname;
-		begin = strrchr(end, '\\');
+		begin = strrchr(mypath, '\\');
 
 		if(begin) keyname = begin + 1;
 		else keyname = mypath;
@@ -77,18 +78,13 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 			
 		if(begin) {
 			*begin = '\0';
-			end = begin-1;
 		} else {
-			end = NULL;
+			break;
 		}
 	}
 
-	SAFE_FREE(mypath);
+	ret = talloc_asprintf_append(ret, "%s", kd->dn);
 
-	ret[strlen(ret)-1] = '\0';
-
-	if(strlen(ret) == 0) return NULL;
-	
 	return ret;
 }
 
@@ -127,6 +123,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	struct ldb_context *c = k->hive->backend_data;
 	struct ldb_message_element *el;
 	struct ldb_key_data *kd = k->backend_data;
+	const struct ldb_val *val;
 
 	/* Do the search if necessary */
 	if (kd->values == NULL) {
@@ -144,7 +141,10 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	
 	*value = talloc_p(mem_ctx, struct registry_value);
 	(*value)->name = talloc_strdup(mem_ctx, el->values[0].data);
-	/* FIXME */
+	(*value)->data_type = ldb_msg_find_uint(kd->values[idx], "type", 0);
+	val = ldb_msg_find_ldb_val(kd->values[idx], "data");
+	(*value)->data_blk = talloc_memdup(mem_ctx, val->data, val->length);
+	(*value)->data_len = val->length;
 
 	return WERR_OK;
 }
@@ -155,11 +155,9 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 	struct ldb_message **msg;
 	char *ldap_path;
 	int ret;
-	struct ldb_key_data *kd = h->backend_data, *newkd;
-	ldap_path = talloc_asprintf(mem_ctx, "%s%s%s", 
-								reg_path_to_ldb(mem_ctx, name, NULL), 
-								kd->dn?",":"",
-								kd->dn?kd->dn:"");
+	struct ldb_key_data *newkd;
+
+	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
 
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL,&msg);
 
@@ -185,9 +183,12 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 {
 	struct ldb_context *c;
 	struct ldb_key_data *kd;
+	struct ldb_wrap *wrap;
 
 	if (!hive->location) return WERR_INVALID_PARAM;
-	c = ldb_connect(hive->location, 0, NULL);
+	wrap = ldb_wrap_connect(hive, hive->location, 0, NULL);
+
+	c = wrap->ldb;
 
 	if(!c) {
 		DEBUG(1, ("ldb_open_hive: %s\n", ldb_errstring(hive->backend_data)));
@@ -201,13 +202,13 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	talloc_set_destructor (hive, ldb_close_hive);
 	(*k)->name = talloc_strdup(*k, "");
 	(*k)->backend_data = kd = talloc_zero_p(*k, struct ldb_key_data);
-	kd->dn = talloc_strdup(*k, "key=root");
+	kd->dn = talloc_strdup(*k, "hive=");
 	
 
 	return WERR_OK;
 }
 
-static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, SEC_DESC *sd, struct registry_key **newkey)
+static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sd, struct registry_key **newkey)
 {
 	struct ldb_context *ctx = parent->hive->backend_data;
 	struct ldb_message msg;
@@ -216,7 +217,7 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 
 	ZERO_STRUCT(msg);
 
-	msg.dn = reg_path_to_ldb(mem_ctx, parent->path, talloc_asprintf(mem_ctx, "key=%s,", name));
+	msg.dn = reg_path_to_ldb(mem_ctx, parent, name, NULL);
 
 	ldb_msg_add_string(ctx, &msg, "key", talloc_strdup(mem_ctx, name));
 
@@ -276,13 +277,14 @@ static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint
 	struct ldb_context *ctx = parent->hive->backend_data;
 	struct ldb_message msg;
 	struct ldb_val val;
+	struct ldb_key_data *kd = parent->backend_data;
 	int ret;
 	char *type_s;
 	TALLOC_CTX *mem_ctx = talloc_init("ldb_set_value");
 
 	ZERO_STRUCT(msg);
 
-	msg.dn = reg_path_to_ldb(mem_ctx, parent->path, talloc_asprintf(mem_ctx, "value=%s,", name));
+	msg.dn = talloc_asprintf(mem_ctx, "value=%s,%s", name, kd->dn);
 
 	ldb_msg_add_string(ctx, &msg, "value", talloc_strdup(mem_ctx, name));
 	val.length = len;

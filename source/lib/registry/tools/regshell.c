@@ -37,7 +37,7 @@
  * exit
  */
 
-static struct registry_key *cmd_info(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_info(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
 	time_t last_mod;
 	printf("Name: %s\n", cur->name);
@@ -49,19 +49,50 @@ static struct registry_key *cmd_info(TALLOC_CTX *mem_ctx, struct registry_key *c
 	return cur;
 }
 
-static struct registry_key *cmd_pwd(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_predef(TALLOC_CTX *mem_ctx, struct registry_context *ctx, struct registry_key *cur, int argc, char **argv)
+{
+	struct registry_key *ret = NULL;
+	if (argc < 2) {
+		fprintf(stderr, "Usage: predef predefined-key-name\n");
+	} else if (!ctx) {
+		fprintf(stderr, "No full registry loaded, no predefined keys defined\n");
+	} else {
+		WERROR error = reg_get_predefined_key_by_name(ctx, argv[1], &ret);
+
+		if (!W_ERROR_IS_OK(error)) {
+			fprintf(stderr, "Error opening predefined key %s: %s\n", argv[1], win_errstr(error));
+			ret = NULL;
+		}
+	}
+	return ret;
+}
+
+static struct registry_key *cmd_pwd(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
 	printf("%s\n", cur->path);
 	return cur;
 }
 
-static struct registry_key *cmd_set(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_set(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
-	/* FIXME */
-	return NULL;
+	if (argc < 4) {
+		fprintf(stderr, "Usage: set value-name type value\n");
+	} else {
+		struct registry_value *val;
+		if (reg_string_to_val(mem_ctx, argv[2], argv[3], &val)) {
+			WERROR error = reg_val_set(cur, argv[1], val->data_type, val->data_blk, val->data_len);
+			if (!W_ERROR_IS_OK(error)) {
+				fprintf(stderr, "Error setting value: %s\n", win_errstr(error));
+				return NULL;
+			}
+		} else {
+			fprintf(stderr, "Unable to interpret data\n");
+		}
+	}
+	return cur;
 }
 
-static struct registry_key *cmd_ck(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_ck(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 { 
 	struct registry_key *new = NULL;
 	WERROR error;
@@ -80,7 +111,7 @@ static struct registry_key *cmd_ck(TALLOC_CTX *mem_ctx, struct registry_key *cur
 	return new;
 }
 
-static struct registry_key *cmd_ls(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_ls(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
 	int i;
 	WERROR error;
@@ -100,7 +131,7 @@ static struct registry_key *cmd_ls(TALLOC_CTX *mem_ctx, struct registry_key *cur
 	
 	return NULL; 
 }
-static struct registry_key *cmd_mkkey(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_mkkey(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 { 
 	struct registry_key *tmp;
 	if(argc < 2) {
@@ -113,12 +144,10 @@ static struct registry_key *cmd_mkkey(TALLOC_CTX *mem_ctx, struct registry_key *
 		return NULL;
 	}
 
-	fprintf(stderr, "Successfully added new subkey '%s' to '%s'\n", argv[1], cur->path);
-	
 	return NULL; 
 }
 
-static struct registry_key *cmd_rmkey(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_rmkey(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 { 
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmkey <name>\n");
@@ -134,7 +163,7 @@ static struct registry_key *cmd_rmkey(TALLOC_CTX *mem_ctx, struct registry_key *
 	return NULL; 
 }
 
-static struct registry_key *cmd_rmval(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_rmval(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 { 
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmval <valuename>\n");
@@ -150,19 +179,19 @@ static struct registry_key *cmd_rmval(TALLOC_CTX *mem_ctx, struct registry_key *
 	return NULL; 
 }
 
-static struct registry_key *cmd_exit(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_exit(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
 	exit(0);
 	return NULL; 
 }
 
-static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_key *, int, char **);
+static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *, int, char **);
 
 struct {
 	const char *name;
 	const char *alias;
 	const char *help;
-	struct registry_key *(*handle)(TALLOC_CTX *mem_ctx, struct registry_key *, int argc, char **argv);
+	struct registry_key *(*handle)(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *, int argc, char **argv);
 } regshell_cmds[] = {
 	{"ck", "cd", "Change current key", cmd_ck },
 	{"info", "i", "Show detailed information of a key", cmd_info },
@@ -174,10 +203,11 @@ struct {
 	{"set", "update", "Update value", cmd_set },
 	{"help", "?", "Help", cmd_help },
 	{"exit", "quit", "Exit", cmd_exit },
+	{"predef", "predefined", "Go to predefined key", cmd_predef },
 	{NULL }
 };
 
-static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
+static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_context *ctx, struct registry_key *cur, int argc, char **argv)
 {
 	int i;
 	printf("Available commands:\n");
@@ -187,7 +217,7 @@ static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_key *c
 	return NULL;
 } 
 
-static struct registry_key *process_cmd(TALLOC_CTX *mem_ctx, struct registry_key *k, char *line)
+static struct registry_key *process_cmd(TALLOC_CTX *mem_ctx, struct registry_context *ctx, struct registry_key *k, char *line)
 {
 	int argc;
 	char **argv = NULL;
@@ -201,7 +231,7 @@ static struct registry_key *process_cmd(TALLOC_CTX *mem_ctx, struct registry_key
 	for(i = 0; regshell_cmds[i].name; i++) {
 		if(!strcmp(regshell_cmds[i].name, argv[0]) || 
 		   (regshell_cmds[i].alias && !strcmp(regshell_cmds[i].alias, argv[0]))) {
-			return regshell_cmds[i].handle(mem_ctx, k, argc, argv);
+			return regshell_cmds[i].handle(mem_ctx, ctx, k, argc, argv);
 		}
 	}
 
@@ -214,7 +244,7 @@ static struct registry_key *process_cmd(TALLOC_CTX *mem_ctx, struct registry_key
 
 static struct registry_key *current_key = NULL;
 
-static char **reg_complete_command(const char *text, int end)
+static char **reg_complete_command(const char *text, int start, int end)
 {
 	/* Complete command */
 	char **matches;
@@ -262,23 +292,28 @@ cleanup:
 	return NULL;
 }
 
-static char **reg_complete_key(const char *text, int end)
+static char **reg_complete_key(const char *text, int start, int end)
 {
+	struct registry_key *base;
 	struct registry_key *subkey;
 	int i, j = 1;
 	int samelen = 0;
 	int len;
 	char **matches;
+	const char *base_n = "";
 	TALLOC_CTX *mem_ctx;
+	WERROR status;
 
 	matches = malloc_array_p(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
 	matches[0] = NULL;
+	mem_ctx = talloc_init("completion");
+
+	base = current_key;
 
 	len = strlen(text);
-	mem_ctx = talloc_init("completion");
 	for(i = 0; j < MAX_COMPLETIONS-1; i++) {
-		WERROR status = reg_key_get_subkey_by_index(mem_ctx, current_key, i, &subkey);
+		status = reg_key_get_subkey_by_index(mem_ctx, base, i, &subkey);
 		if(W_ERROR_IS_OK(status)) {
 			if(!strncmp(text, subkey->name, len)) {
 				matches[j] = strdup(subkey->name);
@@ -298,18 +333,19 @@ static char **reg_complete_key(const char *text, int end)
 			return NULL;
 		}
 	}
-	talloc_destroy(mem_ctx);
 
 	if (j == 1) { /* No matches at all */
 		SAFE_FREE(matches);
+		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
 	if (j == 2) { /* Exact match */
-		matches[0] = strdup(matches[1]);
+		asprintf(&matches[0], "%s%s", base_n, matches[1]);
 	} else {
-		matches[0] = strndup(matches[1], samelen);
+		asprintf(&matches[0], "%s%s", base_n, talloc_strndup(mem_ctx, matches[1], samelen));
 	}		
+	talloc_destroy(mem_ctx);
 
 	matches[j] = NULL;
 	return matches;
@@ -320,9 +356,9 @@ static char **reg_completion(const char *text, int start, int end)
 	smb_readline_ca_char(' ');
 
 	if (start == 0) {
-		return reg_complete_command(text, end);
+		return reg_complete_command(text, start, end);
 	} else {
-		return reg_complete_key(text, end);
+		return reg_complete_key(text, start, end);
 	}
 }
 
@@ -395,7 +431,7 @@ static char **reg_completion(const char *text, int start, int end)
 			break;
 
 		if(line[0] != '\n') {
-			struct registry_key *new = process_cmd(mem_ctx, curkey, line);
+			struct registry_key *new = process_cmd(mem_ctx, h, curkey, line);
 			if(new)curkey = new;
 		}
 	}

@@ -24,14 +24,27 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
+static const struct {
+	uint32 id;
+	const char *name;
+} reg_value_types[] = {
+	{ REG_SZ, "REG_SZ" },
+	{ REG_DWORD, "REG_DWORD" },
+	{ REG_BINARY, "REG_BINARY" },
+	{ REG_EXPAND_SZ, "REG_EXPAND_SZ" },
+	{ REG_NONE, "REG_NONE" },
+	{ 0, NULL }
+};
+
 /* Return string description of registry value type */
 const char *str_regtype(int type)
 {
-	switch(type) {
-	case REG_SZ: return "STRING";
-	case REG_DWORD: return "DWORD";
-	case REG_BINARY: return "BINARY";
+	int i;
+	for (i = 0; reg_value_types[i].name; i++) {
+		if (reg_value_types[i].id == type) 
+			return reg_value_types[i].name;
 	}
+
 	return "Unknown";
 }
 
@@ -84,10 +97,48 @@ char *reg_val_description(TALLOC_CTX *mem_ctx, struct registry_value *val)
 	return talloc_asprintf(mem_ctx, "%s = %s : %s", val->name?val->name:"<No Name>", str_regtype(val->data_type), reg_val_data_string(mem_ctx, val));
 }
 
-BOOL reg_val_set_string(struct registry_value *val, char *str)
+BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, struct registry_value **value)
 {
-	/* FIXME */
-	return False;
+	int i;
+	*value = talloc_p(mem_ctx, struct registry_value);
+	(*value)->data_type = -1;
+
+	/* Find the correct type */
+	for (i = 0; reg_value_types[i].name; i++) {
+		if (!strcmp(reg_value_types[i].name, type_str)) {
+			(*value)->data_type = reg_value_types[i].id;
+			break;
+		}
+	}
+
+	if ((*value)->data_type == -1) 
+		return False;
+
+	/* Convert data appropriately */
+
+	switch ((*value)->data_type) 
+	{
+		case REG_SZ:
+		case REG_EXPAND_SZ:
+			(*value)->data_blk = talloc_strdup(mem_ctx, data_str);
+			(*value)->data_len = strlen(data_str);
+			break;
+		case REG_DWORD:
+			(*value)->data_len = sizeof(uint32);
+			(*value)->data_blk = talloc_p(mem_ctx, uint32);
+			*((uint32 *)(*value)->data_blk) = atol(data_str);
+			break;
+
+		case REG_NONE:
+			(*value)->data_len = 0;
+			(*value)->data_blk = NULL;
+			break;
+	
+		default:
+		case REG_BINARY: /* FIXME */
+			return False;
+	}
+	return True;
 }
 
 WERROR reg_key_get_subkey_val(TALLOC_CTX *mem_ctx, struct registry_key *key, const char *subname, const char *valname, struct registry_value **val)
@@ -220,7 +271,7 @@ WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 	return error;
 }
 
-WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32 access_mask, SEC_DESC *sec_desc, struct registry_key **result)
+WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32 access_mask, struct security_descriptor *sec_desc, struct registry_key **result)
 {
 	struct registry_key *parent;
 	const char *n;

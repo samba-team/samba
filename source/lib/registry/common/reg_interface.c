@@ -348,9 +348,12 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_subkey_by_index(mem_ctx, key, i, subkey);
 			if(W_ERROR_IS_OK(error) && !strcmp((*subkey)->name, name)) {
-				return error;
+				break;
 			}
 		}
+
+		if (W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) 
+			error = WERR_DEST_NOT_FOUND;
 	} else {
 		return WERR_NOT_SUPPORTED;
 	}
@@ -375,7 +378,7 @@ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, 
 	} else {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_value_by_index(mem_ctx, key, i, val);
-			if(W_ERROR_IS_OK(error) && StrCaseCmp((*val)->name, name)) {
+			if(W_ERROR_IS_OK(error) && !strcmp((*val)->name, name)) {
 				break;
 			}
 		}
@@ -402,7 +405,7 @@ WERROR reg_key_del(struct registry_key *parent, const char *name)
 	return WERR_OK;
 }
 
-WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, SEC_DESC *desc, struct registry_key **newkey)
+WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **newkey)
 {
 	WERROR error;
 	

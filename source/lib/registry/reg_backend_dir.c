@@ -22,7 +22,7 @@
 #include "registry.h"
 #include "system/dir.h"
 
-static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, SEC_DESC *desc, struct registry_key **result)
+static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **result)
 {
 	char *path;
 	int ret;
