@@ -6,6 +6,7 @@
 	<author><firstname>Simo</firstname><surname>Sorce</surname><contrib>original vfs_skel README</contrib></author>
 	<author><firstname>Alexander</firstname><surname>Bokovoy</surname><contrib>original vfs_netatalk docs</contrib></author>
 	<author><firstname>Stefan</firstname><surname>Metzmacher</surname><contrib>Update for multiple modules</contrib></author>
+	<author><firstname>Ed</firstname><surname>Riddle</surname><contrib>original shadow_copy docs</contrib></author>
 </chapterinfo>
 <title>Stackable VFS modules</title>
 
@@ -93,10 +94,10 @@ This can be done using a configuration similar to the one shown in <link linkend
 		A simple module to audit file access to the syslog
 		facility. The following operations are logged:
 		<itemizedlist>
-			<listitem>share</listitem>
-			<listitem>connect/disconnect</listitem>
-			<listitem>directory opens/create/remove</listitem>
-			<listitem>file open/close/rename/unlink/chmod</listitem>
+			<listitem><para>share</para></listitem>
+			<listitem><para>connect/disconnect</para></listitem>
+			<listitem><para>directory opens/create/remove</para></listitem>
+			<listitem><para>file open/close/rename/unlink/chmod</para></listitem>
 		</itemizedlist>
 		</para>
 
@@ -244,6 +245,290 @@ This can be done using a configuration similar to the one shown in <link linkend
 		</para>
 
 	</sect2>
+
+    <sect2>
+      <title>shadow_copy</title>
+	<warning>
+	<para>
+	  <emphasis>THIS IS NOT A BACKUP, ARCHIVAL, OR VERSION CONTROL
+	  SOLUTION!</emphasis></para>
+	<para>
+	  With Samba or Windows servers, shadow copy is designed to be
+	  an end-user tool only.  It does not replace or enhance your
+	  backup and archival solutions and should in no way be
+	  considered as such.  Additionally, if you need version
+	  control, implement a version control system.  You have been
+	  warned.</para>
+	</warning>
+      <para>
+	The shadow_copy module allows you to setup functionality that
+	is similar to MS shadow copy services.  When setup properly,
+	this module allows Microsoft shadow copy clients to browse
+	"shadow copies" on samba shares.  You will need to install the
+	shadow copy client.  You can get the MS shadow copy client
+	<ulink noescape="1"
+	url="http://www.microsoft.com/windowsserver2003/downloads/shadowcopyclient.mspx">here.</ulink>.
+	Note the additional requirements for pre-Windows XP clients.
+	I did not test this functionality with any pre-Windows XP
+	clients.  You should be able to get more information about MS
+	Shadow Copy <ulink noescape="1"
+	url="http://www.microsoft.com/windowsserver2003/techinfo/overview/scr.mspx">from
+	the Microsoft's site</ulink>.</para>
+      <para>
+	The shadow_copy VFS module requires some underlying file system
+	setup with some sort of Logical Volume Manager (LVM) such as
+	LVM1, LVM2, or EVMS.  Setting up LVM is beyond the scope of
+	this document; however, we will outline the steps we took to
+	test this functionality for <emphasis>example purposes
+	only.</emphasis> You need to make sure the LVM implementation
+	you choose to deploy is ready for production.  Make sure you
+	do plenty of tests.</para>
+      <para>
+	Here are some common resources for LVM and EVMS:
+	<itemizedlist>
+	  <listitem>
+	    <para><ulink noescape="1"
+	    url="http://www.sistina.com/products_lvm_download.htm">Sistina's
+	    LVM1 and LVM2</ulink></para>
+	  </listitem>
+	  <listitem>
+	    <para><ulink url="http://evms.sourceforge.net/">Enterprise
+	    Volume Management System (EVMS)</ulink></para>
+	  </listitem>
+	  <listitem>
+	    <para><ulink url="http://tldp.org/HOWTO/LVM-HOWTO/">The LVM HOWTO</ulink></para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      See <ulink
+	      url="http://www-106.ibm.com/developerworks/linux/library/l-lvm/">Learning
+	      Linux LVM, Part 1</ulink> and <ulink
+	      url="http://www-106.ibm.com/developerworks/library/l-lvm2.html">Learning
+	      Linux LWM, Part 2</ulink> for Daniel Robbins' well
+	      written a two part tutorial on Linux and LVM using LVM
+	      source code and reiserfs.</para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+      <sect3>
+	<title>Shadow Copy Setup</title>
+	<para>
+	  At the time of this writing, not much testing has been done.
+	  I tested the shadow copy VFS module with a specific scenario
+	  which was not deployed in a production environment, but more
+	  as a proof of concept.  The scenario involved a Samba 3 file
+	  server on Debian Sarge with an XFS file system and LVM1.  I
+	  do NOT recommend you use this as a solution without doing
+	  your own due diligence with regard to all the components
+	  presented here.  That said, following is an basic outline of
+	  how I got things going.</para>
+	<orderedlist>
+	  <listitem>
+	    <formalpara>
+	      <title>Installed Operating System </title> 
+	      <para>
+		In my tests, I used <ulink
+		url="http://www.debian.org/devel/debian-installer/">Debian
+		Sarge</ulink> (i.e. testing) on an XFS file system.
+		Setting up the OS is a bit beyond the scope of this
+		document.  It is assumed that you have a working OS
+		capable of running Samba.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem>
+	    <formalpara>
+	      <title>Install &amp; Configure Samba</title>
+	      <para>
+		See the <link linkend="introduction">installation
+		section</link> of this HOWTO for more detail on this.
+		It doesn't matter if it is a Domain Controller or
+		Member File Server, but it is assumed that you have a
+		working Samba 3.0.3 or newer server running.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem>
+	    <formalpara>
+	      <title>Install &amp; Configure LVM</title>
+	      <para>
+		Before you can make shadow copies available to the
+		client, you have to create the shadow copies.  This is
+		done by taking some sort of file system snapshot.
+		Snapshots are a typical feature of Logical Volume
+		Managers such as LVM, so we first need to have that
+		setup.</para>
+	    </formalpara>
+	    <itemizedlist>
+	      <para>
+		The following is provided as an example and will be
+		most helpful for Debian users.  Again, this was tested
+		using the "testing" or "Sarge" distribution.</para>
+	      <listitem>
+		<para>
+		  Install lvm10 and devfsd packages if you have not
+		  done so already.  On Debian systems, you are warned
+		  of the interaction of devfs and lvm1 which requires
+		  the use of devfs filenames.  Running
+		  <command>apt-get update &amp;&amp; apt-get install
+		  lvm10 devfsd xfsprogs</command> should do the trick
+		  for this example.</para>
+	      </listitem>
+	      <listitem>
+		<para>
+		  Now you need to create a volume.  You will need to
+		  create a partition (or partitions) to add to your
+		  volume.  Use your favorite partitioning tool
+		  (e.g. Linux fdisk, cfdisk, etc.).  The partition
+		  type should be set to 0x8e for "Linux LVM."  In this
+		  example, we will use /dev/hdb1.</para>
+		<para>
+		  Once you have the Linux LVM partition (type 0x8e),
+		  you can run a series of commands to create the LVM
+		  volume.  You can use several disks and or
+		  partitions, but we will use only one in this
+		  example.  You may also need to load the kernel
+		  module with something like <command>modprobe lvm-mod
+		  </command> and set your system up to load it on
+		  reboot by adding it to
+		  (<filename>/etc/modules</filename>). </para>
+	      </listitem>
+	      <listitem>
+		<para>
+		  Create the physical volume with <command>pvcreate
+		  /dev/hdb1</command></para>
+	      </listitem>
+	      <listitem>
+		<para>
+		  Create the volume group with and add /dev/hda1 to it
+		  with <command>vgcreate shadowvol /dev/hdb1</command>
+		  </para>
+		<para>
+		  You can use <command>vgdisplay</command> to review
+		  information about the volume group.</para>
+	      </listitem>
+	      <listitem>
+		<para>
+		  Now you can create the logical volume with something
+		  like <command>lvcreate -L400M -nsh_test
+		  shadowvol</command></para>
+		<para>
+		  This creates the logical volume of 400MB's named
+		  "sh_test" in the volume group we created called
+		  shadowvol.  If everything is working so far, you
+		  should see them in
+		  <filename>/dev/shadowvol</filename>.</para>
+	      </listitem>
+	      <listitem>
+		<para>
+		  Now we should be ready to format the logical volume
+		  we named sh_test with <command>mkfs.xfs
+		  /dev/shadowvol/sh_test</command></para>
+		<para>
+		  You can format the logical volume with any file
+		  system you choose, but make sure to use one that
+		  allows you to take advantage of the additional
+		  features of LVM such as freezing, resizing and
+		  growing your file systems.</para>
+		<para>
+		  Now we have an LVM volume where we can play with the
+		  shadow_copy VFS module.</para>
+	      </listitem>
+	      <listitem>
+		<para>
+		  Now we need to prepare the directory with something
+		  like <command>mkdir -p /data/shadow_share</command>
+		  or whatever you want to name your shadow copy
+		  enabled Samba share.  Make sure you set the
+		  permissions such that you can use it.  If in doubt,
+		  use <command>chmod 777 /data/shadow_share</command>
+		  and tighten the permissions once you get things
+		  working.</para>
+	      </listitem>
+	      <listitem>
+		<para>
+		  Mount the LVM volume using something like
+		  <command>mount /dev/shadowvol/sh_test
+		  /data/shadow_share</command></para>
+		<para>
+		  You may also want to edit your
+		  <filename>/etc/fstab</filename> so that this
+		  partition mounts during the system boot.</para>
+	      </listitem>
+	    </itemizedlist>
+	  </listitem>
+	  <listitem>
+	    <formalpara>
+	      <title>Install &amp; Configure the shadow_copy VFS
+	      Module</title>
+	      <para>
+		Finally we get to the actual shadow_copy VFS module.
+		The shadow_copy VFS module should be available in
+		Samba 3.0.3 and higher.  The smb.conf configuration is pretty
+		standard.  Here is our example of a share configured
+		with the shadow_copy VFS module:</para>
+	    </formalpara>
+	    <para>
+	      <smbconfexample id="vfsshadow">
+		<title>Share With shadow_copy VFS</title>
+		<smbconfsection>[shadow_share]</smbconfsection>
+		<smbconfoption><name>comment</name><value>Shadow Copy Enabled Share</value></smbconfoption>
+		<smbconfoption><name>path</name><value>/data/shadow_share</value></smbconfoption>
+		<smbconfoption><name>vfs objects</name><value>shadow_copy</value></smbconfoption>
+		<smbconfoption><name>writeable</name><value>yes</value></smbconfoption>
+		<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
+	      </smbconfexample>
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <formalpara>
+	      <title>Create Snapshots and Make Them Available to shadow_copy.so</title> 
+	      <para>
+		Before you can browse the shadow copies, you must
+		create them and mount them.  This will most likely be
+		done with a script that runs as a cron job.  With this
+		particular solution, the shadow_copy VFS module is
+		used to browse LVM snapshots.  Those snapshots are not
+		created by the module.  They are not made available by
+		the module either.  This module allows the shadow copy
+		enabled client to browse the snapshots you take and
+		make available.</para>
+	    </formalpara>
+	    <para>
+	      Here is a simple script used to create and mount the
+	      snapshots:
+	      <screen>
+#!/bin/bash
+# This is a test, this is only a test
+SNAPNAME=`date +%Y.%m.%d-%H.%M.%S`
+xfs_freeze -f /data/shadow_share/
+lvcreate -L10M -s -n $SNAPNAME /dev/shadowvol/sh_test
+xfs_freeze -u /data/shadow_share/
+mkdir /data/shadow_share/@GMT-$SNAPNAME
+mount /dev/shadowvol/$SNAPNAME /data/shadow_share/@GMT-$SNAPNAME -onouuid,ro
+	      </screen>
+	      Note that the script does not handle other things like
+	      remounting snapshots on reboot.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <formalpara>
+	      <title>Test From Client</title>
+	      <para>
+		To test, you will need to install the shadow copy
+		client which you can obtain from the <ulink
+		url="http://www.microsoft.com/windowsserver2003/downloads/shadowcopyclient.mspx">Microsoft
+		web site.</ulink> I only tested this with an XP client
+		so your results may vary with other pre-XP clients.
+		Once installed, with your XP client you can
+		right-click on specific files or in the empty space of
+		the shadow_share and view the "properties".  If
+		anything has changed, then you will see it on the
+		"Previous Versions" tab of the properties
+		window. </para>
+	    </formalpara>
+	  </listitem>
+	</orderedlist>
+      </sect3>
+    </sect2>
 
 </sect1>
 
