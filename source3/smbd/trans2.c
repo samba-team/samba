@@ -329,8 +329,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
       strcpy(fname,dname);      
 
-      if(name_map_mangle(fname,False,SNUM(cnum)) &&
-         mask_match(fname, mask, case_sensitive, True))
+      if(mask_match(fname, mask, case_sensitive, True))
 	{
 	  BOOL isdots = (strequal(fname,"..") || strequal(fname,"."));
 	  if (dont_descend && !isdots)
@@ -368,6 +367,8 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	  found = True;
 	}
     }
+
+  name_map_mangle(fname,False,SNUM(cnum));
 
   p = pdata;
   nameptr = p;
