@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,7 +37,8 @@
 RCSID("$Id$");
 
 static kadm5_ret_t
-kadmind_dispatch(void *kadm_handle, krb5_data *in, krb5_data *out)
+kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
+		 krb5_data *in, krb5_data *out)
 {
     kadm5_ret_t ret;
     int32_t cmd, mask, tmp;
@@ -207,16 +208,21 @@ kadmind_dispatch(void *kadm_handle, krb5_data *in, krb5_data *out)
 	}
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-#if 0
-	/* anyone can change her/his own password */
-	/* but not until there is a way to ensure that the
-           authentication was done via an initial ticket request */
-	if(!krb5_principal_compare(context->context, context->caller, princ))
-	    ret = KADM5_AUTH_INSUFFICIENT;
-	if(ret)
-#endif
+
+	/*
+	 * The change is allowed if at least one of:
+	 * a) it's for the principal him/herself and this was an initial ticket
+	 * b) the user is on the CPW ACL.
+	 */
+
+	if (initial
+	    && krb5_principal_compare (context->context, context->caller,
+				       princ))
+	    ret = 0;
+	else
 	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
-	if(ret){
+
+	if(ret) {
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
 	}
@@ -236,16 +242,20 @@ kadmind_dispatch(void *kadm_handle, krb5_data *in, krb5_data *out)
 	    goto fail;
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-#if 0
-	/* anyone can change her/his own password */
-	/* but not until there is a way to ensure that the
-           authentication was done via an initial ticket request */
-	if(!krb5_principal_compare(context->context, context->caller, princ))
-	    ret = KADM5_AUTH_INSUFFICIENT;
-	if(ret)
-#endif
+	/*
+	 * The change is allowed if at least one of:
+	 * a) it's for the principal him/herself and this was an initial ticket
+	 * b) the user is on the CPW ACL.
+	 */
+
+	if (initial
+	    && krb5_principal_compare (context->context, context->caller,
+				       princ))
+	    ret = 0;
+	else
 	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
-	if(ret){
+
+	if(ret) {
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
 	}
@@ -327,6 +337,7 @@ fail:
 static void
 v5_loop (krb5_context context,
 	 krb5_auth_context ac,
+	 krb5_boolean initial,
 	 void *kadm_handle,
 	 int fd)
 {
@@ -358,7 +369,7 @@ v5_loop (krb5_context context,
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_rd_priv");
 	krb5_data_free(&in);
-	kadmind_dispatch(kadm_handle, &out, &msg);
+	kadmind_dispatch(kadm_handle, initial, &out, &msg);
 	krb5_data_free(&out);
 	ret = krb5_mk_priv(context, ac, &msg, &reply, NULL);
 	krb5_data_free(&msg);
@@ -404,6 +415,7 @@ handle_v5(krb5_context context,
     char *client;
     void *kadm_handle;
     ssize_t n;
+    krb5_boolean initial;
 
     unsigned kadm_version;
     kadm5_config_params realm_params;
@@ -447,10 +459,11 @@ handle_v5(krb5_context context,
 	_kadm5_unmarshal_params(context, &params, &realm_params);
     }
 
-    ticket->ticket.flags.initial; /* XXX ? */
+    initial = ticket->ticket.flags.initial;
     ret = krb5_unparse_name(context, ticket->client, &client);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
+    krb5_free_ticket (context, ticket);
     ret = kadm5_init_with_password_ctx(context, 
 				       client, 
 				       NULL,
@@ -460,7 +473,7 @@ handle_v5(krb5_context context,
 				       &kadm_handle);
     if(ret)
 	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
-    v5_loop (context, ac, kadm_handle, fd);
+    v5_loop (context, ac, initial, kadm_handle, fd);
 }
 
 krb5_error_code
