@@ -34,6 +34,22 @@
 
 #include "includes.h"
 
+static int verbose;
+
+/*
+  debug routine 
+*/
+static void ldif_write_msg(struct ldb_context *ldb, 
+			   FILE *f, 
+			   enum ldb_changetype changetype,
+			   struct ldb_message *msg)
+{
+	struct ldb_ldif ldif;
+	ldif.changetype = changetype;
+	ldif.msg = *msg;
+	ldb_ldif_write_file(ldb, f, &ldif);
+}
+
 /*
   modify a database record so msg1 becomes msg2
   returns the number of modified elements
@@ -91,6 +107,10 @@ static int modify_record(struct ldb_context *ldb,
 		return -1;
 	}
 
+	if (verbose > 0) {
+		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, &mod);
+	}
+
 	return count;
 }
 
@@ -130,6 +150,9 @@ static int merge_edits(struct ldb_context *ldb,
 					msgs2[i]->dn, ldb_errstring(ldb));
 				return -1;
 			}
+			if (verbose > 0) {
+				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_ADD, msgs2[i]);
+			}
 			adds++;
 		} else {
 			if (modify_record(ldb, msg, msgs2[i]) > 0) {
@@ -146,6 +169,9 @@ static int merge_edits(struct ldb_context *ldb,
 				fprintf(stderr, "failed to delete %s - %s\n",
 					msgs1[i]->dn, ldb_errstring(ldb));
 				return -1;
+			}
+			if (verbose > 0) {
+				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_DELETE, msgs1[i]);
 			}
 			deletes++;
 		}
@@ -295,7 +321,7 @@ static void usage(void)
 		editor = "vi";
 	}
 
-	while ((opt = getopt(argc, argv, "hab:e:H:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hab:e:H:s:v")) != EOF) {
 		switch (opt) {
 		case 'b':
 			basedn = optarg;
@@ -323,6 +349,10 @@ static void usage(void)
 			expression = "(|(objectclass=*)(dn=*))";
 			break;
 			
+		case 'v':
+			verbose++;
+			break;
+
 		case 'h':
 		default:
 			usage();
