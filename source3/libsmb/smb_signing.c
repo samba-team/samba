@@ -353,8 +353,6 @@ static void cli_null_free_signing_context(struct cli_state *cli)
 
 BOOL cli_null_set_signing(struct cli_state *cli)
 {
-	struct smb_basic_sign_data *data;
-
 	cli->sign_info.signing_context = NULL;
 	
 	cli->sign_info.sign_outgoing_message = cli_null_sign_outgoing_message;
