@@ -266,6 +266,38 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 }
 
 
+/*************************************************************
+ Initialises a SAM_ACCOUNT ready to add a new account, based
+ on the unix user if possible.
+ ************************************************************/
+
+NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
+{
+	NTSTATUS nt_status = NT_STATUS_NO_MEMORY;
+
+	struct passwd *pwd;
+	
+	pwd = Get_Pwnam(username);
+
+	if (pwd) {
+		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(new_sam_acct, pwd))) {
+			*new_sam_acct = NULL;
+			return nt_status;
+		}
+	} else {
+		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(new_sam_acct))) {
+			*new_sam_acct = NULL;
+			return nt_status;
+		}
+		if (!pdb_set_username(*new_sam_acct, username, PDB_SET)) {
+			pdb_free_sam(new_sam_acct);
+			return nt_status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+
 /**
  * Free the contets of the SAM_ACCOUNT, but not the structure.
  *
@@ -910,7 +942,6 @@ BOOL local_password_change(const char *user_name, int local_flags,
 			   char *err_str, size_t err_str_len,
 			   char *msg_str, size_t msg_str_len)
 {
-	struct passwd  *pwd = NULL;
 	SAM_ACCOUNT 	*sam_pass=NULL;
 	uint16 other_acb;
 
@@ -922,35 +953,15 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
 		pdb_free_sam(&sam_pass);
 		
-		if (local_flags & LOCAL_ADD_USER) {
-			pwd = getpwnam_alloc(user_name);
-		} else if (local_flags & LOCAL_DELETE_USER) {
+		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
 			/* Might not exist in /etc/passwd */
+			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name))) {
+				slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
+				return False;
+			}
 		} else {
 			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
 			return False;
-		}
-		
-		if (pwd) {
-			/* Local user found, so init from this */
-			if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sam_pass, pwd))){
-				slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
-				passwd_free(&pwd);
-				return False;
-			}
-		
-			passwd_free(&pwd);
-		} else {
-			if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_pass))){
-				slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
-				return False;
-			}
-
-	        	if (!pdb_set_username(sam_pass, user_name, PDB_CHANGED)) {
-	                	slprintf(err_str, err_str_len - 1, "Failed to set username for user %s.\n", user_name);
-	               	 	pdb_free_sam(&sam_pass);
-	               	 	return False;
-	        	}
 		}
 	} else {
 		/* the entry already existed */

@@ -351,20 +351,12 @@ static int new_user (struct pdb_context *in, const char *username,
 			const char *profile, char *user_sid, char *group_sid)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
-	struct passwd  *pwd = NULL;
+	NTSTATUS nt_status;
 	char *password1, *password2, *staticpass;
 	
-	ZERO_STRUCT(sam_pwent);
-
-	if ((pwd = getpwnam_alloc(username))) {
-		pdb_init_sam_pw (&sam_pwent, pwd);
-		passwd_free(&pwd);
-	} else {
-		fprintf (stderr, "WARNING: user %s does not exist in system passwd\n", username);
-		pdb_init_sam(&sam_pwent);
-		if (!pdb_set_username(sam_pwent, username, PDB_CHANGED)) {
-			return -1;
-		}
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pwent, username))) {
+		DEBUG(0, ("could not create account to add new user %s\n", username));
+		return -1;
 	}
 
 	staticpass = getpass("new password:");

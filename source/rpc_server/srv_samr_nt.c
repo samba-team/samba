@@ -1473,13 +1473,14 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	for (i = 0; i < num_rids; i++) {
 		fstring name;
             	DOM_SID sid;
+            	int ret;
 
 	        r_u->status = NT_STATUS_NONE_MAPPED;
 
 	        rid [i] = 0xffffffff;
 	        type[i] = SID_NAME_UNKNOWN;
 
-		rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
+		ret = rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
 
  		/*
 		 * we are only looking for a name
@@ -1492,7 +1493,8 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		 * a cleaner code is to add the sid of the domain we're looking in
 		 * to the local_lookup_name function.
 		 */
-            	if(local_lookup_name(name, &sid, &local_type)) {
+		 
+            	if ((ret > 0) && local_lookup_name(name, &sid, &local_type)) {
                 	sid_split_rid(&sid, &local_rid);
 				
 			if (sid_equal(&sid, &pol_sid)) {
@@ -2205,6 +2207,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	uint32 acc_granted;
 	SEC_DESC *psd;
 	size_t    sd_size;
+	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 
 	/* Get the domain SID stored in the domain policy */
@@ -2274,7 +2277,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	/* the passdb lookup has failed; check to see if we need to run the
 	   add user/machine script */
 	   
-	pw = getpwnam_alloc(account);
+	pw = Get_Pwnam(account);
 	
 	if ( !pw ) {
 		/* 
@@ -2288,73 +2291,25 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 			pstrcpy(add_script, lp_addmachine_script());		
 		else 
 			pstrcpy(add_script, lp_adduser_script());
-	
+
 		if (*add_script) {
   			int add_ret;
   			all_string_sub(add_script, "%u", account, sizeof(account));
   			add_ret = smbrun(add_script,NULL);
  			DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
-	
-		/* try again */
-		pw = getpwnam_alloc(account);
-	}
-		
-
-	if (pw) {
-		DOM_SID user_sid;
-		DOM_SID group_sid;
-		if (!uid_to_sid(&user_sid, pw->pw_uid)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			DEBUG(1, ("_api_samr_create_user: uid_to_sid failed, cannot add user.\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		if (!pdb_set_user_sid(sam_pass, &user_sid, PDB_CHANGED)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (!gid_to_sid(&group_sid, pw->pw_gid)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			DEBUG(1, ("_api_samr_create_user: gid_to_sid failed, cannot add user.\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		if (!pdb_set_group_sid(sam_pass, &group_sid, PDB_CHANGED)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		passwd_free(&pw); /* done with this now */
-	} else {
-		DEBUG(3,("attempting to create non-unix account %s\n", account));
 		
 	}
 	
-	if (!pdb_set_username(sam_pass, account, PDB_CHANGED)) {
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_MEMORY;
-	}
-
+	nt_status = pdb_init_sam_new(&sam_pass, account);
+	if (!NT_STATUS_IS_OK(nt_status))
+		return nt_status;
+		
  	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
- 
+	
  	if (!pdb_add_sam_account(sam_pass)) {
  		pdb_free_sam(&sam_pass);
  		DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
- 			  account));
- 		return NT_STATUS_ACCESS_DENIED;		
- 	}
-
-	pdb_reset_sam(sam_pass);
-	
-	if (!pdb_getsampwnam(sam_pass, account)) {
- 		pdb_free_sam(&sam_pass);
- 		DEBUG(0, ("could not find user/computer %s just added to passdb?!?\n", 
  			  account));
  		return NT_STATUS_ACCESS_DENIED;		
  	}
