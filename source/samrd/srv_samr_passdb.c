@@ -27,7 +27,6 @@
 	BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 					uint32 flags, uint32 rid,
 					POLICY_HND *alias_pol);
-	BOOL samr_delete_dom_alias(  POLICY_HND *alias_pol);
 	uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 					uint32 unk_0, uint32 unk_1,
 					POLICY_HND *user_pol, uint32 *rid);
@@ -1291,13 +1290,10 @@ uint32 _samr_query_useraliases(const POLICY_HND *pol,
 	return status;
 }
 
-#if 0
-
 /*******************************************************************
  samr_reply_delete_dom_alias
  ********************************************************************/
-uint32 _samr_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
-				prs_struct *rdata)
+uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol)
 {
 	uint32 status = 0;
 
@@ -1305,12 +1301,10 @@ uint32 _samr_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
 	uint32 alias_rid;
 	fstring alias_sid_str;
 
-	SAMR_R_DELETE_DOM_ALIAS r_u;
-
 	DEBUG(5,("samr_delete_dom_alias: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &alias_pol, &alias_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), alias_pol, &alias_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1336,11 +1330,10 @@ uint32 _samr_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
 		}
 	}
 
-	make_samr_r_delete_dom_alias(&r_u, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_delete_dom_alias("", &r_u, rdata, 0);
+	return status;
 }
+
+#if 0
 
 
 /*******************************************************************

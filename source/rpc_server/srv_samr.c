@@ -464,56 +464,6 @@ static void api_samr_query_useraliases( rpcsrv_struct *p, prs_struct *data, prs_
 
 }
 
-/*******************************************************************
- samr_reply_delete_dom_alias
- ********************************************************************/
-static void samr_reply_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
-				prs_struct *rdata)
-{
-	uint32 status = 0;
-
-	DOM_SID alias_sid;
-	uint32 alias_rid;
-	fstring alias_sid_str;
-
-	SAMR_R_DELETE_DOM_ALIAS r_u;
-
-	DEBUG(5,("samr_delete_dom_alias: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->alias_pol, &alias_sid))
-	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	else
-	{
-		sid_to_string(alias_sid_str, &alias_sid     );
-		sid_split_rid(&alias_sid, &alias_rid);
-	}
-
-	if (status == 0x0)
-	{
-		DEBUG(10,("sid is %s\n", alias_sid_str));
-
-		if (sid_equal(&alias_sid, &global_sam_sid))
-		{
-			DEBUG(10,("lookup on Domain SID\n"));
-
-			become_root(True);
-			status = del_alias_entry(alias_rid) ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_ALIAS);
-			unbecome_root(True);
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
-		}
-	}
-
-	make_samr_r_delete_dom_alias(&r_u, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_delete_dom_alias("", &r_u, rdata, 0);
-}
 
 /*******************************************************************
  api_samr_delete_dom_alias
@@ -521,8 +471,14 @@ static void samr_reply_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
 static void api_samr_delete_dom_alias( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_DELETE_DOM_ALIAS q_u;
+	SAMR_R_DELETE_DOM_ALIAS r_u;
+
+	ZERO_STRUCT(r_u);
+	ZERO_STRUCT(q_u);
+
 	samr_io_q_delete_dom_alias("", &q_u, data, 0);
-	samr_reply_delete_dom_alias(&q_u, rdata);
+	r_u.status = _samr_delete_dom_alias(&q_u.alias_pol);
+	samr_io_r_delete_dom_alias("", &r_u, rdata, 0);
 }
 
 
