@@ -1,3 +1,18 @@
+2003-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c (repl_mutual): don't set kerberos error where
+	there was no kerberos error
+
+	* gssapi_locl.h: Add destruction/creation prototypes and structure
+	for the thread specific storage.
+
+	* display_status.c: use thread specific storage to set/get the
+	kerberos error message
+
+	* init.c: Provide locking around the creation of the global
+	krb5_context. Add destruction/creation functions for the thread
+	specific storage that the error string handling is using.
+	
 2003-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: add missing prototype and missing .Ft
