@@ -33,6 +33,7 @@ static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
 static int verbose;
 static int die_on_error;
+static int NumLoops = 0;
 
 /* a test fn for LANMAN mask support */
 int ms_fnmatch_lanman_core(char *pattern, char *string)
@@ -382,6 +383,8 @@ static void test_mask(int argc, char *argv[],
 		if (strspn(file+l, ".") == strlen(file+l)) continue;
 
 		testpair(cli, mask, file);
+		if (NumLoops && (--NumLoops == 0))
+		break;
 	}
 
  finished:
@@ -396,6 +399,7 @@ static void usage(void)
   masktest //server/share [options..]\n\
   options:\n\
 	-d debuglevel\n\
+	-n numloops\n\
         -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
@@ -459,8 +463,11 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "d:U:s:hm:f:aoW:M:vE")) != EOF) {
+	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vE")) != EOF) {
 		switch (opt) {
+		case 'n':
+			NumLoops = atoi(optarg);
+			break;
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
 			break;
