@@ -98,7 +98,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o \
 	  lib/util_str.o lib/util_sid.o \
 	  lib/util_unistr.o lib/util_file.o \
-	  lib/util.o lib/util_sock.o lib/util_sec.o 
+	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
@@ -144,7 +144,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/mangle.o smbd/negprot.o \
             smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
-            smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o smbd/uid.o \
+            smbd/$(QUOTAOBJS) smbd/reply.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o
 
