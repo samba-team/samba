@@ -37,15 +37,16 @@ typedef union unid_t {
 	gid_t gid;
 } unid_t;
 
+struct DOM_SID;
 /* Filled out by IDMAP backends */
 struct idmap_methods {
 
 	/* Called when backend is first loaded */
 	NTSTATUS (*init)(void);
 
-	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, int id_type);
-	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, const DOM_SID *sid);
-	NTSTATUS (*set_mapping)(const DOM_SID *sid, unid_t id, int id_type);
+	NTSTATUS (*get_sid_from_id)(struct DOM_SID *sid, unid_t id, int id_type);
+	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, const struct DOM_SID *sid);
+	NTSTATUS (*set_mapping)(const struct DOM_SID *sid, unid_t id, int id_type);
 
 	/* Called when backend is unloaded */
 	NTSTATUS (*close)(void);
