@@ -140,27 +140,6 @@ uint32 make_dom_gids(DOMAIN_GRP * mem, int num_members, DOM_GID ** ppgids)
 	return count;
 }
 
-/*******************************************************************
- gets a domain user's groups
- ********************************************************************/
-static int get_domain_user_groups(DOMAIN_GRP_MEMBER ** grp_members, uint32 group_rid)
-{
-	DOMAIN_GRP *grp;
-	int num_mem;
-
-	if (grp_members == NULL)
-		return 0;
-
-	grp = getgrouprid(group_rid, grp_members, &num_mem);
-
-	if (grp == NULL)
-	{
-		return 0;
-	}
-
-	return num_mem;
-}
-
 
 /*******************************************************************
  lookup_wk_group_sid
@@ -484,30 +463,6 @@ static uint32 lookup_added_alias_name(const char *als_name,
 	}
 
 	DEBUG(5, (" none mapped\n"));
-	return NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
- lookup_added_user_rid
- ********************************************************************/
-static uint32 lookup_added_user_rids(char *nt_name, uint32 *usr_rid, uint32 *grp_rid)
-{
-	struct sam_passwd *sam_pass;
-	(*usr_rid) = 0;
-	(*grp_rid) = 0;
-
-	/* find the user account */
-	become_root(True);
-	sam_pass = getsam21pwntnam(nt_name);
-	unbecome_root(True);
-
-	if (sam_pass != NULL)
-	{
-		(*usr_rid) = sam_pass->user_rid;
-		(*grp_rid) = sam_pass->group_rid;
-		return 0x0;
-	}
-
 	return NT_STATUS_NONE_MAPPED;
 }
 
