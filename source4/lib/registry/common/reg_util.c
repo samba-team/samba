@@ -54,7 +54,7 @@ char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct registry_value *v)
 	  asciip = ret;
 	  for (i=0; i<v->data_len; i++) { 
 		  int str_rem = v->data_len * 3 - (asciip - ret);
-		  asciip += snprintf(asciip, str_rem, "%02x", *(uint8_t *)(v->data_blk+i));
+		  asciip += snprintf(asciip, str_rem, "%02x", *(uint8_t *)(((char *)v->data_blk)+i));
 		  if (i < v->data_len && str_rem > 0)
 			  *asciip = ' '; asciip++;	
 	  }
