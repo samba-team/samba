@@ -161,7 +161,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 		vec[0].sfv_fd = SFV_FD_SELF;
 		vec[0].sfv_flag = 0;
-		vec[0].sfv_off = header->data;
+		vec[0].sfv_off = (off_t)header->data;
 		vec[0].sfv_len = hdr_len = header->length;
 
 		vec[1].sfv_fd = fromfd;
