@@ -1,5 +1,11 @@
 2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/Makefile.am: add kerberos.8 manpage
+
+	* lib/krb5/cache.c: check for NULL remove_cred function
+
+	* lib/krb5/fcache.c: pretend that empty files are non-existant
+
 	* lib/krb5/get_addrs.c (find_all_addresses): use getifaddrs, from
 	Jason Thorpe <thorpej@netbsd.org>
 

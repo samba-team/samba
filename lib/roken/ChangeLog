@@ -1,5 +1,8 @@
 2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
 
+	* ifaddrs.h: fix freeifaddrs prototype, and add ifa_broadaddr
+	macro
+
 	* getifaddrs.c: free some memory
 
 2000-12-04  Johan Danielsson  <joda@pdc.kth.se>
