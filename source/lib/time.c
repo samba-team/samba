@@ -409,3 +409,10 @@ NTTIME nttime_from_string(const char *s)
 {
 	return strtoull(s, NULL, 0);
 }
+
+long long usec_time_diff(struct timeval *larget, struct timeval *smallt)
+{
+	long long sec_diff = larget->tv_sec - smallt->tv_sec;
+	return (sec_diff * 1000000) + (long long)(larget->tv_usec - smallt->tv_usec);
+}
+
