@@ -819,12 +819,15 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct)
 	if (!pdb_context) {
 		return False;
 	}
+	
+	/* disable acccounts with no passwords (that has not 
+	   been allowed by the  ACB_PWNOTREQ bit */
 
-	/* disable acccounts with no passwords */
 	lm_pw = pdb_get_lanman_passwd( sam_acct );
 	nt_pw = pdb_get_lanman_passwd( sam_acct );
-	if ( !lm_pw || !nt_pw ) {
-		acb_flags = pdb_get_acct_ctrl( sam_acct ) | ACB_DISABLED;
+	acb_flags = pdb_get_acct_ctrl( sam_acct );
+	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
+		acb_flags |= ACB_DISABLED;
 		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
 		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
 	}
@@ -842,11 +845,14 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 		return False;
 	}
 
-	/* disable acccounts with no passwords */
+	/* disable acccounts with no passwords (that has not 
+	   been allowed by the  ACB_PWNOTREQ bit */
+	
 	lm_pw = pdb_get_lanman_passwd( sam_acct );
 	nt_pw = pdb_get_lanman_passwd( sam_acct );
-	if ( !lm_pw || !nt_pw ) {
-		acb_flags = pdb_get_acct_ctrl( sam_acct ) | ACB_DISABLED;
+	acb_flags = pdb_get_acct_ctrl( sam_acct );
+	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
+		acb_flags |= ACB_DISABLED;
 		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
 		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
 	}
