@@ -106,7 +106,7 @@ static int tdb_convert_fn(TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 /*****************************************************************************
  Convert the idmap database from an older version.
 *****************************************************************************/
-static BOOL tdb_idmap_convert(const char *idmap_name)
+static BOOL tdb_idmap_convert(void)
 {
 	int32 vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
 	BOOL bigendianheader =
@@ -280,8 +280,27 @@ static BOOL tdb_get_id_from_sid(DOM_SID * sid, uid_t * id, BOOL isgroup)
 *****************************************************************************/
 static BOOL tdb_idmap_init(void)
 {
+	SMB_STRUCT_STAT stbuf;
+
+	/* move to the new database on first startup */
+	if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
+		if (file_exist(lock_path("winbindd_idmap.tdb"), &stbuf)) {
+			char *cmd = NULL;
+			
+			/* lazy file copy */
+			if (asprintf(&cmd, "cp -p %s/winbindd_idmap.tdb %s/idmap.tdb", lp_lockdir(), lp_lockdir()) != -1) {
+				system(cmd);
+				free(cmd);
+			}
+			if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
+				DEBUG(0, ("idmap_init: Unable to make a new database copy\n"));
+				return False;
+			}
+		}
+	}
+
 	/* Open tdb cache */
-	if (!(idmap_tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0,
+	if (!(idmap_tdb = tdb_open_log(lock_path("idmap.tdb"), 0,
 				       TDB_DEFAULT, O_RDWR | O_CREAT,
 				       0600))) {
 		DEBUG(0,
@@ -290,9 +309,8 @@ static BOOL tdb_idmap_init(void)
 	}
 
 	/* possibly convert from an earlier version */
-	if (!tdb_idmap_convert(lock_path("winbindd_idmap.tdb"))) {
-		DEBUG(0,
-		      ("winbindd_idmap_init: Unable to open idmap database\n"));
+	if (!tdb_idmap_convert()) {
+		DEBUG(0, ("winbindd_idmap_init: Unable to open idmap database\n"));
 		return False;
 	}
 

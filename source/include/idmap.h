@@ -41,7 +41,7 @@ typedef union unid_t {
 struct idmap_methods {
 
 	/* Called when backend is first loaded */
-	NTSTATUS (*init)(const char *init_str);
+	NTSTATUS (*init)(void);
 
 	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, int id_type);
 	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, const DOM_SID *sid);

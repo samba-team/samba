@@ -45,143 +45,6 @@ static struct idmap_state {
 	gid_t gid_low, gid_high;               /* Range of gids to allocate */
 } idmap_state;
 
-
-/* FIXME: let handle conversions when all things work ok.
-	  I think it is better to handle the conversion at
-	  upgrade time and leave the old db intact.
-	  That would also make easier to go back to 2.2 if needed
-	  ---SSS */
-#if 0
-
-/* convert one record to the new format */
-static int tdb_convert_fn(TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
-			  void *ignored)
-{
-	struct winbindd_domain *domain;
-	char *p;
-	DOM_SID sid;
-	uint32 rid;
-	fstring keystr;
-	fstring dom_name;
-	TDB_DATA key2;
-
-	p = strchr(key.dptr, '/');
-	if (!p)
-		return 0;
-
-	*p = 0;
-	fstrcpy(dom_name, key.dptr);
-	*p++ = '/';
-
-	domain = find_domain_from_name(dom_name);
-	if (!domain) {
-		/* We must delete the old record. */
-		DEBUG(0,
-		      ("winbindd: tdb_convert_fn : Unable to find domain %s\n",
-		       dom_name));
-		DEBUG(0,
-		      ("winbindd: tdb_convert_fn : deleting record %s\n",
-		       key.dptr));
-		tdb_delete(idmap_tdb, key);
-		return 0;
-	}
-
-	rid = atoi(p);
-
-	sid_copy(&sid, &domain->sid);
-	sid_append_rid(&sid, rid);
-
-	sid_to_string(keystr, &sid);
-	key2.dptr = keystr;
-	key2.dsize = strlen(keystr) + 1;
-
-	if (tdb_store(idmap_tdb, key2, data, TDB_INSERT) != 0) {
-		/* not good! */
-		DEBUG(0,
-		      ("winbindd: tdb_convert_fn : Unable to update record %s\n",
-		       key2.dptr));
-		DEBUG(0,
-		      ("winbindd: tdb_convert_fn : conversion failed - idmap corrupt ?\n"));
-		return -1;
-	}
-
-	if (tdb_store(idmap_tdb, data, key2, TDB_REPLACE) != 0) {
-		/* not good! */
-		DEBUG(0,
-		      ("winbindd: tdb_convert_fn : Unable to update record %s\n",
-		       data.dptr));
-		DEBUG(0,
-		      ("winbindd: tdb_convert_fn : conversion failed - idmap corrupt ?\n"));
-		return -1;
-	}
-
-	tdb_delete(idmap_tdb, key);
-
-	return 0;
-}
-
-/*****************************************************************************
- Convert the idmap database from an older version.
-*****************************************************************************/
-static BOOL tdb_idmap_convert(const char *idmap_name)
-{
-	int32 vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
-	BOOL bigendianheader =
-	    (idmap_tdb->flags & TDB_BIGENDIAN) ? True : False;
-
-	if (vers == IDMAP_VERSION)
-		return True;
-
-	if (((vers == -1) && bigendianheader)
-	    || (IREV(vers) == IDMAP_VERSION)) {
-		/* Arrggghh ! Bytereversed or old big-endian - make order independent ! */
-		/*
-		 * high and low records were created on a
-		 * big endian machine and will need byte-reversing.
-		 */
-
-		int32 wm;
-
-		wm = tdb_fetch_int32(idmap_tdb, HWM_USER);
-
-		if (wm != -1) {
-			wm = IREV(wm);
-		} else
-			wm = server_state.uid_low;
-
-		if (tdb_store_int32(idmap_tdb, HWM_USER, wm) == -1) {
-			DEBUG(0,
-			      ("tdb_idmap_convert: Unable to byteswap user hwm in idmap database\n"));
-			return False;
-		}
-
-		wm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
-		if (wm != -1) {
-			wm = IREV(wm);
-		} else
-			wm = server_state.gid_low;
-
-		if (tdb_store_int32(idmap_tdb, HWM_GROUP, wm) == -1) {
-			DEBUG(0,
-			      ("tdb_idmap_convert: Unable to byteswap group hwm in idmap database\n"));
-			return False;
-		}
-	}
-
-	/* the old format stored as DOMAIN/rid - now we store the SID direct */
-	tdb_traverse(idmap_tdb, tdb_convert_fn, NULL);
-
-	if (tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) ==
-	    -1) {
-		DEBUG(0,
-		      ("tdb_idmap_convert: Unable to byteswap group hwm in idmap database\n"));
-		return False;
-	}
-
-	return True;
-}
-#endif
-
 /* Allocate either a user or group id from the pool */
 static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 {
@@ -387,24 +250,25 @@ static NTSTATUS db_set_mapping(DOM_SID *sid, unid_t id, int id_type)
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
-static NTSTATUS db_idmap_init(const char *db_name)
+static NTSTATUS db_idmap_init(void)
 {
+	SMB_STRUCT_STAT stbuf;
+
+	/* move to the new database on first startup */
+	if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
+		if (file_exist(lock_path("winbindd_idmap.tdb"), &stbuf)) {
+			DEBUG(0, ("idmap_init: winbindd_idmap.tdb is present and idmap.tdb is not!\nPlease RUN winbindd first to convert the db to the new format!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
 	/* Open tdb cache */
-	if (!(idmap_tdb = tdb_open_log(lock_path(db_name), 0,
+	if (!(idmap_tdb = tdb_open_log(lock_path("idmap.tdb"), 0,
 				       TDB_DEFAULT, O_RDWR | O_CREAT,
 				       0600))) {
 		DEBUG(0, ("idmap_init: Unable to open idmap database\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
-#if 0
-	/* possibly convert from an earlier version */
-	if (!tdb_idmap_convert(lock_path("winbind_idmap.tdb"))) {
-		DEBUG(0,
-		      ("idmap_init: Unable to open old idmap database\n"));
-		return False;
-	}
-#endif
 
 	/* Create high water marks for group and user id */
 	if (tdb_fetch_int32(idmap_tdb, HWM_USER) == -1) {
