@@ -11,7 +11,7 @@
 <title>Introduction and configuration</title>
 
 <para>
-Since samba 3.0, samba supports stackable VFS(Virtual File System) modules. 
+Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
 Samba passes each request to access the unix file system thru the loaded VFS modules. 
 This chapter covers all the modules that come with the samba source and references to 
 some external modules.
@@ -20,27 +20,32 @@ some external modules.
 <para>
 You may have problems to compile these modules, as shared libraries are
 compiled and linked in different ways on different systems.
-I currently tested them against GNU/linux and IRIX.
+They currently have been tested against GNU/linux and IRIX.
 </para>
 
 <para>
 To use the VFS modules, create a share similar to the one below.  The
 important parameter is the <command>vfs object</command> parameter which must point to
-the exact pathname of the shared library object. For example, to use audit.so:
+the exact pathname of the shared library objects. For example, to log all access 
+to files and use a recycle bin:
 
 <programlisting>
        [audit]
                 comment = Audited /data directory
                 path = /data
-                vfs object = /path/to/audit.so
+                vfs object = /path/to/audit.so /path/to/recycle.so
                 writeable = yes
                 browseable = yes
 </programlisting>
 </para>
 
 <para>
+The modules are used in the order they are specified.
+</para>
+
+<para>
 Further documentation on writing VFS modules for Samba can be found in
-docs directory of the Samba source distribution.
+the Samba Developers Guide.
 </para>
 
 </sect1>
