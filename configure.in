@@ -269,7 +269,8 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(arpa/ftp.h arpa/inet.h arpa/nameser.h arpa/telnet.h )
 AC_CHECK_HEADERS(bsdsetjmp.h crypt.h)
 AC_CHECK_HEADERS(curses.h db.h dbm.h dirent.h err.h errno.h)
-AC_CHECK_HEADERS(fcntl.h fnmatch.h grp.h inttypes.h limits.h maillock.h ndbm.h)
+AC_CHECK_HEADERS(fcntl.h fnmatch.h glob.h grp.h inttypes.h limits.h)
+AC_CHECK_HEADERS(maillock.h ndbm.h)
 AC_CHECK_HEADERS(net/if.h netdb.h)
 AC_CHECK_HEADERS(netinet/in.h netinet/in6.h netinet/in6_var.h)
 AC_CHECK_HEADERS(netinet/in6_machtypes.h netinet/in_systm.h)
@@ -292,6 +293,10 @@ if test "$ac_cv_header_err_h" = no; then
 fi
 if test "$ac_cv_header_fnmatch_h" = no; then
 	EXTRA_HDRS="$EXTRA_HDRS fnmatch.h"
+	AC_SUBST(EXTRA_HDRS)
+fi
+if test "$ac_cv_header_glob_h" = no; then
+	EXTRA_HDRS="$EXTRA_HDRS glob.h"
 	AC_SUBST(EXTRA_HDRS)
 fi
 
@@ -417,7 +422,7 @@ fi
 
 AC_BROKEN(chown daemon err errx fchown flock fnmatch)
 AC_BROKEN(getcwd getdtablesize gethostname geteuid getgid getegid)
-AC_BROKEN(getopt getusershell inet_aton initgroups iruserok lstat memmove)
+AC_BROKEN(getopt getusershell glob inet_aton initgroups iruserok lstat memmove)
 AC_BROKEN(mkstemp putenv rcmd readv setegid setenv seteuid)
 AC_BROKEN(strcasecmp strncasecmp strdup strerror strftime strlwr strnlen)
 AC_BROKEN(strsep strtok_r strupr swab unsetenv verr verrx vsyslog)
