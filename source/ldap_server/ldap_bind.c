@@ -53,7 +53,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	const char *errstr;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS sasl_status;
-	BOOL ret;
+	/*BOOL ret;*/
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
@@ -120,13 +120,12 @@ reply:
 		return NT_STATUS_NO_MEMORY;
 	}
 	ldapsrv_consumed_from_buf(&call->conn->out_buffer, call->conn->out_buffer.length);
-*/
+
 	status = gensec_session_info(call->conn->gensec, &call->conn->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	//debug_session_info(0, 0, call->conn->session_info);
+*/
 
 	return status;
 }
