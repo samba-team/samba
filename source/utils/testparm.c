@@ -320,6 +320,13 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 					   Map system can only work if force create mode excludes octal 010 (S_IXGRP).\n",
 					   lp_servicename(s) );
 			}
+#ifdef HAVE_CUPS
+			if (lp_printing(s) == PRINT_CUPS && *(lp_printcommand(s)) != '\0') {
+				 fprintf(stderr,"Warning: Service %s defines a print command, but \
+print command parameter is ignored when using CUPS libraries.\n",
+					   lp_servicename(s) );
+			}
+#endif
 		}
 	}
 
