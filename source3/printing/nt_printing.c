@@ -1290,7 +1290,7 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 	
 	param=printer.info_2->specific;
 	
-	while (param != NULL && i < param_index)
+	while (param != NULL && i <= param_index)
 	{
 		param=param->next;
 		i++;
