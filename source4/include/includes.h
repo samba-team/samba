@@ -91,14 +91,6 @@
 
 typedef int BOOL;
 
-/*
-  we use struct ipv4_addr to avoid having to include all the
-  system networking headers everywhere
-*/
-struct ipv4_addr {
-	uint32_t addr;
-};
-
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]
@@ -126,7 +118,6 @@ extern int errno;
 #include "pstring.h"
 #include "smb_macros.h"
 #include "smb.h"
-#include "ads.h"
 #include "lib/socket/socket.h"
 #include "libcli/ldap/ldap.h"
 #include "byteorder.h"
@@ -142,6 +133,7 @@ extern int errno;
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "nsswitch/winbind_client.h"
+#include "ads.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)

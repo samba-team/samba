@@ -102,7 +102,7 @@ interface nbt
 
 	typedef struct {
 		nb_flags nb_flags;
-		uint32   ipaddr;
+		ipv4_addr  ipaddr;
 	} nbt_rdata_address;
 
 	typedef struct {
