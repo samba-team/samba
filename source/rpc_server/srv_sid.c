@@ -66,7 +66,7 @@ DOM_SID global_sid_S_1_1;    /* everyone */
 DOM_SID global_sid_S_1_3;    /* */
 DOM_SID global_sid_S_1_5;    /* NT Authority */
 
-extern pstring global_myworkgroup;
+extern fstring global_myworkgroup;
 /* extern fstring global_member_dom_name; */
 
 static struct sid_name_map_info

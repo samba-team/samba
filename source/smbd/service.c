@@ -54,8 +54,8 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 	snum = SNUM(conn);
   
 	if (do_chdir &&
-	    ChDir(conn->connectpath) != 0 &&
-	    ChDir(conn->origpath) != 0) {
+	    dos_ChDir(conn->connectpath) != 0 &&
+	    dos_ChDir(conn->origpath) != 0) {
 		DEBUG(0,("chdir (%s) failed\n",
 			 conn->connectpath));
 		return(False);
@@ -430,7 +430,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
 	
-	if (ChDir(conn->connectpath) != 0) {
+	if (dos_ChDir(conn->connectpath) != 0) {
 		DEBUG(0,("Can't change directory to %s (%s)\n",
 			 conn->connectpath,strerror(errno)));
 		unbecome_user();
@@ -453,9 +453,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	{
 		pstring s;
 		pstrcpy(s,conn->connectpath);
-		GetWd(s);
+		dos_GetWd(s);
 		string_set(&conn->connectpath,s);
-		ChDir(conn->connectpath);
+		dos_ChDir(conn->connectpath);
 	}
 #endif
 	

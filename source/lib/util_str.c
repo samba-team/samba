@@ -458,11 +458,11 @@ void string_replace(char *s,char oldc,char newc)
 /*******************************************************************
 skip past some strings in a buffer
 ********************************************************************/
-char *skip_string(const char *buf,size_t n)
+char *skip_string(char *buf,size_t n)
 {
   while (n--)
     buf += strlen(buf) + 1;
-  return((char *)buf);
+  return(buf);
 }
 
 /*******************************************************************

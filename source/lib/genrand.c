@@ -56,7 +56,7 @@ static void do_filehash(char *fname, unsigned char *hash)
 
 static void do_dirrand(char *name, unsigned char *buf, int buf_len)
 {
-  void *dp = dos_opendir(name);
+  DIR *dp = opendir(name);
   pstring fullname;
   int len_left;
   int fullname_len;
@@ -86,7 +86,7 @@ static void do_dirrand(char *name, unsigned char *buf, int buf_len)
       if(strlen(p) <= len_left)
         pstrcpy(pos, p);
 
-      if(dos_stat(fullname,&st) == 0) {
+      if(sys_stat(fullname,&st) == 0) {
         SIVAL(buf, ((counter * 4)%(buf_len-4)), 
               IVAL(buf,((counter * 4)%(buf_len-4))) ^ st.st_atime);
         counter++;

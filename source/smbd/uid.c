@@ -54,7 +54,7 @@ void init_uid(void)
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 	
-	ChDir(OriginalDir);
+	dos_ChDir(OriginalDir);
 }
 
 
@@ -303,7 +303,7 @@ BOOL unbecome_user(void )
   if (!current_user.conn)
     return(False);
 
-  ChDir(OriginalDir);
+  dos_ChDir(OriginalDir);
 
   if (initial_uid == 0)
     {
@@ -336,7 +336,7 @@ BOOL unbecome_user(void )
   current_user.uid = initial_uid;
   current_user.gid = initial_gid;
   
-  if (ChDir(OriginalDir) != 0)
+  if (dos_ChDir(OriginalDir) != 0)
     DEBUG( 0, ( "chdir(%s) failed in unbecome_user\n", OriginalDir ) );
 
   DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
@@ -366,7 +366,7 @@ void become_root(BOOL save_dir)
 		DEBUG(0,("ERROR: become root depth is non zero\n"));
 	}
 	if (save_dir)
-		GetWd(become_root_dir);
+		dos_GetWd(become_root_dir);
 
 	current_user_saved = current_user;
 	become_root_depth = 1;
@@ -415,7 +415,7 @@ void unbecome_root(BOOL restore_dir)
 	}
 
 	if (restore_dir)
-		ChDir(become_root_dir);
+		dos_ChDir(become_root_dir);
 
 	current_user = current_user_saved;
 

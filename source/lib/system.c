@@ -143,7 +143,7 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-int sys_stat(char *fname,SMB_STRUCT_STAT *sbuf)
+int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 #if defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
   return stat64(fname, sbuf);
@@ -169,7 +169,7 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
  An lstat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
+int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 #if defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
   return lstat64(fname, sbuf);
@@ -287,42 +287,9 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T of
 }
 
 /*******************************************************************
-just a unlink wrapper that calls dos_to_unix.
-********************************************************************/
-int dos_unlink(char *fname)
-{
-  return(unlink(dos_to_unix(fname,False)));
-}
-
-
-/*******************************************************************
-a simple open() wrapper that calls dos_to_unix.
-********************************************************************/
-int dos_open(char *fname,int flags,mode_t mode)
-{
-  return(sys_open(dos_to_unix(fname,False),flags,mode));
-}
-
-
-/*******************************************************************
-a simple opendir() wrapper that calls dos_to_unix
-********************************************************************/
-DIR *dos_opendir(char *dname)
-{
-	return(opendir(dos_to_unix(dname,False)));
-}
-
-/*******************************************************************
-and a stat() wrapper that calls dos_to_unix.
-********************************************************************/
-int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf)
-{
-  return(sys_stat(dos_to_unix(fname,False),sbuf));
-}
-
-/*******************************************************************
 The wait() calls vary between systems
 ********************************************************************/
+
 int sys_waitpid(pid_t pid,int *status,int options)
 {
 #ifdef HAVE_WAITPID
@@ -330,174 +297,6 @@ int sys_waitpid(pid_t pid,int *status,int options)
 #else /* HAVE_WAITPID */
   return wait4(pid, status, options, NULL);
 #endif /* HAVE_WAITPID */
-}
-
-/*******************************************************************
-don't forget lstat() that calls dos_to_unix.
-********************************************************************/
-int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
-{
-  return(sys_lstat(dos_to_unix(fname,False),sbuf));
-}
-
-/*******************************************************************
-mkdir() gets a wrapper that calls dos_to_unix.
-********************************************************************/
-int dos_mkdir(char *dname,mode_t mode)
-{
-  return(mkdir(dos_to_unix(dname,False),mode));
-}
-
-/*******************************************************************
-do does rmdir() - call dos_to_unix
-********************************************************************/
-int dos_rmdir(char *dname)
-{
-  return(rmdir(dos_to_unix(dname,False)));
-}
-
-/*******************************************************************
-I almost forgot chdir() - call dos_to_unix.
-********************************************************************/
-int dos_chdir(char *dname)
-{
-  return(chdir(dos_to_unix(dname,False)));
-}
-
-/*******************************************************************
-now for utime() - call dos_to_unix.
-********************************************************************/
-int dos_utime(char *fname,struct utimbuf *times)
-{
-  /* if the modtime is 0 or -1 then ignore the call and
-     return success */
-  if (times->modtime == (time_t)0 || times->modtime == (time_t)-1)
-    return 0;
-  
-  /* if the access time is 0 or -1 then set it to the modtime */
-  if (times->actime == (time_t)0 || times->actime == (time_t)-1)
-    times->actime = times->modtime;
-   
-  return(utime(dos_to_unix(fname,False),times));
-}
-
-/*********************************************************
-for rename across filesystems Patch from Warren Birnbaum 
-<warrenb@hpcvscdp.cv.hp.com>
-**********************************************************/
-
-static int copy_reg(char *source, const char *dest)
-{
-  SMB_STRUCT_STAT source_stats;
-  int ifd;
-  int ofd;
-  char *buf;
-  int len;                      /* Number of bytes read into `buf'. */
-
-  sys_lstat (source, &source_stats);
-  if (!S_ISREG (source_stats.st_mode))
-    return 1;
-
-  if (unlink (dest) && errno != ENOENT)
-    return 1;
-
-  if((ifd = sys_open (source, O_RDONLY, 0)) < 0)
-    return 1;
-
-  if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0 )
-  {
-    close (ifd);
-    return 1;
-  }
-
-  if((buf = malloc( COPYBUF_SIZE )) == NULL)
-  {
-    close (ifd);  
-    close (ofd);  
-    unlink (dest);
-    return 1;
-  }
-
-  while ((len = read(ifd, buf, COPYBUF_SIZE)) > 0)
-  {
-    if (write_data(ofd, buf, len) < 0)
-    {
-      close (ifd);
-      close (ofd);
-      unlink (dest);
-      free(buf);
-      return 1;
-    }
-  }
-  free(buf);
-  if (len < 0)
-  {
-    close (ifd);
-    close (ofd);
-    unlink (dest);
-    return 1;
-  }
-
-  if (close (ifd) < 0)
-  {
-    close (ofd);
-    return 1;
-  }
-  if (close (ofd) < 0)
-    return 1;
-
-  /* chown turns off set[ug]id bits for non-root,
-     so do the chmod last.  */
-
-  /* Try to copy the old file's modtime and access time.  */
-  {
-    struct utimbuf tv;
-
-    tv.actime = source_stats.st_atime;
-    tv.modtime = source_stats.st_mtime;
-    if (utime (dest, &tv))
-      return 1;
-  }
-
-  /* Try to preserve ownership.  For non-root it might fail, but that's ok.
-     But root probably wants to know, e.g. if NFS disallows it.  */
-  if (chown (dest, source_stats.st_uid, source_stats.st_gid)
-      && (errno != EPERM))
-    return 1;
-
-  if (chmod (dest, source_stats.st_mode & 07777))
-    return 1;
-
-  unlink (source);
-  return 0;
-}
-
-/*******************************************************************
-for rename() - call dos_to_unix.
-********************************************************************/
-int dos_rename(char *from, char *to)
-{
-    int rcode;  
-    pstring zfrom, zto;
-
-    pstrcpy (zfrom, dos_to_unix (from, False));
-    pstrcpy (zto, dos_to_unix (to, False));
-    rcode = rename (zfrom, zto);
-
-    if (errno == EXDEV) 
-    {
-      /* Rename across filesystems needed. */
-      rcode = copy_reg (zfrom, zto);        
-    }
-    return rcode;
-}
-
-/*******************************************************************
-for chmod - call dos_to_unix.
-********************************************************************/
-int dos_chmod(char *fname,mode_t mode)
-{
-  return(chmod(dos_to_unix(fname,False),mode));
 }
 
 /*******************************************************************
@@ -515,22 +314,9 @@ char *sys_getwd(char *s)
 }
 
 /*******************************************************************
-for getwd - takes a UNIX directory name and returns the name
-in dos format.
-********************************************************************/
-char *dos_getwd(char *s)
-{
-	char *wd;
-	wd = sys_getwd(s);
-	if (wd)
-		unix_to_dos(wd, True);
-	return wd;
-}
-
-/*******************************************************************
 chown isn't used much but OS/2 doesn't have it
 ********************************************************************/
-int sys_chown(char *fname,uid_t uid,gid_t gid)
+int sys_chown(const char *fname,uid_t uid,gid_t gid)
 {
 #ifndef HAVE_CHOWN
 	static int done;
@@ -546,7 +332,7 @@ int sys_chown(char *fname,uid_t uid,gid_t gid)
 /*******************************************************************
 os/2 also doesn't have chroot
 ********************************************************************/
-int sys_chroot(char *dname)
+int sys_chroot(const char *dname)
 {
 #ifndef HAVE_CHROOT
 	static int done;
@@ -564,7 +350,7 @@ A wrapper for gethostbyname() that tries avoids looking up hostnames
 in the root domain, which can cause dial-on-demand links to come up for no
 apparent reason.
 ****************************************************************************/
-struct hostent *sys_gethostbyname(char *name)
+struct hostent *sys_gethostbyname(const char *name)
 {
 #ifdef REDUCE_ROOT_DNS_LOOKUPS
   char query[256], hostname[256];
