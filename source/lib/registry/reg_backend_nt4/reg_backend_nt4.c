@@ -1085,12 +1085,15 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 	if (clsname_len) { /* Just print in Ascii for now */
 		smb_ucs2_t *clsnamep;
 		int clsnam_off;
+		char *clsnameu;
 
 		clsnam_off = IVAL(&nk_hdr->clsnam_off,0);
 		clsnamep = (smb_ucs2_t *)LOCN(regf->base, clsnam_off);
 		DEBUG(2, ("Class Name Offset: %0X\n", clsnam_off));
 
-		tmp->class_name = talloc_strdup_w(h->mem_ctx, clsnamep);
+		clsnameu = acnv_u2ux(clsnamep);
+		tmp->class_name = talloc_strdup(tmp->mem_ctx, clsnameu);
+		SAFE_FREE(clsnameu);
 
 		DEBUGADD(2,("  Class Name: %s\n", cls_name));
 

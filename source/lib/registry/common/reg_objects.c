@@ -141,7 +141,7 @@ char *reg_val_get_path(REG_VAL *v)
 const char *reg_key_get_path(REG_KEY *k)
 {
 	SMB_REG_ASSERT(k);
-	return strchr(k->path, '\\')?strchr(k->path, '\\')+1:k->path;
+	return strchr(k->path, '\\')?strchr(k->path, '\\')+1:"";
 }
 
 const char *reg_key_get_path_abs(REG_KEY *k)

@@ -176,14 +176,14 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 		return WERR_OK;
 	}
 
-	mem_ctx = talloc_init("mem_ctx");
-
-	fullname = talloc_asprintf(mem_ctx, "%s%s%s", parent->path, parent->path[strlen(parent->path)-1] == '\\'?"":"\\", name);
-
 	if(!parent->handle->functions->open_key) {
 		DEBUG(0, ("Registry backend doesn't have get_subkey_by_name nor open_key!\n"));
 		return WERR_NOT_SUPPORTED;
 	}
+
+	mem_ctx = talloc_init("mem_ctx");
+
+	fullname = talloc_asprintf(mem_ctx, "%s%s%s", reg_key_get_path(parent), strlen(reg_key_get_path(parent))?"\\":"", name);
 
 	error = parent->handle->functions->open_key(parent->handle, parent->hive, fullname, result);
 
@@ -193,7 +193,7 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 	}
 		
 	(*result)->handle = parent->handle;
-	(*result)->path = fullname;
+	(*result)->path = talloc_asprintf((*result)->mem_ctx, "%s\\%s", reg_key_get_path_abs(parent), (*result)->name);
 	(*result)->hive = parent->hive;
 	talloc_steal(mem_ctx, (*result)->mem_ctx, fullname);
 
@@ -303,7 +303,7 @@ WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
 		return WERR_NOT_SUPPORTED;
 	}
 
-	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", (*subkey)->name);
+	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s\\%s", reg_key_get_path_abs(key), (*subkey)->name);
 	(*subkey)->handle = key->handle;
 	(*subkey)->hive = key->hive;
 
@@ -334,7 +334,7 @@ WERROR reg_key_get_subkey_by_name(REG_KEY *key, const char *name, REG_KEY **subk
 
 	if(!W_ERROR_IS_OK(error)) return error;
 
-	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", (*subkey)->name);
+	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s\\%s", reg_key_get_path_abs(key), (*subkey)->name);
 	(*subkey)->handle = key->handle;
 	(*subkey)->hive = key->hive;
 
