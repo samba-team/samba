@@ -4395,9 +4395,9 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
 BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
-int chmod_acl(const char *name, mode_t mode);
-int fchmod_acl(int fd, mode_t mode);
-BOOL directory_has_default_acl(const char *fname);
+int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
+int fchmod_acl(files_struct *fsp, int fd, mode_t mode);
+BOOL directory_has_default_acl(connection_struct *conn, const char *fname);
 
 /*The following definitions come from  smbd/process.c  */
 
@@ -4628,6 +4628,28 @@ BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, S
 BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd);
 int vfswrap_chmod_acl(connection_struct *conn, char *name, mode_t mode);
 int vfswrap_fchmod_acl(files_struct *fsp, int fd, mode_t mode);
+int vfswrap_sys_acl_get_entry(struct connection_struct *conn, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int vfswrap_sys_acl_get_tag_type(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int vfswrap_sys_acl_get_permset(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void * vfswrap_sys_acl_get_qualifier(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T vfswrap_sys_acl_get_file(struct connection_struct *conn, const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T vfswrap_sys_acl_get_fd(struct files_struct *fsp, int fd);
+int vfswrap_sys_acl_clear_perms(struct connection_struct *conn, SMB_ACL_PERMSET_T permset);
+int vfswrap_sys_acl_add_perm(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char * vfswrap_sys_acl_to_text(struct connection_struct *conn, SMB_ACL_T theacl, ssize_t *plen);
+SMB_ACL_T vfswrap_sys_acl_init(struct connection_struct *conn, int count);
+int vfswrap_sys_acl_create_entry(struct connection_struct *conn, SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int vfswrap_sys_acl_set_tag_type(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int vfswrap_sys_acl_set_qualifier(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, void *qual);
+int vfswrap_sys_acl_set_permset(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int vfswrap_sys_acl_valid(struct connection_struct *conn, SMB_ACL_T theacl );
+int vfswrap_sys_acl_set_file(struct connection_struct *conn, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int vfswrap_sys_acl_set_fd(struct files_struct *fsp, int fd, SMB_ACL_T theacl);
+int vfswrap_sys_acl_delete_def_file(struct connection_struct *conn, const char *path);
+int vfswrap_sys_acl_get_perm(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int vfswrap_sys_acl_free_text(struct connection_struct *conn, char *text);
+int vfswrap_sys_acl_free_acl(struct connection_struct *conn, SMB_ACL_T posix_acl);
+int vfswrap_sys_acl_free_qualifier(struct connection_struct *conn, void *qualifier, SMB_ACL_TAG_T tagtype);
 
 /*The following definitions come from  smbwrapper/realcalls.c  */
 

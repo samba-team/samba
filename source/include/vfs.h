@@ -40,7 +40,8 @@
  */
 
 /* Changed to version 2 for CIFS UNIX extensions (mknod and link added). JRA. */
-#define SMB_VFS_INTERFACE_VERSION 2
+/* Changed to version 3 for POSIX acl extensions. JRA. */
+#define SMB_VFS_INTERFACE_VERSION 3
 
 /* VFS operations structure */
 
@@ -104,7 +105,29 @@ struct vfs_ops {
 
 	int (*chmod_acl)(struct connection_struct *conn, char *name, mode_t mode);
 	int (*fchmod_acl)(struct files_struct *fsp, int fd, mode_t mode);
-	
+
+	int (*sys_acl_get_entry)(struct connection_struct *conn, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+	int (*sys_acl_get_tag_type)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+	int (*sys_acl_get_permset)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+	void * (*sys_acl_get_qualifier)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d);
+	SMB_ACL_T (*sys_acl_get_file)(struct connection_struct *conn, const char *path_p, SMB_ACL_TYPE_T type);
+	SMB_ACL_T (*sys_acl_get_fd)(struct files_struct *fsp, int fd);
+	int (*sys_acl_clear_perms)(struct connection_struct *conn, SMB_ACL_PERMSET_T permset);
+	int (*sys_acl_add_perm)(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+	char * (*sys_acl_to_text)(struct connection_struct *conn, SMB_ACL_T theacl, ssize_t *plen);
+	SMB_ACL_T (*sys_acl_init)(struct connection_struct *conn, int count);
+	int (*sys_acl_create_entry)(struct connection_struct *conn, SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+	int (*sys_acl_set_tag_type)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+	int (*sys_acl_set_qualifier)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, void *qual);
+	int (*sys_acl_set_permset)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+	int (*sys_acl_valid)(struct connection_struct *conn, SMB_ACL_T theacl );
+	int (*sys_acl_set_file)(struct connection_struct *conn, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+	int (*sys_acl_set_fd)(struct files_struct *fsp, int fd, SMB_ACL_T theacl);
+	int (*sys_acl_delete_def_file)(struct connection_struct *conn, const char *path);
+	int (*sys_acl_get_perm)(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+	int (*sys_acl_free_text)(struct connection_struct *conn, char *text);
+	int (*sys_acl_free_acl)(struct connection_struct *conn, SMB_ACL_T posix_acl);
+	int (*sys_acl_free_qualifier)(struct connection_struct *conn, void *qualifier, SMB_ACL_TAG_T tagtype);
 };
 
 struct vfs_options {

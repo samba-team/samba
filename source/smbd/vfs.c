@@ -81,13 +81,36 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_fset_nt_acl,
 	vfswrap_set_nt_acl,
 
+	/* POSIX ACL operations. */
 #if defined(HAVE_NO_ACLS)
 	NULL,
-	NULL
+	NULL,
 #else
 	vfswrap_chmod_acl,
 	vfswrap_fchmod_acl
 #endif
+	vfswrap_sys_acl_get_entry,
+	vfswrap_sys_acl_get_tag_type,
+	vfswrap_sys_acl_get_permset,
+	vfswrap_sys_acl_get_qualifier,
+	vfswrap_sys_acl_get_file,
+	vfswrap_sys_acl_get_fd,
+	vfswrap_sys_acl_clear_perms,
+	vfswrap_sys_acl_add_perm,
+	vfswrap_sys_acl_to_text,
+	vfswrap_sys_acl_init,
+	vfswrap_sys_acl_create_entry,
+	vfswrap_sys_acl_set_tag_type,
+	vfswrap_sys_acl_set_qualifier,
+	vfswrap_sys_acl_set_permset,
+	vfswrap_sys_acl_valid,
+	vfswrap_sys_acl_set_file,
+	vfswrap_sys_acl_set_fd,
+	vfswrap_sys_acl_delete_def_file,
+	vfswrap_sys_acl_get_perm,
+	vfswrap_sys_acl_free_text,
+	vfswrap_sys_acl_free_acl,
+	vfswrap_sys_acl_free_qualifier
 };
 
 /****************************************************************************
@@ -259,11 +282,78 @@ static BOOL vfs_init_custom(connection_struct *conn)
     if (conn->vfs_ops.set_nt_acl == NULL)
 		conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
 
+    /* POSIX ACL entries. */
     if (conn->vfs_ops.chmod_acl == NULL)
 		conn->vfs_ops.chmod_acl = default_vfs_ops.chmod_acl;
 
     if (conn->vfs_ops.fchmod_acl == NULL)
 		conn->vfs_ops.fchmod_acl = default_vfs_ops.fchmod_acl;
+
+    if (conn->vfs_ops.sys_acl_get_entry == NULL)
+                conn->vfs_ops.sys_acl_get_entry = default_vfs_ops.sys_acl_get_entry;
+
+    if (conn->vfs_ops.sys_acl_get_tag_type == NULL)
+                conn->vfs_ops.sys_acl_get_tag_type = default_vfs_ops.sys_acl_get_tag_type;
+
+    if (conn->vfs_ops.sys_acl_get_permset == NULL)
+                conn->vfs_ops.sys_acl_get_permset = default_vfs_ops.sys_acl_get_permset;
+
+    if (conn->vfs_ops.sys_acl_get_qualifier == NULL)
+                conn->vfs_ops.sys_acl_get_qualifier = default_vfs_ops.sys_acl_get_qualifier;
+
+    if (conn->vfs_ops.sys_acl_get_file == NULL)
+                conn->vfs_ops.sys_acl_get_file = default_vfs_ops.sys_acl_get_file;
+
+    if (conn->vfs_ops.sys_acl_get_fd == NULL)
+                conn->vfs_ops.sys_acl_get_fd = default_vfs_ops.sys_acl_get_fd;
+
+    if (conn->vfs_ops.sys_acl_clear_perms == NULL)
+                conn->vfs_ops.sys_acl_clear_perms = default_vfs_ops.sys_acl_clear_perms;
+
+    if (conn->vfs_ops.sys_acl_add_perm == NULL)
+                conn->vfs_ops.sys_acl_add_perm = default_vfs_ops.sys_acl_add_perm;
+
+    if (conn->vfs_ops.sys_acl_to_text == NULL)
+                conn->vfs_ops.sys_acl_to_text = default_vfs_ops.sys_acl_to_text;
+
+    if (conn->vfs_ops.sys_acl_init == NULL)
+                conn->vfs_ops.sys_acl_init = default_vfs_ops.sys_acl_init;
+
+    if (conn->vfs_ops.sys_acl_create_entry == NULL)
+                conn->vfs_ops.sys_acl_create_entry = default_vfs_ops.sys_acl_create_entry;
+
+    if (conn->vfs_ops.sys_acl_set_tag_type == NULL)
+                conn->vfs_ops.sys_acl_set_tag_type = default_vfs_ops.sys_acl_set_tag_type;
+
+    if (conn->vfs_ops.sys_acl_set_qualifier == NULL)
+                conn->vfs_ops.sys_acl_set_qualifier = default_vfs_ops.sys_acl_set_qualifier;
+
+    if (conn->vfs_ops.sys_acl_set_permset == NULL)
+                conn->vfs_ops.sys_acl_set_permset = default_vfs_ops.sys_acl_set_permset;
+
+    if (conn->vfs_ops.sys_acl_valid == NULL)
+                conn->vfs_ops.sys_acl_valid = default_vfs_ops.sys_acl_valid;
+
+    if (conn->vfs_ops.sys_acl_set_file == NULL)
+                conn->vfs_ops.sys_acl_set_file = default_vfs_ops.sys_acl_set_file;
+
+    if (conn->vfs_ops.sys_acl_set_fd == NULL)
+                conn->vfs_ops.sys_acl_set_fd = default_vfs_ops.sys_acl_set_fd;
+
+    if (conn->vfs_ops.sys_acl_delete_def_file == NULL)
+                conn->vfs_ops.sys_acl_delete_def_file = default_vfs_ops.sys_acl_delete_def_file;
+
+    if (conn->vfs_ops.sys_acl_get_perm == NULL)
+                conn->vfs_ops.sys_acl_get_perm = default_vfs_ops.sys_acl_get_perm;
+
+    if (conn->vfs_ops.sys_acl_free_text == NULL)
+                conn->vfs_ops.sys_acl_free_text = default_vfs_ops.sys_acl_free_text;
+
+    if (conn->vfs_ops.sys_acl_free_acl == NULL)
+                conn->vfs_ops.sys_acl_free_acl = default_vfs_ops.sys_acl_free_acl;
+
+    if (conn->vfs_ops.sys_acl_free_qualifier == NULL)
+                conn->vfs_ops.sys_acl_free_qualifier = default_vfs_ops.sys_acl_free_qualifier;
 
     return True;
 }

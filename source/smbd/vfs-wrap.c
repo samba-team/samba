@@ -106,7 +106,7 @@ int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
 	}
 #endif
 
-	if (lp_inherit_acls(SNUM(conn)) && (has_dacl = directory_has_default_acl(parent_dirname(path))))
+	if (lp_inherit_acls(SNUM(conn)) && (has_dacl = directory_has_default_acl(conn, parent_dirname(path))))
 		mode = 0777;
 
 	result = mkdir(path, mode);
@@ -841,7 +841,7 @@ int vfswrap_chmod_acl(connection_struct *conn, char *name, mode_t mode)
 	int result;
 
 	START_PROFILE(chmod_acl);
-	result = chmod_acl(name, mode);
+	result = chmod_acl(conn, name, mode);
 	END_PROFILE(chmod_acl);
 	return result;
 }
@@ -851,7 +851,117 @@ int vfswrap_fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 	int result;
 
 	START_PROFILE(fchmod_acl);
-	result = fchmod_acl(fd, mode);
+	result = fchmod_acl(fsp, fd, mode);
 	END_PROFILE(fchmod_acl);
 	return result;
+}
+
+int vfswrap_sys_acl_get_entry(struct connection_struct *conn, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
+{
+	return sys_acl_get_entry(theacl, entry_id, entry_p);
+}
+
+int vfswrap_sys_acl_get_tag_type(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p)
+{
+	return sys_acl_get_tag_type(entry_d, tag_type_p);
+}
+
+int vfswrap_sys_acl_get_permset(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
+{
+	return sys_acl_get_permset(entry_d, permset_p);
+}
+
+void * vfswrap_sys_acl_get_qualifier(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d)
+{
+	return sys_acl_get_qualifier(entry_d);
+}
+
+SMB_ACL_T vfswrap_sys_acl_get_file(struct connection_struct *conn, const char *path_p, SMB_ACL_TYPE_T type)
+{
+	return sys_acl_get_file(path_p, type);
+}
+
+SMB_ACL_T vfswrap_sys_acl_get_fd(struct files_struct *fsp, int fd)
+{
+	return sys_acl_get_fd(fd);
+}
+
+int vfswrap_sys_acl_clear_perms(struct connection_struct *conn, SMB_ACL_PERMSET_T permset)
+{
+	return sys_acl_clear_perms(permset);
+}
+
+int vfswrap_sys_acl_add_perm(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
+{
+	return sys_acl_add_perm(permset, perm);
+}
+
+char * vfswrap_sys_acl_to_text(struct connection_struct *conn, SMB_ACL_T theacl, ssize_t *plen)
+{
+	return sys_acl_to_text(theacl, plen);
+}
+
+SMB_ACL_T vfswrap_sys_acl_init(struct connection_struct *conn, int count)
+{
+	return sys_acl_init(count);
+}
+
+int vfswrap_sys_acl_create_entry(struct connection_struct *conn, SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
+{
+	return sys_acl_create_entry(pacl, pentry);
+}
+
+int vfswrap_sys_acl_set_tag_type(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
+{
+	return sys_acl_set_tag_type(entry, tagtype);
+}
+
+int vfswrap_sys_acl_set_qualifier(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, void *qual)
+{
+	return sys_acl_set_qualifier(entry, qual);
+}
+
+int vfswrap_sys_acl_set_permset(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
+{
+	return sys_acl_set_permset(entry, permset);
+}
+
+int vfswrap_sys_acl_valid(struct connection_struct *conn, SMB_ACL_T theacl )
+{
+	return sys_acl_valid(theacl );
+}
+
+int vfswrap_sys_acl_set_file(struct connection_struct *conn, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+{
+	return sys_acl_set_file(name, acltype, theacl);
+}
+
+int vfswrap_sys_acl_set_fd(struct files_struct *fsp, int fd, SMB_ACL_T theacl)
+{
+	return sys_acl_set_fd(fd, theacl);
+}
+
+int vfswrap_sys_acl_delete_def_file(struct connection_struct *conn, const char *path)
+{
+	return sys_acl_delete_def_file(path);
+}
+
+int vfswrap_sys_acl_get_perm(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
+{
+	return sys_acl_get_perm(permset, perm);
+}
+
+int vfswrap_sys_acl_free_text(struct connection_struct *conn, char *text)
+{
+	return sys_acl_free_text(text);
+}
+
+int vfswrap_sys_acl_free_acl(struct connection_struct *conn, SMB_ACL_T posix_acl)
+{
+	return sys_acl_free_acl(posix_acl);
+}
+
+int vfswrap_sys_acl_free_qualifier(struct connection_struct *conn, void *qualifier, SMB_ACL_TAG_T tagtype)
+{
+	return sys_acl_free_qualifier(qualifier, tagtype);
 }
