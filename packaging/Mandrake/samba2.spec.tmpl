@@ -89,7 +89,7 @@ make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so debug2html
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba,xinetd.d}
+mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,samba}
 mkdir -p $RPM_BUILD_ROOT/etc/samba/security
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/lib/security
@@ -193,9 +193,9 @@ install -m755 packaging/Mandrake/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/Mandrake/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
-install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/etc/samba/samba.pamd
 install -m644 packaging/Mandrake/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
-install -m644 packaging/Mandrake/samba.xinetd $RPM_BUILD_ROOT/etc/xinetd.d/swat
+install -m644 packaging/Mandrake/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
 ##
