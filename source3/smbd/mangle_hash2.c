@@ -325,7 +325,7 @@ static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards)
 		prefix_len = PTR_DIFF(dot_p, name);
 		suffix_len = len - (prefix_len+1);
 
-		if (prefix_len > 8 || suffix_len > 3) {
+		if (prefix_len > 8 || suffix_len > 3 || suffix_len == 0) {
 			return False;
 		}
 
