@@ -173,7 +173,7 @@ parse_hdbflags2int(char *str)
     unsigned i;
     parse_integer(&i, str);
 
-    return int2flags(i);
+    return int2HDBFlags(i);
 }
 
 static void
