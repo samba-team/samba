@@ -23,11 +23,12 @@ exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
 PICFLAGS = @PICFLAGS@
-SHARED = @SHARED@
+
+LIBNAME = afskauthlib
+LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
-LD_FLAGS = @LD_FLAGS@
- 
-LIB = afskauthlib.$(SHLIBEXT)
+SHARED = @SHARED@
+LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = verify.c
 
@@ -43,10 +44,7 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(libdir)
-	-if test "$(LIB)" != ""; then \
-	  $(INSTALL) -m 0555 $(LIB) $(libdir) ; \
-	  $(LN_S) $(libdir)/$(LIB) /usr/afsws/lib/afskauthlib.so
-	fi
+	$(INSTALL) -m 0555 $(LIB) $(libdir)
 
 uninstall:
 
@@ -75,5 +73,11 @@ dist: $(DISTFILES)
 
 $(OBJECTS): ../../../config.h
 
-$(LIB): $(OBJECTS)
-	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) $(LD_FLAGS) -L../../kafs -L../../krb -L../../des -L../../roken -lkafs -lkrb -ldes -lroken
+$(LIBNAME).a: $(OBJECTS)
+	rm -f $@
+	$(AR) cr $@ $(OBJECTS)
+	-$(RANLIB) $@
+
+$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
+	rm -f $@
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes ../../roken/libroken.a
