@@ -63,47 +63,44 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 	twr->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
 	GUID_from_string(e->uuid, &twr->floors[0].lhs.info.uuid.uuid);
 	twr->floors[0].lhs.info.uuid.version = e->if_version;
-	twr->floors[0].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 2);
+	twr->floors[0].rhs.uuid.unknown = 0;
 	
 	/* encoded with NDR ... */
 	twr->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 	GUID_from_string(NDR_GUID, &twr->floors[1].lhs.info.uuid.uuid);
 	twr->floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	twr->floors[1].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 2);
+	twr->floors[1].rhs.uuid.unknown = 0;
 	
 	/* on an RPC connection ... */
 	twr->floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
 	twr->floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->floors[2].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 2);
+	twr->floors[2].rhs.ncacn.minor_version = 0;
 
 	switch (e->ep_description.type) {
 	case ENDPOINT_SMB:
 		/* on a SMB pipe ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[3].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
+		twr->floors[3].rhs.smb.unc = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
 								   e->ep_description.info.smb_pipe);
-		twr->floors[3].rhs.rhs_data.length = strlen(twr->floors[3].rhs.rhs_data.data)+1;
 		
 		/* on an NetBIOS link ... */
 		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
 		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[4].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\\\%s", 
+		twr->floors[4].rhs.netbios.name = talloc_asprintf(mem_ctx, "\\\\%s", 
 								   lp_netbios_name());
-		twr->floors[4].rhs.rhs_data.length = strlen(twr->floors[4].rhs.rhs_data.data)+1;
 		break;
 
 	case ENDPOINT_TCP:
 		/* on a TCP connection ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[3].rhs.rhs_data = data_blob_talloc(mem_ctx, NULL, 2);
-		RSSVAL(twr->floors[3].rhs.rhs_data.data, 0, e->ep_description.info.tcp_port);
+		twr->floors[3].rhs.tcp.port = e->ep_description.info.tcp_port;
 		
 		/* on an IP link ... */
 		twr->floors[4].lhs.protocol = EPM_PROTOCOL_IP;
 		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[4].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 4);
+		twr->floors[4].rhs.ip.address = 0;
 		/* TODO: we should fill in our IP address here as a hint to the 
 		   client */
 		break;
