@@ -76,7 +76,7 @@ static BOOL rpc_read(struct cli_state *cli, prs_struct *rdata, uint32 data_to_re
 		if (size > (size_t)data_to_read)
 			size = (size_t)data_to_read;
 
-		num_read = (int)cli_read_one(cli, cli->nt_pipe_fnum, pdata, (off_t)stream_offset, size);
+		num_read = (int)cli_read(cli, cli->nt_pipe_fnum, pdata, (off_t)stream_offset, size);
 
 		DEBUG(5,("rpc_read: num_read = %d, read offset: %d, to read: %d\n",
 		          num_read, stream_offset, data_to_read));
@@ -467,7 +467,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		prs_init(&hps, 0, cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
-		num_read = cli_read_one(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
+		num_read = cli_read(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
 		if (cli_error(cli, &eclass, &ecode, NULL) &&
 		    (eclass != ERRDOS && ecode != ERRmoredata)) {
 			DEBUG(0,("rpc_api_pipe: cli_read error : %d/%d\n", 
