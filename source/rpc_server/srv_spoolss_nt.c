@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
  *  Copyright (C) Jeremy Allison               2001-2002,
- *  Copyright (C) Gerald Carter		       2000-2003,
+ *  Copyright (C) Gerald Carter		       2000-2004,
  *  Copyright (C) Tim Potter                   2001-2002.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -312,6 +312,7 @@ void invalidate_printer_hnd_cache( char *printername )
 	for ( p=printers_list; p; p=p->next )
 	{
 		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
+			&& p->printer_info
 			&& StrCaseCmp(p->dev.handlename, printername)==0)
 		{
 			DEBUG(10,("invalidating printer_info cache for handl:\n"));
@@ -1188,6 +1189,12 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 		ZERO_STRUCT( notify );
 		notify2_unpack_msg( &notify, &msg_tv, msg_ptr, msg_len );
 		msg_ptr += msg_len;
+
+		/* we don't know if the change was from us or not so kill 
+		   any cached printer objects */
+
+		if ( notify.type == PRINTER_NOTIFY_TYPE )
+			invalidate_printer_hnd_cache( notify.printer );
 		
 		/* add to correct list in container */
 		

@@ -600,6 +600,7 @@ void pjob_delete(int snum, uint32 jobid)
 	tdb_delete(pdb->tdb, print_key(jobid));
 	release_print_db(pdb);
 	rap_jobid_delete(snum, jobid);
+	remove_from_jobs_changed( snum, jobid );
 }
 
 /****************************************************************************
