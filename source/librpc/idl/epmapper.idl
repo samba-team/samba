@@ -151,7 +151,7 @@ interface epmapper
 	} epm_rhs_null;
 
 	typedef struct {
-		astring identifier;
+		uint16 minor_version;
 	} epm_rhs_ncalrpc;
 
 	typedef struct {
