@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -264,7 +264,7 @@ md5_finito (struct md5 *m, void *res)
   md5_update (m, zeros, dstart + 8);
   {
       int i;
-      u_char *r = (u_char *)res;
+      unsigned char *r = (unsigned char *)res;
 
       for (i = 0; i < 4; ++i) {
 	  r[4*i]   = m->counter[i] & 0xFF;

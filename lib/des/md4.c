@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -226,7 +226,7 @@ md4_update (struct md4 *m, const void *v, size_t len)
 void
 md4_finito (struct md4 *m, void *res)
 {
-  static u_char zeros[72];
+  static unsigned char zeros[72];
   u_int32_t len;
   unsigned int dstart = (120 - m->offset - 1) % 64 + 1;
 
@@ -240,7 +240,7 @@ md4_finito (struct md4 *m, void *res)
   md4_update (m, zeros, dstart + 8);
   {
       int i;
-      u_char *r = (u_char *)res;
+      unsigned char *r = (unsigned char *)res;
 
       for (i = 0; i < 4; ++i) {
 	  r[4*i]   = m->counter[i] & 0xFF;

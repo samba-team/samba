@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -288,7 +288,7 @@ sha_finito (struct sha *m, void *res)
   sha_update (m, zeros, dstart + 8);
   {
       int i;
-      u_char *r = (u_char *)res;
+      unsigned char *r = (unsigned char*)res;
 
       for (i = 0; i < 5; ++i) {
 	  r[4*i+3] = m->counter[i] & 0xFF;
