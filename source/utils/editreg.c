@@ -711,6 +711,21 @@ typedef struct sk_struct {
   char sec_desc[1];
 } SK_HDR;
 
+typedef struct ace_struct {
+    unsigned char type;
+    unsigned char flags;
+    unsigned short length;
+    unsigned int perms;
+    DOM_SID trustee;
+} REG_ACE;
+
+typedef struct acl_struct {
+  WORD rev;
+  WORD size;
+  DWORD num_aces;
+  REG_ACE *aces;   /* One or more ACEs */
+} REG_ACL;
+
 typedef struct sec_desc_rec {
   WORD rev;
   WORD type;
@@ -991,17 +1006,95 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
   }
 }
 
+/*
+ * Allocate storage and uplicate a SID 
+ * We could allocate the SID to be only the size needed, but I am too lazy. 
+ */
+DOM_SID *dup_sid(DOM_SID *sid)
+{
+  DOM_SID *tmp = (DOM_SID *)malloc(sizeof(DOM_SID));
+  int i;
+  
+  if (!tmp) return NULL;
+  tmp->ver = sid->ver;
+  tmp->auths = sid->auths;
+  for (i=0; i<6; i++) {
+    tmp->auth[i] = sid->auth[i];
+  }
+  for (i=0; i<tmp->auths; i++) {
+    tmp->sub_auths[i] = sid->sub_auths[i];
+  }
+  return tmp;
+}
+
+/*
+ * Allocate space for an ACE and duplicate the registry encoded one passed in
+ */
+ACE *dup_ace(REG_ACE *ace)
+{
+  ACE *tmp = NULL; 
+
+  return tmp;
+}
+
+/*
+ * Allocate space for an ACL and duplicate the registry encoded one passed in 
+ */
+ACL *dup_acl(REG_ACL *acl)
+{
+  ACL *tmp = NULL;
+  REG_ACE* ace;
+  int i, num_aces;
+
+  num_aces = IVAL(&acl->num_aces);
+
+  tmp = (ACL *)malloc(sizeof(ACL) + (num_aces - 1)*sizeof(ACE *));
+  if (!tmp) return NULL;
+
+  tmp->num_aces = num_aces;
+  tmp->refcnt = 1;
+  tmp->rev = SVAL(&acl->rev);
+  ace = (REG_ACE *)&acl->aces;
+  for (i=0; i<num_aces; i++) {
+    tmp->aces[i] = dup_ace(ace);
+    /* XXX: FIXME, should handle malloc errors */
+  }
+
+  return tmp;
+}
+
 SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
 {
   SEC_DESC *tmp = NULL;
   
+  tmp = (SEC_DESC *)malloc(sizeof(SEC_DESC));
+
+  if (!tmp) {
+    return NULL;
+  }
+  
+  tmp->rev = SVAL(&sec_desc->rev);
+  tmp->type = SVAL(&sec_desc->type);
+  tmp->owner = dup_sid((DOM_SID *)(sec_desc + IVAL(&sec_desc->owner_off)));
+  if (!tmp->owner) {
+    free(tmp);
+    return NULL;
+  }
+  tmp->group = dup_sid((DOM_SID *)(sec_desc + IVAL(&sec_desc->owner_off)));
+  if (!tmp->group) {
+    free(tmp);
+    return NULL;
+  }
+
+  /* Now pick up the SACL and DACL */
+
   return tmp;
 }
 
 KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
 {
   KEY_SEC_DESC *tmp = NULL;
-  int sk_next_off, sk_prev_off;
+  int sk_next_off, sk_prev_off, sk_size;
   REG_SEC_DESC *sec_desc;
 
   if (!sk_hdr) return NULL;
@@ -1009,6 +1102,12 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
   if (SVAL(&sk_hdr->SK_ID) != REG_SK_ID) {
     fprintf(stderr, "Unrecognized SK Header ID: %08X, %s\n", (int)sk_hdr,
 	    regf->regfile_name);
+    return NULL;
+  }
+
+  if (-size < (sk_size = IVAL(&sk_hdr->rec_size))) {
+    fprintf(stderr, "Incorrect SK record size: %d vs %d. %s\n",
+	    -size, sk_size, regf->regfile_name);
     return NULL;
   }
 
@@ -1043,6 +1142,8 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
     
     /*
      * Allocate an entry in the SK_MAP ...
+     * We don't need to free tmp, because that is done for us if the
+     * sm_map entry can't be expanded when we need more space in the map.
      */
     
     if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
