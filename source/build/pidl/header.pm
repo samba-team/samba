@@ -208,11 +208,15 @@ sub HeaderTypedefProto($)
 }
 
 #####################################################################
-# parse a typedef
+# parse a const
 sub HeaderConst($)
 {
     my($const) = shift;
-    $res .= "#define $const->{NAME}\t( $const->{VALUE} )\n";
+    if (!defined($const->{ARRAY_LEN})) {
+    	$res .= "#define $const->{NAME}\t( $const->{VALUE} )\n";
+    } else {
+    	$res .= "#define $const->{NAME}\t $const->{VALUE}\n";
+    }
 }
 
 #####################################################################
