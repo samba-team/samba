@@ -1,12 +1,8 @@
-#! /bin/sh -x
+#! /bin/sh
 
 LANG=C; export LANG
 LC_ALL=C; export LC_ALL
 LC_COLLATE=C; export LC_COLLATE
-
-# Need reference point for "mkproto.awk", including when "srcdir != builddir".
-# Use of "abs_..." is unpleasant.  Is there another way?
-abs_srcdir=@abs_srcdir@
 
 if [ $# -lt 3 ]
 then
@@ -36,7 +32,7 @@ echo creating $header
 mkdir -p `dirname $header`
 
 ${awk} $headeropt \
-  -f $abs_srcdir/mkproto.awk $proto_src > $headertmp
+  -f script/mkproto.awk $proto_src > $headertmp
 
 if cmp -s $header $headertmp 2>/dev/null
 then
