@@ -636,6 +636,12 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 }
 
 
+/* a helpful macro to avoid running over the end of our blob */
+#define NEED_DATA(amount) \
+if (head_ofs + amount > blob->length) { \
+        return False; \
+}
+
 /*
   this is a tiny msrpc packet parser. This the the partner of msrpc_gen
 
@@ -648,6 +654,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
   d = word (4 bytes)
   C = constant ascii string
  */
+
 BOOL msrpc_parse(DATA_BLOB *blob,
 		 const char *format, ...)
 {
@@ -665,19 +672,7 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U':
-			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || (len1&1) || ptr + len1 > blob->length) {
-				return False;
-			}
-			ps = va_arg(ap, char **);
-			pull_string(NULL, p, blob->data + ptr, -1, len1, 
-				    STR_UNICODE|STR_NOALIGN);
-			(*ps) = strdup(p);
-			break;
-		case 'A':
+			NEED_DATA(8);
 			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
@@ -686,16 +681,44 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 			if (len1 != len2 || ptr + len1 > blob->length) {
 				return False;
 			}
+			if (len1 & 1) {
+				/* if odd length and unicode */
+				return False;
+			}
+
 			ps = va_arg(ap, char **);
 			if (0 < len1) {
-				pull_string(NULL, p, blob->data + ptr, -1, 
-					    len1, STR_ASCII|STR_NOALIGN);
+				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+					    len1, 
+					    STR_UNICODE|STR_NOALIGN);
+				(*ps) = strdup(p);
+			} else {
+				(*ps) = NULL;
+			}
+			break;
+		case 'A':
+			NEED_DATA(8);
+			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
+
+			/* make sure its in the right format - be strict */
+			if (len1 != len2 || ptr + len1 > blob->length) {
+				return False;
+			}
+
+			ps = va_arg(ap, char **);
+			if (0 < len1) {
+				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+					    len1, 
+					    STR_ASCII|STR_NOALIGN);
 				(*ps) = strdup(p);
 			} else {
 				(*ps) = NULL;
 			}
 			break;
 		case 'B':
+			NEED_DATA(8);
 			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
@@ -709,12 +732,14 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 		case 'b':
 			b = (DATA_BLOB *)va_arg(ap, void *);
 			len1 = va_arg(ap, unsigned);
-			*b = data_blob(blob->data + head_ofs, 
-				       MIN(len1, blob->length - head_ofs));
+			/* make sure its in the right format - be strict */
+			NEED_DATA(len1);
+			*b = data_blob(blob->data + head_ofs, len1);
 			head_ofs += len1;
 			break;
 		case 'd':
 			v = va_arg(ap, uint32 *);
+			NEED_DATA(4);
 			*v = IVAL(blob->data, head_ofs); head_ofs += 4;
 			break;
 		case 'C':

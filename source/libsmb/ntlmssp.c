@@ -76,7 +76,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			 &neg_flags,
 			 &cliname,
 			 &domname)) {
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	SAFE_FREE(cliname);
@@ -155,6 +155,8 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		
 	data_blob_free(&struct_blob);
 
+	ntlmssp_state->expected_state = NTLMSSP_AUTH;
+
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
@@ -196,7 +198,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &ntlmssp_state->workstation,
 			 &sess_key,
 			 &neg_flags)) {
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	data_blob_free(&sess_key);
@@ -224,7 +226,7 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 	
 	*ntlmssp_state = talloc_zero(mem_ctx, sizeof(**ntlmssp_state));
 	if (!*ntlmssp_state) {
-		DEBUG(0,("ntlmssp_start: talloc failed!\n"));
+		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -237,6 +239,8 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 	(*ntlmssp_state)->get_global_myname = global_myname;
 	(*ntlmssp_state)->get_domain = lp_workgroup;
 	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
+
+	(*ntlmssp_state)->expected_state = NTLMSSP_NEGOTIATE;
 
 	return NT_STATUS_OK;
 }
@@ -267,8 +271,11 @@ NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state,
 	if (!msrpc_parse(&request, "Cd",
 			 "NTLMSSP",
 			 &ntlmssp_command)) {
-		
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (ntlmssp_command != ntlmssp_state->expected_state) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (ntlmssp_command == NTLMSSP_NEGOTIATE) {
@@ -276,7 +283,7 @@ NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state,
 	} else if (ntlmssp_command == NTLMSSP_AUTH) {
 		return ntlmssp_server_auth(ntlmssp_state, request, reply);
 	} else {
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 }
 
