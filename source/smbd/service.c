@@ -130,7 +130,7 @@ struct server_socket *service_setup_socket(struct server_service *service,
 	}
 
 	/* ready to listen */
-	status = socket_set_option(socket_ctx, "SO_KEEPALIVE", NULL);
+	status = socket_set_option(socket_ctx, "SO_KEEPALIVE SO_REUSEADDR=1", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("socket_set_option(socket_ctx, SO_KEEPALIVE, NULL): %s\n",
 			nt_errstr(status)));
