@@ -192,7 +192,8 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
-		DEBUG(3, ("convert_string_talloc: conversion not supported!\n"));
+		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
+			  charset_name(from), charset_name(to)));
 		return -1;
 	}
 
