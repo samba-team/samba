@@ -66,7 +66,7 @@ manpages: $(MANDIR) $(MANPAGES)
 pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf $(PDFDIR)/Samba-Developers-Guide.pdf
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 htmlfaq: $(HTMLDIR) CSS
-	@$(XSLTPROC) --param base.dir "$(FAQDIR)" xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
+	@$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
 html: $(HTMLDIR) CSS
 	@$(XSLTPROC) xslt/html-chunk.xsl $(PROJDOC)/samba-doc.xml
