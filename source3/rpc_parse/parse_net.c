@@ -142,9 +142,9 @@ static void init_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_statu
 	info->tc_status  = tc_status;
 
 	if (trusted_dc_name != NULL)
-		init_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name+1);
+		init_unistr2(&info->uni_trusted_dc_name, trusted_dc_name, len_dc_name+1);
 	else
-		init_unistr2(&(info->uni_trusted_dc_name), "", 1);
+		init_unistr2(&info->uni_trusted_dc_name, "", 1);
 }
 
 /*******************************************************************
@@ -259,7 +259,7 @@ void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
 		break;
 	case 3:
 		r_l->ptr = 1; /* undocumented pointer */
-		init_netinfo_3(&(r_l->logon.info3), flags, logon_attempts);	
+		init_netinfo_3(&r_l->logon.info3, flags, logon_attempts);	
 		r_l->status = NT_STATUS_OK;
 		break;
 	default:
@@ -1098,7 +1098,7 @@ void init_sam_info(DOM_SAM_INFO *sam,
 {
 	DEBUG(5,("init_sam_info: %d\n", __LINE__));
 
-	init_clnt_info2(&(sam->client), logon_srv, comp_name, clnt_cred);
+	init_clnt_info2(&sam->client, logon_srv, comp_name, clnt_cred);
 
 	if (rtn_cred != NULL) {
 		sam->ptr_rtn_cred = 1;
@@ -1624,17 +1624,25 @@ BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct *ps,
 	prs_debug(ps, depth, desc, "net_io_q_sam_sync");
 	depth++;
 
-	smb_io_unistr2("", &(q_s->uni_srv_name), True, ps, depth);
-	smb_io_unistr2("", &(q_s->uni_cli_name), True, ps, depth);
+	if (!smb_io_unistr2("", &q_s->uni_srv_name, True, ps, depth))
+                return False;
+	if (!smb_io_unistr2("", &q_s->uni_cli_name, True, ps, depth))
+                return False;
 
-	smb_io_cred("", &(q_s->cli_creds), ps, depth);
-	smb_io_cred("", &(q_s->ret_creds), ps, depth);
+	if (!smb_io_cred("", &q_s->cli_creds, ps, depth))
+                return False;
+	if (!smb_io_cred("", &q_s->ret_creds, ps, depth))
+                return False;
 
-	prs_uint32("database_id  ", ps, depth, &(q_s->database_id));
-	prs_uint32("restart_state", ps, depth, &(q_s->restart_state));
-	prs_uint32("sync_context ", ps, depth, &(q_s->sync_context));
+	if (!prs_uint32("database_id  ", ps, depth, &q_s->database_id))
+                return False;
+	if (!prs_uint32("restart_state", ps, depth, &q_s->restart_state))
+                return False;
+	if (!prs_uint32("sync_context ", ps, depth, &q_s->sync_context))
+                return False;
 
-	prs_uint32("max_size", ps, depth, &(q_s->max_size));
+	if (!prs_uint32("max_size", ps, depth, &q_s->max_size))
+                return False;
 
 	return True;
 }
@@ -1648,38 +1656,23 @@ static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR * delta,
 	prs_debug(ps, depth, desc, "net_io_sam_delta_hdr");
 	depth++;
 
-	prs_uint16("type", ps, depth, &(delta->type));
-	prs_uint16("type2", ps, depth, &(delta->type2));
-	prs_uint32("target_rid", ps, depth, &(delta->target_rid));
+	if (!prs_uint16("type", ps, depth, &delta->type))
+                return False;
+	if (!prs_uint16("type2", ps, depth, &delta->type2))
+                return False;
+	if (!prs_uint32("target_rid", ps, depth, &delta->target_rid))
+                return False;
 
-	prs_uint32("type3", ps, depth, &(delta->type3));
+	if (!prs_uint32("type3", ps, depth, &delta->type3))
+                return False;
 
         /* Not sure why we need this but it seems to be necessary to get
            sam deltas working. */
 
-        if (delta->type != 0x16)
-                prs_uint32("ptr_delta", ps, depth, &(delta->ptr_delta));
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_delta_hdr2(char *desc, SAM_DELTA_HDR *delta,
-                                  prs_struct *ps, int depth)
-{
-        uint32 unk;
-
-	prs_debug(ps, depth, desc, "net_io_sam_delta_stamp");
-	depth++;
-
-	prs_uint16("type", ps, depth, &(delta->type));
-	prs_uint16("type2", ps, depth, &(delta->type2));
-	prs_uint32("rid", ps, depth, &unk);
-
-
-	prs_uint32("unknown_ptr", ps, depth, &unk);
+        if (delta->type != 0x16) {
+                if (!prs_uint32("ptr_delta", ps, depth, &delta->ptr_delta))
+                        return False;
+        }
 
 	return True;
 }
@@ -1693,10 +1686,17 @@ static BOOL net_io_sam_delta_stamp(char *desc, SAM_DELTA_STAMP *info,
 	prs_debug(ps, depth, desc, "net_io_sam_delta_stamp");
 	depth++;
 
-        prs_uint32("seqnum", ps, depth, &info->seqnum);
-        prs_uint32("dom_mod_count_ptr", ps, depth, &info->dom_mod_count_ptr);
-        if (info->dom_mod_count_ptr)
-                prs_uint64("dom_mod_count", ps, depth, &info->dom_mod_count);
+        if (!prs_uint32("seqnum", ps, depth, &info->seqnum))
+                return False;
+        if (!prs_uint32("dom_mod_count_ptr", ps, depth, 
+                        &info->dom_mod_count_ptr))
+                return False;
+
+        if (info->dom_mod_count_ptr) {
+                if (!prs_uint64("dom_mod_count", ps, depth,
+                                &info->dom_mod_count))
+                        return False;
+        }
 
         return True;
 }
@@ -1710,30 +1710,48 @@ static BOOL net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO * info,
 	prs_debug(ps, depth, desc, "net_io_sam_domain_info");
 	depth++;
 
-	smb_io_unihdr("hdr_dom_name", &(info->hdr_dom_name), ps, depth);
-	smb_io_unihdr("hdr_oem_info", &(info->hdr_oem_info), ps, depth);
+	if (!smb_io_unihdr("hdr_dom_name", &info->hdr_dom_name, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_oem_info", &info->hdr_oem_info, ps, depth))
+                return False;
 
-        prs_uint64("force_logoff", ps, depth, &info->force_logoff);
-	prs_uint16("min_pwd_len", ps, depth, &(info->min_pwd_len));
-	prs_uint16("pwd_history_len", ps, depth, &info->pwd_history_len);
-	prs_uint64("max_pwd_age", ps, depth, &info->max_pwd_age);
-	prs_uint64("min_pwd_age", ps, depth, &info->min_pwd_age);
-	prs_uint64("dom_mod_count", ps, depth, &info->dom_mod_count);
-	smb_io_time("creation_time", &info->creation_time, ps, depth);
+        if (!prs_uint64("force_logoff", ps, depth, &info->force_logoff))
+                return False;
+	if (!prs_uint16("min_pwd_len", ps, depth, &info->min_pwd_len))
+                return False;
+	if (!prs_uint16("pwd_history_len", ps, depth, &info->pwd_history_len))
+                return False;
+	if (!prs_uint64("max_pwd_age", ps, depth, &info->max_pwd_age))
+                return False;
+	if (!prs_uint64("min_pwd_age", ps, depth, &info->min_pwd_age))
+                return False;
+	if (!prs_uint64("dom_mod_count", ps, depth, &info->dom_mod_count))
+                return False;
+	if (!smb_io_time("creation_time", &info->creation_time, ps, depth))
+                return False;
 
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
-	smb_io_unihdr("hdr_unknown", &(info->hdr_unknown), ps, depth);
-	ps->data_offset += 40;
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_unknown", &info->hdr_unknown, ps, depth))
+                return False;
 
-	smb_io_unistr2("uni_dom_name", &(info->uni_dom_name),
-		       info->hdr_dom_name.buffer, ps, depth);
-	smb_io_unistr2("buf_oem_info", &(info->buf_oem_info),
-		       info->hdr_oem_info.buffer, ps, depth);
+	if (ps->data_offset + 40 > ps->buffer_size)
+                return False;
+        ps->data_offset += 40;
 
-	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
-		       info->hdr_sec_desc.buffer, ps, depth);
-	smb_io_unistr2("buf_unknown", &(info->buf_unknown),
-		       info->hdr_unknown.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_dom_name", &info->uni_dom_name,
+                            info->hdr_dom_name.buffer, ps, depth))
+                return False;
+	if (!smb_io_unistr2("buf_oem_info", &info->buf_oem_info,
+                            info->hdr_oem_info.buffer, ps, depth))
+                return False;
+
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+                return False;
+	if (!smb_io_unistr2("buf_unknown", &info->buf_unknown,
+                            info->hdr_unknown.buffer, ps, depth))
+                return False;
 
 	return True;
 }
@@ -1747,18 +1765,28 @@ static BOOL net_io_sam_group_info(char *desc, SAM_GROUP_INFO * info,
 	prs_debug(ps, depth, desc, "net_io_sam_group_info");
 	depth++;
 
-	smb_io_unihdr("hdr_grp_name", &(info->hdr_grp_name), ps, depth);
-	smb_io_gid("gid", &(info->gid), ps, depth);
-	smb_io_unihdr("hdr_grp_desc", &(info->hdr_grp_desc), ps, depth);
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
+	if (!smb_io_unihdr("hdr_grp_name", &info->hdr_grp_name, ps, depth))
+                return False;
+	if (!smb_io_gid("gid", &info->gid, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_grp_desc", &info->hdr_grp_desc, ps, depth))
+                return False;
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
+                return False;
+
+        if (ps->data_offset + 48 > ps->buffer_size)
+                return False;
 	ps->data_offset += 48;
 
-	smb_io_unistr2("uni_grp_name", &(info->uni_grp_name),
-		       info->hdr_grp_name.buffer, ps, depth);
-	smb_io_unistr2("uni_grp_desc", &(info->uni_grp_desc),
-		       info->hdr_grp_desc.buffer, ps, depth);
-	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
-		       info->hdr_sec_desc.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_grp_name", &info->uni_grp_name,
+                            info->hdr_grp_name.buffer, ps, depth))
+                return False;
+	if (!smb_io_unistr2("uni_grp_desc", &info->uni_grp_desc,
+                            info->hdr_grp_desc.buffer, ps, depth))
+                return False;
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+                return False;
 
 	return True;
 }
@@ -1772,16 +1800,23 @@ static BOOL net_io_sam_passwd_info(char *desc, SAM_PWD * pwd,
 	prs_debug(ps, depth, desc, "net_io_sam_passwd_info");
 	depth++;
 
-	prs_uint32("unk_0 ", ps, depth, &(pwd->unk_0));
+	if (!prs_uint32("unk_0 ", ps, depth, &pwd->unk_0))
+                return False;
 
-	smb_io_unihdr("hdr_lm_pwd", &(pwd->hdr_lm_pwd), ps, depth);
-	prs_uint8s(False, "buf_lm_pwd", ps, depth, pwd->buf_lm_pwd, 16);
+	if (!smb_io_unihdr("hdr_lm_pwd", &pwd->hdr_lm_pwd, ps, depth))
+                return False;
+	if (!prs_uint8s(False, "buf_lm_pwd", ps, depth, pwd->buf_lm_pwd, 16))
+                return False;
 
-	smb_io_unihdr("hdr_nt_pwd", &(pwd->hdr_nt_pwd), ps, depth);
-	prs_uint8s(False, "buf_nt_pwd", ps, depth, pwd->buf_nt_pwd, 16);
+	if (!smb_io_unihdr("hdr_nt_pwd", &pwd->hdr_nt_pwd, ps, depth))
+                return False;
+	if (!prs_uint8s(False, "buf_nt_pwd", ps, depth, pwd->buf_nt_pwd, 16))
+                return False;
 
-	smb_io_unihdr("", &(pwd->hdr_empty_lm), ps, depth);
-	smb_io_unihdr("", &(pwd->hdr_empty_nt), ps, depth);
+	if (!smb_io_unihdr("", &pwd->hdr_empty_lm, ps, depth))
+                return False;
+	if (!smb_io_unihdr("", &pwd->hdr_empty_nt, ps, depth))
+                return False;
 
 	return True;
 }
@@ -1815,27 +1850,27 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
 
 	DEBUG(5, ("make_sam_account_info\n"));
 
-	make_uni_hdr(&(info->hdr_acct_name), len_user_name);
-	make_uni_hdr(&(info->hdr_full_name), len_full_name);
-	make_uni_hdr(&(info->hdr_home_dir), len_home_dir);
-	make_uni_hdr(&(info->hdr_dir_drive), len_dir_drive);
-	make_uni_hdr(&(info->hdr_logon_script), len_logon_script);
-	make_uni_hdr(&(info->hdr_profile), len_profile_path);
-	make_uni_hdr(&(info->hdr_acct_desc), len_description);
-	make_uni_hdr(&(info->hdr_workstations), len_workstations);
-	make_uni_hdr(&(info->hdr_comment), len_unknown_str);
-	make_uni_hdr(&(info->hdr_parameters), len_munged_dial);
+	make_uni_hdr(&info->hdr_acct_name, len_user_name);
+	make_uni_hdr(&info->hdr_full_name, len_full_name);
+	make_uni_hdr(&info->hdr_home_dir, len_home_dir);
+	make_uni_hdr(&info->hdr_dir_drive, len_dir_drive);
+	make_uni_hdr(&info->hdr_logon_script, len_logon_script);
+	make_uni_hdr(&info->hdr_profile, len_profile_path);
+	make_uni_hdr(&info->hdr_acct_desc, len_description);
+	make_uni_hdr(&info->hdr_workstations, len_workstations);
+	make_uni_hdr(&info->hdr_comment, len_unknown_str);
+	make_uni_hdr(&info->hdr_parameters, len_munged_dial);
 
 	/* not present */
-	make_bufhdr2(&(info->hdr_sec_desc), 0, 0, 0);
+	make_bufhdr2(&info->hdr_sec_desc, 0, 0, 0);
 
 	info->user_rid = user_rid;
 	info->group_rid = group_rid;
 
-	init_nt_time(&(info->logon_time));
-	init_nt_time(&(info->logoff_time));
-	init_nt_time(&(info->pwd_last_set_time));
-	init_nt_time(&(info->acct_expiry_time));
+	init_nt_time(&info->logon_time);
+	init_nt_time(&info->logoff_time);
+	init_nt_time(&info->pwd_last_set_time);
+	init_nt_time(&info->acct_expiry_time);
 
 	info->logon_divs = 0xA8;
 	info->ptr_logon_hrs = 0;	/* Don't care right now */
@@ -1852,16 +1887,16 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
 	info->unknown1 = 0x4EC;
 	info->unknown2 = 0;
 
-	copy_unistr2(&(info->uni_acct_name), user_name);
-	copy_unistr2(&(info->uni_full_name), full_name);
-	copy_unistr2(&(info->uni_home_dir), home_dir);
-	copy_unistr2(&(info->uni_dir_drive), dir_drive);
-	copy_unistr2(&(info->uni_logon_script), log_scr);
-	copy_unistr2(&(info->uni_profile), prof_path);
-	copy_unistr2(&(info->uni_acct_desc), desc);
-	copy_unistr2(&(info->uni_workstations), wkstas);
-	copy_unistr2(&(info->uni_comment), unk_str);
-	copy_unistr2(&(info->uni_parameters), mung_dial);
+	copy_unistr2(&info->uni_acct_name, user_name);
+	copy_unistr2(&info->uni_full_name, full_name);
+	copy_unistr2(&info->uni_home_dir, home_dir);
+	copy_unistr2(&info->uni_dir_drive, dir_drive);
+	copy_unistr2(&info->uni_logon_script, log_scr);
+	copy_unistr2(&info->uni_profile, prof_path);
+	copy_unistr2(&info->uni_acct_desc, desc);
+	copy_unistr2(&info->uni_workstations, wkstas);
+	copy_unistr2(&info->uni_comment, unk_str);
+	copy_unistr2(&info->uni_parameters, mung_dial);
 
 	return True;
 }
@@ -1879,98 +1914,147 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 	prs_debug(ps, depth, desc, "net_io_sam_account_info");
 	depth++;
 
-	smb_io_unihdr("hdr_acct_name", &(info->hdr_acct_name), ps, depth);
-	smb_io_unihdr("hdr_full_name", &(info->hdr_full_name), ps, depth);
+	if (!smb_io_unihdr("hdr_acct_name", &info->hdr_acct_name, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_full_name", &info->hdr_full_name, ps, depth))
+                return False;
 
-	prs_uint32("user_rid ", ps, depth, &(info->user_rid));
-	prs_uint32("group_rid", ps, depth, &(info->group_rid));
+	if (!prs_uint32("user_rid ", ps, depth, &info->user_rid))
+                return False;
+	if (!prs_uint32("group_rid", ps, depth, &info->group_rid))
+                return False;
 
-	smb_io_unihdr("hdr_home_dir ", &(info->hdr_home_dir), ps, depth);
-	smb_io_unihdr("hdr_dir_drive", &(info->hdr_dir_drive), ps, depth);
-	smb_io_unihdr("hdr_logon_script", &(info->hdr_logon_script), ps,
-		      depth);
-	smb_io_unihdr("hdr_acct_desc", &(info->hdr_acct_desc), ps, depth);
-	smb_io_unihdr("hdr_workstations", &(info->hdr_workstations), ps,
-		      depth);
+	if (!smb_io_unihdr("hdr_home_dir ", &info->hdr_home_dir, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_dir_drive", &info->hdr_dir_drive, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_logon_script", &info->hdr_logon_script, ps,
+                           depth))
+                return False;
 
-	smb_io_time("logon_time", &(info->logon_time), ps, depth);
-	smb_io_time("logoff_time", &(info->logoff_time), ps, depth);
+	if (!smb_io_unihdr("hdr_acct_desc", &info->hdr_acct_desc, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_workstations", &info->hdr_workstations, ps,
+                           depth))
+                return False;
 
-	prs_uint32("logon_divs   ", ps, depth, &(info->logon_divs));
-	prs_uint32("ptr_logon_hrs", ps, depth, &(info->ptr_logon_hrs));
+	if (!smb_io_time("logon_time", &info->logon_time, ps, depth))
+                return False;
+	if (!smb_io_time("logoff_time", &info->logoff_time, ps, depth))
+                return False;
 
-	prs_uint16("bad_pwd_count", ps, depth, &(info->bad_pwd_count));
-	prs_uint16("logon_count", ps, depth, &(info->logon_count));
-	smb_io_time("pwd_last_set_time", &(info->pwd_last_set_time), ps,
-		    depth);
-	smb_io_time("acct_expiry_time", &(info->acct_expiry_time), ps, depth);
+	if (!prs_uint32("logon_divs   ", ps, depth, &info->logon_divs))
+                return False;
+	if (!prs_uint32("ptr_logon_hrs", ps, depth, &info->ptr_logon_hrs))
+                return False;
 
-	prs_uint32("acb_info", ps, depth, &(info->acb_info));
-	prs_uint8s(False, "nt_pwd", ps, depth, info->nt_pwd, 16);
-	prs_uint8s(False, "lm_pwd", ps, depth, info->lm_pwd, 16);
-	prs_uint8("lm_pwd_present", ps, depth, &(info->lm_pwd_present));
-	prs_uint8("nt_pwd_present", ps, depth, &(info->nt_pwd_present));
-	prs_uint8("pwd_expired", ps, depth, &(info->pwd_expired));
+	if (!prs_uint16("bad_pwd_count", ps, depth, &info->bad_pwd_count))
+                return False;
+	if (!prs_uint16("logon_count", ps, depth, &info->logon_count))
+                return False;
+	if (!smb_io_time("pwd_last_set_time", &info->pwd_last_set_time, ps,
+                         depth))
+                return False;
+	if (!smb_io_time("acct_expiry_time", &info->acct_expiry_time, ps, 
+                         depth))
+                return False;
 
-	smb_io_unihdr("hdr_comment", &(info->hdr_comment), ps, depth);
-	smb_io_unihdr("hdr_parameters", &(info->hdr_parameters), ps, depth);
-	prs_uint16("country", ps, depth, &(info->country));
-	prs_uint16("codepage", ps, depth, &(info->codepage));
+	if (!prs_uint32("acb_info", ps, depth, &info->acb_info))
+                return False;
+	if (!prs_uint8s(False, "nt_pwd", ps, depth, info->nt_pwd, 16))
+                return False;
+	if (!prs_uint8s(False, "lm_pwd", ps, depth, info->lm_pwd, 16))
+                return False;
+	if (!prs_uint8("lm_pwd_present", ps, depth, &info->lm_pwd_present))
+                return False;
+	if (!prs_uint8("nt_pwd_present", ps, depth, &info->nt_pwd_present))
+                return False;
+	if (!prs_uint8("pwd_expired", ps, depth, &info->pwd_expired))
+                return False;
 
-	smb_io_bufhdr2("hdr_priv_data", &(hdr_priv_data), ps, depth);
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
-	smb_io_unihdr("hdr_profile", &(info->hdr_profile), ps, depth);
+	if (!smb_io_unihdr("hdr_comment", &info->hdr_comment, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_parameters", &info->hdr_parameters, ps, 
+                           depth))
+                return False;
+	if (!prs_uint16("country", ps, depth, &info->country))
+                return False;
+	if (!prs_uint16("codepage", ps, depth, &info->codepage))
+                return False;
+
+	if (!smb_io_bufhdr2("hdr_priv_data", &hdr_priv_data, ps, depth))
+                return False;
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_profile", &info->hdr_profile, ps, depth))
+                return False;
 
 	for (i = 0; i < 3; i++)
 	{
-		smb_io_unihdr("hdr_reserved", &(info->hdr_reserved[i]), ps,
-			      depth);
+		if (!smb_io_unihdr("hdr_reserved", &info->hdr_reserved[i], 
+                                   ps, depth))
+                        return False;                                          
 	}
 
 	for (i = 0; i < 4; i++)
 	{
-		prs_uint32("dw_reserved", ps, depth, &(info->dw_reserved[i]));
+		if (!prs_uint32("dw_reserved", ps, depth, 
+                                &info->dw_reserved[i]))
+                        return False;
 	}
 
-	smb_io_unistr2("uni_acct_name", &(info->uni_acct_name),
-		       info->hdr_acct_name.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_acct_name", &info->uni_acct_name,
+                            info->hdr_acct_name.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_full_name", &(info->uni_full_name),
-		       info->hdr_full_name.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_full_name", &info->uni_full_name,
+                            info->hdr_full_name.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_home_dir ", &(info->uni_home_dir),
-		       info->hdr_home_dir.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_home_dir ", &info->uni_home_dir,
+                            info->hdr_home_dir.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_dir_drive", &(info->uni_dir_drive),
-		       info->hdr_dir_drive.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_dir_drive", &info->uni_dir_drive,
+                            info->hdr_dir_drive.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_logon_script", &(info->uni_logon_script),
-		       info->hdr_logon_script.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_logon_script", &info->uni_logon_script,
+                            info->hdr_logon_script.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_acct_desc", &(info->uni_acct_desc),
-		       info->hdr_acct_desc.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_acct_desc", &info->uni_acct_desc,
+                            info->hdr_acct_desc.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_workstations", &(info->uni_workstations),
-		       info->hdr_workstations.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_workstations", &info->uni_workstations,
+                            info->hdr_workstations.buffer, ps, depth))
+                return False;
 	prs_align(ps);
 
-	prs_uint32("unknown1", ps, depth, &(info->unknown1));
-	prs_uint32("unknown2", ps, depth, &(info->unknown2));
+	if (!prs_uint32("unknown1", ps, depth, &info->unknown1))
+                return False;
+	if (!prs_uint32("unknown2", ps, depth, &info->unknown2))
+                return False;
 
-	smb_io_buffer4("buf_logon_hrs", &(info->buf_logon_hrs),
-		       info->ptr_logon_hrs, ps, depth);
+	if (!smb_io_buffer4("buf_logon_hrs", &info->buf_logon_hrs,
+                            info->ptr_logon_hrs, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_comment", &(info->uni_comment),
-		       info->hdr_comment.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_comment", &info->uni_comment,
+                            info->hdr_comment.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_parameters", &(info->uni_parameters),
-		       info->hdr_parameters.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_parameters", &info->uni_parameters,
+                            info->hdr_parameters.buffer, ps, depth))
+                return False;
 	prs_align(ps);
 	if (hdr_priv_data.buffer != 0)
 	{
 		int old_offset = 0;
 		uint32 len = 0x44;
-		prs_uint32("pwd_len", ps, depth, &len);
+		if (!prs_uint32("pwd_len", ps, depth, &len))
+                        return False;
 		old_offset = ps->data_offset;
 		if (len == 0x44)
 		{
@@ -1979,21 +2063,28 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 				/* reading */
 /* // FIXME			prs_hash1(ps, ps->offset, sess_key); */
 			}
-			net_io_sam_passwd_info("pass", &(info->pass), ps,
-					       depth);
+			if (!net_io_sam_passwd_info("pass", &info->pass, 
+                                                    ps, depth))
+                                return False;
+
 			if (!ps->io)
 			{
 				/* writing */
 /* // FIXME TOO			prs_hash1(ps, old_offset, sess_key); */
 			}
 		}
+                if (old_offset + len > ps->buffer_size)
+                        return False;
 		ps->data_offset = old_offset + len;
 	}
-	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
-		       info->hdr_sec_desc.buffer, ps, depth);
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+                return False;
 	prs_align(ps);
-	smb_io_unistr2("uni_profile", &(info->uni_profile),
-		       info->hdr_profile.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_profile", &info->uni_profile,
+                            info->hdr_profile.buffer, ps, depth))
+                return False;
+
 	prs_align(ps);
 
 	return True;
@@ -2012,14 +2103,23 @@ static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO * info,
 	depth++;
 
 	prs_align(ps);
-	prs_uint32("ptr_rids   ", ps, depth, &(info->ptr_rids));
-	prs_uint32("ptr_attribs", ps, depth, &(info->ptr_attribs));
-	prs_uint32("num_members", ps, depth, &(info->num_members));
+	if (!prs_uint32("ptr_rids   ", ps, depth, &info->ptr_rids))
+                return False;
+	if (!prs_uint32("ptr_attribs", ps, depth, &info->ptr_attribs))
+                return False;
+	if (!prs_uint32("num_members", ps, depth, &info->num_members))
+                return False;
+
+        if (ps->data_offset + 16 > ps->buffer_size)
+                return False;
 	ps->data_offset += 16;
 
 	if (info->ptr_rids != 0)
 	{
-		prs_uint32("num_members2", ps, depth, &(info->num_members2));
+		if (!prs_uint32("num_members2", ps, depth, 
+                                &info->num_members2))
+                        return False;
+
 		if (info->num_members2 != info->num_members)
 		{
 			/* RPC fault */
@@ -2038,13 +2138,16 @@ static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO * info,
 		for (i = 0; i < info->num_members2; i++)
 		{
 			slprintf(tmp, sizeof(tmp) - 1, "rids[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(info->rids[i]));
+			if (!prs_uint32(tmp, ps, depth, &info->rids[i]))
+                                return False;
 		}
 	}
 
 	if (info->ptr_attribs != 0)
 	{
-		prs_uint32("num_members3", ps, depth, &(info->num_members3));
+		if (!prs_uint32("num_members3", ps, depth, 
+                                &info->num_members3))
+                        return False;
 		if (info->num_members3 != info->num_members)
 		{
 			/* RPC fault */
@@ -2063,7 +2166,8 @@ static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO * info,
 		for (i = 0; i < info->num_members3; i++)
 		{
 			slprintf(tmp, sizeof(tmp) - 1, "attribs[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(info->attribs[i]));
+			if (!prs_uint32(tmp, ps, depth, &info->attribs[i]))
+                                return False;
 		}
 	}
 
@@ -2079,18 +2183,28 @@ static BOOL net_io_sam_alias_info(char *desc, SAM_ALIAS_INFO * info,
 	prs_debug(ps, depth, desc, "net_io_sam_alias_info");
 	depth++;
 
-	smb_io_unihdr("hdr_als_name", &(info->hdr_als_name), ps, depth);
-	prs_uint32("als_rid", ps, depth, &(info->als_rid));
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
-	smb_io_unihdr("hdr_als_desc", &(info->hdr_als_desc), ps, depth);
+	if (!smb_io_unihdr("hdr_als_name", &info->hdr_als_name, ps, depth))
+                return False;
+	if (!prs_uint32("als_rid", ps, depth, &info->als_rid))
+                return False;
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
+                return False;
+	if (!smb_io_unihdr("hdr_als_desc", &info->hdr_als_desc, ps, depth))
+                return False;
+
+        if (ps->data_offset + 40 > ps->buffer_size)
+                return False;
 	ps->data_offset += 40;
 
-	smb_io_unistr2("uni_als_name", &(info->uni_als_name),
-		       info->hdr_als_name.buffer, ps, depth);
-	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
-		       info->hdr_sec_desc.buffer, ps, depth);
-	smb_io_unistr2("uni_als_desc", &(info->uni_als_desc),
-		       info->hdr_als_name.buffer, ps, depth);
+	if (!smb_io_unistr2("uni_als_name", &info->uni_als_name,
+                            info->hdr_als_name.buffer, ps, depth))
+                return False;
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+                return False;
+	if (!smb_io_unistr2("uni_als_desc", &info->uni_als_desc,
+                            info->hdr_als_name.buffer, ps, depth))
+                return False;
 
 	return True;
 }
@@ -2108,13 +2222,19 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
 	depth++;
 
 	prs_align(ps);
-	prs_uint32("num_members", ps, depth, &(info->num_members));
-	prs_uint32("ptr_members", ps, depth, &(info->ptr_members));
-	ps->data_offset += 16;
+	if (!prs_uint32("num_members", ps, depth, &info->num_members))
+                return False;
+	if (!prs_uint32("ptr_members", ps, depth, &info->ptr_members))
+                return False;
 
 	if (info->ptr_members != 0)
 	{
-		prs_uint32("num_sids", ps, depth, &(info->num_sids));
+                if (ps->data_offset + 16 > ps->buffer_size)
+                        return False;
+                ps->data_offset += 16;
+
+		if (!prs_uint32("num_sids", ps, depth, &info->num_sids))
+                        return False;
 		if (info->num_sids != info->num_members)
 		{
 			/* RPC fault */
@@ -2133,7 +2253,8 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
 		for (i = 0; i < info->num_sids; i++)
 		{
 			slprintf(tmp, sizeof(tmp) - 1, "ptr_sids[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(info->ptr_sids[i]));
+			if (!prs_uint32(tmp, ps, depth, &info->ptr_sids[i]))
+                                return False;
 		}
 
                 info->sids = talloc(ps->mem_ctx, sizeof(DOM_SID2) *
@@ -2151,8 +2272,9 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
 			{
 				slprintf(tmp, sizeof(tmp) - 1, "sids[%02d]",
 					 i);
-				smb_io_dom_sid2(tmp, &(info->sids[i]), ps,
-						depth);
+				if (!smb_io_dom_sid2(tmp, &info->sids[i], 
+                                                     ps, depth))
+                                        return False;
 			}
 		}
 	}
@@ -2176,46 +2298,55 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 
                 case SAM_DELTA_SAM_STAMP:
                 {
-                        net_io_sam_delta_stamp("", &delta->stamp,
-                                               ps, depth);
+                        if (!net_io_sam_delta_stamp("", &delta->stamp,
+                                                    ps, depth))
+                                return False;
                         break;
                 }
 
 		case SAM_DELTA_DOMAIN_INFO:
 		{
-			net_io_sam_domain_info("", &delta->domain_info,
-					       ps, depth);
+			if (!net_io_sam_domain_info("", &delta->domain_info,
+                                                    ps, depth))
+                                return False;
 			break;
 		}
 		case SAM_DELTA_GROUP_INFO:
 		{
-			net_io_sam_group_info("", &delta->group_info,
-					      ps, depth);
+			if (!net_io_sam_group_info("", &delta->group_info,
+                                                   ps, depth))
+                                return False;
 			break;
 		}
 		case SAM_DELTA_ACCOUNT_INFO:
 		{
-			net_io_sam_account_info("", sess_key,
-						&delta->account_info,
-						ps, depth);
+			if (!net_io_sam_account_info("", sess_key,
+                                                     &delta->account_info,
+                                                     ps, depth))
+                                return False;
 			break;
 		}
 		case SAM_DELTA_GROUP_MEM:
 		{
-			net_io_sam_group_mem_info("", &delta->grp_mem_info,
-						  ps, depth);
+			if (!net_io_sam_group_mem_info("", 
+                                                       &delta->grp_mem_info,
+                                                       ps, depth))
+                                return False;
 			break;
 		}
 		case SAM_DELTA_ALIAS_INFO:
 		{
-			net_io_sam_alias_info("", &delta->alias_info,
-					      ps, depth);
+                        if (!net_io_sam_alias_info("", &delta->alias_info,
+                                                   ps, depth))
+                                return False;
 			break;
 		}
 		case SAM_DELTA_ALIAS_MEM:
 		{
-			net_io_sam_alias_mem_info("", &delta->als_mem_info,
-						  ps, depth);
+			if (!net_io_sam_alias_mem_info("", 
+                                                       &delta->als_mem_info,
+                                                       ps, depth))
+                                return False;
 			break;
 		}
 		default:
@@ -2241,18 +2372,24 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 	prs_debug(ps, depth, desc, "net_io_r_sam_sync");
 	depth++;
 
-	smb_io_cred("srv_creds", &(r_s->srv_creds), ps, depth);
-	prs_uint32("sync_context", ps, depth, &(r_s->sync_context));
+	if (!smb_io_cred("srv_creds", &r_s->srv_creds, ps, depth))
+                return False;
+	if (!prs_uint32("sync_context", ps, depth, &r_s->sync_context))
+                return False;
 
-	prs_uint32("ptr_deltas", ps, depth, &(r_s->ptr_deltas));
+	if (!prs_uint32("ptr_deltas", ps, depth, &r_s->ptr_deltas))
+                return False;
 	if (r_s->ptr_deltas != 0)
 	{
-		prs_uint32("num_deltas ", ps, depth, &(r_s->num_deltas));
-		prs_uint32("ptr_deltas2", ps, depth, &(r_s->ptr_deltas2));
+		if (!prs_uint32("num_deltas ", ps, depth, &r_s->num_deltas))
+                        return False;
+		if (!prs_uint32("ptr_deltas2", ps, depth, &r_s->ptr_deltas2))
+                        return False;
 		if (r_s->ptr_deltas2 != 0)
 		{
-			prs_uint32("num_deltas2", ps, depth,
-				   &(r_s->num_deltas2));
+			if (!prs_uint32("num_deltas2", ps, depth,
+                                        &r_s->num_deltas2))
+                                return False;
 
 			if (r_s->num_deltas2 != r_s->num_deltas)
 			{
@@ -2275,8 +2412,10 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 
 			for (i = 0; i < r_s->num_deltas2; i++)
 			{
-				net_io_sam_delta_hdr("", &r_s->hdr_deltas[i],
-						     ps, depth);
+				if (!net_io_sam_delta_hdr("", 
+                                                          &r_s->hdr_deltas[i],
+                                                          ps, depth))
+                                        return False;
 			}
 
                         if (r_s->num_deltas2 > 0) {
@@ -2294,16 +2433,20 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 
 			for (i = 0; i < r_s->num_deltas2; i++)
 			{
-				net_io_sam_delta_ctr("", sess_key,
-						     &r_s->deltas[i],
-						     r_s->hdr_deltas[i].type3,
-						     ps, depth);
+				if (!net_io_sam_delta_ctr(
+                                        "", sess_key, &r_s->deltas[i],
+                                        r_s->hdr_deltas[i].type3,
+                                        ps, depth)) {
+                                        DEBUG(0, ("hmm, failed on i=%d\n", i));
+                                        return False;
+                                }
 			}
 		}
 	}
 
 	prs_align(ps);
-	prs_uint32("status", ps, depth, &(r_s->status));
+	if (!prs_uint32("status", ps, depth, &r_s->status))
+                return False;
 
 	return True;
 }
@@ -2340,15 +2483,22 @@ BOOL net_io_q_sam_deltas(char *desc, NET_Q_SAM_DELTAS *q_s, prs_struct *ps,
 	prs_debug(ps, depth, desc, "net_io_q_sam_deltas");
 	depth++;
 
-	smb_io_unistr2("", &q_s->uni_srv_name, True, ps, depth);
-	smb_io_unistr2("", &q_s->uni_cli_name, True, ps, depth);
+	if (!smb_io_unistr2("", &q_s->uni_srv_name, True, ps, depth))
+                return False;
+	if (!smb_io_unistr2("", &q_s->uni_cli_name, True, ps, depth))
+                return False;
 
-	smb_io_cred("", &q_s->cli_creds, ps, depth);
-	smb_io_cred("", &q_s->ret_creds, ps, depth);
+	if (!smb_io_cred("", &q_s->cli_creds, ps, depth))
+                return False;
+	if (!smb_io_cred("", &q_s->ret_creds, ps, depth))
+                return False;
 
-	prs_uint32("database_id  ", ps, depth, &q_s->database_id);
-        prs_uint64("dom_mod_count", ps, depth, &q_s->dom_mod_count);
-	prs_uint32("max_size", ps, depth, &q_s->max_size);
+	if (!prs_uint32("database_id  ", ps, depth, &q_s->database_id))
+                return False;
+        if (!prs_uint64("dom_mod_count", ps, depth, &q_s->dom_mod_count))
+                return False;
+	if (!prs_uint32("max_size", ps, depth, &q_s->max_size))
+                return False;
 
 	return True;
 }
@@ -2364,16 +2514,22 @@ BOOL net_io_r_sam_deltas(char *desc, uint8 sess_key[16],
 	prs_debug(ps, depth, desc, "net_io_r_sam_deltas");
 	depth++;
 
-	smb_io_cred("srv_creds", &r_s->srv_creds, ps, depth);
-        prs_uint64("dom_mod_count", ps, depth, &r_s->dom_mod_count);
+	if (!smb_io_cred("srv_creds", &r_s->srv_creds, ps, depth))
+                return False;
+        if (!prs_uint64("dom_mod_count", ps, depth, &r_s->dom_mod_count))
+                return False;
 
-	prs_uint32("ptr_deltas", ps, depth, &r_s->ptr_deltas);
-	prs_uint32("num_deltas", ps, depth, &r_s->num_deltas);
-	prs_uint32("ptr_deltas2", ps, depth, &r_s->num_deltas2);
+	if (!prs_uint32("ptr_deltas", ps, depth, &r_s->ptr_deltas))
+                return False;
+	if (!prs_uint32("num_deltas", ps, depth, &r_s->num_deltas))
+                return False;
+	if (!prs_uint32("ptr_deltas2", ps, depth, &r_s->num_deltas2))
+                return False;
 
 	if (r_s->num_deltas2 != 0)
 	{
-		prs_uint32("num_deltas2 ", ps, depth, &(r_s->num_deltas2));
+		if (!prs_uint32("num_deltas2 ", ps, depth, &r_s->num_deltas2))
+                        return False;
 
 		if (r_s->ptr_deltas != 0)
 		{
@@ -2410,16 +2566,20 @@ BOOL net_io_r_sam_deltas(char *desc, uint8 sess_key[16],
 
 			for (i = 0; i < r_s->num_deltas; i++)
 			{
-				net_io_sam_delta_ctr("", sess_key,
-						     &r_s->deltas[i],
-						     r_s->hdr_deltas[i].type2,
-						     ps, depth);
+				if (!net_io_sam_delta_ctr(
+                                        "", sess_key,
+                                        &r_s->deltas[i],
+                                        r_s->hdr_deltas[i].type2,
+                                        ps, depth))
+                                        
+                                        return False;
 			}
 		}
 	}
 
 	prs_align(ps);
-	prs_uint32("status", ps, depth, &(r_s->status));
+	if (!prs_uint32("status", ps, depth, &r_s->status))
+                return False;
 
 	return True;
 }
