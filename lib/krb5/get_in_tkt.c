@@ -279,7 +279,7 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
     
     krb5_us_timeofday (context, &sec, &usec);
     p.patimestamp = sec;
-    p.pausec      = usec;
+    p.pausec      = &usec;
 
     ret = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
 			       sizeof(buf),
