@@ -16,10 +16,10 @@ INSTALL = @INSTALL@
 
 prefix 	= @prefix@
 
-SOURCES = base64.c glob.c
+SOURCES = base64.c glob.c sockbuf.c
 OBJECTS = $(libcommon_OBJS)
 
-libcommon_OBJS = base64.o glob.o
+libcommon_OBJS = base64.o glob.o sockbuf.o
 
 LIBNAME = $(LIBPREFIX)common
 LIBEXT = a
