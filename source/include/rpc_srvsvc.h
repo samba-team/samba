@@ -26,13 +26,14 @@
 
 
 /* srvsvc pipe */
-#define SRV_NETCONNENUM      0x08
-#define SRV_NETFILEENUM      0x09
-#define SRV_NETSESSENUM      0x0c
-#define SRV_NETSHAREENUM     0x0f
-#define SRV_NET_SRV_GET_INFO 0x15
-#define SRV_NET_SRV_SET_INFO 0x16
-#define	SRV_NET_REMOTE_TOD   0x1c
+#define SRV_NETCONNENUM        0x08
+#define SRV_NETFILEENUM        0x09
+#define SRV_NETSESSENUM        0x0c
+#define SRV_NETSHAREENUM       0x0f
+#define SRV_NET_SHARE_GET_INFO 0x10
+#define SRV_NET_SRV_GET_INFO   0x15
+#define SRV_NET_SRV_SET_INFO   0x16
+#define SRV_NET_REMOTE_TOD     0x1c
 
 /* SESS_INFO_0 (pointers to level 0 session info strings) */
 typedef struct ptr_sess_info0
@@ -267,12 +268,8 @@ typedef struct str_share_info1
 /* SRV_SHARE_INFO_1 */
 typedef struct share_info_1_info
 {
-	uint32 num_entries_read;                     /* EntriesRead */
-	uint32 ptr_share_info;                       /* Buffer */
-	uint32 num_entries_read2;                    /* EntriesRead */
-
-	SH_INFO_1 *info_1; /* share entry pointers */
-	SH_INFO_1_STR *info_1_str; /* share entry strings */
+	SH_INFO_1 info_1;
+	SH_INFO_1_STR info_1_str;
 
 } SRV_SHARE_INFO_1;
 
@@ -303,23 +300,27 @@ typedef struct str_share_info2
 /* SRV_SHARE_INFO_2 */
 typedef struct share_info_2_info
 {
-	uint32 num_entries_read;                     /* EntriesRead */
-	uint32 ptr_share_info;                       /* Buffer */
-	uint32 num_entries_read2;                    /* EntriesRead */
-
-	SH_INFO_2 *info_2; /* share entry pointers */
-	SH_INFO_2_STR *info_2_str; /* share entry strings */
+	SH_INFO_2 info_2;
+	SH_INFO_2_STR info_2_str;
 
 } SRV_SHARE_INFO_2;
 
 /* SRV_SHARE_INFO_CTR */
-typedef struct srv_share_info_1_info
+typedef struct srv_share_info_ctr_info
 {
-	uint32 switch_value;         /* switch value */
-	uint32 ptr_share_ctr;       /* pointer to share info union */
+	uint32 info_level;
+	uint32 switch_value;
+	uint32 ptr_share_info;
+
+	uint32 num_entries;
+	uint32 ptr_entries;
+	uint32 num_entries2;
+
 	union {
-		SRV_SHARE_INFO_1 info1; /* share info level 1 */
-		SRV_SHARE_INFO_2 info2; /* share info level 2 */
+		SRV_SHARE_INFO_1 *info1; /* share info level 1 */
+		SRV_SHARE_INFO_2 *info2; /* share info level 2 */
+		void *info;
+
 	} share;
 
 } SRV_SHARE_INFO_CTR;
@@ -329,8 +330,6 @@ typedef struct q_net_share_enum_info
 {
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* server name */
-
-	uint32 share_level;          /* share level */
 
 	SRV_SHARE_INFO_CTR ctr;     /* share info container */
 
@@ -344,7 +343,6 @@ typedef struct q_net_share_enum_info
 /* SRV_R_NET_SHARE_ENUM */
 typedef struct r_net_share_enum_info
 {
-	uint32 share_level;          /* share level */
 	SRV_SHARE_INFO_CTR ctr;     /* share info container */
 
 	uint32 total_entries;                    /* total number of entries */
@@ -353,6 +351,35 @@ typedef struct r_net_share_enum_info
 	uint32 status;               /* return status */
 
 } SRV_R_NET_SHARE_ENUM;
+
+
+/* SRV_Q_NET_SHARE_GET_INFO */
+typedef struct q_net_share_get_info_info
+{
+	uint32 ptr_srv_name;
+	UNISTR2 uni_srv_name;
+
+	UNISTR2 uni_share_name;
+	uint32 info_level;
+
+} SRV_Q_NET_SHARE_GET_INFO;
+
+/* SRV_R_NET_SHARE_GET_INFO */
+typedef struct r_net_share_get_info_info
+{
+	uint32 switch_value;
+	uint32 ptr_share_ctr;
+
+	union {
+		SRV_SHARE_INFO_1 info1;
+		SRV_SHARE_INFO_2 info2;
+
+	} share;
+
+	uint32 status;
+
+} SRV_R_NET_SHARE_GET_INFO;
+
 
 /* FILE_INFO_3 (level 3 file info strings) */
 typedef struct file_info3_info

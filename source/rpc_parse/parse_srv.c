@@ -102,95 +102,6 @@ static BOOL srv_io_share_info1(char *desc, SH_INFO_1 *sh1, prs_struct *ps, int d
 }
 
 /*******************************************************************
- Free a share info level 1 structure.
- ********************************************************************/
-
-void free_srv_share_info_1(SRV_SHARE_INFO_1 *sh1)
-{
-	if(!sh1)
-		return;
-	if(sh1->info_1)
-		free(sh1->info_1);
-	sh1->info_1 = NULL;
-	if(sh1->info_1_str)
-		free(sh1->info_1_str);
-	sh1->info_1_str = NULL;
-	memset(sh1, '\0', sizeof(SRV_SHARE_INFO_1) );
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 *ctr, prs_struct *ps, int depth)
-{
-	if (ctr == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_share_1_ctr");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("num_entries_read", ps, depth, &ctr->num_entries_read))
-		return False;
-	if(!prs_uint32("ptr_share_info", ps, depth, &ctr->ptr_share_info))
-		return False;
-
-	if (ctr->ptr_share_info != 0) {
-		int i;
-		int num_entries = ctr->num_entries_read;
-
-		/*
-		 * Allocate the num_entries arrays on demand if reading.
-		 */
-
-		if(UNMARSHALLING(ps) && ctr->info_1 == NULL) {
-			if(!(ctr->info_1 = malloc(num_entries * sizeof(SH_INFO_1)))) {
-				DEBUG(0,("srv_io_srv_share_info_1: malloc failed for %d SH_INFO_1.\n",
-					num_entries ));
-				return False;
-			}
-			memset(ctr->info_1, '\0', num_entries * sizeof(SH_INFO_1) );
-		}
-
-		if(UNMARSHALLING(ps) && ctr->info_1_str == NULL) {
-			if(!(ctr->info_1_str = malloc(num_entries * sizeof(SH_INFO_1_STR)))) {
-				DEBUG(0,("srv_io_srv_share_info_1: malloc failed for %d SH_INFO_1_STR.\n",
-					num_entries ));
-				free(ctr->info_1);
-				ctr->info_1 = NULL;
-				return False;
-			}
-			memset(ctr->info_1_str, '\0', num_entries * sizeof(SH_INFO_1_STR) );
-		}
-
-		if(!prs_uint32("num_entries_read2", ps, depth, &ctr->num_entries_read2))
-		if(!prs_uint32("num_entries_read2", ps, depth, &ctr->num_entries_read2))
-			return False;
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_share_info1("", &ctr->info_1[i], ps, depth))
-				return False;
-		}
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_share_info1_str("", &ctr->info_1_str[i], ps, depth))
-				return False;
-		}
-
-		if(!prs_align(ps))
-			return False;
-	} else {
-		if(UNMARSHALLING(ps))
-			memset(ctr, '\0', sizeof(SRV_SHARE_INFO_1));
-	}
-
-	return True;
-}
-
-/*******************************************************************
  Inits a SH_INFO_2_STR structure
 ********************************************************************/
 
@@ -256,23 +167,6 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 }
 
 /*******************************************************************
- Free a share info level 2 structure.
- ********************************************************************/
-
-void free_srv_share_info_2(SRV_SHARE_INFO_2 *sh2)
-{
-	if(!sh2)
-		return;
-	if(sh2->info_2)
-		free(sh2->info_2);
-	sh2->info_2 = NULL;
-	if(sh2->info_2_str)
-		free(sh2->info_2_str);
-	sh2->info_2_str = NULL;
-	memset(sh2, '\0', sizeof(SRV_SHARE_INFO_2) );
-}
-
-/*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
 
@@ -311,77 +205,6 @@ static BOOL srv_io_share_info2(char *desc, SH_INFO_2 *sh2, prs_struct *ps, int d
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 *ctr, prs_struct *ps, int depth)
-{
-	if (ctr == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_share_2_ctr");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("num_entries_read", ps, depth, &ctr->num_entries_read))
-		return False;
-	if(!prs_uint32("ptr_share_info", ps, depth, &ctr->ptr_share_info))
-		return False;
-
-	if (ctr->ptr_share_info != 0) {
-		int i;
-		int num_entries = ctr->num_entries_read;
-
-		/*
-		 * Allocate the num_entries arrays on demand if reading.
-		 */
-
-		if(UNMARSHALLING(ps) && ctr->info_2 == NULL) {
-			if(!(ctr->info_2 = malloc(num_entries * sizeof(SH_INFO_2)))) {
-				DEBUG(0,("srv_io_srv_share_info_2: malloc failed for %d SH_INFO_2.\n",
-					num_entries ));
-				return False;
-			}
-			memset(ctr->info_2, '\0', num_entries * sizeof(SH_INFO_2) );
-		}
-
-		if(UNMARSHALLING(ps) && ctr->info_2_str == NULL) {
-			if(!(ctr->info_2_str = malloc(num_entries * sizeof(SH_INFO_2_STR)))) {
-				DEBUG(0,("srv_io_srv_share_info_2: malloc failed for %d SH_INFO_2_STR.\n",
-					num_entries ));
-				free(ctr->info_2);
-				ctr->info_2 = NULL;
-				return False;
-			}
-			memset(ctr->info_2_str, '\0', num_entries * sizeof(SH_INFO_2_STR) );
-		}
-
-		if(!prs_uint32("num_entries_read2", ps, depth, &ctr->num_entries_read2))
-			return False;
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_share_info2("", &ctr->info_2[i], ps, depth))
-				return False;
-		}
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_share_info2_str("", &ctr->info_2_str[i], ps, depth))
-				return False;
-		}
-
-		if(!prs_align(ps))
-			return False;
-	} else {
-		if(UNMARSHALLING(ps))
-			memset(ctr, '\0', sizeof(SRV_SHARE_INFO_2));
-	}
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
 static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
@@ -390,32 +213,102 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 	prs_debug(ps, depth, desc, "srv_io_srv_share_ctr");
 	depth++;
 
+	if (UNMARSHALLING(ps)) {
+		memset(ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
+	}
+
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("switch_value", ps, depth, &ctr->switch_value))
-		return False;
-	if(!prs_uint32("ptr_share_ctr", ps, depth, &ctr->ptr_share_ctr))
+	if(!prs_uint32("info_level", ps, depth, &ctr->info_level))
 		return False;
 
-	if (ctr->ptr_share_ctr != 0) {
-		switch (ctr->switch_value) {
-		case 2:
-			if(!srv_io_srv_share_info_2("", &ctr->share.info2, ps, depth))
+	if (ctr->info_level == 0)
+		return True;
+
+	if(!prs_uint32("switch_value", ps, depth, &ctr->switch_value))
+		return False;
+	if(!prs_uint32("ptr_share_info", ps, depth, &ctr->ptr_share_info))
+		return False;
+
+	if (ctr->ptr_share_info == 0)
+		return True;
+
+	if(!prs_uint32("num_entries", ps, depth, &ctr->num_entries))
+		return False;
+	if(!prs_uint32("ptr_entries", ps, depth, &ctr->ptr_entries))
+		return False;
+
+	if (ctr->ptr_entries == 0) {
+		if (ctr->num_entries == 0)
+			return True;
+		else
+			return False;
+	}
+
+	if(!prs_uint32("num_entries2", ps, depth, &ctr->num_entries2))
+		return False;
+
+	if (ctr->num_entries2 != ctr->num_entries)
+		return False;
+
+	switch (ctr->switch_value) {
+	case 1:
+	{
+		SRV_SHARE_INFO_1 *info1 = ctr->share.info1;
+		int num_entries = ctr->num_entries;
+		int i;
+
+		if (UNMARSHALLING(ps)) {
+			if (!(info1 = malloc(num_entries * sizeof(SRV_SHARE_INFO_1))))
 				return False;
-			break;
-		case 1:
-			if(!srv_io_srv_share_info_1("", &ctr->share.info1, ps, depth))
-				return False;
-			break;
-		default:
-			DEBUG(5,("%s no share info at switch_value %d\n",
-			         tab_depth(depth), ctr->switch_value));
-			break;
+			memset(info1, '\0', num_entries * sizeof(SRV_SHARE_INFO_1));
+			ctr->share.info1 = info1;
 		}
-	} else {
-		if(UNMARSHALLING(ps))
-			memset(ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
+
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_share_info1("", &info1[i].info_1, ps, depth))
+				return False;
+		}
+
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_share_info1_str("", &info1[i].info_1_str, ps, depth))
+				return False;
+		}
+
+		break;
+	}
+
+	case 2:
+	{
+		SRV_SHARE_INFO_2 *info2 = ctr->share.info2;
+		int num_entries = ctr->num_entries;
+		int i;
+
+		if (UNMARSHALLING(ps)) {
+			if (!(info2 = malloc(num_entries * sizeof(SRV_SHARE_INFO_2))))
+				return False;
+			memset(info2, '\0', num_entries * sizeof(SRV_SHARE_INFO_2));
+			ctr->share.info2 = info2;
+		}
+
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_share_info2("", &info2[i].info_2, ps, depth))
+				return False;
+		}
+
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_share_info2_str("", &info2[i].info_2_str, ps, depth))
+				return False;
+		}
+
+		break;
+	}
+
+	default:
+		DEBUG(5,("%s no share info at switch_value %d\n",
+			 tab_depth(depth), ctr->switch_value));
+		break;
 	}
 
 	return True;
@@ -429,14 +322,8 @@ void free_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr)
 {
 	if(!ctr)
 		return;
-	switch (ctr->switch_value) {
-	case 1:
-		free_srv_share_info_1(&ctr->share.info1);
-		break;
-	case 2:
-		free_srv_share_info_2(&ctr->share.info2);
-		break;
-	}
+	if(ctr->share.info)
+		free(ctr->share.info);
 	memset(ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
 }
 
@@ -469,18 +356,16 @@ void free_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n)
 ********************************************************************/
 
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
-				char *srv_name, 
-				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd)
+				char *srv_name, uint32 info_level,
+				uint32 preferred_len, ENUM_HND *hnd)
 {
-	q_n->ctr = *ctr;
 
 	DEBUG(5,("init_q_net_share_enum\n"));
 
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 
-	q_n->share_level    = share_level;
+	q_n->ctr.info_level = q_n->ctr.switch_value = info_level;
+	q_n->ctr.ptr_share_info = 0;
 	q_n->preferred_len = preferred_len;
 
 	memcpy(&q_n->enum_hnd, hnd, sizeof(*hnd));
@@ -506,19 +391,11 @@ BOOL srv_io_q_net_share_enum(char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *
 	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
 		return False;
 
+	if(!srv_io_srv_share_ctr("share_ctr", &q_n->ctr, ps, depth))
+		return False;
+
 	if(!prs_align(ps))
 		return False;
-
-	if(!prs_uint32("share_level", ps, depth, &q_n->share_level))
-		return False;
-
-	if (q_n->share_level != -1) {
-		if(!srv_io_srv_share_ctr("share_ctr", &q_n->ctr, ps, depth))
-			return False;
-	} else {
-		if(UNMARSHALLING(ps))
-			memset(&q_n->ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
-	}
 
 	if(!prs_uint32("preferred_len", ps, depth, &q_n->preferred_len))
 		return False;
@@ -541,22 +418,126 @@ BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *
 	prs_debug(ps, depth, desc, "srv_io_r_net_share_enum");
 	depth++;
 
+	if(!srv_io_srv_share_ctr("share_ctr", &r_n->ctr, ps, depth))
+		return False;
+
 	if(!prs_align(ps))
 		return False;
-
-	if(!prs_uint32("share_level", ps, depth, &r_n->share_level))
-		return False;
-
-	if (r_n->share_level != 0) {
-		if(!srv_io_srv_share_ctr("share_ctr", &r_n->ctr, ps, depth))
-			return False;
-	}
 
 	if(!prs_uint32("total_entries", ps, depth, &r_n->total_entries))
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
 	if(!prs_uint32("status     ", ps, depth, &r_n->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Frees a SRV_Q_NET_SHARE_GET_INFO structure.
+********************************************************************/
+
+void free_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n)
+{
+	if(!q_n)
+		return;
+	memset(q_n, '\0', sizeof(SRV_Q_NET_SHARE_GET_INFO));
+}
+
+/*******************************************************************
+ Frees a SRV_R_NET_SHARE_GET_INFO structure.
+********************************************************************/
+
+void free_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n)
+{
+	if(!r_n)
+		return;
+	memset(r_n, '\0', sizeof(SRV_R_NET_SHARE_GET_INFO));
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL srv_io_q_net_share_get_info(char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n, prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_share_get_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_n->ptr_srv_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("", &q_n->uni_share_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("info_level", ps, depth, &q_n->info_level))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_struct *ps, int depth)
+{
+	if (r_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_share_get_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("switch_value ", ps, depth, &r_n->switch_value ))
+		return False;
+
+	if(!prs_uint32("ptr_share_ctr", ps, depth, &r_n->ptr_share_ctr))
+		return False;
+
+	if (r_n->ptr_share_ctr != 0) {
+		switch (r_n->switch_value) {
+		case 1:
+			if(!srv_io_share_info1("", &r_n->share.info1.info_1, ps, depth))
+				return False;
+
+			if(!srv_io_share_info1_str("", &r_n->share.info1.info_1_str, ps, depth))
+				return False;
+
+			break;
+		case 2:
+			if(!srv_io_share_info2("", &r_n->share.info2.info_2, ps, depth))
+				return False;
+
+			if(!srv_io_share_info2_str("", &r_n->share.info2.info_2_str, ps, depth))
+				return False;
+
+			break;
+		default:
+			DEBUG(5,("%s no share info at switch_value %d\n",
+			         tab_depth(depth), r_n->switch_value));
+			break;
+		}
+	}
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;

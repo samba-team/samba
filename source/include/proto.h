@@ -1451,8 +1451,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 			char *server_name, 
 			uint32 switch_value, SRV_R_NET_SHARE_ENUM *r_o,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
+			uint32 preferred_len, ENUM_HND *hnd);
 BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
@@ -2017,7 +2016,6 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 
 void init_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
 void init_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark);
-void free_srv_share_info_1(SRV_SHARE_INFO_1 *sh1);
 void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
 				char *net_name, char *remark,
 				char *path, char *passwd);
@@ -2025,17 +2023,18 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd);
-void free_srv_share_info_2(SRV_SHARE_INFO_2 *sh2);
 void free_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr);
 void free_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n);
 void free_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n);
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
-				char *srv_name, 
-				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd);
+				char *srv_name, uint32 info_level,
+				uint32 preferred_len, ENUM_HND *hnd);
 BOOL srv_io_q_net_share_enum(char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth);
+void free_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n);
+void free_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n);
+BOOL srv_io_q_net_share_get_info(char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_struct *ps, int depth);
 void init_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
 void init_srv_sess_info0(SESS_INFO_0 *ss0, char *name);
 void init_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user);
@@ -2241,13 +2240,9 @@ void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action,
 void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
 				SRV_CONN_INFO_CTR *ctr);
 void display_share_info_1(FILE *out_hnd, enum action_type action,
-		SH_INFO_1 *info1, SH_INFO_1_STR *str1);
+			  SRV_SHARE_INFO_1 *info1);
 void display_share_info_2(FILE *out_hnd, enum action_type action,
-		SH_INFO_2 *info2, SH_INFO_2_STR *str2);
-void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SHARE_INFO_1 *ctr);
-void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SHARE_INFO_2 *ctr);
+			  SRV_SHARE_INFO_2 *info2);
 void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
 				SRV_SHARE_INFO_CTR *ctr);
 void display_file_info_3(FILE *out_hnd, enum action_type action,

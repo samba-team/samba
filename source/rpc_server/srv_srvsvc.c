@@ -31,10 +31,9 @@ extern pstring global_myname;
 
 /*******************************************************************
  Fill in a share info level 1 structure.
- See ipc.c:fill_share_info()
  ********************************************************************/
 
-static void init_srv_share_1_info(SH_INFO_1 *sh1, SH_INFO_1_STR *str1, int snum)
+static void init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, int snum)
 {
 	int len_net_name;
 	pstring net_name;
@@ -55,77 +54,15 @@ static void init_srv_share_1_info(SH_INFO_1 *sh1, SH_INFO_1_STR *str1, int snum)
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
 
-	init_srv_share_info1(sh1, net_name, type, remark);
-	init_srv_share_info1_str(str1, net_name, remark);
-}
-
-/*******************************************************************
- Fill in a share info level 1 structure.
- ********************************************************************/
-
-static BOOL init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, uint32 *snum, uint32 *svcs)
-{
-	uint32 num_entries = 0;
-	uint32 res_handle;
-	int i;
-
-	DEBUG(5,("init_srv_share_info_1\n"));
-
-	memset(sh1, '\0', sizeof(SRV_SHARE_INFO_1));
-
-	/* First count the number of entries. */
-
-	res_handle = *snum;
-	*svcs = lp_numservices();
-
-	for (; *snum < *svcs; (*snum)++) {
-		if (lp_browseable(*snum) && lp_snum_ok(*snum))
-			num_entries++;
-	}
-
-	if(num_entries) {
-		if(!(sh1->info_1 = (SH_INFO_1 *)malloc(num_entries * sizeof(SH_INFO_1)))) {
-			DEBUG(0,("init_srv_share_info_1: malloc fail for %d SH_INFO_1.",
-				num_entries ));
-			return False;
-		}
-
-		memset(sh1->info_1, '\0', num_entries * sizeof(SH_INFO_1));
-
-		if(!(sh1->info_1_str = (SH_INFO_1_STR *)malloc(num_entries * sizeof(SH_INFO_1_STR)))) {
-			DEBUG(0,("init_srv_share_info_1: malloc fail for %d SH_INFO_1_STR.",
-				num_entries ));
-			free(sh1->info_1);
-			sh1->info_1 = NULL;
-			return False;
-		}
-
-		memset(sh1->info_1_str, '\0', num_entries * sizeof(SH_INFO_1_STR));
-	}
-
-	for (*snum = res_handle, i = 0; *snum < *svcs; (*snum)++) {
-		if (lp_browseable(*snum) && lp_snum_ok(*snum)) {
-			init_srv_share_1_info(&sh1->info_1[i], &sh1->info_1_str[i], *snum);
-			i++;
-		}
-	}
-
-	sh1->num_entries_read = num_entries;
-	sh1->ptr_share_info = (num_entries > 0) ? 1 : 0;
-	sh1->num_entries_read2 = num_entries;
-	
-	if ((*snum) >= (*svcs))
-		(*snum) = 0;
-
-	return True;
+	init_srv_share_info1(&sh1->info_1, net_name, type, remark);
+	init_srv_share_info1_str(&sh1->info_1_str, net_name, remark);
 }
 
 /*******************************************************************
  Fill in a share info level 2 structure.
- See ipc.c:fill_share_info()
  ********************************************************************/
 
-static void init_srv_share_2_info(SH_INFO_2 *sh2, SH_INFO_2_STR *str2, int snum)
+static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 {
 	int len_net_name;
 	pstring net_name;
@@ -150,113 +87,82 @@ static void init_srv_share_2_info(SH_INFO_2 *sh2, SH_INFO_2_STR *str2, int snum)
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
 
-	init_srv_share_info2(sh2, net_name, type, remark, 0, 0xffffffff, 1, path, passwd);
-	init_srv_share_info2_str(str2, net_name, remark, path, passwd);
+	init_srv_share_info2(&sh2->info_2, net_name, type, remark, 0, 0xffffffff, 1, path, passwd);
+	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, passwd);
 }
 
 /*******************************************************************
- Fill in a share info level 2 structure.
+ Fill in a share info structure.
  ********************************************************************/
 
-static BOOL init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, uint32 *snum, uint32 *svcs)
+static BOOL init_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
+	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries)
 {
-	uint32 num_entries = 0;
-	uint32 res_handle;
-	int i;
+	int num_entries = 0;
+	int num_services = lp_numservices();
+	int snum;
 
-	DEBUG(5,("init_srv_share_info_2\n"));
+	DEBUG(5,("init_srv_share_info_ctr\n"));
 
-	memset(sh2, '\0', sizeof(SRV_SHARE_INFO_2));
+	ZERO_STRUCTPN(ctr);
+
+	ctr->info_level = ctr->switch_value = info_level;
+	*resume_hnd = 0;
 
 	/* Count the number of entries. */
-
-	res_handle = *snum;
-	*svcs = lp_numservices();
-
-	for (; *snum < *svcs; (*snum)++) {
-		if (lp_browseable((*snum)) && lp_snum_ok((*snum)))
+	for (snum = 0; snum < num_services; snum++) {
+		if (lp_browseable(snum) && lp_snum_ok(snum))
 			num_entries++;
 	}
 
-	if(num_entries) {
-		if(!(sh2->info_2 = (SH_INFO_2 *)malloc(num_entries * sizeof(SH_INFO_2)))) {
-			DEBUG(0,("init_srv_share_info_2: malloc fail for %d SH_INFO_2.",
-				num_entries ));
-			return False;
+	*total_entries = num_entries;
+	ctr->num_entries2 = ctr->num_entries = num_entries;
+	ctr->ptr_share_info = ctr->ptr_entries = 1;
+
+	if (!num_entries)
+		return True;
+
+	switch (info_level) {
+	case 1:
+	{
+		SRV_SHARE_INFO_1 *info1;
+		int i = 0;
+
+		info1 = malloc(num_entries * sizeof(SRV_SHARE_INFO_1));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum)) {
+				init_srv_share_info_1(&info1[i++], snum);
+			}
 		}
 
-		memset(sh2->info_2, '\0', num_entries * sizeof(SH_INFO_2));
-
-		if(!(sh2->info_2_str = (SH_INFO_2_STR *)malloc(num_entries * sizeof(SH_INFO_2_STR)))) {
-			DEBUG(0,("init_srv_share_info_2: malloc fail for %d SH_INFO_2_STR.",
-				num_entries ));
-			free(sh2->info_2);
-			sh2->info_2 = NULL;
-			return False;
-		}
-
-		memset(sh2->info_2_str, '\0', num_entries * sizeof(SH_INFO_2_STR));
+		ctr->share.info1 = info1;
+		break;
 	}
 
-	for (i = 0, *snum = res_handle; *snum < *svcs; (*snum)++) {
-		if (lp_browseable((*snum)) && lp_snum_ok((*snum))) {
-			init_srv_share_2_info(&sh2->info_2[i], &sh2->info_2_str[i], *snum);
-			i++;
+	case 2:
+	{
+		SRV_SHARE_INFO_2 *info2;
+		int i = 0;
+
+		info2 = malloc(num_entries * sizeof(SRV_SHARE_INFO_2));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum)) {
+				init_srv_share_info_2(&info2[i++], snum);
+			}
 		}
+
+		ctr->share.info2 = info2;
+		break;
 	}
 
-	sh2->num_entries_read  = num_entries;
-	sh2->ptr_share_info    = num_entries > 0 ? 1 : 0;
-	sh2->num_entries_read2 = num_entries;
-	
-	if (*snum >= *svcs)
-		*snum = 0;
+	default:
+		DEBUG(5,("init_srv_share_info_ctr: unsupported switch value %d\n", info_level));
+		return False;
+	}
 
 	return True;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_SHARE_ENUM structure.
-********************************************************************/
-
-static uint32 init_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
-{
-	uint32 status = 0x0;
-	DEBUG(5,("init_srv_share_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value) {
-	case 1:
-		if(!init_srv_share_info_1(&ctr->share.info1, resume_hnd, total_entries)) {
-			*resume_hnd = 0;
-			*total_entries = 0;
-			ctr->ptr_share_ctr = 0;
-			return (status = 0xC0000000 | NT_STATUS_NO_MEMORY);
-		}
-		ctr->ptr_share_ctr = 1;
-		break;
-	case 2:
-		if(!init_srv_share_info_2(&ctr->share.info2, resume_hnd, total_entries)) {
-			*resume_hnd = 0;
-			*total_entries = 0;
-			ctr->ptr_share_ctr = 0;
-			return (status = 0xC0000000 | NT_STATUS_NO_MEMORY);
-		}
-		ctr->ptr_share_ctr = 2;
-		break;
-	default:
-		DEBUG(5,("init_srv_share_info_ctr: unsupported switch value %d\n",
-	          switch_value));
-		*resume_hnd = 0;
-		*total_entries = 0;
-		ctr->ptr_share_ctr = 0;
-		status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-		break;
-	}
-
-	return status;
 }
 
 /*******************************************************************
@@ -264,19 +170,16 @@ static uint32 init_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
 ********************************************************************/
 
 static void init_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n,
-				uint32 resume_hnd, int share_level, int switch_value)  
+				      uint32 info_level, uint32 resume_hnd)  
 {
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
 
-	r_n->share_level  = share_level;
-	if (share_level == 0)
+	if (init_srv_share_info_ctr(&r_n->ctr, info_level,
+				    &resume_hnd, &r_n->total_entries)) {
+		r_n->status = 0x0;
+	} else {
 		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-	else
-		r_n->status = init_srv_share_info_ctr(&r_n->ctr, switch_value,
-						&resume_hnd, &r_n->total_entries);
-
-	if (r_n->status != 0x0)
-		resume_hnd = 0;
+	}
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
 }
@@ -295,9 +198,8 @@ static BOOL srv_reply_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 
 	/* Create the list of shares for the response. */
 	init_srv_r_net_share_enum(&r_n,
-				get_enum_hnd(&q_n->enum_hnd),
-				q_n->share_level,
-				q_n->ctr.switch_value);
+				q_n->ctr.info_level,
+				get_enum_hnd(&q_n->enum_hnd));
 
 	/* store the response in the SMB stream */
 	ret = srv_io_r_net_share_enum("", &r_n, rdata, 0);
@@ -306,6 +208,71 @@ static BOOL srv_reply_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 	free_srv_r_net_share_enum(&r_n);
 
 	DEBUG(5,("srv_net_share_enum: %d\n", __LINE__));
+
+	return ret;
+}
+
+/*******************************************************************
+ Inits a SRV_R_NET_SHARE_GET_INFO structure.
+********************************************************************/
+
+static void init_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
+				  char *share_name, uint32 info_level)
+{
+	uint32 status = 0x0;
+	int snum;
+
+	DEBUG(5,("init_srv_r_net_share_get_info: %d\n", __LINE__));
+
+	r_n->switch_value = info_level;
+
+	snum = find_service(share_name);
+
+	if (snum >= 0) {
+		switch (info_level) {
+		case 1:
+			init_srv_share_info_1(&r_n->share.info1, snum);
+			break;
+		case 2:
+			init_srv_share_info_2(&r_n->share.info2, snum);
+			break;
+		default:
+			DEBUG(5,("init_srv_net_share_get_info: unsupported switch value %d\n", info_level));
+			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			break;
+		}
+	} else {
+		status = 0xC0000000 | NT_STATUS_BAD_NETWORK_NAME;
+	}
+
+	r_n->ptr_share_ctr = (status == 0x0) ? 1 : 0;
+	r_n->status = status;
+}
+
+/*******************************************************************
+ Net share get info.
+********************************************************************/
+
+static BOOL srv_reply_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n,
+                                         prs_struct *rdata)
+{
+	SRV_R_NET_SHARE_GET_INFO r_n;
+	char *share_name;
+	BOOL ret;
+
+	DEBUG(5,("srv_net_share_get_info: %d\n", __LINE__));
+
+	/* Create the list of shares for the response. */
+	share_name = unistr2_to_str(&q_n->uni_share_name);
+	init_srv_r_net_share_get_info(&r_n, share_name, q_n->info_level);
+
+	/* store the response in the SMB stream */
+	ret = srv_io_r_net_share_get_info("", &r_n, rdata, 0);
+
+	/* Free the memory used by the response. */
+	free_srv_r_net_share_get_info(&r_n);
+
+	DEBUG(5,("srv_net_share_get_info: %d\n", __LINE__));
 
 	return ret;
 }
@@ -1041,6 +1008,30 @@ static BOOL api_srv_net_share_enum( uint16 vuid, prs_struct *data,
 }
 
 /*******************************************************************
+ RPC to return share information.
+********************************************************************/
+
+static BOOL api_srv_net_share_get_info( uint16 vuid, prs_struct *data,
+                                        prs_struct *rdata )
+{
+	SRV_Q_NET_SHARE_GET_INFO q_n;
+	BOOL ret;
+
+	/* Unmarshall the net server get info. */
+	if(!srv_io_q_net_share_get_info("", &q_n, data, 0)) {
+		DEBUG(0,("api_srv_net_share_get_info: Failed to unmarshall SRV_Q_NET_SHARE_GET_INFO.\n"));
+		return False;
+	}
+
+	ret = srv_reply_net_share_get_info(&q_n, rdata);
+
+	/* Free any data allocated in the unmarshalling. */
+	free_srv_q_net_share_get_info(&q_n);
+
+	return ret;
+}
+
+/*******************************************************************
 time of day
 ********************************************************************/
 static BOOL srv_reply_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_n,
@@ -1103,13 +1094,14 @@ static BOOL api_srv_net_remote_tod( uint16 vuid, prs_struct *data,
 ********************************************************************/
 struct api_struct api_srv_cmds[] =
 {
-	{ "SRV_NETCONNENUM"     , SRV_NETCONNENUM     , api_srv_net_conn_enum    },
-	{ "SRV_NETSESSENUM"     , SRV_NETSESSENUM     , api_srv_net_sess_enum    },
-	{ "SRV_NETSHAREENUM"    , SRV_NETSHAREENUM    , api_srv_net_share_enum   },
-	{ "SRV_NETFILEENUM"     , SRV_NETFILEENUM     , api_srv_net_file_enum    },
-	{ "SRV_NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info },
-	{ "SRV_NET_REMOTE_TOD"  , SRV_NET_REMOTE_TOD  , api_srv_net_remote_tod   },
-	{ NULL                  , 0                   , NULL                     }
+	{ "SRV_NETCONNENUM"       , SRV_NETCONNENUM       , api_srv_net_conn_enum    },
+	{ "SRV_NETSESSENUM"       , SRV_NETSESSENUM       , api_srv_net_sess_enum    },
+	{ "SRV_NETSHAREENUM"      , SRV_NETSHAREENUM      , api_srv_net_share_enum   },
+	{ "SRV_NET_SHARE_GET_INFO", SRV_NET_SHARE_GET_INFO, api_srv_net_share_get_info },
+	{ "SRV_NETFILEENUM"       , SRV_NETFILEENUM       , api_srv_net_file_enum    },
+	{ "SRV_NET_SRV_GET_INFO"  , SRV_NET_SRV_GET_INFO  , api_srv_net_srv_get_info },
+	{ "SRV_NET_REMOTE_TOD"    , SRV_NET_REMOTE_TOD    , api_srv_net_remote_tod   },
+	{ NULL                    , 0                     , NULL                     }
 };
 
 /*******************************************************************
