@@ -32,7 +32,7 @@ extern fstring global_sam_name;
  * that points to the correct function for the selected database. JRA.
  */
 
-static struct aliasdb_ops *aldb_ops;
+static struct aliasdb_ops *aldb_ops = NULL;
 
 /***************************************************************
  Initialise the alias db operations.
@@ -49,8 +49,8 @@ BOOL initialise_alias_db(void)
   aldb_ops =  nisplus_initialise_alias_db();
 #elif defined(WITH_LDAP)
   aldb_ops = ldap_initialise_alias_db();
-#else 
-  aldb_ops = file_initialise_alias_db();
+#elif defined(USE_SMBUNIX_DB)
+  aldb_ops = unix_initialise_alias_db();
 #endif 
 
   return (aldb_ops != NULL);
@@ -380,10 +380,57 @@ BOOL getuseraliasnam(char *user_name, LOCAL_GRP **als, int *num_alss)
 /*************************************************************
  initialises a LOCAL_GRP.
  **************************************************************/
-
 void aldb_init_als(LOCAL_GRP *als)
 {
 	if (als == NULL) return;
 	ZERO_STRUCTP(als);
 }
 
+/*************************************************************
+ turns an alias entry into a string.
+ **************************************************************/
+BOOL make_alias_line(char *p, int max_len,
+				LOCAL_GRP *als,
+				LOCAL_GRP_MEMBER **mem, int *num_mem)
+{
+	int i;
+	int len;
+	len = slprintf(p, max_len-1, "%s:%s:%d:", als->name, als->comment, als->rid);
+
+	if (len == -1)
+	{
+		DEBUG(0,("make_alias_line: cannot create entry\n"));
+		return False;
+	}
+
+	p += len;
+	max_len -= len;
+
+	if (mem == NULL || num_mem == NULL)
+	{
+		return True;
+	}
+
+	for (i = 0; i < (*num_mem); i++)
+	{
+		len = strlen((*mem)[i].name);
+		p = safe_strcpy(p, (*mem)[i].name, max_len); 
+
+		if (p == NULL)
+		{
+			DEBUG(0, ("make_alias_line: out of space for aliases!\n"));
+			return False;
+		}
+
+		max_len -= len;
+
+		if (i != (*num_mem)-1)
+		{
+			*p = ',';
+			p++;
+			max_len--;
+		}
+	}
+
+	return True;
+}
