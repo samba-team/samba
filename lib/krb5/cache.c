@@ -468,3 +468,14 @@ krb5_cc_get_version(krb5_context context,
     else
 	return 0;
 }
+
+/*
+ * Clear `mcreds' so it can be used with krb5_cc_retrieve_cred
+ */
+
+void
+krb5_cc_clear_mcred(krb5_creds *mcred)
+{
+    memset(mcred, 0, sizeof(*mcred));
+    return 0;
+}
