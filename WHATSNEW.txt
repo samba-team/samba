@@ -5,8 +5,8 @@ This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
 
-This release contains three major changes to the 
-1.9.17 series and much re-written code.
+This release contains several major changes and much re-written 
+code.
 
 The main changes are :
 
@@ -73,6 +73,24 @@ Please see the new man page for make_smbcodepage
 for details on adding additional client code page
 support.
 
+4). New Printing support.
+-------------------------
+
+An implementation of the Windows 95 automatic printer
+driver installation has been added to smbd. To use this
+new feature please read the document:
+
+docs/PRINTER_DRIVER.txt
+
+Thanks to Jean-Francois Micouleau, and also Herb Lewis
+of Silicon Graphics for this new code.
+
+Printer support on System V systems (notably Solaris)
+has been improved with the addition of code generously
+donated by Norm Jacobs of Sun Microsystems. Sun have
+also made a Solaris SPARC workstation available to the
+Samba Team to aid in their porting efforts.
+
 
 Changed code.
 -------------
@@ -87,20 +105,6 @@ may now be used without recompiling.
 
 Much of the internals of Samba has been re-structured
 to support the oplock and Domain controller changes.
-
-An implementation of the Windows 95 automatic printer
-driver installation has been added to smbd. To use this
-new feature please read the document:
-
-docs/PRINTER_DRIVER.txt 
-
-Thanks to Jean-Francois Micouleau for this new code.
-
-Printer support on System V systems (notably Solaris)
-has been improved with the addition of code generously
-donated by Norm Jacobs of Sun Microsystems. Sun have
-also made a Solaris SPARC workstation available to the
-Samba Team to aid in their porting efforts.
 
 Samba now contains an implementation of share modes
 using System V shared memory as well as the mmap()
