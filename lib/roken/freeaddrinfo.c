@@ -51,7 +51,7 @@ freeaddrinfo(struct addrinfo *ai)
 	free (ai->ai_canonname);
 	free (ai->ai_addr);
 	tofree = ai;
-	ai = ai->ai-next;
+	ai = ai->ai_next;
 	free (tofree);
     }
 }
