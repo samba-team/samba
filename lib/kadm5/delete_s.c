@@ -53,10 +53,20 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
 	krb5_warn(context->context, ret, "opening database");
 	return ret;
     }
-    kadm5_log_delete (context,
-		      princ);
-
+    ret = context->db->fetch(context->context, context->db, &ent);
+    if(ret == HDB_ERR_NOENTRY)
+	goto out2;
+    if(ent.flags.immutable) {
+	ret = KADM5_PROTECT_PRINCIPAL;
+	goto out;
+    }
+    
+    kadm5_log_delete (context, princ);
+    
     ret = context->db->delete(context->context, context->db, &ent);
+out:
+    hdb_free_entry(context->context, &ent);
+out2:
     context->db->close(context->context, context->db);
     return _kadm5_error_code(ret);
 }
