@@ -134,12 +134,7 @@ static void delete_tdb(void)
 	}
 }
 
-static int del_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void*)
-{
-	tdb_delete(tdb, key);
-}
-
-static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void*)
+static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("%*.*s : %*.*s\n", 
 	       (int)key.dsize, (int)key.dsize, key.dptr, 
@@ -149,7 +144,7 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void*)
 
 static int total_bytes;
 
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void*)
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	total_bytes += dbuf.dsize;
 	return 0;
@@ -173,6 +168,12 @@ static char *getline(char *prompt)
 	if (p) p = strchr(p, '\n');
 	if (p) *p = 0;
 	return p?line:NULL;
+}
+
+static int do_delete_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
+                     void *state)
+{
+    return tdb_delete(tdb, key);
 }
 
 int main(int argc, char *argv[])
@@ -204,7 +205,7 @@ int main(int argc, char *argv[])
 		} else if (strcmp(tok,"show") == 0) {
 			show_tdb();
 		} else if (strcmp(tok,"erase") == 0) {
-			tdb_traverse(tdb, del_rec, NULL);
+			tdb_traverse(tdb, do_delete_fn, NULL);
 		} else if (strcmp(tok,"delete") == 0) {
 			delete_tdb();
 		} else if (strcmp(tok,"dump") == 0) {

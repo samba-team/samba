@@ -66,6 +66,11 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
     TDB_CLEAR_IF_FIRST - clear database if we are the only one with it open
 
 ----------------------------------------------------------------------
+char *tdb_error(TDB_CONTEXT *tdb);
+
+     return a error string for the last tdb error
+
+----------------------------------------------------------------------
 int tdb_close(TDB_CONTEXT *tdb);
 
    close a database
@@ -96,9 +101,10 @@ int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 
 ----------------------------------------------------------------------
 int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb,
-                 TDB_DATA key, TDB_DATA dbuf));
+                 TDB_DATA key, TDB_DATA dbuf, void *state), void *state);
 
-   traverse the entire database - calling fn(tdb, key, data) on each element.
+   traverse the entire database - calling fn(tdb, key, data, state) on each 
+   element.
 
    return -1 on error or the record count traversed
 
