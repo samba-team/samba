@@ -1501,7 +1501,7 @@ AC_TRY_COMPILE([
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
 #endif
-#ifdef HAVE_SYS_CAPABILITY
+#ifdef HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
 #endif
 ],[int i;],
