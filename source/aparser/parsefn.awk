@@ -105,6 +105,22 @@ function parse_scalar(f, v, elnum, flags)
 	}
 }
 
+function parse_align2(f, v, elnum, flags,
+		       LOCAL, elem)
+{
+	elem = elements[elnum, "elem"];
+	v["OFFSET"] = elem_name(v, elem);
+	print_template(f, "prs_align2.tpl", v);
+}
+
+function parse_align4(f, v, elnum, flags,
+		       LOCAL, elem)
+{
+	elem = elements[elnum, "elem"];
+	v["OFFSET"] = elem_name(v, elem);
+	print_template(f, "prs_align4.tpl", v);
+}
+
 function parse_pointer(f, v, elnum, flags,
 		       LOCAL, elem)
 {
@@ -116,7 +132,13 @@ function parse_pointer(f, v, elnum, flags,
 
 function parse_scalars(f, v, elnum, flags)
 {
-	if (elements[elnum, "ptr"] == "1") {
+	if (elements[elnum, "type"] == ".align2") {
+		parse_align2(f, v, elnum, flags);
+	}
+	else if (elements[elnum, "type"] == ".align4") {
+		parse_align4(f, v, elnum, flags);
+	}
+	else if (elements[elnum, "ptr"] == "1") {
 		parse_pointer(f, v, elnum, flags);
 	} else {
 		parse_scalar(f, v, elnum, flags);
@@ -129,7 +151,10 @@ function parse_buffers(f, v, elnum, flags,
 	elem = elements[elnum, "elem"];
 	type = elements[elnum, "type"];
 	v["ELEM"] = elem_name(v, elem);
-	if (elements[elnum, "ptr"] == "1") {
+	if (elements[elnum, "type"] == ".align2") {
+	}
+	else if (elements[elnum, "type"] == ".align4") {
+	} else if (elements[elnum, "ptr"] == "1") {
 		print_template(f, "ifptr_start.tpl", v);
 		parse_scalar(f, v, elnum, "PARSE_SCALARS|PARSE_BUFFERS");
 		print_template(f, "ifptr_end.tpl", v);
@@ -167,7 +192,12 @@ function struct_parser(f, v, struct_num,
 		parse_buffers(f, v, structs[struct_num, i], "PARSE_BUFFERS");
 	}
 
-	print_template(f, "fn_end.tpl", v);
+	if (i > 0) {
+		print_template(f, "fn_end.tpl", v);
+	}
+	else {
+		print_template(f, "fn_end0.tpl", v);
+	}
 }
 
 function produce_parsers(f,

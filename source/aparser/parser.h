@@ -70,6 +70,8 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 BOOL prs_init(prs_struct *ps, uint32 size, BOOL io);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_align(prs_struct *ps, int align);
+BOOL io_align4(prs_struct *ps, int align);
+BOOL io_align2(prs_struct *ps, int align);
 void print_asc(int level, unsigned char *buf,int len);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void dump_data(int level,char *buf1,int len);
