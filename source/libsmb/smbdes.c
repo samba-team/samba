@@ -397,6 +397,46 @@ void SamOEMhash( unsigned char *data, const unsigned char *key, int val)
   }
 }
 
+void SamOEMhashBlob( unsigned char *data, int len, DATA_BLOB *key)
+{
+  unsigned char s_box[256];
+  unsigned char index_i = 0;
+  unsigned char index_j = 0;
+  unsigned char j = 0;
+  int ind;
+
+  for (ind = 0; ind < 256; ind++)
+  {
+    s_box[ind] = (unsigned char)ind;
+  }
+
+  for( ind = 0; ind < 256; ind++)
+  {
+     unsigned char tc;
+
+     j += (s_box[ind] + key->data[ind%key->length]);
+
+     tc = s_box[ind];
+     s_box[ind] = s_box[j];
+     s_box[j] = tc;
+  }
+  for( ind = 0; ind < len; ind++)
+  {
+    unsigned char tc;
+    unsigned char t;
+
+    index_i++;
+    index_j += s_box[index_i];
+
+    tc = s_box[index_i];
+    s_box[index_i] = s_box[index_j];
+    s_box[index_j] = tc;
+
+    t = s_box[index_i] + s_box[index_j];
+    data[ind] = data[ind] ^ s_box[t];
+  }
+}
+
 /* Decode a sam password hash into a password.  The password hash is the
    same method used to store passwords in the NT registry.  The DES key
    used is based on the RID of the user. */

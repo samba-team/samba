@@ -1341,7 +1341,7 @@ NTSTATUS cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                POLICY_HND *user_pol, uint16 switch_value,
-                               DATA_BLOB sess_key, SAM_USERINFO_CTR *ctr)
+                               DATA_BLOB *sess_key, SAM_USERINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_SET_USERINFO q;
@@ -1353,8 +1353,8 @@ NTSTATUS cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	if (sess_key.length != 16) {
-		DEBUG(1, ("Cannot handle user session key of length [%u]\n", sess_key.length));
+	if (!sess_key->length) {
+		DEBUG(1, ("No user session key\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
@@ -1398,7 +1398,7 @@ NTSTATUS cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                 POLICY_HND *user_pol, uint16 switch_value,
-                                DATA_BLOB sess_key, SAM_USERINFO_CTR *ctr)
+                                DATA_BLOB *sess_key, SAM_USERINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_SET_USERINFO2 q;
@@ -1407,8 +1407,8 @@ NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	DEBUG(10,("cli_samr_set_userinfo2\n"));
 
-	if (sess_key.length != 16) {
-		DEBUG(1, ("Cannot handle user session key of length [%u]\n", sess_key.length));
+	if (!sess_key->length) {
+		DEBUG(1, ("No user session key\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
