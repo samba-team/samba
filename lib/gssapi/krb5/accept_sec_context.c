@@ -76,6 +76,7 @@ gss_accept_sec_context
   krb5_ticket *ticket = NULL;
   krb5_keytab keytab = NULL;
   krb5_data fwd_data;
+  OM_uint32 minor;
 
   gssapi_krb5_init ();
 
