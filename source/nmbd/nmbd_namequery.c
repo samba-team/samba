@@ -26,8 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
-
 /****************************************************************************
  Deal with a response packet when querying a name.
 ****************************************************************************/
@@ -180,7 +178,7 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
   struct nmb_name nmbname;
   struct name_record *namerec;
 
-  make_nmb_name(&nmbname, name, type, scope);
+  make_nmb_name(&nmbname, name, type);
 
   /*
    * We need to check our local namelists first.
@@ -193,7 +191,7 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
     struct res_rec rrec;
     int i;
 
-    bzero((char *)&rrec, sizeof(struct res_rec));
+    memset((char *)&rrec, '\0', sizeof(struct res_rec));
 
     /* Fake up the needed res_rec just in case it's used. */
     rrec.rr_name = nmbname;
@@ -247,7 +245,7 @@ BOOL query_name_from_wins_server(struct in_addr ip_to,
 {
   struct nmb_name nmbname;
 
-  make_nmb_name(&nmbname, name, type, scope);
+  make_nmb_name(&nmbname, name, type);
 
   if(queue_query_name_from_wins_server( ip_to,
         query_name_response,

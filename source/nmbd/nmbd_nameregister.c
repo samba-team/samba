@@ -26,7 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern fstring global_myworkgroup;
 
 /****************************************************************************
@@ -53,6 +52,13 @@ static void register_name_response(struct subnet_record *subrec,
 
   /* Sanity check. Ensure that the answer name in the incoming packet is the
      same as the requested name in the outgoing packet. */
+
+  if(!question_name || !answer_name)
+  {
+    DEBUG(0,("register_name_response: malformed response (%s is NULL).\n",
+           question_name ? "question_name" : "answer_name" ));
+    return;
+  }
 
   if(!nmb_name_equal(question_name, answer_name))
   {
@@ -326,7 +332,7 @@ BOOL register_name(struct subnet_record *subrec,
 {
   struct nmb_name nmbname;
 
-  make_nmb_name(&nmbname, name, type, scope);
+  make_nmb_name(&nmbname, name, type);
 
   /* Always set the NB_ACTIVE flag on the name we are
      registering. Doesn't make sense without it.

@@ -26,7 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
@@ -133,7 +132,7 @@ in workgroup %s on subnet %s\n",
        will stop us syncing with ourself if we are also
        a local master browser. */
 
-    make_nmb_name(&nmbname, global_myname, 0x20, scope);
+    make_nmb_name(&nmbname, global_myname, 0x20);
 
     work->dmb_name = nmbname;
     /* Pick the first interface ip address as the domain master browser ip. */
@@ -156,6 +155,16 @@ in workgroup %s on subnet %s\n",
 
      */
     become_domain_master_browser_bcast(work->work_group);
+  }
+  else
+  {
+    /*
+     * Now we are a domain master on a broadcast subnet, we need to add
+     * the WORKGROUP<1b> name to the unicast subnet so that we can answer
+     * unicast requests sent to this name. This bug wasn't found for a while
+     * as it is strange to have a DMB without using WINS. JRA.
+     */
+    insert_permanent_name_into_unicast(subrec, registered_name, nb_flags);
   }
 }
 
@@ -272,7 +281,7 @@ static void become_domain_master_browser_bcast(char *workgroup_name)
     if (work && (work->dom_state == DOMAIN_NONE))
     {
       struct nmb_name nmbname;
-      make_nmb_name(&nmbname,workgroup_name,0x1b,scope);
+      make_nmb_name(&nmbname,workgroup_name,0x1b);
 
       /*
        * Check for our name on the given broadcast subnet first, only initiate
@@ -320,7 +329,7 @@ static void become_domain_master_browser_wins(char *workgroup_name)
   {
     struct nmb_name nmbname;
 
-    make_nmb_name(&nmbname,workgroup_name,0x1b,scope);
+    make_nmb_name(&nmbname,workgroup_name,0x1b);
 
     /*
      * Check for our name on the unicast subnet first, only initiate

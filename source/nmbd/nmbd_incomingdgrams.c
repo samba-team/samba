@@ -546,10 +546,11 @@ static void send_backup_list_response(struct subnet_record *subrec,
   char outbuf[1024];
   char *p, *countptr;
   unsigned int count = 0;
-  int len;
+#if 0
   struct server_record *servrec;
+#endif
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
 
   DEBUG(3,("send_backup_list_response: sending backup list for workgroup %s to %s IP %s\n",
 	   work->work_group, nmb_namestr(send_to_name), inet_ntoa(sendto_ip)));
@@ -572,9 +573,20 @@ static void send_backup_list_response(struct subnet_record *subrec,
   p = skip_string(p,1);
 
   /* Look for backup browsers in this workgroup. */
+
+#if 0
+  /* we don't currently send become_backup requests so we should never
+     send any other servers names out as backups for our
+     workgroup. That's why this is commented out (tridge) */
+
+  /*
+   * NB. Note that the struct work_record here is not neccessarily
+   * attached to the subnet *subrec.
+   */
+
   for (servrec = work->serverlist; servrec; servrec = servrec->next)
   { 
-    len = PTR_DIFF(p, outbuf);
+    int len = PTR_DIFF(p, outbuf);
     if((sizeof(outbuf) - len) < 16)
       break;
 
@@ -596,10 +608,9 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
     p = skip_string(p,1);
   }
+#endif
 
   SCVAL(countptr, 0, count);
-
-  len = PTR_DIFF(p, outbuf);
 
   DEBUG(4,("send_backup_list_response: sending response to %s<00> IP %s with %d servers.\n",
           send_to_name->name, inet_ntoa(sendto_ip), count));
@@ -630,6 +641,7 @@ void process_get_backup_list_request(struct subnet_record *subrec,
   uint32 token = IVAL(buf,1); /* Sender's key index for the workgroup. */
   int name_type = dgram->dest_name.name_type;
   char *workgroup_name = dgram->dest_name.name;
+  struct subnet_record *search_subrec = subrec;
 
   DEBUG(3,("process_get_backup_list_request: request from %s IP %s to %s.\n",
            nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
@@ -646,12 +658,18 @@ void process_get_backup_list_request(struct subnet_record *subrec,
     return;
   }
 
-  if((work = find_workgroup_on_subnet(subrec, workgroup_name)) == NULL)
+  if((work = find_workgroup_on_subnet(search_subrec, workgroup_name)) == NULL)
   {
     DEBUG(0,("process_get_backup_list_request: Cannot find workgroup %s on \
-subnet %s.\n", workgroup_name, subrec->subnet_name));
+subnet %s.\n", workgroup_name, search_subrec->subnet_name));
     return;
   }
+
+  /* 
+   * If the packet was sent to WORKGROUP<1b> instead
+   * of WORKGROUP<1d> then it was unicast to us a domain master
+   * browser. Change search subrec to unicast.
+   */
 
   if(name_type == 0x1b)
   {
@@ -664,6 +682,8 @@ subnet %s.\n", workgroup_name, subrec->subnet_name));
 and I am not a domain master browser.\n", workgroup_name));
       return;
     }
+
+    search_subrec = unicast_subnet;
   }
   else if (name_type == 0x1d)
   {

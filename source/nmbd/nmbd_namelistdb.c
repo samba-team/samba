@@ -26,7 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern char **my_netbios_names;
 
 uint16 samba_nb_type = 0; /* samba's NetBIOS name type */
@@ -42,8 +41,6 @@ void set_samba_nb_type(void)
     samba_nb_type = NB_MFLAG;               /* samba is a 'hybrid' node type. */
   else
     samba_nb_type = NB_BFLAG;           /* samba is broadcast-only node type. */
-
-	DEBUG(10,("set_samba_nb_type: %x\n", samba_nb_type));
   } /* set_samba_nb_type */
 
 /* ************************************************************************** **
@@ -201,7 +198,7 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
     return( NULL );
   }
 
-  bzero( (char *)namerec, sizeof(*namerec) );
+  memset( (char *)namerec, '\0', sizeof(*namerec) );
   namerec->data.ip = (struct in_addr *)malloc( sizeof(struct in_addr) 
                                                * num_ips );
   if( NULL == namerec->data.ip )
@@ -215,8 +212,8 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
 
   namerec->subnet = subrec;
 
-  make_nmb_name( &namerec->name, name, type, scope );
-  upcase_name( &namerec->name, NULL );
+  make_nmb_name(&namerec->name, name, type);
+  upcase_name(&namerec->name, NULL );
 
   /* Enter the name as active. */
   namerec->data.nb_flags = nb_flags | NB_ACTIVE;
@@ -604,21 +601,15 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
 
 void dump_all_namelists(void)
 {
-  pstring fname;
   FILE *fp; 
   struct subnet_record *subrec;
 
-  pstrcpy(fname,lp_lockdir());
-  trim_string(fname,NULL,"/");
-  pstrcat(fname,"/"); 
-  pstrcat(fname,"namelist.debug");
-
-  fp = sys_fopen(fname,"w");
+  fp = sys_fopen(lock_path("namelist.debug"),"w");
      
   if (!fp)
   { 
     DEBUG(0,("dump_all_namelists: Can't open file %s. Error was %s\n",
-              fname,strerror(errno)));
+              "namelist.debug",strerror(errno)));
     return;
   }
       

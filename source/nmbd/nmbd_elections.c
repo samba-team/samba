@@ -26,8 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
-
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -46,7 +44,7 @@ static void send_election_dgram(struct subnet_record *subrec, char *workgroup_na
   DEBUG(2,("send_election_dgram: Sending election packet for workgroup %s on subnet %s\n",
 	workgroup_name, subrec->subnet_name ));
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
   CVAL(p,0) = ANN_Election; /* Election opcode. */
   p++;
@@ -135,6 +133,9 @@ void check_master_browser_exists(time_t t)
   struct subnet_record *subrec;
   char *workgroup_name = global_myworkgroup;
 
+  if (!lastrun)
+    lastrun = t;
+
   if (t < (lastrun + (CHECK_TIME_MST_BROWSE * 60)))
     return;
 
@@ -191,7 +192,7 @@ void run_elections(time_t t)
          */
         struct nmb_name nmbname;
 
-        make_nmb_name(&nmbname, work->work_group, 0x1e, scope);
+        make_nmb_name(&nmbname, work->work_group, 0x1e);
         if(find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME)==NULL) {
           DEBUG(8,("run_elections: Cannot send election packet yet as name %s not \
 yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
@@ -362,7 +363,7 @@ BOOL check_elections(void)
          */
         struct nmb_name nmbname;
 
-        make_nmb_name(&nmbname, work->work_group, 0x1e, scope);
+        make_nmb_name(&nmbname, work->work_group, 0x1e);
         if(find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME)==NULL) {
           DEBUG(8,("check_elections: Cannot send election packet yet as name %s not \
 yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));

@@ -1,7 +1,7 @@
 /*
-   Unix SMB/NetBIOS implementation.
+   Unix SMB/Netbios implementation.
    Version 1.9.
-   NBT NetBIOS routines and daemon - version 2
+   NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    
    This program is free software; you can redistribute it and/or modify
@@ -32,13 +32,10 @@ extern int DEBUGLEVEL;
 extern pstring debugf;
 pstring servicesf = CONFIGFILE;
 
-extern pstring scope;
-
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
-extern pstring myhostname;
 static pstring host_file;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
@@ -57,50 +54,6 @@ BOOL found_lm_clients = False;
 time_t StartupTime = 0;
 
 extern struct in_addr ipzero;
-
-/**************************************************************************** **
-  reload the services file
- **************************************************************************** */
-static BOOL reload_nmbd_services(BOOL test)
-{
-  BOOL ret;
-  extern fstring remote_machine;
-
-  fstrcpy( remote_machine, "nmb" );
-
-  if ( lp_loaded() )
-  {
-    pstring fname;
-    pstrcpy( fname,lp_configfile());
-    if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
-    {
-      pstrcpy(servicesf,fname);
-      test = False;
-    }
-  }
-
-  if ( test && !lp_file_list_changed() )
-    return(True);
-
-  ret = lp_load( servicesf, True , False, False);
-
-  /* perhaps the config filename is now set */
-  if ( !test )
-  {
-    DEBUG( 3, ( "services not loaded\n" ) );
-    reload_nmbd_services( True );
-  }
-
-  /* Do a sanity check for a misconfigured nmbd */
-  if( lp_wins_support() && *lp_wins_server() )
-  {
-    DEBUG(0,("ERROR: both 'wins support = true' and 'wins server = <server>' \
-cannot be set in the smb.conf file. nmbd aborting.\n"));
-    exit(10);
-  }
-
-  return(ret);
-} /* reload_nmbd_services */
 
 /**************************************************************************** **
   catch a sigterm
@@ -130,6 +83,8 @@ static void sig_term(int sig)
 /**************************************************************************** **
  catch a sighup
  **************************************************************************** */
+static VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
+
 static void sig_hup(int sig)
 {
   BlockSignals( True, SIGHUP );
@@ -139,9 +94,8 @@ static void sig_hup(int sig)
   write_browse_list( 0, True );
 
   dump_all_namelists();
-  reload_nmbd_services( True );
 
-  set_samba_nb_type();
+  reload_after_sighup = True;
 
   BlockSignals(False,SIGHUP);
 
@@ -227,6 +181,111 @@ static void expire_names_and_servers(time_t t)
    */
   expire_workgroups_and_servers(t);
 } /* expire_names_and_servers */
+
+
+/************************************************************************** **
+reload the list of network interfaces
+ ************************************************************************** */
+static void reload_interfaces(time_t t)
+{
+	static time_t lastt;
+	int n;
+	struct subnet_record *subrec;
+	extern BOOL rescan_listen_set;
+
+	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return;
+	lastt = t;
+
+	if (!interfaces_changed()) return;
+
+	/* the list of probed interfaces has changed, we may need to add/remove
+	   some subnets */
+	load_interfaces();
+
+	/* find any interfaces that need adding */
+	for (n=iface_count() - 1; n >= 0; n--) {
+		struct interface *iface = get_interface(n);
+		for (subrec=subnetlist; subrec; subrec=subrec->next) {
+			if (ip_equal(iface->ip, subrec->myip) &&
+			    ip_equal(iface->nmask, subrec->mask_ip)) break;
+		}
+		if (!subrec) {
+			/* it wasn't found! add it */
+			DEBUG(2,("Found new interface %s\n", 
+				 inet_ntoa(iface->ip)));
+			subrec = make_normal_subnet(iface);
+			if (subrec) register_my_workgroup_one_subnet(subrec);
+		}
+	}
+
+	/* find any interfaces that need deleting */
+	for (subrec=subnetlist; subrec; subrec=subrec->next) {
+		for (n=iface_count() - 1; n >= 0; n--) {
+			struct interface *iface = get_interface(n);
+			if (ip_equal(iface->ip, subrec->myip) &&
+			    ip_equal(iface->nmask, subrec->mask_ip)) break;
+		}
+		if (n == -1) {
+			/* oops, an interface has disapeared. This is
+			 tricky, we don't dare actually free the
+			 interface as it could be being used, so
+			 instead we just wear the memory leak and
+			 remove it from the list of interfaces without
+			 freeing it */
+			DEBUG(2,("Deleting dead interface %s\n", 
+				 inet_ntoa(subrec->myip)));
+			close_subnet(subrec);
+		}
+	}
+	
+	rescan_listen_set = True;
+}
+
+
+
+/**************************************************************************** **
+  reload the services file
+ **************************************************************************** */
+static BOOL reload_services(BOOL test)
+{
+  BOOL ret;
+  extern fstring remote_machine;
+
+  fstrcpy( remote_machine, "nmb" );
+
+  if ( lp_loaded() )
+  {
+    pstring fname;
+    pstrcpy( fname,lp_configfile());
+    if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
+    {
+      pstrcpy(servicesf,fname);
+      test = False;
+    }
+  }
+
+  if ( test && !lp_file_list_changed() )
+    return(True);
+
+  ret = lp_load( servicesf, True , False, False);
+
+  /* perhaps the config filename is now set */
+  if ( !test )
+  {
+    DEBUG( 3, ( "services not loaded\n" ) );
+    reload_services( True );
+  }
+
+  /* Do a sanity check for a misconfigured nmbd */
+  if( lp_wins_support() && *lp_wins_server() )
+  {
+    DEBUG(0,("ERROR: both 'wins support = true' and 'wins server = <server>' \
+cannot be set in the smb.conf file. nmbd aborting.\n"));
+    exit(10);
+  }
+
+  return(ret);
+} /* reload_services */
 
 /**************************************************************************** **
  The main select loop.
@@ -395,6 +454,28 @@ static void process(void)
      * regularly sync with any other DMBs we know about 
      */
     sync_all_dmbs(t);
+
+    /*
+     * clear the unexpected packet queue 
+     */
+    clear_unexpected(t);
+
+    /*
+     * Reload the services file if we got a sighup.
+     */
+
+    if(reload_after_sighup) {
+	    reload_services( True );
+	    reopen_logs();
+	    reload_interfaces(0);
+	    reload_after_sighup = False;
+    }
+
+    /* check for new network interfaces */
+    reload_interfaces(t);
+
+    /* free up temp memory */
+    lp_talloc_free();
   }
 } /* process */
 
@@ -446,7 +527,7 @@ static BOOL init_structs(void)
 
   if (! *global_myname)
   {
-    fstrcpy( global_myname, myhostname );
+    fstrcpy( global_myname, myhostname() );
     p = strchr( global_myname, '.' );
     if (p)
       *p = 0;
@@ -509,7 +590,7 @@ static BOOL init_structs(void)
     *p = 0;
   strlower( local_machine );
 
-  DEBUG( 5, ("NetBIOS name list:-\n") );
+  DEBUG( 5, ("Netbios name list:-\n") );
   for( n=0; my_netbios_names[n]; n++ )
     DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
 
@@ -521,20 +602,20 @@ static BOOL init_structs(void)
  **************************************************************************** */
 static void usage(char *pname)
 {
-  DEBUG(0,("Incorrect program usage - is the command line correct?\n"));
 
-  printf( "Usage: %s [-n name] [-D] [-p port] [-d debuglevel] ", pname );
-  printf( "[-l log basename]\n" );
-  printf( "Version %s\n", VERSION );
-  printf( "\t-D                    become a daemon\n" );
-  printf( "\t-p port               listen on the specified port\n" );
-  printf( "\t-d debuglevel         set the debuglevel\n" );
+  printf( "Usage: %s [-DaohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
+  printf( "       [-n name] [-p port] [-s configuration file]\n" );
+  printf( "\t-D                    Become a daemon\n" );
+  printf( "\t-a                    Append to log file (default)\n" );
+  printf( "\t-o                    Overwrite log file, don't append\n" );
+  printf( "\t-h                    Print usage\n" );
+  printf( "\t-V                    Print version\n" );
+  printf( "\t-H hosts file         Load a netbios hosts file\n" );
+  printf( "\t-d debuglevel         Set the debuglevel\n" );
   printf( "\t-l log basename.      Basename for log/debug files\n" );
-  printf( "\t-n netbiosname.       " );
-  printf( "the netbios name to advertise for this host\n");
-  printf( "\t-H hosts file         load a netbios hosts file\n" );
-  printf( "\t-a                    append to log file (default)\n" );
-  printf( "\t-o                    overwrite log file, don't append\n" );
+  printf( "\t-n netbiosname.       Primary netbios name\n" );
+  printf( "\t-p port               Listen on the specified port\n" );
+  printf( "\t-s configuration file Configuration file name\n" );
   printf( "\n");
 } /* usage */
 
@@ -583,23 +664,26 @@ static void usage(char *pname)
   CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
   CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
 
+#if defined(SIGFPE)
+  /* we are never interested in SIGFPE */
+  BlockSignals(True,SIGFPE);
+#endif
+
   /* Setup the signals that allow the debug log level
      to by dynamically changed. */
 
   /* If we are using the malloc debug code we can't use
      SIGUSR1 and SIGUSR2 to do debug level changes. */
-#ifndef MEM_MAN
 #if defined(SIGUSR1)
-	CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+  CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
 #endif /* SIGUSR1 */
 
 #if defined(SIGUSR2)
-	CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+  CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 #endif /* SIGUSR2 */
-#endif /* MEM_MAN */
 
   while( EOF != 
-         (opt = getopt( argc, argv, "aos:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:" )) )
+         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dp:hSH:G:f:" )) )
     {
       switch (opt)
         {
@@ -623,10 +707,6 @@ static void usage(char *pname)
         case 'l':
           slprintf(debugf,sizeof(debugf)-1, "%s.nmb",optarg);
           break;
-        case 'i':
-          pstrcpy(scope,optarg);
-          strupper(scope);
-          break;
         case 'a':
           append_log = True;
           break;
@@ -646,9 +726,14 @@ static void usage(char *pname)
           usage(argv[0]);
           exit(0);
           break;
+        case 'V':
+	  printf( "Version %s\n", VERSION );
+          exit(0);
+          break;
         default:
           if( !is_a_socket(0) )
           {
+	    DEBUG(0,("Incorrect program usage - is the command line correct?\n"));
             usage(argv[0]);
             exit(0);
           }
@@ -658,16 +743,10 @@ static void usage(char *pname)
 
   reopen_logs();
 
-  DEBUG( 1, ( "NetBIOS nameserver version %s started.\n", VERSION ) );
+  DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
   DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
 
-  if( !get_myname( myhostname, NULL) )
-  {
-    DEBUG( 0, ( "Unable to get my hostname - exiting.\n" ) );
-    return -1;
-  }
-
-  if ( !reload_nmbd_services(False) )
+  if ( !reload_services(False) )
     return(-1);
 
   codepage_initialise(lp_client_code_page());
@@ -675,12 +754,15 @@ static void usage(char *pname)
   if(!init_structs())
     return -1;
 
-  reload_nmbd_services( True );
+  reload_services( True );
 
-	if (!init_myworkgroup())
-	{
-		exit(1);
-	}
+  fstrcpy( global_myworkgroup, lp_workgroup() );
+
+  if (strequal(global_myworkgroup,"*"))
+  {
+    DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+    exit(1);
+  }
 
   set_samba_nb_type();
 
@@ -695,6 +777,14 @@ static void usage(char *pname)
     DEBUG( 2, ( "Becoming a daemon.\n" ) );
     become_daemon();
   }
+
+#ifndef SYNC_DNS
+  /* Setup the async dns. We do it here so it doesn't have all the other
+     stuff initialised and thus chewing memory and sockets */
+  if(lp_we_are_a_wins_server()) {
+	  start_async_dns();
+  }
+#endif
 
   if (!directory_exist(lp_lockdir(), NULL)) {
 	  mkdir(lp_lockdir(), 0755);
