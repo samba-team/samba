@@ -12,6 +12,9 @@ Kerberos administration utility
 .Oo Fl p Ar string \*(Ba Xo
 .Fl -principal= Ns Ar string Oc
 .Xc
+.Oo Fl K Ar string \*(Ba Xo
+.Fl -keytab= Ns Ar string Oc
+.Xc
 .Oo Fl c Ar file \*(Ba Xo
 .Fl -config-file= Ns Ar file Oc
 .Xc
@@ -47,6 +50,11 @@ Supported options:
 .Fl -principal= Ns Ar string
 .Xc
 principal to authenticate as
+.It Xo
+.Fl K Ar string Ns ,
+.Fl -keytab= Ns Ar string
+.Xc
+keytab for authentication pricipal
 .It Xo
 .Fl c Ar file Ns ,
 .Fl -config-file= Ns Ar file
