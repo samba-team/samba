@@ -1488,7 +1488,7 @@ char *GetWd(char *str)
 
   if (!sys_getwd(s))
     {
-      DEBUG(0,("Getwd failed, errno %d\n",errno));
+      DEBUG(0,("Getwd failed, errno %s\n",strerror(errno)));
       return (NULL);
     }
 
@@ -1951,7 +1951,7 @@ int read_udp_socket(int fd,char *buf,int len)
   bzero((char *)&lastip,sizeof(lastip));
   ret = recvfrom(fd,buf,len,0,&sock,&socklen);
   if (ret <= 0) {
-    DEBUG(2,("read socket failed. ERRNO=%d\n",errno));
+    DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
     return(0);
   }
 
@@ -2408,8 +2408,8 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
   ret = (sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
 
   if (!ret)
-    DEBUG(0,("Packet send to %s(%d) failed ERRNO=%d\n",
-	     inet_ntoa(ip),port,errno));
+    DEBUG(0,("Packet send to %s(%d) failed ERRNO=%s\n",
+	     inet_ntoa(ip),port,strerror(errno)));
 
   close(out_fd);
   return(ret);
