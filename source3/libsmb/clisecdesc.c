@@ -33,7 +33,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
 	int rparam_count=0, rdata_count=0;
-	TALLOC_CTX *mem_ctx = NULL;
+	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 
@@ -74,13 +74,11 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 
  cleanup:
 
-	if (mem_ctx) {
-		talloc_destroy(mem_ctx);
-		prs_mem_free(&pd);
-	}
+	talloc_destroy(mem_ctx);
 	safe_free(rparam);
 	safe_free(rdata);
 
+	prs_mem_free(&pd);
 	return psd;
 }
 
@@ -95,7 +93,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
 	int rparam_count=0, rdata_count=0;
-	TALLOC_CTX *mem_ctx=NULL;
+	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
 	BOOL ret = False;
 
@@ -140,10 +138,9 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 	safe_free(rparam);
 	safe_free(rdata);
 
-	if (mem_ctx) {
-		talloc_destroy(mem_ctx);
-		prs_mem_free(&pd);
-	}
+	talloc_destroy(mem_ctx);
+
+	prs_mem_free(&pd);
 	return ret;
 }
 

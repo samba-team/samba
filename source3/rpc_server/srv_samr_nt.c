@@ -2104,11 +2104,9 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
     copy_sam_passwd(&new_pwd, pwd);
     copy_id23_to_sam_passwd(&new_pwd, id23);
  
-    if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len))
+    if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len, nt_hash, lm_hash))
         return False;
- 
-    nt_lm_owf_gen(buf, nt_hash, lm_hash);
- 
+  
     pdb_set_lanman_passwd (&new_pwd, lm_hash);
     pdb_set_nt_passwd     (&new_pwd, nt_hash);
  
@@ -2153,12 +2151,8 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 
 	memset(buf, 0, sizeof(buf));
  
-	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len))
+	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len, nt_hash, lm_hash))
 		return False;
- 
-	DEBUG(5,("set_user_info_24:nt_lm_owf_gen\n"));
- 
-	nt_lm_owf_gen(buf, nt_hash, lm_hash);
  
 	pdb_set_lanman_passwd (pwd, lm_hash);
 	pdb_set_nt_passwd     (pwd, nt_hash);

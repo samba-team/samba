@@ -832,8 +832,19 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 				 PRINTER_INFO_CTR *ctr);
 uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level, 
 			      int *returned, PORT_INFO_CTR *ctr);
-uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
-			      uint32 level, PRINTER_INFO_CTR *ctr);
+uint32 cli_spoolss_getprinter(
+	struct cli_state *cli, 
+	POLICY_HND *pol,
+	uint32 level, 
+	PRINTER_INFO_CTR *ctr
+);
+uint32 cli_spoolss_setprinter(
+	struct cli_state *cli, 
+	POLICY_HND *pol,
+	uint32 level, 
+	PRINTER_INFO_CTR *ctr,
+	uint32 command
+);
 uint32 cli_spoolss_getprinterdriver (
 	struct cli_state 	*cli, 
 	POLICY_HND 		*pol, 
@@ -947,6 +958,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
 BOOL cli_chkpath(struct cli_state *cli, char *path);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path);
 
 /*The following definitions come from  libsmb/clilist.c  */
 
@@ -1152,8 +1164,9 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
-BOOL decode_pw_buffer(char buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32 *new_pw_len);
+BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
+		      int new_pwrd_size, uint32 *new_pw_len,
+		      uchar nt_p16[16], uchar p16[16]);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
