@@ -96,7 +96,8 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		done_become_root = True;
 	}
 
-	p->tdb = tdb_open_log(printdb_path, 5000, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	p->tdb = tdb_open_ex(printdb_path, 5000, TDB_DEFAULT, O_RDWR|O_CREAT, 
+		0600, smbd_tdb_log);
 
 	if (done_become_root)
 		unbecome_root();

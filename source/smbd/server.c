@@ -501,6 +501,7 @@ BOOL reload_services(BOOL test)
 	return(ret);
 }
 
+
 #if DUMP_CORE
 /*******************************************************************
 prepare to dump a core file - carefully!
@@ -890,3 +891,4 @@ void build_options(BOOL screen);
 	exit_server("normal exit");
 	return(0);
 }
+

@@ -29,8 +29,8 @@ static TDB_CONTEXT *tdb;
 TDB_CONTEXT *conn_tdb_ctx(void)
 {
 	if (!tdb)
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			       O_RDWR | O_CREAT, 0644);
+		tdb = tdb_open_ex(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+			       O_RDWR | O_CREAT, 0644, smbd_tdb_log);
 
 	return tdb;
 }
@@ -131,8 +131,8 @@ BOOL claim_connection(connection_struct *conn, const char *name,int max_connecti
 	TDB_DATA kbuf, dbuf;
 
 	if (!tdb)
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			       O_RDWR | O_CREAT, 0644);
+		tdb = tdb_open_ex(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+			       O_RDWR | O_CREAT, 0644, smbd_tdb_log);
 
 	if (!tdb)
 		return False;
