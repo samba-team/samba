@@ -204,7 +204,8 @@ LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 
 LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_auth.o \
 		librpc/rpc/dcerpc_util.o \
-		librpc/rpc/dcerpc_smb.o librpc/rpc/dcerpc_tcp.o
+		librpc/rpc/dcerpc_smb.o librpc/rpc/dcerpc_tcp.o \
+		librpc/rpc/dcerpc_lsa.o
 
 LIBNTLMSSP_OBJ = libcli/auth/ntlmssp.o libcli/auth/ntlmssp_parse.o \
 		libcli/auth/ntlmssp_sign.o
@@ -867,6 +868,20 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
 	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS) 
 
+LIBRPC_OBJS = $(LIBRAW_RPC_OBJ)
+
+LIBRPC_MAJOR=1
+LIBRPC_PICOBJS = $(LIBRPC_OBJS:.o=.po)
+
+bin/librpc.@SHLIBEXT@: $(LIBRPC_PICOBJS)
+	@echo Linking librpc shared library $@
+	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBRPC_PICOBJS) $(LDFLAGS) $(LIBS) \
+		@SONAMEFLAG@`basename $@`.$(LIBRPC_MAJOR)
+
+bin/librpc.a: $(LIBRPC_PICOBJS)
+	@echo Linking librpc non-shared library $@
+	-$(AR) -rc $@ $(LIBRPC_PICOBJS) 
+
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
@@ -999,31 +1014,6 @@ installclientlib:
 	-$(INSTALLCMD) -d $(DESTDIR)${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h $(DESTDIR)${prefix}/include
 
-# Python extensions
-
-PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
-	$(PARAM_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	$(SECRETS_OBJ) $(KRBCLIENT_OBJ)
-
-python_ext: $(PYTHON_OBJS)
-	@if test -z "$(PYTHON)"; then \
-		echo Use the option --with-python to configure python; \
-		exit 1; fi
-	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-	LIBS="$(LIBS)" \
-		$(PYTHON) python/setup.py build
-
-python_install: $(PYTHON_OBJS)
-	@if test -z "$(PYTHON)"; then \
-		echo Use the option --with-python to configure python; \
-		exit 1; fi
-	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
-	LIBS="$(LIBS)" \
-		$(PYTHON) python/setup.py install
-
-python_clean:
-	@-if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
-
 # revert to the previously installed version
 revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS) 
@@ -1065,7 +1055,7 @@ uninstallscripts:
 # Toplevel clean files
 TOPFILES=dynconfig.o dynconfig.po
 
-clean: delheaders python_clean
+clean: delheaders
 	-rm -f core */*~ *~ */*.o */*/*.o */*/*.po */*/*.po32 */*.po */*.po32 */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
 		.headers.stamp 
