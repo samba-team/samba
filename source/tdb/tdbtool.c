@@ -68,6 +68,8 @@ tdbtool:
   show      key        : show a record by key
   delete    key        : delete a record by key
   free                 : print the database freelist
+  first                : print the first record
+  next                 : print the next record
 ");
 }
 
@@ -221,10 +223,33 @@ static int do_delete_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
     return tdb_delete(tdb, key);
 }
 
+static void first_record(TDB_CONTEXT *tdb, TDB_DATA *pkey)
+{
+	TDB_DATA dbuf;
+	*pkey = tdb_firstkey(tdb);
+	
+	dbuf = tdb_fetch(tdb, *pkey);
+	if (!dbuf.dptr) terror("fetch failed");
+	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
+	print_rec(tdb, *pkey, dbuf, NULL);
+}
+
+static void next_record(TDB_CONTEXT *tdb, TDB_DATA *pkey)
+{
+	TDB_DATA dbuf;
+	*pkey = tdb_nextkey(tdb, *pkey);
+	
+	dbuf = tdb_fetch(tdb, *pkey);
+	if (!dbuf.dptr) terror("fetch failed");
+	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
+	print_rec(tdb, *pkey, dbuf, NULL);
+}
+
 int main(int argc, char *argv[])
 {
     char *line;
     char *tok;
+	TDB_DATA iterate_kbuf;
 
     if (argv[1]) {
 	static char tmp[1024];
@@ -276,6 +301,10 @@ int main(int argc, char *argv[])
             info_tdb();
 		} else if (strcmp(tok, "free") == 0) {
 			tdb_printfreelist(tdb);
+		} else if (strcmp(tok, "first") == 0) {
+			first_record(tdb, &iterate_kbuf);
+		} else if (strcmp(tok, "next") == 0) {
+			next_record(tdb, &iterate_kbuf);
         } else {
             help();
         }
