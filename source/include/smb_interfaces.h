@@ -1096,6 +1096,9 @@ union smb_open {
 			uint32_t create_options;
 			uint32_t impersonation;
 			uint8_t  security_flags;
+			/* NOTE: fname can also be a pointer to a
+			 uint64_t file_id if create_options has the
+			 NTCREATEX_OPTIONS_OPEN_BY_FILE_ID flag set */
 			const char *fname;
 		} in;
 
