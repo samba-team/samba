@@ -141,7 +141,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
-	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+	ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
 	count = ldb_search(ldb, basedn, scope, r->filter, attrs, &res);
 
 	for (i=0; i < count; i++) {
@@ -284,7 +284,7 @@ invalid_input:
 	add_result->dn = talloc_steal(add_reply, dn);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+		ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
 		ldb_ret = ldb_add(ldb, msg);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
@@ -330,7 +330,7 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	DEBUG(10, ("sldb_Del: dn: [%s]\n", dn));
 
-	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+	ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
 	ldb_ret = ldb_delete(ldb, dn);
 
 	del_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
@@ -449,7 +449,7 @@ invalid_input:
 	modify_result->dn = talloc_steal(modify_reply, dn);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+		ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
 		ldb_ret = ldb_modify(ldb, msg);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
@@ -503,7 +503,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 
 	attrs[0] = NULL;
 
-	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+	ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
 	count = ldb_search(ldb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
 
 	compare_r = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);

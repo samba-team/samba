@@ -119,7 +119,7 @@ int samdb_search_free(void *ctx,
 		      TALLOC_CTX *mem_ctx, struct ldb_message **res)
 {
 	struct samdb_context *sam_ctx = ctx;
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_search_free(sam_ctx->ldb, res);
 }
 
@@ -746,7 +746,7 @@ int samdb_msg_add_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	if (s == NULL || a == NULL) {
 		return -1;
 	}
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_msg_add_string(sam_ctx->ldb, msg, a, s);
 }
 
@@ -761,7 +761,7 @@ int samdb_msg_add_delete(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	if (a == NULL) {
 		return -1;
 	}
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	/* we use an empty replace rather than a delete, as it allows for 
 	   samdb_replace() to be used everywhere */
 	return ldb_msg_add_empty(sam_ctx->ldb, msg, a, LDB_FLAG_MOD_REPLACE);
@@ -811,7 +811,7 @@ int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		return -1;
 	}
 	memcpy(val.data, hash.hash, 16);
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
 }
 
@@ -832,7 +832,7 @@ int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	for (i=0;i<count;i++) {
 		memcpy(i*16 + (char *)val.data, hashes[i].hash, 16);
 	}
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
 }
 
@@ -855,7 +855,7 @@ int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message
 	struct ldb_val val;
 	val.length = hours.units_per_week / 8;
 	val.data = hours.bitmap;
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
 }
 
@@ -868,7 +868,7 @@ int samdb_msg_set_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	struct samdb_context *sam_ctx = ctx;
 	struct ldb_message_element *el;
 
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 
 	el = ldb_msg_find_element(msg, attr_name);
 	if (el) {
@@ -897,7 +897,7 @@ int samdb_add(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
 	struct samdb_context *sam_ctx = ctx;
 
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_add(sam_ctx->ldb, msg);
 }
 
@@ -908,7 +908,7 @@ int samdb_delete(void *ctx, TALLOC_CTX *mem_ctx, const char *dn)
 {
 	struct samdb_context *sam_ctx = ctx;
 
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_delete(sam_ctx->ldb, dn);
 }
 
@@ -919,7 +919,7 @@ int samdb_modify(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
 	struct samdb_context *sam_ctx = ctx;
 
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_modify(sam_ctx->ldb, msg);
 }
 

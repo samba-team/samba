@@ -458,3 +458,13 @@ The talloc_realloc_p() macro is equivalent to:
 except that it provides integer overflow protection for the multiply,
 returning NULL if the multiply overflows.
 
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_realloc_fn(const void *ctx, void *ptr, size_t size);
+
+This is a non-macro version of talloc_realloc(), which is useful 
+as libraries sometimes want a ralloc function pointer. A realloc()
+implementation encapsulates the functionality of malloc(), free() and
+realloc() in one call, which is why it is useful to be able to pass
+around a single function pointer.
+

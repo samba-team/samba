@@ -273,6 +273,10 @@ int talloc_unlink(const void *context, void *ptr)
 	struct talloc_chunk *tc_p, *new_p;
 	void *new_parent;
 
+	if (context == NULL) {
+		context = null_context;
+	}
+
 	if (talloc_unreference(context, ptr) == 0) {
 		return 0;
 	}
@@ -559,6 +563,10 @@ void *talloc_steal(const void *new_ctx, const void *ptr)
 
 	if (!ptr) {
 		return NULL;
+	}
+
+	if (new_ctx == NULL) {
+		new_ctx = null_context;
 	}
 
 	tc = talloc_chunk_from_ptr(ptr);
@@ -948,16 +956,11 @@ void *talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned 
 }
 
 /*
-  a alloc function for ldb that uses talloc
+  a function version of talloc_realloc(), so it can be passed as a function pointer
+  to libraries that want a realloc function (a realloc function encapsulates
+  all the basic capabilities of an allocation library, which is why this is useful)
 */
-void *talloc_ldb_alloc(void *context, void *ptr, size_t size)
+void *talloc_realloc_fn(const void *context, void *ptr, size_t size)
 {
-	if (ptr == NULL) {
-		return talloc(context, size);
-	}
-	if (size == 0) {
-		talloc_free(ptr);
-		return NULL;
-	}
-	return talloc_realloc(context, ptr, size);
+	return _talloc_realloc(context, ptr, size, NULL);
 }
