@@ -1,3 +1,7 @@
+1999-11-20  Assar Westerlund  <assar@sics.se>
+
+	* context_s.c (find_db_spec): ugly cast work-around.
+
 1999-11-14  Assar Westerlund  <assar@sics.se>
 
 	* context_s.c (_kadm5_s_init_context): call krb5_add_et_list so

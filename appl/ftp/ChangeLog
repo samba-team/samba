@@ -1,3 +1,8 @@
+1999-11-20  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ls.c (make_fileinfo): cast to allow for non-const
+ 	prototypes of readlink
+
 1999-11-12  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c (args): use arg_counter for `l'
