@@ -420,13 +420,12 @@ create_mainwindow (void)
 	gwsam_init_subsystems;
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
-	setup_logging("gwsam", True);
+	setup_logging(argv[0], DEBUG_STDERR);
 
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
 	connect_sam();
 	gtk_widget_show_all(mainwin);
-	gtk_main();
 
-	return 0;
+	return gtk_event_loop();
 }

@@ -79,5 +79,8 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe);
 GType gtk_select_domain_dialog_get_type (void);
 struct policy_handle gtk_select_domain_dialog_get_handle(GtkSelectDomainDialog *d);
 
+int gtk_event_loop(void);
+struct event_context;
+struct event_context *gtk_event_context(void);
 
 #endif

@@ -660,7 +660,7 @@ gboolean on_key_activate(GtkTreeSelection *selection,
 	return TRUE;
 }
 
-static GtkWidget* create_mainwin (void)
+static GtkWidget* create_mainwindow(void)
 {
 	GtkWidget *vbox1;
 	GtkWidget *menubar;
@@ -955,43 +955,41 @@ static GtkWidget* create_savefilewin (void)
 	return savefilewin;
 }
 
- int main(int argc, char *argv[])
+static int gregedit_load_defaults(void)
 {
-	poptContext pc;
-	WERROR error;
-	int opt;
-	struct poptOption long_options[] = {
-		POPT_AUTOHELP
-		POPT_TABLEEND
-	};
-
-	gregedit_init_subsystems;
-
-	lp_load(dyn_CONFIGFILE,True,False,False);
-	load_interfaces();
-
-	gtk_init (&argc, &argv);
-	mem_ctx = talloc_init("gregedit");
-
-	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
-
-	while((opt = poptGetNextOpt(pc)) != -1) {
-	}
-
-	error = reg_open_local(&registry);
+	WERROR error = reg_open_local(&registry);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, error);
 		return -1;
 	}
-	mainwin = create_mainwin ();
 	registry_load_root();
 
-	gtk_widget_show_all (mainwin);
-
-	gtk_main ();
-
-	talloc_free(mem_ctx);
 	return 0;
+}
+
+ int main(int argc, char *argv[])
+{
+	int ret;
+
+	gregedit_init_subsystems;
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	load_interfaces();
+	setup_logging(argv[0], DEBUG_STDERR);
+
+	mem_ctx = talloc_init("gregedit");
+
+	gtk_init(&argc, &argv);
+	mainwin = create_mainwindow();
+	gtk_widget_show_all(mainwin);
+
+	ret = gregedit_load_defaults();
+	if (ret != 0) goto failed;
+
+	ret = gtk_event_loop();
+
+failed:
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 
