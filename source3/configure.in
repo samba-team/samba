@@ -866,7 +866,7 @@ AC_CHECK_FUNCS(_stat _lstat _fstat __stat __lstat __fstat)
 AC_CHECK_FUNCS(_acl __acl _facl __facl _open __open _chdir __chdir)
 AC_CHECK_FUNCS(_close __close _fchdir __fchdir _fcntl __fcntl)
 AC_CHECK_FUNCS(getdents _getdents __getdents _lseek __lseek _read __read)
-AC_CHECK_FUNCS(_write __write _fork __fork)
+AC_CHECK_FUNCS(getdirentries _write __write _fork __fork)
 AC_CHECK_FUNCS(_stat64 __stat64 _fstat64 __fstat64 _lstat64 __lstat64)
 AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readdir64)
 AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
@@ -2119,7 +2119,7 @@ if test -d /usr/include/heimdal; then
         CFLAGS="$CFLAGS -I/usr/include/heimdal"
         CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
         AC_MSG_RESULT(yes)
-
+ 
     fi
 else
     AC_MSG_RESULT(no)
@@ -2131,7 +2131,7 @@ if test x$FOUND_KRB5 = x"no"; then
 #################################################
 # see if this box has the RedHat location for kerberos
 AC_MSG_CHECKING(for /usr/kerberos)
-if test -d /usr/kerberos -a -f /usr/kerberos/lib/libkrb5.a ; then
+if test -d /usr/kerberos -a -f /usr/kerberos/lib/libkrb5.a; then
     LIBS="$LIBS -lkrb5"
     LDFLAGS="$LDFLAGS -L/usr/kerberos/lib"
     CFLAGS="$CFLAGS -I/usr/kerberos/include"
@@ -2141,7 +2141,6 @@ else
     AC_MSG_RESULT(no)
 fi
 fi
-
 
   # now check for krb5.h. Some systems have the libraries without the headers!
   # note that this check is done here to allow for different kerberos
@@ -2161,7 +2160,7 @@ fi
   AC_CHECK_LIB(asn1, copy_Authenticator, [LIBS="$LIBS -lasn1 -lroken"])
   # Heimdal checks. On static Heimdal gssapi must be linked before krb5.
   AC_CHECK_LIB(gssapi, gss_display_status, [LIBS="$LIBS -lgssapi -lkrb5 -lasn1";
-	AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
+        AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 
   AC_CHECK_LIB(krb5, krb5_set_real_time, [AC_DEFINE(HAVE_KRB5_SET_REAL_TIME,1,[Whether krb5_set_real_time is available])])
   AC_CHECK_LIB(krb5, krb5_set_default_in_tkt_etypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES,1,[Whether krb5_set_default_in_tkt_etypes, is available])])
@@ -2204,12 +2203,13 @@ fi
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
   AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
-	AC_DEFINE(HAVE_KRB5,1,[Whether KRB5 is available])])
+        AC_DEFINE(HAVE_KRB5,1,[Whether KRB5 is available])])
 
   ########################################################
   # now see if we can find the gssapi libs in standard paths
   AC_CHECK_LIB(gssapi_krb5, gss_display_status, [LIBS="$LIBS -lgssapi_krb5";
-	AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
+        AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
+
 fi
 
 ########################################################
