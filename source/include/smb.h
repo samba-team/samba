@@ -1601,9 +1601,9 @@ struct share_ops {
 /* each implementation of the shared memory code needs
    to support the following operations */
 struct shmem_ops {
-	BOOL (*close)( void );
-	int (*alloc)(int );
-	BOOL (*free)(int );
+	BOOL (*shm_close)( void );
+	int (*shm_alloc)(int );
+	BOOL (*shm_free)(int );
 	int (*get_userdef_off)(void);
 	void *(*offset2addr)(int );
 	int (*addr2offset)(void *addr);
