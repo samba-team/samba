@@ -38,6 +38,7 @@ krb5_build_ap_req (krb5_context context,
   ap.authenticator.cipher = authenticator;
 
   ret->length = encode_AP_REQ(buf + sizeof(buf) - 1, sizeof(buf), &ap);
+  free (ap.ticket.realm);
 
   ret->data = malloc(ret->length);
   memcpy (ret->data, buf + sizeof(buf) - ret->length, ret->length);
