@@ -137,8 +137,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 		SAFE_FREE(status);
 		return WINBINDD_ERROR;
 	    }
-	    safe_strcat(response,state->request.data.winsreq,maxlen);
-	    safe_strcat(response,"\t",maxlen);
+	    fstrcat(response,state->request.data.winsreq);
+	    fstrcat(response,"\t");
 	    for (i = 0; i < count; i++) {
 		/* ignore group names */
 		if (status[i].flags & 0x80) continue;
@@ -148,8 +148,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 			    SAFE_FREE(status);
 			    return WINBINDD_ERROR;
 			}
-			safe_strcat(response, status[i].name, maxlen);
-			safe_strcat(response, " ", maxlen);
+			fstrcat(response, status[i].name);
+			fstrcat(response, " ");
 		}
 	    }
 	    /* make last character a newline */
@@ -190,16 +190,16 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 			/* Clear out the newline character */
 			response[strlen(response)-1] = ' '; 
 		    }
-		    safe_strcat(response,addr,maxlen);
-		    safe_strcat(response,"\t",maxlen);
+		    fstrcat(response,addr);
+		    fstrcat(response,"\t");
 		}
 		size = strlen(state->request.data.winsreq) + strlen(response);
 		if (size > maxlen) {
 		    SAFE_FREE(ip_list);
 		    return WINBINDD_ERROR;
 		}   
-		safe_strcat(response,state->request.data.winsreq,maxlen);
-		safe_strcat(response,"\n",maxlen);
+		fstrcat(response,state->request.data.winsreq);
+		fstrcat(response,"\n");
 		SAFE_FREE(ip_list);
 	} else
 		return WINBINDD_ERROR;

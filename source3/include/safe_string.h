@@ -129,11 +129,17 @@ size_t __unsafe_string_function_usage_here_char__(void);
     safe_strcpy(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1)
 
 
-/* inside the _fn varients of these is a call to 'clobber_region' - which might
-   destory the stack on a buggy function.  Help the debugging process by putting
-   the function and line it was last called from into a static buffer
+/* Inside the _fn variants of these is a call to clobber_region(), -
+ * which might destroy the stack on a buggy function.  We help the
+ * debugging process by putting the function and line who last caused
+ * a clobbering into a static buffer.  If the program crashes at
+ * address 0xf1f1f1f1 then this function is probably, but not
+ * necessarily, to blame. */
 
-   But only for developers */
+/* overmalloc_safe_strcpy: DEPRECATED!  Used when you know the
+ * destination buffer is longer than maxlength, but you don't know how
+ * long.  This is not a good situation, because we can't do the normal
+ * sanity checks. Don't use in new code! */
 
 #ifdef DEVELOPER
 #define overmalloc_safe_strcpy(dest,src,maxlength)	safe_strcpy_fn(__FUNCTION__,__LINE__,dest,src,maxlength)
@@ -213,8 +219,5 @@ size_t __unsafe_string_function_usage_here_char__(void);
    versions */
 #define strlower(s) strlower_m(s)
 #define strupper(s) strupper_m(s)
-
-#define safe_strcpy_base(dest, src, base, size) \
-    safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
 
 #endif

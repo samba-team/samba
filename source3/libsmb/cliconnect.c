@@ -66,7 +66,7 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 		memcpy(pword, pass, passlen);
 	} else if (passlen > 0) {
 		/* Plaintext mode needed, assume plaintext supplied. */
-		passlen = clistr_push(cli, pword, pass, -1, STR_TERMINATE);
+		passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
 	}
 
 	/* send a session setup command */
@@ -774,7 +774,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 			/*
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
-			passlen = clistr_push(cli, pword, pass, -1, STR_TERMINATE);
+			passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
 		} else {
 			memcpy(pword, pass, passlen);
 		}
