@@ -203,24 +203,28 @@ typedef struct pdb_context
 	
 	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
 
-	NTSTATUS (*pdb_getsamgrnam)(struct pdb_context *context, SAM_GROUP *samgroup, char *name);
+	NTSTATUS (*pdb_getgrsid)(struct pdb_context *context, GROUP_MAP *map,
+				 DOM_SID sid, BOOL with_priv);
 	
-	NTSTATUS (*pdb_getsamgrsid)(struct pdb_context *context, SAM_GROUP *samgroup, DOM_SID *sid);
+	NTSTATUS (*pdb_getgrgid)(struct pdb_context *context, GROUP_MAP *map,
+				 gid_t gid, BOOL with_priv);
 	
-	NTSTATUS (*pdb_add_sam_group)(struct pdb_context *context, SAM_GROUP *samgroup);
+	NTSTATUS (*pdb_getgrnam)(struct pdb_context *context, GROUP_MAP *map,
+				 char *name, BOOL with_priv);
 	
-	NTSTATUS (*pdb_update_sam_group)(struct pdb_context *context, SAM_GROUP *samgroup);
+	NTSTATUS (*pdb_add_group_mapping_entry)(struct pdb_context *context,
+						GROUP_MAP *map);
 	
-	NTSTATUS (*pdb_delete_sam_group)(struct pdb_context *context, DOM_SID *sid);
-
-	NTSTATUS (*pdb_add_sam_group_member)(struct pdb_context *context, DOM_SID *group_sid, DOM_SID *new_member_sid);
+	NTSTATUS (*pdb_update_group_mapping_entry)(struct pdb_context *context,
+						   GROUP_MAP *map);
 	
-	NTSTATUS (*pdb_delete_sam_group_member)(struct pdb_context *context, DOM_SID *group_sid, DOM_SID *member_sid);
+	NTSTATUS (*pdb_delete_group_mapping_entry)(struct pdb_context *context,
+						   DOM_SID sid);
 	
-	NTSTATUS (*pdb_enum_sam_groups)(struct pdb_context *context,
+	NTSTATUS (*pdb_enum_group_mapping)(struct pdb_context *context,
 					   enum SID_NAME_USE sid_name_use,
-					   SAM_GROUP **groups, int *num_entries,
-					   BOOL unix_only);
+					   GROUP_MAP **rmap, int *num_entries,
+					   BOOL unix_only, BOOL with_priv);
 
 	void (*free_fn)(struct pdb_context **);
 	
@@ -253,23 +257,27 @@ typedef struct pdb_methods
 	
 	NTSTATUS (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
 	
-	NTSTATUS (*getsamgrnam)(struct pdb_methods *methods, SAM_GROUP *samgroup, char *name);
+	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map,
+			     DOM_SID sid, BOOL with_priv);
 
-	NTSTATUS (*getsamgrsid)(struct pdb_methods *methods, SAM_GROUP *samgroup, DOM_SID *sid);
+	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map,
+			     gid_t gid, BOOL with_priv);
 
-	NTSTATUS (*add_sam_group)(struct pdb_methods *methods, SAM_GROUP *samgroup);
+	NTSTATUS (*getgrnam)(struct pdb_methods *methods, GROUP_MAP *map,
+			     char *name, BOOL with_priv);
 
-	NTSTATUS (*update_sam_group)(struct pdb_methods *methods, SAM_GROUP *samgroup);
+	NTSTATUS (*add_group_mapping_entry)(struct pdb_methods *methods,
+					    GROUP_MAP *map);
 
-	NTSTATUS (*delete_sam_group)(struct pdb_methods *methods, DOM_SID sid);
+	NTSTATUS (*update_group_mapping_entry)(struct pdb_methods *methods,
+					       GROUP_MAP *map);
 
-	NTSTATUS (*add_sam_group_member)(struct pdb_methods *methods, DOM_SID *group_sid, DOM_SID *new_member_sid);
-	
-	NTSTATUS (*delete_sam_group_member)(struct pdb_methods *methods, DOM_SID *group_sid, DOM_SID *member_sid);
-	
-	NTSTATUS (*enum_sam_groups)(struct pdb_methods *methods,
+	NTSTATUS (*delete_group_mapping_entry)(struct pdb_methods *methods,
+					       DOM_SID sid);
+
+	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
 				       enum SID_NAME_USE sid_name_use,
-				       SAM_GROUP **groups, int *num_entries,
+				       GROUP_MAP **rmap, int *num_entries,
 				       BOOL unix_only, BOOL with_priv);
 
 	void *private_data;  /* Private data of some kind */
