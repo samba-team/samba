@@ -244,9 +244,6 @@ struct smbcli_request {
 	/* allow a request to be part of a list of requests */
 	struct smbcli_request *next, *prev;
 
-	/* a talloc context for the lifetime of this request */
-	TALLOC_CTX *mem_ctx;
-	
 	/* each request is in one of 4 possible states */
 	enum smbcli_request_state state;
 	

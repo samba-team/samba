@@ -325,7 +325,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 		if (!req) goto error;
 
 		req->in.buffer = buffer;
-		talloc_steal(req->mem_ctx, buffer);
+		talloc_steal(req, buffer);
 		req->in.size = len;
 		req->in.allocated = req->in.size;
 		goto async;
@@ -349,7 +349,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 
 	/* fill in the 'in' portion of the matching request */
 	req->in.buffer = buffer;
-	talloc_steal(req->mem_ctx, buffer);
+	talloc_steal(req, buffer);
 	req->in.size = len;
 	req->in.allocated = req->in.size;
 
