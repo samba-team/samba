@@ -219,8 +219,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	s = find(name); \
 	if (s) { \
 		if ((s->sname1.field1) != (v.sname2.out.field2)) { \
-			printf("(%d) %s/%s [0x%x] != %s/%s [0x%x]\n", \
-			       __LINE__, \
+			printf("(%s) %s/%s [0x%x] != %s/%s [0x%x]\n", \
+			       __location__, \
 				#sname1, #field1, (int)s->sname1.field1, \
 				#sname2, #field2, (int)v.sname2.out.field2); \
 			ret = False; \
@@ -231,8 +231,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	s = find(name); \
 	if (s) { \
 		if (s->sname1.field1 != (~1 & nt_time_to_unix(v.sname2.out.field2))) { \
-			printf("(%d) %s/%s [%s] != %s/%s [%s]\n", \
-			       __LINE__, \
+			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			       __location__, \
 				#sname1, #field1, timestring(mem_ctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(mem_ctx, v.sname2.out.field2)); \
 			ret = False; \
@@ -243,8 +243,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	s = find(name); \
 	if (s) { \
 		if (s->sname1.field1 != v.sname2.out.field2) { \
-			printf("(%d) %s/%s [%s] != %s/%s [%s]\n", \
-			       __LINE__, \
+			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			       __location__, \
 				#sname1, #field1, nt_time_string(mem_ctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(mem_ctx, v.sname2.out.field2)); \
 			ret = False; \
@@ -255,8 +255,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	s = find(name); \
 	if (s) { \
 		if (!s->sname1.field1 || strcmp(s->sname1.field1, v.sname2.out.field2.s)) { \
-			printf("(%d) %s/%s [%s] != %s/%s [%s]\n", \
-			       __LINE__, \
+			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			       __location__, \
 				#sname1, #field1, s->sname1.field1, \
 				#sname2, #field2, v.sname2.out.field2.s); \
 			ret = False; \
@@ -269,8 +269,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, v.sname2.out.field2.s) || \
 		    wire_bad_flags(&s->sname1.field1, flags, cli)) { \
-			printf("(%d) %s/%s [%s] != %s/%s [%s]\n", \
-			       __LINE__, \
+			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			       __location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				#sname2, #field2, v.sname2.out.field2.s); \
 			ret = False; \
@@ -283,8 +283,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, fname) || \
 		    wire_bad_flags(&s->sname1.field1, flags, cli)) { \
-			printf("(%d) %s/%s [%s] != %s\n", \
-			       __LINE__, \
+			printf("(%s) %s/%s [%s] != %s\n", \
+			       __location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				fname); \
 			ret = False; \
@@ -296,8 +296,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	if (s) { \
 		if (!s->sname1.field1 || \
 		    strcmp(s->sname1.field1, fname)) { \
-			printf("(%d) %s/%s [%s] != %s\n", \
-			       __LINE__, \
+			printf("(%s) %s/%s [%s] != %s\n", \
+			       __location__, \
 				#sname1, #field1, s->sname1.field1, \
 				fname); \
 			ret = False; \
@@ -534,16 +534,16 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) Incorrect value %s=%d - should be %d\n", \
-		       __LINE__, #v, v, correct); \
+		printf("(%s) Incorrect value %s=%d - should be %d\n", \
+		       __location__, #v, v, correct); \
 		ret = False; \
 	}} while (0)
 
