@@ -36,32 +36,22 @@
  * SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+RCSID("$Id$");
+#endif
+
 #include <Windows.h>
 
-void msg(char *text)
+BOOL WINAPI
+DllMain (HANDLE hInst, 
+	 ULONG reason,
+	 LPVOID lpReserved)
 {
-	HWND wnd = GetActiveWindow();
-
-	MessageBox(wnd, text, "KClient message", MB_OK|MB_APPLMODAL);
-}
-
-BOOL   WINAPI   DllMain (HANDLE hInst, 
-                        ULONG reason,
-                        LPVOID lpReserved)
-{
-	WORD wVersionRequested; 
-	WSADATA wsaData; 
-	int err; 
-	switch(reason){
-	case DLL_PROCESS_ATTACH:
-			return FALSE;
-		}
-		break;
-	case DLL_PROCESS_DETACH:
-		WSACleanup();
-	}
-
-  	
-	msg("Initializing krb4.dll OK");
+    switch(reason) {
+    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_DETACH:
+    default:
 	return TRUE;
+    }
 }
