@@ -282,7 +282,9 @@ store_address(int fd, krb5_address p)
 static krb5_error_code
 ret_address(int fd, krb5_address *adr)
 {
-    ret_int16(fd, (int16_t*)&adr->type);
+    int16_t t;
+    ret_int16(fd, &t);
+    adr->type = t;
     ret_data(fd, &adr->address);
     return 0;
 }
