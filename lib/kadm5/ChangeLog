@@ -1,3 +1,8 @@
+2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_c.c: use
+	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
+
 2003-08-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* set_keys.c (_kadm5_set_keys_randomly): remove dup return
