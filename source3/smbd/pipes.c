@@ -148,21 +148,18 @@ int reply_pipe_close(char *inbuf,char *outbuf)
 /****************************************************************************
  api_LsarpcSNPHS
 
- SetNamedPipeHandleState on \PIPE\lsarpc. We can't really do much here,
- so just blithely return True. This is really only for NT domain stuff,
- we we're only handling that - don't assume Samba now does complete
- named pipe handling.
+ SetNamedPipeHandleState on \PIPE\lsarpc. 
 ****************************************************************************/
-BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len)
+BOOL api_LsarpcSNPHS(int pnum, int cnum, char *param)
 {
   uint16 id;
 
+  if (!param) return False;
+
   id = param[0] + (param[1] << 8);
   DEBUG(4,("lsarpc SetNamedPipeHandleState to code %x\n",id));
-  return(True);
+
+  return set_rpc_pipe_hnd_state(pnum, cnum, id);
 }
 
 
