@@ -53,6 +53,8 @@ OM_uint32 gss_release_cred
 
     krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);
     if ((*cred_handle)->keytab != NULL) {
+	if ((*cred_handle)->keytab->filename != NULL)
+	    free((*cred_handle)->keytab->filename);
         free((*cred_handle)->keytab);
     }
     gss_release_oid_set(NULL, &(*cred_handle)->mechanisms);
