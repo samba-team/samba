@@ -5843,7 +5843,7 @@ WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 ****************************************************************************/
 static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_srv_name,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
-				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
+				DEVICEMODE *devmode, SEC_DESC_BUF *sec_desc_buf,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle)
 {
@@ -5939,10 +5939,8 @@ WERROR _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_
 	UNISTR2 *uni_srv_name = &q_u->server_name;
 	uint32 level = q_u->level;
 	SPOOL_PRINTER_INFO_LEVEL *info = &q_u->info;
-	uint32 unk0 = q_u->unk0;
-	uint32 unk1 = q_u->unk1;
-	uint32 unk2 = q_u->unk2;
-	uint32 unk3 = q_u->unk3;
+	DEVICEMODE *devmode = q_u->devmode_ctr.devmode;
+	SEC_DESC_BUF *sdb = q_u->secdesc_ctr;
 	uint32 user_switch = q_u->user_switch;
 	SPOOL_USER_CTR *user = &q_u->user_ctr;
 	POLICY_HND *handle = &r_u->handle;
@@ -5954,7 +5952,7 @@ WERROR _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_
 			return WERR_UNKNOWN_LEVEL;
 		case 2:
 			return spoolss_addprinterex_level_2(p, uni_srv_name, info,
-							    unk0, unk1, unk2, unk3,
+							    devmode, sdb,
 							    user_switch, user, handle);
 		default:
 			return WERR_UNKNOWN_LEVEL;
