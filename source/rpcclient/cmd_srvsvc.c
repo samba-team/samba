@@ -200,7 +200,7 @@ static uint32 cmd_srvsvc_srv_query_info(struct cli_state *cli, int argc,
 
 	if (!(mem_ctx = talloc_init())) {
 		DEBUG(0,("cmd_srvsvc_srv_query_info: talloc_init failed\n"));
-		goto done;
+		return result;
 	}
 
 	/* Initialise RPC connection */
@@ -231,6 +231,8 @@ static uint32 cmd_srvsvc_srv_query_info(struct cli_state *cli, int argc,
 	}
 
  done:
+	talloc_destroy(mem_ctx);
+
 	return result;
 }
 

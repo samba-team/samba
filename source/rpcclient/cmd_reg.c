@@ -4,6 +4,7 @@
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,7 +31,6 @@
 
 extern int DEBUGLEVEL;
 
-extern struct cli_state *smb_cli;
 extern int smb_tidx;
 
 extern FILE* out_hnd;
@@ -54,10 +54,12 @@ extern FILE* out_hnd;
  *
  */
 
+#if 0 /* Simo: reg functions need to be updated to the new cmd interface */
+
 /****************************************************************************
 nt registry enum
 ****************************************************************************/
-void cmd_reg_enum(struct client_info *info)
+static void cmd_reg_enum(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -224,7 +226,7 @@ void cmd_reg_enum(struct client_info *info)
 /****************************************************************************
 nt registry query key
 ****************************************************************************/
-void cmd_reg_query_key(struct client_info *info)
+static void cmd_reg_query_key(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -324,7 +326,7 @@ void cmd_reg_query_key(struct client_info *info)
 /****************************************************************************
 nt registry create value
 ****************************************************************************/
-void cmd_reg_create_val(struct client_info *info)
+static void cmd_reg_create_val(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -470,7 +472,7 @@ void cmd_reg_create_val(struct client_info *info)
 /****************************************************************************
 nt registry delete value
 ****************************************************************************/
-void cmd_reg_delete_val(struct client_info *info)
+static void cmd_reg_delete_val(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -545,7 +547,7 @@ void cmd_reg_delete_val(struct client_info *info)
 /****************************************************************************
 nt registry delete key
 ****************************************************************************/
-void cmd_reg_delete_key(struct client_info *info)
+static void cmd_reg_delete_key(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -623,7 +625,7 @@ void cmd_reg_delete_key(struct client_info *info)
 /****************************************************************************
 nt registry create key
 ****************************************************************************/
-void cmd_reg_create_key(struct client_info *info)
+static void cmd_reg_create_key(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -716,7 +718,7 @@ void cmd_reg_create_key(struct client_info *info)
 /****************************************************************************
 nt registry security info
 ****************************************************************************/
-void cmd_reg_test_key_sec(struct client_info *info)
+static void cmd_reg_test_key_sec(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -811,7 +813,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 /****************************************************************************
 nt registry security info
 ****************************************************************************/
-void cmd_reg_get_key_sec(struct client_info *info)
+static void cmd_reg_get_key_sec(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -898,3 +900,175 @@ void cmd_reg_get_key_sec(struct client_info *info)
 		DEBUG(5,("cmd_reg_get_key_sec: query failed\n"));
 	}
 }
+
+#endif /* 0 */
+
+/****************************************************************************
+nt registry shutdown
+****************************************************************************/
+static uint32 cmd_reg_shutdown(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	fstring msg;
+	uint32 timeout = 20;
+	uint16 flgs = 0;
+	int opt;
+	int ret;
+	char *srv_name;
+	TALLOC_CTX *mem_ctx;
+
+	ret = asprintf (&srv_name, "\\\\%s", cli->desthost);
+	if (ret < 0) {
+		DEBUG(0,("cmd_reg_shutdown: Not enough memory!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	strupper(srv_name);
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("cmd_spoolss_getprinter: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_WINREG)) {
+		fprintf (stderr, "Could not initialize winreg pipe!\n");
+		goto done;
+	}
+			
+	*msg = 0;
+	optind = 0; /* TODO: test if this hack works on other systems too --simo */
+
+	while ((opt = getopt(argc, argv, "m:t:rf")) != EOF)
+	{
+		fprintf (stderr, "[%s]\n", argv[argc-1]);
+	
+		switch (opt)
+		{
+			case 'm':
+			{
+				safe_strcpy(msg, optarg, sizeof(msg)-1);
+				fprintf (stderr, "[%s|%s]\n", optarg, msg);
+				break;
+			}
+			case 't':
+			{
+				timeout = atoi(optarg);
+				fprintf (stderr, "[%s|%d]\n", optarg, timeout);
+			break;
+			}
+			case 'r':
+			{
+				flgs |= 0x100;
+			break;
+			}
+			case 'f':
+			{
+				flgs |= 0x001;
+				break;
+			}
+		}
+	}
+
+	/* create an entry */
+	result = cli_reg_shutdown(cli, mem_ctx, srv_name, msg, timeout, flgs);
+
+	if (result == NT_STATUS_NOPROBLEMO)
+		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
+	else
+		DEBUG(5,("cmd_reg_shutdown: query failed\n"));
+
+ 	cli_nt_session_close(cli);
+
+done:
+	talloc_destroy(mem_ctx);
+			
+	return result;
+}
+
+/****************************************************************************
+abort a shutdown
+****************************************************************************/
+static uint32 cmd_reg_abort_shutdown(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	int ret;
+	char *srv_name;
+	TALLOC_CTX *mem_ctx;
+
+	ret = asprintf(&srv_name, "\\\\%s", cli->desthost);
+	if (ret < 0) {
+		DEBUG(0,("cmd_reg_shutdown: Not enough memory!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	strupper(srv_name);
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("cmd_spoolss_getprinter: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_WINREG)) {
+		fprintf (stderr, "Could not initialize winreg pipe!\n");
+		goto done;
+	}
+
+	result = cli_reg_abort_shutdown(cli, mem_ctx, srv_name);
+
+	if (result == NT_STATUS_NOPROBLEMO)
+		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
+	else
+		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
+
+	cli_nt_session_close(cli);
+
+done:
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
+
+/* List of commands exported by this module */
+struct cmd_set reg_commands[] = {
+
+	{ "REG"  },
+
+	{ "shutdown",		cmd_reg_shutdown,		"Remote Shutdown",
+				"[-m message] [-t timeout] [-r] [-f] (-r == reboot, -f == force)" },
+				
+	{ "abortshutdown",	cmd_reg_abort_shutdown,		"Abort Shutdown",
+				"" },				
+/*
+	{ "regenum",		cmd_reg_enum,			"Registry Enumeration",
+				"<keyname>" },
+				
+	{ "regdeletekey",	cmd_reg_delete_key,		"Registry Key Delete",
+				"<keyname>" },
+				
+	{ "regcreatekey",	cmd_reg_create_key,		"Registry Key Create",
+				"<keyname> [keyclass]" },
+				
+	{ "regqueryval",	cmd_reg_query_info,		"Registry Value Query",
+				"<valname>" },
+				
+	{ "regquerykey",	cmd_reg_query_key,		"Registry Key Query",
+				"<keyname>" },
+				
+	{ "regdeleteval",	cmd_reg_delete_val,		"Registry Value Delete",
+				"<valname>" },
+	
+	{ "regcreateval",	cmd_reg_create_val,		"Registry Key Create",
+				"<valname> <valtype> <value>" },
+	
+	{ "reggetsec",		cmd_reg_get_key_sec,		"Registry Key Security",
+				"<keyname>" },
+	
+	{ "regtestsec",		cmd_reg_test_key_sec,		"Test Registry Key Security",
+				"<keyname>" },
+*/
+	{ NULL }
+};
+

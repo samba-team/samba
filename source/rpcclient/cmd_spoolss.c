@@ -174,6 +174,7 @@ static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char 
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -360,6 +361,7 @@ static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -467,6 +469,7 @@ static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **arg
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -529,6 +532,7 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -729,6 +733,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
 	{
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -835,6 +840,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
 	{
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1107,6 +1113,7 @@ static uint32 cmd_spoolss_addprinterdriver (struct cli_state *cli, int argc, cha
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
 	{
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1177,6 +1184,7 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
 	{
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1262,6 +1270,7 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
 	{
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -1333,6 +1342,7 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
 	{
 		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

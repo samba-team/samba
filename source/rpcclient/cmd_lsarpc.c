@@ -53,6 +53,7 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
 		DEBUG(0, ("Could not initialize samr pipe!\n"));
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -117,6 +118,7 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
 		DEBUG(0, ("Could not initialize samr pipe!\n"));
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -185,6 +187,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
 		DEBUG(0, ("Could not initialize samr pipe!\n"));
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -277,6 +280,7 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
 		DEBUG(0, ("Could not initialize samr pipe!\n"));
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

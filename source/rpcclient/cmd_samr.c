@@ -170,6 +170,7 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -297,6 +298,7 @@ static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv)
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -386,6 +388,7 @@ static uint32 cmd_samr_query_usergroups(struct cli_state *cli, int argc, char **
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -472,6 +475,7 @@ static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **ar
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -556,6 +560,7 @@ static uint32 cmd_samr_enum_dom_groups(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -634,6 +639,7 @@ static uint32 cmd_samr_query_aliasmem(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -724,6 +730,7 @@ static uint32 cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -790,7 +797,7 @@ static uint32 cmd_samr_query_dominfo(struct cli_state *cli, int argc,
 	SAM_UNK_CTR ctr;
 
 	if (argc > 2) {
-		printf("Usage: %s [infolevel\n", argv[0]);
+		printf("Usage: %s [infolevel]\n", argv[0]);
 		return 0;
 	}
 
@@ -809,6 +816,7 @@ static uint32 cmd_samr_query_dominfo(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -896,6 +904,7 @@ static uint32 cmd_samr_create_dom_user(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -975,6 +984,7 @@ static uint32 cmd_samr_lookup_names(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1058,6 +1068,7 @@ static uint32 cmd_samr_lookup_rids(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		fprintf (stderr, "Could not initialize samr pipe!\n");
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1135,6 +1146,7 @@ static uint32 cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 
 	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
 		DEBUG(0, ("cmd_samr_delete_dom_user: could not open samr pipe!\n"));
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

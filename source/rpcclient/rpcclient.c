@@ -374,6 +374,7 @@ extern struct cmd_set spoolss_commands[];
 extern struct cmd_set netlogon_commands[];
 extern struct cmd_set srvsvc_commands[];
 extern struct cmd_set dfs_commands[];
+extern struct cmd_set reg_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -383,6 +384,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	netlogon_commands,
 	srvsvc_commands,
 	dfs_commands,
+	reg_commands,
 	NULL
 };
 
@@ -406,15 +408,13 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 	char *p = cmd, **argv = NULL;
 	uint32 result;
 	pstring buf;
-	int argc = 1, i;
-
-	next_token_nr(&p, buf, " ", sizeof(buf));
+	int argc = 0, i;
 
 	/* Count number of arguments first time through the loop then
 	   allocate memory and strdup them. */
 
  again:
-	while(next_token_nr(NULL, buf, " ", sizeof(buf))) {
+	while(next_token(&p, buf, " ", sizeof(buf))) {
 		if (argv) {
 			argv[argc] = strdup(buf);
 		}
@@ -429,14 +429,12 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 		argv = (char **)malloc(sizeof(char *) * argc);
 
 		if (!argv) {
-			fprintf(stderr, "out of memoryx\n");
+			fprintf(stderr, "out of memory\n");
 			return 0;
 		}
 					
 		p = cmd;
-		next_token_nr(&p, buf, " ", sizeof(buf));
-		argv[0] = strdup(buf);
-		argc = 1;
+		argc = 0;
 					
 		goto again;
 	}
@@ -475,7 +473,7 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	if (cmd[strlen(cmd) - 1] == '\n')
 		cmd[strlen(cmd) - 1] = '\0';
 
-	if (!next_token_nr(&p, buf, " ", sizeof(buf))) {
+	if (!next_token(&p, buf, " ", sizeof(buf))) {
 		return 0;
 	}
 

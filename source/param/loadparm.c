@@ -3580,8 +3580,8 @@ char **lp_list_make(char *string)
 	
 	if (!string || !*string) return NULL;
 	s = strdup(string);
-	if (!s || !*s) {
-		DEBUG(0,("ERROR: Unable to allocate memory"));
+	if (!s) {
+		DEBUG(0,("lp_list_make: Unable to allocate memory"));
 		return NULL;
 	}
 	
@@ -3589,15 +3589,13 @@ char **lp_list_make(char *string)
 	list = NULL;
 	
 	str = s;
-	while (*str)
-	{
-		if (!next_token(&str, tok, LIST_SEP, sizeof(pstring))) continue;
-		
+	while (next_token(&str, tok, LIST_SEP, sizeof(pstring)))
+	{		
 		if (num == lsize) {
 			lsize += P_LIST_ABS;
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
 			if (!rlist) {
-				DEBUG(0,("ERROR: Unable to allocate memory"));
+				DEBUG(0,("lp_list_make: Unable to allocate memory"));
 				lp_list_free (&list);
 				free (s);
 				return NULL;
@@ -3608,7 +3606,7 @@ char **lp_list_make(char *string)
 		
 		list[num] = strdup(tok);
 		if (!list[num]) {
-			DEBUG(0,("ERROR: Unable to allocate memory"));
+			DEBUG(0,("lp_list_make: Unable to allocate memory"));
 			lp_list_free (&list);
 			free (s);
 			return NULL;
@@ -3638,7 +3636,7 @@ BOOL lp_list_copy(char ***dest, char **src)
 			lsize += P_LIST_ABS;
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
 			if (!rlist) {
-				DEBUG(0,("ERROR: Unable to allocate memory"));
+				DEBUG(0,("lp_list_copy: Unable to allocate memory"));
 				lp_list_free (&list);
 				return False;
 			}
@@ -3648,7 +3646,7 @@ BOOL lp_list_copy(char ***dest, char **src)
 		
 		list[num] = strdup(src[num]);
 		if (!list[num]) {
-			DEBUG(0,("ERROR: Unable to allocate memory"));
+			DEBUG(0,("lp_list_copy: Unable to allocate memory"));
 			lp_list_free (&list);
 			return False;
 		}
@@ -3713,7 +3711,7 @@ BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
 			{
 				t = (char *) malloc(ls +ld +1);
 				if (!t) {
-					DEBUG(0,("ERROR: Unable to allocate memory"));
+					DEBUG(0,("lp_list_substitute: Unable to allocate memory"));
 					return False;
 				}
 				memcpy(t, *list, d);

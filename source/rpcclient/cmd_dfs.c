@@ -47,7 +47,8 @@ static uint32 cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
 
 	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
 		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	result = cli_dfs_exist(cli, mem_ctx, &dfs_exists);
@@ -57,6 +58,8 @@ static uint32 cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
 
 	cli_nt_session_close(cli);
 
+done:
+	talloc_destroy(mem_ctx);
 	return result;
 }
 
@@ -87,7 +90,8 @@ static uint32 cmd_dfs_add(struct cli_state *cli, int argc, char **argv)
 
 	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
 		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	result = cli_dfs_add(cli, mem_ctx, entrypath, servername, 
@@ -95,6 +99,8 @@ static uint32 cmd_dfs_add(struct cli_state *cli, int argc, char **argv)
 
 	cli_nt_session_close(cli);
 
+done:
+	talloc_destroy(mem_ctx);
 	return result;
 }
 
@@ -122,7 +128,8 @@ static uint32 cmd_dfs_remove(struct cli_state *cli, int argc, char **argv)
 
 	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
 		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	result = cli_dfs_remove(cli, mem_ctx, entrypath, servername, 
@@ -130,6 +137,8 @@ static uint32 cmd_dfs_remove(struct cli_state *cli, int argc, char **argv)
 
 	cli_nt_session_close(cli);
 
+done:
+	talloc_destroy(mem_ctx);
 	return result;
 }
 
@@ -236,24 +245,23 @@ static uint32 cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
 
 	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
 		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* Call RPC function */
 
 	if ((result = cli_dfs_enum(cli, mem_ctx, info_level, &ctr)) 
-	    != NT_STATUS_NOPROBLEMO) {
-		goto done;
+	    == NT_STATUS_NOPROBLEMO) {
+	    
+		/* Print results */
+		display_dfs_info_ctr(&ctr);
 	}
-
-	/* Print results */
-
-	display_dfs_info_ctr(&ctr);
-
- done:
 
 	cli_nt_session_close(cli);
 
+done:
+	talloc_destroy(mem_ctx);
 	return result;
 }
 
@@ -286,25 +294,25 @@ static uint32 cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
 
 	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
 		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* Call RPC function */
 
 	if ((result = cli_dfs_get_info(cli, mem_ctx, entrypath, servername, 
 				       sharename, info_level, &ctr))
-	    != NT_STATUS_NOPROBLEMO) {
-		goto done;
+	    == NT_STATUS_NOPROBLEMO) {
+
+		/* Print results */
+
+		display_dfs_info_ctr(&ctr);
 	}
-
-	/* Print results */
-
-	display_dfs_info_ctr(&ctr);
-
- done:
 
 	cli_nt_session_close(cli);
 
+done:
+	talloc_destroy(mem_ctx);
 	return result;
 }
 
