@@ -3215,7 +3215,6 @@ return the size required by a struct in the stream
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 {
 	uint32 	size = 0; 
-	uint32	data_len;
 	
 	if (!p)
 		return 0;

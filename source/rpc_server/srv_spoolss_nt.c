@@ -6964,7 +6964,6 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 			type;
 	WERROR 		result;
 	uint8 		*data=NULL;
-	uint32 		i;
 	
 
 	DEBUG(4,("_spoolss_enumprinterdataex\n"));
