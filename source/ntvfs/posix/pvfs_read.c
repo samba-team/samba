@@ -35,13 +35,16 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	if (rd->generic.level != RAW_READ_READX) {
-		return NT_STATUS_NOT_SUPPORTED;
+		return ntvfs_map_read(req, rd, ntvfs);
 	}
-
 
 	f = pvfs_find_fd(pvfs, req, rd->readx.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
 	status = pvfs_check_lock(pvfs, f, req->smbpid, 

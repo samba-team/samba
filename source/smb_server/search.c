@@ -268,6 +268,7 @@ void reply_fclose(struct smbsrv_request *req)
 	sc->fclose.in.id.client_cookie = IVAL(p, 17);
 
 	/* do a search close operation */
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_fclose_send;
 	req->async.private = sc;
 

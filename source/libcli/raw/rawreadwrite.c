@@ -36,9 +36,6 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
-	case RAW_READ_GENERIC:
-		return NULL;
-		
 	case RAW_READ_READBRAW:
 		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
 			bigoffset = True;
@@ -115,10 +112,6 @@ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 	}
 
 	switch (parms->generic.level) {
-	case RAW_READ_GENERIC:
-		/* handled in _send() */
-		break;
-
 	case RAW_READ_READBRAW:
 		parms->readbraw.out.nread = req->in.size - NBT_HDR_SIZE;
 		if (parms->readbraw.out.nread > 
@@ -188,9 +181,6 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
-	case RAW_WRITE_GENERIC:
-		return NULL;
-		
 	case RAW_WRITE_WRITEUNLOCK:
 		SETUP_REQUEST(SMBwriteunlock, 5, 3 + parms->writeunlock.in.count);
 		SSVAL(req->out.vwv, VWV(0), parms->writeunlock.in.fnum);
@@ -284,8 +274,6 @@ NTSTATUS smb_raw_write_recv(struct smbcli_request *req, union smb_write *parms)
 	}
 
 	switch (parms->generic.level) {
-	case RAW_WRITE_GENERIC:
-		break;
 	case RAW_WRITE_WRITEUNLOCK:
 		SMBCLI_CHECK_WCT(req, 1);		
 		parms->writeunlock.out.nwritten = SVAL(req->in.vwv, VWV(0));

@@ -114,8 +114,8 @@ struct smbsrv_request {
 	   control_flag on the request to indicate that it wishes to
 	   delay the reply
 
-	   If async.send_fn is NULL then the backend cannot ask for a
-	   delayed reply for this request
+	   If REQ_CONTROL_MAY_ASYNC is not set then the backend cannot
+	   ask for a delayed reply for this request
 
 	   note that the async.private pointer is private to the front
 	   end not the backend. The backend must not change it.

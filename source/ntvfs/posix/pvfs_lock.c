@@ -273,48 +273,21 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	struct pvfs_pending_lock *pending = NULL;
 	NTSTATUS status;
 
-	f = pvfs_find_fd(pvfs, req, lck->generic.in.fnum);
+	if (lck->generic.level != RAW_LOCK_GENERIC) {
+		return ntvfs_map_lock(req, lck, ntvfs);
+	}
+
+	f = pvfs_find_fd(pvfs, req, lck->lockx.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	switch (lck->generic.level) {
-	case RAW_LOCK_LOCK:
-		status = brl_lock(pvfs->brl_context,
-				  &f->locking_key,
-				  req->smbpid,
-				  f->fnum,
-				  lck->lock.in.offset,
-				  lck->lock.in.count,
-				  WRITE_LOCK, NULL);
-		if (NT_STATUS_IS_OK(status)) {
-			f->lock_count++;
-		}
-		return status;
-				
-	case RAW_LOCK_UNLOCK:
-		status = brl_unlock(pvfs->brl_context,
-				    &f->locking_key,
-				    req->smbpid,
-				    f->fnum,
-				    lck->lock.in.offset,
-				    lck->lock.in.count);
-		if (NT_STATUS_IS_OK(status)) {
-			f->lock_count--;
-		}
-		return status;
-
-	case RAW_LOCK_GENERIC:
-		return NT_STATUS_INVALID_LEVEL;
-
-	case RAW_LOCK_LOCKX:
-		/* fall through to the most complex case */
-		break;
+	if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	/* now the lockingX case, most common and also most complex */
 	if (lck->lockx.in.timeout != 0 && 
-	    req->async.send_fn) {
+	    (req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
 		pending = talloc_p(req, struct pvfs_pending_lock);
 		if (pending == NULL) {
 			return NT_STATUS_NO_MEMORY;

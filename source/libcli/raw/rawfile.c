@@ -493,9 +493,6 @@ struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_cl
 	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
-	case RAW_CLOSE_GENERIC:
-		return NULL;
-
 	case RAW_CLOSE_CLOSE:
 		SETUP_REQUEST(SMBclose, 3, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->close.in.fnum);
@@ -539,9 +536,6 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
-	case RAW_LOCK_GENERIC:
-		return NULL;
-
 	case RAW_LOCK_LOCK:
 		SETUP_REQUEST(SMBlock, 5, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->lock.in.fnum);
