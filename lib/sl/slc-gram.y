@@ -177,6 +177,8 @@ check_command(struct assignment *as)
 	int seen_function = 0;
 	int seen_help = 0;
 	int seen_argument = 0;
+	int seen_minargs = 0;
+	int seen_maxargs = 0;
 	int ret = 0;
 	for(a = as; a != NULL; a = a->next) {
 		if(strcmp(a->name, "name") == 0)
@@ -189,6 +191,10 @@ check_command(struct assignment *as)
 			seen_help++;
 		} else if(strcmp(a->name, "argument") == 0) {
 			seen_argument++;
+		} else if(strcmp(a->name, "min_args") == 0) {
+			seen_minargs++;
+		} else if(strcmp(a->name, "max_args") == 0) {
+			seen_maxargs++;
 		} else {
 			ex(a, "unknown name");
 			ret++;
@@ -208,6 +214,14 @@ check_command(struct assignment *as)
 	}
 	if(seen_argument > 1) {
 		ex(as, "multiple argument strings");
+		ret++;
+	}
+	if(seen_minargs > 1) {
+		ex(as, "multiple min_args strings");
+		ret++;
+	}
+	if(seen_maxargs > 1) {
+		ex(as, "multiple max_args strings");
 		ret++;
 	}
 	
@@ -484,9 +498,51 @@ gen_wrapper(struct assignment *as)
     cprint(1, "if(getarg(args, %d, argc, argv, &optind))\n", nargs);
     cprint(2, "goto usage;\n");
 
-    if(arg == NULL) {
-	cprint(1, "if(optind < argc)\n");
-	cprint(2, "goto usage;\n");
+    {
+	int min_args = -1;
+	int max_args = -1;
+	char *end;
+	if(arg == NULL) {
+	    max_args = 0;
+	} else {
+	    if((tmp = find(as, "min_args")) != NULL) {
+		min_args = strtol(tmp->u.value, &end, 0);
+		if(*end != '\0') {
+		    ex(tmp, "min_args is not numeric");
+		    exit(1);
+		}
+		if(min_args < 0) {
+		    ex(tmp, "min_args must be non-negative");
+		    exit(1);
+		}
+	    }
+	    if((tmp = find(as, "max_args")) != NULL) {
+		max_args = strtol(tmp->u.value, &end, 0);
+		if(*end != '\0') {
+		    ex(tmp, "max_args is not numeric");
+		    exit(1);
+		}
+		if(max_args < 0) {
+		    ex(tmp, "max_args must be non-negative");
+		    exit(1);
+		}
+	    }
+	}
+	if(min_args != -1 || max_args != -1) {
+	    if(min_args == max_args)
+		cprint(1, "if(argc - optind != %d)\n", 
+		       min_args);
+	    else if(max_args != -1 && min_args != -1)
+		cprint(1, "if(argc - optind < %d || argc - optind > %d)\n", 
+		       min_args, max_args);
+	    else if(max_args != -1)
+		cprint(1, "if(argc - optind > %d)\n", 
+		       max_args);
+	    else if(min_args != -1)
+		cprint(1, "if(argc - optind < %d)\n", 
+		       min_args);
+	    cprint(2, "goto usage;\n");
+	}
     }
     
     cprint(1, "if(help_flag)\n");
