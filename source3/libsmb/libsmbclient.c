@@ -46,7 +46,6 @@ static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
 }
 
 extern BOOL in_client;
-extern pstring global_myname;
 
 /*
  * Is the logging working / configfile read ? 
@@ -2625,8 +2624,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 		 * We try to get our netbios name from the config. If that fails we fall
 		 * back on constructing our netbios name from our hostname etc
 		 */
-		if (global_myname) {
-			context->netbios_name = strdup(global_myname);
+		if (global_myname()) {
+			context->netbios_name = strdup(global_myname());
 		}
 		else {
 			/*
