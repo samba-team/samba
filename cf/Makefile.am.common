@@ -198,9 +198,7 @@ install-data-local: install-cat-mans
 .et.c:
 	$(COMPILE_ET) $<
 
-if KRB4
 LIB_kafs = $(top_builddir)/lib/kafs/libkafs.la $(AIX_EXTRA_KAFS)
-endif
 
 if KRB5
 LIB_krb5 = $(top_builddir)/lib/krb5/libkrb5.la \
