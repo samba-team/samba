@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,7 +56,7 @@ modify_principal(void *server_handle,
     ret = context->db->fetch(context->context, context->db, 0, &ent);
     if(ret)
 	goto out;
-    ret = _kadm5_setup_entry(&ent, mask, princ, mask, NULL, 0);
+    ret = _kadm5_setup_entry(context, &ent, mask, princ, mask, NULL, 0);
     if(ret)
 	goto out2;
     ret = _kadm5_set_modifier(context, &ent);
