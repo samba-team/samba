@@ -1610,9 +1610,7 @@ static char *pace_str(uint32 ace_flags)
 BOOL print_access_check(int snum, uint16 vuid, uint32 required_access)
 {
 	SEC_DESC_BUF *secdesc = NULL;
-	uint32 acc_grant, status;
 	user_struct *user;
-	BOOL result;
 	char *p;
 	int i;
 
@@ -1635,7 +1633,6 @@ BOOL print_access_check(int snum, uint16 vuid, uint32 required_access)
 		fstring sid_str;
 		fstring dom_name, name;
 		uint8 name_type;
-		BOOL result;
 
 		sid_to_string(sid_str, sid);
 		winbind_lookup_sid(sid, dom_name, name, &name_type);
