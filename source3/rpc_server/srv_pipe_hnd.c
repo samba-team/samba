@@ -775,10 +775,14 @@ ssize_t read_from_pipe(pipes_struct *p, char *data, size_t n)
 	 * read request.
 	 */
 
+        /* This condition should result in the connection being closed.  
+           Netapp filers seem to set it to 0xffff which results in domain
+           authentications failing.  Just ignore it so things work. */
+
 	if(n > MAX_PDU_FRAG_LEN) {
-		DEBUG(0,("read_from_pipe: too large read (%u) requested on pipe %s. We can \
-only service %d sized reads.\n", (unsigned int)n, p->name, MAX_PDU_FRAG_LEN ));
-		return -1;
+                DEBUG(5,("read_from_pipe: too large read (%u) requested on "
+                         "pipe %s. We can only service %d sized reads.\n", 
+                         (unsigned int)n, p->name, MAX_PDU_FRAG_LEN ));
 	}
 
 	/*
