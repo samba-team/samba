@@ -41,12 +41,16 @@ static pstring options;
 static struct in_addr dest_ip;
 static BOOL have_ip;
 static int smb_port = 0;
+static BOOL got_user;
 static BOOL got_pass;
 static uid_t mount_uid;
 static gid_t mount_gid;
 static int mount_ro;
 static unsigned mount_fmask;
 static unsigned mount_dmask;
+static BOOL use_kerberos;
+/* TODO: Add code to detect smbfs version in kernel */
+static BOOL status32_smbfs = False;
 
 static void usage(void);
 
@@ -155,7 +159,14 @@ static struct cli_state *do_connection(char *the_service)
 	}
 
 	/* SPNEGO doesn't work till we get NTSTATUS error support */
-	c->use_spnego = False;
+	/* But it is REQUIRED for kerberos authentication */
+	if(!use_kerberos) c->use_spnego = False;
+
+	/* The kernel doesn't yet know how to sign it's packets */
+	c->sign_info.allow_smb_signing = False;
+
+	/* Use kerberos authentication if specified */
+	c->use_kerberos = use_kerberos;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
@@ -190,9 +201,17 @@ static struct cli_state *do_connection(char *the_service)
 
 	/* This should be right for current smbfs. Future versions will support
 	  large files as well as unicode and oplocks. */
-	c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
-				CAP_NT_FIND | CAP_STATUS32 | CAP_LEVEL_II_OPLOCKS);
-	c->force_dos_errors = True;
+	if (status32_smbfs) {
+	    c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
+                                 CAP_NT_FIND | CAP_LEVEL_II_OPLOCKS);
+	}
+	else {
+	    c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
+				 CAP_NT_FIND | CAP_STATUS32 |
+				 CAP_LEVEL_II_OPLOCKS);
+	    c->force_dos_errors = True;
+	}
+
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
@@ -504,6 +523,9 @@ static void init_mount(void)
 		fprintf(stderr,"smbmnt failed: %d\n", WEXITSTATUS(status));
 		/* FIXME: do some proper error handling */
 		exit(1);
+	} else if (WIFSIGNALED(status)) {
+		fprintf(stderr, "smbmnt killed by signal %d\n", WTERMSIG(status));
+		exit(1);
 	}
 
 	/* Ok...  This is the rubicon for that mount point...  At any point
@@ -623,8 +645,9 @@ static void read_credentials_file(char *filename)
 			pstrcpy(password, val);
 			got_pass = True;
 		}
-		else if (strwicmp("username", param) == 0)
+		else if (strwicmp("username", param) == 0) {
 			pstrcpy(username, val);
+		}
 
 		memset(buf, 0, sizeof(buf));
 	}
@@ -646,6 +669,7 @@ static void usage(void)
       username=<arg>                  SMB username\n\
       password=<arg>                  SMB password\n\
       credentials=<filename>          file with username/password\n\
+      krb                             use kerberos (active directory)\n\
       netbiosname=<arg>               source NetBIOS name\n\
       uid=<arg>                       mount uid or username\n\
       gid=<arg>                       mount gid or groupname\n\
@@ -687,6 +711,17 @@ static void parse_mount_smb(int argc, char **argv)
 	int val;
 	char *p;
 
+	/* FIXME: This function can silently fail if the arguments are
+	 * not in the expected order.
+
+	> The arguments syntax of smbmount 2.2.3a (smbfs of Debian stable)
+	> requires that one gives "-o" before further options like username=...
+	> . Without -o, the username=.. setting is *silently* ignored. I've
+	> spent about an hour trying to find out why I couldn't log in now..
+
+	*/
+
+
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
 		exit(1);
@@ -721,6 +756,7 @@ static void parse_mount_smb(int argc, char **argv)
                         if (!strcmp(opts, "username") || 
 			    !strcmp(opts, "logon")) {
 				char *lp;
+				got_user = True;
 				pstrcpy(username,opteq+1);
 				if ((lp=strchr_m(username,'%'))) {
 					*lp = 0;
@@ -778,6 +814,16 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "guest")) {
 				*password = '\0';
 				got_pass = True;
+			} else if(!strcmp(opts, "krb")) {
+#ifdef HAVE_KRB5
+
+				use_kerberos = True;
+				if(!status32_smbfs)
+					fprintf(stderr, "Warning: kerberos support will only work for samba servers\n");
+#else
+				fprintf(stderr,"No kerberos support compiled in\n");
+				exit(1);
+#endif
 			} else if(!strcmp(opts, "rw")) {
 				mount_ro = 0;
 			} else if(!strcmp(opts, "ro")) {
@@ -861,6 +907,10 @@ static void parse_mount_smb(int argc, char **argv)
 	}
 
 	parse_mount_smb(argc, argv);
+
+	if (use_kerberos && !got_user) {
+		got_pass = True;
+	}
 
 	if (*credentials != 0) {
 		read_credentials_file(credentials);

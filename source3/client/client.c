@@ -41,6 +41,7 @@ static pstring password;
 static pstring username;
 static pstring workgroup;
 static char *cmdstr;
+static BOOL got_user;
 static BOOL got_pass;
 static int io_bufsize = 64512;
 static BOOL use_kerberos;
@@ -2433,24 +2434,9 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	if (!cli_send_tconX(c, sharename, "?????",
 			    password, strlen(password)+1)) {
-		pstring full_share;
-
-		/*
-		 * Some servers require \\server\share for the share
-		 * while others are happy with share as we gave above
-		 * Lets see if we give it the long form if it works
-		 */
-		pstrcpy(full_share, "\\\\");
-		pstrcat(full_share, server);
-		pstrcat(full_share, "\\");
-		pstrcat(full_share, sharename);
-		if (!cli_send_tconX(c, full_share, "?????", password,
-					strlen(password) + 1)) {
-
-			d_printf("tree connect failed: %s\n", cli_errstr(c));
-			cli_shutdown(c);
-			return NULL;
-		}
+		d_printf("tree connect failed: %s\n", cli_errstr(c));
+		cli_shutdown(c);
+		return NULL;
 	}
 
 	DEBUG(4,(" tconx ok\n"));
@@ -2889,6 +2875,8 @@ static void remember_query_host(const char *arg,
 		case 'U':
 			{
 				char *lp;
+
+				got_user = True;
 				pstrcpy(username,optarg);
 				if ((lp=strchr_m(username,'%'))) {
 					*lp = 0;
@@ -2985,7 +2973,6 @@ static void remember_query_host(const char *arg,
 		case 'k':
 #ifdef HAVE_KRB5
 			use_kerberos = True;
-			got_pass = True;
 #else
 			d_printf("No kerberos support compiled in\n");
 			exit(1);
@@ -2996,6 +2983,9 @@ static void remember_query_host(const char *arg,
 			exit(1);
 		}
 	}
+
+	if (use_kerberos && !got_user)
+			got_pass = True;
 
 	init_names();
 

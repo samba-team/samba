@@ -4018,6 +4018,7 @@ static void usage(void)
 {
 	int opt, i;
 	char *p;
+	int gotuser = 0;
 	int gotpass = 0;
 	extern char *optarg;
 	extern int optind;
@@ -4103,13 +4104,13 @@ static void usage(void)
 		case 'k':
 #ifdef HAVE_KRB5
 			use_kerberos = True;
-			gotpass = True;
 #else
 			d_printf("No kerberos support compiled in\n");
 			exit(1);
 #endif
 			break;
 		case 'U':
+			gotuser = 1;
 			fstrcpy(username,optarg);
 			p = strchr_m(username,'%');
 			if (p) {
@@ -4124,6 +4125,7 @@ static void usage(void)
 		}
 	}
 
+	if(use_kerberos && !gotuser) gotpass = True;
 
 	while (!gotpass) {
 		p = getpass("Password:");
