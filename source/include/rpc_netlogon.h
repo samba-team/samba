@@ -153,6 +153,14 @@ typedef struct netlogon_3_info
 
 } NETLOGON_INFO_3;
 
+/* NETLOGON_INFO - union of all status info */
+typedef union netlogon_info
+{
+	NETLOGON_INFO_1 info1;
+	NETLOGON_INFO_2 info2;
+	NETLOGON_INFO_3 info3;
+} NETLOGON_INFO;
+
 /*******************************************************
  Logon Control Response
 
@@ -165,13 +173,7 @@ typedef struct net_r_logon_ctrl2_info
 	uint32       switch_value;  /* 0x1, 0x3 */
 	uint32       ptr;
 
-	union
-	{
-		NETLOGON_INFO_1 info1;
-		NETLOGON_INFO_2 info2;
-		NETLOGON_INFO_3 info3;
-
-	} logon;
+	NETLOGON_INFO logon;
 
 	uint32 status; /* return code */
 

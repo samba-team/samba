@@ -4,7 +4,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Sander Striker                    2000
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -216,54 +217,24 @@ BOOL net_io_q_logon_ctrl2(char *desc,  NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, i
 /*******************************************************************
 makes an NET_R_LOGON_CTRL2 structure.
 ********************************************************************/
-BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
-				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
-				uint32 tc_status, char *trusted_domain_name)
+BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, 
+				uint32 switch_value,
+				NETLOGON_INFO *logon_info,
+				uint32 status)
 {
 	if (r_l == NULL) return False;
 
-	DEBUG(5,("make_r_logon_ctrl2\n"));
-
-	r_l->switch_value  = query_level; /* should only be 0x1 */
-
-	switch (query_level)
+	r_l->switch_value  = switch_value; /* should only be 0x1 */
+	r_l->status = status;
+	memcpy(&(r_l->logon), logon_info, sizeof(NETLOGON_INFO));
+	
+	if (status == NT_STATUS_NOPROBLEMO)
 	{
-		case 1:
-		{
-			r_l->ptr = 1; /* undocumented pointer */
-			make_netinfo_1(&(r_l->logon.info1), flags, pdc_status);	
-			r_l->status = 0;
-
-			break;
-		}
-		case 2:
-		{
-			r_l->ptr = 1; /* undocumented pointer */
-			make_netinfo_2(&(r_l->logon.info2), flags, pdc_status,
-			               tc_status, trusted_domain_name);	
-			r_l->status = 0;
-
-			break;
-		}
-		case 3:
-		{
-			r_l->ptr = 1; /* undocumented pointer */
-			make_netinfo_3(&(r_l->logon.info3), flags, logon_attempts);	
-			r_l->status = 0;
-
-			break;
-		}
-		default:
-		{
-			DEBUG(2,("make_r_logon_ctrl2: unsupported switch value %d\n",
-				r_l->switch_value));
-			r_l->ptr = 0; /* undocumented pointer */
-
-			/* take a guess at an error code... */
-			r_l->status = NT_STATUS_INVALID_INFO_CLASS;
-
-			break;
-		}
+		r_l->ptr = 1;
+	}
+	else
+	{
+		r_l->ptr = 0;
 	}
 
 	return True;
@@ -311,30 +282,6 @@ BOOL net_io_r_logon_ctrl2(char *desc,  NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, i
 	}
 
 	prs_uint32("status       ", ps, depth, &(r_l->status       ));
-
-	return True;
-}
-
-/*******************************************************************
-makes an NET_R_TRUST_DOM_LIST structure.
-********************************************************************/
-BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
-			uint32 num_doms, char **dom_name)
-{
-	if (r_t == NULL) return False;
-
-	DEBUG(5,("make_r_trust_dom\n"));
-
-	make_buffer2_multi(&r_t->uni_trust_dom_name,
-			dom_name, num_doms);
-	if (num_doms == 0)
-	{
-		r_t->uni_trust_dom_name.buf_max_len = 0x2;
-		r_t->uni_trust_dom_name.buf_len = 0x2;
-	}
-	r_t->uni_trust_dom_name.undoc = 0x1;
-	
-	r_t->status = 0;
 
 	return True;
 }
@@ -1298,6 +1245,53 @@ BOOL net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int d
 	smb_io_sam_info("", &(q_l->sam_id), ps, depth);           /* domain SID */
 	prs_uint16("validation_level", ps, depth, &(q_l->validation_level));
 
+	return True;
+}
+
+/*******************************************************************
+makes a NET_R_SAM_LOGON structure.
+********************************************************************/
+BOOL make_r_sam_logon(NET_R_SAM_LOGON *r_s, 
+			    const DOM_CRED *srv_creds,
+			    uint16 switch_value,
+			    NET_USER_INFO_3 *user_info,
+			    uint32 auth_resp,
+			    uint32 status)
+{
+	if (r_s == NULL) return False;
+
+	/* XXXX we may want this behaviour:
+	if (status == NT_STATUS_NOPROBLEMO)
+	{
+	*/
+		/* XXXX maybe we want to say 'no', reject the client's credentials */
+		r_s->buffer_creds = 1; /* yes, we have valid server credentials */
+		memcpy(&(r_s->srv_creds), srv_cred, sizeof(r_s->srv_creds));
+
+	if (status == NT_STATUS_NOPROBLEMO)
+	{
+		/* store the user information, if there is any. */
+		r_s->user = user_info;
+		if (user_info != NULL && user_info->ptr_user_info != 0)
+		{
+			r_s.switch_value = 3; /* indicates type of validation user info */
+		}
+		else
+		{
+			r_s.switch_value = 0; /* indicates no info */
+		}
+	}
+	else
+	{
+		/* XXXX we may want this behaviour:
+		r_s->buffer_creds = 0;
+		*/
+		r_s->switch_value = 0;
+		r_s->user = NULL;
+	}
+
+	r_s->status = status;
+	r_s->auth_resp = auth_resp;
 
 	return True;
 }
@@ -1345,6 +1339,36 @@ BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int
 	prs_align(ps);
 	
 	smb_io_sam_info("", &(q_l->sam_id), ps, depth);           /* domain SID */
+
+	return True;
+}
+
+/*******************************************************************
+makes a NET_R_SAM_LOGOFF structure.
+********************************************************************/
+BOOL make_r_sam_logoff(NET_R_SAM_LOGOFF *r_s, 
+			    const DOM_CRED *srv_cred,
+			    uint32 status)
+{
+	if (r_s == NULL) return False;
+
+	/* XXXX we may want this behaviour:
+	if (status == NT_STATUS_NOPROBLEMO)
+	{
+	*/
+		/* XXXX maybe we want to say 'no', reject the client's credentials */
+		r_s->buffer_creds = 1; /* yes, we have valid server credentials */
+		memcpy(&(r_s->srv_creds), srv_cred, sizeof(r_s->srv_creds));
+
+	/* XXXX we may want this behaviour:
+	}
+	else
+	{
+		r_s->buffer_creds = 0;
+	}
+	*/
+
+	r_s->status = status;
 
 	return True;
 }
@@ -1933,6 +1957,31 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 			break;
 		}
 	}
+
+	return True;
+}
+
+/*******************************************************************
+makes a NET_R_SAM_SYNC structure.
+********************************************************************/
+BOOL make_r_sam_sync(NET_R_SAM_SYNC *r_s, 
+			   const DOM_CRED *srv_cred,
+			   uint32 sync_context,
+			   uint32 num_deltas,
+			   uint32 num_deltas2,
+			   SAM_DELTA_HDR *hdr_deltas,
+			   SAM_DELTA_CTR *deltas,
+			   uint32 status)
+{
+	if (r_s == NULL) return False;
+
+	memcpy(&(r_s->srv_creds), srv_cred, sizeof(r_s->srv_creds));
+	r_s->sync_context = sync_context;
+	r_s->num_deltas = num_deltas;
+	r_s->num_deltas2 = num_deltas2;
+	r_s->hdr_deltas = hdr_deltas;
+	r_s->deltas = deltas;
+	r_s->status = status;
 
 	return True;
 }
