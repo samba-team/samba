@@ -3409,7 +3409,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 	  return(-3);
 	}
 
-      DEBUG(0,("%s couldn't find service %s\n",timestring(),service));      
+      DEBUG(0,("%s %s (%s) couldn't find service %s\n",timestring(),remote_machine,client_addr(),service));      
       return(-2);
     }
 
