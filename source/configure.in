@@ -710,12 +710,12 @@ case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX)
 			BLDSHARED="true"
 			LDSHFLAGS="-shared" 
-            DYNEXP="-Wl,--export-dynamic"
+			DYNEXP="-Wl,--export-dynamic"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*solaris*) 
-        AC_DEFINE(SUNOS5)
+			AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
 			LDSHFLAGS="-h \$@ -G"
 			if test "${ac_cv_prog_CC}" = "gcc"; then
@@ -728,7 +728,6 @@ case "$host_os" in
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*sunos*) AC_DEFINE(SUNOS4)
-#            WL="-Qoption ld "
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-h,\$@ -G"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
@@ -768,20 +767,19 @@ case "$host_os" in
 				LDSHFLAGS="-b -z +h \$@"
 				PICFLAG="+z"
 			fi
-            DYNEXP="-Wl,-E"
+			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192)
 		;;
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1)
-            WL="-Wl,"
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
 			PICFLAG="-fPIC"
 		;;
 		*sco*) 
-        DYNEXP="-Wl,-Bexport"
-        AC_DEFINE(SCO)
-        ;;
+			DYNEXP="-Wl,-Bexport"
+        		AC_DEFINE(SCO)
+		;;
 		*unixware*) AC_DEFINE(UNIXWARE)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
@@ -791,26 +789,25 @@ case "$host_os" in
 		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
 		*sysv4*)
 			case "$host" in
-				*-univel-*)     if [ test "$GCC" != yes ]; then
-									AC_DEFINE(HAVE_MEMSET)
-								fi
-								LDSHFLAGS="-G"
-                                DYNEXP="-Bexport"
+				*-univel-*)
+					if [ test "$GCC" != yes ]; then
+						AC_DEFINE(HAVE_MEMSET)
+					fi
+					LDSHFLAGS="-G"
+                             		DYNEXP="-Bexport"
 				;;
-				*mips-sni-sysv4*) 
-                    AC_DEFINE(RELIANTUNIX)
-                    WL="-LD"
-                    ;;
+				*mips-sni-sysv4*)
+					AC_DEFINE(RELIANTUNIX)
+                    		;;
 			esac
-			;;
+		;;
 
 		*sysv5*)
-            WL="-Wl,"
 			if [ test "$GCC" != yes ]; then
 				AC_DEFINE(HAVE_MEMSET)
 			fi
 			LDSHFLAGS="-G"
-			;;
+		;;
 esac
 AC_SUBST(DYNEXP)
 AC_MSG_RESULT($BLDSHARED)
