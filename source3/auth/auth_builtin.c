@@ -28,7 +28,7 @@
  * Return a guest logon for guest users (username = "")
  *
  * Typically used as the first module in the auth chain, this allows
- * guest logons to be delt with in one place.  Non-gust logons 'fail'
+ * guest logons to be dealt with in one place.  Non-guest logons 'fail'
  * and pass onto the next module.
  **/
 
