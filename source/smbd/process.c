@@ -1169,9 +1169,10 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
   /*
    * Now we are root, check if the log files need pruning.
+   * Force a log file check.
    */
-  if(need_to_check_log_size())
-      check_log_size();
+  force_check_log_size();
+  check_log_size();
 
   /*
    * Modify the select timeout depending upon
