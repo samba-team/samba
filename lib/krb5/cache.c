@@ -119,6 +119,7 @@ krb5_cc_gen_new(krb5_context context,
     if (p == NULL)
 	return KRB5_CC_NOMEM;
     p->ops = ops;
+    *id = p;
     return p->ops->gen_new(context, id);
 }
 
@@ -171,7 +172,11 @@ krb5_error_code
 krb5_cc_destroy(krb5_context context,
 		krb5_ccache id)
 {
-    return id->ops->destroy(context, id);
+    krb5_error_code ret;
+
+    ret = id->ops->destroy(context, id);
+    krb5_cc_close (context, id);
+    return ret;
 }
 
 krb5_error_code
@@ -210,6 +215,7 @@ krb5_cc_retrieve_cred(krb5_context context,
 	    ret = 0;
 	    break;
 	}
+	krb5_free_creds_contents (context, creds);
     }
     krb5_cc_end_seq_get(context, id, &cursor);
     return ret;
