@@ -343,7 +343,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	SEC_DESC *sd;
 	SEC_ACL *new_dacl, *the_acl;
 	SEC_ACE *new_ace_list = NULL;
-	int new_ace_list_ndx = 0, i;
+	unsigned int new_ace_list_ndx = 0, i;
 	size_t size;
 
 	/* Currently we only process the dacl when creating the child.  The

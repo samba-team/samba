@@ -203,7 +203,7 @@ static const char *cache_lookup(u32 hash)
  */
 static BOOL is_mangled_component(const char *name)
 {
-	int len, i;
+	unsigned int len, i;
 
 	M_DEBUG(10,("is_mangled_component %s ?\n", name));
 
@@ -368,7 +368,7 @@ static void mangle_reset(void)
 static BOOL check_cache(char *name)
 {
 	u32 hash, multiplier;
-	int i;
+	unsigned int i;
 	const char *prefix;
 	char extension[4];
 
@@ -489,8 +489,8 @@ static void name_map(char *name, BOOL need83, BOOL cache83)
 	char *dot_p;
 	char lead_chars[7];
 	char extension[4];
-	int extension_length, i;
-	int prefix_len;
+	unsigned int extension_length, i;
+	unsigned int prefix_len;
 	u32 hash, v;
 	char new_name[13];
 

@@ -283,7 +283,7 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 
 	if (!pwd) {
 		new_sam_acct = NULL;
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(new_sam_acct))) {
@@ -661,7 +661,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	pdb_free_sam(&sam_account);
 		
 	if (pdb_getgrsid(&map, *sid, MAPPING_WITHOUT_PRIV)) {
-		if (map.gid!=-1) {
+		if (map.gid!=(gid_t)-1) {
 			DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
 		} else {
 			DEBUG(5,("local_lookup_sid: mapped group %s to no unix gid.  Returning name.\n", map.nt_name));
@@ -950,7 +950,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	if (pdb_getgrsid(&map, *psid, MAPPING_WITHOUT_PRIV)) {
 		
 		/* the SID is in the mapping table but not mapped */
-		if (map.gid==-1)
+		if (map.gid==(gid_t)-1)
 			return False;
 
 		*pgid = map.gid;
@@ -992,10 +992,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 /*************************************************************
  Change a password entry in the local smbpasswd file.
 
- FIXME!!  The function needs to be abstracted into the
- passdb interface or something.  It is currently being called
- by _api_samr_create_user() in rpc_server/srv_samr.c,
- in SWAT and by smbpasswd/pdbedit.
+It is currently being called by SWAT and by smbpasswd.
  
  --jerry
  *************************************************************/

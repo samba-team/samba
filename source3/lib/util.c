@@ -249,13 +249,7 @@ BOOL init_names(void)
 	int n;
 
 	if (global_myname() == NULL || *global_myname() == '\0') {
-		fstring name;
-
-		fstrcpy( name, myhostname() );
-		p = strchr( name, '.' );
-		if (p)
-			*p = 0;
-		if (!set_global_myname(name)) {
+		if (!set_global_myname(myhostname())) {
 			DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
 			return False;
 		}
@@ -315,9 +309,9 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
  Like atoi but gets the value up to the separator character.
 ****************************************************************************/
 
-static char *Atoic(char *p, int *n, char *c)
+static const char *Atoic(const char *p, int *n, const char *c)
 {
-	if (!isdigit((int)*p)) {
+	if (!isdigit((const int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
@@ -339,7 +333,7 @@ static char *Atoic(char *p, int *n, char *c)
  Reads a list of numbers.
  *************************************************************************/
 
-char *get_numlist(char *p, uint32 **num, int *count)
+const char *get_numlist(const char *p, uint32 **num, int *count)
 {
 	int val;
 
@@ -1014,7 +1008,7 @@ BOOL get_myfullname(char *my_name)
  Get my own domain name.
 ****************************************************************************/
 
-BOOL get_mydomname(char *my_domname)
+BOOL get_mydomname(fstring my_domname)
 {
 	pstring hostname;
 	char *p;
@@ -1730,6 +1724,23 @@ BOOL is_myname_or_ipaddr(const char *s)
 }
 
 /*******************************************************************
+ Is the name specified our workgroup/domain.
+ Returns true if it is equal, false otherwise.
+********************************************************************/
+
+BOOL is_myworkgroup(const char *s)
+{
+	BOOL ret = False;
+
+	if (strequal(s, lp_workgroup())) {
+		ret=True;
+	}
+
+	DEBUG(8, ("is_myworkgroup(\"%s\") returns %d\n", s, ret));
+	return(ret);
+}
+
+/*******************************************************************
  Set the horrid remote_arch string based on an enum.
 ********************************************************************/
 
@@ -2389,7 +2400,7 @@ static BOOL unix_do_match(char *regexp, char *str)
  Simple case insensitive interface to a UNIX wildcard matcher.
 *******************************************************************/
 
-BOOL unix_wild_match(char *pattern, char *string)
+BOOL unix_wild_match(const char *pattern, const char *string)
 {
 	pstring p2, s2;
 	char *p;
