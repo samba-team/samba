@@ -404,16 +404,25 @@ as_rep(KDC_REQ *req,
      *
      * To fix this, always send at least one no-op last_req
      *
-     * If there's a pw_end we will use that, otherwise just a dummy lr.
+     * If there's a pw_end or valid_end we will use that,
+     * otherwise just a dummy lr.
      */
-    ek.last_req.len = 1;
-    ALLOC(ek.last_req.val);
+    ek.last_req.val = malloc(2 * sizeof(*ek.last_req.val));
+    ek.last_req.len = 0;
     if (client->pw_end) {
-	ek.last_req.val->lr_type  = 6;
-	ek.last_req.val->lr_value = *client->pw_end;
-    } else {
-	ek.last_req.val->lr_type  = 0;
-	ek.last_req.val->lr_value = 0;
+	ek.last_req.val[ek.last_req.len].lr_type  = 6;
+	ek.last_req.val[ek.last_req.len].lr_value = *client->pw_end;
+	++ek.last_req.len;
+    }
+    if (client->valid_end) {
+	ek.last_req.val[ek.last_req.len].lr_type  = 7;
+	ek.last_req.val[ek.last_req.len].lr_value = *client->valid_end;
+	++ek.last_req.len;
+    }
+    if (ek.last_req.len == 0) {
+	ek.last_req.val[ek.last_req.len].lr_type  = 0;
+	ek.last_req.val[ek.last_req.len].lr_value = 0;
+	++ek.last_req.len;
     }
     ek.nonce = b->nonce;
     if (client->valid_end || client->pw_end) {
