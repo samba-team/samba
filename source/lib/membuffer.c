@@ -20,6 +20,37 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/*******************************************************************
+ *
+ * Description: memory buffer / stream management.
+ * Author     : Luke K C Leighton
+ * Created    : Dec 1997
+ *
+
+ * this module is intended for use in streaming data in and out of
+ * buffers.  it is intended that a single data stream be subdivided
+ * into manageable sections.
+
+ * for example, an rpc header contains a length field, but until the
+ * data has been created, the length is unknown.  using this module,
+ * the header section can be tacked onto the front of the data memory
+ * list once the size of the data section preceding it is known.
+ 
+ * the "margin" can be used to over-run and retrospectively lengthen
+ * the buffer.  this is to save time in some of the loops, where it is
+ * not particularly desirable to realloc data by 1, 2 or 4 bytes
+ * repetitively...
+
+ * each memory buffer contains a start and end offset.  the end of
+ * one buffer should equal to the start of the next in the chain.
+ * (end - start = len, instead of end - start + 1 = len)
+
+ * the debug log levels are very high in some of the routines: you
+ * have no idea how boring it gets staring at debug output from these
+
+ ********************************************************************/
+
+
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -27,42 +58,52 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  initialise a memory buffer.
  ********************************************************************/
-void buf_init(struct mem_buf *buf, int align, int margin)
+void mem_init(struct mem_buf *buf, int margin)
 {
 	buf->data      = NULL;
 	buf->data_size = 0;
 	buf->data_used = 0;
-	buf->align     = align;
+
 	buf->margin    = margin;
+
+	buf->next      = NULL;
+
+	buf->offset.start = 0;
+	buf->offset.end   = 0;
 }
 
 /*******************************************************************
  initialise a memory buffer.
  ********************************************************************/
-void buf_create(struct mem_buf *buf, char *data, int size, int align, int margin)
+void mem_create(struct mem_buf *buf, char *data, int size, int margin)
 {
 	buf->data      = data;
 	buf->data_size = size;
 	buf->data_used = size;
-	buf->align     = align;
+
 	buf->margin    = margin;
+
+	buf->next      = NULL;
+
+	buf->offset.start = 0;
+	buf->offset.end   = size;
 }
 
 /*******************************************************************
  takes a memory buffer out of one structure: puts it in the other.
  NULLs the one that the buffer is being stolen from.
  ********************************************************************/
-void buf_take(struct mem_buf *buf_to, struct mem_buf *buf_from)
+void mem_take(struct mem_buf *mem_to, struct mem_buf *mem_from)
 {
-	memcpy(buf_to, buf_from, sizeof(*buf_to));
+	memcpy(mem_to, mem_from, sizeof(*mem_to));
 
-	buf_init(buf_from, buf_from->align, buf_from->margin);
+	mem_init(mem_from, mem_from->margin);
 }
 
 /*******************************************************************
  allocate a memory buffer.  assume it's empty
  ********************************************************************/
-BOOL buf_alloc(struct mem_buf *buf, int size)
+BOOL mem_alloc_data(struct mem_buf *buf, int size)
 {
 	buf->data_size = size + buf->margin;
 	buf->data_used = size;
@@ -71,10 +112,9 @@ BOOL buf_alloc(struct mem_buf *buf, int size)
 
 	if (buf->data == NULL)
 	{
-		DEBUG(3,("buf_alloc: could not malloc size %d\n",
+		DEBUG(3,("mem_alloc: could not malloc size %d\n",
 					  buf->data_size));
-		buf->data_size = 0;
-		buf->data_used = 0;
+		mem_init(buf, buf->margin);
 
 		return False;
 	}
@@ -85,21 +125,119 @@ BOOL buf_alloc(struct mem_buf *buf, int size)
 }
 
 /*******************************************************************
+ allocates a memory buffer structure
+ ********************************************************************/
+BOOL mem_buf_copy(char *copy_into, struct mem_buf *buf,
+				uint32 offset, uint32 len)
+{
+	uint32 end = offset + len;
+	char *q = NULL;
+	uint32 data_len = mem_buf_len(buf);
+	uint32 start_offset = offset;
+	struct mem_buf **bcp = &buf;
+	
+	if (buf == NULL || copy_into == NULL) return False;
+
+	DEBUG(200,("mem_buf_copy: data[%d..%d] offset %d len %d\n",
+	            buf->offset.start, data_len, offset, len));
+
+	/* there's probably an off-by-one bug, here, and i haven't even tested the code :-) */
+	while (offset < end && ((q = mem_data(bcp, offset)) != NULL))
+	{
+		uint32 copy_len = (*bcp)->offset.end - offset;
+
+		DEBUG(200,("\tdata[%d..%d] - offset %d len %d\n",
+		        (*bcp)->offset.start, (*bcp)->offset.end,
+		        offset, copy_len));
+
+		memcpy(copy_into, q, copy_len);
+	
+		offset    += copy_len;
+		copy_into += copy_len;
+	}
+
+	if ((*bcp) != NULL)
+	{
+		DEBUG(200,("mem_buf_copy: copied %d bytes\n", offset - start_offset));
+	}
+	else
+	{
+		DEBUG(200,("mem_buf_copy: failed\n"));
+	}
+
+	return buf != NULL;
+}
+
+/*******************************************************************
+ allocates a memory buffer structure
+ ********************************************************************/
+BOOL mem_buf_init(struct mem_buf **buf, uint32 margin)
+{
+	if (buf == NULL) return False;
+
+	if ((*buf) == NULL)
+	{
+		(*buf) = malloc(sizeof(**buf));
+		if ((*buf) != NULL) 
+		{
+			mem_init((*buf), margin);
+			return True;
+		}
+	}
+	else
+	{
+		(*buf)->margin = margin;
+		return True;
+	}
+	return False;
+}
+
+/*******************************************************************
+ frees up a memory buffer.
+ ********************************************************************/
+void mem_buf_free(struct mem_buf **buf)
+{
+	if (buf == NULL) return;
+	if ((*buf) == NULL) return;
+
+	mem_free_data(*buf);            /* delete memory data */
+	free(*buf);                     /* delete item */
+	(*buf) = NULL;
+}
+
+/*******************************************************************
+ frees a memory buffer chain.  assumes that all items are malloced.
+ ********************************************************************/
+void mem_free_chain(struct mem_buf **buf)
+{
+	if (buf == NULL) return;
+	if ((*buf) == NULL) return;
+
+	if ((*buf)->next != NULL)
+	{
+		mem_free_chain(&((*buf)->next)); /* delete all other items in chain */
+	}
+	mem_buf_free(buf);
+}
+
+/*******************************************************************
  frees a memory buffer.
  ********************************************************************/
-void buf_free(struct mem_buf *buf)
+void mem_free_data(struct mem_buf *buf)
 {
+	if (buf == NULL) return;
+
 	if (buf->data != NULL)
 	{
-		free(buf->data);
+		free(buf->data);     /* delete data in this structure */
 	}
-	buf_init(buf, buf->align, buf->margin);
+	mem_init(buf, buf->margin);
 }
 
 /*******************************************************************
  reallocate a memory buffer, including a safety margin
  ********************************************************************/
-BOOL buf_realloc(struct mem_buf *buf, int new_size)
+BOOL mem_realloc_data(struct mem_buf *buf, int new_size)
 {
 	/* hm.  maybe we want to align the data size here... */
 	char *new_data = realloc(buf->data, new_size + buf->margin);
@@ -112,17 +250,17 @@ BOOL buf_realloc(struct mem_buf *buf, int new_size)
 	}
 	else if (buf->data_size <= new_size)
 	{
-		DEBUG(3,("buf_realloc: warning - could not realloc to %d(+%d)\n",
+		DEBUG(3,("mem_realloc: warning - could not realloc to %d(+%d)\n",
 				  new_size, buf->margin));
 
 		buf->data_used = new_size;
 	}
 	else 
 	{
-		DEBUG(3,("buf_realloc: error - could not realloc to %d\n",
+		DEBUG(3,("mem_realloc: error - could not realloc to %d\n",
 				  new_size));
 
-		buf_free(buf);
+		mem_free_data(buf);
 		return False;
 	}
 
@@ -132,129 +270,78 @@ BOOL buf_realloc(struct mem_buf *buf, int new_size)
 /*******************************************************************
  reallocate a memory buffer, retrospectively :-)
  ********************************************************************/
-void buf_grow(struct mem_buf *buf, int new_size)
+BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size)
 {
-	if (new_size + buf->margin >= buf->data_size)
+	if (new_size + (*buf)->margin >= (*buf)->data_size)
 	{
-		buf_realloc(buf, new_size);
+		if (io)
+		{
+			return mem_realloc_data((*buf), new_size);
+		}
+		else
+		{
+			DEBUG(3,("mem_grow_data: cannot resize when reading from a data stream\n"));
+			return False;
+		}
 	}
+	return True;
 }
 
 /*******************************************************************
-align a pointer to a multiple of align_offset bytes.  looks like it
-will work for offsets of 0, 2 and 4...
-********************************************************************/
-void buf_align(struct mem_buf *buf, int *data_off)
+ search for a memory buffer that falls within the specified offset
+ ********************************************************************/
+BOOL mem_find(struct mem_buf **buf, uint32 offset)
 {
-	int mod = ((*data_off) & (buf->align-1));
-	if (buf->align != 0 && mod != 0)
+	struct mem_buf *f;
+	if (buf == NULL) return False;
+
+	f = *buf;
+
+	DEBUG(200,("mem_find: data[%d..%d] offset: %d\n",
+	      f->offset.start, f->offset.end, offset));
+
+	while (f != NULL && offset >= f->offset.end)
 	{
-		(*data_off) += buf->align - mod;
+		f = f->next;
+
+		DEBUG(200,("mem_find: next[%d..%d]\n",
+	      f->offset.start, f->offset.end));
 	}
+
+	(*buf) = f;
+
+	DEBUG(200,("mem_find: found data[%d..%d]\n",
+	      (*buf)->offset.start,(*buf)->offset.end));
+
+	return f != NULL;
 }
+
 
 /*******************************************************************
- stream a uint8
+ add up the lengths of all sections.
  ********************************************************************/
-void buf_uint8(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint8 *data)
+uint32 mem_buf_len(struct mem_buf *buf)
 {
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_CVAL(name, depth, buf->data, io, q, *data)
-	(*data_off) += 1;
-}
-
-/*******************************************************************
- stream a uint16
- ********************************************************************/
-void buf_uint16(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint16 *data)
-{
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_SVAL(name, depth, buf->data, io, q, *data)
-	(*data_off) += 2;
-}
-
-/*******************************************************************
- stream a uint32
- ********************************************************************/
-void buf_uint32(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint32 *data)
-{
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_IVAL(name, depth, buf->data, io, q, *data)
-	(*data_off) += 4;
-}
-
-
-/******************************************************************
- stream an array of uint8s.  length is number of uint8s
- ********************************************************************/
-void buf_uint8s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint8 *data, int len)
-{
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_PCVAL(charmode, name, depth, buf->data, io, q, data, len)
-	(*data_off) += len;
-}
-
-/******************************************************************
- stream an array of uint16s.  length is number of uint16s
- ********************************************************************/
-void buf_uint16s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint16 *data, int len)
-{
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_PSVAL(charmode, name, depth, buf->data, io, q, data, len)
-	(*data_off) += len * sizeof(uint16);
-}
-
-/******************************************************************
- stream an array of uint32s.  length is number of uint32s
- ********************************************************************/
-void buf_uint32s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint32 *data, int len)
-{
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_PIVAL(charmode, name, depth, buf->data, io, q, data, len)
-	(*data_off) += len * sizeof(uint32);
-}
-
-/******************************************************************
- stream a "not" unicode string, length/buffer specified separately,
- in byte chars
- ********************************************************************/
-void buf_uninotstr2(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNINOTSTR2 *str)
-{
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_PSVAL(charmode, name, depth, buf->data, io, q, str->buffer, str->uni_max_len)
-	(*data_off) += str->uni_buf_len;
-}
-
-/******************************************************************
- stream a unicode string, length/buffer specified separately,
- int uint16 chars.
- ********************************************************************/
-void buf_unistr2(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNISTR2 *str)
-{
-	char *q = &(buf->data[(*data_off)]);
-	DBG_RW_PSVAL(charmode, name, depth, buf->data, io, q, str->buffer, str->uni_max_len)
-	(*data_off) += str->uni_str_len * sizeof(uint16);
-}
-
-/*******************************************************************
- stream a unicode  null-terminated string
- ********************************************************************/
-void buf_unistr(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNISTR *str)
-{
-	int i = 0;
-	char *ptr = buf->data;
-	uint8 *start = (uint8*)ptr;
-
-	do 
+	int len = 0;
+	while (buf != NULL)
 	{
-		RW_SVAL(io, ptr, str->buffer[i], 0);
-		ptr += 2;
-		i++;
-
-	} while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
-		     (str->buffer[i] != 0));
-
-	(*data_off) += i*2;
-
-	dump_data(5+depth, start, (*data_off));
+		len += buf->offset.end - buf->offset.start;
+		buf = buf->next;
+	}
+	return len;
 }
+
+
+/*******************************************************************
+ return the memory location specified by offset.  may return NULL.
+ ********************************************************************/
+char *mem_data(struct mem_buf **buf, uint32 offset)
+{
+	if (mem_find(buf, offset))
+	{
+		return &((*buf)->data[offset - (*buf)->offset.start]);
+	}
+	return NULL;
+}
+
+

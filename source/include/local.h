@@ -88,6 +88,12 @@
 #define GUEST_ACCOUNT "nobody"
 #endif
 
+
+/* the default guest account - normally set in the Makefile or smb.conf */
+#ifndef GUEST_ACCOUNT
+#define GUEST_ACCOUNT "nobody"
+#endif
+
 /* do you want smbd to send a 1 byte packet to nmbd to trigger it to start 
    when smbd starts? */
 #ifndef PRIME_NMBD

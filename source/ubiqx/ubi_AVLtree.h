@@ -34,11 +34,6 @@
  *  Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * -------------------------------------------------------------------------- **
- * Log: ubi_AVLtree.h,v
- * Revision 2.5  1997/12/23 04:00:15  crh
- * In this version, all constants & macros defined in the header file have
- * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
- * when run with '-pedantic -fsyntax-only -Wall'.
  *
  * Revision 2.4  1997/07/26 04:36:23  crh
  * Andrew Leppard, aka "Grazgur", discovered that I still had my brains tied
@@ -159,7 +154,7 @@ typedef struct ubi_avlNodeStruct {
                         /* that may be balanced, or be one node longer to the */
                         /* right or left.  This field keeps track of the      */
                         /* balance value of each node.                        */
-    } ubi_avlNode;
+    } ubi_avlNode;  /* Typedef'd name for an avl tree node. */
 
 typedef ubi_avlNode *ubi_avlNodePtr;    /* a Pointer to an AVL node */
 

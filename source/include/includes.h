@@ -502,7 +502,21 @@ char *mktemp(char *); /* No standard include */
 #define REPLACE_INNETGR
 #endif 
 
-
+#ifdef __OpenBSD__
+#include <strings.h>
+#include <netinet/tcp.h>
+#define NO_GETSPNAM
+#define SIGNAL_CAST (void (*)())
+#define USE_DIRECT
+#define REPLACE_INNETGR
+#define HAVE_BZERO
+#define HAVE_PATHCONF
+#define HAVE_GETGRNAM 1
+#define HAVE_GETTIMEOFDAY
+#define HAVE_MEMMOVE
+#define USE_GETCWD
+#define USE_SETSID
+#endif 
 
 #ifdef FreeBSD
 #include <arpa/inet.h>
@@ -1086,6 +1100,23 @@ struct spwd { /* fake shadow password structure */
 #define DEFAULT_PRINTING PRINT_BSD
 #endif
 #endif
+
+/* This defines the name of the printcap file. It is MOST UNLIKELY that
+   this will change BUT! Specifying a file with the format of a printcap
+   file but containing only a subset of the printers actually in your real 
+   printcap file is a quick-n-dirty way to allow dynamic access to a subset
+   of available printers.
+*/
+#ifndef PRINTCAP_NAME
+#ifdef AIX
+#define PRINTCAP_NAME "/etc/qconfig"
+#elif defined(SYSV)
+#define PRINTCAP_NAME "lpstat"
+#else
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+#endif
+
 
 /* This defines the name of the printcap file. It is MOST UNLIKELY that
    this will change BUT! Specifying a file with the format of a printcap

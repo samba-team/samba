@@ -259,7 +259,6 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int connection_num;
   uint16 vuid = SVAL(inbuf,smb_uid);
   int passlen = SVAL(inbuf,smb_vwv3);
-  BOOL doencrypt = SMBENCRYPT();
 
   *service = *user = *password = *devicename = 0;
 
@@ -279,7 +278,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     password[passlen]=0;    
     path = smb_buf(inbuf) + passlen;
 
-    if (!doencrypt || passlen != 24) {
+    if (passlen != 24) {
       if (strequal(password," "))
 	*password = 0;
       passlen = strlen(password);
@@ -509,6 +508,7 @@ static void sess_get_info(char *inbuf, char *user, char *domain,
     }
 
     memcpy(smb_passwd,smb_buf(inbuf),*smb_passlen);
+	smb_passwd[*smb_passlen] = 0;
     pstrcpy(user,smb_buf(inbuf)+*smb_passlen);
 
     if (lp_security() != SEC_SERVER && !doencrypt)
@@ -570,14 +570,16 @@ static void sess_get_info_nt1(char *inbuf, char *user, char *domain,
 	passlen1 = MIN(passlen1, MAX_PASS_LEN);
 	passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
-	if (doencrypt)
+	if (doencrypt || (lp_security() == SEC_SERVER))
 	{
 		/* Save the lanman2 password and the NT md4 password. */
 		*smb_passlen = passlen1;
 		memcpy(smb_passwd,p,*smb_passlen);
+		smb_passwd[passlen1] = 0;
 
 		*smb_nt_passlen = passlen2;
 		memcpy(smb_nt_passwd,p+passlen1,*smb_nt_passlen);
+		smb_nt_passwd[passlen2] = 0;
 	}
 	else
 	{

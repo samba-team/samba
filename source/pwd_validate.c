@@ -245,12 +245,14 @@ BOOL server_validate(struct cli_state *clnt, char *user, char *domain,
 	}
 
 
+#ifdef USE_NETWKSTAUSERLOGON
 	if (!cli_NetWkstaUserLogon(clnt, t_idx, user, clnt->called_netbios_name))
 	{
 		DEBUG(1,("password server %s failed NetWkstaUserLogon\n", clnt->full_dest_host_name));
 		cli_tdis(clnt, t_idx);
 		return False;
 	}
+#endif
 
 	if (clnt->privileges == 0)
 	{

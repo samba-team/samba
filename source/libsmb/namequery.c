@@ -132,7 +132,7 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   GetTimeOfDay(&tval);
 
   if (!send_packet(&p)) 
-    return(False);
+    return False;
 
   retries--;
 

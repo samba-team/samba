@@ -734,6 +734,14 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   if(numentries == 0)
     return(ERROR(ERRDOS,ERRbadfile));
 
+  /* 
+   * If there are no matching entries we must return ERRDOS/ERRbadfile - 
+   * from observation of NT.
+   */
+
+  if(numentries == 0)
+    return(ERROR(ERRDOS,ERRbadfile));
+
   /* At this point pdata points to numentries directory entries. */
 
   /* Set up the return parameter block */

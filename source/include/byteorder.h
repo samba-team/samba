@@ -204,42 +204,42 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 /* macros for debug printing and reading / writing of data / arrays */
 
-#define DBG_RW_PCVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
+#define DBG_RW_PCVAL(charmode,string,depth,offset,read,inbuf,outbuf,len) \
 	RW_PCVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
+	DEBUG(5,("%s%06x %s: ", \
+             tab_depth(depth), offset,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), (len)); else \
 	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (uint8)((outbuf)[idx]))); } } \
 	DEBUG(5,("\n"));
 
-#define DBG_RW_PSVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
+#define DBG_RW_PSVAL(charmode,string,depth,offset,read,inbuf,outbuf,len) \
 	RW_PSVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
+	DEBUG(5,("%s%06x %s: ", \
+             tab_depth(depth), offset,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), 2*(len)); else \
 	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (uint16)((outbuf)[idx]))); } } \
 	DEBUG(5,("\n"));
 
-#define DBG_RW_PIVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
+#define DBG_RW_PIVAL(charmode,string,depth,offset,read,inbuf,outbuf,len) \
 	RW_PIVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
+	DEBUG(5,("%s%06x %s: ", \
+             tab_depth(depth), offset,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), 4*(len)); else \
 	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (uint32)((outbuf)[idx]))); } } \
 	DEBUG(5,("\n"));
 
-#define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
+#define DBG_RW_CVAL(string,depth,offset,read,inbuf,outbuf) \
 	RW_CVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %02x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base), string, outbuf));
+	DEBUG(5,("%s%06x %s: %02x\n", \
+             tab_depth(depth), offset, string, outbuf));
 
-#define DBG_RW_SVAL(string,depth,base,read,inbuf,outbuf) \
+#define DBG_RW_SVAL(string,depth,offset,read,inbuf,outbuf) \
 	RW_SVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %04x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base), string, outbuf));
+	DEBUG(5,("%s%06x %s: %04x\n", \
+             tab_depth(depth), offset, string, outbuf));
 
-#define DBG_RW_IVAL(string,depth,base,read,inbuf,outbuf) \
+#define DBG_RW_IVAL(string,depth,offset,read,inbuf,outbuf) \
 	RW_IVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %08x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base), string, outbuf));
+	DEBUG(5,("%s%06x %s: %08x\n", \
+             tab_depth(depth), offset, string, outbuf));
 

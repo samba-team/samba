@@ -27,18 +27,6 @@
 enum display_type   { DISPLAY_NONE, DISPLAY_TXT, DISPLAY_HTML };
 enum action_type    { ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER };
 
-#ifndef MAX_CONNECTIONS
-#define MAX_CONNECTIONS 127
-#endif
-
-#ifndef MAX_OPEN_FILES
-#define MAX_OPEN_FILES 50
-#endif
-
-#ifndef GUEST_ACCOUNT
-#define GUEST_ACCOUNT "nobody"
-#endif
-
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
 
@@ -517,6 +505,28 @@ typedef struct
   int real_open_flags;
 } file_fd_struct;
 
+struct mem_desc
+{
+	/* array memory offsets */
+	uint32 start;
+	uint32 end; 
+};
+
+struct mem_buf
+{
+	char *data;
+	uint32 data_size;
+	uint32 data_used;
+
+	uint32 margin; /* safety margin when reallocing. */
+	               /* this can be abused quite nicely */
+	uint8 align;   /* alignment of data structures (smb, dce/rpc, udp etc) */
+
+	struct mem_desc offset;
+
+	struct mem_buf *next;
+};
+
 typedef struct
 {
   int cnum;
@@ -539,28 +549,47 @@ typedef struct
   BOOL granted_oplock;
   BOOL sent_oplock_break;
   char *name;
+
 } files_struct;
 
-struct mem_buf
+typedef struct
 {
-	char *data;
-	uint32 data_size;
-	uint32 data_used;
+	struct mem_buf *data; /* memory buffer */
+	uint32 offset; /* offset currently being accessed in memory buffer */
+	uint8 align; /* data alignment */
+	BOOL io; /* parsing in or out of data stream */
+	int depth; /* debug level depth */
 
-	uint32 margin; /* safety margin when reallocing. */
-			    /* this can be abused quite nicely */
+} prs_struct;
 
-	uint8 align; /* alignment of data structures (smb, dce/rpc, udp etc) */
-	uint32 start_offset; /* when used with mem_array, this can be non-zero */
-};
+typedef struct
+{
+	int cnum;
+	int uid;
+	BOOL open; /* open connection */
+	uint16 device_state;
+	fstring name;
+	fstring pipe_srv_name;
 
-#define mem_buffer mem_buf /* for now... */
+	/* output header */
+	prs_struct rhdr;
+
+	/* output data */
+	prs_struct rdata;
+
+	RPC_HDR     hdr;
+	RPC_HDR_BA  hdr_ba;
+	RPC_HDR_RB  hdr_rb;
+	RPC_HDR_RR  hdr_rr;
+
+} pipes_struct;
+
 
 struct api_struct
 {
   char *name;
   uint8 opnum;
-  void (*fn) (int uid, struct mem_buf*, int*, struct mem_buf*, int*);
+  void (*fn) (int uid, prs_struct*, prs_struct*);
 };
 
 struct uid_cache {

@@ -154,7 +154,6 @@ void start_async_dns(void)
 	asyncdns_process();
 }
 
-
 /***************************************************************************
 check if a particular name is already being queried
   ****************************************************************************/

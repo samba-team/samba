@@ -60,6 +60,8 @@ static BOOL open_connection(struct cli_state *c)
 
 	c->protocol = max_protocol;
 
+	c->protocol = max_protocol;
+
 	if (!cli_negprot(c)) {
 		printf("%s rejected the negprot (%s)\n",host, cli_errstr(c));
 		cli_shutdown(c);
@@ -171,6 +173,9 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 			printf("unlock failed (%s)\n", cli_errstr(c));
 		}
 	}
+
+	cli_close(c, fnum2);
+	cli_unlink(c, lockfname);
 
 	cli_close(c, fnum2);
 	cli_unlink(c, lockfname);
@@ -437,6 +442,9 @@ static void run_locktest2(void)
 		return;
 	}
 
+	cli_close(&cli, fnum);
+	cli_unlink(&cli, fname);
+
 	close_connection(&cli);
 
 	printf("locktest2 finished\n");
@@ -598,6 +606,198 @@ static void run_unlinktest(void)
 	printf("unlink test finished\n");
 }
 
+
+
+static void browse_callback(char *sname, uint32 stype, char *comment)
+{
+	printf("\t%20.20s %08x %s\n", sname, stype, comment);
+}
+
+
+/*
+  This test checks the browse list code
+
+*/
+static void run_browsetest(void)
+{
+	static struct cli_state cli;
+
+	printf("starting browse test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	printf("domain list:\n");
+	cli_NetServerEnum(&cli, workgroup, 
+			  SV_TYPE_DOMAIN_ENUM,
+			  browse_callback);
+
+	printf("machine list:\n");
+	cli_NetServerEnum(&cli, workgroup, 
+			  SV_TYPE_ALL,
+			  browse_callback);
+
+	close_connection(&cli);
+
+	printf("browse test finished\n");
+}
+
+
+/*
+  This checks how the getatr calls works
+*/
+static void run_attrtest(void)
+{
+	static struct cli_state cli;
+	int fnum;
+	time_t t, t2;
+	char *fname = "\\attrib.tst";
+
+	printf("starting attrib test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_close(&cli, fnum);
+	if (!cli_getatr(&cli, fname, NULL, NULL, &t)) {
+		printf("getatr failed (%s)\n", cli_errstr(&cli));
+	}
+
+	if (abs(t - time(NULL)) > 2) {
+		printf("ERROR: SMBgetatr bug. time is %s",
+		       ctime(&t));
+		t = time(NULL);
+	}
+
+	t2 = t-60*60*24; /* 1 day ago */
+
+	if (!cli_setatr(&cli, fname, 0, t2)) {
+		printf("setatr failed (%s)\n", cli_errstr(&cli));
+	}
+
+	if (!cli_getatr(&cli, fname, NULL, NULL, &t)) {
+		printf("getatr failed (%s)\n", cli_errstr(&cli));
+	}
+
+	if (t != t2) {
+		printf("ERROR: getatr/setatr bug. times are\n%s",
+		       ctime(&t));
+		printf("%s", ctime(&t2));
+	}
+
+	cli_unlink(&cli, fname);
+
+	close_connection(&cli);
+
+	printf("attrib test finished\n");
+}
+
+
+/*
+  This checks a couple of trans2 calls
+*/
+static void run_trans2test(void)
+{
+	static struct cli_state cli;
+	int fnum;
+	uint32 size;
+	time_t c_time, a_time, m_time, w_time, m_time2;
+	char *fname = "\\trans2.tst";
+	char *dname = "\\trans2";
+	char *fname2 = "\\trans2\\trans2.tst";
+
+	printf("starting trans2 test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	if (!cli_qfileinfo(&cli, fnum, &c_time, &a_time, &m_time, &size)) {
+		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(&cli));
+	}
+	cli_close(&cli, fnum);
+
+	sleep(2);
+
+	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_close(&cli, fnum);
+
+	if (!cli_qpathinfo(&cli, fname, &c_time, &a_time, &m_time, &size)) {
+		printf("ERROR: qpathinfo failed (%s)\n", cli_errstr(&cli));
+	} else {
+		if (c_time != m_time) {
+			printf("create time=%s", ctime(&c_time));
+			printf("modify time=%s", ctime(&m_time));
+			printf("This system appears to have sticky create times\n");
+		}
+		if (a_time % (60*60) == 0) {
+			printf("access time=%s", ctime(&a_time));
+			printf("This system appears to set a midnight access time\n");
+		}
+
+		if (abs(m_time - time(NULL)) > 60*60*24*7) {
+			printf("ERROR: totally incorrect times - maybe word reversed?\n");
+		}
+	}
+
+
+	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_close(&cli, fnum);
+	if (!cli_qpathinfo2(&cli, fname, &c_time, &a_time, &m_time, 
+			    &w_time, &size)) {
+		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
+	} else {
+		if (w_time < 60*60*24*2) {
+			printf("write time=%s", ctime(&w_time));
+			printf("This system appears to set a initial 0 write time\n");
+		}
+	}
+
+	cli_unlink(&cli, fname);
+
+
+	/* check if the server updates the directory modification time
+           when creating a new file */
+	if (!cli_mkdir(&cli, dname)) {
+		printf("ERROR: mkdir failed (%s)\n", cli_errstr(&cli));
+	}
+	sleep(3);
+	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time, 
+			    &w_time, &size)) {
+		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
+	}
+
+	fnum = cli_open(&cli, fname2, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_write(&cli, fnum,  (char *)&fnum, 0, sizeof(fnum));
+	cli_close(&cli, fnum);
+	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time2, 
+			    &w_time, &size)) {
+		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
+	} else {
+		if (m_time2 == m_time)
+			printf("This system does not update directory modification times\n");
+	}
+	cli_unlink(&cli, fname2);
+	cli_rmdir(&cli, dname);
+
+
+	close_connection(&cli);
+
+	printf("trans2 test finished\n");
+}
 
 
 static void browse_callback(char *sname, uint32 stype, char *comment)

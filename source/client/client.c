@@ -187,7 +187,7 @@ static int process_tok(fstring tok)
 	  cmd = i;
 	  break;
 	}
-      else if (strnequal(commands[i].name, tok, tok_len+1))
+      else if (strnequal(commands[i].name, tok, tok_len))
 	{
 	  matches++;
 	  cmd = i;
@@ -256,6 +256,11 @@ static void wait_keyboard(struct cli_state *cli, int t_idx)
 	  }
       }
 #endif
+
+      /* We deliberately use receive_smb instead of
+         client_receive_smb as we want to receive
+         session keepalives and then drop them here.
+       */
       if (FD_ISSET(cli->fd,&fds))
   	receive_smb(cli->fd,cli->inbuf,0);
       
@@ -386,7 +391,7 @@ static void usage(char *pname)
 	   pname);
 
   fprintf(out_hnd, "\nVersion %s\n",VERSION);
-  fprintf(out_hnd, "\t-p port               listen on the specified port\n");
+  fprintf(out_hnd, "\t-p port               connect to the specified port\n");
   fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
   fprintf(out_hnd, "\t-l log basename.      Basename for log/debug files\n");
   fprintf(out_hnd, "\t-n netbios name.      Use this name as my netbios name\n");

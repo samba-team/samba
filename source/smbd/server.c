@@ -1525,6 +1525,11 @@ void close_file(int fnum, BOOL normal_close)
 
   fs_p->sent_oplock_break = False;
 
+  if(fs_p->granted_oplock == True)
+    global_oplocks_open--;
+
+  fs_p->sent_oplock_break = False;
+
   DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
 	   timestring(),Connections[cnum].user,fs_p->name,
 	   Connections[cnum].num_files_open));
@@ -2986,6 +2991,14 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
   if(global_oplock_break)
     global_oplock_break = False;
 
+  /* Free the buffers we've been using to recurse. */
+  free(inbuf);
+  free(outbuf);
+
+  /* We need this in case a readraw crossed on the wire. */
+  if(global_oplock_break)
+    global_oplock_break = False;
+
   /*
    * If the client did not respond we must die.
    */
@@ -3173,7 +3186,6 @@ oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
 /****************************************************************************
 Get the next SMB packet, doing the local message processing automatically.
 ****************************************************************************/
-
 BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout)
 {
   BOOL got_smb = False;
@@ -5192,6 +5204,10 @@ static void usage(char *pname)
       argv++;
       argc--;
     }
+
+  if (!directory_exist(lp_lockdir(), NULL)) {
+	  mkdir(lp_lockdir(), 0755);
+  }
 
   while ((opt = getopt(argc, argv, "O:i:l:s:d:Dp:hPaf:")) != EOF)
     switch (opt)
