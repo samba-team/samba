@@ -13,6 +13,11 @@
 
 	* login.c: make this build without krb5
 
+2001-09-22  Assar Westerlund  <assar@sics.se>
+
+	* login_locl.h: kludge: use absolute path to find prot.h so we do
+	not get confused by athena's prot.h
+
 2001-09-17  Assar Westerlund  <assar@sics.se>
 
 	* login.c (do_login): add setpcred
