@@ -93,13 +93,12 @@ int main(int argc, char *argv[])
 	int i, seed=0;
 	int loops = NLOOPS;
 
-	unlink("test.tdb");
-
 	for (i=0;i<NPROC-1;i++) {
 		if (fork() == 0) break;
 	}
 
-	db = tdb_open("test.tdb", 0, O_RDWR | O_CREAT, 0600);
+	db = tdb_open("test.tdb", 0, TDB_CLEAR_IF_FIRST, 
+		      O_RDWR | O_CREAT, 0600);
 	if (!db) {
 		fatal("db open failed");
 	}

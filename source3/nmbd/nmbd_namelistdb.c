@@ -602,21 +602,15 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
 
 void dump_all_namelists(void)
 {
-  pstring fname;
   FILE *fp; 
   struct subnet_record *subrec;
 
-  pstrcpy(fname,lp_lockdir());
-  trim_string(fname,NULL,"/");
-  pstrcat(fname,"/"); 
-  pstrcat(fname,"namelist.debug");
-
-  fp = sys_fopen(fname,"w");
+  fp = sys_fopen(lock_path("namelist.debug"),"w");
      
   if (!fp)
   { 
     DEBUG(0,("dump_all_namelists: Can't open file %s. Error was %s\n",
-              fname,strerror(errno)));
+              "namelist.debug",strerror(errno)));
     return;
   }
       

@@ -23,6 +23,7 @@
 
 
 extern fstring remote_machine;
+static TDB_CONTEXT *tdb;
 
 extern int DEBUGLEVEL;
 
@@ -33,9 +34,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
-	TDB_CONTEXT *tdb;
 
-	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDWR | O_CREAT, 0644);
 	if (!tdb) return False;
 
 	DEBUG(3,("Yielding connection to %s\n",name));
@@ -49,20 +48,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	kbuf.dsize = sizeof(key);
 
 	tdb_delete(tdb, kbuf);
-	tdb_close(tdb);
 	return(True);
-}
-
-
-/****************************************************************************
-claim an entry in the connections database
-****************************************************************************/
-int delete_dead(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
-{
-	struct connections_key key;
-	memcpy(&key, kbuf.dptr, sizeof(key));
-	if (!process_exists(key.pid)) tdb_delete(tdb, kbuf);
-	return 0;
 }
 
 
@@ -74,13 +60,15 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
-	TDB_CONTEXT *tdb;
 	extern int Client;
 
 	if (max_connections <= 0)
 		return(True);
-	
-	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDWR | O_CREAT, 0644);
+
+	if (!tdb) {
+		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+			       O_RDWR | O_CREAT, 0644);
+	}
 	if (!tdb) return False;
 
 	DEBUG(5,("claiming %s %d\n",name,max_connections));
@@ -92,10 +80,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
-
-	if (Clear) {
-		tdb_traverse(tdb, delete_dead);
-	}
 
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
