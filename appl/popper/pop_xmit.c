@@ -29,17 +29,18 @@ pop_xmit (POP *p)
     int                     id, pid;
 
     /*  Create a temporary file into which to copy the user's message */
-    (void)mktemp((char *)strcpy(temp_xmit,POP_TMPXMIT));
+    mktemp(strcpy(temp_xmit,POP_TMPXMIT));
 #ifdef DEBUG
     if(p->debug)
-        pop_log(p,POP_DEBUG,
+        pop_log(p, POP_DEBUG,
             "Creating temporary file for sending a mail message \"%s\"\n",
                 temp_xmit);
 #endif /* DEBUG */
-    if ((tmp = fopen(temp_xmit,"w+")) == NULL)
-        return (pop_msg(p,POP_FAILURE,
-            "Unable to create temporary message file \"%s\", errno = %d",
-                temp_xmit,errno));
+    if ((tmp = fopen(temp_xmit, "w+")) == NULL)
+        return (pop_msg(p, POP_FAILURE,
+			"Unable to create temporary message file \"%s\": %s",
+			temp_xmit,
+			strerror(errno)));
 
     /*  Tell the client to start sending the message */
     pop_msg(p,POP_SUCCESS,"Start sending the message.");
@@ -53,13 +54,10 @@ pop_xmit (POP *p)
 #ifdef DEBUG
         if(p->debug)pop_log(p,POP_DEBUG,"Receiving: \"%s\"",buffer);
 #endif /* DEBUG */
-        if (*buffer == '.') {
-            /*  Exit on end of message */
-            if (strcmp(buffer,".\r\n") == 0) break;
-        }
-        (void)fputs (buffer,tmp);
+	if (strcmp(buffer,".\r\n") == 0) break;
+        fputs (buffer,tmp);
     }
-    (void)fclose (tmp);
+    fclose (tmp);
 
 #ifdef DEBUG
     if(p->debug)pop_log(p,POP_DEBUG,"Forking for \"%s\"",MAIL_COMMAND);
@@ -67,12 +65,13 @@ pop_xmit (POP *p)
     /*  Send the message */
     switch (pid = fork()) {
         case 0:
-            (void)fclose (p->input);
-            (void)fclose (p->output);       
-            (void)close(0);
-            if (open(temp_xmit,O_RDONLY,0) < 0) (void)_exit(1);
-            (void)execl (MAIL_COMMAND,"send-mail","-t","-oem",NULLCP);
-            (void)_exit(1);
+            fclose (p->input);
+            fclose (p->output);       
+            close(0);
+            if (open(temp_xmit,O_RDONLY,0) < 0)
+		_exit(1);
+            execl (MAIL_COMMAND, "send-mail", "-t", "-oem", (char *)NULL);
+            _exit(1);
         case -1:
 #ifdef DEBUG
             if (!p->debug) (void)unlink (temp_xmit);
@@ -80,11 +79,13 @@ pop_xmit (POP *p)
             return (pop_msg(p,POP_FAILURE,
                 "Unable to execute \"%s\"",MAIL_COMMAND));
         default:
-            while((id = wait(&stat)) >=0 && id != pid);
-            if (!p->debug) (void)unlink (temp_xmit);
+            while((id = wait(&stat)) >=0 && id != pid)
+		;
+            if (!p->debug) 
+		unlink (temp_xmit);
             if (WEXITSTATUS(stat) != 0)
-                return (pop_msg(p,POP_FAILURE,"Unable to send message"));
-            return (pop_msg (p,POP_SUCCESS,"Message sent successfully"));
+                return pop_msg(p,POP_FAILURE,"Unable to send message");
+            return pop_msg (p,POP_SUCCESS,"Message sent successfully");
     }
 
 }
