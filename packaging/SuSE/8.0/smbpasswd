@@ -1,0 +1,5 @@
+# This file is the authentication source for samba. You add password
+# information with the smbpasswd or smbadduser command.
+#
+# Cf. section 'encrypt passwords' in the manual page of smb.conf for
+# more information.

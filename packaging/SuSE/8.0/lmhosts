@@ -1,0 +1,7 @@
+# This file provides the same function that the lmhosts file does for
+# Windows. It's another way to map netbios names to ip addresses.
+#
+# Cf. section 'name resolve order' in the manual page of smb.conf for
+# more information.
+
+127.0.0.1	localhost
