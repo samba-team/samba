@@ -33,6 +33,7 @@ sub smb_build_main($)
 		"lib/dcom/config.mk",
 		"lib/socket/config.mk",
 		"lib/ldb/config.mk",
+		"lib/talloc/config.mk",
 		"lib/tdb/config.mk",
 		"lib/registry/config.mk",
 		"lib/messaging/config.mk",

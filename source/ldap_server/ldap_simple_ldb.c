@@ -58,7 +58,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct ldapsrv_reply *ent_r, *done_r;
 	int result = LDAP_SUCCESS;
 	struct samdb_context *samdb;
-	struct ldb_message **res;
+	struct ldb_message **res = NULL;
 	int i, j, y, count = 0;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
@@ -102,8 +102,8 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
-	ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
 	count = ldb_search(samdb->ldb, basedn->dn, scope, r->filter, attrs, &res);
+	talloc_steal(samdb, res);
 
 	for (i=0; i < count; i++) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
@@ -249,7 +249,6 @@ reply:
 	ALLOC_CHECK(add_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
 		ldb_ret = ldb_add(samdb->ldb, msg);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
@@ -302,7 +301,6 @@ reply:
 	ALLOC_CHECK(del_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
 		ldb_ret = ldb_delete(samdb->ldb, dn->dn);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
@@ -413,7 +411,6 @@ reply:
 	ALLOC_CHECK(modify_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
 		ldb_ret = ldb_modify(samdb->ldb, msg);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
@@ -447,7 +444,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	struct ldapsrv_reply *compare_r;
 	int result = LDAP_SUCCESS;
 	struct samdb_context *samdb;
-	struct ldb_message **res;
+	struct ldb_message **res = NULL;
 	const char *attrs[1];
 	const char *errstr = NULL;
 	const char *filter = NULL;
@@ -475,8 +472,8 @@ reply:
 	ALLOC_CHECK(compare_r);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
 		count = ldb_search(samdb->ldb, dn->dn, LDB_SCOPE_BASE, filter, attrs, &res);
+		talloc_steal(samdb, res);
 		if (count == 1) {
 			DEBUG(10,("sldb_Compare: matched\n"));
 			result = LDAP_COMPARE_TRUE;
@@ -580,7 +577,6 @@ reply:
 	ALLOC_CHECK(modifydn_r);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
 		ldb_ret = ldb_rename(samdb->ldb, olddn->dn, newdn);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;

@@ -92,6 +92,7 @@ struct ldb_wrap *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		talloc_free(w);
 		return NULL;
 	}
+	talloc_steal(w, w->ldb);
 
 	talloc_set_destructor(w, ldb_wrap_destructor);
 	ldb_set_debug(w->ldb, ldb_wrap_debug, NULL);

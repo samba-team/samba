@@ -309,7 +309,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	void *local_ctx;
 	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
-	struct ldb_message **res;
+	struct ldb_message **res = NULL;
 	int result = LDAP_SUCCESS;
 	struct ldapsrv_reply *ent_r, *done_r;
 	struct	rootdse_db_context *rootdsedb;
@@ -338,8 +338,8 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		attrs[j] = NULL;
 	}
 
-	ldb_set_alloc(rootdsedb->ldb, talloc_realloc_fn, rootdsedb);
 	count = ldb_search(rootdsedb->ldb, "", 0, "dn=cn=rootDSE", attrs, &res);
+	talloc_steal(rootdsedb, res);
 
 	if (count == 1) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);

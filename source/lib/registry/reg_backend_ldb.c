@@ -261,17 +261,17 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sd, struct registry_key **newkey)
 {
 	struct ldb_context *ctx = parent->hive->backend_data;
-	struct ldb_message msg;
+	struct ldb_message *msg;
 	struct ldb_key_data *newkd;
 	int ret;
 
-	ZERO_STRUCT(msg);
+	msg = ldb_msg_new(mem_ctx);
 
-	msg.dn = reg_path_to_ldb(mem_ctx, parent, name, NULL);
+	msg->dn = reg_path_to_ldb(msg, parent, name, NULL);
 
-	ldb_msg_add_string(ctx, &msg, "key", talloc_strdup(mem_ctx, name));
+	ldb_msg_add_string(ctx, msg, "key", talloc_strdup(mem_ctx, name));
 
-	ret = ldb_add(ctx, &msg);
+	ret = ldb_add(ctx, msg);
 	if (ret < 0) {
 		DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(parent->hive->backend_data)));
 		return WERR_FOOBAR;
@@ -281,7 +281,7 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 	(*newkey)->name = talloc_strdup(mem_ctx, name);
 
 	(*newkey)->backend_data = newkd = talloc_zero_p(*newkey, struct ldb_key_data);
-	newkd->dn = msg.dn; 
+	newkd->dn = talloc_steal(newkd, msg->dn);
 
 	return WERR_OK;
 }
