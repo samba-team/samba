@@ -1369,4 +1369,4 @@ check: check-programs
 # These are called by the test suite and need to be built before
 # running it.  For the time being we don't build all of BIN_PROGS,
 # because they're not all needed.
-check-programs: bin/t_strcmp bin/t_push_ucs2 bin/smbcontrol
+check-programs: bin/t_strcmp bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf
