@@ -1203,6 +1203,9 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    || samba_acct_flags[flags_len - 1] != ']') 
 	    goto out2;
 
+	/* Allow forwarding */
+	ent->flags.forwardable = TRUE;
+
 	for (i=0; i < flags_len; i++) {
 	    switch (samba_acct_flags[i]) {
 	    case ' ':
