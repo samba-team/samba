@@ -1160,7 +1160,7 @@
 		The use of WINS reduces network broadcast traffic. The reduction is greatest when all network 
 		clients are configured to operate in <parameter>Hybrid Mode</parameter>. This can be effected through 
 		use of DHCP to set the NetBIOS node type to type 8 for all network clients. Additionally, it is 
-		beneficial to configure Samba to use <smbconfoption name="name resolve order"/>wins host cast</smbconfoption>.
+		beneficial to configure Samba to use <smbconfoption name="name resolve order">wins host cast</smbconfoption>.
 		</para>
 
 		<note><para>
