@@ -168,66 +168,63 @@ static struct passwd *_Get_Pwnam(char *s)
 }
 
 
-/****************************************************************************
- A wrapper for getpwnam().  The following variations are tried...
-    - in all lower case
-    - as transmitted IF a different case
-    - in all upper case IF that is different from the transmitted username
-    - using the lp_usernamelevel() for permutations
- Note that this can change user!
-****************************************************************************/
-
+/*
+ * A wrapper for getpwnam().  The following variations are tried:
+ *   - as transmitted
+ *   - in all lower case if this differs from transmitted
+ *   - in all upper case if this differs from transmitted
+ *   - using lp_usernamelevel() for permutations.
+ * NOTE: This can potentially modify 'user' depending on value of
+ *       allow_change!
+ */
 struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 {
-	fstring 	user2, orig_username;
-  	int 		usernamelevel = lp_usernamelevel();
-	struct 		passwd *ret;  
+	fstring user2;
+	struct passwd *ret = NULL;
 
 	if (!user || !(*user))
 		return(NULL);
 
-	/* make a few copies to work with */
-	fstrcpy(orig_username, user);
-	if (!allow_change) 
-	{
-		/* allow_change was False, so make a copy and temporarily
-		   assign the char* user to the temp copy */
-		fstrcpy(user2,user);
-		user = &user2[0];
-	}
+	fstrcpy(user2, user);
 
-	/* try in all lower case first as this is the most
+	/* Try in all lower case first as this is the most 
 	   common case on UNIX systems */
-	strlower(user);
-	ret = _Get_Pwnam(user);
-	if (ret)
-		return(ret);
-	
-	/* try as transmitted, but only if the original username
-	   gives us a different case */
-	if (strcmp(user, orig_username) != 0)
-	{
-		ret = _Get_Pwnam(orig_username);
-		if (ret)
-			return(ret);
+	strlower(user2);
+	DEBUG(5,("Trying _Get_Pwnam(), username as lowercase is %s\n",user2));
+	ret = _Get_Pwnam(user2);
+	if(ret)
+		goto done;
+
+	/* Try as given, if username wasn't originally lowercase */
+	if(strcmp(user,user2) != 0) {
+		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",user2));
+		ret = _Get_Pwnam(user2);
+		if(ret)
+			goto done;
+	}	
+
+	/* Try as uppercase, if username wasn't originally uppercase */
+	strupper(user2);
+	if(strcmp(user,user2) != 0) {
+		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n",user2));
+		ret = _Get_Pwnam(user2);
+		if(ret)
+			goto done;
 	}
 
-	/* finally, try in all caps if that is a new case */
-	strupper(user);
-	if (strcmp(user, orig_username) != 0)
-	{
-		ret = _Get_Pwnam(user);
-		if (ret)
-			return(ret);
-	}
+	/* Try all combinations up to usernamelevel */
+	strlower(user2);
+	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n",lp_usernamelevel(),user2));
+	ret = uname_string_combinations(user2, _Get_Pwnam, lp_usernamelevel());
 
-	/* Try all combinations up to usernamelevel. */
-	strlower(user);
-	ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
-	if (ret)
-		return(ret);
+done:
+	DEBUG(5,("Get_Pwnam %s find a valid username!\n",ret ? "did":"didn't"));
+	/* If caller wants the modified username, ensure they get it  */
+	if(allow_change)
+		fstrcpy(user,user2);
 
-	return(NULL);
+	/* We can safely assume ret is NULL if none of the above succeed */
+	return(ret);  
 }
 
 /****************************************************************************
