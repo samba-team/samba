@@ -787,7 +787,8 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	}
 	(*server_info)->unix_name = smb_xstrdup(pwd->pw_name);
 	(*server_info)->gid = pwd->pw_gid;
-
+	(*server_info)->uid = pwd->pw_uid;
+	
 	passwd_free(&pwd);
 
 	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, sampass, 
