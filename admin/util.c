@@ -62,7 +62,8 @@ set_keys(hdb_entry *ent, char *password)
     memset(&salt, 0, sizeof(salt));
     krb5_get_salt(ent->principal, &salt);
     for(i = 0; i < ent->keys.len; i++) {
-	krb5_string_to_key(password, &salt, &ent->keys.val[i].key); /* XXX */
+	krb5_string_to_key(password, &salt, ent->keys.val[i].key.keytype,
+			   &ent->keys.val[i].key); /* XXX */
 	seal_key(&ent->keys.val[i]);
     }
     krb5_data_free(&salt);
