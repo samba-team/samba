@@ -1,3 +1,16 @@
+Thu Apr  8 15:08:25 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: build testit
+
+	* complete.c: nuke NEW, DISPOSE, RENEW, and COPYFROMTO macros;
+ 	(rl_complete): call rl_list_possib instead of doing the same
+
+	* editline.h: nuke NEW, DISPOSE, RENEW, and COPYFROMTO macros
+
+	* editline.c: nuke NEW, DISPOSE, RENEW, and COPYFROMTO macros
+
+	* sysunix.c: add some whitespace
+
 Thu Mar 18 11:22:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: include Makefile.am.common
