@@ -2159,7 +2159,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	size_t numtowrite;
 	SMB_OFF_T startpos;
 	char *data;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int outsize = 0;
 	START_PROFILE(SMBwriteunlock);
@@ -2171,7 +2171,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, 
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, 
 		      WRITE_LOCK,False)) {
 		END_PROFILE(SMBwriteunlock);
 		return ERROR_DOS(ERRDOS,ERRlock);
@@ -2193,11 +2193,13 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
-	status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, 
-			   (SMB_BIG_UINT)startpos);
-	if (NT_STATUS_V(status)) {
-		END_PROFILE(SMBwriteunlock);
-		return ERROR_NT(status);
+	if (numtowrite) {
+		status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, 
+				   (SMB_BIG_UINT)startpos);
+		if (NT_STATUS_V(status)) {
+			END_PROFILE(SMBwriteunlock);
+			return ERROR_NT(status);
+		}
 	}
 	
 	outsize = set_message(outbuf,1,0,True);
@@ -2620,7 +2622,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
 		END_PROFILE(SMBwriteclose);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2629,7 +2631,16 @@ int reply_writeclose(connection_struct *conn,
 
 	set_filetime(conn, fsp->fsp_name,mtime);
   
-	close_err = close_file(fsp,True);
+	/*
+	 * More insanity. W2K only closes the file if writelen > 0.
+	 * JRA.
+	 */
+
+	if (numtowrite) {
+		DEBUG(3,("reply_writeclose: zero length write doesn't close file %s\n",
+			fsp->fsp_name ));
+		close_err = close_file(fsp,True);
+	}
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
 		 fsp->fnum, (int)numtowrite, (int)nwritten,
