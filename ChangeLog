@@ -1,8 +1,8 @@
 Mon Mar 10 01:43:22 1997  Assar Westerlund  <assar@sics.se>
 
-	* reduced generated code by 1/5
+	* lib/asn1/gen.c: reduced generated code by 1/5
 
- 	(der_put_length_and_tag): new function
+ 	* lib/asn1/der_put.c: (der_put_length_and_tag): new function
 
 	* lib/asn1/der_get.c (der_match_tag_and_length): new function
 
