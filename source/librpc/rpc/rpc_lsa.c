@@ -23,10 +23,6 @@
 #include "includes.h"
 
 
-NTSTATUS ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, struct lsa_OpenPolicy *r);
-NTSTATUS ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, struct lsa_OpenPolicy2 *r);
-NTSTATUS ndr_push_lsa_EnumSids(struct ndr_push *ndr, struct lsa_EnumSids *r);
-
 /*
   OpenPolicy interface
 */
