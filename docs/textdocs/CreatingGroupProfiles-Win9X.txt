@@ -1,0 +1,58 @@
+To      : "C.Lee Taylor" <leet@leenx.co.za>
+Cc      : Bart <bartro@go.ro>,
+          samba@lists.samba.org
+Attchmnt:
+Subject : Re: [Samba] Profiles ...
+----- Message Text -----
+On Fri, 17 Jan 2003, C.Lee Taylor wrote:
+
+> John H Terpstra wrote:
+> > On Thu, 16 Jan 2003, C.Lee Taylor wrote:
+> >
+> >
+> >>Bart wrote:
+> >>
+> >>>Or ju put the documents on the home drive and change the target of the
+> >>>'my documents' folder to this home drive.
+> >>>
+> >>>that way you have security & all the docs on a mounted drive.
+> >>
+> >>    We did that with Win98SE, and found that some times it would change
+> >>back or to something that should cause problems ... that is why I was
+> >>hoping, there was away around this ... but then it seems not.
+> >
+> >
+> > Did you check the Win98 Resource Kit for how to configure this?
+>       No, just searched the registery for the set strings, changed them and
+> tested.  Also used support.microsoft.com for other info ... Don't have
+> access to the Resource kits, unless they have not put them up on the net
+> and it's legal for us to use them wihtout paying?
+
+That method does not work well. You need the Win98 Group Policy Editor to
+set this up. It can be found on the Original full product Win98
+installation CD under tools/reskit/netadmin/poledit. You install this
+using the Add/Remove Programs facility and then click on the 'Have Disk'
+tab.
+
+Use the Group Policy Editor to create a policy file that specifies the
+location of user profiles and/or the 'My Documents' etc. stuff. You then
+save these settings in a file called Config.POL that needs to be placed in
+the root of the [NETLOGON] share. If your Win98 is configured to log onto
+the Samba Domain, it will automatically read this file and update the
+Win98 registry of the machine that is logging on.
+
+All of this is covered in the Win98 Resource Kit documentation.
+
+If you do not do it this way, then every so often Win98 will check the
+integrity of the registry and will restore it's settings from the back-up
+copy of the registry it stores on each Win98 machine. Hence, your symptoms
+of things changing back to original settings.
+
+Hope this helps. I have omitted quite a lot of detail you will need to
+figure out. Yell if you need more help.
+
+- John T.
+--
+John H Terpstra
+Email: jht@samba.org
+
