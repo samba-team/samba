@@ -18,6 +18,13 @@ server in the domain should accept the same authentication information.
 However the network browsing functionality of domains and workgroups is
 identical and is explained in BROWSING.txt.
 
+There are some implementation differences: Windows 95 can be a member of
+both a workgroup and a domain, but Windows NT cannot. Windows 95 also
+has the concept of an "alternative workgroup". Samba can only be a
+member of a single workgroup or domain, although this is due to change
+with a future version when nmbd will be split into two daemons, one
+for WINS and the other for browsing (NetBIOS.txt explains what WINS is.)
+
 Issues related to the single-logon network model are discussed in this
 document.  Samba supports domain logons, network logon scripts, and user
 profiles.  The support is still experimental, but it seems to work.
