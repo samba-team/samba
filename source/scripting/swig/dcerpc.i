@@ -41,11 +41,8 @@ PyObject *ntstatus_exception;
 
 void set_ntstatus_exception(int status)
 {
-	PyObject *obj = PyTuple_New(2);
-
-	PyTuple_SetItem(obj, 0, PyInt_FromLong(status));
-	PyTuple_SetItem(obj, 1, 
-		PyString_FromString(nt_errstr(NT_STATUS(status))));
+	PyObject *obj = Py_BuildValue("(i,s)", status, 
+				nt_errstr(NT_STATUS(status)));
 
 	PyErr_SetObject(ntstatus_exception, obj);
 }
@@ -86,15 +83,30 @@ uint32 get_uint32_property(PyObject *dict, char *key)
 }
 
 %typemap(in, numinputs=0) TALLOC_CTX * {
-	$1 = talloc_init("foo");
+	$1 = talloc_init("$symname");
+}
+
+%typemap(freearg) TALLOC_CTX * {
+	talloc_free($1);
 }
 
 %typemap(argout) struct dcerpc_pipe ** {
 	long status = PyLong_AsLong(resultobj);
+
+	/* Throw exception if result was not OK */
+
 	if (status != 0) {
 		set_ntstatus_exception(status);
 		return NULL;
 	}
+
+	/* Set REF_ALLOC flag so we don't have to do too much extra
+	   mucking around with ref variables in ndr unmarshalling. */
+
+	(*$1)->flags |= DCERPC_NDR_REF_ALLOC;
+
+	/* Return swig handle on dcerpc_pipe */
+
         resultobj = SWIG_NewPointerObj(*$1, SWIGTYPE_p_dcerpc_pipe, 0);
 }
 
