@@ -1340,7 +1340,7 @@ static void init_globals(void)
 	string_set(&Globals.szLockDir, dyn_LOCKDIR);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
-	pstrcat(s, VERSION);
+	pstrcat(s, SAMBA_VERSION_STRING);
 	string_set(&Globals.szServerString, s);
 	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
 		 DEFAULT_MINOR_VERSION);

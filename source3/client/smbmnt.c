@@ -38,7 +38,7 @@ help(void)
 {
         printf("\n");
         printf("Usage: smbmnt mount-point [options]\n");
-	printf("Version %s\n\n",VERSION);
+	printf("Version %s\n\n",SAMBA_VERSION_STRING);
         printf("-s share       share name on server\n"
                "-r             mount read-only\n"
                "-u uid         mount as uid\n"

@@ -2934,7 +2934,7 @@ static void remember_query_host(const char *arg,
 	use_kerberos = cmdline_auth_info.use_kerberos;
 	got_pass = cmdline_auth_info.got_pass;
 
-	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
+	DEBUG(3,("Client started (version %s).\n", SAMBA_VERSION_STRING));
 
 	if (tar_type) {
 		if (cmdstr)

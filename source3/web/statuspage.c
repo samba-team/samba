@@ -327,7 +327,7 @@ void status_page(void)
 
 	d_printf("<table>\n");
 
-	d_printf("<tr><td>%s</td><td>%s</td></tr>", _("version:"), VERSION);
+	d_printf("<tr><td>%s</td><td>%s</td></tr>", _("version:"), SAMBA_VERSION_STRING);
 
 	fflush(stdout);
 	d_printf("<tr><td>%s</td><td>%s</td>\n", _("smbd:"), smbd_running()?_("running"):_("not running"));
