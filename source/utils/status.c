@@ -545,9 +545,24 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
 	pstring fname;
 	int c;
-	extern char *optarg;
-	int profile_only = 0, new_debuglevel = -1;
+	int profile_only = 0;
+	static int new_debuglevel = -1;
 	TDB_CONTEXT *tdb;
+	poptContext pc;
+	struct poptOption long_options[] = {
+		{"processes",	'p', POPT_ARG_NONE,	&processes_only},
+		{"verbose",	'v', POPT_ARG_NONE, 	&verbose},
+		{"locks",	'L', POPT_ARG_NONE,	&locks_only},
+		{"shares",	'S', POPT_ARG_NONE,	&shares_only},
+		{"conf",	's', POPT_ARG_STRING,	0, 's'},
+		{"user",        'u', POPT_ARG_STRING,	0, 'u'},
+		{"brief",	'b', POPT_ARG_NONE, 	&brief},
+		{"profile",	'P', POPT_ARG_NONE,	&profile_only},
+		{"byterange",	'B', POPT_ARG_NONE,	&show_brl},
+		{"debug",	'd', POPT_ARG_INT,	&new_debuglevel},
+		{ 0, 0, 0, 0}
+	};
+
 
 	setup_logging(argv[0],True);
 	
@@ -559,39 +574,17 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		d_printf("smbstatus should not be run setuid\n");
 		return(1);
 	}
+
+	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
 	
-	while ((c = getopt(argc, argv, "pvLSs:u:bPBd:")) != EOF) {
+	while ((c = poptGetNextOpt(pc)) != EOF) {
 		switch (c) {
-		case 'b':
-			brief = 1;
-			break;
-		case 'B':
-			show_brl = 1;
-			break;
-		case 'd':
-			new_debuglevel = atoi(optarg);
-			break;
-			
-		case 'v':
-			verbose = 1;
-			break;
-		case 'L':
-			locks_only = 1;
-			break;
-		case 'p':
-			processes_only = 1;
-			break;
-		case 'P':
-			profile_only = 1;
-			break;
-		case 'S':
-			shares_only = 1;
-			break;
 		case 's':
-			pstrcpy(dyn_CONFIGFILE, optarg);
+			pstrcpy(dyn_CONFIGFILE, poptGetOptArg(pc));
 			break;
 		case 'u':                                      
-			Ucrit_addUsername(optarg);             
+			Ucrit_addUsername(poptGetOptArg(pc));             
 			break;
 		default:
 			fprintf(stderr, "Usage: %s [-P] [-v] [-L] [-p] [-S] [-s configfile] [-u username] [-d debuglevel]\n", *argv);
