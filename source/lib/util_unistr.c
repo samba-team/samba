@@ -1981,3 +1981,12 @@ int ucs2doscp(smb_ucs2_t w)
   return ((int)ucs2_to_doscp[w]);
 }
 
+/* Temporary fix until 3.0... JRA */
+
+int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
+{
+	if(dest_len==-1)
+		dest_len=MAXUNI-3;
+	unistr_to_ascii(dest, src, dest_len - 1);
+	return src_len;
+}

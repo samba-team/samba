@@ -104,7 +104,7 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, uid_t *id,
             result = True;
         }
 
-        free(data.dptr);
+        SAFE_FREE(data.dptr);
 
     } else {
 
@@ -187,7 +187,7 @@ BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
             result = True;
         }
     done:            
-        free(data.dptr);
+        SAFE_FREE(data.dptr);
     }
 
     return result;
@@ -251,11 +251,11 @@ BOOL winbindd_idmap_init(void)
 
 #define DUMP_INFO 0
 
-void winbindd_idmap_dump_status(void)
+void winbindd_idmap_status(void)
 {
     int user_hwm, group_hwm;
 
-    DEBUG(0, ("Status for winbindd idmap:\n"));
+    DEBUG(0, ("winbindd idmap status:\n"));
 
     /* Get current high water marks */
 

@@ -124,10 +124,8 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 		}
 	}
 	
-	if (rparam)
-      free(rparam);
-	if (rdata)
-      free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 	return (cli->rap_error == 0);
 }
 
@@ -193,21 +191,19 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 			DEBUG(4,("NetShareEnum failed\n"));
 		}
   
-	if (rparam)
-		free(rparam);
-	if (rdata)
-		free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 	
 	return count;
 }
 
 
 /****************************************************************************
-call a NetServerEnum for the specified workgroup and servertype mask.
-This function then calls the specified callback function for each name returned.
+call a NetServerEnum for the specified workgroup and servertype mask.  This
+function then calls the specified callback function for each name returned.
 
-The callback function takes 3 arguments: the machine name, the server type and
-the comment.
+The callback function takes 4 arguments: the machine name, the server type,
+the comment and a state pointer.
 ****************************************************************************/
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *, void *),
@@ -237,9 +233,9 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	SIVAL(p,0,stype);
 	p += 4;
 
-	p += clistr_push(cli, p, workgroup, -1, 
-			 STR_TERMINATE | STR_CONVERT | STR_ASCII);
-	
+	p += clistr_push(cli, p, workgroup, -1,
+		STR_TERMINATE | STR_CONVERT | STR_ASCII);
+
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
                     NULL, 0, CLI_BUFFER_SIZE,               /* data, length, max */
@@ -272,10 +268,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		}
 	}
   
-	if (rparam)
-		free(rparam);
-	if (rdata)
-		free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 	
 	return(count > 0);
 }
@@ -325,13 +319,10 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    * use this as the key to make_oem_passwd_hash().
    */
   memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
-  fstrcpy(upper_case_old_pw, old_password);
-  unix_to_dos(upper_case_old_pw,True);
-  strupper(upper_case_old_pw);
+  clistr_push(cli, upper_case_old_pw, old_password, -1,STR_CONVERT|STR_TERMINATE|STR_UPPER);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-  pstrcpy(dos_new_password, new_password);
-  unix_to_dos(dos_new_password, True);
+  clistr_push(cli, dos_new_password, new_password, -1, STR_CONVERT|STR_TERMINATE);
 
   if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
     return False;
@@ -340,9 +331,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    * Now place the old password hash in the data.
    */
   memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
-  fstrcpy(upper_case_new_pw, new_password);
-  unix_to_dos(upper_case_new_pw,True);
-  strupper(upper_case_new_pw);
+  clistr_push(cli, upper_case_new_pw, new_password, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
 
   E_P16((uchar *)upper_case_new_pw, new_pw_hash);
 
@@ -369,10 +358,8 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
       cli->rap_error = SVAL(rparam,0);
   }
 
-  if (rparam)
-    free(rparam);
-  if (rdata)
-    free(rdata);
+  SAFE_FREE(rparam);
+  SAFE_FREE(rdata);
 
   return (cli->rap_error == 0);
 }
@@ -414,12 +401,12 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 		       cli_receive_trans(cli, SMBtrans2, 
 					 &rparam, &param_len,
 					 &rdata, &data_len));
-		if (!ret) {
+		if (!ret && cli_is_dos_error(cli)) {
 			/* we need to work around a Win95 bug - sometimes
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode, NULL);
+			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 		}
@@ -451,8 +438,8 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 		*mode = SVAL(rdata,l1_attrFile);
 	}
 
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
 	return True;
 }
 
@@ -521,8 +508,8 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		*ino = IVAL(rdata, 64);
 	}
 
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
 	return True;
 }
 
@@ -593,8 +580,8 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		*ino = IVAL(rdata, 64);
 	}
 
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
 	return True;
 }
 
@@ -637,7 +624,7 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdat
 
 	memcpy(outdata, rdata, data_len);
 
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
 	return True;
 }

@@ -83,7 +83,7 @@ void init_rpc_pipe_hnd(void)
 {
 	bmap = bitmap_allocate(MAX_OPEN_PIPES);
 	if (!bmap)
-		exit_server("out of memory in init_rpc_pipe_hnd\n");
+		exit_server("out of memory in init_rpc_pipe_hnd");
 }
 
 /****************************************************************************
@@ -158,14 +158,14 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	if ((p->mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
 	if (!init_pipe_handle_list(p, pipe_name)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		talloc_destroy(p->mem_ctx);
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -569,7 +569,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return (ssize_t)data_len;
 	}
 
@@ -618,7 +618,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		prs_mem_free(&rpc_in);
 	} else {
 		/*
@@ -926,7 +926,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	ZERO_STRUCTP(p);
 
-	free(p);
+	SAFE_FREE(p);
 	
 	return True;
 }

@@ -299,4 +299,8 @@ Byte offset   Type     name                description
 #define SMB_FILE_TRACKING_INFORMATION			1036
 #define SMB_FILE_MAXIMUM_INFORMATION			1037
 
+
 #endif
+
+
+

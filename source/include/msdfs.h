@@ -56,7 +56,8 @@ struct dfs_path
 {
 	pstring hostname;
 	pstring servicename;
-	pstring reqpath;
+  pstring volumename;
+  pstring restofthepath;
 };
 
 #ifdef WITH_MSDFS

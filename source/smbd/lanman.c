@@ -746,6 +746,8 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKS(desc,"z","WinPrint");	/* pszPrProc */
 		PACKS(desc,"z",NULL);		/* pszParms */
 		PACKS(desc,"z",NULL);		/* pszComment - don't ask.... JRA */
+		/* "don't ask" that it's done this way to fix corrupted 
+		   Win9X/ME printer comments. */
 		if (!status) {
 			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
 		} else {
@@ -954,10 +956,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 
 	DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
 
-	if (queue)
-		free(queue);
-	if (tmpdata)
-		free (tmpdata);
+	SAFE_FREE(queue);
+	SAFE_FREE(tmpdata);
 
 	return(True);
 }
@@ -1047,7 +1047,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
       }
   }
 
-  if (subcntarr) free(subcntarr);
+  SAFE_FREE(subcntarr);
  
   *rdata_len = desc.usedlen;
   *rparam_len = 8;
@@ -1058,11 +1058,11 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   SSVAL(*rparam,6,queuecnt);
   
   for (i = 0; i < queuecnt; i++) {
-    if (queue && queue[i]) free(queue[i]);
+    if (queue) SAFE_FREE(queue[i]);
   }
 
-  if (queue) free(queue);
-  if (status) free(status);
+  SAFE_FREE(queue);
+  SAFE_FREE(status);
   
   return True;
 }
@@ -1135,13 +1135,13 @@ static int get_server_info(uint32 servertype,
       struct srv_info_struct *ts;
 
       alloced += 10;
-      ts = (struct srv_info_struct *)Realloc(*servers,sizeof(**servers)*alloced);
+      ts = (struct srv_info_struct *)
+	Realloc(*servers,sizeof(**servers)*alloced);
       if (!ts) {
         DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
         return(0);
       }
-      else
-        *servers = ts;      
+      else *servers = ts;
       memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
     }
     s = &(*servers)[count];
@@ -1412,7 +1412,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,counted+missed);
 
-  if (servers) free(servers);
+  SAFE_FREE(servers);
 
   DEBUG(3,("NetServerEnum domain = %s uLevel=%d counted=%d total=%d\n",
 	   domain,uLevel,counted,counted+missed));
@@ -1909,6 +1909,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(str2,1);
 	int jobid, errcode;
 	extern struct current_user current_user;
+	WERROR werr = WERR_OK;
 
 	jobid = SVAL(p,0);
 
@@ -1929,18 +1930,21 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(&current_user, jobid, &errcode)) 
+		if (print_job_delete(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(&current_user, jobid, &errcode)) 
+		if (print_job_pause(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(&current_user, jobid, &errcode)) 
+		if (print_job_resume(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	}
+	
+	if (!W_ERROR_IS_OK(werr))
+		errcode = W_ERROR_V(werr);
 	
  out:
 	SSVAL(*rparam,0,errcode);	
@@ -1963,6 +1967,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	char *QueueName = skip_string(str2,1);
 	int errcode = NERR_notsupported;
 	int snum;
+	WERROR werr = WERR_OK;
 	extern struct current_user current_user;
 
 	/* check it's a supported varient */
@@ -1982,16 +1987,17 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 
 	switch (function) {
 	case 74: /* Pause queue */
-		if (print_queue_pause(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_pause(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	case 75: /* Resume queue */
-		if (print_queue_resume(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_resume(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	case 103: /* Purge */
-		if (print_queue_purge(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_purge(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	}
 
+	if (!W_ERROR_IS_OK(werr)) errcode = W_ERROR_V(werr);
  out:
 	SSVAL(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -2160,7 +2166,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	    pstrcpy(comment,servers[i].comment);	    
 	  }
       }
-      if (servers) free(servers);
+      SAFE_FREE(servers);
 
       SCVAL(p,0,lp_major_announce_version());
       SCVAL(p,1,lp_minor_announce_version());
@@ -2825,8 +2831,8 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,desc.neededlen);
 
-  if (queue) free(queue);
-  if (tmpdata) free(tmpdata);
+  SAFE_FREE(queue);
+  SAFE_FREE(tmpdata);
 
   DEBUG(4,("WPrintJobGetInfo: errorcode %d\n",desc.errcode));
   return(True);
@@ -2895,7 +2901,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   SSVAL(*rparam,4,succnt);
   SSVAL(*rparam,6,count);
 
-  if (queue) free(queue);
+  SAFE_FREE(queue);
 
   DEBUG(4,("WPrintJobEnumerate: errorcode %d\n",desc.errcode));
   return(True);
@@ -3014,7 +3020,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   SSVAL(*rparam,4,desc.neededlen);
 
   DEBUG(4,("WPrintDestGetInfo: errorcode %d\n",desc.errcode));
-  if (tmpdata) free (tmpdata);
+  SAFE_FREE(tmpdata);
   return(True);
 }
 

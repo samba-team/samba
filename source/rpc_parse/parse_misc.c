@@ -785,7 +785,7 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
  Copies a UNISTR2 structure.
 ********************************************************************/
 
-void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
+void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
 
 	/* set up string lengths. add one if string is not null-terminated */
@@ -822,7 +822,7 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
  Creates a STRING2 structure.
 ********************************************************************/
 
-void init_string2(STRING2 *str, char *buf, int len)
+void init_string2(STRING2 *str, const char *buf, int len)
 {
 	int alloc_len = 0;
 
@@ -908,6 +908,13 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 		smb_panic("init_unistr2: malloc fail\n");
 		return;
 	}
+
+	/*
+	 * don't move this test above ! The UNISTR2 must be initialized !!!
+	 * jfm, 7/7/2001.
+	 */
+	if (buf==NULL)
+		return;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
 	dos_struni2((char *)str->buffer, buf, len);
@@ -1523,4 +1530,68 @@ BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64)
 		prs_uint32(name, ps, depth+1, &data64->high);
 }
 
+/*******************************************************************
+reads or writes a BUFHDR2 structure.
+********************************************************************/
+BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_bufhdr2");
+	depth++;
 
+	prs_align(ps);
+	prs_uint32("info_level", ps, depth, &(hdr->info_level));
+	prs_uint32("length    ", ps, depth, &(hdr->length    ));
+	prs_uint32("buffer    ", ps, depth, &(hdr->buffer    ));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a BUFFER4 structure.
+********************************************************************/
+BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("buf_len", ps, depth, &(buf4->buf_len));
+
+	if (buf4->buf_len > MAX_BUFFERLEN)
+	{
+		buf4->buf_len = MAX_BUFFERLEN;
+	}
+
+	prs_uint8s(True, "buffer", ps, depth, buf4->buffer, buf4->buf_len);
+
+	return True;
+}
+
+/*******************************************************************
+creates a UNIHDR structure.
+********************************************************************/
+
+BOOL make_uni_hdr(UNIHDR *hdr, int len)
+{
+	if (hdr == NULL)
+	{
+		return False;
+	}
+	hdr->uni_str_len = 2 * len;
+	hdr->uni_max_len = 2 * len;
+	hdr->buffer      = len != 0 ? 1 : 0;
+
+	return True;
+}
+
+/*******************************************************************
+creates a BUFHDR2 structure.
+********************************************************************/
+BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
+{
+	hdr->info_level = info_level;
+	hdr->length     = length;
+	hdr->buffer     = buffer;
+
+	return True;
+}

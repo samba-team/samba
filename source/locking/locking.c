@@ -98,14 +98,13 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-             SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
-             int *eclass,uint32 *ecode)
+NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
-	BOOL ok = False;
+	NTSTATUS status;
 
 	if (!lp_locking(SNUM(conn)))
-		return(True);
+		return NT_STATUS_OK;
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
@@ -114,12 +113,12 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      lock_pid, sys_getpid(), conn->cnum, 
-			      offset, count, 
-			      lock_type);
+		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
+				  lock_pid, sys_getpid(), conn->cnum, 
+				  offset, count, 
+				  lock_type);
 
-		if (ok && lp_posix_locking(SNUM(conn))) {
+		if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(conn))) {
 
 			/*
 			 * Try and get a POSIX lock on this range.
@@ -127,9 +126,8 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 			 * overlapping on a different fd. JRA.
 			 */
 
-			ok = set_posix_lock(fsp, offset, count, lock_type);
-
-			if (!ok) {
+			if (!set_posix_lock(fsp, offset, count, lock_type)) {
+				status = NT_STATUS_LOCK_NOT_GRANTED;
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
@@ -141,31 +139,23 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		}
 	}
 
-	if (!ok) {
-		*eclass = ERRDOS;
-		*ecode = ERRlock;
-		return False;
-	}
-	return True; /* Got lock */
+	return status;
 }
 
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-               SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       int *eclass,uint32 *ecode)
+NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		   SMB_BIG_UINT count,SMB_BIG_UINT offset)
 {
 	BOOL ok = False;
 	
 	if (!lp_locking(SNUM(conn)))
-		return(True);
+		return NT_STATUS_OK;
 	
 	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
-		*eclass = ERRDOS;
-		*ecode = ERRbadfid;
-		return False;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
@@ -182,17 +172,15 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
-		*eclass = ERRDOS;
-		*ecode = ERRnotlocked;
-		return False;
+		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
 	if (!lp_posix_locking(SNUM(conn)))
-		return True;
+		return NT_STATUS_OK;
 
 	(void)release_posix_lock(fsp, offset, count);
 
-	return True; /* Did unlock */
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -421,7 +409,7 @@ int get_share_modes(connection_struct *conn,
 	ret = data->u.num_share_mode_entries;
 	if(ret)
 		*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	if (! *shares)
 		return 0;
@@ -451,7 +439,7 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 
 /*******************************************************************
  Check if two share mode entries are identical, ignoring oplock 
- and port info and also ignoring the delete on close setting. 
+ and port info. 
 ********************************************************************/
 
 BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
@@ -541,7 +529,7 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 				count = -1;
 		}
 	}
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	return count;
 }
 
@@ -596,7 +584,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		dbuf.dsize = size;
 		if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 			ret = False;
-		free(p);
+		SAFE_FREE(p);
 		return ret;
 	}
 
@@ -612,12 +600,12 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 	memcpy(p + sizeof(*data) + sizeof(share_mode_entry), dbuf.dptr + sizeof(*data),
 	       dbuf.dsize - sizeof(*data));
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize = size;
 	if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 		ret = False;
-	free(p);
+	SAFE_FREE(p);
 	return ret;
 }
 
@@ -662,7 +650,7 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 		}
 	}
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	return need_store;
 }
 
@@ -752,12 +740,12 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 	/* store it back */
 	if (data->u.num_share_mode_entries) {
 		if (tdb_store(tdb, locking_key(dev,inode), dbuf, TDB_REPLACE)==-1) {
-			free(dbuf.dptr);
+			SAFE_FREE(dbuf.dptr);
 			return False;
 		}
 	}
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	return True;
 }
 

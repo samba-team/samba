@@ -43,6 +43,7 @@ static BOOL challenge_sent=False;
 /*******************************************************************
 Get the next challenge value - no repeats.
 ********************************************************************/
+
 void generate_next_challenge(char *challenge)
 {
 	unsigned char buf[8];
@@ -55,23 +56,26 @@ void generate_next_challenge(char *challenge)
 }
 
 /*******************************************************************
-set the last challenge sent, usually from a password server
+ Set the last challenge sent, usually from a password server.
 ********************************************************************/
+
 BOOL set_challenge(unsigned char *challenge)
 {
-  memcpy(saved_challenge,challenge,8);
-  challenge_sent = True;
-  return(True);
+	memcpy(saved_challenge,challenge,8);
+	challenge_sent = True;
+	return(True);
 }
 
 /*******************************************************************
-get the last challenge sent
+ Get the last challenge sent.
 ********************************************************************/
+
 static BOOL last_challenge(unsigned char *challenge)
 {
-  if (!challenge_sent) return(False);
-  memcpy(challenge,saved_challenge,8);
-  return(True);
+	if (!challenge_sent)
+		return(False);
+	memcpy(challenge,saved_challenge,8);
+	return(True);
 }
 
 /* this holds info on user ids that are already validated for this VC */
@@ -80,10 +84,11 @@ static int next_vuid = VUID_OFFSET;
 static int num_validated_vuids;
 
 /****************************************************************************
-check if a uid has been validated, and return an pointer to the user_struct
-if it has. NULL if not. vuid is biased by an offset. This allows us to
-tell random client vuid's (normally zero) from valid vuids.
+ Check if a uid has been validated, and return an pointer to the user_struct
+ if it has. NULL if not. vuid is biased by an offset. This allows us to
+ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
+
 user_struct *get_valid_user_struct(uint16 vuid)
 {
 	user_struct *usp;
@@ -105,8 +110,9 @@ user_struct *get_valid_user_struct(uint16 vuid)
 }
 
 /****************************************************************************
-invalidate a uid
+ Invalidate a uid.
 ****************************************************************************/
+
 void invalidate_vuid(uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
@@ -118,15 +124,16 @@ void invalidate_vuid(uint16 vuid)
 
 	DLIST_REMOVE(validated_users, vuser);
 
-	safe_free(vuser->groups);
+	SAFE_FREE(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
 	safe_free(vuser);
 	num_validated_vuids--;
 }
 
 /****************************************************************************
-invalidate all vuid entries for this process
+ Invalidate all vuid entries for this process.
 ****************************************************************************/
+
 void invalidate_all_vuids(void)
 {
 	user_struct *usp, *next=NULL;
@@ -139,8 +146,9 @@ void invalidate_all_vuids(void)
 }
 
 /****************************************************************************
-return a validated username
+ Return a validated username.
 ****************************************************************************/
+
 char *validated_username(uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
@@ -150,8 +158,9 @@ char *validated_username(uint16 vuid)
 }
 
 /****************************************************************************
-return a validated domain
+ Return a validated domain.
 ****************************************************************************/
+
 char *validated_domain(uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
@@ -159,7 +168,6 @@ char *validated_domain(uint16 vuid)
 		return 0;
 	return(vuser->user.domain);
 }
-
 
 /****************************************************************************
  Create the SID list for this user.
@@ -251,9 +259,9 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 }
 
 /****************************************************************************
-register a uid/name pair as being valid and that a valid password
-has been given. vuid is biased by an offset. This allows us to
-tell random client vuid's (normally zero) from valid vuids.
+ Register a uid/name pair as being valid and that a valid password
+ has been given. vuid is biased by an offset. This allows us to
+ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
 int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
@@ -334,33 +342,32 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	return vuser->vuid;
 }
 
-
 /****************************************************************************
-add a name to the session users list
+ Add a name to the session users list.
 ****************************************************************************/
+
 void add_session_user(char *user)
 {
-  fstring suser;
-  StrnCpy(suser,user,sizeof(suser)-1);
+	fstring suser;
+	StrnCpy(suser,user,sizeof(suser)-1);
 
-  if (!Get_Pwnam(suser,True)) return;
+	if (!Get_Pwnam(suser,True))
+		return;
 
-  if (suser && *suser && !in_list(suser,session_users,False))
-    {
-      if (strlen(suser) + strlen(session_users) + 2 >= sizeof(pstring))
-	DEBUG(1,("Too many session users??\n"));
-      else
-	{
-	  pstrcat(session_users," ");
-	  pstrcat(session_users,suser);
+	if (suser && *suser && !in_list(suser,session_users,False)) {
+		if (strlen(suser) + strlen(session_users) + 2 >= sizeof(pstring))
+			DEBUG(1,("Too many session users??\n"));
+		else {
+			pstrcat(session_users," ");
+			pstrcat(session_users,suser);
+		}
 	}
-    }
 }
 
-
 /****************************************************************************
-update the encrypted smbpasswd file from the plaintext username and password
+ Update the encrypted smbpasswd file from the plaintext username and password.
 *****************************************************************************/
+
 static BOOL update_smbpassword_file(char *user, char *password)
 {
 	SAM_ACCOUNT 	*sampass = NULL;
@@ -396,56 +403,55 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	return ret;
 }
 
-
-
-
-
 /****************************************************************************
-core of smb password checking routine.
+ Core of smb password checking routine.
 ****************************************************************************/
+
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8)
 {
-  /* Finish the encryption of part_passwd. */
-  unsigned char p21[21];
-  unsigned char p24[24];
+	/* Finish the encryption of part_passwd. */
+	unsigned char p21[21];
+	unsigned char p24[24];
 
-  if (part_passwd == NULL)
-    DEBUG(10,("No password set - allowing access\n"));
-  /* No password set - always true ! */
-  if (part_passwd == NULL)
-    return 1;
+	if (part_passwd == NULL)
+		DEBUG(10,("No password set - allowing access\n"));
 
-  memset(p21,'\0',21);
-  memcpy(p21,part_passwd,16);
-  E_P24(p21, c8, p24);
+	/* No password set - always true ! */
+	if (part_passwd == NULL)
+		return True;
+
+	memset(p21,'\0',21);
+	memcpy(p21,part_passwd,16);
+	E_P24(p21, c8, p24);
 #if DEBUG_PASSWORD
-  {
-    int i;
-    DEBUG(100,("Part password (P16) was |"));
-    for(i = 0; i < 16; i++)
-      DEBUG(100,("%X ", (unsigned char)part_passwd[i]));
-    DEBUG(100,("|\n"));
-    DEBUG(100,("Password from client was |"));
-    for(i = 0; i < 24; i++)
-      DEBUG(100,("%X ", (unsigned char)password[i]));
-    DEBUG(100,("|\n"));
-    DEBUG(100,("Given challenge was |"));
-    for(i = 0; i < 8; i++)
-      DEBUG(100,("%X ", (unsigned char)c8[i]));
-    DEBUG(100,("|\n"));
-    DEBUG(100,("Value from encryption was |"));
-    for(i = 0; i < 24; i++)
-      DEBUG(100,("%X ", (unsigned char)p24[i]));
-    DEBUG(100,("|\n"));
-  }
+	{
+		int i;
+		DEBUG(100,("Part password (P16) was |"));
+		for(i = 0; i < 16; i++)
+			DEBUG(100,("%X ", (unsigned char)part_passwd[i]));
+		DEBUG(100,("|\n"));
+		DEBUG(100,("Password from client was |"));
+		for(i = 0; i < 24; i++)
+		DEBUG(100,("%X ", (unsigned char)password[i]));
+		DEBUG(100,("|\n"));
+		DEBUG(100,("Given challenge was |"));
+		for(i = 0; i < 8; i++)
+			DEBUG(100,("%X ", (unsigned char)c8[i]));
+		DEBUG(100,("|\n"));
+		DEBUG(100,("Value from encryption was |"));
+		for(i = 0; i < 24; i++)
+			DEBUG(100,("%X ", (unsigned char)p24[i]));
+		DEBUG(100,("|\n"));
+	}
 #endif
-  return (memcmp(p24, password, 24) == 0);
+	return (memcmp(p24, password, 24) == 0);
 }
 
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
+
 BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
                      uchar lm_pass[24], uchar nt_pass[24])
 {
@@ -495,8 +501,7 @@ BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
 
 	lm_pw = pdb_get_lanman_passwd(sampass);
 	
-	if((lm_pw == NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ)) 
-	{
+	if((lm_pw == NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ)) {
 		DEBUG(4,("smb_password_ok: no password required for user %s\n",user_name));
 		return True;
 	}
@@ -513,11 +518,9 @@ BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
 	return False;
 }
 
-
 /****************************************************************************
-check if a username/password is OK assuming the password is a 24 byte
-SMB hash
-return True if the password is correct, False otherwise
+ Check if a username/password is OK assuming the password is a 24 byte
+ SMB hash. Return True if the password is correct, False otherwise.
 ****************************************************************************/
 
 BOOL pass_check_smb(char *user, char *domain, uchar *chal, 
@@ -526,27 +529,21 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	SAM_ACCOUNT *sampass = NULL;
 
 	if (!lm_pwd || !nt_pwd)
-	{
 		return(False);
-	}
 
 #if 0	/* JERRY */
 	/* FIXME! this code looks to be unnecessary now that the passdb
 	   validates that the username exists and has a valid uid */
-	if (pwd != NULL && user == NULL)
-	{
+	if (pwd != NULL && user == NULL) {
 		pass = (struct passwd *) pwd;
 		user = pass->pw_name;
-	}
-	else
-	{
+	} else {
 		/* I don't get this call here.  I think it should be moved.
 		   Need to check on it.     --jerry */
 		pass = smb_getpwnam(user,True);
 	}
 
-	if (pass == NULL)
-	{
+	if (pass == NULL) {
 		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",user));
 		return(False);
 	}
@@ -554,8 +551,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 
 	/* get the account information */
 	pdb_init_sam(&sampass);
-	if (!pdb_getsampwnam(sampass, user))
-	{
+	if (!pdb_getsampwnam(sampass, user)) {
 		DEBUG(1,("Couldn't find user '%s' in passdb.\n", user));
 		return(False);
 	}
@@ -567,24 +563,18 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	}
 
 
-	if (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) 
-	{
-		if (lp_null_passwords()) 
-		{
+	if (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) {
+		if (lp_null_passwords()) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", user));
 			return(True);
-		} 
-		else 
-		{
+		} else {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", user));
 			return(False);
 		}		
 	}
 
 	if (smb_password_ok(sampass, chal, lm_pwd, nt_pwd))
-	{
 		return(True);
-	}
 	
 	DEBUG(2,("pass_check_smb failed - invalid password for user [%s]\n", user));
 
@@ -592,10 +582,11 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 }
 
 /****************************************************************************
-check if a username/password pair is OK either via the system password
-database or the encrypted SMB password database
-return True if the password is correct, False otherwise
+ Check if a username/password pair is OK either via the system password
+ database or the encrypted SMB password database
+ return True if the password is correct, False otherwise.
 ****************************************************************************/
+
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 {
 
@@ -625,7 +616,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 		 */
 
 		if (ret)
-		  return (smb_pam_accountcheck(user) == NT_STATUS_OK);
+		  return (NT_STATUS_V(smb_pam_accountcheck(user)) == NT_STATUS_V(NT_STATUS_OK));
 
 		return ret;
 	} 
@@ -636,8 +627,9 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 }
 
 /****************************************************************************
-check if a username is valid
+ Check if a username is valid
 ****************************************************************************/
+
 BOOL user_ok(char *user,int snum)
 {
 	pstring valid, invalid;
@@ -651,9 +643,8 @@ BOOL user_ok(char *user,int snum)
 	
 	ret = !user_in_list(user,invalid);
 	
-	if (ret && valid && *valid) {
+	if (ret && valid && *valid)
 		ret = user_in_list(user,valid);
-	}
 
 	if (ret && lp_onlyuser(snum)) {
 		char *user_list = lp_username(snum);
@@ -664,12 +655,10 @@ BOOL user_ok(char *user,int snum)
 	return(ret);
 }
 
-
-
-
 /****************************************************************************
-validate a group username entry. Return the username or NULL
+ Validate a group username entry. Return the username or NULL.
 ****************************************************************************/
+
 static char *validate_group(char *group,char *password,int pwlen,int snum)
 {
 #ifdef HAVE_NETGROUP
@@ -1029,10 +1018,10 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
   return False;
 }
 
-
 /****************************************************************************
-check for a possible hosts equiv or rhosts entry for the user
+ Check for a possible hosts equiv or rhosts entry for the user.
 ****************************************************************************/
+
 BOOL check_hosts_equiv(char *user)
 {
   char *fname = NULL;
@@ -1062,7 +1051,6 @@ BOOL check_hosts_equiv(char *user)
 
   return(False);
 }
-
 
 /****************************************************************************
  Return the client state structure.
@@ -1380,7 +1368,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
     return False;
   }
 
-  if (cli_nt_setup_creds(pcli, trust_passwd) == False) {
+  if (!NT_STATUS_IS_OK(cli_nt_setup_creds(pcli, trust_passwd))) {
     DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
     cli_nt_session_close(pcli);
@@ -1413,12 +1401,11 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
   return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
 }
 
-
-
 /***********************************************************************
  We have been asked to dynamcially determine the IP addresses of
  the PDC and BDC's for this DOMAIN, and query them in turn.
 ************************************************************************/
+
 static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd, time_t last_change_time)
 {
 	struct in_addr *ip_list = NULL;
@@ -1488,8 +1475,6 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 	return connected_ok;
 }
 
-
-
 /***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
  key from the machine password.
@@ -1512,6 +1497,7 @@ BOOL domain_client_validate( char *user, char *domain,
   uint32 smb_uid_low;
   BOOL connected_ok = False;
   time_t last_change_time;
+  NTSTATUS status;
 
   if (pptoken)
     *pptoken = NULL;
@@ -1614,20 +1600,22 @@ BOOL domain_client_validate( char *user, char *domain,
 
   ZERO_STRUCT(info3);
 
-  if(cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
+  status = cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
                           ((smb_apasslen != 0) ? smb_apasswd : NULL),
                           ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
-                          &ctr, &info3) == False) {
-    uint32 nt_rpc_err;
+                          &ctr, &info3);
 
-    cli_error(&cli, NULL, NULL, &nt_rpc_err);
+  if (!NT_STATUS_IS_OK(status)) {
+
+    NTSTATUS nt_rpc_err = cli_nt_error(&cli);
+
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
 
-    if((nt_rpc_err == NT_STATUS_NO_SUCH_USER) && (user_exists != NULL))
+    if((NT_STATUS_V(nt_rpc_err) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
       *user_exists = False;
 
     return False;

@@ -24,11 +24,7 @@
 */
 
 #include "includes.h"
-
-extern pstring server;
-extern pstring global_myname;
-extern pstring username, password;
-extern pstring workgroup;
+#include "rpcclient.h"
 
 struct table_node {
 	char 	*long_archi;
@@ -78,8 +74,9 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 /**********************************************************************
  * dummy function  -- placeholder
   */
-static uint32 cmd_spoolss_not_implemented (struct cli_state *cli, 
-					   int argc, char **argv)
+static NTSTATUS cmd_spoolss_not_implemented(struct cli_state *cli, 
+                                            TALLOC_CTX *mem_ctx,
+                                            int argc, char **argv)
 {
 	printf ("(*) This command is not currently implemented.\n");
 	return NT_STATUS_OK;
@@ -140,13 +137,14 @@ static void display_sec_desc(SEC_DESC *sec)
 /***********************************************************************
  * Get printer information
  */
-static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli, 
+                                            TALLOC_CTX *mem_ctx,
+                                            int argc, char **argv)
 {
-	uint32 		result = NT_STATUS_UNSUCCESSFUL; 
+	NTSTATUS 	result = NT_STATUS_UNSUCCESSFUL; 
 	pstring		printername;
 	fstring		servername, user;
 	POLICY_HND	hnd;
-	TALLOC_CTX 	*mem_ctx;
 	
 	if (argc != 2) {
 		printf("Usage: %s <printername>\n", argv[0]);
@@ -156,39 +154,22 @@ static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char 
 	if (!cli)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_open_printer_ex: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-
 	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (servername);
 	fstrcpy  (user, cli->user_name);
 	fstrcpy  (printername, argv[1]);
 
-		
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	/* Open the printer handle */
 	result = cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
 				MAXIMUM_ALLOWED_ACCESS, servername, user, &hnd);
 
-	if (result == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result)) {
 		printf ("Printer %s opened successfully\n", printername);
 		result = cli_spoolss_close_printer (cli, mem_ctx, &hnd);
-		if (result != NT_STATUS_OK) {
+		if (!NT_STATUS_IS_OK(result)) {
 			printf ("Error closing printer handle! (%s)\n", get_nt_error_msg(result));
 		}
 	}
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -202,9 +183,9 @@ static void display_print_info_0(PRINTER_INFO_0 *i1)
 	fstring 	name;
 	fstring 	servername;
 
-	unistr_to_ascii(name, i1->printername.buffer, sizeof(name) - 1);
-	unistr_to_ascii(servername, i1->servername.buffer, sizeof(servername) - 1);
-
+	rpcstr_pull(name, i1->printername.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(servername, i1->servername.buffer, sizeof(servername), 0,STR_TERMINATE);
+  
 	printf("\tprintername:[%s]\n", name);
 	printf("\tservername:[%s]\n", servername);
 	printf("\tcjobs:[0x%x]\n", i1->cjobs);
@@ -255,9 +236,9 @@ static void display_print_info_1(PRINTER_INFO_1 *i1)
 	fstring name;
 	fstring comm;
 
-	unistr_to_ascii(desc, i1->description.buffer, sizeof(desc) - 1);
-	unistr_to_ascii(name, i1->name       .buffer, sizeof(name) - 1);
-	unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm) - 1);
+	rpcstr_pull(desc, i1->description.buffer, sizeof(desc), 0, STR_TERMINATE);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), 0, STR_TERMINATE);
 
 	printf("\tflags:[0x%x]\n", i1->flags);
 	printf("\tname:[%s]\n", name);
@@ -282,23 +263,17 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 	fstring datatype;
 	fstring parameters;
 	
-	unistr_to_ascii(servername, i2->servername.buffer, 
-			sizeof(servername) - 1);
-	unistr_to_ascii(printername, i2->printername.buffer, 
-			sizeof(printername) - 1);
-	unistr_to_ascii(sharename, i2->sharename.buffer,
-			sizeof(sharename) - 1);
-	unistr_to_ascii(portname, i2->portname.buffer, sizeof(portname) - 1);
-	unistr_to_ascii(drivername, i2->drivername.buffer, 
-			sizeof(drivername) - 1);
-	unistr_to_ascii(comment, i2->comment.buffer, sizeof(comment) - 1);
-	unistr_to_ascii(location, i2->location.buffer, sizeof(location) - 1);
-	unistr_to_ascii(sepfile, i2->sepfile.buffer, sizeof(sepfile) - 1);
-	unistr_to_ascii(printprocessor, i2->printprocessor.buffer, 
-			sizeof(printprocessor) - 1);
-	unistr_to_ascii(datatype, i2->datatype.buffer, sizeof(datatype) - 1);
-	unistr_to_ascii(parameters, i2->parameters.buffer, 
-			sizeof(parameters) - 1);
+	rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), 0, STR_TERMINATE);
+	rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), 0, STR_TERMINATE);
+	rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), 0, STR_TERMINATE);
+	rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), 0, STR_TERMINATE);
+	rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), 0, STR_TERMINATE);
+	rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), 0, STR_TERMINATE);
+	rpcstr_pull(location, i2->location.buffer,sizeof(location), 0, STR_TERMINATE);
+	rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), 0, STR_TERMINATE);
+	rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), 0, STR_TERMINATE);
+	rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), 0, STR_TERMINATE);
+	rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), 0, STR_TERMINATE);
 
 	printf("\tservername:[%s]\n", servername);
 	printf("\tprintername:[%s]\n", printername);
@@ -335,14 +310,15 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 
 /* Enumerate printers */
 
-static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, char **argv)
 {
-	uint32 			result = NT_STATUS_UNSUCCESSFUL, 
-				info_level = 1;
+	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	uint32			info_level = 1;
 	PRINTER_INFO_CTR	ctr;
 	int 			returned;
 	uint32			i = 0;
-	TALLOC_CTX		*mem_ctx;
 
 	if (argc > 2) 
 	{
@@ -350,21 +326,8 @@ static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_enum_printers: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-
 	if (argc == 2) {
 		info_level = atoi(argv[1]);
-	}
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Enumerate printers  -- Should we enumerate types other 
@@ -373,7 +336,7 @@ static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **
 	result = cli_spoolss_enum_printers(cli, mem_ctx, PRINTER_ENUM_LOCAL, 
 					   info_level, &returned, &ctr);
 
-	if (result == NT_STATUS_OK) 
+	if (NT_STATUS_IS_OK(result)) 
 	{
 		if (!returned)
 			printf ("No Printers printers returned.\n");
@@ -405,9 +368,6 @@ static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **
 		}
 	}
 
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
@@ -418,7 +378,7 @@ static void display_port_info_1(PORT_INFO_1 *i1)
 {
 	fstring buffer;
 	
-	unistr_to_ascii(buffer, i1->port_name.buffer, sizeof(buffer)-1);
+	rpcstr_pull(buffer, i1->port_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
 	printf("\tPort Name:\t[%s]\n", buffer);
 }
 
@@ -429,11 +389,13 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 {
 	fstring buffer;
 	
-	unistr_to_ascii(buffer, i2->port_name.buffer, sizeof(buffer) - 1);
+	rpcstr_pull(buffer, i2->port_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
 	printf("\tPort Name:\t[%s]\n", buffer);
-	unistr_to_ascii(buffer, i2->monitor_name.buffer, sizeof(buffer) - 1);
+	rpcstr_pull(buffer, i2->monitor_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
+
 	printf("\tMonitor Name:\t[%s]\n", buffer);
-	unistr_to_ascii(buffer, i2->description.buffer, sizeof(buffer) - 1);
+	rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), 0, STR_TERMINATE);
+
 	printf("\tDescription:\t[%s]\n", buffer);
 	printf("\tPort Type:\t[%d]\n", i2->port_type);
 	printf("\tReserved:\t[%d]\n", i2->reserved);
@@ -442,34 +404,22 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 
 /* Enumerate ports */
 
-static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx,
+                                       int argc, char **argv)
 {
-	uint32 			result = NT_STATUS_UNSUCCESSFUL, 
-				info_level = 1;
+	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	uint32                  info_level = 1;
 	PORT_INFO_CTR 		ctr;
 	int 			returned;
-	TALLOC_CTX		*mem_ctx;
 	
 	if (argc > 2) {
 		printf("Usage: %s [level]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_enum_ports: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-
 	if (argc == 2) {
 		info_level = atoi(argv[1]);
-	}
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Enumerate ports */
@@ -477,7 +427,7 @@ static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **arg
 
 	result = cli_spoolss_enum_ports(cli, mem_ctx, info_level, &returned, &ctr);
 
-	if (result == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result)) {
 		int i;
 
 		for (i = 0; i < returned; i++) {
@@ -495,43 +445,28 @@ static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **arg
 		}
 	}
 
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /***********************************************************************
  * Get printer information
  */
-static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx,
+                                       int argc, char **argv)
 {
 	POLICY_HND 	pol;
-	uint32 		result, 
-			info_level = 1;
+	NTSTATUS	result;
+	uint32 		info_level = 1;
 	BOOL 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername, 
 			servername,
 			user;
-	TALLOC_CTX	*mem_ctx;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s <printername> [level]\n", argv[0]);
 		return NT_STATUS_OK;
-	}
-
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_getprinter: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Open a printer handle */
@@ -545,17 +480,18 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	fstrcpy  (user, cli->user_name);
 	
 	/* get a printer handle */
-	if ((result = cli_spoolss_open_printer_ex(
+	result = cli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, servername,
-		user, &pol)) != NT_STATUS_OK) {
+		user, &pol);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
  
 	opened_hnd = True;
 
 	/* Get printer info */
-	if ((result = cli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr))
-	    != NT_STATUS_OK) {
+	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -583,9 +519,6 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	if (opened_hnd) 
 		cli_spoolss_close_printer(cli, mem_ctx, &pol);
 
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
@@ -598,7 +531,7 @@ static void display_print_driver_1(DRIVER_INFO_1 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
 
 	printf ("Printer Driver Info 1:\n");
 	printf ("\tDriver Name: [%s]\n\n", name);
@@ -619,11 +552,11 @@ static void display_print_driver_2(DRIVER_INFO_2 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
-	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
-	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
-	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
-	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
 
 	printf ("Printer Driver Info 2:\n");
 	printf ("\tVersion: [%x]\n", i1->version);
@@ -657,19 +590,18 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
-	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
-	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
-	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
-	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
-	unistr_to_ascii(helpfile, i1->helpfile.buffer, sizeof(helpfile)-1);
-	
-	unistr_to_ascii(monitorname, i1->monitorname.buffer, sizeof(monitorname)-1);
-	unistr_to_ascii(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
+	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), 0, STR_TERMINATE);
+	rpcstr_pull(monitorname, i1->monitorname.buffer, sizeof(monitorname), 0, STR_TERMINATE);
+	rpcstr_pull(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype), 0, STR_TERMINATE);
 
 	printf ("Printer Driver Info 3:\n");
 	printf ("\tVersion: [%x]\n", i1->version);
-	printf ("\tDriver Name: [%s]\n",name );
+	printf ("\tDriver Name: [%s]\n",name);
 	printf ("\tArchitecture: [%s]\n", architecture);
 	printf ("\tDriver Path: [%s]\n", driverpath);
 	printf ("\tDatafile: [%s]\n", datafile);
@@ -678,7 +610,8 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 
 	while (valid)
 	{
-		unistr_to_ascii(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles)-1);
+		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), 0, STR_TERMINATE);
+		
 		length+=strlen(dependentfiles)+1;
 		
 		if (strlen(dependentfiles) > 0)
@@ -702,36 +635,24 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 /***********************************************************************
  * Get printer information
  */
-static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli, 
+                                      TALLOC_CTX *mem_ctx,
+                                      int argc, char **argv)
 {
 	POLICY_HND 	pol;
-	uint32 		result, 
-			info_level = 3;
+	NTSTATUS	result;
+	uint32		info_level = 3;
 	BOOL 		opened_hnd = False;
 	PRINTER_DRIVER_CTR 	ctr;
 	fstring 	printername, 
 			servername, 
 			user;
 	uint32		i;
-	TALLOC_CTX	*mem_ctx;
 
 	if ((argc == 1) || (argc > 3)) 
 	{
 		printf("Usage: %s <printername> [level]\n", argv[0]);
 		return NT_STATUS_OK;
-	}
-
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_getdriver: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
-	{
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* get the arguments need to open the printer handle */
@@ -743,9 +664,9 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 		info_level = atoi(argv[2]);
 
 	/* Open a printer handle */
-	if ((result=cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
-		    MAXIMUM_ALLOWED_ACCESS, servername, user, &pol)) != NT_STATUS_OK) 
-	{
+	result=cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
+					    MAXIMUM_ALLOWED_ACCESS, servername, user, &pol);
+	if (!NT_STATUS_IS_OK(result)) {
 		printf ("Error opening printer handle for %s!\n", printername);
 		return result;
 	}
@@ -755,20 +676,9 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 	/* loop through and print driver info level for each architecture */
 	for (i=0; archi_table[i].long_archi!=NULL; i++) 
 	{
-		result = cli_spoolss_getprinterdriver (cli, mem_ctx, &pol, info_level, 
-				archi_table[i].long_archi, &ctr);
-				
-		switch (result)
-		{
-		case ERRsuccess:
-			break;
-			
-		case ERRunknownprinterdriver:
-			continue;
-
-		default:
-			printf ("Error getting driver for %s [%s] - %s\n", printername,
-				archi_table[i].long_archi, get_nt_error_msg(result));
+		result = cli_spoolss_getprinterdriver(cli, mem_ctx, &pol, info_level, 
+						       archi_table[i].long_archi, &ctr);
+		if (!NT_STATUS_IS_OK(result)) {
 			continue;
 		}
 
@@ -790,54 +700,34 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 			printf("unknown info level %d\n", info_level);
 			break;
 		}
-		
-	
 	}
 	
-
 	/* cleanup */
 	if (opened_hnd)
 		cli_spoolss_close_printer (cli, mem_ctx, &pol);
-	cli_nt_session_close (cli);
-	talloc_destroy(mem_ctx);
 	
-	if (result==ERRunknownprinterdriver)
-		return NT_STATUS_OK;
-	else 
-		return result;
+	return result;
 		
 }
 
 /***********************************************************************
  * Get printer information
  */
-static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_enum_drivers(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, char **argv)
 {
-	uint32 		result=0, 
-			info_level = 1;
+	NTSTATUS	result = NT_STATUS_OK;
+	uint32          info_level = 1;
 	PRINTER_DRIVER_CTR 	ctr;
 	fstring 	servername;
 	uint32		i, j,
 			returned;
-	TALLOC_CTX	*mem_ctx;
 
 	if (argc > 2) 
 	{
 		printf("Usage: enumdrivers [level]\n");
 		return NT_STATUS_OK;
-	}
-
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_enum_drivers: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
-	{
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* get the arguments need to open the printer handle */
@@ -858,7 +748,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 			continue;
 			
 
-		if (result != NT_STATUS_OK)
+		if (!NT_STATUS_IS_OK(result))
 		{
 			printf ("Error getting driver for environment [%s] - %s\n",
 				archi_table[i].long_archi, get_nt_error_msg(result));
@@ -890,16 +780,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 		}
 	}
 	
-
-	/* cleanup */
-	cli_nt_session_close (cli);
-	talloc_destroy(mem_ctx);
-	
-	if (result==ERRunknownprinterdriver)
-		return NT_STATUS_OK;
-	else 
-		return result;
-		
+	return result;
 }
 
 /****************************************************************************
@@ -911,7 +792,7 @@ static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
         if (i1 == NULL)
                 return;
  
-        unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
  
 	printf ("\tDirectory Name:[%s]\n", name);
 }
@@ -919,32 +800,19 @@ static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
 /***********************************************************************
  * Get printer driver directory information
  */
-static uint32 cmd_spoolss_getdriverdir(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_getdriverdir(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, char **argv)
 {
-	uint32 			result;
+	NTSTATUS		result;
 	fstring			env;
 	DRIVER_DIRECTORY_CTR	ctr;
-	TALLOC_CTX		*mem_ctx;
 
 	if (argc > 2) 
 	{
 		printf("Usage: %s [environment]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
-	{
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_getdriverdir: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 
 	/* get the arguments need to open the printer handle */
 	if (argc == 2)
@@ -953,21 +821,15 @@ static uint32 cmd_spoolss_getdriverdir(struct cli_state *cli, int argc, char **a
 		fstrcpy (env, "Windows NT x86");
 
 	/* Get the directory.  Only use Info level 1 */
-	if ((result = cli_spoolss_getprinterdriverdir (cli, mem_ctx, 1, env, &ctr)) 
-	     != NT_STATUS_OK)
-	{
+	result = cli_spoolss_getprinterdriverdir (cli, mem_ctx, 1, env, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
 	
 	display_printdriverdir_1 (ctr.info1);
 
-	/* cleanup */
-	cli_nt_session_close (cli);
-	talloc_destroy(mem_ctx);
-	
 	return result;
-		
 }
 
 /*******************************************************************************
@@ -1078,15 +940,16 @@ static BOOL init_drv_info_3_members (
 }
 
 
-static uint32 cmd_spoolss_addprinterdriver (struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli, 
+                                             TALLOC_CTX *mem_ctx,
+                                             int argc, char **argv)
 {
-	uint32 			result,
-				level = 3;
+	NTSTATUS		result;
+	uint32                  level = 3;
 	PRINTER_DRIVER_CTR	ctr;
 	DRIVER_INFO_3		info3;
 	fstring			arch;
 	fstring			driver_name;
-	TALLOC_CTX		*mem_ctx = NULL;
 
 	/* parse the command arguements */
 	if (argc != 3)
@@ -1098,20 +961,6 @@ static uint32 cmd_spoolss_addprinterdriver (struct cli_state *cli, int argc, cha
 
 		return NT_STATUS_OK;
         }
-	
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_addprinterdriver: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
-	{
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 		
 	/* Fill in the DRIVER_INFO_3 struct */
 	ZERO_STRUCT(info3);
@@ -1131,32 +980,27 @@ static uint32 cmd_spoolss_addprinterdriver (struct cli_state *cli, int argc, cha
 
 
 	ctr.info3 = &info3;
-	if ((result = cli_spoolss_addprinterdriver (cli, mem_ctx, level, &ctr)) 
-	     != NT_STATUS_OK)
-	{
+	result = cli_spoolss_addprinterdriver (cli, mem_ctx, level, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	unistr_to_ascii (driver_name, info3.name.buffer, sizeof(driver_name)-1);
+	rpcstr_pull(driver_name, info3.name.buffer, sizeof(driver_name), 0, STR_TERMINATE);
 	printf ("Printer Driver %s successfully installed.\n", driver_name);
 
-	/* cleanup */
-	cli_nt_session_close (cli);
-	talloc_destroy(mem_ctx);
-	
 	return result;
-		
 }
 
 
-static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_addprinterex(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx, 
+                                         int argc, char **argv)
 {
-	uint32 			result,
-				level = 2;
+	NTSTATUS		result;
+	uint32			level = 2;
 	PRINTER_INFO_CTR	ctr;
 	PRINTER_INFO_2		info2;
 	fstring			servername;
-	TALLOC_CTX		*mem_ctx = NULL;
 	
 	/* parse the command arguements */
 	if (argc != 5)
@@ -1165,24 +1009,9 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 		return NT_STATUS_OK;
         }
 	
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_addprinterex: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-
         slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (servername);
 
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
-	{
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-		
 	/* Fill in the DRIVER_INFO_3 struct */
 	ZERO_STRUCT(info2);
 #if 0	/* JERRY */
@@ -1212,35 +1041,29 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 	*/
 
 	ctr.printers_2 = &info2;
-	if ((result = cli_spoolss_addprinterex (cli, mem_ctx, level, &ctr)) 
-	     != NT_STATUS_OK)
-	{
-		cli_nt_session_close (cli);
+	result = cli_spoolss_addprinterex (cli, mem_ctx, level, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
 	printf ("Printer %s successfully installed.\n", argv[1]);
 
-	/* cleanup */
-	cli_nt_session_close (cli);
-	talloc_destroy(mem_ctx);
-	
 	return result;
-		
 }
 
-static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli, 
+                                      TALLOC_CTX *mem_ctx,
+                                      int argc, char **argv)
 {
 	POLICY_HND		pol;
-	uint32 			result,
-				level = 2;
+	NTSTATUS		result;
+	uint32			level = 2;
 	BOOL			opened_hnd = False;
 	PRINTER_INFO_CTR	ctr;
 	PRINTER_INFO_2		info2;
 	fstring			servername,
 				printername,
 				user;
-	TALLOC_CTX		*mem_ctx = NULL;
 	
 	/* parse the command arguements */
 	if (argc != 3)
@@ -1249,30 +1072,15 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 		return NT_STATUS_OK;
         }
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_setdriver: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (servername);
 	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
 	fstrcpy  (user, cli->user_name);
 
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
-	{
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-		
 	/* get a printer handle */
-	if ((result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-		MAXIMUM_ALLOWED_ACCESS, servername, user, &pol)) 
-		!= NT_STATUS_OK) 
-	{
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+					     MAXIMUM_ALLOWED_ACCESS, servername, user, &pol);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
  
@@ -1281,16 +1089,16 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 	/* Get printer info */
 	ZERO_STRUCT (info2);
 	ctr.printers_2 = &info2;
-	if ((result = cli_spoolss_getprinter(cli, mem_ctx, &pol, level, &ctr)) != NT_STATUS_OK) 
-	{
+	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, level, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
 		printf ("Unable to retrieve printer information!\n");
 		goto done;
 	}
 
 	/* set the printer driver */
 	init_unistr(&ctr.printers_2->drivername, argv[2]);
-	if ((result = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0)) != NT_STATUS_OK)
-	{
+	result = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0);
+	if (!NT_STATUS_IS_OK(result)) {
 		printf ("SetPrinter call failed!\n");
 		goto done;;
 	}
@@ -1301,18 +1109,17 @@ done:
 	/* cleanup */
 	if (opened_hnd)
 		cli_spoolss_close_printer(cli, mem_ctx, &pol);
-	cli_nt_session_close (cli);
-	talloc_destroy(mem_ctx);
 	
 	return result;		
 }
 
 
-static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, char **argv)
 {
-	uint32 			result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
 	fstring			servername;
-	TALLOC_CTX		*mem_ctx = NULL;
 	int			i;
 	
 	/* parse the command arguements */
@@ -1322,29 +1129,16 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 		return NT_STATUS_OK;
         }
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_deletedriver: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (servername);
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
-	{
-		fprintf (stderr, "Could not initialize spoolss pipe!\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* delete the driver for all architectures */
 	for (i=0; archi_table[i].long_archi; i++)
 	{
 		/* make the call to remove the driver */
-		if ((result = cli_spoolss_deleteprinterdriver(cli, mem_ctx, 
-			archi_table[i].long_archi, argv[1])) != NT_STATUS_OK)
-		{
+		result = cli_spoolss_deleteprinterdriver(cli, mem_ctx, 
+							 archi_table[i].long_archi, argv[1]);
+		if (!NT_STATUS_IS_OK(result)) {
 			printf ("Failed to remove driver %s for arch [%s] - error %s!\n", 
 				argv[1], archi_table[i].long_archi, get_nt_error_msg(result));
 		}
@@ -1352,11 +1146,6 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 			printf ("Driver %s removed for arch [%s].\n", argv[1], archi_table[i].long_archi);
 	}
 		
-
-	/* cleanup */
-	cli_nt_session_close (cli);
-	talloc_destroy(mem_ctx);
-	
 	return NT_STATUS_OK;		
 }
 
@@ -1364,20 +1153,22 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
-	{ "SPOOLSS", 		NULL, 				"" },
-	{ "adddriver",		cmd_spoolss_addprinterdriver,	"Add a print driver" },
-	{ "addprinter",		cmd_spoolss_addprinterex,	"Add a printer" },
-	{ "deldriver",		cmd_spoolss_deletedriver,	"Delete a printer driver" },
-	{ "enumdata",		cmd_spoolss_not_implemented,	"Enumerate printer data (*)" },
-	{ "enumjobs",		cmd_spoolss_not_implemented,	"Enumerate print jobs (*)" },
-	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports" },
-	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	"Enumerate installed printer drivers" },
-	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers" },
-	{ "getdata",		cmd_spoolss_not_implemented,	"Get print driver data (*)" },
-	{ "getdriver",		cmd_spoolss_getdriver,		"Get print driver information" },
-	{ "getdriverdir",	cmd_spoolss_getdriverdir,	"Get print driver upload directory" },
-	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
-	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle" },
-	{ "setdriver",		cmd_spoolss_setdriver,		"Set printer driver" },
-	{ NULL, NULL, NULL }
+	{ "SPOOLSS"  },
+
+	{ "adddriver",		cmd_spoolss_addprinterdriver,	PIPE_SPOOLSS, "Add a print driver",                  "" },
+	{ "addprinter",		cmd_spoolss_addprinterex,	PIPE_SPOOLSS, "Add a printer",                       "" },
+	{ "deldriver",		cmd_spoolss_deletedriver,	PIPE_SPOOLSS, "Delete a printer driver",             "" },
+	{ "enumdata",		cmd_spoolss_not_implemented,	PIPE_SPOOLSS, "Enumerate printer data (*)",          "" },
+	{ "enumjobs",		cmd_spoolss_not_implemented,	PIPE_SPOOLSS, "Enumerate print jobs (*)",            "" },
+	{ "enumports", 		cmd_spoolss_enum_ports, 	PIPE_SPOOLSS, "Enumerate printer ports",             "" },
+	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	PIPE_SPOOLSS, "Enumerate installed printer drivers", "" },
+	{ "enumprinters", 	cmd_spoolss_enum_printers, 	PIPE_SPOOLSS, "Enumerate printers",                  "" },
+	{ "getdata",		cmd_spoolss_not_implemented,	PIPE_SPOOLSS, "Get print driver data (*)",           "" },
+	{ "getdriver",		cmd_spoolss_getdriver,		PIPE_SPOOLSS, "Get print driver information",        "" },
+	{ "getdriverdir",	cmd_spoolss_getdriverdir,	PIPE_SPOOLSS, "Get print driver upload directory",   "" },
+	{ "getprinter", 	cmd_spoolss_getprinter, 	PIPE_SPOOLSS, "Get printer info",                    "" },
+	{ "openprinter",	cmd_spoolss_open_printer_ex,	PIPE_SPOOLSS, "Open printer handle",                 "" },
+	{ "setdriver",		cmd_spoolss_setdriver,		PIPE_SPOOLSS, "Set printer driver",                  "" },
+
+	{ NULL }
 };

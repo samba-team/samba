@@ -303,12 +303,12 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 	r_u.status = _spoolss_rfnpcnex(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_rfnpcnex("", &r_u, rdata, 0)) {
-		safe_free(r_u.info.data);
+		SAFE_FREE(r_u.info.data);
 		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
 		return False;
 	}
 
-	safe_free(r_u.info.data);
+	SAFE_FREE(r_u.info.data);
 
 	return True;
 }
@@ -1108,7 +1108,7 @@ static BOOL api_spoolss_addprintprocessor(pipes_struct *p)
 	   automatically set the winprint processor for printer
 	   entries later.  Used to debug the LexMark Optra S 1855 PCL
 	   driver --jerry */
-	r_u.status = NT_STATUS_OK;
+	r_u.status = WERR_OK;
 
 	if(!spoolss_io_r_addprintprocessor("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprintprocessor: unable to marshall SPOOL_R_ADDPRINTPROCESSOR.\n"));
@@ -1199,6 +1199,66 @@ static BOOL api_spoolss_getjob(pipes_struct *p)
 	return True;
 }
 
+/********************************************************************
+ * api_spoolss_getprinterdataex
+ *
+ * called from the spoolss dispatcher
+ ********************************************************************/
+
+static BOOL api_spoolss_getprinterdataex(pipes_struct *p)
+{
+	SPOOL_Q_GETPRINTERDATAEX q_u;
+	SPOOL_R_GETPRINTERDATAEX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* read the stream and fill the struct */
+	if (!spoolss_io_q_getprinterdataex("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_getprinterdataex: unable to unmarshall SPOOL_Q_GETPRINTERDATAEX.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_getprinterdataex( p, &q_u, &r_u);
+
+	if (!spoolss_io_r_getprinterdataex("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_getprinterdataex: unable to marshall SPOOL_R_GETPRINTERDATAEX.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL api_spoolss_setprinterdataex(pipes_struct *p)
+{
+	SPOOL_Q_SETPRINTERDATAEX q_u;
+	SPOOL_R_SETPRINTERDATAEX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_setprinterdataex("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_setprinterdataex: unable to unmarshall SPOOL_Q_SETPRINTERDATAEX.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_setprinterdataex(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_setprinterdataex("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_setprinterdataex: unable to marshall SPOOL_R_SETPRINTERDATAEX.\n"));
+		return False;
+	}
+
+	return True;
+}
+
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
@@ -1245,6 +1305,9 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMMONITORS",              SPOOLSS_ENUMMONITORS,              api_spoolss_enumprintmonitors         },
  {"SPOOLSS_GETJOB",                    SPOOLSS_GETJOB,                    api_spoolss_getjob                    },
  {"SPOOLSS_ENUMPRINTPROCDATATYPES",    SPOOLSS_ENUMPRINTPROCDATATYPES,    api_spoolss_enumprintprocdatatypes    },
+ {"SPOOLSS_GETPRINTERDATAEX",          SPOOLSS_GETPRINTERDATAEX,          api_spoolss_getprinterdataex          },
+ {"SPOOLSS_SETPRINTERDATAEX",          SPOOLSS_SETPRINTERDATAEX,          api_spoolss_setprinterdataex          },
+
  { NULL,                               0,                                 NULL                                  }
 };
 

@@ -91,7 +91,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 
@@ -613,7 +613,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
  Marshall a fault pdu.
 *******************************************************************/
 
-BOOL setup_fault_pdu(pipes_struct *p, uint32 status)
+BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 {
 	prs_struct outgoing_pdu;
 	RPC_HDR fault_hdr;
@@ -1188,7 +1188,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		 * and not put the pipe into fault state. JRA.
 		 */
 		DEBUG(4, ("unknown\n"));
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 
@@ -1223,7 +1223,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		if (data) {
 			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data,
 				   data_len);
-			free(data);
+			SAFE_FREE(data);
 		}
 
 	}

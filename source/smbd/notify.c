@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern uint32 global_client_caps;
-
 static struct cnotify_fns *cnotify;
 
 /****************************************************************************
@@ -47,27 +45,14 @@ static struct change_notify *change_notify_list;
 /****************************************************************************
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
-
-static void change_notify_reply_packet(char *inbuf, uint32 error_code)
+static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
 	construct_reply_common(inbuf, outbuf);
 
-	/*
-	 * If we're returning a 'too much in the directory changed' we need to
-	 * set this is an NT error status flags. If we don't then the (probably
-	 * untested) code in the NT redirector has a bug in that it doesn't re-issue
-	 * the change notify.... Ah - I *love* it when I get so deeply into this I
-	 * can even determine how MS failed to test stuff and why.... :-). JRA.
-	 */
-	
-	if (global_client_caps & CAP_STATUS32) {
-		ERROR(0,error_code);
-	} else {
-		ERROR(ERRDOS,STATUS_NOTIFY_ENUM_DIR);
-	}
+	ERROR_NT(error_code);
 
 	/*
 	 * Seems NT needs a transact command with an error code
@@ -76,7 +61,7 @@ static void change_notify_reply_packet(char *inbuf, uint32 error_code)
 	set_message(outbuf,18,0,False);
 
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("change_notify_reply_packet: send_smb failed.\n");
+		exit_server("change_notify_reply_packet: send_smb failed.");
 }
 
 /****************************************************************************
@@ -89,7 +74,7 @@ static void change_notify_remove(struct change_notify *cnbp)
 	cnotify->remove_notify(cnbp->change_data);
 	DLIST_REMOVE(change_notify_list, cnbp);
 	ZERO_STRUCTP(cnbp);
-	free(cnbp);
+	SAFE_FREE(cnbp);
 }
 
 /****************************************************************************
@@ -207,7 +192,7 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	cnbp->change_data = cnotify->register_notify(conn, fsp->fsp_name, flags);
 	
 	if (!cnbp->change_data) {
-		free(cnbp);
+		SAFE_FREE(cnbp);
 		return False;
 	}
 

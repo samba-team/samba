@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+/* To be removed.... JRA */
+#define SMB_ALIGNMENT 1
+
 struct timeval smb_last_time;
 
 static char *InBuffer = NULL;
@@ -707,7 +710,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     /* does this protocol need a valid tree connection? */
     if ((flags & AS_USER) && !conn) {
-	    return ERROR(ERRSRV, ERRinvnid);
+	    return ERROR_DOS(ERRSRV, ERRinvnid);
     }
 
 
@@ -716,7 +719,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       if (flags & AS_GUEST) 
         flags &= ~AS_USER;
       else
-        return(ERROR(ERRSRV,ERRaccess));
+        return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     /* this code is to work around a bug is MS client 3 without
@@ -727,23 +730,23 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     /* does it need write permission? */
     if ((flags & NEED_WRITE) && !CAN_WRITE(conn))
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
 
     /* ipc services are limited */
     if (IS_IPC(conn) && (flags & AS_USER) && !(flags & CAN_IPC)) {
-      return(ERROR(ERRSRV,ERRaccess));	    
+      return(ERROR_DOS(ERRSRV,ERRaccess));	    
     }
 
     /* load service specific parameters */
     if (conn && !set_current_service(conn,(flags & AS_USER)?True:False)) {
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     /* does this protocol need to be run as guest? */
     if ((flags & AS_GUEST) && 
 		 (!change_to_guest() || 
 		!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     last_inbuf = inbuf;

@@ -3,7 +3,7 @@
    Version 2.2
    RPC pipe client
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter 2000-2001
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "rpcclient.h"
 
 extern pstring debugf;
 
@@ -83,7 +84,7 @@ static char **completion_fn(char *text, int start, int end)
 	}
 
 	if (count == 2) {
-		free(matches[0]);
+		SAFE_FREE(matches[0]);
 		matches[0] = strdup(matches[1]);
 	}
 	matches[count] = NULL;
@@ -131,7 +132,7 @@ static void read_authfile (
 		/* break up the line into parameter & value.
 		   will need to eat a little whitespace possibly */
 		param = buf;
-		if (!(ptr = strchr (buf, '=')))
+		if (!(ptr = strchr(buf, '=')))
 			continue;
 		val = ptr+1;
 		*ptr = '\0';
@@ -186,11 +187,13 @@ static void get_username (char *username)
 	return;
 }
 
-/* Fetch the SID for this domain */
-void fetch_domain_sid(struct cli_state *cli)
+/* Fetch the SID for this computer */
+
+void fetch_machine_sid(struct cli_state *cli)
 {
 	POLICY_HND pol;
-	uint32 result = 0, info_class = 5;
+	NTSTATUS result = NT_STATUS_OK;
+	uint32 info_class = 5;
 	fstring domain_name;
 	static BOOL got_domain_sid;
 	TALLOC_CTX *mem_ctx;
@@ -209,15 +212,16 @@ void fetch_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	
-	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
-					  SEC_RIGHTS_MAXIMUM_ALLOWED,
-					  &pol) != NT_STATUS_OK)) {
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
-	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
-						domain_name, &domain_sid))
-	    != NT_STATUS_OK) {
+	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
+					   domain_name, &domain_sid);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
@@ -232,7 +236,7 @@ void fetch_domain_sid(struct cli_state *cli)
  error:
 	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
 
-	if (result != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result)) {
 		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
 	}
 
@@ -245,7 +249,7 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 			  char* domain, char* password)
 {
 	ZERO_STRUCTP(creds);
-	
+
 	if (lp_encrypted_passwords()) {
 		pwd_make_lm_nt_16(&creds->pwd, password);
 	} else {
@@ -254,27 +258,76 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 
 	fstrcpy(creds->user_name, username);
 	fstrcpy(creds->domain, domain);
+
+	if (! *username) {
+		creds->pwd.null_pwd = True;
+	}
 }
 
 
-static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
+/* Display help on commands */
+
+static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, char **argv)
 {
-	struct cmd_list *temp_list;
+	struct cmd_list *tmp;
+        struct cmd_set *tmp_set;
 
-	for (temp_list = cmd_list; temp_list; temp_list = temp_list->next) {
-		struct cmd_set *temp_set = temp_list->cmd_set;
+        /* Usage */
 
-		while(temp_set->name) {
-			printf("%15s\t\t%s\n", temp_set->name,
-			       temp_set->description);
-			temp_set++;
+        if (argc > 2) {
+                printf("Usage: %s [command]\n", argv[0]);
+                return NT_STATUS_OK;
+        }
+
+        /* Help on one command */
+
+        if (argc == 2) {
+                for (tmp = cmd_list; tmp; tmp = tmp->next) {
+                        
+                        tmp_set = tmp->cmd_set;
+
+                        while(tmp_set->name) {
+                                if (strequal(argv[1], tmp_set->name)) {
+                                        if (tmp_set->usage &&
+                                            tmp_set->usage[0])
+                                                printf("%s\n", tmp_set->usage);
+                                        else
+                                                printf("No help for %s\n", tmp_set->name);
+
+                                        return NT_STATUS_OK;
+                                }
+
+                                tmp_set++;
+                        }
+                }
+
+                printf("No such command: %s\n", argv[1]);
+                return NT_STATUS_OK;
+        }
+
+        /* List all commands */
+
+	for (tmp = cmd_list; tmp; tmp = tmp->next) {
+
+		tmp_set = tmp->cmd_set;
+
+		while(tmp_set->name) {
+
+			printf("%15s\t\t%s\n", tmp_set->name,
+			       tmp_set->description);
+
+			tmp_set++;
 		}
 	}
 
-	return 0;
+	return NT_STATUS_OK;
 }
 
-static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
+/* Change the debug level */
+
+static NTSTATUS cmd_debuglevel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                               int argc, char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -290,7 +343,8 @@ static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 	return NT_STATUS_OK;
 }
 
-static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_quit(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, char **argv)
 {
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */
@@ -299,19 +353,21 @@ static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
 /* Build in rpcclient commands */
 
 static struct cmd_set rpcclient_commands[] = {
-	{ "GENERAL OPTIONS", 	NULL, 	"" },
-	{ "help", 	cmd_help, 	"Print list of commands" },
-	{ "?", 		cmd_help, 	"Print list of commands" },
-	{ "debuglevel", cmd_debuglevel, "Set debug level" },
-	{ "exit", 	cmd_quit, 	"Exit program" },
-	{ "quit", 	cmd_quit, 	"Exit program" },
 
-	{ NULL, NULL, NULL }
+	{ "GENERAL OPTIONS" },
+
+	{ "help", 	cmd_help, 	NULL,	"Get help on commands", "[command]" },
+	{ "?", 		cmd_help, 	NULL,	"Get help on commands", "[command]" },
+	{ "debuglevel", cmd_debuglevel, NULL,	"Set debug level", "level" },
+	{ "exit", 	cmd_quit, 	NULL,	"Exit program", "" },
+	{ "quit", 	cmd_quit, 	NULL,	"Exit program", "" },
+
+	{ NULL }
 };
 
 static struct cmd_set separator_command[] = {
-	{ "---------------", NULL,	"----------------------" },
-	{ NULL, NULL, NULL }
+	{ "---------------", NULL,	NULL,	"----------------------" },
+	{ NULL }
 };
 
 
@@ -322,6 +378,8 @@ extern struct cmd_set samr_commands[];
 extern struct cmd_set spoolss_commands[];
 extern struct cmd_set netlogon_commands[];
 extern struct cmd_set srvsvc_commands[];
+extern struct cmd_set dfs_commands[];
+extern struct cmd_set reg_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -330,10 +388,12 @@ static struct cmd_set *rpcclient_command_list[] = {
 	spoolss_commands,
 	netlogon_commands,
 	srvsvc_commands,
+	dfs_commands,
+	reg_commands,
 	NULL
 };
 
-void add_command_set(struct cmd_set *cmd_set)
+static void add_command_set(struct cmd_set *cmd_set)
 {
 	struct cmd_list *entry;
 
@@ -348,20 +408,19 @@ void add_command_set(struct cmd_set *cmd_set)
 	DLIST_ADD(cmd_list, entry);
 }
 
-static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd)
+static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, 
+                       char *cmd)
 {
 	char *p = cmd, **argv = NULL;
-	uint32 result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
-	int argc = 1, i;
-
-	next_token(&p, buf, " ", sizeof(buf));
+	int argc = 0, i;
 
 	/* Count number of arguments first time through the loop then
 	   allocate memory and strdup them. */
 
  again:
-	while(next_token(NULL, buf, " ", sizeof(buf))) {
+	while(next_token(&p, buf, " ", sizeof(buf))) {
 		if (argv) {
 			argv[argc] = strdup(buf);
 		}
@@ -374,56 +433,87 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 		/* Create argument list */
 
 		argv = (char **)malloc(sizeof(char *) * argc);
+                memset(argv, 0, sizeof(char *) * argc);
 
 		if (!argv) {
-			fprintf(stderr, "out of memoryx\n");
-			return 0;
+			fprintf(stderr, "out of memory\n");
+			result = NT_STATUS_NO_MEMORY;
+                        goto done;
 		}
 					
 		p = cmd;
-		next_token(&p, buf, " ", sizeof(buf));
-		argv[0] = strdup(buf);
-		argc = 1;
+		argc = 0;
 					
 		goto again;
 	}
 
 	/* Call the function */
-	if (cmd_entry->fn) {
-		result = cmd_entry->fn(cli, argc, argv);
-	}
-	else {
-		fprintf (stderr, "Invalid command\n");
-		result = NT_STATUS_INVALID_PARAMETER;
-	}
 
+	if (cmd_entry->fn) {
+                TALLOC_CTX *mem_ctx;
+
+                /* Create mem_ctx */
+
+                if (!(mem_ctx = talloc_init())) {
+                        DEBUG(0, ("talloc_init() failed\n"));
+                        goto done;
+                }
+
+                /* Open pipe */
+
+                if (cmd_entry->pipe)
+                        if (!cli_nt_session_open(cli, cmd_entry->pipe)) {
+                                DEBUG(0, ("Could not initialise %s\n",
+                                          cmd_entry->pipe));
+                                goto done;
+                        }
+
+                /* Run command */
+
+                result = cmd_entry->fn(cli, mem_ctx, argc, argv);
+
+                /* Cleanup */
+
+                if (cmd_entry->pipe)
+                        cli_nt_session_close(cli);
+
+                talloc_destroy(mem_ctx);
+
+	} else {
+		fprintf (stderr, "Invalid command\n");
+                goto done;
+        }
+
+ done:
 						
 	/* Cleanup */
-	for (i = 0; i < argc; i++) {
-		free(argv[i]);
-	}
+
+        if (argv) {
+                for (i = 0; i < argc; i++)
+                        SAFE_FREE(argv[i]);
 	
-	free(argv);
+                SAFE_FREE(argv);
+        }
 	
 	return result;
 }
 
 /* Process a command entered at the prompt or as part of -c */
 
-static uint32 process_cmd(struct cli_state *cli, char *cmd)
+static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 {
 	struct cmd_list *temp_list;
 	BOOL found = False;
 	pstring buf;
 	char *p = cmd;
-	uint32 result=0;
+	NTSTATUS result = NT_STATUS_OK;
 	int len = 0;
 
 	if (cmd[strlen(cmd) - 1] == '\n')
 		cmd[strlen(cmd) - 1] = '\0';
 
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
-		return 0;
+		return NT_STATUS_OK;
 	}
 
         /* strip the trainly \n if it exsists */
@@ -438,8 +528,9 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 
 		while(temp_set->name) {
 			if (strequal(buf, temp_set->name)) {
-				found = True;
+                                found = True;
 				result = do_cmd(cli, temp_set, cmd);
+
 				goto done;
 			}
 			temp_set++;
@@ -449,10 +540,10 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
  done:
 	if (!found && buf[0]) {
 		printf("command not found: %s\n", buf);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
-	if (result != 0) {
+	if (!NT_STATUS_IS_OK(result)) {
 		printf("result was %s\n", get_nt_error_msg(result));
 	}
 
@@ -484,6 +575,7 @@ struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 
 	/* Establish a SMB connection */
 	if (!resolve_srv_name(system_name, dest_host, &dest_ip)) {
+                fprintf(stderr, "Could not resolve %s\n", dest_host);
 		return NULL;
 	}
 
@@ -492,6 +584,7 @@ struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 
 	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
 				      &called, "IPC$", "IPC", False, True)) {
+                fprintf(stderr, "Error establishing IPC$ connection\n");
 		return NULL;
 	}
 	
@@ -537,12 +630,11 @@ static void usage(void)
 				server;
 	struct cmd_set **cmd_set;
 
-	charset_initialise();
 	setlinebuf(stdout);
 
 	DEBUGLEVEL = 1;
 
-	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:")) != EOF) {
+	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
 		switch (opt) {
 		case 'A':
 			/* only get the username, password, and domain from the file */
@@ -594,24 +686,24 @@ static void usage(void)
 			exit(1);
 		}
 	}
-	
+
 	argv += optind;
 	argc -= optind;
- 
+
 	/* Parse options */
 	if (argc == 0) {
 		usage();
 		return 0;
 	}
- 
+	
 	if (strncmp("//", argv[0], 2) == 0 || strncmp("\\\\", argv[0], 2) == 0)
 		argv[0] += 2;
- 
+
 	pstrcpy(server, argv[0]);
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging (argv[0], interactive);
+	setup_logging("rpcclient", interactive);
 	if (!interactive) 
 		reopen_logs();
 	
@@ -623,7 +715,6 @@ static void usage(void)
 	}
 	DEBUGLEVEL = olddebug;
 
-	codepage_initialise(lp_client_code_page());
 	load_interfaces();
 
 	TimeInit();
@@ -635,8 +726,8 @@ static void usage(void)
 	 * initialize the credentials struct.  Get password
 	 * from stdin if necessary
 	 */
-	if (!strlen(username))
-		get_username (username);
+	if (!strlen(username) && !got_pass)
+		get_username(username);
 		
 	if (!got_pass) {
 		init_rpcclient_creds (&creds, username, domain, "");
@@ -667,7 +758,9 @@ static void usage(void)
 		cmd_set++;
 	}
 
-        /* Do anything specified with -c */
+	fetch_machine_sid(&cli);
+ 
+       /* Do anything specified with -c */
         if (cmdstr[0]) {
                 char    *cmd;
                 char    *p = cmdstr;

@@ -25,7 +25,7 @@
 /* error code stuff - put together by Merik Karman
    merik@blackadder.dsh.oz.au */
 
-typedef struct
+typedef const struct
 {
   char *name;
   int code;
@@ -125,7 +125,7 @@ err_code_struct hard_msgs[] = {
   {NULL,-1,NULL}};
 
 
-struct
+const struct
 {
   int code;
   char *class;
@@ -146,37 +146,55 @@ struct
 /****************************************************************************
 return a SMB error string from a SMB buffer
 ****************************************************************************/
-char *smb_errstr(char *inbuf)
+char *smb_dos_errstr(char *inbuf)
 {
-  static pstring ret;
-  int class = CVAL(inbuf,smb_rcls);
-  int num = SVAL(inbuf,smb_err);
-  int i,j;
-
-  for (i=0;err_classes[i].class;i++)
-    if (err_classes[i].code == class)
-      {
-	if (err_classes[i].err_msgs)
-	  {
-	    err_code_struct *err = err_classes[i].err_msgs;
-	    for (j=0;err[j].name;j++)
-	      if (num == err[j].code)
-		{
-		  if (DEBUGLEVEL > 0)
-		    slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",
-			     err_classes[i].class,
-			     err[j].name,err[j].message);
-		  else
-		    slprintf(ret, sizeof(ret) - 1, "%s - %s",
-			     err_classes[i].class,err[j].name);
-		  return ret;
+	static pstring ret;
+	int class = CVAL(inbuf,smb_rcls);
+	int num = SVAL(inbuf,smb_err);
+	int i,j;
+	
+	for (i=0;err_classes[i].class;i++)
+		if (err_classes[i].code == class) {
+			if (err_classes[i].err_msgs) {
+				err_code_struct *err = err_classes[i].err_msgs;
+				for (j=0;err[j].name;j++)
+					if (num == err[j].code) {
+						if (DEBUGLEVEL > 0)
+							slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",
+								 err_classes[i].class,
+								 err[j].name,err[j].message);
+						else
+							slprintf(ret, sizeof(ret) - 1, "%s - %s",
+								 err_classes[i].class,err[j].name);
+						return ret;
+					}
+			}
+			
+			slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class,num);
+			return ret;
 		}
-	  }
+	
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
+	return(ret);
+}
 
-	slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class,num);
-	return ret;
-      }
-  
-  slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
-  return(ret);
+
+/*****************************************************************************
+ returns an WERROR error message.
+ *****************************************************************************/
+char *werror_str(WERROR status)
+{
+	static fstring msg;
+	slprintf(msg, sizeof(msg), "WIN32 code 0x%08x", W_ERROR_V(status));
+	return msg;
+}
+
+
+/*****************************************************************************
+map a unix errno to a win32 error
+ *****************************************************************************/
+WERROR map_werror_from_unix(int error)
+{
+	NTSTATUS status = map_nt_error_from_unix(error);
+	return ntstatus_to_werror(status);
 }

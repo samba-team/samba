@@ -44,7 +44,7 @@ static void free_reg_info(void *ptr)
  reg_reply_unknown_1
  ********************************************************************/
 
-uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
+NTSTATUS _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 {
 	/* set up the REG unknown_1 response */
 	ZERO_STRUCT(r_u->pol);
@@ -60,7 +60,7 @@ uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
  reg_reply_open
  ********************************************************************/
 
-uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
+NTSTATUS _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
 {
 	if (!create_policy_hnd(p, &r_u->pol, free_reg_info, NULL))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -72,7 +72,7 @@ uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
  reg_reply_open_entry
  ********************************************************************/
 
-uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
+NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
 {
 	POLICY_HND pol;
 	fstring name;
@@ -112,9 +112,9 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
  reg_reply_info
  ********************************************************************/
 
-uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
+NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
-	uint32 status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 	char *key = NULL;
 	uint32 type=0x1; /* key type: REG_SZ */
 
@@ -139,7 +139,7 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	if ( strequal(name, "RefusePasswordChange") ) {
 		type=0xF770;
-		status = ERRbadfile;
+		status = NT_STATUS_NO_SUCH_FILE;
 		init_unistr2(uni_key, "", 0);
 		init_buffer2(buf, (uint8*) uni_key->buffer, uni_key->uni_str_len*2);
 		

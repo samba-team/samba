@@ -322,7 +322,7 @@ BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps,
 	if(!smb_io_pol_hnd("", &r_p->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_p->status))
+	if(!prs_ntstatus("status", ps, depth, &r_p->status))
 		return False;
 
 	return True;
@@ -389,7 +389,7 @@ BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps,
 	if(!smb_io_pol_hnd("", &r_p->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_p->status))
+	if(!prs_ntstatus("status", ps, depth, &r_p->status))
 		return False;
 
 	return True;
@@ -450,7 +450,7 @@ BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u,
 			return False;
 	}
 
-	if (!prs_uint32("status", ps, depth, &r_u->status))
+	if (!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -530,13 +530,13 @@ BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
 
 void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
 			   char *domain_name, DOM_SID *domain_sid,
-                           uint32 status)
+                           NTSTATUS status)
 {
         DEBUG(5, ("init_r_enum_trust_dom\n"));
 	
         r_e->enum_context = enum_context;
 	
-        if (status == 0) {
+        if (NT_STATUS_IS_OK(status)) {
                 int len_domain_name = strlen(domain_name) + 1;
 		
                 r_e->num_domains  = 1;
@@ -617,7 +617,7 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 		}
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_e->status))
+	if(!prs_ntstatus("status", ps, depth, &r_e->status))
 		return False;
 
 	return True;
@@ -787,7 +787,7 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_q->status))
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1029,7 +1029,7 @@ BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s,
 	if(!prs_uint32("mapped_count", ps, depth, &r_s->mapped_count))
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_s->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_s->status))
 		return False;
 
 	return True;
@@ -1190,7 +1190,7 @@ BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r,
 	if(!prs_uint32("mapped_count", ps, depth, &r_r->mapped_count))
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_r->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -1235,7 +1235,7 @@ BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth)
 	if(!smb_io_pol_hnd("", &r_c->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
@@ -1274,11 +1274,268 @@ BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, in
 		return False;
 	if(!prs_uint32("dummy4", ps, depth, &r_c->dummy4))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
 }
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_q_enum_privs(char *desc, LSA_Q_ENUM_PRIVS *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_enum_privs");
+	depth++;
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	if(!prs_uint32("enum_context   ", ps, depth, &q_q->enum_context))
+		return False;
+	if(!prs_uint32("pref_max_length", ps, depth, &q_q->pref_max_length))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL lsa_io_priv_entries(char *desc, LSA_PRIV_ENTRY *entries, uint32 count, prs_struct *ps, int depth)
+{
+	uint32 i;
+
+	if (entries == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_priv_entries");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	for (i = 0; i < count; i++) {
+		if (!smb_io_unihdr("", &entries[i].hdr_name, ps, depth))
+			return False;
+		if(!prs_uint32("luid_low ", ps, depth, &entries[i].luid_low))
+			return False;
+		if(!prs_uint32("luid_high", ps, depth, &entries[i].luid_high))
+			return False;
+	}
+
+	for (i = 0; i < count; i++)
+		if (!smb_io_unistr2("", &entries[i].name, entries[i].hdr_name.buffer, ps, depth))
+			return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits an LSA_R_ENUM_PRIVS structure.
+********************************************************************/
+
+void init_lsa_r_enum_privs(LSA_R_ENUM_PRIVS *r_u, uint32 enum_context,
+			  uint32 count, LSA_PRIV_ENTRY *entries)
+{
+	DEBUG(5, ("init_lsa_r_enum_privs\n"));
+
+	r_u->enum_context=enum_context;
+	r_u->count=count;
+	
+	if (entries!=NULL) {
+		r_u->ptr=1;
+		r_u->count1=count;
+		r_u->privs=entries;
+	} else {
+		r_u->ptr=0;
+		r_u->count1=0;
+		r_u->privs=NULL;
+	}		
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_enum_privs");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("enum_context", ps, depth, &r_q->enum_context))
+		return False;
+	if(!prs_uint32("count", ps, depth, &r_q->count))
+		return False;
+	if(!prs_uint32("ptr", ps, depth, &r_q->ptr))
+		return False;
+
+	if (r_q->ptr) {
+		if(!prs_uint32("count1", ps, depth, &r_q->count1))
+			return False;
+
+		if (!lsa_io_priv_entries("", r_q->privs, r_q->count1, ps, depth))
+			return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_q_priv_get_dispname(char *desc, LSA_Q_PRIV_GET_DISPNAME *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_priv_get_dispname");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	if (!smb_io_unihdr("hdr_name", &q_q->hdr_name, ps, depth))
+		return False;
+
+	if (!smb_io_unistr2("name", &q_q->name, q_q->hdr_name.buffer, ps, depth))
+		return False;
+
+	if(!prs_uint16("lang_id    ", ps, depth, &q_q->lang_id))
+		return False;
+	if(!prs_uint16("lang_id_sys", ps, depth, &q_q->lang_id_sys))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_priv_get_dispname");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_info", ps, depth, &r_q->ptr_info))
+		return False;
+
+	if (r_q->ptr_info){
+		if (!smb_io_unihdr("hdr_name", &r_q->hdr_desc, ps, depth))
+			return False;
+
+		if (!smb_io_unistr2("desc", &r_q->desc, r_q->hdr_desc.buffer, ps, depth))
+			return False;
+	}
+/*
+	if(!prs_align(ps))
+		return False;
+*/
+	if(!prs_uint16("lang_id", ps, depth, &r_q->lang_id))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_q_enum_accounts(char *desc, LSA_Q_ENUM_ACCOUNTS *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_enum_accounts");
+	depth++;
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	if(!prs_uint32("enum_context   ", ps, depth, &q_q->enum_context))
+		return False;
+	if(!prs_uint32("pref_max_length", ps, depth, &q_q->pref_max_length))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits an LSA_R_ENUM_PRIVS structure.
+********************************************************************/
+
+void init_lsa_r_enum_accounts(LSA_R_ENUM_ACCOUNTS *r_u, uint32 enum_context)
+{
+	DEBUG(5, ("init_lsa_r_enum_accounts\n"));
+
+	r_u->enum_context=enum_context;
+	if (r_u->enum_context!=0) {
+		r_u->sids.num_entries=enum_context;
+		r_u->sids.ptr_sid_enum=1;
+		r_u->sids.num_entries2=enum_context;
+	} else {
+		r_u->sids.num_entries=0;
+		r_u->sids.ptr_sid_enum=0;
+		r_u->sids.num_entries2=0;
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_r_enum_accounts(char *desc, LSA_R_ENUM_ACCOUNTS *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_enum_accounts");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("enum_context", ps, depth, &r_q->enum_context))
+		return False;
+
+	if (!lsa_io_sid_enum("sids", &r_q->sids, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+		return False;
+
+	return True;
+}
+
 
 /*******************************************************************
  Reads or writes an LSA_Q_UNK_GET_CONNUSER structure.
@@ -1344,7 +1601,221 @@ BOOL lsa_io_r_unk_get_connuser(char *desc, LSA_R_UNK_GET_CONNUSER *r_c, prs_stru
 	if (!prs_align(ps))
 	  return False;
 	
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_OPENACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_q_open_account(char *desc, LSA_Q_OPENACCOUNT *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_open_account");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("", &r_c->sid, ps, depth)) /* domain SID */
+		return False;
+
+ 	if(!prs_uint32("access", ps, depth, &r_c->access))
+		return False;
+  
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_OPENACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_r_open_account(char *desc, LSA_R_OPENACCOUNT  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_open_account");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ Reads or writes an LSA_Q_ENUMPRIVSACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_q_enum_privsaccount(char *desc, LSA_Q_ENUMPRIVSACCOUNT *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_enum_privsaccount");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LUID structure.
+********************************************************************/
+
+BOOL lsa_io_luid(char *desc, LUID *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_luid");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!prs_uint32("low", ps, depth, &r_c->low))
+		return False;
+
+	if(!prs_uint32("high", ps, depth, &r_c->high))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LUID_ATTR structure.
+********************************************************************/
+
+BOOL lsa_io_luid_attr(char *desc, LUID_ATTR *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_luid_attr");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if (!lsa_io_luid(desc, &r_c->luid, ps, depth))
+		return False;
+
+	if(!prs_uint32("attr", ps, depth, &r_c->attr))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an PRIVILEGE_SET structure.
+********************************************************************/
+
+BOOL lsa_io_privilege_set(char *desc, PRIVILEGE_SET *r_c, prs_struct *ps, int depth)
+{
+	uint32 i;
+
+	prs_debug(ps, depth, desc, "lsa_io_privilege_set");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!prs_uint32("count", ps, depth, &r_c->count))
+		return False;
+	if(!prs_uint32("control", ps, depth, &r_c->control))
+		return False;
+
+	for (i=0; i<r_c->count; i++) {
+		if (!lsa_io_luid_attr(desc, &r_c->set[i], ps, depth))
+			return False;
+	}
+	
+	return True;
+}
+
+void init_lsa_r_enum_privsaccount(LSA_R_ENUMPRIVSACCOUNT *r_u, LUID_ATTR *set, uint32 count, uint32 control)
+{
+	r_u->ptr=1;
+	r_u->count=count;
+	r_u->set.set=set;
+	r_u->set.count=count;
+	r_u->set.control=control;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_ENUMPRIVSACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_r_enum_privsaccount(char *desc, LSA_R_ENUMPRIVSACCOUNT *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_enum_privsaccount");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!prs_uint32("ptr", ps, depth, &r_c->ptr))
+		return False;
+
+	if (r_c->ptr!=0) {
+		if(!prs_uint32("count", ps, depth, &r_c->count))
+			return False;
+
+		/* malloc memory if unmarshalling here */
+		
+		if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
+			return False;
+	}
+
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+
+
+/*******************************************************************
+ Reads or writes an  LSA_Q_GETSYSTEMACCOUNTstructure.
+********************************************************************/
+
+BOOL lsa_io_q_getsystemaccount(char *desc, LSA_Q_GETSYSTEMACCOUNT  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_getsystemaccount");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an  LSA_R_GETSYSTEMACCOUNTstructure.
+********************************************************************/
+
+BOOL lsa_io_r_getsystemaccount(char *desc, LSA_R_GETSYSTEMACCOUNT  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_getsystemaccount");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!prs_uint32("access", ps, depth, &r_c->access))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;

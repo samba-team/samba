@@ -25,7 +25,7 @@
 int num_good_sends = 0;
 int num_good_receives = 0;
 
-static struct opcode_names {
+static const struct opcode_names {
 	char *nmb_opcode_name;
 	int opcode;
 } nmb_header_opcode_names[] = {
@@ -42,9 +42,9 @@ static struct opcode_names {
 /****************************************************************************
  * Lookup a nmb opcode name.
  ****************************************************************************/
-static char *lookup_opcode_name( int opcode )
+static const char *lookup_opcode_name( int opcode )
 {
-  struct opcode_names *op_namep;
+  const struct opcode_names *op_namep;
   int i;
 
   for(i = 0; nmb_header_opcode_names[i].nmb_opcode_name != 0; i++) {
@@ -343,8 +343,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
     int l = parse_nmb_name(inbuf,*offset,length,&(*recs)[i].rr_name);
     (*offset) += l;
     if (!l || (*offset)+10 > length) {
-      free(*recs);
-      *recs = NULL;
+      SAFE_FREE(*recs);
       return(False);
     }
     (*recs)[i].rr_type = RSVAL(inbuf,(*offset));
@@ -354,8 +353,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
     (*offset) += 10;
     if ((*recs)[i].rdlength>sizeof((*recs)[i].rdata) || 
 	(*offset)+(*recs)[i].rdlength > length) {
-      free(*recs);
-      *recs = NULL;
+      SAFE_FREE(*recs);
       return(False);
     }
     memcpy((*recs)[i].rdata,inbuf+(*offset),(*recs)[i].rdlength);
@@ -578,19 +576,10 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 
 free_and_exit:
 
-  if(copy_nmb->answers) {
-    free((char *)copy_nmb->answers);
-    copy_nmb->answers = NULL;
-  }
-  if(copy_nmb->nsrecs) {
-    free((char *)copy_nmb->nsrecs);
-    copy_nmb->nsrecs = NULL;
-  }
-  if(copy_nmb->additional) {
-    free((char *)copy_nmb->additional);
-    copy_nmb->additional = NULL;
-  }
-  free((char *)pkt_copy);
+  SAFE_FREE(copy_nmb->answers);
+  SAFE_FREE(copy_nmb->nsrecs);
+  SAFE_FREE(copy_nmb->additional);
+  SAFE_FREE(pkt_copy);
 
   DEBUG(0,("copy_nmb_packet: malloc fail in resource records.\n"));
   return NULL;
@@ -638,18 +627,9 @@ struct packet_struct *copy_packet(struct packet_struct *packet)
   ******************************************************************/
 static void free_nmb_packet(struct nmb_packet *nmb)
 {  
-  if (nmb->answers) {
-    free(nmb->answers);
-    nmb->answers = NULL;
-  }
-  if (nmb->nsrecs) {
-    free(nmb->nsrecs);
-    nmb->nsrecs = NULL;
-  }
-  if (nmb->additional) {
-    free(nmb->additional);
-    nmb->additional = NULL;
-  }
+  SAFE_FREE(nmb->answers);
+  SAFE_FREE(nmb->nsrecs);
+  SAFE_FREE(nmb->additional);
 }
 
 /*******************************************************************
@@ -672,7 +652,7 @@ void free_packet(struct packet_struct *packet)
   else if (packet->packet_type == DGRAM_PACKET)
     free_dgram_packet(&packet->packet.dgram);
   ZERO_STRUCTPN(packet);
-  free(packet);
+  SAFE_FREE(packet);
 }
 
 /*******************************************************************
@@ -1289,5 +1269,3 @@ int name_len(char *s1)
 
 	return(len);
 } /* name_len */
-
-

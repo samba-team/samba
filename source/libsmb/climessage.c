@@ -41,11 +41,9 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	p += clistr_push(cli, p, username, -1, 
-			 STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, username, -1, STR_TERMINATE);
 	*p++ = 4;
-	p += clistr_push(cli, p, host, -1, 
-			 STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, host, -1, STR_TERMINATE);
 	
 	cli_setup_bcc(cli, p);
 	
@@ -55,7 +53,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_is_error(cli)) return False;
 
 	*grp = SVAL(cli->inbuf,smb_vwv0);
 
@@ -71,7 +69,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 	char *p;
 
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,1,len+3,True);
+	set_message(cli->outbuf,1,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendtxt;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
@@ -79,16 +77,19 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 	SSVAL(cli->outbuf,smb_vwv0,grp);
 	
 	p = smb_buf(cli->outbuf);
-	*p = 1;
-	SSVAL(p,1,len);
-	memcpy(p+3,msg,len);
+	*p++ = 1;
+	SSVAL(p,0,len); p += 2;
+	memcpy(p,msg,len);
+	p += len;
+
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_is_error(cli)) return False;
 
 	return True;
 }      
@@ -113,7 +114,7 @@ BOOL cli_message_end(struct cli_state *cli, int grp)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_is_error(cli)) return False;
 
 	return True;
 }      

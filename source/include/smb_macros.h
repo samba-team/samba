@@ -73,14 +73,14 @@
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
 #define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-                               return(ERROR(ERRDOS,ERRbadfid)); \
+                               return(ERROR_DOS(ERRDOS,ERRbadfid)); \
                             else if((fsp)->fd == -1) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
+                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
+                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
+                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
 								return(CACHED_ERROR(fsp))
@@ -153,7 +153,8 @@
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR(class,x) error_packet(outbuf,0,class,x,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__,__FILE__)
 #define ERROR_BOTH(nterr,class,x) error_packet(outbuf,nterr,class,x,__LINE__,__FILE__)
 
 /* this is how errors are generated */

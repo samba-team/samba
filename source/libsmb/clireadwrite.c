@@ -80,8 +80,6 @@ static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset,
 
 ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
 {
-	uint32 ecode;
-	uint8 eclass;
 	char *p;
 	int size2;
 	int readsize;
@@ -108,15 +106,22 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		if (!cli_receive_smb(cli))
 			return -1;
 
-		/*
-		 * Check for error.  Because the client library doesn't support
-		 * STATUS32, we need to check for and ignore the more data error
-		 * for pipe support.
-		 */
+		/* Check for error.  Make sure to check for DOS and NT
+                   errors. */
 
-		if (cli_error(cli, &eclass, &ecode, NULL) &&
-			(eclass != ERRDOS && ecode != ERRmoredata)) {
-			return -1;
+                if (cli_is_error(cli)) {
+                        NTSTATUS status = NT_STATUS_OK;
+                        uint8 eclass = 0;
+			uint32 ecode = 0;
+
+                        if (cli_is_nt_error(cli))
+                                status = cli_nt_error(cli);
+                        else
+                                cli_dos_error(cli, &eclass, &ecode);
+
+                        if ((eclass == ERRDOS && ecode == ERRmoredata) ||
+                            NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
+                                return -1;
 		}
 
 		size2 = SVAL(cli->inbuf, smb_vwv5);
@@ -292,7 +297,7 @@ ssize_t cli_write(struct cli_state *cli,
 
 		received++;
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		if (cli_is_error(cli))
 			break;
 
 		bwritten += SVAL(cli->inbuf, smb_vwv2);
@@ -344,7 +349,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		if (!cli_receive_smb(cli))
 			return -1;
 		
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		if (cli_is_error(cli))
 			return -1;
 
 		size = SVAL(cli->inbuf,smb_vwv0);

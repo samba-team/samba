@@ -331,6 +331,15 @@ typedef struct sam_user_info_21
 } SAM_USER_INFO_21;
 
 
+/* SAM_USER_INFO_20 */
+typedef struct sam_user_info_20
+{
+	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
+
+	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel number */
+
+} SAM_USER_INFO_20;
+
 /* SAM_USER_INFO_12 */
 typedef struct sam_user_info_12
 {
@@ -402,7 +411,7 @@ typedef struct q_samr_close_hnd_info
 typedef struct r_samr_close_hnd_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_CLOSE_HND;
 
@@ -429,7 +438,7 @@ typedef struct r_samr_usrdom_pwinfo_info
 	uint16 unknown_0; /* 0000 */
 	uint16 unknown_1; /* 0x0016 or 0x0015 */
 	uint32 unknown_2; /* 0x0000 0000 */
-	uint32 status; 
+	NTSTATUS status; 
 
 } SAMR_R_GET_USRDOM_PWINFO;
 
@@ -452,7 +461,7 @@ typedef struct r_samr_query_sec_obj_info
 	uint32 ptr;
 	SEC_DESC_BUF *buf;
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_QUERY_SEC_OBJ;
 
@@ -502,6 +511,13 @@ typedef struct sam_unknown_info_12_inf
 
 } SAM_UNK_INFO_12;
 
+typedef struct sam_unknown_info_5_inf
+{
+	UNIHDR hdr_server; /* server name unicode header */
+	UNISTR2 uni_server; /* server name unicode string */
+
+} SAM_UNK_INFO_5;
+
 typedef struct sam_unknown_info_2_inf
 {
 	uint32 unknown_0; /* 0x0000 0000 */
@@ -549,6 +565,7 @@ typedef struct sam_unknown_ctr_info
 		SAM_UNK_INFO_1 inf1;
 		SAM_UNK_INFO_2 inf2;
 		SAM_UNK_INFO_3 inf3;
+		SAM_UNK_INFO_5 inf5;
 		SAM_UNK_INFO_6 inf6;
 		SAM_UNK_INFO_7 inf7;
 		SAM_UNK_INFO_12 inf12;
@@ -566,7 +583,7 @@ typedef struct r_samr_query_domain_info
 
 	SAM_UNK_CTR *ctr;
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_QUERY_DOMAIN_INFO;
 
@@ -588,7 +605,7 @@ typedef struct r_samr_lookup_domain_info
 	uint32   ptr_sid;
 	DOM_SID2 dom_sid;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_LOOKUP_DOMAIN;
 
@@ -614,7 +631,7 @@ typedef struct q_samr_open_domain_info
 typedef struct r_samr_open_domain_info
 {
 	POLICY_HND domain_pol; /* policy handle associated with the SID */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_OPEN_DOMAIN;
 
@@ -654,7 +671,7 @@ typedef struct r_samr_enum_domains_info
 
 	uint32 num_entries4;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_ENUM_DOMAINS;
 
@@ -688,7 +705,7 @@ typedef struct r_samr_enum_dom_users_info
 
 	uint32 num_entries4;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_ENUM_DOM_USERS;
 
@@ -722,7 +739,7 @@ typedef struct r_samr_enum_dom_groups_info
 
 	uint32 num_entries4;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_ENUM_DOM_GROUPS;
 
@@ -756,7 +773,7 @@ typedef struct r_samr_enum_dom_aliases_info
 
 	uint32 num_entries4;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_ENUM_DOM_ALIASES;
 
@@ -947,7 +964,7 @@ typedef struct r_samr_query_dispinfo_info
 
 	SAM_DISPINFO_CTR *ctr;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_QUERY_DISPINFO;
 
@@ -964,7 +981,7 @@ typedef struct q_samr_delete_dom_group_info
 typedef struct r_samr_delete_dom_group_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;        /* return status */
+	NTSTATUS status;        /* return status */
 
 } SAMR_R_DELETE_DOM_GROUP;
 
@@ -987,7 +1004,7 @@ typedef struct r_samr_create_dom_group_info
 	POLICY_HND pol;        /* policy handle */
 
 	uint32 rid;    
-	uint32 status;    
+	NTSTATUS status;    
 
 } SAMR_R_CREATE_DOM_GROUP;
 
@@ -1042,7 +1059,7 @@ typedef struct r_samr_query_groupinfo_info
 	uint32 ptr;        
 	GROUP_INFO_CTR *ctr;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_QUERY_GROUPINFO;
 
@@ -1058,7 +1075,7 @@ typedef struct q_samr_set_group_info
 /* SAMR_R_SET_GROUPINFO - SAM Group Info */
 typedef struct r_samr_set_group_info
 {
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_SET_GROUPINFO;
 
@@ -1075,7 +1092,7 @@ typedef struct q_samr_delete_dom_alias_info
 typedef struct r_samr_delete_dom_alias_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;        /* return status */
+	NTSTATUS status;        /* return status */
 
 } SAMR_R_DELETE_DOM_ALIAS;
 
@@ -1098,7 +1115,7 @@ typedef struct r_samr_create_dom_alias_info
 	POLICY_HND alias_pol;        /* policy handle */
 
 	uint32 rid;    
-	uint32 status;    
+	NTSTATUS status;    
 
 } SAMR_R_CREATE_DOM_ALIAS;
 
@@ -1138,7 +1155,7 @@ typedef struct r_samr_query_aliasinfo_info
 	uint32 ptr;        
 	ALIAS_INFO_CTR ctr;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_QUERY_ALIASINFO;
 
@@ -1154,7 +1171,7 @@ typedef struct q_samr_set_alias_info
 /* SAMR_R_SET_ALIASINFO - SAM alias info */
 typedef struct r_samr_set_aliasinfo_info
 {
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_SET_ALIASINFO;
 
@@ -1176,7 +1193,7 @@ typedef struct r_samr_query_usergroup_info
 
 	DOM_GID *gid; /* group info */
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_QUERY_USERGROUPS;
 
@@ -1190,6 +1207,7 @@ typedef struct sam_userinfo_ctr_info
 		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
 		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
 		SAM_USER_INFO_12 *id12; /* auth-level 0x12 */
+		SAM_USER_INFO_20 *id20; /* auth-level 20 */
 		SAM_USER_INFO_21 *id21; /* auth-level 21 */
 		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
 		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
@@ -1214,7 +1232,7 @@ typedef struct q_samr_set_user_info2
 /* SAMR_R_SET_USERINFO2 - set sam info */
 typedef struct r_samr_set_user_info2
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_SET_USERINFO2;
 
@@ -1230,7 +1248,7 @@ typedef struct q_samr_set_user_info
 /* SAMR_R_SET_USERINFO - set sam info */
 typedef struct r_samr_set_user_info
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_SET_USERINFO;
 
@@ -1249,7 +1267,7 @@ typedef struct r_samr_query_user_info
 	uint32 ptr;            /* pointer */
 	SAM_USERINFO_CTR *ctr;
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_QUERY_USERINFO;
 
@@ -1285,7 +1303,7 @@ typedef struct r_samr_query_useraliases_info
 	uint32 num_entries2; 
 	uint32 *rid; /* domain RIDs being looked up */
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } SAMR_R_QUERY_USERALIASES;
 
@@ -1324,7 +1342,7 @@ typedef struct r_samr_lookup_names_info
 
 	uint32 *types; /* SID_ENUM type */
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } SAMR_R_LOOKUP_NAMES;
 
@@ -1369,7 +1387,7 @@ typedef struct r_samr_lookup_rids_info
 
 	uint32 *type; /* SID_ENUM type */
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_LOOKUP_RIDS;
 
@@ -1388,7 +1406,7 @@ typedef struct q_samr_open_user_info
 typedef struct r_samr_open_user_info
 {
 	POLICY_HND user_pol;       /* policy handle associated with unknown id */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_OPEN_USER;
 
@@ -1414,7 +1432,7 @@ typedef struct r_samr_create_user_info
 
 	uint32 unknown_0;     /* 0x0007 03ff */
 	uint32 user_rid;      /* user RID */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_CREATE_USER;
 
@@ -1431,7 +1449,7 @@ typedef struct q_samr_delete_dom_user_info
 typedef struct r_samr_delete_dom_user_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;        /* return status */
+	NTSTATUS status;        /* return status */
 
 } SAMR_R_DELETE_DOM_USER;
 
@@ -1459,7 +1477,7 @@ typedef struct r_samr_query_groupmem_info
 	uint32 num_attrs;
 	uint32 *attr;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_QUERY_GROUPMEM;
 
@@ -1477,7 +1495,7 @@ typedef struct q_samr_del_group_mem_info
 /* SAMR_R_DEL_GROUPMEM - probably an del group member */
 typedef struct r_samr_del_group_mem_info
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_DEL_GROUPMEM;
 
@@ -1496,7 +1514,7 @@ typedef struct q_samr_add_group_mem_info
 /* SAMR_R_ADD_GROUPMEM - probably an add group member */
 typedef struct r_samr_add_group_mem_info
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_ADD_GROUPMEM;
 
@@ -1515,7 +1533,7 @@ typedef struct q_samr_open_group_info
 typedef struct r_samr_open_group_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_OPEN_GROUP;
 
@@ -1537,7 +1555,7 @@ typedef struct r_samr_query_aliasmem_info
 
 	DOM_SID2 *sid;
 
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_QUERY_ALIASMEM;
 
@@ -1555,7 +1573,7 @@ typedef struct q_samr_add_alias_mem_info
 /* SAMR_R_ADD_ALIASMEM - add alias member */
 typedef struct r_samr_add_alias_mem_info
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_ADD_ALIASMEM;
 
@@ -1573,7 +1591,7 @@ typedef struct q_samr_del_alias_mem_info
 /* SAMR_R_DEL_ALIASMEM - delete alias member */
 typedef struct r_samr_del_alias_mem_info
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_DEL_ALIASMEM;
 
@@ -1594,7 +1612,7 @@ typedef struct q_samr_open_alias_info
 typedef struct r_samr_open_alias_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_OPEN_ALIAS;
 
@@ -1613,7 +1631,7 @@ typedef struct q_samr_connect_anon_info
 typedef struct r_samr_connect_anon_info
 {
 	POLICY_HND connect_pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_CONNECT_ANON;
 
@@ -1632,7 +1650,7 @@ typedef struct q_samr_connect_info
 typedef struct r_samr_connect_info
 {
     POLICY_HND connect_pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_CONNECT;
 
@@ -1651,7 +1669,7 @@ typedef struct r_samr_get_dom_pwinfo
 	uint16 unk_0;
 	uint16 unk_1;
 	uint16 unk_2;
-	uint32 status;
+	NTSTATUS status;
 
 } SAMR_R_GET_DOM_PWINFO;
 
@@ -1695,7 +1713,7 @@ typedef struct q_samr_chgpasswd_user_info
 /* SAMR_R_CHGPASSWD_USER */
 typedef struct r_samr_chgpasswd_user_info
 {
-	uint32 status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
+	NTSTATUS status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
 
 } SAMR_R_CHGPASSWD_USER;
 
@@ -1712,7 +1730,7 @@ typedef struct q_samr_unknown_2d_info
 /* SAMR_R_UNKNOWN_2D - probably an open */
 typedef struct r_samr_unknown_2d_info
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_UNKNOWN_2D;
 

@@ -45,7 +45,8 @@ static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
  bits not yet granted. Zero means permission allowed (no more needed bits).
 **********************************************************************************/
 
-static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, uint32 *status)
+static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
+			NTSTATUS *status)
 {
 	uint32 mask = ace->info.mask;
 
@@ -104,7 +105,9 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
  include other bits requested.
 **********************************************************************************/ 
 
-static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, uint32 desired, uint32 *status)
+static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, 
+			    uint32 desired, 
+			    NTSTATUS *status)
 {
 	uint32 acc_denied = 0;
 	uint32 acc_granted = 0;
@@ -200,7 +203,8 @@ void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping)
 *****************************************************************************/ 
 
 BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
-		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
+		     uint32 acc_desired, uint32 *acc_granted, 
+		     NTSTATUS *status)
 {
 	extern NT_USER_TOKEN anonymous_token;
 	size_t i;
@@ -218,8 +222,8 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 	*acc_granted = 0;
 
 	DEBUG(10,("se_access_check: requested access %x, for  NT token with %u entries and first sid %s.\n",
-				(unsigned int)acc_desired, (unsigned int)token->num_sids,
-				sid_to_string(sid_str, &token->user_sids[0])));
+		 (unsigned int)acc_desired, (unsigned int)token->num_sids,
+		sid_to_string(sid_str, &token->user_sids[0])));
 
 	/*
 	 * No security descriptor or security descriptor with no DACL
@@ -264,7 +268,8 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 
 	if (tmp_acc_desired & MAXIMUM_ALLOWED_ACCESS) {
 		tmp_acc_desired &= ~MAXIMUM_ALLOWED_ACCESS;
-		return get_max_access( the_acl, token, acc_granted, tmp_acc_desired, status);
+		return get_max_access( the_acl, token, acc_granted, tmp_acc_desired, 
+				       status);
 	}
 
 	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
@@ -277,9 +282,9 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 			  (unsigned int)tmp_acc_desired ));
 
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
-		if (*status != NT_STATUS_OK) {
+		if (NT_STATUS_V(*status)) {
 			*acc_granted = 0;
-			DEBUG(5,("se_access_check: ACE %u denied with status %x.\n", (unsigned int)i, (unsigned int)*status ));
+			DEBUG(5,("se_access_check: ACE %u denied with status %s.\n", (unsigned int)i, get_nt_error_msg(*status)));
 			return False;
 		}
 	}

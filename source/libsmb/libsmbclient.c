@@ -122,7 +122,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
   if (*p == '/') {
 
-    strncpy(server, lp_workgroup(), 16); /* FIXME: Danger here */
+    strncpy(server, (char *)lp_workgroup(), 16); /* FIXME: Danger here */
     return 0;
 
   }
@@ -135,8 +135,8 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
    */
 
   /* check that '@' occurs before '/', if '/' exists at all */
-  q = strchr(p, '@');
-  r = strchr(p, '/');
+  q = strchr_m(p, '@');
+  r = strchr_m(p, '/');
   if (q && (!r || q < r)) {
     pstring username, passwd, domain;
     char *u = userinfo;
@@ -145,13 +145,13 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
     username[0] = passwd[0] = domain[0] = 0;
 
-    if (strchr(u, ';')) {
+    if (strchr_m(u, ';')) {
       
       next_token(&u, domain, ";", sizeof(fstring));
 
     }
 
-    if (strchr(u, ':')) {
+    if (strchr_m(u, ':')) {
 
       next_token(&u, username, ":", sizeof(fstring));
 
@@ -199,16 +199,27 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
 int smbc_errno(struct cli_state *c)
 {
-	uint8 eclass;
-	uint32 ecode;
 	int ret;
 
-	ret = cli_error(c, &eclass, &ecode, NULL);
+        if (cli_is_dos_error(c)) {
+                uint8 eclass;
+                uint32 ecode;
 
-	if (ret) {
-		DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n", 
-			 (int)eclass, (int)ecode, (int)ecode, ret));
-	}
+                cli_dos_error(c, &eclass, &ecode);
+                ret = cli_errno_from_dos(eclass, ecode);
+                
+                DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n", 
+                         (int)eclass, (int)ecode, (int)ecode, ret));
+        } else {
+                NTSTATUS status;
+
+                status = cli_nt_error(c);
+                ret = cli_errno_from_nt(status);
+
+                DEBUG(3,("smbc errno %s -> %d\n",
+                         get_nt_error_msg(status), ret));
+        }
+
 	return ret;
 }
 
@@ -280,11 +291,11 @@ struct smbc_server *smbc_server(char *server, char *share,
 
   DEBUG(4,("smbc_server: server_n=[%s] server=[%s]\n", server_n, server));
   
-  if ((p=strchr(server_n,'#')) && 
+  if ((p=strchr_m(server_n,'#')) && 
       (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
     
     fstrcpy(group, server_n);
-    p = strchr(group,'#');
+    p = strchr_m(group,'#');
     *p = 0;
 		
   }
@@ -386,9 +397,9 @@ struct smbc_server *smbc_server(char *server, char *share,
   cli_shutdown(&c);
   if (!srv) return NULL;
   
-  if (srv->server_name) free(srv->server_name);
-  if (srv->share_name) free(srv->share_name);
-  free(srv);
+  SAFE_FREE(srv->server_name);
+  SAFE_FREE(srv->share_name);
+  SAFE_FREE(srv);
   return NULL;
 }
 
@@ -416,12 +427,11 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   }
 
-  if (smbc_initialized) { /* Already done, so don't do it again */
+  if (smbc_initialized) { /* Don't go through this if we have already done it */
 
     return 0;
 
   }
-
 
   smbc_initialized = 1;
   smbc_auth_fn = fn;
@@ -451,8 +461,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   slprintf(my_netbios_name, 16, "smbc%s%d", user, pid);
 
-  charset_initialise();
-
   /* Here we would open the smb.conf file if needed ... */
 
   home = getenv("HOME");
@@ -475,8 +483,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
     return -1;
 
   }
-
-  codepage_initialise(lp_client_code_page()); /* Get a codepage */
 
   reopen_logs();  /* Get logging working ... */
 
@@ -600,8 +606,7 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
       /* Handle the error ... */
 
-      free(smbc_file_table[slot]);
-      smbc_file_table[slot] = NULL;
+      SAFE_FREE(smbc_file_table[slot]);
       errno = smbc_errno(&srv->cli);
       return -1;
 
@@ -814,8 +819,8 @@ int smbc_close(int fd)
 
   }
 
-  if (fe->fname) free(fe->fname);
-  free(fe);
+  SAFE_FREE(fe->fname);
+  SAFE_FREE(fe);
   smbc_file_table[fd - smbc_start_fd] = NULL;
 
   return 0;
@@ -1311,8 +1316,8 @@ static void smbc_remove_dir(struct smbc_file *dir)
 
     f = d; d = d->next;
 
-    if (f->dirent) free(f->dirent);
-    free(f);
+    SAFE_FREE(f->dirent);
+    SAFE_FREE(f);
 
   }
 
@@ -1348,7 +1353,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
     dir->dir_list = malloc(sizeof(struct smbc_dir_list));
     if (!dir->dir_list) {
 
-      free(dirent);
+      SAFE_FREE(dirent);
       dir->dir_error = ENOMEM;
       return -1;
 
@@ -1363,7 +1368,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 
     if (!dir->dir_end) {
 
-      free(dirent);
+      SAFE_FREE(dirent);
       dir->dir_error = ENOMEM;
       return -1;
 
@@ -1454,8 +1459,6 @@ int smbc_opendir(const char *fname)
   struct smbc_server *srv = NULL;
   struct in_addr rem_ip;
   int slot = 0;
-  uint8 eclass;
-  uint32 ecode;
 
   if (!smbc_initialized) {
 
@@ -1519,10 +1522,9 @@ int smbc_opendir(const char *fname)
     
       errno = EINVAL;
       if (smbc_file_table[slot]) {
-	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	free(smbc_file_table[slot]);
+	SAFE_FREE(smbc_file_table[slot]->fname);
+	SAFE_FREE(smbc_file_table[slot]);
       }
-      smbc_file_table[slot] = NULL;
       return -1;
 
     }
@@ -1559,10 +1561,9 @@ int smbc_opendir(const char *fname)
     if (!srv) {
 
       if (smbc_file_table[slot]) {
-	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	free(smbc_file_table[slot]);
+	SAFE_FREE(smbc_file_table[slot]->fname);
+	SAFE_FREE(smbc_file_table[slot]);
       }
-      smbc_file_table[slot] = NULL;
       return -1;
 
     }
@@ -1575,11 +1576,10 @@ int smbc_opendir(const char *fname)
 			   (void *)smbc_file_table[slot])) {
 
       if (smbc_file_table[slot]) {
-	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	free(smbc_file_table[slot]);
+	SAFE_FREE(smbc_file_table[slot]->fname);
+	SAFE_FREE(smbc_file_table[slot]);
       }
-      smbc_file_table[slot] = NULL;
-      errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
+      errno = cli_errno(&srv->cli);
       return -1;
 
     }
@@ -1592,10 +1592,9 @@ int smbc_opendir(const char *fname)
 
 	errno = EINVAL;
 	if (smbc_file_table[slot]) {
-	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	  free(smbc_file_table[slot]);
+	  SAFE_FREE(smbc_file_table[slot]->fname);
+	  SAFE_FREE(smbc_file_table[slot]);
 	}
-	smbc_file_table[slot] = NULL;
 	return -1;
 	
       }
@@ -1630,10 +1629,9 @@ int smbc_opendir(const char *fname)
 	if (!srv) {
 
 	  if (smbc_file_table[slot]) {
-	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	    free(smbc_file_table[slot]);
+	    SAFE_FREE(smbc_file_table[slot]->fname);
+	    SAFE_FREE(smbc_file_table[slot]);
 	  }
-	  smbc_file_table[slot] = NULL;  /* FIXME: Memory leaks ... */
 	  return -1;
 
 	}
@@ -1646,11 +1644,10 @@ int smbc_opendir(const char *fname)
 			       (void *)smbc_file_table[slot])) {
 
 	  if (smbc_file_table[slot]) {
-	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	    free(smbc_file_table[slot]);
+	    SAFE_FREE(smbc_file_table[slot]->fname);
+	    SAFE_FREE(smbc_file_table[slot]);
 	  }
-	  smbc_file_table[slot] = NULL;
-	  errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
+	  errno = cli_errno(&srv->cli);
 	  return -1;
 
 	}
@@ -1669,10 +1666,9 @@ int smbc_opendir(const char *fname)
 	  if (!srv) {
 
 	    if (smbc_file_table[slot]) {
-	      if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	      free(smbc_file_table[slot]);
+	      SAFE_FREE(smbc_file_table[slot]->fname);
+	      SAFE_FREE(smbc_file_table[slot]);
 	    }
-	    smbc_file_table[slot] = NULL;
 	    return -1;
 
 	  }
@@ -1684,12 +1680,11 @@ int smbc_opendir(const char *fname)
 	  if (cli_RNetShareEnum(&srv->cli, list_fn, 
 				(void *)smbc_file_table[slot]) < 0) {
 
-	    errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
+	    errno = cli_errno(&srv->cli);
 	    if (smbc_file_table[slot]) {
-	      if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	      free(smbc_file_table[slot]);
+	      SAFE_FREE(smbc_file_table[slot]->fname);
+	      SAFE_FREE(smbc_file_table[slot]);
 	    }
-	    smbc_file_table[slot] = NULL;
 	    return -1;
 
 	  }
@@ -1699,10 +1694,9 @@ int smbc_opendir(const char *fname)
 
 	  errno = ENODEV;   /* Neither the workgroup nor server exists */
 	  if (smbc_file_table[slot]) {
-	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	    free(smbc_file_table[slot]);
+	    SAFE_FREE(smbc_file_table[slot]->fname);
+	    SAFE_FREE(smbc_file_table[slot]);
 	  }
-	  smbc_file_table[slot] = NULL;
 	  return -1;
 
 	}
@@ -1721,10 +1715,9 @@ int smbc_opendir(const char *fname)
       if (!srv) {
 
 	if (smbc_file_table[slot]) {
-	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	  free(smbc_file_table[slot]);
+	  SAFE_FREE(smbc_file_table[slot]->fname);
+	  SAFE_FREE(smbc_file_table[slot]);
 	}
-	smbc_file_table[slot] = NULL;
 	return -1;
 
       }
@@ -1739,10 +1732,9 @@ int smbc_opendir(const char *fname)
 		   (void *)smbc_file_table[slot]) < 0) {
 
 	if (smbc_file_table[slot]) {
-	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	  free(smbc_file_table[slot]);
+	  SAFE_FREE(smbc_file_table[slot]->fname);
+	  SAFE_FREE(smbc_file_table[slot]);
 	}
-	smbc_file_table[slot] = NULL;
 	errno = smbc_errno(&srv->cli);
 	return -1;
 
@@ -1790,8 +1782,8 @@ int smbc_closedir(int fd)
 
   if (fe) {
 
-    if (fe->fname) free(fe->fname);
-    free(fe);    /* Free the space too */
+    SAFE_FREE(fe->fname);
+    SAFE_FREE(fe);    /* Free the space too */
 
   }
 

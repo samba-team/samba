@@ -139,9 +139,6 @@
    accessible to root */
 #define DUMP_CORE 1
 
-#define SMB_ALIGNMENT 1
-
-
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
@@ -189,6 +186,10 @@
 #define SESSION_TEMPLATE "smb/%d"
 #endif
 
+/* the maximum age in seconds of a password. Should be a lp_ parameter */
+#define MAX_PASSWORD_AGE (21*24*60*60)
+
 /* Allocation roundup. */
 #define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
+
 #endif

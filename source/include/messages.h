@@ -37,8 +37,12 @@
 
 /* rpc messages */
 #define MSG_PRINTER_NOTIFY 2001
+#define MSG_PRINTER_UPDATE 2002
 
+/* smbd messages */
 #define MSG_SMB_CONF_UPDATED 3001
 #define MSG_SMB_FORCE_TDIS   3002
+#define MSG_SMB_SAM_SYNC     3003
+#define MSG_SMB_SAM_REPL     3004
 
 #endif

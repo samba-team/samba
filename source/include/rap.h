@@ -366,9 +366,16 @@
 #define RAP_NetUserAdd2_REQ       "WsTWW"
 #define RAP_NetUserEnum_REQ       "WrLeh"
 #define RAP_NetUserEnum2_REQ      "WrLDieh"
+#define RAP_NetUserGetGroups_REQ  "zWrLeh"
+#define RAP_NetUserSetGroups_REQ  "zWsTW"
+#define RAP_NetUserPasswordSet_REQ "zb16b16w"
+#define RAP_NetUserPasswordSet2_REQ "zb16b16WW"
+#define RAP_SAMOEMChgPasswordUser2_REQ "B516B16"
+#define RAP_NetUserValidate2_REQ    "Wb62WWrLhWW"
 
 #define RAP_NetServerEnum2_REQ  "WrLehDz"
 #define RAP_WserverGetInfo_REQ  "WrLh"
+#define RAP_NetWkstatGetInfo    "WrLh"
 
 #define RAP_WShareAdd_REQ       "WsT"
 #define RAP_WShareEnum_REQ      "WrLeh"
@@ -378,6 +385,11 @@
 #define RAP_NetPrintQEnum_REQ   "WrLeh"
 #define RAP_NetPrintQGetInfo_REQ "zWrLh"
 
+#define RAP_NetServerAdminCommand_REQ "zhrLeh"
+#define RAP_NetServiceEnum_REQ  "WrLeh"
+#define RAP_NetServiceControl_REQ "zWWrL"
+#define RAP_NetServiceInstall_REQ "zF88sg88T"
+#define RAP_NetServiceGetInfo_REQ "zWrLh"
 #define RAP_NetSessionEnum_REQ  "WrLeh"
 #define RAP_NetSessionGetInfo_REQ "zWrLh"
 #define RAP_NetSessionDel_REQ   "zW"
@@ -405,6 +417,8 @@
 #define RAP_SERVER_INFO_L1      "B16BBDz"
 #define RAP_SERVER_INFO_L2 "B16BBDzDDDWWzWWWWWWWB21BzWWWWWWWWWWWWWWWWWWWWWWz"
 #define RAP_SERVER_INFO_L3 "B16BBDzDDDWWzWWWWWWWB21BzWWWWWWWWWWWWWWWWWWWWWWzDWz"
+#define RAP_SERVICE_INFO_L0     "B16"
+#define RAP_SERVICE_INFO_L2     "B16WDWB64"
 #define RAP_SHARE_INFO_L0       "B13"
 #define RAP_SHARE_INFO_L1	"B13BWz"
 #define RAP_SHARE_INFO_L2	"B13BWzWWWzB9B"
@@ -429,6 +443,8 @@
 #define RAP_UPASSWD_LEN 16 /* user password */
 #define RAP_SPASSWD_LEN 9 /* share password */
 #define RAP_MACHNAME_LEN 16
+#define RAP_SRVCNAME_LEN 16
+#define RAP_SRVCCMNT_LEN 64
 #define RAP_DATATYPE_LEN 10
 
 
@@ -451,6 +467,16 @@ typedef struct rap_user_info_1
     uint16 userflags;
     char * logon_script;
 } RAP_USER_INFO_1;
+
+typedef struct rap_service_info_2
+{
+    char   service_name[RAP_SRVCNAME_LEN];
+    uint16 status;
+    uint32 installcode;
+    uint16 process_num;
+    char * comment;
+} RAP_SERVICE_INFO_2;
+
 
 typedef struct rap_share_info_0
 {

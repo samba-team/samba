@@ -23,18 +23,13 @@
 
 #include "includes.h"
 
-
-static void cli_process_oplock(struct cli_state *cli);
-
 /*
  * Change the port number used to call on 
  */
 int cli_set_port(struct cli_state *cli, int port)
 {
-	if (port > 0)
-	  cli->port = port;
-
-	return cli->port;
+	cli->port = port;
+	return port;
 }
 
 /****************************************************************************
@@ -52,38 +47,44 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
 		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
 		    SVAL(cli->inbuf,smb_vwv7) == 0) {
-			if (cli->use_oplocks) cli_process_oplock(cli);
+			if (cli->oplock_handler) {
+				int fnum = SVAL(cli->inbuf,smb_vwv2);
+				unsigned char level = CVAL(cli->inbuf,smb_vwv3+1);
+				if (!cli->oplock_handler(cli, fnum, level)) return False;
+			}
 			/* try to prevent loops */
 			CVAL(cli->inbuf,smb_com) = 0xFF;
 			goto again;
 		}
 	}
 
+        /* If the server is not responding, note that now */
+
+        if (!ret) {
+                close(cli->fd);
+                cli->fd = -1;
+        }
+
 	return ret;
 }
 
 /****************************************************************************
-  send an smb to a fd and re-establish if necessary
+  send an smb to a fd.
 ****************************************************************************/
+
 BOOL cli_send_smb(struct cli_state *cli)
 {
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
-	BOOL reestablished=False;
 
 	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
-		if (ret <= 0 && errno == EPIPE && !reestablished) {
-			if (cli_reestablish_connection(cli)) {
-				reestablished = True;
-				nwritten=0;
-				continue;
-			}
-		}
 		if (ret <= 0) {
+                        close(cli->fd);
+                        cli->fd = -1;
 			DEBUG(0,("Error writing %d bytes to client. %d\n",
 				 (int)len,(int)ret));
 			return False;
@@ -100,7 +101,6 @@ setup basics in a outgoing packet
 void cli_setup_packet(struct cli_state *cli)
 {
         cli->rap_error = 0;
-        cli->nt_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
@@ -110,6 +110,9 @@ void cli_setup_packet(struct cli_state *cli)
 		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
 		if (cli->capabilities & CAP_UNICODE) {
 			flags2 |= FLAGS2_UNICODE_STRINGS;
+		}
+		if (cli->capabilities & CAP_STATUS32) {
+			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 		}
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
@@ -124,51 +127,6 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
 }
 
 
-/****************************************************************************
-process an oplock break request from the server
-****************************************************************************/
-static void cli_process_oplock(struct cli_state *cli)
-{
-	char *oldbuf = cli->outbuf;
-	pstring buf;
-	int fnum;
-	unsigned char level;
-
-	fnum = SVAL(cli->inbuf,smb_vwv2);
-	level = CVAL(cli->inbuf,smb_vwv3+1);
-
-	/* damn, we really need to keep a record of open files so we
-	   can detect a oplock break and a close crossing on the
-	   wire. for now this swallows the errors */
-	if (fnum == 0) return;
-
-	/* Ignore level II break to none's. */
-	if (level == OPLOCKLEVEL_NONE)
-		return;
-
-	cli->outbuf = buf;
-
-        memset(buf,'\0',smb_size);
-        set_message(buf,8,0,True);
-
-        CVAL(buf,smb_com) = SMBlockingX;
-	SSVAL(buf,smb_tid, cli->cnum);
-        cli_setup_packet(cli);
-	SSVAL(buf,smb_vwv0,0xFF);
-	SSVAL(buf,smb_vwv1,0);
-	SSVAL(buf,smb_vwv2,fnum);
-	if (cli->use_level_II_oplocks)
-		SSVAL(buf,smb_vwv3,0x102); /* levelII oplock break ack */
-	else
-		SSVAL(buf,smb_vwv3,2); /* exclusive oplock break ack */
-	SIVAL(buf,smb_vwv4,0); /* timoeut */
-	SSVAL(buf,smb_vwv6,0); /* unlockcount */
-	SSVAL(buf,smb_vwv7,0); /* lockcount */
-
-        cli_send_smb(cli);	
-
-	cli->outbuf = oldbuf;
-}
 
 /****************************************************************************
 initialise a client structure
@@ -193,11 +151,20 @@ initialise a client structure
 ****************************************************************************/
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
+        BOOL alloced_cli = False;
+
+	/* Check the effective uid - make sure we are not setuid */
+	if (is_setuid_root()) {
+		DEBUG(0,("libsmb based programs must *NOT* be setuid root.\n"));
+		return NULL;
+	}
+
 	if (!cli) {
 		cli = (struct cli_state *)malloc(sizeof(*cli));
 		if (!cli)
 			return NULL;
 		ZERO_STRUCTP(cli);
+                alloced_cli = True;
 	}
 
 	if (cli->initialised) {
@@ -218,23 +185,34 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->max_xmit = cli->bufsize;
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
+	cli->oplock_handler = cli_oplock_ack;
+
 	if (!cli->outbuf || !cli->inbuf)
-	{
-		return NULL;
-	}
+                goto error;
 
-	if ((cli->mem_ctx = talloc_init()) == NULL) {
-		free(cli->outbuf);
-		free(cli->inbuf);
-		return NULL;
-	}
+	if ((cli->mem_ctx = talloc_init()) == NULL)
+                goto error;
 
-	memset(cli->outbuf, '\0', cli->bufsize);
-	memset(cli->inbuf, '\0', cli->bufsize);
+	memset(cli->outbuf, 0, cli->bufsize);
+	memset(cli->inbuf, 0, cli->bufsize);
+
+	cli->nt_pipe_fnum = 0;
 
 	cli->initialised = 1;
 
 	return cli;
+
+        /* Clean up after malloc() error */
+
+ error:
+
+        SAFE_FREE(cli->inbuf);
+        SAFE_FREE(cli->outbuf);
+
+        if (alloced_cli)
+                SAFE_FREE(cli);
+
+        return NULL;
 }
 
 /****************************************************************************
@@ -242,24 +220,18 @@ shutdown a client structure
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
 {
-	if (cli->outbuf)
-	{
-		free(cli->outbuf);
-	}
-	if (cli->inbuf)
-	{
-		free(cli->inbuf);
-	}
+	SAFE_FREE(cli->outbuf);
+	SAFE_FREE(cli->inbuf);
 
 	if (cli->mem_ctx)
 		talloc_destroy(cli->mem_ctx);
 
 #ifdef WITH_SSL
-    if (cli->fd != -1)
-      sslutil_disconnect(cli->fd);
+	if (cli->fd != -1)
+		sslutil_disconnect(cli->fd);
 #endif /* WITH_SSL */
 	if (cli->fd != -1) 
-      close(cli->fd);
+		close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
 }
 
@@ -281,4 +253,3 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 	cli->pid = pid;
 	return ret;
 }
-

@@ -26,23 +26,29 @@
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static void parse_domain_user(char *domuser, fstring domain, fstring user)
+static void wb_parse_domain_user(char *domuser, fstring domain, fstring user)
 {
-        char *p;
-        char *sep = lp_winbind_separator();
-        if (!sep) sep = "\\";
-        p = strchr(domuser,*sep);
-        if (!p) p = strchr(domuser,'\\');
-        if (!p) {
-                fstrcpy(domain,"");
-                fstrcpy(user, domuser);
-                return;
-        }
-        
-        fstrcpy(user, p+1);
-        fstrcpy(domain, domuser);
-        domain[PTR_DIFF(p, domuser)] = 0;
-        strupper(domain);
+	char *p;
+	char *sep = lp_winbind_separator();
+ 
+	if (!sep)
+		sep = "\\";
+ 
+	p = strchr(domuser,*sep);
+ 
+	if (!p)
+		p = strchr(domuser,'\\');
+ 
+	if (!p) {
+		fstrcpy(domain,"");
+		fstrcpy(user, domuser);
+		return;
+	}
+ 
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+	strupper(domain);
 }
 
 /* Return a password structure from a username.  Specify whether cached data 
@@ -59,7 +65,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request.data.auth.user, name_domain, 
+	wb_parse_domain_user(state->request.data.auth.user, name_domain, 
                           name_user);
 
 	/* don't allow the null domain */
@@ -98,7 +104,7 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
     if (state == NULL) return WINBINDD_ERROR;
 
-    parse_domain_user(state->request.data.chauthtok.user, domain, user);
+    wb_parse_domain_user(state->request.data.chauthtok.user, domain, user);
 
     oldpass = state->request.data.chauthtok.oldpass;
     newpass = state->request.data.chauthtok.newpass;

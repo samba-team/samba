@@ -4,6 +4,7 @@
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -163,9 +164,9 @@ char *get_numlist(char *p, uint32 **num, int *count)
 		uint32 *tn;
 
 		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
-		if (tn == NULL) {
-			if (*num)
-				free(*num);
+		if (tn == NULL)
+		{
+			SAFE_FREE(*num);
 			return NULL;
 		} else
 			(*num) = tn;
@@ -332,20 +333,21 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 /*******************************************************************
   setup only the byte count for a smb message
 ********************************************************************/
-void set_message_bcc(char *buf,int num_bytes)
+int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
 	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	return (smb_size + num_words*2 + num_bytes);
 }
 
 /*******************************************************************
   setup only the byte count for a smb message, using the end of the
   message as a marker
 ********************************************************************/
-void set_message_end(void *outbuf,void *end_ptr)
+int set_message_end(void *outbuf,void *end_ptr)
 {
-	set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
+	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************
@@ -656,12 +658,13 @@ void *Realloc(void *p,size_t size)
 
 /****************************************************************************
  Free memory, checks for NULL.
+use directly SAFE_FREE()
+exist only because we need to pass a function pointer somewhere --SSS
 ****************************************************************************/
 
 void safe_free(void *p)
 {
-	if (p != NULL)
-		free(p);
+	SAFE_FREE(p);
 }
 
 /****************************************************************************
@@ -1243,13 +1246,11 @@ routine to free a namearray.
 
 void free_namearray(name_compare_entry *name_array)
 {
-  if(name_array == 0)
+  if(name_array == NULL)
     return;
 
-  if(name_array->name != NULL)
-    free(name_array->name);
-
-  free((char *)name_array);
+  SAFE_FREE(name_array->name);
+  SAFE_FREE(name_array);
 }
 
 /****************************************************************************
@@ -1643,6 +1644,44 @@ int smb_mkstemp(char *template)
 	if (!p) return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 #endif
+}
+
+/*****************************************************************
+ malloc that aborts with smb_panic on fail or zero size.
+ *****************************************************************/  
+
+void *xmalloc(size_t size)
+{
+	void *p;
+	if (size == 0)
+		smb_panic("xmalloc: called with zero size.\n");
+	if ((p = malloc(size)) == NULL)
+		smb_panic("xmalloc: malloc fail.\n");
+	return p;
+}
+
+/*****************************************************************
+ Memdup with smb_panic on fail.
+ *****************************************************************/  
+
+void *xmemdup(const void *p, size_t size)
+{
+	void *p2;
+	p2 = xmalloc(size);
+	memcpy(p2, p, size);
+	return p2;
+}
+
+/*****************************************************************
+ strdup that aborts on malloc fail.
+ *****************************************************************/  
+
+char *xstrdup(const char *s)
+{
+	char *s1 = strdup(s);
+	if (!s1)
+		smb_panic("xstrdup: malloc fail\n");
+	return s1;
 }
 
 /*****************************************************************

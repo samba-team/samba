@@ -44,8 +44,8 @@ static char *trust_keystr(char *domain)
 /************************************************************************
  Routine to get the trust account password for a domain
 ************************************************************************/
-BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-				 time_t *pass_last_set_time)
+static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+					time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
 	size_t size;
@@ -55,16 +55,15 @@ BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
-	free(pass);
+	SAFE_FREE(pass);
 	return True;
 }
 
 /* Check the machine account password is valid */
 
-enum winbindd_result winbindd_check_machine_acct(
-	struct winbindd_cli_state *state)
+enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
-	int result = WINBINDD_ERROR;
+	NTSTATUS status;
 	uchar trust_passwd[16];
 	struct in_addr *ip_list = NULL;
 	int count;
@@ -78,7 +77,7 @@ enum winbindd_result winbindd_check_machine_acct(
  again:
 	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, 
                                          NULL)) {
-		result = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
 
@@ -89,7 +88,7 @@ enum winbindd_result winbindd_check_machine_acct(
 			     controller)) {
 		DEBUG(0, ("could not find domain controller for "
 			  "domain %s\n", lp_workgroup()));		  
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		goto done;
 	}
 
@@ -103,7 +102,7 @@ enum winbindd_result winbindd_check_machine_acct(
 #if 0 /* XXX */
 	{
 		uint16 validation_level;
-        result = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
+        status = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
                                     trust_account, trust_passwd, 
                                     SEC_CHAN_WKSTA, &validation_level);	
 	}
@@ -117,7 +116,7 @@ enum winbindd_result winbindd_check_machine_acct(
 #define MAX_RETRIES 8
 
         if ((num_retries < MAX_RETRIES) && 
-            result == NT_STATUS_ACCESS_DENIED) {
+            NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED)) {
                 num_retries++;
                 goto again;
         }
@@ -125,11 +124,10 @@ enum winbindd_result winbindd_check_machine_acct(
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
 
-	DEBUG(3, ("secret is %s\n", (result == NT_STATUS_OK) ?
-		  "good" : "bad"));
+	DEBUG(3, ("secret is %s\n", NT_STATUS_IS_OK(status) ?  "good" : "bad"));
 
  done:
-	state->response.data.num_entries = result;
+	state->response.data.num_entries = NT_STATUS_V(status);
 	return WINBINDD_OK;
 }
 
@@ -142,6 +140,9 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 
 	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
 
+        if (domain_list == NULL)
+                get_domain_info();
+
 	for(domain = domain_list; domain; domain = domain->next) {
 
 		/* Skip own domain */
@@ -151,16 +152,15 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 		/* Add domain to list */
 
 		total_entries++;
-		ted = Realloc(extra_data, sizeof(fstring) *
+		ted = Realloc(extra_data, sizeof(fstring) * 
 				     total_entries);
 
 		if (!ted) {
 			DEBUG(0,("winbindd_list_trusted_domains: failed to enlarge buffer!\n"));
-			if (extra_data)
-				free(extra_data);
+			SAFE_FREE(extra_data);
 			return WINBINDD_ERROR;
-        } else
-			extra_data = ted;
+		}
+		else extra_data = ted;
 
 		memcpy(&extra_data[extra_data_len], domain->name,
 		       strlen(domain->name));

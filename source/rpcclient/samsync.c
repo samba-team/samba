@@ -265,10 +265,10 @@ static struct cli_state *init_connection(struct cli_state *cli,
                         char *lp;
 
                         fstrcpy(username,optarg);
-                        if ((lp=strchr_m(username,'%'))) {
+                        if ((lp=strchr(username,'%'))) {
                                 *lp = 0;
                                 fstrcpy(password,lp+1);
-                                memset(strchr_m(optarg, '%') + 1, 'X',
+                                memset(strchr(optarg, '%') + 1, 'X',
                                        strlen(password));
 			}
                         break;

@@ -155,14 +155,12 @@ static int TimeZoneFaster(time_t t)
 					      sizeof(dst_table[0])*(i+1));
     if (!tdt) {
       DEBUG(0,("TimeZoneFaster: out of memory!\n"));
-      if (dst_table)
-        free(dst_table);
+      SAFE_FREE(dst_table);
       table_size = 0;
     } else {
-
       dst_table = tdt;
       table_size++;
-    
+
       dst_table[i].zone = zone; 
       dst_table[i].start = dst_table[i].end = t;
     
@@ -614,3 +612,12 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
   return ret;
 }
 
+/****************************************************************************
+initialise an NTTIME to -1, which means "unknown" or "don't expire"
+****************************************************************************/
+
+void init_nt_time(NTTIME *nt)
+{
+	nt->high = 0x7FFFFFFF;
+	nt->low = 0xFFFFFFFF;
+}

@@ -73,7 +73,7 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 do a NBT node status query on an open socket and return an array of
 structures holding the returned names or NULL if the query failed
 **************************************************************************/
-struct node_status *name_status_query(int fd,struct nmb_name *name,
+struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
 {
 	BOOL found=False;
@@ -171,7 +171,7 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	if (sock == -1) return False;
 
 	make_nmb_name(&nname, "*", 0);
-	status = name_status_query(sock, &nname, to_ip, &count);
+	status = node_status_query(sock, &nname, to_ip, &count);
 	close(sock);
 	if (!status) return False;
 
@@ -184,7 +184,7 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 
 	dos_to_unix(name, True);
 
-	free(status);
+	SAFE_FREE(status);
 	return True;
 }
 
@@ -273,7 +273,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 
   if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
     debug_nmb_packet(p2);
-    free(p2);  /* No memory leaks ... */
+    SAFE_FREE(p2);  /* No memory leaks ... */
   }
 
   return True;
@@ -406,7 +406,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			if (!tmp_ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
 				if (ip_list)
-					free(ip_list);
+					SAFE_FREE(ip_list);
 			}
 
 			ip_list = tmp_ip_list;
@@ -865,10 +865,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 	  }
   }
 
-  if((*return_iplist) != NULL) {
-    free((char *)(*return_iplist));
-    *return_iplist = NULL;
-  }
+  SAFE_FREE(*return_iplist);
   return False;
 }
 
@@ -886,11 +883,11 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 
 	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
 		*return_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE((char *)ip_list);
 		return True;
 	}
 	if(ip_list != NULL)
-		free((char *)ip_list);
+		SAFE_FREE((char *)ip_list);
 	return False;
 }
 
@@ -951,17 +948,16 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 
 	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE((char *)ip_list);
 		return True;
 	}
 	if(internal_resolve_name(group, 0x1B, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE((char *)ip_list);
 		return True;
 	}
 
-	if(ip_list != NULL)
-		free((char *)ip_list);
+	SAFE_FREE((char *)ip_list);
 	return False;
 }
 
@@ -1177,4 +1173,12 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
 {
 	return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
+}
+
+/********************************************************
+ Get the IP address list of the Domain Master Browsers
+********************************************************/
+BOOL get_dmb_list(struct in_addr **ip_list, int *count)
+{
+	return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
 }

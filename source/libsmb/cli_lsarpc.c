@@ -25,73 +25,37 @@
 
 #include "includes.h"
 
-/* Opens a SMB connection to the lsa pipe */
+/** @defgroup rpc_client RPC Client
+ *
+ * @{
+ **/
 
+/**
+ * @file cli_lsarpc.c
+ *
+ * RPC client routines for the LSA RPC pipe.  LSA means "local
+ * security authority", which is half of a password database.
+ **/
+
+/** Opens a SMB connection to the lsa pipe
+ *
+ * @param system_name NETBIOS name of the machine to connect to. */
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds)
 {
-	struct in_addr dest_ip;
-	struct nmb_name calling, called;
-	fstring dest_host;
-	extern pstring global_myname;
-	struct ntuser_creds anon;
-
-	/* Initialise cli_state information */
-
-	if (!cli_initialise(cli)) {
-		return NULL;
-	}
-
-	if (!creds) {
-		ZERO_STRUCT(anon);
-		anon.pwd.null_pwd = 1;
-		creds = &anon;
-	}
-
-	cli_init_creds(cli, creds);
-
-	/* Establish a SMB connection */
-
-	if (!resolve_srv_name(system_name, dest_host, &dest_ip)) {
-		return NULL;
-	}
-
-	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
-
-	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
-				      &called, "IPC$", "IPC", False, True)) {
-		return NULL;
-	}
-
-	/* Open a NT session thingy */
-
-	if (!cli_nt_session_open(cli, PIPE_LSARPC)) {
-		cli_shutdown(cli);
-		return NULL;
-	}
-
-	return cli;
+        return cli_pipe_initialise(cli, system_name, PIPE_LSASS, creds);
 }
 
-/* Shut down a SMB connection to the LSA pipe */
+/** Open a LSA policy handle */
 
-void cli_lsa_shutdown(struct cli_state *cli)
-{
-	if (cli->fd != -1) cli_ulogoff(cli);
-	cli_shutdown(cli);
-}
-
-/* Open a LSA policy handle */
-
-uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL q;
 	LSA_R_OPEN_POL r;
 	LSA_SEC_QOS qos;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -127,7 +91,7 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
 	}
 
@@ -138,15 +102,73 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Close a LSA policy handle */
+/** Open a LSA policy handle */
 
-uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-		     POLICY_HND *pol)
+NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPEN_POL2 q;
+	LSA_R_OPEN_POL2 r;
+	LSA_SEC_QOS qos;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	if (sec_qos) {
+		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+                                 &qos);
+	} else {
+		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+                                 NULL);
+	}
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_open_pol2("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_OPENPOLICY2, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_open_pol2("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*pol = r.pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Close a LSA policy handle */
+
+NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                       POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_CLOSE q;
 	LSA_R_CLOSE r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -175,7 +197,7 @@ uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
 	}
 
@@ -186,18 +208,18 @@ uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Lookup a list of sids */
+/** Lookup a list of sids */
 
-uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *pol, int num_sids, DOM_SID *sids, 
-			   char ***names, uint32 **types, int *num_names)
+NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *pol, int num_sids, DOM_SID *sids, 
+                             char ***names, uint32 **types, int *num_names)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
 	LSA_R_LOOKUP_SIDS r;
 	DOM_R_REF ref;
 	LSA_TRANS_NAME_ENUM t_names;
-	uint32 result;
+	NTSTATUS result;
 	int i;
 
 	ZERO_STRUCT(q);
@@ -233,8 +255,9 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_OK && result != 0x00000107 &&
-	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
+	if (!NT_STATUS_IS_OK(result) && 
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_FILES_OPEN) &&
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NONE_MAPPED)) {
 		
 		/* An actual error occured */
 
@@ -268,18 +291,18 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		/* Translate optimised name through domain index array */
 
 		if (dom_idx != 0xffffffff) {
-			unistr2_to_ascii(dom_name, 
-					 &ref.ref_dom[dom_idx].uni_dom_name, 
-					 sizeof(dom_name)- 1);
-			unistr2_to_ascii(name, &t_names.uni_name[i], 
-					 sizeof(name) - 1);
+
+			unistr2_to_ascii(dom_name, &ref.ref_dom[dom_idx].uni_dom_name, sizeof(dom_name)- 1);
+			unistr2_to_ascii(name, &t_names.uni_name[i], sizeof(name) - 1);
 
 			slprintf(full_name, sizeof(full_name) - 1,
-				 "%s%s%s", dom_name, dom_name[0] ? 
-				 "\\" : "", name);
+				 "%s%s%s", dom_name, 
+                                 (dom_name[0] && name[0]) ? 
+				 lp_winbind_separator() : "", name);
 
 			(*names)[i] = talloc_strdup(mem_ctx, full_name);
 			(*types)[i] = t_names.name[i].sid_name_use;
+
 		} else {
 			(*names)[i] = NULL;
 			(*types)[i] = SID_NAME_UNKNOWN;
@@ -293,17 +316,17 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Lookup a list of names */
+/** Lookup a list of names */
 
-uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			    POLICY_HND *pol, int num_names, char **names, 
-			    DOM_SID **sids, uint32 **types, int *num_sids)
+NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              POLICY_HND *pol, int num_names, char **names, 
+                              DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
 	LSA_R_LOOKUP_NAMES r;
 	DOM_R_REF ref;
-	uint32 result;
+	NTSTATUS result;
 	int i;
 	
 	ZERO_STRUCT(q);
@@ -336,8 +359,8 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_OK && 
-	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
+	if (!NT_STATUS_IS_OK(result) && 
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NONE_MAPPED)) {
 
 		/* An actual error occured */
 
@@ -394,16 +417,16 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Query info policy */
+/** Query info policy */
 
-uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol, uint16 info_class, 
-				 fstring domain_name, DOM_SID *domain_sid)
+NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                   POLICY_HND *pol, uint16 info_class, 
+                                   fstring domain_name, DOM_SID *domain_sid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
 	LSA_R_QUERY_INFO r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -430,7 +453,7 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -481,17 +504,17 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Enumerate list of trusted domains */
+/** Enumerate list of trusted domains */
 
-uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 *enum_ctx, 
-			      uint32 *num_domains, char ***domain_names, 
-			      DOM_SID **domain_sids)
+NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                POLICY_HND *pol, uint32 *enum_ctx, 
+                                uint32 *num_domains, char ***domain_names, 
+                                DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM q;
 	LSA_R_ENUM_TRUST_DOM r;
-	uint32 result;
+	NTSTATUS result;
 	int i;
 
 	ZERO_STRUCT(q);
@@ -525,8 +548,8 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	   0x8000001a (NT_STATUS_UNABLE_TO_FREE_VM) so we ignore it and
 	   pretend everything is OK. */
 
-	if (result != NT_STATUS_OK && 
-	    result != NT_STATUS_UNABLE_TO_FREE_VM) {
+	if (!NT_STATUS_IS_OK(result) && 
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_UNABLE_TO_FREE_VM)) {
 
 		/* An actual error ocured */
 
@@ -579,3 +602,5 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/** @} **/

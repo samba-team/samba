@@ -23,7 +23,6 @@
 
 #include "includes.h"
 
-
 /*******************************************************************
 dump a prs to a file
  ********************************************************************/
@@ -62,9 +61,14 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 }
 
 
-/*******************************************************************
- Initialise a parse structure - malloc the data if requested.
- ********************************************************************/
+/**
+ * Initialise an expandable parse structure.
+ *
+ * @param size Initial buffer size.  If >0, a new buffer will be
+ * created with malloc().
+ *
+ * @return False if allocation fails, otherwise True.
+ **/
 BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 {
 	ZERO_STRUCTP(ps);
@@ -114,10 +118,9 @@ BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout)
 
 void prs_mem_free(prs_struct *ps)
 {
-	if(ps->is_dynamic && (ps->data_p != NULL))
-		free(ps->data_p);
+	if(ps->is_dynamic)
+		SAFE_FREE(ps->data_p);
 	ps->is_dynamic = False;
-	ps->data_p = NULL;
 	ps->buffer_size = 0;
 	ps->data_offset = 0;
 }
@@ -548,6 +551,67 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 
 	return True;
 }
+
+/*******************************************************************
+ Stream a NTSTATUS
+ ********************************************************************/
+
+BOOL prs_ntstatus(char *name, prs_struct *ps, int depth, NTSTATUS *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = NT_STATUS(RIVAL(q,0));
+		else
+			*status = NT_STATUS(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,NT_STATUS_V(*status));
+		else
+			SIVAL(q,0,NT_STATUS_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 get_nt_error_msg(*status)));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
+/*******************************************************************
+ Stream a WERROR
+ ********************************************************************/
+
+BOOL prs_werror(char *name, prs_struct *ps, int depth, WERROR *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = W_ERROR(RIVAL(q,0));
+		else
+			*status = W_ERROR(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,W_ERROR_V(*status));
+		else
+			SIVAL(q,0,W_ERROR_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 werror_str(*status)));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
 
 /******************************************************************
  Stream an array of uint8s. Length is number of uint8s.
@@ -1147,3 +1211,27 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
 
     return 0;
 } 
+
+/*******************************************************************
+ hash a stream.
+ ********************************************************************/
+BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
+{
+	char *q;
+
+	q = prs_data_p(ps);
+        q = &q[offset];
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("prs_hash1\n"));
+	dump_data(100, sess_key, 16);
+	dump_data(100, q, 68);
+#endif
+	SamOEMhash((uchar *) q, sess_key, 68);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, q, 68);
+#endif
+
+	return True;
+}

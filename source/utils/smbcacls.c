@@ -92,9 +92,8 @@ static BOOL cacls_open_policy_hnd(void)
 		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (cli_lsa_open_policy(&lsa_cli, lsa_cli.mem_ctx, True, 
-					GENERIC_EXECUTE_ACCESS, &pol)
-		    != NT_STATUS_OK) {
+		if (!NT_STATUS_IS_OK(cli_lsa_open_policy(&lsa_cli, lsa_cli.mem_ctx, True, 
+					GENERIC_EXECUTE_ACCESS, &pol))) {
 			return False;
 		}
 
@@ -118,8 +117,8 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
-	    cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, &types, 
-				&num_names) != NT_STATUS_OK ||
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, &types, 
+				&num_names)) ||
 	    !names || !names[0]) {
 		return;
 	}
@@ -142,8 +141,8 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	}
 
 	if (!cacls_open_policy_hnd() ||
-	    cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, &sids, &types, 
-				 &num_sids) != NT_STATUS_OK) {
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, &sids, &types, 
+				 &num_sids))) {
 		result = False;
 		goto done;
 	}

@@ -34,16 +34,17 @@ extern int optind;
 static BOOL local_mode;
 
 /*********************************************************
-a strdup with exit
+ A strdup with exit
 **********************************************************/
-static char *xstrdup(char *s)
+
+static char *strdup_x(const char *s)
 {
-	s = strdup(s);
-	if (!s) {
+	char *new_s = strdup(s);
+	if (!new_s) {
 		fprintf(stderr,"out of memory\n");
 		exit(1);
 	}
-	return s;
+	return new_s;
 }
 
 
@@ -164,13 +165,13 @@ Join a domain using the administrator username and password
 /* Macro for checking RPC error codes to make things more readable */
 
 #define CHECK_RPC_ERR(rpc, msg) \
-        if ((result = rpc) != NT_STATUS_OK) { \
+        if (!NT_STATUS_IS_OK(result = rpc)) { \
                 DEBUG(0, (msg ": %s\n", get_nt_error_msg(result))); \
                 goto done; \
         }
 
 #define CHECK_RPC_ERR_DEBUG(rpc, debug_args) \
-        if ((result = rpc) != NT_STATUS_OK) { \
+        if (!NT_STATUS_IS_OK(result = rpc)) { \
                 DEBUG(0, debug_args); \
                 goto done; \
         }
@@ -204,7 +205,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 
 	/* Misc */
 
-	uint32 result;
+	NTSTATUS result;
 	int retval = 1;
 
 	/* Connect to remote machine */
@@ -299,7 +300,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 		result = NT_STATUS_USER_EXISTS;
 	}	
 
-	if (result == NT_STATUS_USER_EXISTS) {
+	if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_USER_EXISTS)) {
 		uint32 num_rids, *name_types, *user_rids;
 		uint32 flags = 0x3e8;
 		char *names;
@@ -332,7 +333,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 			("could not re-open existing user %s: %s\n",
 			 acct_name, get_nt_error_msg(result)));
 		
-	} else if (result != NT_STATUS_OK) {
+	} else if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error creating domain user: %s\n",
 			  get_nt_error_msg(result)));
 		goto done;
@@ -473,7 +474,7 @@ static char *get_pass( char *prompt, BOOL stdin_get)
 	} else {
 		p = getpass(prompt);
 	}
-	return xstrdup(p);
+	return strdup_x(p);
 }
 
 /*************************************************************
@@ -592,11 +593,11 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'x':
 			local_flags |= LOCAL_DELETE_USER;
-			new_passwd = xstrdup("XXXXXX");
+			new_passwd = strdup_x("XXXXXX");
 			break;
 		case 'd':
 			local_flags |= LOCAL_DISABLE_USER;
-			new_passwd = xstrdup("XXXXXX");
+			new_passwd = strdup_x("XXXXXX");
 			break;
 		case 'e':
 			local_flags |= LOCAL_ENABLE_USER;
@@ -606,7 +607,7 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'n':
 			local_flags |= LOCAL_SET_NO_PASSWORD;
-			new_passwd = xstrdup("NO PASSWORD");
+			new_passwd = strdup_x("NO PASSWORD");
 			break;
 		case 'j':
 			new_domain = optarg;
@@ -739,7 +740,7 @@ static int process_root(int argc, char *argv[])
 		if (got_username || got_pass)
 			usage();
 		fstrcpy(user_name, argv[0]);
-		new_passwd = xstrdup(argv[1]);
+		new_passwd = strdup_x(argv[1]);
 		break;
 	default:
 		usage();
@@ -769,7 +770,7 @@ static int process_root(int argc, char *argv[])
 
 		if (local_flags & LOCAL_ADD_USER) {
 		        safe_free(new_passwd);
-			new_passwd = xstrdup(user_name);
+			new_passwd = strdup_x(user_name);
 			strlower(new_passwd);
 		}
 
@@ -809,7 +810,7 @@ static int process_root(int argc, char *argv[])
 				goto done;
 			}
 			if((sampass != NULL) && (pdb_get_lanman_passwd(sampass) != NULL)) {
-				new_passwd = xstrdup("XXXX"); /* Don't care. */
+				new_passwd = strdup_x("XXXX"); /* Don't care. */
 			}
 			
 			pdb_free_sam(sampass);
@@ -909,7 +910,7 @@ static int process_nonroot(int argc, char *argv[])
 	if (!user_name) {
 		pwd = sys_getpwuid(getuid());
 		if (pwd) {
-			user_name = xstrdup(pwd->pw_name);
+			user_name = strdup_x(pwd->pw_name);
 		} else {
 			fprintf(stderr,"you don't exist - go away\n");
 			exit(1);
