@@ -33,6 +33,33 @@ struct resolve_state {
 
 static struct smbcli_composite *setup_next_method(struct smbcli_composite *c);
 
+/* pointers to the resolver backends */
+static const struct resolve_method {
+	const char *name;
+	struct smbcli_composite *(*send_fn)(struct nbt_name *, struct event_context *);
+	NTSTATUS (*recv_fn)(struct smbcli_composite *, TALLOC_CTX *, const char **);
+} methods[] = {
+	{ "bcast", resolve_name_bcast_send, resolve_name_bcast_recv },
+	{ "wins",  resolve_name_wins_send, resolve_name_wins_recv },
+	{ "host",  resolve_name_host_send, resolve_name_host_recv }
+};
+
+
+/* 
+   find a matching backend
+*/
+static const struct resolve_method *find_method(const char *name)
+{
+	int i;
+	if (name == NULL) return NULL;
+	for (i=0;i<ARRAY_SIZE(methods);i++) {
+		if (strcasecmp(name, methods[i].name) == 0) {
+			return &methods[i];
+		}
+	}
+	return NULL;
+}
+
 /*
   handle completion of one name resolve method
 */
@@ -40,15 +67,9 @@ static void resolve_handler(struct smbcli_composite *req)
 {
 	struct smbcli_composite *c = req->async.private;
 	struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
-	const char *method = state->methods[0];
+	const struct resolve_method *method = find_method(state->methods[0]);
 
-	if (strcasecmp(method, "bcast")) {
-		c->status = resolve_name_bcast_recv(req, state, &state->reply_addr);
-	} else if (strcasecmp(method, "wins")) {
-		c->status = resolve_name_wins_recv(req, state, &state->reply_addr);
-	} else {
-		c->status = NT_STATUS_INTERNAL_ERROR;
-	}
+	c->status = method->recv_fn(req, state, &state->reply_addr);
 	
 	if (!NT_STATUS_IS_OK(c->status)) {
 		state->methods++;
@@ -72,18 +93,16 @@ static void resolve_handler(struct smbcli_composite *req)
 static struct smbcli_composite *setup_next_method(struct smbcli_composite *c)
 {
 	struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
-	const char *method;
 	struct smbcli_composite *req = NULL;
 
 	do {
-		method = state->methods[0];
-		if (method == NULL) break;
-		if (strcasecmp(method, "bcast")) {
-			req = resolve_name_bcast_send(&state->name, c->event_ctx);
-		} else if (strcasecmp(method, "wins")) {
-			req = resolve_name_wins_send(&state->name, c->event_ctx);
+		const struct resolve_method *method = find_method(state->methods[0]);
+		if (method) {
+			req = method->send_fn(&state->name, c->event_ctx);
+			if (req == NULL) {
+				state->methods++;
+			}
 		}
-		if (req == NULL) state->methods++;
 	} while (!req && state->methods[0]);
 
 	if (req) {
