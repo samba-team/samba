@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
+#include "protos.h"
+
 #ifndef HAVE_PUTENV
 int putenv(const char *string);
 #endif

@@ -46,8 +46,7 @@ KLIB=$(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBROKEN)
 all: telnetd
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	-I../../../include -I.. -I../../.. -I$(srcdir)/.. -I. -I$(srcdir) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I.. -I../../.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
 telnetd: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)

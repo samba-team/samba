@@ -13,10 +13,6 @@ RCSID("$Id$");
 #endif
 #include "roken.h"
 
-#if defined(__ultrix) || defined(sun)
-char *crypt(const char*, const char*);
-#endif
-
 int
 verify_unix_user(char *user, char *password)
 {
