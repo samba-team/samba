@@ -656,6 +656,23 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL get_one_dc_name(struct in_addr ip, const char *domain_name,
+			    const DOM_SID *sid, fstring dcname)
+{
+	int i;
+
+	send_getdc_request(ip, domain_name, sid);
+	smb_msleep(100);
+
+	for (i=0; i<5; i++) {
+		if (receive_getdc_response(ip, domain_name, dcname))
+			return True;
+		smb_msleep(500);
+	}
+
+	return name_status_find(domain_name, 0x1c, 0x20, ip, dcname);
+}
+
 static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs)
 {
@@ -702,9 +719,11 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		if (!resolve_name(dcname, &ip, 0x20))
 			continue;
 
-		if (is_ipaddress(dcname) &&
-		    !name_status_find(domain->name, 0x1b, 0x20, ip, dcname))
-				continue;
+		/* Even if we got the dcname, double check the name to use for
+		 * the netlogon auth2 */
+
+		if (!get_one_dc_name(ip, domain->name, &domain->sid, dcname))
+			continue;
 
 		add_one_dc_unique(mem_ctx, domain->name, dcname, ip,
 				  dcs, num_dcs);
@@ -720,7 +739,7 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
 
-	char **dcnames = NULL;
+	const char **dcnames = NULL;
 	int num_dcnames = 0;
 
 	struct sockaddr_in *addrs = NULL;
