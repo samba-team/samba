@@ -76,16 +76,18 @@
 }
 #endif
 
+#ifndef NO_OPEN64_ALIAS
 #ifdef HAVE__OPEN64
  int _open64(const char *name, int flags, mode_t mode) 
 {
    return open64(name, flags, mode);
 }
-#elif HAVE___OPEN
+#elif HAVE___OPEN64
  int __open64(const char *name, int flags, mode_t mode) 
 {
    return open64(name, flags, mode);
 }
+#endif
 #endif
 
 #ifdef HAVE_PREAD
@@ -626,7 +628,7 @@
 #endif
 
 #ifdef HAVE_UTIMES
- int utimes(const char *name,struct timeval tvp[2])
+ int utimes(const char *name,const struct timeval tvp[2])
 {
 	if (smbw_path(name)) {
 		return smbw_utimes(name, tvp);
