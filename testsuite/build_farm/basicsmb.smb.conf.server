@@ -1,3 +1,5 @@
 security=server
 password server=user
-smb passwd file=/dev/null
+smb passwd file=NON_EXISTANT_FILE
+
+
