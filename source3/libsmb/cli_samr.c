@@ -1,3 +1,4 @@
+#define NEW_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 2.2
@@ -275,6 +276,55 @@ uint32 cli_samr_open_user(struct cli_state *cli, POLICY_HND *domain_pol,
 	return result;
 }
 
+/* Open handle on a group */
+
+uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
+			  uint32 access_mask, uint32 group_rid,
+			  POLICY_HND *group_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_OPEN_GROUP q;
+	SAMR_R_OPEN_GROUP r;
+	uint32 result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+
+	/* Marshall data and send request */
+
+	init_samr_q_open_group(&q, domain_pol, access_mask, group_rid);
+
+	if (!samr_io_q_open_group("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_OPEN_GROUP, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_open_group("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		*group_pol = r.group_pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query user info */
 
 uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol, 
@@ -314,7 +364,103 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol,
 
 	/* Return output parameters */
 
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Query group info */
+
+uint32 cli_samr_query_groupinfo(struct cli_state *cli, POLICY_HND *group_pol,
+				uint32 info_level, GROUP_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_GROUPINFO q;
+	SAMR_R_QUERY_GROUPINFO r;
+	uint32 result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_groupinfo(&q, group_pol, info_level);
+
+	if (!samr_io_q_query_groupinfo("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_GROUPINFO, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	r.ctr = ctr;
+
+	if (!samr_io_r_query_groupinfo("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Query user groups */
+
+uint32 cli_samr_query_usergroups(struct cli_state *cli, POLICY_HND *user_pol,
+				 uint32 *num_groups, DOM_GID **gid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_USERGROUPS q;
+	SAMR_R_QUERY_USERGROUPS r;
+	uint32 result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_usergroups(&q, user_pol);
+
+	if (!samr_io_q_query_usergroups("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_USERGROUPS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_query_usergroups("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
 	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		*num_groups = r.num_entries;
+		*gid = r.gid;
 	}
 
  done:
@@ -323,3 +469,55 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol,
 
 	return result;
 }
+
+/* Query user groups */
+
+uint32 cli_samr_query_groupmem(struct cli_state *cli, POLICY_HND *group_pol,
+			       uint32 *num_mem, uint32 **rid, uint32 **attr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_GROUPMEM q;
+	SAMR_R_QUERY_GROUPMEM r;
+	uint32 result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_groupmem(&q, group_pol);
+
+	if (!samr_io_q_query_groupmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_GROUPMEM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_query_groupmem("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		*num_mem = r.num_entries;
+		*rid = r.rid;
+		*attr = r.attr;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+#undef NEW_NTDOMAIN
