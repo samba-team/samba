@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "system/time.h"
 #include "libcli/auth/kerberos.h"
 #include "secrets.h"
 #include "pstring.h"
