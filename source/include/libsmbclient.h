@@ -195,7 +195,7 @@ int smbc_lseekdir(int fd, off_t offset, int whence);
  * Print a file given the name in fname. It would be a URL ...
  */
 
-int smbc_print_file(const char *fname);
+int smbc_print_file(const char *fname, const char *printq);
 
 /* 
  * Open a print file that can be written to by other calls. This simply
@@ -215,6 +215,6 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
  * Delete a print job 
  */
 
-int smbc_unlink_print_job(int id);
+int smbc_unlink_print_job(const char *fname, int id);
 
 #endif
