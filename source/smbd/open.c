@@ -793,7 +793,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
 
 
   /* ignore any oplock requests if oplocks are disabled */
-  if (!lp_oplocks(SNUM(conn)) {
+  if (!lp_oplocks(SNUM(conn))) {
 	  oplock_request = 0;
   }
 
