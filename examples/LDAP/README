@@ -4,35 +4,18 @@
 !== written by Gerald Carter <jerry@samba.org>
 !==
 
-This is a quick and dirty means of storing smbpasswd entries
-in LDAP.  Samba 2.2.x does not have any ability to grab
-this information directly from LDAP so you will need to
-periodically generate an smbpasswd from an ldapsearch
-"(objectclass=smbPasswordEntry)".
-
-Be aware of search limits on your client or server which prevent
-all entries from being returned in the search result.
+This is a quick and dirty means of converting smbpasswd entries
+to sambaAccount entriues in an LDAP directory.
 
 
 Pre-requisites for import_smbpasswd.pl & export_smbpasswd.pl
-------------------------------------------------------------
-You must install Mozilla PerLDAP which is available at:
-
-	http://www.mozilla.org/directory
-
-PerLDAP depends on the Netscape (aka iPlanet) C-SDK which is
-available for download at:
-
-	http:// www.iplanet.com/downloads/developer/
-
-
-Pre-requisites for import2_smbpasswd.pl & export2_smbpasswd.pl
 --------------------------------------------------------------
 These two scripts are modified versions of 
 [import|export]_smbpasswd.pl rewritten to use the Net::LDAP
 perl module available from 
 
 	http://perl-ldap.sourceforge.net
+
 
 
 
@@ -68,7 +51,7 @@ You must restart the LDAP server for these new included schema files
 to become active.
 
 
-import[2]_smbpasswd.pl
+import_smbpasswd.pl
 ----------------------
 
 Make sure you customize the local site variable in the perl script
@@ -80,17 +63,17 @@ refer to RFC2307 and http://www.padl.com/software.html).
 
 The following will import an smbpasswd file into an LDAP directory
 
-	$ cat smbpasswd | import[2]_smbpasswd.pl
+	$ cat smbpasswd | import_smbpasswd.pl
 
 
-export[2]_smbpasswd.pl
+export_smbpasswd.pl
 ----------------------
 
 Make sure you customize the local site variable in the perl script
 (i.e. ldapserver, rootdn, rootpw, etc...).  You can then generate
 an smbpasswd file by executing
 
-	$ export[2]_smbpasswd.pl > smbpasswd
+	$ export_smbpasswd.pl > smbpasswd
 
 NOTE: Server side (or client side) search limites may prevent
 all users from being listed.  Check you directory server documentation
