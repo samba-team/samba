@@ -4046,7 +4046,7 @@ void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 /*The following definitions come from  tdb/tdbutil.c  */
 
 int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval);
-int tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
+void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
