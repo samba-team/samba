@@ -162,7 +162,7 @@ NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
 	ADS_STATUS rc;
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry = NULL;
-	char *ldap_exp = NULL;
+	char *ldap_exp;
 	char *sidstr = NULL;
 	int count;
 	char *dn2;
@@ -174,27 +174,28 @@ NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
-		DEBUG(1,("ads_sid_to_dn: asprintf failed!\n"));
+	if(!(ldap_exp = talloc_asprintf(mem_ctx, "(objectSid=%s)", sidstr))) {
+		DEBUG(1,("ads_sid_to_dn: talloc_asprintf failed!\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, &msg, ldap_exp, NULL);
+	rc = ads_search_retry(ads, (void **)&msg, ldap_exp, NULL);
 	if (!ADS_ERR_OK(rc)) {
 		status = ads_ntstatus(rc);
 		DEBUG(1,("ads_sid_to_dn ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
 
-	if ((count = ads_count_replies(msg)) != 1) {
+	if ((count = ads_count_replies(ads, msg)) != 1) {
+		fstring sid_string;
 		DEBUG(1,("ads_sid_to_dn (sid=%s): Not found (count=%d)\n", 
-			 sid_to_string(sid_string, sid)), count);
+			 sid_to_string(sid_string, sid), count));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	entry = ads_first_entry(msg);
+	entry = ads_first_entry(ads, msg);
 
 	dn2 = ads_get_dn(ads, entry);
 
@@ -213,13 +214,12 @@ NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
 
 	status = NT_STATUS_OK;
 
-	DEBUG(3,("ads sid_to_dn mapped %s\n", *dn2));
+	DEBUG(3,("ads sid_to_dn mapped %s\n", dn2));
 
 	SAFE_FREE(dn2);
 done:
 	if (msg) ads_msgfree(ads, msg);
 
-	SAFE_FREE(ldap_exp);
 	SAFE_FREE(sidstr);
 
 	return status;
