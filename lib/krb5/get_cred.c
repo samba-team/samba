@@ -159,7 +159,7 @@ krb5_get_kdc_cred(krb5_context context,
      */
 
     ret = krb5_sendto_kdc (context, &enc, &in_creds->server->realm, &resp);
-
+    if(ret)
 	goto out;
 
     memset(&rep, 0, sizeof(rep));
