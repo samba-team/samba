@@ -384,9 +384,7 @@ interface drsuapi
 		[case(DRSUAPI_ATTRIBUTE_objectSid)] drsuapi_DsAttributeValueCtrSID sid;
 
 		/* SecurityDescriptor */
-		/* we can't parse some ads specific security_descriptors yet
 		[case(DRSUAPI_ATTRIBUTE_ntSecurityDescriptor)] drsuapi_DsAttributeValueCtrSecurityDescriptor security_descriptor;
-		*/
 
 		/* UnicodeString */
 		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
