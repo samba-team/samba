@@ -584,7 +584,14 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	    && geteuid() != 0
 	    && (time(0) - locked_at) > ALLOW_LOGOUT
 	    && strncmp(passwd, LOGOUT_PASSWD, sizeof(LOGOUT_PASSWD)) == 0)
-	    kill(-1, SIGHUP);
+	    {
+		signal(SIGHUP, SIG_IGN);
+		kill(-1, SIGHUP);
+		sleep(5);
+		/* If the X-server shut down then so will we, else
+		 * continue */
+		signal(SIGHUP, SIG_DFL);
+	    }
 #ifdef KERBEROS
 	/*
 	 * Try to verify as user with kerberos.
