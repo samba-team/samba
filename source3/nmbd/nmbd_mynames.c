@@ -29,6 +29,7 @@ extern int DEBUGLEVEL;
 extern char **my_netbios_names;
 extern pstring myname;
 extern fstring myworkgroup;
+extern pstring scope;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
 
@@ -97,14 +98,41 @@ Exiting.\n", myworkgroup, subrec->subnet_name));
 
     for (i=0; my_netbios_names[i]; i++)
     {
-      add_name_to_subnet(unicast_subnet, my_netbios_names[i],0x20,samba_nb_type, PERMANENT_TTL,
-                     SELF_NAME, 1, &FIRST_SUBNET->myip);
+      for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
+      {
+        /*
+         * Ensure all the IP addresses are added if we are multihomed.
+         */
+        struct nmb_name nmbname;
 
-      add_name_to_subnet(unicast_subnet, my_netbios_names[i],0x3,samba_nb_type, PERMANENT_TTL,
-                     SELF_NAME, 1, &FIRST_SUBNET->myip);
+        make_nmb_name(&nmbname, my_netbios_names[i],0x20, scope);
+        insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-      add_name_to_subnet(unicast_subnet, my_netbios_names[i],0x0,samba_nb_type, PERMANENT_TTL,
-                     SELF_NAME, 1, &FIRST_SUBNET->myip);
+        make_nmb_name(&nmbname, my_netbios_names[i],0x3, scope);
+        insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
+
+        make_nmb_name(&nmbname, my_netbios_names[i],0x0, scope);
+        insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
+      }
+    }
+
+    /*
+     * Add the WORKGROUP<0> and WORKGROUP<1e> group names to the unicast subnet
+     * also for the same reasons.
+     */
+
+    for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
+    {
+      /*
+       * Ensure all the IP addresses are added if we are multihomed.
+       */
+      struct nmb_name nmbname;
+
+      make_nmb_name(&nmbname, myworkgroup, 0x0, scope);
+      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+
+      make_nmb_name(&nmbname, myworkgroup, 0x1e, scope);
+      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
     }
   }
 

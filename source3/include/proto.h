@@ -483,6 +483,8 @@ void add_domain_names(time_t t);
 
 /*The following definitions come from  nmbd_become_lmb.c  */
 
+void insert_permanent_name_into_unicast( struct subnet_record *subrec, 
+                                                struct nmb_name *nmbname, uint16 nb_type );
 void unbecome_local_master_success(struct subnet_record *subrec,
                              struct userdata_struct *userdata,
                              struct nmb_name *released_name,
