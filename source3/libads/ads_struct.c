@@ -72,47 +72,6 @@ char *ads_build_dn(const char *realm)
 }
 
 
-#ifdef HAVE_LDAP
-/*
-  find the ldap server from DNS
-*/
-static char *find_ldap_server(ADS_STRUCT *ads)
-{
-	char *list = NULL;
-	struct in_addr ip;
-
-	if (ads->realm &&
-	    strcasecmp(ads->workgroup, lp_workgroup()) == 0 &&
-	    ldap_domain2hostlist(ads->realm, &list) == LDAP_SUCCESS) {
-		char *p;
-		p = strchr(list, ':');
-		if (p) *p = 0;
-		return list;
-	}
-
-	/* get desperate, find the domain controller IP */
-	if (resolve_name(ads->workgroup, &ip, 0x1B)) {
-		return strdup(inet_ntoa(ip));
-	}
-	
-	/* or a BDC ... */
-	if (resolve_name(ads->workgroup, &ip, 0x1C)) {
-		return strdup(inet_ntoa(ip));
-	}
-
-	return NULL;
-}
-
-#else 
-
-static char *find_ldap_server(ADS_STRUCT *ads)
-{
-	/* Without LDAP this doesn't make much sense */
-	return NULL;
-}
-
-#endif 
-
 #ifndef LDAP_PORT
 #define LDAP_PORT 389
 #endif
@@ -122,58 +81,24 @@ static char *find_ldap_server(ADS_STRUCT *ads)
 */
 ADS_STRUCT *ads_init(const char *realm, 
 		     const char *workgroup,
-		     const char *ldap_server,
-		     const char *bind_path,
-		     const char *password)
+		     const char *ldap_server)
 {
 	ADS_STRUCT *ads;
 	
 	ads = (ADS_STRUCT *)smb_xmalloc(sizeof(*ads));
 	ZERO_STRUCTP(ads);
 	
-	if (!workgroup) {
-		workgroup = lp_workgroup();
-	}
+	ads->server.realm = realm? strdup(realm) : NULL;
+	ads->server.workgroup = workgroup ? strdup(workgroup) : NULL;
+	ads->server.ldap_server = ldap_server? strdup(ldap_server) : NULL;
 
-	ads->realm = realm? strdup(realm) : NULL;
-	ads->workgroup = strdup(workgroup);
-	ads->ldap_server = ldap_server? strdup(ldap_server) : NULL;
-	ads->bind_path = bind_path? strdup(bind_path) : NULL;
-	ads->ldap_port = LDAP_PORT;
-	if (password) ads->password = strdup(password);
-
-	if (!ads->realm) {
-		ads->realm = strdup(lp_realm());
-		if (!ads->realm[0]) {
-			SAFE_FREE(ads->realm);
-		}
+	/* we need to know if this is a foreign realm to know if we can
+	   use lp_ads_server() */
+	if (realm && strcasecmp(lp_realm(), realm) != 0) {
+		ads->server.foreign = 1;
 	}
-
-	if (!ads->realm && strchr_m(ads->workgroup, '.')) {
-		/* the smb.conf has specified the realm in 'workgroup =' */
-		ads->realm = strdup(ads->workgroup);
-	}
-
-	if (!ads->bind_path && ads->realm) {
-		ads->bind_path = ads_build_dn(ads->realm);
-	}
-	if (!ads->ldap_server) {
-		if (strcasecmp(ads->workgroup, lp_workgroup()) == 0) {
-			ads->ldap_server = strdup(lp_ads_server());
-		}
-		if (!ads->ldap_server || !ads->ldap_server[0]) {
-			SAFE_FREE(ads->ldap_server);
-			ads->ldap_server = find_ldap_server(ads);
-		}
-	}
-	if (!ads->kdc_server) {
-		/* assume its the same as LDAP */
-		ads->kdc_server = ads->ldap_server? strdup(ads->ldap_server) : NULL;
-	}
-
-	if (ads->ldap_server) {
-		/* its very useful knowing the IP of the ldap server */
-		ads->ldap_ip = *interpret_addr2(ads->ldap_server);
+	if (workgroup && strcasecmp(lp_workgroup(), workgroup) != 0) {
+		ads->server.foreign = 1;
 	}
 
 	return ads;
@@ -182,7 +107,7 @@ ADS_STRUCT *ads_init(const char *realm,
 /* a simpler ads_init() interface using all defaults */
 ADS_STRUCT *ads_init_simple(void)
 {
-	return ads_init(NULL, NULL, NULL, NULL, NULL);
+	return ads_init(NULL, NULL, NULL);
 }
 
 /*
@@ -194,13 +119,19 @@ void ads_destroy(ADS_STRUCT **ads)
 #if HAVE_LDAP
 		if ((*ads)->ld) ldap_unbind((*ads)->ld);
 #endif
-		SAFE_FREE((*ads)->realm);
-		SAFE_FREE((*ads)->ldap_server);
-		SAFE_FREE((*ads)->ldap_server_name);
-		SAFE_FREE((*ads)->kdc_server);
-		SAFE_FREE((*ads)->bind_path);
-		SAFE_FREE((*ads)->password);
-		SAFE_FREE((*ads)->user_name);
+		SAFE_FREE((*ads)->server.realm);
+		SAFE_FREE((*ads)->server.workgroup);
+		SAFE_FREE((*ads)->server.ldap_server);
+
+		SAFE_FREE((*ads)->auth.realm);
+		SAFE_FREE((*ads)->auth.password);
+		SAFE_FREE((*ads)->auth.user_name);
+		SAFE_FREE((*ads)->auth.kdc_server);
+
+		SAFE_FREE((*ads)->config.realm);
+		SAFE_FREE((*ads)->config.bind_path);
+		SAFE_FREE((*ads)->config.ldap_server_name);
+
 		ZERO_STRUCTP(*ads);
 		SAFE_FREE(*ads);
 	}

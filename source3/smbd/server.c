@@ -364,6 +364,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 				set_socket_options(smbd_server_fd(),user_socket_options);
 				
+				/* this is needed so that we get decent entries
+				   in smbstatus for port 445 connects */
+				fstrcpy(remote_machine, get_socket_addr(smbd_server_fd()));
+				
 				/* Reset global variables in util.c so
 				   that client substitutions will be
 				   done correctly in the process.  */

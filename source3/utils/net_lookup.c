@@ -215,6 +215,8 @@ static int net_lookup_kdc(int argc, const char **argv)
 	DEBUG(1, ("No kerberos support\n"));
 	return -1;
 }
+
+
 /* lookup hosts or IP addresses using internal samba lookup fns */
 int net_lookup(int argc, const char **argv)
 {

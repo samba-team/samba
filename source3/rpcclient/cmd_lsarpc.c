@@ -191,23 +191,15 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 
 	/* defaults, but may be changed using params */
 	uint32 enum_ctx = 0;
-	uint32 preferred_maxnum = 5;
 	uint32 num_domains = 0;
 	int i;
 
-	if (argc > 3) {
-		printf("Usage: %s [preferred max number (%d)] [enum context (0)]\n",
-			argv[0], preferred_maxnum);
+	if (argc > 2) {
+		printf("Usage: %s [enum context (0)]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	/* enumeration context */
-	if (argc >= 2 && argv[1]) {
-		preferred_maxnum = atoi(argv[1]);
-	}	
-
-	/* preferred maximum number */
-	if (argc == 3 && argv[2]) {
+	if (argc == 2 && argv[1]) {
 		enum_ctx = atoi(argv[2]);
 	}	
 
@@ -221,8 +213,8 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 	/* Lookup list of trusted domains */
 
 	result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-						&preferred_maxnum, &num_domains,
-						&domain_names, &domain_sids);
+					&num_domains,
+					&domain_names, &domain_sids);
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
 	    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))

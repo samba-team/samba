@@ -39,7 +39,7 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
     new_password = strdup(tmp_password);
     asprintf(&service_principal, "HOST/%s", host_principal);
     
-    ret = kerberos_set_password(ads->kdc_server, host_principal, password, 
+    ret = kerberos_set_password(ads->auth.kdc_server, host_principal, password, 
 				service_principal, new_password);
 
     if (!secrets_store_machine_password(new_password)) {

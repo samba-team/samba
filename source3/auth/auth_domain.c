@@ -46,7 +46,9 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
 		return NT_STATUS_NO_LOGON_SERVERS;		
 	}
 
-	DEBUG(4,("ads_resolve_dc: realm=%s\n", ads->realm));
+	DEBUG(4,("ads_resolve_dc: realm=%s\n", ads->config.realm));
+
+	ads->auth.no_bind = 1;
 
 #ifdef HAVE_ADS
 	/* a full ads_connect() is actually overkill, as we don't srictly need
@@ -55,7 +57,7 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
 	ads_connect(ads);
 #endif
 
-	fstrcpy(remote_machine, ads->ldap_server_name);
+	fstrcpy(remote_machine, ads->config.ldap_server_name);
 	strupper(remote_machine);
 	*dest_ip = ads->ldap_ip;
 	ads_destroy(&ads);

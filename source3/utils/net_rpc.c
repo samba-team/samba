@@ -1824,7 +1824,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	POLICY_HND connect_hnd;
 	
 	/* trusted domains listing variables */
-	int enum_ctx = 0, pref_num_domains = 5;
+	int enum_ctx = 0;
 	int num_domains, i, pad_len, col_len = 20;
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
@@ -1894,7 +1894,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 
 	do {
 		nt_status = cli_lsa_enum_trust_dom(cli, mem_ctx, &connect_hnd, &enum_ctx,
-						   &pref_num_domains, &num_domains,
+						   &num_domains,
 						   &trusted_dom_names, &domain_sids);
 		
 		if (NT_STATUS_IS_ERR(nt_status)) {

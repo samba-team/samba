@@ -77,7 +77,7 @@ ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	/* we need to fetch a service ticket as the ldap user in the
 	   servers realm, regardless of our realm */
-	asprintf(&sname, "ldap/%s@%s", ads->ldap_server_name, ads->server_realm);
+	asprintf(&sname, "ldap/%s@%s", ads->config.ldap_server_name, ads->config.realm);
 	krb5_init_context(&ctx);
 	krb5_set_default_tgs_ktypes(ctx, enc_types);
 	krb5_parse_name(ctx, sname, &principal);
@@ -163,7 +163,7 @@ ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	gss_release_buffer(&minor_status, &output_token);
 
-	output_token.value = malloc(strlen(ads->bind_path) + 8);
+	output_token.value = malloc(strlen(ads->config.bind_path) + 8);
 	p = output_token.value;
 
 	*p++ = 1; /* no sign or seal */
@@ -171,9 +171,10 @@ ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	*p++ = max_msg_size>>16;
 	*p++ = max_msg_size>>8;
 	*p++ = max_msg_size;
-	snprintf(p, strlen(ads->bind_path)+4, "dn:%s", ads->bind_path);
+	snprintf(p, strlen(ads->config.bind_path)+4, "dn:%s", ads->config.bind_path);
+	p += strlen(ads->config.bind_path);
 
-	output_token.length = strlen(ads->bind_path) + 8;
+	output_token.length = strlen(ads->config.bind_path) + 8;
 
 	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
 			  &output_token, &conf_state,

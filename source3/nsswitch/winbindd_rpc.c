@@ -575,22 +575,23 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_domains,
 				char ***names,
+				char ***alt_names,
 				DOM_SID **dom_sids)
 {
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 enum_ctx = 0;
-	uint32 pref_num_domains = 5;
 
 	DEBUG(3,("rpc: trusted_domains\n"));
 
 	*num_domains = 0;
+	*alt_names = NULL;
 
 	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
 		goto done;
 
 	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-					&hnd->pol, &enum_ctx, &pref_num_domains,
+					&hnd->pol, &enum_ctx,
 					num_domains, names, dom_sids);
 done:
 	return result;
@@ -621,6 +622,13 @@ done:
 	return status;
 }
 
+/* find alternate names list for the domain - none for rpc */
+static NTSTATUS alternate_name(struct winbindd_domain *domain)
+{
+	return NT_STATUS_OK;
+}
+
+
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	False,
@@ -633,5 +641,6 @@ struct winbindd_methods msrpc_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid
+	domain_sid,
+	alternate_name
 };
