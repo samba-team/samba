@@ -322,7 +322,6 @@ fkt_next_entry_int(krb5_context context,
 		   off_t *end)
 {
     int32_t len;
-    u_int32_t timestamp;
     int ret;
     int8_t tmp8;
     int32_t tmp32;
@@ -341,7 +340,7 @@ loop:
     if (ret)
 	goto out;
     ret = krb5_ret_int32(cursor->sp, &tmp32);
-    timestamp = tmp32;
+    entry->timestamp = tmp32;
     if (ret)
 	goto out;
     ret = krb5_ret_int8(cursor->sp, &tmp8);
@@ -446,7 +445,7 @@ fkt_add_entry(krb5_context context,
 	    krb5_storage_free(emem);
 	    goto out;
 	}
-	ret = krb5_store_int32 (emem, time(NULL));
+	ret = krb5_store_int32 (emem, entry->timestamp);
 	if(ret) {
 	    krb5_storage_free(emem);
 	    goto out;
