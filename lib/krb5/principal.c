@@ -765,6 +765,16 @@ krb5_425_conv_principal_ext(krb5_context context,
 	    dns_free_data(r);
 #endif
     }
+    if(func != NULL) {
+	snprintf(host, sizeof(host), "%s.%s", instance, realm);
+	strlwr(host);
+	ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
+	if((*func)(context, pr)){
+	    *princ = pr;
+	    return 0;
+	}
+	krb5_free_principal(context, pr);
+    }
 
     /*
      * if the instance is the first component of the local hostname,
