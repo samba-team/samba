@@ -46,7 +46,7 @@ static int debug_flag;
 static char *port_str;
 char *realm;
 #ifdef KRB4
-int do_kerberos4 = 1;
+int do_kerberos4 = 0;
 #endif
 
 static struct getargs args[] = {
@@ -75,7 +75,7 @@ static struct getargs args[] = {
 	"enable debugging" 
     },
 #ifdef KRB4
-    {	"kerberos4", 0, arg_negative_flag, &do_kerberos4,
+    {	"kerberos4", 0,		arg_flag,   &do_kerberos4,
 	"don't respond to kerberos 4 requests"
     },
 #endif
