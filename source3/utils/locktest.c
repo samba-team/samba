@@ -37,18 +37,35 @@ static BOOL analyze;
 #define READ_PCT 50
 #define LOCK_PCT 25
 #define UNLOCK_PCT 65
+#define RANGE_MULTIPLE 1
 
 struct record {
-	int r1, r2;
-	int conn, f;
+	char r1, r2;
+	char conn, f;
 	int start, len;
-	BOOL needed;
+	char needed;
 };
 
 static struct record preset[] = {
+#if 1
+{36,  5, 1, 1,  1,  2, 1},
+{ 2,  6, 0, 1,  0,  2, 1},
+{53, 92, 1, 1,  0,  0, 1},
+{99, 11, 1, 1,  2,  1, 1},
+#endif
 	};
 
 static struct record *recorded;
+
+static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+		      enum brl_type lock_type,
+		      br_off start, br_off size)
+{
+	printf("%6d   %05x:%05x    %s  %9.0f   %9.0f\n", 
+	       (int)pid, (int)dev, (int)ino, 
+	       lock_type==READ_LOCK?"R":"W",
+	       (double)start, (double)size);
+}
 
 /***************************************************** 
 return a connection to a server
@@ -61,6 +78,8 @@ struct cli_state *connect_one(char *share)
 	fstring server;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
+	fstring myname;
+	static int count;
 
 	fstrcpy(server,share+2);
 	share = strchr(server,'\\');
@@ -72,7 +91,9 @@ struct cli_state *connect_one(char *share)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, "locktest", 0x0);
+	slprintf(myname,sizeof(myname), "lock-%d-%d", getpid(), count++);
+
+	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
@@ -145,16 +166,23 @@ struct cli_state *connect_one(char *share)
 }
 
 
-static void reconnect(struct cli_state *cli[2][2], char *share1, char *share2)
+static void reconnect(struct cli_state *cli[2][2], int fnum[2][2][2],
+		      char *share1, char *share2)
 {
-	int server, conn;
+	int server, conn, f;
 	char *share[2];
 	share[0] = share1;
 	share[1] = share2;
 
+	
+
 	for (server=0;server<2;server++)
 	for (conn=0;conn<2;conn++) {
 		if (cli[server][conn]) {
+			for (f=0;f<2;f++) {
+				cli_close(cli[server][conn], fnum[server][conn][f]);
+			}
+			cli_ulogoff(cli[server][conn]);
 			cli_shutdown(cli[server][conn]);
 			free(cli[server][conn]);
 			cli[server][conn] = NULL;
@@ -201,6 +229,7 @@ static BOOL test_one(struct cli_state *cli[2][2],
 			       conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       ret1, ret2);
 		}
+		if (showall) brl_forall(print_brl);
 		if (ret1 != ret2) return False;
 	} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
 		/* unset a lock */
@@ -215,6 +244,7 @@ static BOOL test_one(struct cli_state *cli[2][2],
 			       conn, f, start, len,
 			       ret1, ret2);
 		}
+		if (showall) brl_forall(print_brl);
 		if (ret1 != ret2) return False;
 	} else {
 		/* reopen the file */
@@ -237,9 +267,27 @@ static BOOL test_one(struct cli_state *cli[2][2],
 		if (showall) {
 			printf("reopen conn=%d f=%d\n",
 			       conn, f);
+			brl_forall(print_brl);
 		}
 	}
 	return True;
+}
+
+static void close_files(struct cli_state *cli[2][2], 
+		       int fnum[2][2][2])
+{
+	int server, conn, f; 
+
+	for (server=0;server<2;server++)
+	for (conn=0;conn<2;conn++)
+	for (f=0;f<2;f++) {
+		if (fnum[server][conn][f] != -1) {
+			cli_close(cli[server][conn], fnum[server][conn][f]);
+			fnum[server][conn][f] = -1;
+		}
+	}
+	cli_unlink(cli[0][0], FILENAME);
+	cli_unlink(cli[1][0], FILENAME);
 }
 
 static void open_files(struct cli_state *cli[2][2], 
@@ -250,9 +298,6 @@ static void open_files(struct cli_state *cli[2][2],
 	for (server=0;server<2;server++)
 	for (conn=0;conn<2;conn++)
 	for (f=0;f<2;f++) {
-		if (fnum[server][conn][f] != -1) {
-			cli_close(cli[server][conn], fnum[server][conn][f]);
-		}
 		fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
 						 O_RDWR|O_CREAT,
 						 DENY_NONE);
@@ -270,15 +315,14 @@ static int retest(struct cli_state *cli[2][2],
 		   int n)
 {
 	int i;
-	printf("retesting %d ...\n", n);
-	open_files(cli, fnum);
+	printf("testing %d ...\n", n);
 	for (i=0; i<n; i++) {
-		if (recorded[i].needed &&
-		    !test_one(cli, fnum, &recorded[i])) return i;
-
-		if (i % 100 == 0) {
+		if (i && i % 100 == 0) {
 			printf("%d\n", i);
 		}
+
+		if (recorded[i].needed &&
+		    !test_one(cli, fnum, &recorded[i])) return i;
 	}
 	return n;
 }
@@ -299,11 +343,6 @@ static void test_locks(char *share1, char *share2)
 	ZERO_STRUCT(fnum);
 	ZERO_STRUCT(cli);
 
-	reconnect(cli, share1, share2);
-	cli_unlink(cli[0][0], FILENAME);
-	cli_unlink(cli[1][0], FILENAME);
-	open_files(cli, fnum);
-
 	recorded = (struct record *)malloc(sizeof(*recorded) * numops);
 
 	for (n=0; n<numops; n++) {
@@ -314,34 +353,35 @@ static void test_locks(char *share1, char *share2)
 			recorded[n].f = random() % 2;
 			recorded[n].start = random() % (LOCKRANGE-1);
 			recorded[n].len = 1 + random() % (LOCKRANGE-recorded[n].start);
+			recorded[n].start *= RANGE_MULTIPLE;
+			recorded[n].len *= RANGE_MULTIPLE;
 			recorded[n].r1 = random() % 100;
 			recorded[n].r2 = random() % 100;
 			recorded[n].needed = True;
 		}
-
-		if (!test_one(cli, fnum, &recorded[n])) break;
-
-		if (n % 100 == 0) {
-			printf("%d\n", n);
-		}
 	}
 
+	reconnect(cli, fnum, share1, share2);
+	open_files(cli, fnum);
+	n = retest(cli, fnum, numops);
+
 	if (n == numops || !analyze) return;
-
 	n++;
-
 
 	while (1) {
 		n1 = n;
 
-		reconnect(cli, share1, share2);
-		cli_unlink(cli[0][0], FILENAME);
-		cli_unlink(cli[1][0], FILENAME);
+		close_files(cli, fnum);
+		reconnect(cli, fnum, share1, share2);
 		open_files(cli, fnum);
 
-		for (i=0;i<n;i++) {
+		for (i=0;i<n-1;i++) {
 			int m;
 			recorded[i].needed = False;
+
+			close_files(cli, fnum);
+			open_files(cli, fnum);
+
 			m = retest(cli, fnum, n);
 			if (m == n) {
 				recorded[i].needed = True;
@@ -358,6 +398,16 @@ static void test_locks(char *share1, char *share2)
 		if (n1 == n) break;
 	}
 
+	close_files(cli, fnum);
+	reconnect(cli, fnum, share1, share2);
+	open_files(cli, fnum);
+	showall = True;
+	n1 = retest(cli, fnum, n);
+	if (n1 != n-1) {
+		printf("ERROR - inconsistent result (%d %d)\n", n1, n);
+	}
+	close_files(cli, fnum);
+
 	for (i=0;i<n;i++) {
 		printf("{%d, %d, %d, %d, %d, %d, %d},\n",
 		       recorded[i].r1,
@@ -368,7 +418,6 @@ static void test_locks(char *share1, char *share2)
 		       recorded[i].len,
 		       recorded[i].needed);
 	}	
-
 }
 
 
@@ -470,6 +519,7 @@ static void usage(void)
 	DEBUG(0,("seed=%d\n", seed));
 	srandom(seed);
 
+	locking_init(1);
 	test_locks(share1, share2);
 
 	return(0);
