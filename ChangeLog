@@ -1,4 +1,34 @@
+1999-09-12  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: revert back awk test, not worked around in
+ 	roken.awk
+
 1999-09-10  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/keytab.c: add comments and clean-up
+
+	* admin/ktutil.c: add `ktutil copy'
+
+	* lib/krb5/keytab_krb4.c: new file
+
+	* lib/krb5/krb5.h (krb5_kt_cursor): add a `data' field
+
+	* lib/krb5/Makefile.am: add keytab_krb4.c
+
+	* lib/krb5/keytab.c: add krb4 and correct some if's
+
+	* admin/srvconvert.c (srvconv): move common code
+
+	* lib/krb5/krb5.h (krb5_fkt_ops, krb5_mkt_ops): new variables
+
+	* lib/krb5/keytab.c: move out file and memory functions
+
+	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add keytab_file.c,
+ 	keytab_memory.c
+
+	* lib/krb5/keytab_memory.c: new file
+
+	* lib/krb5/keytab_file.c: new file
 
 	* kpasswd/kpasswdd.c: move out password quality functions
 
