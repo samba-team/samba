@@ -193,6 +193,8 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 			token->num_sids++;
 		}
 	}
+	for (i = 0; i < ngroups; i++)
+		gid_to_sid( &psids[i+2], groups[i]);
 
 	return token;
 }
@@ -1463,19 +1465,12 @@ BOOL domain_client_validate( char *user, char *domain,
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
 
-    /* unused, so delete here. */
-    if (info3.gids != NULL)
-	    free (info3.gids);
-
     if((nt_rpc_err == NT_STATUS_NO_SUCH_USER) && (user_exists != NULL))
       *user_exists = False;
 
     return False;
   }
 
-    /* unused, so delete here. */
-    if (info3.gids != NULL)
-	    free (info3.gids);
   /*
    * Here, if we really want it, we have lots of info about the user in info3.
    */
@@ -1496,6 +1491,10 @@ BOOL domain_client_validate( char *user, char *domain,
     return False;
   }
 #endif /* 0 */
+
+  /* Note - once the cli stream is shutdown the mem_ctx used
+   to allocate the other_sids and gids structures has been deleted - so
+   these pointers are no longer valid..... */
 
   cli_nt_session_close(&cli);
   cli_ulogoff(&cli);

@@ -3165,7 +3165,6 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 	if ( ret != 0 ) {
 		unlink(tmp_file);
-		free_a_printer(&printer,2);
 		return False;
 	}
 
@@ -3888,7 +3887,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 
 /****************************************************************************
 ****************************************************************************/
-static void fill_form_1(FORM_1 *form, nt_forms_struct *list, int position)
+static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 {
 	form->flag=list->flag;
 	init_unistr(&form->name, list->name);
@@ -3930,7 +3929,7 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 		/* construct the list of form structures */
 		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&forms_1[i], &list[i], i);
+			fill_form_1(&forms_1[i], &list[i]);
 		}
 		
 		safe_free(list);
@@ -3968,6 +3967,69 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 		return ERROR_INVALID_LEVEL;
 	}
 
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *uni_formname, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+{
+	nt_forms_struct *list=NULL;
+	FORM_1 form_1;
+	fstring form_name;
+	int buffer_size=0;
+	int numofforms, i;
+
+	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
+
+	DEBUG(4,("_spoolss_getform\n"));
+	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
+	DEBUGADD(5,("Info level [%d]\n",          level));
+
+	numofforms = get_ntforms(&list);
+	DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
+
+	if (numofforms == 0)
+		return ERROR_NO_MORE_ITEMS;
+
+	switch (level) {
+	case 1:
+
+		/* Check if the requested name is in the list of form structures */
+		for (i=0; i<numofforms; i++) {
+
+			DEBUG(4,("_spoolss_getform: checking form %s (want %s)\n", list[i].name, form_name));
+
+			if (strequal(form_name, list[i].name)) {
+				DEBUGADD(6,("Found form %s number [%d]\n", form_name, i));
+				fill_form_1(&form_1, &list[i]);
+				break;
+			}
+		}
+		
+		safe_free(list);
+
+		/* check the required size. */
+
+		*needed=spoolss_size_form_1(&form_1);
+		
+		if (!alloc_buffer_size(buffer, buffer_size)){
+			return ERROR_INSUFFICIENT_BUFFER;
+		}
+
+		if (*needed > offered) {
+			return ERROR_INSUFFICIENT_BUFFER;
+		}
+
+		/* fill the buffer with the form structures */
+		DEBUGADD(6,("adding form %s [%d] to buffer\n", form_name, i));
+		new_smb_io_form_1("", buffer, &form_1, 0);
+
+		return NT_STATUS_NO_PROBLEMO;
+			
+	default:
+		safe_free(list);
+		return ERROR_INVALID_LEVEL;
+	}
 }
 
 /****************************************************************************
@@ -4233,9 +4295,11 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	convert_printer_info(info, printer, 2);
 
 	if (*lp_addprinter_cmd() )
-		if ( !add_printer_hook(printer) )
+		if ( !add_printer_hook(printer) ) {
+			free_a_printer(&printer,2);
 			return ERROR_ACCESS_DENIED;
-	
+	}
+
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname,
              printer->info_2->sharename);
 

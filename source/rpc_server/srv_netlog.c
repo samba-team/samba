@@ -665,18 +665,15 @@ static BOOL api_net_sam_logon(pipes_struct *p)
     q_l.sam_id.ctr = &ctr;
     
     if(!net_io_q_sam_logon("", &q_l, data, 0)) {
-        DEBUG(0,
-              ("api_net_sam_logon: Failed to unmarshall NET_Q_SAM_LOGON.\n"));
+        DEBUG(0, ("api_net_sam_logon: Failed to unmarshall NET_Q_SAM_LOGON.\n"));
         return False;
     }
     
     /* checks and updates credentials.  creates reply credentials */
-    if (!deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
-                         &(q_l.sam_id.client.cred), &srv_cred))
+    if (!deal_with_creds(vuser->dc.sess_key, &vuser->dc.clnt_cred, &q_l.sam_id.client.cred, &srv_cred))
         status = NT_STATUS_INVALID_HANDLE;
     else
-        memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), 
-               sizeof(vuser->dc.clnt_cred));
+        memcpy(&vuser->dc.srv_cred, &vuser->dc.clnt_cred, sizeof(vuser->dc.clnt_cred));
     
     /* find the username */
     
@@ -858,9 +855,13 @@ static BOOL api_net_sam_logon(pipes_struct *p)
             free((char *)gids);
     }
     
-    if(!net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status))
+    if(!net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status)) {
+		free_user_info3(&usr_info);
         return False;
-    
+   	}
+
+	free_user_info3(&usr_info); 
+
     return True;
 }
 

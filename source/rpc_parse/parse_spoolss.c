@@ -3665,9 +3665,64 @@ BOOL new_spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *
 		return False;
 
 	return True;
-		
 }
 
+/*******************************************************************
+********************************************************************/  
+BOOL spoolss_io_q_getform(char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int depth)
+{
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_getform");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;			
+	if (!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;		
+	if (!smb_io_unistr2("", &q_u->formname,True,ps,depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("level", ps, depth, &q_u->level))
+		return False;	
+	
+	if (!new_spoolss_io_buffer("", ps, depth, q_u->buffer))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+	if (!prs_uint32("offered", ps, depth, &q_u->offered))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+BOOL new_spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "new_spoolss_io_r_getform");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+		
+	if (!new_spoolss_io_buffer("", ps, depth, r_u->buffer))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("size of buffer needed", ps, depth, &r_u->needed))
+		return False;
+		
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
 /*******************************************************************
  Parse a SPOOL_R_ENUMPORTS structure.
 ********************************************************************/  
