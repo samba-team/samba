@@ -1,8 +1,8 @@
 Source: samba
 Section: net
 Priority: optional
-Maintainer: Eloy A. Paris <peloy@debian.org>
-Uploaders: Steve Langasek <vorlon@debian.org>
+Maintainer: Simo Sorce <idra@samba.org>
+Uploaders: Simo Sorce <idra@samba.org>
 Build-Depends: debhelper (>=2.0.103), libpam0g-dev, libreadline4-dev, libcupsys2-dev, autoconf
 Standards-Version: 3.1.1
 
