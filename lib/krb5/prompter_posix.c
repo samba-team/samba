@@ -50,7 +50,7 @@ krb5_prompter_posix (krb5_context context,
     int i;
 
     if (banner)
-	printf ("%s\n", banner);
+	printf ("%s", banner);
     for (i = 0; i < num_prompts; ++i) {
 	if (prompts[i].hidden) {
 	    if(des_read_pw_string(prompts[i].reply->data,
