@@ -829,9 +829,54 @@ static NTSTATUS lsa_DeleteTrustDomain(struct dcesrv_call_state *dce_call, TALLOC
   lsa_QueryTrustedDomainInfo
 */
 static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_QueryTrustedDomainInfo *r)
+					   struct lsa_QueryTrustedDomainInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_trusted_domain_state *trusted_domain_state;
+	struct ldb_message *msg;
+	int ret;
+	struct ldb_message **res;
+	const char *attrs[] = {
+		"cn",
+		"flatname",
+		"posixOffset",
+		"securityIdentifier",
+		NULL
+	};
+
+	DCESRV_PULL_HANDLE(h, r->in.trustdom_handle, LSA_HANDLE_TRUSTED_DOMAIN);
+
+	trusted_domain_state = h->data;
+
+	/* pull all the user attributes */
+	ret = samdb_search(trusted_domain_state->policy->sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "dn=%s", trusted_domain_state->trusted_domain_dn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	msg = res[0];
+	
+	r->out.info = talloc(mem_ctx, union lsa_TrustedDomainInfo);
+	if (!r->out.info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	switch (r->in.level) {
+	case LSA_TRUSTED_DOMAIN_INFO_NAME:
+		r->out.info->name.netbios_name.string
+			= samdb_result_string(msg, "flatname", NULL);					   
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
+		r->out.info->posix_offset.posix_offset
+			= samdb_result_uint(msg, "posixOffset", 0);					   
+		break;
+	default:
+		/* oops, we don't want to return the info after all */
+		talloc_free(r->out.info);
+		r->out.info = NULL;
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -2069,10 +2114,6 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	};
 
 	NTSTATUS nt_status;
-
-	time_t now = time(NULL);
-	NTTIME now_nt;
-	unix_to_nt_time(&now_nt, now);
 
 	DCESRV_PULL_HANDLE(h, r->in.sec_handle, LSA_HANDLE_SECRET);
 
