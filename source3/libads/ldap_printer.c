@@ -178,57 +178,57 @@ static void map_regval_to_ads(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			      REGISTRY_VALUE *value)
 {
 	struct valmap_to_ads map[] = {
-		{"assetNumber", map_sz},
-		{"bytesPerMinute", map_dword},
-		{"defaultPriority", map_dword},
-		{"driverName", map_sz},
-		{"driverVersion", map_dword},
-		{"flags", map_dword},
-		{"location", map_sz},
-		{"operatingSystem", map_sz},
-		{"operatingSystemHotfix", map_sz},
-		{"operatingSystemServicePack", map_sz},
-		{"operatingSystemVersion", map_sz},
-		{"portName", map_multi_sz},
-		{"printAttributes", map_dword},
-		{"printBinNames", map_multi_sz},
-		{"printCollate", map_bool},
-		{"printColor", map_bool},
-		{"printDuplexSupported", map_bool},
-		{"printEndTime", map_dword},
-		{"printFormName", map_sz},
-		{"printKeepPrintedJobs", map_bool},
-		{"printLanguage", map_multi_sz},
-		{"printMACAddress", map_sz},
-		{"printMaxCopies", map_sz},
-		{"printMaxResolutionSupported", map_dword},
-		{"printMaxXExtent", map_dword},
-		{"printMaxYExtent", map_dword},
-		{"printMediaReady", map_multi_sz},
-		{"printMediaSupported", map_multi_sz},
-		{"printMemory", map_dword},
-		{"printMinXExtent", map_dword},
-		{"printMinYExtent", map_dword},
-		{"printNetworkAddress", map_sz},
-		{"printNotify", map_sz},
-		{"printNumberUp", map_dword},
-		{"printOrientationsSupported", map_multi_sz},
-		{"printOwner", map_sz},
-		{"printPagesPerMinute", map_dword},
-		{"printRate", map_dword},
-		{"printRateUnit", map_sz},
-		{"printSeparatorFile", map_sz},
-		{"printShareName", map_sz},
-		{"printSpooling", map_sz},
-		{"printStaplingSupported", map_bool},
-		{"printStartTime", map_dword},
-		{"printStatus", map_sz},
-		{"priority", map_dword},
-		{"serverName", map_sz},
-		{"shortServerName", map_sz},
-		{"uNCName", map_sz},
-		{"url", map_sz},
-		{"versionNumber", map_dword},
+		{SPOOL_REG_ASSETNUMBER, map_sz},
+		{SPOOL_REG_BYTESPERMINUTE, map_dword},
+		{SPOOL_REG_DEFAULTPRIORITY, map_dword},
+		{SPOOL_REG_DRIVERNAME, map_sz},
+		{SPOOL_REG_DRIVERVERSION, map_dword},
+		{SPOOL_REG_FLAGS, map_dword},
+		{SPOOL_REG_LOCATION, map_sz},
+		{SPOOL_REG_OPERATINGSYSTEM, map_sz},
+		{SPOOL_REG_OPERATINGSYSTEMHOTFIX, map_sz},
+		{SPOOL_REG_OPERATINGSYSTEMSERVICEPACK, map_sz},
+		{SPOOL_REG_OPERATINGSYSTEMVERSION, map_sz},
+		{SPOOL_REG_PORTNAME, map_multi_sz},
+		{SPOOL_REG_PRINTATTRIBUTES, map_dword},
+		{SPOOL_REG_PRINTBINNAMES, map_multi_sz},
+		{SPOOL_REG_PRINTCOLLATE, map_bool},
+		{SPOOL_REG_PRINTCOLOR, map_bool},
+		{SPOOL_REG_PRINTDUPLEXSUPPORTED, map_bool},
+		{SPOOL_REG_PRINTENDTIME, map_dword},
+		{SPOOL_REG_PRINTFORMNAME, map_sz},
+		{SPOOL_REG_PRINTKEEPPRINTEDJOBS, map_bool},
+		{SPOOL_REG_PRINTLANGUAGE, map_multi_sz},
+		{SPOOL_REG_PRINTMACADDRESS, map_sz},
+		{SPOOL_REG_PRINTMAXCOPIES, map_sz},
+		{SPOOL_REG_PRINTMAXRESOLUTIONSUPPORTED, map_dword},
+		{SPOOL_REG_PRINTMAXXEXTENT, map_dword},
+		{SPOOL_REG_PRINTMAXYEXTENT, map_dword},
+		{SPOOL_REG_PRINTMEDIAREADY, map_multi_sz},
+		{SPOOL_REG_PRINTMEDIASUPPORTED, map_multi_sz},
+		{SPOOL_REG_PRINTMEMORY, map_dword},
+		{SPOOL_REG_PRINTMINXEXTENT, map_dword},
+		{SPOOL_REG_PRINTMINYEXTENT, map_dword},
+		{SPOOL_REG_PRINTNETWORKADDRESS, map_sz},
+		{SPOOL_REG_PRINTNOTIFY, map_sz},
+		{SPOOL_REG_PRINTNUMBERUP, map_dword},
+		{SPOOL_REG_PRINTORIENTATIONSSUPPORTED, map_multi_sz},
+		{SPOOL_REG_PRINTOWNER, map_sz},
+		{SPOOL_REG_PRINTPAGESPERMINUTE, map_dword},
+		{SPOOL_REG_PRINTRATE, map_dword},
+		{SPOOL_REG_PRINTRATEUNIT, map_sz},
+		{SPOOL_REG_PRINTSEPARATORFILE, map_sz},
+		{SPOOL_REG_PRINTSHARENAME, map_sz},
+		{SPOOL_REG_PRINTSPOOLING, map_sz},
+		{SPOOL_REG_PRINTSTAPLINGSUPPORTED, map_bool},
+		{SPOOL_REG_PRINTSTARTTIME, map_dword},
+		{SPOOL_REG_PRINTSTATUS, map_sz},
+		{SPOOL_REG_PRIORITY, map_dword},
+		{SPOOL_REG_SERVERNAME, map_sz},
+		{SPOOL_REG_SHORTSERVERNAME, map_sz},
+		{SPOOL_REG_UNCNAME, map_sz},
+		{SPOOL_REG_URL, map_sz},
+		{SPOOL_REG_VERSIONNUMBER, map_dword},
 		{NULL, NULL}
 	};
 	int i;
@@ -254,6 +254,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	WERROR result;
 	char *printername, *servername;
 	REGVAL_CTR dsdriver_ctr, dsspooler_ctr;
+	BOOL got_dsdriver = False, got_dsspooler = False;
 	uint32 needed, i;
 	POLICY_HND pol;
 
@@ -274,47 +275,50 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	}
 	
 	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
-					       &pol, "DsDriver", NULL);
+					       &pol, SPOOL_DSDRIVER_KEY, NULL);
 
 	if (W_ERROR_V(result) == ERRmoredata)
 		result = cli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
-						       NULL, &pol, "DsDriver",
+						       NULL, &pol, 
+						       SPOOL_DSDRIVER_KEY,
 						       &dsdriver_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
 			  printername, dos_errstr(result)));
-		cli_spoolss_close_printer(cli, mem_ctx, &pol);
-		return result;
+	} else {
+
+		/* Have the data we need now, so start building */
+		got_dsdriver = True;
+		for (i=0; i < dsdriver_ctr.num_values; i++)
+			map_regval_to_ads(mem_ctx, mods, 
+					  dsdriver_ctr.values[i]);
 	}
-
-	/* Have the data we need now, so start building */
-
-	for (i=0; i < dsdriver_ctr.num_values; i++)
-		map_regval_to_ads(mem_ctx, mods, dsdriver_ctr.values[i]);
 	
 	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
-					       &pol, "DsSpooler", NULL);
+					       &pol, SPOOL_DSSPOOLER_KEY, 
+					       NULL);
 
 	if (W_ERROR_V(result) == ERRmoredata)
 		result = cli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
-						       NULL, &pol, "DsSpooler",
+						       NULL, &pol, 
+						       SPOOL_DSSPOOLER_KEY,
 						       &dsspooler_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
 			  printername, dos_errstr(result)));
-		regval_ctr_destroy(&dsdriver_ctr);
-		cli_spoolss_close_printer(cli, mem_ctx, &pol);
-		return result;
+	} else {
+		got_dsspooler = True;
+		for (i=0; i < dsspooler_ctr.num_values; i++)
+			map_regval_to_ads(mem_ctx, mods, 
+					  dsspooler_ctr.values[i]);
 	}
-	for (i=0; i < dsspooler_ctr.num_values; i++)
-		map_regval_to_ads(mem_ctx, mods, dsspooler_ctr.values[i]);
 	
-	ads_mod_str(mem_ctx, mods, "printerName", printername);
+	ads_mod_str(mem_ctx, mods, SPOOL_REG_PRINTERNAME, printer);
 
-	regval_ctr_destroy(&dsdriver_ctr);
-	regval_ctr_destroy(&dsspooler_ctr);
+	if (got_dsdriver) regval_ctr_destroy(&dsdriver_ctr);
+	if (got_dsspooler) regval_ctr_destroy(&dsspooler_ctr);
 	cli_spoolss_close_printer(cli, mem_ctx, &pol);
 
 	return result;
