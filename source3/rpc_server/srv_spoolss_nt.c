@@ -4177,14 +4177,18 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	clean_up_driver_struct(driver, level);
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	if(!move_driver_to_download_area(driver, level, &user))
-		return ERROR_ACCESS_DENIED;
+	if(!move_driver_to_download_area(driver, level, &user)) {
+		err = ERROR_ACCESS_DENIED;
+		goto done;
+	}
 
-	if (add_a_printer_driver(driver, level)!=0)
-		return ERROR_ACCESS_DENIED;
+	if (add_a_printer_driver(driver, level)!=0) {
+		err = ERROR_ACCESS_DENIED;
+		goto done;
+	}
 
+ done:
 	free_a_printer_driver(driver, level);
-
 	return err;
 }
 
