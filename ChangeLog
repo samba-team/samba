@@ -1,3 +1,8 @@
+2000-06-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/connect.c (add_standard_ports): only listen to port 750 if
+	serving v4 requests
+
 2000-06-22  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/lex.l: fix includes, and lex stuff
