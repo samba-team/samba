@@ -41,212 +41,32 @@
 
 RCSID("$Id$");
 
-/* 
-   This is the present contents of a dump line. This might change at
-   any time. Fields are separated by white space.
-
-  principal
-  keyblock
-  	kvno
-	keys...
-		mkvno (unused)
-		enctype
-		keyvalue
-		salt (- means use normal salt)
-  creation date and principal
-  modification date and principal
-  principal valid from date (not used)
-  principal valid end date (not used)
-  principal key expires (not used)
-  max ticket life
-  max renewable life
-  flags
-  supported etypes
-  */
-
-static void
-append_hex(char *str, krb5_data *data)
-{
-    int i, s = 1;
-    char *p;
-
-    p = data->data;
-    for(i = 0; i < data->length; i++)
-	if(!isalnum((unsigned char)p[i]) && p[i] != '.'){
-	    s = 0;
-	    break;
-	}
-    if(s){
-	p = calloc(1, data->length + 2 + 1);
-	p[0] = '\"';
-	p[data->length + 1] = '\"';
-	memcpy(p + 1, data->data, data->length);
-    }else{
-	p = calloc(1, data->length * 2 + 1);
-	for(i = 0; i < data->length; i++)
-	    sprintf(p + 2 * i, "%02x", ((u_char*)data->data)[i]);
-    }
-    strcat(str, p);
-    free(p);
-}
-
-static char *
-time2str(time_t t)
-{
-    static char buf[128];
-    strftime(buf, sizeof(buf), "%Y%m%d%H%M%S", gmtime(&t));
-    return buf;
-}
-
-static void
-event2string(Event *ev, char **str)
-{
-    char *p;
-    char *pr;
-    if(ev == NULL){
-	*str = strdup("-");
-	return;
-    }
-    krb5_unparse_name(context, ev->principal, &pr);
-    asprintf(&p, "%s:%s", time2str(ev->time), pr);
-    free(pr);
-    *str = p;
-}
-
-static int
-hdb_entry2string(hdb_entry *ent, char **str)
-{
-    char *p;
-    char buf[1024] = "";
-    int i;
-    krb5_unparse_name(context, ent->principal, &p);
-    strcat(buf, p);
-    strcat(buf, " ");
-    free(p);
-    asprintf(&p, "%d", ent->kvno);
-    strcat(buf, p);
-    free(p);
-    for(i = 0; i < ent->keys.len; i++){
-	asprintf(&p, ":%d:%d:", 
-		 ent->keys.val[i].mkvno, 
-		 ent->keys.val[i].key.keytype);
-	strcat(buf, p);
-	free(p);
-#if 0
-	if(ent->keys.val[i].enctypes != NULL) {
-	    int j;
-	    for(j = 0; j < ent->keys.val[i].enctypes->len; j++) {
-		char tmp[16];
-		snprintf(tmp, sizeof(tmp), "%u", 
-			 ent->keys.val[i].enctypes->val[j]);
-		if(j > 0)
-		    strcat(buf, ",");
-		strcat(buf, tmp);
-	    }
-	}
-	strcat(buf, ":");
-#endif
-	append_hex(buf, &ent->keys.val[i].key.keyvalue);
-	strcat(buf, ":");
-	if(ent->keys.val[i].salt){
-	    asprintf(&p, "%u/", ent->keys.val[i].salt->type);
-	    strcat(buf, p);
-	    free(p);
-	    append_hex(buf, &ent->keys.val[i].salt->salt);
-	}else
-	    strcat(buf, "-");
-    }
-    strcat(buf, " ");
-    event2string(&ent->created_by, &p);
-    strcat(buf, p);
-    strcat(buf, " ");
-    free(p);
-    event2string(ent->modified_by, &p);
-    strcat(buf, p);
-    strcat(buf, " ");
-    free(p);
-
-    if(ent->valid_start)
-	strcat(buf, time2str(*ent->valid_start));
-    else
-	strcat(buf, "-");
-
-    strcat(buf, " ");
-    if(ent->valid_end)
-	strcat(buf, time2str(*ent->valid_end));
-    else
-	strcat(buf, "-");
-
-    strcat(buf, " ");
-    if(ent->pw_end)
-	strcat(buf, time2str(*ent->pw_end));
-    else
-	strcat(buf, "-");
-
-    strcat(buf, " ");
-    if(ent->max_life){
-	asprintf(&p, "%d", *ent->max_life);
-	strcat(buf, p);
-	free(p);
-    }else
-	strcat(buf, "-");
-
-    strcat(buf, " ");
-    if(ent->max_renew){
-	asprintf(&p, "%d", *ent->max_renew);
-	strcat(buf, p);
-	free(p);
-    }else
-	strcat(buf, "-");
-    
-    strcat(buf, " ");
-    asprintf(&p, "%d", HDBFlags2int(ent->flags));
-    strcat(buf, p);
-    free(p);
-#if 0
-
-    strcat(buf, " ");
-    if(ent->etypes == NULL || ent->etypes->len == 0)
-	strcat(buf, "-");
-    else {
-	for(i = 0; i < ent->etypes->len; i++){
-	    asprintf(&p, "%u", ent->etypes->val[i]);
-	    strcat(buf, p);
-	    free(p);
-	    if(i != ent->etypes->len - 1)
-		strcat(buf, ":");
-	}
-    }
-#endif
-
-    *str = strdup(buf);
-    
-    return 0;
-}
-
-static krb5_error_code
-print_entry(krb5_context context, HDB *db, hdb_entry *entry, void *data)
-{
-    char *p;
-    hdb_entry2string(entry, &p);
-    fprintf((FILE*)data, "%s\n", p);
-    free(p);
-    return 0;
-}
-
-
 int
 dump(int argc, char **argv)
 {
     krb5_error_code ret;
     FILE *f;
-
     HDB *db = _kadm5_s_get_db(kadm_handle);
+    int decrypt = 0;
+    int optind = 0;
 
-    if(argc < 2)
+    struct getargs args[] = {
+	{ "decrypt", 'd', arg_flag, NULL, "decrypt keys" }
+    };
+    args[0].value = &decrypt;
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind)) {
+	arg_printusage(args, sizeof(args) / sizeof(args[0]), "kadmin dump", 
+		       "[dump-file]");
+	return 0;
+    }
+
+    argc -= optind;
+    argv += optind;
+    if(argc < 1)
 	f = stdout;
     else
-	f = fopen(argv[1], "w");
+	f = fopen(argv[0], "w");
     
     ret = db->open(context, db, O_RDONLY, 0600);
     if(ret){
@@ -256,7 +76,7 @@ dump(int argc, char **argv)
 	return 0;
     }
 
-    hdb_foreach(context, db, print_entry, f);
+    hdb_foreach(context, db, decrypt ? HDB_F_DECRYPT : 0, hdb_print_entry, f);
 
     if(f != stdout)
 	fclose(f);
