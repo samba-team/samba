@@ -23,6 +23,17 @@ interface dcerpc
 		dcerpc_syntax_id transfer_syntaxes[num_transfer_syntaxes];
 	} dcerpc_ctx_list;
 
+	/*
+	  a schannel bind blob - used in auth_info
+	  on a schannel bind
+	*/
+	typedef [public] struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		astring domain;
+		astring hostname;
+	} dcerpc_bind_schannel;
+
 	typedef struct {
 		uint16 max_xmit_frag;
 		uint16 max_recv_frag;

@@ -22,8 +22,7 @@
 */
 
 /*
-  this provides a crypto interface to the various backends (such as
-  NTLMSSP and SCHANNEL) for the rpc server code
+  this provides the NTLMSSP backend for server side rpc
 */
 
 #include "includes.h"
@@ -32,11 +31,15 @@
 /*
   start crypto state
 */
-static NTSTATUS dcesrv_crypto_ntlmssp_start(struct dcesrv_auth *auth)
+static NTSTATUS dcesrv_crypto_ntlmssp_start(struct dcesrv_auth *auth, DATA_BLOB *auth_blob)
 {
 	struct auth_ntlmssp_state *ntlmssp = NULL;
 	NTSTATUS status;
 
+	/* TODO: we should parse the auth_blob and remember the client
+	   hostname and target domain, then check against the auth3
+	   bind packet */
+	
 	status = auth_ntlmssp_start(&ntlmssp);
 
 	auth->crypto_ctx.private_data = ntlmssp;
