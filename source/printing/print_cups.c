@@ -1008,6 +1008,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 static int
 cups_queue_pause(int snum)
 {
+	extern userdom_struct current_user_info;
 	int		ret;		/* Return value */
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -1018,15 +1019,15 @@ cups_queue_pause(int snum)
 
 	DEBUG(5,("cups_queue_pause(%d)\n", snum));
 
-       /*
-        * Make sure we don't ask for passwords...
-	*/
+	/*
+	 * Make sure we don't ask for passwords...
+	 */
 
         cupsSetPasswordCB(cups_passwd_cb);
 
-       /*
-	* Try to connect to the server...
-	*/
+	/*
+	 * Try to connect to the server...
+	 */
 
 	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
 	{
@@ -1035,15 +1036,15 @@ cups_queue_pause(int snum)
 		return (1);
 	}
 
-       /*
-	* Build an IPP_PAUSE_PRINTER request, which requires the following
-	* attributes:
-	*
-	*    attributes-charset
-	*    attributes-natural-language
-	*    printer-uri
-	*    requesting-user-name
-	*/
+	/*
+	 * Build an IPP_PAUSE_PRINTER request, which requires the following
+	 * attributes:
+	 *
+	 *    attributes-charset
+	 *    attributes-natural-language
+	 *    printer-uri
+	 *    requesting-user-name
+	 */
 
 	request = ippNew();
 
@@ -1064,7 +1065,7 @@ cups_queue_pause(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, pjob->user);
+        	     NULL, current_user_info.unix_name);
 
        /*
 	* Do the request and get back a response...

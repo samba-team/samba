@@ -1072,7 +1072,7 @@ static void init_printer_values(void)
 			string_set(&sDefault.szQueuepausecommand, "");
 			string_set(&sDefault.szQueueresumecommand, "");
 
-	                string_set(&Globals.szPrintcapname, "cups");
+			string_set(&Globals.szPrintcapname, "cups");
 #else
 			string_set(&sDefault.szLpqcommand,
 			           "/usr/bin/lpstat -o %p");

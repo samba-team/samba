@@ -1488,6 +1488,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 
     DEBUG(3,("User:[%s]\n", smb_pass->smb_name));
 
+	ZERO_STRUCTP(id10);
     init_sam_user_info10(id10, smb_pass->acct_ctrl);
 
     return True;
@@ -1525,6 +1526,7 @@ static BOOL get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, uint32 us
 	if (smb_pass->acct_ctrl & ACB_DISABLED)
         return NT_STATUS_ACCOUNT_DISABLED;
 
+	ZERO_STRUCTP(id12);
 	init_sam_user_info12(id12, smb_pass->smb_passwd, smb_pass->smb_nt_passwd);
 
 	return NT_STATUS_NOPROBLEMO;
