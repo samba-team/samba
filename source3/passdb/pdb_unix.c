@@ -48,7 +48,7 @@ static NTSTATUS unixsam_getsampwrid (struct pdb_methods *methods,
 				 SAM_ACCOUNT *user, uint32 rid)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct passwd *pass;
+	struct passwd *pass = NULL;
 	const char *guest_account = lp_guestaccount();
 	if (!(guest_account && *guest_account)) {
 		DEBUG(1, ("NULL guest account!?!?\n"));
@@ -68,7 +68,9 @@ static NTSTATUS unixsam_getsampwrid (struct pdb_methods *methods,
 		}
 	} else if (pdb_rid_is_user(rid)) {
 		pass = getpwuid_alloc(fallback_pdb_user_rid_to_uid (rid));
-	} else {
+	}
+
+	if (pass == NULL) {
 		return nt_status;
 	}
 
