@@ -118,6 +118,144 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbcacls</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para>The <command>smbcacls</command> command is 
+		a tool to set ACL's on remote CIFS servers. </para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbsh</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para>The <command>smbsh</command> command is 
+		a program that allows you to run a unix shell with 
+		with an overloaded VFS.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbtree</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para>The <command>smbtree</command> command 
+		is a text-based network neighborhood tool.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbtar</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para>The <command>smbtar</command> can make 
+		backups of data on CIFS/SMB servers.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbspool</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para><command>smbspool</command> is a 
+		helper utility for printing on printers connected 
+		to CIFS servers. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbcontrol</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>smbcontrol</command> is a utility
+		that can change the behaviour of running samba daemons.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>rpcclient</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>rpcclient</command> is a utility
+		that can be used to execute RPC commands on remote 
+		CIFS servers.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>pdbedit</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para>The <command>pdbedit</command> command 
+		can be used to maintain the local user database on 
+		a samba server.</para></listitem></varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>findsmb</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para>The <command>findsmb</command> command 
+		can be used to find SMB servers on the local network.
+		</para></listitem></varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>net</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para>The <command>net</command> command 
+		is supposed to work similar to the DOS/Windows
+		NET.EXE command.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>swat</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para><command>swat</command> is a web-based
+		interface to configuring <filename>smb.conf</filename>.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>winbindd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para><command>winbindd</command> is a daemon 
+		that is used for integrating authentication and 
+		the user database into unix.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>wbinfo</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>wbinfo</command> is a utility 
+		that retrieves and stores information related to winbind.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>editreg</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>editreg</command> is a command-line
+		utility that can edit windows registry files.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>profiles</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>profiles</command> is a command-line
+		utility that can be used to replace all occurences of 
+		a certain SID with another SID.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>vfstest</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>vfstest</command> is a utility
+		that can be used to test vfs modules.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>ntlm_auth</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>ntlm_auth</command> is a helper-utility
+		for external programs wanting to do NTLM-authentication.
+		</para></listitem></varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbmount</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbumount</refentrytitle><manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbmount</refentrytitle><manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para><command>smbmount</command>,<command>smbmnt</command> and <command>smbmnt</command> are commands that can be used to 
+		mount CIFS/SMB shares on Linux.
+		</para></listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 
