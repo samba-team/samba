@@ -51,6 +51,14 @@
 #define NO_OPEN64_ALIAS
 #endif
 
+#ifdef HAVE__FORK
+#define real_fork()            	(_fork())
+#elif HAVE___FORK
+#define real_fork()            	(__fork())
+#elif SYS_fork
+#define real_fork()		(syscall(SYS_fork,()))
+#endif
+
 #ifdef HAVE__OPENDIR
 #define real_opendir(fn)            	((DIR *)_opendir(fn))
 #elif SYS_opendir

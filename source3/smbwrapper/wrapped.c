@@ -908,3 +908,8 @@ static void dirent64_convert(struct dirent *d, struct dirent64 *d64)
 	return real_readdir64(dir);
 }
 #endif
+
+ int fork(void)
+{
+	return smbw_fork();
+}

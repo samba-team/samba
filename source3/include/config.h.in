@@ -165,6 +165,9 @@
 /* Define if you have the __fcntl function.  */
 #undef HAVE___FCNTL
 
+/* Define if you have the __fork function.  */
+#undef HAVE___FORK
+
 /* Define if you have the __fstat function.  */
 #undef HAVE___FSTAT
 
@@ -269,6 +272,9 @@
 
 /* Define if you have the _fcntl function.  */
 #undef HAVE__FCNTL
+
+/* Define if you have the _fork function.  */
+#undef HAVE__FORK
 
 /* Define if you have the _fstat function.  */
 #undef HAVE__FSTAT
