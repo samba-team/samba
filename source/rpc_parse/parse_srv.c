@@ -124,11 +124,14 @@ static void srv_free_srv_share_info_1(SRV_SHARE_INFO_1 *ctr)
 
 	free_void_array(ctr->num_entries_read,
 			(void**) ctr->info_1, *fn);
+	ctr->info_1 = NULL;
 	free_void_array(ctr->num_entries_read,
 			(void**) ctr->info_1_str, *fnstr);
+	ctr->info_1_str = NULL;
 
 	ctr->num_entries_read = 0;
 	ctr->ptr_share_info = 0;
+	ctr->num_entries_read2 = 0;
 }
 
 static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_struct *ps, int depth)
@@ -1522,7 +1525,8 @@ BOOL srv_io_r_net_tprt_enum(char *desc,  SRV_R_NET_TPRT_ENUM *r_n, prs_struct *p
 /*******************************************************************
  makes a FILE_INFO_3_STR structure
 ********************************************************************/
-BOOL make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_name)
+BOOL make_srv_file_info3_str(FILE_INFO_3_STR *fi3,
+			     const char *user_name, const char *path_name)
 {
 	if (fi3 == NULL) return False;
 
@@ -1532,6 +1536,11 @@ BOOL make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_n
 	make_unistr2(&(fi3->uni_user_name), user_name, strlen(user_name)+1);
 
 	return True;
+}
+
+static void srv_free_file_info3_str(FILE_INFO_3_STR *fs3)
+{
+	safe_free(fs3);
 }
 
 /*******************************************************************
@@ -1547,7 +1556,9 @@ static BOOL srv_io_file_info3_str(char *desc,  FILE_INFO_3_STR *sh1, prs_struct 
 	prs_align(ps);
 
 	smb_io_unistr2("", &(sh1->uni_path_name), True, ps, depth); 
+	prs_align(ps);
 	smb_io_unistr2("", &(sh1->uni_user_name), True, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -1556,8 +1567,8 @@ static BOOL srv_io_file_info3_str(char *desc,  FILE_INFO_3_STR *sh1, prs_struct 
  makes a FILE_INFO_3 structure
 ********************************************************************/
 BOOL make_srv_file_info3(FILE_INFO_3 *fl3,
-				uint32 id, uint32 perms, uint32 num_locks,
-				char *path_name, char *user_name)
+			 uint32 id, uint32 perms, uint32 num_locks,
+			 const char *path_name, const char *user_name)
 {
 	if (fl3 == NULL) return False;
 
@@ -1571,6 +1582,11 @@ BOOL make_srv_file_info3(FILE_INFO_3 *fl3,
 	fl3->ptr_user_name = user_name != NULL ? 1 : 0;
 
 	return True;
+}
+
+static void srv_free_file_info3(FILE_INFO_3 *fi3)
+{
+	safe_free(fi3);
 }
 
 /*******************************************************************
@@ -1597,6 +1613,13 @@ static BOOL srv_io_file_info3(char *desc,  FILE_INFO_3 *fl3, prs_struct *ps, int
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static void srv_free_srv_file_info_3(SRV_FILE_INFO_3 *fl3)
+{
+	fl3->num_entries_read = 0;
+	fl3->ptr_file_info = 0;
+	fl3->num_entries_read2 = 0;
+}
+
 static BOOL srv_io_srv_file_info_3(char *desc,  SRV_FILE_INFO_3 *fl3, prs_struct *ps, int depth)
 {
 	if (fl3 == NULL) return False;
@@ -1639,6 +1662,20 @@ static BOOL srv_io_srv_file_info_3(char *desc,  SRV_FILE_INFO_3 *fl3, prs_struct
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+void srv_free_srv_file_ctr(SRV_FILE_INFO_CTR *ctr)
+{
+	switch (ctr->switch_value)
+	{
+		case 3:
+			srv_free_srv_file_info_3(&(ctr->file.info3)); 
+			break;
+		default:
+			DEBUG(5,("no file info at switch_value %d\n",
+			         ctr->switch_value));
+			break;
+	}
+}
+
 static BOOL srv_io_srv_file_ctr(char *desc,  SRV_FILE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL) return False;
