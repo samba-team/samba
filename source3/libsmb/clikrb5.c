@@ -235,12 +235,12 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
-static krb5_error_code krb5_mk_req2(krb5_context context, 
-				    krb5_auth_context *auth_context, 
-				    const krb5_flags ap_req_options,
-				    const char *principal,
-				    krb5_ccache ccache, 
-				    krb5_data *outbuf)
+static krb5_error_code ads_krb5_mk_req(krb5_context context, 
+				       krb5_auth_context *auth_context, 
+				       const krb5_flags ap_req_options,
+				       const char *principal,
+				       krb5_ccache ccache, 
+				       krb5_data *outbuf)
 {
 	krb5_error_code 	  retval;
 	krb5_principal	  server;
@@ -305,7 +305,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
+DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -344,11 +344,11 @@ DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
 		goto failed;
 	}
 
-	if ((retval = krb5_mk_req2(context, 
-				   &auth_context, 
-				   0, 
-				   principal,
-				   ccdef, &packet))) {
+	if ((retval = ads_krb5_mk_req(context, 
+				      &auth_context, 
+				      0, 
+				      principal,
+				      ccdef, &packet))) {
 		goto failed;
 	}
 
@@ -365,7 +365,7 @@ failed:
 	return data_blob(NULL, 0);
 }
 
- BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
+ BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
  {
 #ifdef ENCTYPE_ARCFOUR_HMAC
 	krb5_keyblock *skey;
@@ -390,7 +390,7 @@ failed:
  }
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
-DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
+DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset)
  {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return data_blob(NULL, 0);
