@@ -53,18 +53,11 @@ PAM and afskauthlib
 
 ** lib/des
 
-md4, md5, and sha doesn't work on Crays.
-
 ** lib/gssapi
 
-acquire_cred, release_cred, process_context_token, context_time,
-display_status, compare_names, export_name, inquire_cred,
-wrap_size_limit, add_cred, inquire_cred_by_mech, export_sec_context,
-import_sec_context, inquire_names_for_mech, inquire_mechs_for_name,
-canonicalize_name, and duplicate_name not implemented.
-
-import_name only understands GSS_C_NT_HOSTBASED_SERVICE and
-GSS_C_NO_OID.
+process_context_token, display_status, add_cred, inquire_cred_by_mech,
+export_sec_context, import_sec_context, inquire_names_for_mech, and
+inquire_mechs_for_name not implemented.
 
 get_mic, wrap: always uses the remote_subkey
 
@@ -76,10 +69,6 @@ requested.
 minor_status is never set
 
 init_sec_context: `initiator_cred_handle' and `time_req' ignored.
-
-accept_sec_context: the first principal in the srvtab is always used.
-
-accept_sec_context: `acceptor_cred_handle' is ignored.
 
 input channel bindings are not supported
 
@@ -112,8 +101,6 @@ probably leaks memory when errors occur
 should the sequence numbers be XORed?
 
 encryption and checksum type is still hardcoded in some places.
-
-wait for error before generating preauthentication
 
 pa-afs3-salt?
 
