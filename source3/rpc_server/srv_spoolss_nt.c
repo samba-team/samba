@@ -680,7 +680,7 @@ static struct current_user *get_current_user(struct current_user *user, pipes_st
  * called from the spoolss dispatcher
  ********************************************************************/
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
-				 const PRINTER_DEFAULT *printer_default,
+				 PRINTER_DEFAULT *printer_default,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle)
 {
@@ -747,7 +747,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		}
 		else if ( (printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
-			if (lp_ms_add_printer_wizard()) {
+			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(handle);
 				return ERROR_ACCESS_DENIED;
 			}
@@ -764,6 +764,10 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 	
 		if (!get_printer_snum(handle, &snum))
 			return ERROR_INVALID_HANDLE;
+
+		/* map an empty access mask to the minimum access mask */
+		if (printer_default->access_required == 0x0)
+			printer_default->access_required = PRINTER_ACCESS_USE;
 
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
