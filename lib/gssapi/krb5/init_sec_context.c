@@ -59,11 +59,11 @@ init_auth
     int32_t tmp;
 
     krb5_auth_con_getflags(gssapi_krb5_context,
-			   &(*context_handle)->auth_context,
+			   (*context_handle)->auth_context,
 			   &tmp);
     tmp |= KRB5_AUTH_CONTEXT_DO_SEQUENCE;
     krb5_auth_con_setflags(gssapi_krb5_context,
-			   &(*context_handle)->auth_context,
+			   (*context_handle)->auth_context,
 			   tmp);
   }
 
@@ -100,7 +100,7 @@ init_auth
 
   kret = krb5_cc_get_principal (gssapi_krb5_context,
 				ccache,
-				&(*context_handle)->source);
+				(*context_handle)->source);
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;
@@ -108,7 +108,7 @@ init_auth
 
   kret = krb5_copy_principal (gssapi_krb5_context,
 			      target_name,
-			      &(*context_handle)->target);
+			      (*context_handle)->target);
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;

@@ -71,7 +71,8 @@ OM_uint32 gss_get_mic
 	  4);
 
   des_set_key (&key, schedule);
-  des_cbc_encrypt (p, p, 8, schedule, p + 16, DES_ENCRYPT);
+  des_cbc_encrypt ((des_cblock *)p, (des_cblock *)p, 8,
+		   schedule, (des_cblock *)(p + 16), DES_ENCRYPT);
 
   krb5_auth_setlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,

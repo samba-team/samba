@@ -47,11 +47,11 @@ OM_uint32 gss_accept_sec_context
     int32_t tmp;
 
     krb5_auth_con_getflags(gssapi_krb5_context,
-			   &(*context_handle)->auth_context,
+			   (*context_handle)->auth_context,
 			   &tmp);
     tmp |= KRB5_AUTH_CONTEXT_DO_SEQUENCE;
     krb5_auth_con_setflags(gssapi_krb5_context,
-			   &(*context_handle)->auth_context,
+			   (*context_handle)->auth_context,
 			   tmp);
   }
 
@@ -75,7 +75,7 @@ OM_uint32 gss_accept_sec_context
 
   kret = krb5_copy_principal (gssapi_krb5_context,
 			      ticket->enc_part2.client,
-			      &(*context_handle)->source);
+			      (*context_handle)->source);
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;
@@ -107,7 +107,7 @@ OM_uint32 gss_accept_sec_context
   }
 
   {
-    Checksum *c2 = &(*context_handle)->auth_context->authenticator->cksum;
+    Checksum *c2 = (*context_handle)->auth_context->authenticator->cksum;
     if (cksum.cksumtype != c2->cksumtype ||
 	cksum.checksum.length != c2->checksum.length ||
 	memcmp(cksum.checksum.data,

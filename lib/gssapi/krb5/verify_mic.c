@@ -73,7 +73,8 @@ OM_uint32 gss_verify_mic
 
   p -= 16;
   des_set_key (&key, schedule);
-  des_cbc_encrypt (p, p, 8, schedule, hash, DES_DECRYPT);
+  des_cbc_encrypt ((des_cblock *)p, (des_cblock *)p, 8,
+		   schedule, (des_cblock *)hash, DES_DECRYPT);
 
   memset (key, 0, sizeof(key));
   memset (schedule, 0, sizeof(schedule));
