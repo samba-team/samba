@@ -191,29 +191,34 @@ sub array2oneline($)
 }
 
 ###########################################################
-# This function creates a object file list for a subsystem
+# This function creates a object file
+# and library list for a subsystem
 #
-# $output = _prepare_subsystem_obj_list($subsystem_ctx)
+# $output = _prepare_subsystem_obj_and_lib_list($subsystem_ctx)
 #
 # $subsystem_ctx -		the subsystem context
 #
-# $subsystem_ctx->{SUBSYSTEM} -	the subsystem name
+# $subsystem_ctx->{NAME} -	the subsystem name
 # $subsystem_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this subsystem
+# $subsystem_ctx->{LIB_LIST} -	the list of libraries which sould be linked to this subsystem
 #
 # $output -		the resulting output buffer
-sub _prepare_subsystem_obj_list($)
+sub _prepare_subsystem_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmplist;
+	my $tmpobjlist;
+	my $tmpliblist;
 	my $output;
 
-	$tmplist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
 
 	$output = "
 ###################################
-# Start Subsystem $ctx->{NAME} OBJ LIST
-SUBSYSTEM_$ctx->{NAME}_OBJS =$tmplist
-# End Subsystem $ctx->{NAME} OBJ LIST
+# Start Subsystem $ctx->{NAME} OBJ AND LIB LIST
+SUBSYSTEM_$ctx->{NAME}_OBJS =$tmpobjlist
+SUBSYSTEM_$ctx->{NAME}_LIBS =$tmpliblist
+# End Subsystem $ctx->{NAME} OBJ AND LIB LIST
 ###################################
 ";
 
@@ -221,29 +226,34 @@ SUBSYSTEM_$ctx->{NAME}_OBJS =$tmplist
 }
 
 ###########################################################
-# This function creates a object file list for a module
+# This function creates a object file 
+# and library list for a module
 #
-# $output = _prepare_module_obj_list($module_ctx)
+# $output = _prepare_module_obj_and_lib_list($module_ctx)
 #
 # $module_ctx -		the module context
 #
-# $module_ctx->{MODULE} -	the module binary name
+# $module_ctx->{NAME} -		the module binary name
 # $module_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this module
+# $module_ctx->{LIB_LIST} -	the list of libraries which sould be linked to this module
 #
 # $output -		the resulting output buffer
-sub _prepare_module_obj_list($)
+sub _prepare_module_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmplist;
+	my $tmpobjlist;
+	my $tmpliblist;
 	my $output;
 
-	$tmplist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
 
 	$output = "
 ###################################
-# Start Module $ctx->{NAME} OBJ LIST
-MODULE_$ctx->{NAME}_OBJS =$tmplist
-# End Module $ctx->{NAME} OBJ LIST
+# Start Module $ctx->{NAME} OBJ AND LIB LIST
+MODULE_$ctx->{NAME}_OBJS =$tmpobjlist
+MODULE_$ctx->{NAME}_LIBS =$tmpliblist
+# End Module $ctx->{NAME} OBJ AND LIB LIST
 ###################################
 ";
 
@@ -289,29 +299,34 @@ bin/$ctx->{MODULE}: basics $tmpdepend bin/.dummy
 }
 
 ###########################################################
-# This function creates a object file list for a library
+# This function creates a object file 
+# and library list for a library
 #
-# $output = _prepare_library_obj_list($library_ctx)
+# $output = _prepare_library_obj_and_lib_list($library_ctx)
 #
 # $library_ctx -		the library context
 #
-# $library_ctx->{LIBRARY} -	the library binary name
+# $library_ctx->{NAME} -	the library binary name
 # $library_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this library
+# $library_ctx->{LIB_LIST} -	the list of objectfiles which sould be linked to this library
 #
 # $output -		the resulting output buffer
-sub _prepare_library_obj_list($)
+sub _prepare_library_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmplist;
+	my $tmpobjlist;
+	my $tmpliblist;
 	my $output;
 
-	$tmplist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
 
 	$output = "
 ###################################
-# Start Library $ctx->{NAME} OBJ LIST
-LIBRARY_$ctx->{NAME}_OBJS =$tmplist
-# End Library $ctx->{NAME} OBJ LIST
+# Start Library $ctx->{NAME} OBJ AND LIB LIST
+LIBRARY_$ctx->{NAME}_OBJS =$tmpobjlist
+LIBRARY_$ctx->{NAME}_LIBS =$tmpliblist
+# End Library $ctx->{NAME} OBJ AND LIB LIST
 ###################################
 ";
 
@@ -376,29 +391,34 @@ $output .= "
 }
 
 ###########################################################
-# This function creates a object file list for a binary
+# This function creates a object file 
+# and library list for a binary
 #
-# $output = _prepare_binary_obj_list($binary_ctx)
+# $output = _prepare_binary_obj_and_lib_list($binary_ctx)
 #
 # $binary_ctx -		the binary context
 #
-# $binary_ctx->{BINARY} -	the binary binary name
+# $binary_ctx->{NAME} -		the binary binary name
 # $binary_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this binary
+# $binary_ctx->{LIB_LIST} -	the list of libraries which sould be linked to this binary
 #
 # $output -		the resulting output buffer
-sub _prepare_binary_obj_list($)
+sub _prepare_binary_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmplist;
+	my $tmpobjlist;
+	my $tmpliblist;
 	my $output;
 
-	$tmplist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
 
 	$output = "
 ###################################
-# Start Binary $ctx->{NAME} OBJ LIST
-BINARY_$ctx->{NAME}_OBJS =$tmplist
-# End Binary $ctx->{NAME} OBJ LIST
+# Start Binary $ctx->{NAME} OBJ AND LIB LIST
+BINARY_$ctx->{NAME}_OBJS =$tmpobjlist
+BINARY_$ctx->{NAME}_LIBS =$tmpliblist
+# End Binary $ctx->{NAME} OBJ AND LIB LIST
 ###################################
 ";
 
@@ -546,25 +566,25 @@ $ctx->{TARGET}: $tmpdepend
 	return $output;
 }
 
-sub _prepare_obj_lists($)
+sub _prepare_obj_and_lib_lists($)
 {
 	my $CTX = shift;
 	my $output = "";
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{SUBSYSTEMS}}) {
-		$output .= _prepare_subsystem_obj_list(\%{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}});
+		$output .= _prepare_subsystem_obj_and_lib_list(\%{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
-		$output .= _prepare_module_obj_list(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
+		$output .= _prepare_module_obj_and_lib_list(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
-		$output .= _prepare_library_obj_list(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
+		$output .= _prepare_library_obj_and_lib_list(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
-		$output .= _prepare_binary_obj_list(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
+		$output .= _prepare_binary_obj_and_lib_list(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
 	}
 
 	$output .= _prepare_proto_obj_list(\%{$CTX->{OUTPUT}{PROTO}});
@@ -590,7 +610,7 @@ sub _prepare_rule_lists($)
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
-		#$output .= _prepare_library_rule(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
+		$output .= _prepare_library_rule(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
@@ -642,7 +662,7 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_std_CC_rule("c","o","Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","gch","Precompiling","Rule for precompiled headerfiles");
 
-	$output .= _prepare_obj_lists($CTX);
+	$output .= _prepare_obj_and_lib_lists($CTX);
 
 	$output .= _prepare_depend_lists($CTX);
 
