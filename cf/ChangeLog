@@ -1,3 +1,9 @@
+Thu Mar 18 11:02:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* krb-find-db.m4: subst DBLIB also
+
+	* check-xau.m4: test for Xau{Read,Write}Auth
+
 Wed Mar 10 19:29:20 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* wflags.m4: AC_WFLAGS
