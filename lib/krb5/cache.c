@@ -40,19 +40,6 @@
 
 RCSID("$Id$");
 
-/* XXX shouldn't be here */
-
-void
-krb5_free_ccache(krb5_context context,
-		 krb5_ccache val)
-{
-    free(((krb5_fcache*)(val->data.data))->filename);
-    krb5_data_free (&val->data);
-    free(val);
-}
-
-extern krb5_cc_ops fcc_ops;
-
 krb5_error_code
 krb5_cc_register(krb5_context context, krb5_cc_ops *ops, int override)
 {
@@ -100,6 +87,8 @@ krb5_cc_resolve(krb5_context context,
     if(context->cc_ops == NULL){
 	ret = krb5_cc_register(context, &fcc_ops, 1);
 	if(ret) return ret;
+	ret = krb5_cc_register(context, &mcc_ops, 1);
+	if(ret) return ret;
     }
 
     for(i = 0; context->cc_ops[i].prefix && i < context->num_ops; i++)
@@ -119,22 +108,19 @@ krb5_cc_resolve(krb5_context context,
     return KRB5_CC_UNKNOWN_TYPE;
 }
 
-
-#if 0
 krb5_error_code
 krb5_cc_gen_new(krb5_context context,
 		krb5_cc_ops *ops,
 		krb5_ccache *id)
 {
-}
+    krb5_ccache p;
 
-krb5_error_code
-krb5_cc_register(krb5_context context,
-		 krb5_cc_ops *ops,
-		 krb5_boolean override)
-{
+    p = malloc (sizeof(*p));
+    if (p == NULL)
+	return KRB5_CC_NOMEM;
+    p->ops = ops;
+    return p->ops->gen_new(context, id);
 }
-#endif
 
 char*
 krb5_cc_get_name(krb5_context context,
