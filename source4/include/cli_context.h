@@ -43,7 +43,7 @@ struct cli_negotiate {
 	/* 
 	 * negotiated maximum transmit size - this is given to us by the server
 	 */
-	unsigned max_xmit;
+	uint_t max_xmit;
 
 	/* maximum number of requests that can be multiplexed */
 	uint16_t max_mux;
@@ -85,7 +85,7 @@ struct cli_socket {
 
 	/* a count of the number of packets we have received. We
 	 * actually only care about zero/non-zero at this stage */
-	unsigned pkt_count;
+	uint_t pkt_count;
 
 	/* the network address of the client */
 	char *client_addr;
@@ -147,7 +147,7 @@ struct cli_transport {
 			} dos;
 			NTSTATUS nt_status;
 			enum socket_error socket_error;
-			unsigned nbt_error;
+			uint_t nbt_error;
 		} e;
 	} error;
 
@@ -232,7 +232,7 @@ struct cli_request {
 	NTSTATUS status;
 	
 	/* the sequence number of this packet - used for signing */
-	unsigned seq_num;
+	uint_t seq_num;
 
 	/* set if this is a one-way request, meaning we are not
 	   expecting a reply from the server. */
@@ -246,12 +246,12 @@ struct cli_request {
 		char *buffer;
 		
 		/* the size of the raw buffer, including 4 byte header */
-		unsigned size;
+		uint_t size;
 
 		/* how much has been allocated - on reply the buffer is over-allocated to 
 		   prevent too many realloc() calls 
 		*/
-		unsigned allocated;
+		uint_t allocated;
 
 		/* the start of the SMB header - this is always buffer+4 */
 		char *hdr;
@@ -259,11 +259,11 @@ struct cli_request {
 		/* the command words and command word count. vwv points
 		   into the raw buffer */
 		char *vwv;
-		unsigned wct;
+		uint_t wct;
 
 		/* the data buffer and size. data points into the raw buffer */
 		char *data;
-		unsigned data_size;
+		uint_t data_size;
 
 		/* ptr is used as a moving pointer into the data area
 		 * of the packet. The reason its here and not a local

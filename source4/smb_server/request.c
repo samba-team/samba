@@ -79,7 +79,7 @@ struct request_context *init_smb_request(struct server_context *smb)
 /*
   setup a chained reply in req->out with the given word count and initial data buffer size. 
 */
-static void req_setup_chain_reply(struct request_context *req, unsigned wct, unsigned buflen)
+static void req_setup_chain_reply(struct request_context *req, uint_t wct, uint_t buflen)
 {
 	uint32_t chain_base_size = req->out.size;
 
@@ -111,7 +111,7 @@ static void req_setup_chain_reply(struct request_context *req, unsigned wct, uns
   the caller will then fill in the command words and data before calling req_send_reply() to 
   send the reply on its way
 */
-void req_setup_reply(struct request_context *req, unsigned wct, unsigned buflen)
+void req_setup_reply(struct request_context *req, uint_t wct, uint_t buflen)
 {
 	if (req->chain_count != 0) {
 		req_setup_chain_reply(req, wct, buflen);
@@ -190,7 +190,7 @@ int req_max_data(struct request_context *req)
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void req_grow_allocation(struct request_context *req, unsigned new_size)
+static void req_grow_allocation(struct request_context *req, uint_t new_size)
 {
 	int delta;
 	char *buf2;
@@ -231,7 +231,7 @@ static void req_grow_allocation(struct request_context *req, unsigned new_size)
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-void req_grow_data(struct request_context *req, unsigned new_size)
+void req_grow_data(struct request_context *req, uint_t new_size)
 {
 	int delta;
 
@@ -345,10 +345,10 @@ void req_reply_error(struct request_context *req, NTSTATUS status)
 
   if dest_len is -1 then no limit applies
 */
-size_t req_push_str(struct request_context *req, char *dest, const char *str, int dest_len, unsigned flags)
+size_t req_push_str(struct request_context *req, char *dest, const char *str, int dest_len, uint_t flags)
 {
 	size_t len;
-	unsigned grow_size;
+	uint_t grow_size;
 	char *buf0;
 	const int max_bytes_per_char = 3;
 
@@ -427,7 +427,7 @@ size_t req_append_var_block(struct request_context *req,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ucs2(struct request_context *req, const char **dest, const char *src, int byte_len, unsigned flags)
+static size_t req_pull_ucs2(struct request_context *req, const char **dest, const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
@@ -484,7 +484,7 @@ static size_t req_pull_ucs2(struct request_context *req, const char **dest, cons
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ascii(struct request_context *req, const char **dest, const char *src, int byte_len, unsigned flags)
+static size_t req_pull_ascii(struct request_context *req, const char **dest, const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -531,7 +531,7 @@ static size_t req_pull_ascii(struct request_context *req, const char **dest, con
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t req_pull_string(struct request_context *req, const char **dest, const char *src, int byte_len, unsigned flags)
+size_t req_pull_string(struct request_context *req, const char **dest, const char *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
 	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
@@ -551,7 +551,7 @@ size_t req_pull_string(struct request_context *req, const char **dest, const cha
   on failure *dest is set to the zero length string. This seems to
   match win2000 behaviour
 */
-size_t req_pull_ascii4(struct request_context *req, const char **dest, const char *src, unsigned flags)
+size_t req_pull_ascii4(struct request_context *req, const char **dest, const char *src, uint_t flags)
 {
 	ssize_t ret;
 
@@ -613,7 +613,7 @@ BOOL req_data_oob(struct request_context *req, const char *ptr, uint32_t count)
 /* 
    pull an open file handle from a packet, taking account of the chained_fnum
 */
-uint16_t req_fnum(struct request_context *req, const char *base, unsigned offset)
+uint16_t req_fnum(struct request_context *req, const char *base, uint_t offset)
 {
 	if (req->chained_fnum != -1) {
 		return req->chained_fnum;

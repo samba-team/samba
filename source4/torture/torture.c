@@ -237,7 +237,7 @@ static BOOL rw_torture(struct cli_state *c)
 
 
 	for (i=0;i<torture_numops;i++) {
-		unsigned n = (unsigned)sys_random()%10;
+		uint_t n = (uint_t)sys_random()%10;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
 		}
@@ -324,8 +324,8 @@ static BOOL rw_torture3(struct cli_state *c, const char *lockfname)
 	uint_t i = 0;
 	char buf[131072];
 	char buf_rd[131072];
-	unsigned count;
-	unsigned countprev = 0;
+	uint_t count;
+	uint_t countprev = 0;
 	ssize_t sent = 0;
 	BOOL correct = True;
 
@@ -372,7 +372,7 @@ static BOOL rw_torture3(struct cli_state *c, const char *lockfname)
 
 		if (procnum == 0)
 		{
-			sent = ((unsigned)sys_random()%(20))+ 1;
+			sent = ((uint_t)sys_random()%(20))+ 1;
 			if (sent > sizeof(buf) - count)
 			{
 				sent = sizeof(buf) - count;
@@ -453,7 +453,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 
 	for (i=0;i<torture_numops;i++)
 	{
-		size_t buf_size = ((unsigned)sys_random()%(sizeof(buf)-1))+ 1;
+		size_t buf_size = ((uint_t)sys_random()%(sizeof(buf)-1))+ 1;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
 		}
@@ -556,7 +556,7 @@ static BOOL run_locktest1(int dummy)
 	const char *fname = "\\lockt1.lck";
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
-	unsigned lock_timeout;
+	uint_t lock_timeout;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -4053,7 +4053,7 @@ double torture_create_procs(BOOL (*fn)(struct cli_state *, int), BOOL *result)
 static struct {
 	const char *name;
 	BOOL (*fn)(int);
-	unsigned flags;
+	uint_t flags;
 } torture_ops[] = {
 	{"FDPASS", run_fdpasstest, 0},
 	{"LOCK1",  run_locktest1,  0},

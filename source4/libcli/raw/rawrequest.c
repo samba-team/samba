@@ -103,7 +103,7 @@ struct cli_request *cli_request_setup_nonsmb(struct cli_transport *transport, ui
   setup a SMB packet at transport level
 */
 struct cli_request *cli_request_setup_transport(struct cli_transport *transport,
-						uint8_t command, unsigned wct, unsigned buflen)
+						uint8_t command, uint_t wct, uint_t buflen)
 {
 	struct cli_request *req;
 
@@ -149,7 +149,7 @@ struct cli_request *cli_request_setup_transport(struct cli_transport *transport,
   way. This interface is used before a session is setup.
 */
 struct cli_request *cli_request_setup_session(struct cli_session *session,
-					      uint8_t command, unsigned wct, unsigned buflen)
+					      uint8_t command, uint_t wct, uint_t buflen)
 {
 	struct cli_request *req;
 	uint16_t flags2;
@@ -190,7 +190,7 @@ struct cli_request *cli_request_setup_session(struct cli_session *session,
 */
 struct cli_request *cli_request_setup(struct cli_tree *tree,
 				      uint8_t command, 
-				      unsigned wct, unsigned buflen)
+				      uint_t wct, uint_t buflen)
 {
 	struct cli_request *req;
 
@@ -210,7 +210,7 @@ struct cli_request *cli_request_setup(struct cli_tree *tree,
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void cli_req_grow_allocation(struct cli_request *req, unsigned new_size)
+static void cli_req_grow_allocation(struct cli_request *req, uint_t new_size)
 {
 	int delta;
 	char *buf2;
@@ -251,7 +251,7 @@ static void cli_req_grow_allocation(struct cli_request *req, unsigned new_size)
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void cli_req_grow_data(struct cli_request *req, unsigned new_size)
+static void cli_req_grow_data(struct cli_request *req, uint_t new_size)
 {
 	int delta;
 
@@ -524,7 +524,7 @@ BOOL cli_request_is_error(struct cli_request *req)
 
   return the number of bytes added to the packet
 */
-size_t cli_req_append_string(struct cli_request *req, const char *str, unsigned flags)
+size_t cli_req_append_string(struct cli_request *req, const char *str, uint_t flags)
 {
 	size_t len;
 
@@ -555,7 +555,7 @@ size_t cli_req_append_string(struct cli_request *req, const char *str, unsigned 
  this is used in places where the non-terminated string byte length is
  placed in the packet as a separate field  
 */
-size_t cli_req_append_string_len(struct cli_request *req, const char *str, unsigned flags, int *len)
+size_t cli_req_append_string_len(struct cli_request *req, const char *str, uint_t flags, int *len)
 {
 	int diff = 0;
 	size_t ret;
@@ -596,7 +596,7 @@ size_t cli_req_append_string_len(struct cli_request *req, const char *str, unsig
 
   if dest_len is -1 then no limit applies
 */
-size_t cli_req_append_ascii4(struct cli_request *req, const char *str, unsigned flags)
+size_t cli_req_append_ascii4(struct cli_request *req, const char *str, uint_t flags)
 {
 	size_t size;
 	cli_req_append_bytes(req, (const uint8_t *)"\4", 1);
@@ -662,7 +662,7 @@ size_t cli_req_append_var_block(struct cli_request *req, const uint8_t *bytes, u
   of bytes consumed in the packet is returned
 */
 static size_t cli_req_pull_ucs2(struct cli_request *req, TALLOC_CTX *mem_ctx,
-				char **dest, const char *src, int byte_len, unsigned flags)
+				char **dest, const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
@@ -719,7 +719,7 @@ static size_t cli_req_pull_ucs2(struct cli_request *req, TALLOC_CTX *mem_ctx,
   of bytes consumed in the packet is returned
 */
 size_t cli_req_pull_ascii(struct cli_request *req, TALLOC_CTX *mem_ctx,
-			  char **dest, const char *src, int byte_len, unsigned flags)
+			  char **dest, const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -762,7 +762,7 @@ size_t cli_req_pull_ascii(struct cli_request *req, TALLOC_CTX *mem_ctx,
   of bytes consumed in the packet is returned
 */
 size_t cli_req_pull_string(struct cli_request *req, TALLOC_CTX *mem_ctx, 
-			   char **dest, const char *src, int byte_len, unsigned flags)
+			   char **dest, const char *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
 	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
@@ -860,7 +860,7 @@ NTTIME cli_pull_nttime(void *base, uint16_t offset)
 */
 static size_t cli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 				 DATA_BLOB *blob, const char **dest, 
-				 const char *src, int byte_len, unsigned flags)
+				 const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
@@ -919,7 +919,7 @@ static size_t cli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 */
 static size_t cli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *blob, const char **dest, 
-				  const char *src, int byte_len, unsigned flags)
+				  const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -968,7 +968,7 @@ size_t cli_blob_pull_string(struct cli_session *session,
 			    DATA_BLOB *blob, 
 			    WIRE_STRING *dest, 
 			    uint16_t len_offset, uint16_t str_offset, 
-			    unsigned flags)
+			    uint_t flags)
 {
 	int extra;
 	dest->s = NULL;
@@ -1023,7 +1023,7 @@ size_t cli_blob_pull_unix_string(struct cli_session *session,
 			    DATA_BLOB *blob, 
 			    const char **dest, 
 			    uint16_t str_offset, 
-			    unsigned flags)
+			    uint_t flags)
 {
 	int extra = 0;
 	*dest = NULL;
@@ -1057,7 +1057,7 @@ size_t cli_blob_pull_unix_string(struct cli_session *session,
 */
 size_t cli_blob_append_string(struct cli_session *session,
 			      TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
-			      const char *str, unsigned flags)
+			      const char *str, uint_t flags)
 {
 	size_t max_len;
 	int len;

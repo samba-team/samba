@@ -284,7 +284,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	i = ifc.ifc_len;
 
 	while (i > 0 && total < max_interfaces) {
-		unsigned inc;
+		uint_t inc;
 
 		inc = ifr->ifr_addr.sa_len;
 

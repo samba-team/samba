@@ -26,7 +26,7 @@
   do a non-athenticated dcerpc bind
 */
 NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
-			       const char *uuid, unsigned version)
+			       const char *uuid, uint_t version)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;

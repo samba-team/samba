@@ -43,8 +43,8 @@ static BOOL got_pass;
 static uid_t mount_uid;
 static gid_t mount_gid;
 static int mount_ro;
-static unsigned mount_fmask;
-static unsigned mount_dmask;
+static uint_t mount_fmask;
+static uint_t mount_dmask;
 static BOOL use_kerberos;
 /* TODO: Add code to detect smbfs version in kernel */
 static BOOL status32_smbfs = False;

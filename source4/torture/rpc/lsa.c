@@ -343,7 +343,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 
 	printf("Testing CreateSecret\n");
 
-	asprintf(&secname, "torturesecret-%u", (unsigned)random());
+	asprintf(&secname, "torturesecret-%u", (uint_t)random());
 
 	init_lsa_Name(&r.in.name, secname);
 

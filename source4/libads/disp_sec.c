@@ -65,7 +65,7 @@ static void ads_disp_perms(uint32_t type)
 	for (i = 0; i < 32; i++) {
 		if (type & (1 << i)) {
 			for (j = 1; perms[j].str; j ++) {
-				if (perms[j].mask == (((unsigned) 1) << i)) {
+				if (perms[j].mask == (((uint_t) 1) << i)) {
 					printf("\n\t%s", perms[j].str);
 				}	
 			}

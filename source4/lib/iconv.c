@@ -326,7 +326,7 @@ static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		unsigned v;
+		uint_t v;
 
 		if ((*inbuf)[0] != '@') {
 			/* seven bit ascii case */
