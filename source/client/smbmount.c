@@ -21,12 +21,6 @@
 
 #define NO_SYSLOG
 
-#include <linux/version.h>
-#define LVERSION(major,minor,patch) (((((major)<<8)+(minor))<<8)+(patch))
-#if LINUX_VERSION_CODE < LVERSION(2,1,70)
-#error this code will only compile on versions of linux after 2.1.70
-#endif
-
 #include "includes.h"
 
 #include <mntent.h>
