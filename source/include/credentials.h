@@ -29,8 +29,10 @@ struct cli_credentials {
 	const char *domain;
 	const char *realm;
 
-	const char *(*username_cb) (void);
-	const char *(*password_cb) (void);
-	const char *(*domain_cb) (void);
-	const char *(*realm_cb) (void);
+	const char *(*username_cb) (struct cli_credentials *);
+	const char *(*password_cb) (struct cli_credentials *);
+	const char *(*domain_cb) (struct cli_credentials *);
+	const char *(*realm_cb) (struct cli_credentials *);
+
+	void *priv_data;
 };
