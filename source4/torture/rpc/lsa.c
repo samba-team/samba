@@ -1145,11 +1145,14 @@ static BOOL test_GetUserName(struct dcerpc_pipe *p,
 	struct lsa_GetUserName r;
 	NTSTATUS status;
 	BOOL ret = True;
+	struct lsa_StringPointer lsap;
+
 	printf("\nTesting GetUserName\n");
 
 	r.in.system_name = "\\";	
 	r.in.account_name = NULL;	
-	r.in.unknown_name = NULL;
+	r.in.authority_name = &lsap;
+	lsap.string = NULL;
 
 	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
 
