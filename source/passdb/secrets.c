@@ -252,3 +252,73 @@ BOOL fetch_ldap_pw(char *dn, char* pw, int len)
 	
 	return True;
 }
+
+
+/** @} **/
+
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
+/*
+  lock the secrets tdb based on a string - this is used as a primitive form of mutex
+  between smbd instances. 
+*/
+BOOL secrets_named_mutex(const char *name, unsigned int timeout)
+{
+	TDB_DATA key;
+	int ret;
+
+	if (!message_init())
+		return False;
+
+	key.dptr = (char *)name;
+	key.dsize = strlen(name)+1;
+
+	/* Allow tdb_chainlock to be interrupted by an alarm. */
+	gotalarm = 0;
+	tdb_set_lock_alarm(&gotalarm);
+
+	if (timeout) {
+		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		alarm(timeout);
+	}
+
+	ret = tdb_chainlock(tdb, key);
+
+	/* Prevent tdb_chainlock from being interrupted by an alarm. */
+	tdb_set_lock_alarm(NULL);
+
+	if (timeout) {
+		alarm(0);
+		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		if (gotalarm)
+			return False;
+	}
+
+	if (ret == 0)
+		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
+
+	return (ret == 0);
+}
+
+/*
+  unlock a named mutex
+*/
+void secrets_named_mutex_release(char *name)
+{
+	TDB_DATA key;
+
+	key.dptr = name;
+	key.dsize = strlen(name)+1;
+
+	tdb_chainunlock(tdb, key);
+	DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
+}
