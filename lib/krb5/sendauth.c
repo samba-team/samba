@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,7 +78,7 @@ krb5_sendauth(krb5_context context,
 	      krb5_data *in_data,
 	      krb5_creds *in_creds,
 	      krb5_ccache ccache,
-	      /*krb5_error*/ void **error,
+	      krb5_error **ret_error,
 	      krb5_ap_rep_enc_part **rep_result,
 	      krb5_creds **out_creds)
 {
@@ -165,7 +165,16 @@ krb5_sendauth(krb5_context context,
 	ret = krb5_rd_error (context, &error_data, &error);
 	krb5_data_free (&error_data);
 	if (ret == 0) {
-	    free_KRB_ERROR(&error);
+	    if (ret_error != NULL) {
+		*ret_error = malloc (sizeof(krb5_error));
+		if (*ret_error == NULL) {
+		    free_KRB_ERROR(&error);
+		} else {
+		    **ret_error = error;
+		}
+	    } else {
+		free_KRB_ERROR(&error);
+	    }
 	    return error.error_code;
 	} else
 	    return ret;
