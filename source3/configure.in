@@ -165,6 +165,7 @@ AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
+AC_SUBST(LIBSMBCLIENT)
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
