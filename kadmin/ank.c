@@ -74,14 +74,15 @@ add_new_key(int argc, char **argv)
     if(optind == argc)
 	goto usage;
     memset(&princ, 0, sizeof(princ));
+    krb5_parse_name(context, argv[optind], &princ_ent);
+    princ.principal = princ_ent;
+    mask |= KADM5_PRINCIPAL;
+    edit_entry(&princ, &mask);
     if(rkey){
 	princ.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
 	mask |= KADM5_ATTRIBUTES;
 	password = "hemlig";
     }
-    krb5_parse_name(context, argv[optind], &princ_ent);
-    princ.principal = princ_ent;
-    mask |= KADM5_PRINCIPAL;
     if(password == NULL){
 	if(des_read_pw_string(pwbuf, sizeof(pwbuf), "Password: ", 1))
 	    goto out;
