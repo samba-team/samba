@@ -54,7 +54,7 @@ for file descriptors that were readable
 ********************************************************************/
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
-	int ret;
+	int ret, saved_errno;
 
 	if (initialised != sys_getpid()) {
 		pipe(select_pipe);
@@ -79,10 +79,14 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 		}
 	}
 
+	saved_errno = errno;
+
 	while (pipe_written != pipe_read) {
 		char c;
 		if (read(select_pipe[0], &c, 1) == 1) pipe_read++;
 	}
+
+	errno = saved_errno;
 
 	return ret;
 }
