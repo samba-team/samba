@@ -963,9 +963,17 @@ static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 		return;
 
 	for (j=0; j<num_aliases; j++) {
+		enum SID_NAME_USE type;
 
-		if (!NT_STATUS_IS_OK(sid_to_gid(&aliases[j], &gid)))
+		if (!local_sid_to_gid(&gid, &aliases[j], &type)) {
+			DEBUG(1, ("Got an alias membership with no alias\n"));
 			continue;
+		}
+
+		if ((type != SID_NAME_ALIAS) && (type != SID_NAME_WKN_GRP)) {
+			DEBUG(1, ("Got an alias membership in a non-alias\n"));
+			continue;
+		}
 
 		add_gid_to_array_unique(gid, gids, num);
 	}
