@@ -118,6 +118,7 @@ AC_SUBST(SHELL)
 AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
+AC_SUBST(SHLD) 
 AC_SUBST(HOST_OS)
 AC_SUBST(PAM_MOD)
 AC_SUBST(PDBEDIT)
@@ -127,6 +128,8 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(BLDSHARED)
+AC_SUBST(LIBSMBCLIENT_SHARED)
+AC_SUBST(LIBSMBCLIENT)
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -728,6 +731,7 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
+SHLD="\${CC}" 
 PICFLAG=""
 PICSUFFIX="po.o"
 SHLIBEXT="so"
@@ -2046,6 +2050,32 @@ AC_ARG_WITH(vfs,
   yes)
      AC_MSG_RESULT(yes)
      AC_DEFINE(WITH_VFS)
+     ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
+#################################################
+# should we build libsmbclient?
+
+LIBSMBCLIENT_SHARED=
+LIBSMBCLIENT=
+AC_MSG_CHECKING(whether to build the libsmbclient shared library)
+AC_ARG_WITH(libsmbclient,
+[  --with-libsmbclient     Build the libsmbclient shared library (default=no)],
+[ case "$withval" in
+  yes)
+     if test $BLDSHARED = true; then
+        LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
+	LIBSMBCLIENT=libsmbclient
+        AC_MSG_RESULT(yes)
+     else
+        AC_MSG_RESULT(no shared library support)
+     fi
      ;;
   *)
     AC_MSG_RESULT(no)
