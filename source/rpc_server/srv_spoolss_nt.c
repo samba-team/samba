@@ -5709,7 +5709,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	fstrcpy(info->sharename, lp_const_servicename_dos(snum));
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
 		 get_called_name(), info->sharename);
-	info->attributes = PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
+	info->attributes = PRINTER_ATTRIBUTE_SAMBA;
 	
 	return True;
 }

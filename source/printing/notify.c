@@ -191,11 +191,35 @@ void print_notify_send_messages(unsigned int timeout)
 	talloc_destroy_pool(send_ctx);
 }
 
+/**********************************************************************
+ deep copy a SPOOLSS_NOTIFY_MSG structure using a TALLOC_CTX
+ *********************************************************************/
+ 
+static BOOL copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
+{
+
+	if ( !to || !from )
+		return False;
+	
+	memcpy( to, from, sizeof(SPOOLSS_NOTIFY_MSG) );
+	
+	if ( from->len ) {
+		to->notify.data = talloc_memdup(send_ctx, from->notify.data, from->len );
+		if ( !to->notify.data ) {
+			DEBUG(0,("copy_notify2_msg: talloc_memdup() of size [%d] failed!\n", from->len ));
+			return False;
+		}
+	}
+	
+
+	return True;
+}
+
 /*******************************************************************
  Batch up print notify messages.
 *******************************************************************/
 
-static void send_spoolss_notify2_msg(struct spoolss_notify_msg *msg)
+static void send_spoolss_notify2_msg(SPOOLSS_NOTIFY_MSG *msg)
 {
 	struct notify_queue *pnqueue, *tmp_ptr;
 
@@ -228,7 +252,14 @@ in notify_queue\n", msg->type, msg->field, msg->printer));
 		return;
 	}	
 
-	pnqueue->msg = msg;
+	/* allocate a new msg structure and copy the fields */
+	
+	if ( !(pnqueue->msg = (SPOOLSS_NOTIFY_MSG*)talloc(send_ctx, sizeof(SPOOLSS_NOTIFY_MSG))) ) {
+		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%d] failed!\n", 
+			sizeof(SPOOLSS_NOTIFY_MSG)));
+		return;
+	}
+	copy_notify2_msg(pnqueue->msg, msg);
 	pnqueue->buf = NULL;
 	pnqueue->buflen = 0;
 

@@ -2922,7 +2922,7 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const 
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
 
-	info.attributes = PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;      /* attributes */
+	info.attributes = PRINTER_ATTRIBUTE_SAMBA;
 
 	info.starttime = 0; /* Minutes since 12:00am GMT */
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
@@ -3016,7 +3016,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *do
 			info.parameters);
 
 	/* Samba has to have shared raw drivers. */
-	info.attributes |= (PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK); 
+	info.attributes |= PRINTER_ATTRIBUTE_SAMBA;
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
