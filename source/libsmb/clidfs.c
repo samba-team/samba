@@ -174,8 +174,6 @@ static void cli_cm_set_mntpoint( struct cli_state *c, const char *mnt )
 {
 	struct client_connection *p;
 	int i;
-	pstring path;
-	char *ppath;
 
 	for ( p=connections,i=0; p; p=p->next,i++ ) {
 		if ( strequal(p->cli->desthost, c->desthost) && strequal(p->cli->share, c->share) )
@@ -185,14 +183,6 @@ static void cli_cm_set_mntpoint( struct cli_state *c, const char *mnt )
 	if ( p ) {
 		pstrcpy( p->mount, mnt );
 		dos_clean_name( p->mount );
-
-#if 0 
-		/* strip any leading '\\' */
-		ppath = path;
-		if ( *ppath == '\\' )
-			ppath++;
-		pstrcpy( p->mount, ppath );		
-#endif
 	}
 }
 
@@ -567,7 +557,7 @@ BOOL cli_dfs_get_referral( struct cli_state *cli, const char *path,
 /********************************************************************
 ********************************************************************/
 
-BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
+BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const char *path,
                        struct cli_state **targetcli, pstring targetpath )
 {
 	CLIENT_DFS_REFERRAL *refs = NULL;
@@ -579,6 +569,8 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 	fstring server, share;
 	struct cli_state *newcli;
 	pstring newpath;
+	pstring newmount;
+	char *ppath;
 	
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
@@ -637,17 +629,28 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 		return False;
 	}
 	
-	cli_cm_set_mntpoint( *targetcli, cleanpath );
+	/* parse out the consumed mount path */
+	/* trim off the \server\share\ */
 
-	/* check for another dfs refeerrali, note that we are not 
+	fullpath[consumed/2] = '\0';
+	dos_clean_name( fullpath );
+	ppath = strchr_m( fullpath, '\\' );
+	ppath = strchr_m( ppath+1, '\\' );
+	ppath = strchr_m( ppath+1, '\\' );
+	ppath++;
+	
+	pstr_sprintf( newmount, "%s\\%s", mountpt, ppath );
+	cli_cm_set_mntpoint( *targetcli, newmount );
+
+	/* check for another dfs referral, note that we are not 
 	   checking for loops here */
 
 	if ( !strequal( targetpath, "\\" ) ) {
-		if ( cli_resolve_path( *targetcli, targetpath, &newcli, newpath ) ) {
+		if ( cli_resolve_path( newmount, *targetcli, targetpath, &newcli, newpath ) ) {
 			*targetcli = newcli;
 			pstrcpy( targetpath, newpath );
 		}
 	}
-	
+
 	return True;
 }
