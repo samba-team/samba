@@ -63,8 +63,7 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 	if (passlen > 0 && (cli->sec_mode & 2) && passlen != 24) {
 		/* Encrypted mode needed, and non encrypted password supplied. */
 		passlen = 24;
-		clistr_push(cli, pword, pass, -1, STR_TERMINATE);
-		SMBencrypt((uchar *)pword,cli->secblob.data,(uchar *)pword);
+		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
 	} else if ((cli->sec_mode & 2) && passlen == 24) {
 		/* Encrypted mode needed, and encrypted password supplied. */
 		memcpy(pword, pass, passlen);
@@ -241,9 +240,15 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 }
 
 
-/****************************************************************************
-do a NT1 NTLM/LM encrypted session setup
-****************************************************************************/
+/**
+   do a NT1 NTLM/LM encrypted session setup
+   @param cli client state to create do session setup on
+   @param user username
+   @param pass *either* cleartext password (passlen !=24) or LM response.
+   @param ntpass NT response, implies ntpasslen >=24, implies pass is not clear
+   @param workgroup The user's domain.
+*/
+
 static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
 				  char *pass, int passlen,
 				  char *ntpass, int ntpasslen,
@@ -261,12 +266,8 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* non encrypted password supplied. Ignore ntpass. */
 		passlen = 24;
 		ntpasslen = 24;
-		clistr_push(cli, pword, 
-			    pass?pass:"", sizeof(pword), STR_TERMINATE|STR_ASCII);
-		clistr_push(cli, ntpword, 
-			    pass?pass:"", sizeof(ntpword), STR_TERMINATE|STR_ASCII);
-		SMBencrypt((uchar *)pword,cli->secblob.data,(uchar *)pword);
-		SMBNTencrypt((uchar *)ntpword,cli->secblob.data,(uchar *)ntpword);
+		SMBencrypt((uchar *)pass,cli->secblob.data,(uchar *)pword);
+		SMBNTencrypt((uchar *)pass,cli->secblob.data,(uchar *)ntpword);
 	} else {
 		memcpy(pword, pass, passlen);
 		memcpy(ntpword, ntpass, ntpasslen);
@@ -611,8 +612,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return cli_session_setup_plaintext(cli, user, "", workgroup);
 	}
 
-	/* if the server doesn't support encryption then we have to use plaintext. The 
-	   second password is ignored */
+	/* if the server doesn't support encryption then we have to use 
+	   plaintext. The second password is ignored */
 	if ((cli->sec_mode & 2) == 0) {
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
 	}
