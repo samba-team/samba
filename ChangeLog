@@ -1,3 +1,19 @@
+2004-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/principal.c: make default_v4_name_convert static
+	
+	* lib/krb5/crypto.c: make lots of crypto related variables static
+	
+	* lib/krb5/acache.c: make default_acc_name static
+	
+2004-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: add some text about samba, use example.com
+	
+	* lib/hdb/hdb-ldap.c: Add account expiration for samba from James
+	F.  Hranicky <jfh@cise.ufl.edu>.
+	Add LDAP_addmod_integer and use it.
+
 2004-12-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/{Makefile.am,setup.texi,win2k.texi}: spelling and text
