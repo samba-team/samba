@@ -697,7 +697,7 @@ static void chg_passwd(void)
 ****************************************************************************/
 static void passwd_page(void)
 {
-	char *new_name = get_user_name();
+	char *new_name = cgi_user_name();
 
 	/* 
 	 * After the first time through here be nice. If the user
