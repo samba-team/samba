@@ -147,6 +147,7 @@ Changes in alpha23:
 20) fix CIDR hosts allow/deny notation
 21) Fixup tcon&X server responses and error codes
 22) Set domain for users in passdb created by "net rpc vampire"
+23) More scalable printing updates
 
 
                   ===============================
