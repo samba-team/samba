@@ -1255,9 +1255,6 @@ BOOL smb_io_chal(char *desc, DOM_CHAL *chal, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "smb_io_chal");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	if(!prs_uint8s (False, "data", ps, depth, chal->data, 8))
 		return False;

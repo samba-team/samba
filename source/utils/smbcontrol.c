@@ -42,6 +42,7 @@ static struct {
 	{"dmalloc-mark", MSG_REQ_DMALLOC_MARK },
 	{"dmalloc-log-changed", MSG_REQ_DMALLOC_LOG_CHANGED },
 	{"shutdown", MSG_SHUTDOWN },
+	{"change_id", MSG_PRINTER_DRVUPGRADE},
 	{NULL, -1}
 };
 
@@ -551,6 +552,10 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	case MSG_SHUTDOWN:
 		if (!send_message(dest, MSG_SHUTDOWN, NULL, 0, False))
+			return False;
+		break;
+	case MSG_PRINTER_DRVUPGRADE:
+		if (!send_message(dest, MSG_PRINTER_DRVUPGRADE, params[0], 0, False))
 			return False;
 		break;
 	}

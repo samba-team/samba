@@ -29,24 +29,24 @@ static TDB_CONTEXT *namecache_tdb;
 struct nc_value {
 	time_t expiry;		     /* When entry expires */
 	int count;		     /* Number of addresses */
-	struct in_addr ip_list[0];   /* Address list */
+	struct in_addr ip_list[1];   /* Address list */
 };
 
 /* Initialise namecache system */
 
-void namecache_enable(void)
+BOOL namecache_enable(void)
 {
 	/* Check if we have been here before, or name caching disabled
            by setting the name cache timeout to zero. */ 
 
 	if (done_namecache_init)
-		return;
+		return False;
 
 	done_namecache_init = True;
 
 	if (lp_name_cache_timeout() == 0) {
 		DEBUG(5, ("namecache_init: disabling netbios name cache\n"));
-		return;
+		return False;
 	}
 
 	/* Open namecache tdb in read/write or readonly mode */
@@ -58,13 +58,15 @@ void namecache_enable(void)
 	if (!namecache_tdb) {
 		DEBUG(5, ("namecache_init: could not open %s\n",
 			  lock_path("namecache.tdb")));
-		return;
+		return False;
 	}
 
 	DEBUG(5, ("namecache_init: enabling netbios namecache, timeout %d "
 		  "seconds\n", lp_name_cache_timeout()));
 
 	enable_namecache = True;
+
+	return True;
 }
 
 /* Return a key for a name and name type.  The caller must free
@@ -91,17 +93,20 @@ static TDB_DATA namecache_value(struct in_addr *ip_list, int num_names,
 {
 	TDB_DATA retval;
 	struct nc_value *value;
-	int size;
+	int size = sizeof(struct nc_value);
 
-	size = sizeof(struct nc_value) + sizeof(struct in_addr) *
-		num_names;
+	if (num_names > 0)
+		size += sizeof(struct in_addr) * (num_names-1);
 
 	value = (struct nc_value *)malloc(size);
-		
+
+	memset(value, 0, size);
+
 	value->expiry = expiry;
 	value->count = num_names;
 
-	memcpy(value->ip_list, ip_list, num_names * sizeof(struct in_addr));
+	if (ip_list)
+		memcpy(value->ip_list, ip_list, sizeof(struct in_addr) * num_names);
 
 	retval.dptr = (char *)value;
 	retval.dsize = size;
@@ -160,6 +165,9 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 	time_t now;
 	int i;
 
+	*ip_list = NULL;
+	*num_names = 0;
+
 	if (!enable_namecache)
 		return False;
 
@@ -209,20 +217,23 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 
 	/* Extract and return namelist */
 
-	*ip_list = (struct in_addr *)malloc(
-		sizeof(struct in_addr) * data->count);
-	
-	memcpy(*ip_list, data->ip_list, sizeof(struct in_addr) *
-	       data->count);
-
-	*num_names = data->count;
-
 	DEBUG(5, ("namecache_fetch: returning %d address%s for %s#%02x: ",
-		  *num_names, *num_names == 1 ? "" : "es", name, name_type));
+		  data->count, data->count == 1 ? "" : "es", name, name_type));
 
-	for (i = 0; i < *num_names; i++)
-		DEBUGADD(5, ("%s%s", inet_ntoa((*ip_list)[i]),
-			     i == (*num_names - 1) ? "" : ", "));
+	if (data->count) {
+
+		*ip_list = (struct in_addr *)malloc(
+			sizeof(struct in_addr) * data->count);
+		
+		memcpy(*ip_list, data->ip_list, sizeof(struct in_addr) * data->count);
+		
+		*num_names = data->count;
+		
+		for (i = 0; i < *num_names; i++)
+			DEBUGADD(5, ("%s%s", inet_ntoa((*ip_list)[i]),
+				     i == (*num_names - 1) ? "" : ", "));
+
+	}
 
 	DEBUGADD(5, ("\n"));
 

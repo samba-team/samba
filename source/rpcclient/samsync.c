@@ -217,8 +217,8 @@ static void decode_sam_deltas(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_
 				decode_sam_als_mem_info(a);
 				break;
 			}
-			case SAM_DELTA_DOM_INFO: {
-                		SAM_DELTA_DOM *a;
+			case SAM_DELTA_POLICY_INFO: {
+                		SAM_DELTA_POLICY *a;
 				a = &deltas[i].dom_info;
 				decode_sam_dom_info(a);
 				break;
@@ -324,15 +324,15 @@ static void sam_account_from_delta(SAM_ACCOUNT *account,
 
 static void apply_account_info(SAM_ACCOUNT_INFO *sam_acct_delta)
 {
-	SAM_ACCOUNT sam_acct;
+	SAM_ACCOUNT *sam_acct;
 	BOOL result;
 
-	ZERO_STRUCT(sam_acct);
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+		return;
+	}
 
-	pdb_init_sam(&sam_acct);
-
-	sam_account_from_delta(&sam_acct, sam_acct_delta);
-	result = pdb_add_sam_account(&sam_acct);
+	sam_account_from_delta(sam_acct, sam_acct_delta);
+	result = pdb_add_sam_account(sam_acct);
 }
 
 /* Apply an array of deltas to the SAM database */
@@ -362,6 +362,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
         uint32 num_deltas_0, num_deltas_2;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct pdb_context *in;
+	uint32 neg_flags = 0x000001ff;
 
 	DOM_CRED ret_creds;
 
@@ -384,7 +385,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
         /* Request a challenge */
 
-        if (!NT_STATUS_IS_OK(cli_nt_setup_creds(cli, SEC_CHAN_BDC, trust_passwd))) {
+        if (!NT_STATUS_IS_OK(cli_nt_setup_creds(cli, SEC_CHAN_BDC, trust_passwd, &neg_flags, 2))) {
                 DEBUG(0, ("Error initialising session creds\n"));
                 goto done;
         }
@@ -394,12 +395,15 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
         /* Do sam synchronisation on the SAM database*/
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 0, 
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 0, 0,
 				       &num_deltas_0, &hdr_deltas_0, 
 				       &deltas_0);
         
         if (!NT_STATUS_IS_OK(result))
 		goto done;
+
+	
+        /* Update sam */
 
 	apply_deltas(num_deltas_0, hdr_deltas_0, deltas_0);
 
@@ -412,7 +416,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 #if 1
         /* Do sam synchronisation on the LSA database */
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 2, &num_deltas_2, &hdr_deltas_2, &deltas_2);
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 2, 0, &num_deltas_2, &hdr_deltas_2, &deltas_2);
         
         if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -465,8 +469,6 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
                                
                 goto done;
         }
-
-        /* Update sam tdb */
 
  done:
 	cli_nt_session_close(cli);
@@ -543,7 +545,7 @@ static void user_callback(poptContext con,
 			  const struct poptOption *opt,
 			  const char *arg, const void *data)
 {
-	char *p, *ch;
+	const char *p, *ch;
 
 	if (!arg)
 		return;

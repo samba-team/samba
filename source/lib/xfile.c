@@ -43,6 +43,7 @@ XFILE *x_stderr = &_x_stderr;
 
 #define X_FLAG_EOF 1
 #define X_FLAG_ERROR 2
+#define X_FLAG_EINVAL 3
 
 /* simulate setvbuf() */
 int x_setvbuf(XFILE *f, char *buf, int mode, size_t size)
@@ -340,4 +341,37 @@ char *x_fgets(char *s, int size, XFILE *stream)
 	}
 	*s = 0;
 	return s0;
+}
+
+/* trivial seek, works only for SEEK_SET and SEEK_END if SEEK_CUR is
+ * set then an error is returned */
+off_t x_tseek(XFILE *f, off_t offset, int whence)
+{
+	if (f->flags & X_FLAG_ERROR)
+		return -1;
+
+	/* only SEEK_SET and SEEK_END are supported */
+	/* SEEK_CUR needs internal offset counter */
+	if (whence != SEEK_SET && whence != SEEK_END) {
+		f->flags |= X_FLAG_EINVAL;
+		errno = EINVAL;
+		return -1;
+	}
+
+	/* empty the buffer */
+	switch (f->open_flags & O_ACCMODE) {
+	case O_RDONLY:
+		f->bufused = 0;
+		break;
+	case O_WRONLY:
+		if (x_fflush(f) != 0)
+			return -1;
+		break;
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
+	f->flags &= ~X_FLAG_EOF;
+	return (off_t)sys_lseek(f->fd, offset, whence);
 }

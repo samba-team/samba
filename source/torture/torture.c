@@ -785,6 +785,7 @@ static BOOL run_locktest1(int dummy)
 	char *fname = "\\lockt1.lck";
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
+	unsigned lock_timeout;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -827,9 +828,10 @@ static BOOL run_locktest1(int dummy)
 	}
 
 
-	printf("Testing lock timeouts\n");
+	lock_timeout = (1 + (random() % 20));
+	printf("Testing lock timeout with timeout=%u\n", lock_timeout);
 	t1 = time(NULL);
-	if (cli_lock(&cli2, fnum3, 0, 4, 10*1000, WRITE_LOCK)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, lock_timeout * 1000, WRITE_LOCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		return False;
 	} else {
@@ -841,6 +843,8 @@ static BOOL run_locktest1(int dummy)
 	if (t2 - t1 < 5) {
 		printf("error: This server appears not to support timed lock requests\n");
 	}
+	printf("server slept for %u seconds for a %u second timeout\n",
+	       (unsigned int)(t2-t1), lock_timeout);
 
 	if (!cli_close(&cli1, fnum2)) {
 		printf("close1 failed (%s)\n", cli_errstr(&cli1));
@@ -3413,6 +3417,52 @@ static BOOL run_opentest(int dummy)
 
 	cli_unlink(&cli1, fname);
 
+	/* Test 8 - attributes test test... */
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, FILE_ATTRIBUTE_HIDDEN,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("test 8 open 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 8 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	/* FILE_SUPERSEDE && FILE_OVERWRITE_IF have the same effect here. */
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("test 8 open 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 8 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	/* This open should fail with ACCESS_DENIED for FILE_SUPERSEDE, FILE_OVERWRITE and FILE_OVERWRITE_IF. */
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
+
+	if (fnum1 != -1) {
+		printf("test 8 open 3 of %s succeeded - should have failed with (NT_STATUS_ACCESS_DENIED)\n", fname);
+		correct = False;
+		cli_close(&cli1, fnum1);
+	} else {
+        	if (check_error(__LINE__, &cli1, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED)) {
+			printf("correct error code NT_STATUS_ACCESS_DENIED/ERRDOS:ERRnoaccess returned\n");
+		}
+	}
+
+	printf("Attribute open test #8 %s.\n", correct ? "passed" : "failed");
+
+	cli_unlink(&cli1, fname);
+
 	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
@@ -3479,6 +3529,105 @@ static BOOL run_dirtest(int dummy)
 	}
 
 	printf("finished dirtest\n");
+
+	return correct;
+}
+
+static void del_fn(file_info *finfo, const char *mask, void *state)
+{
+	struct cli_state *pcli = (struct cli_state *)state;
+	fstring fname;
+	slprintf(fname, sizeof(fname), "\\LISTDIR\\%s", finfo->name);
+
+	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
+		return;
+
+	if (finfo->mode & aDIR) {
+		if (!cli_rmdir(pcli, fname))
+			printf("del_fn: failed to rmdir %s\n,", fname );
+	} else {
+		if (!cli_unlink(pcli, fname))
+			printf("del_fn: failed to unlink %s\n,", fname );
+	}
+}
+
+static BOOL run_dirtest1(int dummy)
+{
+	int i;
+	static struct cli_state cli;
+	int fnum, num_seen;
+	BOOL correct = True;
+
+	printf("starting directory test\n");
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	cli_sockopt(&cli, sockops);
+
+	cli_list(&cli, "\\LISTDIR\\*", 0, del_fn, &cli);
+	cli_list(&cli, "\\LISTDIR\\*", aDIR, del_fn, &cli);
+	cli_rmdir(&cli, "\\LISTDIR");
+	cli_mkdir(&cli, "\\LISTDIR");
+
+	/* Create 1000 files and 1000 directories. */
+	for (i=0;i<1000;i++) {
+		fstring fname;
+		slprintf(fname, sizeof(fname), "\\LISTDIR\\f%d", i);
+		fnum = cli_nt_create_full(&cli, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
+		if (fnum == -1) {
+			fprintf(stderr,"Failed to open %s\n", fname);
+			return False;
+		}
+		cli_close(&cli, fnum);
+	}
+	for (i=0;i<1000;i++) {
+		fstring fname;
+		slprintf(fname, sizeof(fname), "\\LISTDIR\\d%d", i);
+		if (!cli_mkdir(&cli, fname)) {
+			fprintf(stderr,"Failed to open %s\n", fname);
+			return False;
+		}
+	}
+
+	/* Now ensure that doing an old list sees both files and directories. */
+	num_seen = cli_list_old(&cli, "\\LISTDIR\\*", aDIR, list_fn, NULL);
+	printf("num_seen = %d\n", num_seen );
+	/* We should see 100 files + 1000 directories + . and .. */
+	if (num_seen != 2002)
+		correct = False;
+
+	/* Ensure if we have the "must have" bits we only see the
+	 * relevent entries.
+	 */
+	num_seen = cli_list_old(&cli, "\\LISTDIR\\*", (aDIR<<8)|aDIR, list_fn, NULL);
+	printf("num_seen = %d\n", num_seen );
+	if (num_seen != 1002)
+		correct = False;
+
+	num_seen = cli_list_old(&cli, "\\LISTDIR\\*", (aARCH<<8)|aDIR, list_fn, NULL);
+	printf("num_seen = %d\n", num_seen );
+	if (num_seen != 1000)
+		correct = False;
+
+	/* Delete everything. */
+	cli_list(&cli, "\\LISTDIR\\*", 0, del_fn, &cli);
+	cli_list(&cli, "\\LISTDIR\\*", aDIR, del_fn, &cli);
+	cli_rmdir(&cli, "\\LISTDIR");
+
+#if 0
+	printf("Matched %d\n", cli_list(&cli, "a*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "b*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "xyzabc", 0, list_fn, NULL));
+#endif
+
+	if (!torture_close_connection(&cli)) {
+		correct = False;
+	}
+
+	printf("finished dirtest1\n");
 
 	return correct;
 }
@@ -3711,6 +3860,7 @@ static struct {
 	{"OPLOCK2",  run_oplock2, 0},
 	{"OPLOCK3",  run_oplock3, 0},
 	{"DIR",  run_dirtest, 0},
+	{"DIR1",  run_dirtest1, 0},
 	{"DENY1",  torture_denytest1, 0},
 	{"DENY2",  torture_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
@@ -3863,6 +4013,7 @@ static void usage(void)
 	argc--;
 	argv++;
 
+	srandom(time(NULL));
 
 	fstrcpy(workgroup, lp_workgroup());
 

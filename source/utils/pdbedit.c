@@ -508,6 +508,17 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
+	if (!*global_myname) {
+		char *p2;
+
+		pstrcpy(global_myname, myhostname());
+		p2 = strchr_m(global_myname, '.');
+		if (p2) 
+                        *p2 = 0;
+	}
+	
+	strupper(global_myname);
+
 	setparms =	(config_file ? BIT_CONFIGFILE : 0) +
 			(new_debuglevel ? BIT_DEBUGLEVEL : 0) +
 			(backend ? BIT_BACKEND : 0) +
@@ -544,7 +555,7 @@ int main (int argc, char **argv)
 	/* the lowest bit options are always accepted */
 	checkparms = setparms & ~MASK_ALWAYS_GOOD;
 
-	/* accoun tpolicy operations */
+	/* account policy operations */
 	if ((checkparms & BIT_ACCPOLICY) && !(checkparms & ~(BIT_ACCPOLICY + BIT_ACCPOLVAL))) {
 		uint32 value;
 		int field = account_policy_name_to_fieldnum(account_policy);

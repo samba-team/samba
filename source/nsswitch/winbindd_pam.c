@@ -147,7 +147,7 @@ done:
 	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authenticaion for user %s returned %s (PAM: %d)\n", 
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n", 
 	      state->request.data.auth.user, 
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
@@ -183,7 +183,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.auth_crap.domain[sizeof(state->request.data.auth_crap.domain)-1]='\0';
 
-	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for (utf8) %s", state->request.data.auth.user))) {
+	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for (utf8) %s", state->request.data.auth_crap.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -292,7 +292,7 @@ done:
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
-	      ("NTLM CRAP authenticaion for user [%s]\\[%s] returned %s (PAM: %d)\n", 
+	      ("NTLM CRAP authentication for user [%s]\\[%s] returned %s (PAM: %d)\n", 
 	       domain,
 	       user,
 	       state->response.data.auth.nt_status_string,

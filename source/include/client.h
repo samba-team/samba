@@ -60,6 +60,7 @@ struct print_job_info
 typedef struct smb_sign_info {
 	BOOL use_smb_signing;
 	BOOL negotiated_smb_signing;
+	BOOL temp_smb_signing;
 	size_t mac_key_len;
 	uint8 mac_key[44];
 	uint32 send_seq_num;

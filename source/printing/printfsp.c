@@ -46,7 +46,7 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 		fstrcat(name, p);
 	}
 
-	jobid = print_job_start(&current_user, SNUM(conn), name);
+	jobid = print_job_start(&current_user, SNUM(conn), name, NULL);
 	if (jobid == -1) {
 		file_free(fsp);
 		return NULL;

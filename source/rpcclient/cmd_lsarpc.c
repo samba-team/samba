@@ -86,15 +86,8 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 		printf("forest name is %s\n", forest_name);
 
 	if (info_class == 12) {
-		int i;
-		uint32 *data1 = (uint32 *) dom_guid.info;
-		uint16 *data2 = (uint16 *) &dom_guid.info[4];
-		uint16 *data3 = (uint16 *) &dom_guid.info[6];
-		printf("domain GUID is %08x-%04x-%04x", *data1,*data2,*data3);
-		printf("-%02x%02x-", dom_guid.info[8], dom_guid.info[9]);
-		for (i=10;i<GUID_SIZE;i++)
-			printf("%02x", dom_guid.info[i]);
-		printf("\n");
+		printf("domain GUID is ");
+		print_guid(&dom_guid);
 	}
  done:
 	return result;

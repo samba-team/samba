@@ -1233,26 +1233,23 @@ int sys_dup2(int oldfd, int newfd)
  Wrapper for Admin Logs.
 ****************************************************************************/
 
-void sys_adminlog(int priority, const char *format_str, ...)
+void sys_adminlog(int priority, char *format_str, ...)
 {
 	va_list ap;
 	int ret;
-	char **msgbuf = NULL;
-
-	if (!lp_admin_log())
-		return;
+	char *msgbuf = NULL;
 
 	va_start( ap, format_str );
-	ret = vasprintf( msgbuf, format_str, ap );
+	ret = vasprintf( &msgbuf, format_str, ap );
 	va_end( ap );
 
 	if (ret == -1)
 		return;
 
 #if defined(HAVE_SYSLOG)
-	syslog( priority, "%s", *msgbuf );
+	syslog( priority, "%s", msgbuf );
 #else
-	DEBUG(0,("%s", *msgbuf ));
+	DEBUG(0,("%s", msgbuf ));
 #endif
-	SAFE_FREE(*msgbuf);
+	SAFE_FREE(msgbuf);
 }

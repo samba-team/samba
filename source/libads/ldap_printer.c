@@ -28,7 +28,7 @@
     results can be used.  It should be freed using ads_msgfree.
 */
 ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
-				      char *printer, char *servername)
+				      const char *printer, char *servername)
 {
 	ADS_STATUS status;
 	char *srv_dn, **srv_cn, *exp;

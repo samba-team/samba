@@ -573,24 +573,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 }
 
 
-/* Print usage information */
-static void usage(void)
-{
-	printf("Usage: rpcclient [options] server\n");
-
-	printf("\t-A or --authfile authfile          File containing user credentials\n");
-	printf("\t-c or --command \"command string\"   Execute semicolon separated cmds\n");
-	printf("\t-d or --debug debuglevel           Set the debuglevel\n");
-	printf("\t-l or --logfile logfile            Logfile to use instead of stdout\n");
-	printf("\t-h or --help                       Print this help message.\n");
-	printf("\t-N or --nopass                     Don't ask for a password\n");
-	printf("\t-s or --conf configfile            Specify an alternative config file\n");
-	printf("\t-U or --user username              Set the network username\n");
-	printf("\t-W or --workgroup domain           Set the domain name for user account\n");
-	printf("\t-I or --dest-ip ip                 Specify destination IP address\n");
-	printf("\n");
-}
-
 /* Main function */
 
  int main(int argc, char *argv[])
@@ -599,7 +581,6 @@ static void usage(void)
 	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
-	int 			olddebug;
 	static char		*cmdstr = "";
 	const char *server;
 	struct cli_state	*cli;
@@ -616,40 +597,35 @@ static void usage(void)
 	struct cmd_set 		**cmd_set;
 	struct in_addr 		server_ip;
 	NTSTATUS 		nt_status;
-	extern BOOL 		AllowDebugChange;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
 	poptContext pc;
 	struct poptOption long_options[] = {
-		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A'},
-		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's'},
-		{"nopass",	'N', POPT_ARG_NONE,	&got_pass},
-		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U'},
-		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W'},
-		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
-		{"help",        'h', POPT_ARG_NONE,	0, 'h'},
-		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I'},
+		POPT_AUTOHELP
+		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A', "File containing user credentials"},
+		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's', "Specify an alternative config file"},
+		{"nopass",	'N', POPT_ARG_NONE,	&got_pass, 'N', "Don't ask for a password"},
+		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U', "Set the network username"},
+		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W', "Set the domain name for user account"},
+		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds"},
+		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
+		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL }
 	};
 
-
 	setlinebuf(stdout);
-
-	DEBUGLEVEL = 1;
-	AllowDebugChange = False;
 
 	/* Parse options */
 
-	if (argc == 1) {
-		usage();
-		return 0;
-	}
-	
 	pc = poptGetContext("rpcclient", argc, (const char **) argv,
 			    long_options, 0);
+
+	if (argc == 1) {
+		poptPrintHelp(pc, stderr, 0);
+		return 0;
+	}
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -686,7 +662,7 @@ static void usage(void)
 			break;
 		}
 		case 'I':
-		        if (!inet_aton(opt_ipaddr, &server_ip)) {
+		        if ( (server_ip.s_addr=inet_addr(opt_ipaddr)) == INADDR_NONE ) {
 				fprintf(stderr, "%s not a valid IP address\n",
 					opt_ipaddr);
 				return 1;
@@ -694,11 +670,6 @@ static void usage(void)
 		case 'W':
 			pstrcpy(domain, opt_domain);
 			break;
-			
-		case 'h':
-		default:
-			usage();
-			exit(1);
 		}
 	}
 
@@ -708,7 +679,7 @@ static void usage(void)
 	server = poptGetArg(pc);
 	
 	if (!server || poptGetArg(pc)) {
-		usage();
+		poptPrintHelp(pc, stderr, 0);
 		return 1;
 	}
 
@@ -721,12 +692,9 @@ static void usage(void)
 		reopen_logs();
 	
 	/* Load smb.conf file */
-	/* FIXME!  How to get this DEBUGLEVEL to last over lp_load()? */
-	olddebug = DEBUGLEVEL;
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False))
 		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
-	}
-	DEBUGLEVEL = olddebug;
 
 	load_interfaces();
 

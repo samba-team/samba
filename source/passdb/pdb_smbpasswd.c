@@ -1327,7 +1327,8 @@ static BOOL smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *u
  call getpwnam() for unix account information until we have found
  the correct entry
  ***************************************************************/
-static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct, const char *username)
+static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, 
+				  SAM_ACCOUNT *sam_acct, const char *username)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
@@ -1380,6 +1381,16 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 	void *fp = NULL;
 
 	DEBUG(10, ("pdb_getsampwrid: search by rid: %d\n", rid));
+
+	/* More special case 'guest account' hacks... */
+	if (rid == DOMAIN_USER_RID_GUEST) {
+		const char *guest_account = lp_guestaccount();
+		if (!(guest_account && *guest_account)) {
+			DEBUG(1, ("Guest account not specfied!\n"));
+			return False;
+		}
+		return smbpasswd_getsampwnam(my_methods, sam_acct, guest_account);
+	}
 
 	/* Open the sam password file - not for update. */
 	fp = startsmbfilepwent(smbpasswd_state->smbpasswd_file, PWF_READ, &(smbpasswd_state->pw_file_lock_depth));

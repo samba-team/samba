@@ -274,27 +274,6 @@ done:
 }
 
 /****************************************************************************
- Get_Pwnam wrapper for modification.
-  NOTE: This can potentially modify 'user'! 
-****************************************************************************/
-
-struct passwd *Get_Pwnam_Modify(fstring user)
-{
-	fstring user2;
-	struct passwd *ret;
-
-	fstrcpy(user2, user);
-
-	ret = Get_Pwnam_internals(user, user2);
-	
-	/* If caller wants the modified username, ensure they get it  */
-	fstrcpy(user,user2);
-
-	/* We can safely assume ret is NULL if none of the above succeed */
-	return(ret);  
-}
-
-/****************************************************************************
  Get_Pwnam wrapper without modification.
   NOTE: This with NOT modify 'user'! 
 ****************************************************************************/
@@ -636,39 +615,3 @@ static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(c
 	return(NULL);
 }
 
-/****************************************************************************
- These wrappers allow appliance mode to work. In appliance mode the username
- takes the form DOMAIN/user.
-****************************************************************************/
-
-struct passwd *smb_getpwnam(char *user, BOOL allow_change)
-{
-	struct passwd *pw;
-	char *p;
-	char *sep;
-	extern pstring global_myname;
-
-	if (allow_change)
-		pw = Get_Pwnam_Modify(user);
-	else
-		pw = Get_Pwnam(user);
-
-	if (pw)
-		return pw;
-
-	/*
-	 * If it is a domain qualified name and it isn't in our password
-	 * database but the domain portion matches our local machine name then
-	 * lookup just the username portion locally.
-	 */
-
-	sep = lp_winbind_separator();
-	p = strchr_m(user,*sep);
-	if (p && strncasecmp(global_myname, user, strlen(global_myname))==0) {
-		if (allow_change)
-			pw = Get_Pwnam_Modify(p+1);
-		else
-			pw = Get_Pwnam(p+1);
-	}
-	return NULL;
-}

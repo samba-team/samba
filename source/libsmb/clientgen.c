@@ -32,49 +32,48 @@ int cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
-  read an smb from a fd ignoring all keepalive packets. Note that the buffer 
-  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
-  The timeout is in milliseconds
+ Read an smb from a fd ignoring all keepalive packets. Note that the buffer 
+ *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
+ The timeout is in milliseconds
 
-  This is exactly the same as receive_smb except that it never returns
-  a session keepalive packet (just as receive_smb used to do).
-  receive_smb was changed to return keepalives as the oplock processing means this call
-  should never go into a blocking read.
+ This is exactly the same as receive_smb except that it never returns
+ a session keepalive packet (just as receive_smb used to do).
+ receive_smb was changed to return keepalives as the oplock processing means this call
+ should never go into a blocking read.
 ****************************************************************************/
 
 static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 {
-  BOOL ret;
+	BOOL ret;
 
-  for(;;)
-  {
-    ret = receive_smb(fd, buffer, timeout);
+	for(;;) {
+		ret = receive_smb(fd, buffer, timeout);
 
-    if (!ret)
-    {
-      DEBUG(10,("client_receive_smb failed\n"));
-      show_msg(buffer);
-      return ret;
-    }
+		if (!ret) {
+			DEBUG(10,("client_receive_smb failed\n"));
+			show_msg(buffer);
+			return ret;
+		}
 
-    /* Ignore session keepalive packets. */
-    if(CVAL(buffer,0) != SMBkeepalive)
-      break;
-  }
-  show_msg(buffer);
-  return ret;
+		/* Ignore session keepalive packets. */
+		if(CVAL(buffer,0) != SMBkeepalive)
+			break;
+	}
+	show_msg(buffer);
+	return ret;
 }
 
-
 /****************************************************************************
-recv an smb
+ Recv an smb.
 ****************************************************************************/
+
 BOOL cli_receive_smb(struct cli_state *cli)
 {
 	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) return False; 
+	if (cli->fd == -1)
+		return False; 
 
  again:
 	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
@@ -151,34 +150,32 @@ void cli_setup_packet(struct cli_state *cli)
 		uint16 flags2;
 		SCVAL(cli->outbuf,smb_flg,0x8);
 		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-		if (cli->capabilities & CAP_UNICODE) {
+		if (cli->capabilities & CAP_UNICODE)
 			flags2 |= FLAGS2_UNICODE_STRINGS;
-		}
-		if (cli->capabilities & CAP_STATUS32) {
+		if (cli->capabilities & CAP_STATUS32)
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-		}
-		if (cli->use_spnego) {
+		if (cli->use_spnego)
 			flags2 |= FLAGS2_EXTENDED_SECURITY;
-		}
-		if (cli->sign_info.use_smb_signing)
+		if (cli->sign_info.use_smb_signing 
+		    || cli->sign_info.temp_smb_signing)
 			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
 
 /****************************************************************************
-setup the bcc length of the packet from a pointer to the end of the data
+ Setup the bcc length of the packet from a pointer to the end of the data.
 ****************************************************************************/
+
 void cli_setup_bcc(struct cli_state *cli, void *p)
 {
 	set_message_bcc(cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
 }
 
-
-
 /****************************************************************************
-initialise credentials of a client structure
+ Initialise credentials of a client structure.
 ****************************************************************************/
+
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
         /* copy_nt_creds(&cli->usr, usr); */
@@ -193,10 +190,10 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
                cli->ntlmssp_flags,cli->ntlmssp_cli_flgs));
 }
 
-
 /****************************************************************************
-initialise a client structure
+ Initialise a client structure.
 ****************************************************************************/
+
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
         BOOL alloced_cli = False;
@@ -215,9 +212,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
                 alloced_cli = True;
 	}
 
-	if (cli->initialised) {
-		cli_shutdown(cli);
-	}
+	if (cli->initialised)
+		cli_close_connection(cli);
 
 	ZERO_STRUCTP(cli);
 
@@ -234,7 +230,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	cli->oplock_handler = cli_oplock_ack;
-	cli->use_spnego = True;
+	if (lp_use_spnego()) {
+		cli->use_spnego = True;
+	}
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
@@ -243,6 +241,10 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 		cli->force_dos_errors = True;
 	}
 
+	/* A way to attempt to force SMB signing */
+	if (getenv("CLI_FORCE_SMB_SIGNING"))
+		cli->sign_info.negotiated_smb_signing = True;
+                                   
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 
@@ -273,43 +275,75 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 }
 
 /****************************************************************************
-shutdown a client structure
+ Close a client connection and free the memory without destroying cli itself.
 ****************************************************************************/
-void cli_shutdown(struct cli_state *cli)
+
+void cli_close_connection(struct cli_state *cli)
 {
-	BOOL allocated;
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
 	data_blob_free(&cli->secblob);
 
-	if (cli->mem_ctx)
+	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);
+		cli->mem_ctx = NULL;
+	}
 
 	if (cli->fd != -1) 
 		close(cli->fd);
-	allocated = cli->allocated;
+	cli->fd = -1;
+}
+
+/****************************************************************************
+ Shutdown a client structure.
+****************************************************************************/
+
+void cli_shutdown(struct cli_state *cli)
+{
+	BOOL allocated = cli->allocated;
+	cli_close_connection(cli);
 	ZERO_STRUCTP(cli);
 	if (allocated) {
 		free(cli);
 	} 
 }
 
-
 /****************************************************************************
-set socket options on a open connection
+ Set socket options on a open connection.
 ****************************************************************************/
+
 void cli_sockopt(struct cli_state *cli, char *options)
 {
 	set_socket_options(cli->fd, options);
 }
 
 /****************************************************************************
-set the PID to use for smb messages. Return the old pid.
+ Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
+
 uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 {
 	uint16 ret = cli->pid;
 	cli->pid = pid;
 	return ret;
 }
+
+/****************************************************************************
+Send a keepalive packet to the server
+****************************************************************************/
+BOOL cli_send_keepalive(struct cli_state *cli)
+{
+        if (cli->fd == -1) {
+                DEBUG(3, ("cli_send_keepalive: fd == -1\n"));
+                return False;
+        }
+        if (!send_keepalive(cli->fd)) {
+                close(cli->fd);
+                cli->fd = -1;
+                DEBUG(0,("Error sending keepalive packet to client.\n"));
+                return False;
+        }
+        return True;
+}
+

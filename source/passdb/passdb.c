@@ -75,11 +75,19 @@ static void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	user->private.workstations = "";
 	user->private.unknown_str = "";
 	user->private.munged_dial = "";
+
+	user->private.plaintext_pw = NULL;
+
 }	
 
 static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
 {
 	if (*user) {
+		data_blob_clear_free(&((*user)->private.lm_pw));
+		data_blob_clear_free(&((*user)->private.nt_pw));
+
+		if((*user)->private.plaintext_pw!=NULL)
+			memset((*user)->private.plaintext_pw,'\0',strlen((*user)->private.plaintext_pw));
 		talloc_destroy((*user)->mem_ctx);
 		*user = NULL;
 	}
@@ -251,6 +259,15 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 							    pwd->pw_name, global_myname, 
 							    pwd->pw_uid, pwd->pw_gid), 
 				     False);
+		if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL)) {
+			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", pwd->pw_name));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		if (!pdb_set_acct_ctrl(sam_account, ACB_WSTRUST)) {
+			DEBUG(1, ("Failed to set 'trusted workstation account' flags for user %s.\n", pwd->pw_name));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 	return NT_STATUS_OK;
 }
@@ -301,7 +318,8 @@ static void pdb_free_sam_contents(SAM_ACCOUNT *user)
 
 	data_blob_clear_free(&(user->private.lm_pw));
 	data_blob_clear_free(&(user->private.nt_pw));
-	data_blob_clear_free(&(user->private.plaintext_pw));
+	if (user->private.plaintext_pw!=NULL)
+		memset(user->private.plaintext_pw,'\0',strlen(user->private.plaintext_pw));
 }
 
 
@@ -823,11 +841,14 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 		return False;
 	
 	if (pdb_getsampwsid(sam_user, psid)) {
-		*puid = pdb_get_uid(sam_user);
-		if (*puid == -1) {
+		
+		if (!(pdb_get_init_flag(sam_user) & FLAG_SAM_UID)) { 
 			pdb_free_sam(&sam_user);
 			return False;
 		}
+
+		*puid = pdb_get_uid(sam_user);
+			
 		DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
 			  (unsigned int)*puid, pdb_get_username(sam_user)));
 		pdb_free_sam(&sam_user);
@@ -982,6 +1003,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 {
 	struct passwd  *pwd = NULL;
 	SAM_ACCOUNT 	*sam_pass=NULL;
+	uint16 other_acb;
 
 	*err_str = '\0';
 	*msg_str = '\0';
@@ -1021,29 +1043,31 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	               	 	return False;
 	        	}
 		}
-		if (local_flags & LOCAL_TRUST_ACCOUNT) {
-	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST)) {
-	                	slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
-	                	pdb_free_sam(&sam_pass);
-	                	return False;
-	        	}
-		} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
-	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST)) {
-	                	slprintf(err_str, err_str_len - 1, "Failed to set 'domain trust account' flags for user %s.\n", user_name);
-	                	pdb_free_sam(&sam_pass);
-	                	return False;
-	        	}
-		} else {
-	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL)) {
-	                	slprintf(err_str, err_str_len - 1, "Failed to set 'normal account' flags for user %s.\n", user_name);
-	               	 	pdb_free_sam(&sam_pass);
-	               	 	return False;
-	        	}
-		}
-
 	} else {
 		/* the entry already existed */
 		local_flags &= ~LOCAL_ADD_USER;
+	}
+
+	/* the 'other' acb bits not being changed here */
+	other_acb =  (pdb_get_acct_ctrl(sam_pass) & (!(ACB_WSTRUST|ACB_DOMTRUST|ACB_SVRTRUST|ACB_NORMAL)));
+	if (local_flags & LOCAL_TRUST_ACCOUNT) {
+		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb) ) {
+			slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
+			pdb_free_sam(&sam_pass);
+			return False;
+		}
+	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
+		if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST | other_acb)) {
+			slprintf(err_str, err_str_len - 1, "Failed to set 'domain trust account' flags for user %s.\n", user_name);
+			pdb_free_sam(&sam_pass);
+			return False;
+		}
+	} else {
+		if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL | other_acb)) {
+			slprintf(err_str, err_str_len - 1, "Failed to set 'normal account' flags for user %s.\n", user_name);
+			pdb_free_sam(&sam_pass);
+			return False;
+		}
 	}
 
 	/*

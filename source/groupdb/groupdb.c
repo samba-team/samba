@@ -39,9 +39,7 @@ BOOL initialise_group_db(void)
     return True;
   }
 
-#ifdef WITH_NISPLUS
-  gpdb_ops =  nisplus_initialise_group_db();
-#elif defined(WITH_LDAP)
+#ifdef WITH_LDAP
   gpdb_ops = ldap_initialise_group_db();
 #else 
   gpdb_ops = file_initialise_group_db();

@@ -232,6 +232,7 @@
 #undef MMAP_BLACKLIST
 #undef HAVE_IMMEDIATE_STRUCTURES
 #undef HAVE_CUPS
+#undef WITH_SAM
 #undef WITH_LDAP_SAM
 #undef WITH_NISPLUS_SAM
 #undef WITH_TDB_SAM
@@ -252,6 +253,7 @@
 #undef HAVE_LDAP
 #undef HAVE_STAT_ST_BLOCKS
 #undef STAT_ST_BLOCKSIZE
+#undef HAVE_STAT_ST_BLKSIZE
 #undef HAVE_DEVICE_MAJOR_FN
 #undef HAVE_DEVICE_MINOR_FN
 #undef HAVE_PASSWD_PW_COMMENT
@@ -286,6 +288,14 @@
 #endif
 
 #undef LDAP_SET_REBIND_PROC_ARGS
+#undef HAVE_SENDFILE
+#undef HAVE_SENDFILE64
+#undef LINUX_SENDFILE_API
+#undef LINUX_BROKEN_SENDFILE_API
+#undef WITH_SENDFILE
+#undef FREEBSD_SENDFILE_API
+#undef HPUX_SENDFILE_API
+#undef WITH_ADS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -1088,6 +1098,9 @@
 /* Define if you have the <sys/syscall.h> header file.  */
 #undef HAVE_SYS_SYSCALL_H
 
+/* Define if you have the <sys/syslog.h> header file.  */
+#undef HAVE_SYS_SYSLOG_H
+
 /* Define if you have the <sys/termio.h> header file.  */
 #undef HAVE_SYS_TERMIO_H
 
@@ -1105,6 +1118,9 @@
 
 /* Define if you have the <syscall.h> header file.  */
 #undef HAVE_SYSCALL_H
+
+/* Define if you have the <syslog.h> header file.  */
+#undef HAVE_SYSLOG_H
 
 /* Define if you have the <termio.h> header file.  */
 #undef HAVE_TERMIO_H

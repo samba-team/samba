@@ -297,8 +297,13 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 		case 'L' : 
 			if (local_machine_name && *local_machine_name)
 				string_sub(p,"%L", local_machine_name,l); 
-			else
-				string_sub(p,"%L", global_myname,l); 
+			else {
+				pstring temp_name;
+
+				pstrcpy(temp_name, global_myname);
+				strlower(temp_name);
+				string_sub(p,"%L", temp_name,l); 
+			}
 			break;
 		case 'M' :
 			string_sub(p,"%M", client_name(),l);
@@ -673,6 +678,19 @@ void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 {
 	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
 			conn->gid, current_user_info.smb_name, str, len);
+}
+
+char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, char *str)
+{
+	return talloc_sub_advanced(mem_ctx, SNUM(conn), conn->user,
+			conn->connectpath, conn->gid,
+			current_user_info.smb_name, str);
+}
+
+char *alloc_sub_conn(connection_struct *conn, char *str)
+{
+	return alloc_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
+			conn->gid, current_user_info.smb_name, str);
 }
 
 /****************************************************************************

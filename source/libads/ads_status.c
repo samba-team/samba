@@ -30,9 +30,36 @@ ADS_STATUS ads_build_error(enum ads_error_type etype,
 			   int rc, int minor_status)
 {
 	ADS_STATUS ret;
-	ret.error_type = etype;
-	ret.rc = rc;
+
+	if (etype == ADS_ERROR_NT) {
+		DEBUG(0,("don't use ads_build_error with ADS_ERROR_NT!\n"));
+		ret.err.rc = -1;
+		ret.error_type = ADS_ERROR_SYSTEM;
+		ret.minor_status = 0;
+		return ret;	
+	}	
+		
+	ret.err.rc = rc;
+	ret.error_type = etype;		
 	ret.minor_status = minor_status;
+	return ret;
+}
+
+ADS_STATUS ads_build_nt_error(enum ads_error_type etype, 
+			   NTSTATUS nt_status)
+{
+	ADS_STATUS ret;
+
+	if (etype != ADS_ERROR_NT) {
+		DEBUG(0,("don't use ads_build_nt_error without ADS_ERROR_NT!\n"));
+		ret.err.rc = -1;
+		ret.error_type = ADS_ERROR_SYSTEM;
+		ret.minor_status = 0;
+		return ret;	
+	}
+	ret.err.nt_status = nt_status;
+	ret.error_type = etype;		
+	ret.minor_status = 0;
 	return ret;
 }
 
@@ -40,9 +67,12 @@ ADS_STATUS ads_build_error(enum ads_error_type etype,
   do a rough conversion between ads error codes and NT status codes
   we'll need to fill this in more
 */
-NTSTATUS ads_ntstatus(ADS_STATUS rc)
+NTSTATUS ads_ntstatus(ADS_STATUS status)
 {
-	if (ADS_ERR_OK(rc)) return NT_STATUS_OK;
+	if (status.error_type == ADS_ERROR_NT){
+		return status.err.nt_status;	
+	}
+	if (ADS_ERR_OK(status)) return NT_STATUS_OK;
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -59,14 +89,14 @@ const char *ads_errstr(ADS_STATUS status)
 
 	switch (status.error_type) {
 	case ADS_ERROR_SYSTEM:
-		return strerror(status.rc);
+		return strerror(status.err.rc);
 #ifdef HAVE_LDAP
 	case ADS_ERROR_LDAP:
-		return ldap_err2string(status.rc);
+		return ldap_err2string(status.err.rc);
 #endif
 #ifdef HAVE_KRB5
 	case ADS_ERROR_KRB5: 
-		return error_message(status.rc);
+		return error_message(status.err.rc);
 #endif
 #ifdef HAVE_GSSAPI
 	case ADS_ERROR_GSS:
@@ -76,7 +106,7 @@ const char *ads_errstr(ADS_STATUS status)
 		gss_buffer_desc msg1, msg2;
 		msg1.value = NULL;
 		msg2.value = NULL;
-		gss_display_status(&minor, status.rc, GSS_C_GSS_CODE,
+		gss_display_status(&minor, status.err.rc, GSS_C_GSS_CODE,
 				   GSS_C_NULL_OID, &msg_ctx, &msg1);
 		gss_display_status(&minor, status.minor_status, GSS_C_MECH_CODE,
 				   GSS_C_NULL_OID, &msg_ctx, &msg2);
@@ -86,6 +116,8 @@ const char *ads_errstr(ADS_STATUS status)
 		return ret;
 	}
 #endif
+	case ADS_ERROR_NT: 
+		return nt_errstr(ads_ntstatus(status));
 	default:
 		return "Unknown ADS error type!? (not compiled in?)";
 	}

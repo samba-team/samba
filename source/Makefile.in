@@ -18,9 +18,11 @@ LDFLAGS=@LDFLAGS@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
 DYNEXP=@DYNEXP@
+PYTHON=@PYTHON@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
+PRINTLIBS=@PRINTLIBS@
 
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
@@ -106,7 +108,7 @@ LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
 
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/pdbedit bin/smbgroupedit
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest \
-	bin/locktest2 bin/nsstest
+	bin/locktest2 bin/nsstest bin/vfstest
 SHLIBS = @LIBSMBCLIENT@
 
 SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd \
@@ -124,7 +126,7 @@ TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o
 LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
           lib/interfaces.o lib/pidfile.o lib/replace.o \
-          lib/signal.o lib/system.o lib/time.o \
+          lib/signal.o lib/system.o lib/sendfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_getent.o lib/util_pw.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o lib/dprintf.o \
@@ -134,11 +136,11 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
-	  lib/server_mutex.o lib/tallocmsg.o lib/dmallocmsg.o \
+	  lib/tallocmsg.o lib/dmallocmsg.o \
 	  lib/md5.o lib/hmacmd5.o lib/iconv.o lib/smbpasswd.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
-	  lib/adt_tree.o lib/popt_common.o $(TDB_OBJ) 
+	  lib/adt_tree.o lib/popt_common.o lib/gencache.o $(TDB_OBJ) 
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
 
@@ -152,7 +154,7 @@ PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/kerberos.o libads/ldap_user.o \
 	     libads/ads_struct.o libads/ads_status.o \
-             libads/disp_sec.o
+             libads/disp_sec.o libads/ads_utils.o
 
 LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
 
@@ -180,8 +182,9 @@ LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
 
+REGOBJS_OBJ = registry/reg_objects.o
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
-               registry/reg_db.o
+               registry/reg_db.o 
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
@@ -190,7 +193,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
 		 rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o $(REGISTRY_OBJ)
+                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -201,7 +204,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o \
-		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o
+		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
+		$(REGOBJS_OBJ)
 
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
@@ -213,8 +217,15 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 		passdb/pdb_tdb.o passdb/pdb_ldap.o passdb/pdb_plugin.o \
-		passdb/pdb_nisplus.o passdb/pdb_unix.o passdb/util_sam_sid.o \
-		passdb/pdb_compat.o
+		passdb/pdb_unix.o passdb/util_sam_sid.o \
+		passdb/pdb_compat.o passdb/pdb_nisplus.o
+
+SAM_STATIC_MODULES = sam/sam_plugin.o
+
+SAM_OBJ = sam/account.o sam/get_set_account.o sam/get_set_group.o \
+		sam/get_set_domain.o sam/interface.o sam/api.o $(SAM_STATIC_MODULES)
+
+SAMTEST_OBJ = torture/samtest.o torture/cmd_sam.o $(SAM_OBJ) $(LIB_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(READLINE_OBJ) lib/util_seaccess.o $(LIBADS_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(GROUPDB_OBJ)
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -232,25 +243,37 @@ UNIGRP_OBJ = libsmb/netlogon_unigrp.o
 
 AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
 	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
-	   auth/auth_builtin.o auth/auth_compat.o $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
+	   auth/auth_builtin.o auth/auth_compat.o \
+	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
 
-SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
-	    smbd/utmp.o smbd/session.o \
-            smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
-            smbd/ipc.o smbd/lanman.o smbd/negprot.o \
-            smbd/message.o smbd/nttrans.o smbd/pipes.o \
-            smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
-	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
-	    smbd/blocking.o smbd/sec_ctx.o \
-	    smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
-            smbd/posix_acls.o lib/sysacls.o \
-	    smbd/process.o smbd/service.o smbd/error.o \
-	    printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o \
-            smbd/build_options.o \
-	    smbd/change_trust_pw.o \
-	    $(MANGLE_OBJ)
+SMBD_OBJ_MAIN = smbd/server.o
+
+SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
+	       smbd/utmp.o smbd/session.o \
+               smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
+               smbd/ipc.o smbd/lanman.o smbd/negprot.o \
+               smbd/message.o smbd/nttrans.o smbd/pipes.o \
+               smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
+	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
+	       smbd/blocking.o smbd/sec_ctx.o \
+	       smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
+               smbd/posix_acls.o lib/sysacls.o lib/server_mutex.o \
+	       smbd/process.o smbd/service.o smbd/error.o \
+	       printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o \
+               smbd/build_options.o \
+	       smbd/change_trust_pw.o \
+	       $(MANGLE_OBJ)
+
+SMBD_OBJ_BASE = $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
+		$(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
+		$(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
+		$(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
+		$(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
+		$(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
+		$(LIB_SMBD_OBJ) $(REGISTRY_OBJ)
 
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
@@ -261,15 +284,7 @@ PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
-SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
-           $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
-           $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
-	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
-	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
-	   $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
-	   $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
-	   $(LIB_SMBD_OBJ)
-
+SMBD_OBJ = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -343,13 +358,6 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(READLINE_OBJ) $(GROUPDB_OBJ) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ)
 
-SAMSYNC_OBJ1 = rpcclient/samsync.o rpcclient/display_sec.o
-
-SAMSYNC_OBJ = $(SAMSYNC_OBJ1) \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-             $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
-             $(GROUPDB_OBJ) $(SECRETS_OBJ)
-
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.po
 
 SMBW_OBJ1 = smbwrapper/smbw.o \
@@ -373,12 +381,13 @@ CLIENT_OBJ1 = client/client.o client/clitar.o
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(READLINE_OBJ) 
 
-NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
-	   utils/net_rap.o utils/net_rpc.o \
-	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o
+NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
+	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
+	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
+	   utils/net_cache.o
 
 NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
-	  $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
+	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 	  $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
@@ -414,6 +423,8 @@ LOCKTEST_OBJ = torture/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
 NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
+VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
+
 LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -438,15 +449,16 @@ DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
 SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
-PROTO_OBJ = $(SMBD_OBJ1) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
-	    $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
+PROTO_OBJ = $(SMBD_OBJ_MAIN) \
+	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
+	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) \
 	    $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
 	    $(QUOTAOBJS) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
-	    $(LIB_SMBD_OBJ) 
+	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
 	    $(LIB_OBJ) $(NSSWINS_OBJ)
@@ -486,7 +498,7 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ)
+		$(SECRETS_OBJ) $(LIBADS_OBJ) 
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o
 
@@ -534,7 +546,7 @@ nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 wins : SHOWFLAGS nsswitch/libnss_wins.so
 
-everything: all libsmbclient debug2html smbfilter talloctort bin/samsync bin/make_printerdef
+everything: all libsmbclient debug2html smbfilter talloctort bin/make_printerdef
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -605,7 +617,7 @@ bin/.dummy:
 
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) $(LIBS) 
 
 bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -617,15 +629,11 @@ bin/wrepld: $(WREPL_OBJ) bin/.dummy
 
 bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) $(LIBS) 
 
 bin/rpcclient: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
-
-bin/samsync: $(SAMSYNC_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMSYNC_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
 bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -657,7 +665,7 @@ bin/testparm: $(TESTPARM_OBJ) bin/.dummy
 
 bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(PRINTLIBS) $(LIBS)
 
 bin/smbstatus: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -678,6 +686,10 @@ bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
+
+bin/samtest: $(SAMTEST_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/smbgroupedit: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -718,6 +730,10 @@ bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
 bin/nsstest: $(NSSTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/vfstest: $(VFSTEST_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(LIBS) @BUILD_POPT@
 
 bin/locktest2: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
@@ -802,10 +818,6 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 	-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
 
-bin/spamsync: rpcclient/samsync.o bin/libmsrpc.a
-	@$(LINK) -o $@ rpcclient/samsync.o bin/libmsrpc.a \
-		$(UBIQX_OBJ) $(LIBS)
-
 bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
@@ -835,6 +847,53 @@ installclientlib:
 	-$(INSTALLCMD) bin/libsmbclient.so ${prefix}/lib
 	-$(INSTALLCMD) -d ${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
+
+# Python extensions
+
+PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
+	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ)
+
+PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o \
+		python/py_spoolss_printers.o python/py_spoolss_printers_conv.o\
+		python/py_spoolss_forms.o python/py_spoolss_forms_conv.o \
+		python/py_spoolss_ports.o python/py_spoolss_ports_conv.o \
+		python/py_spoolss_drivers.o python/py_spoolss_drivers_conv.o \
+		python/py_spoolss_jobs.o python/py_spoolss_jobs_conv.o \
+		python/py_spoolss_printerdata.o
+
+PY_LSA_PROTO_OBJ = python/py_lsa.o
+
+PY_COMMON_PROTO_OBJ = python/py_common.c python/py_ntsec.c
+
+python_proto: python_spoolss_proto python_lsa_proto python_common_proto
+
+python_spoolss_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+		-h _PY_SPOOLSS_PROTO_H python/py_spoolss_proto.h \
+		$(PY_SPOOLSS_PROTO_OBJ)
+
+python_lsa_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+		-h _PY_LSA_PROTO_H python/py_lsa_proto.h \
+		$(PY_LSA_PROTO_OBJ)
+
+python_common_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+		-h _PY_COMMON_PROTO_H python/py_common_proto.h \
+		$(PY_COMMON_PROTO_OBJ)
+
+python_ext: $(PYTHON_OBJS)
+	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
+	LIBS="$(LIBS)" \
+		$(PYTHON) python/setup.py build
+
+python_install: $(PYTHON_OBJS)
+	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+	LIBS="$(LIBS)" \
+		$(PYTHON) python/setup.py install
+
+python_clean:
+	@if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
 
 # revert to the previously installed version
 revert:
@@ -871,9 +930,9 @@ uninstallscripts:
 # Toplevel clean files
 TOPFILES=dynconfig.o dynconfig.po
 
-clean: delheaders
+clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-	$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
+		$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
@@ -949,7 +1008,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
-realclean: clean
+realclean: clean delheaders
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
 	-rmdir bin
 

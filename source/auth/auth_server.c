@@ -285,7 +285,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 * need to detect this as some versions of NT4.x are broken. JRA.
 	 */
 
-	/* I sure as hell hope that there arn't servers out there that take 
+	/* I sure as hell hope that there aren't servers out there that take 
 	 * NTLMv2 and have this bug, as we don't test for that... 
 	 *  - abartlet@samba.org
 	 */
@@ -375,9 +375,7 @@ use this machine as the password server.\n"));
 	if NT_STATUS_IS_OK(nt_status) {
 		struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
 		if (pass) {
-			if (!make_server_info_pw(server_info, pass)) { 
-				nt_status = NT_STATUS_NO_MEMORY;
-			}
+			nt_status = make_server_info_pw(server_info, pass);
 		} else {
 			nt_status = NT_STATUS_NO_SUCH_USER;
 		}

@@ -68,7 +68,7 @@ void *secrets_fetch(const char *key, size_t *size)
 
 /* store a secrets entry 
  */
-BOOL secrets_store(const char *key, void *data, size_t size)
+BOOL secrets_store(const char *key, const void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
 	secrets_init();
@@ -95,7 +95,7 @@ BOOL secrets_delete(const char *key)
 	return tdb_delete(tdb, kbuf) == 0;
 }
 
-BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
+BOOL secrets_store_domain_sid(char *domain, const DOM_SID *sid)
 {
 	fstring key;
 
@@ -148,7 +148,7 @@ BOOL secrets_fetch_domain_guid(char *domain, GUID *guid)
 	strupper(key);
 	dyn_guid = (GUID *)secrets_fetch(key, &size);
 
-	DEBUG(6,("key is %s, guid is at %x, size is %d\n", key, dyn_guid, size));
+	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
 
 	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
 		uuid_generate_random(&new_guid);
@@ -206,8 +206,27 @@ char *trustdom_keystr(const char *domain)
 }
 
 /************************************************************************
- Routine to get the machine trust account password for a domain.
+ Lock the trust password entry.
 ************************************************************************/
+
+BOOL secrets_lock_trust_account_password(char *domain, BOOL dolock)
+{
+	if (!tdb)
+		return False;
+
+	if (dolock)
+		return (tdb_lock_bystring(tdb, trust_keystr(domain)) == 0);
+	else
+		tdb_unlock_bystring(tdb, trust_keystr(domain));
+	return True;
+}
+
+/************************************************************************
+ Routine to get the trust account password for a domain.
+ The user of this function must have locked the trust password file using
+ the above call.
+************************************************************************/
+
 BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time)
 {
@@ -243,6 +262,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 /************************************************************************
  Routine to get account password to trusted domain
 ************************************************************************/
+
 BOOL secrets_fetch_trusted_domain_password(char *domain, char** pwd,
 					   DOM_SID *sid, time_t *pass_last_set_time)
 {
@@ -559,3 +579,69 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 	return status;
 }
 
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
+/*
+  lock the secrets tdb based on a string - this is used as a primitive form of mutex
+  between smbd instances. 
+*/
+BOOL secrets_named_mutex(const char *name, unsigned int timeout)
+{
+	TDB_DATA key;
+	int ret;
+
+	if (!message_init())
+		return False;
+
+	key.dptr = (char *)name;
+	key.dsize = strlen(name)+1;
+
+	/* Allow tdb_chainlock to be interrupted by an alarm. */
+	gotalarm = 0;
+	tdb_set_lock_alarm(&gotalarm);
+
+	if (timeout) {
+		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		alarm(timeout);
+	}
+
+	ret = tdb_chainlock(tdb, key);
+
+	/* Prevent tdb_chainlock from being interrupted by an alarm. */
+	tdb_set_lock_alarm(NULL);
+
+	if (timeout) {
+		alarm(0);
+		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		if (gotalarm)
+			return False;
+	}
+
+	if (ret == 0)
+		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
+
+	return (ret == 0);
+}
+
+/*
+  unlock a named mutex
+*/
+void secrets_named_mutex_release(char *name)
+{
+	TDB_DATA key;
+
+	key.dptr = name;
+	key.dsize = strlen(name)+1;
+
+	tdb_chainunlock(tdb, key);
+	DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
+}

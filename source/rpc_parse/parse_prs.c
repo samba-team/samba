@@ -1061,7 +1061,9 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 
 		len++;
 
-		dump_data(5+depth, (char *)start, len * 2);
+		DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+		print_asc(5, (unsigned char*)start, 2*len);	
+		DEBUG(5, ("\n"));
 	}
 	else { /* unmarshalling */
 	
@@ -1114,6 +1116,10 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 			/* NULL terminate the UNISTR */
 			str->buffer[len++] = '\0';
 		}
+
+		DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+		print_asc(5, (unsigned char*)str->buffer, 2*len);	
+		DEBUG(5, ("\n"));
 	}
 
 	/* set the offset in the prs_struct; 'len' points to the

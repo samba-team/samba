@@ -153,8 +153,10 @@ static const char *default_classname_table[] = {
 	"rpc_srv",           /* DBGC_RPC_SRV      */
 	"rpc_cli",           /* DBGC_RPC_CLI      */
 	"passdb",            /* DBGC_PASSDB       */
+	"sam",               /* DBGC_SAM          */
 	"auth",              /* DBGC_AUTH         */
 	"winbind",           /* DBGC_WINBIND      */
+	"vfs",		     /* DBGC_VFS	  */
 	NULL
 };
 
@@ -350,7 +352,7 @@ int debug_lookup_classname(const char *classname)
 
 
 /****************************************************************************
-dump the current registered denug levels
+dump the current registered debug levels
 ****************************************************************************/
 static void debug_dump_status(int level)
 {
@@ -371,8 +373,7 @@ static void debug_dump_status(int level)
 parse the debug levels from smbcontrol. Example debug level parameter:
   printdrivers:7
 ****************************************************************************/
-BOOL debug_parse_params(char **params, int *debuglevel_class,
-			BOOL *debuglevel_class_isset)
+static BOOL debug_parse_params(char **params)
 {
 	int   i, ndx;
 	char *class_name;
@@ -385,8 +386,8 @@ BOOL debug_parse_params(char **params, int *debuglevel_class,
 	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL 
 	 */
 	if (isdigit((int)params[0][0])) {
-		debuglevel_class[DBGC_ALL] = atoi(params[0]);
-		debuglevel_class_isset[DBGC_ALL] = True;
+		DEBUGLEVEL_CLASS[DBGC_ALL] = atoi(params[0]);
+		DEBUGLEVEL_CLASS_ISSET[DBGC_ALL] = True;
 		i = 1; /* start processing at the next params */
 	}
 	else
@@ -397,8 +398,8 @@ BOOL debug_parse_params(char **params, int *debuglevel_class,
 		if ((class_name=strtok(params[i],":")) &&
 			(class_level=strtok(NULL, "\0")) &&
             ((ndx = debug_lookup_classname(class_name)) != -1)) {
-				debuglevel_class[ndx] = atoi(class_level);
-				debuglevel_class_isset[ndx] = True;
+				DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
+				DEBUGLEVEL_CLASS_ISSET[ndx] = True;
 		} else {
 			DEBUG(0,("debug_parse_params: unrecognized debug class name or format [%s]\n", params[i]));
 			return False;
@@ -425,8 +426,7 @@ BOOL debug_parse_levels(const char *params_str)
 
 	params = str_list_make(params_str, NULL);
 
-	if (debug_parse_params(params, DEBUGLEVEL_CLASS,
-			       DEBUGLEVEL_CLASS_ISSET))
+	if (debug_parse_params(params))
 	{
 		debug_dump_status(5);
 		str_list_free(&params);

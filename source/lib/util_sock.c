@@ -871,7 +871,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	
 	/* Look up the host address in the address list we just got. */
 	for (i = 0; hp->h_addr_list[i]; i++) {
-		if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr)) == 0)
+		if (memcmp(hp->h_addr_list[i], (char *) & addr, sizeof(addr)) == 0)
 			return True;
 	}
 	
@@ -976,6 +976,7 @@ int create_pipe_sock(const char *socket_dir,
 		     const char *socket_name,
 		     mode_t dir_perms)
 {
+#ifdef HAVE_UNIXSOCKET
         struct sockaddr_un sunaddr;
         struct stat st;
         int sock;
@@ -1064,6 +1065,10 @@ int create_pipe_sock(const char *socket_dir,
         /* Success! */
         
         return sock;
+#else
+        DEBUG(0, ("create_pipe_sock: No Unix sockets on this system\n"));
+        return -1;
+#endif /* HAVE_UNIXSOCKET */
 }
 
 /*******************************************************************

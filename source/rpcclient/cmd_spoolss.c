@@ -313,15 +313,22 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 	uint32			info_level = 1;
 	PRINTER_INFO_CTR	ctr;
 	uint32			i = 0, num_printers, needed;
+	fstring name;
 
-	if (argc > 2) 
+	if (argc > 3) 
 	{
-		printf("Usage: %s [level]\n", argv[0]);
+		printf("Usage: %s [level] [name]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc == 2) {
+	if (argc == 2)
 		info_level = atoi(argv[1]);
+
+	if (argc == 3)
+		fstrcpy(name, argv[2]);
+	else {
+		slprintf(name, sizeof(name)-1, "\\\\%s", cli->desthost);
+		strupper(name);
 	}
 
 	/* Enumerate printers  -- Should we enumerate types other 
@@ -330,12 +337,12 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 	ZERO_STRUCT(ctr);
 
 	result = cli_spoolss_enum_printers(
-		cli, mem_ctx, 0, &needed, PRINTER_ENUM_LOCAL, 
+		cli, mem_ctx, 0, &needed, name, PRINTER_ENUM_LOCAL, 
 		info_level, &num_printers, &ctr);
 
 	if (W_ERROR_V(result) == ERRinsufficientbuffer)
 		result = cli_spoolss_enum_printers(
-			cli, mem_ctx, needed, NULL, PRINTER_ENUM_LOCAL, 
+			cli, mem_ctx, needed, NULL, name, PRINTER_ENUM_LOCAL, 
 			info_level, &num_printers, &ctr);
 
 	if (W_ERROR_IS_OK(result)) {
@@ -1613,7 +1620,8 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
 	POLICY_HND pol;
 	BOOL opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
-	PRINTER_INFO_0 *info = NULL;
+	PRINTER_INFO_0 info;
+	REGISTRY_VALUE value;
 
 	/* parse the command arguements */
 	if (argc != 4) {
@@ -1635,6 +1643,8 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
 
 	opened_hnd = True;
 
+	ctr.printers_0 = &info;
+
         result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
                                         &pol, 0, &ctr);
 
@@ -1645,13 +1655,16 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
                 goto done;
 		
 	printf("%s\n", timestring(True));
-	printf("\tchange_id (before set)\t:[0x%x]\n", info->change_id);
+	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
 
 	/* Set the printer data */
 	
-	result = cli_spoolss_setprinterdata(
-		cli, mem_ctx, &pol, argv[2], REG_SZ, argv[3], 
-		strlen(argv[3]) + 1);
+	fstrcpy(value.valuename, argv[2]);
+	value.type = REG_SZ;
+	value.size = strlen(argv[3]) + 1;
+	value.data_p = talloc_memdup(mem_ctx, argv[3], value.size);
+
+	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, &value);
 		
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to set [%s=%s]!\n", argv[2], argv[3]);
@@ -1668,7 +1681,7 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
                 goto done;
 		
 	printf("%s\n", timestring(True));
-	printf("\tchange_id (after set)\t:[0x%x]\n", info->change_id);
+	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
 
 done:
 	/* cleanup */
@@ -1778,10 +1791,10 @@ static NTSTATUS cmd_spoolss_enum_jobs(struct cli_state *cli,
 	for (i = 0; i < num_jobs; i++) {
 		switch(level) {
 		case 1:
-			display_job_info_1(ctr.job.job_info_1[i]);
+			display_job_info_1(&ctr.job.job_info_1[i]);
 			break;
 		case 2:
-			display_job_info_2(ctr.job.job_info_2[i]);
+			display_job_info_2(&ctr.job.job_info_2[i]);
 			break;
 		default:
 			d_printf("unknown info level %d\n", level);

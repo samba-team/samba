@@ -49,6 +49,7 @@ int net_rpc_join_ok(const char *domain)
 	int retval = 1;
 	uint32 channel;
 	NTSTATUS result;
+	uint32 neg_flags = 0x000001ff;
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
@@ -75,7 +76,7 @@ int net_rpc_join_ok(const char *domain)
 
 	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
 					 channel,
-					 stored_md4_trust_password),
+					 stored_md4_trust_password, &neg_flags, 2),
 			  "error in domain join verification");
 	
 	retval = 0;		/* Success! */

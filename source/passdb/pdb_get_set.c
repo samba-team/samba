@@ -151,7 +151,7 @@ const uint8* pdb_get_lanman_passwd (const SAM_ACCOUNT *sampass)
 const char* pdb_get_plaintext_passwd (const SAM_ACCOUNT *sampass)
 {
 	if (sampass) {
-		return ((char*)sampass->private.plaintext_pw.data);
+		return (sampass->private.plaintext_pw);
 	}
 	else
 		return (NULL);
@@ -956,14 +956,24 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[16])
  below)
  ********************************************************************/
 
-BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const uint8 *password, size_t len)
+BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const char *password)
 {
 	if (!sampass)
 		return False;
 
-	data_blob_clear_free(&sampass->private.plaintext_pw);
-	
-	sampass->private.plaintext_pw = data_blob(password, len);
+	if (password) { 
+		if (sampass->private.plaintext_pw!=NULL) 
+			memset(sampass->private.plaintext_pw,'\0',strlen(sampass->private.plaintext_pw)+1);
+		sampass->private.plaintext_pw = talloc_strdup(sampass->mem_ctx, password);
+		
+		if (!sampass->private.plaintext_pw) {
+			DEBUG(0, ("pdb_set_unknown_str: talloc_strdup() failed!\n"));
+			return False;
+		}
+
+	} else {
+		sampass->private.plaintext_pw = NULL;
+	}
 
 	return True;
 }
@@ -1062,7 +1072,10 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 
 	if (!pdb_set_lanman_passwd (sampass, new_lanman_p16)) 
 		return False;
-	
+
+	if (!pdb_set_plaintext_pw_only (sampass, plaintext)) 
+		return False;
+
 	if (!pdb_set_pass_changed_now (sampass))
 		return False;
 

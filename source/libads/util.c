@@ -40,7 +40,7 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
     asprintf(&service_principal, "HOST/%s", host_principal);
     
     ret = kerberos_set_password(ads->auth.kdc_server, host_principal, password, 
-				service_principal, new_password);
+				service_principal, new_password, ads->auth.time_offset);
 
     if (!secrets_store_machine_password(new_password)) {
 	    DEBUG(1,("Failed to save machine password\n"));

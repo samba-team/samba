@@ -30,18 +30,25 @@ extern int global_oplock_break;
 extern uint32 global_client_caps;
 extern pstring global_myname;
 
-/* given a stat buffer return the allocated size on disk, taking into
-   account sparse files */
-SMB_OFF_T get_allocation_size(SMB_STRUCT_STAT *sbuf)
-{
-	SMB_OFF_T ret;
-	ret = sbuf->st_blksize * (SMB_OFF_T)sbuf->st_blocks;
-	ret = SMB_ROUNDUP_ALLOCATION(ret);
-	return ret;
-}
-
 #define get_file_size(sbuf) (sbuf.st_size)
 
+/* given a stat buffer return the allocated size on disk, taking into
+   account sparse files */
+SMB_OFF_T get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+{
+	SMB_OFF_T ret;
+#if defined(HAVE_STAT_ST_BLKSIZE) && defined(HAVE_STAT_ST_BLOCKS)
+	ret = sbuf->st_blksize * (SMB_OFF_T)sbuf->st_blocks;
+#elif defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+	ret = (SMB_OFF_T)STAT_ST_BLOCKSIZE * (SMB_OFF_T)sbuf->st_blocks;
+#else
+	ret = get_file_size(*sbuf);
+#endif
+	if (!ret && fsp && fsp->initial_allocation_size)
+		ret = fsp->initial_allocation_size;
+	ret = SMB_ROUNDUP(ret,SMB_ROUNDUP_ALLOCATION_SIZE);
+	return ret;
+}
 
 /****************************************************************************
   Send the required number of replies back.
@@ -579,7 +586,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 
 			file_size = get_file_size(sbuf);
-			allocation_size = get_allocation_size(&sbuf);
+			allocation_size = get_allocation_size(NULL,&sbuf);
 			mdate = sbuf.st_mtime;
 			adate = sbuf.st_atime;
 			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
@@ -660,6 +667,11 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,nt_extmode); p += 4;
 			q = p; p += 4;
 			SIVAL(p,0,0); p += 4;
+			/* Clear the short name buffer. This is
+			 * IMPORTANT as not doing so will trigger
+			 * a Win2k client bug. JRA.
+			 */
+			memset(p,'\0',26);
 			if (!was_8_3) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
@@ -751,12 +763,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,get_file_size(sbuf));             /* File size 64 Bit */
 			p+= 8;
 
-#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-			SOFF_T(p,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
-#else
-			/* Can't get the value - fake it using size. */
-			SOFF_T(p,0,get_file_size(sbuf));             /* Number of bytes used on disk - 64 Bit */
-#endif
+			SOFF_T(p,0,get_allocation_size(NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			p+= 8;
 
 			put_long_date(p,sbuf.st_ctime);       /* Creation Time 64 Bit */
@@ -899,7 +906,11 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 
 	p = strrchr_m(directory,'/');
 	if(p == NULL) {
-		pstrcpy(mask,directory);
+		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
+		if((directory[0] == '.') && (directory[1] == '\0'))
+			pstrcpy(mask,"*");
+		else
+			pstrcpy(mask,directory);
 		pstrcpy(directory,"./");
 	} else {
 		pstrcpy(mask,p+1);
@@ -1554,12 +1565,16 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	BOOL delete_pending = False;
 	int len;
 	time_t c_time;
+	files_struct *fsp = NULL;
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 
 	if (tran_call == TRANSACT2_QFILEINFO) {
-		files_struct *fsp = file_fsp(params,0);
+		if (total_params < 4)
+			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
+		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
@@ -1657,7 +1672,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	mode = dos_mode(conn,fname,&sbuf);
 	fullpathname = fname;
 	file_size = get_file_size(sbuf);
-	allocation_size = get_allocation_size(&sbuf);
+	allocation_size = get_allocation_size(fsp,&sbuf);
 	if (mode & aDIR)
 		file_size = 0;
 
@@ -1842,7 +1857,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_INTERNAL_INFORMATION:
-			/* This should be an index number - looks like dev/ino to me :-) */
+			/* This should be an index number - looks like
+			   dev/ino to me :-) 
+
+			   I think this causes us to fail the IFSKIT
+			   BasicFileInformationTest. -tpot */
+
 			SIVAL(pdata,0,sbuf.st_dev);
 			SIVAL(pdata,4,sbuf.st_ino);
 			data_size = 8;
@@ -1972,12 +1992,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SOFF_T(pdata,0,get_file_size(sbuf));             /* File size 64 Bit */
 			pdata += 8;
 
-#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-			SOFF_T(pdata,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
-#else
-			/* Can't get the value - fake it using size. */
-			SOFF_T(pdata,0,get_file_size(sbuf));             /* Number of bytes used on disk - 64 Bit */
-#endif
+			SOFF_T(pdata,0,get_allocation_size(fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			pdata += 8;
 
 			put_long_date(pdata,sbuf.st_ctime);       /* Creation Time 64 Bit */
@@ -2334,7 +2349,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
-		case SMB_INFO_QUERY_EA_SIZE:
 		{
 			if (total_data < l1_cbFile+4)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
@@ -2350,6 +2364,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 			break;
 		}
+
+		case SMB_INFO_SET_EA:
+			return(ERROR_DOS(ERRDOS,ERReasnotsupported));
 
 		/* XXXX um, i don't think this is right.
 			it's also not in the cifs6.txt spec.
@@ -2412,11 +2429,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		case SMB_SET_FILE_ALLOCATION_INFO:
 		{
 			int ret = -1;
-			SMB_OFF_T allocation_size = IVAL(pdata,0);
+			SMB_OFF_T allocation_size;
 
 			if (total_data < 8)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
+			allocation_size = IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
 			allocation_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
@@ -2425,6 +2443,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
 					fname, (double)allocation_size ));
+
+			if (allocation_size)
+				allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
 
 			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;

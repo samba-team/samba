@@ -146,6 +146,7 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
   ******************************************************************/
 static int profile_dump(void)
 {
+#ifdef WITH_PROFILE
 	if (!profile_setup(True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
 		return -1;
@@ -482,6 +483,9 @@ static int profile_dump(void)
 	d_printf("run_elections_time:             %u\n", profile_p->run_elections_time);
 	d_printf("election_count:                 %u\n", profile_p->election_count);
 	d_printf("election_time:                  %u\n", profile_p->election_time);
+#else /* WITH_PROFILE */
+	fprintf(stderr, "Profile data unavailable\n");
+#endif /* WITH_PROFILE */
 
 	return 0;
 }
@@ -549,7 +553,9 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		{"conf",	's', POPT_ARG_STRING,	0, 's'},
 		{"user",        'u', POPT_ARG_STRING,	0, 'u'},
 		{"brief",	'b', POPT_ARG_NONE, 	&brief},
+#ifdef WITH_PROFILE
 		{"profile",	'P', POPT_ARG_NONE,	&profile_only},
+#endif /* WITH_PROFILE */
 		{"byterange",	'B', POPT_ARG_NONE,	&show_brl},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ 0, 0, 0, 0}

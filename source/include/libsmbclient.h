@@ -333,7 +333,7 @@ typedef struct _SMBCCTX {
 
 	/** Space to store private data of the server cache.
 	 */
-	void * server_cache;
+	struct smbc_server_cache * server_cache;
 
 	/** INTERNAL functions
 	 * do _NOT_ touch these from your program !

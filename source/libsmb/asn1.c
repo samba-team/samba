@@ -174,6 +174,16 @@ BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 	return !data->has_error;
 }
 
+/* write a BOOLEAN - hmm, I suspect this one is the correct one, and the 
+   above boolean is bogus. Need to check */
+BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
+{
+	asn1_push_tag(data, ASN1_BOOLEAN);
+	asn1_write_uint8(data, v);
+	asn1_pop_tag(data);
+	return !data->has_error;
+}
+
 /* check a BOOLEAN */
 BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
@@ -244,15 +254,12 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	asn1_read_uint8(data, &b);
 	if (b & 0x80) {
 		int n = b & 0x7f;
-		if (n > 2) {
-			data->has_error = True;
-			return False;
-		}
 		asn1_read_uint8(data, &b);
 		nesting->taglen = b;
-		if (n == 2) {
+		while (n > 1) {
 			asn1_read_uint8(data, &b);
 			nesting->taglen = (nesting->taglen << 8) | b;
+			n--;
 		}
 	} else {
 		nesting->taglen = b;
@@ -366,6 +373,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 {
 	int len;
+	ZERO_STRUCTP(blob);
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
 	len = asn1_tag_remaining(data);
 	*blob = data_blob(NULL, len);
@@ -382,7 +390,8 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 	
 	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
 	while (asn1_tag_remaining(data)>0) {
-		*i = (*i << 8) + asn1_read_uint8(data, &b);
+		asn1_read_uint8(data, &b);
+		*i = (*i << 8) + b;
 	}
 	return asn1_end_tag(data);	
 	

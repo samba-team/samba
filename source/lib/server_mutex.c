@@ -38,7 +38,7 @@ BOOL grab_server_mutex(const char *name)
 		DEBUG(0,("grab_server_mutex: malloc failed for %s\n", name));
 		return False;
 	}
-	if (!message_named_mutex(mutex_server_name, 20)) {
+	if (!secrets_named_mutex(mutex_server_name, 10)) {
 		DEBUG(10,("grab_server_mutex: failed for %s\n", name));
 		SAFE_FREE(mutex_server_name);
 		return False;
@@ -50,8 +50,7 @@ BOOL grab_server_mutex(const char *name)
 void release_server_mutex(void)
 {
 	if (mutex_server_name) {
-		message_named_mutex_release(mutex_server_name);
+		secrets_named_mutex_release(mutex_server_name);
 		SAFE_FREE(mutex_server_name);
 	}
 }
-

@@ -217,23 +217,23 @@ static int process_options(int argc, char **argv, int local_flags)
 *************************************************************/
 static char *stdin_new_passwd(void)
 {
-	static fstring new_passwd;
+	static fstring new_pw;
 	size_t len;
 
-	ZERO_ARRAY(new_passwd);
+	ZERO_ARRAY(new_pw);
 
 	/*
 	 * if no error is reported from fgets() and string at least contains
 	 * the newline that ends the password, then replace the newline with
 	 * a null terminator.
 	 */
-	if ( fgets(new_passwd, sizeof(new_passwd), stdin) != NULL) {
-		if ((len = strlen(new_passwd)) > 0) {
-			if(new_passwd[len-1] == '\n')
-				new_passwd[len - 1] = 0; 
+	if ( fgets(new_pw, sizeof(new_pw), stdin) != NULL) {
+		if ((len = strlen(new_pw)) > 0) {
+			if(new_pw[len-1] == '\n')
+				new_pw[len - 1] = 0; 
 		}
 	}
-	return(new_passwd);
+	return(new_pw);
 }
 
 
@@ -259,20 +259,20 @@ static char *get_pass( char *prompt, BOOL stdin_get)
 static char *prompt_for_new_password(BOOL stdin_get)
 {
 	char *p;
-	fstring new_passwd;
+	fstring new_pw;
 
-	ZERO_ARRAY(new_passwd);
+	ZERO_ARRAY(new_pw);
  
 	p = get_pass("New SMB password:", stdin_get);
 
-	fstrcpy(new_passwd, p);
+	fstrcpy(new_pw, p);
 	SAFE_FREE(p);
 
 	p = get_pass("Retype new SMB password:", stdin_get);
 
-	if (strcmp(p, new_passwd)) {
+	if (strcmp(p, new_pw)) {
 		fprintf(stderr, "Mismatch - password unchanged.\n");
-		ZERO_ARRAY(new_passwd);
+		ZERO_ARRAY(new_pw);
 		SAFE_FREE(p);
 		return NULL;
 	}
@@ -285,27 +285,27 @@ static char *prompt_for_new_password(BOOL stdin_get)
  Change a password either locally or remotely.
 *************************************************************/
 
-static BOOL password_change(const char *remote_machine, char *user_name, 
-			    char *old_passwd, char *new_passwd, int local_flags)
+static BOOL password_change(const char *remote_mach, char *username, 
+			    char *old_passwd, char *new_pw, int local_flags)
 {
 	BOOL ret;
 	pstring err_str;
 	pstring msg_str;
 
-	if (remote_machine != NULL) {
+	if (remote_mach != NULL) {
 		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
 							LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
 			/* these things can't be done remotely yet */
 			return False;
 		}
-		ret = remote_password_change(remote_machine, user_name, 
-					     old_passwd, new_passwd, err_str, sizeof(err_str));
+		ret = remote_password_change(remote_mach, username, 
+					     old_passwd, new_pw, err_str, sizeof(err_str));
 		if(*err_str)
 			fprintf(stderr, err_str);
 		return ret;
 	}
 	
-	ret = local_password_change(user_name, local_flags, new_passwd, 
+	ret = local_password_change(username, local_flags, new_pw, 
 				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
 
 	if(*msg_str)

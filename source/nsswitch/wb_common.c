@@ -5,6 +5,8 @@
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) Andrew Bartlett 2002
+   
    
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -75,7 +77,7 @@ void init_response(struct winbindd_response *response)
 
 /* Close established socket */
 
-static void close_sock(void)
+void close_sock(void)
 {
 	if (winbindd_fd != -1) {
 		close(winbindd_fd);
@@ -83,14 +85,75 @@ static void close_sock(void)
 	}
 }
 
+/* Make sure socket handle isn't stdin, stdout or stderr */
+#define RECURSION_LIMIT 3
+
+static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */) 
+{
+	int new_fd;
+	if (fd >= 0 && fd <= 2) {
+#ifdef F_DUPFD 
+		if ((new_fd = fcntl(fd, F_DUPFD, 3)) == -1) {
+			return -1;
+		}
+		/* Parinoia */
+		if (new_fd < 3) {
+			close(new_fd);
+			return -1;
+		}
+		close(fd);
+		return new_fd;
+#else
+		if (limit <= 0)
+			return -1;
+		
+		new_fd = dup(fd);
+		if (new_fd == -1) 
+			return -1;
+
+		/* use the program stack to hold our list of FDs to close */
+		new_fd = make_nonstd_fd_internals(new_fd, limit - 1);
+		close(fd);
+		return new_fd;
+#endif
+	}
+	return fd;
+}
+
+static int make_safe_fd(int fd) 
+{
+	int result, flags;
+	int new_fd = make_nonstd_fd_internals(fd, RECURSION_LIMIT);
+	if (new_fd == -1) {
+		close(fd);
+		return -1;
+	}
+	/* Socket should be closed on exec() */
+	
+#ifdef FD_CLOEXEC
+	result = flags = fcntl(new_fd, F_GETFD, 0);
+	if (flags >= 0) {
+		flags |= FD_CLOEXEC;
+		result = fcntl( new_fd, F_SETFD, flags );
+	}
+	if (result < 0) {
+		close(new_fd);
+		return -1;
+	}
+#endif
+	return new_fd;
+}
+
 /* Connect to winbindd socket */
 
 int winbind_open_pipe_sock(void)
 {
+#ifdef HAVE_UNIXSOCKET
 	struct sockaddr_un sunaddr;
 	static pid_t our_pid;
 	struct stat st;
 	pstring path;
+	int fd;
 	
 	if (our_pid != getpid()) {
 		close_sock();
@@ -144,8 +207,12 @@ int winbind_open_pipe_sock(void)
 	
 	/* Connect to socket */
 	
-	if ((winbindd_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		return -1;
+	}
+
+	if ((winbindd_fd = make_safe_fd( fd)) == -1) {
+		return winbindd_fd;
 	}
 	
 	if (connect(winbindd_fd, (struct sockaddr *)&sunaddr, 
@@ -155,6 +222,9 @@ int winbind_open_pipe_sock(void)
 	}
         
 	return winbindd_fd;
+#else
+	return -1;
+#endif /* HAVE_UNIXSOCKET */
 }
 
 /* Write data to winbindd socket */
@@ -366,8 +436,8 @@ NSS_STATUS winbindd_get_response(struct winbindd_response *response)
 /* Handle simple types of requests */
 
 NSS_STATUS winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response)
+			    struct winbindd_request *request,
+			    struct winbindd_response *response)
 {
 	NSS_STATUS status;
 

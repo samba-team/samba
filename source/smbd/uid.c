@@ -59,18 +59,26 @@ BOOL change_to_guest(void)
 static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 {
 	int i;
-	for (i=0;i<conn->uid_cache.entries;i++)
-		if (conn->uid_cache.list[i] == vuser->uid)
+	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++)
+		if (conn->vuid_cache.list[i] == vuser->vuid)
 			return(True);
 
+	if ((conn->force_user || conn->force_group) 
+	    && (conn->vuid != vuser->vuid)) {
+		return False;
+	}
+	
 	if (!user_ok(vuser->user.unix_name,snum))
 		return(False);
 
-	i = conn->uid_cache.entries % UID_CACHE_SIZE;
-	conn->uid_cache.list[i] = vuser->uid;
+	if (!share_access_check(conn, snum, vuser, conn->read_only ? FILE_READ_DATA : FILE_WRITE_DATA)) {
+		return False;
+	}
 
-	if (conn->uid_cache.entries < UID_CACHE_SIZE)
-		conn->uid_cache.entries++;
+	i = conn->vuid_cache.entries % VUID_CACHE_SIZE;
+	conn->vuid_cache.list[i] = vuser->vuid;
+
+	conn->vuid_cache.entries++;
 
 	return(True);
 }
@@ -115,27 +123,21 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 
 	snum = SNUM(conn);
 
-	if((vuser != NULL) && !check_user_ok(conn, vuser, snum))
-		return False;
-
-	if (conn->force_user || 
-		conn->admin_user ||
-	    (lp_security() == SEC_SHARE)) {
+	if (conn->force_user) /* security = share sets this too */ {
 		uid = conn->uid;
 		gid = conn->gid;
 		current_user.groups = conn->groups;
 		current_user.ngroups = conn->ngroups;
 		token = conn->nt_user_token;
-	} else {
-		if (!vuser) {
-			DEBUG(2,("change_to_user: Invalid vuid used %d\n",vuid));
-			return(False);
-		}
+	} else if ((vuser) && check_user_ok(conn, vuser, snum)) {
 		uid = vuser->uid;
 		gid = vuser->gid;
 		current_user.ngroups = vuser->n_groups;
 		current_user.groups  = vuser->groups;
 		token = vuser->nt_user_token;
+	} else {
+		DEBUG(2,("change_to_user: Invalid vuid used %d or vuid not permitted access to share.\n",vuid));
+		return False;
 	}
 
 	/*
@@ -175,7 +177,11 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		if (vuser && vuser->guest)
 			is_guest = True;
 
-		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups, is_guest, NULL);
+		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups, is_guest);
+		if (!token) {
+			DEBUG(1, ("change_to_user: create_nt_token failed!\n"));
+			return False;
+		}
 		must_free_token = True;
 	}
 	

@@ -1119,10 +1119,8 @@ BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *
 	if(!prs_uint32("total_entries", ps, depth, &r_n->total_entries))
 		return False;
 
-	if(r_n->total_entries != 0) {
-		if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
-			return False;
-	}
+	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
+		return False;
 
 	if(!prs_werror("status", ps, depth, &r_n->status))
 		return False;

@@ -109,7 +109,7 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	}
 
 	/* we don't need to bind, just connect */
-	ads->auth.no_bind = 1;
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
 
 	DEBUG(4,("cm_ads_find_dc: domain=%s\n", domain));
 
@@ -145,11 +145,16 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 
 	/* Lookup domain controller name. Try the real PDC first to avoid
 	   SAM sync delays */
-	if (!get_dc_list(True, domain, &ip_list, &count)) {
-		if (!get_dc_list(False, domain, &ip_list, &count)) {
-			DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-			return False;
-		}
+	if (get_dc_list(True, domain, &ip_list, &count) &&
+	    name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
+		*dc_ip = ip_list[0];
+		SAFE_FREE(ip_list);
+		return True;
+	}
+
+	if (!get_dc_list(False, domain, &ip_list, &count)) {
+		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+		return False;
 	}
 
 	/* Pick a nice close server */
@@ -377,16 +382,6 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 	fstrcpy(new_conn->domain, domain);
 	fstrcpy(new_conn->pipe_name, pipe_name);
 	
-	/* Look for a domain controller for this domain.  Negative results
-	   are cached so don't bother applying the caching for this
-	   function just yet.  */
-
-	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		add_failed_connection_entry(new_conn, result);
-		return result;
-	}
-		
 	/* Return false if we have tried to look up this domain and netbios
 	   name before and failed. */
 
@@ -418,6 +413,16 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 		return result;
 	}
 
+	/* Look for a domain controller for this domain.  Negative results
+	   are cached so don't bother applying the caching for this
+	   function just yet.  */
+
+	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		add_failed_connection_entry(new_conn, result);
+		return result;
+	}
+		
 	/* Initialise SMB connection */
 
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
@@ -859,6 +864,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 {
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct winbindd_cm_conn *conn;
+	uint32 neg_flags = 0x000001ff;
 
 	if (!cli) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -870,8 +876,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 		return result;
 	}
 	
-	result = cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
+	result = cli_nt_setup_creds(conn->cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
@@ -884,8 +889,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			}
 			
 			/* Try again */
-			result = cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-							SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
+			result = cli_nt_setup_creds( conn->cli, get_sec_chan(),trust_passwd, &neg_flags, 2);
 		}
 		
 		if (!NT_STATUS_IS_OK(result)) {

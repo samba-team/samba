@@ -29,7 +29,7 @@ programmers who have contributed.
 
 The indent utility can be used to format C files in the general 
 samba coding style. The arguments you should give to indent are:
--bad -bap -br -ce -cdw -nbc -brs -bbb -nbc -npsl
+-bad -bap -br -ce -cdw -nbc -brs -bbb -nbc -npsl -ut -i8
 
 Following are some considerations you should use when adding new code to
 Samba.  First and foremost remember that:

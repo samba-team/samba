@@ -3,7 +3,7 @@
    SMB parameters and setup, plus a whole lot more.
    
    Copyright (C) Andrew Tridgell              1992-2000
-   Copyright (C) John H Terpstra              1996-2000
+   Copyright (C) John H Terpstra              1996-2002
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
    Copyright (C) Simo Sorce                   2001-2002
@@ -193,44 +193,6 @@ typedef struct nttime_info
 } NTTIME;
 
 
-/* The Splint code analysis tool doesn't like immediate structures. */
-
-#ifdef _SPLINT_                      /* http://www.splint.org */
-#undef HAVE_IMMEDIATE_STRUCTURES
-#endif
-
-/* the following rather strange looking definitions of NTSTATUS and WERROR
-   and there in order to catch common coding errors where different error types
-   are mixed up. This is especially important as we slowly convert Samba
-   from using BOOL for internal functions 
-*/
-
-#if defined(HAVE_IMMEDIATE_STRUCTURES)
-typedef struct {uint32 v;} NTSTATUS;
-#define NT_STATUS(x) ((NTSTATUS) { x })
-#define NT_STATUS_V(x) ((x).v)
-#else
-typedef uint32 NTSTATUS;
-#define NT_STATUS(x) (x)
-#define NT_STATUS_V(x) (x)
-#endif
-
-#if defined(HAVE_IMMEDIATE_STRUCTURES)
-typedef struct {uint32 v;} WERROR;
-#define W_ERROR(x) ((WERROR) { x })
-#define W_ERROR_V(x) ((x).v)
-#else
-typedef uint32 WERROR;
-#define W_ERROR(x) (x)
-#define W_ERROR_V(x) (x)
-#endif
-
-#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
-#define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
-#define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
-#define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
-
-
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
 #define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
@@ -391,6 +353,7 @@ typedef struct files_struct
 	BOOL delete_on_close;
 	SMB_OFF_T pos;
 	SMB_OFF_T size;
+	SMB_OFF_T initial_allocation_size; /* Faked up initial allocation on disk. */
 	mode_t mode;
 	uint16 vuid;
 	write_bmpx_struct *wbmpx_ptr;
@@ -430,9 +393,9 @@ typedef struct
   time_t status_time;
 } dir_status_struct;
 
-struct uid_cache {
-  int entries;
-  uid_t list[UID_CACHE_SIZE];
+struct vuid_cache {
+  unsigned int entries;
+  uint16 list[VUID_CACHE_SIZE];
 };
 
 typedef struct
@@ -461,7 +424,8 @@ typedef struct connection_struct
 	unsigned cnum; /* an index passed over the wire */
 	int service;
 	BOOL force_user;
-	struct uid_cache uid_cache;
+	BOOL force_group;
+	struct vuid_cache vuid_cache;
 	void *dirptr;
 	BOOL printer;
 	BOOL ipc;
@@ -652,7 +616,7 @@ typedef struct sam_passwd
 		
 		DATA_BLOB lm_pw; /* .data is Null if no password */
 		DATA_BLOB nt_pw; /* .data is Null if no password */
-		DATA_BLOB plaintext_pw; /* .data is Null if not available */
+		char* plaintext_pw; /* is Null if not available */
 		
 		uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
 		uint32 unknown_3; /* 0x00ff ffff */
@@ -716,6 +680,7 @@ struct connections_data {
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;
+	uint32 bcast_msg_flags;
 };
 
 
@@ -788,12 +753,16 @@ struct bitmap {
 	int n;
 };
 
-#define FLAG_BASIC 	0x01 /* fundamental options */
-#define FLAG_SHARE 	0x02 /* file sharing options */
-#define FLAG_PRINT 	0x04 /* printing options */
-#define FLAG_GLOBAL 	0x08 /* local options that should be globally settable in SWAT */
-#define FLAG_DEPRECATED 0x10 /* options that should no longer be used */
-#define FLAG_HIDE  	0x20 /* options that should be hidden in SWAT */
+#define FLAG_BASIC 	0x0001 /* fundamental options */
+#define FLAG_SHARE 	0x0002 /* file sharing options */
+#define FLAG_PRINT 	0x0004 /* printing options */
+#define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
+#define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
+#define FLAG_ADVANCED 	0x0020 /* Parameters that the wizard will operate on */
+#define FLAG_DEVELOPER 	0x0040 /* Parameters that the wizard will operate on */
+#define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
+#define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
+#define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
@@ -1147,17 +1116,17 @@ struct bitmap {
 #define FILE_SHARE_DELETE 4
 
 /* FileAttributesField */
-#define FILE_ATTRIBUTE_READONLY aRONLY
-#define FILE_ATTRIBUTE_HIDDEN aHIDDEN
-#define FILE_ATTRIBUTE_SYSTEM aSYSTEM
-#define FILE_ATTRIBUTE_DIRECTORY aDIR
-#define FILE_ATTRIBUTE_ARCHIVE aARCH
-#define FILE_ATTRIBUTE_NORMAL 0x80L
-#define FILE_ATTRIBUTE_TEMPORARY 0x100L
-#define FILE_ATTRIBUTE_SPARSE 0x200L
-#define FILE_ATTRIBUTE_COMPRESSED 0x800L
-#define FILE_ATTRIBUTE_NONINDEXED 0x2000L
-#define SAMBA_ATTRIBUTES_MASK 0x7F
+#define FILE_ATTRIBUTE_READONLY		0x001L
+#define FILE_ATTRIBUTE_HIDDEN		0x002L
+#define FILE_ATTRIBUTE_SYSTEM		0x004L
+#define FILE_ATTRIBUTE_DIRECTORY	0x010L
+#define FILE_ATTRIBUTE_ARCHIVE		0x020L
+#define FILE_ATTRIBUTE_NORMAL		0x080L
+#define FILE_ATTRIBUTE_TEMPORARY	0x100L
+#define FILE_ATTRIBUTE_SPARSE		0x200L
+#define FILE_ATTRIBUTE_COMPRESSED	0x800L
+#define FILE_ATTRIBUTE_NONINDEXED	0x2000L
+#define SAMBA_ATTRIBUTES_MASK		0x7F
 
 /* Flags - combined with attributes. */
 #define FILE_FLAG_WRITE_THROUGH    0x80000000L
@@ -1185,8 +1154,10 @@ struct bitmap {
 #define FILE_EIGHT_DOT_THREE_ONLY 0x0400
 #define FILE_RANDOM_ACCESS        0x0800
 #define FILE_DELETE_ON_CLOSE      0x1000
+#define FILE_OPEN_BY_FILE_ID	  0x2000
 
 /* Responses when opening a file. */
+#define FILE_WAS_SUPERSEDED 0
 #define FILE_WAS_OPENED 1
 #define FILE_WAS_CREATED 2
 #define FILE_WAS_OVERWRITTEN 3
@@ -1299,7 +1270,7 @@ char *strdup(char *s);
  */
  
 #define DEFAULT_MAJOR_VERSION 0x04
-#define DEFAULT_MINOR_VERSION 0x05
+#define DEFAULT_MINOR_VERSION 0x09
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
@@ -1374,6 +1345,9 @@ enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
 
 /* LDAP SSL options */
 enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
+
+/* LDAP PASSWD SYNC methods */
+enum ldap_passwd_sync_types {LDAP_PASSWD_SYNC_ON, LDAP_PASSWD_SYNC_OFF, LDAP_PASSWD_SYNC_ONLY};
 
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA};
@@ -1655,8 +1629,6 @@ struct unix_error_map {
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
 #define SAFE_NETBIOS_CHARS ". -_"
-
-#include "nsswitch/winbindd_nss.h"
 
 /* generic iconv conversion structure */
 typedef struct {

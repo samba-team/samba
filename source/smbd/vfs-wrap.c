@@ -20,6 +20,10 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
+
+
 /* Check for NULL pointer parameters in vfswrap_* functions */
 
 /* We don't want to have NULL function pointers lying around.  Someone
@@ -185,6 +189,17 @@ SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int wh
 	}
 
 	END_PROFILE(syscall_lseek);
+	return result;
+}
+
+ssize_t vfswrap_sendfile(int tofd, struct files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
+			SMB_OFF_T offset, size_t n)
+{
+	ssize_t result;
+
+	START_PROFILE_BYTES(syscall_sendfile, n);
+	result = sys_sendfile(tofd, fromfd, hdr, offset, n);
+	END_PROFILE(syscall_sendfile);
 	return result;
 }
 

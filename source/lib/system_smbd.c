@@ -41,6 +41,11 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 	gid_t *gids_saved;
 	int ret, ngrp_saved;
 
+	if (non_root_mode()) {
+		*grpcnt = 0;
+		return 0;
+	}
+
 	/* work out how many groups we need to save */
 	ngrp_saved = getgroups(0, NULL);
 	if (ngrp_saved == -1) {
@@ -56,13 +61,14 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 
 	ngrp_saved = getgroups(ngrp_saved, gids_saved);
 	if (ngrp_saved == -1) {
-		free(gids_saved);
+		SAFE_FREE(gids_saved);
 		/* very strange! */
 		return -1;
 	}
 
 	if (initgroups(user, gid) != 0) {
-		free(gids_saved);
+		DEBUG(0, ("getgrouplist_internals: initgroups() failed!\n"));
+		SAFE_FREE(gids_saved);
 		return -1;
 	}
 
@@ -101,5 +107,6 @@ int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 	become_root();
 	retval = getgrouplist_internals(user, gid, groups, grpcnt);
 	unbecome_root();
+	return retval;
 #endif
 }

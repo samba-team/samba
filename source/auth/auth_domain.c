@@ -48,7 +48,7 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
 
 	DEBUG(4,("ads_resolve_dc: realm=%s\n", ads->config.realm));
 
-	ads->auth.no_bind = 1;
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
 
 #ifdef HAVE_ADS
 	/* a full ads_connect() is actually overkill, as we don't srictly need
@@ -131,6 +131,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	struct in_addr dest_ip;
 	fstring remote_machine;
         NTSTATUS result;
+	uint32 neg_flags = 0x000001ff;
 
 	if (lp_security() == SEC_ADS) {
 		result = ads_resolve_dc(remote_machine, &dest_ip);
@@ -206,7 +207,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd);
+	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
@@ -250,7 +251,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 }
 
 /***********************************************************************
- We have been asked to dynamcially determine the IP addresses of
+ We have been asked to dynamically determine the IP addresses of
  the PDC and BDC's for DOMAIN, and query them in turn.
 ************************************************************************/
 static NTSTATUS find_connect_pdc(struct cli_state **cli, 

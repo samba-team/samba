@@ -338,10 +338,10 @@ BOOL share_access_check(connection_struct *conn, int snum, user_struct *vuser, u
 	if (!psd)
 		goto out;
 
-	if (vuser)
-		token = vuser->nt_user_token;
-	else
+	if (conn->nt_user_token)
 		token = conn->nt_user_token;
+	else 
+		token = vuser->nt_user_token;
 
 	ret = se_access_check(psd, token, desired_access, &granted, &status);
 

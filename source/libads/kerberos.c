@@ -50,7 +50,7 @@ kerb_prompter(krb5_context ctx, void *data,
   simulate a kinit, putting the tgt in the default cache location
   remus@snapserver.com
 */
-int kerberos_kinit_password(const char *principal, const char *password)
+int kerberos_kinit_password(const char *principal, const char *password, int time_offset)
 {
 	krb5_context ctx;
 	krb5_error_code code = 0;
@@ -60,6 +60,10 @@ int kerberos_kinit_password(const char *principal, const char *password)
 
 	if ((code = krb5_init_context(&ctx)))
 		return code;
+
+	if (time_offset != 0) {
+		krb5_set_real_time(ctx, time(NULL) + time_offset, 0);
+	}
 	
 	if ((code = krb5_cc_default(ctx, &cc))) {
 		krb5_free_context(ctx);
@@ -111,7 +115,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	int ret;
 
 	asprintf(&s, "%s@%s", ads->auth.user_name, ads->auth.realm);
-	ret = kerberos_kinit_password(s, ads->auth.password);
+	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
