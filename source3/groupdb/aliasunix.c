@@ -170,7 +170,7 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 {
 	/* Static buffers we will return. */
 	static LOCAL_GRP gp_buf;
-	struct group *unix_grp = NULL;
+	struct group unix_grp;
 	struct unix_entries *grps = (struct unix_entries *)vp;
 
 	if (lp_server_role() == ROLE_DOMAIN_NONE)
@@ -195,12 +195,12 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		DOM_NAME_MAP gmep;
 		fstring sid_str;
 
-		unix_grp = &grps->grps[grps->grp_idx];
+		memcpy(&unix_grp, &grps->grps[grps->grp_idx], sizeof(unix_grp));
 
 		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
-		           unix_grp->gr_name));
+		           unix_grp.gr_name));
 			
-		if (!lookupsmbgrpgid(unix_grp->gr_gid, &gmep))
+		if (!lookupsmbgrpgid(unix_grp.gr_gid, &gmep))
 		{
 			continue;
 		}
@@ -224,7 +224,7 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		break;
 	}
 
-	if (unix_grp == NULL || grps->grp_idx >= grps->num_grps)
+	if (grps->grp_idx >= grps->num_grps)
 	{
 		return NULL;
 	}
@@ -236,8 +236,8 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		(*mem) = NULL;
 		(*num_mem) = 0;
 
-		unix_grp = getgrgid(unix_grp->gr_gid);
-		get_unixalias_members(unix_grp, num_mem, mem);
+		memcpy(&unix_grp, getgrgid(unix_grp.gr_gid), sizeof(unix_grp));
+		get_unixalias_members(&unix_grp, num_mem, mem);
 	}
 
 	{
