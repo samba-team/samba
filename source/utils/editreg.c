@@ -740,7 +740,7 @@ REG_KEY *nt_find_key_in_list_by_name(KEY_LIST *list, char *key)
 
   if (!list || !key || !*key) return NULL;
 
-  for (i = 0; i<= list->key_count; i++)
+  for (i = 0; i < list->key_count; i++)
     if ((res = nt_find_key_by_name(list->keys[i], key)))
       return res;
   
@@ -970,7 +970,7 @@ REG_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
 /*
  * Delete a value. Should perhaps return the value ...
  */
-REG_KEY *nt_delete_reg_valye(REG_KEY *key, char *name)
+REG_KEY *nt_delete_reg_value(REG_KEY *key, char *name)
 {
 
   return NULL;
@@ -1073,8 +1073,6 @@ KEY_SEC_DESC *nt_create_init_sec(REGF *regf)
   return tsec;
 }
 
-REG_KEY *nt_add_reg_subkey(REGF *regf, REG_KEY *key, char *name, int create);
-
 /*
  * Add a sub-key 
  */
@@ -1096,16 +1094,6 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
 
   }
 
-  for (i = 0; i < list->key_count; i++) {
-    if ((ret = nt_add_reg_subkey(regf, key, name, create)))
-      return ret;
-  }
-
-  /*
-   * If we reach here we could not find the the first component
-   * so create it ...
-   */
-
   lname = strdup(name);
   if (!lname) return NULL;
 
@@ -1115,6 +1103,19 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
     *c2 = 0;
     c2++;
   }
+
+  for (i = 0; i < list->key_count; i++) {
+    if (strcmp(list->keys[i]->name, c1) == 0) {
+      ret = nt_add_reg_key_list(regf, list->keys[i], c2, create);
+      free(lname);
+      return ret;
+    }
+  }
+
+  /*
+   * If we reach here we could not find the the first component
+   * so create it ...
+   */
 
   if (list->key_count < list->max_keys){
     list->key_count++;
@@ -1147,7 +1148,7 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
   tmp->owner = key;
   tmp->type = REG_SUB_KEY;
   /*
-   * Next, pull security from the parent, but override by with
+   * Next, pull security from the parent, but override with
    * anything passed in on the command line
    */
   tmp->security = nt_inherit_security(key);
@@ -1155,7 +1156,7 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
   list->keys[list->key_count - 1] = tmp;
 
   if (c2) {
-    ret = nt_add_reg_subkey(regf, key, c2, True);
+    ret = nt_add_reg_key_list(regf, key, c2, True);
   }
 
   if (lname) free(lname);
@@ -1168,12 +1169,6 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
   return NULL;
 }
 
-REG_KEY *nt_add_reg_subkey(REGF *regf, REG_KEY *key, char *name, int create)
-{
-
-  return NULL;
-}
-
 /*
  * This routine only adds a key from the root down.
  * It calls helper functions to handle sub-key lists and sub-keys
@@ -1181,7 +1176,7 @@ REG_KEY *nt_add_reg_subkey(REGF *regf, REG_KEY *key, char *name, int create)
 REG_KEY *nt_add_reg_key(REGF *regf, char *name, int create)
 {
   char *lname = NULL, *c1, *c2;
-  REG_KEY * tmp = NULL, *key = NULL;
+  REG_KEY * tmp = NULL;
 
   /*
    * Look until we hit the first component that does not exist, and
@@ -1225,11 +1220,11 @@ REG_KEY *nt_add_reg_key(REGF *regf, char *name, int create)
      * way down
      */
 
-    if (strcmp(c1, key->name) != 0)
+    if (strcmp(c1, regf->root->name) != 0)
       goto error;
   }
 
-  tmp = nt_add_reg_key_list(regf, key, c2, True);
+  tmp = nt_add_reg_key_list(regf, regf->root, c2, True);
   free(lname);
   return tmp;
   
@@ -2644,8 +2639,19 @@ CMD *regedit4_get_cmd(int fd)
 
   cmd->cmd = CMD_NONE;
   cmd->key = NULL;
+  cmd->val_count = 0;
   cmd->val_spec_list = cmd->val_spec_last = NULL;
   while ((cl = get_cmd_line(fd))) {
+
+    /*
+     * If it is an empty command line, and we already have a key
+     * then exit from here ... FIXME: Clean up the parser
+     */
+
+    if (cl->line_len == 0 && cmd->key) {
+      free_cmd_line(cl);
+      break;
+    } 
 
     strip_comment(cl);     /* remove anything beyond a comment char */
     trim_trailing_spaces(cl);
@@ -3123,7 +3129,7 @@ int main(int argc, char *argv[])
 	}
 
 	while (cmd->val_count) {
-
+	  cmd->val_count--;
 	}
 
 	break;
