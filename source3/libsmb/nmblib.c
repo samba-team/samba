@@ -67,18 +67,19 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
 {
   int i, j;
 
-  DEBUG(4,("    %s: nmb_name=%s rr_type=%d rr_class=%d ttl=%d\n",
-	   hdr,
-	   namestr(&res->rr_name),
-	   res->rr_type,
-	   res->rr_class,
-	   res->ttl));
-		
-  if (res->rdlength == 0 || res->rdata == NULL) return;
+  DEBUGADD( 4, ( "    %s: nmb_name=%s rr_type=%d rr_class=%d ttl=%d\n",
+                 hdr,
+                 namestr(&res->rr_name),
+                 res->rr_type,
+                 res->rr_class,
+                 res->ttl ) );
+
+  if( res->rdlength == 0 || res->rdata == NULL )
+    return;
 
   for (i = 0; i < res->rdlength; i+= 16)
     {
-      DEBUG(4, ("    %s %3x char ", hdr, i));
+      DEBUGADD(4, ("    %s %3x char ", hdr, i));
 
       for (j = 0; j < 16; j++)
 	{
@@ -86,18 +87,18 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
 	  if (x < 32 || x > 127) x = '.';
 	  
 	  if (i+j >= res->rdlength) break;
-	  DEBUG(4, ("%c", x));
+	  DEBUGADD(4, ("%c", x));
 	}
       
-      DEBUG(4, ("   hex ", i));
+      DEBUGADD(4, ("   hex ", i));
 
       for (j = 0; j < 16; j++)
 	{
 	  if (i+j >= res->rdlength) break;
-	  DEBUG(4, ("%02X", (unsigned char)res->rdata[i+j]));
+	  DEBUGADD(4, ("%02X", (unsigned char)res->rdata[i+j]));
 	}
       
-      DEBUG(4, ("\n"));
+      DEBUGADD(4, ("\n"));
     }
 }
 
@@ -107,34 +108,38 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
 void debug_nmb_packet(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
-  
-  DEBUG(4,("nmb packet from %s(%d) header: id=%d opcode=%s(%d) response=%s\n",
-	   inet_ntoa(p->ip), p->port,
-	   nmb->header.name_trn_id,
-           lookup_opcode_name(nmb->header.opcode),
-           nmb->header.opcode,BOOLSTR(nmb->header.response)));
-  DEBUG(4,("    header: flags: bcast=%s rec_avail=%s rec_des=%s trunc=%s auth=%s\n",
-	   BOOLSTR(nmb->header.nm_flags.bcast),
-	   BOOLSTR(nmb->header.nm_flags.recursion_available),
-	   BOOLSTR(nmb->header.nm_flags.recursion_desired),
-	   BOOLSTR(nmb->header.nm_flags.trunc),
-	   BOOLSTR(nmb->header.nm_flags.authoritative)));
-  DEBUG(4,("    header: rcode=%d qdcount=%d ancount=%d nscount=%d arcount=%d\n",
-	   nmb->header.rcode,
-	   nmb->header.qdcount,
-	   nmb->header.ancount,
-	   nmb->header.nscount,
-	   nmb->header.arcount));
+
+  if( DEBUGLVL( 4 ) )
+    {
+    dbgtext( "nmb packet from %s(%d) header: id=%d opcode=%s(%d) response=%s\n",
+             inet_ntoa(p->ip), p->port,
+             nmb->header.name_trn_id,
+             lookup_opcode_name(nmb->header.opcode),
+             nmb->header.opcode,
+             BOOLSTR(nmb->header.response) );
+    dbgtext( "    header: flags: bcast=%s rec_avail=%s rec_des=%s trunc=%s auth=%s\n",
+             BOOLSTR(nmb->header.nm_flags.bcast),
+             BOOLSTR(nmb->header.nm_flags.recursion_available),
+             BOOLSTR(nmb->header.nm_flags.recursion_desired),
+             BOOLSTR(nmb->header.nm_flags.trunc),
+             BOOLSTR(nmb->header.nm_flags.authoritative) );
+    dbgtext( "    header: rcode=%d qdcount=%d ancount=%d nscount=%d arcount=%d\n",
+             nmb->header.rcode,
+             nmb->header.qdcount,
+             nmb->header.ancount,
+             nmb->header.nscount,
+             nmb->header.arcount );
+    }
 
   if (nmb->header.qdcount)
     {
-      DEBUG(4,("    question: q_name=%s q_type=%d q_class=%d\n",
-	       namestr(&nmb->question.question_name),
-	       nmb->question.question_type,
-	       nmb->question.question_class));
+      DEBUGADD( 4, ( "    question: q_name=%s q_type=%d q_class=%d\n",
+                     namestr(&nmb->question.question_name),
+                     nmb->question.question_type,
+                     nmb->question.question_class) );
     }
 
-  if (nmb->answers && nmb->header.ancount) 
+  if (nmb->answers && nmb->header.ancount)
     {
       debug_nmb_res_rec(nmb->answers,"answers");
     }

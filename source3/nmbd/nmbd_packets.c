@@ -95,9 +95,11 @@ Dumps out the browse packet data.
 static void debug_browse_data(char *outbuf, int len)
 {
   int i,j;
+
+  DEBUG( 4, ( "debug_browse_data():\n" ) );
   for (i = 0; i < len; i+= 16)
   {
-    DEBUG(4, ("%3x char ", i));
+    DEBUGADD( 4, ( "%3x char ", i ) );
 
     for (j = 0; j < 16; j++)
     {
@@ -107,19 +109,19 @@ static void debug_browse_data(char *outbuf, int len)
 	    
       if (i+j >= len)
         break;
-      DEBUG(4, ("%c", x));
+      DEBUGADD( 4, ( "%c", x ) );
     }
 
-    DEBUG(4, (" hex ", i));
+    DEBUGADD( 4, ( " hex ", i ) );
 
     for (j = 0; j < 16; j++)
     {
       if (i+j >= len) 
         break;
-      DEBUG(4, (" %02x", (unsigned char)outbuf[i+j]));
+      DEBUGADD( 4, ( " %02x", (unsigned char)outbuf[i+j] ) );
     }
 
-    DEBUG(4, ("\n"));
+    DEBUGADD( 4, ("\n") );
   }
 }
 

@@ -101,8 +101,13 @@ static void sync_browse_lists(struct subnet_record *subrec, struct work_record *
   static struct cli_state cli;
   uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
-  DEBUG(2,("%s: sync_browse_lists: Sync browse lists with server %s<%02x> at IP %s for workgroup %s\n",
-     timestring(), name, nm_type, inet_ntoa(ip), work->work_group ));
+  if( DEBUGLVL( 2 ) )
+  {
+    dbgtext( "sync_browse_lists():\n" );
+    dbgtext( "Sync browse lists with server %s<%02x> ", name, nm_type );
+    dbgtext( "at IP %s ", inet_ntoa( ip ) );
+    dbgtext( "for workgroup %s\n", work->work_group );
+  }
 
   /* Check we're not trying to sync with ourselves. This can happen if we are
      a domain *and* a local master browser. */
