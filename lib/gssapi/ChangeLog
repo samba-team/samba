@@ -1,4 +1,4 @@
-2003-12-12  Love  <lha@stacken.kth.se>
+2003-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.c: make rrc a modulus operation if its longer then the
 	length of the message, noticed by Sam Hartman
