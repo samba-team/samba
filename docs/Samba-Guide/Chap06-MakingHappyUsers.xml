@@ -3785,7 +3785,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 			<listitem><para>A direct network path such as:
 		    <constant>\\MASSIVE\profdata</constant></para></listitem>
 			<listitem><para>A network redirection (UNC name) that contains a macro such as: </para>
-				<para><constant>\\%LOGONSERVER%\profdata\</constant></para></listitem>
+				<para><constant>%LOGONSERVER%\profdata\</constant></para></listitem>
 		</itemizedlist>
 		</para></step>
 
