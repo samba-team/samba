@@ -1,3 +1,7 @@
+2000-07-29  Assar Westerlund  <assar@sics.se>
+
+	* decapsulate.c (gssapi_krb5_verify_header): sanity-check length
+
 2000-07-22  Assar Westerlund  <assar@sics.se>
 
 	* gssapi.h: update OID for GSS_C_NT_HOSTBASED_SERVICE and other
