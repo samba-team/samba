@@ -1,5 +1,5 @@
-#!/bin/sh
-SRCDIR=$1/
+#!/bin/sh -v
+SRCDIR=$1
 
 YODLDIR=$SRCDIR/../docs/yodldocs
 MANPAGEDIR=$SRCDIR/../docs/manpages
@@ -30,7 +30,7 @@ do
 #
 # Create the basename from the YODL manpage
 #
-    bn=`echo $d | sed -e 's/\.yo//`
+    bn=`echo $d | sed -e 's/\.yo//'`
 
 	case "$d"
 	in
