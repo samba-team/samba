@@ -227,8 +227,8 @@ typedef struct sam_user_info_21
 {
 	NTTIME logon_time;            /* logon time */
 	NTTIME logoff_time;           /* logoff time */
-	NTTIME kickoff_time;          /* kickoff time */
 	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME kickoff_time;          /* kickoff time */
 	NTTIME pass_can_change_time;  /* password can change time */
 	NTTIME pass_must_change_time; /* password must change time */
 
@@ -336,6 +336,14 @@ typedef struct sam_user_info_10
 	uint32 acb_info;
 
 } SAM_USER_INFO_10;
+
+/* SAM_USER_INFO_7 */
+typedef struct sam_user_info_7
+{
+	UNIHDR hdr_user_name;
+	UNISTR2 uni_user_name;
+
+} SAM_USER_INFO_7;
 
 
 
@@ -1136,6 +1144,7 @@ typedef struct sam_userinfo_ctr_info
 
 	union
 	{
+		SAM_USER_INFO_7 *id7;
 		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
 		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
 		SAM_USER_INFO_12 *id12; /* auth-level 0x12 */

@@ -208,7 +208,7 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 * ctr,
 	prs_debug(ps, depth, desc, "srv_io_share_1_ctr");
 	depth++;
 
-	if (ps->io)
+	if (UNMARSHALLING(ps))
 	{
 		ZERO_STRUCTP(ctr);
 	}
@@ -226,7 +226,7 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 * ctr,
 		prs_uint32("num_entries_read2", ps, depth,
 			   &(ctr->num_entries_read2));
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			ctr->info_1 = g_new0(SH_INFO_1 *, num_entries);
 			ctr->info_1_str =
@@ -240,7 +240,7 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 * ctr,
 
 		for (i = 0; i < num_entries; i++)
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				ctr->info_1[i] = g_new(SH_INFO_1, 1);
 			}
@@ -254,7 +254,7 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 * ctr,
 
 		for (i = 0; i < num_entries; i++)
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				ctr->info_1_str[i] = g_new(SH_INFO_1_STR, 1);
 			}
@@ -683,7 +683,7 @@ static BOOL srv_io_share_info_union(const char *desc,
 		}
 		case 1005:
 		{
-			if(UNMARSHALLING(ps))
+			if (UNMARSHALLING(ps))
 			{
 				info->id1005 = g_new(SHARE_INFO_1005, count);
 				if(info->id1005 == NULL)
@@ -770,7 +770,7 @@ static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 * ctr,
 	prs_debug(ps, depth, desc, "srv_io_share_2_ctr");
 	depth++;
 
-	if (ps->io)
+	if (UNMARSHALLING(ps))
 	{
 		ZERO_STRUCTP(ctr);
 	}
@@ -788,7 +788,7 @@ static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 * ctr,
 		prs_uint32("num_entries_read2", ps, depth,
 			   &(ctr->num_entries_read2));
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			ctr->info_2 = g_new0(SH_INFO_2 *, num_entries);
 			ctr->info_2_str =
@@ -802,7 +802,7 @@ static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 * ctr,
 
 		for (i = 0; i < num_entries; i++)
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				ctr->info_2[i] = g_new(SH_INFO_2, 1);
 			}
@@ -816,7 +816,7 @@ static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 * ctr,
 
 		for (i = 0; i < num_entries; i++)
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				ctr->info_2_str[i] = g_new(SH_INFO_2_STR, 1);
 			}
@@ -2080,7 +2080,7 @@ static BOOL srv_io_srv_tprt_info_0(char *desc, SRV_TPRT_INFO_0 * tp0,
 		prs_uint32("num_entries_read2", ps, depth,
 			   &(tp0->num_entries_read2));
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			/* reading */
 			tp0->info_0 = g_new(TPRT_INFO_0, num_entries);
@@ -2108,7 +2108,7 @@ static BOOL srv_io_srv_tprt_info_0(char *desc, SRV_TPRT_INFO_0 * tp0,
 		prs_align(ps);
 	}
 
-	if (!ps->io)
+	if (MARSHALLING(ps))
 	{
 		/* writing */
 		free_srv_tprt_info_0(tp0);
@@ -2405,7 +2405,7 @@ static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 * fl3,
 	prs_debug(ps, depth, desc, "srv_io_file_3_fl3");
 	depth++;
 
-	if (ps->io)
+	if (UNMARSHALLING(ps))
 	{
 		ZERO_STRUCTP(fl3);
 	}
@@ -2423,7 +2423,7 @@ static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 * fl3,
 			   &(fl3->num_entries_read2));
 		num_entries = fl3->num_entries_read2;
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			fl3->info_3 = g_new0(FILE_INFO_3 *, num_entries);
 			fl3->info_3_str =
@@ -2437,7 +2437,7 @@ static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 * fl3,
 
 		for (i = 0; i < num_entries; i++)
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				fl3->info_3[i] = g_new(FILE_INFO_3, 1);
 			}
@@ -2450,7 +2450,7 @@ static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 * fl3,
 
 		for (i = 0; i < num_entries; i++)
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				fl3->info_3_str[i] =
 					g_new(FILE_INFO_3_STR, 1);

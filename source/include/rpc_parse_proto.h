@@ -662,17 +662,11 @@ BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
 			      prs_struct *ps, int depth);
 BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 			  const uint8 lm_pwd[16], const uint8 nt_pwd[16]);
-BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
-			prs_struct *ps, int depth);
 BOOL make_sam_user_info10(SAM_USER_INFO_10 * usr, uint32 acb_info);
-BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr,
-			prs_struct *ps, int depth);
 BOOL make_sam_user_info11(SAM_USER_INFO_11 * usr,
 			  NTTIME * expiry,
 			  char *mach_acct,
 			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl);
-BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr,
-			prs_struct *ps, int depth);
 BOOL make_sam_user_info24(SAM_USER_INFO_24 * usr,
 			  const char newpass[516], uint16 passlen);
 BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/* all zeros */
@@ -755,8 +749,6 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
 			   uint32 unknown_5, uint32 unknown_6);
-BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
-			prs_struct *ps, int depth);
 uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 				    uint16 switch_value,
 				    const SAM_USER_INFO_21 * usr);

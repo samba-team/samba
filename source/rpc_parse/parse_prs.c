@@ -145,6 +145,12 @@ void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io)
 
 	prs_init(ps, 0, align, io);
 	prs_append_data(ps, data, size);
+	if (MARSHALLING(ps))
+	{
+		DEBUG(1, ("WARNING: prs_create initialised a buffer "
+			  "in marshalling-mode\n"));
+	}
+
 	/* *arg* */
 	/* safe_free(data); */
 

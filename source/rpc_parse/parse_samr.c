@@ -4976,7 +4976,7 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
+static BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
 			prs_struct *ps, int depth)
 {
 	if (u == NULL)
@@ -5017,7 +5017,7 @@ BOOL make_sam_user_info10(SAM_USER_INFO_10 * usr, uint32 acb_info)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr,
+static BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr,
 			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
@@ -5085,7 +5085,7 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr,
+static BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr,
 			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
@@ -5663,7 +5663,7 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
+static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
@@ -5676,9 +5676,9 @@ BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 
 	smb_io_time("logon_time           ", &(usr->logon_time), ps, depth);
 	smb_io_time("logoff_time          ", &(usr->logoff_time), ps, depth);
-	smb_io_time("kickoff_time         ", &(usr->kickoff_time), ps, depth);
 	smb_io_time("pass_last_set_time   ", &(usr->pass_last_set_time), ps,
 		    depth);
+	smb_io_time("kickoff_time         ", &(usr->kickoff_time), ps, depth);
 	smb_io_time("pass_can_change_time ", &(usr->pass_can_change_time), ps,
 		    depth);
 	smb_io_time("pass_must_change_time", &(usr->pass_must_change_time),
@@ -6021,8 +6021,8 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr,
 		}
 		default:
 		{
-			DEBUG(2,
-			      ("samr_io_userinfo_ctr: unknown switch level\n"));
+			DEBUG(2, ("samr_io_userinfo_ctr: unknown switch "
+				  "level 0x%x\n", ctr->switch_value));
 			ret = False;
 			break;
 		}

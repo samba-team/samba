@@ -375,6 +375,11 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 					       SMBD_SELECT_TIMEOUT * 1000,
 					       &got_msrpc))
 		{
+			if (smb_read_error == READ_TIMEOUT)
+			{
+				DEBUG(5, ("msrpcd_process: ignoring timeout\n"));
+				continue;
+			}
 			if (smb_read_error == READ_EOF)
 			{
 				DEBUG(3, ("end of file from client\n"));
