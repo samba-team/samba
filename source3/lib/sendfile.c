@@ -274,7 +274,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		hdtrl[0].iov_len = hdr_len = 0;
 	}
 	hdtrl[1].iov_base = NULL;
-	hdtrl[1].iov_base = 0;
+	hdtrl[1].iov_len = 0;
 
 	total = count;
 	while (total + hdtrl[0].iov_len) {
@@ -394,6 +394,62 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 	}
 	return count + hdr_len;
 }
+
+#elif defined(AIX_SENDFILE_API)
+
+/* BEGIN AIX SEND_FILE */
+
+/* Contributed by William Jojo <jojowil@hvcc.edu> */
+#include <sys/socket.h>
+
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+{
+	size_t total=0;
+	struct sf_parms hdtrl;
+
+	/* Set up the header/trailer struct params. */
+	if (header) {
+		hdtrl.header_data = header->data;
+		hdtrl.header_length = header->length;
+	} else {
+		hdtrl.header_data = NULL;
+		hdtrl.header_length = 0;
+	}
+	hdtrl.trailer_data = NULL;
+	hdtrl.trailer_length = 0;
+
+	hdtrl.file_descriptor = fromfd;
+	hdtrl.file_offset = offset;
+	hdtrl.file_bytes = count;
+
+	while ( hdtrl.file_bytes + hdtrl.header_length ) {
+		ssize_t ret;
+
+		/*
+		 Return Value
+
+		 There are three possible return values from send_file:
+
+		 Value Description
+
+		 -1 an error has occurred, errno contains the error code.
+
+		 0 the command has completed successfully.
+
+		 1 the command was completed partially, some data has been
+		 transmitted but the command has to return for some reason,
+		 for example, the command was interrupted by signals.
+		*/
+		do {
+			ret = send_file(&tofd, &hdtrl, 0);
+		} while ( (ret == 1) || (ret == -1 && errno == EINTR) );
+		if ( ret == -1 )
+			return -1;
+	}
+
+	return count + header->length;
+}
+/* END AIX SEND_FILE */
 
 #else /* No sendfile implementation. Return error. */
 

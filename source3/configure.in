@@ -4239,7 +4239,36 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 		AC_MSG_RESULT(no);
 	fi
 	;;
+	*aix*)
+		AC_CACHE_CHECK([for AIX send_file support],samba_cv_HAVE_SENDFILE,[
+		AC_TRY_LINK([\
+#include <sys/socket.h>],
+[\
+	int fromfd, tofd;
+	size_t total=0;
+	struct sf_parms hdtrl;
+	ssize_t nwritten;
+	off64_t offset;
 
+	hdtrl.header_data = 0;
+	hdtrl.header_length = 0;
+	hdtrl.file_descriptor = fromfd;
+	hdtrl.file_offset = 0;
+	hdtrl.file_bytes = 0;
+	hdtrl.trailer_data = 0;
+	hdtrl.trailer_length = 0;
+
+	nwritten = send_file(&tofd, &hdtrl, 0);
+],
+samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
+	if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
+		AC_DEFINE(HAVE_SENDFILE,1,[Whether sendfile() is available])
+		AC_DEFINE(AIX_SENDFILE_API,1,[Whether the AIX send_file() API is available])
+		AC_DEFINE(WITH_SENDFILE,1,[Whether to include sendfile() support])
+	else
+		AC_MSG_RESULT(no);
+	fi
+	;;
 	*)
 	;;
         esac
