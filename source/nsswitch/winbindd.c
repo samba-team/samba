@@ -276,7 +276,7 @@ static struct dispatch_table cache_table[] = {
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
 	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
-	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
+	{ WINBINDD_GETUSERSIDS, cache_getusersids, "GETUSERSIDS" },
 
 	/* Group functions */
 
@@ -1044,16 +1044,13 @@ int main(int argc, char **argv)
 
 	ZERO_STRUCT(server_state);
 
-	if (!winbindd_param_init())
-		return 1;
-
 	/* Winbind daemon initialisation */
 
-	if (!winbindd_upgrade_idmap())
-		return 1;
-
-	if (!idmap_init(lp_idmap_backend()))
-		return 1;
+	if ( (!winbindd_param_init()) || (!winbindd_upgrade_idmap()) ||
+	     (!idmap_init(lp_idmap_backend())) ) {
+		DEBUG(1, ("Could not init idmap -- netlogon proxy only\n"));
+		idmap_proxyonly();
+	}
 
 	generate_wellknown_sids();
 

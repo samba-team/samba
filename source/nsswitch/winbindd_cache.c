@@ -1872,3 +1872,91 @@ cache_list_groups_next(struct winbindd_cli_state *state)
 	/* If we had tail recursion, we could call ourselves :-) */
 	goto next_domain;
 }	
+
+enum winbindd_result cache_getusersids(struct winbindd_cli_state *state)
+{
+	DOM_SID user_sid;
+	DOM_SID **user_sids;
+	struct winbindd_domain *domain;
+	unsigned int i;
+	TALLOC_CTX *mem_ctx;
+	char *ret = NULL;
+	uint32 num_groups;
+	unsigned ofs, ret_size = 0;
+	struct cache_entry *centry = NULL;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	if (!string_to_sid(&user_sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not convert sid %s from string\n",
+			  state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	domain = find_lookup_domain_from_sid(&user_sid);
+
+	if (!domain) {
+		DEBUG(1,("Can't find domain from sid\n"));
+		return WINBINDD_ERROR;
+	}
+
+	centry = wcache_fetch_only("UG/%s", sid_string_static(&user_sid));
+
+	if ((state->continuation != NULL) && /* Here the second time */
+	    (centry == NULL)) {
+		DEBUG(1, ("Internal error, no centry second time\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if ((centry == NULL) || centry_expired(domain, centry))
+		state->send_to_background = True;
+
+	if (centry == NULL) {
+		state->continuation = cache_getusersids;
+		return WINBINDD_PENDING;
+	}
+
+	mem_ctx = talloc_init("winbindd_getusersids(%s)",
+			      state->request.data.username);
+
+	if (mem_ctx == NULL) {
+		centry_free(centry);
+		return WINBINDD_ERROR;
+	}
+
+	num_groups = centry_uint32(centry);
+
+	user_sids = talloc(mem_ctx, sizeof(*user_sids) * num_groups);
+	if (user_sids == NULL)
+		smb_panic("cache_getusersids out of memory");
+
+	for (i=0; i<num_groups; i++)
+		user_sids[i] = centry_sid(centry, mem_ctx);
+
+	/* work out the response size */
+	for (i = 0; i < num_groups; i++) {
+		const char *s = sid_string_static(user_sids[i]);
+		ret_size += strlen(s) + 1;
+	}
+
+	ret = malloc(ret_size);
+	if (ret == NULL)
+		smb_panic("cache_getusersids out of memory");
+
+	ofs = 0;
+	for (i = 0; i < num_groups; i++) {
+		const char *s = sid_string_static(user_sids[i]);
+		safe_strcpy(ret + ofs, s, ret_size - ofs - 1);
+		ofs += strlen(ret+ofs) + 1;
+	}
+
+	/* Send data back to client */
+	state->response.data.num_entries = num_groups;
+	state->response.extra_data = ret;
+	state->response.length += ret_size;
+
+	talloc_destroy(mem_ctx);
+
+	return WINBINDD_OK;
+}
