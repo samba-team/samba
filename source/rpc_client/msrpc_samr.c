@@ -848,14 +848,49 @@ BOOL sam_query_groupmem( const POLICY_HND *pol_dom,
 
 		if (rid_copy != NULL)
 		{
-			uint32 i;
+			uint32 i, j;
+
 			for (i = 0; i < num_mem; i++)
 			{
 				rid_copy[i] = (*rid_mem)[i];
 			}
+
+			/* Only look up rids in lots of ~900 users.  The
+			   current TNG code borks LSASS.EXE at between
+			   987-1000 rids requiring a reboot of NT.  )-: */
+
+#define MAX_LOOKUP_RIDS 800
+
 			/* resolve names */
-			res3 = samr_query_lookup_rids( pol_dom, 1000,
-		                   num_mem, rid_copy, num_names, name, type);
+			
+			*name = malloc(num_mem * sizeof(char *));
+			*type = malloc(num_mem * sizeof(uint32));
+
+			for(j = 0; j < num_mem; j += MAX_LOOKUP_RIDS) 
+			{
+				uint32 tmp_num_names = 0;
+				char **tmp_names;
+				uint32 *tmp_types;
+				uint32 k;
+
+				/* Look up up to MAX_LOOKUP_RIDS */
+
+				samr_query_lookup_rids(
+					pol_dom, 1000, 
+					MIN(num_mem - j, MAX_LOOKUP_RIDS),
+					&rid_copy[j], &tmp_num_names,
+					&tmp_names, &tmp_types);
+
+				memcpy(&(*name)[j], tmp_names,
+				       sizeof(char *) * tmp_num_names);
+				memcpy(&(*type)[j], tmp_types,
+				       sizeof(uint32) * tmp_num_names);
+
+				safe_free(tmp_names);
+				safe_free(tmp_types);
+
+				*num_names += tmp_num_names;
+			}
 
 			free(rid_copy);
 		}
