@@ -1,3 +1,25 @@
+Sun Jun  1 16:31:23 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_safe.c, lib/krb5/rd_priv.c, lib/krb5/mk_rep.c,
+ 	lib/krb5/mk_priv.c, lib/krb5/build_auth.c: Some support for
+ 	KRB5_AUTH_CONTEXT_DO_SEQUENCE
+
+	* lib/krb5/get_in_tkt.c (get_in_tkt): be prepared to parse an
+ 	KRB_ERROR.  Some support for PA_ENC_TS_ENC.
+
+	* lib/krb5/auth_context.c: implemented seq_number functions
+
+	* lib/krb5/generate_subkey.c, generate_seq_number.c: new files
+
+	* lib/gssapi/gssapi.h: avoid including <krb5.h>
+
+	* lib/asn1/Makefile.am: SUFFIXES as a variable to make automake
+ 	happy
+
+	* kdc/kdc.c: preliminary PREAUTH_ENC_TIMESTAMP
+
+	* configure.in: adapted to automake 1.1p
+
 Thu May 15 20:25:37 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/verify_user.c: First stab at a verify user.
