@@ -1,3 +1,8 @@
+2000-03-20  Assar Westerlund  <assar@sics.se>
+
+	* afssysdefs.h: make versions later than 5.7 of solaris also use
+	73
+
 2000-03-16  Assar Westerlund  <assar@sics.se>
 
 	* afskrb.c (afslog_uid_int): use krb_get_tf_fullname instead of
