@@ -672,7 +672,7 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip);
 BOOL lookup_dc_name(const char *srcname, const char *domain, 
 		    struct in_addr *dc_ip, char *ret_name);
 BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count);
-BOOL get_dmb_list(struct in_addr **ip_list, int *count);
+BOOL get_lmb_list(struct in_addr **ip_list, int *count);
 
 /*The following definitions come from  libsmb/nmblib.c  */
 
@@ -1008,6 +1008,7 @@ char *ufc_crypt(const char *key,const char *salt);
 
 /*The following definitions come from  lib/username.c  */
 
+BOOL name_is_local(const char *name);
 char *get_user_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
@@ -2326,6 +2327,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode);
 BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode);
 BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode);
 int print_job_write(int jobid, const char *buf, int size);
+int print_queue_length(int snum, print_status_struct *pstatus);
 int print_job_start(struct current_user *user, int snum, char *jobname);
 BOOL print_job_end(int jobid, BOOL normal_close);
 int print_queue_status(int snum, 
@@ -4482,7 +4484,6 @@ void unbecome_root(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void);
 void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN **pptok);
-BOOL name_is_local(const char *name);
 BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
@@ -4657,6 +4658,9 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
+TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
+			 int open_flags, mode_t mode,
+			 tdb_log_func log_fn);
 int tdb_close(TDB_CONTEXT *tdb);
 int tdb_lockall(TDB_CONTEXT *tdb);
 void tdb_unlockall(TDB_CONTEXT *tdb);

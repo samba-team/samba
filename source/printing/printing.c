@@ -753,7 +753,9 @@ static BOOL print_cache_expired(int snum)
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	t2 = tdb_fetch_int(tdb, key);
 	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
-		DEBUG(3, ("print cache expired\n"));
+		DEBUG(3, ("print cache expired for queue %s \
+(last_cache = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
+			(int)t2, (int)t, (int)lp_lpqcachetime() ));
 		return True;
 	}
 	return False;
@@ -785,15 +787,21 @@ static int get_queue_status(int snum, print_status_struct *status)
 /****************************************************************************
  Determine the number of jobs in a queue.
 ****************************************************************************/
-static int print_queue_length(int snum)
+
+int print_queue_length(int snum, print_status_struct *pstatus)
 {
 	print_status_struct status;
-
+	int len;
+ 
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum)) print_queue_update(snum);
-
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
+ 
 	/* also fetch the queue status */
-	return get_queue_status(snum, &status);
+	len = get_queue_status(snum, &status);
+	if (pstatus)
+		*pstatus = status;
+	return len;
 }
 
 /****************************************************************************
@@ -823,6 +831,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	struct printjob pjob;
 	int next_jobid;
 	user_struct *vuser;
+	int njobs;
 
 	errno = 0;
 
@@ -857,9 +866,9 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	}
 
 	/* Insure the maximum queue size is not violated */
-	if (lp_maxprintjobs(snum) && print_queue_length(snum) > lp_maxprintjobs(snum)) {
+	if (lp_maxprintjobs(snum) && (njobs = print_queue_length(snum,NULL)) > lp_maxprintjobs(snum)) {
 		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per queue (%d).\n",
-			print_queue_length(snum), lp_maxprintjobs(snum) ));
+			njobs, lp_maxprintjobs(snum) ));
 		errno = ENOSPC;
 		return -1;
 	}
@@ -867,7 +876,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* Insure the maximum print jobs in the system is not violated */
 	if (lp_totalprintjobs() && get_total_jobs(snum) > lp_totalprintjobs()) {
 		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per system (%d).\n",
-			print_queue_length(snum), lp_totalprintjobs() ));
+			njobs, lp_totalprintjobs() ));
 		errno = ENOSPC;
 		return -1;
 	}

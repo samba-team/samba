@@ -1848,14 +1848,12 @@ static void spoolss_notify_status(int snum,
 				  NT_PRINTER_INFO_LEVEL *printer,
 				  TALLOC_CTX *mem_ctx)
 {
-	print_queue_struct *q=NULL;
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-	print_queue_status(snum, &q, &status);
+	print_queue_length(snum, &status);
 	data->notify_data.value[0]=(uint32) status.status;
 	data->notify_data.value[1] = 0;
-	SAFE_FREE(q);
 }
 
 /*******************************************************************
@@ -1867,13 +1865,8 @@ static void spoolss_notify_cjobs(int snum,
 				 NT_PRINTER_INFO_LEVEL *printer, 
 				 TALLOC_CTX *mem_ctx)
 {
-	print_queue_struct *q=NULL;
-	print_status_struct status;
-
-	memset(&status, 0, sizeof(status));
-	data->notify_data.value[0] = print_queue_status(snum, &q, &status);
+	data->notify_data.value[0] = print_queue_length(snum, NULL);
 	data->notify_data.value[1] = 0;
-	SAFE_FREE(q);
 }
 
 /*******************************************************************
