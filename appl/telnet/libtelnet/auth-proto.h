@@ -58,7 +58,6 @@
 #ifdef AUTHENTICATION
 Authenticator *findauthenticator (int, int);
 
-int auth_cmd (int, char **);
 int auth_wait (char *);
 void auth_disable_name (char *);
 void auth_finished (Authenticator *, int);
@@ -71,7 +70,16 @@ void auth_request (void);
 void auth_send (unsigned char *, int);
 void auth_send_retry (void);
 void auth_printsub(unsigned char*, int, unsigned char*, int);
-
+int getauthmask(char *type, int *maskp);
+int auth_enable(char *type);
+int auth_disable(char *type);
+int auth_onoff(char *type, int on);
+int auth_togdebug(int on);
+int auth_status(void);
+int auth_sendname(unsigned char *cp, int len);
+void auth_debug(int mode);
+void auth_gen_printsub(unsigned char *data, int cnt,
+		       unsigned char *buf, int buflen);
 
 #ifdef UNSAFE
 int unsafe_init (Authenticator *, int);

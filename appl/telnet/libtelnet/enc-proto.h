@@ -105,7 +105,6 @@ void encrypt_wait(void);
 #ifdef	TELENTD
 void encrypt_wait (void);
 #else
-int encrypt_cmd (int, char **);
 void encrypt_display (void);
 #endif
 
