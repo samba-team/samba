@@ -1,3 +1,8 @@
+1999-08-18  Assar Westerlund  <assar@sics.se>
+
+	* ftp/cmds.c (getit): be more suspicious when parsing the result
+ 	of MDTM.  Do the comparison of timestamps correctly.
+
 1999-08-13  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c (send_data): avoid calling mmap with `len == 0'.
