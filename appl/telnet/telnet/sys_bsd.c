@@ -527,8 +527,8 @@ TerminalNewMode(int f)
 #endif
 #ifdef	SIGTSTP
 	(void) signal(SIGTSTP, SIG_DFL);
-	sigemptyset(sm);
-	sigaddset(sm, SIGTSTP);
+	sigemptyset(&sm);
+	sigaddset(&sm, SIGTSTP);
 	sigprocmask(SIG_UNBLOCK, &sm, NULL);
 #endif	/* SIGTSTP */
 	tmp_tc = old_tc;
