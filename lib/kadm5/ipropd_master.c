@@ -528,8 +528,7 @@ write_stats(krb5_context context, slave *slaves, u_int32_t current_version)
     if (fp == NULL)
 	return;
 
-    strftime(str, sizeof(str), "%Y-%m-%d %H:%M:%S",
-	     localtime(&t));
+    krb5_format_time(context, t, str, sizeof(str), TRUE); 
     fprintf(fp, "Status for slaves, last updated: %s\n\n", str);
 
     fprintf(fp, "Master version: %lu\n\n", (unsigned long)current_version);
