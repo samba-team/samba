@@ -45,9 +45,10 @@ static pid_t local_pid;
 static int get_queue_status(int, print_status_struct *);
 
 /****************************************************************************
-initialise the printing backend. Called once at startup. 
-Does not survive a fork
+ Initialise the printing backend. Called once at startup. 
+ Does not survive a fork
 ****************************************************************************/
+
 BOOL print_backend_init(void)
 {
 	char *sversion = "INFO/version";
@@ -80,8 +81,9 @@ BOOL print_backend_init(void)
 }
 
 /****************************************************************************
-useful function to generate a tdb key
+ Useful function to generate a tdb key.
 ****************************************************************************/
+
 static TDB_DATA print_key(int jobid)
 {
 	static int j;
@@ -94,8 +96,9 @@ static TDB_DATA print_key(int jobid)
 }
 
 /****************************************************************************
-useful function to find a print job in the database
+ Useful function to find a print job in the database.
 ****************************************************************************/
+
 static struct printjob *print_job_find(int jobid)
 {
 	static struct printjob pjob;
@@ -110,8 +113,9 @@ static struct printjob *print_job_find(int jobid)
 }
 
 /****************************************************************************
-store a job structure back to the database
+ Store a job structure back to the database.
 ****************************************************************************/
+
 static BOOL print_job_store(int jobid, struct printjob *pjob)
 {
 	TDB_DATA d;
@@ -122,8 +126,9 @@ static BOOL print_job_store(int jobid, struct printjob *pjob)
 }
 
 /****************************************************************************
-parse a file name from the system spooler to generate a jobid
+ Parse a file name from the system spooler to generate a jobid.
 ****************************************************************************/
+
 static int print_parse_jobid(char *fname)
 {
 	int jobid;
@@ -137,10 +142,10 @@ static int print_parse_jobid(char *fname)
 	return jobid;
 }
 
-
 /****************************************************************************
-list a unix job in the print database
+ List a unix job in the print database.
 ****************************************************************************/
+
 static void print_unix_job(int snum, print_queue_struct *q)
 {
 	int jobid = q->job + UNIX_JOB_START;
@@ -247,8 +252,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 }
 
 /****************************************************************************
-check if the print queue has been updated recently enough
+ Check if the print queue has been updated recently enough.
 ****************************************************************************/
+
 static void print_cache_flush(int snum)
 {
 	fstring key;
@@ -472,19 +478,20 @@ static void print_queue_update(int snum)
 }
 
 /****************************************************************************
-check if a jobid is valid. It is valid if it exists in the database
+ Check if a jobid is valid. It is valid if it exists in the database.
 ****************************************************************************/
+
 BOOL print_job_exists(int jobid)
 {
 	return tdb_exists(tdb, print_key(jobid));
 }
 
-
 /****************************************************************************
-work out which service a jobid is for
-note that we have to look up by queue name to ensure that it works for 
-other than the process that started the job
+ Work out which service a jobid is for.
+ Note that we have to look up by queue name to ensure that it works for 
+ other than the process that started the job.
 ****************************************************************************/
+
 int print_job_snum(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -494,8 +501,9 @@ int print_job_snum(int jobid)
 }
 
 /****************************************************************************
-give the fd used for a jobid
+ Give the fd used for a jobid.
 ****************************************************************************/
+
 int print_job_fd(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -506,10 +514,11 @@ int print_job_fd(int jobid)
 }
 
 /****************************************************************************
-give the filename used for a jobid
-only valid for the process doing the spooling and when the job
-has not been spooled
+ Give the filename used for a jobid.
+ Only valid for the process doing the spooling and when the job
+ has not been spooled.
 ****************************************************************************/
+
 char *print_job_fname(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -517,10 +526,10 @@ char *print_job_fname(int jobid)
 	return pjob->filename;
 }
 
-
 /****************************************************************************
-set the place in the queue for a job
+ Set the place in the queue for a job.
 ****************************************************************************/
+
 BOOL print_job_set_place(int jobid, int place)
 {
 	DEBUG(2,("print_job_set_place not implemented yet\n"));
@@ -528,8 +537,9 @@ BOOL print_job_set_place(int jobid, int place)
 }
 
 /****************************************************************************
-set the name of a job. Only possible for owner
+ Set the name of a job. Only possible for owner.
 ****************************************************************************/
+
 BOOL print_job_set_name(int jobid, char *name)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -539,10 +549,10 @@ BOOL print_job_set_name(int jobid, char *name)
 	return print_job_store(jobid, pjob);
 }
 
-
 /****************************************************************************
-delete a print job - don't update queue
+ Delete a print job - don't update queue.
 ****************************************************************************/
+
 static BOOL print_job_delete1(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -586,8 +596,9 @@ static BOOL print_job_delete1(int jobid)
 }
 
 /****************************************************************************
-return true if the current user owns the print job
+ Return true if the current user owns the print job.
 ****************************************************************************/
+
 static BOOL is_owner(struct current_user *user, int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -605,8 +616,9 @@ static BOOL is_owner(struct current_user *user, int jobid)
 }
 
 /****************************************************************************
-delete a print job
+ Delete a print job.
 ****************************************************************************/
+
 BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 {
 	int snum = print_job_snum(jobid);
@@ -641,10 +653,10 @@ BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 	return !print_job_exists(jobid);
 }
 
-
 /****************************************************************************
-pause a job
+ Pause a job.
 ****************************************************************************/
+
 BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -687,8 +699,9 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 }
 
 /****************************************************************************
-resume a job
+ Resume a job.
 ****************************************************************************/
+
 BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -728,8 +741,9 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 }
 
 /****************************************************************************
-write to a print file
+ Write to a print file.
 ****************************************************************************/
+
 int print_job_write(int jobid, const char *buf, int size)
 {
 	int fd;
@@ -764,6 +778,7 @@ static BOOL print_cache_expired(int snum)
 /****************************************************************************
  Get the queue status - do not update if db is out of date.
 ****************************************************************************/
+
 static int get_queue_status(int snum, print_status_struct *status)
 {
 	fstring keystr;
@@ -808,6 +823,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 /****************************************************************************
  Determine the number of jobs in all queues.
 ****************************************************************************/
+
 static int get_total_jobs(int snum)
 {
 	int total_jobs;
@@ -823,8 +839,9 @@ static int get_total_jobs(int snum)
 }
 
 /***************************************************************************
-start spooling a job - return the jobid
+ Start spooling a job - return the jobid.
 ***************************************************************************/
+
 int print_job_start(struct current_user *user, int snum, char *jobname)
 {
 	int jobid;
@@ -832,7 +849,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	struct printjob pjob;
 	int next_jobid;
 	user_struct *vuser;
-	int njobs;
+	int njobs = 0;
 
 	errno = 0;
 
@@ -1114,8 +1131,9 @@ static int printjob_comp(print_queue_struct *j1, print_queue_struct *j2)
 }
 
 /****************************************************************************
-get a printer queue listing
+ Get a printer queue listing.
 ****************************************************************************/
+
 int print_queue_status(int snum, 
 		       print_queue_struct **queue,
 		       print_status_struct *status)
@@ -1186,10 +1204,10 @@ int print_queue_status(int snum,
 	return tstruct.qcount;
 }
 
-
 /****************************************************************************
-turn a queue name into a snum
+ Turn a queue name into a snum.
 ****************************************************************************/
+
 int print_queue_snum(char *qname)
 {
 	int snum = lp_servicenumber(qname);
@@ -1197,10 +1215,10 @@ int print_queue_snum(char *qname)
 	return snum;
 }
 
-
 /****************************************************************************
- pause a queue
+ Pause a queue.
 ****************************************************************************/
+
 BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 {
 	char *printer_name;
@@ -1231,8 +1249,9 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 }
 
 /****************************************************************************
- resume a queue
+ Resume a queue.
 ****************************************************************************/
+
 BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 {
 	char *printer_name;
@@ -1263,8 +1282,9 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 }
 
 /****************************************************************************
- purge a queue - implemented by deleting all jobs that we can delete
+ Purge a queue - implemented by deleting all jobs that we can delete.
 ****************************************************************************/
+
 BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 {
 	print_queue_struct *queue;
