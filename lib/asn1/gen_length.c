@@ -126,8 +126,12 @@ length_type (const char *name, const Type *t, const char *variable)
 		 variable, variable);
 
 	fprintf (codefile, "for(i = (%s)->len - 1; i >= 0; --i){\n", name);
+	fprintf (codefile, "int oldret = %s;\n"
+		 "%s = 0;\n", variable, variable);
 	asprintf (&n, "&(%s)->val[i]", name);
 	length_type(n, t->subtype, variable);
+	fprintf (codefile, "%s += oldret;\n",
+		 variable);
 	fprintf (codefile, "}\n");
 
 	fprintf (codefile,
