@@ -534,9 +534,6 @@ BOOL srv_check_sign_mac(char *inbuf)
 
 void srv_calculate_sign_mac(char *outbuf)
 {
-	if (!srv_sign_info.doing_signing)
-		return;
-
 	/* Check if it's a session keepalive. */
 	/* JRA Paranioa test - do we ever generate these in the server ? */
 	if(CVAL(outbuf,0) == SMBkeepalive)
