@@ -54,29 +54,20 @@ The components of the suite are (in summary):
 
 <item> smbd, the SMB server. This handles actual connections from
 clients, doing all the file, permission and username work
-
 <item>nmbd, the Netbios name server, which helps clients locate
 servers, doing the browsing work and managing domains as this
 capability is being built into Samba
-
 <item>smbclient, the Unix-hosted client program
-
 <item>smbrun, a little 'glue' program to help the server run external
 programs
-
 <item>testprns, a program to test server access to printers
-
 <item>testparms, a program to test the Samba configuration file for
 correctness
-
 <item>smb.conf, the Samba configuration file
-
 <item> smbprint, a sample script to allow a Unix host to use smbclient
 to print to an SMB server
-
 <item> documentation! DON'T neglect to read it - you will save a great
 deal of time!
-
 </itemize>
 
 The suite is supplied with full source (of course!) and is GPLed.
@@ -125,28 +116,27 @@ very stable and safe, and this is mostly due to the policy of many
 public releases.
 
 How the scheme works:
-
-1) when major changes are made the version number is increased. For
+<enum>
+<item>when major changes are made the version number is increased. For
 example, the transition from 1.9.15 to 1.9.16. However, this version
 number will not appear immediately and people should continue to use
 1.9.15 for production systems (see next point.)
 
-2) just after major changes are made the software is considered
+<item>just after major changes are made the software is considered
 unstable, and a series of alpha releases are distributed, for example
 1.9.16alpha1. These are for testing by those who know what they are
 doing.  The "alpha" in the filename will hopefully scare off those who
 are just looking for the latest version to install.
 
-3) when Andrew thinks that the alphas have stabilised to the point
+<item>when Andrew thinks that the alphas have stabilised to the point
 where he would recommend new users install it, he renames it to the
 same version number without the alpha, for example 1.9.16.
 
-4) inevitably bugs are found in the "stable" releases and minor patch
-levels are released which give us the pXX series, for example
-1.9.16p2.
-
+<item>inevitably bugs are found in the "stable" releases and minor patch
+levels are released which give us the pXX series, for example 1.9.16p2.
+</enum>
 So the progression goes:
-
+<verb>
                         1.9.15p7        (production)
                         1.9.15p8        (production)
                         1.9.16alpha1    (test sites only)
@@ -154,7 +144,7 @@ So the progression goes:
                         1.9.16alpha20   (test sites only)
                         1.9.16          (production)
                         1.9.16p1        (production)
-
+</verb>
 The above system means that whenever someone looks at the samba ftp
 site they will be able to grab the highest numbered release without an
 alpha in the name and be sure of getting the current recommended
@@ -207,15 +197,17 @@ At time of writing, the Makefile claimed support for:
 There are two mailing lists devoted to discussion of Samba-related
 matters.  There is also the newsgroup, comp.protocols.smb, which has a
 great deal of discussion on Samba. There is also a WWW site 'SAMBA Web
-Pages' at http://samba.canberra.edu.au/pub/samba/samba.html, under
+Pages' at <url url="http://samba.canberra.edu.au/pub/samba/samba.html">, under
 which there is a comprehensive survey of Samba users. Another useful
 resource is the hypertext archive of the Samba mailing list.
 
-Send email to listproc@samba.anu.edu.au. Make sure the subject line is
+Send email to <htmlurl url="mailto:listproc@samba.anu.edu.au" name="listproc@samba.anu.edu.au">. Make sure the subject line is
 blank, and include the following two lines in the body of the message:
 
-      subscribe samba Firstname Lastname
-      subscribe samba-announce Firstname Lastname
+<tscreen><verb>
+subscribe samba Firstname Lastname
+subscribe samba-announce Firstname Lastname
+</verb></tscreen>
 
 Obviously you should substitute YOUR first name for "Firstname" and
 YOUR last name for "Lastname"! Try not to send any signature stuff, it
@@ -227,24 +219,26 @@ been received by the list since the last time and sends a copy of this
 message to all subscribers.
 
 If you stop being interested in Samba, please send another email to
-listproc@samba.anu.edu.au. Make sure the subject line is blank, and
+<htmlurl url="mailto:listproc@samba.anu.edu.au" name="listproc@samba.anu.edu.au">. Make sure the subject line is blank, and
 include the following two lines in the body of the message:
 
-      unsubscribe samba
-      unsubscribe samba-announce
+<tscreen><verb>
+unsubscribe samba
+unsubscribe samba-announce
+</verb></tscreen>
 
-The From: line in your message MUST be the same address you used when
+The <bf>From:</bf> line in your message <em>MUST</em> be the same address you used when
 you subscribed.
 
 <sect1> Something's gone wrong - what should I do? <p> <label id="wrong">
 
-[#] *** IMPORTANT! *** [#] 
-DO NOT post messages on mailing lists or in newsgroups until you have
+<bf>[#] *** IMPORTANT! *** [#]</bf>
+<p>DO NOT post messages on mailing lists or in newsgroups until you have
 carried out the first three steps given here!
 
 Firstly, see if there are any likely looking entries in this FAQ! If
 you have just installed Samba, have you run through the checklist in
-DIAGNOSIS.txt? It can save you a lot of time and effort.
+<url url="ftp://samba.anu.edu.au/pub/samba/DIAGNOSIS.txt" name="DIAGNOSIS.txt">? It can save you a lot of time and effort.
 
 Secondly, read the man pages for smbd, nmbd and smb.conf, looking for
 topics that relate to what you are trying to do.
@@ -270,7 +264,7 @@ I can incorporate it in the next version.
 If you make changes to the source code, _please_ submit these patches
 so that everyone else gets the benefit of your work. This is one of
 the most important aspects to the maintainence of Samba. Send all
-patches to samba-bugs@samba.anu.edu.au, not Andrew Tridgell or any
+patches to <htmlurl url="mailto:samba-bugs@samba.anu.edu.au" name="samba-bugs@samba.anu.edu.au">, not Andrew Tridgell or any
 other individual and not the samba team mailing list.
 
 <sect1> Pizza supply details <p> <label id="pizza">
@@ -306,7 +300,7 @@ hungry sniffer dogs but it will have been a noble gesture.
 <sect1>I can't see the Samba server in any browse lists!<p>
 <label id="no_browse">
 
- See ftp://samba.anu.edu.au/pub/samba/BROWSING.txt 
+ See <url url="ftp://samba.anu.edu.au/pub/samba/BROWSING.txt" name="BROWSING.txt">
  for more information on browsing.  Browsing.txt can also be found
  in the docs directory of the Samba source.
 
@@ -320,11 +314,9 @@ thusly:
 The details of how to do this and the specific syntax varies from
 client to client - check your client's documentation.
 
-<sect1>Some files that I KNOW are on the server doesn't show up when I
-view the files from my client! <p> <label id="missing_files">
+<sect1>Some files that I KNOW are on the server doesn't show up when I view the files from my client! <p> <label id="missing_files">
 
-<sect1>Some files on the server show up with really wierd filenames when
-I view the files from my client! <p> <label id="strange_filenames">
+<sect1>Some files on the server show up with really wierd filenames when I view the files from my client! <p> <label id="strange_filenames">
 
 If you check what files are not showing up, you will note that they
 are files which contain upper case letters or which are otherwise not
@@ -366,9 +358,7 @@ Two of this FAQ for more ideas.
 By the way, remember to REMOVE the hardcoded mapping before further
 tests :-)     
 
-<sect1>My client reports "cannot locate specified share name" or
-similar<p> 
-<label id="cant_see_share">
+<sect1>My client reports "cannot locate specified share name" or similar<p> <label id="cant_see_share">
 
 This message indicates that your client CAN locate the specified
 server, which is a good start, but that it cannot find a service of
@@ -446,7 +436,7 @@ as a strictly temporary solution.
 In earlier Samba versions there were some difficulties with the very
 latest Microsoft products, particularly Excel 5 and Word for Windows
 6. These should have all been solved. If not then please let Andrew
-Tridgell know via email at 'samba-bugs@anu.edu.au'.
+Tridgell know via email at <htmlurl url="mailto:samba-bugs@anu.edu.au" name="samba-bugs@anu.edu.au">.
 
 <sect1>My "server string" doesn't seem to be recognised<p>
 <label id="bad_server_string">
@@ -508,7 +498,7 @@ as uid 65535 will actually run as root. This is not good!
 <sect1>Are any Macintosh clients for Samba<p> <label id="mac_clients">
 
 lkcl - update 09mar97 - the answer is "Yes!".  Thursby now have a
-CIFS Client / Server - see www.thursby.com.  They test it against
+CIFS Client / Server - see <url url="http://www.thursby.com/">.  They test it against
 Windows 95, Windows NT and samba for compatibility issues.  At
 present, DAVE is at version 1.0.0.  DAVE version 1.0.1 is in beta,
 and will be released in April 97 (the speed of finder copies has
@@ -519,11 +509,11 @@ several kinds of UNIX machnes, and several more commercial ones.
 These products allow you to run file services and print services
 natively to Macintosh users, with no additional support required on
 the Macintosh.  The two free omplementations are Netatalk,
-http://www.umich.edu/~rsug/netatalk/, and CAP, 
-http://www.cs.mu.oz.au/appletalk/atalk.html.  What Samba offers 
+<url url="http://www.umich.edu/~rsug/netatalk/">, and CAP, 
+<url url="http://www.cs.mu.oz.au/appletalk/atalk.html">.  What Samba offers 
 MS Windows users, these packages offer to Macs.  For more info on
 these packages, Samba, and Linux (and other UNIX-based systems)
-see http://www.eats.com/linux_mac_win.html
+see <url url="http://www.eats.com/linux_mac_win.html">
 
 <sect1>"Session request failed (131,130)" error<p> <label id="sess_req_fail">
 
@@ -562,20 +552,24 @@ To syncronize your PC's clock with your Samba server:
 <itemize>
 <item> Copy timesync.pif to your windows directory
  <item> timesync.pif can be found at:
-    http://samba.canberra.edu.au/pub/samba/binaries/miscellaneous/timesync.pif
+    <url url="http://samba.canberra.edu.au/pub/samba/binaries/miscellaneous/timesync.pif">
 <item> Add timesync.pif to your 'Start Up' group/folder
 <item> Open the properties dialog box for the program/icon
 <item> Make sure the 'Run Minimized' option is set in program 'Properties'
 <iteM> Change the command line section that reads \\sambahost to reflect the name of your server.
 <item> Close the properties dialog box by choosing 'OK'
+</itemize>
 
 Each time you start your computer (or login for Win95) your PC will
 synchronize it's clock with your Samba server.
 
 Alternativley, if you clients support Domain Logons, you can setup Domain Logons with Samba
- - see: ftp://samba.anu.edu.au/pub/samba/BROWSING.txt *** for more information.
-Then add NET TIME \\%L /SET /YES as one of the lines in the logon script.
-
+ - see: <url url="ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt" name="BROWSING.txt"> *** for more information.
+<p>Then add 
+<tscreen><verb>
+NET TIME \\%L /SET /YES
+</verb></tscreen>
+as one of the lines in the logon script.
 <sect1>Problems with WinDD, NTrigue, WinCenterPro etc<p>
 <label id="multiple_session_clients">
 
@@ -624,27 +618,23 @@ hergeth@f7axp1.informatik.fh-muenchen.de may be useful:
  A network-printer (with ethernetcard) is connected to the NT-Clients
 via our UNIX-Fileserver (SAMBA-Server), like the configuration told by
  Matthew Harrell harrell@leech.nrl.navy.mil (see WinNT.txt)
-
- 1.) If a user has choosen this printer as the default printer in his
+<enum>
+<item>If a user has choosen this printer as the default printer in his
      NT-Session and this printer is not connected to the network
      (e.g. switched off) than this user has a problem with the SAMBA-
      connection of his filesystems. It's very slow.
 
- 2.) If the printer is connected to the network everything works fine.
+<item>If the printer is connected to the network everything works fine.
 
- 3.) When the smbd ist started with debug level 3, you can see that
-the
-     NT spooling system try to connect to the printer many times. If
-the
-     printer ist not connected to the network this request fails and
-the
-     NT spooler is wasting a lot of time to connect to the printer
-service.
+<item>When the smbd ist started with debug level 3, you can see that the
+     NT spooling system try to connect to the printer many times. If the
+     printer ist not connected to the network this request fails and the
+     NT spooler is wasting a lot of time to connect to the printer service.
      This seems to be the reason for the slow network connection.
 
- 4.) Maybe it's possible to change this behaviour by setting different
-printer properties in the Print-Manager-Menu of NT, but i didn't try
-it yet.
+<item>Maybe it's possible to change this behaviour by setting different 
+     printer properties in the Print-Manager-Menu of NT, but i didn't try it yet.
+</enum>
 
 <sect1>Why are my file's timestamps off by an hour, or by a few hours?<p>
 <label id="dst_bugs">
@@ -658,77 +648,64 @@ namely, the number of seconds since 1970-01-01 00:00:00 Universal Time
 (or ``GMT''), not counting leap seconds.
 
 On the server side, Samba uses the Unix TZ variable to convert
-internal
-timestamps to and from local time.  So on the server side, there are
-two
-things to get right.
-
-        1.  The Unix system clock must have the correct Universal
-time.
+internal timestamps to and from local time.  So on the server side, there are
+two things to get right.
+<enum>
+<item>The Unix system clock must have the correct Universal time.
         Use the shell command "sh -c 'TZ=UTC0 date'" to check this.
 
-        2.  The TZ environment variable must be set on the server
+<item>The TZ environment variable must be set on the server
         before Samba is invoked.  The details of this depend on the
         server OS, but typically you must edit a file whose name is
-        /etc/TIMEZONE or /etc/default/init, or run the command `zic
--l'.
+        /etc/TIMEZONE or /etc/default/init, or run the command `zic -l'.
 
-        3.  TZ must have the correct value.
-
-                3a.  If possible, use geographical time zone settings
+<item>TZ must have the correct value.
+<enum>
+      <item>If possible, use geographical time zone settings
                 (e.g. TZ='America/Los_Angeles' or perhaps
                 TZ=':US/Pacific').  These are supported by most
                 popular Unix OSes, are easier to get right, and are
                 more accurate for historical timestamps.  If your
                 operating system has out-of-date tables, you should be
                 able to update them from the public domain time zone
-                tables at URL:ftp://elsie.nci.nih.gov/pub/.
+                tables at <url url="ftp://elsie.nci.nih.gov/pub/">.
 
-                3b.  If your system does not support geographical time
-zone
+      <item>If your system does not support geographical timezone
                 settings, you must use a Posix-style TZ strings, e.g.
                 TZ='PST8PDT,M4.1.0/2,M10.5.0/2' for US Pacific time.
-                Posix TZ strings can take the following form (with
-optional
+                Posix TZ strings can take the following form (with optional
                 items in brackets):
-
+<verb>
                         StdOffset[Dst[Offset],Date/Time,Date/Time]
-
+</verb>
                 where:
+<itemize>
+<item>                        `Std' is the standard time designation (e.g. `PST').
 
-                        `Std' is the standard time designation
-(e.g. `PST').
-
-                        `Offset' is the number of hours behind UTC
-(e.g. `8').
+<item>                        `Offset' is the number of hours behind UTC (e.g. `8').
                         Prepend a `-' if you are ahead of UTC, and
                         append `:30' if you are at a half-hour offset.
                         Omit all the remaining items if you do not use
                         daylight-saving time.
 
-                        `Dst' is the daylight-saving time designation
+<item>                        `Dst' is the daylight-saving time designation
                         (e.g. `PDT').
 
                         The optional second `Offset' is the number of
                         hours that daylight-saving time is behind UTC.
                         The default is 1 hour ahead of standard time.
 
-                        `Date/Time,Date/Time' specify when
-daylight-saving
-                        time starts and ends.  The format for a date
-is
-                        `Mm.n.d', which specifies the dth day (0 is
-Sunday)
-                        of the nth week of the mth month, where week 5
-means
-                        the last such day in the month.  The format
-for a
+<item>                        `Date/Time,Date/Time' specify when daylight-saving
+                        time starts and ends.  The format for a date is
+                        `Mm.n.d', which specifies the dth day (0 is Sunday)
+                        of the nth week of the mth month, where week 5 means
+                        the last such day in the month.  The format for a
                         time is [h]h[:mm[:ss]], using a 24-hour clock.
-
-                Other Posix string formats are allowed but you don't
-want
+</itemize>
+                Other Posix string formats are allowed but you don't want
                 to know about them.
-
+</enum>
+</enum>
 On the client side, you must make sure that your client's clock and
 time zone is also set appropriately.  [[I don't know how to do this.]]
 Samba traditionally has had many problems dealing with time zones, due
@@ -742,22 +719,22 @@ and then reconnecting to it; or upgrade your Samba server to
 <label id="printer_driver_name">
 
 Question:
-> On NT, I opened "Printer Manager" and "Connect to Printer".
-> Enter "\\ptdi270\ps1" in the box of printer. I got the
-> following error message:
->
->     You do not have sufficient access to your machine
->     to connect to the selected printer, since a driver
->     needs to be installed locally.
-
+ On NT, I opened "Printer Manager" and "Connect to Printer".
+ Enter "\\ptdi270\ps1" in the box of printer. I got the
+ following error message:
+<tscreen><verb>
+     You do not have sufficient access to your machine
+     to connect to the selected printer, since a driver
+     needs to be installed locally.
+</verb></tscreen>
 Answer:
 
 In the more recent versions of Samba you can now set the "printer
 driver" in smb.conf. This tells the client what driver to use. For
 example, I have:
-
+<tscreen><verb>
      printer driver = HP LaserJet 4L
-
+</verb></tscreen>
 and NT knows to use the right driver. You have to get this string
 exactly right.
 
@@ -767,9 +744,9 @@ correct strings for all the different printers are shown in a listbox
 in that dialog box.
 
 You could also try setting the driver to NULL like this:
-
+<tscreen><verb>
      printer driver = NULL
-
+</verb></tscreen>
 this is effectively what older versions of Samba did, so if that
 worked for you then give it a go. If this does work then let me know
 and I'll make it the default. Currently the default is a 0 length

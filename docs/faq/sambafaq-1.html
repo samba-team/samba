@@ -38,30 +38,21 @@ flexibility designed to make life easier for administrators.</P>
 <P>
 <UL>
 <LI> smbd, the SMB server. This handles actual connections from
-clients, doing all the file, permission and username work
-</LI>
+clients, doing all the file, permission and username work</LI>
 <LI>nmbd, the Netbios name server, which helps clients locate
 servers, doing the browsing work and managing domains as this
-capability is being built into Samba
-</LI>
-<LI>smbclient, the Unix-hosted client program
-</LI>
+capability is being built into Samba</LI>
+<LI>smbclient, the Unix-hosted client program</LI>
 <LI>smbrun, a little 'glue' program to help the server run external
-programs
-</LI>
-<LI>testprns, a program to test server access to printers
-</LI>
+programs</LI>
+<LI>testprns, a program to test server access to printers</LI>
 <LI>testparms, a program to test the Samba configuration file for
-correctness
-</LI>
-<LI>smb.conf, the Samba configuration file
-</LI>
+correctness</LI>
+<LI>smb.conf, the Samba configuration file</LI>
 <LI> smbprint, a sample script to allow a Unix host to use smbclient
-to print to an SMB server
-</LI>
+to print to an SMB server</LI>
 <LI> documentation! DON'T neglect to read it - you will save a great
-deal of time!
-</LI>
+deal of time!</LI>
 </UL>
 </P>
 <P>The suite is supplied with full source (of course!) and is GPLed.</P>
@@ -114,31 +105,39 @@ all means take the plunge and help with the testing and development -
 but don't install it on your departmental server. Samba is typically
 very stable and safe, and this is mostly due to the policy of many
 public releases.</P>
-<P>How the scheme works:</P>
-<P>1) when major changes are made the version number is increased. For
+<P>How the scheme works:
+<OL>
+<LI>when major changes are made the version number is increased. For
 example, the transition from 1.9.15 to 1.9.16. However, this version
 number will not appear immediately and people should continue to use
-1.9.15 for production systems (see next point.)</P>
-<P>2) just after major changes are made the software is considered
+1.9.15 for production systems (see next point.)
+</LI>
+<LI>just after major changes are made the software is considered
 unstable, and a series of alpha releases are distributed, for example
 1.9.16alpha1. These are for testing by those who know what they are
 doing.  The "alpha" in the filename will hopefully scare off those who
-are just looking for the latest version to install.</P>
-<P>3) when Andrew thinks that the alphas have stabilised to the point
+are just looking for the latest version to install.
+</LI>
+<LI>when Andrew thinks that the alphas have stabilised to the point
 where he would recommend new users install it, he renames it to the
-same version number without the alpha, for example 1.9.16.</P>
-<P>4) inevitably bugs are found in the "stable" releases and minor patch
-levels are released which give us the pXX series, for example
-1.9.16p2.</P>
-<P>So the progression goes:</P>
-<P>1.9.15p7        (production)
-1.9.15p8        (production)
-1.9.16alpha1    (test sites only)
-:
-1.9.16alpha20   (test sites only)
-1.9.16          (production)
-1.9.16p1        (production)</P>
-<P>The above system means that whenever someone looks at the samba ftp
+same version number without the alpha, for example 1.9.16.
+</LI>
+<LI>inevitably bugs are found in the "stable" releases and minor patch
+levels are released which give us the pXX series, for example 1.9.16p2.</LI>
+</OL>
+
+So the progression goes:
+<PRE>
+                        1.9.15p7        (production)
+                        1.9.15p8        (production)
+                        1.9.16alpha1    (test sites only)
+                          :
+                        1.9.16alpha20   (test sites only)
+                        1.9.16          (production)
+                        1.9.16p1        (production)
+</PRE>
+
+The above system means that whenever someone looks at the samba ftp
 site they will be able to grab the highest numbered release without an
 alpha in the name and be sure of getting the current recommended
 version.</P>
@@ -151,40 +150,43 @@ version.</P>
 </P>
 <P>Many different platforms have run Samba successfully. The platforms
 most widely used and thus best tested are Linux and SunOS.</P>
-<P>At time of writing, the Makefile claimed support for:</P>
-<P>* SunOS
-* Linux with shadow passwords
-* Linux without shadow passwords
-* SOLARIS
-* SOLARIS 2.2 and above (aka SunOS 5)
-* SVR4
-* ULTRIX
-* OSF1 (alpha only)
-* OSF1 with NIS and Fast Crypt (alpha only)
-* OSF1 V2.0 Enhanced Security (alpha only)
-* AIX
-* BSDI
-* NetBSD
-* NetBSD 1.0
-* SEQUENT
-* HP-UX
-* SGI
-* SGI IRIX 4.x.x
-* SGI IRIX 5.x.x
-* FreeBSD
-* NeXT 3.2 and above
-* NeXT OS 2.x
-* NeXT OS 3.0
-* ISC SVR3V4 (POSIX mode)
-* ISC SVR3V4 (iBCS2 mode)
-* A/UX 3.0
-* SCO with shadow passwords.
-* SCO with shadow passwords, without YP.
-* SCO with TCB passwords
-* SCO 3.2v2 (ODT 1.1) with TCP passwords
-* intergraph
-* DGUX
-* Apollo Domain/OS sr10.3 (BSD4.3)</P>
+<P>At time of writing, the Makefile claimed support for:
+<UL>
+<LI> SunOS</LI>
+<LI> Linux with shadow passwords</LI>
+<LI> Linux without shadow passwords</LI>
+<LI> SOLARIS</LI>
+<LI> SOLARIS 2.2 and above (aka SunOS 5)</LI>
+<LI> SVR4</LI>
+<LI> ULTRIX</LI>
+<LI> OSF1 (alpha only)</LI>
+<LI> OSF1 with NIS and Fast Crypt (alpha only)</LI>
+<LI> OSF1 V2.0 Enhanced Security (alpha only)</LI>
+<LI> AIX</LI>
+<LI> BSDI</LI>
+<LI> NetBSD</LI>
+<LI> NetBSD 1.0</LI>
+<LI> SEQUENT</LI>
+<LI> HP-UX</LI>
+<LI> SGI</LI>
+<LI> SGI IRIX 4.x.x</LI>
+<LI> SGI IRIX 5.x.x</LI>
+<LI> FreeBSD</LI>
+<LI> NeXT 3.2 and above</LI>
+<LI> NeXT OS 2.x</LI>
+<LI> NeXT OS 3.0</LI>
+<LI> ISC SVR3V4 (POSIX mode)</LI>
+<LI> ISC SVR3V4 (iBCS2 mode)</LI>
+<LI> A/UX 3.0</LI>
+<LI> SCO with shadow passwords.</LI>
+<LI> SCO with shadow passwords, without YP.</LI>
+<LI> SCO with TCB passwords</LI>
+<LI> SCO 3.2v2 (ODT 1.1) with TCP passwords</LI>
+<LI> intergraph</LI>
+<LI> DGUX</LI>
+<LI> Apollo Domain/OS sr10.3 (BSD4.3)</LI>
+</UL>
+</P>
 
 
 <H2><A NAME="ss1.6">1.6 How can I find out more about Samba? </A></H2>
@@ -195,13 +197,21 @@ most widely used and thus best tested are Linux and SunOS.</P>
 <P>There are two mailing lists devoted to discussion of Samba-related
 matters.  There is also the newsgroup, comp.protocols.smb, which has a
 great deal of discussion on Samba. There is also a WWW site 'SAMBA Web
-Pages' at http://samba.canberra.edu.au/pub/samba/samba.html, under
+Pages' at 
+<A HREF="http://samba.canberra.edu.au/pub/samba/samba.html">http://samba.canberra.edu.au/pub/samba/samba.html</A>, under
 which there is a comprehensive survey of Samba users. Another useful
 resource is the hypertext archive of the Samba mailing list.</P>
-<P>Send email to listproc@samba.anu.edu.au. Make sure the subject line is
+<P>Send email to 
+<A HREF="mailto:listproc@samba.anu.edu.au">listproc@samba.anu.edu.au</A>. Make sure the subject line is
 blank, and include the following two lines in the body of the message:</P>
-<P>subscribe samba Firstname Lastname
-subscribe samba-announce Firstname Lastname</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+subscribe samba Firstname Lastname
+subscribe samba-announce Firstname Lastname
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
 <P>Obviously you should substitute YOUR first name for "Firstname" and
 YOUR last name for "Lastname"! Try not to send any signature stuff, it
 sometimes confuses the list processor.</P>
@@ -210,11 +220,17 @@ regurgitates a single message containing all the messages that have
 been received by the list since the last time and sends a copy of this
 message to all subscribers.</P>
 <P>If you stop being interested in Samba, please send another email to
-listproc@samba.anu.edu.au. Make sure the subject line is blank, and
+<A HREF="mailto:listproc@samba.anu.edu.au">listproc@samba.anu.edu.au</A>. Make sure the subject line is blank, and
 include the following two lines in the body of the message:</P>
-<P>unsubscribe samba
-unsubscribe samba-announce</P>
-<P>The From: line in your message MUST be the same address you used when
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+unsubscribe samba
+unsubscribe samba-announce
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>The <B>From:</B> line in your message <EM>MUST</EM> be the same address you used when
 you subscribed.</P>
 
 
@@ -223,12 +239,12 @@ you subscribed.</P>
 <P> 
 <A NAME="wrong"></A> 
 </P>
-<P><F>#</F> *** IMPORTANT! *** <F>#</F> 
-DO NOT post messages on mailing lists or in newsgroups until you have
+<P><B><F>#</F> *** IMPORTANT! *** <F>#</F></B></P>
+<P>DO NOT post messages on mailing lists or in newsgroups until you have
 carried out the first three steps given here!</P>
 <P>Firstly, see if there are any likely looking entries in this FAQ! If
 you have just installed Samba, have you run through the checklist in
-DIAGNOSIS.txt? It can save you a lot of time and effort.</P>
+<A HREF="ftp://samba.anu.edu.au/pub/samba/DIAGNOSIS.txt">DIAGNOSIS.txt</A>? It can save you a lot of time and effort.</P>
 <P>Secondly, read the man pages for smbd, nmbd and smb.conf, looking for
 topics that relate to what you are trying to do.</P>
 <P>Thirdly, if there is no obvious solution to hand, try to get a look at
@@ -249,7 +265,8 @@ I can incorporate it in the next version.</P>
 <P>If you make changes to the source code, _please_ submit these patches
 so that everyone else gets the benefit of your work. This is one of
 the most important aspects to the maintainence of Samba. Send all
-patches to samba-bugs@samba.anu.edu.au, not Andrew Tridgell or any
+patches to 
+<A HREF="mailto:samba-bugs@samba.anu.edu.au">samba-bugs@samba.anu.edu.au</A>, not Andrew Tridgell or any
 other individual and not the samba team mailing list.</P>
 
 
