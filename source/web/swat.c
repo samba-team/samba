@@ -602,7 +602,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return ret;
 	}
 
-	if (!pwdb_initialise(False))
+	if (!pwdb_initialise(False) || !initialise_password_db())
 	{
 		printf("Can't setup password database vectors.\n<p>");
 		return False;

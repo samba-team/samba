@@ -365,43 +365,6 @@ uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
 }
 
 /*************************************************************
- initialise password databases, domain names, domain sid.
-**************************************************************/
-BOOL pwdb_initialise(BOOL is_server)
-{
-	get_sam_domain_name();
-
-	if (!init_myworkgroup())
-	{
-		return False;
-	}
-
-	generate_wellknown_sids();
-
-	if (is_server)
-	{
-		if (!generate_sam_sid(global_sam_name, &global_sam_sid))
-		{
-			DEBUG(0,("ERROR: Samba cannot create a SAM SID for its domain (%s).\n",
-				  global_sam_name));
-			return False;
-		}
-	}
-	else
-	{
-		if (!get_domain_sids(lp_workgroup(), &global_member_sid,
-		                      &global_sam_sid))
-		{
-			return False;
-		}
-	}
-
-	create_sidmap_table();
-
-	return initialise_password_db();
-}
-
-/*************************************************************
  the following functions lookup wk rid's.
  these may be unnecessary...
 **************************************************************/

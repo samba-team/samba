@@ -35,31 +35,6 @@ void msrpc_service_init(void)
 		exit(-1);
 	}
 
-	if(!initialise_sam_password_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_passgrp_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_group_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_alias_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_builtin_db())
-	{
-		exit(-1);
-	}
-
 	if (!get_member_domain_sid())
 	{
 		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",

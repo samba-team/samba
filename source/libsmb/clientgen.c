@@ -3457,6 +3457,8 @@ BOOL cli_connect_servers_auth(struct cli_state *cli,
 	* PDC/BDC. Contact each in turn and try and authenticate.
 	*/
 
+	DEBUG(10,("cli_connect_servers_auth: %s\n", p));
+
 	while(p && next_token(&p,remote_host,LIST_SEP,sizeof(remote_host)))
 	{
 		fstring desthost;

@@ -1606,6 +1606,7 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 	int i;
 	int num_rids = q_u->num_names1;
 	DOM_SID pol_sid;
+	fstring tmp;
 
 	SAMR_R_LOOKUP_NAMES r_u;
 
@@ -1615,6 +1616,9 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 	{
 		status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
+
+	sid_to_string(tmp, &pol_sid);
+	DEBUG(5,("pol_sid: %s\n", tmp));
 
 	if (num_rids > MAX_SAM_ENTRIES)
 	{
@@ -1645,6 +1649,11 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 			rid [i] = 0xffffffff;
 			type[i] = SID_NAME_UNKNOWN;
 		}
+
+		sid_to_string(tmp, &sid);
+		DEBUG(10,("name: %s sid: %s rid: %x type: %d\n",
+			name, tmp, rid[i], type[i]));
+		
 	}
 
 	make_samr_r_lookup_names(&r_u, num_rids, rid, type, status);

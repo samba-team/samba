@@ -354,6 +354,7 @@ BOOL get_member_domain_sid(void);
 void generate_wellknown_sids(void);
 BOOL create_sidmap_table(void);
 BOOL generate_sam_sid(char *domain_name, DOM_SID *sid);
+BOOL pwdb_initialise(BOOL is_server);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
 BOOL map_domain_sid_to_any_dc(DOM_SID *sid, char *dc_name);
@@ -1042,6 +1043,10 @@ struct shmem_ops *sysv_shm_open(int ronly);
 void msrpc_service_init(void);
 BOOL reload_services(BOOL test);
 
+/*The following definitions come from  lsarpcd/srv_lsa.c  */
+
+BOOL api_ntlsa_rpc(rpcsrv_struct *p, prs_struct *data);
+
 /*The following definitions come from  mem_man/mem_man.c  */
 
 void *smb_mem_malloc(size_t size,char *file,int line);
@@ -1072,8 +1077,6 @@ void msrpcd_process(int c, pipes_struct *p);
 
 /*The following definitions come from  netlogond/netlogond.c  */
 
-void msrpc_service_init(void);
-BOOL reload_services(BOOL test);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -3700,10 +3703,6 @@ uint32 lookup_added_alias_name(const char *als_name, const char *domain,
 uint32 lookup_added_user_rids(char *nt_name,
 		uint32 *usr_rid, uint32 *grp_rid);
 uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type);
-
-/*The following definitions come from  rpc_server/srv_lsa.c  */
-
-BOOL api_ntlsa_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 

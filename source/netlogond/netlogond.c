@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
  *************************************************************************/
 void msrpc_service_init(void)
 {
-	if (!pwdb_initialise(True))
+	if (!pwdb_initialise(True) || !initialise_password_db())
 	{
 		exit(-1);
 	}

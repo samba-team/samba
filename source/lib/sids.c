@@ -345,6 +345,43 @@ BOOL generate_sam_sid(char *domain_name, DOM_SID *sid)
 	return True;
 }   
 
+/*************************************************************
+ initialise password databases, domain names, domain sid.
+**************************************************************/
+BOOL pwdb_initialise(BOOL is_server)
+{
+	get_sam_domain_name();
+
+	if (!init_myworkgroup())
+	{
+		return False;
+	}
+
+	generate_wellknown_sids();
+
+	if (is_server)
+	{
+		if (!generate_sam_sid(global_sam_name, &global_sam_sid))
+		{
+			DEBUG(0,("ERROR: Samba cannot create a SAM SID for its domain (%s).\n",
+				  global_sam_name));
+			return False;
+		}
+	}
+	else
+	{
+		if (!get_domain_sids(lp_workgroup(), &global_member_sid,
+		                      &global_sam_sid))
+		{
+			return False;
+		}
+	}
+
+	create_sidmap_table();
+
+	return True;
+}
+
 /**************************************************************************
  turns a domain name into a SID.
 
@@ -382,7 +419,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 
 	DEBUG(5,("map_domain_name_to_sid: %s\n", (*nt_domain)));
 
-	for (i = 0; sid_name_map[i]->name != NULL; i++)
+	for (i = 0; i < num_maps; i++)
 	{
 		DEBUG(5,("compare: %s\n", sid_name_map[i]->name));
 		if (strequal(sid_name_map[i]->name, (*nt_domain)))
@@ -395,7 +432,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 		}
 	}
 
-	DEBUG(0,("map_domain_name_to_sid: mapping to %s NOT IMPLEMENTED\n",
+	DEBUG(5,("map_domain_name_to_sid: mapping to %s not known\n",
 		  (*nt_domain)));
 	return False;
 }
@@ -417,7 +454,7 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
 		return False;
 	}
 
-	for (i = 0; sid_name_map[i]->sid != NULL; i++)
+	for (i = 0; i < num_maps; i++)
 	{
 		sid_to_string(sid_str, sid_name_map[i]->sid);
 		DEBUG(5,("compare: %s\n", sid_str));

@@ -505,6 +505,8 @@ static uint32 lookup_added_user_name(const char *nt_name, const char *domain,
 
 	if (sam_pass != NULL)
 	{
+		DEBUG(10,("lookup_added_user_name: nt name: %s rid: %x\n",
+		           nt_name, sam_pass->user_rid));
 		sid_copy(sid, &global_sam_sid);
 		sid_append_rid(sid, sam_pass->user_rid);
 

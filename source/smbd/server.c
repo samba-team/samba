@@ -679,7 +679,7 @@ static void usage(char *pname)
 
 	codepage_initialise(lp_client_code_page());
 
-	if (!pwdb_initialise(True))
+	if (!pwdb_initialise(True) || !initialise_password_db())
 	{
 		exit(1);
 	}
