@@ -781,7 +781,9 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 	}
 
 	/* Make sure we report failure, (when psid == NULL) */
+	become_root();
 	psid = local_gid_to_sid(psid, gid);
+	unbecome_root();
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
 	if (psid)
 		store_gid_sid_cache(psid, SID_NAME_DOM_GRP, gid);
