@@ -162,7 +162,7 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	/* Being able to update the remote cache is seldomly right.
 	   Generally this is a forbidden operation. */
 	if (!(id_type & ID_CACHE_SAVE) && (remote_map != NULL)) {
-		remote_map->set_mapping(sid, id, id_type);
+		ret = remote_map->set_mapping(sid, id, id_type);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG (0, ("idmap_set_mapping: Error, unable to modify remote cache!\n"));
 			DEBUGADD(0, ("Error: %s", nt_errstr(ret)));
