@@ -185,9 +185,8 @@ static enum nss_status fill_pwent(struct passwd *result,
    the static data passed to us by libc to put strings and stuff in.
    Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
-static int fill_grent(struct group *result, 
-                      struct winbindd_gr *gr,
-                      char **buffer, int *buflen)
+static int fill_grent(struct group *result, struct winbindd_gr *gr,
+		      char *extra_data, char **buffer, int *buflen)
 {
 	char *tmp_data;
 	fstring name;
@@ -221,26 +220,9 @@ static int fill_grent(struct group *result,
 
 	result->gr_gid = gr->gr_gid;
 
-	gr->num_gr_mem = 0;
-	
-	if ((result->gr_mem = 
-	     (char **)get_static(buffer, buflen, (gr->num_gr_mem + 1) * 
-				 sizeof(char *))) == NULL) {
-
-		/* Out of memory */
-
-		return NSS_STATUS_TRYAGAIN;
-	}
-
-	(result->gr_mem)[0] = NULL;
-
-	return NSS_STATUS_SUCCESS;	
-
-#if 0
-
 	/* Group membership */
 
-	if ((gr->num_gr_mem < 0) || !response->extra_data) {
+	if ((gr->num_gr_mem < 0) || !extra_data) {
 		gr->num_gr_mem = 0;
 	}
 
@@ -264,7 +246,7 @@ static int fill_grent(struct group *result,
 	/* Start looking at extra data */
 
 	i = 0;
-	tmp_data = response->extra_data;
+	tmp_data = &extra_data[gr->gr_mem_ofs];
 
 	while(next_token((char **)&tmp_data, name, ",", 
 			 sizeof(fstring))) {
@@ -288,8 +270,6 @@ static int fill_grent(struct group *result,
 	(result->gr_mem)[i] = NULL;
 
 	return NSS_STATUS_SUCCESS;
-#endif
-
 }
 
 /*
@@ -609,7 +589,15 @@ _nss_winbind_getgrent_r(struct group *result,
 			return NSS_STATUS_NOTFOUND;
 		}
 
+		/* Adjust group membership offset by the number of group 
+		   entries that were returned. */
+
+		gr_cache[ndx_gr_cache].gr_mem_ofs += 
+			getgrent_response.data.num_entries *
+			sizeof(struct winbindd_gr);
+
 		ret = fill_grent(result, &gr_cache[ndx_gr_cache],
+				 getgrent_response.extra_data,
 				 &buffer, &buflen);
 		
 		/* Out of memory - try again */
@@ -666,6 +654,7 @@ _nss_winbind_getgrnam_r(const char *name,
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response.data.gr, 
+					 response.extra_data,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
@@ -679,7 +668,8 @@ _nss_winbind_getgrnam_r(const char *name,
 		
 		/* We've been called again */
 		
-		ret = fill_grent(result, &response.data.gr, &buffer, &buflen);
+		ret = fill_grent(result, &response.data.gr, 
+				 response.extra_data, &buffer, &buflen);
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -722,7 +712,9 @@ _nss_winbind_getgrgid_r(gid_t gid,
 				       &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
+
 			ret = fill_grent(result, &response.data.gr, 
+					 response.extra_data, 
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
@@ -736,7 +728,8 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 		/* We've been called again */
 
-		ret = fill_grent(result, &response.data.gr, &buffer, &buflen);
+		ret = fill_grent(result, &response.data.gr, 
+				 response.extra_data, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;

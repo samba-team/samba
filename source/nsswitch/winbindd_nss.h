@@ -139,7 +139,6 @@ struct winbindd_response {
 			fstring pw_gecos;
 			fstring pw_dir;
 			fstring pw_shell;
-			int pwent_ndx;
 		} pw;
 
 		/* getgrnam, getgrgid */
@@ -149,7 +148,7 @@ struct winbindd_response {
 			fstring gr_passwd;
 			gid_t gr_gid;
 			int num_gr_mem;
-			int grent_ndx;
+			int gr_mem_ofs;   /* offset to group membership */
 		} gr;
 
 		uint32 num_entries; /* getpwent, getgrent */

@@ -274,6 +274,12 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 
     if (state == NULL) return WINBINDD_ERROR;
     
+    /* Check user has enabled this */
+
+    if (!lp_winbind_enum_users()) {
+	    return WINBINDD_OK;
+    }
+
     /* Free old static data if it exists */
 
     if (state->getpwent_state != NULL) {
@@ -448,7 +454,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		DEBUG(0, ("Got all sam entries for this domain\n"));
 	}
 	
-	return num_entries > 0;
+	return ent->num_sam_entries > 0;
 }
 
 /* Fetch next passwd entry from ntdom database */
@@ -463,6 +469,12 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	char *sep;
 
 	if (state == NULL) return WINBINDD_ERROR;
+
+	/* Check user has enabled this */
+
+	if (!lp_winbind_enum_users()) {
+		return WINBINDD_OK;
+	}
 
 	/* Allocate space for returning a chunk of users */
 
@@ -589,7 +601,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		}
 
 		if (!domain_handles_open(domain)) {
-			return False;
+			continue;
 		}
 
                 /* Query display info */
