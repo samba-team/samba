@@ -70,7 +70,8 @@ print (int argc,
     usage ();
   n = atoi(argv[0]);
   seed = argv[1];
-  des_read_pw_string (pw, sizeof(pw), "Password: ", 0);
+  if (des_read_pw_string (pw, sizeof(pw), "Pass-phrase: ", 0))
+    return 1;
   alg->init (key, pw, seed);
   if (extendedp)
     if (hexp)
@@ -101,7 +102,7 @@ main (int argc, char **argv)
   int count = 10;
   int hexp = 0;
   int extendedp = 0;
-  OtpAlgorithm *alg = otp_find_alg ("md4");
+  OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
   prog = argv[0];
 

@@ -83,7 +83,8 @@ renew (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
   ctx = &oldctx;
   if(otp_challenge (ctx, user, prompt, sizeof(prompt)))
     return 1;
-  des_read_pw_string (pw, sizeof(pw), prompt, 0);
+  kf(des_read_pw_string (pw, sizeof(pw), prompt, 0))
+    return 1;
   ret = otp_verify_user_1 (ctx, pw);
   if (ret == 0) {
     newctx.alg = alg;
@@ -96,8 +97,8 @@ renew (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
 	     newctx.alg->name,
 	     newctx.n, 
 	     newctx.seed);
-    des_read_pw_string (pw, sizeof(pw), prompt, 0);
-    if (otp_parse (newctx.key, pw, alg) == 0) {
+    if (des_read_pw_string (pw, sizeof(pw), prompt, 0) == 0 &&
+	otp_parse (newctx.key, pw, alg) == 0) {
       ctx = &newctx;
     }
   }
@@ -139,7 +140,8 @@ set (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
   ctx.seed[sizeof(ctx.seed) - 1] = '\0';
   strlwr(ctx.seed);
   do {
-    des_read_pw_string (pw, sizeof(pw), "Pass-phrase", 1);
+    if (des_read_pw_string (pw, sizeof(pw), "Pass-phrase: ", VERIFY))
+      return 1;
     if (strlen (pw) < OTP_MIN_PASSPHRASE)
       printf ("Too short pass-phrase.  Use at least %d characters\n",
 	      OTP_MIN_PASSPHRASE);
@@ -168,7 +170,7 @@ main (int argc, char **argv)
   int hexp = 0;
   int renewp = 0;
   int extendedp = 0;
-  OtpAlgorithm *alg = otp_find_alg ("md4");
+  OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
   prog = argv[0];
 
