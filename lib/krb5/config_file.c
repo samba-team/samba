@@ -341,7 +341,7 @@ vget_next(krb5_context context,
 {
     const char *p = va_arg(args, const char *);
     while(b != NULL) {
-	if(strcmp(b->name, name) == NULL) {
+	if(strcmp(b->name, name) == 0) {
 	    if(b->type == type && p == NULL) {
 		*pointer = b;
 		return b->u.generic;
