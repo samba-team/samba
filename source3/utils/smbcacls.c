@@ -140,17 +140,14 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	DOM_SID *sids = NULL;
 	int num_sids;
 	BOOL result = True;
-	fstring name, domain;
-	
+
 	if (strncmp(str, "S-", 2) == 0) {
 		return string_to_sid(sid, str);
 	}
 
-	split_domain_name(str, domain, name);
-
 	if (!cacls_open_policy_hnd() ||
 	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, 
-						  (const char **)&domain, (const char **)&name, 
+						  &str, 
 						  &sids, &types, &num_sids))) {
 		result = False;
 		goto done;
