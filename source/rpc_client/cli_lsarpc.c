@@ -219,7 +219,7 @@ do a LSA Lookup Names
 BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_names,
-			const char **names,
+			char **names,
 			DOM_SID **sids,
 			uint8 **types,
 			int *num_sids)

@@ -149,7 +149,7 @@ do a SAMR query user groups
 ****************************************************************************/
 BOOL get_samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
-				uint32 *num_groups, DOM_GID *gid)
+				uint32 *num_groups, DOM_GID **gid)
 {
 	POLICY_HND pol_open_user;
 	BOOL ret = True;
@@ -1839,7 +1839,7 @@ do a SAMR Query Lookup Names
 ****************************************************************************/
 BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 flags,
-				uint32 num_names, const char **names,
+				uint32 num_names, char **names,
 				uint32 *num_rids,
 				uint32 rid[MAX_LOOKUP_SIDS],
 				uint32 type[MAX_LOOKUP_SIDS])
@@ -1926,8 +1926,8 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol, uint32 flags,
 				uint32 num_rids, uint32 *rids,
 				uint32 *num_names,
-				fstring names[MAX_LOOKUP_SIDS],
-				uint32  type [MAX_LOOKUP_SIDS])
+				char   ***names,
+				uint32 **type)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -1978,19 +1978,26 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 				valid_query = True;
 				*num_names = r_o.num_names1;
 
-				for (i = 0; i < r_o.num_names1; i++)
+				(*names) = malloc((*num_names) * sizeof(**names));
+				for (i = 0; (*names) != NULL && i < r_o.num_names1; i++)
 				{
-					unistr2_to_ascii(names[i], &r_o.uni_name[i], sizeof(fstring)-1);
+					fstring tmp;
+					unistr2_to_ascii(tmp, &r_o.uni_name[i], sizeof(tmp)-1);
+					(*names)[i] = strdup(tmp);
 				}
-				for (i = 0; i < r_o.num_types1; i++)
+
+				(*type) = malloc((*num_names) * sizeof(**type));
+				for (i = 0; (*type) != NULL && i < r_o.num_types1; i++)
 				{
-					type[i] = r_o.type[i];
+					(*type)[i] = r_o.type[i];
 				}
 			}
 			else if (r_o.ptr_names == 0 && r_o.ptr_types == 0)
 			{
 				valid_query = True;
 				*num_names = 0;
+				*names = NULL;
+				*type = NULL;
 			}
 			else
 			{
@@ -2072,14 +2079,15 @@ BOOL samr_query_aliasmem(struct cli_state *cli, uint16 fnum,
 do a SAMR Query User Aliases
 ****************************************************************************/
 BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, DOM_SID *sid,
-				uint32 *num_aliases, uint32 *rid)
+				POLICY_HND *pol, uint32 *ptr_sid, DOM_SID2 *sid,
+				uint32 *num_aliases, uint32 **rid)
 {
 	prs_struct data;
 	prs_struct rdata;
 
 	SAMR_Q_QUERY_USERALIASES q_o;
 	BOOL valid_query = False;
+	ZERO_STRUCT(q_o);
 
 	DEBUG(4,("SAMR Query User Aliases.\n"));
 
@@ -2091,7 +2099,7 @@ BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_query_useraliases(&q_o, pol, sid);
+	make_samr_q_query_useraliases(&q_o, pol, ptr_sid, sid);
 
 	/* turn parameters into data stream */
 	samr_io_q_query_useraliases("", &q_o,  &data, 0);
@@ -2102,10 +2110,10 @@ BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum,
 		SAMR_R_QUERY_USERALIASES r_o;
 		BOOL p;
 
-		/* get user info */
-		r_o.rid = rid;
+		r_o.rid = NULL;
 
 		samr_io_r_query_useraliases("", &r_o, &rdata, 0);
+		*rid = r_o.rid;
 		p = rdata.offset != 0;
 		
 		if (p && r_o.status != 0)
@@ -2197,7 +2205,8 @@ BOOL samr_query_groupmem(struct cli_state *cli, uint16 fnum,
 do a SAMR Query User Groups
 ****************************************************************************/
 BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid)
+				POLICY_HND *pol, uint32 *num_groups,
+				DOM_GID **gid)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -2227,9 +2236,10 @@ BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum,
 		BOOL p;
 
 		/* get user info */
-		r_o.gid = gid;
+		r_o.gid = NULL;
 
 		samr_io_r_query_usergroups("", &r_o, &rdata, 0);
+		*gid = r_o.gid;
 		p = rdata.offset != 0;
 		
 		if (p && r_o.status != 0)

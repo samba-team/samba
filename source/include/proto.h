@@ -485,6 +485,7 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
+void free_char_array(uint32 num_entries, char **entries);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -1747,7 +1748,7 @@ BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
 BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_names,
-			const char **names,
+			char **names,
 			DOM_SID **sids,
 			uint8 **types,
 			int *num_sids);
@@ -1865,7 +1866,7 @@ BOOL create_samr_domain_group(struct cli_state *cli, uint16 fnum,
 				uint32 *rid);
 BOOL get_samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
-				uint32 *num_groups, DOM_GID *gid);
+				uint32 *num_groups, DOM_GID **gid);
 BOOL delete_samr_dom_group(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 group_rid);
@@ -1958,7 +1959,7 @@ BOOL samr_query_lookup_domain(struct cli_state *cli, uint16 fnum,
 			      DOM_SID *dom_sid);
 BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 flags,
-				uint32 num_names, const char **names,
+				uint32 num_names, char **names,
 				uint32 *num_rids,
 				uint32 rid[MAX_LOOKUP_SIDS],
 				uint32 type[MAX_LOOKUP_SIDS]);
@@ -1966,19 +1967,20 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol, uint32 flags,
 				uint32 num_rids, uint32 *rids,
 				uint32 *num_names,
-				fstring names[MAX_LOOKUP_SIDS],
-				uint32  type [MAX_LOOKUP_SIDS]);
+				char   ***names,
+				uint32 **type);
 BOOL samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol, 
 				uint32 *num_mem, DOM_SID2 *sid);
 BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, DOM_SID *sid,
-				uint32 *num_aliases, uint32 *rid);
+				POLICY_HND *pol, uint32 *ptr_sid, DOM_SID2 *sid,
+				uint32 *num_aliases, uint32 **rid);
 BOOL samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, 
 				uint32 *num_mem, uint32 *rid, uint32 *attr);
 BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
+				POLICY_HND *pol, uint32 *num_groups,
+				DOM_GID **gid);
 BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
 				uint16 switch_value, GROUP_INFO_CTR* ctr);
@@ -2123,7 +2125,7 @@ BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 BOOL lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 BOOL make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
-				int num_names, const char **names);
+				int num_names, char **names);
 BOOL lsa_io_q_lookup_names(char *desc,  LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
 BOOL lsa_io_r_lookup_names(char *desc,  LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
 BOOL make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
@@ -2617,11 +2619,13 @@ BOOL samr_io_q_set_aliasinfo(char *desc,  SAMR_Q_SET_ALIASINFO *q_u, prs_struct 
 BOOL samr_io_r_set_aliasinfo(char *desc,  SAMR_R_SET_ALIASINFO *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 				POLICY_HND *hnd,
-				DOM_SID *sid);
+				uint32 *ptr_sid, DOM_SID2 *sid);
 BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs_struct *ps, int depth);
+void samr_free_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u);
 BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
 		uint32 num_rids, uint32 *rid, uint32 status);
 BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth);
+void samr_free_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u);
 BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u, POLICY_HND *pol,
 				uint32 unknown_0, uint32 rid);
 BOOL samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
@@ -2664,7 +2668,7 @@ BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
 BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		POLICY_HND *pol, uint32 flags,
-		uint32 num_names, const char **name);
+		uint32 num_names, char **name);
 BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status);
@@ -3292,7 +3296,7 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 				DOM_SID *sid,
 				uint32 num_rids, uint32 *rid);
 void display_group_members(FILE *out_hnd, enum action_type action,
-				uint32 num_mem, fstring *name, uint32 *type);
+				uint32 num_mem, char **name, uint32 *type);
 void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *info1);
 void display_group_rid_info(FILE *out_hnd, enum action_type action,
 				uint32 num_gids, DOM_GID *gid);

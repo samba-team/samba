@@ -2689,6 +2689,12 @@ BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 		{
 			prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 
+			r_u->gid = malloc(r_u->num_entries2 * sizeof(r_u->gid[0]));
+			if (r_u->gid == NULL)
+			{
+				return False;
+			}
+
 			for (i = 0; i < r_u->num_entries2; i++)
 			{
 				prs_grow(ps);
@@ -3193,7 +3199,7 @@ makes a SAMR_Q_QUERY_USERALIASES structure.
 ********************************************************************/
 BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 				POLICY_HND *hnd,
-				DOM_SID *sid)
+				uint32 *ptr_sid, DOM_SID2 *sid)
 {
 	if (q_u == NULL || hnd == NULL) return False;
 
@@ -3205,10 +3211,8 @@ BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 	q_u->ptr = 1;
 	q_u->num_sids2 = 1;
 
-	{
-		q_u->ptr_sid[0] = 1;
-		make_dom_sid2(&q_u->sid[0], sid);
-	}
+	q_u->ptr_sid = ptr_sid;
+	q_u->sid = sid;
 
 	return True;
 }
@@ -3235,7 +3239,24 @@ BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
 	prs_uint32("num_sids2", ps, depth, &(q_u->num_sids2));
 
-	SMB_ASSERT_ARRAY(q_u->ptr_sid, q_u->num_sids2);
+	if (q_u->num_sids2 != 0)
+	{
+		q_u->ptr_sid = Realloc(q_u->ptr_sid, sizeof(q_u->ptr_sid[0]) *
+		                       q_u->num_sids2);
+		if (q_u->ptr_sid == NULL)
+		{
+			samr_free_q_query_useraliases(q_u);
+			return False;
+		}
+
+		q_u->sid = Realloc(q_u->sid,
+				       sizeof(q_u->sid[0]) * q_u->num_sids2);
+		if (q_u->sid == NULL)
+		{
+			samr_free_q_query_useraliases(q_u);
+			return False;
+		}
+	}
 
 	for (i = 0; i < q_u->num_sids2; i++)
 	{
@@ -3255,9 +3276,31 @@ BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs
 
 	prs_align(ps);
 
+	if (!ps->io)
+	{
+		/* storing.  memory no longer needed */
+		samr_free_q_query_useraliases(q_u);
+	}
 	return True;
 }
 
+/*******************************************************************
+frees memory in a SAMR_Q_QUERY_USERALIASES structure.
+********************************************************************/
+void samr_free_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u)
+{
+	if (q_u->ptr_sid == NULL)
+	{
+		free(q_u->ptr_sid);
+		q_u->ptr_sid = NULL;
+	}
+
+	if (q_u->sid == NULL)
+	{
+		free(q_u->sid);
+		q_u->sid = NULL;
+	}
+}
 
 /*******************************************************************
 makes a SAMR_R_QUERY_USERALIASES structure.
@@ -3309,6 +3352,14 @@ BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs
 
 	if (r_u->num_entries != 0)
 	{
+		r_u->rid = Realloc(r_u->rid,
+				       sizeof(r_u->rid[0]) * r_u->num_entries);
+		if (r_u->rid == NULL)
+		{
+			samr_free_r_query_useraliases(r_u);
+			return False;
+		}
+
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			slprintf(tmp, sizeof(tmp)-1, "rid[%02d]", i);
@@ -3318,7 +3369,24 @@ BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
+	if (!ps->io)
+	{
+		/* storing.  memory no longer needed */
+		samr_free_r_query_useraliases(r_u);
+	}
 	return True;
+}
+
+/*******************************************************************
+frees memory in a SAMR_R_QUERY_USERALIASES structure.
+********************************************************************/
+void samr_free_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u)
+{
+	if (r_u->rid == NULL)
+	{
+		free(r_u->rid);
+		r_u->rid = NULL;
+	}
 }
 
 /*******************************************************************
@@ -3426,8 +3494,6 @@ BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps,
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
 	prs_uint32("num_rids2", ps, depth, &(q_u->num_rids2));
 
-	SMB_ASSERT_ARRAY(q_u->rid, q_u->num_rids2);
-
 	for (i = 0; i < q_u->num_rids2; i++)
 	{
 		prs_grow(ps);
@@ -3463,25 +3529,27 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		r_u->ptr_types  = 1;
 		r_u->num_types2 = num_names;
 
-		r_u->hdr_name = malloc(num_names * sizeof(r_u->hdr_name[0]));
-		if (r_u->hdr_name == NULL)
+		if (num_names != 0)
 		{
-			return False;
+			r_u->hdr_name = malloc(num_names * sizeof(r_u->hdr_name[0]));
+			if (r_u->hdr_name == NULL)
+			{
+				samr_free_r_lookup_rids(r_u);
+				return False;
+			}
+			r_u->uni_name = malloc(num_names * sizeof(r_u->uni_name[0]));
+			if (r_u->uni_name == NULL)
+			{
+				samr_free_r_lookup_rids(r_u);
+				return False;
+			}
+			r_u->type = malloc(r_u->num_types2 * sizeof(r_u->type[0]));
+			if (r_u->type == NULL)
+			{
+				samr_free_r_lookup_rids(r_u);
+				return False;
+			}
 		}
-		r_u->uni_name = malloc(num_names * sizeof(r_u->uni_name[0]));
-		if (r_u->uni_name == NULL)
-		{
-			free(r_u->hdr_name);
-			return False;
-		}
-		r_u->type = malloc(r_u->num_types2 * sizeof(r_u->type[0]));
-		if (r_u->type == NULL)
-		{
-			free(r_u->hdr_name);
-			free(r_u->uni_name);
-			return False;
-		}
-
 
 		for (i = 0; i < num_names; i++)
 		{
@@ -4037,7 +4105,7 @@ makes a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		POLICY_HND *pol, uint32 flags,
-		uint32 num_names, const char **name)
+		uint32 num_names, char **name)
 {
 	int i;
 	if (q_u == NULL) return False;
