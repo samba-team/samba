@@ -181,6 +181,12 @@ krb5_rd_cred(krb5_context context,
     *ret_creds = calloc(enc_krb_cred_part.ticket_info.len + 1, 
 		       sizeof(**ret_creds));
 
+    if (*ret_creds == NULL) {
+	ret = ENOMEM;
+	krb5_set_error_string (context, "malloc: out of memory");
+	goto out;
+    }
+
     for (i = 0; i < enc_krb_cred_part.ticket_info.len; ++i) {
 	KrbCredInfo *kci = &enc_krb_cred_part.ticket_info.val[i];
 	krb5_creds *creds;
