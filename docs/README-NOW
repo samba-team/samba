@@ -2,9 +2,9 @@
             DOCS TREE REMOVED
 ---------------------------------------------------
 
-This docs tree has been moved to a separate CVS 
-module on cvs.samba.org name 'samba-docs'.  
-See http://cvs.samba.org/ for details on accessing 
-Samba cvs trees.
+This docs tree has been moved to a separate SVN 
+module on svn.samba.org name 'samba-docs'.  
+See http://svnanon.samba.org/ for details on accessing 
+Samba svn trees.
 
 
