@@ -1544,8 +1544,8 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 
 			while ((dname = ReadDirName(dirptr))) {
 				pstring fname;
-				pstrcpy(fname,dname);
 				BOOL sys_direntry = False;
+				pstrcpy(fname,dname);
 
 				/* Quick check for "." and ".." */
 				if (fname[0] == '.') {
