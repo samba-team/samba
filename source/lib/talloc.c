@@ -441,7 +441,7 @@ int talloc_free(void *ptr)
 
 	if (tc->refs) {
 		talloc_reference_destructor(tc->refs);
-		return 0;
+		return -1;
 	}
 
 	if (tc->destructor) {
@@ -469,11 +469,13 @@ int talloc_free(void *ptr)
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = p+1;
 		}
-		if (new_parent == null_context) {
-			struct talloc_chunk *p = talloc_parent_chunk(ptr);
-			if (p) new_parent = p+1;
+		if (talloc_free(child) == -1) {
+			if (new_parent == null_context) {
+				struct talloc_chunk *p = talloc_parent_chunk(ptr);
+				if (p) new_parent = p+1;
+			}
+			talloc_steal(new_parent, child);
 		}
-		talloc_free(talloc_steal(new_parent, child));
 	}
 
 	if (tc->parent) {
