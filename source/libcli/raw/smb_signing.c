@@ -188,7 +188,7 @@ static BOOL cli_request_simple_check_incoming_message(struct cli_request *req)
 	}
 
 	if (good && i != 1) {
-		DEBUG(0,("SIGNING OFFSET %d\n", i));
+		DEBUG(0,("SIGNING OFFSET %d (should be %d)\n", i, req->seq_num+1));
 	}
 
 	if (!good) {
