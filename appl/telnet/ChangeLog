@@ -1,3 +1,8 @@
+1999-08-02  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/telnetd.c (doit): only free hp if != NULL.  From: Jonas
+ 	Oberg <jonas@coyote.org>
+
 1999-07-29  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/telnetd.c (doit): remove unused variable mapped_sin
