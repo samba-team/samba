@@ -71,7 +71,8 @@ struct event_context {
 		int code;
 	} exit;
 
-	/* we hang the events off here, to make merging easy */
+	/* This is the talloc parent for all concrete event structures in this
+	 * event context. This makes merging easy. */
 	void *events;
 };
 
