@@ -7,32 +7,25 @@
   pointer_default(unique)
 ] interface spoolss
 {
-	typedef struct {
-		uint32 flags;
-		unistr description;
-		unistr name;
-		unistr comment;
-	} spoolss_PrinterInfo1;
-
-	typedef union {
-		case(1)  spoolss_PrinterInfo1 info1;
-	} spoolssPrinterInfo;
-
-	typedef struct {
-		uint32 len;
-		spoolssPrinterInfo *info;
-	} spoolss_PrinterInfoBuffer;
-
 	/******************/
 	/* Function: 0x00 */
+
+	typedef [public] struct {
+		uint32 flags;
+		relstr name;
+		relstr description;
+		relstr comment;
+	} spoolss_PrinterEnum1;
+
 	NTSTATUS spoolss_EnumPrinters(
-		[in]	 uint32 flags,
-		[in]	 unistr *server,
-		[in]	 uint32 level,
-		[in,out] uint8_buf *buffer,
-		[in]     uint32 offered,
-		[out]	 uint32 needed,
-		[out]	 uint32 returned
+		[in]	     uint32 flags,
+		[in]	     unistr *server,
+		[in]	     uint32 level,
+		[in,size_is(offered)]  uint8 *buf,
+		[in]         uint32 offered,
+		[out,subcontext,switch_is(level)] spoolss_PrinterEnum *info,
+		[out,ref]    uint32 *needed,
+		[out]	     uint32 returned
 		);
 
 	/******************/
@@ -445,7 +438,7 @@
 		[in]     uint32 value_offered,
 		[in]     uint32 data_offered,
 		[out]	 uint32 value_len,
-		[out]	 unistr value_name,
+		[out]	 unistr *value_name,
 		[out]	 uint32 value_needed,
 		[out]    uint32 printerdata_type,
 		[out]    uint8_buf printerdata,

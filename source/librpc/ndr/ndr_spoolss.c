@@ -2,6 +2,23 @@
 
 #include "includes.h"
 
+NTSTATUS ndr_push_spoolss_PrinterEnum1(struct ndr_push *ndr, int ndr_flags, struct spoolss_PrinterEnum1 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, r->flags));
+	NDR_CHECK(ndr_push_relstr(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_push_relstr(ndr, NDR_SCALARS, &r->description));
+	NDR_CHECK(ndr_push_relstr(ndr, NDR_SCALARS, &r->comment));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_push_relstr(ndr, NDR_BUFFERS, &r->name));
+		NDR_CHECK(ndr_push_relstr(ndr, NDR_BUFFERS, &r->description));
+		NDR_CHECK(ndr_push_relstr(ndr, NDR_BUFFERS, &r->comment));
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, struct spoolss_EnumPrinters *r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.flags));
@@ -10,9 +27,10 @@ NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, struct spoolss_Enum
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.server));
 	}
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
-	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
-	if (r->in.buffer) {
-		NDR_CHECK(ndr_push_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buffer));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.buf));
+	if (r->in.buf) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
+		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.buf, r->in.offered));
 	}
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
 
@@ -37,8 +55,17 @@ NTSTATUS ndr_push_spoolss_03(struct ndr_push *ndr, struct spoolss_03 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_04(struct ndr_push *ndr, struct spoolss_04 *r)
+NTSTATUS ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, struct spoolss_EnumJobs *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.firstjob));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.numjobs));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_push_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buffer));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
 
 	return NT_STATUS_OK;
 }
@@ -61,8 +88,15 @@ NTSTATUS ndr_push_spoolss_07(struct ndr_push *ndr, struct spoolss_07 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_08(struct ndr_push *ndr, struct spoolss_08 *r)
+NTSTATUS ndr_push_spoolss_GetPrinter(struct ndr_push *ndr, struct spoolss_GetPrinter *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_push_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buffer));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
 
 	return NT_STATUS_OK;
 }
@@ -121,8 +155,9 @@ NTSTATUS ndr_push_spoolss_11(struct ndr_push *ndr, struct spoolss_11 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_12(struct ndr_push *ndr, struct spoolss_12 *r)
+NTSTATUS ndr_push_spoolss_StartPagePrinter(struct ndr_push *ndr, struct spoolss_StartPagePrinter *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 
 	return NT_STATUS_OK;
 }
@@ -133,8 +168,9 @@ NTSTATUS ndr_push_spoolss_13(struct ndr_push *ndr, struct spoolss_13 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_14(struct ndr_push *ndr, struct spoolss_14 *r)
+NTSTATUS ndr_push_spoolss_EndPagePrinter(struct ndr_push *ndr, struct spoolss_EndPagePrinter *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 
 	return NT_STATUS_OK;
 }
@@ -151,7 +187,7 @@ NTSTATUS ndr_push_spoolss_16(struct ndr_push *ndr, struct spoolss_16 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_17(struct ndr_push *ndr, struct spoolss_17 *r)
+NTSTATUS ndr_push_spoolss_EndDocPrinter(struct ndr_push *ndr, struct spoolss_EndDocPrinter *r)
 {
 
 	return NT_STATUS_OK;
@@ -428,7 +464,7 @@ NTSTATUS ndr_push_spoolss_44(struct ndr_push *ndr, struct spoolss_44 *r)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_push_spoolss_Devmode(struct ndr_push *ndr, int ndr_flags, struct spoolss_Devmode *r)
+NTSTATUS ndr_push_spoolss_Devmode(struct ndr_push *ndr, int ndr_flags, struct spoolss_Devmode *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_align(ndr, 4));
@@ -439,7 +475,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_push_spoolss_DevmodeContainer(struct ndr_push *ndr, int ndr_flags, struct spoolss_DevmodeContainer *r)
+NTSTATUS ndr_push_spoolss_DevmodeContainer(struct ndr_push *ndr, int ndr_flags, struct spoolss_DevmodeContainer *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_align(ndr, 4));
@@ -454,7 +490,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_push_spoolss_UserLevel1(struct ndr_push *ndr, int ndr_flags, struct spoolss_UserLevel1 *r)
+NTSTATUS ndr_push_spoolss_UserLevel1(struct ndr_push *ndr, int ndr_flags, struct spoolss_UserLevel1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_align(ndr, 4));
@@ -477,7 +513,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_push_spoolss_UserLevel(struct ndr_push *ndr, int ndr_flags, uint16 level, union spoolss_UserLevel *r)
+NTSTATUS ndr_push_spoolss_UserLevel(struct ndr_push *ndr, int ndr_flags, uint16 level, union spoolss_UserLevel *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_uint16(ndr, level));
@@ -535,8 +571,12 @@ NTSTATUS ndr_push_spoolss_47(struct ndr_push *ndr, struct spoolss_47 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_48(struct ndr_push *ndr, struct spoolss_48 *r)
+NTSTATUS ndr_push_spoolss_EnumPrinterData(struct ndr_push *ndr, struct spoolss_EnumPrinterData *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.enum_index));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.value_offered));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.data_offered));
 
 	return NT_STATUS_OK;
 }
@@ -679,19 +719,39 @@ NTSTATUS ndr_push_spoolss_5f(struct ndr_push *ndr, struct spoolss_5f *r)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_spoolss_PrinterEnum1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterEnum1 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->flags));
+	NDR_CHECK(ndr_pull_relstr(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_pull_relstr(ndr, NDR_SCALARS, &r->description));
+	NDR_CHECK(ndr_pull_relstr(ndr, NDR_SCALARS, &r->comment));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_relstr(ndr, NDR_BUFFERS, &r->name));
+		NDR_CHECK(ndr_pull_relstr(ndr, NDR_BUFFERS, &r->description));
+		NDR_CHECK(ndr_pull_relstr(ndr, NDR_BUFFERS, &r->comment));
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, struct spoolss_EnumPrinters *r)
 {
-	uint32 _ptr_buffer;
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
-	if (_ptr_buffer) {
-		NDR_ALLOC(ndr, r->out.buffer);
+	uint32 _ptr_info;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
+	if (_ptr_info) {
+		NDR_ALLOC(ndr, r->out.info);
 	} else {
-		r->out.buffer = NULL;
+		r->out.info = NULL;
 	}
-	if (r->out.buffer) {
-		NDR_CHECK(ndr_pull_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.buffer));
+	if (r->out.info) {
+	{ uint16 _level = r->in.level;
+	NDR_CHECK(ndr_pull_subcontext_union_fn(ndr, &_level, r->out.info, (ndr_pull_union_fn_t) ndr_pull_spoolss_PrinterEnum));
+	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.needed));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.needed));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.returned));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -719,8 +779,20 @@ NTSTATUS ndr_pull_spoolss_03(struct ndr_pull *ndr, struct spoolss_03 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_04(struct ndr_pull *ndr, struct spoolss_04 *r)
+NTSTATUS ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, struct spoolss_EnumJobs *r)
 {
+	uint32 _ptr_buffer;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
+	if (_ptr_buffer) {
+		NDR_ALLOC(ndr, r->out.buffer);
+	} else {
+		r->out.buffer = NULL;
+	}
+	if (r->out.buffer) {
+		NDR_CHECK(ndr_pull_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.buffer));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.needed));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.numjobs));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -747,8 +819,20 @@ NTSTATUS ndr_pull_spoolss_07(struct ndr_pull *ndr, struct spoolss_07 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_08(struct ndr_pull *ndr, struct spoolss_08 *r)
+NTSTATUS ndr_pull_spoolss_GetPrinter(struct ndr_pull *ndr, struct spoolss_GetPrinter *r)
 {
+	uint32 _ptr_buffer;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
+	if (_ptr_buffer) {
+		NDR_ALLOC(ndr, r->out.buffer);
+	} else {
+		r->out.buffer = NULL;
+	}
+	if (r->out.buffer) {
+		NDR_CHECK(ndr_pull_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.buffer));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.needed));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.returned));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -817,7 +901,7 @@ NTSTATUS ndr_pull_spoolss_11(struct ndr_pull *ndr, struct spoolss_11 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_12(struct ndr_pull *ndr, struct spoolss_12 *r)
+NTSTATUS ndr_pull_spoolss_StartPagePrinter(struct ndr_pull *ndr, struct spoolss_StartPagePrinter *r)
 {
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -831,7 +915,7 @@ NTSTATUS ndr_pull_spoolss_13(struct ndr_pull *ndr, struct spoolss_13 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_14(struct ndr_pull *ndr, struct spoolss_14 *r)
+NTSTATUS ndr_pull_spoolss_EndPagePrinter(struct ndr_pull *ndr, struct spoolss_EndPagePrinter *r)
 {
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -852,7 +936,7 @@ NTSTATUS ndr_pull_spoolss_16(struct ndr_pull *ndr, struct spoolss_16 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_17(struct ndr_pull *ndr, struct spoolss_17 *r)
+NTSTATUS ndr_pull_spoolss_EndDocPrinter(struct ndr_pull *ndr, struct spoolss_EndDocPrinter *r)
 {
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -1197,8 +1281,23 @@ NTSTATUS ndr_pull_spoolss_47(struct ndr_pull *ndr, struct spoolss_47 *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_48(struct ndr_pull *ndr, struct spoolss_48 *r)
+NTSTATUS ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, struct spoolss_EnumPrinterData *r)
 {
+	uint32 _ptr_value_name;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.value_len));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_value_name));
+	if (_ptr_value_name) {
+		NDR_ALLOC(ndr, r->out.value_name);
+	} else {
+		r->out.value_name = NULL;
+	}
+	if (r->out.value_name) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->out.value_name));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.value_needed));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.printerdata_type));
+	NDR_CHECK(ndr_pull_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.printerdata));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.data_needed));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -1363,6 +1462,17 @@ NTSTATUS ndr_pull_spoolss_5f(struct ndr_pull *ndr, struct spoolss_5f *r)
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
+}
+
+void ndr_print_spoolss_PrinterEnum1(struct ndr_print *ndr, const char *name, struct spoolss_PrinterEnum1 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_PrinterEnum1");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "flags", r->flags);
+	ndr_print_relstr(ndr, "name", &r->name);
+	ndr_print_relstr(ndr, "description", &r->description);
+	ndr_print_relstr(ndr, "comment", &r->comment);
+	ndr->depth--;
 }
 
 void ndr_print_spoolss_Devmode(struct ndr_print *ndr, const char *name, struct spoolss_Devmode *r)

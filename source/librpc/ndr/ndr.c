@@ -405,3 +405,17 @@ NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr, 
+				      uint16 *level,
+				      void *base,
+				      NTSTATUS (*fn)(struct ndr_pull *, int , uint16 *, void *))
+{
+	uint32 size;
+	struct ndr_pull ndr2;
+
+	NDR_CHECK(ndr_pull_uint32(ndr, &size));
+	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
+	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
+	NDR_CHECK(ndr_pull_advance(ndr, size));
+	return NT_STATUS_OK;
+}

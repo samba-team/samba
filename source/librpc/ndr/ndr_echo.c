@@ -90,7 +90,7 @@ NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum1 *r)
+NTSTATUS ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum1 *r)
 {
 	uint32 _ptr_count;
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -110,7 +110,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum3 *r)
+NTSTATUS ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum3 *r)
 {
 	uint32 _ptr_count;
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -130,7 +130,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_echo_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_EnumInfo *r)
+NTSTATUS ndr_pull_echo_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_EnumInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
@@ -164,18 +164,18 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Struct1 *r)
+NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Struct1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	{ uint16 _level;
+	{ uint16 _level = r->level;
 	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_SCALARS, &_level, &r->e));
 	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
 	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level;
+	{ uint16 _level = r->level;
 	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_BUFFERS, &_level, &r->e));
 	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
 	}

@@ -52,10 +52,14 @@ struct ndr_push {
 	uint32 alloc_size;
 	uint32 offset;
 	TALLOC_CTX *mem_ctx;
+
+	/* this list is used by the relstr code to find the offsets */
+	struct ndr_push_save *relstr_list;
 };
 
 struct ndr_push_save {
 	uint32 offset;
+	struct ndr_push_save *next;
 };
 
 
@@ -81,6 +85,8 @@ enum ndr_err_code {
 	NDR_ERR_ARRAY_SIZE,
 	NDR_ERR_BAD_SWITCH,
 	NDR_ERR_OFFSET,
+	NDR_ERR_RELSTR,
+	NDR_ERR_CHARCNV,
 	NDR_ERR_LENGTH
 };
 
@@ -145,6 +151,8 @@ typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
+typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint16, void *);
+typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint16 *, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, void *);
 
@@ -155,5 +163,6 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, v
 #include "librpc/ndr/ndr_lsa.h"
 #include "librpc/ndr/ndr_dfs.h"
 #include "librpc/ndr/ndr_spoolss.h"
+#include "librpc/ndr/ndr_spoolss_buf.h"
 #include "librpc/ndr/ndr_samr.h"
 
