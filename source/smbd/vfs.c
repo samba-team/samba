@@ -415,6 +415,84 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 }
 
 /****************************************************************************
+ An allocate file space call using the vfs interface.
+ Allocates space for a file from a filedescriptor.
+ Returns 0 on success, -1 on failure.
+****************************************************************************/
+
+int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
+{
+	int ret;
+	SMB_STRUCT_STAT st;
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+
+	if (!lp_strict_allocate(SNUM(fsp->conn)))
+		return vfs_set_filelen(fsp, len);
+		
+	release_level_2_oplocks_on_change(fsp);
+
+	/*
+	 * Actually try and commit the space on disk....
+	 */
+
+	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n", fsp->fsp_name, (double)len ));
+
+	ret = vfs_fstat(fsp,fsp->fd,&st);
+	if (ret == -1)
+		return ret;
+
+	if (len == st.st_size)
+		return 0;
+
+	if (len < st.st_size) {
+		/* Shrink - use ftruncate. */
+
+		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
+				fsp->fsp_name, (double)st.st_size ));
+
+		if ((ret = vfs_ops->ftruncate(fsp, fsp->fd, len)) != -1) {
+			set_filelen_write_cache(fsp, len);
+		}
+		return ret;
+	}
+
+	/* Grow - we need to write out the space.... */
+	{
+		static unsigned char zero_space[65536];
+
+		SMB_OFF_T start_pos = st.st_size;
+		SMB_OFF_T len_to_write = len - st.st_size;
+		SMB_OFF_T retlen;
+
+		DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f\n",
+				fsp->fsp_name, (double)st.st_size ));
+
+		if ((retlen = vfs_ops->lseek(fsp, fsp->fd, start_pos, SEEK_SET)) != start_pos)
+			return -1;
+
+		while ( len_to_write > 0) {
+			SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),len_to_write);
+
+			retlen = vfs_ops->write(fsp,fsp->fd,zero_space,current_len_to_write);
+			if (retlen != current_len_to_write) {
+				/* Write fail - return to original size. */
+				int save_errno = errno;
+				fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, st.st_size);
+				errno = save_errno;
+				return -1;
+			}
+
+			DEBUG(10,("vfs_allocate_file_space: file %s, grow. wrote %.0f\n",
+					fsp->fsp_name, (double)current_len_to_write ));
+
+			len_to_write -= current_len_to_write;
+		}
+		set_filelen_write_cache(fsp, len);
+	}
+	return 0;
+}
+
+/****************************************************************************
  A vfs set_filelen call.
  set the length of a file from a filedescriptor.
  Returns 0 on success, -1 on failure.
@@ -425,9 +503,8 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	int ret;
 
 	release_level_2_oplocks_on_change(fsp);
-	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1) {
+	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
-	}
 
 	return ret;
 }

@@ -1950,6 +1950,7 @@ BOOL lp_manglednames(int );
 BOOL lp_widelinks(int );
 BOOL lp_symlinks(int );
 BOOL lp_syncalways(int );
+BOOL lp_strict_allocate(int );
 BOOL lp_strict_sync(int );
 BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );
@@ -4429,6 +4430,7 @@ char *vfs_getwd(connection_struct *conn, char *unix_path);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
+int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len);
 int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
 			    int out_fd, files_struct *out_fsp,

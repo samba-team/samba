@@ -377,6 +377,7 @@ typedef struct
 	BOOL bWidelinks;
 	BOOL bSymlinks;
 	BOOL bSyncAlways;
+	BOOL bStrictAllocate;
 	BOOL bStrictSync;
 	char magic_char;
 	BOOL *copymap;
@@ -490,6 +491,7 @@ static service sDefault = {
 	True,			/* bWidelinks */
 	True,			/* bSymlinks */
 	False,			/* bSyncAlways */
+	False,			/* bStrictAllocate */
 	False,			/* bStrictSync */
 	'~',			/* magic char */
 	NULL,			/* copymap */
@@ -818,6 +820,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, 0},
 	{"stat cache size", P_INTEGER, P_GLOBAL, &Globals.stat_cache_size, NULL, NULL, 0},
+	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_SHARE},
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, 0},
@@ -1656,6 +1659,7 @@ FN_LOCAL_BOOL(lp_manglednames, bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks, bWidelinks)
 FN_LOCAL_BOOL(lp_symlinks, bSymlinks)
 FN_LOCAL_BOOL(lp_syncalways, bSyncAlways)
+FN_LOCAL_BOOL(lp_strict_allocate, bStrictAllocate)
 FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
 FN_LOCAL_BOOL(lp_map_system, bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly, bDeleteReadonly)
