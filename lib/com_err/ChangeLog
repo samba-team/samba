@@ -1,3 +1,7 @@
+Fri Nov 20 06:58:59 1998  Assar Westerlund  <assar@sics.se>
+
+	* lex.l: undef ECHO to work around AIX lex bug
+
 Sun Sep 27 02:23:59 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* com_err.c (error_message): try to pass code to strerror, to see
