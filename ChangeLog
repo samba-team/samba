@@ -1,6 +1,7 @@
-2002-08-17  Assar Westerlund  <assar@ratatosk.pdc.kth.se>
+2002-08-19  Johan Danielsson  <joda@pdc.kth.se>
 
-	* Release 0.4f
+	* lib/krb5/context.c (krb5_get_default_config_files): ignore
+	duplicate files
 
 2002-08-16  Johan Danielsson  <joda@pdc.kth.se>
 
