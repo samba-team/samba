@@ -168,41 +168,6 @@ BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-/* Call winbindd to convert SID to uid. Do not allocate */
-
-BOOL winbind_sid_to_uid_query(uid_t *puid, const DOM_SID *sid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-	fstring sid_str;
-
-	if (!puid)
-		return False;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	sid_to_string(sid_str, sid);
-	fstrcpy(request.data.sid, sid_str);
-
-	request.flags = WBFLAG_QUERY_ONLY;
-	
-	/* Make request */
-
-	result = winbindd_request(WINBINDD_SID_TO_UID, &request, &response);
-
-	/* Copy out result */
-
-	if (result == NSS_STATUS_SUCCESS) {
-		*puid = response.data.uid;
-	}
-
-	return (result == NSS_STATUS_SUCCESS);
-}
-
 /* Call winbindd to convert SID to gid */
 
 BOOL winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
@@ -223,41 +188,6 @@ BOOL winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 	sid_to_string(sid_str, sid);
 	fstrcpy(request.data.sid, sid_str);
 	
-	/* Make request */
-
-	result = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
-
-	/* Copy out result */
-
-	if (result == NSS_STATUS_SUCCESS) {
-		*pgid = response.data.gid;
-	}
-
-	return (result == NSS_STATUS_SUCCESS);
-}
-
-/* Call winbindd to convert SID to gid.  Do not allocate */
-
-BOOL winbind_sid_to_gid_query(gid_t *pgid, const DOM_SID *sid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-	fstring sid_str;
-
-	if (!pgid)
-		return False;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	sid_to_string(sid_str, sid);
-	fstrcpy(request.data.sid, sid_str);
-	
-	request.flags = WBFLAG_QUERY_ONLY;
-
 	/* Make request */
 
 	result = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
@@ -580,4 +510,80 @@ BOOL winbind_delete_group( const char *group )
 	return result == NSS_STATUS_SUCCESS;
 }
 
+/***********************************************************************/
+#if 0	/* not needed currently since winbindd_acct was added -- jerry */
+
+/* Call winbindd to convert SID to uid. Do not allocate */
+
+BOOL winbind_sid_to_uid_query(uid_t *puid, const DOM_SID *sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+	fstring sid_str;
+
+	if (!puid)
+		return False;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	sid_to_string(sid_str, sid);
+	fstrcpy(request.data.sid, sid_str);
+
+	request.flags = WBFLAG_QUERY_ONLY;
+	
+	/* Make request */
+
+	result = winbindd_request(WINBINDD_SID_TO_UID, &request, &response);
+
+	/* Copy out result */
+
+	if (result == NSS_STATUS_SUCCESS) {
+		*puid = response.data.uid;
+	}
+
+	return (result == NSS_STATUS_SUCCESS);
+}
+
+/* Call winbindd to convert SID to gid.  Do not allocate */
+
+BOOL winbind_sid_to_gid_query(gid_t *pgid, const DOM_SID *sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+	fstring sid_str;
+
+	if (!pgid)
+		return False;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	sid_to_string(sid_str, sid);
+	fstrcpy(request.data.sid, sid_str);
+	
+	request.flags = WBFLAG_QUERY_ONLY;
+
+	/* Make request */
+
+	result = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
+
+	/* Copy out result */
+
+	if (result == NSS_STATUS_SUCCESS) {
+		*pgid = response.data.gid;
+	}
+
+	return (result == NSS_STATUS_SUCCESS);
+}
+
+#endif 	/* JERRY */
+
+/***********************************************************************/
 

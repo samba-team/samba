@@ -1195,7 +1195,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 
 	*name_type = SID_NAME_UNKNOWN;
 
-	/* This call can enumerate grou mappings for foreign sids as well.
+	/* This call can enumerate group mappings for foreign sids as well.
 	   So don't check for a match against our domain SID */
 
 	/* we don't need to disable winbindd since the gid is stored in 
