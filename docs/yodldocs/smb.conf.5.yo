@@ -5767,13 +5767,9 @@ dit(bf(source environment (G)))
 This parameter causes Samba to set environment variables as per the
 content of the file named.
 
-The file bf(must) be owned by root and not world writable in order
-to be read (this is a security check).
-
 If the value of this parameter starts with a "|" character then Samba will
 treat that value as a pipe command to open and will set the environment
-variables from the oput of the pipe. This command must not be world writable
-and must reside in a directory that is not world writable.
+variables from the output of the pipe.
 
 The contents of the file or the output of the pipe should be formatted
 as the output of the standard Unix env(1) command. This is of the form :
