@@ -364,7 +364,7 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 		return False;
 	}
 
-	for (i = num_cons-1; i >= 0; --i)
+	for (i = 0; i < num_cons; i++)
 	{
 		if (con_list[i] != NULL &&
 		    strequal(con_list[i]->srv_name , srv_name ) &&

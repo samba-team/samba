@@ -194,6 +194,9 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
 BOOL lookupsmbgrpnam(const char *unix_grp_name, DOM_NAME_MAP *grp);
 BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
 BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep);
+const struct passwd *map_nt_and_unix_username(const char *domain,
+				const char *ntuser,
+				char *unix_user, char *nt_user);
 
 /*The following definitions come from  lib/doscalls.c  */
 
@@ -1068,23 +1071,6 @@ msrpc_service_fns *get_service_fns(void);
 /*The following definitions come from  lsarpcd/srv_lsa.c  */
 
 BOOL api_ntlsa_rpc(rpcsrv_struct *p);
-
-/*The following definitions come from  mem_man/mem_man.c  */
-
-void *smb_mem_malloc(size_t size,char *file,int line);
-char *smb_mem_strdup(const char *s, char *file, int line);
-int smb_mem_free(void *ptr,char *file,int line);
-void smb_mem_write_info(void *ptr,FILE *outfile);
-size_t smb_mem_query_size(void *ptr);
-size_t smb_mem_query_real_size(void *ptr);
-char *smb_mem_query_file(void *ptr);
-int smb_mem_query_line(void *ptr);
-int smb_mem_test(void *ptr);
-void smb_mem_write_status(FILE *outfile);
-void smb_mem_write_verbose(FILE *outfile);
-void smb_mem_write_errors(FILE *outfile);
-void smb_mem_set_multiplier(int multiplier);
-void *smb_mem_resize(void *ptr,size_t newsize);
 
 /*The following definitions come from  msrpc/msrpcd.c  */
 
