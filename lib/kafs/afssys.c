@@ -249,44 +249,64 @@ aix_setup(void)
 #endif
 
 
+
 /*
- * Try to find the cells we should try to klog to in "file".
+ * Get tokens for all cells[]
  */
-static
-int
-k_afslog_file(char *file, char *krealm, uid_t uid)
+static int
+k_afslog_cells(char *cells[], int max, char *krealm, uid_t uid)
 {
-    FILE *f;
-    char cell[64];
     int err = KSUCCESS;
-    f = fopen(file, "r");
-    if (f == NULL)
-	return KSUCCESS;	/* No config file is ok! */
-    while (fgets(cell, sizeof(cell), f) && err == KSUCCESS) {
-	char *nl = strchr(cell, '\n');
-	if (nl)
-	    *nl = 0;
-	err = k_afsklog_uid(cell, krealm, uid);
-    }
-    fclose(f);
+    int i;
+    for(i = 0; i < max; i++)
+	err = k_afsklog_uid(cells[i], krealm, uid);
     return err;
 }
 
-static
-int
+/*
+ * Try to find the cells we should try to klog to in "file".
+ */
+static void
+k_find_cells(char *file, char *cells[], int size, int *index)
+{
+    FILE *f;
+    char cell[64];
+    int i;
+    f = fopen(file, "r");
+    if (f == NULL)
+	return;
+    while (*index < size && fgets(cell, sizeof(cell), f)) {
+	char *nl = strchr(cell, '\n');
+	if (nl) *nl = 0;
+	for(i = 0; i < *index; i++)
+	    if(strcmp(cells[i], cell) == 0)
+		break;
+	if(i == *index)
+	    cells[(*index)++] = strdup(cell);
+    }
+    fclose(f);
+}
+
+static int
 k_afsklog_all_local_cells(char *krealm, uid_t uid)
 {
-    int err = KFAILURE;
-    char *p, home[MaxPathLen];
+    int err;
+    char *cells[32]; /* XXX */
+    int num_cells = sizeof(cells) / sizeof(cells[0]);
+    int index = 0;
 
+    char *p, home[MaxPathLen];
+    
     if ((p = getenv("HOME"))) {
 	sprintf(home, "%s/.TheseCells", p);
-	err = k_afslog_file(home, krealm, uid);
+	k_find_cells(home, cells, num_cells, &index);
     }
-    if(k_afslog_file(_PATH_THESECELLS, krealm, uid) == 0)
-	err = 0;
-    if(k_afslog_file(_PATH_THISCELL, krealm, uid) == 0)
-	err = 0;
+    k_find_cells(_PATH_THESECELLS, cells, num_cells, &index);
+    k_find_cells(_PATH_THISCELL, cells, num_cells, &index);
+    
+    err = k_afslog_cells(cells, index, krealm, uid);
+    while(index > 0)
+	free(cells[--index]);
     return err;
 }
 
@@ -304,8 +324,6 @@ k_afsklog_uid(char *cell, char *krealm, uid_t uid)
   if (cell == 0 || cell[0] == 0)
     return k_afsklog_all_local_cells (krealm, uid);
   foldup(CELL, cell);
-
-  vl_realm = realm_of_cell(cell);
 
   k_errno = krb_get_lrealm(realm , 0);
   if(k_errno == KSUCCESS && (krealm == NULL || strcmp(krealm, realm)))
@@ -351,7 +369,7 @@ k_afsklog_uid(char *cell, char *krealm, uid_t uid)
     k_errno = get_cred(AUTH_SUPERUSER, "", CELL, &c, &ticket);
   
   /* this might work in some conditions */
-  if(k_errno && vl_realm){
+  if(k_errno && (vl_realm = realm_of_cell(cell))){
     k_errno = get_cred(AUTH_SUPERUSER, cell, vl_realm, &c, &ticket);
     if(k_errno)
       k_errno = get_cred(AUTH_SUPERUSER, "", vl_realm, &c, &ticket);
