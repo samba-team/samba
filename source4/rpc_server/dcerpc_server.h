@@ -43,7 +43,11 @@ struct dcesrv_call_state {
 	struct dcesrv_state *dce;
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_packet pkt;
-	DATA_BLOB data;
+
+	struct dcesrv_call_reply {
+		struct dcesrv_call_reply *next, *prev;
+		DATA_BLOB data;
+	} *replies;
 };
 
 /* the state associated with a dcerpc server connection */
@@ -65,6 +69,9 @@ struct dcesrv_state {
 
 	/* the state of the current calls */
 	struct dcesrv_call_state *call_list;
+
+	/* the maximum size the client wants to receive */
+	uint32 cli_max_recv_frag;
 
 	/* private data for the endpoint server */
 	void *private;
