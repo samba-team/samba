@@ -4366,6 +4366,12 @@ static BOOL run_eatest(int dummy)
 	}
 
 	printf("num_eas = %d\n", num_eas);
+
+	if (num_eas != 20) {
+		printf("Should be 20 EA's stored... failing.\n");
+		correct = False;
+	}
+
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
 		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
@@ -4396,6 +4402,12 @@ static BOOL run_eatest(int dummy)
 
 	if (num_eas != 0) {
 		printf("deleting EA's failed.\n");
+		correct = False;
+	}
+
+	/* Try and delete a non existant EA. */
+	if (!cli_set_ea_path(cli, fname, "foo", "", 0)) {
+		printf("deleting non-existant EA 'foo' should succeed. %s\n", cli_errstr(cli));
 		correct = False;
 	}
 

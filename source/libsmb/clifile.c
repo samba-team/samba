@@ -1297,6 +1297,12 @@ static BOOL cli_get_ea_list(struct cli_state *cli,
 		goto out;
 	}
 
+	if (ea_size == 0) {
+		/* No EA's present. */
+		ret = True;
+		goto out;
+	}
+
 	p = rdata + 4;
 	ea_size -= 4;
 
