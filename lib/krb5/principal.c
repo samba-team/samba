@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -176,7 +176,7 @@ exit:
     return ret;
 }
 
-static const char quotable_chars[] = "\n\t\b\\/@";
+static const char quotable_chars[] = " \n\t\b\\/@";
 static const char replace_chars[] = "ntb\\/@";
 
 #define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
