@@ -964,8 +964,6 @@ static WERROR init_srv_file_info_ctr(pipes_struct *p, SRV_FILE_INFO_CTR *ctr,
 
 	ctr->switch_value = switch_value;
 	ctr->num_entries = *total_entries - *resume_hnd;
-	if (ctr->num_entries < 0)
-		ctr->num_entries = 0;
 	ctr->num_entries2 = ctr->num_entries;
 
 	switch (switch_value) {

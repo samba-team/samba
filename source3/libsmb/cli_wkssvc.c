@@ -40,7 +40,6 @@ NTSTATUS cli_wks_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct rbuf;
 	WKS_Q_QUERY_INFO q_o;
 	WKS_R_QUERY_INFO r_o;
-	NTSTATUS nt_status;
 
 	if (cli == NULL || wks100 == NULL)
 		return NT_STATUS_UNSUCCESSFUL;
@@ -89,6 +88,6 @@ NTSTATUS cli_wks_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* do clean up */
 	prs_mem_free(&rbuf);
 	
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
