@@ -765,6 +765,10 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		if (!get_printer_snum(handle, &snum))
 			return ERROR_INVALID_HANDLE;
 
+		/* map an empty access mask to the minimum access mask */
+		if (printer_default->access_required == 0x0)
+			printer_default->access_required = PRINTER_ACCESS_USE;
+
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(handle);
