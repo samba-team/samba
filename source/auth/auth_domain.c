@@ -245,57 +245,67 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 					auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	SAM_TRUST_PASSWD *trust = NULL;
 	unsigned char trust_passwd[16];
-	time_t last_change_time;
 	const char *domain = lp_workgroup();
 	uint32 sec_channel_type = 0;
 	fstring dc_name;
 	struct in_addr dc_ip;
-
+	
 	if ( lp_server_role() != ROLE_DOMAIN_MEMBER ) {
 		DEBUG(0,("check_ntdomain_security: Configuration error!  Cannot use "
 			"ntdomain auth method when not a member of a domain.\n"));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-
+	
 	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_ntdomain_security: Critical variables not present.  Failing.\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	
 	/* 
 	 * Check that the requested domain is not our own machine name.
 	 * If it is, we should never check the PDC here, we use our own local
 	 * password file.
 	 */
-
+	
 	if(strequal(get_global_sam_name(), user_info->domain.str)) {
 		DEBUG(3,("check_ntdomain_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-
+	
 	/*
 	 * Get the machine account password for our primary domain
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
-
-	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time, &sec_channel_type))
-	{
+	
+	nt_status = pdb_init_trustpw_talloc(mem_ctx, &trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not initialise trust password\n"));
+		return nt_status;
+	}
+	
+	nt_status = pdb_gettrustpwnam(trust, domain);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain '%s'\n", domain));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
-
+	
+	sec_channel_type = SCHANNEL_TYPE(pdb_get_tp_flags(trust));
+	memcpy((void*)trust_passwd, pdb_get_tp_pass(trust), sizeof(trust_passwd));
+	data_blob_clear(&trust->private.pass);
+	
 	/* Test if machine password has expired and needs to be changed */
 	if (lp_machine_password_timeout()) {
-		if (last_change_time > 0 && 
-		    time(NULL) > (last_change_time + 
+		if (pdb_get_tp_mod_time(trust) > 0 && 
+		    time(NULL) > (pdb_get_tp_mod_time(trust) + 
 				  lp_machine_password_timeout())) {
 			global_machine_password_needs_changing = True;
 		}
 	}
-
+	
 	/* we need our DC to send the net_sam_logon() request to */
-
+	
 	if ( !get_dc_name(domain, NULL, dc_name, &dc_ip) ) {
 		DEBUG(5,("check_ntdomain_security: unable to locate a DC for domain %s\n",
 			user_info->domain.str));
@@ -303,9 +313,10 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	}
 	
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
-		(uchar *)auth_context->challenge.data, server_info, dc_name, dc_ip,
-		global_myname(), sec_channel_type,trust_passwd, last_change_time);
-		
+					   (uchar *)auth_context->challenge.data, server_info,
+					   dc_name, dc_ip, global_myname(), sec_channel_type,
+					   trust_passwd, pdb_get_tp_mod_time(trust));
+	
 	return nt_status;
 }
 
@@ -333,10 +344,8 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 					   auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	SAM_TRUST_PASSWD *trust = NULL;
 	unsigned char trust_md4_password[16];
-	char *trust_password;
-	time_t last_change_time;
-	DOM_SID sid;
 	fstring dc_name;
 	struct in_addr dc_ip;
 
@@ -344,17 +353,17 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 		DEBUG(1,("check_trustdomain_security: Critical variables not present.  Failing.\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	
 	/* 
 	 * Check that the requested domain is not our own machine name or domain name.
 	 */
-
+	
 	if( strequal(get_global_sam_name(), user_info->domain.str)) {
 		DEBUG(3,("check_trustdomain_security: Requested domain [%s] was for this machine.\n",
 			user_info->domain.str));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-
+	
 	/* No point is bothering if this is not a trusted domain.
 	   This return makes "map to guest = bad user" work again.
 	   The logic is that if we know nothing about the domain, that
@@ -362,27 +371,32 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	
 	if ( !is_trusted_domain( user_info->domain.str ) )
 		return NT_STATUS_NOT_IMPLEMENTED;
-
+	
 	/*
 	 * Get the trusted account password for the trusted domain
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
-
-	if (!secrets_fetch_trusted_domain_password(user_info->domain.str, &trust_password, &sid, &last_change_time))
-	{
+	
+	nt_status = pdb_init_trustpw_talloc(mem_ctx, &trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not initialise trust password\n"));
+		return nt_status;
+	}
+	
+	nt_status = pdb_gettrustpwnam(trust, user_info->domain.str);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("check_trustdomain_security: could not fetch trust account password for domain %s\n", user_info->domain.str));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
-
+	
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("Trust password for domain %s is %s\n", user_info->domain.str, trust_password));
+	DEBUG(100, ("Trust password for domain %s is %s\n", user_info->domain.str, pdb_get_tp_pass(trust)));
 #endif
-	E_md4hash(trust_password, trust_md4_password);
-	SAFE_FREE(trust_password);
-
+	memcpy(trust_md4_password, pdb_get_tp_pass(trust), sizeof(trust_md4_password));
+	data_blob_clear(&trust->private.pass);
 #if 0
 	/* Test if machine password is expired and need to be changed */
-	if (time(NULL) > last_change_time + lp_machine_password_timeout())
+	if (time(NULL) > pdb_get_tp_mod_time(trust) + lp_machine_password_timeout())
 	{
 		global_machine_password_needs_changing = True;
 	}
@@ -398,8 +412,10 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	}
 	
 	nt_status = domain_client_validate(mem_ctx, user_info, user_info->domain.str,
-		(uchar *)auth_context->challenge.data, server_info, dc_name, dc_ip,
-		lp_workgroup(), SEC_CHAN_DOMAIN, trust_md4_password, last_change_time);
+					   (uchar*)auth_context->challenge.data,
+					   server_info, dc_name, dc_ip, lp_workgroup(),
+					   SEC_CHAN_DOMAIN, trust_md4_password,
+					   pdb_get_tp_mod_time(trust));
 
 	return nt_status;
 }

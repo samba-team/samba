@@ -1444,15 +1444,21 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 
 BOOL is_trusted_domain(const char* dom_name)
 {
-	DOM_SID trustdom_sid;
-	char *pass = NULL;
-	time_t lct;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SAM_TRUST_PASSWD *trust = NULL;
+	DOM_SID dom_sid;
 	BOOL ret;
 
 	/* no trusted domains for a standalone server */
-
 	if ( lp_server_role() == ROLE_STANDALONE )
 		return False;
+
+	/* init trust password structure */
+	nt_status = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not initialise trust password\n"));
+		return False;
+	}
 
 	/* if we are a DC, then check for a direct trust relationships */
 
@@ -1460,11 +1466,12 @@ BOOL is_trusted_domain(const char* dom_name)
 		become_root();
 		DEBUG (5,("is_trusted_domain: Checking for domain trust with [%s]\n",
 			dom_name ));
-		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
+		nt_status = pdb_gettrustpwnam(trust, dom_name);
 		unbecome_root();
-		SAFE_FREE(pass);
-		if (ret)
+		if (ret) {
+			trust->free_fn(&trust);
 			return True;
+		}
 	}
 	else {
 		/* if winbindd is not up and we are a domain member) then we need to update the
@@ -1474,14 +1481,18 @@ BOOL is_trusted_domain(const char* dom_name)
 			update_trustdom_cache();
 	}
 
+	sid_copy(&dom_sid, pdb_get_tp_domain_sid(trust));
+
 	/* now the trustdom cache should be available a DC could still
 	 * have a transitive trust so fall back to the cache of trusted
 	 * domains (like a domain member would use  */
 
-	if ( trustdom_cache_fetch(dom_name, &trustdom_sid) ) {
+	if ( trustdom_cache_fetch(dom_name, &dom_sid) ) {
+		trust->free_fn(&trust);
 		return True;
 	}
 
+	trust->free_fn(&trust);
 	return False;
 }
 
