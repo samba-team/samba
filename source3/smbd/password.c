@@ -224,9 +224,11 @@ add a name to the session users list
 void add_session_user(const char *user)
 {
   fstring suser;
-  StrnCpy(suser,user,sizeof(suser)-1);
+  struct passwd *passwd;
 
-  if (!Get_Pwnam_Modify(suser)) return;
+  if (!passwd = Get_Pwnam(user)) return;
+
+  StrnCpy(suser,passwd->pw_name,sizeof(suser)-1);
 
   if (suser && *suser && !in_list(suser,session_users,False))
     {
