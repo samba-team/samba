@@ -1,0 +1,132 @@
+
+
+
+     TTTTEEEESSSSTTTTPPPPAAAARRRRMMMM((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     TTTTEEEESSSSTTTTPPPPAAAARRRRMMMM((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          testparm - check an smb.conf configuration file for
+          internal correctness
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          tttteeeessssttttppppaaaarrrrmmmm [ ----ssss ]  [ ----hhhh ]  [ ----xxxx ]  [ ----LLLL <<<<sssseeeerrrrvvvveeeerrrrnnnnaaaammmmeeee>>>> ]  ccccoooonnnnffffiiiigggg
+          ffffiiiilllleeeennnnaaaammmmeeee [ hhhhoooossssttttnnnnaaaammmmeeee hhhhoooossssttttIIIIPPPP ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          tttteeeessssttttppppaaaarrrrmmmm is a very simple test program to check an ssssmmmmbbbbdddd
+          configuration file for internal correctness. If this program
+          reports no problems, you can use the configuration file with
+          confidence that ssssmmmmbbbbdddd will successfully load the
+          configuration file.
+
+          Note that this is NNNNOOOOTTTT a guarantee that the services
+          specified in the configuration file will be available or
+          will operate as expected.
+
+          If the optional host name and host IP address are specified
+          on the command line, this test program will run through the
+          service entries reporting whether the specified host has
+          access to each service.
+
+          If tttteeeessssttttppppaaaarrrrmmmm finds an error in the  _s_m_b._c_o_n_f file it returns
+          an exit code of 1 to the calling program, else it returns an
+          exit code of 0. This allows shell scripts to test the output
+          from tttteeeessssttttppppaaaarrrrmmmm.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----ssss   Without this option, tttteeeessssttttppppaaaarrrrmmmm will prompt for a
+               carriage return after printing the service names and
+               before dumping the service definitions.
+
+          ----hhhh   Print usage message
+
+          ----xxxx   Print only parameters that have non-default values
+
+          ----LLLL sssseeeerrrrvvvveeeerrrrnnnnaaaammmmeeee
+               Sets the value of the %L macro to _s_e_r_v_e_r_n_a_m_e.  This is
+               useful for testing include files specified with the %L
+               macro.
+
+          ccccoooonnnnffffiiiiggggffffiiiilllleeeennnnaaaammmmeeee
+               This is the name of the configuration file to check. If
+               this parameter is not present then the default _s_m_b._c_o_n_f
+               file will be checked.
+
+          hhhhoooossssttttnnnnaaaammmmeeee
+               If this parameter and the following are specified, then
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     TTTTEEEESSSSTTTTPPPPAAAARRRRMMMM((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     TTTTEEEESSSSTTTTPPPPAAAARRRRMMMM((((1111))))
+
+
+
+               tttteeeessssttttppppaaaarrrrmmmm will examine the _h_o_s_t_s _a_l_l_o_w and _h_o_s_t_s _d_e_n_y
+               parameters in the _s_m_b._c_o_n_f file to determine if the
+               hostname with this IP address would be allowed access
+               to the ssssmmmmbbbbdddd server. If this parameter is supplied, the
+               hostIP parameter must also be supplied.
+
+          hhhhoooossssttttIIIIPPPP
+               This is the IP address of the host specified in the
+               previous parameter. This address must be supplied if
+               the hostname parameter is supplied.
+
+     FFFFIIIILLLLEEEESSSS
+          _s_m_b._c_o_n_f
+               This is usually the name of the configuration file used
+               by ssssmmmmbbbbdddd.
+
+     DDDDIIIIAAAAGGGGNNNNOOOOSSSSTTTTIIIICCCCSSSS
+          The program will issue a message saying whether the
+          configuration file loaded OK or not. This message may be
+          preceded by errors and warnings if the file did not load. If
+          the file was loaded OK, the program then dumps all known
+          service details to stdout.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          _s_m_b._c_o_n_f(_5) ssssmmmmbbbbdddd((((8888))))
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+

@@ -1,0 +1,132 @@
+
+
+
+     SSSSMMMMBBBBTTTTAAAARRRR((((1111))))       UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))       SSSSMMMMBBBBTTTTAAAARRRR((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbtar - shell script for backing up SMB/CIFS shares
+          directly to UNIX tape drives
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ssssmmmmbbbbttttaaaarrrr ----ssss sssseeeerrrrvvvveeeerrrr [ ----pppp ppppaaaasssssssswwwwoooorrrrdddd ]  [ ----xxxx sssseeeerrrrvvvviiiicccceeeessss ]  [ ----XXXX ]  [
+          ----dddd ddddiiiirrrreeeeccccttttoooorrrryyyy ]  [ ----uuuu uuuusssseeeerrrr ]  [ ----tttt ttttaaaappppeeee ]  [ ----tttt ttttaaaappppeeee ]  [ ----bbbb
+          bbbblllloooocccckkkkssssiiiizzzzeeee ]  [ ----NNNN ffffiiiilllleeeennnnaaaammmmeeee ]  [ ----iiii ]  [ ----rrrr ]  [ ----llll lllloooogggglllleeeevvvveeeellll
+          ]  [ ----vvvv ]  ffffiiiilllleeeennnnaaaammmmeeeessss
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          ssssmmmmbbbbttttaaaarrrr is a very small shell script on top of ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111))))
+          which dumps SMB shares directly to tape.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----ssss sssseeeerrrrvvvveeeerrrr
+               The SMB/CIFS server that the share resides upon.
+
+          ----xxxx sssseeeerrrrvvvviiiicccceeee
+               The share name on the server to connect to. The default
+               is "backup".
+
+          ----XXXX   Exclude mode. Exclude filenames... from tar create or
+               restore.
+
+          ----dddd ddddiiiirrrreeeeccccttttoooorrrryyyy
+               Change to initial _d_i_r_e_c_t_o_r_y before restoring / backing
+               up files.
+
+          ----vvvv   Verbose mode.
+
+          ----pppp ppppaaaasssssssswwwwoooorrrrdddd
+               The password to use to access a share. Default: none
+
+          ----uuuu uuuusssseeeerrrr
+               The user id to connect as. Default: UNIX login name.
+
+          ----tttt ttttaaaappppeeee
+               Tape device. May be regular file or tape device.
+               Default: $_T_A_P_E environmental variable; if not set, a
+               file called _t_a_r._o_u_t .
+
+          ----bbbb bbbblllloooocccckkkkssssiiiizzzzeeee
+               Blocking factor. Defaults to 20. See ttttaaaarrrr((((1111)))) for a
+               fuller explanation.
+
+          ----NNNN ffffiiiilllleeeennnnaaaammmmeeee
+               Backup only files newer than filename. Could be used
+               (for example) on a log file to implement incremental
+               backups.
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBTTTTAAAARRRR((((1111))))       UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))       SSSSMMMMBBBBTTTTAAAARRRR((((1111))))
+
+
+
+          ----iiii   Incremental mode; tar files are only backed up if they
+               have the archive bit set. The archive bit is reset
+               after each file is read.
+
+          ----rrrr   Restore. Files are restored to the share from the tar
+               file.
+
+          ----llll lllloooogggg lllleeeevvvveeeellll
+               Log (debug) level. Corresponds to the -_d flag of
+               ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111)))) .
+
+     EEEENNNNVVVVIIIIRRRROOOONNNNMMMMEEEENNNNTTTT VVVVAAAARRRRIIIIAAAABBBBLLLLEEEESSSS
+          The $_T_A_P_E variable specifies the default tape device to
+          write to. May be overridden with the -t option.
+
+     BBBBUUUUGGGGSSSS
+          The ssssmmmmbbbbttttaaaarrrr script has different options from ordinary tar
+          and tar called from smbclient.
+
+     CCCCAAAAVVVVEEEEAAAATTTTSSSS
+          Sites that are more careful about security may not like the
+          way the script handles PC passwords. Backup and restore work
+          on entire shares, should work on file lists. smbtar works
+          best with GNU tar and may not work well with other versions.
+
+     DDDDIIIIAAAAGGGGNNNNOOOOSSSSTTTTIIIICCCCSSSS
+          See the DDDDIIIIAAAAGGGGNNNNOOOOSSSSTTTTIIIICCCCSSSS section for the ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111))))
+           command.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          ssssmmmmbbbbdddd((((8888)))) ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111)))) smb.conf(5)
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          Ricky Poulten <URL:mailto:poultenr@logica.co.uk> wrote the
+          tar extension and this man page. The ssssmmmmbbbbttttaaaarrrr script was
+          heavily rewritten and improved by Martin Kraemer
+          <URL:mailto:Martin.Kraemer@mch.sni.de>. Many thanks to
+          everyone who suggested extensions, improvements, bug fixes,
+          etc. The man page sources were converted to YODL format
+          (another excellent piece of Open Source software, available
+          at ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter.
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+

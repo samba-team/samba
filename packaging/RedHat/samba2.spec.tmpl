@@ -5,7 +5,7 @@ Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
-Packager: John H Terpstra [Samba-Team] <jht@samba.org>
+Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 Provides: samba = %{version}
@@ -319,6 +319,9 @@ install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/samba/samba.
 install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
+# Remove "*.old" files
+find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -524,6 +527,8 @@ fi
 %{prefix}/sbin/smbmount
 %{prefix}/sbin/smbumount
 %{prefix}/sbin/winbindd
+%{prefix}/sbin/debug2html
+%{prefix}/sbin/samba
 /sbin/mount.smbfs
 /sbin/mount.smb
 %{prefix}/bin/mksmbpasswd.sh
@@ -544,6 +549,10 @@ fi
 %{prefix}/bin/smbcontrol
 %{prefix}/bin/smbcacls
 %{prefix}/bin/wbinfo
+%{prefix}/bin/pam_smbpass.so
+%{prefix}/bin/smbmount
+%{prefix}/bin/smbumount
+%{prefix}/bin/tdbbackup
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
 %{prefix}/include/libsmbclient.h
@@ -554,6 +563,7 @@ fi
 %{prefix}/share/swat/include/header.html
 %{prefix}/share/swat/include/footer.html
 %{prefix}/share/swat/using_samba/*
+%{prefix}/share/swat/README
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/recycle.conf
@@ -570,6 +580,7 @@ MANDIR_MACRO/man5/*
 MANDIR_MACRO/man7/*
 MANDIR_MACRO/man8/*
 %dir /etc/codepages/*
+%dir /etc/codepages/src/*
 %attr(755,root,root) %dir /var/cache/samba
 %dir /var/log/samba
 %dir /var/run/samba

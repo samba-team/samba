@@ -1,0 +1,264 @@
+
+
+
+     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbmount - mount an smbfs filesystem
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ssssmmmmbbbbmmmmoooouuuunnnntttt sssseeeerrrrvvvviiiicccceeee mmmmoooouuuunnnntttt----ppppooooiiiinnnntttt [ ----oooo ooooppppttttiiiioooonnnnssss ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          ssssmmmmbbbbmmmmoooouuuunnnntttt mounts a Linux SMB filesystem. It is usually
+          invoked as mmmmoooouuuunnnntttt....ssssmmmmbbbbffffssss by the mmmmoooouuuunnnntttt((((8888)))) command when using
+          the "-t smbfs" option. This command only works in Linux, and
+          the kernel must support the smbfs filesystem.
+
+          Options to ssssmmmmbbbbmmmmoooouuuunnnntttt are specified as a comma-separated list
+          of key=value pairs. It is possible to send options other
+          than those listed here, assuming that smbfs supports them.
+          If you get mount failures, check your kernel log for errors
+          on unknown options.
+
+          ssssmmmmbbbbmmmmoooouuuunnnntttt is a daemon. After mounting it keeps running until
+          the mounted smbfs is umounted. It will log things that
+          happen when in daemon mode using the "machine name"
+          smbmount, so typically this output will end up in
+          _l_o_g._s_m_b_m_o_u_n_t. The ssssmmmmbbbbmmmmoooouuuunnnntttt process may also be called
+          mount.smbfs.
+
+          NNNNOOOOTTTTEEEE:::: ssssmmmmbbbbmmmmoooouuuunnnntttt calls ssssmmmmbbbbmmmmnnnntttt((((8888)))) to do the actual mount. You
+          must make sure that ssssmmmmbbbbmmmmnnnntttt is in the path so that it can be
+          found.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          uuuusssseeeerrrrnnnnaaaammmmeeee====<<<<aaaarrrrgggg>>>>
+               specifies the username to connect as. If this is not
+               given, then the environment variable  UUUUSSSSEEEERRRR is used.
+               This option can also take the form "user%password" or
+               "user/workgroup" or "user/workgroup%password" to allow
+               the password and workgroup to be specified as part of
+               the username.
+
+          ppppaaaasssssssswwwwoooorrrrdddd====<<<<aaaarrrrgggg>>>>
+               specifies the SMB password. If this option is not given
+               then the environment variable PPPPAAAASSSSSSSSWWWWDDDD is used. If it can
+               find no password ssssmmmmbbbbmmmmoooouuuunnnntttt will prompt for a passeword,
+               unless the guest option is given.
+
+               Note that password which contain the arguement
+               delimiter character (i.e. a comma ',') will failed to
+               be parsed correctly on the command line. However, the
+               same password defined in the PASSWD environment
+               variable or a credentials file (see below) will be read
+               correctly.
+
+          ccccrrrreeeeddddeeeennnnttttiiiiaaaallllssss====<<<<ffffiiiilllleeeennnnaaaammmmeeee>>>>
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))
+
+
+
+               specifies a file that contains a username and/or
+               password. The format of the file is:
+
+
+                         username = <value>
+                         password = <value>
+
+
+
+               This is preferred over having passwords in plaintext in
+               a shared file, such as /_e_t_c/_f_s_t_a_b. Be sure to protect
+               any credentials file properly.
+
+          nnnneeeettttbbbbiiiioooossssnnnnaaaammmmeeee====<<<<aaaarrrrgggg>>>>
+               sets the source NetBIOS name. It defaults to the local
+               hostname.
+
+          uuuuiiiidddd====<<<<aaaarrrrgggg>>>>
+               sets the uid that will own all files on the mounted
+               filesystem.  It may be specified as either a username
+               or a numeric uid.
+
+          ggggiiiidddd====<<<<aaaarrrrgggg>>>>
+               sets the gid that will own all files on the mounted
+               filesystem.  It may be specified as either a groupname
+               or a numeric gid.
+
+          ppppoooorrrrtttt====<<<<aaaarrrrgggg>>>>
+               sets the remote SMB port number. The default is 139.
+
+          ffffmmmmaaaasssskkkk====<<<<aaaarrrrgggg>>>>
+               sets the file mask. This determines the permissions
+               that remote files have in the local filesystem. The
+               default is based on the current umask.
+
+          ddddmmmmaaaasssskkkk====<<<<aaaarrrrgggg>>>>
+               sets the directory mask. This determines the
+               permissions that remote directories have in the local
+               filesystem. The default is based on the current umask.
+
+          ddddeeeebbbbuuuugggg====<<<<aaaarrrrgggg>>>>
+               sets the debug level. This is useful for tracking down
+               SMB connection problems. A suggested value to start
+               with is 4. If set too high there will be a lot of
+               output, possibly hiding the useful output.
+
+          iiiipppp====<<<<aaaarrrrgggg>>>>
+               sets the destination host or IP address.
+
+          wwwwoooorrrrkkkkggggrrrroooouuuupppp====<<<<aaaarrrrgggg>>>>
+               sets the workgroup on the destination
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))
+
+
+
+          ssssoooocccckkkkoooopppptttt====<<<<aaaarrrrgggg>>>>
+               sets the TCP socket options. See the _s_m_b._c_o_n_f
+                _s_o_c_k_e_t _o_p_t_i_o_n_s option.
+
+          ssssccccooooppppeeee====<<<<aaaarrrrgggg>>>>
+               sets the NetBIOS scope
+
+          gggguuuueeeesssstttt
+               don't prompt for a password
+
+          rrrroooo   mount read-only
+
+          rrrrwwww   mount read-write
+
+          iiiioooocccchhhhaaaarrrrsssseeeetttt====<<<<aaaarrrrgggg>>>>
+               sets the charset used by the Linux side for codepage to
+               charset translations (NLS). Argument should be the name
+               of a charset, like iso8859-1. (Note: only kernel 2.4.0
+               or later)
+
+          ccccooooddddeeeeppppaaaaggggeeee====<<<<aaaarrrrgggg>>>>
+               sets the codepage the server uses. See the iocharset
+               option. Example value cp850. (Note: only kernel 2.4.0
+               or later)
+
+          ttttttttllll====<<<<aaaarrrrgggg>>>>
+               how long a directory listing is cached in milliseconds
+               (also affects visibility of file size and date
+               changes). A higher value means that changes on the
+               server take longer to be noticed but it can give better
+               performance on large directories, especially over long
+               distances. Default is 1000ms but something like 10000ms
+               (10 seconds) is probably more reasonable in many cases.
+               (Note: only kernel 2.4.2 or later)
+
+     EEEENNNNVVVVIIIIRRRROOOONNNNMMMMEEEENNNNTTTT VVVVAAAARRRRIIIIAAAABBBBLLLLEEEESSSS
+          The variable UUUUSSSSEEEERRRR may contain the username of the person
+          using the client. This information is used only if the
+          protocol level is high enough to support session-level
+          passwords. The variable can be used to set both username and
+          password by using the format username%password.
+
+          The variable PPPPAAAASSSSSSSSWWWWDDDD may contain the password of the person
+          using the client. This information is used only if the
+          protocol level is high enough to support session-level
+          passwords.
+
+          The variable PPPPAAAASSSSSSSSWWWWDDDD____FFFFIIIILLLLEEEE may contain the pathname of a file
+          to read the password from. A single line of input is read
+          and used as the password.
+
+     BBBBUUUUGGGGSSSS
+
+
+
+     PPPPaaaaggggeeee 3333                                          ((((pppprrrriiiinnnntttteeeedddd 1111////7777////111100003333))))
+
+
+
+
+
+
+     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBMMMMOOOOUUUUNNNNTTTT((((8888))))
+
+
+
+          Passwords and other options containing , can not be handled.
+          For passwords an alternative way of passing them is in a
+          credentials file or in the PASSWD environment.
+
+          The credentials file does not handle usernames or passwords
+          with leading space.
+
+          One smbfs bug is important enough to mention here, even if
+          it is a bit misplaced:
+
+          o+ Mounts sometimes stop working. This is usually caused by
+            smbmount terminating. Since smbfs needs smbmount to
+            reconnect when the server disconnects, the mount will
+            eventually go dead. An umount/mount normally fixes this.
+            At least 2 ways to trigger this bug are known.
+
+          Note that the typical response to a bug report is suggestion
+          to try the latest version first. So please try doing that
+          first, and always include which versions you use of relevant
+          software when reporting bugs (minimum: samba, kernel,
+          distribution)
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          Documentation/filesystems/smbfs.txt in the linux kernel
+          source tree may contain additional options and information.
+
+          FreeBSD also has a smbfs, but it is not related to smbmount
+
+          For Solaris, HP-UX and others you may want to look at
+          ssssmmmmbbbbsssshhhh((((1111)))) or at other solutions, such as sharity or perhaps
+          replacing the SMB server with a NFS server.
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          Volker Lendecke, Andrew Tridgell, Michael H. Warfield and
+          others.
+
+          The current maintainer of smbfs and the userspace tools
+          ssssmmmmbbbbmmmmoooouuuunnnntttt, ssssmmmmbbbbuuuummmmoooouuuunnnntttt, and ssssmmmmbbbbmmmmnnnntttt is Urban Widmark
+          <URL:mailto:urban@teststation.com>.  The SAMBA Mailing list
+          <URL:mailto:samba@samba.org> is the preferred place to ask
+          questions regarding these programs.
+
+          The conversion of this manpage for Samba 2.2 was performed
+          by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+     Page 4                                          (printed 1/7/103)
+
+
+

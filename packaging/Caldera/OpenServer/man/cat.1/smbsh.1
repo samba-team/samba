@@ -1,0 +1,198 @@
+
+
+
+     SSSSMMMMBBBBSSSSHHHH((((1111))))        UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))        SSSSMMMMBBBBSSSSHHHH((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbsh - Allows access to Windows NT filesystem  using UNIX
+          commands
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ssssmmmmbbbbsssshhhh [ ----WWWW wwwwoooorrrrkkkkggggrrrroooouuuupppp ]  [ ----UUUU uuuusssseeeerrrrnnnnaaaammmmeeee ]  [ ----PPPP pppprrrreeeeffffiiiixxxx ]  [ ----RRRR
+          <<<<nnnnaaaammmmeeee rrrreeeessssoooollllvvvveeee oooorrrrddddeeeerrrr>>>> ]  [ ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>> ]  [ ----llll llllooooggggffffiiiilllleeee ]
+          [ ----LLLL lllliiiibbbbddddiiiirrrr ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          ssssmmmmbbbbsssshhhh allows you to access an NT filesystem using UNIX
+          commands such as llllssss,  eeeeggggrrrreeeepppp, and rrrrccccpppp. You must use a shell
+          that is dynamically linked in order for ssssmmmmbbbbsssshhhh to work
+          correctly.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----WWWW WWWWOOOORRRRKKKKGGGGRRRROOOOUUUUPPPP
+               Override the default workgroup specified in the
+               workgroup parameter of the _s_m_b._c_o_n_f file for this
+               session. This may be needed to connect to some servers.
+
+          ----UUUU uuuusssseeeerrrrnnnnaaaammmmeeee[[[[%%%%ppppaaaassssssss]]]]
+               Sets the SMB username or username and password.  If
+               this option is not specified, the user will be prompted
+               for both the username and the password. If %pass is not
+               specified, the user will be prompted for the password.
+
+          ----PPPP pppprrrreeeeffffiiiixxxx
+               This option allows the user to set the directory prefix
+               for SMB access. The default value if this option is not
+               specified is ssssmmmmbbbb.
+
+          ----RRRR <<<<nnnnaaaammmmeeee rrrreeeessssoooollllvvvveeee oooorrrrddddeeeerrrr>>>>
+               This option is used to determine what naming services
+               and in what order to resolve host names to IP
+               addresses. The option takes a space-separated string of
+               different name resolution options.
+
+               The options are :"lmhosts", "host", "wins" and "bcast".
+               They cause names to be resolved as follows :
+
+               o+ lmhosts : Lookup an IP address in the Samba lmhosts
+                 file. If the line in lmhosts has no name type
+                 attached to the NetBIOS name (see the lmhosts(5) for
+                 details) then any name type matches for lookup.
+
+               o+ host : Do a standard host name to IP address
+                 resolution, using the system /_e_t_c/_h_o_s_t_s, NIS, or DNS
+                 lookups. This method of name resolution is operating
+                 system dependent, for instance on IRIX or Solaris
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBSSSSHHHH((((1111))))        UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))        SSSSMMMMBBBBSSSSHHHH((((1111))))
+
+
+
+                 this may be controlled by the /_e_t_c/_n_s_s_w_i_t_c_h._c_o_n_f
+                 file). Note that this method is only used if the
+                 NetBIOS name type being queried is the 0x20 (server)
+                 name type, otherwise it is ignored.
+
+               o+ wins : Query a name with the IP address listed in the
+                 _w_i_n_s _s_e_r_v_e_r parameter. If no WINS server has been
+                 specified this method will be ignored.
+
+               o+ bcast : Do a broadcast on each of the known local
+                 interfaces listed in the _i_n_t_e_r_f_a_c_e_s parameter. This
+                 is the least reliable of the name resolution methods
+                 as it depends on the target host being on a locally
+                 connected subnet.
+
+          If this parameter is not set then the name resolve order
+          defined in the _s_m_b._c_o_n_f file parameter (name resolve order)
+          will be used.
+
+          The default order is lmhosts, host, wins, bcast. Without
+          this parameter or any entry in the _n_a_m_e _r_e_s_o_l_v_e _o_r_d_e_r
+          parameter of the _s_m_b._c_o_n_f file, the name resolution methods
+          will be attempted in this order.
+
+          ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>>
+               debug level is an integer from 0 to 10.
+
+               The default value if this parameter is not specified is
+               zero.
+
+               The higher this value, the more detail will be logged
+               about the activities of nnnnmmmmbbbbllllooooooookkkkuuuupppp. At level 0, only
+               critical errors and serious warnings will be logged.
+
+          ----llll llllooooggggffffiiiilllleeeennnnaaaammmmeeee
+               If specified causes all debug messages to be written to
+               the file specified by _l_o_g_f_i_l_e_n_a_m_e . If not specified
+               then all messages will be written to_s_t_d_e_r_r.
+
+          ----LLLL lllliiiibbbbddddiiiirrrr
+               This parameter specifies the location of the shared
+               libraries used by ssssmmmmbbbbsssshhhh. The default value is specified
+               at compile time.
+
+     EEEEXXXXAAAAMMMMPPPPLLLLEEEESSSS
+          To use the ssssmmmmbbbbsssshhhh command, execute  ssssmmmmbbbbsssshhhh from the prompt and
+          enter the username and password that authenticates you to
+          the machine running the Windows NT operating system.
+
+               system% ssssmmmmbbbbsssshhhh
+               Username: uuuusssseeeerrrr
+               Password: XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBSSSSHHHH((((1111))))        UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))        SSSSMMMMBBBBSSSSHHHH((((1111))))
+
+
+
+
+
+
+          Any dynamically linked command you execute from this shell
+          will access the /_s_m_b directory using the smb protocol. For
+          example, the command llllssss ////ssssmmmmbbbb will show a list of workgroups.
+          The command llllssss ////ssssmmmmbbbb////MMMMYYYYGGGGRRRROOOOUUUUPPPP  will show all the machines in
+          the workgroup MYGROUP. The command llllssss
+          ////ssssmmmmbbbb////MMMMYYYYGGGGRRRROOOOUUUUPPPP////<<<<mmmmaaaacccchhhhiiiinnnneeee----nnnnaaaammmmeeee>>>> will show the share names for
+          that machine. You could then, for example, use the  ccccdddd
+          command to change directories, vvvviiii to edit files, and rrrrccccpppp to
+          copy files.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     BBBBUUUUGGGGSSSS
+          ssssmmmmbbbbsssshhhh works by intercepting the standard libc calls with the
+          dynamically loaded versions in  _s_m_b_w_r_a_p_p_e_r._o. Not all calls
+          have been "wrapped", so some programs may not function
+          correctly under ssssmmmmbbbbsssshhhh .
+
+          Programs which are not dynamically linked cannot make use of
+          ssssmmmmbbbbsssshhhh's functionality. Most versions of UNIX have a ffffiiiilllleeee
+          command that will describe how a program was linked.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          ssssmmmmbbbbdddd((((8888)))) smb.conf(5)
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+
