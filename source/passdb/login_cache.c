@@ -95,9 +95,12 @@ LOGIN_CACHE * login_cache_read(SAM_ACCOUNT *sampass)
 			&entry->bad_password_count, 
 			&entry->bad_password_time) == -1) {
 		DEBUG(7, ("No cache entry found\n"));
+		SAFE_FREE(entry);
 		SAFE_FREE(databuf.dptr);
 		return NULL;
 	}
+
+	SAFE_FREE(databuf.dptr);
 
 	DEBUG(5, ("Found login cache entry: timestamp %12u, flags 0x%x, count %d, time %12u\n",
 		  (unsigned int)entry->entry_timestamp, entry->acct_ctrl, 
