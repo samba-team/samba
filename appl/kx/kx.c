@@ -57,7 +57,7 @@ childhandler (int sig)
 
      do { 
 	 pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
-	 if (pid > 0 && WIFEXITED(status) || WIFSIGNALED(status))
+	 if (pid > 0 && (WIFEXITED(status) || WIFSIGNALED(status)))
 	     if (--nchild == 0 && donep)
 		 exit (0);
      } while(pid > 0);
@@ -397,11 +397,13 @@ doit_active (char *host, char *user, int debugpp, int tcpp, int port)
      des_key_schedule schedule;
      des_cblock key;
      int rendez_vous1 = 0, rendez_vous2 = 0;
+     int tmp;
 
-     display_num = get_xsockets (&rendez_vous1,
-				 tcpp ? &rendez_vous2 : NULL);
-     if (display_num < 0)
+     tmp = get_xsockets (&rendez_vous1,
+			 tcpp ? &rendez_vous2 : NULL);
+     if (tmp < 0)
 	 return 1;
+     display_num = tmp;
      strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
      if (create_and_write_cookie (xauthfile, cookie, cookie_len))
 	 return 1;

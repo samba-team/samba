@@ -258,9 +258,12 @@ doit(int sock, int tcpp)
      if (krb_net_read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
 	  return 1;
      if (passivep) {
-	  display_num = get_xsockets (&localx, tcpp ? &tcpx : NULL);
-	  if (display_num < 0)
+	  int tmp;
+
+	  tmp = get_xsockets (&localx, tcpp ? &tcpx : NULL);
+	  if (tmp < 0)
 	       return 1;
+	  display_num = tmp;
 	  if (tcpp)
 	       sprintf (display, "localhost:%u", display_num);
 	  else
