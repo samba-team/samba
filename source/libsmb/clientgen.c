@@ -345,7 +345,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	}
 
 	/* DOS error "more data" is an acceptable error code */
-	if (cli_error(cli, &eclass, &num) && eclass != ERRDOS && num != ERRmoredata)
+	if (cli_error(cli, &eclass, &num) && !(eclass == ERRDOS && num == ERRmoredata))
 	{
 		return(False);
 	}
