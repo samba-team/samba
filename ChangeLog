@@ -1,3 +1,25 @@
+Thu Aug  7 22:17:09 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/mcache.c: new file
+
+	* admin/gettime.c: new function puttime.  Use it.
+
+	* lib/krb5/keyblock.c: Added krb5_free_keyblock and
+ 	krb5_copy_keyblock
+
+	* lib/krb5/init_creds_pw.c: more functionality
+
+	* lib/krb5/creds.c: Added krb5_free_creds_contents and
+ 	krb5_copy_creds.  Changed callers.
+
+	* lib/krb5/config_file.c: new functions krb5_config_get and
+ 	krb5_config_vget
+
+	* lib/krb5/cache.c: cleanup added mcache
+	
+	* kdc/kerberos5.c: include last-req's of type 6 and 7, if
+ 	applicable
+
 Wed Aug  6 20:38:23 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/log.c: New parameter `log-level'. Default to `SYSLOG'.
