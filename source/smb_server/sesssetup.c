@@ -82,6 +82,8 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 				 &sess->old.out.lanman,
 				 &sess->old.out.domain);
 
+	req->session = smbsrv_session_find(req->smb_conn, sess->old.out.vuid);
+
 	return NT_STATUS_OK;
 }
 
@@ -133,6 +135,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 				 &sess->nt1.out.lanman,
 				 &sess->nt1.out.domain);
 	
+	req->session = smbsrv_session_find(req->smb_conn, sess->nt1.out.vuid);
 	srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2);
 	return NT_STATUS_OK;
 }
@@ -153,18 +156,25 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 NTSTATUS sesssetup_backend(struct smbsrv_request *req, 
 			   union smb_sesssetup *sess)
 {
+	NTSTATUS status = NT_STATUS_INVALID_LEVEL;
+
 	switch (sess->generic.level) {
 		case RAW_SESSSETUP_OLD:
-			return sesssetup_old(req, sess);
+			status = sesssetup_old(req, sess);
+			break;
 		case RAW_SESSSETUP_NT1:
-			return sesssetup_nt1(req, sess);
+			status = sesssetup_nt1(req, sess);
+			break;
 		case RAW_SESSSETUP_SPNEGO:
-			return sesssetup_spnego(req, sess);
+			status = sesssetup_spnego(req, sess);
+			break;
 	}
 
-	req->smb_conn->negotiate.done_sesssetup = True;
+	if (NT_STATUS_IS_OK(status)) {
+		req->smb_conn->negotiate.done_sesssetup = True;
+	}
 
-	return NT_STATUS_INVALID_LEVEL;
+	return status;
 }
 
 
