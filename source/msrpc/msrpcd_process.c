@@ -234,7 +234,7 @@ BOOL get_user_creds(int c, vuser_key * uk)
 
 	DEBUG(10, ("get_user_creds: first request\n"));
 
-	rl = read(c, &buf, sizeof(len));
+	rl = read_data(c, (char*)&buf, sizeof(len));
 
 	if (rl != sizeof(len))
 	{
@@ -308,7 +308,7 @@ BOOL get_user_creds(int c, vuser_key * uk)
 
 	status = new_con ? 0x0 : 0x1;
 
-	if (write(c, &status, sizeof(status)) != sizeof(status))
+	if (write_socket(c, (char*)&status, sizeof(status)) != sizeof(status))
 	{
 		return False;
 	}

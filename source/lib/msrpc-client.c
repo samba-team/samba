@@ -88,7 +88,6 @@ BOOL receive_msrpc(int fd, prs_struct * data, unsigned int timeout)
 BOOL msrpc_send(int fd, prs_struct * ps)
 {
 	size_t len = ps != NULL ? prs_buf_len(ps) : 0;
-	size_t nwritten = 0;
 	ssize_t ret;
 	char *outbuf = (ps != NULL ? ps->data : NULL);
 
@@ -101,17 +100,13 @@ BOOL msrpc_send(int fd, prs_struct * ps)
 	}
 	dump_data(10, outbuf, len);
 
-	while (nwritten < len)
+	ret = write_socket(fd, outbuf, len);
+	if (ret <= 0 || ret != len)
 	{
-		ret = write_socket(fd, outbuf + nwritten, len - nwritten);
-		if (ret <= 0)
-		{
-			DEBUG(0, ("Error writing %d msrpc bytes. %d.\n",
-				  len, ret));
-			prs_free_data(ps);
-			return False;
-		}
-		nwritten += ret;
+		DEBUG(0, ("Error writing %d msrpc bytes. %d.\n",
+			  len, ret));
+		prs_free_data(ps);
+		return False;
 	}
 
 	prs_free_data(ps);
@@ -226,7 +221,7 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 	dump_data(100, data, len);
 #endif
 
-	if (write(sock, data, len) <= 0)
+	if (write_socket(sock, data, len) <= 0)
 	{
 		DEBUG(0, ("write failed\n"));
 		return False;
@@ -234,7 +229,7 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 	if (msrpc->redirect)
 	{
 		struct msrpc_local msrpc_redir;
-		len = read(sock, &msrpc_redir, sizeof(msrpc_redir));
+		len = read_data(sock, (char*)&msrpc_redir, sizeof(msrpc_redir));
 
 		if (len != sizeof(msrpc_redir))
 		{
@@ -250,7 +245,7 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 	else
 	{
 		uint32 status;
-		len = read(sock, &status, sizeof(status));
+		len = read_data(sock, (char*)&status, sizeof(status));
 
 		return len == sizeof(status) && status == 0x0;
 	}

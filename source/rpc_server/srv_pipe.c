@@ -42,7 +42,7 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 
 	DEBUG(10,("rpc_to_smb_readwrite: len %d\n", len));
 
-	if (write(p->m->fd, data, len) != len)
+	if (write_socket(p->m->fd, data, len) != len)
 	{
 		return False;
 	}
@@ -109,7 +109,7 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 
 	dump_data(50, data, n);
 
-	return write(p->m->fd, data, n);
+	return write_socket(p->m->fd, data, n);
 }
 
 
