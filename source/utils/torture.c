@@ -786,11 +786,63 @@ static void run_randomipc(int numops)
   
 		SSVAL(param,0,api); 
 
-		cli_api(&cli, 
+		cli_api(&cli,
 			param, param_len, 8,  
 			NULL, 0, BUFFER_SIZE, 
-			&rparam, &rprcnt,     
+			&rparam, &rprcnt,
 			&rdata, &rdrcnt);
+	}
+
+	close_connection(&cli);
+
+	DEBUG(0,("finished random ipc test\n"));
+}
+
+/* send random IPC commands */
+static void run_randomipc_nowait(int numops)
+{
+	char param[BUFFER_SIZE];
+	int api, param_len, i;
+	int reconnect_count = 50;
+	static struct cli_state cli;
+
+	DEBUG(0,("start random ipc test no waiting for SMBtrans response\n"));
+
+	while (reconnect_count > 0 && open_connection(&cli) != 0)
+	{
+		DEBUG(0,("connection failed: retrying %d\n", reconnect_count));
+		msleep(sys_random() % 1000);
+		reconnect_count--;
+	}
+
+	if (reconnect_count == 0)
+	{
+		return;
+	}
+
+	for (i=0;i<numops * 100;i++)
+	{
+		api = sys_random() % 500;
+		if ((sys_random() % 10) == 0)
+		{
+			param_len = (sys_random() % BUFFER_SIZE);
+		}
+		else
+		{
+			param_len = (sys_random() % 64);
+		}
+
+		rand_buf(param, param_len);
+  
+		SSVAL(param,0,api); 
+
+		cli_send_trans(&cli,SMBtrans,
+			PIPE_LANMAN,strlen(PIPE_LANMAN), /* Name, length */
+			0,0,                             /* fid, flags */
+			NULL,0,0,                /* Setup, length, max */
+
+			param, param_len, 8,  
+			NULL, 0, BUFFER_SIZE);
 	}
 
 	close_connection(&cli);
@@ -1167,9 +1219,11 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 	printf("host=%s share=%s user=%s myname=%s procs=%d ops=%d\n", 
 	       host, share, username, myname, nprocs, numops);
 
-	create_procs(nprocs, numops, run_randomipc);
-/*
 	create_procs(nprocs, numops, run_connection);
+/*
+
+	create_procs(nprocs, numops, run_randomipc);
+	create_procs(nprocs, numops, run_randomipc_nowait);
 
 	run_fdpasstest();
 	run_locktest1();
