@@ -290,7 +290,8 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 ******************************************************************/
 
  BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
-				   const char *attribute, pstring value)
+				    const char *attribute, char *value,
+				    int max_len)
 {
 	char **values;
 	
@@ -305,7 +306,7 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 		return False;
 	}
 	
-	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, sizeof(pstring)) == (size_t)-1) {
+	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, max_len) == (size_t)-1) {
 		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
 			  attribute, values[0]));
 		ldap_value_free(values);
@@ -317,6 +318,14 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n", attribute, value));
 #endif	
 	return True;
+}
+
+ BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
+				  const char *attribute, pstring value)
+{
+	return smbldap_get_single_attribute(ldap_struct, entry,
+					    attribute, value, 
+					    sizeof(pstring));
 }
 
 /************************************************************************
@@ -415,11 +424,11 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval)
 {
-	pstring oldval;
+	char oldval[2048]; /* current largest allowed value is mungeddial */
 	BOOL existed;
 
 	if (existing != NULL) {
-		existed = smbldap_get_single_attribute(ldap_struct, existing, attribute, oldval);
+		existed = smbldap_get_single_attribute(ldap_struct, existing, attribute, oldval, sizeof(oldval));
 	} else {
 		existed = False;
 		*oldval = '\0';
