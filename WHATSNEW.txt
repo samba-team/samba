@@ -47,6 +47,16 @@ as an NT workstation instead of a server.
 All of these new parameters and changes are documented in the
 smb.conf man pages and html pages.
 
+Updated and New documentation
+-----------------------------
+
+The NT Domain FAQ has been updated. Three new text documents have
+been provided :
+
+docs/textdocs/File-Cacheing.txt
+docs/textdocs/NT-Guest-Access.txt
+docs/textdocs/CRLF-LF-Conversions.txt
+
 Bugfixes added since 2.0.2
 --------------------------
 

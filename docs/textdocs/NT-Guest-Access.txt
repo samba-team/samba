@@ -1,24 +1,3 @@
-What you are seeing is normal and deliberate.
-
-MS Windows NT can be configured with the guest account enabled. When this is the
-case no logon attempt will ever fail. Instead NT will allow the user access as
-the guest account IF the username and / or password are incorrect. In a situation
-where Samba is using and NT system to validate user passwords, if the NT server
-guest account is enabled then a user logging on as "root" will always be valdated
-even if the password was incorrect. There is NO way that samba can tell from the
-reply packet from NT whether the password was correct and normal user privilidge
-has been granted, or whether the password was incorrect and the user has been given
-only "guest" privilidges.
-
-In short, if we were NOT to do what we do, then there would be no way of telling
-whether or not the password server allows guest only logons. Were we to just accept
-the validation response from such a server the a user could easily gain "root" level
-access to a Samba server.
-
-Now you would not really want us to change the current behaviour, would you?
-
-
-
 > Hi folks ... I don't know if you have seen this, have corrected this yet
 > or it is my configuration.
 > I am using our company PDC for passwd authentication and it works OK
@@ -30,3 +9,35 @@ Now you would not really want us to change the current behaviour, would you?
 > immediately send a second validation with the correct
 > encrypted Bell Master Domain user password.
 >    It would be nice to get rid of the first bad validation attempt.
+
+What you are seeing is being done deliberately.
+
+The problem is that some version of MS Windows NT have a bug when
+used as a password server when Samba is set up to use "security=server"
+(Note that this is *NOT* a problem when using "security=domain").
+
+The NT server accepts a user logon request with a bad password as
+a "guest" login attempt, and logs the user on as the guest user. 
+
+The bug is that the NT server doesn't tell the Samba server
+that this is what it has done (it doesn't set the guest bit
+that is designed for this use in the protocol). Thus the 
+Samba server cannot tell if a user entered a bad password
+and was logged on as guest, or entered a correct user name
+and password and was logged on as the correct user.
+
+The severity of this bug may be imagined if a user attempts
+to access the Samba server as user "root" with a bad password,
+and the Samba server trusted the NT server to authenticate 
+this.....
+
+Thus, Samba performs a logon request with a deliberately
+bad password and checks to see if that request succeeded.
+If it did, then the NT server suffers from the bug and cannot
+be used for "security=server" authentication. If it fails
+then we know this server is correct.
+
+It is this first deliberate invalid connection request that
+people are seeing in the NT event log, but currently there
+seems no way around this so long as there are NT servers
+out there that have this bug.
