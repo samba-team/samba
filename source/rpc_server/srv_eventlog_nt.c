@@ -169,7 +169,7 @@ WERROR _eventlog_open_eventlog(pipes_struct *p,
     if(!create_policy_hnd(p, &(r_u->handle), free_eventlog_info, (void *)info))
 	return WERR_NOMEM;
 
-    policy_handle_to_string(&r_u->handle, info->handle_string);
+    policy_handle_to_string(&r_u->handle, &info->handle_string);
 
     if(!(_eventlog_open_eventlog_hook(info)))
 	return WERR_BADFILE;
@@ -394,11 +394,12 @@ WERROR _eventlog_close_eventlog(pipes_struct *p,
 				EVENTLOG_R_CLOSE_EVENTLOG *r_u)
 {
     Eventlog_info *info = NULL;
+    POLICY_HND *handle;
 
     if(!q_u || !r_u)
 	return WERR_NOMEM;
 
-    POLICY_HND *handle = &(q_u->handle);
+    handle = &(q_u->handle);
     
     info = find_eventlog_info_by_hnd(p, handle);
     if(!(_eventlog_close_eventlog_hook(info)))
@@ -513,7 +514,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
     else if(0 == strncmp(start, "SRC", stop - start))
     {
 	memset(temp, 0, sizeof(temp));
-	sscanf(stop+1, "%s", &temp);
+	sscanf(stop+1, "%s", temp);
 	temp_len = strlen(temp);
 	rpcstr_push((void *)(entry->data_record.source_name), temp, 
 		    sizeof(entry->data_record.source_name), STR_TERMINATE);
@@ -522,7 +523,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
     else if(0 == strncmp(start, "SRN", stop - start))
     {
 	memset(temp, 0, sizeof(temp));
-	sscanf(stop+1, "%s", &temp);
+	sscanf(stop+1, "%s", temp);
 	temp_len = strlen(temp);
 	rpcstr_push((void *)(entry->data_record.computer_name), temp,
 		    sizeof(entry->data_record.computer_name), STR_TERMINATE);
@@ -532,7 +533,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
     else if(0 == strncmp(start, "SID", stop - start))
     {
 	memset(temp, 0, sizeof(temp));
-	sscanf(stop+1, "%s", &temp);
+	sscanf(stop+1, "%s", temp);
 	temp_len = strlen(temp);
 	rpcstr_push((void *)(entry->data_record.sid), temp,
 		    sizeof(entry->data_record.sid), STR_TERMINATE);
@@ -564,7 +565,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
 	strncpy(temp, stop, temp_len);
 	rpcstr_push((void *)(entry->data_record.user_data), temp,
 		    sizeof(entry->data_record.user_data), STR_TERMINATE);
-	entry->data_record.user_data_len = (strlen_w(entry->data_record.user_data) * 2) + 2;
+	entry->data_record.user_data_len = (strlen_w((const smb_ucs2_t *)entry->data_record.user_data) * 2) + 2;
     }
     else
     {
@@ -606,7 +607,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
  *                               If two have same #, but not consecutive, that's an error. If there is no String Data (and NST==0), must include the specifier.
  *               DAT:[(uint8)] - The user-defined data portion of the event log. Can not be multiple lines.
  */
-static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info, Eventlog_entry *entry, char *direction, int starting_record, int buffer_size, BOOL *eof)
+static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info, Eventlog_entry *entry, const char *direction, int starting_record, int buffer_size, BOOL *eof)
 {
     char *cmd = lp_eventlog_read_cmd();
     char **qlines;
@@ -747,15 +748,16 @@ WERROR _eventlog_read_eventlog(pipes_struct *p,
     POLICY_HND *handle;
     Eventlog_entry entry;
     BOOL eof = False;
-    char *direction;
+    const char *direction = "";
     int starting_record;
+    prs_struct *ps;
 
     if(!q_u || !r_u)
 	return WERR_NOMEM;
 
     handle = &(q_u->handle);
     info = find_eventlog_info_by_hnd(p, handle);
-    prs_struct *ps = &p->out_data.rdata;
+    ps = &p->out_data.rdata;
     /* Rather than checking the EVENTLOG_SEQUENTIAL_READ/EVENTLOG_SEEK_READ flags,
        we'll just go to the offset specified in the request, or the oldest entry
        if no offset is specified */
