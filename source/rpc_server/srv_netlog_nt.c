@@ -150,7 +150,7 @@ NTSTATUS _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_T
  ***********************************************************************************/
 
 static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-                             DOM_CRED *srv_cred, NTSTATUS status)  
+				 DOM_CRED *srv_cred, NTSTATUS status)  
 {
 	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
 
@@ -378,7 +378,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
-	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
+	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	DOM_CRED srv_cred;
 	pstring workstation;
 	SAM_ACCOUNT *sampass=NULL;
@@ -395,8 +395,8 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
-	rpcstr_pull(workstation,q_u->clnt_id.login.uni_acct_name.buffer,
-		    sizeof(workstation),q_u->clnt_id.login.uni_acct_name.uni_str_len*2,0);
+	rpcstr_pull(workstation,q_u->clnt_id.login.uni_comp_name.buffer,
+		    sizeof(workstation),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
 
 	DEBUG(3,("Server Password Set by Wksta:[%s] on account [%s]\n", workstation, p->dc.mach_acct));
 	

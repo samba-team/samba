@@ -357,6 +357,8 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
      * As 256 is shorter than a pstring we don't need to check
      * length here - if this ever changes....
      */
+    SMB_ASSERT(sizeof(pstring) > sizeof(linebuf));
+
     strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
     user_name[PTR_DIFF(p, linebuf)] = '\0';
 
@@ -694,7 +696,7 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, const struct smb_passwd* pwd)
 {
   /* Static buffers we will return. */
-  char * user_name = smbpasswd_state->user_name;
+	pstring user_name;
 
   char            linebuf[256];
   char            readbuf[1024];
@@ -812,6 +814,9 @@ static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
      * As 256 is shorter than a pstring we don't need to check
      * length here - if this ever changes....
      */
+
+    SMB_ASSERT(sizeof(user_name) > sizeof(linebuf));
+
     strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
     user_name[PTR_DIFF(p, linebuf)] = '\0';
     if (strequal(user_name, pwd->smb_name)) {
@@ -823,6 +828,9 @@ static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
   if (!found_entry) {
     pw_file_unlock(lockfd, &(smbpasswd_state->pw_file_lock_depth));
     fclose(fp);
+
+    DEBUG(2, ("Cannot update entry for user %s, as they don't exist in the smbpasswd file!\n",
+	      pwd->smb_name));
     return False;
   }
 
@@ -1166,11 +1174,11 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 	if (sampass == NULL) 
 		return False;
 
-       ZERO_STRUCTP(smb_pw);
+	ZERO_STRUCTP(smb_pw);
  
         if (!IS_SAM_UNIX_USER(sampass)) {
 		smb_pw->smb_userid_set = False;
-		DEBUG(5,("build_sam_pass: storing user without a UNIX uid or gid. \n"));
+		DEBUG(5,("build_smb_pass: storing user without a UNIX uid or gid. \n"));
 	} else {
 		uint32 rid = pdb_get_user_rid(sampass);
 		smb_pw->smb_userid_set = True;
@@ -1365,21 +1373,6 @@ static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 
 	DEBUG(10, ("getsampwnam (smbpasswd): search by name: %s\n", username));
 
-	
-	/* break the username from the domain if we have 
-	   been given a string in the form 'DOMAIN\user' */
-	fstrcpy (name, username);
-	if ((user=strchr_m(name, '\\')) != NULL) {
-		domain = name;
-		*user = '\0';
-		user++;
-	}
-	
-	/* if a domain was specified and it wasn't ours
-	   then there is no chance of matching */
-	if ( domain && !StrCaseCmp(domain, lp_workgroup()) )
-		return False;
-
 	/* startsmbfilepwent() is used here as we don't want to lookup
 	   the UNIX account in the local system password file until
 	   we have a match.  */
@@ -1389,11 +1382,6 @@ static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 		DEBUG(0, ("unable to open passdb database.\n"));
 		return False;
 	}
-
-	/* if we have a domain name, then we should map it to a UNIX 
-	   username first */
-	if ( domain )
-		map_username(user);
 
 	while ( ((smb_pw=getsmbfilepwent(smbpasswd_state, fp)) != NULL)&& (!strequal(smb_pw->smb_name, username)) )
 		/* do nothing....another loop */ ;
@@ -1492,13 +1480,17 @@ static BOOL smbpasswd_update_sam_account(struct pdb_methods *my_methods, const S
 	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
-	if (!build_smb_pass(&smb_pw, sampass))
+	if (!build_smb_pass(&smb_pw, sampass)) {
+		DEBUG(0, ("smbpasswd_update_sam_account: build_smb_pass failed!\n"));
 		return False;
+	}
 	
 	/* update the entry */
-	if(!mod_smbfilepwd_entry(smbpasswd_state, &smb_pw))
+	if(!mod_smbfilepwd_entry(smbpasswd_state, &smb_pw)) {
+		DEBUG(0, ("smbpasswd_update_sam_account: mod_smbfilepwd_entry failed!\n"));
 		return False;
-		
+	}
+	
 	return True;
 }
 
