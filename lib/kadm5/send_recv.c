@@ -71,11 +71,12 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
 }
 
 kadm5_ret_t
-_kadm5_client_recv(kadm5_client_context *context, krb5_storage *sp)
+_kadm5_client_recv(kadm5_client_context *context, krb5_data *reply)
 {
     krb5_error_code ret;
-    krb5_data data, reply;
+    krb5_data data;
     krb5_storage *sock;
+
     sock = krb5_storage_from_fd(context->sock);
     if(sock == NULL)
 	return ENOMEM;
@@ -86,11 +87,8 @@ _kadm5_client_recv(kadm5_client_context *context, krb5_storage *sp)
     else if(ret)
 	return ret;
 
-    ret = krb5_rd_priv(context->context, context->ac, &data, &reply, NULL);
+    ret = krb5_rd_priv(context->context, context->ac, &data, reply, NULL);
     krb5_data_free(&data);
-    sp->store(sp, reply.data, reply.length);
-    sp->seek(sp, 0, SEEK_SET);
-    krb5_data_free(&reply);
     return ret;
 }
 
