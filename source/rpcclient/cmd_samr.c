@@ -28,6 +28,17 @@
 extern DOM_SID domain_sid;
 
 /****************************************************************************
+ display sam_user_info_7 structure
+ ****************************************************************************/
+static void display_sam_user_info_7(SAM_USER_INFO_7 *usr)
+{
+	fstring temp;
+
+	unistr2_to_ascii(temp, &usr->uni_name, sizeof(temp)-1);
+	printf("\tUser Name   :\t%s\n", temp);
+}
+
+/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -336,7 +347,17 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_sam_user_info_21(user_ctr->info.id21);
+	switch (user_ctr->switch_value) {
+	case 21:
+		display_sam_user_info_21(user_ctr->info.id21);
+		break;
+	case 7:
+		display_sam_user_info_7(user_ctr->info.id7);
+		break;
+	default:
+		printf("Unsupported infolevel: %d\n", info_level);
+		break;
+	}
 
 done:
 	return result;
