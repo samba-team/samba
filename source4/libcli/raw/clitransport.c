@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 
 static void smbcli_transport_process_recv(struct smbcli_transport *transport);

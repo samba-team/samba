@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 #define VERBOSE 0
 #define OP_MIN 0

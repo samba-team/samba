@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2

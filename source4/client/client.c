@@ -22,6 +22,8 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
+
 #ifndef REGISTER
 #define REGISTER 0
 #endif
