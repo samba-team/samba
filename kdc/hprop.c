@@ -277,7 +277,6 @@ get_creds(krb5_context context, krb5_ccache *cache)
 int main(int argc, char **argv)
 {
     krb5_error_code ret;
-    int e;
     krb5_context context;
     krb5_auth_context ac;
     krb5_principal server;
