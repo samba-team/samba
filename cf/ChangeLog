@@ -1,3 +1,8 @@
+2004-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pthreads.m4: add -pthread to LIBS since libtool doesn't preserve
+	it for us when adding is as a dependency on libs
+	
 2004-04-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* largefile.m4: like AC_SYS_LARGEFILE, but also add to CPPFLAGS
