@@ -20,6 +20,7 @@ popper \- pop 3 server
 [ -d ]
 [ -k ]
 [ -t trace-file]
+[ -i ]
 .SH DESCRIPTION
 .I Popper
 is an implementation of the Post Office Protocol server that runs on a
@@ -41,6 +42,9 @@ using fprintf(s).
 The
 .B \-k
 flag tells popper to talk the kerberised POP protocol (KPOP).
+.B \-i
+flag tells popper it has not been started by inetd and should create
+its own socket and listen on it.  This is useful for debugging.
 .SH HOW TO OBTAIN THE SERVER
 .PP
 The POP server is available via anonymous ftp from ftp.CC.Berkeley.EDU
