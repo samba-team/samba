@@ -282,6 +282,7 @@ OM_uint32 gss_acquire_cred
 	    desired_mechs, cred_usage, handle, actual_mechs, time_rec);
     	if (ret != GSS_S_COMPLETE) {
 	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
+	    krb5_free_principal(gssapi_krb5_context, handle->principal);
 	    free(handle);
 	    return (ret);
 	}
@@ -291,6 +292,7 @@ OM_uint32 gss_acquire_cred
 	    desired_mechs, cred_usage, handle, actual_mechs, time_rec);
 	if (ret != GSS_S_COMPLETE) {
 	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
+	    krb5_free_principal(gssapi_krb5_context, handle->principal);
 	    free(handle);
 	    return (ret);
 	}
@@ -304,8 +306,9 @@ OM_uint32 gss_acquire_cred
 			   actual_mechs);
     if (ret != GSS_S_COMPLETE) {
 	if (handle->mechanisms != NULL)
-		gss_release_oid_set(NULL, &handle->mechanisms);
+	    gss_release_oid_set(NULL, &handle->mechanisms);
 	HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
 	free(handle);
 	return (ret);
     } 
