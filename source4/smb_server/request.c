@@ -108,6 +108,8 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
 */
 void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 {
+	uint16_t flags2;
+
 	if (req->chain_count != 0) {
 		req_setup_chain_reply(req, wct, buflen);
 		return;
@@ -124,6 +126,12 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 		return;
 	}
 
+	flags2 = FLAGS2_LONG_PATH_COMPONENTS | FLAGS2_EXTENDED_SECURITY;
+	flags2 |= (req->flags2 & FLAGS2_UNICODE_STRINGS);
+	if (req->smb_conn->negotiate.client_caps & CAP_STATUS32) {
+		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+	}
+
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
 	req->out.vwv = req->out.hdr + HDR_VWV;
 	req->out.wct = wct;
@@ -136,13 +144,9 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 	SCVAL(req->out.hdr, HDR_WCT, wct);
 	SSVAL(req->out.vwv, VWV(wct), buflen);
 
-
 	memcpy(req->out.hdr, "\377SMB", 4);
 	SCVAL(req->out.hdr,HDR_FLG, FLAG_REPLY | FLAG_CASELESS_PATHNAMES); 
-	SSVAL(req->out.hdr,HDR_FLG2, 
-	      (req->flags2 & FLAGS2_UNICODE_STRINGS) |
-	      FLAGS2_LONG_PATH_COMPONENTS | FLAGS2_32_BIT_ERROR_CODES | FLAGS2_EXTENDED_SECURITY);
-
+	SSVAL(req->out.hdr,HDR_FLG2, flags2);
 	SSVAL(req->out.hdr,HDR_PIDHIGH,0);
 	memset(req->out.hdr + HDR_SS_FIELD, 0, 10);
 
