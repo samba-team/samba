@@ -552,6 +552,15 @@
 /* Define to 1 if you have the <krb5.h> header file. */
 #undef HAVE_KRB5_H
 
+/* Whether krb5_set_default_in_tkt_etypes, is available */
+#undef HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES
+
+/* Whether krb5_set_default_tgs_ktypes is available */
+#undef HAVE_KRB5_SET_DEFAULT_TGS_KTYPES
+
+/* Whether krb5_set_real_time is available */
+#undef HAVE_KRB5_SET_REAL_TIME
+
 /* Define to 1 if you have the <lastlog.h> header file. */
 #undef HAVE_LASTLOG_H
 

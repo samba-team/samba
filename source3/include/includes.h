@@ -1208,5 +1208,17 @@ time_t timegm(struct tm *tm);
 #define VXFS_QUOTA
 #endif
 
+#if defined(HAVE_KRB5)
+
+#ifndef KRB5_SET_REAL_TIME
+krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
+#endif
+
+#ifndef HAVE_KRB5_SET_DEFAULT_TGS_KTYPES
+krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
+#endif
+
+#endif /* HAVE_KRB5 */
+
 #endif /* _INCLUDES_H */
 

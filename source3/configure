@@ -21086,6 +21086,196 @@ if test $ac_cv_lib_asn1_copy_Authenticator = yes; then
   LIBS="$LIBS -lasn1 -lroken"
 fi
 
+  echo "$as_me:$LINENO: checking for krb5_set_real_time in -lkrb5" >&5
+echo $ECHO_N "checking for krb5_set_real_time in -lkrb5... $ECHO_C" >&6
+if test "${ac_cv_lib_krb5_krb5_set_real_time+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lkrb5  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char krb5_set_real_time ();
+#ifdef F77_DUMMY_MAIN
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+#endif
+int
+main ()
+{
+krb5_set_real_time ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_krb5_krb5_set_real_time=yes
+else
+  echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+ac_cv_lib_krb5_krb5_set_real_time=no
+fi
+rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_krb5_krb5_set_real_time" >&5
+echo "${ECHO_T}$ac_cv_lib_krb5_krb5_set_real_time" >&6
+if test $ac_cv_lib_krb5_krb5_set_real_time = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_KRB5_SET_REAL_TIME 1
+_ACEOF
+
+fi
+
+  echo "$as_me:$LINENO: checking for krb5_set_default_in_tkt_etypes in -lkrb5" >&5
+echo $ECHO_N "checking for krb5_set_default_in_tkt_etypes in -lkrb5... $ECHO_C" >&6
+if test "${ac_cv_lib_krb5_krb5_set_default_in_tkt_etypes+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lkrb5  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char krb5_set_default_in_tkt_etypes ();
+#ifdef F77_DUMMY_MAIN
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+#endif
+int
+main ()
+{
+krb5_set_default_in_tkt_etypes ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_krb5_krb5_set_default_in_tkt_etypes=yes
+else
+  echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+ac_cv_lib_krb5_krb5_set_default_in_tkt_etypes=no
+fi
+rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_krb5_krb5_set_default_in_tkt_etypes" >&5
+echo "${ECHO_T}$ac_cv_lib_krb5_krb5_set_default_in_tkt_etypes" >&6
+if test $ac_cv_lib_krb5_krb5_set_default_in_tkt_etypes = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES 1
+_ACEOF
+
+fi
+
+  echo "$as_me:$LINENO: checking for krb5_set_default_tgs_ktypes in -lkrb5" >&5
+echo $ECHO_N "checking for krb5_set_default_tgs_ktypes in -lkrb5... $ECHO_C" >&6
+if test "${ac_cv_lib_krb5_krb5_set_default_tgs_ktypes+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lkrb5  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char krb5_set_default_tgs_ktypes ();
+#ifdef F77_DUMMY_MAIN
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+#endif
+int
+main ()
+{
+krb5_set_default_tgs_ktypes ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_krb5_krb5_set_default_tgs_ktypes=yes
+else
+  echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+ac_cv_lib_krb5_krb5_set_default_tgs_ktypes=no
+fi
+rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_krb5_krb5_set_default_tgs_ktypes" >&5
+echo "${ECHO_T}$ac_cv_lib_krb5_krb5_set_default_tgs_ktypes" >&6
+if test $ac_cv_lib_krb5_krb5_set_default_tgs_ktypes = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_KRB5_SET_DEFAULT_TGS_KTYPES 1
+_ACEOF
+
+fi
+
+
 
   ########################################################
   # now see if we can find the krb5 libs in standard paths
