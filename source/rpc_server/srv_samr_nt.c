@@ -3434,17 +3434,16 @@ static BOOL get_memberuids(gid_t gid, uid_t **uids, int *num)
 
 NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_QUERY_GROUPMEM *r_u)
 {
-	int final_num_rids, i;
 	DOM_SID group_sid;
 	fstring group_sid_str;
-	uid_t *uids;
-	int num;
-	gid_t gid;
+	int i, num_members;
 
 	uint32 *rid=NULL;
 	uint32 *attr=NULL;
 
 	uint32 acc_granted;
+
+	NTSTATUS result;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted)) 
@@ -3464,46 +3463,23 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 
 	DEBUG(10, ("lookup on Domain SID\n"));
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid)))
-		return NT_STATUS_NO_SUCH_GROUP;
+	become_root();
+	result = pdb_enum_group_members(p->mem_ctx, &group_sid,
+					&rid, &num_members);
+	unbecome_root();
 
-	if(!get_memberuids(gid, &uids, &num))
-		return NT_STATUS_NO_SUCH_GROUP;
+	if (!NT_STATUS_IS_OK(result))
+		return result;
 
-	rid=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num);
-	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num);
+	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
 	
-	if (num!=0 && (rid==NULL || attr==NULL))
+	if ((num_members!=0) && (rid==NULL))
 		return NT_STATUS_NO_MEMORY;
 	
-	final_num_rids = 0;
-		
-	for (i=0; i<num; i++) {
-		DOM_SID sid;
+	for (i=0; i<num_members; i++)
+		attr[i] = SID_NAME_USER;
 
-		if (!NT_STATUS_IS_OK(uid_to_sid(&sid, uids[i]))) {
-			DEBUG(1, ("Could not map member uid to SID\n"));
-			continue;
-		}
-
-		if (!sid_check_is_in_our_domain(&sid)) {
-			DEBUG(1, ("Inconsistent SAM -- group member uid not "
-				  "in our domain\n"));
-			continue;
-		}
-
-		sid_peek_rid(&sid, &rid[final_num_rids]);
-
-		/* Hmm. In a trace I got the constant 7 here from NT. */
-		attr[final_num_rids] = SID_NAME_USER;
-
-		final_num_rids += 1;
-	}
-
-	SAFE_FREE(uids);
-
-	init_samr_r_query_groupmem(r_u, final_num_rids, rid, attr,
-				   NT_STATUS_OK);
+	init_samr_r_query_groupmem(r_u, num_members, rid, attr, NT_STATUS_OK);
 
 	return NT_STATUS_OK;
 }

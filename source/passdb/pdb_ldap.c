@@ -2165,6 +2165,213 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 	return ldapsam_getgroup(methods, filter, map);
 }
 
+static void add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
+				    uint32 rid, uint32 **rids, int *num)
+{
+	int i;
+
+	for (i=0; i<*num; i++) {
+		if ((*rids)[i] == rid)
+			return;
+	}
+	
+	*rids = TALLOC_REALLOC_ARRAY(mem_ctx, *rids, uint32, *num+1);
+
+	if (*rids == NULL)
+		return;
+
+	(*rids)[*num] = rid;
+	*num += 1;
+}
+
+static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
+					   TALLOC_CTX *mem_ctx,
+					   const DOM_SID *group,
+					   uint32 **member_rids,
+					   int *num_members)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	struct smbldap_state *conn = ldap_state->smbldap_state;
+	pstring filter;
+	int rc, count;
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry;
+	char **values = NULL;
+	char **memberuid;
+	char *sid_filter = NULL;
+	char *tmp;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
+		return pdb_default_enum_group_members(methods, mem_ctx, group,
+						      member_rids,
+						      num_members);
+
+	*member_rids = NULL;
+	*num_members = 0;
+
+	pstr_sprintf(filter,
+		     "(&(objectClass=sambaSamAccount)"
+		     "(sambaPrimaryGroupSid=%s))",
+		     sid_string_static(group));
+
+	{
+		const char *attrs[] = { "sambaSID", NULL };
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
+				    &msg);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	     entry != NULL;
+	     entry = ldap_next_entry(conn->ldap_struct, entry))
+	{
+		fstring str;
+		DOM_SID sid;
+		uint32 rid;
+
+		if (!smbldap_get_single_attribute(conn->ldap_struct,
+						  entry, "sambaSID",
+						  str, sizeof(str)-1))
+			continue;
+
+		if (!string_to_sid(&sid, str))
+			goto done;
+
+		if (!sid_check_is_in_our_domain(&sid)) {
+			DEBUG(1, ("Inconsistent SAM -- group member uid not "
+				  "in our domain\n"));
+			continue;
+		}
+
+		sid_peek_rid(&sid, &rid);
+
+		add_rid_to_array_unique(mem_ctx, rid, member_rids,
+					num_members);
+	}
+
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	pstr_sprintf(filter,
+		     "(&(objectClass=sambaGroupMapping)"
+		     "(objectClass=posixGroup)"
+		     "(sambaSID=%s))",
+		     sid_string_static(group));
+
+	{
+		const char *attrs[] = { "memberUid", NULL };
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
+				    &msg);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	count = ldap_count_entries(conn->ldap_struct, msg);
+
+	if (count > 1) {
+		DEBUG(1, ("Found more than one groupmap entry for %s\n",
+			  sid_string_static(group)));
+		goto done;
+	}
+
+	if (count == 0) {
+		result = NT_STATUS_OK;
+		goto done;
+	}
+
+	entry = ldap_first_entry(conn->ldap_struct, msg);
+	if (entry == NULL)
+		goto done;
+
+	values = ldap_get_values(conn->ldap_struct, msg, "memberUid");
+	if (values == NULL) {
+		result = NT_STATUS_OK;
+		goto done;
+	}
+
+	sid_filter = strdup("(&(objectClass=sambaSamAccount)(|");
+	if (sid_filter == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (memberuid = values; *memberuid != NULL; memberuid += 1) {
+		tmp = sid_filter;
+		asprintf(&sid_filter, "%s(uid=%s)", tmp, *memberuid);
+		free(tmp);
+		if (sid_filter == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
+	tmp = sid_filter;
+	asprintf(&sid_filter, "%s))", sid_filter);
+	free(tmp);
+	if (sid_filter == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	{
+		const char *attrs[] = { "sambaSID", NULL };
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, sid_filter, attrs, 0,
+				    &msg);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	     entry != NULL;
+	     entry = ldap_next_entry(conn->ldap_struct, entry))
+	{
+		fstring str;
+		DOM_SID sid;
+		uint32 rid;
+
+		if (!smbldap_get_single_attribute(conn->ldap_struct,
+						  entry, "sambaSID",
+						  str, sizeof(str)-1))
+			continue;
+
+		if (!string_to_sid(&sid, str))
+			goto done;
+
+		if (!sid_check_is_in_our_domain(&sid)) {
+			DEBUG(1, ("Inconsistent SAM -- group member uid not "
+				  "in our domain\n"));
+			continue;
+		}
+
+		sid_peek_rid(&sid, &rid);
+
+		add_rid_to_array_unique(mem_ctx, rid, member_rids,
+					num_members);
+	}
+
+	result = NT_STATUS_OK;
+	
+ done:
+	SAFE_FREE(sid_filter);
+
+	if (values != NULL)
+		ldap_value_free(values);
+
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	return result;
+}
+
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       const char *username,
 					       gid_t primary_gid,
@@ -2936,6 +3143,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->update_group_mapping_entry = ldapsam_update_group_mapping_entry;
 	(*pdb_method)->delete_group_mapping_entry = ldapsam_delete_group_mapping_entry;
 	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
+	(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
 	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
 
 	/* TODO: Setup private data and free */
