@@ -57,7 +57,6 @@ sub smb_build_main($)
 		"libcli/libsmb.mk",
 		"libcli/config.mk",
 		"libcli/security/config.mk",
-		"lib/dcom/config.mk",
 		"lib/com/config.mk",
 		"scripting/swig/config.mk",
 	);

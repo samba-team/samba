@@ -126,12 +126,13 @@ extern int errno;
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "librpc/ndr/ndr_orpc.h"
+#include "librpc/gen_ndr/ndr_orpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "smb_interfaces.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "lib/com/com.h"
-#include "lib/dcom/common/dcom.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)

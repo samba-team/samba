@@ -21,8 +21,21 @@
 #ifndef _COM_H /* _COM_H */
 #define _COM_H 
 
+struct IUnknown_vtable;
+
 struct com_context 
 {
+	struct {
+		const char *domain;
+		const char *user;
+		const char *password;
+		struct dcom_object_exporter {
+			uint64_t oxid;	
+			struct DUALSTRINGARRAY bindings;
+			struct dcerpc_pipe *pipe;
+			struct dcom_object_exporter *prev, *next;
+		} *object_exporters;
+	} dcom;
 };
 
 typedef struct IUnknown *(*get_class_object_function) (const struct GUID *clsid);
