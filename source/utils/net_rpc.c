@@ -664,7 +664,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			if (opt_long_list_entries)
 				printf("%-21.21s %-50.50s\n", user, desc);
 			else
-				printf("%-21.21s\n", user);
+				printf("%s\n", user);
 		}
 	} while (!NT_STATUS_IS_OK(result));
 
@@ -698,6 +698,157 @@ int net_rpc_user(int argc, const char **argv)
 	}
 
 	return net_run_function(argc, argv, func, rpc_user_usage);
+}
+
+
+/****************************************************************************/
+
+/**
+ * Basic usage function for 'net rpc group'
+ * @param argc	Standard main() style argc.
+ * @param argv	Standard main() style argv.  Initial components are already
+ *		stripped.
+ **/
+
+static int rpc_group_usage(int argc, const char **argv)
+{
+	return net_help_group(argc, argv);
+}
+
+/** 
+ * List groups on a remote RPC server
+ *
+ * All paramaters are provided by the run_rpc_command funcion, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS 
+rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 start_idx=0, max_entries=250, num_entries, i;
+	struct acct_info *groups;
+	DOM_SID global_sid_Builtin;
+
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Query domain groups */
+	if (opt_long_list_entries)
+		d_printf("\nGroup name            Comment"\
+			 "\n-----------------------------\n");
+	do {
+		result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
+						  &start_idx, max_entries,
+						  &groups, &num_entries);
+						 
+		for (i = 0; i < num_entries; i++) {
+			if (opt_long_list_entries)
+				printf("%-21.21s %-50.50s\n", 
+				       groups[i].acct_name,
+				       groups[i].acct_desc);
+			else
+				printf("%-21.21s\n", groups[i].acct_name);
+		}
+	} while (!NT_STATUS_IS_OK(result));
+	/* query domain aliases */
+	do {
+		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
+						  &start_idx, max_entries,
+						  &groups, &num_entries);
+						 
+		for (i = 0; i < num_entries; i++) {
+			if (opt_long_list_entries)
+				printf("%-21.21s %-50.50s\n", 
+				       groups[i].acct_name,
+				       groups[i].acct_desc);
+			else
+				printf("%-21.21s\n", groups[i].acct_name);
+		}
+	} while (!NT_STATUS_IS_OK(result));
+	cli_samr_close(cli, mem_ctx, &domain_pol);
+	/* Get builtin policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &global_sid_Builtin, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	/* query builtin aliases */
+	do {
+		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
+						  &start_idx, max_entries,
+						  &groups, &num_entries);
+						 
+		for (i = 0; i < num_entries; i++) {
+			if (opt_long_list_entries)
+				printf("%-21.21s %-50.50s\n", 
+				       groups[i].acct_name,
+				       groups[i].acct_desc);
+			else
+				printf("%s\n", groups[i].acct_name);
+		}
+	} while (!NT_STATUS_IS_OK(result));
+
+ done:
+	return result;
+}
+
+/** 
+ * 'net rpc group' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+
+int net_rpc_group(int argc, const char **argv) 
+{
+	struct functable func[] = {
+#if 0
+		{"add", rpc_group_add},
+		{"delete", rpc_group_delete},
+#endif
+		{NULL, NULL}
+	};
+	
+	if (argc == 0) {
+		if (opt_long_list_entries) {
+		} else {
+		}
+		return run_rpc_command(PIPE_SAMR, 0, 
+				       rpc_group_list_internals,
+				       argc, argv);
+	}
+
+	return net_run_function(argc, argv, func, rpc_group_usage);
 }
 
 
@@ -1321,6 +1472,7 @@ int net_rpc(int argc, const char **argv)
 	struct functable func[] = {
 		{"join", net_rpc_join},
 		{"user", net_rpc_user},
+		{"group", net_rpc_group},
 		{"changetrustpw", rpc_changetrustpw},
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
