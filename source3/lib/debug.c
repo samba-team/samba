@@ -200,7 +200,7 @@ void reopen_logs( void )
 
       pstrcpy( debugf, fname );
       if( dbf )
-        fclose( dbf );
+        (void)fclose( dbf );
       if( append_log )
         dbf = fopen( debugf, "a" );
       else
@@ -212,14 +212,14 @@ void reopen_logs( void )
       force_check_log_size();
       if( dbf )
         setbuf( dbf, NULL );
-      umask( oldumask );
+      (void)umask( oldumask );
       }
     }
   else
     {
     if( dbf )
       {
-      fclose( dbf );
+      (void)fclose( dbf );
       dbf = NULL;
       }
     }
@@ -252,17 +252,17 @@ static void check_log_size( void )
 
   if( fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog )
     {
-    fclose( dbf );
+    (void)fclose( dbf );
     dbf = NULL;
     reopen_logs();
     if( dbf && file_size( debugf ) > maxlog )
       {
       pstring name;
 
-      fclose( dbf );
+      (void)fclose( dbf );
       dbf = NULL;
       slprintf( name, sizeof(name)-1, "%s.old", debugf );
-      rename( debugf, name );
+      (void)rename( debugf, name );
       reopen_logs();
       }
     }
@@ -294,7 +294,7 @@ va_dcl
     va_start( ap );
     format_str = va_arg( ap, char * );
 #endif
-    vfprintf( dbf, format_str, ap );
+    (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
     errno = old_errno;
     return( 0 );
@@ -312,7 +312,7 @@ va_dcl
         dbf = fopen( debugf, "a" );
       else
         dbf = fopen( debugf, "w" );
-      umask( oldumask );
+      (void)umask( oldumask );
       if( dbf )
         {
         setbuf( dbf, NULL );
@@ -371,9 +371,9 @@ va_dcl
     va_start( ap );
     format_str = va_arg( ap, char * );
 #endif
-    vfprintf( dbf, format_str, ap );
+    (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
-    fflush( dbf );
+    (void)fflush( dbf );
     }
 
   check_log_size();
@@ -422,7 +422,7 @@ static void format_debug_text( char *msg )
     if( '\n' == msg[i] )
       {
       format_bufr[format_pos] = '\0';
-      Debug1( "%s", format_bufr );
+      (void)Debug1( "%s", format_bufr );
       format_pos = 0;
       }
     }
@@ -482,7 +482,8 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   if( lp_timestamp_logs() || !(lp_loaded()) )
     {
     /* Print it all out at once to prevent split syslog output. */
-    Debug1( "[%s, %d] %s:%s(%d)\n", timestring(), level, file, func, line );
+    (void)Debug1( "[%s, %d] %s:%s(%d)\n",
+                  timestring(), level, file, func, line );
     }
 
   return( True );
