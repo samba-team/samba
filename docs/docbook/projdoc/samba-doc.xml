@@ -96,22 +96,22 @@ Samba has several features that you might want or might not want to use. The cha
 </partintro>
 &NetworkBrowsing;
 &Passdb;
-&NT-Security;
 &GROUP-MAPPING-HOWTO;
+&AccessControls;
+&locking;
+&SecuringSamba;
+&Trusts;
+&MS-Dfs-Setup;
 &PRINTER-DRIVER2;
 &CUPS;
+&VFS;
 &WINBIND;
 &AdvancedNetworkAdmin;
 &PolicyMgmt;
 &ProfileMgmt;
-&Trusts;
 &Samba-PAM;
-&VFS;
-&MS-Dfs-Setup;
 &IntegratingWithWindows;
-&SecuringSamba;
 &unicode;
-&locking;
 </part>
 
 <part id="troubleshooting">
