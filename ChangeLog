@@ -1,3 +1,17 @@
+Fri Mar 19 14:48:03 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/hdb/Makefile.am: add version-info
+
+	* lib/gssapi/Makefile.am: add version-info
+
+	* lib/asn1/Makefile.am: use $(x:y=z) make syntax; move check-der
+ 	to check_PROGRAMS
+
+	* lib/Makefile.am: add 45
+
+	* lib/kadm5/Makefile.am: split in client and server libraries
+ 	(breaks shared libraries otherwise)
+
 Thu Mar 18 11:33:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* include/kadm5/Makefile.am: clean a lot of header files (since

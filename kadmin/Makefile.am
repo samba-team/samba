@@ -25,4 +25,7 @@ COMMON_LDADD = \
 	$(DBLIB)
 
 kadmind_LDADD = $(top_builddir)/lib/kadm5/libkadm5srv.la $(COMMON_LDADD)
-kadmin_LDADD = $(top_builddir)/lib/kadm5/libkadm5clnt.la $(COMMON_LDADD)
+kadmin_LDADD = \
+	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
+	$(top_builddir)/lib/kadm5/libkadm5srv.la \
+	$(COMMON_LDADD)
