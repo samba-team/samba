@@ -31,6 +31,8 @@ In 3.0, the following configuration options have been removed.
 <member>use rhosts</member>
 <member>postscript</member>
 <member>client code page (replaced by dos charset)</member>
+<member>vfs path</member>
+<member>vfs options</member>
 </simplelist>
 </sect1>
 </chapter>
