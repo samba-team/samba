@@ -527,7 +527,7 @@ static void usage(char *pname)
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */
 
-	gain_root_privilage();
+	gain_root_privilege();
 
 	fault_setup((void (*)(void *))exit_server);
 	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);

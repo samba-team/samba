@@ -38,7 +38,7 @@ void init_uid(void)
 	current_user.gid = getegid();
 
 	if (current_user.gid != 0 && current_user.uid == 0) {
-		gain_root_group_privilage();
+		gain_root_group_privilege();
 	}
 
 	current_user.conn = NULL;
@@ -305,7 +305,7 @@ static int become_root_depth;
 static pstring become_root_dir;
 
 /****************************************************************************
-This is used when we need to do a privilaged operation (such as mucking
+This is used when we need to do a privileged operation (such as mucking
 with share mode files) and temporarily need root access to do it. This
 call should always be paired with an unbecome_root() call immediately
 after the operation
@@ -329,7 +329,7 @@ void become_root(BOOL save_dir)
 }
 
 /****************************************************************************
-When the privilaged operation is over call this
+When the privileged operation is over call this
 
 Set save_dir if you also need to save/restore the CWD 
 ****************************************************************************/

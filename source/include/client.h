@@ -80,7 +80,7 @@ struct cli_state {
 	int protocol;
 	int sec_mode;
 	int rap_error;
-	int privilages;
+	int privileges;
 
 	fstring eff_name;
 	fstring desthost;

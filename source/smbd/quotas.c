@@ -387,13 +387,29 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   euser_id = geteuid();
   user_id = getuid();
 
-  setreuid(euser_id, -1);
+  /*
+   * To do this correctly we must set eff id back to zero,
+   * set real uid, then set eff uid (thus leaving saved-set). To reverse we set eff
+   * id to zero, set real uid, then set eff uid back.
+   */
+
+  set_effective_uid(0);
+  set_real_uid(euser_id);
+  set_effective_uid(euser_id);
+
   r= quotactl(path,QCMD(Q_GETQUOTA, USRQUOTA),euser_id,(char *) &D);
   if (r)
      save_errno = errno;
 
-  if (setreuid(user_id, -1) == -1)
-    DEBUG(5,("Unable to reset uid to %d\n", user_id));
+  set_effective_uid(0);
+  set_real_uid(user_id);
+  set_effective_uid(euser_id);
+
+  if (geteuid() != euser_id)
+    DEBUG(0,("Unable to reset eff uid to %d. THIS IS A BUG\n", (int)euser_id));
+
+  if (getuid() != user_id)
+    DEBUG(0,("Unable to reset real uid to %d. THIS IS A BUG\n", (int)user_id));
 
   *bsize = DEV_BSIZE;
 
@@ -586,14 +602,31 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 
 #ifdef HPUX
   {
-    uid_t user_id;
+    uid_t user_id = getuid();
 
     /* for HPUX, real uid must be same as euid to execute quotactl for euid */
-    user_id = getuid();
-    setresuid(euser_id,-1,-1);
+
+    /*
+     * To do this correctly we must set eff id back to zero,
+     * set real uid, then set eff uid (thus leaving saved-set). To reverse we set eff
+     * id to zero, set real uid, then set eff uid back.
+     */
+
+    set_effective_uid(0);
+    set_real_uid(euser_id);
+    set_effective_uid(euser_id);
+
     r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-    if (setresuid(user_id,-1,-1))
-      DEBUG(5,("Unable to reset uid to %d\n", user_id));
+
+    set_effective_uid(0);
+    set_real_uid(user_id);
+    set_effective_uid(euser_id);
+
+    if (geteuid() != euser_id)
+      DEBUG(0,("Unable to reset eff uid to %d. THIS IS A BUG\n", (int)euser_id));
+
+    if (getuid() != user_id)
+      DEBUG(0,("Unable to reset real uid to %d. THIS IS A BUG\n", (int)user_id));
   }
 #else 
 #if defined(__FreeBSD__) || defined(__OpenBSD__)

@@ -121,7 +121,7 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
   gid = pass->pw_gid;
   uid = pass->pw_uid;
 
-  gain_root_privilage();
+  gain_root_privilege();
 
   /* Start new session - gets rid of controlling terminal. */
   if (setsid() < 0) {

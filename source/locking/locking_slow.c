@@ -118,7 +118,7 @@ static int delete_share_file(connection_struct *conn, char *fname )
     DEBUG(5,("delete_share_file: Deleted share file %s\n", fname));
   }
 
-  /* return to our previous privilage level */
+  /* return to our previous privilege level */
   unbecome_root(False);
 
   return 0;
@@ -210,7 +210,7 @@ static BOOL slow_lock_share_entry(connection_struct *conn,
 
   *ptok = (int)fd;
 
-  /* return to our previous privilage level */
+  /* return to our previous privilege level */
   unbecome_root(False);
 
   return ret;

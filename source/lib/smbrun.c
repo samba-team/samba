@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 
 /****************************************************************************
 This is a utility function of smbrun(). It must be called only from
-the child as it may leave the caller in a privilaged state.
+the child as it may leave the caller in a privileged state.
 ****************************************************************************/
 static BOOL setup_stdout_file(char *outfile,BOOL shared)
 {  
@@ -40,9 +40,9 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
   close(1);
 
   if (shared) {
-	/* become root - unprivilaged users can't delete these files */
-	gain_root_privilage();
-	gain_root_group_privilage();
+	/* become root - unprivileged users can't delete these files */
+	gain_root_privilege();
+	gain_root_group_privilege();
   }
 
   if(sys_stat(outfile, &st) == 0) {
@@ -136,14 +136,14 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 		exit(80);
 	}
 	
-	/* now completely lose our privilages. This is a fairly paranoid
+	/* now completely lose our privileges. This is a fairly paranoid
 	   way of doing it, but it does work on all systems that I know of */
 
 	become_user_permanently(uid, gid);
 
 	if (getuid() != uid || geteuid() != uid ||
 	    getgid() != gid || getegid() != gid) {
-		/* we failed to lose our privilages - do not execute
+		/* we failed to lose our privileges - do not execute
                    the command */
 		exit(81); /* we can't print stuff at this stage,
 			     instead use exit codes for debugging */

@@ -21,10 +21,10 @@
 #include "includes.h"
 
 /****************************************************************************
- Gain root privilage before doing something.
+ Gain root privilege before doing something.
 ****************************************************************************/
 
-void gain_root_privilage(void)
+void gain_root_privilege(void)
 {
 #if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
 
@@ -56,7 +56,7 @@ void gain_root_privilage(void)
  Ensure our real and effective groups are zero.
 ****************************************************************************/
 
-void gain_root_group_privilage(void)
+void gain_root_group_privilege(void)
 {
 #ifdef HAVE_SETRESGID
 	setresgid(0,0,0);
@@ -82,18 +82,19 @@ int set_effective_uid(uid_t uid)
 			return -1;
 		}
 	}
+	return 0;
 #endif
 #endif
 
 #if defined(HAVE_SETRESUID)
-    if (setresuid(-1,uid,-1) != 0)
+    return setresuid(-1,uid,-1);
 #elif defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
-	if(setreuid(-1,uid) != 0)
+	return setreuid(-1,uid);
 #else
     if ((seteuid(uid) != 0) && (setuid(uid) != 0))
-#endif
 		return -1;
 	return 0;
+#endif
 }
 
 /****************************************************************************
@@ -103,14 +104,40 @@ int set_effective_uid(uid_t uid)
 int set_effective_gid(gid_t gid)
 {
 #if defined(HAVE_SETRESGID)
-	if (setresgid(-1,gid,-1) != 0)
+	return setresgid(-1,gid,-1);
 #elif defined(HAVE_SETREGID) && !defined(HAVE_SETEGID)
-	if (setregid(-1,gid) != 0)
+	return setregid(-1,gid);
 #else
 	if ((setegid(gid) != 0) && (setgid(gid) != 0))
-#endif
 		return -1;
 	return 0;
+#endif
+}
+
+/****************************************************************************
+ Set *only* the real uid.
+****************************************************************************/
+
+int set_real_uid(uid_t uid)
+{
+#if defined(HAVE_TRAPDOOR_UID)
+#if defined(HAVE_SETUIDX)
+    /* AIX3 has setuidx which is NOT a trapoor function (tridge) */
+    return setuidx(ID_REAL,uid);
+#endif
+#endif
+
+#if defined(HAVE_SETRESUID)
+    return setresuid(uid,-1,-1);
+#elif defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
+    return setreuid(uid,-1);
+#else
+	/* 
+	 * Without either setresuid or setreuid we cannot
+	 * independently set the real uid.
+	 */
+    return -1;
+#endif
 }
 
 /****************************************************************************
@@ -120,17 +147,17 @@ int set_effective_gid(gid_t gid)
 BOOL become_user_permanently(uid_t uid, gid_t gid)
 {
 	/* 
-	 * Now completely lose our privilages. This is a fairly paranoid
+	 * Now completely lose our privileges. This is a fairly paranoid
 	 * way of doing it, but it does work on all systems that I know of.
 	 */
 
 	/*
-	 * First - gain root privilage. We do this to ensure
+	 * First - gain root privilege. We do this to ensure
 	 * we can lose it again.
 	 */
 
-	gain_root_privilage();
-	gain_root_group_privilage();
+	gain_root_privilege();
+	gain_root_group_privilege();
 
 #if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
 	/*
@@ -169,7 +196,7 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	
 	if (getuid() != uid || geteuid() != uid ||
 	    getgid() != gid || getegid() != gid) {
-		/* We failed to lose our privilages. */
+		/* We failed to lose our privileges. */
 		return False;
 	}
 	

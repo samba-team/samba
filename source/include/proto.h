@@ -312,8 +312,8 @@ char *fgets_slash(char *s2,int maxlen,FILE *f);
 
 /*The following definitions come from  lib/util_sec.c  */
 
-void gain_root_privilage(void);
-void gain_root_group_privilage(void);
+void gain_root_privilege(void);
+void gain_root_group_privilege(void);
 int set_effective_uid(uid_t uid);
 int set_effective_gid(gid_t gid);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
