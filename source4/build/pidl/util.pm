@@ -329,7 +329,7 @@ sub c_pull_prefix($)
 	if ($e->{TYPE} =~ "unistr.*") {
 		return "&";
 	}
-	if ($e->{TYPE} =~ "relstr.*") {
+	if ($e->{TYPE} =~ "nstring.*") {
 		return "&";
 	}
 
@@ -362,6 +362,17 @@ sub is_fixed_array($)
 	my $e = shift;
 	my $len = $e->{"ARRAY_LEN"};
 	if (defined $len && is_constant($len)) {
+		return 1;
+	}
+	return 0;
+}
+
+# return 1 if this is a inline array
+sub is_inline_array($)
+{
+	my $e = shift;
+	my $len = $e->{"ARRAY_LEN"};
+	if (defined $len && $len ne "*") {
 		return 1;
 	}
 	return 0;

@@ -198,7 +198,9 @@ sub ParseElementPushScalar($$$)
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
 
-	if (my $value = util::has_property($e, "value")) {
+	if (util::has_property($e, "relative")) {
+		$res .= "\tNDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
+	} elsif (my $value = util::has_property($e, "value")) {
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $value));\n";
 	} elsif (defined $e->{VALUE}) {
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $e->{VALUE}));\n";
@@ -301,7 +303,9 @@ sub ParseElementPullScalar($$$)
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_pull_prefix($e);
 
-	if (defined $e->{VALUE}) {
+	if (util::has_property($e, "relative")) {
+		$res .= "\tNDR_CHECK(ndr_pull_relative(ndr, (const void **)&$var_prefix$e->{NAME}, sizeof(*$var_prefix$e->{NAME}), (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
+	} elsif (defined $e->{VALUE}) {
 		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $e->{VALUE}));\n";
 	} elsif (util::need_wire_pointer($e)) {
 		$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, &_ptr_$e->{NAME}));\n";
@@ -344,7 +348,9 @@ sub ParseElementPushBuffer($$$)
 		$res .= "\tif ($var_prefix$e->{NAME}) {\n";
 	}
 	    
-	if (util::array_size($e)) {
+	if (util::has_property($e, "relative")) {
+		$res .= "\tNDR_CHECK(ndr_push_relative(ndr, NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
+	} elsif (util::array_size($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		if ($e->{POINTERS}) {
@@ -405,6 +411,10 @@ sub ParseElementPullBuffer($$$)
 	my $cprefix = util::c_pull_prefix($e);
 
 	if (util::is_pure_scalar($e)) {
+		return;
+	}
+
+	if (util::has_property($e, "relative")) {
 		return;
 	}
 

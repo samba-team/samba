@@ -59,13 +59,14 @@ sub HeaderElement($)
 		    $res .= "*";
 	    }
     }
-    if (defined $element->{ARRAY_LEN} && $element->{ARRAY_LEN} eq "*") {
+    if (defined $element->{ARRAY_LEN} && 
+	!util::is_constant($element->{ARRAY_LEN})) {
 	    # conformant arrays are ugly! I choose to implement them with
 	    # pointers instead of the [1] method
 	    $res .= "*";
     }
     $res .= "$element->{NAME}";
-    if (defined $element->{ARRAY_LEN} && $element->{ARRAY_LEN} ne "*") {
+    if (defined $element->{ARRAY_LEN} && util::is_constant($element->{ARRAY_LEN})) {
 	    $res .= "[$element->{ARRAY_LEN}]";
     }
     $res .= ";\n";
@@ -128,7 +129,7 @@ sub HeaderType($$$)
 	}
 	if ($data =~ "unistr") {
 		$res .= "const char";
-	} elsif ($data =~ "relstr") {
+	} elsif ($data =~ "nstring") {
 		$res .= "const char *";
 	} elsif (util::is_scalar_type($data)) {
 		$res .= "$data";
@@ -198,6 +199,9 @@ sub HeaderInterface($)
     my($interface) = shift;
     my($data) = $interface->{DATA};
     foreach my $d (@{$data}) {
+	    if (!defined $d->{TYPE}) {
+		    print Dumper $d;
+	    }
 	($d->{TYPE} eq "TYPEDEF") &&
 	    HeaderTypedef($d);
 	($d->{TYPE} eq "FUNCTION") && 
