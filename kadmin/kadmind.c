@@ -47,7 +47,7 @@ static int help_flag;
 static int version_flag;
 static int debug_flag;
 static int debug_port;
-static char *realm;
+char *realm;
 
 static struct getargs args[] = {
     { 
@@ -84,6 +84,9 @@ usage(int ret)
     arg_printusage (args, num_args, NULL, "");
     exit (ret);
 }
+
+krb5_error_code
+kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
 
 int
 main(int argc, char **argv)
@@ -135,11 +138,8 @@ main(int argc, char **argv)
     }
 
     {
-	krb5_principal server;
 	int fd = 0;
 	krb5_auth_context ac = NULL;
-	krb5_ticket *ticket;
-	char *client;
 	if(debug_flag){
 	    if(debug_port == 0)
 		debug_port = krb5_getportbyname (context, "kerberos-adm", 
@@ -150,16 +150,7 @@ main(int argc, char **argv)
 	}
 	if(realm)
 	    krb5_set_default_realm(context, realm); /* XXX */
-	krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
-	ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
-			    server, 0, keytab, &ticket);
-	krb5_free_principal(context, server);
-	
-	if(ret)
-	    krb5_err(context, 1, ret, "krb5_recvauth");
-	krb5_unparse_name(context, ticket->client, &client);
-	
-	kadmind_loop(context, ac, client, fd);
+	kadmind_loop(context, ac, keytab, fd);
     }
     return 0;
 }
