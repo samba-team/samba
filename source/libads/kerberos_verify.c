@@ -148,6 +148,12 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 	get_auth_data_from_tkt(auth_data, tkt);
 
+	{
+		TALLOC_CTX *ctx = talloc_init("pac data");
+		decode_pac_data(auth_data);
+		talloc_destroy(ctx);
+	}
+
 #if 0
 	if (tkt->enc_part2) {
 		file_save("/tmp/authdata.dat",
