@@ -124,12 +124,62 @@ static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
  Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
 ****************************************************************************/
 
-static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, mode_t *pmode,
+static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
+{
+	DOM_SID owner_sid;
+	DOM_SID grp_sid;
+	enum SID_NAME_USE sid_type;
+
+	*puser = (uid_t)-1;
+	*pgrp = (gid_t)-1;
+
+	if(security_info_sent == 0) {
+		DEBUG(0,("unpack_nt_owners: no security info sent !\n"));
+		return False;
+	}
+
+	/*
+	 * Validate the owner and group SID's.
+	 */
+
+	memset(&owner_sid, '\0', sizeof(owner_sid));
+	memset(&grp_sid, '\0', sizeof(grp_sid));
+
+	DEBUG(5,("unpack_nt_owners: validating owner_sids.\n"));
+
+	/*
+	 * Don't immediately fail if the owner sid cannot be validated.
+	 * This may be a group chown only set.
+	 */
+
+	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
+		sid_copy(&owner_sid, psd->owner_sid);
+		if (!sid_to_uid( &owner_sid, puser, &sid_type))
+			DEBUG(3,("unpack_nt_owners: unable to validate owner sid.\n"));
+ 	}
+
+	/*
+	 * Don't immediately fail if the group sid cannot be validated.
+	 * This may be an owner chown only set.
+	 */
+
+	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
+		sid_copy(&grp_sid, psd->grp_sid);
+		if (!sid_to_gid( &grp_sid, pgrp, &sid_type))
+			DEBUG(3,("unpack_nt_owners: unable to validate group sid.\n"));
+	}
+
+	return True;
+}
+
+/****************************************************************************
+ Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
+****************************************************************************/
+
+static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, mode_t *pmode,
                                   uint32 security_info_sent, SEC_DESC *psd, BOOL is_directory)
 {
   extern DOM_SID global_sid_World;
-  DOM_SID owner_sid;
-  DOM_SID grp_sid;
   DOM_SID file_owner_sid;
   DOM_SID file_grp_sid;
   SEC_ACL *dacl = psd->dacl;
@@ -138,8 +188,6 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
   enum SID_NAME_USE sid_type;
 
   *pmode = 0;
-  *puser = (uid_t)-1;
-  *pgrp = (gid_t)-1;
 
   if(security_info_sent == 0) {
     DEBUG(0,("unpack_nt_permissions: no security info sent !\n"));
@@ -154,37 +202,6 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
    */
  
   create_file_sids(psbuf, &file_owner_sid, &file_grp_sid);
-
-  /*
-   * Validate the owner and group SID's.
-   */
-
-  memset(&owner_sid, '\0', sizeof(owner_sid));
-  memset(&grp_sid, '\0', sizeof(grp_sid));
-
-  DEBUG(5,("unpack_nt_permissions: validating owner_sid.\n"));
-
-  /*
-   * Don't immediately fail if the owner sid cannot be validated.
-   * This may be a group chown only set.
-   */
-
-  if (security_info_sent & OWNER_SECURITY_INFORMATION) {
-	sid_copy(&owner_sid, psd->owner_sid);
-    if (!sid_to_uid( &owner_sid, puser, &sid_type))
-      DEBUG(3,("unpack_nt_permissions: unable to validate owner sid.\n"));
-  }
-
-  /*
-   * Don't immediately fail if the group sid cannot be validated.
-   * This may be an owner chown only set.
-   */
-
-  if (security_info_sent & GROUP_SECURITY_INFORMATION) {
-	sid_copy(&grp_sid, psd->grp_sid);
-    if (!sid_to_gid( &grp_sid, pgrp, &sid_type))
-      DEBUG(3,("unpack_nt_permissions: unable to validate group sid.\n"));
-  }
 
   /*
    * If no DACL then this is a chown only security descriptor.
@@ -711,72 +728,75 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 
 BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
-  connection_struct *conn = fsp->conn;
-  uid_t user = (uid_t)-1;
-  gid_t grp = (gid_t)-1;
-  mode_t perms = 0;
-  SMB_STRUCT_STAT sbuf;  
-  BOOL got_dacl = False;
+	connection_struct *conn = fsp->conn;
+	uid_t user = (uid_t)-1;
+	gid_t grp = (gid_t)-1;
+	mode_t perms = 0;
+	SMB_STRUCT_STAT sbuf;  
+	BOOL got_dacl = False;
 
-  /*
-   * Get the current state of the file.
-   */
+	/*
+	 * Get the current state of the file.
+	 */
 
-  if(fsp->is_directory || fsp->fd == -1) {
-    if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0)
-      return False;
-  } else {
-    if(conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0)
-      return False;
-  }
+	if(fsp->is_directory || fsp->fd == -1) {
+		if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0)
+			return False;
+	} else {
+		if(conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0)
+			return False;
+	}
 
-  /*
-   * Unpack the user/group/world id's and permissions.
-   */
+	/*
+	 * Unpack the user/group/world id's.
+	 */
 
-  if (!unpack_nt_permissions( &sbuf, &user, &grp, &perms, security_info_sent, psd, fsp->is_directory))
+	if (!unpack_nt_owners( &sbuf, &user, &grp, security_info_sent, psd))
+		return False;
+
+	/*
+	 * Do we need to chown ?
+	 */
+
+	if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
+
+		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
+				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+
+		if(vfs_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
+			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error = %s.\n",
+				fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+			return False;
+		}
+
+		/*
+		 * Recheck the current state of the file, which may have changed.
+		 * (suid/sgid bits, for instance)
+		 */
+
+		if(fsp->is_directory) {
+			if(vfs_stat(fsp->conn, fsp->fsp_name, &sbuf) != 0) {
+				return False;
+			}
+		} else {
+
+			int ret;
+    
+			if(fsp->fd == -1)
+				ret = vfs_stat(fsp->conn, fsp->fsp_name, &sbuf);
+			else
+				ret = conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf);
+  
+			if(ret != 0)
+				return False;
+		}
+	}
+
+  if (!unpack_nt_permissions( &sbuf, &perms, security_info_sent, psd, fsp->is_directory))
     return False;
 
   if (psd->dacl != NULL)
     got_dacl = True;
-
-  /*
-   * Do we need to chown ?
-   */
-
-  if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
-
-    DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
-          fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
-
-    if(vfs_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
-      DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
-            fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
-      return False;
-    }
-
-    /*
-     * Recheck the current state of the file, which may have changed.
-     * (suid/sgid bits, for instance)
-     */
-
-    if(fsp->is_directory) {
-      if(vfs_stat(fsp->conn, fsp->fsp_name, &sbuf) != 0) {
-        return False;
-      }
-    } else {
-
-      int ret;
-    
-      if(fsp->fd == -1)
-        ret = vfs_stat(fsp->conn, fsp->fsp_name, &sbuf);
-      else
-        ret = conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf);
-  
-      if(ret != 0)
-        return False;
-    }
-  }
 
   /*
    * Only change security if we got a DACL.
@@ -828,8 +848,3 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
   return True;
 }
 #undef OLD_NTDOMAIN
-
-
-
-
-
