@@ -2,6 +2,7 @@
 <chapterinfo>
 	&author.tridge;
 	&author.jelmer;
+	&author.jht;
 	<author><firstname>Karl</firstname><surname>Auer</surname></author>
 	<!-- Isn't some of this written by others as well? -->
 
@@ -19,6 +20,12 @@
 
 	<para>If you need to compile samba from source, check the 
 	<link linkend="compiling">appropriate appendix chapter</link>.</para>
+
+	<para>If you have already installed samba, or if your operating system
+	was pre-installed with samba, then you may not need to bother with this
+	chapter. On the other hand, you may want to read this chapter anyhow
+	for information about updating samba.</para>
+
 </sect1>
 
 <sect1>
