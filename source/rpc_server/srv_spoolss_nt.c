@@ -6953,6 +6953,9 @@ WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *
 		return WERR_ACCESS_DENIED;
 	
 	/* just pass the information off to _spoolss_addprinterdriver() */
+	ZERO_STRUCT(q_u_local);
+	ZERO_STRUCT(r_u_local);
+
 	q_u_local.server_name_ptr = q_u->server_name_ptr;
 	copy_unistr2(&q_u_local.server_name, &q_u->server_name);
 	q_u_local.level = q_u->level;
