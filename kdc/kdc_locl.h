@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -67,6 +67,7 @@ extern int enable_524;
 #ifdef KRB4
 extern char *v4_realm;
 extern int enable_v4;
+extern int enable_v4_cross_realm;
 extern krb5_boolean enable_kaserver;
 #endif
 
