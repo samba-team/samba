@@ -250,10 +250,9 @@ void
 configure(int argc, char **argv)
 {
     int optind = 0;
-    int e;
     const char *p;
     
-    while((e = getarg(args, num_args, argc, argv, &optind)))
+    while(getarg(args, num_args, argc, argv, &optind))
 	warnx("error at argument `%s'", argv[optind]);
 
     if(help_flag)
@@ -273,18 +272,14 @@ configure(int argc, char **argv)
     {
 	krb5_error_code ret;
 	char **files;
-	char *tmp;
+
 	if(config_file == NULL)
 	    config_file = _PATH_KDC_CONF;
-	asprintf(&tmp, "%s:%s", config_file, krb5_config_file);
-	if(tmp == NULL)
-	    krb5_errx(context, 1, "out of memory");
-	    
-	krb5_config_file = tmp;
 
-	ret = krb5_get_default_config_files(&files);
-	if(ret) 
-	    krb5_err(context, 1, ret, "reading configuration files");
+	ret = krb5_prepend_config_files_default(config_file, &files);
+	if (ret)
+	    krb5_err(context, 1, ret, "getting configuration files");
+	    
 	ret = krb5_set_config_files(context, files);
 	krb5_free_config_files(files);
 	if(ret) 
