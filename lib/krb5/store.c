@@ -97,7 +97,7 @@ krb5_storage_set_eof_code(krb5_storage *sp, int code)
     sp->eof_code = code;
 }
 
-ssize_t
+krb5_ssize_t
 _krb5_put_int(void *buffer, unsigned long value, size_t size)
 {
     unsigned char *p = buffer;
@@ -109,7 +109,7 @@ _krb5_put_int(void *buffer, unsigned long value, size_t size)
     return size;
 }
 
-ssize_t
+krb5_ssize_t
 _krb5_get_int(void *buffer, unsigned long *value, size_t size)
 {
     unsigned char *p = buffer;

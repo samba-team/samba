@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-ssize_t
+krb5_ssize_t
 krb5_net_write (krb5_context context,
 		void *p_fd,
 		const void *buf,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-ssize_t
+krb5_ssize_t
 krb5_net_read (krb5_context context,
 	       void *p_fd,
 	       void *buf,
