@@ -1,3 +1,7 @@
+2004-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afssysdefs.h: dragonflybsd uses 339 just like freebsd5
+	
 2004-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afssys.c: s/arla/nnpfs/
