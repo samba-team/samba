@@ -75,10 +75,16 @@ sub HeaderStruct($$)
     my($name) = shift;
     $res .= "\nstruct $name {\n";
     $tab_depth++;
+    my $el_count=0;
     if (defined $struct->{ELEMENTS}) {
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 	    HeaderElement($e);
+	    $el_count++;
 	}
+    }
+    if ($el_count == 0) {
+	    # some compilers can't handle empty structures
+	    $res .= "\tchar _empty_;\n";
     }
     $tab_depth--;
     $res .= "}";
