@@ -21,29 +21,16 @@ AC_DEFUN([_SMB_BUILD_CORE],
 echo "config.status: creating ./config.smb_build.pl"
 
 cat > config.smb_build.pl <<\_SMB_ACEOF
-#!$PERL
+#!$PERL -I$srcdir/build/smb_build
 #
 
 use strict;
 
 my \$SMB_BUILD_CTX;
 
-_SMB_ACEOF
+use main;
 
-echo "#line 1 \"build/smb_build/config_mk.pl\"" >> config.smb_build.pl
-cat >> config.smb_build.pl < build/smb_build/config_mk.pl
-echo "#line 1 \"build/smb_build/input.pl\"" >> config.smb_build.pl
-cat >> config.smb_build.pl < build/smb_build/input.pl
-echo "#line 1 \"build/smb_build/depend.pl\"" >> config.smb_build.pl
-cat >> config.smb_build.pl < build/smb_build/depend.pl
-echo "#line 1 \"build/smb_build/output.pl\"" >> config.smb_build.pl
-cat >> config.smb_build.pl < build/smb_build/output.pl
-echo "#line 1 \"build/smb_build/makefile.pl\"" >> config.smb_build.pl
-cat >> config.smb_build.pl < build/smb_build/makefile.pl
-echo "#line 1 \"build/smb_build/smb_build_h.pl\"" >> config.smb_build.pl
-cat >> config.smb_build.pl < build/smb_build/smb_build_h.pl
-echo "#line 1 \"build/smb_build/main.pl\"" >> config.smb_build.pl
-cat >> config.smb_build.pl < build/smb_build/main.pl
+_SMB_ACEOF
 
 echo "#line 8 \"build/smb_build/core.m4\"" >> config.smb_build.pl
 cat >> config.smb_build.pl <<\_SMB_ACEOF

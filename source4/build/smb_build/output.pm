@@ -260,3 +260,5 @@ sub create_output($)
 
 	return;
 }
+
+1;
