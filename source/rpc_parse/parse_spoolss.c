@@ -1814,7 +1814,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 		return False;
 
 #if 1 /* JFMTEST */
-	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, NULL, &sec_offset))
+	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, &i, &sec_offset))
 		return False;
 #else
 	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
@@ -1869,13 +1869,31 @@ BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *i
 }
 
 /*******************************************************************
- Parse a PRINTER_INFO_3 structure.
+ Parse a PORT_INFO_1 structure.
+********************************************************************/  
+BOOL new_smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
+{
+	prs_struct *ps=&(buffer->prs);
+
+	prs_debug(ps, depth, desc, "new_smb_io_port_info_1");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+	
+	if (!new_smb_io_relstr("port_name", buffer, depth, &info->port_name))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a PORT_INFO_2 structure.
 ********************************************************************/  
 BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&(buffer->prs);
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_info_3");
+	prs_debug(ps, depth, desc, "new_smb_io_port_info_2");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
@@ -3665,10 +3683,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		 */
 		case 0:
 			break;
-		/* 
-		 * level 2 is used by addprinter
-		 * and by setprinter when updating printer's info
-		 */	
+		/* DOCUMENT ME!!! What is level 1 used for? */
 		case 1:
 		{
 			if (UNMARSHALLING(ps)) {
@@ -3683,6 +3698,10 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 			}
 			break;		
 		}
+		/* 
+		 * level 2 is used by addprinter
+		 * and by setprinter when updating printer's info
+		 */	
 		case 2:
 			if (UNMARSHALLING(ps)) {
 				if ((il->info_2=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2))) == NULL)
@@ -3695,6 +3714,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 				return False;
 			}
 			break;		
+		/* DOCUMENT ME!!! What is level 3 used for? */
 		case 3:
 		{
 			if (UNMARSHALLING(ps)) {
