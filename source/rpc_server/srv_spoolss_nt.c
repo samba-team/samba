@@ -1381,6 +1381,19 @@ static void spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 	data->notify_data.value[0]=queue->job;
 }
 
+/*******************************************************************
+ * fill a notify_info_data with
+ ********************************************************************/
+static void spoolss_notify_submitted_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+{
+	struct tm *t;
+
+	t=gmtime(&queue->time);
+
+	data->notify_data.data.length = sizeof(SYSTEMTIME);
+	make_systemtime((SYSTEMTIME*)(data->notify_data.data.string), t);
+}
+
 #define END 65535
 
 struct s_notify_info_data_table
@@ -1438,7 +1451,7 @@ struct s_notify_info_data_table notify_info_data_table[] =
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_DOCUMENT,                "JOB_NOTIFY_DOCUMENT",                POINTER,   spoolss_notify_job_name },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRIORITY,                "JOB_NOTIFY_PRIORITY",                ONE_VALUE, spoolss_notify_priority },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_POSITION,                "JOB_NOTIFY_POSITION",                ONE_VALUE, spoolss_notify_job_position },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_SUBMITTED,               "JOB_NOTIFY_SUBMITTED",               POINTER,   NULL },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_SUBMITTED,               "JOB_NOTIFY_SUBMITTED",               POINTER,   spoolss_notify_submitted_time },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_START_TIME,              "JOB_NOTIFY_START_TIME",              ONE_VALUE, spoolss_notify_start_time },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_UNTIL_TIME,              "JOB_NOTIFY_UNTIL_TIME",              ONE_VALUE, spoolss_notify_until_time },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TIME,                    "JOB_NOTIFY_TIME",                    ONE_VALUE, spoolss_notify_job_time },
@@ -3696,9 +3709,8 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	pstring temp_name;
 	
 	struct tm *t;
-	time_t unixdate = time(NULL);
 	
-	t=gmtime(&unixdate);
+	t=gmtime(&queue->time);
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;	
@@ -3725,14 +3737,12 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	pstring temp_name;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	pstring chaine;
-
 	struct tm *t;
-	time_t unixdate = time(NULL);
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
 		return False;
 	
-	t=gmtime(&unixdate);
+	t=gmtime(&queue->time);
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;
