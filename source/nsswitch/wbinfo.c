@@ -32,6 +32,8 @@ enum nss_status winbindd_request(int req_type,
 				 struct winbindd_request *request,
 				 struct winbindd_response *response);
 
+/* List groups a user is a member of */
+
 static BOOL wbinfo_get_usergroups(char *user)
 {
 	struct winbindd_request request;
@@ -89,7 +91,26 @@ static BOOL wbinfo_list_domains(void)
 
 static BOOL wbinfo_check_secret(void)
 {
-	return False;
+        struct winbindd_response response;
+        BOOL result;
+
+        ZERO_STRUCT(response);
+
+        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
+                NSS_STATUS_SUCCESS;
+
+        if (result) {
+
+                if (response.data.num_entries) {
+                        printf("Secret is good\n");
+                } else {
+                        printf("Secret is bad\n");
+                }
+
+                return True;
+        }
+
+        return False;
 }
 
 /* Convert uid to sid */
@@ -426,8 +447,8 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			break;
-
-			/* Invalid option */
+				
+                      /* Invalid option */
 
 		default:
 			usage();
