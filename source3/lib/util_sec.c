@@ -177,8 +177,16 @@ void gain_root_group_privilege(void)
 
 
 /****************************************************************************
- Set *only* the effective uid.
- we want to end up with ruid==0 and euid==uid
+ Set effective uid, and possibly the real uid too.
+ We want to end up with either:
+  
+   ruid==uid and euid==uid
+
+ or
+
+   ruid==0 and euid==uid
+
+ depending on what the local OS will allow us to regain root from.
 ****************************************************************************/
 void set_effective_uid(uid_t uid)
 {
