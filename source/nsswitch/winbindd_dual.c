@@ -159,10 +159,6 @@ void do_dual_daemon(void)
 		return;
 	}
 	close(fdpair[1]);
-
-	
-	sleep (60);
-	DEBUG(0,("do_dual_daemon: Starting up....\n"));
 	
 	if (!winbind_setup_common()) 
 		_exit(0);
