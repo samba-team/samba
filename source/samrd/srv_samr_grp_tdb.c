@@ -60,7 +60,7 @@ static uint32 samr_open_by_tdbsid(TDB_CONTEXT *ptdb,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -99,7 +99,7 @@ uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -136,7 +136,7 @@ uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -248,7 +248,7 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 	
 	(*num_mem) = num_rids;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -288,7 +288,7 @@ uint32 _samr_query_groupinfo(const POLICY_HND *pol,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -332,7 +332,7 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 	*rid = grp.rid;
 	status = samr_open_by_tdbsid(tdb_grp, &dom_sid, group_pol,
 	                              access_mask, grp.rid);
-	if (status != 0x0)
+	if (status != NT_STATUS_NOPROBLEMO)
 	{
 		return status;
 	}
@@ -344,7 +344,7 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************

@@ -930,6 +930,8 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 				*enum_ctx = 0;
 			}
 		}
+
+		lsa_free_r_enum_trust_dom(&r_q);
 	}
 
 	prs_free_data(&rbuf);

@@ -83,11 +83,11 @@ static void svc_reply_close(SVC_Q_CLOSE *q_r,
 	/* close the policy handle */
 	if (close_policy_hnd(get_global_hnd_cache(), &(q_r->pol)))
 	{
-		r_u.status = 0;
+		r_u.status = NT_STATUS_NOPROBLEMO;
 	}
 	else
 	{
-		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_INVALID;
+		r_u.status = NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	DEBUG(5,("svc_unknown_1: %d\n", __LINE__));
@@ -116,35 +116,35 @@ static void api_svc_close( rpcsrv_struct *p, prs_struct *data,
 static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
 				prs_struct *rdata)
 {
-	uint32 status     = 0;
+	uint32 status     = NT_STATUS_NOPROBLEMO;
 	POLICY_HND pol;
 	SVC_R_OPEN_SERVICE r_u;
 	fstring name;
 
 	DEBUG(5,("svc_open_service: %d\n", __LINE__));
 
-	if (status == 0x0 && find_policy_by_hnd(get_global_hnd_cache(), &q_u->scman_pol) == -1)
+	if (status == NT_STATUS_NOPROBLEMO && find_policy_by_hnd(get_global_hnd_cache(), &q_u->scman_pol) == -1)
 	{
-		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol,
+	if (status == NT_STATUS_NOPROBLEMO && !open_policy_hnd(get_global_hnd_cache(), &pol,
 	                                      q_u->des_access))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	unistr2_to_ascii(name, &q_u->uni_svc_name, sizeof(name)-1);
 
-	if (status == 0x0)
+	if (status == NT_STATUS_NOPROBLEMO)
 	{
 		DEBUG(5,("svc_open_service: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
 	}
 
-	if (status == 0x0 && !set_policy_svc_name(get_global_hnd_cache(), &pol, name))
+	if (status == NT_STATUS_NOPROBLEMO && !set_policy_svc_name(get_global_hnd_cache(), &pol, name))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	make_svc_r_open_service(&r_u, &pol, status);
@@ -179,12 +179,12 @@ static void svc_reply_stop_service(SVC_Q_STOP_SERVICE *q_s,
 
 	DEBUG(5,("svc_stop_service: %d\n", __LINE__));
 
-	r_s.status = 0x0;
+	r_s.status = NT_STATUS_NOPROBLEMO;
 
 	if (find_policy_by_hnd(get_global_hnd_cache(), &q_s->pol) == -1 ||
 		!get_policy_svc_name(get_global_hnd_cache(), &q_s->pol, svc_name))
 	{
-		r_s.status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		r_s.status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	slprintf(script, sizeof(script)-1, "%s/rc.service stop %s/%s.pid %s/%s",
@@ -195,7 +195,7 @@ static void svc_reply_stop_service(SVC_Q_STOP_SERVICE *q_s,
 	/* start the service here */
 	if (smbrun(script, "/tmp/foo", False) == 0)
 	{
-		r_s.status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+		r_s.status = NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* store the response in the SMB stream */
@@ -228,12 +228,12 @@ static void svc_reply_start_service(SVC_Q_START_SERVICE *q_s,
 
 	DEBUG(5,("svc_start_service: %d\n", __LINE__));
 
-	r_s.status = 0x0;
+	r_s.status = NT_STATUS_NOPROBLEMO;
 
 	if (find_policy_by_hnd(get_global_hnd_cache(), &q_s->pol) == -1 ||
 		!get_policy_svc_name(get_global_hnd_cache(), &q_s->pol, svc_name))
 	{
-		r_s.status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		r_s.status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	slprintf(script, sizeof(script)-1, "%s/rc.service start %s/%s.pid %s/%s",
@@ -244,7 +244,7 @@ static void svc_reply_start_service(SVC_Q_START_SERVICE *q_s,
 	/* start the service here */
 	if (smbrun(script, "/tmp/foo", False) == 0)
 	{
-		r_s.status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+		r_s.status = NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* store the response in the SMB stream */
@@ -270,29 +270,29 @@ static void api_svc_start_service( rpcsrv_struct *p, prs_struct *data,
 static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 				prs_struct *rdata)
 {
-	uint32 status     = 0;
+	uint32 status     = NT_STATUS_NOPROBLEMO;
 	POLICY_HND pol;
 	SVC_R_OPEN_SC_MAN r_u;
 	fstring name;
 
 	DEBUG(5,("svc_open_sc_man: %d\n", __LINE__));
 
-	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol,		                                      q_u->des_access))
+	if (status == NT_STATUS_NOPROBLEMO && !open_policy_hnd(get_global_hnd_cache(), &pol,		                                      q_u->des_access))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	unistr2_to_ascii(name, &q_u->uni_srv_name, sizeof(name)-1);
 
-	if (status == 0x0)
+	if (status == NT_STATUS_NOPROBLEMO)
 	{
 		DEBUG(5,("svc_open_sc_man: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
 	}
 
-	if (status == 0x0 && !set_policy_svc_name(get_global_hnd_cache(), &pol, name))
+	if (status == NT_STATUS_NOPROBLEMO && !set_policy_svc_name(get_global_hnd_cache(), &pol, name))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	make_svc_r_open_sc_man(&r_u, &pol, status);
@@ -347,13 +347,13 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 
 	DEBUG(5,("svc_enum_svcs_status: %d\n", __LINE__));
 
-	if (dos_status == 0x0 && find_policy_by_hnd(get_global_hnd_cache(), &q_u->pol) == -1)
+	if (dos_status == NT_STATUS_NOPROBLEMO && find_policy_by_hnd(get_global_hnd_cache(), &q_u->pol) == -1)
 	{
-		dos_status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		dos_status = NT_STATUS_INVALID_HANDLE;
 	}
 
 #if 0
-	if (dos_status == 0x0)
+	if (dos_status == NT_STATUS_NOPROBLEMO)
 	{
 		DEBUG(5,("svc_enum_svcs_status:\n"));
 
@@ -458,13 +458,13 @@ static void svc_reply_query_disp_name(SVC_Q_QUERY_DISP_NAME *q_u,
 {
 	SVC_R_QUERY_DISP_NAME r_u;
 	fstring svc_name;
-	uint32 status = 0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	DEBUG(5,("svc_query_disp_name: %d\n", __LINE__));
 
 	if (find_policy_by_hnd(get_global_hnd_cache(), &q_u->scman_pol) == -1)
 	{
-		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* for now display name = service name */

@@ -632,10 +632,10 @@ BOOL lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct 
 /*******************************************************************
 makes an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
-BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-				int32 enum_context,
-				char *domain_name, DOM_SID *domain_sid,
-				uint32 status)
+BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, int32 enum_context,
+			   uint32 num_domains, 
+			   UNISTR2 *domain_names, DOM_SID **domain_sids,
+			   uint32 status)
 {
 	if (r_e == NULL) return False;
 
@@ -643,17 +643,37 @@ BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
 
 	r_e->enum_context = enum_context;
 
-	if (status == 0)
+	if ((domain_names == NULL) || (domain_sids == NULL))
 	{
-		int len_domain_name = strlen(domain_name);
+		num_domains = 0;
+	}
 
-		r_e->num_domains  = 1;
+	if ((status == 0) && (num_domains != 0))
+	{
+		uint32 i;
+
+		r_e->num_domains  = num_domains;
 		r_e->ptr_enum_domains = 1;
-		r_e->num_domains2 = 1;
+		r_e->num_domains2 = num_domains;
 
-		make_uni_hdr2(&(r_e->hdr_domain_name[0]), len_domain_name);
-		make_unistr2 (&(r_e->uni_domain_name[0]), domain_name, len_domain_name);
-		make_dom_sid2(&(r_e->domain_sid[0]), domain_sid);
+		r_e->hdr_domain_name = g_new(UNIHDR2, num_domains);
+		r_e->domain_sid = g_new(DOM_SID2, num_domains);
+		if ((r_e->hdr_domain_name == NULL)
+		    || (r_e->domain_sid == NULL))
+		{
+			r_e->uni_domain_name = NULL;
+			lsa_free_r_enum_trust_dom(r_e);
+			r_e->status = status;
+			return False;
+		}
+		r_e->uni_domain_name = domain_names;
+		for (i = 0; i < num_domains; i++)
+		{
+			make_unihdr2_from_unistr2(&(r_e->hdr_domain_name[i]),
+						  &(domain_names[i]));
+			make_dom_sid2(&(r_e->domain_sid[i]),
+				      domain_sids[i]);
+		}
 	}
 	else
 	{
@@ -682,16 +702,30 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *
 
 	if (r_e->ptr_enum_domains != 0)
 	{
-		uint32 i;
+		uint32 i, num_domains;
 		prs_uint32("num_domains2", ps, depth, &(r_e->num_domains2));
+		num_domains = r_e->num_domains2;
 
-		for (i = 0; i < r_e->num_domains2; i++)
+		if (ps->io)
 		{
+			r_e->uni_domain_name = g_new(UNISTR2, num_domains);
+			r_e->hdr_domain_name = g_new(UNIHDR2, num_domains);
+			r_e->domain_sid = g_new(DOM_SID2, num_domains);
+			if ((r_e->uni_domain_name == NULL)
+			    || (r_e->hdr_domain_name == NULL)
+			    || (r_e->domain_sid == NULL))
+			{
+				lsa_free_r_enum_trust_dom(r_e);
+				return False;
+			}
+		}
 
+		for (i = 0; i < num_domains; i++)
+		{
 			smb_io_unihdr2 ("", &(r_e->hdr_domain_name[i]), ps, depth);
 		}
 
-		for (i = 0; i < r_e->num_domains2; i++)
+		for (i = 0; i < num_domains; i++)
 		{
 			smb_io_unistr2 ("", &(r_e->uni_domain_name[i] ), r_e->hdr_domain_name[i].buffer, ps, depth);
 			prs_align(ps);
@@ -701,7 +735,30 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *
 
 	prs_uint32("status", ps, depth, &(r_e->status));
 
+	if (! ps->io)
+	{
+		r_e->uni_domain_name = NULL;
+		lsa_free_r_enum_trust_dom(r_e);
+	}
+
 	return True;
+}
+
+void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e)
+{
+	if (r_e == NULL)
+	{
+		return;
+	}
+	safe_free(r_e->uni_domain_name);
+	safe_free(r_e->hdr_domain_name);
+	safe_free(r_e->domain_sid);
+	r_e->uni_domain_name = NULL;
+	r_e->hdr_domain_name = NULL;
+	r_e->domain_sid = NULL;
+
+	r_e->num_domains = 0;
+	r_e->ptr_enum_domains = 0;
 }
 
 /*******************************************************************

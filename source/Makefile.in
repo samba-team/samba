@@ -324,6 +324,7 @@ SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 SMBD_OBJ = $(SMBD_OBJ1) \
            $(RPC_SERVER_OBJ) \
            libsmb/clienttrust.o \
+           lib/domain_namemap.o \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) 

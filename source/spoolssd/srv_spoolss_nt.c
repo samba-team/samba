@@ -545,7 +545,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 
 	/* if there is a error free the printer entry */
 	
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -555,7 +555,7 @@ uint32 _spoolss_closeprinter(POLICY_HND *handle)
 {
 	if (close_printer_handle(handle))
 	{
-		return 0x0;
+		return NT_STATUS_NOPROBLEMO;
 	}
 	return NT_STATUS_INVALID_HANDLE;	
 }
@@ -768,7 +768,7 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 		return ERROR_INVALID_PARAMETER;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -817,7 +817,7 @@ uint32 _spoolss_rffpcnex(const POLICY_HND *handle,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1404,7 +1404,7 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd,
 	}
 	DEBUG(4,("All printers enumerated\n"));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1454,7 +1454,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd,
 	 }
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -1863,7 +1863,7 @@ uint32 _spoolss_enumprinters(
 	DEBUG(4,("%d printers enumerated\n", *returned));
 	(*offered) = buffer->size;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -1896,7 +1896,7 @@ uint32 _spoolss_getprinter( POLICY_HND *handle,
 			construct_printer_info_0(printer, snum, servername);
 			ctr->printer.info0=printer;
 			
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		case 1:
 		{
@@ -1906,7 +1906,7 @@ uint32 _spoolss_getprinter( POLICY_HND *handle,
 			construct_printer_info_1(printer, snum, servername);
 			ctr->printer.info1=printer;			
 
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		case 2:
 		{
@@ -1916,7 +1916,7 @@ uint32 _spoolss_getprinter( POLICY_HND *handle,
 			construct_printer_info_2(printer, snum, servername);
 			ctr->printer.info2=printer;	
 
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		default:
 		{
@@ -2140,7 +2140,7 @@ uint32 _spoolss_getprinterdriver2( const POLICY_HND *handle,
 			construct_printer_driver_info_1(info1, snum, servername, architecture);
 			ctr->driver.info1=info1;			
 
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		case 2:
 		{
@@ -2148,7 +2148,7 @@ uint32 _spoolss_getprinterdriver2( const POLICY_HND *handle,
 			construct_printer_driver_info_2(info2, snum, servername, architecture);
 			ctr->driver.info2=info2;			
 
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		case 3:
 		{
@@ -2156,7 +2156,7 @@ uint32 _spoolss_getprinterdriver2( const POLICY_HND *handle,
 			construct_printer_driver_info_3(info3, snum, servername, architecture);
 			ctr->driver.info3=info3;
 
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		default:
 		{
@@ -2175,7 +2175,7 @@ uint32 _spoolss_startpageprinter(const POLICY_HND *handle)
 	if (OPEN_HANDLE(pnum))
 	{
 		Printer[pnum].page_started=True;
-		return 0x0;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	DEBUG(3,("Error in startpageprinter printer handle (pnum=%x)\n",pnum));
@@ -2191,7 +2191,7 @@ uint32 _spoolss_endpageprinter(const POLICY_HND *handle)
 	if (OPEN_HANDLE(pnum))
 	{
 		Printer[pnum].page_started=False;
-		return 0x0;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	DEBUG(3,("Error in endpageprinter printer handle (pnum=%x)\n",pnum));
@@ -2272,7 +2272,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 	Printer[pnum].document_started=True;
 	(*jobid) = Printer[pnum].current_jobid;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -2364,7 +2364,7 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 
 	lpq_reset(snum);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -2389,7 +2389,7 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 	(*buffer_written) = write(fd, buffer, buffer_size);
 	Printer[pnum].document_lastwritten = (*buffer_written);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -2438,7 +2438,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	int snum;
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_DEVICEMODE *nt_devmode;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	nt_devmode=NULL;
 	
@@ -2529,7 +2529,7 @@ uint32 _spoolss_setprinter( const POLICY_HND *handle,
 ****************************************************************************/
 uint32 _spoolss_fcpn( const POLICY_HND *handle)
 {
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -2538,7 +2538,7 @@ uint32 _spoolss_addjob( const POLICY_HND *handle, uint32 level,
 				const BUFFER *buffer,
 				uint32 buf_size)
 {
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -2674,7 +2674,7 @@ uint32 _spoolss_enumjobs( const POLICY_HND *handle,
 				                &(queue[i]), i, snum);
 			}
 			safe_free(queue);
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		case 2:
 		{
@@ -2690,7 +2690,7 @@ uint32 _spoolss_enumjobs( const POLICY_HND *handle,
 				                &(queue[i]), i, snum);
 			}
 			safe_free(queue);
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 	}
 
@@ -2703,7 +2703,7 @@ uint32 _spoolss_enumjobs( const POLICY_HND *handle,
 ****************************************************************************/
 uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid)
 {
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -2749,19 +2749,19 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 			{
 				del_printqueue(NULL, snum, jobid);
 				safe_free(queue);
-				return 0x0;
+				return NT_STATUS_NOPROBLEMO;
 			}
 			case JOB_CONTROL_PAUSE:
 			{
 				status_printjob(NULL, snum, jobid, LPQ_PAUSED);
 				safe_free(queue);
-				return 0x0;
+				return NT_STATUS_NOPROBLEMO;
 			}
 			case JOB_CONTROL_RESUME:
 			{
 				status_printjob(NULL, snum, jobid, LPQ_QUEUED);
 				safe_free(queue);
-				return 0x0;
+				return NT_STATUS_NOPROBLEMO;
 			}
 		}
 	}
@@ -2849,7 +2849,7 @@ uint32 _spoolss_enumprinterdrivers( const UNISTR2 *name,
 			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 
 }
 
@@ -2900,7 +2900,7 @@ uint32 _spoolss_enumforms( const POLICY_HND *handle,
 				fill_form_1(&((*forms_1)[i]), &(list[i]), i);
 			}
 			safe_free(list);
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
    		}
 	}
 
@@ -2955,7 +2955,7 @@ uint32 _spoolss_enumports( const UNISTR2 *name,
 				}
 			}
    			ctr->port.info_2=ports_2;
-   			return 0x0;
+   			return NT_STATUS_NOPROBLEMO;
    		}
 	}
 
@@ -2981,7 +2981,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name,
 	fstring share_name;
 	UNISTR2 *portname;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info2;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	
 	if (!open_printer_hnd(handle))
 	{
@@ -3019,7 +3019,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3055,7 +3055,7 @@ uint32 _spoolss_getprinterdriverdirectory( const UNISTR2 *name,
 							    
 	make_unistr(&(ctr->driver.info_1.name), chaine);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3078,7 +3078,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle,
 	uint32 biggest_valuesize;
 	uint32 biggest_datasize;
 	uint32 data_len;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	
 	int pnum = find_printer_index_by_hnd(handle);
 	int snum;
@@ -3183,7 +3183,7 @@ uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 		
 	int pnum=0;
 	int snum=0;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	
 	DEBUG(5,("spoolss_setprinterdata\n"));
 
@@ -3245,7 +3245,7 @@ uint32 _spoolss_addform( const POLICY_HND *handle,
 
 	safe_free(list);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3272,7 +3272,7 @@ uint32 _spoolss_setform( const POLICY_HND *handle,
 
 	safe_free(list);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3303,7 +3303,7 @@ uint32 _spoolss_enumprintprocessors(const UNISTR2 *name,
 
 	make_unistr(&((*info_1)->name), "winprint");
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3332,7 +3332,7 @@ uint32 _spoolss_enumprintmonitors( const UNISTR2 *name,
 	
 	make_unistr(&((*info_1)->name), "Local Port");
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3416,5 +3416,5 @@ uint32 _spoolss_getjob( const POLICY_HND *handle,
 	}
 
 	safe_free(queue);
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }

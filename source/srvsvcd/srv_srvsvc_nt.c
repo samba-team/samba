@@ -52,7 +52,7 @@ uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod )
 	                      t->tm_mon + 1,
 	                      1900+t->tm_year,
 	                      t->tm_wday);
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -149,11 +149,11 @@ uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
 		}
 		default:
 		{
-			return (0xC0000000 | NT_STATUS_INVALID_INFO_CLASS);
+			return (NT_STATUS_INVALID_INFO_CLASS);
 			break;
 		}
 	}
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -322,7 +322,7 @@ static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
 					int switch_value, uint32 *resume_hnd,
 					uint32 *total_entries)
 {
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	DEBUG(5,("make_srv_share_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -352,7 +352,7 @@ static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_share_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -374,7 +374,7 @@ static uint32 make_srv_r_net_share_enum( uint32 resume_hnd,
 
 	if (share_level == 0)
 	{
-		status = (0xC0000000 | NT_STATUS_INVALID_INFO_CLASS);
+		status = (NT_STATUS_INVALID_INFO_CLASS);
 	}
 	else
 	{
@@ -382,7 +382,7 @@ static uint32 make_srv_r_net_share_enum( uint32 resume_hnd,
 				&resume_hnd, total_entries);
 	}
 
-	if (status != 0x0)
+	if (status != NT_STATUS_NOPROBLEMO)
 	{
 		resume_hnd = 0;
 	}
@@ -588,7 +588,7 @@ static uint32 make_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
 			int switch_value, uint32 *resume_hnd, 
 			uint32 *total_entries)
 {
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	DEBUG(5,("make_srv_sess_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -616,7 +616,7 @@ static uint32 make_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
 			(*resume_hnd) = 0;
 			(*total_entries) = 0;
 			ctr->ptr_sess_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -637,14 +637,14 @@ static uint32 make_srv_r_net_sess_enum( uint32 resume_hnd,
 
 	if (sess_level == -1)
 	{
-		status = (0xC0000000 | NT_STATUS_INVALID_INFO_CLASS);
+		status = (NT_STATUS_INVALID_INFO_CLASS);
 	}
 	else
 	{
 		status = make_srv_sess_info_ctr(ctr, switch_value,
 				&resume_hnd, total_entries);
 	}
-	if (status != 0x0)
+	if (status != NT_STATUS_NOPROBLEMO)
 	{
 		resume_hnd = 0;
 	}

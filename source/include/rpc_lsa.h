@@ -230,9 +230,9 @@ typedef struct lsa_r_enum_trust_dom_info
 
 	/* this lot is only added if ptr_enum_domains is non-NULL */
 	uint32 num_domains2; /* number of domains */
-	UNIHDR2 hdr_domain_name[MAX_TRUSTED_DOMS];
-	UNISTR2 uni_domain_name[MAX_TRUSTED_DOMS];
-	DOM_SID2 domain_sid[MAX_TRUSTED_DOMS];
+	UNIHDR2 *hdr_domain_name;
+	UNISTR2 *uni_domain_name;
+	DOM_SID2 *domain_sid;
 
 	uint32 status; /* return code */
 

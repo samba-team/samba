@@ -192,7 +192,7 @@ static void make_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *sto
 static uint32 make_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
 {
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	DEBUG(5,("make_srv_conn_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -218,7 +218,7 @@ static uint32 make_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_conn_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -237,13 +237,13 @@ static void make_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 	r_n->conn_level  = conn_level;
 	if (conn_level == -1)
 	{
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
 		r_n->status = make_srv_conn_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
 	}
-	if (r_n->status != 0x0)
+	if (r_n->status != NT_STATUS_NOPROBLEMO)
 	{
 		resume_hnd = 0;
 	}
@@ -333,7 +333,7 @@ static void make_srv_file_info_3(SRV_FILE_INFO_3 *fl3, uint32 *fnum, uint32 *fto
 static uint32 make_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
 {
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	DEBUG(5,("make_srv_file_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -353,7 +353,7 @@ static uint32 make_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_file_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -372,13 +372,13 @@ static void make_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
 	r_n->file_level  = file_level;
 	if (file_level == 0)
 	{
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
 		r_n->status = make_srv_file_info_ctr(r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
 	}
-	if (r_n->status != 0x0)
+	if (r_n->status != NT_STATUS_NOPROBLEMO)
 	{
 		resume_hnd = 0;
 	}

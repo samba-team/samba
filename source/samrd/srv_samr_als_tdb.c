@@ -59,7 +59,7 @@ static uint32 samr_open_by_tdbsid(TDB_CONTEXT *ptdb,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -109,7 +109,7 @@ uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -159,7 +159,7 @@ uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -190,7 +190,7 @@ uint32 _samr_query_aliasinfo(const POLICY_HND *alias_pol,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -314,7 +314,7 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 		free(mem_grp);
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -357,7 +357,7 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 	*rid = grp.rid;
 	status = samr_open_by_tdbsid(tdb_grp, &dom_sid, alias_pol, access_mask, grp.rid);
 
-	if (status != 0x0)
+	if (status != NT_STATUS_NOPROBLEMO)
 	{
 		return status;
 	}
@@ -369,7 +369,7 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************

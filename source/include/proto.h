@@ -1073,6 +1073,9 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 				const LSA_OBJ_ATTR *attr,
 				uint32 des_access);
+uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
+			   uint32 *num_doms, UNISTR2 **uni_names,
+			   DOM_SID ***sids);
 uint32 _lsa_close(POLICY_HND *hnd);
 uint32 _lsa_open_secret(const POLICY_HND *hnd,
 			const UNISTR2 *secret_name, uint32 des_access,
@@ -2694,11 +2697,12 @@ BOOL make_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 				POLICY_HND *pol,
 				uint32 enum_context, uint32 preferred_len);
 BOOL lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
-BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-				int32 enum_context,
-				char *domain_name, DOM_SID *domain_sid,
-				uint32 status);
+BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, int32 enum_context,
+			   uint32 num_domains, 
+			   UNISTR2 *domain_names, DOM_SID **domain_sids,
+			   uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
+void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e);
 BOOL lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
 BOOL make_lsa_sid_enum(LSA_SID_ENUM *sen, uint32 num_entries, DOM_SID **sids);
 BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
@@ -2730,6 +2734,7 @@ BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
 BOOL make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
 BOOL smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth);
 BOOL make_uni_hdr(UNIHDR *hdr, int len);
+BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str);
 BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
 BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len);
 BOOL smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
@@ -2739,6 +2744,7 @@ BOOL smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
 BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
 BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
 BOOL make_uni_hdr2(UNIHDR2 *hdr, int len);
+BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str);
 BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
 BOOL make_unistr(UNISTR *str, char *buf);
 BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
@@ -4267,6 +4273,10 @@ void readline_init(void);
 
 msrpc_service_fns *get_service_fns(void);
 
+/*The following definitions come from  samrd/samrtdbd.c  */
+
+msrpc_service_fns *get_service_fns(void);
+
 /*The following definitions come from  samrd/srv_samr_als_tdb.c  */
 
 uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
@@ -4353,6 +4363,132 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 				uint32 group_rid,
 				POLICY_HND *group_pol);
+
+/*The following definitions come from  samrd/srv_samr_passdb.c  */
+
+uint32 _samr_close(POLICY_HND *hnd);
+uint32 _samr_open_domain(const POLICY_HND *connect_pol,
+				uint32 ace_perms,
+				const DOM_SID *sid,
+				POLICY_HND *domain_pol);
+uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
+				uint32 *unknown_0,
+				uint32 *unknown_1);
+uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff);
+uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
+				uint16 acb_mask, uint16 unk_1, uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_users);
+uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown);
+uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid);
+uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
+uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
+uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx, 
+				uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_users);
+uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
+				uint32 *start_idx, uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_groups);
+uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
+					uint32 *start_idx, uint32 size,
+					SAM_ENTRY **sam,
+					UNISTR2 **uni_acct_name,
+					uint32 *num_sam_aliases);
+uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
+					uint32 start_idx,
+					uint32 max_entries,
+					uint32 max_size,
+					uint32 *data_size,
+					uint32 *num_entries,
+					SAM_DISPINFO_CTR *ctr);
+uint32 _samr_delete_dom_group(POLICY_HND *group_pol);
+uint32 _samr_query_groupmem(const POLICY_HND *group_pol, 
+					uint32 *num_mem,
+					uint32 **rid,
+					uint32 **attr);
+uint32 _samr_query_groupinfo(const POLICY_HND *pol,
+				uint16 switch_level,
+				GROUP_INFO_CTR* ctr);
+uint32 _samr_query_aliasinfo(const POLICY_HND *alias_pol,
+				uint16 switch_level,
+				ALIAS_INFO_CTR *ctr);
+uint32 _samr_query_useraliases(const POLICY_HND *pol,
+				const uint32 *ptr_sid, const DOM_SID2 *sid,
+				uint32 *num_aliases, uint32 **rid);
+uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol);
+uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol, 
+				uint32 *num_mem, DOM_SID2 **sid);
+uint32 _samr_lookup_names(const POLICY_HND *pol,
+				
+			uint32 num_names1,
+			uint32 flags,
+			uint32 ptr,
+			const UNISTR2 *uni_name,
+
+			uint32 *num_rids1,
+			uint32 rid[MAX_SAM_ENTRIES],
+			uint32 *num_types1,
+			uint32 type[MAX_SAM_ENTRIES]);
+uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
+				const UNISTR2 *uni_user_name,
+				const char nt_newpass[516],
+				const uchar nt_oldhash[16],
+				const char lm_newpass[516],
+				const uchar lm_oldhash[16]);
+uint32 _samr_get_dom_pwinfo(const UNISTR2 *uni_srv_name,
+				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2);
+uint32 _samr_lookup_rids(const POLICY_HND *pol,
+				uint32 num_rids, uint32 flags,
+				const uint32 *rids,
+				uint32 *num_names,
+				UNIHDR **hdr_name, UNISTR2** uni_name,
+				uint32 **types);
+uint32 _samr_open_user(const POLICY_HND *domain_pol,
+					uint32 access_mask, uint32 user_rid, 
+					POLICY_HND *user_pol);
+uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR *ctr);
+uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR *ctr);
+uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO2_CTR *ctr);
+uint32 _samr_query_usergroups(const POLICY_HND *pol,
+				uint32 *num_groups,
+				DOM_GID **gids);
+uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_acct_name,
+				uint32 access_mask,
+				POLICY_HND *alias_pol, uint32 *rid);
+uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_acct_name,
+				uint32 access_mask,
+				POLICY_HND *group_pol, uint32 *rid);
+uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
+				uint16 switch_value,
+				SAM_UNK_CTR *ctr);
+uint32 _samr_create_user(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_username,
+				uint16 acb_info, uint32 access_mask, 
+				POLICY_HND *user_pol,
+				uint32 *unknown_0, uint32 *user_rid);
+uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
+				POLICY_HND *connect_pol);
+uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
+				POLICY_HND *connect_pol);
+uint32 _samr_open_alias(const POLICY_HND *domain_pol,
+					uint32 access_mask, uint32 alias_rid,
+					POLICY_HND *alias_pol);
+uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
+				uint32 group_rid,
+				POLICY_HND *group_pol);
+uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
+				const UNISTR2 *uni_domain,
+				DOM_SID *dom_sid);
 
 /*The following definitions come from  samrd/srv_samr_sam_tdb.c  */
 

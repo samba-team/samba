@@ -182,7 +182,7 @@ static uint32 samr_open_by_sid(const DOM_SID *dom_sid,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -196,7 +196,7 @@ uint32 _samr_close(POLICY_HND *hnd)
 	if (close_policy_hnd(get_global_hnd_cache(), hnd))
 	{
 		bzero(hnd, sizeof(*hnd));
-		return 0x0;
+		return NT_STATUS_NOPROBLEMO;
 	}
 	return NT_STATUS_OBJECT_NAME_INVALID;
 }
@@ -230,7 +230,7 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 
 	DEBUG(5,("_samr_open_domain: %d\n", __LINE__));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -256,7 +256,7 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 
 	DEBUG(5,("samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -286,7 +286,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 
 	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -361,7 +361,7 @@ uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx,
 
 	DEBUG(5,("samr_enum_dom_users: %d\n", __LINE__));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -396,7 +396,7 @@ uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -430,7 +430,7 @@ uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -475,7 +475,7 @@ uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -520,7 +520,7 @@ uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /******************************************************************
@@ -591,7 +591,7 @@ uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx,
 
 	free_char_array(num_entries, doms);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -675,7 +675,7 @@ uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
 
 	safe_free(grps);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -773,7 +773,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 
 	safe_free(alss);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -932,7 +932,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 		return STATUS_MORE_ENTRIES;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -1039,7 +1039,7 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 	
 	(*num_mem) = num_rids;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -1079,7 +1079,7 @@ uint32 _samr_query_groupinfo(const POLICY_HND *pol,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -1111,7 +1111,7 @@ uint32 _samr_query_aliasinfo(const POLICY_HND *alias_pol,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -1212,7 +1212,7 @@ uint32 _samr_query_useraliases(const POLICY_HND *pol,
 	(*num_aliases) = num_rids;
 	safe_free(mem_grp);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1327,7 +1327,7 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 		free(mem_grp);
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1399,7 +1399,7 @@ uint32 _samr_lookup_names(const POLICY_HND *pol,
 	(*num_rids1) = num_rids;
 	(*num_types1) = num_rids;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1427,7 +1427,7 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -1442,7 +1442,7 @@ uint32 _samr_get_dom_pwinfo(const UNISTR2 *uni_srv_name,
 	*unk_1 = 0;
 	*unk_2 = 0;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1547,7 +1547,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol,
 	(*num_names) = num_rids;
 	make_samr_lookup_rids(num_rids, grp_names, hdr_name, uni_name);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1754,7 +1754,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1908,7 +1908,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -1983,7 +1983,7 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -2037,7 +2037,7 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 		free(mem_grp);
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -2088,7 +2088,7 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -2140,7 +2140,7 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -2192,7 +2192,7 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -2276,7 +2276,7 @@ uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -2291,7 +2291,7 @@ uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************

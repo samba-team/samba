@@ -66,7 +66,7 @@ uint32 _wks_query_info( const UNISTR2 *srv_name, uint16 switch_value,
 		case 100:
 		{
 			create_wks_info_100(wks100);
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 	}
 	return NT_STATUS_INVALID_INFO_CLASS;

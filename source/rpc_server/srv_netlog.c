@@ -157,22 +157,22 @@ static void net_reply_auth_2(NET_Q_AUTH_2 *q_a, prs_struct *rdata,
 	srv_flgs.neg_flags = q_a->clnt_flgs.neg_flags & 0x400001ff;
 
 	/* minimum bits required */
-	if (status == 0x0 && !IS_BITS_SET_ALL(srv_flgs.neg_flags, 0x000000ff))
+	if (status == NT_STATUS_NOPROBLEMO && !IS_BITS_SET_ALL(srv_flgs.neg_flags, 0x000000ff))
 	{
-		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+		status = NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* secure channel NOT to be used */
-	if (status == 0x0 && !lp_server_schannel())
+	if (status == NT_STATUS_NOPROBLEMO && !lp_server_schannel())
 	{
 		srv_flgs.neg_flags &= ~0x40000000;
 	}
 
 	/* secure channel MUST be used */
-	if (status == 0x0 && lp_server_schannel() == True &&
+	if (status == NT_STATUS_NOPROBLEMO && lp_server_schannel() == True &&
 	    IS_BITS_CLR_ALL(srv_flgs.neg_flags, 0x40000000))
 	{
-		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+		status = NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* set up the LSA AUTH 2 response */
@@ -231,7 +231,7 @@ static void net_reply_sam_logon(NET_Q_SAM_LOGON *q_s, prs_struct *rdata,
 
 	/* store the user information, if there is any. */
 	r_s.user = user_info;
-	if (status == 0x0 && user_info != NULL && user_info->ptr_user_info != 0)
+	if (status == NT_STATUS_NOPROBLEMO && user_info != NULL && user_info->ptr_user_info != 0)
 	{
 		r_s.switch_value = 3; /* indicates type of validation user info */
 	}
@@ -285,7 +285,7 @@ static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
 	r_s.sync_context = 1;
 	r_s.ptr_deltas = 0;
 
-	if ((status == 0x0) && ((vp = startsmbpwent(False)) != NULL))
+	if ((status == NT_STATUS_NOPROBLEMO) && ((vp = startsmbpwent(False)) != NULL))
 	{
 		/* Give the poor BDC some accounts */
 
@@ -370,7 +370,7 @@ static void api_net_req_chal( rpcsrv_struct *p,
                               prs_struct *rdata)
 {
 	NET_Q_REQ_CHAL q_r;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	fstring trust_acct;
 	fstring trust_name;
@@ -391,7 +391,7 @@ static void api_net_req_chal( rpcsrv_struct *p,
 
 	fstrcat(trust_acct, "$");
 
-	if (status == 0x0 &&
+	if (status == NT_STATUS_NOPROBLEMO &&
 	    get_md4pw((char *)dc.md4pw, trust_name, trust_acct))
 	{
 		/* copy the client credentials */
@@ -410,15 +410,15 @@ static void api_net_req_chal( rpcsrv_struct *p,
 		cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),
 				 (char *)dc.md4pw, dc.sess_key);
 	}
-	else if (status == 0x0)
+	else if (status == NT_STATUS_NOPROBLEMO)
 	{
 		/* lkclXXXX take a guess at a good error message to return :-) */
-		status = 0xC0000000 | NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+		status = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 
-	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* construct reply. */
@@ -435,7 +435,7 @@ static void api_net_auth( rpcsrv_struct *p,
                             prs_struct *rdata)
 {
 	NET_Q_AUTH q_a;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
@@ -453,11 +453,11 @@ static void api_net_auth( rpcsrv_struct *p,
 
 	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* check that the client credentials are valid */
-	if (status == 0x0 && cred_assert(&(q_a.clnt_chal), dc.sess_key,
+	if (status == NT_STATUS_NOPROBLEMO && cred_assert(&(q_a.clnt_chal), dc.sess_key,
                     &(dc.clnt_cred.challenge), srv_time))
 	{
 
@@ -468,14 +468,14 @@ static void api_net_auth( rpcsrv_struct *p,
 		memcpy(dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 		memcpy(dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 	}
-	else if (status == 0x0)
+	else if (status == NT_STATUS_NOPROBLEMO)
 	{
-		status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		status = NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 	/* construct reply. */
 	net_reply_auth(&q_a, rdata, &srv_cred, status);
@@ -489,7 +489,7 @@ static void api_net_auth_2( rpcsrv_struct *p,
                             prs_struct *rdata)
 {
 	NET_Q_AUTH_2 q_a;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
@@ -507,10 +507,10 @@ static void api_net_auth_2( rpcsrv_struct *p,
 
 	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0)
+	if (status == NT_STATUS_NOPROBLEMO)
 	{
 		/* check that the client credentials are valid */
 		if (cred_assert(&(q_a.clnt_chal), dc.sess_key,
@@ -526,13 +526,13 @@ static void api_net_auth_2( rpcsrv_struct *p,
 		}
 		else
 		{
-			status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
+			status = NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 	/* construct reply. */
 	net_reply_auth_2(&q_a, rdata, &srv_cred, status);
@@ -546,7 +546,7 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
                                prs_struct *rdata)
 {
 	NET_Q_SRV_PWSET q_a;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	DOM_CRED srv_cred;
 	pstring trust_acct;
 	struct smb_passwd *smb_pass;
@@ -563,11 +563,11 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 
 	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (status == 0x0 && deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
+	if (status == NT_STATUS_NOPROBLEMO && deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
 	                    &(q_a.clnt_id.cred), &srv_cred))
 	{
 		memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
@@ -609,25 +609,25 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 			if (ret)
 			{
 				/* hooray! */
-				status = 0x0;
+				status = NT_STATUS_NOPROBLEMO;
 			}
 		}
 		else
 		{
-			status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
+			status = NT_STATUS_WRONG_PASSWORD;
 		}
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
 	}
-	else if (status == 0x0)
+	else if (status == NT_STATUS_NOPROBLEMO)
 	{
 		/* lkclXXXX take a guess at a sensible error code to return... */
-		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+		status = NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 	/* Construct reply. */
 	net_reply_srv_pwset(&q_a, rdata, &srv_cred, status);
@@ -645,7 +645,7 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	NET_ID_INFO_CTR ctr;	
 
 	DOM_CRED srv_cred;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	fstring trust_name;
 	struct dcinfo dc;
@@ -662,7 +662,7 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 
 	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
@@ -670,9 +670,9 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	                &(q_l.sam_id.client.cred), &srv_cred);
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
-	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 	/* construct reply.  always indicate success */
 	net_reply_sam_logoff(&q_l, rdata, &srv_cred, status);
@@ -687,7 +687,7 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 {
 	NET_Q_SAM_SYNC q_s;
 	DOM_CRED srv_creds;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	fstring trust_name;
 	struct dcinfo dc;
@@ -700,10 +700,10 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 
 	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0)
+	if (status == NT_STATUS_NOPROBLEMO)
 	{
 		/* checks and updates credentials.  creates reply credentials */
 		if (deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
@@ -714,13 +714,13 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 		}
 		else
 		{
-			status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			status = NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* construct reply. */
@@ -735,7 +735,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 				struct sam_passwd *smb_pass,
 				struct dcinfo *dc)
 {
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	char nt_pwd[16];
 	char lm_pwd[16];
@@ -775,7 +775,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	    smb_pass->smb_nt_passwd == NULL ||
 	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
 	{
-		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+		status = NT_STATUS_WRONG_PASSWORD;
 	}
 
 	return status;
@@ -827,10 +827,10 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 		dump_data(100, usr_sess_key, 16);
 #endif
 
-                  return 0x0;
+                  return NT_STATUS_NOPROBLEMO;
 	}
 
-	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+	return NT_STATUS_WRONG_PASSWORD;
 }
 
 /*************************************************************************
@@ -888,10 +888,10 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		dump_data(100, lm_pw8, 16);
 #endif
 
-		return 0x0;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
-	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+	return NT_STATUS_WRONG_PASSWORD;
 }
 
 /*************************************************************************
@@ -939,14 +939,14 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred, 
 	                     &(q_l->sam_id.client.cred), srv_cred))
 	{
-		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	
 	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
@@ -982,7 +982,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 		default:
 		{
 			DEBUG(2,("SAM Logon: unsupported switch value\n"));
-			return 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	} 
 
@@ -1005,11 +1005,11 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 	if (q_l->sam_id.logon_level == GENERAL_LOGON_TYPE)
 	{
 		/* general login.  cleartext password */
-		uint32 status = 0x0;
+		uint32 status = NT_STATUS_NOPROBLEMO;
 		status = net_login_general(&q_l->sam_id.ctr->auth.id4, &dc, usr_sess_key);
 		enc_user_sess_key = usr_sess_key;
 
-		if (status != 0x0)
+		if (status != NT_STATUS_NOPROBLEMO)
 		{
 			return status;
 		}
@@ -1025,12 +1025,12 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (sam_pass == NULL)
 	{
-		return 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DISABLED) &&
 		 IS_BITS_CLR_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ))
 	{
-		return 0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
+		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DOMTRUST))
 	{
@@ -1066,7 +1066,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!(IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ)))
 	{
-		uint32 status = 0x0;
+		uint32 status = NT_STATUS_NOPROBLEMO;
 		switch (q_l->sam_id.logon_level)
 		{
 			case INTERACTIVE_LOGON_TYPE:
@@ -1089,7 +1089,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 				break;
 			}
 		}
-		if (status != 0x0)
+		if (status != NT_STATUS_NOPROBLEMO)
 		{
 			return status;
 		}
@@ -1107,7 +1107,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!getusergroupsntnam(nt_username, &grp_mem, &num_gids))
 	{
-		return 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
+		return NT_STATUS_INVALID_PRIMARY_GROUP;
 	}
 
 	num_gids = make_dom_gids(grp_mem, num_gids, &gids);
@@ -1154,10 +1154,10 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*************************************************************************
@@ -1170,7 +1170,7 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 	NET_Q_SAM_LOGON q_l;
 	NET_ID_INFO_CTR ctr;	
 	NET_USER_INFO_3 usr_info;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	DOM_CRED srv_cred;
 
 	q_l.sam_id.ctr = &ctr;

@@ -46,7 +46,7 @@ uint32 _brs_query_info( const UNISTR2 *srv_name, uint16 switch_value,
 		case 100:
 		{
 			create_brs_info_100(id);
-			return 0x0;
+			return NT_STATUS_NOPROBLEMO;
 		}
 	}
 	return NT_STATUS_INVALID_INFO_CLASS;

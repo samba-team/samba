@@ -48,7 +48,7 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /***************************************************************************
@@ -69,7 +69,7 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /***************************************************************************
@@ -95,22 +95,20 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 }
 
 /***************************************************************************
-lsa_reply_query_info
+_lsa_enum_trust_dom
  ***************************************************************************/
-static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
-				prs_struct *rdata,
-				uint32 enum_context, char *dom_name, DOM_SID *dom_sid)
+uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
+			   uint32 *num_doms, UNISTR2 **uni_names,
+			   DOM_SID ***sids)
 {
-	LSA_R_ENUM_TRUST_DOM r_e;
+	/* Should send on something good */
+	
+	*enum_ctx = 0;
+	*num_doms = 0;
+	*uni_names = NULL;
+	*sids = NULL;
 
-	ZERO_STRUCT(r_e);
-
-	/* set up the LSA QUERY INFO response */
-	make_r_enum_trust_dom(&r_e, enum_context, dom_name, dom_sid,
-	      dom_name != NULL ? 0x0 : 0x80000000 | NT_STATUS_UNABLE_TO_FREE_VM);
-
-	/* store the response in the SMB stream */
-	lsa_io_r_enum_trust_dom("", &r_e, rdata, 0);
+	return 0x80000000 | NT_STATUS_UNABLE_TO_FREE_VM;
 }
 
 /***************************************************************************
@@ -127,11 +125,11 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 	r_q.status = status;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (r_q.status == 0x0 && !find_policy_by_hnd(get_global_hnd_cache(), &q_q->pol))
+	if (r_q.status == NT_STATUS_NOPROBLEMO && !find_policy_by_hnd(get_global_hnd_cache(), &q_q->pol))
 	{
 		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	if (r_q.status == 0x0)
+	if (r_q.status == NT_STATUS_NOPROBLEMO)
 	{
 		/* set up the LSA QUERY INFO response */
 
@@ -140,7 +138,7 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 
 		make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
 
-		r_q.status = 0x0;
+		r_q.status = NT_STATUS_NOPROBLEMO;
 	}
 	/* store the response in the SMB stream */
 	lsa_io_r_query("", &r_q, rdata, 0);
@@ -222,7 +220,7 @@ static uint32 get_remote_sid(const char *dom_name, char *find_name,
 	status = lookup_lsa_name(dom_name, find_name,
 				 sid, sid_name_use);
 
-	if (status == 0x0 &&
+	if (status == NT_STATUS_NOPROBLEMO &&
 	   (!sid_split_rid(sid, rid) ||
 	    !map_domain_sid_to_name(sid, dummy)))
 	{
@@ -244,7 +242,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 
 	for (i = 0; i < num_entries; i++)
 	{
-		uint32 status = 0x0;
+		uint32 status = NT_STATUS_NOPROBLEMO;
 		DOM_SID find_sid;
 		DOM_SID sid;
 		uint32 rid = 0xffffffff;
@@ -261,7 +259,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 		{
 			status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 		}
-		if (status == 0x0 && map_domain_name_to_sid(&find_sid,
+		if (status == NT_STATUS_NOPROBLEMO && map_domain_name_to_sid(&find_sid,
 		                                            &find_name))
 		{
 			sid_name_use = SID_NAME_DOMAIN;
@@ -269,13 +267,13 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 			rid = 0xffffffff;
 			sid_copy(&sid, &find_sid);
 		}
-		else if (status == 0x0)
+		else if (status == NT_STATUS_NOPROBLEMO)
 		{
 			uint32 ret;
 			ret = lookup_sam_domainname("\\\\.",
 						    dom_name, &find_sid);
 
-			if (ret == 0x0)
+			if (ret == NT_STATUS_NOPROBLEMO)
 			{
 				pstring tmp;
 				sid_to_string(tmp, &find_sid);
@@ -295,12 +293,12 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 			}
 		}
 
-		if (status == 0x0)
+		if (status == NT_STATUS_NOPROBLEMO)
 		{
 			dom_idx = make_dom_ref(ref, find_name, &sid);
 		}
 
-		if (status == 0x0)
+		if (status == NT_STATUS_NOPROBLEMO)
 		{
 			(*mapped_count)++;
 		}
@@ -344,7 +342,7 @@ static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 	}
 	else
 	{
-		r_l->status = 0x0;
+		r_l->status = NT_STATUS_NOPROBLEMO;
 	}
 }
 
@@ -364,7 +362,7 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 
 	for (i = 0; i < num_entries; i++)
 	{
-		uint32 status = 0x0;
+		uint32 status = NT_STATUS_NOPROBLEMO;
 		DOM_SID find_sid = sid[i].sid;
 		DOM_SID tmp_sid  = sid[i].sid;
 		uint32 rid = 0xffffffff;
@@ -406,7 +404,7 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 
 		dom_idx = make_dom_ref(ref, dom_name, &find_sid);
 
-		if (status == 0x0)
+		if (status == NT_STATUS_NOPROBLEMO)
 		{
 			(*mapped_count)++;
 		}
@@ -445,7 +443,7 @@ static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 	}
 	else
 	{
-		r_l->status = 0x0;
+		r_l->status = NT_STATUS_NOPROBLEMO;
 	}
 }
 
@@ -496,23 +494,6 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 }
 
 /***************************************************************************
-_lsa_enum_trust_dom
- ***************************************************************************/
-static void _lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
-{
-	LSA_Q_ENUM_TRUST_DOM q_e;
-
-	ZERO_STRUCT(q_e);
-
-	/* grab the enum trust domain context etc. */
-	lsa_io_q_enum_trust_dom("", &q_e, data, 0);
-
-	/* construct reply.  return status is always 0x0 */
-	lsa_reply_enum_trust_dom(&q_e, rdata, 0, NULL, NULL);
-}
-
-/***************************************************************************
 _lsa_query_info
  ***************************************************************************/
 static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
@@ -520,7 +501,7 @@ static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 {
 	LSA_Q_QUERY_INFO q_i;
 	fstring name;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 	DOM_SID *sid = NULL;
 	memset(name, 0, sizeof(name));
 
@@ -552,7 +533,7 @@ static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 		}
 	}
 
-	/* construct reply.  return status is always 0x0 */
+	/* construct reply.  */
 	lsa_reply_query_info(&q_i, rdata, name, sid, status);
 }
 
@@ -568,7 +549,7 @@ static void _lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
 	/* grab the info class and policy handle */
 	lsa_io_q_lookup_sids("", &q_l, data, 0);
 
-	/* construct reply.  return status is always 0x0 */
+	/* construct reply.  return status is always NT_STATUS_NOPROBLEMO */
 	lsa_reply_lookup_sids(rdata, q_l.sids.sid, q_l.sids.num_entries);
 }
 
@@ -601,7 +582,7 @@ uint32 _lsa_close(POLICY_HND *hnd)
 	}
 	close_policy_hnd(get_global_hnd_cache(), hnd);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /***************************************************************************

@@ -281,11 +281,27 @@ creates a UNIHDR structure.
 ********************************************************************/
 BOOL make_uni_hdr(UNIHDR *hdr, int len)
 {
+	if (hdr == NULL)
+	{
+		return False;
+	}
 	hdr->uni_str_len = 2 * len;
 	hdr->uni_max_len = 2 * len;
 	hdr->buffer      = len != 0 ? 1 : 0;
 
 	return True;
+}
+
+/*******************************************************************
+creates a UNIHDR structure from a UNISTR2.
+********************************************************************/
+BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str)
+{
+	int len;
+
+	len = (str ? str->uni_str_len : 0);
+
+	return make_uni_hdr(hdr, len);
 }
 
 /*******************************************************************
@@ -420,10 +436,26 @@ creates a UNIHDR2 structure.
 ********************************************************************/
 BOOL make_uni_hdr2(UNIHDR2 *hdr, int len)
 {
+	if (hdr == NULL)
+	{
+		return False;
+	}
 	make_uni_hdr(&(hdr->unihdr), len);
 	hdr->buffer = len > 0 ? 1 : 0;
 
 	return True;
+}
+
+/*******************************************************************
+creates a UNIHDR2 structure from a UNISTR2.
+********************************************************************/
+BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str)
+{
+	int len;
+
+	len = (str ? str->uni_str_len : 0);
+
+	return make_uni_hdr2(hdr, len);
 }
 
 /*******************************************************************

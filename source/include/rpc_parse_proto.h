@@ -118,11 +118,12 @@ BOOL make_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 				POLICY_HND *pol,
 				uint32 enum_context, uint32 preferred_len);
 BOOL lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
-BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-				int32 enum_context,
-				char *domain_name, DOM_SID *domain_sid,
-				uint32 status);
+BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, int32 enum_context,
+			   uint32 num_domains, 
+			   UNISTR2 *domain_names, DOM_SID **domain_sids,
+			   uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
+void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e);
 BOOL lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
 BOOL make_lsa_sid_enum(LSA_SID_ENUM *sen, uint32 num_entries, DOM_SID **sids);
 BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,

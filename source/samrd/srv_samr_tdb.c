@@ -348,6 +348,6 @@ uint32 samr_open_by_tdbrid( TDB_CONTEXT *tdb,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 

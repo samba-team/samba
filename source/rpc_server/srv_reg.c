@@ -83,11 +83,11 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 	/* close the policy handle */
 	if (close_policy_hnd(get_global_hnd_cache(), &(q_r->pol)))
 	{
-		r_u.status = 0;
+		r_u.status = NT_STATUS_NOPROBLEMO;
 	}
 	else
 	{
-		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_INVALID;
+		r_u.status = NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	DEBUG(5,("reg_unknown_1: %d\n", __LINE__));
@@ -121,12 +121,12 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r, prs_struct *rdata)
 {
 	REG_R_OPEN_HKLM r_u;
 
-	r_u.status = 0x0;
+	r_u.status = NT_STATUS_NOPROBLEMO;
 	/* get a (unique) handle.  open a policy on it. */
 	if (r_u.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(),
 	                                          &r_u.pol, q_r->access_mask))
 	{
-		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	DEBUG(5,("reg_open: %d\n", __LINE__));
@@ -168,12 +168,12 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 
 	if (status == 0 && find_policy_by_hnd(get_global_hnd_cache(), &q_u->pol) == -1)
 	{
-		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol, q_u->access_mask))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	unistr2_to_ascii(name, &q_u->uni_name, sizeof(name)-1);
@@ -185,13 +185,13 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions") &&
 		    !strequal(name, "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
 		{
-			status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+			status = NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
 	if (status == 0x0 && !set_policy_reg_name(get_global_hnd_cache(), &pol, name))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	make_reg_r_open_entry(&r_u, &pol, status);
@@ -237,7 +237,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 
 	if (status == 0x0 && !get_policy_reg_name(get_global_hnd_cache(), &q_u->pol, name))
 	{
-		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (status == 0 &&

@@ -57,25 +57,6 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 /***************************************************************************
 lsa_reply_query_info
  ***************************************************************************/
-static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
-				prs_struct *rdata,
-				uint32 enum_context, char *dom_name, DOM_SID *dom_sid)
-{
-	LSA_R_ENUM_TRUST_DOM r_e;
-
-	ZERO_STRUCT(r_e);
-
-	/* set up the LSA QUERY INFO response */
-	make_r_enum_trust_dom(&r_e, enum_context, dom_name, dom_sid,
-	      dom_name != NULL ? 0x0 : 0x80000000 | NT_STATUS_UNABLE_TO_FREE_VM);
-
-	/* store the response in the SMB stream */
-	lsa_io_r_enum_trust_dom("", &r_e, rdata, 0);
-}
-
-/***************************************************************************
-lsa_reply_query_info
- ***************************************************************************/
 static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 				char *dom_name, DOM_SID *dom_sid,
 				uint32 status)
@@ -497,15 +478,35 @@ api_lsa_enum_trust_dom
 static void api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
+	uint32 status;
+	uint32 enum_context;
+	uint32 num_doms = 0;
+	UNISTR2 *uni_names = NULL;
+	DOM_SID **sids = NULL;
+	LSA_R_ENUM_TRUST_DOM r_e;
 	LSA_Q_ENUM_TRUST_DOM q_e;
 
+	ZERO_STRUCT(r_e);
 	ZERO_STRUCT(q_e);
 
 	/* grab the enum trust domain context etc. */
 	lsa_io_q_enum_trust_dom("", &q_e, data, 0);
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_enum_trust_dom(&q_e, rdata, 0, NULL, NULL);
+
+	status = _lsa_enum_trust_dom(NULL, &enum_context, &num_doms,
+				     &uni_names, &sids);
+
+	make_r_enum_trust_dom(&r_e, enum_context,
+			      num_doms, uni_names, sids,
+			      status);
+
+	/* store the response in the SMB stream */
+	lsa_io_r_enum_trust_dom("", &r_e, rdata, 0);
+
+	/* free names and sids */
+	free_sid_array(num_doms, sids);
+	safe_free(uni_names);
 }
 
 /***************************************************************************
@@ -613,8 +614,8 @@ static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
 	lsa_io_q_open_secret("", &q_o, data, 0);
 
 	ZERO_STRUCT(r_o);
-	r_o.status = _lsa_open_secret(&(q_o.pol),
-				      &(q_o.uni_secret), q_o.des_access,
+	r_o.status = _lsa_open_secret(&q_o.pol,
+				      &q_o.uni_secret, q_o.des_access,
 				      &r_o.pol);
 
 	/* store the response in the SMB stream */

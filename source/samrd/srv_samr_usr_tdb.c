@@ -220,7 +220,7 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 
 	DEBUG(5,("samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -253,7 +253,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 
 	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -309,7 +309,7 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 		free(mem_grp);
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 /*******************************************************************
  samr_reply_query_useraliases
@@ -388,7 +388,7 @@ uint32 _samr_query_useraliases(const POLICY_HND *pol,
 	(*num_aliases) = num_rids;
 	safe_free(mem_grp);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -493,7 +493,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -616,7 +616,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -671,7 +671,7 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 static void create_user_info_21(SAM_USER_INFO_21 *usr,
@@ -730,7 +730,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 			&num_types,
 			&type);
 
-	if (status1 == 0x0)
+	if (status1 == NT_STATUS_NOPROBLEMO)
 	{
 		switch (type)
 		{

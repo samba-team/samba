@@ -61,7 +61,7 @@ static int tdb_user21_traverse(TDB_CONTEXT *tdb,
 	if (data->current_idx < data->start_idx)
 	{
 		data->current_idx++;
-		return 0x0;
+		return 0;
 	}
 
 	data->usr = (SAM_USER_INFO_21*)Realloc(data->usr,
@@ -81,7 +81,7 @@ static int tdb_user21_traverse(TDB_CONTEXT *tdb,
 		data->num_sam_entries++;
 	}
 
-	return 0x0;
+	return 0;
 }
 
 /*******************************************************************
@@ -186,7 +186,7 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 
 	DEBUG(5,("_samr_open_domain: %d\n", __LINE__));
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 typedef struct sam_data_info
@@ -225,7 +225,7 @@ static int tdb_user_traverse(TDB_CONTEXT *tdb,
 	if (data->current_idx < data->start_idx)
 	{
 		data->current_idx++;
-		return 0x0;
+		return 0;
 	}
 
 	data->sam = (SAM_ENTRY*)Realloc(data->sam,
@@ -256,7 +256,7 @@ static int tdb_user_traverse(TDB_CONTEXT *tdb,
 		data->num_sam_entries++;
 	}
 
-	return 0x0;
+	return 0;
 }
 
 /*******************************************************************
@@ -290,7 +290,7 @@ uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx,
 	(*start_idx) += state.num_sam_entries;
 	(*num_sam_users) = state.num_sam_entries;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -377,7 +377,7 @@ uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
 
 	safe_free(grps);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -480,7 +480,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 
 	safe_free(alss);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -645,7 +645,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 		return STATUS_MORE_ENTRIES;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 typedef struct tdb_name_info
@@ -681,13 +681,13 @@ static int tdb_userlookup_names(TDB_CONTEXT *tdb,
 	if (!sam_io_user_info21("usr", &usr, &ps, 0))
 	{
 		DEBUG(5,("tdb_userlookup_names: user convert failed\n"));
-		return 0x0;
+		return 0;
 	}
 	prs_create(&ps, kbuf.dptr, kbuf.dsize, 4, True);
 	if (!_prs_uint32("rid", &ps, 0, &rid))
 	{
 		DEBUG(5,("tdb_userlookup_names: rid convert failed\n"));
-		return 0x0;
+		return 0;
 	}
 
 	for (i = 0; i < data->num_names; i++)
@@ -701,11 +701,11 @@ static int tdb_userlookup_names(TDB_CONTEXT *tdb,
 			data->rids[i] = rid;
 			data->found_one = True;
 
-			return 0x0;
+			return 0;
 		}
 	}
 
-	return 0x0;
+	return 0;
 }
 
 /*******************************************************************
@@ -766,7 +766,7 @@ uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
 	(*num_types) = num_names;
 	(*num_rids) = num_names;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 typedef struct tdb_rid_info
@@ -803,13 +803,13 @@ static int tdb_userlookup_rids(TDB_CONTEXT *tdb,
 	if (!sam_io_user_info21("usr", &usr, &ps, 0))
 	{
 		DEBUG(5,("tdb_userlookup_rids: user convert failed\n"));
-		return 0x0;
+		return 0;
 	}
 	prs_create(&ps, kbuf.dptr, kbuf.dsize, 4, True);
 	if (!_prs_uint32("rid", &ps, 0, &rid))
 	{
 		DEBUG(5,("tdb_userlookup_rids: rid convert failed\n"));
-		return 0x0;
+		return 0;
 	}
 
 	for (i = 0; i < data->num_rids; i++)
@@ -827,11 +827,11 @@ static int tdb_userlookup_rids(TDB_CONTEXT *tdb,
 
 			data->found_one = True;
 
-			return 0x0;
+			return 0;
 		}
 	}
 
-	return 0x0;
+	return 0;
 }
 /*******************************************************************
  samr_reply_lookup_rids
@@ -892,7 +892,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 	(*hdr_name) = state.hdr_name;
 	(*uni_name) = state.uni_name;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -944,6 +944,6 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 		}
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 

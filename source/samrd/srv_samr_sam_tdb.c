@@ -63,7 +63,7 @@ static int tdb_domain_traverse(TDB_CONTEXT *tdb,
 	if (data->current_idx < data->start_idx)
 	{
 		data->current_idx++;
-		return 0x0;
+		return 0;
 	}
 
 	data->sam = (SAM_ENTRY*)Realloc(data->sam,
@@ -93,7 +93,7 @@ static int tdb_domain_traverse(TDB_CONTEXT *tdb,
 		data->num_sam_entries++;
 	}
 
-	return 0x0;
+	return 0;
 }
 
 /*******************************************************************
@@ -126,7 +126,7 @@ uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx,
 	(*start_idx) += state.num_sam_entries;
 	(*num_sam_users) = state.num_sam_entries;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 static BOOL create_domain(TDB_CONTEXT *tdb, char* domain, DOM_SID *sid)
@@ -153,7 +153,7 @@ static BOOL create_domain(TDB_CONTEXT *tdb, char* domain, DOM_SID *sid)
 
 	prs_free_data(&key);
 	prs_free_data(&data);
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -208,7 +208,7 @@ static uint32 tdb_samr_connect( POLICY_HND *pol, uint32 ace_perms)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -258,7 +258,7 @@ static uint32 tdb_lookup_domain(TDB_CONTEXT *tdb,
 	prs_free_data(&key);
 	prs_free_data(&data);
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -296,7 +296,7 @@ uint32 _samr_close(POLICY_HND *hnd)
 	if (close_policy_hnd(get_global_hnd_cache(), hnd))
 	{
 		bzero(hnd, sizeof(*hnd));
-		return 0x0;
+		return NT_STATUS_NOPROBLEMO;
 	}
 	return NT_STATUS_OBJECT_NAME_INVALID;
 }
@@ -328,7 +328,7 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -343,5 +343,5 @@ uint32 _samr_get_dom_pwinfo(const UNISTR2 *uni_srv_name,
 	*unk_1 = 0;
 	*unk_2 = 0;
 
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
