@@ -1,5 +1,47 @@
 1999-07-24  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/sock_principal.c (krb5_sock_to_principal): simplify by
+ 	using `struct sockaddr_storage'
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): simplify by using
+ 	`struct sockaddr_storage'
+
+	* lib/krb5/changepw.c (krb5_change_password): simplify by using
+ 	`struct sockaddr_storage'
+
+	* lib/krb5/auth_context.c (krb5_auth_con_setaddrs_from_fd):
+ 	simplify by using `struct sockaddr_storage'
+
+	* kpasswd/kpasswdd.c (*): simplify by using `struct
+ 	sockaddr_storage'
+
+	* kdc/connect.c (*): simplify by using `struct sockaddr_storage'
+
+	* configure.in (sa_family_t): just test for existence
+	(sockaddr_storage): also specify include file
+
+	* configure.in (AM_INIT_AUTOMAKE): bump version to 0.1i
+	(sa_family_t): test for
+	(struct	sockaddr_storage): test for
+
+	* kdc/hprop.c (propagate_database): typo, NULL should be
+ 	auth_context
+
+	* lib/krb5/get_addrs.c: conditionalize on HAVE_IPV6 instead of
+ 	AF_INET6
+
+	* appl/kf/kf.c (main): use warnx
+
+	* appl/kf/kf.c (proto): remove shadowing context
+
+	* lib/krb5/get_addrs.c (find_all_addresses): try to handle the
+ 	case of getting back an `sockaddr_in6' address when sizeof(struct
+ 	sockaddr_in6) > sizeof(struct sockaddr) and we have no sa_len to
+ 	tell us how large the address is.  This obviously doesn't work
+ 	with unknown protocol types.
+
+1999-07-24  Assar Westerlund  <assar@sics.se>
+
 	* Release 0.1h
 
 1999-07-23  Assar Westerlund  <assar@sics.se>

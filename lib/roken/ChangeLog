@@ -4,6 +4,9 @@
 
 1999-07-19  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am (libroken_la_SOURCES): add copyhostent.c,
+ 	freehostent.c, getipnodebyname.c, getipnodebyaddr.c
+	
 	* roken.h.in: <netdb.h>: include
 	(copyhostent, freehostent, getipnodebyname, getipnodebyaddr): add
 	prototypes
