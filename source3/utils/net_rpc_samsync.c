@@ -1000,34 +1000,34 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 	}
 
 
-	if (!account_policy_set(AP_PASSWORD_HISTORY, delta->pwd_history_len))
+	if (!pdb_set_account_policy(AP_PASSWORD_HISTORY, delta->pwd_history_len))
 		return nt_status;
 
-	if (!account_policy_set(AP_MIN_PASSWORD_LEN, delta->min_pwd_len))
+	if (!pdb_set_account_policy(AP_MIN_PASSWORD_LEN, delta->min_pwd_len))
 		return nt_status;
 
-	if (!account_policy_set(AP_MAX_PASSWORD_AGE, (uint32)u_max_age))
+	if (!pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (uint32)u_max_age))
 		return nt_status;
 
-	if (!account_policy_set(AP_MIN_PASSWORD_AGE, (uint32)u_min_age))
+	if (!pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (uint32)u_min_age))
 		return nt_status;
 
-	if (!account_policy_set(AP_TIME_TO_LOGOUT, (uint32)u_logout))
+	if (!pdb_set_account_policy(AP_TIME_TO_LOGOUT, (uint32)u_logout))
 		return nt_status;
 
-	if (!account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
+	if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
 		return nt_status;
 
-	if (!account_policy_set(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
+	if (!pdb_set_account_policy(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
 		return nt_status;
 
 	if (u_lockouttime != -1)
 		u_lockouttime /= 60;
 
-	if (!account_policy_set(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
+	if (!pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
 		return nt_status;
 
-	if (!account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, delta->logon_chgpass))
+	if (!pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, delta->logon_chgpass))
 		return nt_status;
 
 	return NT_STATUS_OK;

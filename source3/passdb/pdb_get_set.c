@@ -1123,7 +1123,7 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 	if (!pdb_set_pass_last_set_time (sampass, time(NULL), PDB_CHANGED))
 		return False;
 
-	if (!account_policy_get(AP_MAX_PASSWORD_AGE, &expire) 
+	if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire) 
 	    || (expire==(uint32)-1) || (expire == 0)) {
 		if (!pdb_set_pass_must_change_time (sampass, get_time_t_max(), PDB_CHANGED))
 			return False;
@@ -1134,7 +1134,7 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 			return False;
 	}
 	
-	if (!account_policy_get(AP_MIN_PASSWORD_AGE, &min_age) 
+	if (!pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &min_age) 
 	    || (min_age==(uint32)-1)) {
 		if (!pdb_set_pass_can_change_time (sampass, 0, PDB_CHANGED))
 			return False;
@@ -1189,7 +1189,7 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 	if (pdb_get_acct_ctrl(sampass) & ACB_NORMAL) {
 		uchar *pwhistory;
 		uint32 pwHistLen;
-		account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
+		pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 		if (pwHistLen != 0){
 			uint32 current_history_len;
 			/* We need to make sure we don't have a race condition here - the
