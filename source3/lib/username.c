@@ -575,7 +575,7 @@ BOOL user_in_list(const char *user,char **list)
 				domain[PTR_DIFF(p, *list)] = 0;
 
 				/* Check to see if name is a Windows group */
-				if (winbind_lookup_name(groupname, domain, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+				if (winbind_lookup_name(domain, groupname, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
 					
 				/* Check if user name is in the Windows group */
 					ret = user_in_winbind_group_list(user, *list, &winbind_answered);
