@@ -2836,7 +2836,11 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 	int ret= -1;
 	
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
-	
+
+	if (ms_has_wild(directory)) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
 	if (check_name(directory, conn))
 		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
 	
