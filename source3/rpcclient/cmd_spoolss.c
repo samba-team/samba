@@ -778,6 +778,30 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
 	return;
 }
 
+/**************************************************************************
+ wrapper for strtok to get the next parameter from a delimited list.
+ Needed to handle the empty parameter string denoted by "NULL"
+ *************************************************************************/
+static char* get_driver_3_param (char* str, char* delim, UNISTR* dest)
+{
+	char	*ptr;
+
+	/* get the next token */
+	ptr = strtok(str, delim);
+
+	/* a string of 'NULL' is used to represent an empty
+	   parameter because two consecutive delimiters
+	   will not return an empty string.  See man strtok(3)
+	   for details */
+	if (StrCaseCmp(ptr, "NULL") == 0)
+		ptr = NULL;
+
+	if (dest != NULL)
+		init_unistr(dest, ptr);	
+
+	return ptr;
+}
+
 /********************************************************************************
  fill in the members of a DRIVER_INFO_3 struct using a character 
  string in the form of
@@ -790,52 +814,21 @@ BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args)
 	char	*str, *str2;
 	uint32	len, i;
 	
-	/* <Long Printer Name> */
-	if ((str = strtok(args, ":")) == NULL)
-		return False;
-	else
-		init_unistr(&info->name, str);
-
-	/* <Driver File Name> */
-	if ((str = strtok(NULL, ":")) == NULL)
-		return False;
-	else
-		init_unistr(&info->driverpath, str);
-
-	/* <Data File Name > */
-	if ((str = strtok(NULL, ":")) == NULL)
-		return False;
-	else
-		init_unistr(&info->datafile, str);
-
-	/* <Config File Name> */
-	if ((str = strtok(NULL, ":")) == NULL)
-		return False;
-	else
-		init_unistr(&info->configfile, str);
-
-	/* <Help File Name> */
-	if ((str = strtok(NULL, ":")) == NULL)
-		return False;
-	else
-		init_unistr(&info->helpfile, str);
-
-	/* <Language Monitor Name> */
-	if ((str = strtok(NULL, ":")) == NULL)
-		return False;
-	else
-		init_unistr(&info->monitorname, str);
-
-	/* <Default Data Type> */
-	if ((str = strtok(NULL, ":")) == NULL)
-		return False;
-	else
-		init_unistr(&info->defaultdatatype, str);
+	/* fill in the UNISTR fields */
+	str = get_driver_3_param (args, ":", &info->name);
+	str = get_driver_3_param (NULL, ":", &info->driverpath);
+	str = get_driver_3_param (NULL, ":", &info->datafile);
+	str = get_driver_3_param (NULL, ":", &info->configfile);
+	str = get_driver_3_param (NULL, ":", &info->helpfile);
+	str = get_driver_3_param (NULL, ":", &info->monitorname);
+	str = get_driver_3_param (NULL, ":", &info->defaultdatatype);
 
 	/* <Comma Separated List of Dependent Files> */
-	str = strtok(NULL, ":");	/* get the list of dependent files */
-	str2 = str;			/* save the beginning of the string */
-	str = strtok(str, ",");		/* begin to strip out each filename */
+	str2 = get_driver_3_param (NULL, ":", NULL); /* save the beginning of the string */
+	str = str2;			
+
+	/* begin to strip out each filename */
+	str = strtok(str, ",");		
 	len = 0;
 	while (str != NULL)
 	{
@@ -874,3 +867,6 @@ void free_drv_info_3 (DRIVER_INFO_3 *info)
 	
 	return;
 }
+
+
+

@@ -711,15 +711,15 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	q_u->user_switch=1;
 	q_u->user_ctr.level=1;
 	q_u->user_ctr.ptr=1;
-	q_u->user_ctr.user1.size=strlen(clientname)+strlen(user_name)+8;
+	q_u->user_ctr.user1.size=strlen(clientname)+strlen(user_name)+10;
 	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
 	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
 	q_u->user_ctr.user1.build=1381;
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname));
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name));
+	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname)+1);
+	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name)+1);
 	
 	return True;
 }
@@ -760,15 +760,16 @@ BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name
 
 	q_u->user_ctr.level=1;
 	q_u->user_ctr.ptr=1;
-	q_u->user_ctr.user1.size=strlen(clientname)+strlen(user_name)+8;
 	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
 	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
 	q_u->user_ctr.user1.build=1381;
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname));
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name));
+	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname)+1);
+	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name)+1);
+	q_u->user_ctr.user1.size=q_u->user_ctr.user1.user_name.uni_str_len +
+	                         q_u->user_ctr.user1.client_name.uni_str_len + 2;
 	
 	return True;
 }

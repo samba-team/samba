@@ -355,7 +355,7 @@
 /* thanks to the ddk ... */
 typedef struct spool_user_1
 {
-	uint32 size;
+	uint32 size;		/* length of user_name & client_name + 2? */
 	uint32 client_name_ptr;
 	uint32 user_name_ptr;
 	uint32 build;

@@ -473,21 +473,32 @@ BOOL smb_io_unihdr2(char *desc, UNIHDR2 *hdr2, prs_struct *ps, int depth)
 
 void init_unistr(UNISTR *str, const char *buf)
 {
-	size_t len = strlen(buf) + 1;
+	size_t len;
 
-    if (!parse_misc_talloc)
+	if (buf == NULL)
+	{
+		str->buffer = NULL;
+		return;
+	}
+		
+
+	len = strlen(buf) + 1;
+
+    	if (!parse_misc_talloc)
 		parse_misc_talloc = talloc_init();
 
 	if (len < MAX_UNISTRLEN)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
-    str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+    	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
 	if (str->buffer == NULL)
 		smb_panic("init_unistr2: malloc fail\n");
 
 	/* store the string (null-terminated copy) */
 	dos_struni2((char *)str->buffer, buf, len);
+
+	return;
 }
 
 /*******************************************************************
