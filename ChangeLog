@@ -1,5 +1,9 @@
 2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kgetcred.1: add --no-transit-check
+	
+	* kuser/kgetcred.c: add --no-transit-check
+
 	* doc/setup.texi: describe Transit policy
 	
 2003-10-20  Johan Danielsson  <joda@pdc.kth.se>
