@@ -418,7 +418,7 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_dos_date2(p,l1_fdateLastAccess,adate);
       put_dos_date2(p,l1_fdateLastWrite,mdate);
       SIVAL(p,l1_cbFile,(uint32)size);
-      SIVAL(p,l1_cbFileAlloc,ROUNDUP(size,1024));
+      SIVAL(p,l1_cbFileAlloc,SMB_ROUNDUP(size,1024));
       SSVAL(p,l1_attrFile,mode);
       SCVAL(p,l1_cchName,strlen(fname));
       pstrcpy(p + l1_achName, fname);
@@ -436,7 +436,7 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_dos_date2(p,l2_fdateLastAccess,adate);
       put_dos_date2(p,l2_fdateLastWrite,mdate);
       SIVAL(p,l2_cbFile,(uint32)size);
-      SIVAL(p,l2_cbFileAlloc,ROUNDUP(size,1024));
+      SIVAL(p,l2_cbFileAlloc,SMB_ROUNDUP(size,1024));
       SSVAL(p,l2_attrFile,mode);
       SIVAL(p,l2_cbList,0); /* No extended attributes */
       SCVAL(p,l2_cchName,strlen(fname));
@@ -451,7 +451,7 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_dos_date2(p,8,adate);
       put_dos_date2(p,12,mdate);
       SIVAL(p,16,(uint32)size);
-      SIVAL(p,20,ROUNDUP(size,1024));
+      SIVAL(p,20,SMB_ROUNDUP(size,1024));
       SSVAL(p,24,mode);
       SIVAL(p,26,4);
       CVAL(p,30) = strlen(fname);
@@ -470,7 +470,7 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_dos_date2(p,8,adate);
       put_dos_date2(p,12,mdate);
       SIVAL(p,16,(uint32)size);
-      SIVAL(p,20,ROUNDUP(size,1024));
+      SIVAL(p,20,SMB_ROUNDUP(size,1024));
       SSVAL(p,24,mode);
       CVAL(p,32) = strlen(fname);
       pstrcpy(p + 33, fname);
@@ -1335,7 +1335,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
       put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
       SIVAL(pdata,l1_cbFile,(uint32)size);
-      SIVAL(pdata,l1_cbFileAlloc,ROUNDUP(size,1024));
+      SIVAL(pdata,l1_cbFileAlloc,SMB_ROUNDUP(size,1024));
       SSVAL(pdata,l1_attrFile,mode);
       SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
       break;
@@ -1346,7 +1346,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       put_dos_date2(pdata,4,sbuf.st_atime);
       put_dos_date2(pdata,8,sbuf.st_mtime);
       SIVAL(pdata,12,(uint32)size);
-      SIVAL(pdata,16,ROUNDUP(size,1024));
+      SIVAL(pdata,16,SMB_ROUNDUP(size,1024));
       SIVAL(pdata,20,mode);
       break;
 
