@@ -31,7 +31,7 @@
   directory exists (tho it doesn't need to be accessible by the user,
   that comes later)
 */
-static NTSTATUS pvfs_connect(struct request_context *req, const char *sharename)
+static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 {
 	DEBUG(0,   ("Connection to share [%s] ACCESS DENIED!\n", sharename));
 	DEBUGADD(0,("This is because your using the 'ntvfs handler = default'.\n"));

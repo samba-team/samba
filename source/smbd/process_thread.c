@@ -37,7 +37,7 @@ static void *connection_thread(void *thread_parm)
 	return NULL;
 }
 
-static int get_id(struct request_context *req)
+static int get_id(struct smbsrv_request *req)
 {
 	return (int)pthread_self();
 }

@@ -79,7 +79,7 @@ struct smbsrv_tcon {
 
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
-struct request_context {
+struct smbsrv_request {
 	/* the server_context contains all context specific to this SMB socket */
 	struct smbsrv_context *smb_ctx;
 
@@ -130,7 +130,7 @@ struct request_context {
 	   end not the backend. The backend must not change it.
 	*/
 	struct {
-		void (*send_fn)(struct request_context *);
+		void (*send_fn)(struct smbsrv_request *);
 		void *private;
 		NTSTATUS status;
 	} async;
@@ -313,7 +313,7 @@ struct pending_request {
 	struct pending_request *next, *prev;
 
 	/* the request itself - needs to be freed */
-	struct request_context *request;
+	struct smbsrv_request *request;
 };
 
 /* the timers context contains info on when we last did various

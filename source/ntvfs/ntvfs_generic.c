@@ -57,7 +57,7 @@ static BOOL is_exe_file(const char *fname)
 /* 
    NTVFS open generic to any mapper
 */
-NTSTATUS ntvfs_map_open(struct request_context *req, union smb_open *io)
+NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io)
 {
 	NTSTATUS status;
 	union smb_open io2;
@@ -249,7 +249,7 @@ NTSTATUS ntvfs_map_open(struct request_context *req, union smb_open *io)
 /* 
    NTVFS fsinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_fsinfo(struct request_context *req, union smb_fsinfo *fs)
+NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 {
 	NTSTATUS status;
 	union smb_fsinfo fs2;
@@ -368,7 +368,7 @@ NTSTATUS ntvfs_map_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 /* 
    NTVFS fileinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_fileinfo(struct request_context *req, union smb_fileinfo *info, union smb_fileinfo *info2)
+NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info, union smb_fileinfo *info2)
 {
 	int i;
 	/* and convert it to the required level using results in info2 */
@@ -590,7 +590,7 @@ NTSTATUS ntvfs_map_fileinfo(struct request_context *req, union smb_fileinfo *inf
 /* 
    NTVFS fileinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_qfileinfo(struct request_context *req, union smb_fileinfo *info)
+NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	NTSTATUS status;
 	union smb_fileinfo info2;
@@ -613,7 +613,7 @@ NTSTATUS ntvfs_map_qfileinfo(struct request_context *req, union smb_fileinfo *in
 /* 
    NTVFS pathinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_qpathinfo(struct request_context *req, union smb_fileinfo *info)
+NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	NTSTATUS status;
 	union smb_fileinfo info2;

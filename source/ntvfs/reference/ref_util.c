@@ -29,7 +29,7 @@
 /*
   convert a windows path to a unix path - don't do any manging or case sensitive handling
 */
-char *svfs_unix_path(struct request_context *req, const char *name)
+char *svfs_unix_path(struct smbsrv_request *req, const char *name)
 {
 	struct svfs_private *private = req->conn->ntvfs_private;
 	char *ret;
@@ -52,7 +52,7 @@ char *svfs_unix_path(struct request_context *req, const char *name)
   returned names are separate unix and DOS names. The returned names
   are relative to the directory
 */
-struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct request_context *req, const char *pattern)
+struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct smbsrv_request *req, const char *pattern)
 {
 	char *unix_path;
 	char *p, *mask;

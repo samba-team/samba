@@ -30,50 +30,50 @@ struct ntvfs_ops {
 	enum ntvfs_type type;
 	
 	/* initial setup */
-	NTSTATUS (*connect)(struct request_context *req, const char *sharename);
+	NTSTATUS (*connect)(struct smbsrv_request *req, const char *sharename);
 	NTSTATUS (*disconnect)(struct smbsrv_tcon *tcon);
 
 	/* path operations */
-	NTSTATUS (*unlink)(struct request_context *req, struct smb_unlink *unl);
-	NTSTATUS (*chkpath)(struct request_context *req, struct smb_chkpath *cp);
-	NTSTATUS (*qpathinfo)(struct request_context *req, union smb_fileinfo *st);
-	NTSTATUS (*setpathinfo)(struct request_context *req, union smb_setfileinfo *st);
-	NTSTATUS (*open)(struct request_context *req, union smb_open *oi);
-	NTSTATUS (*mkdir)(struct request_context *req, union smb_mkdir *md);
-	NTSTATUS (*rmdir)(struct request_context *req, struct smb_rmdir *rd);
-	NTSTATUS (*rename)(struct request_context *req, union smb_rename *ren);
-	NTSTATUS (*copy)(struct request_context *req, struct smb_copy *cp);
+	NTSTATUS (*unlink)(struct smbsrv_request *req, struct smb_unlink *unl);
+	NTSTATUS (*chkpath)(struct smbsrv_request *req, struct smb_chkpath *cp);
+	NTSTATUS (*qpathinfo)(struct smbsrv_request *req, union smb_fileinfo *st);
+	NTSTATUS (*setpathinfo)(struct smbsrv_request *req, union smb_setfileinfo *st);
+	NTSTATUS (*open)(struct smbsrv_request *req, union smb_open *oi);
+	NTSTATUS (*mkdir)(struct smbsrv_request *req, union smb_mkdir *md);
+	NTSTATUS (*rmdir)(struct smbsrv_request *req, struct smb_rmdir *rd);
+	NTSTATUS (*rename)(struct smbsrv_request *req, union smb_rename *ren);
+	NTSTATUS (*copy)(struct smbsrv_request *req, struct smb_copy *cp);
 
 	/* directory search */
-	NTSTATUS (*search_first)(struct request_context *req, union smb_search_first *io, void *private,
+	NTSTATUS (*search_first)(struct smbsrv_request *req, union smb_search_first *io, void *private,
 				 BOOL (*callback)(void *private, union smb_search_data *file));
-	NTSTATUS (*search_next)(struct request_context *req, union smb_search_next *io, void *private,
+	NTSTATUS (*search_next)(struct smbsrv_request *req, union smb_search_next *io, void *private,
 				 BOOL (*callback)(void *private, union smb_search_data *file));
-	NTSTATUS (*search_close)(struct request_context *req, union smb_search_close *io);
+	NTSTATUS (*search_close)(struct smbsrv_request *req, union smb_search_close *io);
 
 	/* operations on open files */
-	NTSTATUS (*ioctl)(struct request_context *req, union smb_ioctl *io);
-	NTSTATUS (*read)(struct request_context *req, union smb_read *io);
-	NTSTATUS (*write)(struct request_context *req, union smb_write *io);
-	NTSTATUS (*seek)(struct request_context *req, struct smb_seek *io);
-	NTSTATUS (*flush)(struct request_context *req, struct smb_flush *flush);
-	NTSTATUS (*close)(struct request_context *req, union smb_close *io);
-	NTSTATUS (*exit)(struct request_context *req);
-	NTSTATUS (*lock)(struct request_context *req, union smb_lock *lck);
-	NTSTATUS (*setfileinfo)(struct request_context *req, union smb_setfileinfo *info);
-	NTSTATUS (*qfileinfo)(struct request_context *req, union smb_fileinfo *info);
+	NTSTATUS (*ioctl)(struct smbsrv_request *req, union smb_ioctl *io);
+	NTSTATUS (*read)(struct smbsrv_request *req, union smb_read *io);
+	NTSTATUS (*write)(struct smbsrv_request *req, union smb_write *io);
+	NTSTATUS (*seek)(struct smbsrv_request *req, struct smb_seek *io);
+	NTSTATUS (*flush)(struct smbsrv_request *req, struct smb_flush *flush);
+	NTSTATUS (*close)(struct smbsrv_request *req, union smb_close *io);
+	NTSTATUS (*exit)(struct smbsrv_request *req);
+	NTSTATUS (*lock)(struct smbsrv_request *req, union smb_lock *lck);
+	NTSTATUS (*setfileinfo)(struct smbsrv_request *req, union smb_setfileinfo *info);
+	NTSTATUS (*qfileinfo)(struct smbsrv_request *req, union smb_fileinfo *info);
 
 	/* filesystem operations */
-	NTSTATUS (*fsinfo)(struct request_context *req, union smb_fsinfo *fs);
+	NTSTATUS (*fsinfo)(struct smbsrv_request *req, union smb_fsinfo *fs);
 
 	/* printing specific operations */
-	NTSTATUS (*lpq)(struct request_context *req, union smb_lpq *lpq);
+	NTSTATUS (*lpq)(struct smbsrv_request *req, union smb_lpq *lpq);
 
 	/* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
-	NTSTATUS (*trans2)(struct request_context *req, struct smb_trans2 *trans2);
+	NTSTATUS (*trans2)(struct smbsrv_request *req, struct smb_trans2 *trans2);
 
 	/* trans interface - used by IPC backend for pipes and RAP calls */
-	NTSTATUS (*trans)(struct request_context *req, struct smb_trans2 *trans);
+	NTSTATUS (*trans)(struct smbsrv_request *req, struct smb_trans2 *trans);
 };
 
 
@@ -83,5 +83,5 @@ struct ntvfs_critical_sizes {
 	int sizeof_ntvfs_ops;
 	int sizeof_SMB_OFF_T;
 	int sizeof_smbsrv_tcon;
-	int sizeof_request_context;
+	int sizeof_smbsrv_request;
 };
