@@ -22,9 +22,6 @@
 #include "includes.h"
 
 
-#include <libintl.h>
-#define _(String)   gettext(String)
-
 static char *tstring(time_t t)
 {
 	static pstring buf;
@@ -145,23 +142,18 @@ void status_page(void)
 		fclose(f);
 	}
 
-	/*printf("<H2>Server Status</H2>\n");*/
-	printf("<H2>%s</H2>\n", _("Server Status"));
+	printf("<H2>Server Status</H2>\n");
 
 	printf("<FORM method=post>\n");
 
 	if (!autorefresh) {
-	        /*printf("<input type=submit value=\"Auto Refresh\" name=autorefresh>\n");*/
-		printf("<input type=submit value=\"%s\n\" name=autorefresh>\n", _("Auto Refresh"));
-		/*printf("<br>Refresh Interval: ");*/
-		printf("<br>%s: ",_("Refresh Interval"));
+		printf("<input type=submit value=\"Auto Refresh\" name=autorefresh>\n");
+		printf("<br>Refresh Interval: ");
 		printf("<input type=text size=2 name=\"refresh_interval\" value=%d>\n", 
 		       refresh_interval);
 	} else {
-		/*printf("<input type=submit value=\"Stop Refreshing\" name=norefresh>\n");*/
-		printf("<input type=submit value=\"%s\" name=norefresh>\n",_("Stop Refreshing"));
-		/*printf("<br>Refresh Interval: %d\n", refresh_interval);*/
-		printf("<br>%s: %d\n", _("Refresh Interval") , refresh_interval);
+		printf("<input type=submit value=\"Stop Refreshing\" name=norefresh>\n");
+		printf("<br>Refresh Interval: %d\n", refresh_interval);
 		printf("<input type=hidden name=refresh value=1>\n");
 	}
 
@@ -169,32 +161,25 @@ void status_page(void)
 
 	f = sys_fopen(fname,"r");
 	if (!f) {
-		/*printf("Couldn't open status file %s\n",fname);*/
-		printf("%s %s\n", _("Couldn't open status file"),fname);
-		if (!lp_status(-1)) {
-			/*printf("You need to have status=yes in your smb config file\n");*/
-			printf("%s\n",_("You need to have status=yes in your smb config file"));
-		}
+		printf("Couldn't open status file %s\n",fname);
+		if (!lp_status(-1))
+			printf("You need to have status=yes in your smb config file\n");
 	}
 
 
 	printf("<table>\n");
 
-	/*printf("<tr><td>version:</td><td>%s</td></tr>",VERSION);*/
-	printf("<tr><td>%s:</td><td>%s</td></tr>",_("version"), VERSION);
+	printf("<tr><td>version:</td><td>%s</td></tr>",VERSION);
 
 	fflush(stdout);
 	printf("<tr><td>smbd:</td><td>%srunning</td>\n",smbd_running()?"":"not ");
 	if (geteuid() == 0) {
 	    if (smbd_running()) {
-		/*printf("<td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td>\n");*/
-		printf("<td><input type=submit name=\"smbd_stop\" value=\"%s\"></td>\n", _("Stop smbd"));
+		printf("<td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td>\n");
 	    } else {
-		/*printf("<td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td>\n");*/
-		printf("<td><input type=submit name=\"smbd_start\" value=\"%s\"></td>\n", _("Start smbd"));
+		printf("<td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td>\n");
 	    }
-	    /*printf("<td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td>\n");*/
-	    printf("<td><input type=submit name=\"smbd_restart\" value=\"%s\"></td>\n", _("Restart smbd") );
+	    printf("<td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td>\n");
 	}
 	printf("</tr>\n");
 
@@ -202,27 +187,20 @@ void status_page(void)
 	printf("<tr><td>nmbd:</td><td>%srunning</td>\n",nmbd_running()?"":"not ");
 	if (geteuid() == 0) {
 	    if (nmbd_running()) {
-		/*printf("<td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td>\n");*/
-		printf("<td><input type=submit name=\"nmbd_stop\" value=\"%s\"></td>\n",_("Stop nmbd"));
+		printf("<td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td>\n");
 	    } else {
-		/*printf("<td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td>\n");*/
-		printf("<td><input type=submit name=\"nmbd_start\" value=\"%s\"></td>\n",_("Start nmbd"));
+		printf("<td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td>\n");
 	    }
-	    /*printf("<td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td>\n");*/
-	    printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));
+	    printf("<td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td>\n");
 	}
 	printf("</tr>\n");
 
 	printf("</table>\n");
 	fflush(stdout);
 
-	/*printf("<p><h3>Active Connections</h3>\n");*/
-	printf("<p><h3>%s</h3>\n", _("Active Connections"));
-
+	printf("<p><h3>Active Connections</h3>\n");
 	printf("<table border=1>\n");
-	/*printf("<tr><th>PID</th><th>Client</th><th>IP address</th><th>Date</th>\n");*/
-	printf("<tr><th>PID</th><th>%s</th><th>%s</th><th>Date</th>\n",
-		_("Client"), _("IP address") );
+	printf("<tr><th>PID</th><th>Client</th><th>IP address</th><th>Date</th>\n");
 	if (geteuid() == 0) {
 		printf("<th>Kill</th>\n");
 	}
@@ -250,11 +228,9 @@ void status_page(void)
 
 	if (f) fseek(f, 0, SEEK_SET);
 	
-	/*printf("<p><h3>Active Shares</h3>\n");*/
-	printf("<p><h3>%s</h3>\n",_("Active Shares"));
+	printf("<p><h3>Active Shares</h3>\n");
 	printf("<table border=1>\n");
-	/*printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");*/
-	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>PID</th><th>%s</th><th>%s</th></tr>\n\n",_("Share"), _("User"), _("Group"), _("Client"),_("Data"));
+	printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");
 
 	while (f && !feof(f)) {
 		if (fread(&crec,sizeof(crec),1,f) != 1)
@@ -271,11 +247,9 @@ void status_page(void)
 
 	printf("</table><p>\n");
 
-	/*printf("<h3>Open Files</h3>\n");*/
-	printf("<h3>%s</h3>\n", _("Open Files"));
+	printf("<h3>Open Files</h3>\n");
 	printf("<table border=1>\n");
-	/*printf("<tr><th>PID</th><th>Sharing</th><th>R/W</th><th>Oplock</th><th>File</th><th>Date</th></tr>\n");*/
-	printf("<tr><th>PID</th><th>%s</th><th>R/W</th><th>Oplock</th><th>%s</th><th>%s</th></tr>\n", _("Sharing"), _("File"), _("Date") );
+	printf("<tr><th>PID</th><th>Sharing</th><th>R/W</th><th>Oplock</th><th>File</th><th>Date</th></tr>\n");
 
 	locking_init(1);
 	share_mode_forall(print_share_mode);
