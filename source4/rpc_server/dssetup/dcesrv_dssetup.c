@@ -50,18 +50,29 @@ static WERROR ds_RolerGetPrimaryDomainInformation(struct dcesrv_call_state *dce_
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
+	r->out.info = talloc_p(mem_ctx, union ds_DomainInformation);
+	if (r->out.info == NULL) {
+		return WERR_NOMEM;
+	}
+
 	switch (r->in.level) {
-	case 1:
-		r->out.info = talloc_p(mem_ctx, union ds_DomainInformation);
-		if (r->out.info == NULL) {
-			return WERR_NOMEM;
-		}
-		r->out.info->basic.role = lp_server_role();
-		r->out.info->basic.flags = 0x01000003;
-		r->out.info->basic.domain = samdb_result_string(res[0], "name", NULL);
-		r->out.info->basic.dns_domain = samdb_result_string(res[0], "dnsDomain", NULL);
-		r->out.info->basic.forest = samdb_result_string(res[0], "dnsDomain", NULL);
+	case DS_BASIC_INFORMATION:
+		/* incorrect,  but needed for the moment */
+		r->out.info->basic.role        = DS_ROLE_MEMBER_SERVER; 
+		r->out.info->basic.flags       = 0x01000003;
+		r->out.info->basic.domain      = samdb_result_string(res[0], "name", NULL);
+		r->out.info->basic.dns_domain  = samdb_result_string(res[0], "dnsDomain", NULL);
+		r->out.info->basic.forest      = samdb_result_string(res[0], "dnsDomain", NULL);
 		r->out.info->basic.domain_guid = samdb_result_guid(res[0], "objectGUID");
+		break;
+
+	case DS_UPGRADE_STATUS:
+		r->out.info->upgrade.upgrading     = DS_NOT_UPGRADING;
+		r->out.info->upgrade.previous_role = DS_PREVIOUS_UNKNOWN;
+		break;
+
+	case DS_ROLE_OP_STATUS:
+		r->out.info->status.status = DS_STATUS_IDLE;
 		break;
 
 	default:
@@ -73,11 +84,18 @@ static WERROR ds_RolerGetPrimaryDomainInformation(struct dcesrv_call_state *dce_
 }
 
 
+/*****************************************
+NOTE! The remaining calls below were
+removed in w2k3, so the DCESRV_FAULT()
+replies are the correct implementation. Do
+not try and fill these in with anything else
+******************************************/
+
 /* 
   ds_RolerDnsNameToFlatName 
 */
 static WERROR ds_RolerDnsNameToFlatName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerDnsNameToFlatName *r)
+					struct ds_RolerDnsNameToFlatName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -87,7 +105,7 @@ static WERROR ds_RolerDnsNameToFlatName(struct dcesrv_call_state *dce_call, TALL
   ds_RolerDcAsDc 
 */
 static WERROR ds_RolerDcAsDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerDcAsDc *r)
+			     struct ds_RolerDcAsDc *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -97,7 +115,7 @@ static WERROR ds_RolerDcAsDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
   ds_RolerDcAsReplica 
 */
 static WERROR ds_RolerDcAsReplica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerDcAsReplica *r)
+				  struct ds_RolerDcAsReplica *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -107,7 +125,7 @@ static WERROR ds_RolerDcAsReplica(struct dcesrv_call_state *dce_call, TALLOC_CTX
   ds_RolerDemoteDc 
 */
 static WERROR ds_RolerDemoteDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerDemoteDc *r)
+			       struct ds_RolerDemoteDc *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -117,7 +135,7 @@ static WERROR ds_RolerDemoteDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
   ds_RolerGetDcOperationProgress 
 */
 static WERROR ds_RolerGetDcOperationProgress(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerGetDcOperationProgress *r)
+					     struct ds_RolerGetDcOperationProgress *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -127,7 +145,7 @@ static WERROR ds_RolerGetDcOperationProgress(struct dcesrv_call_state *dce_call,
   ds_RolerGetDcOperationResults 
 */
 static WERROR ds_RolerGetDcOperationResults(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerGetDcOperationResults *r)
+					    struct ds_RolerGetDcOperationResults *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -137,7 +155,7 @@ static WERROR ds_RolerGetDcOperationResults(struct dcesrv_call_state *dce_call, 
   ds_RolerCancel 
 */
 static WERROR ds_RolerCancel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerCancel *r)
+			     struct ds_RolerCancel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -147,7 +165,7 @@ static WERROR ds_RolerCancel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
   ds_RolerServerSaveStateForUpgrade 
 */
 static WERROR ds_RolerServerSaveStateForUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerServerSaveStateForUpgrade *r)
+						struct ds_RolerServerSaveStateForUpgrade *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -157,7 +175,7 @@ static WERROR ds_RolerServerSaveStateForUpgrade(struct dcesrv_call_state *dce_ca
   ds_RolerUpgradeDownlevelServer 
 */
 static WERROR ds_RolerUpgradeDownlevelServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerUpgradeDownlevelServer *r)
+					     struct ds_RolerUpgradeDownlevelServer *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -167,7 +185,7 @@ static WERROR ds_RolerUpgradeDownlevelServer(struct dcesrv_call_state *dce_call,
   ds_RolerAbortDownlevelServerUpgrade 
 */
 static WERROR ds_RolerAbortDownlevelServerUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ds_RolerAbortDownlevelServerUpgrade *r)
+						  struct ds_RolerAbortDownlevelServerUpgrade *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
