@@ -233,7 +233,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	SIVAL(p,0,stype);
 	p += 4;
 
-	p += push_pstring_base(p, workgroup, param);
+	push_ascii(p, workgroup, sizeof(pstring)-PTR_DIFF(p,param)-1, STR_TERMINATE|STR_UPPER);
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */

@@ -27,6 +27,13 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+struct vfs_init_function_entry {
+   char *name;
+   vfs_op_tuple *ops, *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *);
+   struct vfs_init_function_entry *prev, *next;
+};
+
+static struct vfs_init_function_entry *backends = NULL;
 
 /* Some structures to help us initialise the vfs operations table */
 
@@ -128,6 +135,59 @@ static struct vfs_ops default_vfs_ops = {
 };
 
 /****************************************************************************
+    maintain the list of available backends
+****************************************************************************/
+
+static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
+{
+   struct vfs_init_function_entry *entry = backends;
+   pstring stripped;
+
+   module_path_get_name(name, stripped);
+
+   while(entry) {
+       if (strequal(entry->name, stripped)) return entry;
+       entry = entry->next;
+   }
+
+   return NULL;
+}
+
+BOOL smb_register_vfs(const char *name, vfs_op_tuple *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *), int version)
+{
+   struct vfs_init_function_entry *entry = backends;
+   
+   if ((version < SMB_VFS_INTERFACE_CASCADED)) {
+       DEBUG(0, ("vfs_init() returned wrong interface version info (was %d, should be no less than %d)\n",
+           version, SMB_VFS_INTERFACE_VERSION ));
+       return False;
+   }
+  
+   if ((version < SMB_VFS_INTERFACE_VERSION)) {
+       DEBUG(0, ("Warning: vfs_init() states that module confirms interface version #%d, current interface version is #%d.\n\
+		Proceeding in compatibility mode, new operations (since version #%d) will fallback to default ones.\n",
+		version, SMB_VFS_INTERFACE_VERSION, version ));
+	   return False;
+   }
+   
+   while(entry) {
+       if (strequal(entry->name, name)) {
+           DEBUG(0,("VFS module %s already loaded!\n", name));
+           return False;
+       }
+       entry = entry->next;
+   }
+
+   entry = smb_xmalloc(sizeof(struct vfs_init_function_entry));
+   entry->name = smb_xstrdup(name);
+   entry->init = init;
+
+   DLIST_ADD(backends, entry);
+   DEBUG(5, ("Successfully added vfs backend '%s'\n", name));
+   return True;
+}
+
+/****************************************************************************
   initialise default vfs hooks
 ****************************************************************************/
 
@@ -139,23 +199,19 @@ static void vfs_init_default(connection_struct *conn)
 	conn->vfs_private = NULL;
 }
 
-/****************************************************************************
-  initialise custom vfs hooks
-****************************************************************************/
+/***************************************************************************
+ Function to load old VFS modules. Should go away after a while.
+ **************************************************************************/
 
-BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
+static vfs_op_tuple *vfs_load_old_plugin(connection_struct *conn, const char *vfs_object)
 {
 	int vfs_version = -1;
- 	vfs_op_tuple *ops, *(*init_fptr)(int *, const struct vfs_ops *, struct smb_vfs_handle_struct *);
- 	int i;
-
-	DEBUG(3, ("Initialising custom vfs hooks from %s\n", vfs_object));
-
+	vfs_op_tuple *ops, *(*init_fptr)(int *, const struct vfs_ops *, struct smb_vfs_handle_struct *);
 	/* Open object file */
 
 	if ((conn->vfs_private->handle = sys_dlopen(vfs_object, RTLD_NOW)) == NULL) {
 		DEBUG(0, ("Error opening %s: %s\n", vfs_object, sys_dlerror()));
-		return False;
+		return NULL;
 	}
 
 	/* Get handle on vfs_init() symbol */
@@ -165,32 +221,73 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	if (init_fptr == NULL) {
 		DEBUG(0, ("No vfs_init() symbol found in %s\n", vfs_object));
 		sys_dlclose(conn->vfs_private->handle);
-		return False;
+		return NULL;
 	}
 
 	/* Initialise vfs_ops structure */
+	if ((ops = init_fptr(&vfs_version, &conn->vfs_ops, conn->vfs_private)) == NULL) {
+		DEBUG(0, ("vfs_init() function from %s failed\n", vfs_object));
+		sys_dlclose(conn->vfs_private->handle);
+		return NULL;
+	}
 
- 	if ((ops = init_fptr(&vfs_version, &conn->vfs_ops, conn->vfs_private)) == NULL) {
- 		DEBUG(0, ("vfs_init() function from %s failed\n", vfs_object));
+	if ((vfs_version < SMB_VFS_INTERFACE_CASCADED)) {
+		DEBUG(0, ("vfs_init() returned wrong interface version info (was %d, should be no less than %d)\n",
+				  vfs_version, SMB_VFS_INTERFACE_VERSION ));
 		sys_dlclose(conn->vfs_private->handle);
- 		return False;
- 	}
-  
- 	if ((vfs_version < SMB_VFS_INTERFACE_CASCADED)) {
- 		DEBUG(0, ("vfs_init() returned wrong interface version info (was %d, should be no less than %d)\n",
- 			vfs_version, SMB_VFS_INTERFACE_VERSION ));
+		return NULL;
+	}
+
+	if ((vfs_version < SMB_VFS_INTERFACE_VERSION)) {
+		DEBUG(0, ("Warning: vfs_init() states that module confirms interface version #%d, current interface version is #%d.\n\
+				  Proceeding in compatibility mode, new operations (since version #%d) will fallback to default ones.\n",
+				  vfs_version, SMB_VFS_INTERFACE_VERSION, vfs_version ));
 		sys_dlclose(conn->vfs_private->handle);
-  		return False;
-  	}
-  
- 	if ((vfs_version < SMB_VFS_INTERFACE_VERSION)) {
- 		DEBUG(0, ("Warning: vfs_init() states that module confirms interface version #%d, current interface version is #%d.\n\
-Proceeding in compatibility mode, new operations (since version #%d) will fallback to default ones.\n",
- 			vfs_version, SMB_VFS_INTERFACE_VERSION, vfs_version ));
-		sys_dlclose(conn->vfs_private->handle);
-  		return False;
-  	}
-  
+		return NULL;
+	}
+	
+	return ops;
+}
+
+
+
+/****************************************************************************
+  initialise custom vfs hooks
+ ****************************************************************************/
+
+BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
+{
+	vfs_op_tuple *ops;
+	int i;
+	struct vfs_init_function_entry *entry;
+
+	DEBUG(3, ("Initialising custom vfs hooks from %s\n", vfs_object));
+
+	if(!backends) static_init_vfs;
+
+	/* First, try to load the module with the new module system */
+	if((entry = vfs_find_backend_entry(vfs_object)) || 
+	   (smb_probe_module("vfs", vfs_object) && 
+		(entry = vfs_find_backend_entry(vfs_object)))) {
+
+		DEBUG(3,("Successfully loaded %s with the new modules system\n", vfs_object));
+		
+		if ((ops = entry->init(&conn->vfs_ops, conn->vfs_private)) == NULL) {
+			DEBUG(0, ("vfs init function from %s failed\n", vfs_object));
+			return False;
+		}
+	} else {
+		/* If that doesn't work, fall back to the old system 
+		 * (This part should go away after a while, it's only here 
+		 * for backwards compatibility) */
+		DEBUG(2, ("Can't load module %s with new modules system, falling back to compatibility\n",
+			vfs_object));
+		if ((ops = vfs_load_old_plugin(conn, vfs_object)) == NULL) {
+			DEBUG(0, ("vfs init function from %s failed\n", vfs_object));
+			return False;
+		}
+	}
+
  	for(i=0; ops[i].op != NULL; i++) {
  	  DEBUG(3, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
  	  if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
@@ -215,54 +312,50 @@ Proceeding in compatibility mode, new operations (since version #%d) will fallba
 
 BOOL smbd_vfs_init(connection_struct *conn)
 {
-	char **vfs_objects, *vfsobj, *vfs_module, *vfs_path;
-	int nobj, i;
+	const char **vfs_objects;
+	char *vfs_module, *vfs_path;
+	unsigned int i = 0;
+	int j = 0;
 	struct smb_vfs_handle_struct *handle;
 	
 	/* Normal share - initialise with disk access functions */
 	vfs_init_default(conn);
+	vfs_objects = lp_vfsobj(SNUM(conn));
 
 	/* Override VFS functions if 'vfs object' was specified*/
-	if (*lp_vfsobj(SNUM(conn))) {
-		vfsobj = NULL;
-		for(i=0; i<SMB_VFS_OP_LAST; i++) {
-		  vfs_opaque_ops[i].op = ((void**)&default_vfs_ops)[i];
-		  vfs_opaque_ops[i].type = i;
-		  vfs_opaque_ops[i].layer = SMB_VFS_LAYER_OPAQUE;
+	if (!vfs_objects)
+		return True;
+
+	for(i=0; i<SMB_VFS_OP_LAST; i++) {
+		vfs_opaque_ops[i].op = ((void**)&default_vfs_ops)[i];
+		vfs_opaque_ops[i].type = i;
+		vfs_opaque_ops[i].layer = SMB_VFS_LAYER_OPAQUE;
+	}
+
+	vfs_path = lp_vfs_path(SNUM(conn));
+	
+	for (i=0; vfs_objects[i]; i++); /* count passed modules */
+        
+	for (j=i-1; j >= 0; j--) {
+		conn->vfs_private = NULL;
+		handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
+		/* Loadable object file */
+		handle->handle = NULL;
+		DLIST_ADD(conn->vfs_private, handle);
+		vfs_module = NULL;
+		if (vfs_path && *vfs_path) {
+			asprintf(&vfs_module, "%s/%s", vfs_path, vfs_objects[j]);
+		} else {
+			asprintf(&vfs_module, "%s", vfs_objects[j]);
 		}
-		if (string_set(&vfsobj, lp_vfsobj(SNUM(conn)))) {
-			/* Parse passed modules specification to array of modules */
-			set_first_token(vfsobj);
-			/* We are using default separators: ' \t\r\n' */
-			vfs_objects = toktocliplist(&nobj, NULL);
-			if (vfs_objects) {
-				vfs_path = lp_vfs_path(SNUM(conn));
-				conn->vfs_private = NULL;
-				for(i=nobj-1; i>=0; i--) {
-					handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
-					/* Loadable object file */
-					handle->handle = NULL;
-					DLIST_ADD(conn->vfs_private, handle)
-					vfs_module = NULL;
-					if (vfs_path) {
-						asprintf(&vfs_module, "%s/%s", vfs_path, vfs_objects[i]);
-					} else {
-						asprintf(&vfs_module, "%s", vfs_objects[i]);
-					}
-					if (!vfs_init_custom(conn, vfs_module)) {
-						DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed for %s\n", vfs_module));
-						string_free(&vfsobj);
-						SAFE_FREE(vfs_module);
-						DLIST_REMOVE(conn->vfs_private, handle);
-						SAFE_FREE(handle);
-						return False;
-					}
-					SAFE_FREE(vfs_module);
-				}
-			}
-			string_free(&vfsobj);
-			return True;
+		if (!vfs_init_custom(conn, vfs_module)) {
+			DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed for %s\n", vfs_module));
+			SAFE_FREE(vfs_module);
+			DLIST_REMOVE(conn->vfs_private, handle);
+			SAFE_FREE(handle);
+			return False;
 		}
+		SAFE_FREE(vfs_module);
 	}
 	return True;
 }
