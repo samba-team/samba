@@ -150,6 +150,8 @@ do_version4(unsigned char *buf,
     int32_t req_time;
     time_t max_life;
     u_int8_t life;
+    char client_name[256];
+    char server_name[256];
 
     sp = krb5_storage_from_mem(buf, len);
     RCHECK(krb5_ret_int8(sp, &pvno), out);
@@ -172,21 +174,33 @@ do_version4(unsigned char *buf,
 	RCHECK(krb5_ret_int8(sp, &life), out1);
 	RCHECK(krb5_ret_stringz(sp, &sname), out1);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out1);
-	kdc_log(0, "AS-REQ %s.%s@%s from %s for %s.%s", 
-		name, inst, realm, from, sname, sinst);
+	snprintf (client_name, sizeof(client_name),
+		  "%s.%s@%s", name, inst, realm);
+	snprintf (server_name, sizeof(server_name),
+		  "%s.%s@%s", sname, sinst, v4_realm);
+	
+	kdc_log(0, "AS-REQ %s from %s for %s",
+		client_name, from, server_name);
 
 	client = db_fetch4(name, inst, realm);
 	if(client == NULL){
-	    kdc_log(0, "Client not found in database: %s.%s@%s", 
-		    name, inst, realm);
+	    kdc_log(0, "Client not found in database: %s", client_name);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, NULL);
 	    goto out1;
 	}
 	server = db_fetch4(sname, sinst, v4_realm);
 	if(server == NULL){
-	    kdc_log(0, "Server not found in database: %s.%s@%s", 
-		    sname, sinst, v4_realm);
+	    kdc_log(0, "Server not found in database: %s", server_name);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, NULL);
+	    goto out1;
+	}
+
+	ret = check_flags (client, client_name,
+			   server, server_name,
+			   TRUE);
+	if (ret) {
+	    /* good error code? */
+	    make_err_reply(reply, KERB_ERR_NAME_EXP, NULL);
 	    goto out1;
 	}
 
@@ -200,9 +214,8 @@ do_version4(unsigned char *buf,
 	    || server->flags.require_preauth) {
 	    kdc_log(0,
 		    "Pre-authentication required for v4-request: "
-		    "%s.%s@%s for %s.%s@%s", 
-		    name, inst, realm,
-		    sname, sinst, v4_realm);
+		    "%s for %s",
+		    client_name, server_name);
 	    make_err_reply(reply, KERB_ERR_NULL_KEY, NULL);
 	    goto out1;
 	}
@@ -349,8 +362,12 @@ do_version4(unsigned char *buf,
 	RCHECK(krb5_ret_int8(sp, &life), out2);
 	RCHECK(krb5_ret_stringz(sp, &sname), out2);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out2);
-	kdc_log(0, "TGS-REQ %s.%s@%s from %s for %s.%s", 
-		ad.pname, ad.pinst, ad.prealm, from, sname, sinst);
+	snprintf (server_name, sizeof(server_name),
+		  "%s.%s@%s",
+		  sname, sinst, v4_realm);
+
+	kdc_log(0, "TGS-REQ %s.%s@%s from %s for %s",
+		ad.pname, ad.pinst, ad.prealm, from, server_name);
 	
 	if(strcmp(ad.prealm, realm)){
 	    kdc_log(0, "Can't hop realms %s -> %s", realm, ad.prealm);
@@ -381,10 +398,19 @@ do_version4(unsigned char *buf,
 	server = db_fetch4(sname, sinst, v4_realm);
 	if(server == NULL){
 	    char *s;
-	    s = kdc_log_msg(0, "Server not found in database: %s.%s@%s", 
-			    sname, sinst, v4_realm);
+	    s = kdc_log_msg(0, "Server not found in database: %s",
+			    server_name);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
 	    free(s);
+	    goto out2;
+	}
+
+	ret = check_flags (NULL, NULL,
+			   server, server_name,
+			   FALSE);
+	if (ret) {
+	    /* good error code? */
+	    make_err_reply(reply, KERB_ERR_NAME_EXP, NULL);
 	    goto out2;
 	}
 
