@@ -1398,7 +1398,6 @@ static const struct {
 
 static void progress_bar(uint_t i, uint_t total)
 {
-	if (i % 10 != 0) return;
 	printf("%5d/%5d\r", i, total);
 	fflush(stdout);
 }
@@ -1651,3 +1650,275 @@ BOOL torture_denytest3(void)
 	return True;
 }
 
+struct bit_value {
+	uint32_t value;
+	const char *name;
+};
+
+static uint32_t map_bits(const struct bit_value *bv, int b, int nbits)
+{
+	int i;
+	uint32_t ret = 0;
+	for (i=0;i<nbits;i++) {
+		if (b & (1<<i)) {
+			ret |= bv[i].value;
+		}
+	}
+	return ret;
+}
+
+static const char *bit_string(TALLOC_CTX *mem_ctx, const struct bit_value *bv, int b, int nbits)
+{
+	char *ret = NULL;
+	int i;
+	for (i=0;i<nbits;i++) {
+		if (b & (1<<i)) {
+			if (ret == NULL) {
+				ret = talloc_asprintf(mem_ctx, "%s", bv[i].name);
+			} else {
+				ret = talloc_asprintf_append(ret, " | %s", bv[i].name);
+			}
+		}
+	}
+	if (ret == NULL) ret = talloc_strdup(mem_ctx, "(NONE)");
+	return ret;
+}
+
+
+/*
+  determine if two opens conflict
+*/
+static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2, uint32_t am2,
+				       enum deny_result *res)
+{
+#define CHECK_MASK(am, sa, right, share) do { \
+	if (((am) & (right)) && !((sa) & (share))) { \
+		*res = A_0; \
+		return NT_STATUS_SHARING_VIOLATION; \
+	}} while (0)
+
+	*res = A_0;
+	if (am2 & SA_RIGHT_FILE_WRITE_APPEND) {
+		*res += A_W;
+	}
+	if (am2 & SA_RIGHT_FILE_READ_DATA) {
+		*res += A_R;
+	}
+
+	/* if either open involves no read.write or delete access then
+	   it can't conflict */
+	if (!(am1 & (SA_RIGHT_FILE_WRITE_APPEND | 
+		     SA_RIGHT_FILE_READ_EXEC | 
+		     STD_RIGHT_DELETE_ACCESS))) {
+		return NT_STATUS_OK;
+	}
+	if (!(am2 & (SA_RIGHT_FILE_WRITE_APPEND | 
+		     SA_RIGHT_FILE_READ_EXEC | 
+		     STD_RIGHT_DELETE_ACCESS))) {
+		return NT_STATUS_OK;
+	}
+
+	/* check the basic share access */
+	CHECK_MASK(am1, sa2, 
+		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   NTCREATEX_SHARE_ACCESS_WRITE);
+	CHECK_MASK(am2, sa1, 
+		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   NTCREATEX_SHARE_ACCESS_WRITE);
+
+	CHECK_MASK(am1, sa2, 
+		   SA_RIGHT_FILE_READ_EXEC, 
+		   NTCREATEX_SHARE_ACCESS_READ);
+	CHECK_MASK(am2, sa1, 
+		   SA_RIGHT_FILE_READ_EXEC, 
+		   NTCREATEX_SHARE_ACCESS_READ);
+
+	CHECK_MASK(am1, sa2, 
+		   STD_RIGHT_DELETE_ACCESS, 
+		   NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(am2, sa1, 
+		   STD_RIGHT_DELETE_ACCESS, 
+		   NTCREATEX_SHARE_ACCESS_DELETE);
+
+	return NT_STATUS_OK;
+}
+
+/*
+  a denytest for ntcreatex
+ */
+static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *cli2, int client)
+{
+	const struct bit_value share_access_bits[] = {
+		{ NTCREATEX_SHARE_ACCESS_READ,   "S_R" },
+		{ NTCREATEX_SHARE_ACCESS_WRITE,  "S_W" },
+		{ NTCREATEX_SHARE_ACCESS_DELETE, "S_D" }
+	};
+	const struct bit_value access_mask_bits[] = {
+		{ SA_RIGHT_FILE_READ_DATA,        "R_DATA" },
+		{ SA_RIGHT_FILE_WRITE_DATA,       "W_DATA" },
+		{ SA_RIGHT_FILE_READ_ATTRIBUTES,  "R_ATTR" },
+		{ SA_RIGHT_FILE_WRITE_ATTRIBUTES, "W_ATTR" },
+		{ SA_RIGHT_FILE_READ_EA,          "R_EAS " },
+		{ SA_RIGHT_FILE_WRITE_EA,         "W_EAS " },
+		{ SA_RIGHT_FILE_APPEND_DATA,      "A_DATA" },
+		{ SA_RIGHT_FILE_EXECUTE,          "EXEC  " }
+	};
+	int fnum1;
+	int i;
+	BOOL correct = True;
+	struct timeval tv, tv_start;
+	const char *fname;
+	int nbits1 = ARRAY_SIZE(share_access_bits);
+	int nbits2 = ARRAY_SIZE(access_mask_bits);
+	union smb_open io1, io2;
+	extern int torture_numops;
+	int failures = 0;
+
+	fname = talloc_asprintf(cli1, "\\ntdeny_%d.dat", client);
+
+	smbcli_unlink(cli1->tree, fname);
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	smbcli_write(cli1->tree, fnum1, 0, fname, 0, strlen(fname));
+	smbcli_close(cli1->tree, fnum1);
+
+	GetTimeOfDay(&tv_start);
+
+	io1.ntcreatex.level = RAW_OPEN_NTCREATEX;
+	io1.ntcreatex.in.root_fid = 0;
+	io1.ntcreatex.in.flags = 0;
+	io1.ntcreatex.in.create_options = 0;
+	io1.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io1.ntcreatex.in.alloc_size = 0;
+	io1.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io1.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io1.ntcreatex.in.security_flags = 0;
+	io1.ntcreatex.in.fname = fname;
+	io2 = io1;
+
+	printf("testing %d entries on %s\n", torture_numops, fname);
+
+	for (i=0;i<torture_numops;i++) {
+		NTSTATUS status1, status2, status2_p;
+		int64_t tdif;
+		TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+		enum deny_result res, res2;
+		int b_sa1 = random() & ((1<<nbits1)-1);
+		int b_am1 = random() & ((1<<nbits2)-1);
+		int b_sa2 = random() & ((1<<nbits1)-1);
+		int b_am2 = random() & ((1<<nbits2)-1);
+
+		progress_bar(i, torture_numops);
+		
+		io1.ntcreatex.in.share_access = map_bits(share_access_bits, b_sa1, nbits1);
+		io1.ntcreatex.in.access_mask  = map_bits(access_mask_bits,  b_am1, nbits2);
+		
+		io2.ntcreatex.in.share_access = map_bits(share_access_bits, b_sa2, nbits1);
+		io2.ntcreatex.in.access_mask  = map_bits(access_mask_bits,  b_am2, nbits2);
+		
+		status1 = smb_raw_open(cli1->tree, mem_ctx, &io1);
+		status2 = smb_raw_open(cli2->tree, mem_ctx, &io2);
+		
+		if (!NT_STATUS_IS_OK(status1)) {
+			res = A_X;
+		} else if (!NT_STATUS_IS_OK(status2)) {
+			res = A_0;
+		} else {
+			char x = 1;
+			res = A_0;
+			if (smbcli_read(cli2->tree, 
+					io2.ntcreatex.out.fnum, (void *)&x, 0, 1) == 1) {
+				res += A_R;
+			}
+			if (smbcli_write(cli2->tree, 
+					 io2.ntcreatex.out.fnum, 0, (void *)&x, 0, 1) == 1) {
+				res += A_W;
+			}
+		}
+		
+		if (NT_STATUS_IS_OK(status1)) {
+			smbcli_close(cli1->tree, io1.ntcreatex.out.fnum);
+		}
+		if (NT_STATUS_IS_OK(status2)) {
+			smbcli_close(cli2->tree, io2.ntcreatex.out.fnum);
+		}
+		
+		status2_p = predict_share_conflict(io1.ntcreatex.in.share_access,
+						   io1.ntcreatex.in.access_mask,
+						   io2.ntcreatex.in.share_access,
+						   io2.ntcreatex.in.access_mask, &res2);
+		
+		GetTimeOfDay(&tv);
+		tdif = usec_time_diff(&tv, &tv_start);
+		tdif /= 1000;
+		if (torture_showall || 
+		    !NT_STATUS_EQUAL(status2, status2_p) ||
+		    res != res2) {
+			printf("\n%-20s %-70s\n%-20s %-70s %4s %4s  %s/%s\n",
+			       bit_string(mem_ctx, share_access_bits, b_sa1, nbits1),
+			       bit_string(mem_ctx, access_mask_bits,  b_am1, nbits2),
+			       bit_string(mem_ctx, share_access_bits, b_sa2, nbits1),
+			       bit_string(mem_ctx, access_mask_bits,  b_am2, nbits2),
+			       resultstr(res),
+			       resultstr(res2),
+			       nt_errstr(status2),
+			       nt_errstr(status2_p));
+			fflush(stdout);
+		}
+		
+		if (res != res2 ||
+		    !NT_STATUS_EQUAL(status2, status2_p)) {
+			CHECK_MAX_FAILURES(failed);
+			correct = False;
+		}
+		
+		talloc_free(mem_ctx);
+	}
+
+failed:
+	smbcli_unlink(cli1->tree, fname);
+	
+	printf("finshed ntdenytest (%d failures)\n", failures);
+	return correct;
+}
+
+
+
+/*
+  a denytest for ntcreatex
+ */
+BOOL torture_ntdenytest1(struct smbcli_state *cli, int client)
+{
+	extern int torture_seed;
+
+	srandom(torture_seed + client);
+
+	printf("starting ntdenytest1 client %d\n", client);
+
+	return torture_ntdenytest(cli, cli, client);
+}
+
+/*
+  a denytest for ntcreatex
+ */
+BOOL torture_ntdenytest2(void)
+{
+	struct smbcli_state *cli1, *cli2;
+	BOOL ret;
+
+	if (!torture_open_connection(&cli1)) {
+		return False;
+	}
+
+	if (!torture_open_connection(&cli2)) {
+		return False;
+	}
+
+	printf("starting ntdenytest2\n");
+
+	ret = torture_ntdenytest(cli1, cli2, 0);
+
+	torture_close_connection(cli1);
+	torture_close_connection(cli2);
+
+	return ret;
+}
