@@ -223,7 +223,7 @@ void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "spoolenum <printer name>\n");
+		report(out_hnd, "spooljobs <printer name>\n");
 		return;
 	}
 
