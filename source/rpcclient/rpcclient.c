@@ -246,7 +246,7 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 			  char* domain, char* password)
 {
 	ZERO_STRUCTP(creds);
-	
+
 	if (lp_encrypted_passwords()) {
 		pwd_make_lm_nt_16(&creds->pwd, password);
 	} else {
@@ -255,6 +255,10 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 
 	fstrcpy(creds->user_name, username);
 	fstrcpy(creds->domain, domain);
+
+	if (! *username) {
+		creds->pwd.null_pwd = True;
+	}
 }
 
 
@@ -577,7 +581,6 @@ static void usage(void)
 		case 'U': {
 			char *lp;
 			pstrcpy(username,optarg);
-			printf("got user=%s\n", username);
 			if ((lp=strchr_m(username,'%'))) {
 				*lp = 0;
 				pstrcpy(password,lp+1);
@@ -634,8 +637,8 @@ static void usage(void)
 	 * initialize the credentials struct.  Get password
 	 * from stdin if necessary
 	 */
-	if (!strlen(username))
-		get_username (username);
+	if (!strlen(username) && !got_pass)
+		get_username(username);
 		
 	if (!got_pass) {
 		init_rpcclient_creds (&creds, username, domain, "");
