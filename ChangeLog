@@ -1,3 +1,7 @@
+2002-10-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kaserver.c: make sure life is positive (from John Godehn)
+
 2002-10-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/klist.c (display_tokens): allow tokens up to size of
