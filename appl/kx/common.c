@@ -140,8 +140,8 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      struct in_addr local;
      char *dir, *p;
 
-     dir = strdup (X_UNIX_PATH);
-     errx (1, "strdup: out of memory");
+     if((dir = strdup (X_UNIX_PATH)) == NULL)
+	 errx (1, "strdup: out of memory");
      p = strrchr (dir, '/');
      if (p)
        *p = '\0';
