@@ -70,27 +70,6 @@ static int find_service(const char *service)
 
 	iService = lp_servicenumber(service);
 
-	/* now handle the special case of a home directory */
-	if (iService == -1) {
-		char *phome_dir = get_user_home_dir(service);
-
-		if(!phome_dir) {
-			/*
-			 * Try mapping the servicename, it may
-			 * be a Windows to unix mapped user name.
-			 */
-/* REWRITE:
-			if (map_username(service))
-				phome_dir = get_user_home_dir(service);
-*/
-		}
-		
-		DEBUG(3,("checking for home directory %s gave %s\n",service,
-			 phome_dir?phome_dir:"(NULL)"));
-		
-		iService = add_home_service(service,service /* 'username' */, phome_dir);
-	}
-
 	/* If we still don't have a service, attempt to add it as a printer. */
 	if (iService == -1) {
 		int iPrinterService;

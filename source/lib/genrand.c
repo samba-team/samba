@@ -135,7 +135,6 @@ static int do_reseed(BOOL use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
 	uint32 v1, v2; struct timeval tval; pid_t mypid;
-	struct passwd *pw;
 
 	if (use_fd) {
 		if (fd != -1)
@@ -150,22 +149,6 @@ static int do_reseed(BOOL use_fd, int fd)
 
 	do_filehash("/etc/shadow", &seed_inbuf[0]);
 	do_filehash(lp_smb_passwd_file(), &seed_inbuf[16]);
-
-	/*
-	 * Add in the root encrypted password.
-	 * On any system where security is taken
-	 * seriously this will be secret.
-	 */
-
-	pw = getpwnam_alloc("root");
-	if (pw && pw->pw_passwd) {
-		size_t i;
-		unsigned char md4_tmp[16];
-		mdfour(md4_tmp, (unsigned char *)pw->pw_passwd, strlen(pw->pw_passwd));
-		for (i=0;i<16;i++)
-			seed_inbuf[8+i] ^= md4_tmp[i];
-		passwd_free(&pw);
-	}
 
 	/*
 	 * Add the counter, time of day, and pid.

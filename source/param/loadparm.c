@@ -2994,29 +2994,7 @@ BOOL lp_snum_ok(int iService)
 
 static void lp_add_auto_services(char *str)
 {
-	char *s;
-	char *p;
-	int homes;
-
-	if (!str)
-		return;
-
-	s = strdup(str);
-	if (!s)
-		return;
-
-	homes = lp_servicenumber(HOMES_NAME);
-
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
-		char *home = get_user_home_dir(p);
-
-		if (lp_servicenumber(p) >= 0)
-			continue;
-
-		if (home && homes >= 0)
-			lp_add_home(p, homes, p, home);
-	}
-	SAFE_FREE(s);
+	return;
 }
 
 /***************************************************************************

@@ -694,8 +694,6 @@ extern int errno;
 #include "charset.h"
 #include "dynconfig.h"
 
-#include "util_getent.h"
-
 #include "version.h"
 #include "smb.h"
 #include "ads.h"
@@ -703,8 +701,6 @@ extern int errno;
 #include "secrets.h"
 
 #include "byteorder.h"
-
-#include "msdfs.h"
 
 #include "md5.h"
 #include "hmacmd5.h"
@@ -721,8 +717,6 @@ extern int errno;
 
 #include "popt.h"
 
-#include "mangle.h"
-
 #include "mutex.h"
 
 #include "librpc/rpc/dcerpc.h"
@@ -732,13 +726,6 @@ extern int errno;
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "registry.h"
-
-
-/* used in net.c */
-struct functable {
-	const char *funcname;
-	int (*fn)(int argc, const char **argv);
-};
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
