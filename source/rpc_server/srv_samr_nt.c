@@ -2274,26 +2274,35 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	}
 #endif
 
-	/* 
-	 * we can't check both the ending $ and the acb_info.
-	 * 
-	 * UserManager creates trust accounts (ending in $,
-	 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
-	 * JFM, 11/29/2001
-	 */
-	if (account[strlen(account)-1] == '$')
-		pstrcpy(add_script, lp_addmachine_script());		
-	else 
-		pstrcpy(add_script, lp_adduser_script());
-
-	if (*add_script) {
-  		int add_ret;
-  		all_string_sub(add_script, "%u", account, sizeof(account));
-  		add_ret = smbrun(add_script,NULL);
- 		DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
-  	}
-	
+	/* the passdb lookup has failed; check to see if we need to run the
+	   add user/machine script */
+	   
 	pw = getpwnam_alloc(account);
+	
+	if ( !pw ) {
+		/* 
+		 * we can't check both the ending $ and the acb_info.
+		 * 
+		 * UserManager creates trust accounts (ending in $,
+		 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
+		 * JFM, 11/29/2001
+		 */
+		if (account[strlen(account)-1] == '$')
+			pstrcpy(add_script, lp_addmachine_script());		
+		else 
+			pstrcpy(add_script, lp_adduser_script());
+
+		if (*add_script) {
+  			int add_ret;
+  			all_string_sub(add_script, "%u", account, sizeof(account));
+  			add_ret = smbrun(add_script,NULL);
+ 			DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+  		}
+		
+		/* try again */
+		pw = getpwnam_alloc(account);
+	}
+	
 
 	if (pw) {
 		nt_status = pdb_init_sam_pw(&sam_pass, pw);
