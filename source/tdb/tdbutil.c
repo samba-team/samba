@@ -120,22 +120,45 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 
 /* useful pair of routines for packing/unpacking data consisting of
    integers and strings */
+#ifdef HAVE_STDARG_H
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 {
+#else /* HAVE_STDARG_H */
+ size_t tdb_pack(va_alist)
+va_dcl
+{
+	char *buf, *fmt;
+	int bufsize;
+#endif /* HAVE_STDARG_H */
+	va_list ap;
 	uint16 w;
 	uint32 d;
 	int i;
 	void *p;
 	int len;
 	char *s;
+	char c;
+#ifdef HAVE_STDARG_H
 	char *buf0 = buf;
 	char *fmt0 = fmt;
 	int bufsize0 = bufsize;
-	va_list ap;
-	char c;
 
 	va_start(ap, fmt);
-	
+#else /* HAVE_STDARG_H */
+	char *buf0;
+	char *fmt0;
+	int bufsize0;
+
+	va_start(ap);
+	buf = va_arg(ap,char *);
+	bufsize = va_arg(ap,int);
+	fmt = va_arg(ap,char *);
+
+	buf0 = buf;
+	fmt0 = fmt;
+	bufsize0 = bufsize;
+#endif /* HAVE_STDARG_H */
+
 	while (*fmt) {
 		switch ((c = *fmt++)) {
 		case 'w':
@@ -207,21 +230,44 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 
 /* useful pair of routines for packing/unpacking data consisting of
    integers and strings */
+#ifdef HAVE_STDARG_H
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 {
+#else /* HAVE_STDARG_H */
+ int tdb_unpack(va_alist)
+va_dcl
+{
+	char *buf, *fmt;
+	int bufsize;
+#endif /* HAVE_STDARG_H */
+	va_list ap;
 	uint16 *w;
 	uint32 *d;
 	int len;
 	int *i;
 	void **p;
 	char *s, **b;
+	char c;
+#ifdef HAVE_STDARG_H
 	char *buf0 = buf;
 	char *fmt0 = fmt;
 	int bufsize0 = bufsize;
-	va_list ap;
-	char c;
 
 	va_start(ap, fmt);
+#else /* HAVE_STDARG_H */
+	char *buf0;
+	char *fmt0;
+	int bufsize0;
+
+	va_start(ap);
+	buf = va_arg(ap,char *);
+	bufsize = va_arg(ap,int);
+	fmt = va_arg(ap,char *);
+
+	buf0 = buf;
+	fmt0 = fmt;
+	bufsize0 = bufsize;
+#endif /* HAVE_STDARG_H */
 	
 	while (*fmt) {
 		switch ((c=*fmt++)) {
