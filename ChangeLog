@@ -1,3 +1,16 @@
+1999-05-14  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hpropd.c: support for dumping to krb4.  From Miroslav Ruda
+ 	<ruda@ics.muni.cz>
+
+	* admin/ktutil.c (kt_add): new option `--no-salt'.  From Miroslav
+ 	Ruda <ruda@ics.muni.cz>
+
+	* configure.in: add cygwin and DOS tests replace sendmsg, recvmsg,
+ 	and innetgr with roken versions
+
+	* kuser/kgetcred.c: new program
+
 Tue May 11 14:09:33 1999  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/mcache.c: fix paste-o
