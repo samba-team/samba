@@ -32,10 +32,10 @@ PDB_MODULE_VERSIONING_MAGIC
  Start enumeration of the passwd list.
 ****************************************************************/
 
-static BOOL testsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS testsam_setsampwent(struct pdb_methods *methods, BOOL update)
 {
 	DEBUG(10, ("testsam_setsampwent called\n"));
-	return True;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************
@@ -51,60 +51,60 @@ static void testsam_endsampwent(struct pdb_methods *methods)
  Get one SAM_ACCOUNT from the list (next in line)
 *****************************************************************/
 
-static BOOL testsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *user)
+static NTSTATUS testsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *user)
 {
 	DEBUG(10, ("testsam_getsampwent called\n"));
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /******************************************************************
  Lookup a name in the SAM database
 ******************************************************************/
 
-static BOOL testsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
+static NTSTATUS testsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
 {
 	DEBUG(10, ("testsam_getsampwnam called\n"));
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
  Search by sid
  **************************************************************************/
 
-static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, const DOM_SID *sid)
+static NTSTATUS testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, const DOM_SID *sid)
 {
 	DEBUG(10, ("testsam_getsampwsid called\n"));
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_delete_sam_account(struct pdb_methods *methods, SAM_ACCOUNT *sam_pass)
+static NTSTATUS testsam_delete_sam_account(struct pdb_methods *methods, SAM_ACCOUNT *sam_pass)
 {
 	DEBUG(10, ("testsam_delete_sam_account called\n"));
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS testsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
 	DEBUG(10, ("testsam_update_sam_account called\n"));
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS testsam_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
 	DEBUG(10, ("testsam_add_sam_account called\n"));
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS pdb_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
