@@ -204,15 +204,15 @@
 	</para>
 
 	<para>
-	For these exercises, our test environment consisted of a SUSE 8.2 Professional Linux Workstation running
-	VMWare 3.2. The following VMWare images were prepared:
+	For these exercises, our test environment consisted of a SUSE 9.2 Professional Linux Workstation running
+	VMWare 4.5. The following VMWare images were prepared:
 	</para>
 
 	<itemizedlist>
 		<listitem><para>Windows 98 &smbmdash; name: MILGATE98.</para></listitem>
 		<listitem><para>Windows Me &smbmdash; name: WINEPRESSME.</para></listitem>
 		<listitem><para>Windows XP Professional &smbmdash; name: LightrayXP.</para></listitem>
-		<listitem><para>Samba-3.0.2 running on a SUSE Enterprise Linux 8.0 machine.</para></listitem>
+		<listitem><para>Samba-3.0.12 running on a SUSE Enterprise Linux 9.</para></listitem>
 	</itemizedlist>
 
 	<para>
@@ -222,7 +222,7 @@
 	<para>
 	<indexterm><primary>ethereal</primary></indexterm>
 	The network captures provided on the CD-ROM at the back of this book were captured using <constant>ethereal</constant>
-	version <literal>0.9.10</literal>. A later version suffices without problems, but an earlier version may not
+	version <literal>0.10.6</literal>. A later version suffices without problems, but an earlier version may not
 	expose all the information needed. Each capture file has been decoded and listed as a trace file. A summary of all
 	packets has also been included. This makes it possible for you to do all the studying you like without the need to
 	perform the time-consuming equipment configuration and test work. This is a good time to point out the value
