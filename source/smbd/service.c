@@ -821,8 +821,6 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	DirCacheFlush(SNUM(conn));
-
 	if (IS_IPC(conn)) {
 		pipe_close_conn(conn);
 	} else {
