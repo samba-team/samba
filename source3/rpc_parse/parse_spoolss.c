@@ -1813,7 +1813,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-#if 1 /* JFMTEST */
+#if 0 /* JFMTEST */
 	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, &dummy, &sec_offset))
 		return False;
 #else
@@ -1838,7 +1838,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!prs_uint32("averageppm", ps, depth, &info->averageppm))
 		return False;
 
-#if 1 /* JFMTEST */
+#if 0 /* JFMTEST */
 	if (!prs_uint32_post("secdesc_ptr", ps, depth, NULL, sec_offset, info->secdesc ? prs_offset(ps)-buffer->struct_start : 0 ))
 		return False;
 
