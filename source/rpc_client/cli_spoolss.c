@@ -401,20 +401,10 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         SPOOL_R_ENUMPRINTERS r;
 	NEW_BUFFER buffer;
 	WERROR result = W_ERROR(ERRgeneral);
-	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Use server name if no object name specified */
-
-	if (name)
-		slprintf(server, sizeof(fstring) - 1, "\\\\%s", name);
-	else
-		slprintf(server, sizeof(fstring) - 1, "\\\\%s", cli->desthost);
-
-        strupper (server);
-	
 	/* Initialise input parameters */
 
 	init_buffer(&buffer, offered, mem_ctx);
@@ -422,7 +412,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	make_spoolss_q_enumprinters(&q, flags, server, level, &buffer, 
+	make_spoolss_q_enumprinters(&q, flags, name, level, &buffer, 
 				    offered);
 
 	/* Marshall data and send request */
