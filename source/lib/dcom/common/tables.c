@@ -77,7 +77,12 @@ NTSTATUS dcom_register_interface(const void *_iface)
 {
 	const struct dcom_interface *iface = _iface;
 	struct interface_list *l;
+	TALLOC_CTX *lcl_ctx = talloc_init("dcom_register_interface");
 
+	DEBUG(5, ("Adding DCOM interface %s\n", GUID_string(lcl_ctx, &iface->iid)));
+
+	talloc_destroy(lcl_ctx);
+	
 	l = talloc_zero_p(interfaces?interfaces:talloc_autofree_context(), 
 			  struct interface_list);
 
