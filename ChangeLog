@@ -1,3 +1,7 @@
+Sun Aug 24 16:46:53 1997  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.0f
+
 Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
 
 	* appl/rsh/rshd.c: syslog remote shells
