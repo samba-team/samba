@@ -337,12 +337,12 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 	/* Call rpc function */
 	
 	werror = cli_spoolss_enum_printers(
-		cli, mem_ctx, 0, &needed, name, flags, level,
+		cli, mem_ctx, 0, &needed, flags, level,
 		&num_printers, &ctr);
 
 	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
 		werror = cli_spoolss_enum_printers(
-			cli, mem_ctx, needed, NULL, name, flags, level,
+			cli, mem_ctx, needed, NULL, flags, level,
 			&num_printers, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
