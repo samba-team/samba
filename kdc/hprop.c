@@ -58,6 +58,7 @@ static int v4_db;
 #ifdef KASERVER_DB
 static int ka_db;
 static char *afs_cell;
+static int kaspecials_flag;
 #endif
 #endif
 
@@ -260,12 +261,15 @@ read_block(krb5_context context, int fd, int32_t pos, void *buf, size_t len)
 }
 
 static int
-ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent, const char *cell)
+ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent,
+	   const char *cell)
 {
     int32_t flags = ntohl(ent->flags);
     krb5_error_code ret;
     hdb_entry hdb;
-    if((flags & KAFNORMAL) == 0) /* remove special entries */
+
+    if(!kaspecials_flag
+       && (flags & KAFNORMAL) == 0) /* remove special entries */
 	return 0;
     memset(&hdb, 0, sizeof(hdb));
     ret = krb5_425_conv_principal(pd->context, ent->name, ent->instance, realm,
@@ -379,6 +383,7 @@ struct getargs args[] = {
 #ifdef KASERVER_DB
     { "ka-db",	  'K',  arg_flag, &ka_db, "use kaserver database" },
     { "cell",	  'c',  arg_string, &afs_cell, "name of AFS cell" },
+    { "kaspecials", 'S', arg_flag,   &kaspecials_flag, "dump KASPECIAL keys"},
 #endif
     { "keytab",   'k',	arg_string, &ktname, "keytab to use for authentication", "keytab" },
     { "decrypt",  'D',  arg_flag,   &decrypt_flag,   "decrypt keys" },
