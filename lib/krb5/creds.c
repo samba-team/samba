@@ -135,7 +135,7 @@ krb5_free_creds (krb5_context context, krb5_creds *c)
 
 krb5_boolean
 krb5_compare_creds(krb5_context context, krb5_flags whichfields, 
-		   krb5_creds *mcreds, krb5_creds *creds)
+		   const krb5_creds *mcreds, const krb5_creds *creds)
 {
     krb5_boolean match;
 
