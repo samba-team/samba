@@ -138,7 +138,7 @@ SAMRNT5LDAPLIB = bin/libsamrnt5ldap.la
 SAMBA_LIBS = $(MSRPCLIB) $(SMBLIB) $(NMBLIB) $(SAMBALIB)
 
 SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) $(SMBPWLIB) \
-                $(SAMRPASSLIB) $(SAMRTDBLIB) $(SAMRNT5LDAPLIB)
+                $(SAMRPASSLIB) 
 
 LIBSTATUS_OBJ = lib/util_status.o 
 
