@@ -292,6 +292,32 @@ AC_NEED_PROTO([
 hstrerror)
 fi
 
+dnl sigh, wish this could be done in a loop
+if test "$ac_cv_func_asprintf" = yes; then
+AC_NEED_PROTO([
+#include <stdio.h>
+#include <string.h>],
+asprintf)dnl
+fi
+if test "$ac_cv_func_vasprintf" = yes; then
+AC_NEED_PROTO([
+#include <stdio.h>
+#include <string.h>],
+vasprintf)dnl
+fi
+if test "$ac_cv_func_asnprintf" = yes; then
+AC_NEED_PROTO([
+#include <stdio.h>
+#include <string.h>],
+asnprintf)dnl
+fi
+if test "$ac_cv_func_vasnprintf" = yes; then
+AC_NEED_PROTO([
+#include <stdio.h>
+#include <string.h>],
+vasnprintf)dnl
+fi
+
 AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
 AC_BROKEN(getdtablesize getopt getusershell inet_aton)
 AC_BROKEN(initgroups iruserok lstat memmove mkstemp)
