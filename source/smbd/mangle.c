@@ -244,12 +244,20 @@ static BOOL is_illegal_name( char *name )
   {
   unsigned char *s;
   int            skip;
+  int namelen;
 
   if( !name )
     return( True );
 
   if( !ct_initialized )
     init_chartest();
+
+  namelen = strlen(name);
+  if (namelen &&
+		  name[namelen-1] == '.' &&
+		  !strequal(name, ".") &&
+		  !strequal(name, ".."))
+	  return True;
 
   s = (unsigned char *)name;
   while( *s )
@@ -403,15 +411,6 @@ BOOL is_8_3( char *fname, BOOL check_case )
   /* base can't be greater than 8 */
   if( l > 8 )
     return( False );
-
-  /* see smb.conf(5) for a description of the 'strip dot' parameter. */
-  if( lp_strip_dot()
-   && len - l == 1
-   && !strchr( dot_pos + 1, '.' ) )
-    {
-    *dot_pos = 0;
-    return( True );
-    }
 
   /* extension must be between 1 and 3 */
   if( (len - l < 2 ) || (len - l > 4) )
