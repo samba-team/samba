@@ -640,27 +640,16 @@ BOOL check_domain_env(char *domain_env, char *domain)
 
 /* Parse a string of the form DOMAIN/user into a domain and a user */
 
-void parse_domain_user(const char *domuser, fstring domain, fstring user)
+BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
-	char *p;
-	char *sep = lp_winbind_separator();
+	char *p = strchr(domuser,*lp_winbind_separator());
 
-	if (!sep) 
-		sep = "\\";
-
-	p = strchr(domuser,*sep);
-
-	if (!p) 
-		p = strchr(domuser,'\\');
-
-	if (!p) {
-		fstrcpy(domain,"");
-		fstrcpy(user, domuser);
-		return;
-	}
+	if (!p)
+		return False;
 	
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
 	strupper(domain);
+	return True;
 }

@@ -213,7 +213,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	fstring name2, dom2;
 	
 	/* sigh. Need to fix interface to give us a raw name */
-	parse_domain_user(name, dom2, name2);
+	if (!parse_domain_user(name, dom2, name2))
+		return NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3,("ads: name_to_sid\n"));
 
@@ -287,7 +288,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	fstring dom2, name2;
 
 	/* sigh. Need to fix interface to give us a raw name */
-	parse_domain_user(user_name, dom2, name2);
+	if (!parse_domain_user(user_name, dom2, name2))
+		return NT_STATUS_UNSUCCESSFUL;
 	
 	DEBUG(3,("ads: query_user\n"));
 
