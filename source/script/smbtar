@@ -80,7 +80,7 @@ while getopts riavl:b:d:N:s:p:x:u:Xt: c; do
       tarcmd="x"
       ;;
    i) # [i]ncremental
-      tarargs=${tarargs}g
+      tarargs=${tarargs}ga
       clientargs="-c 'tarmode inc'"
       ;;
    a) # [a]rchive
