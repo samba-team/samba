@@ -582,17 +582,17 @@ static int cmd_dir(void)
 		if(mask[strlen(mask)-1]!='\\')
 			pstrcat(mask,"\\");
 	} else {
-		*mask = '\0';
+		pstrcpy(mask, "\\");
 	}
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == '\\')
-			pstrcpy(mask,p);
+			pstrcpy(mask,p + 1);
 		else
 			pstrcat(mask,p);
 	} else {
-		pstrcat(mask,"\\*");
+		pstrcat(mask,"*");
 	}
 
 	do_list(mask, attribute, display_finfo, recurse, True);

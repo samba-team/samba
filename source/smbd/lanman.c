@@ -1874,7 +1874,7 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 	
 	/* Open the passgrp file - not for update. */
 	become_root();
-	if(!pdb_setsampwent(False)) {
+	if(!pdb_setsampwent(False, 0)) {
 		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
 		unbecome_root();
 		return False;

@@ -183,6 +183,14 @@ struct winbindd_methods {
 				      const DOM_SID *user_sid,
 				      uint32 *num_groups, DOM_SID ***user_gids);
 
+	/* Lookup all aliases that the sids delivered are member of. This is
+	 * to implement 'domain local groups' correctly */
+	NTSTATUS (*lookup_useraliases)(struct winbindd_domain *domain,
+				       TALLOC_CTX *mem_ctx,
+				       uint32 num_sids, DOM_SID **sids,
+				       uint32 *num_aliases,
+				       uint32 **alias_rids);
+
 	/* find all members of the group with the specified group_rid */
 	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,

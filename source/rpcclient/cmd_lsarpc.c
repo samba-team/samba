@@ -445,6 +445,48 @@ static NTSTATUS cmd_lsa_enum_sids(struct cli_state *cli,
 	return result;
 }
 
+/* Create a new account */
+
+static NTSTATUS cmd_lsa_create_account(struct cli_state *cli, 
+                                           TALLOC_CTX *mem_ctx, int argc, 
+                                           const char **argv) 
+{
+	POLICY_HND dom_pol;
+	POLICY_HND user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 des_access = 0x000f000f;
+	
+	DOM_SID sid;
+
+	if (argc != 2 ) {
+		printf("Usage: %s SID\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;	
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_create_account(cli, mem_ctx, &dom_pol, &sid, des_access, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	printf("Account for SID %s successfully created\n\n", argv[1]);
+	result = NT_STATUS_OK;
+
+ done:
+	return result;
+}
+
+
 /* Enumerate the privileges of an SID */
 
 static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli, 
@@ -531,7 +573,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, sid, &count, &rights);
+	result = cli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, &sid, &count, &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -708,8 +750,13 @@ struct cmd_set lsarpc_commands[] = {
 	{ "enumprivs", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privilege,     NULL, PI_LSARPC, "Enumerate privileges",                 "" },
 	{ "getdispname",         RPC_RTYPE_NTSTATUS, cmd_lsa_get_dispname,       NULL, PI_LSARPC, "Get the privilege name",               "" },
 	{ "lsaenumsid",          RPC_RTYPE_NTSTATUS, cmd_lsa_enum_sids,          NULL, PI_LSARPC, "Enumerate the LSA SIDS",               "" },
+	{ "lsacreateaccount",    RPC_RTYPE_NTSTATUS, cmd_lsa_create_account,     NULL, PI_LSARPC, "Create a new lsa account",   "" },
 	{ "lsaenumprivsaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privsaccounts, NULL, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
 	{ "lsaenumacctrights",   RPC_RTYPE_NTSTATUS, cmd_lsa_enum_acct_rights,   NULL, PI_LSARPC, "Enumerate the rights of an SID",   "" },
+#if 0
+	{ "lsaaddpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_add_priv,           NULL, PI_LSARPC, "Assign a privilege to a SID", "" },
+	{ "lsadelpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_del_priv,           NULL, PI_LSARPC, "Revoke a privilege from a SID", "" },
+#endif
 	{ "lsaaddacctrights",    RPC_RTYPE_NTSTATUS, cmd_lsa_add_acct_rights,    NULL, PI_LSARPC, "Add rights to an account",   "" },
 	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, "Remove rights from an account",   "" },
 	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookupprivvalue,    NULL, PI_LSARPC, "Get a privilege value given its name", "" },
@@ -717,3 +764,4 @@ struct cmd_set lsarpc_commands[] = {
 
 	{ NULL }
 };
+

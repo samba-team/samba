@@ -393,6 +393,37 @@ static BOOL api_lsa_unk_get_connuser(pipes_struct *p)
 }
 
 /***************************************************************************
+ api_lsa_create_user
+ ***************************************************************************/
+
+static BOOL api_lsa_create_account(pipes_struct *p)
+{
+	LSA_Q_CREATEACCOUNT q_u;
+	LSA_R_CREATEACCOUNT r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_create_account("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_create_account: failed to unmarshall LSA_Q_CREATEACCOUNT.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_create_account(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_create_account("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_create_account: Failed to marshall LSA_R_CREATEACCOUNT.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
  api_lsa_open_user
  ***************************************************************************/
 
@@ -611,7 +642,100 @@ static BOOL api_lsa_query_secobj(pipes_struct *p)
 }
 
 /***************************************************************************
- api_lsa_query_dnsdomainfo
+ api_lsa_add_acct_rights
+ ***************************************************************************/
+
+static BOOL api_lsa_add_acct_rights(pipes_struct *p)
+{
+	LSA_Q_ADD_ACCT_RIGHTS q_u;
+	LSA_R_ADD_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_add_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_add_acct_rights: failed to unmarshall LSA_Q_ADD_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_add_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_add_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_add_acct_rights: Failed to marshall LSA_R_ADD_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_remove_acct_rights
+ ***************************************************************************/
+
+static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
+{
+	LSA_Q_REMOVE_ACCT_RIGHTS q_u;
+	LSA_R_REMOVE_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_remove_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_remove_acct_rights: failed to unmarshall LSA_Q_REMOVE_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_remove_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_remove_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_remove_acct_rights: Failed to marshall LSA_R_REMOVE_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_enum_acct_rights
+ ***************************************************************************/
+
+static BOOL api_lsa_enum_acct_rights(pipes_struct *p)
+{
+	LSA_Q_ENUM_ACCT_RIGHTS q_u;
+	LSA_R_ENUM_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_enum_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_enum_acct_rights: failed to unmarshall LSA_Q_ENUM_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_enum_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_enum_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_enum_acct_rights: Failed to marshall LSA_R_ENUM_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_query_info2
  ***************************************************************************/
 
 static BOOL api_lsa_query_info2(pipes_struct *p)
@@ -659,12 +783,16 @@ static struct api_struct api_lsa_cmds[] =
 	{ "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
 	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
 	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
+	{ "LSA_CREATEACCOUNT"   , LSA_CREATEACCOUNT   , api_lsa_create_account   },
 	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
 	{ "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
 	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },
 	{ "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
 	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
 	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
+	{ "LSA_ADDACCTRIGHTS"   , LSA_ADDACCTRIGHTS   , api_lsa_add_acct_rights    },
+	{ "LSA_REMOVEACCTRIGHTS", LSA_REMOVEACCTRIGHTS, api_lsa_remove_acct_rights },
+	{ "LSA_ENUMACCTRIGHTS"  , LSA_ENUMACCTRIGHTS  , api_lsa_enum_acct_rights },
 	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
 	/* be careful of the adding of new RPC's.  See commentrs below about
 	   ADS DC capabilities                                               */

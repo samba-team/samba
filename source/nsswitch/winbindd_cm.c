@@ -266,7 +266,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	if ((getpeername((*cli)->fd, &peeraddr, &peeraddr_len) != 0) ||
 	    (peeraddr_len != sizeof(struct sockaddr_in)) ||
 	    (peeraddr_in->sin_family != PF_INET))
+	{
+		DEBUG(0,("cm_prepare_connection: %s\n", strerror(errno)));
 		goto done;
+	}
 
 	if (ntohs(peeraddr_in->sin_port) == 139) {
 		struct nmb_name calling;
@@ -443,21 +446,6 @@ static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 	return True;
 }
 
-static BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
-				const char *str, char ***array, int *num)
-{
-	char *dup_str = talloc_strdup(mem_ctx, str);
-
-	*array = TALLOC_REALLOC_ARRAY(mem_ctx, *array, char *, (*num)+1);
-
-	if ((*array == NULL) || (dup_str == NULL))
-		return False;
-
-	(*array)[*num] = dup_str;
-	*num += 1;
-	return True;
-}
-
 static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 				  struct in_addr ip, uint16 port,
 				  struct sockaddr_in **addrs, int *num)
@@ -504,6 +492,8 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 			break;
 		}
 	}
+
+	SAFE_FREE(iplist);
 
 	return True;
 }
@@ -552,6 +542,12 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		}
 
 		if (!resolve_name(dcname, &ip, 0x20))
+			continue;
+
+		/* Even if we got the dcname, double check the name to use for
+		 * the netlogon auth2 */
+
+		if (!name_status_find(domain->name, 0x1c, 0x20, ip, dcname))
 			continue;
 
 		add_one_dc_unique(mem_ctx, domain->name, dcname, ip,

@@ -28,6 +28,17 @@
 extern DOM_SID domain_sid;
 
 /****************************************************************************
+ display sam_user_info_7 structure
+ ****************************************************************************/
+static void display_sam_user_info_7(SAM_USER_INFO_7 *usr)
+{
+	fstring temp;
+
+	unistr2_to_ascii(temp, &usr->uni_name, sizeof(temp)-1);
+	printf("\tUser Name   :\t%s\n", temp);
+}
+
+/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -336,7 +347,17 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_sam_user_info_21(user_ctr->info.id21);
+	switch (user_ctr->switch_value) {
+	case 21:
+		display_sam_user_info_21(user_ctr->info.id21);
+		break;
+	case 7:
+		display_sam_user_info_7(user_ctr->info.id7);
+		break;
+	default:
+		printf("Unsupported infolevel: %d\n", info_level);
+		break;
+	}
 
 done:
 	return result;
@@ -658,13 +679,16 @@ static NTSTATUS cmd_samr_enum_dom_users(struct cli_state *cli,
 	uint16 acb_mask = ACB_NORMAL;
 	BOOL got_connect_pol = False, got_domain_pol = False;
 
-	if ((argc < 1) || (argc > 2)) {
-		printf("Usage: %s [access_mask]\n", argv[0]);
+	if ((argc < 1) || (argc > 3)) {
+		printf("Usage: %s [access_mask] [acb_mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
 	if (argc > 1)
 		sscanf(argv[1], "%x", &access_mask);
+
+	if (argc > 2)
+		sscanf(argv[2], "%x", &acb_mask);
 
 	/* Get sam policy handle */
 
@@ -1212,6 +1236,57 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli,
 	return result;
 }
 
+/* Create domain group */
+
+static NTSTATUS cmd_samr_create_dom_group(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, const char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol, group_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *grp_name;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+
+	if ((argc < 2) || (argc > 3)) {
+		printf("Usage: %s groupname [access mask]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	grp_name = argv[1];
+	
+	if (argc > 2)
+                sscanf(argv[2], "%x", &access_mask);
+
+	/* Get sam policy handle */
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get domain policy handle */
+
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      access_mask,
+				      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Create domain user */
+
+	result = cli_samr_create_dom_group(cli, mem_ctx, &domain_pol,
+					   grp_name, MAXIMUM_ALLOWED_ACCESS,
+					   &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+ done:
+	return result;
+}
+
 /* Lookup sam names */
 
 static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli, 
@@ -1572,6 +1647,7 @@ struct cmd_set samr_commands[] = {
 	{ "enumalsgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_als_groups,       NULL, PI_SAMR,	"Enumerate alias groups",  "" },
 
 	{ "createdomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_user,       NULL, PI_SAMR,	"Create domain user",      "" },
+	{ "createdomgroup",     RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_group,      NULL, PI_SAMR,	"Create domain group",     "" },
 	{ "samlookupnames",     RPC_RTYPE_NTSTATUS, cmd_samr_lookup_names,          NULL, PI_SAMR,	"Look up names",           "" },
 	{ "samlookuprids",      RPC_RTYPE_NTSTATUS, cmd_samr_lookup_rids,           NULL, PI_SAMR,	"Look up names",           "" },
 	{ "deletedomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_delete_dom_user,       NULL, PI_SAMR,	"Delete domain user",      "" },

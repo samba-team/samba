@@ -50,7 +50,7 @@ NTSTATUS cli_ds_getprimarydominfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	q.level = level;
 	
 	if (!ds_io_q_getprimdominfo("", &qbuf, 0, &q) 
-	    || !rpc_api_pipe_req(cli, DS_GETPRIMDOMINFO, &qbuf, &rbuf)) {
+	    || !rpc_api_pipe_req(cli, PI_LSARPC_DS, DS_GETPRIMDOMINFO, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -110,7 +110,7 @@ NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_ds_enum_domain_trusts( &q, server, flags );
 		
 	if (!ds_io_q_enum_domain_trusts("", &qbuf, 0, &q) 
-	    || !rpc_api_pipe_req(cli, DS_ENUM_DOM_TRUSTS, &qbuf, &rbuf)) {
+	    || !rpc_api_pipe_req(cli, PI_LSARPC_DS, DS_ENUM_DOM_TRUSTS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}

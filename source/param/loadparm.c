@@ -291,6 +291,7 @@ typedef struct
 	BOOL bKernelChangeNotify;
 	BOOL bUseKerberosKeytab;
 	BOOL bDeferSharingViolations;
+	BOOL bEnablePrivileges;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -809,6 +810,7 @@ static struct parm_struct parm_table[] = {
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_HIDE}, 
 	{"root", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_HIDE}, 
 	{"guest account", P_STRING, P_GLOBAL, &Globals.szGuestaccount, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED}, 
+	{"enable privileges", P_BOOL, P_GLOBAL, &Globals.bEnablePrivileges, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"pam password change", P_BOOL, P_GLOBAL, &Globals.bPamPasswordChange, NULL, NULL, FLAG_ADVANCED}, 
 	{"passwd program", P_STRING, P_GLOBAL, &Globals.szPasswdProgram, NULL, NULL, FLAG_ADVANCED}, 
@@ -1092,6 +1094,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED}, 
+	{"ldap password sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_HIDE}, 
 	{"ldap replication sleep", P_INTEGER, P_GLOBAL, &Globals.ldap_replication_sleep, NULL, NULL, FLAG_ADVANCED},
 	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
@@ -1537,6 +1540,12 @@ static void init_globals(void)
 
 	Globals.bDeferSharingViolations = True;
 	string_set(&Globals.smb_ports, SMB_PORTS);
+
+	/* don't enable privileges by default since Domain 
+	   Admins can then assign thr rights to perform certain 
+	   operations as root */
+
+	Globals.bEnablePrivileges = False;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1774,6 +1783,7 @@ FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
 FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
+FN_GLOBAL_BOOL(lp_enable_privileges, &Globals.bEnablePrivileges)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)

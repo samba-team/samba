@@ -107,7 +107,7 @@ BOOL reg_io_r_open_hkcr(const char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps,
 	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -176,7 +176,7 @@ BOOL reg_io_r_open_hklm(const char *desc, REG_R_OPEN_HKLM * r_r, prs_struct *ps,
 	if (!smb_io_pol_hnd("", &r_r->pol, ps, depth))
 		return False;
 
-	if (!prs_ntstatus("status", ps, depth, &r_r->status))
+	if (!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -230,7 +230,7 @@ BOOL reg_io_r_flush_key(const char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -380,7 +380,7 @@ BOOL reg_io_r_create_key(const char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *p
 	if(!prs_uint32("unknown", ps, depth, &r_r->unknown))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -446,7 +446,7 @@ BOOL reg_io_r_delete_val(const char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct 
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -510,7 +510,7 @@ BOOL reg_io_r_delete_key(const char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *p
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -597,7 +597,7 @@ BOOL reg_io_r_query_key(const char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps,
 	if(!smb_io_time("mod_time     ", &r_r->mod_time, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -651,7 +651,7 @@ BOOL reg_io_r_unknown_1a(const char *desc,  REG_R_UNKNOWN_1A *r_r, prs_struct *p
 
 	if(!prs_uint32("unknown", ps, depth, &r_r->unknown))
 		return False;
-	if(!prs_ntstatus("status" , ps, depth, &r_r->status))
+	if(!prs_werror("status" , ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -702,7 +702,7 @@ BOOL reg_io_r_save_key(const char *desc,  REG_R_SAVE_KEY *r_r, prs_struct *ps, i
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_ntstatus("status" , ps, depth, &r_r->status))
+	if(!prs_werror("status" , ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -768,7 +768,7 @@ BOOL reg_io_r_open_hku(const char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, i
 	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -828,7 +828,7 @@ BOOL reg_io_r_close(const char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int dep
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -893,7 +893,7 @@ BOOL reg_io_r_set_key_sec(const char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+	if(!prs_werror("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -991,7 +991,7 @@ BOOL reg_io_r_get_key_sec(const char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct 
 			return False;
 	}
 
-	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+	if(!prs_werror("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1092,7 +1092,7 @@ BOOL reg_io_q_info(const char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth
 ********************************************************************/
 
 BOOL new_init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
-		     REGISTRY_VALUE *val, NTSTATUS status)
+		     REGISTRY_VALUE *val, WERROR status)
 {
 	uint32		buf_len = 0;
 	BUFFER2		buf2;
@@ -1136,7 +1136,7 @@ BOOL new_init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
 ********************************************************************/
 
 BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
-		     BUFFER2* buf, uint32 type, NTSTATUS status)
+		     BUFFER2* buf, uint32 type, WERROR status)
 {
 	if(r_r == NULL)
 		return False;
@@ -1210,7 +1210,7 @@ BOOL reg_io_r_info(const char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 			return False;
 	}
 
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
  	return True;
@@ -1394,7 +1394,7 @@ BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps,
 			return False;
 	}
 
-	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+	if(!prs_werror("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1469,7 +1469,7 @@ BOOL reg_io_r_create_val(const char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct 
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+	if(!prs_werror("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1625,7 +1625,7 @@ BOOL reg_io_r_enum_key(const char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, i
 			return False;
 	}
 
-	if(!prs_ntstatus("status", ps, depth, &r_q->status))
+	if(!prs_werror("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1685,14 +1685,14 @@ BOOL reg_io_q_open_entry(const char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *p
 ********************************************************************/
 
 void init_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
-			   POLICY_HND *pol, NTSTATUS status)
+			   POLICY_HND *pol, WERROR werr)
 {
-	if (NT_STATUS_IS_OK(status)) {
+	if (W_ERROR_IS_OK(werr)) {
 		memcpy(&r_r->pol, pol, sizeof(r_r->pol));
 	} else {
 		ZERO_STRUCT(r_r->pol);
 	}
-	r_r->status = status;
+	r_r->status = werr;
 }
 
 /*******************************************************************
@@ -1713,7 +1713,7 @@ BOOL reg_io_r_open_entry(const char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *p
 	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_r->status))
+	if(!prs_werror("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -1794,7 +1794,7 @@ BOOL reg_io_r_shutdown(const char *desc, REG_R_SHUTDOWN * r_s, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_s->status))
+	if(!prs_werror("status", ps, depth, &r_s->status))
 		return False;
 
 	return True;
@@ -1849,7 +1849,7 @@ BOOL reg_io_r_abort_shutdown(const char *desc, REG_R_ABORT_SHUTDOWN * r_s,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_ntstatus("status", ps, depth, &r_s->status))
+	if (!prs_werror("status", ps, depth, &r_s->status))
 		return False;
 
 	return True;

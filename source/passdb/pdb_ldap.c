@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Jean François Micouleau	1998
    Copyright (C) Gerald Carter			2001-2003
@@ -476,6 +476,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pstring temp;
 	LOGIN_CACHE	*cache_entry = NULL;
 	int pwHistLen;
+	pstring		tmpstring;
 
 	/*
 	 * do a little initialization
@@ -635,9 +636,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_DRIVE), dir_drive)) 
 	{
-		pdb_set_dir_drive( sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_drive()),
-			PDB_DEFAULT );
+		pdb_set_dir_drive( sampass, lp_logon_drive(), PDB_DEFAULT );
 	} else {
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	}
@@ -649,7 +648,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
 			PDB_DEFAULT );
 	} else {
-		pdb_set_homedir(sampass, homedir, PDB_SET);
+		pstrcpy( tmpstring, homedir );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
@@ -659,7 +660,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()), 
 			PDB_DEFAULT );
 	} else {
-		pdb_set_logon_script(sampass, logon_script, PDB_SET);
+		pstrcpy( tmpstring, logon_script );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
@@ -669,7 +672,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			talloc_sub_basic( sampass->mem_ctx, username, lp_logon_path()),
 			PDB_DEFAULT );
 	} else {
-		pdb_set_profile_path(sampass, profile_path, PDB_SET);
+		pstrcpy( tmpstring, profile_path );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	}
 
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
@@ -782,8 +787,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
 
-/*	pdb_set_munged_dial(sampass, munged_dial, PDB_SET); */
-	
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_BAD_PASSWORD_COUNT), temp)) {
 			/* leave as default */
@@ -1182,33 +1185,48 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
  Connect to LDAP server for password enumeration.
 *********************************************************************/
 
-static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
+static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint16 acb_mask)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
-	pstring filter;
+	pstring filter, suffix;
 	char **attr_list;
+	BOOL machine_mask = False, user_mask = False;
 
 	pstr_sprintf( filter, "(&%s%s)", lp_ldap_filter(), 
 		get_objclass_filter(ldap_state->schema_ver));
 	all_string_sub(filter, "%u", "*", sizeof(pstring));
 
+	machine_mask 	= ((acb_mask != 0) && (acb_mask & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)));
+	user_mask 	= ((acb_mask != 0) && (acb_mask & ACB_NORMAL));
+
+	if (machine_mask) {
+		pstrcpy(suffix, lp_ldap_machine_suffix());
+	} else if (user_mask) {
+		pstrcpy(suffix, lp_ldap_user_suffix());
+	} else {
+		pstrcpy(suffix, lp_ldap_suffix());
+	}
+
+	DEBUG(10,("ldapsam_setsampwent: LDAP Query for acb_mask 0x%x will use suffix %s\n", 
+		acb_mask, suffix));
+
 	attr_list = get_userattr_list(ldap_state->schema_ver);
-	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, 
-				   attr_list, &ldap_state->result);
+	rc = smbldap_search(ldap_state->smbldap_state, suffix, LDAP_SCOPE_SUBTREE, filter, 
+			    attr_list, 0, &ldap_state->result);
 	free_attr_list( attr_list );
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("ldapsam_setsampwent: LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_setsampwent: Query was: %s, %s\n", lp_ldap_suffix(), filter));
+		DEBUG(3, ("ldapsam_setsampwent: Query was: %s, %s\n", suffix, filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base!\n",
-		ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
-		ldap_state->result)));
+	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base %s\n",
+		ldap_count_entries(ldap_state->smbldap_state->ldap_struct, 
+		ldap_state->result), suffix));
 
 	ldap_state->entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
 				 ldap_state->result);
@@ -1409,62 +1427,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 
 static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
 {
-	LDAPMessage *msg = NULL;
-	LDAPMessage *entry = NULL;
-	char **values = NULL;
-	char *attrs[] = { "supportedExtension", NULL };
-	int rc, num_result, num_values, i;
-	BOOL result = False;
-
-	rc = smbldap_search(ldap_state, "", LDAP_SCOPE_BASE, "(objectclass=*)",
-			    attrs, 0, &msg);
-
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(3, ("Could not search rootDSE\n"));
-		return False;
-	}
-
-	num_result = ldap_count_entries(ldap_state->ldap_struct, msg);
-
-	if (num_result != 1) {
-		DEBUG(3, ("Expected one rootDSE, got %d\n", num_result));
-		goto done;
-	}
-
-	entry = ldap_first_entry(ldap_state->ldap_struct, msg);
-
-	if (entry == NULL) {
-		DEBUG(3, ("Could not retrieve rootDSE\n"));
-		goto done;
-	}
-
-	values = ldap_get_values(ldap_state->ldap_struct, entry,
-				 "supportedExtension");
-
-	if (values == NULL) {
-		DEBUG(9, ("LDAP Server does not support any extensions\n"));
-		goto done;
-	}
-
-	num_values = ldap_count_values(values);
-
-	if (num_values == 0) {
-		DEBUG(9, ("LDAP Server does not support any extensions\n"));
-		goto done;
-	}
-
-	for (i=0; i<num_values; i++) {
-		if (strcmp(values[i], LDAP_EXOP_MODIFY_PASSWD) == 0)
-			result = True;
-	}
-
- done:
-	if (values != NULL)
-		ldap_value_free(values);
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	return result;
+	return smbldap_has_extension(ldap_state, LDAP_EXOP_MODIFY_PASSWD);
 }
 
 /********************************************************************
@@ -2267,7 +2230,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (!smbldap_get_single_attribute(conn->ldap_struct,
 						  entry, "sambaSID",
 						  str, sizeof(str)-1))
-			goto done;
+			continue;
 
 		if (!string_to_sid(&sid, str))
 			goto done;
@@ -2275,7 +2238,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (!smbldap_get_single_attribute(conn->ldap_struct,
 						  entry, "gidNumber",
 						  str, sizeof(str)-1))
-			goto done;
+			continue;
 
 		gid = strtoul(str, &end, 10);
 
@@ -2291,7 +2254,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	}
 
 	if (sid_compare(&global_sid_NULL, &(*sids)[0]) == 0) {
-		DEBUG(3, ("primary group not found\n"));
+		DEBUG(3, ("primary group of [%s] not found\n", username));
 		goto done;
 	}
 

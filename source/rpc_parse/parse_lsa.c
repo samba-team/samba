@@ -1650,6 +1650,61 @@ BOOL lsa_io_r_unk_get_connuser(const char *desc, LSA_R_UNK_GET_CONNUSER *r_c, pr
 	return True;
 }
 
+void init_lsa_q_create_account(LSA_Q_CREATEACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 desired_access)
+{
+	memcpy(&trn->pol, hnd, sizeof(trn->pol));
+
+	init_dom_sid2(&trn->sid, sid);
+	trn->access = desired_access;
+}
+
+
+/*******************************************************************
+ Reads or writes an LSA_Q_CREATEACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_q_create_account(const char *desc, LSA_Q_CREATEACCOUNT *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_create_account");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("sid", &r_c->sid, ps, depth)) /* domain SID */
+		return False;
+
+ 	if(!prs_uint32("access", ps, depth, &r_c->access))
+		return False;
+  
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_CREATEACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_r_create_account(const char *desc, LSA_R_CREATEACCOUNT  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_open_account");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+
 void init_lsa_q_open_account(LSA_Q_OPENACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 desired_access)
 {
 	memcpy(&trn->pol, hnd, sizeof(trn->pol));
@@ -1804,13 +1859,15 @@ NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUN
 	r_u->ptr = 1;
 	r_u->count = count;
 
-	if (!NT_STATUS_IS_OK(ret = init_priv_with_ctx(mem_ctx, &(r_u->set))))
+	if ( !NT_STATUS_IS_OK(ret = privilege_set_init_by_ctx(mem_ctx, &(r_u->set))) )
 		return ret;
 	
-	if (!NT_STATUS_IS_OK(ret = dupalloc_luid_attr(r_u->set->mem_ctx, &(r_u->set->set), set)))
+	r_u->set.count = count;
+	
+	if (!NT_STATUS_IS_OK(ret = dup_luid_attr(r_u->set.mem_ctx, &(r_u->set.set), set, count)))
 		return ret;
 
-	DEBUG(10,("init_lsa_r_enum_privsaccount: %d %d privileges\n", r_u->count, r_u->set->count));
+	DEBUG(10,("init_lsa_r_enum_privsaccount: %d privileges\n", r_u->count));
 
 	return ret;
 }
@@ -1837,15 +1894,15 @@ BOOL lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *r_c, p
 		/* malloc memory if unmarshalling here */
 
 		if (UNMARSHALLING(ps) && r_c->count != 0) {
-			if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
+			if (!NT_STATUS_IS_OK(privilege_set_init_by_ctx(ps->mem_ctx, &(r_c->set))))
 				return False;
 
-			if (!(r_c->set->set = PRS_ALLOC_MEM(ps,LUID_ATTR,r_c->count)))
+			if (!(r_c->set.set = PRS_ALLOC_MEM(ps,LUID_ATTR,r_c->count)))
 				return False;
 
 		}
 		
-		if(!lsa_io_privilege_set(desc, r_c->set, ps, depth))
+		if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
 			return False;
 	}
 
@@ -2007,14 +2064,14 @@ BOOL lsa_io_q_addprivs(const char *desc, LSA_Q_ADDPRIVS *r_c, prs_struct *ps, in
 		return False;
 
 	if (UNMARSHALLING(ps) && r_c->count!=0) {
-		if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
+		if (!NT_STATUS_IS_OK(privilege_set_init_by_ctx(ps->mem_ctx, &(r_c->set))))
 			return False;
 		
-		if (!(r_c->set->set = PRS_ALLOC_MEM(ps, LUID_ATTR, r_c->count)))
+		if (!(r_c->set.set = PRS_ALLOC_MEM(ps, LUID_ATTR, r_c->count)))
 			return False;
 	}
 	
-	if(!lsa_io_privilege_set(desc, r_c->set, ps, depth))
+	if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
 		return False;
 	
 	return True;
@@ -2069,14 +2126,14 @@ BOOL lsa_io_q_removeprivs(const char *desc, LSA_Q_REMOVEPRIVS *r_c, prs_struct *
 			return False;
 
 		if (UNMARSHALLING(ps) && r_c->count!=0) {
-			if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
+			if (!NT_STATUS_IS_OK(privilege_set_init_by_ctx(ps->mem_ctx, &(r_c->set))))
 				return False;
 
-			if (!(r_c->set->set = PRS_ALLOC_MEM(ps, LUID_ATTR, r_c->count)))
+			if (!(r_c->set.set = PRS_ALLOC_MEM(ps, LUID_ATTR, r_c->count)))
 				return False;
 		}
 
-		if(!lsa_io_privilege_set(desc, r_c->set, ps, depth))
+		if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
 			return False;
 	}
 
@@ -2243,6 +2300,33 @@ void init_q_enum_acct_rights(LSA_Q_ENUM_ACCT_RIGHTS *q_q,
 }
 
 /*******************************************************************
+********************************************************************/
+NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *r_u, PRIVILEGE_SET *privileges )
+{
+	uint32 i;
+	char *privname;
+	const char **privname_array = NULL;
+	int num_priv = 0;
+
+	for ( i=0; i<privileges->count; i++ ) {
+		privname = luid_to_privilege_name( &privileges->set[i].luid );
+		if ( privname ) {
+			if ( !add_string_to_array( get_talloc_ctx(), privname, &privname_array, &num_priv ) ) 
+				return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if ( num_priv ) {
+		if ( !init_unistr2_array( &r_u->rights, num_priv, privname_array ) ) 
+			return NT_STATUS_NO_MEMORY;
+
+		r_u->count = num_priv;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
 reads or writes a LSA_Q_ENUM_ACCT_RIGHTS structure.
 ********************************************************************/
 BOOL lsa_io_q_enum_acct_rights(const char *desc, LSA_Q_ENUM_ACCT_RIGHTS *q_q, prs_struct *ps, int depth)
@@ -2302,7 +2386,7 @@ void init_q_add_acct_rights(LSA_Q_ADD_ACCT_RIGHTS *q_q,
 	q_q->pol = *hnd;
 	init_dom_sid2(&q_q->sid, sid);
 	init_unistr2_array(&q_q->rights, count, rights);
-	q_q->count = 5;
+	q_q->count = count;
 }
 
 
@@ -2320,7 +2404,7 @@ BOOL lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *q_q, prs_
 	if(!smb_io_dom_sid2("sid", &q_q->sid, ps, depth))
 		return False;
 
-	if(!prs_uint32("count", ps, depth, &q_q->rights.count))
+	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
 	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
@@ -2360,7 +2444,7 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q,
 	init_dom_sid2(&q_q->sid, sid);
 	q_q->removeall = removeall;
 	init_unistr2_array(&q_q->rights, count, rights);
-	q_q->count = 5;
+	q_q->count = count;
 }
 
 
@@ -2381,7 +2465,7 @@ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q
 	if(!prs_uint32("removeall", ps, depth, &q_q->removeall))
 		return False;
 
-	if(!prs_uint32("count", ps, depth, &q_q->rights.count))
+	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
 	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))

@@ -320,7 +320,7 @@ WERROR cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_open_printer_ex("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_OPENPRINTEREX, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_OPENPRINTEREX, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -378,7 +378,7 @@ WERROR cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_closeprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_CLOSEPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_CLOSEPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -449,7 +449,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 	
 	if (!spoolss_io_q_enumprinters("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERS, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENUMPRINTERS, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -547,7 +547,7 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_enumports("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPORTS, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENUMPORTS, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -618,7 +618,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_GETPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -701,7 +701,7 @@ WERROR cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_SETPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -772,7 +772,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getprinterdriver2 ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVER2, &qbuf, &rbuf)) 
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVER2, &qbuf, &rbuf)) 
 		goto done;
 
 	/* Unmarshall response */
@@ -855,7 +855,7 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 	/* Marshall data and send request */
 	
 	if (!spoolss_io_q_enumprinterdrivers ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_ENUMPRINTERDRIVERS, &qbuf, &rbuf))
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDRIVERS, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -941,7 +941,7 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getprinterdriverdir ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
 			       &qbuf, &rbuf)) 
 		goto done;
 
@@ -1006,7 +1006,7 @@ WERROR cli_spoolss_addprinterdriver (struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_addprinterdriver ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTERDRIVER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_ADDPRINTERDRIVER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1064,7 +1064,7 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_addprinterex ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTEREX, &qbuf, &rbuf)) 
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_ADDPRINTEREX, &qbuf, &rbuf)) 
 		goto done;
 		
 	/* Unmarshall response */
@@ -1114,7 +1114,7 @@ WERROR cli_spoolss_deleteprinterdriverex(struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_deleteprinterdriverex ("", &q, &qbuf, 0) 
-		|| !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVEREX , &qbuf, &rbuf)) 
+		|| !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDRIVEREX , &qbuf, &rbuf)) 
 	{
 		goto done;
 	}
@@ -1170,7 +1170,7 @@ WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_deleteprinterdriver ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf))
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1224,7 +1224,7 @@ WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getprintprocessordirectory("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
 			      &qbuf, &rbuf))
 		goto done;
 		
@@ -1286,7 +1286,7 @@ WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_addform("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ADDFORM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ADDFORM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1342,7 +1342,7 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_setform("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_SETFORM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_SETFORM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1407,7 +1407,7 @@ WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getform("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_GETFORM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_GETFORM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1475,7 +1475,7 @@ WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_deleteform("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEFORM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_DELETEFORM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1549,7 +1549,7 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_enumforms("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMFORMS, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENUMFORMS, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1631,7 +1631,7 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_enumjobs("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMJOBS, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENUMJOBS, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1698,7 +1698,7 @@ WERROR cli_spoolss_setjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_setjob("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_SETJOB, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_SETJOB, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1747,7 +1747,7 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getjob("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_GETJOB, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_GETJOB, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1810,7 +1810,7 @@ WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_startpageprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_STARTPAGEPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_STARTPAGEPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1855,7 +1855,7 @@ WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_endpageprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENDPAGEPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENDPAGEPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1904,7 +1904,7 @@ WERROR cli_spoolss_startdocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_startdocprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_STARTDOCPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_STARTDOCPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1952,7 +1952,7 @@ WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_enddocprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENDDOCPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENDDOCPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -1998,7 +1998,7 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getprinterdata("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTERDATA, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_GETPRINTERDATA, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2053,7 +2053,7 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_getprinterdataex("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTERDATAEX, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_GETPRINTERDATAEX, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2108,7 +2108,7 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_setprinterdata("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2154,7 +2154,7 @@ WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_setprinterdataex("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTERDATAEX, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_SETPRINTERDATAEX, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2202,7 +2202,7 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_enumprinterdata("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERDATA, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATA, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2264,7 +2264,7 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_enumprinterdataex("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERDATAEX, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATAEX, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2327,7 +2327,7 @@ WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_writeprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_WRITEPRINTER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_WRITEPRINTER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2375,7 +2375,7 @@ WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_deleteprinterdata("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERDATA, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDATA, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2419,7 +2419,7 @@ WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ct
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_deleteprinterdataex("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERDATAEX, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDATAEX, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2464,7 +2464,7 @@ WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_enumprinterkey("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERKEY, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_ENUMPRINTERKEY, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2519,7 +2519,7 @@ WERROR cli_spoolss_deleteprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_deleteprinterkey("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERKEY, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_DELETEPRINTERKEY, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */

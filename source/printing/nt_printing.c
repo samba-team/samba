@@ -2046,17 +2046,32 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
  handles are not affected.
 ****************************************************************************/
 
-uint32 del_a_printer(char *sharename)
+uint32 del_a_printer(const char *sharename)
 {
 	pstring key;
 	TDB_DATA kbuf;
+	pstring printdb_path;
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
-
 	tdb_delete(tdb_printers, kbuf);
+
+	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, sharename);
+	kbuf.dptr=key;
+	kbuf.dsize=strlen(key)+1;
+	tdb_delete(tdb_printers, kbuf);
+
+	close_all_print_db();
+
+	if (geteuid() == 0) {
+		pstrcpy(printdb_path, lock_path("printing/"));
+		pstrcat(printdb_path, sharename);
+		pstrcat(printdb_path, ".tdb");
+
+		unlink(printdb_path);
+	}
+
 	return 0;
 }
 
@@ -2899,7 +2914,8 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 		return False;
 	}
 
-	if (regval_size(guid_val) == sizeof(struct uuid))
+	/* fetching printer guids really ought to be a separate function.. */
+	if (guid && regval_size(guid_val) == sizeof(struct uuid))
 		memcpy(guid, regval_data_p(guid_val), sizeof(struct uuid));
 
 	free_a_printer(&printer, 2);
@@ -4790,7 +4806,8 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
-	SEC_ACE ace[3];
+	SEC_ACE ace[5];	/* max number of ace entries */
+	int i = 0;
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
@@ -4801,7 +4818,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Create an ACE where Everyone is allowed to print */
 
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
 	/* Make the security descriptor owned by the Administrators group
@@ -4820,20 +4837,38 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	}
 
 	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-	init_sec_ace(&ace[1], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+	init_sec_ace(&ace[i++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_OBJECT_INHERIT |
 		     SEC_ACE_FLAG_INHERIT_ONLY);
 
 	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-	init_sec_ace(&ace[2], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+	init_sec_ace(&ace[i++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
+	/* Add the domain admins group if we are a DC */
+	
+	if ( IS_DC ) {
+		DOM_SID domadmins_sid;
+		
+		sid_copy(&domadmins_sid, get_global_sam_sid());
+		sid_append_rid(&domadmins_sid, DOMAIN_GROUP_RID_ADMINS);
+		
+		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			     sa, SEC_ACE_FLAG_OBJECT_INHERIT |
+			     SEC_ACE_FLAG_INHERIT_ONLY);
+
+		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+		     
 	/* The ACL revision number in rpc_secdesc.h differs from the one
 	   created by NT when setting ACE entries in printer
 	   descriptors.  NT4 complains about the property being edited by a
 	   NT5 machine. */
 
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) != NULL) {
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
 		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 				    &owner_sid, NULL,
 				    NULL, psa, &sd_size);
@@ -5018,6 +5053,11 @@ void map_printer_permissions(SEC_DESC *sd)
        print_job_delete, print_job_pause, print_job_resume,
        print_queue_purge
 
+  Try access control in the following order (for performance reasons):
+    1)  root ans SE_PRINT_OPERATOR can do anything (easy check) 
+    2)  check security descriptor (bit comparisons in memory)
+    3)  "printer admins" (may result in numerous calls to winbind)
+
  ****************************************************************************/
 BOOL print_access_check(struct current_user *user, int snum, int access_type)
 {
@@ -5028,16 +5068,16 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
 	extern struct current_user current_user;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	
 	/* If user is NULL then use the current_user structure */
 
 	if (!user)
 		user = &current_user;
 
-	/* Always allow root or printer admins to do anything */
+	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if (user->uid == 0 ||
-	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum), user->groups, user->ngroups)) {
+	if ( user->uid == 0 || user_has_privileges(user->nt_user_token, &se_printop ) ) {
 		return True;
 	}
 
@@ -5085,6 +5125,13 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 				 &access_granted, &status);
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
+
+        /* see if we need to try the printer admin list */
+
+        if ( access_granted == 0 ) {
+                if ( user_in_list(uidtoname(user->uid), lp_printer_admin(snum), user->groups, user->ngroups) )
+                        return True;
+        }
 
 	talloc_destroy(mem_ctx);
 	

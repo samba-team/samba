@@ -602,8 +602,8 @@ static uint32 get_maxrid(void)
 	int num_entries = 0;
 	int i;
 
-	if (!pdb_setsampwent(False)) {
-		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
+	if (!pdb_setsampwent(False, 0)) {
+		DEBUG(0, ("get_maxrid: Unable to open passdb.\n"));
 		return 0;
 	}
 

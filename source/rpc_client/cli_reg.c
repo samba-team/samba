@@ -27,7 +27,7 @@
 
 /* Shutdown a server */
 
-NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
+WERROR cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
                           const char *msg, uint32 timeout, BOOL do_reboot,
 			  BOOL force)
 {
@@ -35,9 +35,9 @@ NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 	prs_struct rbuf; 
 	REG_Q_SHUTDOWN q_s;
 	REG_R_SHUTDOWN r_s;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_GENERAL_FAILURE;
 
-	if (msg == NULL) return NT_STATUS_INVALID_PARAMETER;
+	if (msg == NULL) return WERR_INVALID_PARAM;
 
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
@@ -50,7 +50,7 @@ NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 	init_reg_q_shutdown(&q_s, msg, timeout, do_reboot, force);
 
 	if (!reg_io_q_shutdown("", &q_s, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, REG_SHUTDOWN, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_WINREG, REG_SHUTDOWN, &qbuf, &rbuf))
 		goto done;
 	
 	/* Unmarshall response */
@@ -68,13 +68,13 @@ done:
 
 /* Abort a server shutdown */
 
-NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
+WERROR cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
 	REG_Q_ABORT_SHUTDOWN q_s;
 	REG_R_ABORT_SHUTDOWN r_s;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_GENERAL_FAILURE;
 
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
@@ -87,7 +87,7 @@ NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 	init_reg_q_abort_shutdown(&q_s);
 
 	if (!reg_io_q_abort_shutdown("", &q_s, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, REG_ABORT_SHUTDOWN, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_WINREG, REG_ABORT_SHUTDOWN, &qbuf, &rbuf))
 	    	goto done;
 	
 		/* Unmarshall response */

@@ -64,7 +64,7 @@ static int export_database (struct pdb_context *in, struct pdb_context
 
 	DEBUG(3, ("called with username=\"%s\"\n", username));
 
-	if (NT_STATUS_IS_ERR(in->pdb_setsampwent(in, 0))) {
+	if (NT_STATUS_IS_ERR(in->pdb_setsampwent(in, 0, 0))) {
 		fprintf(stderr, "Can't sampwent!\n");
 		return 1;
 	}
@@ -237,7 +237,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL check, ret;
 	
-	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False));
+	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
 	if (!check) {
 		return 1;
 	}
@@ -266,7 +266,7 @@ static int fix_users_list (struct pdb_context *in)
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL check, ret;
 	
-	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False));
+	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
 	if (!check) {
 		return 1;
 	}

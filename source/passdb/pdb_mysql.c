@@ -120,7 +120,7 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
 {
 	struct pdb_mysql_data *data =
 		(struct pdb_mysql_data *) methods->private_data;
@@ -454,10 +454,9 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 	data->location = smb_xstrdup(location);
 
 	DEBUG(1,
-		  ("Connecting to database server, host: %s, user: %s, password: %s, database: %s, port: %ld\n",
+		  ("Connecting to database server, host: %s, user: %s, database: %s, port: %ld\n",
 		   config_value(data, "mysql host", CONFIG_HOST_DEFAULT),
 		   config_value(data, "mysql user", CONFIG_USER_DEFAULT),
-		   config_value(data, "mysql password", CONFIG_PASS_DEFAULT),
 		   config_value(data, "mysql database", CONFIG_DB_DEFAULT),
 		   xatol(config_value(data, "mysql port", CONFIG_PORT_DEFAULT))));
 

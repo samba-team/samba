@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Gerald Carter   2003
+   Copyright (C) Volker Lendecke 2005
    
    
    This program is free software; you can redistribute it and/or modify
@@ -1202,6 +1203,90 @@ skip_save:
 	return status;
 }
 
+static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 num_sids, DOM_SID **sids,
+				   uint32 *num_aliases, uint32 **alias_rids)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	char *sidlist = talloc_strdup(mem_ctx, "");
+	int i;
+
+	if (!cache->tdb)
+		goto do_query;
+
+	if (num_sids == 0) {
+		*num_aliases = 0;
+		*alias_rids = NULL;
+		return NT_STATUS_OK;
+	}
+
+	/* We need to cache indexed by the whole list of SIDs, the aliases
+	 * resulting might come from any of the SIDs. */
+
+	for (i=0; i<num_sids; i++) {
+		sidlist = talloc_asprintf(mem_ctx, "%s/%s", sidlist,
+					  sid_string_static(sids[i]));
+		if (sidlist == NULL)
+			return NT_STATUS_NO_MEMORY;
+	}
+
+	centry = wcache_fetch(cache, domain, "UA%s", sidlist);
+
+	if (!centry)
+		goto do_query;
+
+	*num_aliases = centry_uint32(centry);
+	*alias_rids = NULL;
+
+	(*alias_rids) = TALLOC_ARRAY(mem_ctx, uint32, *num_aliases);
+
+	if (!(*alias_rids))
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<(*num_aliases); i++)
+		(*alias_rids)[i] = centry_uint32(centry);
+
+	status = centry->status;
+
+	DEBUG(10,("lookup_useraliases: [Cached] - cached info for domain %s "
+		  "status %s\n", domain->name,
+		  get_friendly_nt_error_msg(status)));
+
+	centry_free(centry);
+	return status;
+
+ do_query:
+	(*num_aliases) = 0;
+	(*alias_rids) = NULL;
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
+	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info "
+		  "for domain %s\n", domain->name ));
+
+	status = domain->backend->lookup_useraliases(domain, mem_ctx,
+						     num_sids, sids,
+						     num_aliases, alias_rids);
+
+	/* and save it */
+	refresh_sequence_number(domain, False);
+	centry = centry_start(domain, status);
+	if (!centry)
+		goto skip_save;
+	centry_put_uint32(centry, *num_aliases);
+	for (i=0; i<(*num_aliases); i++)
+		centry_put_uint32(centry, (*alias_rids)[i]);
+	centry_end(centry, "UA%s", sidlist);
+	centry_free(centry);
+
+ skip_save:
+	return status;
+}
+
 
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
@@ -1387,6 +1472,7 @@ struct winbindd_methods cache_methods = {
 	sid_to_name,
 	query_user,
 	lookup_usergroups,
+	lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,

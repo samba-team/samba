@@ -464,6 +464,39 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 }
 
 /****************************************************************************
+ Reload printers
+**************************************************************************/
+void reload_printers(void)
+{
+	int snum;
+	int n_services = lp_numservices();
+	int pnum = lp_servicenumber(PRINTERS_NAME);
+	const char *pname;
+
+	pcap_cache_reload();
+
+	/* remove stale printers */
+	for (snum = 0; snum < n_services; snum++) {
+		/* avoid removing PRINTERS_NAME or non-autoloaded printers */
+		if (snum == pnum || !(lp_snum_ok(snum) && lp_print_ok(snum) &&
+		                      lp_autoloaded(snum)))
+			continue;
+
+		pname = lp_printername(snum);
+		if (!pcap_printername_ok(pname)) {
+			DEBUG(3, ("removing stale printer %s\n", pname));
+
+			if (is_printer_published(NULL, snum, NULL))
+				nt_printer_publish(NULL, snum, SPOOL_DS_UNPUBLISH);
+			del_a_printer(pname);
+			lp_killservice(snum);
+		}
+	}
+
+	load_printers();
+}
+
+/****************************************************************************
  Reload the services file.
 **************************************************************************/
 
@@ -490,8 +523,7 @@ BOOL reload_services(BOOL test)
 
 	ret = lp_load(dyn_CONFIGFILE, False, False, True);
 
-	remove_stale_printers();
-	load_printers();
+	reload_printers();
 
 	/* perhaps the config filename is now set */
 	if (!test)

@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Gerald Carter			2001-2003
     
@@ -145,6 +145,7 @@ struct smbldap_state {
 	const char *uri;
 	char *bind_dn;
 	char *bind_secret;
+	BOOL paged_results;
 
 	unsigned int num_failures;
 

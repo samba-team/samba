@@ -281,6 +281,11 @@ typedef struct sid_info
 
 } DOM_SID;
 
+typedef struct sid_list {
+	uint32 count;
+	DOM_SID *list;
+} SID_LIST;
+
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
@@ -297,6 +302,7 @@ typedef struct sid_info
 typedef struct _nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
+	SE_PRIV privileges;
 } NT_USER_TOKEN;
 
 /*** query a local group, get a list of these: shows who is in that group ***/
@@ -638,7 +644,7 @@ typedef struct {
 #define AP_RESET_COUNT_TIME		7
 #define AP_BAD_ATTEMPT_LOCKOUT		8
 #define AP_TIME_TO_LOGOUT		9
-
+#define AP_REFUSE_MACHINE_PW_CHANGE	10
 
 /*
  * Flags for local user manipulation.

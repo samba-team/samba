@@ -814,6 +814,8 @@ extern int errno;
 
 #include "version.h"
 
+#include "privileges.h"
+
 #include "smb.h"
 
 #include "nameserv.h"

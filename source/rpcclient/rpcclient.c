@@ -24,6 +24,7 @@
 #include "rpcclient.h"
 
 DOM_SID domain_sid;
+static int pipe_idx;
 
 
 /* List to hold groups of commands.
@@ -315,7 +316,7 @@ static NTSTATUS cmd_sign(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		/* still have session, just need to use it again */
 		cli->pipe_auth_flags = AUTH_PIPE_NTLMSSP;
 		cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
-		if (cli->nt_pipe_fnum != 0)
+		if (cli->nt_pipe_fnum[cli->pipe_idx] != 0)
 			cli_nt_session_close(cli);
 	}
 
@@ -332,7 +333,7 @@ static NTSTATUS cmd_seal(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		cli->pipe_auth_flags = AUTH_PIPE_NTLMSSP;
 		cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
 		cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
-		if (cli->nt_pipe_fnum != 0)
+		if (cli->nt_pipe_fnum[cli->pipe_idx] != 0)
 			cli_nt_session_close(cli);
 	}
 	return NT_STATUS_OK; 
@@ -346,7 +347,7 @@ static NTSTATUS cmd_none(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	} else {
 		/* still have session, just need to use it again */
 		cli->pipe_auth_flags = 0;
-		if (cli->nt_pipe_fnum != 0)
+		if (cli->nt_pipe_fnum[cli->pipe_idx] != 0)
 			cli_nt_session_close(cli);
 	}
 	cli->pipe_auth_flags = 0;
@@ -381,13 +382,13 @@ static NTSTATUS setup_schannel(struct cli_state *cli, int pipe_auth_flags,
 			/* schannel is setup, just need to use it again with new flags */
 			cli->pipe_auth_flags = pipe_auth_flags;
 
-			if (cli->nt_pipe_fnum != 0)
+			if (cli->nt_pipe_fnum[cli->pipe_idx] != 0)
 				cli_nt_session_close(cli);
 			return NT_STATUS_OK;
 		}
 	}
 	
-	if (cli->nt_pipe_fnum != 0)
+	if (cli->nt_pipe_fnum[cli->pipe_idx] != 0)
 		cli_nt_session_close(cli);
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
@@ -523,7 +524,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	if (cmd_entry->pipe_idx != -1
 	    && cmd_entry->pipe_idx != cli->pipe_idx) {
-		if (cli->nt_pipe_fnum != 0)
+		if (cli->nt_pipe_fnum[cli->pipe_idx] != 0)
 			cli_nt_session_close(cli);
 		
 		if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
@@ -558,6 +559,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
      /* Run command */
 
+	pipe_idx = cmd_entry->pipe_idx;
      if ( cmd_entry->returntype == RPC_RTYPE_NTSTATUS ) {
           ntresult = cmd_entry->ntfn(cli, mem_ctx, argc, (const char **) argv);
           if (!NT_STATUS_IS_OK(ntresult)) {
@@ -656,6 +658,7 @@ out_free:
 	struct cmd_set 		**cmd_set;
 	struct in_addr 		server_ip;
 	NTSTATUS 		nt_status;
+	static int		opt_port = 0;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -664,6 +667,7 @@ out_free:
 		POPT_AUTOHELP
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds", "COMMANDS"},
 		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
+		{"port", 'p', POPT_ARG_INT,   &opt_port, 'p', "Specify port number", "PORT"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -737,7 +741,7 @@ out_free:
 	}
 	
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
-					opt_ipaddr ? &server_ip : NULL, 0,
+					opt_ipaddr ? &server_ip : NULL, opt_port,
 					"IPC$", "IPC",  
 					cmdline_auth_info.username, 
 					lp_workgroup(),

@@ -292,6 +292,13 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	return NT_STATUS_NO_SUCH_USER;
 }
 
+static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 num_sids, const DOM_SID **sids,
+				   uint32 *num_aliases, DOM_SID ***aliases)
+{
+	return NT_STATUS_NO_SUCH_USER;
+}
 
 /* Lookup group membership given a rid.   */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
@@ -384,6 +391,7 @@ struct winbindd_methods passdb_methods = {
 	sid_to_name,
 	query_user,
 	lookup_usergroups,
+	lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,

@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,17 +34,6 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  * hanging of the member as key.
  */
 #define MEMBEROF_PREFIX "MEMBEROF/"
-
-PRIVS privs[] = {
-	{SE_PRIV_NONE,           "no_privs",                  "No privilege"                    }, /* this one MUST be first */
-	{SE_PRIV_ADD_MACHINES,   "SeMachineAccountPrivilege", "Add workstations to the domain"  },
-	{SE_PRIV_SEC_PRIV,       "SeSecurityPrivilege",       "Manage the audit logs"           },
-	{SE_PRIV_TAKE_OWNER,     "SeTakeOwnershipPrivilege",  "Take ownership of file"          },
-	{SE_PRIV_ADD_USERS,      "SaAddUsers",                "Add users to the domain - Samba" },
-	{SE_PRIV_PRINT_OPERATOR, "SaPrintOp",                 "Add or remove printers - Samba"  },
-	{SE_PRIV_ALL,            "SaAllPrivs",                "all privileges"                  }
-};
-
 
 /****************************************************************************
 dump the mapping group mapping to a text file

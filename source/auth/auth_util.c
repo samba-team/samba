@@ -493,6 +493,8 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 	for (i = 0; i < token->num_sids; i++)
 		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3lu]: %s\n", (unsigned long)i, 
 					       sid_to_string(sid_str, &token->user_sids[i])));
+
+	dump_se_priv( dbg_class, dbg_lev, &token->privileges );
 }
 
 /****************************************************************************
@@ -583,6 +585,10 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 			ptoken->num_sids--;
 		}
 	}
+
+	/* add privileges assigned to this user */
+
+	get_privileges_for_sids( &ptoken->privileges, ptoken->user_sids, ptoken->num_sids );
 	
 	debug_nt_user_token(DBGC_AUTH, 10, ptoken);
 	
@@ -1410,12 +1416,13 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 
 void delete_nt_token(NT_USER_TOKEN **pptoken)
 {
-    if (*pptoken) {
-	    NT_USER_TOKEN *ptoken = *pptoken;
-	    SAFE_FREE( ptoken->user_sids );
-	    ZERO_STRUCTP(ptoken);
-    }
-    SAFE_FREE(*pptoken);
+	if (*pptoken) {
+		NT_USER_TOKEN *ptoken = *pptoken;
+
+		SAFE_FREE( ptoken->user_sids );
+		ZERO_STRUCTP(ptoken);
+	}
+	SAFE_FREE(*pptoken);
 }
 
 /****************************************************************************
@@ -1429,19 +1436,56 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 	if (!ptoken)
 		return NULL;
 
-    if ((token = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL)
-        return NULL;
+	if ((token = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL)
+		return NULL;
 
-    ZERO_STRUCTP(token);
+	ZERO_STRUCTP(token);
+	
+	token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
+	
+	if ( !token ) {
+		SAFE_FREE(token);
+		return NULL;
+	}
 
-    if ((token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
-        SAFE_FREE(token);
-        return NULL;
-    }
-
-    token->num_sids = ptoken->num_sids;
+	token->num_sids = ptoken->num_sids;
+	
+	/* copy the privileges; don't consider failure to be critical here */
+	
+	if ( !se_priv_copy( &token->privileges, &ptoken->privileges ) ) {
+		DEBUG(0,("dup_nt_token: Failure to copy SE_PRIV!.  Continuing with 0 privileges assigned.\n"));
+	}
 
 	return token;
+}
+
+/****************************************************************************
+ Check for a SID in an NT_USER_TOKEN
+****************************************************************************/
+
+BOOL nt_token_check_sid ( DOM_SID *sid, NT_USER_TOKEN *token )
+{
+	int i;
+	
+	if ( !sid || !token )
+		return False;
+	
+	for ( i=0; i<token->num_sids; i++ ) {
+		if ( sid_equal( sid, &token->user_sids[i] ) )
+			return True;
+	}
+
+	return False;
+}
+
+BOOL nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid ) 
+{
+	DOM_SID domain_sid;
+
+	sid_copy( &domain_sid, get_global_sam_sid() );
+	sid_append_rid( &domain_sid, rid );
+	
+	return nt_token_check_sid( &domain_sid, token );\
 }
 
 /**

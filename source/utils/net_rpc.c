@@ -37,10 +37,6 @@
  **/
 
 
-/* A function of this type is passed to the 'run_rpc_command' wrapper */
-typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, const char *, 
-				   struct cli_state *, TALLOC_CTX *, int, const char **);
-
 /**
  * Many of the RPC functions need the domain sid.  This function gets
  *  it at the start of every run 
@@ -100,7 +96,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem
  * @return A shell status integer (0 for success)
  */
 
-static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flags,
+int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flags,
                            rpc_command_fn fn,
                            int argc, const char **argv) 
 {
@@ -145,7 +141,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 	}
 		
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
-		if (cli->nt_pipe_fnum)
+		if (cli->nt_pipe_fnum[cli->pipe_idx])
 			cli_nt_session_close(cli);
 	}
 
@@ -674,6 +670,133 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 }	
 
 /** 
+ * Rename a user on a remote RPC server
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					  struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					  int argc, const char **argv) {
+	
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 info_level = 7;
+	const char *old_name, *new_name;
+	uint32 *user_rid;
+	uint32 flags = 0x000003e8; /* Unknown */
+	uint32 num_rids, *name_types;
+	uint32 num_names = 1;
+	const char **names;
+	SAM_USERINFO_CTR *user_ctr;
+	SAM_USERINFO_CTR ctr;
+	SAM_USER_INFO_7 info7;
+
+	if (argc != 2) {
+		d_printf("New and old username must be specified\n");
+		rpc_user_usage(argc, argv);
+		return NT_STATUS_OK;
+	}
+
+	old_name = argv[0];
+	new_name = argv[1];
+
+	ZERO_STRUCT(ctr);
+	ZERO_STRUCT(user_ctr);
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
+	names[0] = old_name;
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+				       flags, num_names, names,
+				       &num_rids, &user_rid, &name_types);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Open domain user */
+	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+				    MAXIMUM_ALLOWED_ACCESS, user_rid[0], &user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Query user info */
+	result = cli_samr_query_userinfo(cli, mem_ctx, &user_pol,
+					 info_level, &user_ctr);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	ctr.switch_value = info_level;
+	ctr.info.id7 = &info7;
+
+	init_sam_user_info7(&info7, new_name);
+
+	/* Set new name */
+	result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol,
+				       info_level, &cli->user_session_key, &ctr);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to rename user from %s to %s - %s\n", old_name, new_name, 
+			 nt_errstr(result));
+	} else {
+		d_printf("Renamed user from %s to %s\n", old_name, new_name);
+	}
+	return result;
+}
+
+
+/** 
+ * Rename a user on a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int rpc_user_rename(int argc, const char **argv) 
+{
+	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_rename_internals,
+			       argc, argv);
+}
+
+/** 
  * Delete a user from a remote RPC server
  *
  * @param argc  Standard main() style argc
@@ -1015,6 +1138,7 @@ int net_rpc_user(int argc, const char **argv)
 		{"info", rpc_user_info},
 		{"delete", rpc_user_delete},
 		{"password", rpc_user_password},
+		{"rename", rpc_user_rename},
 		{NULL, NULL}
 	};
 	
@@ -4008,7 +4132,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = cli_reg_abort_shutdown(cli, mem_ctx);
+	result = werror_to_ntstatus(cli_reg_abort_shutdown(cli, mem_ctx));
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -4149,7 +4273,7 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 	}
 
 	/* create an entry */
-	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force);
+	result = werror_to_ntstatus(cli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force));
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
@@ -4437,7 +4561,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (cli->nt_pipe_fnum)
+	if (cli->nt_pipe_fnum[cli->pipe_idx])
 		cli_nt_session_close(cli);
 
 
@@ -4504,7 +4628,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (cli->nt_pipe_fnum)
+	if (cli->nt_pipe_fnum[cli->pipe_idx])
 		cli_nt_session_close(cli);
 	 
 	talloc_destroy(mem_ctx);
@@ -5260,10 +5384,10 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc getsid \t\tfetch the domain sid into the local secrets.tdb\n");
 	d_printf("  net rpc vampire \t\tsyncronise an NT PDC's users and groups into the local passdb\n");
 	d_printf("  net rpc samdump \t\tdiplay an NT PDC's users, groups and other data\n");
-	d_printf("  net rpc trustdom \t\tto create trusting domain's account\n"
-		 "\t\t\t\t\tor establish trust\n");
+	d_printf("  net rpc trustdom \t\tto create trusting domain's account or establish trust\n");
 	d_printf("  net rpc abortshutdown \tto abort the shutdown of a remote server\n");
 	d_printf("  net rpc shutdown \t\tto shutdown a remote server\n");
+	d_printf("  net rpc rights\t\tto manage privileges assigned to SIDs\n");
 	d_printf("\n");
 	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
@@ -5332,6 +5456,7 @@ int net_rpc(int argc, const char **argv)
 		{"samdump", rpc_samdump},
 		{"vampire", rpc_vampire},
 		{"getsid", net_rpc_getsid},
+		{"rights", net_rpc_rights},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
