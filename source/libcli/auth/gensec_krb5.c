@@ -177,13 +177,17 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		case KRB5KDC_ERR_PREAUTH_FAILED:
 		case KRB5KRB_AP_ERR_TKT_EXPIRED:
 		case KRB5_CC_END:
+		{
+			DEBUG(3, ("kerberos: %s\n", 
+				  error_message(ret)));
+			/* fall down to remaining code */
+		}
+		/* just don't print a message for these really ordinary messages */
 		case KRB5_FCC_NOFILE:
 		case KRB5_CC_NOTFOUND:
 		{
 			char *password;
 			time_t kdc_time;
-			DEBUG(3, ("kerberos: %s\n", 
-				  error_message(ret)));
 			nt_status = gensec_get_password(gensec_security, 
 							gensec_security->mem_ctx, 
 							&password);
