@@ -2318,7 +2318,6 @@ void data_blob_free(DATA_BLOB *d)
 		if (d->free_fn) {
 			(d->free_fn)(d);
 		}
-		ZERO_STRUCTP(d);
 	}
 }
 
