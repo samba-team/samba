@@ -253,12 +253,9 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
                          char *data_p, size_t size )
 {
 	REGISTRY_VALUE **ppreg;
-	uint16 len;
 	
 	if ( name )
 	{
-		len = strlen( name );
-
 		/* allocate a slot in the array of pointers */
 		
 		if (  ctr->num_values == 0 )
@@ -279,6 +276,42 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
 		ctr->values[ctr->num_values]->type = type;
 		ctr->values[ctr->num_values]->data_p = talloc_memdup( ctr->ctx, data_p, size );
 		ctr->values[ctr->num_values]->size = size;
+		ctr->num_values++;
+	}
+
+	return ctr->num_values;
+}
+
+/***********************************************************************
+ Add a new registry value to the array
+ **********************************************************************/
+
+int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
+{
+	REGISTRY_VALUE **ppreg;
+	
+	if ( val )
+	{
+		/* allocate a slot in the array of pointers */
+		
+		if (  ctr->num_values == 0 )
+			ctr->values = talloc( ctr->ctx, sizeof(REGISTRY_VALUE*) );
+		else {
+			ppreg = talloc_realloc( ctr->ctx, ctr->values, sizeof(REGISTRY_VALUE*)*(ctr->num_values+1) );
+			if ( ppreg )
+				ctr->values = ppreg;
+		}
+
+		/* allocate a new value and store the pointer in the arrya */
+		
+		ctr->values[ctr->num_values] = talloc( ctr->ctx, sizeof(REGISTRY_VALUE) );
+
+		/* init the value */
+	
+		fstrcpy( ctr->values[ctr->num_values]->valuename, val->valuename );
+		ctr->values[ctr->num_values]->type = val->type;
+		ctr->values[ctr->num_values]->data_p = talloc_memdup( ctr->ctx, val->data_p, val->size );
+		ctr->values[ctr->num_values]->size = val->size;
 		ctr->num_values++;
 	}
 

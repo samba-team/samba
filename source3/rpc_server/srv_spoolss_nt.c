@@ -7925,7 +7925,6 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	fstring			valuename;
 	fstring			keyname;
 	char			*oid_string;
-	UNISTR2			uni_oid;
 	
 	DEBUG(4,("_spoolss_setprinterdataex\n"));
 
@@ -7988,9 +7987,8 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 		 * this is right.    --jerry
 		 */
 		 
-		init_unistr2(  &uni_oid, oid_string, strlen(oid_string)+1 );	
 		set_printer_dataex( printer, keyname, valuename, 
-		                    REG_SZ, (void*)uni_oid.buffer, uni_oid.uni_str_len*sizeof(uint16) );		
+		                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
 	}
 	
 	free_a_printer(&printer, 2);
