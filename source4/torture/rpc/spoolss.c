@@ -139,13 +139,13 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	blob = data_blob(NULL, 0);
 
-	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
 	r.in.printer = NULL;
 	r.in.buffer = &blob;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;	
 	r.out.handle = &handle;
 
-	printf("\nTesting OpenPrinter(\\\\%s\\%s)\n", r.in.server, r.in.printer);
+	printf("\nTesting OpenPrinter(\\\\%s)\n", r.in.server);
 
 	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
