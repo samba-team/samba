@@ -54,7 +54,8 @@ static known_sid_users everyone_users[] = {
 	{0, (enum SID_NAME_USE)0, NULL}};
 
 static known_sid_users creator_owner_users[] = {
-	{ 0, SID_NAME_ALIAS, "Creator Owner" },
+	{ 0, SID_NAME_WKN_GRP, "Creator Owner" },
+	{ 1, SID_NAME_WKN_GRP, "Creator Group" },
 	{0, (enum SID_NAME_USE)0, NULL}};
 
 static known_sid_users nt_authority_users[] = {
@@ -80,11 +81,10 @@ static known_sid_users builtin_groups[] = {
 	{ BUILTIN_ALIAS_RID_BACKUP_OPS, SID_NAME_ALIAS, "Backup Operators" },
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
-
-
 /**************************************************************************
- quick init function
- *************************************************************************/
+ Quick init function.
+*************************************************************************/
+
 static void init_sid_name_map (void)
 {
 	int i = 0;
@@ -105,8 +105,7 @@ static void init_sid_name_map (void)
 		sid_name_map[i].name = global_myname;
 		sid_name_map[i].known_users = NULL;
 		i++;
-	}
-	else {
+	} else {
 		sid_name_map[i].sid = get_global_sam_sid();
 		sid_name_map[i].name = global_myname;
 		sid_name_map[i].known_users = NULL;
@@ -133,8 +132,7 @@ static void init_sid_name_map (void)
 	sid_name_map[i].known_users = &nt_authority_users[0];
 	i++;
 		
-
-	/* end of array */
+	/* End of array. */
 	sid_name_map[i].sid = NULL;
 	sid_name_map[i].name = NULL;
 	sid_name_map[i].known_users = NULL;
@@ -142,7 +140,6 @@ static void init_sid_name_map (void)
 	sid_name_map_initialized = True;
 		
 	return;
-
 }
 
 /**************************************************************************
@@ -257,6 +254,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 /*****************************************************************
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
 *****************************************************************/  
+
 BOOL sid_check_is_domain(const DOM_SID *sid)
 {
 	return sid_equal(sid, get_global_sam_sid());
@@ -265,6 +263,7 @@ BOOL sid_check_is_domain(const DOM_SID *sid)
 /*****************************************************************
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
 *****************************************************************/  
+
 BOOL sid_check_is_in_our_domain(const DOM_SID *sid)
 {
 	DOM_SID dom_sid;
@@ -276,3 +275,32 @@ BOOL sid_check_is_in_our_domain(const DOM_SID *sid)
 	return sid_equal(&dom_sid, get_global_sam_sid());
 }
 
+/**************************************************************************
+ Try and map a name to one of the well known SIDs.
+***************************************************************************/
+
+BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char *name)
+{
+	int i, j;
+
+	if (!sid_name_map_initialized)
+		init_sid_name_map();
+
+	for (i=0; sid_name_map[i].sid != NULL; i++) {
+		known_sid_users *users = sid_name_map[i].known_users;
+
+		if (users == NULL)
+			continue;
+
+		for (j=0; users[j].known_user_name != NULL; j++) {
+			if (strequal(users[j].known_user_name, name) == 0) {
+				sid_copy(sid, sid_name_map[i].sid);
+				sid_append_rid(sid, users[j].rid);
+				*use = users[j].sid_name_use;
+				return True;
+			}
+		}
+	}
+
+	return False;
+}
