@@ -86,14 +86,17 @@ set_auth_data (krb5_context context,
 	       krb5_keyblock *key)
 {
     if(authdata->len) {
-	size_t len;
+	size_t len, buf_size;
 	unsigned char *buf;
 	krb5_crypto crypto;
 	krb5_error_code ret;
 
-	ASN1_MALLOC_ENCODE(AuthorizationData, buf, len, authdata, &len, ret);
+	ASN1_MALLOC_ENCODE(AuthorizationData, buf, buf_size, authdata,
+			   &len, ret);
 	if (ret)
 	    return ret;
+	if (buf_size != len)
+	    krb5_abortx(context, "internal error in ASN.1 encoder");
 
 	ALLOC(req_body->enc_authorization_data, 1);
 	if (req_body->enc_authorization_data == NULL) {
