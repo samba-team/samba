@@ -61,8 +61,8 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
     buf[1] = (out.length >> 16) & 0xff;
     buf[2] = (out.length >> 8) & 0xff;
     buf[3] = out.length & 0xff;
-    krb5_net_write(context->context, context->sock, buf, 4);
-    krb5_net_write(context->context, context->sock, out.data, out.length);
+    krb5_net_write(context->context, &context->sock, buf, 4);
+    krb5_net_write(context->context, &context->sock, out.data, out.length);
     krb5_data_free(&out);
     return 0;
 }
@@ -74,11 +74,11 @@ _kadm5_client_recv(kadm5_client_context *context, krb5_storage *sp)
     size_t len;
     krb5_error_code ret;
     krb5_data data, reply;
-    krb5_net_read(context->context, context->sock, buf, 4);
+    krb5_net_read(context->context, &context->sock, buf, 4);
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
     if(len > sizeof(buf))
 	return ENOMEM; /* XXX */
-    krb5_net_read(context->context, context->sock, buf, len);
+    krb5_net_read(context->context, &context->sock, buf, len);
     data.length = len;
     data.data = buf;
     ret = krb5_rd_priv(context->context, context->ac, &data, &reply, NULL);

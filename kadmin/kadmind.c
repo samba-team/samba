@@ -81,7 +81,7 @@ usage(int ret)
     exit (ret);
 }
 
-kadm5_ret_t
+static kadm5_ret_t
 kadm5_server_send(krb5_context context, krb5_auth_context ac, 
 		  krb5_storage *sp, int fd)
 {
@@ -103,13 +103,13 @@ kadm5_server_send(krb5_context context, krb5_auth_context ac,
     buf[1] = (out.length >> 16) & 0xff;
     buf[2] = (out.length >> 8) & 0xff;
     buf[3] = out.length & 0xff;
-    krb5_net_write(context, fd, buf, 4);
-    krb5_net_write(context, fd, out.data, out.length);
+    krb5_net_write(context, &fd, buf, 4);
+    krb5_net_write(context, &fd, out.data, out.length);
     krb5_data_free(&out);
     return 0;
 }
 
-kadm5_ret_t
+static kadm5_ret_t
 kadm5_server_recv(krb5_context context, krb5_auth_context ac, 
 		  krb5_storage *sp, int fd)
 {
@@ -118,7 +118,7 @@ kadm5_server_recv(krb5_context context, krb5_auth_context ac,
     krb5_data in, out;
     kadm5_ret_t ret;
 
-    ret = krb5_net_read(context, fd, buf, 4);
+    ret = krb5_net_read(context, &fd, buf, 4);
     if(ret == 0)
 	exit(1);
     if(ret < 0)
@@ -128,7 +128,7 @@ kadm5_server_recv(krb5_context context, krb5_auth_context ac,
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
     if(len > sizeof(buf))
 	return ENOMEM;
-    ret = krb5_net_read(context, fd, buf, len);
+    ret = krb5_net_read(context, &fd, buf, len);
     if(ret < 0)
 	krb5_err(context, 1, errno, "krb5_net_read");
     if(ret != len)

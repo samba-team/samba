@@ -61,9 +61,10 @@ send_priv(krb5_context context, krb5_auth_context ac,
     net_len[2] = (packet.length >> 8) & 0xff;
     net_len[3] = packet.length & 0xff;
 	
-    if (krb5_net_write (context, fd, net_len, 4) != 4)
+    if (krb5_net_write (context, &fd, net_len, 4) != 4)
 	ret = errno;
-    else if (krb5_net_write (context, fd, packet.data, packet.length) != packet.length)
+    else if (krb5_net_write (context, &fd,
+			     packet.data, packet.length) != packet.length)
 	ret =  errno;
     krb5_data_free(&packet);
     return ret;
@@ -78,11 +79,11 @@ recv_priv(krb5_context context, krb5_auth_context ac, int fd, krb5_data *out)
     size_t len;
     krb5_data data;
     hdb_entry entry;
-    if(krb5_net_read(context, fd, tmp, 4) != 4)
+    if(krb5_net_read(context, &fd, tmp, 4) != 4)
 	return errno;
     len = (tmp[0] << 24) | (tmp[1] << 16) | (tmp[2] << 8) | tmp[3];
     buf = malloc(len);
-    if(krb5_net_read(context, fd, buf, len) != len)
+    if(krb5_net_read(context, &fd, buf, len) != len)
 	return errno;
     data.data = buf;
     data.length = len;

@@ -83,7 +83,6 @@ krb5_sendauth(krb5_context context,
 	      krb5_creds **out_creds)
 {
     krb5_error_code ret;
-    int fd = *((int *)p_fd);
     u_int32_t len, net_len;
     const char *version = KRB5_SENDAUTH_VERSION;
     u_char repl;
@@ -94,17 +93,17 @@ krb5_sendauth(krb5_context context,
 
     len = strlen(version) + 1;
     net_len = htonl(len);
-    if (krb5_net_write (context, fd, &net_len, 4) != 4
-	|| krb5_net_write (context, fd, version, len) != len)
+    if (krb5_net_write (context, p_fd, &net_len, 4) != 4
+	|| krb5_net_write (context, p_fd, version, len) != len)
 	return errno;
 
     len = strlen(appl_version) + 1;
     net_len = htonl(len);
-    if (krb5_net_write (context, fd, &net_len, 4) != 4
-	|| krb5_net_write (context, fd, appl_version, len) != len)
+    if (krb5_net_write (context, p_fd, &net_len, 4) != 4
+	|| krb5_net_write (context, p_fd, appl_version, len) != len)
 	return errno;
 
-    if (krb5_net_read (context, fd, &repl, sizeof(repl)) != sizeof(repl))
+    if (krb5_net_read (context, p_fd, &repl, sizeof(repl)) != sizeof(repl))
 	return errno;
 
     if (repl != 0)

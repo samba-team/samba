@@ -58,7 +58,6 @@ krb5_recvauth(krb5_context context,
   const char *version = KRB5_SENDAUTH_VERSION;
   char her_version[sizeof(KRB5_SENDAUTH_VERSION)];
   char *her_appl_version;
-  int fd = *((int *)p_fd);
   u_int32_t len;
   u_char repl;
   krb5_data data;
@@ -76,48 +75,48 @@ krb5_recvauth(krb5_context context,
 
   ret = krb5_auth_con_setaddrs_from_fd (context,
 					*auth_context,
-					fd);
+					p_fd);
   if (ret)
       return ret;
 
   if(!(flags & KRB5_RECVAUTH_IGNORE_VERSION)) {
-    if (krb5_net_read (context, fd, &len, 4) != 4)
+    if (krb5_net_read (context, p_fd, &len, 4) != 4)
       return errno;
     len = ntohl(len);
     if (len != sizeof(her_version)
-	|| krb5_net_read (context, fd, her_version, len) != len
+	|| krb5_net_read (context, p_fd, her_version, len) != len
 	|| strncmp (version, her_version, len)) {
       repl = 1;
-      krb5_net_write (context, fd, &repl, 1);
+      krb5_net_write (context, p_fd, &repl, 1);
       return KRB5_SENDAUTH_BADAUTHVERS;
     }
   }
 
-  if (krb5_net_read (context, fd, &len, 4) != 4)
+  if (krb5_net_read (context, p_fd, &len, 4) != 4)
     return errno;
   len = ntohl(len);
   if (len != strlen(appl_version) + 1) {
     repl = 2;
-    krb5_net_write (context, fd, &repl, 1);
+    krb5_net_write (context, p_fd, &repl, 1);
     return KRB5_SENDAUTH_BADAPPLVERS;
   }
   her_appl_version = malloc (len);
   if (her_appl_version == NULL) {
     repl = 2;
-    krb5_net_write (context, fd, &repl, 1);
+    krb5_net_write (context, p_fd, &repl, 1);
     return ENOMEM;
   }
-  if (krb5_net_read (context, fd, her_appl_version, len) != len
+  if (krb5_net_read (context, p_fd, her_appl_version, len) != len
       || strcmp (appl_version, her_appl_version)) {
     repl = 2;
-    krb5_net_write (context, fd, &repl, 1);
+    krb5_net_write (context, p_fd, &repl, 1);
     free (her_appl_version);
     return KRB5_SENDAUTH_BADAPPLVERS;
   }
   free (her_appl_version);
 
   repl = 0;
-  if (krb5_net_write (context, fd, &repl, 1) != 1)
+  if (krb5_net_write (context, p_fd, &repl, 1) != 1)
     return errno;
 
   krb5_data_zero (&data);
@@ -153,7 +152,7 @@ krb5_recvauth(krb5_context context,
   }      
 
   len = 0;
-  if (krb5_net_write (context, fd, &len, 4) != 4)
+  if (krb5_net_write (context, p_fd, &len, 4) != 4)
     return errno;
 
   if (ap_options & AP_OPTS_MUTUAL_REQUIRED) {

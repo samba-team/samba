@@ -57,7 +57,7 @@ do_read (int fd,
 	    int status;
 	    krb5_data data;
 
-	    ret = krb5_net_read (context, fd, &len, 4);
+	    ret = krb5_net_read (context, &fd, &len, 4);
 	    if (ret != 4)
 		return ret;
 	    len = ntohl(len);
@@ -65,7 +65,7 @@ do_read (int fd,
 	    outer_len = (outer_len + 7) & ~7;
 	    if (outer_len > sz)
 		abort ();
-	    ret = krb5_net_read (context, fd, buf, outer_len);
+	    ret = krb5_net_read (context, &fd, buf, outer_len);
 	    if (ret != outer_len)
 		return ret;
 	    status = krb5_decrypt(context, buf, outer_len,
@@ -109,10 +109,10 @@ do_write (int fd, void *buf, size_t sz)
 	    if (status)
 		errx (1, "%s", krb5_get_err_text(context, status));
 	    len = htonl(sz);
-	    ret = krb5_net_write (context, fd, &len, 4);
+	    ret = krb5_net_write (context, &fd, &len, 4);
 	    if (ret != 4)
 		return ret;
-	    ret = krb5_net_write (context, fd, data.data, data.length);
+	    ret = krb5_net_write (context, &fd, data.data, data.length);
 	    if (ret != data.length)
 		return ret;
 	    free (data.data);

@@ -140,9 +140,9 @@ proto (int sock, const char *hostname, const char *service)
     len = packet.length;
     net_len = htonl(len);
 
-    if (krb5_net_write (context, sock, &net_len, 4) != 4)
+    if (krb5_net_write (context, &sock, &net_len, 4) != 4)
 	err (1, "krb5_net_write");
-    if (krb5_net_write (context, sock, packet.data, len) != len)
+    if (krb5_net_write (context, &sock, packet.data, len) != len)
 	err (1, "krb5_net_write");
 
     data.data   = "hemligt";
@@ -162,9 +162,9 @@ proto (int sock, const char *hostname, const char *service)
     len = packet.length;
     net_len = htonl(len);
 
-    if (krb5_net_write (context, sock, &net_len, 4) != 4)
+    if (krb5_net_write (context, &sock, &net_len, 4) != 4)
 	err (1, "krb5_net_write");
-    if (krb5_net_write (context, sock, packet.data, len) != len)
+    if (krb5_net_write (context, &sock, packet.data, len) != len)
 	err (1, "krb5_net_write");
     return 0;
 }
