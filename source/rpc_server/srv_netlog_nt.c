@@ -548,14 +548,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (p->netsec_auth_validated) {
-		/* The client opens a second RPC NETLOGON pipe without
-                   doing a auth2. The session key for the schannel is
-                   re-used from the auth2 the client did before. */
-		extern struct dcinfo last_dcinfo;
-		p->dc = last_dcinfo;
-	}
-
 	/* checks and updates credentials.  creates reply credentials */
 	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;

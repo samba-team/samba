@@ -1088,6 +1088,11 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		RPC_AUTH_VERIFIER auth_verifier;
 		uint32 flags;
 
+		/* The client opens a second RPC NETLOGON pipe without
+                   doing a auth2. The credentials for the schannel are
+                   re-used from the auth2 the client did before. */
+		p->dc = last_dcinfo;
+
 		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL, RPC_HDR_AUTH_LEN, 1);
 		if(!smb_io_rpc_hdr_auth("", &auth_info, &out_auth, 0)) {
 			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR_AUTH failed.\n"));
