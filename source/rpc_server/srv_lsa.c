@@ -296,28 +296,16 @@ static BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 	/* Check if this is our own sid.  This should perhaps be done by
 	   winbind?  For the moment handle it here. */
 
-	sid_to_string(sid_str, sid);
-	DEBUG(0, ("*** looking up sid %s\n", sid_str));
-
 	if (sid->num_auths == 5) {
 		sid_copy(&tmp_sid, sid);
 		sid_split_rid(&tmp_sid, &rid);
 
 		if (sid_equal(&global_sam_sid, &tmp_sid)) {
 
-		sid_to_string(sid_str, &tmp_sid);
-		DEBUG(0, ("*** split up sid %s with rid %d\n", sid_str,
-			  rid));
-
-		sid_to_string(sid_str, &global_sam_sid);
-		DEBUG(0, ("*** my sid is %s\n", sid_str));
-		      
 		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
 			lookup_local_rid(rid, name, name_type);
 		}
 	}
-
-	DEBUG(0, ("*** calling winbindd\n"));
 
 	/* Initialise request */
 
