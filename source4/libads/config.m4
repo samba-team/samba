@@ -523,6 +523,10 @@ if test x"$with_krb5_support" != x"no"; then
 		AC_MSG_CHECKING(whether KRB5 support is used)
 		SMB_EXT_LIB_ENABLE(KRB5,YES)
 		AC_MSG_RESULT(yes)
+		echo "KRB5_CFLAGS:   ${KRB5_CFLAGS}"
+		echo "KRB5_CPPFLAGS: ${KRB5_CPPFLAGS}"
+		echo "KRB5_LDFLAGS:  ${KRB5_LDFLAGS}"
+		echo "KRB5_LIBS:     ${KRB5_LIBS}"
 	else
 		if test x"$with_krb5_support" = x"yes"; then
 			AC_MSG_ERROR(a working krb5 library is needed for KRB5 support)
