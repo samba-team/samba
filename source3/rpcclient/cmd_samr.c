@@ -1034,7 +1034,7 @@ void cmd_sam_enum_users(struct client_info *info)
 	BOOL request_user_info  = False;
 	BOOL request_group_info = False;
 	BOOL request_alias_info = False;
-	uint16 num_entries = 0;
+	uint16 start_idx = 0x0;
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
@@ -1075,7 +1075,7 @@ void cmd_sam_enum_users(struct client_info *info)
 #ifdef DEBUG_TESTING
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		num_entries = (uint16)strtol(tmp, (char**)NULL, 16);
+		start_idx = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
@@ -1102,7 +1102,7 @@ void cmd_sam_enum_users(struct client_info *info)
 
 #ifdef DEBUG_TESTING
 	DEBUG(5,("Number of entries:%d unk_0:%04x acb_mask:%04x unk_1:%04x\n",
-	          num_entries, unk_0, acb_mask, unk_1));
+	          start_idx, unk_0, acb_mask, unk_1));
 #endif
 
 	/* open SAMR session.  negotiate credentials */
@@ -1127,9 +1127,9 @@ void cmd_sam_enum_users(struct client_info *info)
 
 	/* read some users */
 	res = res ? samr_enum_dom_users(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain,
-	            num_entries, unk_0, acb_mask, unk_1, 0xffff,
-				&info->dom.sam, &info->dom.num_sam_entries) : False;
+	             &info->dom.samr_pol_open_domain,
+	             start_idx, acb_mask, unk_1, 0x80,
+	             &info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)
 	{

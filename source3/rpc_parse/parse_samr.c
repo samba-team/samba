@@ -871,7 +871,7 @@ static void sam_io_sam_entry(char *desc,  SAM_ENTRY *sam, prs_struct *ps, int de
 makes a SAMR_Q_ENUM_DOM_USERS structure.
 ********************************************************************/
 void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
-				uint16 req_num_entries, uint16 unk_0,
+				uint32 start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size)
 {
 	if (q_e == NULL || pol == NULL) return;
@@ -880,8 +880,7 @@ void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
 
 	memcpy(&(q_e->pol), pol, sizeof(*pol));
 
-	q_e->req_num_entries = req_num_entries; /* zero indicates lots */
-	q_e->unknown_0 = unk_0; /* this gets returned in the response */
+	q_e->start_idx = start_idx; /* zero indicates lots */
 	q_e->acb_mask  = acb_mask;
 	q_e->unknown_1 = unk_1;
 	q_e->max_size = size;
@@ -902,13 +901,11 @@ void samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struc
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint16("req_num_entries", ps, depth, &(q_e->req_num_entries));
-	prs_uint16("unknown_0      ", ps, depth, &(q_e->unknown_0      ));
+	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
+	prs_uint16("acb_mask ", ps, depth, &(q_e->acb_mask ));
+	prs_uint16("unknown_1", ps, depth, &(q_e->unknown_1));
 
-	prs_uint16("acb_mask       ", ps, depth, &(q_e->acb_mask       ));
-	prs_uint16("unknown_1      ", ps, depth, &(q_e->unknown_1      ));
-
-	prs_uint32("max_size       ", ps, depth, &(q_e->max_size       ));
+	prs_uint32("max_size ", ps, depth, &(q_e->max_size ));
 
 	prs_align(ps);
 }
@@ -918,7 +915,7 @@ void samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struc
 makes a SAMR_R_ENUM_DOM_USERS structure.
 ********************************************************************/
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
-		uint32 unk_0,
+		uint32 next_idx,
 		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status)
 {
 	int i;
@@ -934,7 +931,7 @@ void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 			 num_sam_entries));
 	}
 
-	r_u->unknown_0 = unk_0;
+	r_u->next_idx = next_idx;
 
 	if (num_sam_entries != 0)
 	{
@@ -981,7 +978,7 @@ void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struc
 
 	prs_align(ps);
 
-	prs_uint32("unknown_0   ", ps, depth, &(r_u->unknown_0   ));
+	prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx    ));
 	prs_uint32("ptr_entries1", ps, depth, &(r_u->ptr_entries1));
 
 	if (r_u->ptr_entries1 != 0)

@@ -73,7 +73,10 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 			/* skip the requested number of entries.
 			   not very efficient, but hey...
 			 */
-			start_idx--;
+			if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
+			{
+				start_idx--;
+			}
 			continue;
 		}
 
@@ -344,11 +347,12 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	DEBUG(5,("samr_reply_enum_dom_users: %d\n", __LINE__));
 
 	become_root(True);
-	get_sampwd_entries(pass, 0, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
+	get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+	                   MAX_SAM_ENTRIES, q_u->acb_mask);
 	unbecome_root(True);
 
 	make_samr_r_enum_dom_users(&r_e, 
-	                           0x00000000, num_entries,
+	                           q_u->start_idx + num_entries, num_entries,
 	                           pass, r_e.status);
 
 	/* store the response in the SMB stream */
