@@ -1,5 +1,9 @@
 Thu Apr  8 15:08:25 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* Makefile.in: snprintf
+
+	* roken_rename.h: add snprintf, asprintf
+
 	* Makefile.am: build testit
 
 	* complete.c: nuke NEW, DISPOSE, RENEW, and COPYFROMTO macros;
