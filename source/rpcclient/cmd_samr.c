@@ -429,8 +429,8 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	BOOL res = True, res1 = True;
 	POLICY_HND pol_sam;
 	POLICY_HND pol_dom;
-	int num_names;
-	char **names;
+	int num_names = 0;
+	char **names = NULL;
 	uint32 num_rids, i;
 	uint32 *rids = NULL;
 	uint32 *types = NULL;
@@ -527,7 +527,7 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	safe_free(rids);
 	safe_free(types);
 
-	free_char_array(num_names, names);
+        free_char_array(num_names, names);
 }
 
 /****************************************************************************
