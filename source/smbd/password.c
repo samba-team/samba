@@ -1608,6 +1608,11 @@ BOOL domain_client_validate( char *user, char *domain,
 		cli_shutdown(pcli);
 		release_server_mutex();
 
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication \
+via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
+		/* END_ADMIN_LOG */
+
 		if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
 			*user_exists = False;
 

@@ -6837,12 +6837,14 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	/* BEGIN_ADMIN_LOG */
         switch(level) {
 	    case 3:
-		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
+		sys_adminlog(LOG_INFO,(char *)gettext("Added printer driver. Print driver name: %s. \
+Print driver OS: %s. Administrator name: %s."),
 			driver.info_3->name,drv_ver_to_os[driver.info_3->cversion],uidtoname(user.uid));
 		fstrcpy(driver_name, driver.info_3->name);
 		break;
 	    case 6:   
-		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
+		sys_adminlog(LOG_INFO,(char *)gettext("Added printer driver. Print driver name: %s. \
+Print driver OS: %s. Administrator name: %s."),
 			driver.info_6->name,drv_ver_to_os[driver.info_6->version],uidtoname(user.uid));
 		fstrcpy(driver_name, driver.info_6->name);
 		break;

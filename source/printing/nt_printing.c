@@ -4499,6 +4499,7 @@ void map_printer_permissions(SEC_DESC *sd)
        print_queue_purge
 
  ****************************************************************************/
+
 BOOL print_access_check(struct current_user *user, int snum, int access_type)
 {
 	SEC_DESC_BUF *secdesc = NULL;
@@ -4563,6 +4564,18 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	result = se_access_check(secdesc->sec, user->nt_user_token, access_type,
 				 &access_granted, &status);
+
+        /* BEGIN_ADMIN_LOG */
+	if (access_granted == 0) {
+		switch(access_type) {
+			case 0x8:
+				sys_adminlog( LOG_ERR, (char *)
+				gettext( "Permission denied-- user not allowed to connect to printer. User name: %s. Printer name: %s." ),
+					uidtoname(user->uid), PRINTERNAME(snum) );
+				break;
+		}
+	}
+        /* END_ADMIN_LOG */
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
 

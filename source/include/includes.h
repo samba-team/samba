@@ -1032,6 +1032,14 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #define LOG_DEBUG       7       /* debug-level messages */
 #endif
 
+#ifdef HAVE_LIBINTL_H
+#include <libintl.h>
+#endif
+
+#ifndef HAVE_GETTEXT
+#define gettext(x) x
+#endif
+
 /* NetBSD doesn't have these */
 #ifndef SHM_R
 #define SHM_R 0400
