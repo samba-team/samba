@@ -2170,9 +2170,13 @@ BOOL print_access_check(struct current_user *user, int snum,
 
 	/* Get printer name */
 	pname = PRINTERNAME(snum);
-	if (!pname || !*pname) pname = SERVICE(snum);
+	if (!pname || !*pname)
+		pname = SERVICE(snum);
 
-	if (!pname || !*pname) return False;
+	if (!pname || !*pname) {
+		errno = EACCES;
+		return False;
+	}
 
 	/* Get printer security descriptor */
 	nt_printing_getsec(pname, &secdesc);
@@ -2219,6 +2223,9 @@ BOOL print_access_check(struct current_user *user, int snum,
 
 	/* Free mallocated memory */
 	free_sec_desc_buf(&secdesc);
+
+	if (!result)
+		errno = EACCES;
 
 	return result;
 }

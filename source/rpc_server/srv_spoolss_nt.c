@@ -2919,19 +2919,16 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	 * server-side code. *nnnnnggggh!*
 	 */
 	
-	if (info_1->p_datatype != 0)
-	{
-		unistr2_to_ascii(datatype, &(info_1->docname), sizeof(datatype));
-		if (strcmp(datatype, "RAW") != 0)
-		{
+	if (info_1->p_datatype != 0) {
+		unistr2_to_ascii(datatype, &info_1->docname, sizeof(datatype));
+		if (strcmp(datatype, "RAW") != 0) {
 			(*jobid)=0;
 			return ERROR_INVALID_DATATYPE;
 		}		
 	}		 
 	
 	/* get the share number of the printer */
-	if (!get_printer_snum(handle, &snum))
-	{
+	if (!get_printer_snum(handle, &snum)) {
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -3162,13 +3159,13 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	numlines = 0;
 	qlines = file_lines_load(tmp_file, &numlines);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-	DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
 	DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
 	unlink(tmp_file);
 
 	if(numlines) {
 		// Set the portname to what the script says the portname should be
 		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
+		DEBUGADD(6,("Line[0] = [%s]\n", qlines[0]));
 
 		// Send SIGHUP to process group... is there a better way?
 		kill(0, SIGHUP);
@@ -4013,7 +4010,6 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		numlines = 0;
 		qlines = file_lines_load(tmp_file, &numlines);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-		DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
 		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
 		unlink(tmp_file);
 
@@ -4112,7 +4108,6 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		numlines = 0;
 		qlines = file_lines_load(tmp_file, &numlines);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-		DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
 		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
 		unlink(tmp_file);
 
