@@ -1,3 +1,8 @@
+2001-07-15  Assar Westerlund  <assar@sics.se>
+
+	* afskauthlib/Makefile.am: use LIB_des, so that we link with
+	libcrypto/libdes from krb4
+
 2001-07-12  Assar Westerlund  <assar@sics.se>
 
 	* sia/Makefile.am: use $(CC) instead of ld for linking
