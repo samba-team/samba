@@ -211,7 +211,7 @@ receive (krb5_context context,
 
     ret = server_context->db->open(context,
 				   server_context->db,
-				   O_RDWR | O_CREAT, 0);
+				   O_RDWR | O_CREAT, 0600);
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
@@ -224,7 +224,8 @@ receive (krb5_context context,
 
 static void
 receive_everything (krb5_context context, int *fd,
-		    kadm5_server_context *server_context)
+		    kadm5_server_context *server_context,
+		    krb5_auth_context auth_context)
 {
     int ret;
     krb5_data data;
@@ -233,17 +234,25 @@ receive_everything (krb5_context context, int *fd,
 
     ret = server_context->db->open(context,
 				   server_context->db,
-				   O_RDWR | O_CREAT | O_TRUNC, 0);
+				   O_RDWR | O_CREAT | O_TRUNC, 0600);
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
     do {
-	krb5_data data;
+	krb5_data packet, data;
 	krb5_storage *sp;
 
-	ret = krb5_read_message (context, fd, &data);
+	ret = krb5_read_message (context, fd, &packet);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_read_message");
+
+	ret = krb5_rd_priv (context,
+			    auth_context,
+			    &packet,
+			    &data,
+			    NULL);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_rd_priv");
 
 	sp = krb5_storage_from_data (&data);
 	krb5_ret_int32 (sp, &opcode);
@@ -257,9 +266,16 @@ receive_everything (krb5_context context, int *fd,
 	    ret = hdb_value2entry (context, &fake_data, &entry);
 	    if (ret)
 		krb5_err (context, 1, ret, "hdb_value2entry");
+	    ret = server_context->db->store(server_context->context,
+					    server_context->db,
+					    0, &entry);
+	    if (ret)
+		krb5_err (context, 1, ret, "hdb_store");
+
 	    hdb_free_entry (context, &entry);
 	    krb5_data_free (&data);
 	}
+	krb5_data_free (&packet);
     } while (opcode == ONE_PRINC);
 
     if (opcode != NOW_YOU_HAVE)
@@ -412,7 +428,8 @@ main(int argc, char **argv)
 		   server_context->log_context.version);
 	    break;
 	case TELL_YOU_EVERYTHING :
-	    receive_everything (context, &master_fd, server_context);
+	    receive_everything (context, &master_fd, server_context,
+				auth_context);
 	    break;
 	case NOW_YOU_HAVE :
 	case I_HAVE :
