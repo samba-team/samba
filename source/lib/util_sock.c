@@ -1034,7 +1034,7 @@ char *get_socket_name(int fd)
 
 	fstrcpy(addr_buf, p);
 
-	if (inet_aton(p, &addr) == 0) return name_buf;
+	addr = *interpret_addr2(p);
 	
 	/* Look up the remote host name. */
 	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {
