@@ -152,4 +152,78 @@ done:
 	return status;
 }
 
+/* convert a sid to a DN */
+
+NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
+		       TALLOC_CTX *mem_ctx,
+		       const DOM_SID *sid,
+		       char **dn)
+{
+	ADS_STATUS rc;
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry = NULL;
+	char *ldap_exp = NULL;
+	char *sidstr = NULL;
+	int count;
+	char *dn2;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(sidstr = sid_binstring(sid))) {
+		DEBUG(1,("ads_sid_to_dn: sid_binstring failed!\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
+		DEBUG(1,("ads_sid_to_dn: asprintf failed!\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	rc = ads_search_retry(ads, &msg, ldap_exp, NULL);
+	if (!ADS_ERR_OK(rc)) {
+		status = ads_ntstatus(rc);
+		DEBUG(1,("ads_sid_to_dn ads_search: %s\n", ads_errstr(rc)));
+		goto done;
+	}
+
+	if ((count = ads_count_replies(msg)) != 1) {
+		DEBUG(1,("ads_sid_to_dn (sid=%s): Not found (count=%d)\n", 
+			 sid_to_string(sid_string, sid)), count);
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	entry = ads_first_entry(msg);
+
+	dn2 = ads_get_dn(ads, entry);
+
+	if (!dn2) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	*dn = talloc_strdup(mem_ctx, dn2);
+
+	if (!*dn) {
+		SAFE_FREE(dn2);
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+	DEBUG(3,("ads sid_to_dn mapped %s\n", *dn2));
+
+	SAFE_FREE(dn2);
+done:
+	if (msg) ads_msgfree(ads, msg);
+
+	SAFE_FREE(ldap_exp);
+	SAFE_FREE(sidstr);
+
+	return status;
+}
+
+
 #endif
