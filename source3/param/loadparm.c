@@ -2380,7 +2380,7 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* the printer name is set to the service name. */
 	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
 	string_set(&ServicePtrs[i]->comment, comment);
-`
+
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = False;
 	/* No share modes on printer services. */
