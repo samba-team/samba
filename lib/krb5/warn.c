@@ -68,6 +68,7 @@ _warnerr(krb5_context context, int doexit, int eval, int do_errtext, krb5_error_
 	krb5_log(context, context->warn_dest, level, xfmt, args[0], args[1]);
     else
 	warnx(xfmt, args[0], args[1]);
+    free(msg);
     if(doexit)
 	exit(eval);
     return 0;
