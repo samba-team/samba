@@ -1,16 +1,13 @@
 <?xml version="1.0"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 
-  <!-- Stuff for xincludes -->
-  <!ENTITY % xinclude SYSTEM "../entities/xinclude.dtd">
-  %xinclude;
-
   <!-- entities files to use -->
   <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
   %global_entities;
 
 ]>
-<book id="S3bE">
+<book id="S3bE"
+	xmlns:xi="http://www.w3.org/2003/XInclude">
 	<title>Samba-3 by Example</title>
 	<subtitle>Practical Exercises in Successful Samba Deployment</subtitle>
 	<bookinfo>
@@ -26,10 +23,10 @@
 	<para>boo</para>
 	<?latex \clearpage ?>
 	<para>boo</para>
-	<xi:include href="inside-cover.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="acknowledgements.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="foreword.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="preface.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
+	<xi:include href="inside-cover.xml"/>
+	<xi:include href="acknowledgements.xml"/>
+	<xi:include href="foreword.xml"/>
+	<xi:include href="preface.xml"/>
 	<?latex \cleardoublepage ?>
 	<toc/>
 	<?latex \cleardoublepage ?>
@@ -37,20 +34,20 @@
 	<?latex \cleardoublepage ?>
 	<lot/>
 	<!-- Chapters -->
-	<xi:include href="Chap01-WindowsNetworkingPrimer.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap02-SimpleOfficeServer.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap03-TheSmallOffice.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap04-SecureOfficeServer.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap05-500UserNetwork.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap06-MakingHappyUsers.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap07-2000UserNetwork.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap08-MigrateNT4Samba3.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap09-AddingUNIXClients.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap10-KerberosFastStart.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap10b-DomainAppsSupport.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap11-HighAvailability.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
-	<xi:include href="Chap12-Appendix.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
+	<xi:include href="Chap01-WindowsNetworkingPrimer.xml"/>
+	<xi:include href="Chap02-SimpleOfficeServer.xml"/>
+	<xi:include href="Chap03-TheSmallOffice.xml"/>
+	<xi:include href="Chap04-SecureOfficeServer.xml"/>
+	<xi:include href="Chap05-500UserNetwork.xml"/>
+	<xi:include href="Chap06-MakingHappyUsers.xml"/>
+	<xi:include href="Chap07-2000UserNetwork.xml"/>
+	<xi:include href="Chap08-MigrateNT4Samba3.xml"/>
+	<xi:include href="Chap09-AddingUNIXClients.xml"/>
+	<xi:include href="Chap10-KerberosFastStart.xml"/>
+	<xi:include href="Chap10b-DomainAppsSupport.xml"/>
+	<xi:include href="Chap11-HighAvailability.xml"/>
+	<xi:include href="Chap12-Appendix.xml"/>
 	<?latex \include{gpl}?>
-	<xi:include href="glossary.xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
+	<xi:include href="glossary.xml"/>
 	<index/>
 </book>
