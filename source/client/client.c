@@ -37,7 +37,6 @@ static pstring service;
 static pstring desthost;
 static pstring username;
 static pstring password;
-static pstring workgroup;
 static BOOL use_kerberos;
 static BOOL got_pass;
 static char *cmdstr = NULL;
@@ -2411,10 +2410,10 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       workgroup)) {
+			       lp_workgroup())) {
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
+		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c));
 			cli_shutdown(c);
 			return NULL;
@@ -2479,7 +2478,7 @@ static int do_host_query(char *query_host)
 		return 1;
 
 	browse_host(True);
-	list_servers(workgroup);
+	list_servers(lp_workgroup());
 
 	cli_shutdown(cli);
 	
@@ -2620,6 +2619,11 @@ static void remember_query_host(const char *arg,
 
 	setup_logging(argv[0],True);
 
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
+			argv[0], dyn_CONFIGFILE);
+	}
+	
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
 				POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "service <password>");
@@ -2675,11 +2679,6 @@ static void remember_query_host(const char *arg,
 		}
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], dyn_CONFIGFILE);
-	}
-	
 	poptGetArg(pc);
 	
 	load_interfaces();
@@ -2715,7 +2714,6 @@ static void remember_query_host(const char *arg,
 
 	pstrcpy(username, cmdline_auth_info.username);
 	pstrcpy(password, cmdline_auth_info.password);
-	pstrcpy(workgroup, lp_workgroup());
 	use_kerberos = cmdline_auth_info.use_kerberos;
 	got_pass = cmdline_auth_info.got_pass;
 
