@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -60,7 +60,10 @@ typedef struct gss_ctx_id_t_desc_struct {
   gss_name_t source, target;
   OM_uint32 flags;
   enum { LOCAL = 1, OPEN = 2, 
-	 COMPAT_OLD_DES3 = 4, COMPAT_OLD_DES3_SELECTED = 8 } more_flags;
+	 COMPAT_OLD_DES3 = 4,
+         COMPAT_OLD_DES3_SELECTED = 8,
+	 ACCEPTOR_SUBKEY = 16
+  } more_flags;
   struct krb5_ticket *ticket;
   OM_uint32 lifetime;
   HEIMDAL_MUTEX ctx_id_mutex;
@@ -107,6 +110,9 @@ krb5_error_code gssapi_krb5_init (void);
 
 struct gssapi_thr_context *
 gssapi_get_thread_context(int);
+
+void
+gsskrb5_is_cfx(gss_ctx_id_t, int *);
 
 OM_uint32
 gssapi_krb5_create_8003_checksum (
@@ -243,7 +249,7 @@ gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
 
 OM_uint32
 gssapi_msg_order_create(OM_uint32 *, struct gss_msg_order **, 
-			OM_uint32, OM_uint32, OM_uint32);
+			OM_uint32, OM_uint32, OM_uint32, int);
 OM_uint32
 gssapi_msg_order_destroy(struct gss_msg_order **);
 
