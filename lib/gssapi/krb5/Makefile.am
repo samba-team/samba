@@ -35,5 +35,6 @@ libgssapi_a_SOURCES =				\
 	release_oid_set.c			\
 	test_oid_set_member.c			\
 	unwrap.c				\
+	v1.c					\
 	verify_mic.c				\
 	wrap.c
