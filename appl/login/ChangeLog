@@ -1,3 +1,7 @@
+2000-07-01  Assar Westerlund  <assar@sics.se>
+
+	* login.c (login_timeout): add back
+
 2000-06-28  Johan Danielsson  <joda@pdc.kth.se>
 
 	* env.c: new file for environment related functions
