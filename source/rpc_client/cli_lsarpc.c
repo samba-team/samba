@@ -270,7 +270,7 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 
 		if (p)
 		{
-			if (r_l.undoc_buffer != 0 && ref.undoc_buffer != 0)
+			if (r_l.ptr_dom_ref != 0 && r_l.ptr_entries != 0)
 			{
 				valid_response = True;
 			}
@@ -399,7 +399,7 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 
 		if (p)
 		{
-			if (t_names.ptr_trans_names != 0 && ref.undoc_buffer != 0)
+			if (t_names.ptr_trans_names != 0 && r_l.ptr_dom_ref != 0)
 			{
 				valid_response = True;
 			}

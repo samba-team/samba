@@ -175,7 +175,6 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 		return -1;
 	}
 
-	ref->undoc_buffer = 1;
 	ref->num_ref_doms_1 = num+1;
 	ref->ptr_ref_dom  = 1;
 	ref->max_entries = MAX_REF_DOMAINS;
@@ -268,13 +267,27 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 make_reply_lookup_names
  ***************************************************************************/
 static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
-				DOM_R_REF *ref, DOM_RID2 *rid2,
-				uint32 mapped_count, uint32 status)
+				DOM_R_REF *ref, uint32 num_entries,
+				DOM_RID2 *rid2, uint32 mapped_count)
 {
+	r_l->ptr_dom_ref  = 1;
 	r_l->dom_ref      = ref;
+
+	r_l->num_entries  = num_entries;
+	r_l->ptr_entries  = 1;
+	r_l->num_entries2 = num_entries;
 	r_l->dom_rid      = rid2;
+
 	r_l->mapped_count = mapped_count;
-	r_l->status       = status;
+
+	if (mapped_count == 0)
+	{
+		r_l->status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+	else
+	{
+		r_l->status = 0x0;
+	}
 }
 
 /***************************************************************************
@@ -356,12 +369,21 @@ make_reply_lookup_sids
  ***************************************************************************/
 static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 				DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *names,
-				uint32 mapped_count, uint32 status)
+				uint32 mapped_count)
 {
+	r_l->ptr_dom_ref  = 1;
 	r_l->dom_ref      = ref;
 	r_l->names        = names;
 	r_l->mapped_count = mapped_count;
-	r_l->status       = status;
+
+	if (mapped_count == 0)
+	{
+		r_l->status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+	else
+	{
+		r_l->status = 0x0;
+	}
 }
 
 /***************************************************************************
@@ -381,7 +403,7 @@ static void lsa_reply_lookup_sids(prs_struct *rdata,
 
 	/* set up the LSA Lookup SIDs response */
 	make_lsa_trans_names(&ref, &names, num_entries, sid, &mapped_count);
-	make_reply_lookup_sids(&r_l, &ref, &names, mapped_count, 0x0);
+	make_reply_lookup_sids(&r_l, &ref, &names, mapped_count);
 
 	/* store the response in the SMB stream */
 	lsa_io_r_lookup_sids("", &r_l, rdata, 0);
@@ -404,11 +426,7 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 
 	/* set up the LSA Lookup RIDs response */
 	make_lsa_rid2s(&ref, rids, num_entries, names, &mapped_count);
-	make_reply_lookup_names(&r_l, &ref, rids, mapped_count, 0x0);
-
-	r_l.num_entries  = num_entries;
-	r_l.undoc_buffer = 1;
-	r_l.num_entries2 = num_entries;
+	make_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
 
 	/* store the response in the SMB stream */
 	lsa_io_r_lookup_names("", &r_l, rdata, 0);
@@ -541,7 +559,6 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 
 	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
 
-	/* construct reply.  return status is always 0x0 */
 	lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
 }
 

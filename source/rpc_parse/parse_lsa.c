@@ -71,7 +71,6 @@ static void lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int de
 
 	prs_align(ps);
 	
-	prs_uint32("undoc_buffer  ", ps, depth, &(r_r->undoc_buffer  )); /* undocumented buffer pointer. */
 	prs_uint32("num_ref_doms_1", ps, depth, &(r_r->num_ref_doms_1)); /* num referenced domains? */
 	prs_uint32("ptr_ref_dom   ", ps, depth, &(r_r->ptr_ref_dom   )); /* undocumented buffer pointer. */
 	prs_uint32("max_entries   ", ps, depth, &(r_r->max_entries   )); /* 32 - max number of entries */
@@ -915,15 +914,29 @@ void lsa_io_r_lookup_names(char *desc,  LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps,
 
 	prs_align(ps);
 	
-	lsa_io_dom_r_ref("", r_r->dom_ref, ps, depth); /* domain reference info */
-
-	prs_uint32("num_entries ", ps, depth, &(r_r->num_entries));
-	prs_uint32("undoc_buffer", ps, depth, &(r_r->undoc_buffer));
-	prs_uint32("num_entries2", ps, depth, &(r_r->num_entries2));
-
-	for (i = 0; i < r_r->num_entries2; i++)
+	prs_uint32("ptr_dom_ref", ps, depth, &(r_r->ptr_dom_ref));
+	if (r_r->ptr_dom_ref != 0)
 	{
-		smb_io_dom_rid2("", &(r_r->dom_rid[i]), ps, depth); /* domain RIDs being looked up */
+		lsa_io_dom_r_ref("", r_r->dom_ref, ps, depth);
+	}
+
+	prs_uint32("num_entries", ps, depth, &(r_r->num_entries));
+	prs_uint32("ptr_entries", ps, depth, &(r_r->ptr_entries));
+
+	if (r_r->ptr_entries != 0)
+	{
+		prs_uint32("num_entries2", ps, depth, &(r_r->num_entries2));
+
+		if (r_r->num_entries2 != r_r->num_entries)
+		{
+			/* RPC fault */
+			return;
+		}
+
+		for (i = 0; i < r_r->num_entries2; i++)
+		{
+			smb_io_dom_rid2("", &(r_r->dom_rid[i]), ps, depth); /* domain RIDs being looked up */
+		}
 	}
 
 	prs_uint32("mapped_count", ps, depth, &(r_r->mapped_count));
