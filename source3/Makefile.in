@@ -1321,10 +1321,10 @@ finddead:
 
 # when configure.in is updated, reconfigure
 $(srcdir)/configure: $(srcdir)/configure.in
-	@echo "WARNING: you need to rerun autoconf"
+	@echo "WARNING: you need to rerun ./autogen.sh"
 
 config.status: $(srcdir)/configure
-	@echo "WARNING: you need to run configure"
+	@echo "WARNING: you need to run ./configure"
 
 Makefile: $(srcdir)/Makefile.in config.status
 	@echo "WARNING: you need to run ./config.status"
