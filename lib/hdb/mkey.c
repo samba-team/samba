@@ -197,13 +197,21 @@ read_master_encryptionkey(krb5_context context, const char *filename,
     ssize_t len;
 	       
     fd = open(filename, O_RDONLY | O_BINARY);
-    if(fd < 0)
-	return errno;
+    if(fd < 0) {
+	int save_errno = errno;
+	krb5_set_error_string(context, "failed to open %s: %s", 
+			      filename, streror(save_errno));
+	return save_errno;
+    }
     
     len = read(fd, buf, sizeof(buf));
     close(fd);
-    if(len < 0)
-	return errno;
+    if(len < 0) {
+	int save_errno = errno;
+	krb5_set_error_string(context, "error reading %s: %s", 
+			      filename, streror(save_errno));
+	return save_errno;
+    }
 
     ret = decode_EncryptionKey(buf, len, &key, &len);
     memset(buf, 0, sizeof(buf));
@@ -235,13 +243,25 @@ read_master_krb4(krb5_context context, const char *filename,
     ssize_t len;
 	       
     fd = open(filename, O_RDONLY | O_BINARY);
-    if(fd < 0)
-	return errno;
+    if(fd < 0) {
+	int save_errno = errno;
+	krb5_set_error_string(context, "failed to open %s: %s", 
+			      filename, streror(save_errno));
+	return save_errno;
+    }
     
     len = read(fd, buf, sizeof(buf));
     close(fd);
-    if(len < 0)
-	return errno;
+    if(len < 0) {
+	int save_errno = errno;
+	krb5_set_error_string(context, "error reading %s: %s", 
+			      filename, streror(save_errno));
+	return save_errno;
+    }
+    if(len != 8) {
+	krb5_set_error_string(context, "bad contents of %s", filename);
+	return HEIM_ERR_EOF; /* XXX file might be too large */
+    }
 
     memset(&key, 0, sizeof(key));
     key.keytype = ETYPE_DES_PCBC_NONE;
@@ -271,10 +291,15 @@ hdb_read_master_key(krb5_context context, const char *filename,
 	filename = HDB_DB_DIR "/m-key";
 
     f = fopen(filename, "r");
-    if(f == NULL)
-	return errno;
+    if(f == NULL) {
+	int save_errno = errno;
+	krb5_set_error_string(context, "failed to open %s: %s", 
+			      filename, streror(save_errno));
+	return save_errno;
+    }
     
     if(fread(buf, 1, 2, f) != 2) {
+	krb5_set_error_string(context, "end of file reading %s", filename);
 	fclose(f);
 	return HEIM_ERR_EOF;
     }
