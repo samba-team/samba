@@ -489,7 +489,11 @@ static int delete_user_entry (struct pdb_context *in, const char *username)
 		return -1;
 	}
 
-	return NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount));
+	if (!NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount))) {
+		fprintf (stderr, "Unable to delete user %s\n", username);
+		return -1;
+	}
+	return 0;
 }
 
 /*********************************************************
@@ -515,7 +519,12 @@ static int delete_machine_entry (struct pdb_context *in, const char *machinename
 		return -1;
 	}
 
-	return NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount));
+	if (!NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount))) {
+		fprintf (stderr, "Unable to delete machine %s\n", name);
+		return -1;
+	}
+
+	return 0;
 }
 
 /*********************************************************
