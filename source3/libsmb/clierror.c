@@ -96,17 +96,21 @@ const char *cli_errstr(struct cli_state *cli)
 				break;
 			case READ_EOF:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Call returned zero bytes (EOF)\n" );
+					"Call returned zero bytes (EOF)" );
 				break;
 			case READ_ERROR:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Read error: %s\n", strerror(errno) );
+					"Read error: %s", strerror(errno) );
 				break;
 			case WRITE_ERROR:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Write error: %s\n", strerror(errno) );
+					"Write error: %s", strerror(errno) );
 				break;
-			default:
+		        case READ_BAD_SIG:
+				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+					"Server packet had invalid SMB signiture!");
+				break;
+		        default:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Unknown error code %d\n", cli->smb_rw_error );
 				break;
