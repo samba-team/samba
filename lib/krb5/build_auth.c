@@ -53,7 +53,6 @@ krb5_build_authenticator (krb5_context context,
   char buf[1024];
   size_t len;
   krb5_error_code ret;
-  unsigned seq_number;
 
   auth->authenticator_vno = 5;
   copy_Realm(&cred->client->realm, &auth->crealm);
@@ -74,8 +73,8 @@ krb5_build_authenticator (krb5_context context,
     krb5_generate_seq_number (context,
 			      &cred->session, 
 			      &auth_context->local_seqnumber);
-    seq_number = auth_context->local_seqnumber;
-    auth->seq_number = &seq_number;
+    ALLOC(auth->seq_number, 1);
+    *auth->seq_number = auth_context->local_seqnumber;
   } else
     auth->seq_number = NULL;
   auth->authorization_data = NULL;
