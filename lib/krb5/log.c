@@ -214,6 +214,8 @@ log_file(const char *time,
     struct file_data *f = data;
     if(f->keep_open == 0)
 	f->fd = fopen(f->filename, f->mode);
+    if(f->fd == NULL)
+	return;
     fprintf(f->fd, "%s %s\n", time, msg);
     if(f->keep_open == 0)
 	fclose(f->fd);
