@@ -167,6 +167,7 @@ static int do_compile(int codepage, char *input_file, char *output_file)
   FILE *fp = NULL;
   size_t size = 0;
   char *buf = NULL;
+  char *orig_buf = NULL;
   char output_buf[CODEPAGE_HEADER_SIZE + 4 * MAXCODEPAGELINES];
   int num_lines = 0;
   int i = 0;
@@ -222,6 +223,8 @@ The maximum size I will believe is 100k.\n", prog_name, size);
    */
 
   num_lines = clean_data( &buf, &size);
+
+  orig_buf = buf; /* Save for free(). */
 
   /* There can be a maximum of MAXCODEPAGELINES lines. */
   if(num_lines > MAXCODEPAGELINES)
@@ -300,6 +303,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
 
   fclose(fp);
 
+  free(orig_buf);
   return 0;
 }
 
