@@ -3279,7 +3279,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		   1,0,0,&Access,&action);
 
   if (!fsp1->open) {
-	  fsp1->reserved = False;
+	  file_free(fsp1);
 	  return(False);
   }
 
@@ -3296,7 +3296,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 
   if (!fsp2->open) {
     close_file(fsp1,False);
-    fsp2->reserved = False;
+    file_free(fsp2);
     return(False);
   }
 

@@ -49,6 +49,15 @@ BOOL allow_access(char *deny_list,char *allow_list,
 		  char *cname,char *caddr);
 BOOL check_access(int sock, char *allow_list, char *deny_list);
 
+/*The following definitions come from  lib/bitmap.c  */
+
+struct bitmap *bitmap_allocate(int n);
+void bitmap_free(struct bitmap *bm);
+BOOL bitmap_set(struct bitmap *bm, unsigned i);
+BOOL bitmap_clear(struct bitmap *bm, unsigned i);
+BOOL bitmap_query(struct bitmap *bm, unsigned i);
+int bitmap_find(struct bitmap *bm, unsigned ofs);
+
 /*The following definitions come from  lib/charcnv.c  */
 
 char *unix2dos_format(char *str,BOOL overwrite);
