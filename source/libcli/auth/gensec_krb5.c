@@ -47,6 +47,7 @@ struct gensec_krb5_state {
 	krb5_keyblock krb5_keyblock;
 };
 
+#ifdef KRB5_DO_VERIFY_PAC
 static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
 					    struct PAC_SIGNATURE_DATA *sig,
 					    struct gensec_krb5_state *gensec_krb5_state,
@@ -95,6 +96,7 @@ for (i=0; i < 40; i++) {
 
 	return NT_STATUS_OK;
 }
+#endif
 
 static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 				struct PAC_LOGON_INFO *logon_info_out,
@@ -168,7 +170,7 @@ static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("PAC no kdc_key\n"));
 		return NT_STATUS_FOOBAR;
 	}
-
+#ifdef KRB5_DO_VERIFY_PAC
 	/* clear the kdc_key */
 /*	memset((void *)kdc_sig_ptr , '\0', sizeof(*kdc_sig_ptr));*/
 
@@ -214,7 +216,7 @@ static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
+#endif
 	DEBUG(0,("account_name: %s [%s]\n",logon_info->account_name.string, logon_info->full_name.string));
 	*logon_info_out = *logon_info;
 

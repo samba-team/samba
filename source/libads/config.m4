@@ -286,6 +286,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_free_unparsed_name, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_keytab_entry_contents, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_kt_free_entry, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_verify_checksum, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_ticket_get_authorization_data_type, $KRB5_LIBS)
 
   LIBS="$LIBS $KRB5_LIBS"
   
