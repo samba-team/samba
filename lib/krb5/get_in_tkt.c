@@ -562,6 +562,46 @@ fail:
     return ret;
 }
 
+static int
+set_ptypes(krb5_context context,
+	   KRB_ERROR *error, 
+	   krb5_preauthtype **ptypes,
+	   krb5_preauthdata **preauth)
+{
+    static krb5_preauthdata preauth2;
+    static krb5_preauthtype ptypes2[] = { KRB5_PADATA_ENC_TIMESTAMP, KRB5_PADATA_NONE };
+
+    if(error->e_data) {
+	METHOD_DATA md;
+	int i;
+	decode_METHOD_DATA(error->e_data->data, 
+			   error->e_data->length, 
+			   &md, 
+			   NULL);
+	for(i = 0; i < md.len; i++){
+	    switch(md.val[i].padata_type){
+	    case pa_enc_timestamp:
+		*ptypes = ptypes2;
+		break;
+	    case pa_etype_info:
+		*preauth = &preauth2;
+		ALLOC_SEQ(*preauth, 1);
+		(*preauth)->val[0].type = KRB5_PADATA_ENC_TIMESTAMP;
+		krb5_decode_ETYPE_INFO(context,
+				       md.val[i].padata_value.data, 
+				       md.val[i].padata_value.length,
+				       &(*preauth)->val[0].info,
+				       NULL);
+		break;
+	    }
+	}
+	free_METHOD_DATA(&md);
+    } else {
+	*ptypes = ptypes2;
+    }
+    return(1);
+}
+
 krb5_error_code
 krb5_get_in_cred(krb5_context context,
 		 krb5_flags options,
@@ -587,62 +627,85 @@ krb5_get_in_cred(krb5_context context,
     krb5_kdc_flags opts;
     PA_DATA *pa;
     krb5_enctype etype;
+    const krb5_preauthdata *my_preauth = NULL;
     unsigned nonce;
+    int done;
 
     opts.i = options;
 
     krb5_generate_random_block (&nonce, sizeof(nonce));
     nonce &= 0xffffffff;
 
-    ret = init_as_req (context,
-		       opts,
-		       creds,
-		       addrs,
-		       etypes,
-		       ptypes,
-		       preauth,
-		       key_proc,
-		       keyseed,
-		       nonce,
-		       &a);
-    if (ret)
-	return ret;
+    do {
+	done = 1;
+	ret = init_as_req (context,
+			   opts,
+			   creds,
+			   addrs,
+			   etypes,
+			   ptypes,
+			   preauth,
+			   key_proc,
+			   keyseed,
+			   nonce,
+			   &a);
+	if (my_preauth) {
+	    free_ETYPE_INFO(&my_preauth->val[0].info);
+	    free (my_preauth->val);
+	}
+	if (ret)
+	    return ret;
 
-    ret = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
-			 sizeof(buf),
-			 &a,
-			 &req.length);
-    free_AS_REQ(&a);
-    if (ret)
-	return ret;
+	ret = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
+			     sizeof(buf),
+			     &a,
+			     &req.length);
+	free_AS_REQ(&a);
+	if (ret)
+	    return ret;
 
-    req.data = buf + sizeof(buf) - req.length;
+	req.data = buf + sizeof(buf) - req.length;
 
-    ret = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
-    if (ret)
-	return ret;
+	ret = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
+	if (ret)
+	    return ret;
 
-    memset (&rep, 0, sizeof(rep));
-    if((ret = decode_AS_REP(resp.data, resp.length, &rep.kdc_rep, &size))) {
-	/* let's try to parse it as a KRB-ERROR */
-	KRB_ERROR error;
-	int ret2;
+	memset (&rep, 0, sizeof(rep));
+	ret = decode_AS_REP(resp.data, resp.length, &rep.kdc_rep, &size);
+	if(ret) {
+	    /* let's try to parse it as a KRB-ERROR */
+	    KRB_ERROR error;
+	    int ret2;
 
-	ret2 = krb5_rd_error(context, &resp, &error);
-	if(ret2 && resp.data && ((char*)resp.data)[0] == 4)
-	    ret = KRB5KRB_AP_ERR_V4_REPLY;
-	krb5_data_free(&resp);
-	if (ret2 == 0) {
-	    ret = error.error_code;
-	    if(ret_as_reply)
-		ret_as_reply->error = error;
-	    else
-		free_KRB_ERROR (&error);
+	    ret2 = krb5_rd_error(context, &resp, &error);
+	    if(ret2 && resp.data && ((char*)resp.data)[0] == 4)
+		ret = KRB5KRB_AP_ERR_V4_REPLY;
+	    krb5_data_free(&resp);
+	    if (ret2 == 0) {
+		ret = error.error_code;
+		/* if no preauth was set and KDC requires it, give it
+                   one more try */
+		if (!ptypes && !preauth
+		    && ret == KRB5KDC_ERR_PREAUTH_REQUIRED
+#if 0
+			|| ret == KRB5KDC_ERR_BADOPTION
+#endif
+		    && set_ptypes(context, &error, &ptypes, &my_preauth)) {
+		    done = 0;
+		    preauth = my_preauth;
+		    free_KRB_ERROR(&error);
+		    continue;
+		}
+		if(ret_as_reply)
+		    ret_as_reply->error = error;
+		else
+		    free_KRB_ERROR (&error);
+		return ret;
+	    }
 	    return ret;
 	}
-	return ret;
-    }
-    krb5_data_free(&resp);
+	krb5_data_free(&resp);
+    } while(!done);
     
     pa = NULL;
     etype = rep.kdc_rep.enc_part.etype;
