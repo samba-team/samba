@@ -131,6 +131,16 @@ add_history(char *p)
 #endif
 
 int
+sl_command(SL_cmd *cmds, int argc, char **argv)
+{
+    SL_cmd *c;
+    c = sl_match (cmds, argv[0], 0);
+    if (c == NULL)
+	return -1;
+    return (*c->func)(argc, argv);
+}
+
+int
 sl_loop (SL_cmd *cmds, char *prompt)
 {
     unsigned max_count;
