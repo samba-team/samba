@@ -94,7 +94,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			/* fetch a new id and increment it */
-			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, &hwm, 1);
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_GROUP, &hwm, 1);
 
 			if (!ret) {
 				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
@@ -102,8 +102,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			/* recheck it is in the range */
-			if (hwm > idmap_state.uid_high) {
-				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
+			if (hwm > idmap_state.gid_high) {
+				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %u)\n", idmap_state.gid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			
