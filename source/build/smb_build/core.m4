@@ -71,6 +71,6 @@ smb_build_main(\$SMB_BUILD_CTX);
 0;
 _SMB_ACEOF
 
-$PERL config.smb_build.pl || exit $?
+$PERL ./config.smb_build.pl || exit $?
 
 ])
