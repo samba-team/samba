@@ -2583,6 +2583,11 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 	if (r_u == NULL)
 		return False;
 
+	if (UNMARSHALLING(ps))
+	{
+		ZERO_STRUCTP(r_u);
+	}
+
 	prs_debug(ps, depth, desc, "samr_io_r_query_groupmem");
 	depth++;
 

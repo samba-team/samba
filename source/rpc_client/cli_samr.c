@@ -61,6 +61,8 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 		SAMR_R_CHGPASSWD_USER r_e;
 		BOOL p;
 
+		ZERO_STRUCT(r_e);
+
 		samr_io_r_chgpasswd_user("", &r_e, &rdata, 0);
 
 		p = rdata.offset != 0;
@@ -110,6 +112,8 @@ BOOL samr_get_dom_pwinfo(struct cli_connection *con, const char *srv_name)
 	{
 		SAMR_R_GET_DOM_PWINFO r_e;
 		BOOL p;
+
+		ZERO_STRUCT(r_e);
 
 		samr_io_r_get_dom_pwinfo("", &r_e, &rdata, 0);
 
@@ -169,6 +173,8 @@ BOOL samr_query_dom_info(  POLICY_HND *domain_pol, uint16 switch_value,
 		SAMR_R_QUERY_DOMAIN_INFO r_e;
 		BOOL p;
 
+		ZERO_STRUCT(r_e);
+
 		r_e.ctr = ctr;
 		samr_io_r_query_dom_info("", &r_e, &rdata, 0);
 
@@ -227,6 +233,8 @@ uint32 samr_enum_domains(  POLICY_HND *pol,
 	{
 		SAMR_R_ENUM_DOMAINS r_e;
 		BOOL p;
+
+		ZERO_STRUCT(r_e);
 
 		samr_io_r_enum_domains("", &r_e, &rdata, 0);
 
@@ -2097,8 +2105,7 @@ BOOL samr_query_groupmem(  POLICY_HND *group_pol,
 		SAMR_R_QUERY_GROUPMEM r_o;
 		BOOL p;
 
-		r_o.rid  = NULL;
-		r_o.attr = NULL;
+		ZERO_STRUCT(r_o);
 
 		samr_io_r_query_groupmem("", &r_o, &rdata, 0);
 		*rid  = r_o.rid ;
@@ -2115,7 +2122,7 @@ BOOL samr_query_groupmem(  POLICY_HND *group_pol,
 		if (p && 
 		    ((r_o.ptr_rids != 0 && r_o.ptr_attrs != 0) ||
 		     (r_o.ptr_rids == 0 && r_o.ptr_attrs == 0)) &&
-		    r_o.num_rids == r_o.num_attrs)
+		      r_o.num_rids == r_o.num_attrs)
 		{
 			valid_query = True;
 			*num_mem = r_o.num_rids;
@@ -2159,6 +2166,8 @@ BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 	{
 		SAMR_R_QUERY_USERGROUPS r_o;
 		BOOL p;
+
+		ZERO_STRUCT(r_o);
 
 		/* get user info */
 		r_o.gid = NULL;
@@ -2217,6 +2226,8 @@ BOOL samr_query_groupinfo(  POLICY_HND *pol,
 	{
 		SAMR_R_QUERY_GROUPINFO r_o;
 		BOOL p;
+
+		ZERO_STRUCT(r_o);
 
 		/* get group info */
 		r_o.ctr = ctr;
@@ -2283,6 +2294,8 @@ BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 		SAMR_R_SET_USERINFO2 r_o;
 		BOOL p;
 
+		ZERO_STRUCT(r_o);
+
 		samr_io_r_set_userinfo2("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
 		
@@ -2337,6 +2350,8 @@ BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 	{
 		SAMR_R_SET_USERINFO r_o;
 		BOOL p;
+
+		ZERO_STRUCT(r_o);
 
 		samr_io_r_set_userinfo("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
@@ -2457,6 +2472,8 @@ BOOL samr_close(  POLICY_HND *hnd)
 		SAMR_R_CLOSE_HND r_c;
 		BOOL p;
 
+		ZERO_STRUCT(r_c);
+
 		samr_io_r_close_hnd("", &r_c, &rdata, 0);
 		p = rdata.offset != 0;
 
@@ -2516,6 +2533,8 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 	{
 		SAMR_R_QUERY_DISPINFO r_o;
 		BOOL p;
+
+		ZERO_STRUCT(r_o);
 
 		/* get user info */
 		r_o.ctr = ctr;
