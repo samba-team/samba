@@ -8,6 +8,9 @@ AC_CONFIG_HEADER(include/config.h)
 AC_DISABLE_STATIC
 AC_ENABLE_SHARED
 
+SMB_VERSION_STRING=`cat include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
+echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
+
 #################################################
 # Directory handling stuff to support both the
 # legacy SAMBA directories and FHS compliant
