@@ -133,15 +133,68 @@ struct lsa_AuditEventsInfo {
 	struct lsa_AuditSettings *settings;
 };
 
-struct lsa_PrimaryDomainInfo {
+struct lsa_DomainInfo {
 	struct lsa_Name name;
+	struct dom_sid2 *sid;
+};
+
+struct lsa_PDAccountInfo {
+	struct lsa_Name name;
+};
+
+struct lsa_ServerRole {
+	uint16 role;
+};
+
+struct lsa_ReplicaSourceInfo {
+	struct lsa_Name source;
+	struct lsa_Name account;
+};
+
+struct lsa_DefaultQuotaInfo {
+	uint32 paged_pool;
+	uint32 non_paged_pool;
+	uint32 min_wss;
+	uint32 max_wss;
+	uint32 pagefile;
+	HYPER_T unknown;
+};
+
+struct lsa_ModificationInfo {
+	HYPER_T modified_id;
+	NTTIME db_create_time;
+};
+
+struct lsa_AuditFullSetInfo {
+	uint32 shutdown_on_full;
+};
+
+struct lsa_AuditFullQueryInfo {
+	uint32 shutdown_on_full;
+	uint32 log_is_full;
+};
+
+struct lsa_DnsDomainInfo {
+	struct lsa_Name name;
+	struct lsa_Name dns_domain;
+	struct lsa_Name dns_forest;
+	struct GUID domain_guid;
 	struct dom_sid2 *sid;
 };
 
 union lsa_PolicyInformation {
 /* [case(1)] */ struct lsa_AuditLogInfo audit_log;
 /* [case(2)] */ struct lsa_AuditEventsInfo audit_events;
-/* [case(3)] */ struct lsa_PrimaryDomainInfo domain;
+/* [case(3)] */ struct lsa_DomainInfo domain;
+/* [case(4)] */ struct lsa_PDAccountInfo pd;
+/* [case(5)] */ struct lsa_DomainInfo account_domain;
+/* [case(6)] */ struct lsa_ServerRole role;
+/* [case(7)] */ struct lsa_ReplicaSourceInfo replica;
+/* [case(8)] */ struct lsa_DefaultQuotaInfo quota;
+/* [case(9)] */ struct lsa_ModificationInfo db;
+/* [case(10)] */ struct lsa_AuditFullSetInfo auditfullset;
+/* [case(11)] */ struct lsa_AuditFullQueryInfo auditfullquery;
+/* [case(12)] */ struct lsa_DnsDomainInfo dns;
 };
 
 struct lsa_QueryInfoPolicy {

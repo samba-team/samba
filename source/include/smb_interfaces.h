@@ -23,7 +23,7 @@ typedef SMB_BIG_UINT large_t;
 
 /* Globally Unique ID */
 #define GUID_SIZE 16
-typedef struct guid_info
+typedef struct GUID
 {
 	uint8 info[GUID_SIZE];
 } GUID;
@@ -34,6 +34,14 @@ typedef struct nttime_info
 	uint32 low;
 	uint32 high;
 } NTTIME;
+
+/* 8 byte aligned 'hyper' type from MS IDL */
+typedef struct
+{
+	uint32 low;
+	uint32 high;
+} HYPER_T;
+
 
 
 /* this structure is just a wrapper for a string, the only reason we

@@ -412,7 +412,7 @@ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, stru
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_pull_lsa_PrimaryDomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrimaryDomainInfo *r)
+static NTSTATUS ndr_pull_lsa_DomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainInfo *r)
 {
 	uint32 _ptr_sid;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -434,11 +434,208 @@ done:
 	return NT_STATUS_OK;
 }
 
-void ndr_print_lsa_PrimaryDomainInfo(struct ndr_print *ndr, const char *name, struct lsa_PrimaryDomainInfo *r)
+void ndr_print_lsa_DomainInfo(struct ndr_print *ndr, const char *name, struct lsa_DomainInfo *r)
 {
-	ndr_print_struct(ndr, name, "lsa_PrimaryDomainInfo");
+	ndr_print_struct(ndr, name, "lsa_DomainInfo");
 	ndr->depth++;
 	ndr_print_lsa_Name(ndr, "name", &r->name);
+	ndr_print_ptr(ndr, "sid", r->sid);
+	ndr->depth++;
+	if (r->sid) {
+		ndr_print_dom_sid2(ndr, "sid", r->sid);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_PDAccountInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_PDAccountInfo *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->name));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_PDAccountInfo(struct ndr_print *ndr, const char *name, struct lsa_PDAccountInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_PDAccountInfo");
+	ndr->depth++;
+	ndr_print_lsa_Name(ndr, "name", &r->name);
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_ServerRole(struct ndr_pull *ndr, int ndr_flags, struct lsa_ServerRole *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->role));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_ServerRole(struct ndr_print *ndr, const char *name, struct lsa_ServerRole *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ServerRole");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "role", r->role);
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_ReplicaSourceInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ReplicaSourceInfo *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->source));
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->account));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->source));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->account));
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_ReplicaSourceInfo(struct ndr_print *ndr, const char *name, struct lsa_ReplicaSourceInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ReplicaSourceInfo");
+	ndr->depth++;
+	ndr_print_lsa_Name(ndr, "source", &r->source);
+	ndr_print_lsa_Name(ndr, "account", &r->account);
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_DefaultQuotaInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DefaultQuotaInfo *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->paged_pool));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->non_paged_pool));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->min_wss));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->max_wss));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->pagefile));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->unknown));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_DefaultQuotaInfo(struct ndr_print *ndr, const char *name, struct lsa_DefaultQuotaInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_DefaultQuotaInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "paged_pool", r->paged_pool);
+	ndr_print_uint32(ndr, "non_paged_pool", r->non_paged_pool);
+	ndr_print_uint32(ndr, "min_wss", r->min_wss);
+	ndr_print_uint32(ndr, "max_wss", r->max_wss);
+	ndr_print_uint32(ndr, "pagefile", r->pagefile);
+	ndr_print_HYPER_T(ndr, "unknown", r->unknown);
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_ModificationInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ModificationInfo *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->modified_id));
+	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->db_create_time));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_ModificationInfo(struct ndr_print *ndr, const char *name, struct lsa_ModificationInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ModificationInfo");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "modified_id", r->modified_id);
+	ndr_print_NTTIME(ndr, "db_create_time", r->db_create_time);
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_AuditFullSetInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditFullSetInfo *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->shutdown_on_full));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_AuditFullSetInfo(struct ndr_print *ndr, const char *name, struct lsa_AuditFullSetInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_AuditFullSetInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "shutdown_on_full", r->shutdown_on_full);
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_AuditFullQueryInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditFullQueryInfo *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->shutdown_on_full));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->log_is_full));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_AuditFullQueryInfo(struct ndr_print *ndr, const char *name, struct lsa_AuditFullQueryInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_AuditFullQueryInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "shutdown_on_full", r->shutdown_on_full);
+	ndr_print_uint32(ndr, "log_is_full", r->log_is_full);
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_DnsDomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DnsDomainInfo *r)
+{
+	uint32 _ptr_sid;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->dns_domain));
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->dns_forest));
+	NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_guid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sid));
+	if (_ptr_sid) {
+		NDR_ALLOC(ndr, r->sid);
+	} else {
+		r->sid = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->dns_domain));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->dns_forest));
+		NDR_CHECK(ndr_pull_GUID(ndr, ndr_flags, &r->domain_guid));
+	if (r->sid) {
+		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->sid));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_DnsDomainInfo(struct ndr_print *ndr, const char *name, struct lsa_DnsDomainInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_DnsDomainInfo");
+	ndr->depth++;
+	ndr_print_lsa_Name(ndr, "name", &r->name);
+	ndr_print_lsa_Name(ndr, "dns_domain", &r->dns_domain);
+	ndr_print_lsa_Name(ndr, "dns_forest", &r->dns_forest);
+	ndr_print_GUID(ndr, "domain_guid", &r->domain_guid);
 	ndr_print_ptr(ndr, "sid", r->sid);
 	ndr->depth++;
 	if (r->sid) {
@@ -462,7 +659,43 @@ static NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_fla
 	break;
 
 	case 3:
-	NDR_CHECK(ndr_pull_lsa_PrimaryDomainInfo(ndr, NDR_SCALARS, &r->domain));
+	NDR_CHECK(ndr_pull_lsa_DomainInfo(ndr, NDR_SCALARS, &r->domain));
+	break;
+
+	case 4:
+	NDR_CHECK(ndr_pull_lsa_PDAccountInfo(ndr, NDR_SCALARS, &r->pd));
+	break;
+
+	case 5:
+	NDR_CHECK(ndr_pull_lsa_DomainInfo(ndr, NDR_SCALARS, &r->account_domain));
+	break;
+
+	case 6:
+	NDR_CHECK(ndr_pull_lsa_ServerRole(ndr, NDR_SCALARS, &r->role));
+	break;
+
+	case 7:
+	NDR_CHECK(ndr_pull_lsa_ReplicaSourceInfo(ndr, NDR_SCALARS, &r->replica));
+	break;
+
+	case 8:
+	NDR_CHECK(ndr_pull_lsa_DefaultQuotaInfo(ndr, NDR_SCALARS, &r->quota));
+	break;
+
+	case 9:
+	NDR_CHECK(ndr_pull_lsa_ModificationInfo(ndr, NDR_SCALARS, &r->db));
+	break;
+
+	case 10:
+	NDR_CHECK(ndr_pull_lsa_AuditFullSetInfo(ndr, NDR_SCALARS, &r->auditfullset));
+	break;
+
+	case 11:
+	NDR_CHECK(ndr_pull_lsa_AuditFullQueryInfo(ndr, NDR_SCALARS, &r->auditfullquery));
+	break;
+
+	case 12:
+	NDR_CHECK(ndr_pull_lsa_DnsDomainInfo(ndr, NDR_SCALARS, &r->dns));
 	break;
 
 	default:
@@ -480,7 +713,43 @@ buffers:
 	break;
 
 	case 3:
-		NDR_CHECK(ndr_pull_lsa_PrimaryDomainInfo(ndr, NDR_BUFFERS, &r->domain));
+		NDR_CHECK(ndr_pull_lsa_DomainInfo(ndr, NDR_BUFFERS, &r->domain));
+	break;
+
+	case 4:
+		NDR_CHECK(ndr_pull_lsa_PDAccountInfo(ndr, NDR_BUFFERS, &r->pd));
+	break;
+
+	case 5:
+		NDR_CHECK(ndr_pull_lsa_DomainInfo(ndr, NDR_BUFFERS, &r->account_domain));
+	break;
+
+	case 6:
+		NDR_CHECK(ndr_pull_lsa_ServerRole(ndr, NDR_BUFFERS, &r->role));
+	break;
+
+	case 7:
+		NDR_CHECK(ndr_pull_lsa_ReplicaSourceInfo(ndr, NDR_BUFFERS, &r->replica));
+	break;
+
+	case 8:
+		NDR_CHECK(ndr_pull_lsa_DefaultQuotaInfo(ndr, NDR_BUFFERS, &r->quota));
+	break;
+
+	case 9:
+		NDR_CHECK(ndr_pull_lsa_ModificationInfo(ndr, NDR_BUFFERS, &r->db));
+	break;
+
+	case 10:
+		NDR_CHECK(ndr_pull_lsa_AuditFullSetInfo(ndr, NDR_BUFFERS, &r->auditfullset));
+	break;
+
+	case 11:
+		NDR_CHECK(ndr_pull_lsa_AuditFullQueryInfo(ndr, NDR_BUFFERS, &r->auditfullquery));
+	break;
+
+	case 12:
+		NDR_CHECK(ndr_pull_lsa_DnsDomainInfo(ndr, NDR_BUFFERS, &r->dns));
 	break;
 
 	default:
@@ -503,7 +772,43 @@ void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char *name, ui
 	break;
 
 	case 3:
-	ndr_print_lsa_PrimaryDomainInfo(ndr, "domain", &r->domain);
+	ndr_print_lsa_DomainInfo(ndr, "domain", &r->domain);
+	break;
+
+	case 4:
+	ndr_print_lsa_PDAccountInfo(ndr, "pd", &r->pd);
+	break;
+
+	case 5:
+	ndr_print_lsa_DomainInfo(ndr, "account_domain", &r->account_domain);
+	break;
+
+	case 6:
+	ndr_print_lsa_ServerRole(ndr, "role", &r->role);
+	break;
+
+	case 7:
+	ndr_print_lsa_ReplicaSourceInfo(ndr, "replica", &r->replica);
+	break;
+
+	case 8:
+	ndr_print_lsa_DefaultQuotaInfo(ndr, "quota", &r->quota);
+	break;
+
+	case 9:
+	ndr_print_lsa_ModificationInfo(ndr, "db", &r->db);
+	break;
+
+	case 10:
+	ndr_print_lsa_AuditFullSetInfo(ndr, "auditfullset", &r->auditfullset);
+	break;
+
+	case 11:
+	ndr_print_lsa_AuditFullQueryInfo(ndr, "auditfullquery", &r->auditfullquery);
+	break;
+
+	case 12:
+	ndr_print_lsa_DnsDomainInfo(ndr, "dns", &r->dns);
 	break;
 
 	default:

@@ -120,12 +120,65 @@
 	typedef struct {
 		lsa_Name name;
 		dom_sid2 *sid;
-	} lsa_PrimaryDomainInfo;
+	} lsa_DomainInfo;
+
+	typedef struct {
+		lsa_Name name;
+	} lsa_PDAccountInfo;
+
+	typedef struct {
+		uint16 role;
+	} lsa_ServerRole;
+
+	typedef struct {
+		lsa_Name source;
+		lsa_Name account;
+	} lsa_ReplicaSourceInfo;
+
+	typedef struct {
+		uint32 paged_pool;
+		uint32 non_paged_pool;
+		uint32 min_wss;
+		uint32 max_wss;
+		uint32 pagefile;
+		HYPER_T unknown;
+	} lsa_DefaultQuotaInfo;
+
+	typedef struct {
+		HYPER_T modified_id;
+		NTTIME db_create_time;
+	} lsa_ModificationInfo;
+
+	typedef struct {
+		uint32 shutdown_on_full;
+	} lsa_AuditFullSetInfo;
+
+	typedef struct {
+		uint32 shutdown_on_full;
+		uint32 log_is_full;
+	} lsa_AuditFullQueryInfo;
+
+	typedef struct {
+		lsa_Name name;
+		lsa_Name dns_domain;
+		lsa_Name dns_forest;
+		GUID domain_guid;
+		dom_sid2 *sid;
+	} lsa_DnsDomainInfo;
 
 	typedef union {
-		case(1) lsa_AuditLogInfo audit_log;
-		case(2) lsa_AuditEventsInfo audit_events;
-		case(3) lsa_PrimaryDomainInfo domain;
+		case(1)  lsa_AuditLogInfo audit_log;
+		case(2)  lsa_AuditEventsInfo audit_events;
+		case(3)  lsa_DomainInfo domain;
+		case(4)  lsa_PDAccountInfo pd;
+		case(5)  lsa_DomainInfo account_domain;
+		case(6)  lsa_ServerRole role;
+		case(7)  lsa_ReplicaSourceInfo replica;
+		case(8)  lsa_DefaultQuotaInfo quota;
+		case(9)  lsa_ModificationInfo db;
+		case(10) lsa_AuditFullSetInfo auditfullset;
+		case(11) lsa_AuditFullQueryInfo auditfullquery;
+		case(12) lsa_DnsDomainInfo dns;
 	} lsa_PolicyInformation;
 
 	NTSTATUS lsa_QueryInfoPolicy (
