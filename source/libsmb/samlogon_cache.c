@@ -136,7 +136,7 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, const char * username, NET_USE
 	/* so we fill it in since winbindd_getpwnam() makes use of it */
 	
 	if ( !user->uni_user_name.buffer ) {
-		init_unistr2( &user->uni_user_name, username, STR_TERMINATE );
+		init_unistr2( &user->uni_user_name, username, UNI_STR_TERMINATE );
 		init_uni_hdr( &user->hdr_user_name, &user->uni_user_name );
 	}
 		
