@@ -1,8 +1,54 @@
-              WHAT'S NEW IN Samba 2.2.5  - 18th June 2002
-              ===========================================
+            WHAT'S NEW IN Samba 2.2.6pre1  - 27th July 2002
+            ===============================================
 
-This is the latest stable release of Samba. This is the version that all
-production Samba servers should be running for all current bug-fixes.
+This is a prelease snapshot of SAMBA_2_2 cvs branch.  This is a non-production
+release provided for testing purposes only.
+
+
+New/Changed parameters in 2.2.6pre1
+-----------------------------------
+
+There have been no changes to smb.conf(5) parameters.
+
+
+Changes in 2.2.6pre1
+--------------------
+
+1)  Fixed several compiler warnings caused by the use const parameters
+2)  Fixed a hand in the main smbd process caused by an EINTR in the
+    wrong place
+3)  Fixed string substitutions to accept a length for sanity checks
+4)  Fixed 17-bit length fiedl in nmb header
+5)  Removed non-portable inline declaration for functions
+6)  Performance fix for including files with an smb.conf variable in the
+    path name
+7)  Fix for parsing LPRng lpq output
+8)  Parsing fix for PRINTER_INFO_2 structure which was causing viewing 
+    printer properties to fail
+9)  Fix for printer change notification and Windows NT clients which caused
+    the client to go into an infinite loop of refeshing the local printers
+    folder
+10) Allow trans2 and nttrans messages to be processed in oplock break state
+    which fixes a problem with oplock break requests and Win2k clients
+11) Don't crash on setfileinfo on printer fsp
+12) Memory fixes caught by Valgrind 
+13) Updates to stop spurious error message in tdb
+14) Fix silly logic bug in 'make smbd processes' and 'status = no' check
+15) Fix compilation of pam_smbpass and --with-ldap
+16) Fix compilation of samwrapper on Solaris hosts
+17) fix logic error in a check for enableing the winbind_pam_auth_crap() code
+    & fix formatting typo in --with-winbind-auth-challenge
+18) Correcting check for ldap_start_tls()
+19) Fixed a problem with getgroups() where it could include our current
+    effective gid
+    
+
+              =========================================
+
+Older releases notes for 2.2.x distributions follow
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.5 follow :
 
 There have been several fixes and internal enhancements which include:
 
@@ -121,9 +167,6 @@ See the cvs log for SAMBA_2_2 for more details
 43) Added links to new documentation on SWAT welcome page
 
 
-              =========================================
-
-Older releases notes for 2.2.x distributions follow
 
 -----------------------------------------------------------------------------
 The release notes for 2.2.4 follow :
