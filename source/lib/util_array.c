@@ -184,13 +184,19 @@ void free_uint32_array(uint32 num_entries, uint32 **entries)
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
-uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name)
+#if 0
+
+/* This function is completely broken. */
+
+uint32* add_uint32s_to_array(uint32 *len, uint32 **array, const uint32 *name)
 {
 	void*(*fn)(const void*) = (void*(*)(const void*))&uint32_dup;
 	return (uint32*)add_copy_to_array(len,
 	                     (void***)array, (const void*)name, *fn, False);
 				
 }
+
+#endif
 
 void free_unistr_array(uint32 num_entries, UNISTR2 **entries)
 {
