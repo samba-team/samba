@@ -1,7 +1,29 @@
-2003-09-05  Love  <lha@stacken.kth.se>
+2003-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* cfx.c: RRC also need to be zero before wraping them From: Luke
-	Howard <lukeh@PADL.COM>
+	* init_sec_context.c: Add support for SPNEGO on the initator side.
+	Tested with ldap server on a Windows 2000 DC. Implementation
+	initially from Assar Westerlund, passes though quite a lot of
+	hands before I commited it.
+	
+	* gssapi.h: export GSS_SPNEGO_MECHANISM
+	
+	* gssapi_locl.h: include spnego_as.h add prototype for
+	gssapi_krb5_get_mech
+	
+	* decapsulate.c (gssapi_krb5_get_mech): make non static
+	
+	* Makefile.am: build SPNEGO file
+	
+2003-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* external.c: SPENGO and IAKERB oids
+	
+	* spnego.asn1: SPENGO ASN1
+	
+2003-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.c: RRC also need to be zero before wraping them
+	From: Luke Howard <lukeh@PADL.COM>
 	
 2003-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
