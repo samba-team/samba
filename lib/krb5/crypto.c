@@ -2068,6 +2068,7 @@ krb5_crypto_destroy(krb5_context context,
 	free_key_usage(context, &crypto->key_usage[i]);
     free(crypto->key_usage);
     free_key_data(context, &crypto->key);
+    free (crypto);
     return 0;
 }
 
