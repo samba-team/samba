@@ -479,7 +479,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		while ((ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) == 0) {
+		while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
 			if (kt_entry.vno != kvno) {
 				char *ktprinc = NULL;
 				char *p;
@@ -516,6 +516,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 			smb_krb5_kt_free_entry(context, &kt_entry);
 			ZERO_STRUCT(kt_entry);
 		}
+		ret = 0;
 		for (i = 0; oldEntries[i]; i++) {
 			ret |= ads_keytab_add_entry(ads, oldEntries[i]);
 			krb5_free_unparsed_name(context, oldEntries[i]);
