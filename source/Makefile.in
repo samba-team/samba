@@ -396,10 +396,10 @@ NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 # now the rules...
 ######################################################################
 
-all : CHECK $(SPROGS) $(PROGS) nsswitch $(SHLIBS)
+all : CHECK $(SPROGS) $(PROGS) nsswitch
 
 # The following "everything" is NOT needed except by Samba developers - so do not use this!
-everything : CHECK $(SPROGS) $(PROGS) nsswitch smbwrapper smbtorture debug2html smbfilter nsswitch/libnss_wins.so
+everything : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch smbwrapper smbtorture debug2html smbfilter nsswitch/libnss_wins.so
 
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
