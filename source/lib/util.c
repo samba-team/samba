@@ -2002,20 +2002,20 @@ read from a socket
 int read_udp_socket(int fd,char *buf,int len)
 {
   int ret;
-  struct sockaddr sock;
+  struct sockaddr_in sock;
   int socklen;
   
   socklen = sizeof(sock);
   bzero((char *)&sock,socklen);
   bzero((char *)&lastip,sizeof(lastip));
-  ret = recvfrom(fd,buf,len,0,&sock,&socklen);
+  ret = recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
   if (ret <= 0) {
     DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
     return(0);
   }
 
-  lastip = *(struct in_addr *) &sock.sa_data[2];
-  lastport = ntohs(((struct sockaddr_in *)&sock)->sin_port);
+  lastip = sock.sin_addr;
+  lastport = ntohs(sock.sin_port);
 
   DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
              inet_ntoa(lastip), lastport, ret));

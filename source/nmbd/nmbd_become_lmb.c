@@ -35,7 +35,7 @@ extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
  our IP address if it already exists.
 ******************************************************************/
 
-static void insert_permanent_name_into_unicast( struct subnet_record *subrec, 
+void insert_permanent_name_into_unicast( struct subnet_record *subrec, 
                                                 struct nmb_name *nmbname, uint16 nb_type )
 {
   struct name_record *namerec;
