@@ -186,6 +186,7 @@ mkdir -p $RPM_BUILD_ROOT%{_libdir} $RPM_BUILD_ROOT%{_includedir}
 install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libsmbclient.*
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
 install -m644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/swat
