@@ -274,13 +274,13 @@ BOOL create_subnets(void)
    *
    * NOTE: I'm not sure of the implications of WINS server failover
    *       on this bit of code.  Because of failover, the WINS
-   *       server address can change.
+   *       server address can change.  crh
    */
 
   if(*lp_wins_server())
   {
     struct in_addr real_wins_ip;
-    real_wins_ip = *interpret_addr2( wins_srv() );
+    real_wins_ip = wins_srv_ip();
 
     if (!zero_ip(real_wins_ip))
     {
@@ -288,9 +288,10 @@ BOOL create_subnets(void)
     }
     else
     {
-      /* The smb.conf's wins server parameter MUST be a host_name
-         or an ip_address. */
-      DEBUG(0,("invalid smb.conf parameter 'wins server'\n"));
+      /* wins_srv_ip() can return a zero IP if all servers are
+       * either down or incorrectly entered in smb.conf.  crh
+       */
+      DEBUG(0,("No 'live' WINS servers found.  Check 'wins server' parameter.\n"));
       return False;
     }
   } 
@@ -330,9 +331,9 @@ BOOL create_subnets(void)
 
   if (lp_we_are_a_wins_server())
   {
-    if((wins_server_subnet = make_subnet("WINS_SERVER_SUBNET",
-                                       WINS_SERVER_SUBNET, 
-                                       ipzero, ipzero, ipzero)) == NULL)
+    if( (wins_server_subnet = make_subnet( "WINS_SERVER_SUBNET",
+                                           WINS_SERVER_SUBNET, 
+                                           ipzero, ipzero, ipzero )) == NULL )
       return False;
   }
 

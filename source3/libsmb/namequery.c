@@ -534,7 +534,7 @@ static BOOL resolve_wins(const char *name, int name_type,
 		return False;
 	}
 
-	wins_ip = *interpret_addr2( wins_srv() );
+	wins_ip     = wins_srv_ip();
 	wins_ismyip = ismyip(wins_ip);
 
 	DEBUG(3, ("resolve_wins: WINS server == <%s>\n", inet_ntoa(wins_ip)) );
