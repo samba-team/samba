@@ -49,6 +49,9 @@ static void cmd_quit(struct client_info *info);
 static struct cli_state smbcli;
 struct cli_state *smb_cli = &smbcli;
 
+static struct client_info cli_info;
+
+
 FILE *out_hnd;
 
 /****************************************************************************
@@ -95,68 +98,73 @@ static void rpcclient_stop(void)
 {
 	cli_shutdown(smb_cli);
 }
+
+#define COMPL_NONE 0
+#define COMPL_REGLIST 1
+
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
 struct
 {
-  char *name;
-  void (*fn)(struct client_info*);
-  char *description;
+	char *name;
+	void (*fn)(struct client_info*);
+	char *description;
+	char compl_args[2];
 } commands[] = 
 {
-  {"eventlog",   cmd_eventlog,         "list the events"},
-  {"svcenum",    cmd_svc_enum,         "[-i] Lists Services Manager"},
-  {"at",         cmd_at,               "Scheduler control (at /? for syntax)"},
-  {"time",       cmd_time,             "Display remote time"},
-  {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)"},
-  {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete"},
-  {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create"},
-  {"shutdown",cmd_reg_shutdown,  "[-m message] [-t timeout] [-r or --reboot] Server Shutdown"},
-  {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query"},
-  {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete"},
-  {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create"},
-  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security"},
-  {"regtestsec", cmd_reg_test_key_sec, "<keyname> Test Registry Key Security"},
-  {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test"},
-  {"domtrust",    cmd_netlogon_domain_test, "<domain> NT Inter-Domain test"},
-  {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info"},
-  {"srvinfo",    cmd_srv_query_info,   "Server Query Info"},
-  {"srvsessions",cmd_srv_enum_sess,    "List sessions on a server"},
-  {"srvshares",  cmd_srv_enum_shares,  "List shares on a server"},
-  {"srvconnections",cmd_srv_enum_conn, "List connections on a server"},
-  {"srvfiles",   cmd_srv_enum_files,   "List files on a server"},
-  {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
-  {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
-  {"lookupnames",cmd_lsa_lookup_names,  "Resolve SIDs from names"},
-  {"lookupdomain",cmd_sam_lookup_domain, "Obtain SID for a local domain"},
-  {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
-  {"addgroupmem",cmd_sam_add_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member"},
-  {"addaliasmem",cmd_sam_add_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member"},
-  {"delgroupmem",cmd_sam_del_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Delete Domain Group Member"},
-  {"delaliasmem",cmd_sam_del_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Delete Domain Alias Member"},
-  {"creategroup",cmd_sam_create_dom_group,"SAM Create Domain Group"},
-  {"createalias",cmd_sam_create_dom_alias,"SAM Create Domain Alias"},
-  {"createuser", cmd_sam_create_dom_user,"<username> SAM Create Domain User"},
-  {"delgroup",   cmd_sam_delete_dom_group,"SAM Delete Domain Group"},
-  {"delalias",   cmd_sam_delete_dom_alias,"SAM Delete Domain Alias"},
-  {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change"},
-  {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)"},
-  {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)"},
-  {"enumaliases",cmd_sam_enum_aliases, "SAM Aliases Database Query (experimental!)"},
-  {"enumgroups", cmd_sam_enum_groups,  "SAM Group Database Query (experimental!)"},
-  {"dominfo",    cmd_sam_query_dominfo, "SAM Query Domain Info"},
-  {"dispinfo",   cmd_sam_query_dispinfo, "SAM Query Display Info"},
-  {"querysecret", cmd_lsa_query_secret, "LSA Query Secret (developer use)"},
-  {"samsync",    cmd_sam_sync,    "SAM Synchronization Test (experimental)"},
-  {"quit",       cmd_quit,        "logoff the server"},
-  {"q",          cmd_quit,        "logoff the server"},
-  {"exit",       cmd_quit,        "logoff the server"},
-  {"bye",        cmd_quit,        "logoff the server"},
-  {"help",       cmd_help,        "[command] give help on a command"},
-  {"?",          cmd_help,        "[command] give help on a command"},
-  {"!",          NULL,            "run a shell command on the local system"},
-  {"",           NULL,            NULL}
+  {"eventlog",   cmd_eventlog,         "list the events",{COMPL_NONE, COMPL_NONE}},
+  {"svcenum",    cmd_svc_enum,         "[-i] Lists Services Manager",{COMPL_NONE, COMPL_NONE}},
+  {"at",         cmd_at,               "Scheduler control (at /? for syntax)",{COMPL_NONE, COMPL_NONE}},
+  {"time",       cmd_time,             "Display remote time",{COMPL_NONE, COMPL_NONE}},
+  {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)",{COMPL_REGLIST, COMPL_NONE}},
+  {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete",{COMPL_NONE, COMPL_NONE}},
+  {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create",{COMPL_NONE, COMPL_NONE}},
+  {"shutdown",cmd_reg_shutdown,  "[-m message] [-t timeout] [-r or --reboot] Server Shutdown",{COMPL_NONE, COMPL_NONE}},
+  {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query",{COMPL_NONE, COMPL_NONE}},
+  {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete",{COMPL_NONE, COMPL_NONE}},
+  {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create",{COMPL_NONE, COMPL_NONE}},
+  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security",{COMPL_NONE, COMPL_NONE}},
+  {"regtestsec", cmd_reg_test_key_sec, "<keyname> Test Registry Key Security",{COMPL_NONE, COMPL_NONE}},
+  {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test",{COMPL_NONE, COMPL_NONE}},
+  {"domtrust",    cmd_netlogon_domain_test, "<domain> NT Inter-Domain test",{COMPL_NONE, COMPL_NONE}},
+  {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info",{COMPL_NONE, COMPL_NONE}},
+  {"srvinfo",    cmd_srv_query_info,   "Server Query Info",{COMPL_NONE, COMPL_NONE}},
+  {"srvsessions",cmd_srv_enum_sess,    "List sessions on a server",{COMPL_NONE, COMPL_NONE}},
+  {"srvshares",  cmd_srv_enum_shares,  "List shares on a server",{COMPL_NONE, COMPL_NONE}},
+  {"srvconnections",cmd_srv_enum_conn, "List connections on a server",{COMPL_NONE, COMPL_NONE}},
+  {"srvfiles",   cmd_srv_enum_files,   "List files on a server",{COMPL_NONE, COMPL_NONE}},
+  {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)",{COMPL_NONE, COMPL_NONE}},
+  {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs",{COMPL_NONE, COMPL_NONE}},
+  {"lookupnames",cmd_lsa_lookup_names,  "Resolve SIDs from names",{COMPL_NONE, COMPL_NONE}},
+  {"lookupdomain",cmd_sam_lookup_domain, "Obtain SID for a local domain",{COMPL_NONE, COMPL_NONE}},
+  {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
+  {"addgroupmem",cmd_sam_add_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member",{COMPL_NONE, COMPL_NONE}},
+  {"addaliasmem",cmd_sam_add_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member",{COMPL_NONE, COMPL_NONE}},
+  {"delgroupmem",cmd_sam_del_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Delete Domain Group Member",{COMPL_NONE, COMPL_NONE}},
+  {"delaliasmem",cmd_sam_del_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Delete Domain Alias Member",{COMPL_NONE, COMPL_NONE}},
+  {"creategroup",cmd_sam_create_dom_group,"SAM Create Domain Group",{COMPL_NONE, COMPL_NONE}},
+  {"createalias",cmd_sam_create_dom_alias,"SAM Create Domain Alias",{COMPL_NONE, COMPL_NONE}},
+  {"createuser", cmd_sam_create_dom_user,"<username> SAM Create Domain User",{COMPL_NONE, COMPL_NONE}},
+  {"delgroup",   cmd_sam_delete_dom_group,"SAM Delete Domain Group",{COMPL_NONE, COMPL_NONE}},
+  {"delalias",   cmd_sam_delete_dom_alias,"SAM Delete Domain Alias",{COMPL_NONE, COMPL_NONE}},
+  {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change",{COMPL_NONE, COMPL_NONE}},
+  {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
+  {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)",{COMPL_NONE, COMPL_NONE}},
+  {"enumaliases",cmd_sam_enum_aliases, "SAM Aliases Database Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
+  {"enumgroups", cmd_sam_enum_groups,  "SAM Group Database Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
+  {"dominfo",    cmd_sam_query_dominfo, "SAM Query Domain Info",{COMPL_NONE, COMPL_NONE}},
+  {"dispinfo",   cmd_sam_query_dispinfo, "SAM Query Display Info",{COMPL_NONE, COMPL_NONE}},
+  {"querysecret", cmd_lsa_query_secret, "LSA Query Secret (developer use)",{COMPL_NONE, COMPL_NONE}},
+  {"samsync",    cmd_sam_sync,    "SAM Synchronization Test (experimental)",{COMPL_NONE, COMPL_NONE}},
+  {"quit",       cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
+  {"q",          cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
+  {"exit",       cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
+  {"bye",        cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
+  {"help",       cmd_help,        "[command] give help on a command",{COMPL_NONE, COMPL_NONE}},
+  {"?",          cmd_help,        "[command] give help on a command",{COMPL_NONE, COMPL_NONE}},
+  {"!",          NULL,            "run a shell command on the local system",{COMPL_NONE, COMPL_NONE}},
+  {"",           NULL,            NULL,{COMPL_NONE, COMPL_NONE}}
 };
 
 
@@ -435,6 +443,94 @@ enum client_action
 
 #ifdef HAVE_LIBREADLINE
 
+/****************************************************************************
+GNU readline completion functions
+****************************************************************************/
+
+/* Complete a remote registry enum */
+
+static uint32 reg_list_len = 0;
+static char **reg_name = NULL;
+
+static void reg_init(int val, const char *full_keyname, int num)
+{
+	switch (val)
+	{
+		case 0:
+		{
+			free_char_array(reg_list_len, reg_name);
+			reg_list_len = 0;
+			reg_name = NULL;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+}
+
+static void add_reg_name(const char *name)
+{
+	reg_name = (char**)Realloc(reg_name, (reg_list_len+1) *
+	                                   sizeof(reg_name[0]));
+
+	if (reg_name != NULL)
+	{
+		reg_name[reg_list_len] = strdup(name);
+		reg_list_len++;
+	}
+}
+static void reg_key_list(const char *full_name,
+				const char *name, time_t key_mod_time)
+{
+	DEBUG(10,("reg_key_list: %s\n", name));
+	add_reg_name(name);
+}
+
+static void reg_val_list(const char *full_name,
+				const char* name,
+				uint32 type,
+				BUFFER2 *value)
+{
+	DEBUG(10,("reg_val_list: %s\n", name));
+	add_reg_name(name);
+}
+
+char *complete_remote_regenum(char *text, int state)
+{
+	pstring full_keyname;
+	static uint32 i = 0;
+    
+	DEBUG(10,("complete_remote_regenum: %s (%d)\n", text, state));
+
+	if (state == 0)
+	{
+		pstrcpy(full_keyname, cli_info.cur_dir);
+
+		/* Iterate all keys / values */
+		if (!msrpc_reg_enum_key(smb_cli, full_keyname,
+		                   reg_init, reg_key_list, reg_val_list))
+		{
+			return NULL;
+		}
+
+		i = 0;
+    	}
+
+	for (; i < reg_list_len; i++)
+	{
+		DEBUG(10,("match: %s key: %s\n", text, reg_name[i]));
+		if (strnequal(text, reg_name[i], strlen(text)))
+		{
+			i++;
+			return strdup(reg_name[i-1]);
+		}
+	}
+	
+	return NULL;
+}
+
 /* Complete an rpcclient command */
 
 char *complete_cmd(char *text, int state)
@@ -496,6 +592,19 @@ char **completion_fn(char *text, int start, int end)
 	    
 	    /* Call appropriate completion function */
 
+      if (num_words == 2)
+      {
+        switch (commands[cmd_index].compl_args[num_words - 2])
+        {
+
+        case COMPL_REGLIST:
+          return completion_matches(text, complete_remote_regenum);
+
+        default:
+            /* An invalid completion type */
+            break;
+        }
+      }
 	}
     }
 
@@ -533,8 +642,6 @@ char *complete_cmd_null(char *text, int state)
 	char *cmd_str="";
 	mode_t myumask = 0755;
 	enum client_action cli_action = CLIENT_NONE;
-
-	struct client_info cli_info;
 
 	pstring password; /* local copy only, if one is entered */
 

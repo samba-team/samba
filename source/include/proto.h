@@ -3200,7 +3200,7 @@ void cmd_sam_sync(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 
-void msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
+BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 				REG_FN(reg_fn),
 				REG_KEY_FN(reg_key_fn),
 				REG_VAL_FN(reg_val_fn));
@@ -3396,6 +3396,7 @@ void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
 void rpcclient_init(void);
+char *complete_remote_regenum(char *text, int state);
 char *complete_cmd(char *text, int state);
 char **completion_fn(char *text, int start, int end);
 char *complete_cmd_null(char *text, int state);

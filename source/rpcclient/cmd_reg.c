@@ -119,7 +119,7 @@ static void reg_display_val_info(const char *full_name,
 /****************************************************************************
 nt registry enum
 ****************************************************************************/
-void msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
+BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 				REG_FN(reg_fn),
 				REG_KEY_FN(reg_key_fn),
 				REG_VAL_FN(reg_val_fn))
@@ -276,6 +276,8 @@ void msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 	{
 		DEBUG(5,("msrpc_reg_enum_key: query failed\n"));
 	}
+
+	return res1;
 }
 
 /****************************************************************************
@@ -291,10 +293,13 @@ void cmd_reg_enum(struct client_info *info)
 		return;
 	}
 
-	msrpc_reg_enum_key(smb_cli, full_keyname,
+	if (msrpc_reg_enum_key(smb_cli, full_keyname,
 				reg_display_key,
 				reg_display_key_info,
-				reg_display_val_info);
+				reg_display_val_info))
+	{
+		pstrcpy(info->cur_dir, full_keyname);
+	}
 }
 
 /****************************************************************************
