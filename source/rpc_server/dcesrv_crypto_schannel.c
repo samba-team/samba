@@ -24,7 +24,7 @@
 
 struct srv_schannel_state {
 	TALLOC_CTX *mem_ctx;
-	struct dcerpc_bind_schannel bind_info;
+	struct schannel_bind bind_info;
 	struct schannel_state *state;
 };
 
@@ -37,6 +37,8 @@ static NTSTATUS dcesrv_crypto_schannel_start(struct dcesrv_auth *auth, DATA_BLOB
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	uint8_t session_key[16];
+	const char *account_name;
+	struct schannel_bind_ack ack;
 
 	mem_ctx = talloc_init("schannel_start");
 	if (!mem_ctx) {
@@ -53,14 +55,20 @@ static NTSTATUS dcesrv_crypto_schannel_start(struct dcesrv_auth *auth, DATA_BLOB
 
 	/* parse the schannel startup blob */
 	status = ndr_pull_struct_blob(auth_blob, mem_ctx, &schannel->bind_info, 
-				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_bind_schannel);
+				      (ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (schannel->bind_info.bind_type == 23) {
+		account_name = schannel->bind_info.u.info23.account_name;
+	} else {
+		account_name = schannel->bind_info.u.info3.account_name;
+	}
+
 	/* pull the session key for this client */
-	status = schannel_fetch_session_key(mem_ctx, schannel->bind_info.hostname, session_key);
+	status = schannel_fetch_session_key(mem_ctx, account_name, session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_INVALID_HANDLE;
@@ -74,6 +82,17 @@ static NTSTATUS dcesrv_crypto_schannel_start(struct dcesrv_auth *auth, DATA_BLOB
 	}
 
 	auth->crypto_ctx.private_data = schannel;
+
+	ack.unknown1 = 1;
+	ack.unknown2 = 0;
+	ack.unknown3 = 0x6c0000;
+
+	status = ndr_push_struct_blob(auth_blob, mem_ctx, &ack, 
+				      (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	return status;
 }
@@ -102,7 +121,7 @@ static NTSTATUS dcesrv_crypto_schannel_seal(struct dcesrv_auth *auth, TALLOC_CTX
   sign a packet
 */
 static NTSTATUS dcesrv_crypto_schannel_sign(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
-						const uint8_t *data, size_t length, DATA_BLOB *sig) 
+					    const uint8_t *data, size_t length, DATA_BLOB *sig) 
 {
 	struct srv_schannel_state *srv_schannel_state = auth->crypto_ctx.private_data;
 

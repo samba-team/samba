@@ -1396,3 +1396,37 @@ size_t valgrind_strlen(const char *s)
 	return count;
 }
 #endif
+
+
+/*
+  format a string into length-prefixed dotted domain format, as used in NBT
+  and in some ADS structures
+*/
+const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
+{
+	char *ret;
+	int i;
+	if (!s || !*s) {
+		return talloc_strdup(mem_ctx, "");
+	}
+	ret = talloc(mem_ctx, strlen(s)+2);
+	if (!ret) {
+		return ret;
+	}
+	
+	memcpy(ret+1, s, strlen(s)+1);
+	ret[0] = '.';
+
+	for (i=0;ret[i];i++) {
+		if (ret[i] == '.') {
+			char *p = strchr(ret+i+1, '.');
+			if (p) {
+				ret[i] = p-(ret+i+1);
+			} else {
+				ret[i] = strlen(ret+i+1);
+			}
+		}
+	}
+
+	return ret;
+}
