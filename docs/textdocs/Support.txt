@@ -33,7 +33,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       35
+    EUROPE                                       36
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1201,6 +1201,43 @@ Fax: +32 (2) 5220930
 
 We provide commercial support in Belgium to large organisations
 (eg:   N.A.T.O., Unisys, E.C.C. ...)
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SOFIA - BULGARIA
+
+National Laboratory for Computer Virology and SEA Ltd.
+
+We work mainly in the following fields:  
+
+* Design and testing of antivirus and computer security related software
+  and hardware; 
+* Data aquisition equipment
+* Network design and consulting. 
+
+Samba is our most common network tool for the export of data collected on
+UNIX machines to PC clients, file services and simple client/server
+processing schemes. 
+
+Samba experience: Linux, Ultrix, Solaris, AIX, RiscOS. 
+
+Client experience: LanMan, WFW, Win 95, Win NT.
+
+Address:
+
+National Laboratory for Computer Virology BAS, 
+Akad. G. Bonchev Str. bl.8, 
+Sofia 1113, 
+Bulgaria
+E-mail:sales@nlcv.acad.bg
+URL http://www.nlcv.acad.bg 
+
+SEA Ltd,
+Akad G.Bonchev Str bl. 8, rm 225,
+Sofia 1113.
+Bulgaria
+E-mail:nmechkov@virbus.bg
+URL http://www.orgchm.acad.bg/~sealtd
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
