@@ -645,14 +645,12 @@ Here are the possible scenarios for supporting migration:
 
 </sect1>
 
-</chapter>
-
 
 <!--
 
   This comment from rpc_server/srv_spoolss_nt.c:_spoolss_open_printer_ex()
   needs to be added into a section probably.  This is to remind me it needs 
-  to be done.  --jerry
+  to be done.  -jerry
 
                 /*
                  * If the openprinterex rpc call contains a devmode,
@@ -707,3 +705,4 @@ Here are the possible scenarios for supporting migration:
                  * on the Advanced Tab of the printer properties window.
 -->
 
+</chapter>

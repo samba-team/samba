@@ -380,15 +380,19 @@ unique uid !
 
 <para>
 <emphasis>I get told "You already have a connection to the Domain...." 
-when creating a machine account.</emphasis>
+or "Cannot join domain, the credentials supplied conflict with an 
+existing set.." when creating a machine account.</emphasis>
 </para>
 
 <para>
 This happens if you try to create a machine account from the 
-machine itself and use a user name that does not work (for whatever 
-reason) and then try another (possibly valid) user name.
-Exit out of the network applet to close the initial connection 
-and try again.
+machine itself and already have a connection (e.g. mapped drive) 
+to a share (or IPC$) on the Samba PDC.  The following command
+will remove all network drive connections:
+</para>
+
+<para>
+<prompt>C:\WINNT\></prompt> <command>net use * /d</command>
 </para>
 
 <para>
@@ -398,15 +402,6 @@ get this message.  Change the workgroup name to something else, it
 does not matter what, reboot, and try again.
 </para>
 
-<para>
-<emphasis>I get told "Cannot join domain, the credentials supplied 
-conflict with an existing set.."</emphasis>
-</para>
-
-<para>
-This is the same basic problem as mentioned above, "You already 
-have a connection..."
-</para>
 
 <para>
 <emphasis>
@@ -443,7 +438,7 @@ wrong ?
 
 <para>
 This problem is caused by the PDC not having a suitable machine account. 
-If you are using the <command>add user script =</> method to create 
+If you are using the <parameter>add user script</parameter> method to create 
 accounts then this would indicate that it has not worked. Ensure the domain 
 admin user system is working.
 </para>
@@ -459,6 +454,41 @@ in both /etc/passwd and the smbpasswd file. Some people have reported
 that inconsistent subnet masks between the Samba server and the NT 
 client have caused this problem.   Make sure that these are consistent 
 for both client and server.
+</para>
+
+<para>
+<emphasis>When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+I get a message about my account being disabled.</emphasis>
+</para>
+ 
+<para>
+This problem is caused by a PAM related bug in Samba 2.2.0.  This bug is 
+fixed in 2.2.1.  Other symptoms could be unaccessible shares on 
+NT/W2K member servers in the domain or the following error in your smbd.log:
+passdb/pampass.c:pam_account(268) PAM: UNKNOWN ERROR for User: %user%
+</para>
+ 
+<para>
+At first be ensure to enable the useraccounts with <command>smbpasswd -e 
+%user%</command>, this is normaly done, when you create an account.
+</para>
+
+<para>
+In order to work around this problem in 2.2.0, configure the 
+<parameter>account</parameter> control flag in 
+<filename>/etc/pam.d/samba</filename> file as follows:
+</para> 
+
+<para><programlisting>
+account required        pam_permit.so
+</programlisting></para>
+
+<para>
+If you want to remain backward compatibility to samba 2.0.x use
+<filename>pam_permit.so</filename>, it's also possible to use 
+<filename>pam_pwdb.so</filename>. There are some bugs if you try to 
+use <filename>pam_unix.so</filename>, if you need this, be ensure to use
+the most recent version of this file.
 </para>
 
 </sect1>
