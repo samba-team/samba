@@ -11,7 +11,7 @@ carefully choose them so later tests only use capabilities verified in
 the earlier tests.
 
 I would welcome additions to this set of tests. Please mail them to
-samba-bugs@anu.edu.au
+samba-bugs@samba.anu.edu.au
 
 If you send me an email saying "it doesn't work" and you have not
 followed this test procedure then you should not be surprised if I
@@ -36,7 +36,7 @@ smb.conf. I will assume this share is called "tmp". You can add a
  read only = yes
 
 
-THESE TESTS ASSUME VERSION 1.9.15 OR LATER OF THE SAMBA SUITE. SOME
+THESE TESTS ASSUME VERSION 1.9.16 OR LATER OF THE SAMBA SUITE. SOME
 COMMANDS SHOWN DID NOT EXIST IN EARLIER VERSIONS
 
 
@@ -66,7 +66,7 @@ you do have correct entries for the remainder of these tests.
 TEST 3:
 -------
 
-run the command "smbclient -L BIGSERVER -U%" on the unix box. You
+run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. 
 
 If you get a error message containing the string "Bad password" then
@@ -86,7 +86,8 @@ If you get a "session request failed" then the server refused the
 connection. If it says "your server software is being unfriendly" then
 its probably because you have invalid command line parameters to smbd,
 or a similar fatal problem with the initial startup of smbd. Also
-check your config file for syntax errors with "testparm". 
+check your config file for syntax errors with "testparm" and that the
+various directories where samba keeps its log and lock files exist.
 
 Another common cause of these two errors is having something already running 
 on port 139, such as Samba (ie smbd is running from inetd already) or something
@@ -101,7 +102,7 @@ run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.
 
 If you don't then nmbd is incorrectly installed. Check your inetd.conf
-if yu run it from there, or that the daemon is running and listening
+if you run it from there, or that the daemon is running and listening
 to udp port 137.
 
 One common problem is that many inetd implementations can't take many
@@ -116,9 +117,7 @@ run the command "nmblookup -B ACLIENT '*'"
 
 You should get the PCs IP address back. If you don't then the client
 software on the PC isn't installed correctly, or isn't started, or you
-got the name of the PC wrong. Note that you probably won't get a "node
-status response" from the PC due to a bug in the microsoft netbios
-nameserver implementation (it responds to the wrong port number).
+got the name of the PC wrong. 
 
 TEST 6:
 -------
@@ -134,20 +133,9 @@ hosts.
 
 If this doesn't give a similar result to the previous test then
 nmblookup isn't correctly getting your broadcast address through its
-automatic mechanism. In this case you should experiment with the -B
-option which allows you to manually specify the broadcast address,
-overriding the automatic detection. You should try different broadcast
-addresses until your find the one that works. It will most likely be
-something like a.b.c.255 as microsoft tcpip stacks only listen on 1's
-based broadcast addresses. If you get stuck then ask your local
-networking guru for help (and show them this paragraph).
-
-If you find you do need the -B option (ie. the automatic detection
-doesn't work) then you should add the -B option with the right
-broadcast address for your network to the command line of nmbd in
-inetd.conf or in the script you use to start nmbd as a daemon. Once
-you do this go back to the "nmblookup __SAMBA__ -B BIGSERVER" test to
-make sure you have it running properly.
+automatic mechanism. In this case you should experiment use the
+"interfaces" option in smb.conf to manually configure your IP
+address, broadcast and netmask. 
 
 If your PC and server aren't on the same subnet then you will need to
 use the -B option to set the broadcast address to the that of the PCs
@@ -174,6 +162,8 @@ compile in support for them in smbd
 - you have a mixed case password and you haven't enabled the "password
 level" option at a high enough level
 - the "path =" line in smb.conf is incorrect. Check it with testparm
+- you enabled password encryption but didn't create the SMB encrypted
+password file
 
 Once connected you should be able to use the commands "dir" "get"
 "put" etc. Type "help <command>" for instructions. You should
@@ -227,8 +217,8 @@ TEST 10:
 
 From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
-specified in the Makefile). You should be able to double click on the
-name of the server and get a list of shares. If you get a "invalid
+specified in smb.conf). You should be able to double click on the name
+of the server and get a list of shares. If you get a "invalid
 password" error when you do then you are probably running WinNT and it
 is refusing to browse a server that has no encrypted password
 capability and is in user level security mode.

@@ -5,53 +5,17 @@ Samba now fully supports browsing. The browsing is supported by nmbd
 and is also controlled by options in the smb.conf file (see
 smb.conf(5)).
 
-Samba can act as a browse master for a workgroup and the ability for 
-samba to support domain logons and scripts is now available with features 
-still being added.  See DOMAIN.txt for more information .
+Samba can act as a browse master for a workgroup and the ability for
+samba to support domain logons and scripts is now available.  See
+DOMAIN.txt for more information on domain logons.
 
 To get browsing to work you need to run nmbd as usual, but will need
 to use the "workgroup" option in smb.conf to control what workgroup
 Samba becomes a part of.
 
-The -G option is most useful for simple setups where Samba is browsable
-in only one workgroup. In more complex cases the lmhosts file is
-better.
-
-Be very careful setting up your lmhosts file. An incorrectly setup
-lmhosts file can have disasterous results for your net!
-
-A simple lmhosts file might be:
-
-# This is a simple lmhosts file
-#
-# This is a host alias. Anyone querying this name
-# will get the specified IP
-192.0.2.17 SMBDATA
-#
-# first put ourselves in workgroup MYGROUP using
-# our own net address
-0.0.0.0 MYGROUP 255.255.255.0 G
-
-Note in the above that I overrode what workgroup Samba is in using the
-G flag. Also note that the 0.0.0.0 address is used, which will be
-automatically replaced with the broadcast address for groups, and with
-the local IP address for other entries.
-
 Samba also has a useful option for a Samba server to offer itself for
-browsing on another subnet.
-
-This works by the lmhosts file specifying a broadcast address on the
-other network to use to find a browse master for the workgroup.
-
-For example if you wanted yourself to appear in the workgroup STAFF on
-the network which has a broadcast of 192.0.3.255 then this entry would
-do the trick:
-
-# put ourselves in the STAFF workgroup on the other subnet
-192.0.3.255 STAFF 255.255.255.0 G
-
-Notice the G at the end! It is very important you include this as this
-entry without the G could cause a broadcast storm! 
+browsing on another subnet. See "remote announce" in the smb.conf man
+page. 
 
 If something doesn't work then hopefully the log.nmb file will
 help you track down the problem. Try a debug level of 2 or 3 for
@@ -74,8 +38,8 @@ are now far more likely to correctly find your broadcast and network
 addess, so in most cases these aren't needed.
 
 The other big problem people have is that their broadcast address,
-netmask or IP address is wrong (specified with the -B, -N and -I
-options to nmbd). 
+netmask or IP address is wrong (specified with the "interfaces" option
+in smb.conf)
 
 FORCING SAMBA TO BE THE MASTER
 ==============================
@@ -87,7 +51,7 @@ election. By default Samba uses a very low precedence and thus loses
 elections to just about anyone else.
 
 If you want Samba to win elections then just set the "os level" global
-option in smb.conf to a higher number. It defaults to 0. Using 33
+option in smb.conf to a higher number. It defaults to 0. Using 34
 would make it win all elections over every other system (except other
 samba systems!)
 
@@ -132,22 +96,9 @@ ends in a 0) then you will strike problems. Windows for Workgroups
 does not seem to support a 0's broadcast and you will probably find
 that browsing and name lookups won't work.
 
-You have a few options:
-
-1) change to a 1's broadcast on your unix server. These often end in
-.255 (check with your local network guru for details)
-
-2) set the nmbd broadcast to a 1's based address on the command line using
-the -B option. This only works if your network setup listens on both
-0s and 1s based broadcasts. The -B option can only control what
-address it sends to, not what it listens on.
-
 MULTIPLE INTERFACES
 ===================
 
 Samba now supports machines with multiple network interfaces. If you
 have multiple interfaces then you will need to use the "interfaces"
 option in smb.conf to configure them. See smb.conf(5) for details.
-
-
-
