@@ -43,9 +43,11 @@ int gendb_search_v(struct ldb_context *ldb,
 		return -1;
 	}
 
-	ldb_set_alloc(ldb, talloc_realloc_fn, mem_ctx);
+	*res = NULL;
 
 	count = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, attrs, res);
+
+	if (*res) talloc_steal(mem_ctx, *res);
 
 	DEBUG(4,("gendb_search_v: %s %s -> %d  (%s)\n", 
 		 basedn?basedn:"NULL", expr, count,
