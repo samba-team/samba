@@ -144,10 +144,10 @@ BOOL dbgtext();
 #define DEBUG( level, body ) \
   ((DEBUGLEVEL>=(level) && \
     dbghdr(level, FILE_MACRO, FUNCTION_MACRO, (__LINE__)))? \
-    (void)dbgtext body:0)
+    (void)(dbgtext body) : (void)0)
 
 #define DEBUGADD( level, body ) \
-     (DEBUGLEVEL>=(level)?(void)dbgtext body:0);
+     (DEBUGLEVEL>=(level)?(void)(dbgtext body) : (void)0);
 
 /* End Debugging code section.
  * -------------------------------------------------------------------------- **
