@@ -95,7 +95,7 @@ int get_ntforms(nt_forms_struct **list)
 			total = 0;
 			break;
 		}
-		bzero( (char *)&(*list)[total], sizeof(nt_forms_struct) );
+		memset( (char *)&(*list)[total], '\0', sizeof(nt_forms_struct) );
 		if ( parse_form_entry(line, &(*list)[total] ) )
 		{
 			total++;

@@ -1,27 +1,3 @@
-/*
- * THIS CODE IS OUT-OF-DATE BY TWO YEARS, IS LEGACY DESIGN AND VERY, VERY,
- * INCOMPLETE.  PLEASE DO NOT MAKE ANY FURTHER ENHANCEMENTS TO THIS CODE
- * UNLESS THEY ARE ALSO CARRIED OUT IN THE SAMBA_TNG BRANCH.
- *
- * PLEASE DO NOT TREAT THIS CODE AS AUTHORITATIVE IN *ANY* WAY.
- *
- * REPEAT, PLEASE DO NOT MAKE ANY MODIFICATIONS TO THIS CODE WITHOUT
- * FIRST CHECKING THE EQUIVALENT MODULE IN SAMBA_TNG, UPDATING THAT
- * FIRST, *THEN* CONSIDER MAKING THE SAME MODIFICATION IN THIS BRANCH
- *
- * YOU WILL, ALMOST GUARANTEED, FIND THAT THE BUG-FIX OR ENHANCEMENT THAT
- * YOU THINK IS NECESSARY, HAS ALREADY BEEN IMPLEMENTED IN SAMBA_TNG.
- * IF IT HAS NOT, YOUR BUG-FIX OR ENHANCEMENT *MUST* GO INTO SAMBA_TNG
- * AS THE SAMBA_TNG CODE WILL REPLACE THIS MODULE WITHOUT REFERENCE TO
- * ANYTHING IN IT, WITH THE POSSIBLE RISK THAT THE BUG-FIX OR ENHANCEMENT
- * MAY BE LOST.
- *
- * PLEASE OBSERVE AND RESPECT THIS SIMPLE REQUEST.
- *
- * THANK YOU.
- *
- * lkcl@samba.org
- */
 
 /* 
  *  Unix SMB/Netbios implementation.
@@ -209,29 +185,6 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 	return NULL;
 }
 
-#ifdef DISABLED_BECAUSE_IT_FIXES_THE_PROBLEM_IN_THE_WRONG_WAY
-
-/*
- * 1) this code should be *inside* getsam21pwent(), behind the
- * sam database API.  it should *not* be explictly in the samsrv
- * implementation.  that's the whole point of the sam database API:
- * it hides implementation issues like this and allows code reuse
- * for LDAP, NISPLUS, SMBPASSWD+Unix Passwd, MYSQL, tdb etc.
- *
- * 2) modifications to cvs main and 2_0 should be absolutely critical
- * bug-fixes only, and TNG should be checked and worked on first.
- * any bug-fixes and enhancements should be made to TNG,
- * as per instructions at top of this file.
- *
- * i really appreciate the efforts of the person who wrote this code
- * (whoever they are), however please consult with me because there
- * are design issues that you should be aware of, and your skills
- * are needed to fix the problems in the correct code-module in
- * the right branch, not this one.
- * 
- * lkcl@samba.org 23mar2000.
- */
-
 /*******************************************************************
  This function sets up a list of users taken from the list of
  users that UNIX knows about, as well as all the user names that
@@ -377,8 +330,6 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 	return (*num_entries) > 0;
 }
-
-#endif
 
 /*******************************************************************
  samr_reply_unknown_1
@@ -766,22 +717,6 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	}
 	else if (strequal(sid_str, sam_sid_str))
 	{
-#ifdef _DISABLED_BECAUSE_THERE_IS_AN_API_TO_CALL_TO_OBTAIN_ALIASES
-
-		/*
-		 * this code has been disabled because there is an API
-		 * to call to enumerate NT aliases.
-		 *
-		 * it is the job of this API to decide which unix groups
-		 * should be mapped to NT aliases and which should be
-		 * mapped to NT groups.
-		 *
-		 * putting *all* unix groups as aliases is not the correct
-		 * thing to do, just as it is not the correct thing to
-		 * do to return all unix users as NT users (as is done
-		 * by the disabled function, get_passwd_entries())
-		 */
-
 		char *name;
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
@@ -798,7 +733,6 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		}
 
 		endgrent();
-#endif
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
@@ -859,7 +793,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 	if (r_e.status == 0x0)
 	{
 		become_root(True);
-		got_pwds = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+		got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
 		unbecome_root(True);
 
 		switch (q_u->switch_level)

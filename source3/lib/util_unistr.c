@@ -712,7 +712,7 @@ smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
 	dst_len /= sizeof(smb_ucs2_t); /* Convert to smb_ucs2_t units. */
 
 	for(i = 0; (i < (dst_len  - 1)) && src[i];) {
-		size_t skip = get_character_len(*src);
+		size_t skip = skip_multibyte_char(*src);
 		smb_ucs2_t val = (*src & 0xff);
 
 		/*
@@ -801,7 +801,7 @@ size_t strlen_w(const smb_ucs2_t *src)
 
 /*******************************************************************
  Safe wstring copy into a known length string. maxlength includes
- the terminating zero. maxlength is in bytes.
+ the terminating zero. maxlength is in ucs2 units.
 ********************************************************************/
 
 smb_ucs2_t *safe_strcpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src, size_t maxlength)
@@ -817,10 +817,6 @@ smb_ucs2_t *safe_strcpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src, size_t maxleng
         *dest = 0;
         return dest;
     }
-
-	/*
-	 * Convert maxlength to smb_ucs2_t units.
-	 */
 
 	maxlength /= sizeof(smb_ucs2_t);
 
@@ -841,7 +837,7 @@ smb_ucs2_t *safe_strcpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src, size_t maxleng
 
 /*******************************************************************
  Safe string cat into a string. maxlength includes the terminating zero.
- maxlength is in bytes.
+ maxlength is in ucs2 units.
 ********************************************************************/
 
 smb_ucs2_t *safe_strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength)
@@ -855,12 +851,6 @@ smb_ucs2_t *safe_strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlen
 
     if (!src)
         return dest;
-
-	/*
-	 * Convert maxlength to smb_ucs2_t units.
-	 */
-
-	maxlength /= sizeof(smb_ucs2_t);
 
     ucs2_src_len = strlen_w(src);
     ucs2_dest_len = strlen_w(dest);
@@ -880,7 +870,7 @@ smb_ucs2_t *safe_strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlen
 }
 
 /*******************************************************************
- Compare the two strings s1 and s2. len is in ucs2 units.
+ Compare the two strings s1 and s2.
 ********************************************************************/
 
 int strcmp_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
@@ -1245,6 +1235,7 @@ int StrCaseCmp_w(const smb_ucs2_t *s, const smb_ucs2_t *t)
 
 /*******************************************************************
  Case insensitive string compararison, length limited.
+ n is in ucs2 units.
 ********************************************************************/
 
 int StrnCaseCmp_w(const smb_ucs2_t *s, const smb_ucs2_t *t, size_t n)
@@ -1289,7 +1280,8 @@ BOOL strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
 }
 
 /*******************************************************************
- Compare 2 strings up to and including the nth char.
+ Compare 2 strings up to and including the nth char. n is in ucs2
+ units.
 ******************************************************************/
 
 BOOL strnequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2,size_t n)
@@ -1504,18 +1496,12 @@ BOOL str_is_all_w(const smb_ucs2_t *s,smb_ucs2_t c)
  Paranoid strcpy into a buffer of given length (includes terminating
  zero. Strips out all but 'a-Z0-9' and replaces with '_'. Deliberately
  does *NOT* check for multibyte characters. Don't change it !
- maxlength is in bytes.
+ maxlength is in ucs2 units.
 ********************************************************************/
 
 smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength)
 {
 	size_t len, i;
-
-	/*
-	 * Convert to smb_ucs2_t units.
-	 */
-
-	maxlength /= sizeof(smb_ucs2_t);
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy_w\n"));
@@ -1546,7 +1532,8 @@ smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxle
 
 /****************************************************************************
  Like strncpy but always null terminates. Make sure there is room !
- The variable n should always be one less than the available size and is in bytes.
+ The variable n should always be one less than the available size and is in
+ ucs2 units.
 ****************************************************************************/
 
 smb_ucs2_t *StrnCpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src,size_t n)
@@ -1559,12 +1546,6 @@ smb_ucs2_t *StrnCpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src,size_t n)
 		return(dest);
 	}
 
-	/*
-	 * Convert to smb_ucs2_t units.
-	 */
-
-	n /= sizeof(smb_ucs2_t);
-
 	while (n-- && (*d++ = *src++))
 		;
 	*d = 0;
@@ -1574,7 +1555,7 @@ smb_ucs2_t *StrnCpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src,size_t n)
 /****************************************************************************
  Like strncpy but copies up to the character marker. Always null terminates.
  returns a pointer to the character marker in the source string (src).
- n is in bytes.
+ n is in ucs2 units.
 ****************************************************************************/
 
 smb_ucs2_t *strncpyn_w(smb_ucs2_t *dest, const smb_ucs2_t *src,size_t n, smb_ucs2_t c)
@@ -1593,7 +1574,7 @@ smb_ucs2_t *strncpyn_w(smb_ucs2_t *dest, const smb_ucs2_t *src,size_t n, smb_ucs
 		return NULL;
 	}
 
-	str_len = PTR_DIFF(p, src) + sizeof(smb_ucs2_t);
+	str_len = PTR_DIFF(p, src) + 1;
 	safe_strcpy_w(dest, src, MIN(n, str_len));
 
 	return p;
@@ -1751,19 +1732,13 @@ BOOL string_set_w(smb_ucs2_t **dest,const smb_ucs2_t *src)
 
  Any of " ; ' $ or ` in the insert string are replaced with _
  if len==0 then no length check is performed
- len is in bytes.
+ len is in ucs2 units.
 ****************************************************************************/
 
 void string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *insert, size_t len)
 {
 	smb_ucs2_t *p;
 	ssize_t ls,lp,li, i;
-
-	/*
-	 * Convert to smb_ucs2_t units.
-	 */
-
-	len /= sizeof(smb_ucs2_t);
 
 	if (!insert || !pattern || !s)
 		return;
@@ -1827,12 +1802,6 @@ void all_string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *
 {
 	smb_ucs2_t *p;
 	ssize_t ls,lp,li;
-
-	/*
-	 * Convert to smb_ucs2_t units.
-	 */
-
-	len /= sizeof(smb_ucs2_t);
 
 	if (!insert || !pattern || !s)
 		return;
@@ -1905,17 +1874,11 @@ smb_ucs2_t *octal_string_w(int i)
 
 /****************************************************************************
  Truncate a string at a specified length.
- length is in bytes.
+ length is in ucs2 units.
 ****************************************************************************/
 
 smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length)
 {
-	/*
-	 * Convert to smb_ucs2_t units.
-	 */
-
-	length /= sizeof(smb_ucs2_t);
-
 	if (s && strlen_w(s) > length)
 		s[length] = 0;
 

@@ -548,7 +548,7 @@ char *timestring(BOOL hires)
 			strftime(TimeBuf,100,"%Y/%m/%d %H:%M:%S",tm);
 		}
 #else
-		if (hires)() {
+		if (hires) {
 			slprintf(TimeBuf, 
 				 sizeof(TimeBuf)-1, 
 				 "%s.%06ld", 

@@ -453,6 +453,15 @@ struct nmb_packet
   struct res_rec *additional;
 };
 
+/* msg_type field options - from rfc1002. */
+
+#define DGRAM_UNIQUE 0x10
+#define DGRAM_GROUP 0x11
+#define DGRAM_BROADCAST 0x12
+#define DGRAM_ERROR 0x13
+#define DGRAM_QUERY_REQUEST 0x14
+#define DGRAM_POSITIVE_QUERY_RESPONSE 0x15
+#define DGRAM_NEGATIVE_QUERT_RESPONSE 0x16
 
 /* A datagram - this normally contains SMB data in the data[] array. */
 
