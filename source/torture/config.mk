@@ -20,7 +20,7 @@ ADD_OBJ_FILES = \
 		torture/basic/delaywrite.o \
 		torture/basic/attr.o 
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB
+		LIBSMB LIBRPC
 # End SUBSYSTEM TORTURE_BASIC
 #################################
 
@@ -185,7 +185,8 @@ REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
 		LIBBASIC \
-		LIBCMDLINE
+		LIBCMDLINE \
+		LIBRPC
 # End BINARY gentest
 #################################
 
@@ -198,7 +199,8 @@ REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
 		LIBBASIC \
-		LIBCMDLINE
+		LIBCMDLINE \
+		LIBRPC
 # End BINARY masktest
 #################################
 
@@ -212,6 +214,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
 		LIBBASIC \
-		LIBCMDLINE
+		LIBCMDLINE \
+		LIBRPC
 # End BINARY locktest
 #################################

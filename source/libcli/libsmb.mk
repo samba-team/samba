@@ -1,5 +1,5 @@
 [SUBSYSTEM::LIBSMB]
-REQUIRED_SUBSYSTEMS = LIBCLI LIBRPC SOCKET
+REQUIRED_SUBSYSTEMS = LIBCLI SOCKET
 ADD_OBJ_FILES = libcli/clireadwrite.o \
 		libcli/cliconnect.o \
 		libcli/clifile.o \
