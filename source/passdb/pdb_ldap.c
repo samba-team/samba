@@ -1562,7 +1562,6 @@ Get SAM_ACCOUNT entry from LDAP by SID
 *********************************************************************/
 static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result;
 	LDAPMessage *entry;
@@ -1595,21 +1594,22 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	}
 
 	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-	if (entry) 
+	if (!entry) 
 	{
-		if (!init_sam_from_ldap(ldap_state, user, entry)) {
-			DEBUG(1,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
-			ldap_msgfree(result);
-			return NT_STATUS_NO_SUCH_USER;
-		}
-		pdb_set_backend_private_data(user, result, 
-					     private_data_free_fn, 
-					     my_methods, PDB_CHANGED);
-		ret = NT_STATUS_OK;
-	} else {
 		ldap_msgfree(result);
+		return NT_STATUS_NO_SUCH_USER;
 	}
-	return NT_STATUS_NO_SUCH_USER;
+
+	if (!init_sam_from_ldap(ldap_state, user, entry)) {
+		DEBUG(1,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
+		ldap_msgfree(result);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	pdb_set_backend_private_data(user, result, 
+				     private_data_free_fn, 
+				     my_methods, PDB_CHANGED);
+	return NT_STATUS_OK;
 }	
 
 /********************************************************************
