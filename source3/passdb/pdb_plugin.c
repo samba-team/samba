@@ -46,7 +46,7 @@ NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	trim_string(plugin_name, " ", " ");
 
 	DEBUG(5, ("Trying to load sam plugin %s\n", plugin_name));
-	dl_handle = sys_dlopen(plugin_name, RTLD_NOW | RTLD_GLOBAL );
+	dl_handle = sys_dlopen(plugin_name, RTLD_NOW );
 	if (!dl_handle) {
 		DEBUG(0, ("Failed to load sam plugin %s using sys_dlopen (%s)\n", plugin_name, sys_dlerror()));
 		return NT_STATUS_UNSUCCESSFUL;
