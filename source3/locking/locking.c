@@ -465,18 +465,19 @@ BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock)
 	return mod_share_mode(fsp, modify_share_mode_fn, (void *)&mv);
 }
 
-static void (*traverse_callback)(share_mode_entry *, char *);
 
 /****************************************************************************
 traverse the whole database with this function, calling traverse_callback
 on each share mode
 ****************************************************************************/
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
 {
 	struct locking_data *data;
 	share_mode_entry *shares;
 	char *name;
 	int i;
+
+	SHAREMODE_FN(traverse_callback) = (SHAREMODE_FN_CAST())state;
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
@@ -492,9 +493,8 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
  Call the specified function on each entry under management by the
  share mode system.
 ********************************************************************/
-int share_mode_forall(void (*fn)(share_mode_entry *, char *))
+int share_mode_forall(SHAREMODE_FN(fn))
 {
 	if (!tdb) return 0;
-	traverse_callback = fn;
-	return tdb_traverse(tdb, traverse_fn);
+	return tdb_traverse(tdb, traverse_fn, (void*)fn);
 }

@@ -331,19 +331,17 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 }
 
 
-static void (*traverse_callback)(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
-				 enum brl_type lock_type,
-				 br_off start, br_off size);
-
 /****************************************************************************
 traverse the whole database with this function, calling traverse_callback
 on each lock
 ****************************************************************************/
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct lock_struct *locks;
 	struct lock_key *key;
 	int i;
+
+	BRLOCK_FN(traverse_callback) = (BRLOCK_FN_CAST())state;
 
 	locks = (struct lock_struct *)dbuf.dptr;
 	key = (struct lock_key *)kbuf.dptr;
@@ -361,11 +359,8 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 /*******************************************************************
  Call the specified function on each lock in the database
 ********************************************************************/
-int brl_forall(void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
-			  enum brl_type lock_type,
-			  br_off start, br_off size))
+int brl_forall(BRLOCK_FN(fn))
 {
 	if (!tdb) return 0;
-	traverse_callback = fn;
-	return tdb_traverse(tdb, traverse_fn);
+	return tdb_traverse(tdb, traverse_fn, (BRLOCK_FN_CAST())fn);
 }

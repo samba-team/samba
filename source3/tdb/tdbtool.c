@@ -134,7 +134,7 @@ static void delete_tdb(void)
 	}
 }
 
-static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
+static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("%*.*s : %*.*s\n", 
 	       (int)key.dsize, (int)key.dsize, key.dptr, 
@@ -144,7 +144,7 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 
 static int total_bytes;
 
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	total_bytes += dbuf.dsize;
 	return 0;
@@ -154,7 +154,7 @@ static void info_tdb(void)
 {
 	int count;
 	total_bytes = 0;
-	count = tdb_traverse(tdb, traverse_fn);
+	count = tdb_traverse(tdb, traverse_fn, NULL);
 	printf("%d records totalling %d bytes\n", count, total_bytes);
 }
 
@@ -199,11 +199,11 @@ int main(int argc, char *argv[])
 		} else if (strcmp(tok,"show") == 0) {
 			show_tdb();
 		} else if (strcmp(tok,"erase") == 0) {
-			tdb_traverse(tdb, tdb_delete);
+			tdb_traverse(tdb, tdb_delete, NULL);
 		} else if (strcmp(tok,"delete") == 0) {
 			delete_tdb();
 		} else if (strcmp(tok,"dump") == 0) {
-			tdb_traverse(tdb, print_rec);
+			tdb_traverse(tdb, print_rec, NULL);
 		} else if (strcmp(tok,"info") == 0) {
 			info_tdb();
 		} else {
