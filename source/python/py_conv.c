@@ -42,12 +42,12 @@ PyObject *from_struct(void *s, struct pyconv *conv)
 		switch (conv[i].type) {
 		case PY_UNISTR: {
 			UNISTR *u = (UNISTR *)((char *)s + conv[i].offset);
-			fstring s = "";
+			fstring str = "";
 
 			if (u->buffer)
 				fstr_pull(s, u);
 
-			item = PyString_FromString(s);
+			item = PyString_FromString(str);
 			PyDict_SetItemString(obj, conv[i].name, item);
 
 			break;
@@ -122,13 +122,13 @@ BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv)
 		switch (conv[i].type) {
 		case PY_UNISTR: {
 			UNISTR *u = (UNISTR *)((char *)s + conv[i].offset);
-			char *s = "";
+			char *str = "";
 
 			if (!PyString_Check(obj))
 				goto done;
 
-			s = PyString_AsString(obj);
-			init_unistr(u, s);
+			str = PyString_AsString(obj);
+			init_unistr(u, str);
 			
 			break;
 		}

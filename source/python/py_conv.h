@@ -31,6 +31,7 @@ struct pyconv {
 
 PyObject *from_struct(void *s, struct pyconv *conv);
 BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv);
+PyObject *from_unistr_list(uint16 *dependentfiles);
 
 /* Another version of offsetof (-: */
 
