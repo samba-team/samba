@@ -23,7 +23,11 @@
 
 #include "includes.h"
 
+static const char *machine_password;
 
+#define TEST_MACHINE_NAME "torturetest"
+
+#if 0
 static void reopen(struct dcerpc_pipe **p, const struct dcerpc_interface_table *iface)
 {
 	NTSTATUS status;
@@ -179,6 +183,7 @@ static BOOL test_scan(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	test_scan_call(mem_ctx, &dcerpc_table_drsuapi, 0x0);
 	return True;
 }
+#endif
 
 static BOOL test_DRSBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
@@ -203,28 +208,50 @@ BOOL torture_rpc_drsuapi(int dummy)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	void *join_ctx;
+	const char *binding = lp_parm_string(-1, "torture", "binding");
 
-	mem_ctx = talloc_init("torture_rpc_srvsvc");
+	if (!binding) {
+		printf("You must specify a ncacn binding string\n");
+		return False;
+	}
 
-	status = torture_rpc_connection(&p,
-					DCERPC_DRSUAPI_NAME,
-					DCERPC_DRSUAPI_UUID,
-					DCERPC_DRSUAPI_VERSION);
+	lp_set_cmdline("netbios name", TEST_MACHINE_NAME);
+
+	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_SVRTRUST, 
+				       &machine_password);
+	if (!join_ctx) {
+		printf("Failed to join as BDC\n");
+		return False;
+	}
+
+	status = dcerpc_pipe_connect(&p, binding,
+				     	DCERPC_DRSUAPI_UUID,
+					DCERPC_DRSUAPI_VERSION,
+					lp_workgroup(), 
+					TEST_MACHINE_NAME"$",
+					machine_password);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
 	if (!test_DRSBind(p, mem_ctx)) {
 		ret = False;
 	}
 
+#if 0
 	if (!test_scan(p, mem_ctx)) {
 		ret = False;
 	}
-
+#endif
 	talloc_destroy(mem_ctx);
 
         torture_rpc_close(p);
+
+	torture_leave_domain(join_ctx);
 
 	return ret;
 }
