@@ -460,9 +460,9 @@ DES_init_random_number_generator(DES_cblock *seed)
 
 /* This is for backwards compatibility. */
 void
-DES_random_key(DES_cblock ret)
+DES_random_key(DES_cblock *ret)
 {
-    DES_new_random_key((DES_cblock *)ret);
+    DES_new_random_key(ret);
 }
 
 #ifdef TESTRUN

@@ -64,7 +64,7 @@ void	DES_set_random_generator_seed(DES_cblock *);
 void	DES_generate_random_block(DES_cblock *);
 void	DES_set_sequence_number(unsigned char *);
 void 	DES_init_random_number_generator(DES_cblock *);
-void	DES_random_key(DES_cblock);
+void	DES_random_key(DES_cblock *);
 
 
 void	DES_encrypt(uint32_t [2], DES_key_schedule *, int);
