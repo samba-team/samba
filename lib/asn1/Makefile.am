@@ -69,7 +69,7 @@ $(foo) asn1.h: asn1_files
 asn1_files: asn1_compile $(srcdir)/k5.asn1
 	./asn1_compile $(srcdir)/k5.asn1
 
-$(libasn1_a_SOURCES): asn1.h
+$(libasn1_a_OBJECTS): asn1.h
 
 .x.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
