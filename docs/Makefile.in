@@ -88,7 +88,7 @@ all:
 
 everything: manpages pdf html-single html htmlman htmlfaq txt ps
 
-release: manpages htmlman html html-single htmlfaq pdf
+release: manpages htmlman html html-single pdf guide
 
 # Global rules
 
