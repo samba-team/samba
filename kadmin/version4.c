@@ -387,7 +387,7 @@ error_code(int ret)
 	return KADM_INSECURE_PW;
 #endif
     case KADM5_PASS_Q_CLASS :
-#ifdef KADM_PASS_Q_CLASS :
+#ifdef KADM_PASS_Q_CLASS
 	return KADM_PASS_Q_CLASS;
 #else
 	return KADM_INSECURE_PW;
