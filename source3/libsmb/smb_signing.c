@@ -28,9 +28,17 @@ struct outstanding_packet_lookup {
 	struct outstanding_packet_lookup *prev, *next;
 };
 
+/* Store the data for an ongoing trans/trans2/nttrans operation. */
+struct trans_info_context {
+	uint16 mid;
+	uint32 send_seq_num;
+	uint32 reply_seq_num;
+};
+
 struct smb_basic_signing_context {
 	DATA_BLOB mac_key;
 	uint32 send_seq_num;
+	struct trans_info_context *trans_info;
 	struct outstanding_packet_lookup *outstanding_packet_list;
 };
 
@@ -261,6 +269,7 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
+	uint32 send_seq_num;
 
 	if (!si->doing_signing)
 		return;
@@ -275,7 +284,12 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(outbuf);
 
-	simple_packet_signature(data, outbuf, data->send_seq_num, calc_md5_mac);
+	if (data->trans_info)
+		send_seq_num = data->trans_info->send_seq_num;
+	else
+		send_seq_num = data->send_seq_num;
+
+	simple_packet_signature(data, outbuf, send_seq_num, calc_md5_mac);
 
 	DEBUG(10, ("client_sign_outgoing_message: sent SMB signature of\n"));
 	dump_data(10, calc_md5_mac, 8);
@@ -284,6 +298,9 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signatures...*/
+
+	if (data->trans_info)
+		return;
 
 	data->send_seq_num++;
 	store_sequence_for_reply(&data->outstanding_packet_list, 
@@ -313,9 +330,13 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		return False;
 	}
 
-	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
+	if (data->trans_info) {
+		reply_seq_number = data->trans_info->reply_seq_num;
+	} else if (!get_sequence_for_reply(&data->outstanding_packet_list, 
 				    SVAL(inbuf, smb_mid), 
 				    &reply_seq_number)) {
+		DEBUG(1, ("client_check_incoming_message: failed to get sequence number %u for reply.\n",
+					(unsigned int) SVAL(inbuf, smb_mid) ));
 		return False;
 	}
 
@@ -365,6 +386,10 @@ static void simple_free_signing_context(struct smb_sign_info *si)
 	}
 
 	data_blob_free(&data->mac_key);
+
+	if (data->trans_info)
+		SAFE_FREE(data->trans_info);
+
 	SAFE_FREE(si->signing_context);
 
 	return;
@@ -390,6 +415,7 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	}
 
 	data = smb_xmalloc(sizeof(*data));
+	memset(data, '\0', sizeof(*data));
 
 	cli->sign_info.signing_context = data;
 	
@@ -419,6 +445,42 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	cli->sign_info.free_signing_context = simple_free_signing_context;
 
 	return True;
+}
+
+/***********************************************************
+ Tell client code we are in a multiple trans reply state.
+************************************************************/
+
+void cli_signing_trans_start(struct cli_state *cli)
+{
+	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
+
+	if (!cli->sign_info.doing_signing)
+		return;
+
+	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
+	ZERO_STRUCTP(data->trans_info);
+
+	data->trans_info->send_seq_num = data->send_seq_num;
+	data->trans_info->mid = SVAL(cli->outbuf,smb_mid);
+	data->trans_info->reply_seq_num = data->send_seq_num+1;
+}
+
+/***********************************************************
+ Tell client code we are out of a multiple trans reply state.
+************************************************************/
+
+void cli_signing_trans_stop(struct cli_state *cli)
+{
+	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
+
+	if (!cli->sign_info.doing_signing)
+		return;
+
+	if (data->trans_info)
+		SAFE_FREE(data->trans_info);
+
+	data->send_seq_num += 2;
 }
 
 /***********************************************************
@@ -776,6 +838,7 @@ void srv_set_signing(const uchar user_session_key[16], const DATA_BLOB response)
 	srv_sign_info.doing_signing = True;
 
 	data = smb_xmalloc(sizeof(*data));
+	memset(data, '\0', sizeof(*data));
 
 	srv_sign_info.signing_context = data;
 	

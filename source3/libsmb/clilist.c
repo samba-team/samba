@@ -145,7 +145,11 @@ static int interpret_long_filename(struct cli_state *cli,
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state)
 {
+#if 0
 	int max_matches = 1366; /* Match W2k - was 512. */
+#else
+	int max_matches = 512;
+#endif
 	int info_level;
 	char *p, *p2;
 	pstring mask;
@@ -207,8 +211,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				    &setup, 1, 0,           /* setup, length, max */
 				    param, param_len, 10,   /* param, length, max */
 				    NULL, 0, 
-				    MIN(16384,cli->max_xmit) /* data, length, max. W2K server signing
-								has a bug unless this matches what W2K uses. */
+#if 0
+				    /* w2k value. */
+				    MIN(16384,cli->max_xmit) /* data, length, max. */
+#else
+				    cli->max_xmit	    /* data, length, max. */
+#endif
 				    )) {
 			break;
 		}

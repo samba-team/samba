@@ -40,6 +40,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	char *outdata,*outparam;
 	char *p;
 	int pipe_name_len=0;
+	uint16 mid;
 
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
 	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*2+this_lparam));
@@ -49,6 +50,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	SCVAL(cli->outbuf,smb_com,trans);
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
+	mid = cli->mid;
 
 	if (pipe_name) {
 		pipe_name_len = clistr_push(cli, smb_buf(cli->outbuf), pipe_name, -1, STR_TERMINATE);
@@ -84,6 +86,8 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	cli_setup_bcc(cli, outdata+this_ldata);
 
 	show_msg(cli->outbuf);
+
+	cli_signing_trans_start(cli);
 	if (!cli_send_smb(cli))
 		return False;
 
@@ -122,6 +126,10 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
 			
+			/* Ensure this packet has the same MID as
+			 * the primary. Important in signing. JRA. */
+			cli->mid = mid;
+
 			show_msg(cli->outbuf);
 			if (!cli_send_smb(cli))
 				return False;
@@ -292,6 +300,7 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		
 	}
 	
+	cli_signing_trans_stop(cli);
 	return(True);
 }
 
@@ -309,6 +318,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	unsigned int i;
 	unsigned int this_ldata,this_lparam;
 	unsigned int tot_data=0,tot_param=0;
+	uint16 mid;
 	char *outdata,*outparam;
 
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
@@ -319,6 +329,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	SCVAL(cli->outbuf,smb_com,SMBnttrans);
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
+	mid = cli->mid;
 
 	outparam = smb_buf(cli->outbuf)+3;
 	outdata = outparam+this_lparam;
@@ -347,6 +358,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	cli_setup_bcc(cli, outdata+this_ldata);
 
 	show_msg(cli->outbuf);
+	cli_signing_trans_start(cli);
 	if (!cli_send_smb(cli))
 		return False;
 
@@ -384,7 +396,12 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
 			
+			/* Ensure this packet has the same MID as
+			 * the primary. Important in signing. JRA. */
+			cli->mid = mid;
+
 			show_msg(cli->outbuf);
+
 			if (!cli_send_smb(cli))
 				return False;
 			
@@ -559,5 +576,6 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 			break;
 	}
 	
+	cli_signing_trans_stop(cli);
 	return(True);
 }
