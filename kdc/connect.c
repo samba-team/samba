@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -637,7 +637,7 @@ handle_http_tcp (struct descr *d)
 	t++;
     if(de_http(t) != 0) {
 	kdc_log(0, "Malformed HTTP request from %s", d->addr_string);
-	kdc_log(5, "Request: %s", t);
+	kdc_log(5, "HTTP request: %s", t);
 	free(data);
 	return -1;
     }
@@ -663,7 +663,7 @@ handle_http_tcp (struct descr *d)
 	write(d->s, proto, strlen(proto));
 	write(d->s, msg, strlen(msg));
 	kdc_log(0, "HTTP request from %s is non KDC request", d->addr_string);
-	kdc_log(5, "Request: %s", t);
+	kdc_log(5, "HTTP request: %s", t);
 	free(data);
 	return -1;
     }
