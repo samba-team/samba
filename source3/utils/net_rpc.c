@@ -915,6 +915,7 @@ static int rpc_trustdom(int argc, const char **argv)
 		{"del", rpc_trustdom_del},
 		{"establish", rpc_trustdom_establish},
 		{"revoke", rpc_trustdom_revoke},
+		{"help", rpc_trustdom_usage},
 		{NULL, NULL}
 	};
 
@@ -932,18 +933,18 @@ static int rpc_trustdom(int argc, const char **argv)
 /** 
  * Basic usage function for 'net rpc'
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
+ * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
 int net_rpc_usage(int argc, const char **argv) 
 {
-	d_printf("  net rpc join \tto join a domain \n");
-	d_printf("  net rpc user \tto add, delete and list users\n");
+	d_printf("  net rpc join \t\t\tto join a domain \n");
+	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
-	d_printf("  net rpc trustdom \tto create trusting domain's account or establish trust\n");
+	d_printf("  net rpc trustdom \t\tto create trusting domain's account or establish trust\n");
 	d_printf("  net rpc abortshutdown \tto to abort the shutdown of a remote server\n");
-	d_printf("  net rpc shutdown \tto to shutdown a remote server\n");
+	d_printf("  net rpc shutdown \t\tto to shutdown a remote server\n");
 	d_printf("\n");
 	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
@@ -953,10 +954,40 @@ int net_rpc_usage(int argc, const char **argv)
 	return -1;
 }
 
+
+/**
+ * Help function for 'net rpc'.  Calls command specific help if requested
+ * or displays usage of net rpc
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+
+int rpc_help(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"join", rpc_join_usage},
+		{"user", rpc_user_usage},
+		//{"changetrustpw", rpc_changetrustpw_usage},
+		{"trustdom", rpc_trustdom_usage},
+		//{"abortshutdown", rpc_shutdown_abort_usage},
+		//{"shutdown", rpc_shutdown_usage},
+		{NULL, NULL}
+	};
+
+	if (argc == 0) {
+		net_rpc_usage(argc, argv);
+		return -1;
+	}
+
+	return (net_run_function(argc, argv, func, rpc_user_usage));
+}
+
+
 /** 
  * 'net rpc' entrypoint.
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
+ * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
@@ -969,6 +1000,7 @@ int net_rpc(int argc, const char **argv)
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
 		{"shutdown", rpc_shutdown},
+		{"help", rpc_help},
 		{NULL, NULL}
 	};
 	return net_run_function(argc, argv, func, net_rpc_usage);

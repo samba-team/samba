@@ -94,7 +94,7 @@ int net_time_usage(int argc, const char **argv)
 "net time set\n\truns /bin/date with the time from the server\n\n"\
 "net time zone\n\tdisplays the timezone in hours from GMT on the remote computer\n\n"\
 "\n");
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -168,6 +168,7 @@ int net_time(int argc, const char **argv)
 
 	if (!opt_host && !opt_have_ip) {
 		d_printf("You must specify a hostname or IP\n");
+		net_time_usage(argc,argv);
 		return -1;
 	}
 

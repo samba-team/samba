@@ -79,6 +79,27 @@ struct in_addr opt_dest_ip;
 
 extern pstring global_myname;
 
+int net_common_flags_usage(int argc, const char **argv)
+{
+
+	d_printf("Valid targets: choose one (none defaults to localhost)\n");
+	d_printf("\t-S or --server=<server>\t\tserver name\n");
+	d_printf("\t-I or --ipaddress=<ipaddr>\taddress of target server\n");
+	d_printf("\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n");
+
+	d_printf("\n");
+	d_printf("Valid miscellaneous options are:\n"); /* misc options */
+	d_printf("\t-p or --port=<port>\tconnection port on target server\n");
+	d_printf("\t-W or --myworkgroup=<wg>\tclient workgroup\n");
+	d_printf("\t-d or --debug=<level>\t\tdebug level (0-10)\n");
+	d_printf("\t-n or --myname=<name>\t\tclient name\n");
+	d_printf("\t-U or --user=<name>\t\tuser name\n");
+	d_printf("\t-s or --conf=<path>\t\tpathname of smb.conf file\n");
+	d_printf("\t-l or --long\t\t\tDisplay full information\n");
+	return -1;
+}
+
+
 /*
   run a function from a function table. If not found then
   call the specified usage function 
@@ -283,11 +304,14 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 
 static int net_usage(int argc, const char **argv)
 {
-	d_printf("  net ads [command]\tto run ADS commands\n"\
+	d_printf("  net time\t\t to view or set time information\n"\
+		 "  net lookup\t\t to lookup host name or ip address\n"\
+		 "\n"\
+		 "  net ads [command]\tto run ADS commands\n"\
 		 "  net rap [command]\tto run RAP (pre-RPC) commands\n"\
 		 "  net rpc [command]\tto run RPC commands\n"\
-		 "  net rap help\n"\
-		 "\nType \"net help <option>\" to get more information on that option\n");
+		 "\n"\
+		 "Type \"net help <option>\" to get more information on that option\n");
 	return -1;
 }
 
@@ -310,7 +334,7 @@ static int net_help(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADS", net_ads_usage},	
-		{"RAP", net_rap_usage},
+		{"RAP", net_rap_help},
 		{"RPC", net_rpc_usage},
 
 		{"FILE", net_rap_file_usage},
@@ -332,7 +356,7 @@ static int net_help(int argc, const char **argv)
 		{"HELP", help_usage},
 		{NULL, NULL}};
 
-	return net_run_function(argc, argv, func, help_usage);
+	return net_run_function(argc, argv, func, net_usage);
 }
 
 /* main function table */
@@ -378,25 +402,25 @@ static struct functable net_func[] = {
 	static int debuglevel;
 
 	struct poptOption long_options[] = {
-		{"help",        'h', POPT_ARG_NONE,   0,     'h'},
-		{"workgroup",   'w', POPT_ARG_STRING, &opt_target_workgroup},
-		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
-		{"user",        'U', POPT_ARG_STRING, &opt_user_name, 'U'},
-		{"ipaddress",   'I', POPT_ARG_STRING, 0,     'I'},
-		{"port",        'p', POPT_ARG_INT,    &opt_port},
-		{"myname",      'n', POPT_ARG_STRING, &opt_requester_name},
-		{"conf",        's', POPT_ARG_STRING, &servicesf},
-		{"debug",       'd', POPT_ARG_INT,    &debuglevel, 'd'},
-		{"debuglevel",  'd', POPT_ARG_INT,    &debuglevel, 'd'},
-		{"server",      'S', POPT_ARG_STRING, &opt_host},
-		{"comment",     'C', POPT_ARG_STRING, &opt_comment},
-		{"maxusers",    'M', POPT_ARG_INT,    &opt_maxusers},
-		{"flags",       'F', POPT_ARG_INT,    &opt_flags},
-		{"jobid",       'j', POPT_ARG_INT,    &opt_jobid},
-		{"long",        'l', POPT_ARG_NONE,   &opt_long_list_entries},
-		{"reboot",        'r', POPT_ARG_NONE,   &opt_reboot},
-		{"force",        'f', POPT_ARG_NONE,   &opt_force},
-		{"timeout",       't', POPT_ARG_INT,    &opt_timeout},
+		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
+		{"workgroup",	'w', POPT_ARG_STRING, &opt_target_workgroup},
+		{"myworkgroup",	'W', POPT_ARG_STRING, &opt_workgroup},
+		{"user",	'U', POPT_ARG_STRING, &opt_user_name, 'U'},
+		{"ipaddress",	'I', POPT_ARG_STRING, 0,'I'},
+		{"port",	'p', POPT_ARG_INT,    &opt_port},
+		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
+		{"conf",	's', POPT_ARG_STRING, &servicesf},
+		{"debug",	'd', POPT_ARG_INT,    &debuglevel, 'd'},
+		{"debuglevel",	'd', POPT_ARG_INT,    &debuglevel, 'd'},
+		{"server",	'S', POPT_ARG_STRING, &opt_host},
+		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
+		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
+		{"flags",	'F', POPT_ARG_INT,    &opt_flags},
+		{"jobid",	'j', POPT_ARG_INT,    &opt_jobid},
+		{"long",	'l', POPT_ARG_NONE,   &opt_long_list_entries},
+		{"reboot",	'r', POPT_ARG_NONE,   &opt_reboot},
+		{"force",	'f', POPT_ARG_NONE,   &opt_force},
+		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{ 0, 0, 0, 0}
 	};
 
