@@ -887,6 +887,7 @@ int sys_pclose(int fd);
 void *sys_dlopen(const char *name, int flags);
 void *sys_dlsym(void *handle, char *symbol);
 int sys_dlclose (void *handle);
+ssize_t sys_sendfile( int out_fd, int in_fd, off_t *offset, size_t count);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -1869,6 +1870,7 @@ int lp_security(void);
 int lp_maxdisksize(void);
 int lp_lpqcachetime(void);
 int lp_max_smbd_processes(void);
+int lp_lanman_printing_only(void);
 int lp_totalprintjobs(void);
 int lp_syslog(void);
 int lp_client_code_page(void);
