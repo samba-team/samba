@@ -1989,13 +1989,20 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
-
 void standard_sub(connection_struct *conn, char *str)
 {
 	if (conn==NULL)
 		standard_sub_advanced(-1, "", "", -1, str);
 	else
 		standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str);
+}
+
+/****************************************************************************
+like standard_sub but by snum
+****************************************************************************/
+void standard_sub_snum(int snum, char *str)
+{
+	standard_sub_advanced(snum, "", "", -1, str);
 }
 
 /*******************************************************************
