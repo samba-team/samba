@@ -354,7 +354,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	if (!cli_api_pipe(cli, "\\PIPE\\",
 	          setup, 2, 0,                     /* Setup, length, max */
 	          NULL, 0, 0,                      /* Params, length, max */
-	          pdata, data_len, data_len,       /* data, length, max */                  
+	          pdata, data_len, 1024,       	   /* data, length, max */                  
 	          &rparam, &rparam_len,            /* return params, len */
 	          &prdata, &rdata_len))            /* return data, len */
 	{
