@@ -1,5 +1,6 @@
 2001-08-22  Assar Westerlund  <assar@sics.se>
 
+	* kdc/headers.h: include libutil.h if it exists
 	* kpasswd/kpasswd_locl.h: include libutil.h if it exists
 	* kdc/kerberos4.c (get_des_key): check for null keys even if
 	is_server
