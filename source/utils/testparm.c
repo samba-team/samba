@@ -40,6 +40,22 @@ extern FILE *dbf;
 extern int DEBUGLEVEL;
 extern pstring myhostname;
 
+/***********************************************
+ Here we do a set of 'hard coded' checks for bad
+ configuration settings.
+************************************************/
+
+void do_global_checks(void)
+{
+  if(lp_security() > SEC_SHARE && lp_revalidate(-1))
+    printf("WARNING: the 'revalidate' parameter is ignored in all but \
+'security=share' mode.\n");
+
+  if( lp_wins_support() && *lp_wins_server() )
+    printf("ERROR: both 'wins support = true' and 'wins server = <server>' \
+cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
+}
+
  int main(int argc, char *argv[])
 {
   pstring configfile;
@@ -75,6 +91,12 @@ extern pstring myhostname;
 
 
   printf("Loaded services file OK.\n");
+
+  /*
+   * Global settings checks.
+   */
+
+  do_global_checks();
 
   for (s=0;s<1000;s++)
     if (VALID_SNUM(s))
