@@ -36,6 +36,7 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 
 /*The following definitions come from  client.c  */
 
+void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num);
 void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
 void cmd_help(void);
 
@@ -629,6 +630,11 @@ int main(int argc,char *argv[]);
 char *getsmbpass(char *pass);
 void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 		char *name, int nm_type, struct in_addr ip, BOOL local);
+
+/*The following definitions come from  ntclient.c  */
+
+BOOL cli_lsa_req_chal(DOM_CHAL *srv_chal, char *desthost, char *myhostname,
+				int Client, int cnum);
 
 /*The following definitions come from  params.c  */
 

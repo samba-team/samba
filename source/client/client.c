@@ -147,7 +147,7 @@ static BOOL setup_term_code (char *code)
 /****************************************************************************
 send an SMBclose on an SMB file handle
 ****************************************************************************/
-static void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num)
+void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num)
 {
   bzero(outbuf,smb_size);
   set_message(outbuf,3,0,True);
@@ -3526,165 +3526,6 @@ static BOOL process(char *base_directory)
 }
 
 /****************************************************************************
-do a LSA Request Challenge
-****************************************************************************/
-static BOOL do_lsa_req_chal(uint16 fnum)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	char *rpc_hdr;
-	int rdrcnt,rprcnt;
-	int count = 0;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_REQ_CHAL q_c;
-	DOM_CHAL clnt_chal;
-	int call_id = 0x1;
-
-	/* create and send a MSRPC command with api LSA_REQCHAL */
-
-	clnt_chal.data[0] = 0x11111111;
-	clnt_chal.data[1] = 0x22222222;
-
-	DEBUG(4,("LSA Request Challenge from %s to %s: %lx %lx\n",
-	          desthost, myhostname, clnt_chal.data[0], clnt_chal.data[1]));
-
-	/* store the parameters */
-	make_q_req_chal(&q_c, desthost, myhostname, &clnt_chal);
-
-	/* i have absolutely no idea why you do this.  or what it is.  help! */
-	SIVAL(data, 0, 0xF400);
-
-	rpc_hdr = data + 2;
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_req_chal(False, &q_c, rpc_hdr + 0x18, rpc_hdr, 4, 5);
-
-	/* create the request RPC_HDR _after_ the main data: length is now known */
-	create_rpc_request(call_id, LSA_REQCHAL, rpc_hdr, PTR_DIFF(p, rpc_hdr));
-
-	/* create setup parameters. */
-	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
-	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt,&rdrcnt,
-				NULL, data, setup,
-				&rparam,&rdata))
-	{
-		DEBUG(5, ("cli_call_api: return OK\n"));
-#if 0
-		/* oh, now what??? */
-
-		int res = SVAL(rparam,0);
-		int converter=SVAL(rparam,2);
-		int i;
-		BOOL long_share_name=False;
-
-		if (res == 0)
-		{
-			count=SVAL(rparam,4);
-			p = rdata;
-
-		}
-#endif
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return(count>0);
-}
-
-/****************************************************************************
-  open an rpc pipe (\NETLOGON or \srvsvc for example)
-  ****************************************************************************/
-static uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname)
-{
-	int fnum;
-	char *p;
-
-	DEBUG(5,("open_rpc_pipe: %s\n", rname));
-
-	bzero(outbuf,smb_size);
-	set_message(outbuf,15,1 + strlen(rname),True);
-
-	CVAL(outbuf,smb_com) = SMBopenX;
-	SSVAL(outbuf,smb_tid, cnum);
-	cli_setup_pkt(outbuf);
-
-	SSVAL(outbuf,smb_vwv0,0xFF);
-	SSVAL(outbuf,smb_vwv2,1);
-	SSVAL(outbuf,smb_vwv3,(DENY_NONE<<4));
-	SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
-	SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
-	SSVAL(outbuf,smb_vwv8,1);
-
-	p = smb_buf(outbuf);
-	strcpy(p,rname);
-	p = skip_string(p,1);
-
-	send_smb(Client,outbuf);
-	receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-
-	if (CVAL(inbuf,smb_rcls) != 0)
-	{
-		if (CVAL(inbuf,smb_rcls) == ERRSRV &&
-		    SVAL(inbuf,smb_err) == ERRnoresource &&
-		    cli_reopen_connection(inbuf,outbuf))
-		{
-			return open_rpc_pipe(inbuf, outbuf, rname);
-		}
-		DEBUG(0,("opening remote pipe %s - error %s\n", rname, smb_errstr(inbuf)));
-
-		return 0xffff;
-	}
-
-	fnum = SVAL(inbuf, smb_vwv2);
-
-	DEBUG(5,("opening pipe: fnum %d\n", fnum));
-
-	return fnum;
-}
-
-/****************************************************************************
-
-****************************************************************************/
-static BOOL cli_lsa_req_chal(void)
-{
-	uint16 fnum;
-	char *inbuf,*outbuf; 
-
-	inbuf  = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-	outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-
-	if (!inbuf || !outbuf)
-	{
-		DEBUG(0,("out of memory\n"));
-		return -1;
-	}
-	
-	/* open the \PIPE\NETLOGON file */
-	fnum = open_rpc_pipe(inbuf, outbuf, PIPE_NETLOGON);
-
-	if (fnum != 0xffff)
-	{
-		do_lsa_req_chal(fnum);
-
-		/* close \PIPE\NETLOGON */
-		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
-
-		free(inbuf); free(outbuf);
-		return True;
-	}
-
-	return False;
-}
-
-/****************************************************************************
 usage on the program
 ****************************************************************************/
 static void usage(char *pname)
@@ -4056,12 +3897,14 @@ static void usage(char *pname)
 
 		if (cli_open_sockets(port))
 		{
-			if (!cli_send_login(NULL,NULL,True,True))
-			{
-				return(1);
-			}
+			DOM_CHAL srv_chal;
 
-			cli_lsa_req_chal();
+			if (!cli_send_login(NULL,NULL,True,True)) return(1);
+
+			if (!cli_lsa_req_chal(&srv_chal, desthost, myhostname, Client, cnum))
+			{
+				return (1);
+			}
 #if 0
 			cli_lsa_auth2();
 			cli_lsa_sam_logon();

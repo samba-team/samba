@@ -300,36 +300,32 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-	int    pkttype;
-	uint32 call_id;
-	uint16 opnum;
+	RPC_HDR hdr;
 
 	if (data == NULL)
 	{
-		DEBUG(2, ("api_ntLsarpcTNP: NULL data parameter\n"));
+		DEBUG(2,("api_ntLsarpcTNP: NULL data received\n"));
 		return False;
 	}
 
-	/* really should decode these using an RPC_HDR structure */
-	pkttype = CVAL(data,  2);
-	call_id = CVAL(data, 12);
-	opnum   = SVAL(data, 22);
+	smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
 
-	if (pkttype == RPC_BIND) /* RPC BIND */
+	if (hdr.pkt_type == RPC_BIND) /* RPC BIND */
 	{
-		DEBUG(4,("netlogon rpc bind %x\n",pkttype));
+		DEBUG(4,("lsarpc rpc bind %x\n", hdr.pkt_type));
 		LsarpcTNP1(data,rdata,rdata_len);
 		return True;
 	}
 
-	DEBUG(4,("ntlsa TransactNamedPipe op %x\n",opnum));
-	switch (opnum)
+	DEBUG(4,("lsarpc TransactNamedPipe op %x\n",hdr.cancel_count));
+
+	switch (hdr.cancel_count)
 	{
 		case LSA_OPENPOLICY:
 		{
 			DEBUG(3,("LSA_OPENPOLICY\n"));
 			api_lsa_open_policy(param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -338,7 +334,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 			DEBUG(3,("LSA_QUERYINFOPOLICY\n"));
 
 			api_lsa_query_info(param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -406,7 +402,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENSECRET\n"));
 			api_lsa_lookup_sids(param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -414,13 +410,13 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_LOOKUPNAMES\n"));
 			api_lsa_lookup_names(param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
 		default:
 		{
-			DEBUG(4, ("NTLSARPC, unknown code: %lx\n", opnum));
+			DEBUG(4, ("NTLSARPC, unknown code: %lx\n", hdr.cancel_count));
 			break;
 		}
 	}
