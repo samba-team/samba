@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -286,6 +286,7 @@ configure(int argc, char **argv)
 
 	for (i = 0; i < addresses_str.num_strings; ++i)
 	    add_one_address (addresses_str.strings[i], i == 0);
+	free_getarg_strings (&addresses_str);
     } else {
 	char **foo = krb5_config_get_strings (context, cf,
 					      "kdc", "addresses", NULL);
