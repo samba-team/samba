@@ -32,6 +32,14 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION 1
 
+/* we need to have a small set of default forms to support our
+   default printer */
+static nt_forms_struct default_forms[] = {
+	{"A4", 0xb0, 0x3354f, 0x4884e, 0x0, 0x0, 0x3354f, 0x4884e},
+	{"Letter", 0x20, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367}
+};
+
+
 /****************************************************************************
 open the NT printing tdb
 ****************************************************************************/
@@ -78,7 +86,7 @@ int get_ntforms(nt_forms_struct **list)
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) continue;
 
-		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX)+1);
+		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddddddd",
 				 &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
@@ -89,6 +97,13 @@ int get_ntforms(nt_forms_struct **list)
 		(*list)[n] = form;
 		n++;
 	}
+
+	/* we should never return a null forms list or NT gets unhappy */
+	if (n == 0) {
+		*list = (nt_forms_struct *)memdup(&default_forms, sizeof(default_forms));
+		n = sizeof(sizeof(default_forms))/ sizeof(sizeof(default_forms[0]));
+	}
+	
 
 	return n;
 }
@@ -109,7 +124,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 			       (*list)[i].left, (*list)[i].top, (*list)[i].right, 
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
-		slprintf(key, sizeof(key), "%s/%s", FORMS_PREFIX, (*list)[i].name);
+		slprintf(key, sizeof(key), "%s%s", FORMS_PREFIX, (*list)[i].name);
 		kbuf.dsize = strlen(key)+1;
 		kbuf.dptr = key;
 		dbuf.dsize = len;
@@ -207,7 +222,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 	TDB_DATA kbuf, newkey;
 
 	get_short_archi(short_archi, architecture);
-	slprintf(key, sizeof(key), "%s/%s/", DRIVERS_PREFIX, short_archi);
+	slprintf(key, sizeof(key), "%s%s/", DRIVERS_PREFIX, short_archi);
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
@@ -275,7 +290,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	TDB_DATA kbuf, dbuf;
 
 	get_short_archi(architecture, driver->environment);
-	slprintf(key, sizeof(key), "%s/%s/%s", DRIVERS_PREFIX, architecture, driver->name);
+	slprintf(key, sizeof(key), "%s%s/%s", DRIVERS_PREFIX, architecture, driver->name);
 
 	/*
 	 * cversion must be 2.
@@ -386,7 +401,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	ZERO_STRUCT(driver);
 
 	get_short_archi(architecture, in_arch);
-	slprintf(key, sizeof(key), "%s/%s/%s", DRIVERS_PREFIX, architecture, in_prt);
+	slprintf(key, sizeof(key), "%s%s/%s", DRIVERS_PREFIX, architecture, in_prt);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -572,7 +587,7 @@ uint32 del_a_printer(char *portname)
 	pstring key;
 	TDB_DATA kbuf;
 
-	slprintf(key, sizeof(key), "%s/%s",
+	slprintf(key, sizeof(key), "%s%s",
 		 PRINTERS_PREFIX, portname);
 
 	kbuf.dptr=key;
@@ -655,7 +670,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	}
 	
 
-	slprintf(key, sizeof(key), "%s/%s",
+	slprintf(key, sizeof(key), "%s%s",
 		 PRINTERS_PREFIX, info->portname);
 
 	kbuf.dptr = key;
@@ -781,7 +796,7 @@ NT_DEVICEMODE *construct_nt_devicemode(void)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	fstrcpy(nt_devmode->formname, "A4");
+	fstrcpy(nt_devmode->formname, "Letter");
 
 	nt_devmode->specversion      = 0x0401;
 	nt_devmode->driverversion    = 0x0400;
@@ -791,7 +806,7 @@ NT_DEVICEMODE *construct_nt_devicemode(void)
 				       DEFAULTSOURCE | COPIES | SCALE | 
 				       PAPERSIZE | ORIENTATION;
 	nt_devmode->orientation      = 1;
-	nt_devmode->papersize        = PAPER_A4;
+	nt_devmode->papersize        = PAPER_LETTER;
 	nt_devmode->paperlength      = 0;
 	nt_devmode->paperwidth       = 0;
 	nt_devmode->scale            = 0x64;
@@ -1051,7 +1066,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		
 	ZERO_STRUCT(info);
 
-	slprintf(key, sizeof(key), "%s/%s",
+	slprintf(key, sizeof(key), "%s%s",
 		 PRINTERS_PREFIX, sharename);
 
 	kbuf.dptr = key;
@@ -1089,6 +1104,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
 	nt_printing_getsec(sharename, &info.secdesc_buf);
+
+	fstrcpy(info.sharename, "");
 
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
