@@ -1920,7 +1920,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,l1_cbFile,(uint32)file_size);
 			SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
 			SSVAL(pdata,l1_attrFile,mode);
-			SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
+			SIVAL(pdata,l1_attrFile+2,0); /* this is what win2003 does */
 			break;
 
 		case SMB_INFO_IS_NAME_VALID:
@@ -1943,7 +1943,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		case SMB_INFO_QUERY_ALL_EAS:
 			data_size = 4;
-			SIVAL(pdata,0,data_size);
+			SIVAL(pdata,0,0); /* ea size */
 			break;
 
 		case SMB_FILE_BASIC_INFORMATION:
@@ -2042,7 +2042,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			pdata += 24;
 			pdata += 4; /* EA info */
-			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, 0);
+			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, STR_UNICODE);
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
