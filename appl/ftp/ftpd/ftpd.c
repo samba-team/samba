@@ -147,10 +147,9 @@ char	remotehost[MAXHOSTNAMELEN];
 static char ttyline[20];
 char	*tty = ttyline;		/* for klogin */
 
-#if defined(KERBEROS)
-int	notickets = 1;
-char	*krbtkfile_env = NULL;
-#endif 
+/* Default level for security, 0 allow any kind of connection, 1 only
+   authorized and anonymous connections, 2 only authorized */
+static int auth_level = 1;
 
 #ifdef sun
 extern char *optarg;
@@ -279,8 +278,21 @@ main(int argc, char **argv, char **envp)
 	else
 	    port = htons(21);
 
-	while ((ch = getopt(argc, argv, "dilp:t:T:u:v")) != EOF) {
+	while ((ch = getopt(argc, argv, "a:dilp:t:T:u:v")) != EOF) {
 		switch (ch) {
+		case 'a':
+		{
+		    int tmp;
+		    if(isdigit(optarg[0])){
+			tmp = atoi(optarg);
+			if(tmp >= 0 && tmp <= 2){
+			    auth_level = tmp;
+			    break;
+			}
+		    }
+		    warnx("bad value for -a");
+		    break;
+		}
 		case 'd':
 			debug = 1;
 			break;
@@ -502,6 +514,11 @@ user(char *name)
 {
 	char *cp, *shell;
 
+	if(auth_level == 2 && !auth_complete){
+	    reply(530, "No login allowed without authorization.");
+	    return;
+	}
+
 	if (logged_in) {
 		if (guest) {
 			reply(530, "Can't change user from guest login.");
@@ -515,20 +532,23 @@ user(char *name)
 
 	guest = 0;
 	if (strcmp(name, "ftp") == 0 || strcmp(name, "anonymous") == 0) {
-		if (checkuser(_PATH_FTPUSERS, "ftp") ||
-		    checkuser(_PATH_FTPUSERS, "anonymous"))
-			reply(530, "User %s access denied.", name);
-		else if ((pw = sgetpwnam("ftp")) != NULL) {
-			guest = 1;
-			askpasswd = 1;
-			reply(331,
-			    "Guest login ok, type your name as password.");
-		} else
-			reply(530, "User %s unknown.", name);
-		if (!askpasswd && logging)
-			syslog(LOG_NOTICE,
-			    "ANONYMOUS FTP LOGIN REFUSED FROM %s", remotehost);
-		return;
+	    if (checkuser(_PATH_FTPUSERS, "ftp") ||
+		checkuser(_PATH_FTPUSERS, "anonymous"))
+		reply(530, "User %s access denied.", name);
+	    else if ((pw = sgetpwnam("ftp")) != NULL) {
+		guest = 1;
+		askpasswd = 1;
+		reply(331, "Guest login ok, type your name as password.");
+	    } else
+		reply(530, "User %s unknown.", name);
+	    if (!askpasswd && logging)
+		syslog(LOG_NOTICE,
+		       "ANONYMOUS FTP LOGIN REFUSED FROM %s", remotehost);
+	    return;
+	}
+	if(auth_level == 1 && !auth_complete){
+	    reply(530, "Only authorized and anonymous login allowed.");
+	    return;
 	}
 	if (pw = sgetpwnam(name)) {
 		if ((shell = pw->pw_shell) == NULL || *shell == 0)
@@ -559,7 +579,7 @@ user(char *name)
 		    myskey ? myskey : "error getting challenge", name);
 	} else
 #endif
-	     if(ct)
+	     if(auth_ok())
 		  ct->userok(name);
 	     else{
 		  reply(331, "Password required for %s.", name);
@@ -719,11 +739,9 @@ pass(char *passwd)
 			rval = 1;	/* failure below */
 			goto skip;
 		}
-#if defined(KERBEROS)
-		rval = klogin(pw, "", hostname, passwd);
+		rval = klogin(pw->pw_name, passwd);
 		if (rval == 0)
-			goto skip;
-#endif
+		    goto skip;
 #ifdef SKEY
 		if (skey_haskey(pw->pw_name) == 0 &&
 		   (skey_passcheck(pw->pw_name, passwd) != -1)) {
@@ -732,10 +750,10 @@ pass(char *passwd)
 		}
 #endif
 		/* the strcmp does not catch null passwords! */
-		if (pw == NULL || *pw->pw_passwd == '\0' ||
-		    strcmp(crypt(passwd, (pw ? pw->pw_passwd : "xx")), pw->pw_passwd)) {
-			rval = 1;	 /* failure */
-			goto skip;
+		if (pw == NULL || *pw->pw_passwd == 0 ||
+		    strcmp((char*)crypt(passwd, pw->pw_passwd), pw->pw_passwd)){
+		    rval = 1;	 /* failure */
+		    goto skip;
 		}
 		rval = 0;
 
