@@ -11,7 +11,7 @@ endif
 
 TDBDIR=../tdb
 
-CFLAGS=-Wall -O3 -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
+CFLAGS=-Wall -g -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
 LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
 
 TDB_OBJ=$(TDBDIR)/tdb.o $(TDBDIR)/spinlock.o
