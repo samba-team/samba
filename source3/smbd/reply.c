@@ -2691,6 +2691,8 @@ int reply_lock(connection_struct *conn,
 
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
 	if (NT_STATUS_V(status)) {
+#if 0
+		/* Tests using Samba4 against W2K show this call never creates a blocking lock. */
 		if (lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
@@ -2702,6 +2704,7 @@ int reply_lock(connection_struct *conn,
 				return -1;
 			}
 		}
+#endif
 		END_PROFILE(SMBlock);
 		return ERROR_NT(status);
 	}
