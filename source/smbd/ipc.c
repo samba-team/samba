@@ -1821,11 +1821,15 @@ static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
   return(True);
 }
 
+/****************************************************************************
+  Purge a print queue - or pause or resume it.
+  ****************************************************************************/
 static BOOL api_WPrintQueuePurge(int cnum,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
 {
+  int function = SVAL(param,0);
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *QueueName = skip_string(str2,1);
@@ -1853,18 +1857,29 @@ static BOOL api_WPrintQueuePurge(int cnum,uint16 vuid, char *param,char *data,
   }
 
   if (snum >= 0 && VALID_SNUM(snum)) {
-    print_queue_struct *queue=NULL;
-    int i, count;
     lpq_reset(snum);
     
-    count = get_printqueue(snum,cnum,&queue,NULL);
-    for (i = 0; i < count; i++)
-      del_printqueue(cnum,snum,queue[i].job);
-    
-    if (queue) free(queue);
+    switch (function) {
+    case 74: /* Pause queue */
+    case 75: /* Resume queue */
+      status_printqueue(cnum,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
+      DEBUG(3,("Print queue %s, queue=%s\n",
+            (function==74?"pause":"resume"),QueueName));
+      break;
+    case 103: /* Purge */
+      {
+        print_queue_struct *queue=NULL;
+        int i, count;
+        count = get_printqueue(snum,cnum,&queue,NULL);
+        for (i = 0; i < count; i++)
+          del_printqueue(cnum,snum,queue[i].job);
+ 
+        if (queue) free(queue);
+        DEBUG(3,("Print queue purge, queue=%s\n",QueueName));
+        break;
+      }
+    }
   }
-
-  DEBUG(3,("Print queue purge, queue=%s\n",QueueName));
 
   return(True);
 }
@@ -3490,6 +3505,8 @@ struct
   {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
   {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
   {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
+  {"WPrintQueuePause",  74, api_WPrintQueuePurge,0},
+  {"WPrintQueueResume", 75, api_WPrintQueuePurge,0},
   {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
   {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
   {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},

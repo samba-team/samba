@@ -1213,3 +1213,36 @@ void printjob_decode(int jobid, int *snum, int *job)
 	(*snum) = (jobid >> 8) & 0xFF;
 	(*job) = jobid & 0xFF;
 }
+
+/****************************************************************************
+ Change status of a printer queue
+****************************************************************************/
+
+void status_printqueue(int cnum,int snum,int status)
+{
+  char *queuestatus_command = (status==LPSTAT_STOPPED ? 
+                               lp_queuepausecommand(snum):lp_queueresumecommand(snum));
+  char *printername = PRINTERNAME(snum);
+  pstring syscmd;
+  int ret;
+
+  if (!printername || !*printername) {
+    DEBUG(6,("replacing printer name with service (snum=(%s,%d))\n",
+          lp_servicename(snum),snum));
+    printername = lp_servicename(snum);
+  }
+
+  if (!queuestatus_command || !(*queuestatus_command)) {
+    DEBUG(5,("No queuestatus command to %s job\n",
+          (status==LPSTAT_STOPPED?"pause":"resume")));
+    return;
+  }
+
+  pstrcpy(syscmd,queuestatus_command);
+  string_sub(syscmd,"%p",printername);
+  standard_sub(cnum,syscmd);
+
+  ret = smbrun(syscmd,NULL,False);
+  DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
+  lpq_reset(snum); /* queue has changed */
+}
