@@ -121,9 +121,10 @@ otp_get_internal (void *v, OtpContext *ctx, int lockp)
   }
   p = dat.dptr;
 
+  memcpy (&then, p, sizeof(then));
+  ctx->lock_time = then;
   if (lockp) {
     time(&now);
-    memcpy (&then, p, sizeof(then));
     if (then && now - then < OTP_USER_TIMEOUT) {
       ctx->err = "Entry locked";
       return -1;
