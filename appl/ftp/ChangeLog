@@ -1,3 +1,13 @@
+1999-08-13  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c (send_data): avoid calling mmap with `len == 0'.
+  	Some mmap:s rather dislike that (Solaris) and some munmap (Linux)
+ 	get grumpy later.
+
+	* ftp/ftp.c (copy_stream): avoid calling mmap with `len == 0'.
+  	Some mmap:s rather dislike that (Solaris) and some munmap (Linux)
+ 	get grumpy later.
+
 1999-08-03  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ftp.c (active_mode): hide failure of EPRT by setting verbose
