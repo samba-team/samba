@@ -785,18 +785,20 @@ create and open a temporary file
 ****************************************************************************/
 int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
 {
+	int len;
 	char *p;
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,1,0,True);
+	set_message(cli->outbuf,3,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBctemp;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,0);
+	SIVALS(cli->outbuf,smb_vwv1,-1);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -813,10 +815,17 @@ int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
 		return -1;
 	}
 
+	/* despite the spec, the result has a -1, followed by
+	   length, followed by name */
+	p = smb_buf(cli->inbuf);
+	p += 4;
+	len = smb_buflen(cli->inbuf) - 4;
+	if (len <= 0) return -1;
+
 	if (tmp_path) {
 		pstring path2;
-		clistr_pull(cli, path2, smb_buf(cli->inbuf)+1, 
-			    sizeof(path2), -1, STR_TERMINATE);
+		clistr_pull(cli, path2, p, 
+			    sizeof(path2), len, STR_ASCII);
 		*tmp_path = strdup(path2);
 	}
 
