@@ -606,17 +606,17 @@ get_new_tickets(krb5_context context,
 
     if(ticket_life != 0) {
 	if(abs(cred.times.endtime - cred.times.starttime - ticket_life) > 30) {
-	    char life[32];
-	    unparse_time(cred.times.endtime - cred.times.starttime, 
-			 life, sizeof(life));
+	    char life[64];
+	    unparse_time_approx(cred.times.endtime - cred.times.starttime, 
+				life, sizeof(life));
 	    krb5_warnx(context, "NOTICE: ticket lifetime is %s", life);
 	}
     }
     if(renew_life) {
 	if(abs(cred.times.renew_till - cred.times.starttime - renew) > 30) {
-	    char life[32];
-	    unparse_time(cred.times.renew_till - cred.times.starttime, 
-			 life, sizeof(life));
+	    char life[64];
+	    unparse_time_approx(cred.times.renew_till - cred.times.starttime, 
+				life, sizeof(life));
 	    krb5_warnx(context, "NOTICE: ticket renewable lifetime is %s", 
 		       life);
 	}
