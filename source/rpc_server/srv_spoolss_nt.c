@@ -773,15 +773,15 @@ static TALLOC_CTX* notify_ctr_getctx( SPOOLSS_NOTIFY_MSG_CTR *ctr )
 /***********************************************************************
  **********************************************************************/
  
-static SPOOLSS_NOTIFY_MSG_GROUP* notify_ctr_getgroup( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 index )
+static SPOOLSS_NOTIFY_MSG_GROUP* notify_ctr_getgroup( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 {
 	if ( !ctr || !ctr->msg_groups )
 		return NULL;
 	
-	if ( index >= ctr->num_groups )
+	if ( idx >= ctr->num_groups )
 		return NULL;
 		
-	return &ctr->msg_groups[index];
+	return &ctr->msg_groups[idx];
 
 }
 
@@ -864,11 +864,11 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
  back registered
  **********************************************************************/
 
-static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 index )
+static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 {
 	Printer_entry 		 *p;
 	TALLOC_CTX		 *mem_ctx = notify_ctr_getctx( ctr );
-	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, index );
+	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, idx );
 	SPOOLSS_NOTIFY_MSG       *messages;
 	
 	
