@@ -66,7 +66,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		unsigned char local_nt_response[24];
 		
 		generate_random_buffer(chal, 8, False);
-		SMBencrypt( (const uchar *)state->request.data.auth.pass, chal, local_lm_response);
+		SMBencrypt( (const uchar *)unix_to_dos_static(state->request.data.auth.pass), chal, local_lm_response);
 		SMBNTencrypt((const uchar *)unix_to_dos_static(state->request.data.auth.pass), chal, 
 			     local_nt_response);
 

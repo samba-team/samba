@@ -109,7 +109,7 @@ BOOL session_claim(uint16 vuid)
 		return False;
 	}
 
-	dlen = tdb_pack(dbuf, sizeof(dbuf), "fffdd",
+	dlen = tdb_pack(dbuf, sizeof(dbuf), NULL, "fffdd",
 			sessionid.username, sessionid.hostname, sessionid.id_str,
 			sessionid.id_num, sessionid.pid);
 
@@ -156,7 +156,7 @@ void session_yield(uint16 vuid)
 		return;
 	}
 
-	tdb_unpack(data.dptr, data.dsize, "fffdd",
+	tdb_unpack(data.dptr, data.dsize, NULL, "fffdd",
 		   &sessionid.username, &sessionid.hostname, &sessionid.id_str,
 		   &sessionid.id_num, &sessionid.pid);
 

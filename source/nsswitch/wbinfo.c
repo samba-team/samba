@@ -493,7 +493,7 @@ static BOOL wbinfo_auth_crap(char *username)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
-        SMBencrypt((uchar *)pass, request.data.auth_crap.chal, 
+        SMBencrypt((uchar *)unix_to_dos_static(pass), request.data.auth_crap.chal, 
                    (uchar *)request.data.auth_crap.lm_resp);
         SMBNTencrypt((uchar *)unix_to_dos_static(pass), request.data.auth_crap.chal,
                      (uchar *)request.data.auth_crap.nt_resp);

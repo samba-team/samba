@@ -159,18 +159,18 @@ again:
 
 	/* Pack header */
 
-	len += tdb_pack(buf + len, buflen - len, "f", msg->printer);
+	len += tdb_pack(buf + len, buflen - len, NULL, "f", msg->printer);
 
-	len += tdb_pack(buf + len, buflen - len, "ddddd",
+	len += tdb_pack(buf + len, buflen - len, NULL, "ddddd",
 			msg->type, msg->field, msg->id, msg->len, msg->flags);
 
 	/* Pack data */
 
 	if (msg->len == 0)
-		len += tdb_pack(buf + len, buflen - len, "dd",
+		len += tdb_pack(buf + len, buflen - len, NULL, "dd",
 				msg->notify.value[0], msg->notify.value[1]);
 	else
-		len += tdb_pack(buf + len, buflen - len, "B",
+		len += tdb_pack(buf + len, buflen - len, NULL, "B",
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {

@@ -186,12 +186,12 @@ BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 	
 	/* store the number of subkeys */
 	
-	len += tdb_pack(buffer+len, buflen-len, "d", num_subkeys );
+	len += tdb_pack(buffer+len, buflen-len, NULL, "d", num_subkeys );
 	
 	/* pack all the strings */
 	
 	for (i=0; i<num_subkeys; i++) {
-		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
+		len += tdb_pack( buffer+len, buflen-len, NULL, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
 			if ((tmpbuf = Realloc( buffer, len*2 )) == NULL) {
@@ -202,7 +202,7 @@ BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 			buffer = tmpbuf;
 			buflen = len*2;
 					
-			len = tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
+			len = tdb_pack( buffer+len, buflen-len, NULL, "f", regsubkey_ctr_specific_key(ctr, i) );
 		}		
 	}
 	
@@ -257,10 +257,10 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 		return -1;
 	}
 	
-	len = tdb_unpack( buf, buflen, "d", &num_items);
+	len = tdb_unpack( buf, buflen, NULL, "d", &num_items);
 	
 	for (i=0; i<num_items; i++) {
-		len += tdb_unpack( buf+len, buflen-len, "f", subkeyname );
+		len += tdb_unpack( buf+len, buflen-len, NULL, "f", subkeyname );
 		regsubkey_ctr_addkey( ctr, subkeyname );
 	}
 

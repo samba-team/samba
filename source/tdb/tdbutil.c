@@ -383,7 +383,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, ui
  integers and strings.
 ****************************************************************************/
 
-size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
+size_t tdb_pack(char *buf, int bufsize, char * (*cnv_fn)(char *), char *fmt, ...)
 {
 	va_list ap;
 	uint16 w;
@@ -421,18 +421,12 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 				SIVAL(buf, 0, d);
 			break;
 		case 'P':
-			s = va_arg(ap,char *);
-			w = strlen(s);
-			len = w + 1;
-			if (bufsize >= len)
-				memcpy(buf, s, len);
-			break;
-		case 'F': /* Convert from DOS to UNIX codepage. */
 			{
-				fstring tmp_str;
+				pstring tmp_str;
 				s = va_arg(ap,char *);
-				fstrcpy(tmp_str,s);
-				dos_to_unix(tmp_str);
+				pstrcpy(tmp_str, s);
+				if (cnv_fn)
+					(*cnv_fn)(tmp_str);
 				w = strlen(tmp_str);
 				len = w + 1;
 				if (bufsize >= len)
@@ -440,12 +434,18 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 				break;
 			}
 		case 'f':
-			s = va_arg(ap,char *);
-			w = strlen(s);
-			len = w + 1;
-			if (bufsize >= len)
-				memcpy(buf, s, len);
-			break;
+			{
+				fstring tmp_str;
+				s = va_arg(ap,char *);
+				fstrcpy(tmp_str,s);
+				if (cnv_fn)
+					(*cnv_fn)(tmp_str);
+				w = strlen(tmp_str);
+				len = w + 1;
+				if (bufsize >= len)
+					memcpy(buf, tmp_str, len);
+				break;
+			}
 		case 'B':
 			i = va_arg(ap, int);
 			s = va_arg(ap, char *);
@@ -479,7 +479,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
  integers and strings.
 ****************************************************************************/
 
-int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
+int tdb_unpack(char *buf, int bufsize, char * (*cnv_fn)(char *), char *fmt, ...)
 {
 	va_list ap;
 	uint16 *w;
@@ -524,6 +524,8 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 			if (bufsize < len || len > sizeof(pstring))
 				goto no_space;
 			memcpy(s, buf, len);
+			if (cnv_fn)
+				(*cnv_fn)(s);
 			break;
 		case 'f':
 			s = va_arg(ap,char *);
@@ -531,14 +533,8 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 			if (bufsize < len || len > sizeof(fstring))
 				goto no_space;
 			memcpy(s, buf, len);
-			break;
-		case 'F': /* Convert from UNIX to DOS codepage. */
-			s = va_arg(ap,char *);
-			len = strlen(buf) + 1;
-			if (bufsize < len || len > sizeof(fstring))
-				goto no_space;
-			memcpy(s, buf, len);
-			unix_to_dos(s);
+			if (cnv_fn)
+				(*cnv_fn)(s);
 			break;
 		case 'B':
 			i = va_arg(ap, int *);

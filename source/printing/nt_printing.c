@@ -469,7 +469,7 @@ int get_ntforms(nt_forms_struct **list)
 		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
 		unix_to_dos(form.name);
 
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddd",
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, *_unix_to_dos, "dddddddd",
 				 &i, &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
 		SAFE_FREE(dbuf.dptr);
@@ -502,7 +502,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 
 	for (i=0;i<number;i++) {
 		/* save index, so list is rebuilt in correct order */
-		len = tdb_pack(buf, sizeof(buf), "dddddddd",
+		len = tdb_pack(buf, sizeof(buf), *_dos_to_unix, "dddddddd",
 			       i, (*list)[i].flag, (*list)[i].width, (*list)[i].length,
 			       (*list)[i].left, (*list)[i].top, (*list)[i].right,
 			       (*list)[i].bottom);
@@ -1686,7 +1686,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
  again:
 	len = 0;
-	len += tdb_pack(buf+len, buflen-len, "dFFFFFFFF",
+	len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "dffffffff",
 			driver->cversion,
 			driver->name,
 			driver->environment,
@@ -1699,7 +1699,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
-			len += tdb_pack(buf+len, buflen-len, "F",
+			len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "f",
 					driver->dependentfiles[i]);
 		}
 	}
@@ -1813,7 +1813,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	if (!dbuf.dptr) 
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 
-	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dFFFFFFFF",
+	len += tdb_unpack(dbuf.dptr, dbuf.dsize, *_unix_to_dos, "dffffffff",
 			  &driver.cversion,
 			  driver.name,
 			  driver.environment,
@@ -1837,7 +1837,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		} else
 			driver.dependentfiles = tddfs;
 
-		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "F",
+		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, *_unix_to_dos, "f",
 				  &driver.dependentfiles[i]);
 		i++;
 	}
@@ -1973,12 +1973,12 @@ int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 {
 	int len = 0;
 
-	len += tdb_pack(buf+len, buflen-len, "p", nt_devmode);
+	len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "p", nt_devmode);
 
 	if (!nt_devmode)
 		return len;
 
-	len += tdb_pack(buf+len, buflen-len, "FFwwwwwwwwwwwwwwwwwwddddddddddddddp",
+	len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "ffwwwwwwwwwwwwwwwwwwddddddddddddddp",
 			nt_devmode->devicename,
 			nt_devmode->formname,
 
@@ -2019,7 +2019,7 @@ int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 
 	
 	if (nt_devmode->private) {
-		len += tdb_pack(buf+len, buflen-len, "B",
+		len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "B",
 				nt_devmode->driverextra,
 				nt_devmode->private);
 	}
@@ -2061,7 +2061,7 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 			pstrcat( path, "\\" );
 			pstrcat( path, regval_name(val) );
 
-			len += tdb_pack(buf+len, buflen-len, "pFdB",
+			len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "pfdB",
 					val,
 					path,
 					regval_type(val),
@@ -2073,7 +2073,7 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 
 	/* terminator */
 	
-	len += tdb_pack(buf+len, buflen-len, "p", NULL);
+	len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "p", NULL);
 
 	return len;
 }
@@ -2145,7 +2145,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
  again:	
 	len = 0;
-	len += tdb_pack(buf+len, buflen-len, "dddddddddddFFFFFPFFFFF",
+	len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "dddddddddddFFFFFPFFFFF",
 			info->attributes,
 			info->priority,
 			info->default_priority,
@@ -2359,11 +2359,11 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	ZERO_STRUCT(devmode);
 
-	len += tdb_unpack(buf+len, buflen-len, "p", nt_devmode);
+	len += tdb_unpack(buf+len, buflen-len, *_unix_to_dos, "p", nt_devmode);
 
 	if (!*nt_devmode) return len;
 
-	len += tdb_unpack(buf+len, buflen-len, "FFwwwwwwwwwwwwwwwwwwddddddddddddddp",
+	len += tdb_unpack(buf+len, buflen-len, *_unix_to_dos, "ffwwwwwwwwwwwwwwwwwwddddddddddddddp",
 			  devmode.devicename,
 			  devmode.formname,
 
@@ -2406,7 +2406,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 		/* the len in tdb_unpack is an int value and
 		 * devmode.driverextra is only a short
 		 */
-		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.private);
+		len += tdb_unpack(buf+len, buflen-len, *_unix_to_dos, "B", &extra_len, &devmode.private);
 		devmode.driverextra=(uint16)extra_len;
 		
 		/* check to catch an invalid TDB entry so we don't segfault */
@@ -2748,13 +2748,13 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 	
 		/* check to see if there are any more registry values */
 		
-		len += tdb_unpack(buf+len, buflen-len, "p", &regval_p);		
+		len += tdb_unpack(buf+len, buflen-len, *_unix_to_dos, "p", &regval_p);		
 		if ( !regval_p ) 
 			break;
 
 		/* unpack the next regval */
 
-		len += tdb_unpack(buf+len, buflen-len, "FdB",
+		len += tdb_unpack(buf+len, buflen-len, *_unix_to_dos, "fdB",
 				  string,
 				  &type,
 				  &size,
@@ -2989,7 +2989,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *do
 	if (!dbuf.dptr)
 		return get_a_printer_2_default(info_ptr, dos_sharename);
 
-	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddFFFFFPFFFFF",
+	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, *_unix_to_dos, "dddddddddddfffffPfffff",
 			&info.attributes,
 			&info.priority,
 			&info.default_priority,

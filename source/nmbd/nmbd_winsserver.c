@@ -278,7 +278,7 @@ BOOL initialise_wins(void)
 			sscanf(p+1,"%x",&type);
 		}
 
-		len = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddfddd",
+		len = tdb_unpack(dbuf.dptr, dbuf.dsize, NULL, "dddfddd",
 				&nb_flags, &high, &low,
 				ip_str, &ttl, &num_ips, &wins_flags);
 
@@ -304,7 +304,7 @@ BOOL initialise_wins(void)
 		}
 
 		for (i = 0; i < num_ips; i++) {
-			len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f", ip_str);
+			len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, NULL, "f", ip_str);
 			ip_list[i] = *interpret_addr2(ip_str);
 		}
 
@@ -1817,7 +1817,7 @@ void wins_write_database(BOOL background)
 			/* store the type in the key to make the name unique */
 			slprintf(key, sizeof(key), "%s%s#%02x", ENTRY_PREFIX, namerec->name.name, namerec->name.name_type);
 
-			len = tdb_pack(buf, sizeof(buf), "dddfddd",
+			len = tdb_pack(buf, sizeof(buf), NULL, "dddfddd",
 					(int)namerec->data.nb_flags,
 					(int)(namerec->data.id>>32),
 					(int)(namerec->data.id&0xffffffff),
@@ -1827,7 +1827,7 @@ void wins_write_database(BOOL background)
 					namerec->data.wins_flags);
 
 			for (i = 0; i < namerec->data.num_ips; i++)
-				len += tdb_pack(buf+len, sizeof(buf)-len, "f", inet_ntoa(namerec->data.ip[i]));
+				len += tdb_pack(buf+len, sizeof(buf)-len, NULL, "f", inet_ntoa(namerec->data.ip[i]));
 			
 			kbuf.dsize = strlen(key)+1;
 			kbuf.dptr = key;

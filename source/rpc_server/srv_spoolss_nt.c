@@ -1040,17 +1040,17 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, void *buf, size_t len )
 
 	/* Unpack message */
 
-	offset += tdb_unpack((char *)buf + offset, len - offset, "f",
+	offset += tdb_unpack((char *)buf + offset, len - offset, NULL, "f",
 			     msg->printer);
 	
-	offset += tdb_unpack((char *)buf + offset, len - offset, "ddddd",
+	offset += tdb_unpack((char *)buf + offset, len - offset, NULL, "ddddd",
 			     &msg->type, &msg->field, &msg->id, &msg->len, &msg->flags);
 
 	if (msg->len == 0)
-		tdb_unpack((char *)buf + offset, len - offset, "dd",
+		tdb_unpack((char *)buf + offset, len - offset, NULL, "dd",
 			   &msg->notify.value[0], &msg->notify.value[1]);
 	else
-		tdb_unpack((char *)buf + offset, len - offset, "B", 
+		tdb_unpack((char *)buf + offset, len - offset, NULL, "B", 
 			   &msg->len, &msg->notify.data);
 			   
 	DEBUG(3, ("notify2_unpack_msg: got NOTIFY2 message for printer %s, type %d, field 0x%02x, flags 0x%04x\n",

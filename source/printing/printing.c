@@ -229,7 +229,7 @@ int unpack_pjob( char* buf, int buflen, struct printjob *pjob )
 	if ( !buf || !pjob )
 		return -1;
 		
-	len += tdb_unpack(buf+len, buflen-len, "dddddddddffff",
+	len += tdb_unpack(buf+len, buflen-len, NULL, "dddddddddffff",
 				&pjob->pid,
 				&pjob->sysjob,
 				&pjob->fd,
@@ -442,7 +442,7 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 	do {
 		len = 0;
 		buflen = newlen;
-		len += tdb_pack(buf+len, buflen-len, "dddddddddffff",
+		len += tdb_pack(buf+len, buflen-len, NULL, "dddddddddffff",
 				pjob->pid,
 				pjob->sysjob,
 				pjob->fd,

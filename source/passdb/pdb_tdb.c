@@ -93,7 +93,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	}
 	
 	/* unpack the buffer into variables */
-	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
+	len = tdb_unpack (buf, buflen, NULL, TDB_FORMAT_STRING,
 		&logon_time,
 		&logoff_time,
 		&kickoff_time,
@@ -355,7 +355,7 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	else munged_dial_len = 0;
 		
 	/* one time to get the size needed */
-	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING,
+	len = tdb_pack(NULL, 0, NULL, TDB_FORMAT_STRING,
 		logon_time,
 		logoff_time,
 		kickoff_time,
@@ -394,7 +394,7 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	}
 	
 	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING,
+	buflen = tdb_pack(*buf, len, NULL, TDB_FORMAT_STRING,
 		logon_time,
 		logoff_time,
 		kickoff_time,
