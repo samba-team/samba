@@ -6,6 +6,7 @@ Copyright: GNU GPL version 2
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-PVERSION.tar.gz
 Patch: makefile-path.patch
+Patch1: smbw.patch
 Packager: John H Terpstra [Samba-Team] <jht@samba.anu.edu.au>
 Requires: pam >= 0.64
 BuildRoot: /tmp/samba
@@ -75,6 +76,7 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 %prep
 %setup
 %patch -p1
+%patch1 -p1
 mv source/smbwrapper/README source/smbwrapper/README.smbsh
 
 %build
