@@ -303,8 +303,6 @@ static int join_domain_byuser(char *domain, char *remote,
 	NTSTATUS result;
 	int retval = 1;
 
-	ZERO_STRUCT(dest_ip);
-
 	pstrcpy(pdc_name, remote ? remote : "");
 
 	/* Connect to remote machine */
