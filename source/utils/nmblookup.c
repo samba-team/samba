@@ -133,14 +133,14 @@ send out one query
 ****************************************************************************/
 static BOOL query_one(char *lookup, unsigned int lookup_type)
 {
-	int j, count;
+	int j, count, flags;
 	struct in_addr *ip_list=NULL;
 
 	if (got_bcast) {
 		printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
 		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
 				     use_bcast?True:recursion_desired,
-				     bcast_addr,&count);
+				     bcast_addr,&counti, &flags);
 	} else {
 		struct in_addr *bcast;
 		for (j=iface_count() - 1;
@@ -152,7 +152,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 			ip_list = name_query(ServerFD,lookup,lookup_type,
 					     use_bcast,
 					     use_bcast?True:recursion_desired,
-					     *bcast,&count);
+					     *bcast,&count, &flags);
 		}
 	}
 
