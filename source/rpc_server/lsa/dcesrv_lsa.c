@@ -153,7 +153,7 @@ static NTSTATUS lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		i++;
 	}
 
-	*r->in.resume_handle = i;
+	*r->out.resume_handle = i;
 
 	return NT_STATUS_OK;
 }
