@@ -54,7 +54,7 @@ OM_uint32 gss_acquire_cred
     gss_cred_id_t handle;
     OM_uint32 ret;
 
-    handle = (gss_cred_id_t)malloc(sizeof(handle));
+    handle = (gss_cred_id_t)malloc(sizeof(*handle));
     if (handle == GSS_C_NO_CREDENTIAL) {
         return GSS_S_FAILURE;
     }
