@@ -1,3 +1,53 @@
+Tue Jan 20 22:58:31 1998  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.c: rename `-s' to `-S' to be MIT-compatible.
+
+	* lib/kadm5/kadm5_locl.h: add kadm5_log_context and
+ 	kadm5_log*-functions
+
+	* lib/kadm5/create_s.c (kadm5_s_create_principal): add change to
+ 	log
+
+	* lib/kadm5/rename_s.c (kadm5_s_rename_principal): add change to
+ 	log
+
+	* lib/kadm5/init_s.c (kadm5_s_init_with_password_ctx): initialize
+ 	log_context
+
+	* lib/kadm5/delete_s.c (kadm5_s_delete_principal): add change to
+ 	log
+
+	* lib/kadm5/modify_s.c (kadm5_s_modify_principal): add change to
+ 	log
+
+	* lib/kadm5/randkey_s.c (kadm5_s_randkey_principal): add change to
+ 	log
+
+	* lib/kadm5/chpass_s.c (kadm5_s_chpass_principal): add change to
+ 	log
+
+	* lib/kadm5/Makefile.am: add log.c, dump_log and replay_log
+
+	* lib/kadm5/replay_log.c: new file
+
+	* lib/kadm5/dump_log.c: new file
+
+	* lib/kadm5/log.c: new file
+
+	* lib/krb5/str2key.c (get_str): initialize pad space to zero
+
+	* lib/krb5/config_file.c (krb5_config_vget_next): handle c == NULL
+
+	* kpasswd/kpasswdd.c: rewritten to use the kadm5 API
+
+	* kpasswd/Makefile.am: link with kadm5srv
+
+	* kdc/kerberos5.c (tgs_rep): initialize `i'
+
+	* kadmin/kadmind.c (main): use kadm5_server_{send,recv}_sp
+
+	* include/Makefile.am: added admin.h
+
 Sun Jan 18 01:41:34 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/mcache.c (mcc_store_cred): restore linked list if
