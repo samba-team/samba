@@ -611,6 +611,8 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	char *buf;
 	int buflen, len, ret;
 	TDB_DATA kbuf, dbuf;
+	NTTIME time_nt;
+	time_t time_unix;
 	
 	/* 
 	 * in addprinter: no servername and the printer is the name
@@ -637,6 +639,9 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	 * behind a SAMBA share.
 	 */
 
+	unix_to_nt_time(&time_nt, time_unix);
+	info->changeid=time_nt.low;
+	info->c_setprinter++;
 
 	buf = NULL;
 	buflen = 0;
