@@ -28,7 +28,6 @@
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */
-static char *excluded_domain;
 
 /* Free a response structure */
 
@@ -39,16 +38,6 @@ void free_response(struct winbindd_response *response)
 	if (response)
 		SAFE_FREE(response->extra_data);
 }
-
-/*
-  smbd needs to be able to exclude lookups for its own domain
-*/
-void winbind_exclude_domain(const char *domain)
-{
-	SAFE_FREE(excluded_domain);
-	excluded_domain = strdup(domain);
-}
-
 
 /* Initialise a request structure */
 
@@ -322,12 +311,6 @@ NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 	/* Check for our tricky environment variable */
 
 	if (getenv(WINBINDD_DONT_ENV)) {
-		return NSS_STATUS_NOTFOUND;
-	}
-
-	/* smbd may have excluded this domain */
-	if (excluded_domain && 
-	    strcasecmp(excluded_domain, request->domain) == 0) {
 		return NSS_STATUS_NOTFOUND;
 	}
 
