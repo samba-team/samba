@@ -45,6 +45,7 @@ static char *query_string;
 static char *baseurl;
 static char *pathinfo;
 static char *C_user;
+static BOOL inetd_server;
 
 static void unescape(char *buf)
 {
@@ -258,6 +259,27 @@ static void cgi_setup_error(char *err, char *header, char *info)
 
 
 /***************************************************************************
+tell a browser about a fatal authentication error
+  ***************************************************************************/
+static void cgi_auth_error(void)
+{
+	if (inetd_server) {
+                cgi_setup_error("401 Authorization Required", 
+                                "WWW-Authenticate: Basic realm=\"SWAT\"\r\n",
+                                "You must be authenticated to use this service");
+	} else {
+		printf("Content-Type: text/html\r\n");
+
+		printf("\r\n<HTML><HEAD><TITLE>SWAT</TITLE></HEAD>\n");
+		printf("<BODY><H1>Installation Error</H1>\n");
+		printf("SWAT must be installed via inetd. It cannot be run as a CGI script<p>\n");
+		printf("</BODY></HTML>\r\n");
+	}
+	exit(0);
+}
+
+
+/***************************************************************************
 decode a base64 string in-place - simple and slow algorithm
   ***************************************************************************/
 static void base64_decode(char *s)
@@ -297,7 +319,7 @@ static BOOL cgi_handle_authorization(char *line)
 {
 	char *p, *user, *user_pass;
 	struct passwd *pass = NULL;
-	int ret = False;
+	BOOL ret = False;
 
 	if (strncasecmp(line,"Basic ", 6)) {
 		cgi_setup_error("401 Bad Authorization", "", 
@@ -387,7 +409,7 @@ BOOL am_root(void)
 /***************************************************************************
 return a ptr to the users name
   ***************************************************************************/
-char *get_user_name(void)
+char *cgi_user_name(void)
 {
         return(C_user);
 }
@@ -460,20 +482,15 @@ void cgi_setup(char *rootdir, int auth_required)
 				"chdir failed - the server is not configured correctly");
 	}
 
+	/* maybe we are running under a web server */
 	if (getenv("CONTENT_LENGTH") || getenv("REQUEST_METHOD")) {
-
-		char *x;
-
-		/* Save the users name if available */
-		if ((x = getenv("REMOTE_USER"))) {
-			C_user = strdup(x);
-		} else {
-			C_user = "";
+		if (auth_required) {
+			cgi_auth_error();
 		}
-
-		/* assume we are running under a real web server */
 		return;
 	}
+
+	inetd_server = True;
 
 #if CGI_LOGGING
 	f = fopen("/tmp/cgi.log", "a");
@@ -509,9 +526,7 @@ void cgi_setup(char *rootdir, int auth_required)
 #endif
 
 	if (auth_required && !authenticated) {
-		cgi_setup_error("401 Authorization Required", 
-				"WWW-Authenticate: Basic realm=\"root\"\r\n",
-				"You must be authenticated to use this service");
+		cgi_auth_error();
 	}
 
 	if (!url) {
@@ -551,7 +566,7 @@ return the current pages URL
   ***************************************************************************/
 char *cgi_baseurl(void)
 {
-	if (baseurl) {
+	if (inetd_server) {
 		return baseurl;
 	}
 	return getenv("SCRIPT_NAME");
@@ -563,7 +578,7 @@ return the current pages path info
 char *cgi_pathinfo(void)
 {
 	char *r;
-	if (pathinfo) {
+	if (inetd_server) {
 		return pathinfo;
 	}
 	r = getenv("PATH_INFO");
@@ -577,7 +592,7 @@ return the hostname of the client
   ***************************************************************************/
 char *cgi_remote_host(void)
 {
-	if (baseurl) {
+	if (inetd_server) {
 		return client_name(1);
 	}
 	return getenv("REMOTE_HOST");
@@ -588,7 +603,7 @@ return the hostname of the client
   ***************************************************************************/
 char *cgi_remote_addr(void)
 {
-	if (baseurl) {
+	if (inetd_server) {
 		return client_addr(1);
 	}
 	return getenv("REMOTE_ADDR");
@@ -600,7 +615,7 @@ return True if the request was a POST
   ***************************************************************************/
 BOOL cgi_waspost(void)
 {
-	if (baseurl) {
+	if (inetd_server) {
 		return request_post;
 	}
 	return strequal(getenv("REQUEST_METHOD"), "POST");
