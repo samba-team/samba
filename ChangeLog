@@ -1,7 +1,7 @@
 2003-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kaserver.c (do_getticket): if times data is shorter then 8
-	byte, request is mailformed.
+	byte, request is malformed.
 
 	* kdc/kaserver.c (do_authenticate): if request length is less then
 	8, its a bad request and fail. Pointed out by Marco Foglia
