@@ -154,8 +154,8 @@ if test "$with_krb4" != "no"; then
 	CFLAGS="$save_CFLAGS"
 	LIB_kdb="-lkdb -lkrb"
 	if test "$krb4_libdir"; then
-		LIB_krb4="-rpath $krb4_libdir $LIB_krb4"
-		LIB_kdb="-rpath $krb4_libdir -L$krb4_libdir $LIB_kdb"
+		LIB_krb4="-Wl,-rpath $krb4_libdir $LIB_krb4"
+		LIB_kdb="-Wl,-rpath $krb4_libdir -L$krb4_libdir $LIB_kdb"
 	fi
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4" != "no")
@@ -234,6 +234,7 @@ KRB_C_BIGENDIAN
 AC_C_INLINE
 
 KRB_AIX
+KRB_IRIX
 
 KRB_CHECK_X
 
@@ -546,13 +547,27 @@ dnl
 dnl crypto functions tests
 dnl
 
-AC_FIND_FUNC_NO_LIBS(MD4Init, crypto)
-AC_FIND_FUNC_NO_LIBS(MD4_Init, crypto)
-AC_FIND_FUNC_NO_LIBS(MD5Init, crypto)
-AC_FIND_FUNC_NO_LIBS(MD5_Init, crypto)
-AC_FIND_FUNC_NO_LIBS(SHA1Init, crypto)
-AC_FIND_FUNC_NO_LIBS(SHA1_Init, crypto)
-AC_FIND_FUNC_NO_LIBS(des_cbc_encrypt, crypto des)
+AC_FIND_FUNC_NO_LIBS2(MD4Init, crypto des, [], [], [], [$LIB_krb4])
+AC_FIND_FUNC_NO_LIBS2(MD4_Init, crypto des, [], [], [], [$LIB_krb4])
+AC_FIND_FUNC_NO_LIBS2(MD5Init, crypto des, [], [], [], [$LIB_krb4])
+AC_FIND_FUNC_NO_LIBS2(MD5_Init, crypto des, [], [], [], [$LIB_krb4])
+AC_FIND_FUNC_NO_LIBS2(SHA1Init, crypto des, [], [], [], [$LIB_krb4])
+AC_FIND_FUNC_NO_LIBS2(SHA1_Init, crypto des, [], [], [], [$LIB_krb4])
+AC_FIND_FUNC_NO_LIBS2(des_cbc_encrypt, crypto des, [], [], [], [$LIB_krb4])
+AC_FIND_FUNC_NO_LIBS2(RC4, crypto des, [], [], [], [$LIB_krb4])
+if test "$ac_cv_func_des_cbc_encrypt" = "yes" -a \
+\( "$ac_cv_func_MD4Init"  = "yes" -o "$ac_cv_func_MD4_Init"  = "yes" \) -a \
+\( "$ac_cv_func_MD5Init"  = "yes" -o "$ac_cv_func_MD5_Init"  = "yes" \) -a \
+\( "$ac_cv_func_SHA1Init" = "yes" -o "$ac_cv_func_SHA1_Init" = "yes" \) -a \
+"$ac_cv_func_RC4" = "yes"; then
+  DIR_des=''
+  LIB_des="$ac_cv_funclib_MD4Init"
+else
+  DIR_des='des'
+  LIB_des='$(top_builddir)/lib/des/libdes.la'
+fi
+AC_SUBST(DIR_des)
+AC_SUBST(LIB_des)
 
 KRB_READLINE
 
@@ -580,6 +595,8 @@ fi
 
 AC_CHECK_FUNC(getmsg)
 
+if test "$ac_cv_func_getmsg" = "yes"; then
+
 AC_CACHE_CHECK(for working getmsg, ac_cv_func_getmsg_work,
 AC_TRY_RUN(
 [
@@ -598,6 +615,8 @@ int main()
 ac_cv_func_getmsg_work=no))
 test "$ac_cv_func_getmsg_work" = "yes" &&
 AC_DEFINE(HAVE_GETMSG, 1, [Define if you have a working getmsg.])
+
+fi
 
 if test "$ac_cv_func_getmsg_work" = yes; then
 AC_MSG_CHECKING(for streamspty)
@@ -693,7 +712,10 @@ AC_CONFIG_FILES(Makefile 		\
 	appl/kf/Makefile		\
 	appl/dceutils/Makefile		\
 	doc/Makefile			\
+	tools/Makefile			\
+	tools/krb5-config		\
 )
+AC_CONFIG_COMMANDS(tools/krb5-config, [chmod +x tools/krb5-config])
 
 AC_OUTPUT
 
