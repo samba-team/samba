@@ -263,6 +263,7 @@ krb5_change_password (krb5_context	context,
     int sock;
     int i;
     struct addrinfo *ai, *a;
+    int done = 0;
 
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret)
@@ -272,59 +273,65 @@ krb5_change_password (krb5_context	context,
     if (ret)
 	goto out;
 
-    for (a = ai; a != NULL; a = a->ai_next) {
+    for (a = ai; !done && a != NULL; a = a->ai_next) {
+	int replied = 0;
+
 	sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (sock < 0)
 	    continue;
 
-	for (i = 0; i < 5; ++i) {
+	for (i = 0; !done && i < 5; ++i) {
 	    fd_set fdset;
 	    struct timeval tv;
 
-	    ret = send_request (context,
-				&auth_context,
-				creds,
-				sock,
-				a->ai_addr,
-				a->ai_addrlen,
-				newpw);
-	    if (ret) {
-		close(sock);
-		goto out;
+	    if (!replied) {
+		replied = 0;
+		ret = send_request (context,
+				    &auth_context,
+				    creds,
+				    sock,
+				    a->ai_addr,
+				    a->ai_addrlen,
+				    newpw);
+		if (ret) {
+		    close(sock);
+		    goto out;
+		}
 	    }
-
+	    
 	    FD_ZERO(&fdset);
 	    FD_SET(sock, &fdset);
 	    tv.tv_usec = 0;
-	    tv.tv_sec  = 1 << i;
+	    tv.tv_sec  = 1 + 1 << i;
 
 	    ret = select (sock + 1, &fdset, NULL, NULL, &tv);
 	    if (ret < 0 && errno != EINTR) {
 		close(sock);
 		goto out;
 	    }
-	    if (ret == 1)
-		break;
-	}
-	if (i == 5) {
-	    ret = KRB5_KDC_UNREACH;
-	    close (sock);
-	    continue;
-	}
+	    if (ret == 1) {
+		replied = 1;
 
-	ret = process_reply (context,
-			     auth_context,
-			     sock,
-			     result_code,
-			     result_code_string,
-			     result_string);
+		ret = process_reply (context,
+				     auth_context,
+				     sock,
+				     result_code,
+				     result_code_string,
+				     result_string);
+		if (ret == 0)
+		    done = 1;
+	    } else {
+		ret = KRB5_KDC_UNREACH;
+	    }
+	}
 	close (sock);
-	if (ret == 0)
-	    break;
     }
     freeaddrinfo (ai);
 
 out:
     krb5_auth_con_free (context, auth_context);
-    return ret;
+    if (done)
+	return 0;
+    else
+	return ret;
 }
