@@ -1129,7 +1129,7 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = False;
-	fsp->share_mode = 0;
+	fsp->share_mode = share_mode;
 	fsp->print_file = False;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
