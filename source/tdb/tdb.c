@@ -35,7 +35,7 @@
 #include "includes.h"
 #endif
 
-#define TDB_VERSION (0x26011967 + 1)
+#define TDB_VERSION (0x26011967 + 2)
 #define TDB_MAGIC (0x26011999U)
 #define TDB_FREE_MAGIC (~TDB_MAGIC)
 #define TDB_ALIGN 4
@@ -43,7 +43,8 @@
 #define DEFAULT_HASH_SIZE 131
 #define TDB_PAGE_SIZE 0x2000
 #define TDB_LEN_MULTIPLIER 10
-#define FREELIST_TOP (sizeof(struct tdb_header))
+#define TDB_RESERVED 1024
+#define FREELIST_TOP (TDB_RESERVED + sizeof(struct tdb_header))
 
 #define LOCK_SET 1
 #define LOCK_CLEAR 0
