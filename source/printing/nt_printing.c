@@ -2444,11 +2444,11 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	 */
 
 	if (lp_default_devmode(snum)) {
-		info.devmode = NULL;
-	}
-	else {
 		if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
 			goto fail;
+	}
+	else {
+		info.devmode = NULL;
 	}
 
 	/* This will get the current RPC talloc context, but we should be
