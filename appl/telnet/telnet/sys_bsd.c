@@ -831,6 +831,9 @@ process_rings(netin, netout, netex, ttyin, ttyout, poll)
     if (netex) {
 	FD_SET(net, &xbits);
     }
+#ifdef __CYGWIN32__
+    FD_SET(tout, &obits);
+#endif
     if ((c = select(16, &ibits, &obits, &xbits,
 			(poll == 0)? (struct timeval *)0 : &TimeValue)) < 0) {
 	if (c == -1) {

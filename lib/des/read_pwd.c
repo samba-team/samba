@@ -232,7 +232,9 @@ static int read_pw(buf, buff, size, prompt, verify)
     FILE *tty=NULL;
     char *p;
 
-#ifndef MSDOS
+#ifdef __CYGWIN32__
+    tty = stdin;
+#elif !defined(MSDOS)
     if ((tty=fopen("/dev/tty","r")) == NULL)
 	tty=stdin;
 #else /* MSDOS */
