@@ -1380,7 +1380,7 @@ char *gidtoname(gid_t gid)
  Convert a user name into a uid. 
 ********************************************************************/
 
-uid_t nametouid(char *name)
+uid_t nametouid(const char *name)
 {
 	struct passwd *pass;
 	char *p;
