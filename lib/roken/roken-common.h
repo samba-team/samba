@@ -255,6 +255,9 @@ ssize_t ROKEN_LIB_FUNCTION eread (int fd, void *buf, size_t nbytes);
 ssize_t ROKEN_LIB_FUNCTION ewrite (int fd, const void *buf, size_t nbytes);
 
 void
+esetenv(const char *var, const char *val, int rewrite);
+
+void
 socket_set_address_and_port (struct sockaddr *sa, const void *ptr, int port);
 
 size_t

@@ -39,6 +39,7 @@ libroken_la_SOURCES =		\
 	environment.c		\
 	eread.c			\
 	erealloc.c		\
+	esetenv.c		\
 	estrdup.c		\
 	ewrite.c		\
 	getaddrinfo_hostspec.c	\
