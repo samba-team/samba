@@ -59,7 +59,17 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <pwd.h>
+
+#ifdef HAVE_NSS_H
 #include <nss.h>
+#else
+/* Minimal needed to compile.. */
+enum nss_status {
+NSS_STATUS_SUCCESS,
+NSS_STATUS_NOTFOUND,
+NSS_STATUS_UNAVAIL
+};
+#endif
 
 /* I'm trying really hard not to include anything from smb.h with the
    result of some silly looking redeclaration of structures. */

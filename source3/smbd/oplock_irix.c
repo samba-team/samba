@@ -26,7 +26,6 @@
 #if HAVE_KERNEL_OPLOCKS_IRIX
 extern int DEBUGLEVEL;
 
-
 static int oplock_pipe_write = -1;
 static int oplock_pipe_read = -1;
 
@@ -93,6 +92,7 @@ Disabling kernel oplock support.\n", strerror(errno) ));
 ****************************************************************************/
 static BOOL irix_oplock_receive_message(fd_set *fds, char *buffer, int buffer_len)
 {
+	extern int smb_read_error;
      oplock_stat_t os;
      SMB_DEV_T dev;
      SMB_INO_T inode;
