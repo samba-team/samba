@@ -2578,12 +2578,12 @@ case "$host_os" in
 		;;
 	*solaris*)
 		HAVE_WINBIND=yes
-		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
 		WINBIND_NSS_EXTRA_LIBS="-lsocket"
 		;;
 	*hpux11*)
 		HAVE_WINBIND=yes
-		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
 		;;
 	*)
 		HAVE_WINBIND=no
