@@ -842,7 +842,7 @@ static BOOL del_smbfilepwd_entry(uint32 user_rid)
 
   DEBUG(0, ("del_smbfilepwd_entry: User:[%s]\n", sam_pass->nt_name));
 
-//  unistr2_to_ascii(name, sam_pass->nt_name, sizeof(name) - 1);
+/*  unistr2_to_ascii(name, sam_pass->nt_name, sizeof(name) - 1); */
   fstrcpy(name, sam_pass->nt_name);
 
   DEBUG(0, ("del_smbfilepwd_entry: user: %s\n", name));
