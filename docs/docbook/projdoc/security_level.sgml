@@ -20,7 +20,7 @@ Samba supports the following options to the global smb.conf parameter
 
 <para><programlisting>
 [global]
-<ulink url="smb.conf.5.html#SECURITY"><parameter>security</parameter></ulink> = [share|user(default)|domain|ads]
+<ulink url="smb.conf.5.html#SECURITY"><parameter>security</parameter></ulink> = [share|user(default)|server|domain|ads]
 </programlisting></para>
 
 <para>
