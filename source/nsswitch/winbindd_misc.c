@@ -182,15 +182,18 @@ enum winbindd_result winbindd_check_machine_acct(
 	uint32 result = NT_STATUS_INTERNAL_ERROR;
 	uchar trust_passwd[16];
 	fstring trust_account;
+        int num_retries = 0;
 	char *p;
 
 	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
 
 	/* Get trust account name and password */
 
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
-		DEBUG(0, ("unable to get trust accound password for domain %s",
-			  lp_workgroup()));
+ again:
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, 
+                                         NULL)) {
+		DEBUG(0, ("unable to get trust accound password for domain "
+                          "%s", lp_workgroup()));
 		goto done;
 	}
 
@@ -208,6 +211,19 @@ enum winbindd_result winbindd_check_machine_acct(
 	} else {
 		result = check_passwordserver(trust_account, trust_passwd);
 	}
+
+        /* There is a race condition between fetching the trust account
+           password and joining the domain so it's possible that the trust
+           account password has been changed on us.  We are returned
+           NT_STATUS_ACCESS_DENIED if this happens. */
+
+#define MAX_RETRIES 8
+
+        if ((num_retries < MAX_RETRIES) && 
+            result == NT_STATUS_ACCESS_DENIED) {
+                num_retries++;
+                goto again;
+        }
 
 	if (result != NT_STATUS_INTERNAL_ERROR) {
 		DEBUG(3, ("secret is %s\n", (result == NT_STATUS_NOPROBLEMO) ?
