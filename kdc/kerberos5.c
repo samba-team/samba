@@ -82,8 +82,9 @@ find_etype(hdb_entry *princ, unsigned *etypes, unsigned len,
 {
     int i;
     krb5_error_code ret = -1;
-    for(i = 0; i < len && ret != 0; i++)
-	ret = hdb_etype2key(context, princ, etypes[i], key);
+    for(i = 0; i < len ; i++)
+	if((ret = hdb_etype2key(context, princ, etypes[i], key)) == 0)
+	    break;
     if(index) *index = i;
     return ret;
 }
