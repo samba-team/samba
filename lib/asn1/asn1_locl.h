@@ -6,11 +6,17 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <ctype.h>
 #include "der.h"
 #include "gen.h"
+#include "hash.h"
+#include "symbol.h"
+
 
 void generate_type_encode (Symbol *s);
 void generate_type_decode (Symbol *s);
