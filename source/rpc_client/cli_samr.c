@@ -36,7 +36,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a SAMR query user groups
 ****************************************************************************/
-BOOL get_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL get_samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid)
 {
@@ -44,7 +44,7 @@ BOOL get_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum,
 	if (pol_open_domain == NULL || num_groups == NULL || gid == NULL) return False;
 
 	/* send open domain (on user sid) */
-	if (!do_samr_open_user(cli, t_idx, fnum,
+	if (!do_samr_open_user(cli,
 				pol_open_domain,
 				0x02011b, user_rid,
 				&pol_open_user))
@@ -53,20 +53,20 @@ BOOL get_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum,
 	}
 
 	/* send user groups query */
-	if (!do_samr_query_usergroups(cli, t_idx, fnum,
+	if (!do_samr_query_usergroups(cli,
 				&pol_open_user,
 				num_groups, gid))
 	{
 		DEBUG(5,("do_samr_query_usergroups: error in query user groups\n"));
 	}
 
-	return do_samr_close(cli, t_idx, fnum, &pol_open_user);
+	return do_samr_close(cli, &pol_open_user);
 }
 
 /****************************************************************************
 do a SAMR query user info
 ****************************************************************************/
-BOOL get_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL get_samr_query_userinfo(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, SAM_USER_INFO_21 *usr)
@@ -77,7 +77,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum,
 	bzero(usr, sizeof(*usr));
 
 	/* send open domain (on user sid) */
-	if (!do_samr_open_user(cli, t_idx, fnum,
+	if (!do_samr_open_user(cli,
 				pol_open_domain,
 				0x02011b, user_rid,
 				&pol_open_user))
@@ -86,7 +86,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum,
 	}
 
 	/* send user info query */
-	if (!do_samr_query_userinfo(cli, t_idx, fnum,
+	if (!do_samr_query_userinfo(cli,
 				&pol_open_user,
 				info_level, (void*)usr))
 	{
@@ -94,13 +94,13 @@ BOOL get_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum,
 		          info_level));
 	}
 
-	return do_samr_close(cli, t_idx, fnum, &pol_open_user);
+	return do_samr_close(cli, &pol_open_user);
 }
 
 /****************************************************************************
 do a SAMR unknown 0x8 command
 ****************************************************************************/
-BOOL do_samr_unknown_8(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_unknown_8(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint16 switch_value)
 {
 	prs_struct data;
@@ -116,7 +116,7 @@ BOOL do_samr_unknown_8(struct cli_state *cli, int t_idx, uint16 fnum,
 
 	DEBUG(4,("SAMR Unknown 8 switch:%d\n", switch_value));
 
-	if (domain_pol == NULL || fnum == 0xffff) return False;
+	if (domain_pol == NULL || cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_unknown_8(&q_e, domain_pol, switch_value);
@@ -125,7 +125,7 @@ BOOL do_samr_unknown_8(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_unknown_8("", &q_e, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_UNKNOWN_8, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_UNKNOWN_8, &data, &rdata))
 	{
 #if 0
 
@@ -158,7 +158,7 @@ BOOL do_samr_unknown_8(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR enumerate users
 ****************************************************************************/
-BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_enum_dom_users(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info sam[MAX_SAM_ENTRIES],
@@ -177,7 +177,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum,
 
 	DEBUG(4,("SAMR Enum SAM DB max size:%x\n", size));
 
-	if (pol == NULL || sam == NULL || num_sam_users == NULL || fnum == 0xffff) return False;
+	if (pol == NULL || sam == NULL || num_sam_users == NULL || cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_enum_dom_users(&q_e, pol,
@@ -188,7 +188,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_enum_dom_users("", &q_e, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_ENUM_DOM_USERS, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_ENUM_DOM_USERS, &data, &rdata))
 	{
 		SAMR_R_ENUM_DOM_USERS r_e;
 		BOOL p;
@@ -245,7 +245,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR Connect
 ****************************************************************************/
-BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_connect(struct cli_state *cli, 
 				char *srv_name, uint32 unknown_0,
 				POLICY_HND *connect_pol)
 {
@@ -263,7 +263,7 @@ BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum,
 	DEBUG(4,("SAMR Open Policy server:%s undoc value:%x\n",
 				srv_name, unknown_0));
 
-	if (srv_name == NULL || connect_pol == NULL || fnum == 0xffff) return False;
+	if (srv_name == NULL || connect_pol == NULL || cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_connect(&q_o, srv_name, unknown_0);
@@ -272,7 +272,7 @@ BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_connect("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_CONNECT, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_CONNECT, &data, &rdata))
 	{
 		SAMR_R_CONNECT r_o;
 		BOOL p;
@@ -303,7 +303,7 @@ BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR Open User
 ****************************************************************************/
-BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_open_user(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol)
 {
@@ -321,7 +321,7 @@ BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum,
 	DEBUG(4,("SAMR Open User.  unk_0: %08x RID:%x\n",
 	          unk_0, rid));
 
-	if (pol == NULL || user_pol == NULL || fnum == 0xffff) return False;
+	if (pol == NULL || user_pol == NULL || cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_open_user(&q_o, pol, unk_0, rid);
@@ -330,7 +330,7 @@ BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_open_user("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_OPEN_USER, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_OPEN_USER, &data, &rdata))
 	{
 		SAMR_R_OPEN_USER r_o;
 		BOOL p;
@@ -361,10 +361,11 @@ BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR Open Domain
 ****************************************************************************/
-BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_open_domain(struct cli_state *cli, 
 				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid,
 				POLICY_HND *domain_pol)
 {
+	pstring sid_str;
 	prs_struct data;
 	prs_struct rdata;
 
@@ -376,9 +377,10 @@ BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum,
 	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
-	DEBUG(4,("SAMR Open Domain.  SID:%s RID:%x\n", sid, rid));
+	sid_to_string(sid_str, sid);
+	DEBUG(4,("SAMR Open Domain.  SID:%s RID:%x\n", sid_str, rid));
 
-	if (connect_pol == NULL || sid == NULL || domain_pol == NULL || fnum == 0xffff) return False;
+	if (connect_pol == NULL || sid == NULL || domain_pol == NULL || cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_open_domain(&q_o, connect_pol, rid, sid);
@@ -387,7 +389,7 @@ BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_open_domain("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_OPEN_DOMAIN, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_OPEN_DOMAIN, &data, &rdata))
 	{
 		SAMR_R_OPEN_DOMAIN r_o;
 		BOOL p;
@@ -418,7 +420,7 @@ BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR Query Unknown 12
 ****************************************************************************/
-BOOL do_samr_query_unknown_12(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_query_unknown_12(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
 				uint32 *num_aliases,
 				fstring als_names    [MAX_LOOKUP_SIDS],
@@ -439,7 +441,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli, int t_idx, uint16 fnum,
 
 	if (pol == NULL || rid == 0 || num_gids == 0 || gids == NULL ||
 	    num_aliases == NULL || als_names == NULL || num_als_users == NULL ||
-	    fnum == 0xffff) return False;
+	    cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_unknown_12(&q_o, pol, rid, num_gids, gids);
@@ -448,7 +450,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_unknown_12("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_UNKNOWN_12, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_UNKNOWN_12, &data, &rdata))
 	{
 		SAMR_R_UNKNOWN_12 r_o;
 		BOOL p;
@@ -503,7 +505,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR Query User Groups
 ****************************************************************************/
-BOOL do_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid)
 {
 	prs_struct data;
@@ -519,7 +521,7 @@ BOOL do_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum,
 
 	DEBUG(4,("SAMR Query User Groups.\n"));
 
-	if (pol == NULL || gid == NULL || num_groups == 0|| fnum == 0xffff) return False;
+	if (pol == NULL || gid == NULL || num_groups == 0|| cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_query_usergroups(&q_o, pol);
@@ -528,7 +530,7 @@ BOOL do_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_query_usergroups("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_QUERY_USERGROUPS, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_QUERY_USERGROUPS, &data, &rdata))
 	{
 		SAMR_R_QUERY_USERGROUPS r_o;
 		BOOL p;
@@ -563,7 +565,7 @@ BOOL do_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR Query User Info
 ****************************************************************************/
-BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_query_userinfo(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 switch_value, void* usr)
 {
 	prs_struct data;
@@ -579,7 +581,7 @@ BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum,
 
 	DEBUG(4,("SAMR Query User Info.  level: %d\n", switch_value));
 
-	if (pol == NULL || usr == NULL || switch_value == 0|| fnum == 0xffff) return False;
+	if (pol == NULL || usr == NULL || switch_value == 0|| cli->nt_pipe_fnum == 0xffff) return False;
 
 	/* store the parameters */
 	make_samr_q_query_userinfo(&q_o, pol, switch_value);
@@ -588,7 +590,7 @@ BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum,
 	samr_io_q_query_userinfo("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_QUERY_USERINFO, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_QUERY_USERINFO, &data, &rdata))
 	{
 		SAMR_R_QUERY_USERINFO r_o;
 		BOOL p;
@@ -627,7 +629,7 @@ BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a SAMR Close
 ****************************************************************************/
-BOOL do_samr_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd)
+BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -651,7 +653,7 @@ BOOL do_samr_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hn
 	samr_io_q_close_hnd("", &q_c,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, SAMR_CLOSE_HND, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_CLOSE_HND, &data, &rdata))
 	{
 		SAMR_R_CLOSE_HND r_c;
 		BOOL p;

@@ -190,6 +190,7 @@ void GetTimeOfDay(struct timeval *tval);
 void TimeInit(void);
 int TimeDiff(time_t t);
 struct tm *LocalTime(time_t *t);
+time_t interpret_nt_time(NTTIME *t);
 time_t interpret_long_date(char *p);
 void put_long_date(char *p,time_t t);
 BOOL null_mtime(time_t mtime);
@@ -1213,6 +1214,42 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted);
 void cli_nt_session_close(struct cli_state *cli);
 
+/*The following definitions come from  rpc_client/cli_samr.c  */
+
+BOOL get_samr_query_usergroups(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain, uint32 user_rid,
+				uint32 *num_groups, DOM_GID *gid);
+BOOL get_samr_query_userinfo(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 user_rid, SAM_USER_INFO_21 *usr);
+BOOL do_samr_unknown_8(struct cli_state *cli, 
+				POLICY_HND *domain_pol, uint16 switch_value);
+BOOL do_samr_enum_dom_users(struct cli_state *cli, 
+				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
+				uint16 acb_mask, uint16 unk_1, uint32 size,
+				struct acct_info sam[MAX_SAM_ENTRIES],
+				int *num_sam_users);
+BOOL do_samr_connect(struct cli_state *cli, 
+				char *srv_name, uint32 unknown_0,
+				POLICY_HND *connect_pol);
+BOOL do_samr_open_user(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
+				POLICY_HND *user_pol);
+BOOL do_samr_open_domain(struct cli_state *cli, 
+				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid,
+				POLICY_HND *domain_pol);
+BOOL do_samr_query_unknown_12(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
+				uint32 *num_aliases,
+				fstring als_names    [MAX_LOOKUP_SIDS],
+				uint32  num_als_users[MAX_LOOKUP_SIDS]);
+BOOL do_samr_query_usergroups(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
+BOOL do_samr_query_userinfo(struct cli_state *cli, 
+				POLICY_HND *pol, uint16 switch_value, void* usr);
+BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
+
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
 BOOL do_wks_query_info(struct cli_state *cli, 
@@ -1252,6 +1289,7 @@ uint32 get_enum_hnd(ENUM_HND *enh);
 void make_enum_hnd(ENUM_HND *enh, uint32 hnd);
 void smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth);
 void smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
+void make_dom_sid(DOM_SID *sid, char *str_sid);
 void make_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid);
 void smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
 void make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
@@ -1440,11 +1478,20 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 
+void make_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
 void samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
 void samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
+void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
+				POLICY_HND *connect_pol, uint32 rid,
+				DOM_SID *sid);
 void samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
+void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
+				POLICY_HND *user_pol, uint16 switch_value);
 void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth);
+void make_samr_q_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
+				POLICY_HND *domain_pol, uint16 switch_value);
+void samr_io_q_unknown_8(char *desc,  SAMR_Q_UNKNOWN_8 *q_u, prs_struct *ps, int depth);
 void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid);
 void make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
 				uint16 unknown_2, uint16 unknown_3,
@@ -1452,16 +1499,22 @@ void make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
 				int num_sid3s, DOM_SID3 sid3[MAX_SAM_SIDS],
 				uint32 status);
 void samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int depth);
+void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
+				uint16 req_num_entries, uint16 unk_0,
+				uint16 acb_mask, uint16 unk_1, uint32 size);
 void samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struct *ps, int depth);
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		uint16 total_num_entries, uint16 unk_0,
 		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status);
 void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth);
+void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol, uint32 size);
 void samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_struct *ps, int depth);
 void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		uint32 num_sam_entries, SAM_USER_INFO_21 grps[MAX_SAM_ENTRIES],
 		uint32 status);
 void samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
+				uint16 switch_level, uint32 start_idx, uint32 size);
 void samr_io_q_query_dispinfo(char *desc,  SAMR_Q_QUERY_DISPINFO *q_e, prs_struct *ps, int depth);
 void make_sam_info_2(SAM_INFO_2 *sam, uint32 acb_mask,
 		uint32 start_idx, uint32 num_sam_entries,
@@ -1472,12 +1525,17 @@ void make_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
 void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 		uint16 switch_level, SAM_INFO_CTR *ctr, uint32 status);
 void samr_io_r_query_dispinfo(char *desc,  SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth);
+void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
+				uint16 switch_level, uint32 start_idx, uint32 size);
 void samr_io_q_enum_dom_groups(char *desc,  SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
 void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 		uint32 start_idx, uint32 num_sam_entries,
 		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES],
 		uint32 status);
 void samr_io_r_enum_dom_groups(char *desc,  SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
+				POLICY_HND *pol,
+				uint16 switch_level);
 void samr_io_q_query_aliasinfo(char *desc,  SAMR_Q_QUERY_ALIASINFO *q_e, prs_struct *ps, int depth);
 void make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
 		uint16 switch_value, char *acct_desc,
@@ -1496,12 +1554,19 @@ void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
 		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
 		uint32 status);
 void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, int depth);
+void make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
+				POLICY_HND *pol,
+				uint32 unk_0, uint32 rid);
 void samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
+				POLICY_HND *hnd);
 void samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
 void make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 		uint32 num_gids, DOM_GID *gid, uint32 status);
 void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
+				POLICY_HND *hnd, uint16 switch_value);
 void samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struct *ps, int depth);
 void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 
@@ -1537,10 +1602,28 @@ void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
 void samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, int depth);
 void samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, int depth);
+void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
+				char *srv_name, uint32 unknown_0);
 void samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
 void samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int depth);
+void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
+				uint32 unknown_0, uint32 rid);
 void samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, int depth);
+void make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name);
+void samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
+void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u,
+				uint16 level, uint32 status);
+void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
+void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
+void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
+void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
+		POLICY_HND *pol, uint32 rid,
+		uint32 num_gids, uint32 *gid);
+void make_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
+void make_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
@@ -1681,9 +1764,69 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 
 void cmd_lsa_query_info(struct client_info *info);
 
+/*The following definitions come from  rpcclient/cmd_samr.c  */
+
+void cmd_sam_test(struct client_info *info);
+void cmd_sam_enum_users(struct client_info *info);
+void cmd_sam_query_user(struct client_info *info);
+void cmd_sam_query_groups(struct client_info *info);
+void cmd_sam_enum_aliases(struct client_info *info);
+
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */
 
 void cmd_wks_query_info(struct client_info *info);
+
+/*The following definitions come from  rpcclient/display.c  */
+
+char *get_file_mode_str(uint32 share_mode);
+char *get_file_oplock_str(uint32 op_type);
+char *get_share_type_str(uint32 type);
+char *get_server_type_str(uint32 type);
+void display_srv_info_101(FILE *out_hnd, enum action_type action,
+		SRV_INFO_101 *sv101);
+void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *sv102);
+void display_srv_info_ctr(FILE *out_hnd, enum action_type action,SRV_INFO_CTR *ctr);
+void display_conn_info_0(FILE *out_hnd, enum action_type action,
+		CONN_INFO_0 *info0);
+void display_conn_info_1(FILE *out_hnd, enum action_type action,
+		CONN_INFO_1 *info1, CONN_INFO_1_STR *str1);
+void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action,
+				SRV_CONN_INFO_0 *ctr);
+void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action,
+				SRV_CONN_INFO_1 *ctr);
+void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_CONN_INFO_CTR *ctr);
+void display_share_info_1(FILE *out_hnd, enum action_type action,
+		SH_INFO_1 *info1, SH_INFO_1_STR *str1);
+void display_share_info_2(FILE *out_hnd, enum action_type action,
+		SH_INFO_2 *info2, SH_INFO_2_STR *str2);
+void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SHARE_INFO_1 *ctr);
+void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SHARE_INFO_2 *ctr);
+void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SHARE_INFO_CTR *ctr);
+void display_file_info_3(FILE *out_hnd, enum action_type action,
+		FILE_INFO_3 *info3, FILE_INFO_3_STR *str3);
+void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
+				SRV_FILE_INFO_3 *ctr);
+void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_FILE_INFO_CTR *ctr);
+void display_server(FILE *out_hnd, enum action_type action,
+				char *sname, uint32 type, char *comment);
+void display_share(FILE *out_hnd, enum action_type action,
+				char *sname, uint32 type, char *comment);
+void display_share2(FILE *out_hnd, enum action_type action,
+				char *sname, uint32 type, char *comment,
+				uint32 perms, uint32 max_uses, uint32 num_uses,
+				char *path, char *passwd);
+void display_name(FILE *out_hnd, enum action_type action,
+				char *sname);
+void display_group_rid_info(FILE *out_hnd, enum action_type action,
+				uint32 num_gids, DOM_GID *gid);
+void display_alias_name_info(FILE *out_hnd, enum action_type action,
+				uint32 num_aliases, fstring *alias_name, uint32 *num_als_usrs);
+void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_INFO_21 *usr);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 

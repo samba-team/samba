@@ -236,6 +236,17 @@ struct tm *LocalTime(time_t *t)
   return(gmtime(&t2));
 }
 
+/****************************************************************************
+take an NTTIME structure, containing high / low time.  convert to unix time.
+lkclXXXX this may need 2 SIVALs not a memcpy.  we'll see...
+****************************************************************************/
+time_t interpret_nt_time(NTTIME *t)
+{
+  char data[8];
+  memcpy(data, t, sizeof(data));
+  return interpret_long_date(data);
+}
+
 
 #define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
 
@@ -532,3 +543,4 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
    */
   return ret;
 }
+
