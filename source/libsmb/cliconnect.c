@@ -403,6 +403,8 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, c
 	/* we don't need this blob for kerberos */
 	data_blob_free(&blob2);
 
+	data_blob_free(&negTokenTarg);
+
 	return !cli_is_error(cli);
 }
 #endif
