@@ -1007,7 +1007,28 @@ interface netlogon
 
 	/****************/
 	/* Function 0x22 */
-	WERROR netr_DSRGETDCNAMEEX2();
+	typedef struct {
+		unistr *dc_unc;
+		unistr *dc_address;
+		int32 dc_address_type;
+		GUID domain_guid;
+		unistr *domain_name;
+		unistr *forest_name;
+		uint32 dc_flags;
+		unistr *dc_site_name;
+		unistr *client_site_name;
+	} netr_DrsGetDCNameEx2Info;
+
+	WERROR netr_DrsGetDCNameEx2(
+		[in] unistr *server_unc,
+		[in] unistr *client_account,
+		[in] uint32 mask,
+		[in] unistr *domain_name,
+		[in] GUID *domain_guid,
+		[in] unistr *site_name,
+		[in] uint32 flags,
+		[out] netr_DrsGetDCNameEx2Info *info
+		);
 
 	/****************/
 	/* Function 0x23 */

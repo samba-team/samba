@@ -887,6 +887,46 @@ static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem
 	return True;
 }
 
+/*
+  try a netlogon netr_DrsGetDCNameEx2
+*/
+static BOOL test_netr_DrsGetDCNameEx2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_DrsGetDCNameEx2 r;
+	BOOL ret = True;
+
+	r.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.client_account	= NULL;
+	r.in.mask		= 0x00000000;
+	r.in.domain_name	= talloc_asprintf(mem_ctx, "%s", lp_realm());
+	r.in.domain_guid	= NULL;
+	r.in.site_name		= NULL;
+	r.in.flags		= 0x40000000;
+
+	printf("Testing netr_DrsGetDCNameEx2 without client account\n");
+
+	status = dcerpc_netr_DrsGetDCNameEx2(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("netr_DrsGetDCNameEx2 - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		ret = False;
+	}
+
+	printf("Testing netr_DrsGetDCNameEx2 with client acount\n");
+	r.in.client_account	= TEST_MACHINE_NAME"$";
+	r.in.mask		= 0x00002000;
+	r.in.flags		= 0x80000000;
+
+	status = dcerpc_netr_DrsGetDCNameEx2(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("netr_DrsGetDCNameEx2 - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		ret = False;
+	}
+
+	return ret;
+}
 
 static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
@@ -1119,6 +1159,10 @@ BOOL torture_rpc_netlogon(void)
 	}
 
 	if (!test_GetDomainInfo_async(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_netr_DrsGetDCNameEx2(p, mem_ctx)) {
 		ret = False;
 	}
 
