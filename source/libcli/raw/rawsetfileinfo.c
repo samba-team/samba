@@ -56,8 +56,8 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		return True;
 
 	case RAW_SFILEINFO_EA_SET:
-		NEED_BLOB(ea_list_size(1, &parms->ea_set.in.ea));
-		ea_put_list(blob->data, 1, &parms->ea_set.in.ea);
+		NEED_BLOB(ea_list_size(parms->ea_set.in.num_eas, parms->ea_set.in.eas));
+		ea_put_list(blob->data, parms->ea_set.in.num_eas, parms->ea_set.in.eas);
 		return True;
 
 	case RAW_SFILEINFO_BASIC_INFO:

@@ -32,7 +32,6 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct pvfs_filename *name;
 	mode_t mode;
-	int i;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, md->t2mkdir.in.path, 0, &name);
@@ -60,12 +59,12 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 	}
 
 	/* setup any EAs that were asked for */
-	for (i=0;i<md->t2mkdir.in.num_eas;i++) {
-		status = pvfs_setfileinfo_ea_set(pvfs, name, -1, &md->t2mkdir.in.eas[i]);
-		if (!NT_STATUS_IS_OK(status)) {
-			rmdir(name->full_name);
-			return status;
-		}
+	status = pvfs_setfileinfo_ea_set(pvfs, name, -1, 
+					 md->t2mkdir.in.num_eas,
+					 md->t2mkdir.in.eas);
+	if (!NT_STATUS_IS_OK(status)) {
+		rmdir(name->full_name);
+		return status;
 	}
 
 	return NT_STATUS_OK;
@@ -127,6 +126,11 @@ NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
 
 	if (!name->exists) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	status = pvfs_xattr_unlink_hook(pvfs, name->full_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (rmdir(name->full_name) == -1) {

@@ -827,21 +827,9 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_EA_SET:
-		CHECK_MIN_BLOB_SIZE(blob, 4);
-		len = IVAL(blob->data, 0);
-		if (len > blob->length || len < 4) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		{
-			DATA_BLOB blob2;
-			blob2.data = blob->data+4;
-			blob2.length = len-4;
-			len = ea_pull_struct(&blob2, req, &st->ea_set.in.ea);
-		}
-		if (len == 0) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		return NT_STATUS_OK;
+		return ea_pull_list(blob, req, 
+				    &st->ea_set.in.num_eas, 
+				    &st->ea_set.in.eas);
 
 	case SMB_SFILEINFO_BASIC_INFO:
 	case SMB_SFILEINFO_BASIC_INFORMATION:

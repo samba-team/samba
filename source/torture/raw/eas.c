@@ -80,22 +80,18 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 
-	printf("Adding first EA\n");
+	printf("Adding first two EAs\n");
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.file.fnum = fnum;
-	setfile.ea_set.in.ea.flags = 0;
-	setfile.ea_set.in.ea.name.s = "EAONE";
-	setfile.ea_set.in.ea.value = data_blob_string_const("VALUE1");
+	setfile.ea_set.in.num_eas = 2;
+	setfile.ea_set.in.eas = talloc_array_p(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas[0].flags = 0;
+	setfile.ea_set.in.eas[0].name.s = "EAONE";
+	setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE1");
+	setfile.ea_set.in.eas[1].flags = 0;
+	setfile.ea_set.in.eas[1].name.s = "SECONDEA";
+	setfile.ea_set.in.eas[1].value = data_blob_string_const("ValueTwo");
 
-	status = smb_raw_setfileinfo(cli->tree, &setfile);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	ret &= check_ea(cli, fname, "EAONE", "VALUE1");
-
-	setfile.ea_set.in.ea.name.s = "SECONDEA";
-	setfile.ea_set.in.ea.value = data_blob_string_const("ValueTwo");
-
-	printf("Adding second EA\n");
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -103,7 +99,9 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= check_ea(cli, fname, "SECONDEA", "ValueTwo");
 
 	printf("Modifying 2nd EA\n");
-	setfile.ea_set.in.ea.value = data_blob_string_const(" Changed Value");
+	setfile.ea_set.in.num_eas = 1;
+	setfile.ea_set.in.eas[0].name.s = "SECONDEA";
+	setfile.ea_set.in.eas[0].value = data_blob_string_const(" Changed Value");
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -111,8 +109,8 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
 
 	printf("Setting a NULL EA\n");
-	setfile.ea_set.in.ea.value = data_blob(NULL, 0);
-	setfile.ea_set.in.ea.name.s = "NULLEA";
+	setfile.ea_set.in.eas[0].value = data_blob(NULL, 0);
+	setfile.ea_set.in.eas[0].name.s = "NULLEA";
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -121,9 +119,9 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= check_ea(cli, fname, "NULLEA", NULL);
 
 	printf("Deleting first EA\n");
-	setfile.ea_set.in.ea.flags = 0;
-	setfile.ea_set.in.ea.name.s = "EAONE";
-	setfile.ea_set.in.ea.value = data_blob(NULL, 0);
+	setfile.ea_set.in.eas[0].flags = 0;
+	setfile.ea_set.in.eas[0].name.s = "EAONE";
+	setfile.ea_set.in.eas[0].value = data_blob(NULL, 0);
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -131,9 +129,9 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
 
 	printf("Deleting second EA\n");
-	setfile.ea_set.in.ea.flags = 0;
-	setfile.ea_set.in.ea.name.s = "SECONDEA";
-	setfile.ea_set.in.ea.value = data_blob(NULL, 0);
+	setfile.ea_set.in.eas[0].flags = 0;
+	setfile.ea_set.in.eas[0].name.s = "SECONDEA";
+	setfile.ea_set.in.eas[0].value = data_blob(NULL, 0);
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
