@@ -922,14 +922,27 @@ static int next_block(char *ltarbuf, char **bufferp, int bufsiz)
 
     DEBUG(5, ("Reading more data into ltarbuf ...\n"));
 
-    total = 0;
+    /*
+     * Bugfix from Bob Boehmer <boehmer@worldnet.att.net>
+     * Fixes bug where read can return short if coming from
+     * a pipe.
+     */
 
-    for (bufread = read(tarhandle, ltarbuf, bufsiz); total < bufsiz; total += bufread) {
+    bufread = read(tarhandle, ltarbuf, bufsiz);
+    total = bufread;
 
-      if (bufread <= 0) { /* An error, return false */
-	return (total > 0 ? -2 : bufread);
+    while (total < bufsiz) {
+      if (bufread < 0) { /* An error, return false */
+        return (total > 0 ? -2 : bufread);
       }
-
+      if (bufread == 0) {
+        if (total <= 0) {
+            return -2;
+        }
+        break;
+      }
+      bufread = read(tarhandle, &ltarbuf[total], bufsiz - total);
+      total += bufread;
     }
 
     DEBUG(5, ("Total bytes read ... %i\n", total));
@@ -967,24 +980,27 @@ static int skip_file(int skipsize)
   return(True);
 }
 
-/* We get a file from the tar file and store it */
+/*************************************************************
+ Get a file from the tar file and store it.
+ When this is called, tarbuf already contains the first
+ file block. This is a bit broken & needs fixing.
+**************************************************************/
+
 static int get_file(file_info2 finfo)
 {
-  int fsize = finfo.size;
   int fnum = -1, pos = 0, dsize = 0, rsize = 0, bpos = 0;
 
-  DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, fsize));
+  DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, finfo.size));
 
   if (ensurepath(finfo.name) && 
-      (fnum=cli_open(cli, finfo.name, O_WRONLY|O_CREAT|O_TRUNC, DENY_NONE)) == -1)
-    {
+      (fnum=cli_open(cli, finfo.name, O_WRONLY|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
       DEBUG(0, ("abandoning restore\n"));
       return(False);
-    }
+  }
 
   /* read the blocks from the tar file and write to the remote file */
 
-  rsize = fsize;  /* This is how much to write */
+  rsize = finfo.size;  /* This is how much to write */
 
   while (rsize > 0) {
 
@@ -1022,17 +1038,23 @@ static int get_file(file_info2 finfo)
 
     }
 
-    while (dsize >= TBLOCK) {
+    /*
+     * Bugfix from Bob Boehmer <boehmer@worldnet.att.net>.
+     * If the file being extracted is an exact multiple of
+     * TBLOCK bytes then we don't want to extract the next
+     * block from the tarfile here, as it will be done in
+     * the caller of get_file().
+     */
+
+    while (((rsize != 0) && (dsize >= TBLOCK)) ||
+         ((rsize == 0) && (dsize > TBLOCK))) {
 
       if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
-
 	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
 	return False;
-
       }
 
       dsize -= TBLOCK;
-
     }
 
     bpos = dsize;
@@ -1228,10 +1250,14 @@ static void do_tarput(void)
 
     case '0':  /* Should use symbolic names--FIXME */
 
-      /* Skip to the next block first, so we can get the file, FIXME, should
-         be in get_file ... */
+      /* 
+       * Skip to the next block first, so we can get the file, FIXME, should
+       * be in get_file ...
+       * The 'finfo.size != 0' fix is from Bob Boehmer <boehmer@worldnet.att.net>
+       * Fixes bug where file size in tarfile is zero.
+       */
 
-      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
+      if ((finfo.size != 0) && next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
 	DEBUG(0, ("Short file, bailing out...\n"));
 	return;
       }
