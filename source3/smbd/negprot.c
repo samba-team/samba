@@ -25,7 +25,8 @@ extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
 extern fstring remote_machine;
-BOOL global_encrypted_passwords_negotiated;
+BOOL global_encrypted_passwords_negotiated = False;
+BOOL global_spnego_negotiated = False;
 
 /****************************************************************************
 reply for the core protocol
@@ -169,6 +170,8 @@ static int negprot_spnego(char *p, uint8 cryptkey[8])
 			      NULL};
 	char *principal;
 	int len;
+
+	global_spnego_negotiated = True;
 
 	memset(guid, 0, 16);
 	safe_strcpy((char *)guid, global_myname, 16);
