@@ -93,26 +93,26 @@ char **my_netbios_names;
 
 /****************************************************************************
   find a suitable temporary directory. The result should be copied immediately
-  as it may be overwritten by a subsequent call
+ as it may be overwritten by a subsequent call.
   ****************************************************************************/
 char *tmpdir(void)
 {
   char *p;
-  if ((p = getenv("TMPDIR"))) {
+	if ((p = getenv("TMPDIR")))
     return p;
-  }
   return "/tmp";
 }
 
 /****************************************************************************
-determine whether we are in the specified group
+ Determine whether we are in the specified group.
 ****************************************************************************/
 
 BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 {
 	int i;
 
-	if (group == current_gid) return(True);
+	if (group == current_gid)
+		return(True);
 
 	for (i=0;i<ngroups;i++)
 		if (group == groups[i])
@@ -121,14 +121,13 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 	return(False);
 }
 
-
 /****************************************************************************
-like atoi but gets the value up to the separater character
+ Like atoi but gets the value up to the separater character.
 ****************************************************************************/
+
 char *Atoic(char *p, int *n, char *c)
 {
-	if (!isdigit((int)*p))
-	{
+	if (!isdigit((int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
@@ -136,9 +135,7 @@ char *Atoic(char *p, int *n, char *c)
 	(*n) = atoi(p);
 
 	while ((*p) && isdigit((int)*p))
-	{
 		p++;
-	}
 
 	if (strchr_m(c, *p) == NULL)
 	{
@@ -150,22 +147,20 @@ char *Atoic(char *p, int *n, char *c)
 }
 
 /*************************************************************************
- reads a list of numbers
+ Reads a list of numbers.
  *************************************************************************/
+
 char *get_numlist(char *p, uint32 **num, int *count)
 {
 	int val;
 
 	if (num == NULL || count == NULL)
-	{
 		return NULL;
-	}
 
 	(*count) = 0;
 	(*num  ) = NULL;
 
-	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':')
-	{
+	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':') {
 		uint32 *tn;
 		
 		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
@@ -173,8 +168,8 @@ char *get_numlist(char *p, uint32 **num, int *count)
 		{
 			SAFE_FREE(*num);
 			return NULL;
-		}
-		else (*num) = tn;
+		} else
+			(*num) = tn;
 		(*num)[(*count)] = val;
 		(*count)++;
 		p++;
@@ -183,14 +178,15 @@ char *get_numlist(char *p, uint32 **num, int *count)
 	return p;
 }
 
-
 /*******************************************************************
-  check if a file exists - call vfs_file_exist for samba files
+ Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
+
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 {
   SMB_STRUCT_STAT st;
-  if (!sbuf) sbuf = &st;
+	if (!sbuf)
+		sbuf = &st;
   
   if (sys_stat(fname,sbuf) != 0) 
     return(False);
@@ -199,8 +195,9 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
-check a files mod time
+ Check a files mod time.
 ********************************************************************/
+
 time_t file_modtime(char *fname)
 {
   SMB_STRUCT_STAT st;
@@ -212,8 +209,9 @@ time_t file_modtime(char *fname)
 }
 
 /*******************************************************************
-  check if a directory exists
+ Check if a directory exists.
 ********************************************************************/
+
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 {
   SMB_STRUCT_STAT st2;
@@ -614,8 +612,9 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
 }
 
 /*******************************************************************
-sleep for a specified number of milliseconds
+ Sleep for a specified number of milliseconds.
 ********************************************************************/
+
 void msleep(int t)
 {
   int tdiff=0;
@@ -638,10 +637,10 @@ void msleep(int t)
   }
 }
 
-
 /****************************************************************************
-become a daemon, discarding the controlling terminal
+ Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
+
 void become_daemon(void)
 {
 	if (sys_fork()) {
@@ -684,8 +683,9 @@ BOOL yesno(char *p)
 }
 
 /****************************************************************************
-expand a pointer to be a particular size
+ Expand a pointer to be a particular size.
 ****************************************************************************/
+
 void *Realloc(void *p,size_t size)
 {
   void *ret=NULL;
@@ -707,20 +707,21 @@ void *Realloc(void *p,size_t size)
   return(ret);
 }
 
-
 /****************************************************************************
-free memory, checks for NULL and set to NULL
+ Free memory, checks for NULL.
 use directly SAFE_FREE()
 exist only because we need to pass a function pointer somewhere --SSS
 ****************************************************************************/
+
 void safe_free(void *p)
 {
 	SAFE_FREE(p);
 }
 
 /****************************************************************************
-get my own name and IP
+ Get my own name and IP.
 ****************************************************************************/
+
 BOOL get_myname(char *my_name)
 {
 	pstring hostname;
@@ -739,7 +740,9 @@ BOOL get_myname(char *my_name)
 	if (my_name) {
 		/* split off any parts after an initial . */
 		char *p = strchr_m(hostname,'.');
-		if (p) *p = 0;
+
+		if (p)
+			*p = 0;
 		
 		fstrcpy(my_name,hostname);
 	}
@@ -748,8 +751,9 @@ BOOL get_myname(char *my_name)
 }
 
 /****************************************************************************
-interpret a protocol description string, with a default
+ Interpret a protocol description string, with a default.
 ****************************************************************************/
+
 int interpret_protocol(char *str,int def)
 {
   if (strequal(str,"NT1"))
