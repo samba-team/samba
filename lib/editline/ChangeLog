@@ -1,3 +1,7 @@
+2005-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* editline.c: avoid const string and strict aliasing warnings
+
 2005-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Make editline a non-static library and let libtool
