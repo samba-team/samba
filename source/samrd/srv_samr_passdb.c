@@ -59,8 +59,6 @@
 					uint32 *num_aliases, uint32 **rid);
 	BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 					DOM_GID **gid);
-	BOOL samr_query_groupinfo(  POLICY_HND *pol,
-					uint16 switch_value, GROUP_INFO_CTR* ctr);
 	BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 					void* usr);
 	BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr);
@@ -1118,44 +1116,35 @@ uint32 _samr_query_groupmem(POLICY_HND *group_pol,
 	return status;
 }
 
-#if 0
-
 
 /*******************************************************************
  samr_reply_query_groupinfo
  ********************************************************************/
-uint32 _samr_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
-				prs_struct *rdata)
+uint32 _samr_query_groupinfo(POLICY_HND *pol,
+				uint16 switch_level,
+				GROUP_INFO_CTR* ctr)
 {
-	SAMR_R_QUERY_GROUPINFO r_e;
-	GROUP_INFO_CTR ctr;
 	uint32 status = 0x0;
 
-	ptr = 0;
-
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(pol)) == -1))
+	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
-
-	DEBUG(5,("samr_reply_query_groupinfo: %d\n", __LINE__));
 
 	if (status == 0x0)
 	{
 		if (switch_level == 1)
 		{
-			ptr = 1;
-			ctr.switch_value1 = 1;
-			make_samr_group_info1(&ctr.group.info1,
+			ctr->switch_value1 = 1;
+			make_samr_group_info1(&ctr->group.info1,
 			                      "fake account name",
 			                      "fake account description", 2);
 		}
 		else if (switch_level == 4)
 		{
-			ptr = 1;
-			ctr.switch_value1 = 4;
-			make_samr_group_info4(&ctr.group.info4,
+			ctr->switch_value1 = 4;
+			make_samr_group_info4(&ctr->group.info4,
 			                     "fake account description");
 		}
 		else
@@ -1164,14 +1153,10 @@ uint32 _samr_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
 		}
 	}
 
-	make_samr_r_query_groupinfo(&r_e, status == 0 ? &ctr : NULL, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_groupinfo("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_query_groupinfo: %d\n", __LINE__));
-
+	return status;
 }
+
+#if 0
 
 
 /*******************************************************************

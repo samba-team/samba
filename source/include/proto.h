@@ -4275,8 +4275,9 @@ uint32 _samr_query_groupmem(POLICY_HND *group_pol,
 					uint32 *num_mem,
 					uint32 **rid,
 					uint32 **attr);
-uint32 _samr_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
-				prs_struct *rdata);
+uint32 _samr_query_groupinfo(POLICY_HND *pol,
+				uint16 switch_value,
+				GROUP_INFO_CTR* ctr);
 uint32 _samr_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 				prs_struct *rdata);
 uint32 _samr_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,

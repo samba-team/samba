@@ -394,65 +394,25 @@ static void api_samr_query_groupmem( rpcsrv_struct *p, prs_struct *data, prs_str
 
 
 /*******************************************************************
- samr_reply_query_groupinfo
- ********************************************************************/
-static void samr_reply_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_QUERY_GROUPINFO r_e;
-	GROUP_INFO_CTR ctr;
-	uint32 status = 0x0;
-
-	r_e.ptr = 0;
-
-	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->pol)) == -1))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-
-	DEBUG(5,("samr_reply_query_groupinfo: %d\n", __LINE__));
-
-	if (status == 0x0)
-	{
-		if (q_u->switch_level == 1)
-		{
-			r_e.ptr = 1;
-			ctr.switch_value1 = 1;
-			make_samr_group_info1(&ctr.group.info1,
-			                      "fake account name",
-			                      "fake account description", 2);
-		}
-		else if (q_u->switch_level == 4)
-		{
-			r_e.ptr = 1;
-			ctr.switch_value1 = 4;
-			make_samr_group_info4(&ctr.group.info4,
-			                     "fake account description");
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-		}
-	}
-
-	make_samr_r_query_groupinfo(&r_e, status == 0 ? &ctr : NULL, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_groupinfo("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_query_groupinfo: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
  api_samr_query_groupinfo
  ********************************************************************/
 static void api_samr_query_groupinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_GROUPINFO q_e;
+	SAMR_R_QUERY_GROUPINFO r_e;
+	GROUP_INFO_CTR ctr;
+	uint32 status;
+
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
+	ZERO_STRUCT(ctr);
+	
 	samr_io_q_query_groupinfo("", &q_e, data, 0);
-	samr_reply_query_groupinfo(&q_e, rdata);
+
+	status = _samr_query_groupinfo(&q_e.pol, q_e.switch_level, &ctr);
+
+	make_samr_r_query_groupinfo(&r_e, status == 0 ? &ctr : NULL, status);
+	samr_io_r_query_groupinfo("", &r_e, rdata, 0);
 }
 
 
