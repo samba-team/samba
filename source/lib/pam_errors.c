@@ -28,7 +28,7 @@
 #endif	
 
 /* PAM -> NT_STATUS map */
-const static struct {
+static struct {
 	int pam_code;
 	NTSTATUS ntstatus;
 } pam_to_nt_status_map[] = {
@@ -58,7 +58,7 @@ const static struct {
 };
 
 /* NT_STATUS -> PAM map */
-const static struct {
+static struct {
 	NTSTATUS ntstatus;
 	int pam_code;
 } nt_status_to_pam_map[] = {
