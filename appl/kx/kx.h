@@ -42,10 +42,6 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#ifdef SOCKS
-#include <socks.h>
-#endif
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -108,6 +104,10 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xauth.h>
+
+#ifdef SOCKS
+#include <socks.h>
+#endif
 
 #include <krb.h>
 

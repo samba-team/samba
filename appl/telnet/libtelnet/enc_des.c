@@ -32,9 +32,6 @@
  */
 
 #include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
 
 RCSID("$Id$");
 
@@ -44,6 +41,9 @@ RCSID("$Id$");
 #ifdef	__STDC__
 #include <stdlib.h>
 #include <string.h>
+#endif
+#ifdef SOCKS
+#include <socks.h>
 #endif
 
 #include "encrypt.h"

@@ -55,10 +55,6 @@
 #include <config.h>
 #endif
 
-#ifdef SOCKS
-#include <socks.h>
-#endif
-
 RCSID("$Id$");
 
 #ifdef	KRB4
@@ -74,6 +70,10 @@ RCSID("$Id$");
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 #include <roken.h>
 
 #include "encrypt.h"

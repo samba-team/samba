@@ -41,9 +41,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#ifdef SOCKS
-#include <socks.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,6 +58,10 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_CURSES_H
+#include <curses.h>
 #endif
 
 #include <termios.h>
@@ -128,6 +129,10 @@
 
 #ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
+
+#ifdef SOCKS
+#include <socks.h>
 #endif
 
 #include <roken.h>

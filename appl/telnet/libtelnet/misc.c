@@ -32,9 +32,6 @@
  */
 
 #include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
 
 RCSID("$Id$");
 
@@ -42,6 +39,10 @@ RCSID("$Id$");
 #include "auth.h"
 #include "encrypt.h"
 #include <string.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 #include <roken.h>
 
 char *RemoteHostName;

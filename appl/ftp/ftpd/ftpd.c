@@ -36,10 +36,6 @@
 RCSID("$Id$");
 #endif
 
-#ifdef SOCKS
-#include <socks.h>
-#endif
-
 /*
  * FTP server.
  */
@@ -140,6 +136,11 @@ RCSID("$Id$");
 #include "roken.h"
 
 #include <otp.h>
+
+#ifdef SOCKS
+#include <socks.h>
+extern int LIBPREFIX(fclose)      __P((FILE *));
+#endif
 
 void yyparse();
 

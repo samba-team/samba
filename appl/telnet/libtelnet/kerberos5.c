@@ -52,9 +52,6 @@
  */
 
 #include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
 
 static const char *error_message(long foo)
 {
@@ -81,6 +78,9 @@ RCSID("$Id$");
 #endif
 #include <netdb.h>
 #include <ctype.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
 
 /* kerberos 5 include files (ext-proto.h) will get an appropriate stdlib.h
    and string.h/strings.h */

@@ -45,10 +45,6 @@
 #include <config.h>
 #endif
 
-#ifdef SOCKS
-#include <socks.h>
-#endif
-
 #include <sys/cdefs.h>
 
 #ifdef HAVE_PWD_H
@@ -122,6 +118,11 @@
 #endif
 
 #include <err.h>
+
+#ifdef SOCKS
+#include <socks.h>
+extern int LIBPREFIX(fclose)      __P((FILE *));
+#endif
 
 #include "ftp_var.h"
 #include "extern.h"

@@ -45,9 +45,6 @@
  */
 
 #include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
 
 RCSID("$Id$");
 
@@ -58,6 +55,9 @@ RCSID("$Id$");
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <setjmp.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
 
 static jmp_buf env;
 

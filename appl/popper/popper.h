@@ -23,10 +23,6 @@
 #define RETURN_PATH_HANDLING
 #endif
 
-#ifdef SOCKS
-#include <socks.h>
-#endif
-
 /* Common include files */
 
 #include <stdio.h>
@@ -88,6 +84,10 @@
 #include <sys/select.h>
 #endif
 #include "version.h"
+
+#ifdef SOCKS
+#include <socks.h>
+#endif
 
 #include <err.h>
 #include <roken.h>

@@ -53,9 +53,6 @@
 
 
 #include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
 
 RCSID("$Id$");
 
@@ -69,6 +66,10 @@ RCSID("$Id$");
 
 #include <stdlib.h>
 #include <string.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 #include <roken.h>
 
 /*
