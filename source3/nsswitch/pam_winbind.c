@@ -1,6 +1,7 @@
 /* pam_winbind module
 
    Copyright Andrew Tridgell <tridge@samba.org> 2000
+   Copyright Tim Potter <tpot@samba.org> 2000
 
    largely based on pam_userdb by Christian Gafton <gafton@redhat.com> 
 */
@@ -455,8 +456,6 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc,
         if (retval != PAM_SUCCESS) {
             return PAM_AUTHTOK_ERR;
         }
-
-        fprintf(stderr, "oldpw = %s, newpw = %s\n", oldpw, newpw);
 
         if (retval == PAM_SUCCESS && 
             winbind_chauthtok_request(user, oldpw, newpw) == 0) {
