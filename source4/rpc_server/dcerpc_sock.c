@@ -38,7 +38,7 @@ static ssize_t dcerpc_write_fn(void *private, DATA_BLOB *out)
 	struct socket_context *sock = private;
 	size_t sendlen;
 
-	status = socket_send(sock, sock, out, &sendlen, 0);
+	status = socket_send(sock, out, &sendlen, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -131,7 +131,7 @@ static void add_socket_rpc_tcp_iface(struct server_service *service,
 	struct server_socket *sock;
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 0;
-	const char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
+	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
 			
 	if (e->ep_description.endpoint) 
 		port = atoi(e->ep_description.endpoint);
@@ -251,22 +251,30 @@ void dcesrv_sock_recv(struct server_connection *conn, time_t t, uint16_t flags)
 	NTSTATUS status;
 	struct dcesrv_connection *dce_conn = conn->private_data;
 	DATA_BLOB tmp_blob;
+	size_t nread;
 
-	DEBUG(10,("dcesrv_sock_recv\n"));
-
-	status = socket_recv(conn->socket, conn->socket, &tmp_blob, 0x4000, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_IS_ERR(status)) {
-			dcesrv_terminate_connection(dce_conn, "eof on socket");
-			return;
-		}
+	tmp_blob = data_blob_talloc(conn->socket, NULL, 0x1000);
+	if (tmp_blob.data == NULL) {
+		dcesrv_terminate_connection(dce_conn, "out of memory");
 		return;
 	}
 
+	status = socket_recv(conn->socket, tmp_blob.data, tmp_blob.length, &nread, 0);
+	if (NT_STATUS_IS_ERR(status)) {
+		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
+		return;
+	}
+	if (nread == 0) {
+		return;
+	}
+
+	tmp_blob.length = nread;
+
 	status = dcesrv_input(dce_conn, &tmp_blob);
 	talloc_free(tmp_blob.data);
+
 	if (!NT_STATUS_IS_OK(status)) {
-		dcesrv_terminate_connection(dce_conn, "eof on socket");
+		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
 		return;
 	}
 
