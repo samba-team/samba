@@ -403,6 +403,7 @@ static void usage(char *pname)
   int opt;
   extern FILE *dbf;
   extern char *optarg;
+  char pidFile[100] = { 0 };
 
   *host_file = 0;
 
@@ -431,10 +432,13 @@ static void usage(char *pname)
   signal(SIGHUP ,SIGNAL_CAST sig_hup);
   signal(SIGTERM,SIGNAL_CAST sig_term);
 
-  while ((opt = getopt(argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:")) != EOF)
+  while ((opt = getopt(argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:")) != EOF)
     {
       switch (opt)
 	{
+        case 'f':
+          strncpy(pidFile, optarg, sizeof(pidFile));
+          break;
 	case 's':
 	  strcpy(servicesf,optarg);
 	  break;	  
@@ -503,6 +507,32 @@ static void usage(char *pname)
     DEBUG(2,("%s becoming a daemon\n",timestring()));
     become_daemon();
   }
+
+  if (*pidFile)
+    {
+      int     fd;
+      char    buf[20];
+
+      if ((fd = open(pidFile,
+        O_NONBLOCK | O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0)
+        {
+          DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, strerror(errno)));
+          exit(1);
+        }
+      if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False)
+        {
+          DEBUG(0,("ERROR: nmbd is already running\n"));
+          exit(1);
+        }
+      sprintf(buf, "%u\n", (unsigned int) getpid());
+      if (write(fd, buf, strlen(buf)) < 0)
+        {
+          DEBUG(0,("ERROR: can't write to %s: %s\n", pidFile, strerror(errno)));
+          exit(1);
+        }
+      /* Leave pid file open & locked for the duration... */
+    }
+
 
   DEBUG(3,("Opening sockets %d\n", port));
 
