@@ -476,10 +476,15 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   if( stdout_logging )
     return( True );
 
-  /* Print it all out at once. */
-  if(lp_timestamp_logs())
-    Debug1( "[%s, %d] %s%s%s(%d)\n",
-            timestring(), level, file, (*file)?":":"", func, line );
+  /* Print the header if timestamps are turned on.  If parameters are
+   * not yet loaded, then default to timestamps on.
+   */
+  if( lp_timestamp_logs() || !(lp_loaded()) )
+    {
+    /* Print it all out at once to prevent split syslog output. */
+    Debug1( "[%s, %d] %s:%s(%d)\n", timestring(), level, file, func, line );
+    }
+
   return( True );
   } /* dbghdr */
 
