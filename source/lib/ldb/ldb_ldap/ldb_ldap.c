@@ -496,6 +496,35 @@ static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	return ret;
 }
 
+static int lldb_lock(struct ldb_module *module, const char *lockname)
+{
+	struct ldb_context *ldb = module->ldb;
+	struct lldb_private *lldb = module->private_data;
+	int ret = 0;
+
+	if (lockname == NULL) {
+		return -1;
+	}
+
+	/* TODO implement a local locking mechanism here */
+
+	return ret;
+}
+
+static int lldb_unlock(struct ldb_module *module, const char *lockname)
+{
+	struct ldb_context *ldb = module->ldb;
+	struct lldb_private *lldb = module->private_data;
+	int ret = 0;
+
+	if (lockname == NULL) {
+		return -1;
+	}
+
+	/* TODO implement a local unlocking mechanism here */
+
+	return ret;
+}
 
 /*
   return extended error information
@@ -516,6 +545,8 @@ static const struct ldb_module_ops lldb_ops = {
 	lldb_modify,
 	lldb_delete,
 	lldb_rename,
+	lldb_lock,
+	lldb_unlock,
 	lldb_errstring
 };
 

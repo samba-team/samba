@@ -80,6 +80,18 @@ static int skel_rename_record(struct ldb_module *module, const char *olddn, cons
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
+/* named_lock */
+static const char *skel_named_lock(struct ldb_module *module, const char *lockname)
+{
+	return ldb_next_named_lock(module, lockname);
+}
+
+/* named_unlock */
+static const char *skel_named_unlock(struct ldb_module *module, const char *lockname)
+{
+	return ldb_next_named_unlock(module, lockname);
+}
+
 /* return extended error information */
 static const char *skel_errstring(struct ldb_module *module)
 {
@@ -100,6 +112,8 @@ static const struct ldb_module_ops skel_ops = {
 	skel_modify_record,
 	skel_delete_record,
 	skel_rename_record,
+	skel_named_lock,
+	skel_named_unlock,
 	skel_errstring,
 	skel_cache_free
 };

@@ -250,6 +250,22 @@ int ldb_next_rename_record(struct ldb_module *module, const char *olddn, const c
 	return module->next->ops->rename_record(module->next, olddn, newdn);
 }
 
+int ldb_next_named_lock(struct ldb_module *module, const char *lockname)
+{
+	if (!module->next) {
+		return -1;
+	}
+	return module->next->ops->named_lock(module->next, lockname);
+}
+
+int ldb_next_named_unlock(struct ldb_module *module, const char *lockname)
+{
+	if (!module->next) {
+		return -1;
+	}
+	return module->next->ops->named_unlock(module->next, lockname);
+}
+
 const char *ldb_next_errstring(struct ldb_module *module)
 {
 	if (!module->next) {
