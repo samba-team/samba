@@ -370,6 +370,14 @@
 /**************************/
 /* srvsvc_NetShare        */
 /**************************/
+
+	/* share types */
+	const int STYPE_DISKTREE = 0;
+	const int STYPE_PRINTQ   = 1;
+	const int STYPE_DEVICE   = 2;	/* Serial device */
+	const int STYPE_IPC      = 3;	/* Interprocess communication (IPC) */
+	const int STYPE_HIDDEN   = 0x80000000; /* share is a hidden one */
+
 	typedef struct {
 		unistr *name;
 	} srvsvc_NetShareInfo0;
