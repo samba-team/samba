@@ -282,7 +282,7 @@ common_auth(sia_collect_func_t *collect,
 		       toname, toinst, realm, name));
 	    return SIADFAIL;
 	}
-	ret = krb_verify_user(toname, toinst, realm,
+	ret = krb_verify_user_multiple(toname, toinst, realm,
 			      entity->password, getuid() == 0, NULL);
 	if(ret){
 	    SIA_DEBUG(("DEBUG", "krb_verify_user: %s", krb_get_err_text(ret)));

@@ -68,7 +68,7 @@ afs_verify(char *name,
 	      "%s%d_%d", TKT_ROOT,
 	      (unsigned)pwd->pw_uid, (unsigned)getpid());
     krb_set_tkt_string (tkt_string);
-    ret = krb_verify_user (name, "", lrealm, password, 1, NULL);
+    ret = krb_verify_user_multiple (name, "", lrealm, password, 1, NULL);
     if (ret == KSUCCESS) {
       if (k_hasafs()) {
 	k_setpag ();
