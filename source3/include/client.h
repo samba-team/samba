@@ -24,6 +24,10 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
+/* the client asks for a smaller buffer to save ram and also to get more
+   overlap on the wire */
+#define CLI_BUFFER_SIZE (0x4000)
+
 /*
  * These definitions depend on smb.h
  */
