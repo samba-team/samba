@@ -25,7 +25,7 @@
 #include "winbindd.h"
 #include "debug.h"
 
-/* Prototypes from common.h - only needed #if TNG */
+/* Prototypes from common.h */
 
 int winbindd_request(int req_type, struct winbindd_request *request,
 		     struct winbindd_response *response);
