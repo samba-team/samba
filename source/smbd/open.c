@@ -647,11 +647,11 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 	  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
 	  if (same_pid) {
-		  if (isexe && old_mode == O_RDONLY && 
+		  if (isexe && old_mode == DOS_OPEN_RDONLY && 
 		      old_deny == DENY_DOS && new_deny == DENY_READ) {
 			  return AFAIL;
 		  }
-		  if (!isexe && old_mode == O_RDONLY && 
+		  if (!isexe && old_mode == DOS_OPEN_RDONLY && 
 		      old_deny == DENY_DOS && new_deny == DENY_DOS) {
 			  return AREAD;
 		  }
@@ -660,7 +660,7 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 			  if (old_mode == DOS_OPEN_RDONLY) return AFAIL;
 			  return AALL;
 		  }
-		  if (old_mode == O_RDONLY && old_deny == DENY_DOS) {
+		  if (old_mode == DOS_OPEN_RDONLY && old_deny == DENY_DOS) {
 			  if (new_deny == DENY_FCB || new_deny == DENY_READ) {
 				  if (isexe) return AREAD;
 				  return AFAIL;
