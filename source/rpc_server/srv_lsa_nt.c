@@ -487,7 +487,7 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		r_u->status = NT_STATUS_INVALID_HANDLE;
 
-	if (!ref || !names && NT_STATUS_OK(r_u->status))
+	if (!ref || !names && NT_STATUS_IS_OK(r_u->status))
 		r_u->status = NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup SIDs response */
@@ -515,7 +515,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		r_u->status = NT_STATUS_INVALID_HANDLE;
 
-	if (!ref || !rids && NT_STATUS_OK(r_u->status))
+	if (!ref || !rids && NT_STATUS_IS_OK(r_u->status))
 		r_u->status = NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
