@@ -1856,7 +1856,7 @@ static int
 arcfour_checksum_p(struct checksum_type *ct, krb5_crypto crypto)
 {
     return (ct->type == CKSUMTYPE_HMAC_MD5) &&
-	(crypto->key.key->keytype != KEYTYPE_ARCFOUR);
+	(crypto->key.key->keytype == KEYTYPE_ARCFOUR);
 }
 
 krb5_error_code
