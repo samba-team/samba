@@ -2,8 +2,6 @@ PDB_OBJS	= pdb_mysql.so
 PDB_LDFLAGS	= -lmysqlclient
 MAKEFILE	= Makefile.pdb
 
-include	$(MAKEFILE)
-
 CC		= @CC@
 LIBTOOL		= libtool
 CFLAGS		= @CFLAGS@ $(PDB_CFLAGS)
