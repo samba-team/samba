@@ -361,7 +361,7 @@ NTSTATUS pvfs_acl_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
 		return NT_STATUS_OK;
 	}
 	status = pvfs_xattr_ndr_load(pvfs, acl, name->full_name, fd, 
-				     XATTR_DOSACL_NAME,
+				     XATTR_NTACL_NAME,
 				     acl, 
 				     (ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
 	return status;
@@ -384,7 +384,7 @@ NTSTATUS pvfs_acl_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
 	   admin privileges to set it */
 	privs = root_privileges();
 	status = pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
-				     XATTR_DOSACL_NAME, 
+				     XATTR_NTACL_NAME, 
 				     acl, 
 				     (ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
 	talloc_free(privs);
