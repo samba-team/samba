@@ -68,6 +68,8 @@
 #include <fcntl.h>
 #include <utime.h>
 
+#define SMBC_CTX_VERSION	1
+
 #define SMBC_BASE_FD        10000 /* smallest file descriptor returned */
 
 #define SMBC_WORKGROUP      1
@@ -123,6 +125,19 @@ struct smbc_dirent
  */
 #define SMBC_XATTR_FLAG_CREATE       0x1 /* fail if attr already exists */
 #define SMBC_XATTR_FLAG_REPLACE      0x2 /* fail if attr does not exist */
+
+
+/*
+ * Mappings of the DOS mode bits, as returned by smbc_getxattr() when the
+ * attribute name "system.dos_attr.mode" (or "system.dos_attr.*" or
+ * "system.*") is specified.
+ */
+#define SMBC_DOS_MODE_READONLY       0x01
+#define SMBC_DOS_MODE_HIDDEN         0x02
+#define SMBC_DOS_MODE_SYSTEM         0x04
+#define SMBC_DOS_MODE_VOLUME_ID      0x08
+#define SMBC_DOS_MODE_DIRECTORY      0x10
+#define SMBC_DOS_MODE_ARCHIVE        0x20
 
 
 #ifndef ENOATTR
@@ -457,13 +472,13 @@ struct _SMBCCTX {
 	struct smbc_internal_data * internal;
 
 	int flags;
-	
 };
 
 /* Flags for SMBCCTX->flags */
 #define SMB_CTX_FLAG_USE_KERBEROS (1 << 0)
 #define SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS (1 << 1)
 #define SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON (1 << 2) /* don't try to do automatic anon login */
+#define SMBCCTX_FLAG_CTXVER (1 << 3 ) /* internal flag used to define _SMBCCTX version */
 
 /**@ingroup misc
  * Create a new SBMCCTX (a context).
@@ -2184,5 +2199,76 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv);
 #ifdef __cplusplus
 }
 #endif
+
+/**@ingroup directory
+ * Convert strings of %xx to their single character equivalent.
+ *
+ * @param dest      A pointer to a buffer in which the resulting decoded
+ *                  string should be placed.  This may be a pointer to the
+ *                  same buffer as src_segment.
+ * 
+ * @param src       A pointer to the buffer containing the URL to be decoded.
+ *                  Any %xx sequences herein are converted to their single
+ *                  character equivalent.  Each 'x' must be a valid hexadecimal
+ *                  digit, or that % sequence is left undecoded.
+ *
+ * @param max_dest_len
+ *                  The size of the buffer pointed to by dest_segment.
+ * 
+ * @return          The number of % sequences which could not be converted
+ *                  due to lack of two following hexadecimal digits.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+int
+smbc_urldecode(char *dest, char * src, size_t max_dest_len);
+#ifdef __cplusplus
+}
+#endif
+
+
+/*
+ * Convert any characters not specifically allowed in a URL into their %xx
+ * equivalent.
+ *
+ * @param dest      A pointer to a buffer in which the resulting encoded
+ *                  string should be placed.  Unlike smbc_urldecode(), this
+ *                  must be a buffer unique from src.
+ * 
+ * @param src       A pointer to the buffer containing the string to be encoded.
+ *                  Any character not specifically allowed in a URL is converted
+ *                  into its hexadecimal value and encoded as %xx.
+ *
+ * @param max_dest_len
+ *                  The size of the buffer pointed to by dest_segment.
+ * 
+ * @returns         The remaining buffer length.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+int
+smbc_urlencode(char * dest, char * src, int max_dest_len);
+#ifdef __cplusplus
+}
+#endif
+
+
+/**@ingroup directory
+ * Return the version of the linked Samba code, and thus the version of the
+ * libsmbclient code.
+ *
+ * @return          The version string.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+const char *
+smbc_version(void);
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* SMBCLIENT_H_INCLUDED */
