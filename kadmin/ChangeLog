@@ -1,5 +1,10 @@
 1999-09-10  Assar Westerlund  <assar@sics.se>
 
+	* version4.c: only create you loose packets when we fail decoding
+ 	and not when an operation is not performed for some reason
+	(decode_packet): read the service key from the hdb
+	(dispatch, decode_packet): return proper error messages
+
 	* version4.c (kadm_ser_cpw): add password quality functions
 
 1999-08-26  Johan Danielsson  <joda@pdc.kth.se>
