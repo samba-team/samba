@@ -76,7 +76,13 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 #elif defined(LINUX_BROKEN_SENDFILE_API)
 
-#include <sys/sendfile.h>
+/*
+ * We must use explicit 32 bit types here. This code path means Linux
+ * won't do proper 64-bit sendfile. JRA.
+ */
+
+extern int32 sendfile (int out_fd, int in_fd, int32 *offset, uint32 count);
+
 
 #ifndef MSG_MORE
 #define MSG_MORE 0x8000
@@ -87,11 +93,13 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 	size_t total=0;
 	ssize_t ret;
 	ssize_t hdr_len = 0;
+	uint32 small_total = 0;
+	int32 small_offset;
 
 	/* 
 	 * Fix for broken Linux 2.4 systems with no working sendfile64().
 	 * If the offset+count > 2 GB then pretend we don't have the
-	 * system call sendfile at all. The upper later catches this
+	 * system call sendfile at all. The upper layer catches this
 	 * and uses a normal read. JRA.
 	 */
 
@@ -115,17 +123,19 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		}
 	}
 
-	total = count;
-	while (total) {
-		ssize_t nwritten;
+	small_total = (uint32)count;
+	small_offset = (int32)offset;
+
+	while (small_total) {
+		int32 nwritten;
 		do {
-			nwritten = sendfile(tofd, fromfd, &offset, total);
+			nwritten = sendfile(tofd, fromfd, &small_offset, small_total);
 		} while (nwritten == -1 && errno == EINTR);
 		if (nwritten == -1)
 			return -1;
 		if (nwritten == 0)
 			return -1; /* I think we're at EOF here... */
-		total -= nwritten;
+		small_total -= nwritten;
 	}
 	return count + hdr_len;
 }

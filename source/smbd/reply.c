@@ -1692,7 +1692,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 	ssize_t nread = -1;
 	char *data = smb_buf(outbuf);
 
-#if defined(WITH_SENDFILE) && defined(HAVE_SENDFILE)
+#if defined(WITH_SENDFILE)
 	/*
 	 * We can only use sendfile on a non-chained packet and on a file
 	 * that is exclusively oplocked.
