@@ -353,10 +353,7 @@ int main(int argc, char *argv[])
 {
 	BOOL 			interactive = True;
 	int 			opt;
-	static char		*cmdstr = "";
-	static char *opt_logfile=NULL;
-	static char *config_file = dyn_CONFIGFILE;
-	pstring 		logfile;
+	static char		*cmdstr = NULL;
 	struct cmd_set 		**cmd_set;
 	struct samtest_state st;
 
@@ -365,12 +362,9 @@ int main(int argc, char *argv[])
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{"command",	'e', POPT_ARG_STRING,	&cmdstr, 'e', "Execute semicolon seperated cmds"},
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
-		{"configfile", 'c', POPT_ARG_STRING, &config_file, 0,"use different configuration file",NULL},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ 0, 0, 0, 0}
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 
 	ZERO_STRUCT(st);
@@ -419,7 +413,7 @@ int main(int argc, char *argv[])
 	}
 
        /* Do anything specified with -c */
-	if (cmdstr[0]) {
+	if (cmdstr && cmdstr[0]) {
 		char    *cmd;
 		char    *p = cmdstr;
  

@@ -814,16 +814,13 @@ int main(int argc, char **argv)
 	static BOOL log_stdout = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_SAMBA
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "dual-daemon", 'B', POPT_ARG_VAL, &opt_dual_daemon, True, "Dual daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, False, "Disable caching" },
-		
-		{ 0, 0, 0, 0 }
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 	poptContext pc;
 	int opt;

@@ -97,70 +97,6 @@ static char **completion_fn(char *text, int start, int end)
 	return matches;
 }
 
-/***********************************************************************
- * read in username/password credentials from a file
- */
-static void read_authfile (
-	char *filename, 
-	char* username, 
-	char* password, 
-	char* domain
-)
-{
-	FILE *auth;
-        fstring buf;
-        uint16 len = 0;
-	char *ptr, *val, *param;
-                               
-	if ((auth=sys_fopen(filename, "r")) == NULL)
-	{
-		printf ("ERROR: Unable to open credentials file!\n");
-		return;
-	}
-                                
-	while (!feof(auth))
-	{  
-		/* get a line from the file */
-		if (!fgets (buf, sizeof(buf), auth))
-			continue;
-		
-		len = strlen(buf);
-		
-		/* skip empty lines */			
-		if ((len) && (buf[len-1]=='\n'))
-		{
-			buf[len-1] = '\0';
-			len--;
-		}	
-		if (len == 0)
-			continue;
-					
-		/* break up the line into parameter & value.
-		   will need to eat a little whitespace possibly */
-		param = buf;
-		if (!(ptr = strchr_m(buf, '=')))
-			continue;
-		val = ptr+1;
-		*ptr = '\0';
-					
-		/* eat leading white space */
-		while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
-			val++;
-					
-		if (strwicmp("password", param) == 0)
-			fstrcpy (password, val);
-		else if (strwicmp("username", param) == 0)
-			fstrcpy (username, val);
-		else if (strwicmp("domain", param) == 0)
-			fstrcpy (domain, val);
-						
-		memset(buf, 0, sizeof(buf));
-	}
-	fclose(auth);
-	
-	return;
-}
-
 static char* next_command (char** cmdstr)
 {
 	static pstring 		command;
@@ -179,28 +115,6 @@ static char* next_command (char** cmdstr)
 		*cmdstr = NULL;
 	
 	return command;
-}
-
-
-/**
- * Find default username from environment variables.
- *
- * @param username fstring to receive username; not touched if none is
- * known.
- **/
-static void get_username (char *username)
-{
-        if (getenv("USER"))
-                fstrcpy(username,getenv("USER"));
- 
-        if (*username == 0 && getenv("LOGNAME"))
-                fstrcpy(username,getenv("LOGNAME"));
- 
-        if (*username == 0) {
-                fstrcpy(username,"GUEST");
-        }
-
-	return;
 }
 
 /* Fetch the SID for this computer */
@@ -575,21 +489,12 @@ out_free:
 
  int main(int argc, char *argv[])
 {
-	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
-	static char		*cmdstr = "";
+	static char		*cmdstr = NULL;
 	const char *server;
 	struct cli_state	*cli;
-	fstring 		password="",
-				username="",
-		domain="";
-	static char 		*opt_authfile=NULL,
-				*opt_username=NULL,
-				*opt_domain=NULL,
- 	                        *opt_logfile=NULL,
-	                        *opt_ipaddr=NULL;
-	pstring 		logfile;
+	static char 		*opt_ipaddr=NULL;
 	struct cmd_set 		**cmd_set;
 	struct in_addr 		server_ip;
 	NTSTATUS 		nt_status;
@@ -599,17 +504,11 @@ out_free:
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A', "File containing user credentials", "AUTHFILE"},
-		{"nopass",	'N', POPT_ARG_NONE,	&got_pass, 'N', "Don't ask for a password"},
-		{"user", 'U', POPT_ARG_STRING,	&opt_username, 'U', "Set the network username", "USER"},
-		{"workgroup", 'W', POPT_ARG_STRING, 	&opt_domain, 'W', "Set the domain name for user account", "DOMAIN"},
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds", "COMMANDS"},
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout", "LOGFILE" },
 		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ NULL }
+		POPT_COMMON_SAMBA
+		POPT_CREDENTIALS
+		POPT_TABLEEND
 	};
 
 	ZERO_STRUCT(server_ip);
@@ -628,43 +527,13 @@ out_free:
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'A':
-			/* only get the username, password, and domain from the file */
-			read_authfile (opt_authfile, username, password, domain);
-			if (strlen (password))
-				got_pass = 1;
-			break;
-			
-		case 'l':
-			slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
-				 opt_logfile);
-			lp_set_logfile(logfile);
-			interactive = False;
-			break;
-			
-		case 'U': {
-			char *lp;
 
-			fstrcpy(username,opt_username);
-
-			if ((lp=strchr_m(username,'%'))) {
-				*lp = 0;
-				fstrcpy(password,lp+1);
-				got_pass = 1;
-				memset(strchr_m(opt_username,'%') + 1, 'X',
-				       strlen(password));
-			}
-			break;
-		}
 		case 'I':
 		        if ( (server_ip.s_addr=inet_addr(opt_ipaddr)) == INADDR_NONE ) {
 				fprintf(stderr, "%s not a valid IP address\n",
 					opt_ipaddr);
 				return 1;
 			}
-		case 'W':
-			fstrcpy(domain, opt_domain);
-			break;
 		}
 	}
 
@@ -701,28 +570,25 @@ out_free:
 	 * from stdin if necessary
 	 */
 
-	if (!got_pass) {
+	if (!cmdline_auth_info.got_pass) {
 		char *pass = getpass("Password:");
 		if (pass) {
-			fstrcpy(password, pass);
+			pstrcpy(cmdline_auth_info.password, pass);
 		}
 	}
 	
-	if (!strlen(username) && !got_pass)
-		get_username(username);
-		
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
 					opt_ipaddr ? &server_ip : NULL, 0,
 					"IPC$", "IPC",  
-					username, domain,
-					password, 0, NULL);
+					cmdline_auth_info.username, lp_workgroup(),
+					cmdline_auth_info.password, 0, NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
 		return 1;
 	}
 
-	memset(password,'X',sizeof(password));
+	memset(cmdline_auth_info.password,'X',sizeof(cmdline_auth_info.password));
 
 	/* Load command lists */
 
@@ -737,7 +603,7 @@ out_free:
 	fetch_machine_sid(cli);
  
        /* Do anything specified with -c */
-        if (cmdstr[0]) {
+        if (cmdstr && cmdstr[0]) {
                 char    *cmd;
                 char    *p = cmdstr;
  

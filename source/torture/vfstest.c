@@ -4,7 +4,7 @@
 
    Copyright (C) Simo Sorce 2002
    Copyright (C) Eric Lorimer 2002
-   Copyright (C) Jelmer Vernooij 2002
+   Copyright (C) Jelmer Vernooij 2002,2003
 
    Most of this code was ripped off of rpcclient.
    Copyright (C) Tim Potter 2000-2001
@@ -474,17 +474,11 @@ BOOL reload_services(BOOL test)
 
 int main(int argc, char *argv[])
 {
-	BOOL 			interactive = True;
-	int 			opt;
-	static char		*cmdstr = "";
-	static char		*opt_logfile=NULL;
-	static int		opt_debuglevel;
-	pstring 		logfile;
+	static char		*cmdstr = NULL;
 	struct cmd_set 		**cmd_set;
-	extern BOOL 		AllowDebugChange;
 	static struct vfs_state vfs;
 	int i;
-	static const char	*filename = "";
+	static const char	*filename = NULL;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -493,35 +487,17 @@ int main(int argc, char *argv[])
 		POPT_AUTOHELP
 		{"file",	'f', POPT_ARG_STRING,	&filename, 0, },
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 0, "Execute specified list of commands" },
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Write output to specified logfile" },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ 0, 0, 0, 0}
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 
 
 	setlinebuf(stdout);
 
-	DEBUGLEVEL = 1;
-	AllowDebugChange = False;
-
 	pc = poptGetContext("vfstest", argc, (const char **) argv,
 			    long_options, 0);
 	
-	while((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt) {
-		case 'l':
-			slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
-				 opt_logfile);
-			lp_set_logfile(logfile);
-			interactive = False;
-			break;
-			
-		case 'd':
-			DEBUGLEVEL = opt_debuglevel;
-			break;
-		}
-	}
+	while(poptGetNextOpt(pc) != -1);
 
 
 	poptFreeContext(pc);
@@ -531,9 +507,7 @@ int main(int argc, char *argv[])
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging("vfstest", interactive);
-	if (!interactive) 
-		reopen_logs();
+	setup_logging("vfstest", True);
 	
 	/* Load command lists */
 
@@ -556,13 +530,13 @@ int main(int argc, char *argv[])
 	smbd_vfs_init(vfs.conn);
 
 	/* Do we have a file input? */
-	if (filename[0]) {
+	if (filename && filename[0]) {
 		process_file(&vfs, filename);
 		return 0;
 	}
 
 	/* Do anything specified with -c */
-	if (cmdstr[0]) {
+	if (cmdstr && cmdstr[0]) {
 		char    *cmd;
 		char    *p = cmdstr;
  

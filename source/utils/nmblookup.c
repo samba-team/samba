@@ -203,9 +203,6 @@ int main(int argc,char *argv[])
 	  { "root-port", 'r', POPT_ARG_VAL, &RootPort, True, "Use root port 137 (Win95 only replies to this)" },
 	  { "lookup-by-ip", 'A', POPT_ARG_VAL, &lookup_by_ip, True, "Do a node status on <name> as an IP Address" },
 	  POPT_COMMON_SAMBA
-	  { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_scope },
-	  { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-	  { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 	  { 0, 0, 0, 0 }
   };
 	

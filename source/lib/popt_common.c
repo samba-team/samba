@@ -29,6 +29,7 @@
  *		-V,--version
  *		-l,--log-base
  *		-n,--netbios-name
+ *		-W,--workgroup
  *		-i,--scope
  */
 
@@ -102,49 +103,29 @@ static void popt_common_callback(poptContext con,
 			  set_global_scope(arg);
 		}
 		break;
+
+	case 'W':
+		if (arg) {
+			set_global_myworkgroup(arg);
+		}
+		break;
 	}
 }
 
-struct poptOption popt_common_debug[] = {
+struct poptOption popt_common_samba[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
 	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
-	{ 0 }
-};
-
-struct poptOption popt_common_scope[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback }, 
-    { "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },  
-	{ 0 }
-};
-
-struct poptOption popt_common_configfile[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
-	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file" },
-	{ 0 }
-};
-
-struct poptOption popt_common_socket_options[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
-	{"socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use" },
-	{ 0 }
-};
-
-struct poptOption popt_common_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
-	{"version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
-	{ 0 }
-};
-
-struct poptOption popt_common_netbios_name[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
-	{"netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name"},
-	{ 0 }
-};
-
-struct poptOption popt_common_log_base[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_callback },
-	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files"},
-	{ 0 }
+	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file",
+	  "CONFIGFILE" },
+	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use",
+	  "SOCKETOPTIONS" },
+	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
+	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files",
+	  "LOGFILEBASE" },
+	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
+	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
+	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
+	POPT_TABLEEND
 };
 
 /****************************************************************************
@@ -255,7 +236,7 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
 		else if (strwicmp("username", param) == 0)
 			pstrcpy(info->username, val);
 		else if (strwicmp("domain", param) == 0)
-			pstrcpy(info->workgroup,val);
+			set_global_myworkgroup(val);
 		memset(buf, 0, sizeof(buf));
 	}
 	x_fclose(auth);
@@ -263,7 +244,6 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
 
 /* Handle command line options:
  *		-U,--user
- *		-W,--workgroup
  *		-A,--authentication-file
  *		-k,--use-kerberos
  *		-N,--no-pass
@@ -327,30 +307,25 @@ static void popt_common_credentials_callback(poptContext con,
 		get_credentials_file(arg, &cmdline_auth_info);
 		break;
 
-		case 'W':
-			pstrcpy(cmdline_auth_info.workgroup,arg);
-			break;
-
-		case 'k':
+	case 'k':
 #ifndef HAVE_KRB5
-			d_printf("No kerberos support compiled in\n");
-			exit(1);
+		d_printf("No kerberos support compiled in\n");
+		exit(1);
 #else
-			cmdline_auth_info.got_pass = True;
+		cmdline_auth_info.use_kerberos = True;
+		cmdline_auth_info.got_pass = True;
 #endif
-
-			break;
-		}
+		break;
 	}
+}
 
 
 
-	struct poptOption popt_common_credentials[] = {
-		{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_credentials_callback },
-		{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
-		{ "no-pass", 'N', POPT_ARG_VAL, &cmdline_auth_info.got_pass, True, "Don't ask for a password" },
-		{ "kerberos", 'k', POPT_ARG_VAL, &cmdline_auth_info.use_kerberos, True, "Use kerberos (active directory) authentication" },
-		{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
-		{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
-		{ 0 }
-	};
+struct poptOption popt_common_credentials[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_credentials_callback },
+	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
+	{ "no-pass", 'N', POPT_ARG_NONE, &cmdline_auth_info.got_pass, True, "Don't ask for a password" },
+	{ "kerberos", 'k', POPT_ARG_NONE, &cmdline_auth_info.use_kerberos, True, "Use kerberos (active directory) authentication" },
+	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
+	POPT_TABLEEND
+};

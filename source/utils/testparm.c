@@ -186,7 +186,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	return ret;
 }   
 
-int main(int argc, const char *argv[])
+ int main(int argc, const char *argv[])
 {
 	const char *config_file = dyn_CONFIGFILE;
 	int s;
@@ -206,7 +206,7 @@ int main(int argc, const char *argv[])
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
 		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
-		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
+		POPT_COMMON_SAMBA
 		{0,0,0,0}
 	};
 
