@@ -91,6 +91,10 @@
  * -------------------------------------------------------------------------- **
  *
  *  Log: ubi_Cache.c,v 
+ *  Revision 0.2  1998/06/02 01:36:18  crh
+ *  Changed include name from ubi_null.h to sys_include.h to make it
+ *  more generic.
+ *
  *  Revision 0.1  1998/05/20 04:36:02  crh
  *  The C file now includes ubi_null.h.  See ubi_null.h for more info.
  *
@@ -100,7 +104,7 @@
  * ========================================================================== **
  */
 
-#include "ubi_null.h"     /* ubiqx NULL source.       */
+#include "sys_include.h"  /* System-specific includes. */
 #include "ubi_Cache.h"    /* Header for *this* module. */
 
 /* -------------------------------------------------------------------------- **
@@ -110,8 +114,8 @@
 /*  commented out until I make use of it...
 static char ModuleID[] = 
 "ubi_Cache\n\
-\tRevision: 0.1 \n\
-\tDate: 1998/05/20 04:36:02 \n\
+\tRevision: 0.2 \n\
+\tDate: 1998/06/02 01:36:18 \n\
 \tAuthor: crh \n";
 */
 

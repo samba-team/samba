@@ -29,6 +29,9 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.h,v 
+ * Revision 4.3  1998/06/02 01:28:43  crh
+ * Changed ubi_null.h to sys_include.h to make it more generic.
+ *
  * Revision 4.2  1998/05/20 04:32:36  crh
  * The C file now includes ubi_null.h.  See ubi_null.h for more info.
  * Also, the balance and gender fields of the node were declared as

@@ -25,6 +25,10 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_sLinkList.c,v 
+ * Revision 0.6  1998/06/02 01:38:47  crh
+ * Changed include file name from ubi_null.h to sys_include.h to make it
+ * more generic.
+ *
  * Revision 0.5  1998/05/20 04:38:05  crh
  * The C file now includes ubi_null.h.  See ubi_null.h for more info.
  *
@@ -75,7 +79,7 @@
  * ========================================================================== **
  */
 
-#include "ubi_null.h"       /* ubiqx NULL source.        */
+#include "sys_include.h"    /* System-specific includes. */
 #include "ubi_sLinkList.h"  /* Header for *this* module. */
 
 /* ========================================================================== **
