@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -75,6 +75,6 @@ del_entry(int argc, char **argv)
     }
 
     for(i = 1; i < argc; i++)
-	ret = foreach_principal(argv[i], do_del_entry, NULL);
+	ret = foreach_principal(argv[i], do_del_entry, "del", NULL);
     return 0;
 }
