@@ -196,7 +196,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_wkssvc.o rpc_client/cli_dfs.o \
 	       rpc_client/cli_reg.o rpc_client/cli_pipe.o \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
-		rpc_client/cli_ds.o
+	       rpc_client/cli_ds.o libsmb/namequery_dc.o
 
 LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
@@ -228,7 +228,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		$(REGOBJS_OBJ)
 
 
-RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
+RPC_CLIENT_OBJ = rpc_client/cli_pipe.o 
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -469,7 +469,7 @@ LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
-		 $(LIBMSRPC_OBJ) 
+		 $(LIBMSRPC_OBJ) $(SECRETS_OBJ)
 
 TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
