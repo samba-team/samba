@@ -53,7 +53,7 @@ struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 	packet->questions[0].question_class = NBT_QCLASS_IP;
 	
 	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
-				    timeval_current_ofs(io->in.timeout, 0), False);
+				    io->in.timeout, io->in.retries, False);
 	if (req == NULL) goto failed;
 
 	talloc_free(packet);
@@ -146,7 +146,7 @@ struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
 	packet->questions[0].question_class = NBT_QCLASS_IP;
 	
 	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
-				    timeval_current_ofs(io->in.timeout, 0), False);
+				    io->in.timeout, io->in.retries, False);
 	if (req == NULL) goto failed;
 
 	talloc_free(packet);

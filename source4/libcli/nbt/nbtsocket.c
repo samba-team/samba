@@ -109,6 +109,40 @@ failed:
 
 
 /*
+  handle a request timeout
+*/
+static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event *te,
+				    struct timeval t, void *private)
+{
+	struct nbt_name_request *req = talloc_get_type(private, 
+						       struct nbt_name_request);
+
+	if (req->num_retries != 0) {
+		req->num_retries--;
+		req->te = event_add_timed(req->nbtsock->event_ctx, req, 
+					  timeval_add(&t, req->timeout, 0),
+					  nbt_name_socket_timeout, req);
+		DLIST_ADD_END(req->nbtsock->send_queue, req, struct nbt_name_request *);
+		EVENT_FD_WRITEABLE(req->nbtsock->fde);
+		return;
+	}
+
+	nbt_name_request_destructor(req);
+	if (req->num_replies == 0) {
+		req->state = NBT_REQUEST_TIMEOUT;
+		req->status = NT_STATUS_IO_TIMEOUT;
+	} else {
+		req->state = NBT_REQUEST_DONE;
+		req->status = NT_STATUS_OK;
+	}
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+}
+
+
+
+/*
   handle recv events on a nbt name socket
 */
 static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
@@ -143,6 +177,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		return;
 	}
 
+	/* parse the request */
 	status = ndr_pull_struct_blob(&blob, packet, packet, 
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_name_packet);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -158,6 +193,8 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		NDR_PRINT_DEBUG(nbt_name_packet, packet);
 	}
 
+	/* if its not a reply then pass it off to the incoming request
+	   handler, if any */
 	if (!(packet->operation & NBT_FLAG_REPLY)) {
 		if (nbtsock->incoming.handler) {
 			nbtsock->incoming.handler(nbtsock, packet, src_addr, src_port);
@@ -175,34 +212,61 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		return;
 	}
 
+	/* if this is a WACK response, this we need to go back to waiting,
+	   but perhaps increase the timeout */
+	if ((packet->operation & NBT_OPCODE) == NBT_OPCODE_WACK) {
+		if (req->received_wack || packet->ancount < 1) {
+			nbt_name_request_destructor(req);
+			req->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			req->state  = NBT_REQUEST_ERROR;
+			goto done;
+		}
+		talloc_free(req->te);
+		/* we know we won't need any more retries - the server
+		   has received our request */
+		req->num_retries   = 0;
+		req->received_wack = True;
+		if (packet->answers[0].ttl != 0) {
+			req->timeout       = MIN(packet->answers[0].ttl, 20);
+		}
+		req->te            = event_add_timed(req->nbtsock->event_ctx, req, 
+						     timeval_current_ofs(req->timeout, 0),
+						     nbt_name_socket_timeout, req);
+		DLIST_ADD_END(req->nbtsock->send_queue, req, struct nbt_name_request *);
+		EVENT_FD_WRITEABLE(req->nbtsock->fde);
+		talloc_free(tmp_ctx);
+		return;
+	}
+	
+
 	req->replies = talloc_realloc(req, req->replies, struct nbt_name_reply, req->num_replies+1);
 	if (req->replies == NULL) {
 		nbt_name_request_destructor(req);
-		req->state = NBT_REQUEST_DONE;
+		req->state  = NBT_REQUEST_ERROR;
 		req->status = NT_STATUS_NO_MEMORY;
-		talloc_free(tmp_ctx);
-		if (req->async.fn) {
-			req->async.fn(req);
-		}
-		return;
+		goto done;
 	}
 
 	req->replies[req->num_replies].reply_addr = talloc_steal(req, src_addr);
 	req->replies[req->num_replies].reply_port = src_port;
-	req->replies[req->num_replies].packet = talloc_steal(req, packet);
+	req->replies[req->num_replies].packet     = talloc_steal(req, packet);
 	req->num_replies++;
 
-	talloc_free(tmp_ctx);
-
 	/* if we don't want multiple replies then we are done */
-	if (!req->allow_multiple_replies ||
-	    req->num_replies == NBT_MAX_REPLIES) {
-		nbt_name_request_destructor(req);
-		req->state = NBT_REQUEST_DONE;
-		req->status = NT_STATUS_OK;
-		if (req->async.fn) {
-			req->async.fn(req);
-		}
+	if (req->allow_multiple_replies &&
+	    req->num_replies < NBT_MAX_REPLIES) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	nbt_name_request_destructor(req);
+	req->state  = NBT_REQUEST_DONE;
+	req->status = NT_STATUS_OK;
+
+done:
+	talloc_free(tmp_ctx);
+	if (req->async.fn) {
+		req->async.fn(req);
 	}
 }
 
@@ -266,33 +330,12 @@ failed:
 }
 
 /*
-  handle a request timeout
-*/
-static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event *te,
-				    struct timeval t, void *private)
-{
-	struct nbt_name_request *req = talloc_get_type(private, 
-						       struct nbt_name_request);
-	nbt_name_request_destructor(req);
-	if (req->num_replies == 0) {
-		req->state = NBT_REQUEST_TIMEOUT;
-		req->status = NT_STATUS_IO_TIMEOUT;
-	} else {
-		req->state = NBT_REQUEST_DONE;
-		req->status = NT_STATUS_OK;
-	}
-	if (req->async.fn) {
-		req->async.fn(req);
-	}
-}
-
-/*
   send off a nbt name request
 */
 struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock, 
 					       const char *dest_addr, int dest_port,
 					       struct nbt_name_packet *request,
-					       struct timeval timeout,
+					       int timeout, int retries,
 					       BOOL allow_multiple_replies)
 {
 	struct nbt_name_request *req;
@@ -302,13 +345,15 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	req = talloc_zero(nbtsock, struct nbt_name_request);
 	if (req == NULL) goto failed;
 
-	req->nbtsock = nbtsock;
-	req->dest_addr = talloc_strdup(req, dest_addr);
-	if (req->dest_addr == NULL) goto failed;
-	req->dest_port = dest_port;
+	req->nbtsock                = nbtsock;
+	req->dest_port              = dest_port;
 	req->allow_multiple_replies = allow_multiple_replies;
-	req->state = NBT_REQUEST_SEND;
-	req->is_reply = False;
+	req->state                  = NBT_REQUEST_SEND;
+	req->is_reply               = False;
+	req->timeout                = timeout;
+	req->num_retries            = retries;
+	req->dest_addr              = talloc_strdup(req, dest_addr);
+	if (req->dest_addr == NULL) goto failed;
 
 	/* we select a random transaction id unless the user supplied one */
 	if (request->name_trn_id == 0) {
@@ -331,7 +376,8 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	request->name_trn_id = id;
 	req->name_trn_id     = id;
 
-	req->te = event_add_timed(nbtsock->event_ctx, req, timeout,
+	req->te = event_add_timed(nbtsock->event_ctx, req, 
+				  timeval_current_ofs(req->timeout, 0),
 				  nbt_name_socket_timeout, req);
 	
 	talloc_set_destructor(req, nbt_name_request_destructor);	
