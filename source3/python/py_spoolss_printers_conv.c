@@ -164,7 +164,7 @@ BOOL py_from_SID(PyObject **obj, DOM_SID *sid)
 	return True;
 }
 
-BOOL py_to_SID(DOM_SID **sid, PyObject *dict)
+BOOL py_to_SID(DOM_SID *sid, PyObject *dict)
 {
 	return False;
 }
@@ -191,7 +191,7 @@ BOOL py_from_ACE(PyObject **dict, SEC_ACE *ace)
 	return True;
 }
 
-BOOL py_to_ACE(SEC_ACE **ace, PyObject *dict)
+BOOL py_to_ACE(SEC_ACE *ace, PyObject *dict)
 {
 	return False;
 }
@@ -225,7 +225,7 @@ BOOL py_from_ACL(PyObject **dict, SEC_ACL *acl)
 	return True;
 }
 
-BOOL py_to_ACL(SEC_ACL **acl, PyObject *dict)
+BOOL py_to_ACL(SEC_ACL *acl, PyObject *dict)
 {
 	return False;
 }
@@ -274,19 +274,19 @@ BOOL py_from_DEVICEMODE(PyObject **dict, DEVICEMODE *devmode)
 	return True;
 }
 
-BOOL py_to_DEVICEMODE(DEVICEMODE **devmode, PyObject *dict)
+BOOL py_to_DEVICEMODE(DEVICEMODE *devmode, PyObject *dict)
 {
 	PyObject *obj;
 
-	to_struct(*devmode, dict, py_DEVICEMODE);
+	to_struct(devmode, dict, py_DEVICEMODE);
 
 	obj = PyDict_GetItemString(dict, "private");
 
 	if (!obj)
 		return False;
 
-	(*devmode)->private = PyString_AsString(obj);
-	(*devmode)->driverextra = PyString_Size(obj);
+	devmode->private = PyString_AsString(obj);
+	devmode->driverextra = PyString_Size(obj);
 
 	return True;
 }
@@ -301,7 +301,7 @@ BOOL py_from_PRINTER_INFO_0(PyObject **dict, PRINTER_INFO_0 *info)
 	return True;
 }
 
-BOOL py_to_PRINTER_INFO_0(PRINTER_INFO_0 *info, PyObject **dict)
+BOOL py_to_PRINTER_INFO_0(PRINTER_INFO_0 *info, PyObject *dict)
 {
 	return False;
 }
@@ -316,7 +316,7 @@ BOOL py_from_PRINTER_INFO_1(PyObject **dict, PRINTER_INFO_1 *info)
 	return True;
 }
 
-BOOL py_to_PRINTER_INFO_1(PRINTER_INFO_1 *info, PyObject **dict)
+BOOL py_to_PRINTER_INFO_1(PRINTER_INFO_1 *info, PyObject *dict)
 {
 	return False;
 }
@@ -340,7 +340,7 @@ BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info)
 	return True;
 }
 
-BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject **dict)
+BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict)
 {
 	return False;
 }
@@ -361,7 +361,7 @@ BOOL py_from_PRINTER_INFO_3(PyObject **dict, PRINTER_INFO_3 *info)
 	return True;
 }
 
-BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject **dict)
+BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject *dict)
 {
 	return False;
 }
