@@ -141,6 +141,8 @@ BOOL dbgtext();
   ( (DEBUGLEVEL >= (level)) \
    && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
 
+#if 0
+
 #define DEBUG( level, body ) \
   ( ( DEBUGLEVEL >= (level) \
    && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) ) \
@@ -148,6 +150,18 @@ BOOL dbgtext();
 
 #define DEBUGADD( level, body ) \
      ( (DEBUGLEVEL >= (level)) ? (void)(dbgtext body) : (void)0 )
+
+#else
+
+#define DEBUG( level, body ) \
+  (void)( (DEBUGLEVEL >= (level)) \
+       && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
+       && (dbgtext body) )
+
+#define DEBUGADD( level, body ) \
+  (void)( (DEBUGLEVEL >= (level)) && (dbgtext body) )
+
+#endif
 
 /* End Debugging code section.
  * -------------------------------------------------------------------------- **
