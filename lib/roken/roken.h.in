@@ -417,6 +417,32 @@ struct hostent *
 copyhostent (const struct hostent *h);
 #endif
 
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+
+#ifndef HAVE_SA_FAMILY_T
+typedef unsigned short sa_family_t;
+#endif
+
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+
+struct sockaddr_storage {
+    u_int8_t		__ss_len;
+    sa_familiy_t	__ss_family;
+    char		pad[sizeof(struct sockaddr_in)
+			   - sizeof(u_int8_t) - sizeof(sa_family_t)];
+};
+
+#else
+
+struct sockaddr_storage {
+    sa_family_t		__ss_family;
+    char		pad[sizeof(struct sockaddr_in) - sizeof(sa_family_t)];
+};
+
+#endif
+
+#endif /* HAVE_STRUCT_SOCKADDR_STORAGE */
+
 /*
  * kludges and such
  */
