@@ -271,7 +271,7 @@ int main (int argc, char **argv)
 	enum SID_NAME_USE sid_type;
 	uint32 rid = -1;
 
-	setup_logging("groupedit", True);
+	setup_logging("groupedit", DEBUG_STDOUT);
 
 	if (argc < 2) {
 		usage();

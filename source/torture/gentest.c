@@ -2113,7 +2113,7 @@ static void usage(void)
 		exit(1);
 	}
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	for (i=0;i<NSERVERS;i++) {
 		const char *share = argv[1+i];
@@ -2147,7 +2147,7 @@ static void usage(void)
 			break;
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
-			setup_logging(NULL,True);
+			setup_logging(NULL, DEBUG_STDOUT);
 			break;
 		case 's':
 			options.seed = atoi(optarg);

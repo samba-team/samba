@@ -513,7 +513,7 @@ int main (int argc, char **argv)
 		{0,0,0,0}
 	};
 	
-	setup_logging("pdbedit", True);
+	setup_logging("pdbedit", DEBUG_STDOUT);
 	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);

@@ -580,7 +580,7 @@ int main(int argc, char **argv)
 
 	local_flags = process_options(argc, argv, local_flags);
 
-	setup_logging("smbpasswd", True);
+	setup_logging("smbpasswd", DEBUG_STDOUT);
 	
 	/*
 	 * Set the machine NETBIOS name if not already

@@ -656,7 +656,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	AllowDebugChange = False;
 	DEBUGLEVEL = 0;
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 	
 	if (argc < 2) usage(True);
 

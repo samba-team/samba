@@ -394,6 +394,6 @@ void initsmb(void)
 
 	py_samba_init();
 
-	setup_logging("smb", True);
+	setup_logging("smb", DEBUG_STDOUT);
 	DEBUGLEVEL = 10;
 }

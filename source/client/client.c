@@ -2896,7 +2896,7 @@ static void remember_query_host(const char *arg,
 	*query_host = 0;
 	*base_directory = 0;
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0],DEBUG_STDOUT);
 	mem_ctx = talloc_init("client.c/main");
 	if (!mem_ctx) {
 		d_printf("\nclient.c: Not enough memory\n");

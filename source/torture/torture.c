@@ -4113,7 +4113,7 @@ static void usage(void)
 			break;
 		case 'd':
 			lp_set_cmdline("debug level", optarg);
-			setup_logging(NULL,True);
+			setup_logging(NULL, DEBUG_STDOUT);
 			break;
 		case 'O':
 			lp_set_cmdline("socket options", optarg);

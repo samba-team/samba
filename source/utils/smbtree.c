@@ -281,7 +281,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 
 	dbf = x_stderr;
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();

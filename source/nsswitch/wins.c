@@ -79,7 +79,7 @@ static void nss_wins_init(void)
 	AllowDebugChange = False;
 
 	TimeInit();
-	setup_logging("nss_wins",False);
+	setup_logging("nss_wins",DEBUG_FILE);
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 }

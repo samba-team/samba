@@ -493,7 +493,7 @@ static void usage(void)
 	all_string_sub(share1,"/","\\",0);
 	all_string_sub(share2,"/","\\",0);
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	argc -= 4;
 	argv += 4;

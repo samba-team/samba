@@ -282,7 +282,7 @@ enum client_action
 
 	smb_cli->nt_pipe_fnum   = 0xffff;
 
-	setup_logging(pname, True);
+	setup_logging(pname, DEBUG_STDOUT);
 
 	password[0] = 0;
 

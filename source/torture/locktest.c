@@ -465,7 +465,7 @@ static void usage(void)
 		exit(1);
 	}
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	for (server=0;server<NSERVERS;server++) {
 		share[server] = argv[1+server];

@@ -1286,7 +1286,7 @@ static void printers_page(void)
 		}
 	}
 
-	setup_logging(argv[0],False);
+	setup_logging(argv[0],DEBUG_FILE);
 	load_config(True);
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();

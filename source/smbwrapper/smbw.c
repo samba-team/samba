@@ -55,7 +55,7 @@ void smbw_init(void)
 	smbw_busy++;
 
 	DEBUGLEVEL = 0;
-	setup_logging("smbsh",True);
+	setup_logging("smbsh", DEBUG_STDOUT);
 
 	dbf = x_stderr;
 

@@ -218,7 +218,7 @@ int main(int argc, const char *argv[])
 
 	while((opt = poptGetNextOpt(pc)) != -1);
 
-	setup_logging(poptGetArg(pc), True);
+	setup_logging(poptGetArg(pc), DEBUG_STDOUT);
 
 	if (poptPeekArg(pc)) 
 		config_file = poptGetArg(pc);

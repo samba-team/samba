@@ -619,7 +619,7 @@ static void process(void)
 
 	set_remote_machine_name("wrepld");
 
-	setup_logging(argv[0],log_stdout);
+	setup_logging(argv[0],log_stdout?DEBUG_STDOUT:DEBUG_FILE);
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
