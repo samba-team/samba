@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rap.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
 
 /* At this moment these are just dummy functions, but you might get the
  * idea. */
