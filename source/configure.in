@@ -2234,25 +2234,6 @@ AC_ARG_WITH(msdfs,
 )
 
 #################################################
-# check for Samba VFS support
-
-AC_MSG_CHECKING(whether to support the experimental Samba vfs)
-AC_ARG_WITH(vfs,
-[  --with-vfs              Include Samba vfs support (default=no)],
-[ case "$withval" in
-  yes)
-     AC_MSG_RESULT(yes)
-     AC_DEFINE(WITH_VFS)
-     ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-
-#################################################
 # should we build libsmbclient?
 
 LIBSMBCLIENT_SHARED=
