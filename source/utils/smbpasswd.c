@@ -326,7 +326,7 @@ static int join_domain_byuser(char *domain, char *remote,
 	 * If we are given a remote machine assume this is the PDC.
 	 */
 	
-	if(remote == NULL) {
+	if(remote == NULL || !strcmp(remote, "*")) {
                 struct in_addr *ip_list;
                 int addr_count;
                 if (!get_dc_list(True /* PDC only*/, domain, &ip_list, &addr_count)) {
@@ -587,7 +587,7 @@ machine %s in domain %s.\n", global_myname, domain);
 	 * If we are given a remote machine assume this is the PDC.
 	 */
 	
-	if(remote == NULL) {
+	if(remote == NULL || !strcmp(remote, "*")) {
                 struct in_addr *ip_list;
                 int addr_count;
                 if (!get_dc_list(True /* PDC only*/, domain, &ip_list, &addr_count)) {
