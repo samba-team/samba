@@ -137,6 +137,8 @@ static DWORD str_to_dword(const char *a) {
     return ret;
 }
 
+#if 0 /* unused */
+
 static DWORD calc_hash(const char *str) {
 	DWORD ret = 0;
 	int i;
@@ -152,7 +154,7 @@ static void parse_rgkn_block(CREG *creg, off_t start_off, off_t end_off)
 	for(i = start_off; end_off - i > sizeof(RGKN_KEY); i+= sizeof(RGKN_KEY)) {
 		RGKN_KEY *key = (RGKN_KEY *)LOCN_RGKN(creg, i);
 		if(key->type == 0) {
-			DEBUG(4,("Regular, id: %d, %d, parent: %x, firstchild: %x, next: %x hash: %lX\n", key->id.id, key->id.rgdb, key->parent_offset, key->first_child_offset, key->next_offset, key->hash));
+			DEBUG(4,("Regular, id: %d, %d, parent: %x, firstchild: %x, next: %x hash: %lX\n", key->id.id, key->id.rgdb, key->parent_offset, key->first_child_offset, key->next_offset, (long)key->hash));
 		} else if(key->type == 0x80000000) {
 			DEBUG(3,("free\n"));
 			i += key->hash;
@@ -161,6 +163,8 @@ static void parse_rgkn_block(CREG *creg, off_t start_off, off_t end_off)
 		}
 	}
 }
+
+#endif
 
 static void parse_rgdb_block(CREG *creg, RGDB_HDR *rgdb_hdr)
 {
@@ -226,8 +230,8 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
 {
 	CREG *creg;
 	DWORD creg_id, rgkn_id;
-	DWORD i, nfree = 0;
-	DWORD offset, end_offset;
+	DWORD i;
+	DWORD offset;
 
 	creg = talloc_p(h->mem_ctx, CREG);
 	memset(creg, 0, sizeof(CREG));
@@ -284,8 +288,8 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
 		RGDB_HDR *rgdb_hdr = (RGDB_HDR *)LOCN_RGDB_BLOCK(creg, offset);
 		
 		if(strncmp((char *)&(rgdb_hdr->RGDB_ID), "RGDB", 4)) {
-			DEBUG(0, ("unrecognized rgdb entry: %4s, %s\n", 
-					  &rgdb_hdr->RGDB_ID, location));
+			DEBUG(0, ("unrecognized rgdb entry: %4d, %s\n", 
+					  rgdb_hdr->RGDB_ID, location));
 			return WERR_FOOBAR;
 		} else {
 			DEBUG(3, ("Valid rgdb entry, first free id: %d, max id: %d\n", rgdb_hdr->first_free_id, rgdb_hdr->max_id));
@@ -317,7 +321,6 @@ static WERROR w95_close_reg(REG_HANDLE *h)
 static WERROR w95_fetch_values(REG_KEY *k, int *count, REG_VAL ***values)
 {
 	RGKN_KEY *rgkn_key = k->backend_data;
-	RGDB_VALUE *val;
 	DWORD i;
 	DWORD offset = 0;
 	RGDB_KEY *rgdb_key = LOCN_RGDB_KEY((CREG *)k->handle->backend_data, rgkn_key->id.rgdb, rgkn_key->id.id);

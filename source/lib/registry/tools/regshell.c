@@ -58,7 +58,7 @@ static REG_KEY *cmd_ck(REG_KEY *cur, int argc, char **argv)
 
 static REG_KEY *cmd_ls(REG_KEY *cur, int argc, char **argv)
 {
-	int i, num;
+	int i;
 	WERROR error;
 	REG_VAL *value;
 	REG_KEY *sub;
@@ -198,7 +198,6 @@ REG_KEY *process_cmd(REG_KEY *k, char *line)
 
 int main (int argc, char **argv)
 {
-	uint32	setparms, checkparms;
 	int opt;
 	char *backend = "dir";
 	char *credentials = NULL;
