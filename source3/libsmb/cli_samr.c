@@ -778,7 +778,10 @@ uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+        result = r.status;
+
+	if (result != NT_STATUS_NOPROBLEMO &&
+	    result != STATUS_MORE_ENTRIES) {
 		goto done;
 	}
 
