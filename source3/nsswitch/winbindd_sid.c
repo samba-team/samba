@@ -152,7 +152,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 		DOM_SID sid2;
 		uint32 rid;
 		
-		domain = find_domain_from_name( lp_workgroup() );
+		domain = find_our_domain();
 		if ( !domain ) {
 			DEBUG(0,("winbindd_sid_to_uid: can't find my own domain!\n"));
 			return WINBINDD_ERROR;
@@ -244,7 +244,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		uint32 rid;
 		unid_t id;
 		
-		domain = find_domain_from_name( lp_workgroup() );
+		domain = find_our_domain();
 		if ( !domain ) {
 			DEBUG(0,("winbindd_sid_to_uid: can't find my own domain!\n"));
 			return WINBINDD_ERROR;
@@ -341,7 +341,7 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 		if ( !(pw = getpwuid(state->request.data.uid)) )
 			return WINBINDD_ERROR;
 
-		if ( !(domain = find_domain_from_name(lp_workgroup())) ) {
+		if ( !(domain = find_our_domain()) ) {
 			DEBUG(0,("winbindd_uid_to_sid: can't find my own domain!\n"));
 			return WINBINDD_ERROR;
 		}
@@ -411,7 +411,7 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 		if ( !(grp = getgrgid(state->request.data.gid)) )
 			return WINBINDD_ERROR;
 
-		if ( !(domain = find_domain_from_name(lp_workgroup())) ) {
+		if ( !(domain = find_our_domain()) ) {
 			DEBUG(0,("winbindd_uid_to_sid: can't find my own domain!\n"));
 			return WINBINDD_ERROR;
 		}

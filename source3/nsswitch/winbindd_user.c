@@ -124,7 +124,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* Parse domain and username */
 
 	parse_domain_user(state->request.data.username, 
-		name_domain, name_user);
+			  name_domain, name_user);
 	
 	/* if this is our local domain (or no domain), the do a local tdb search */
 	
@@ -140,16 +140,16 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 
 	/* should we deal with users for our domain? */
 	
-	if ( lp_winbind_trusted_domains_only() && strequal(name_domain, lp_workgroup())) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
-			name_domain, name_user));
-		return WINBINDD_ERROR;
-	}	
-	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(5, ("no such domain: %s\n", name_domain));
 		return WINBINDD_ERROR;
 	}
+	
+	if ( domain->primary && lp_winbind_trusted_domains_only()) {
+		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
+			name_domain, name_user));
+		return WINBINDD_ERROR;
+	}	
 	
 	/* Get rid and name type from name */
 

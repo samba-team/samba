@@ -106,7 +106,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	*num_gr_mem = 0;
 	
 	if ( !((group_name_type==SID_NAME_DOM_GRP) ||
-		((group_name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+		((group_name_type==SID_NAME_ALIAS) && domain->primary)) )
 	{
 		DEBUG(1, ("SID %s in domain %s isn't a domain group (%d)\n", 
 			  sid_to_string(sid_string, group_sid), domain->name, 
@@ -260,20 +260,18 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		return WINBINDD_OK;
 	}
 
-	/* should we deal with users for our domain? */
-	
-	if ( lp_winbind_trusted_domains_only() && strequal(name_domain, lp_workgroup())) {
-		DEBUG(7,("winbindd_getgrnam: My domain -- rejecting getgrnam() for %s\\%s.\n", 
-			name_domain, name_group));
-		return WINBINDD_ERROR;
-	}	
-
-	
 	/* Get info for the domain */
 
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
-		DEBUG(0, ("could not get domain sid for domain %s\n",
+		DEBUG(3, ("could not get domain sid for domain %s\n",
 			  name_domain));
+		return WINBINDD_ERROR;
+	}
+	/* should we deal with users for our domain? */
+	
+	if ( lp_winbind_trusted_domains_only() && domain->primary) {
+		DEBUG(7,("winbindd_getgrnam: My domain -- rejecting getgrnam() for %s\\%s.\n", 
+			name_domain, name_group));
 		return WINBINDD_ERROR;
 	}
 
@@ -287,7 +285,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	}
 
 	if ( !((name_type==SID_NAME_DOM_GRP) ||
-		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+		((name_type==SID_NAME_ALIAS) && domain->primary)) )
 	{
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  name_group, name_type));
@@ -378,7 +376,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 	}
 
 	if ( !((name_type==SID_NAME_DOM_GRP) ||
-		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	       ((name_type==SID_NAME_ALIAS) && domain->primary) ))
 	{
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  group_name, name_type));
@@ -436,7 +434,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		   are a member of a Samba domain */
 		
 		if ( (IS_DC || lp_winbind_trusted_domains_only())
-			&& strequal(domain->name, lp_workgroup()) )
+			&& domain->primary )
 		{
 			continue;
 		}
@@ -542,7 +540,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	   and are not using LDAP to get the groups */
 	   
 	if ( lp_security() != SEC_ADS && domain->native_mode 
-		&& strequal(lp_workgroup(), domain->name) )
+		&& domain->primary )
 	{
 		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
 		
@@ -933,21 +931,22 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	/* Parse domain and username */
 
 	parse_domain_user(state->request.data.username, 
-		name_domain, name_user);
+			  name_domain, name_user);
 	
-	/* bail if there is no domain */ 
-	
-	if ( !*name_domain )
-		goto done;
-
 	/* Get info for the domain */
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
-		DEBUG(0, ("could not find domain entry for domain %s\n", 
+		DEBUG(7, ("could not find domain entry for domain %s\n", 
 			  name_domain));
 		goto done;
 	}
 
+	if ( domain->primary && lp_winbind_trusted_domains_only()) {
+		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getgroups() for %s\\%s.\n", 
+			name_domain, name_user));
+		return WINBINDD_ERROR;
+	}	
+	
 	/* Get rid and name type from name.  The following costs 1 packet */
 
 	if (!winbindd_lookup_sid_by_name(domain, name_user, &user_sid, 
@@ -956,7 +955,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	if (name_type != SID_NAME_USER) {
+	if (name_type != SID_NAME_USER && name_type != SID_NAME_COMPUTER) {
 		DEBUG(1, ("name '%s' is not a user name: %d\n", 
 			  name_user, name_type));
 		goto done;
@@ -995,7 +994,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			   in a win2k native mode domain. */
 			
 			if ( !((sid_type==SID_NAME_DOM_GRP) ||
-				((sid_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+				((sid_type==SID_NAME_ALIAS) && domain->primary)) )
 			{
 				DEBUG(10, ("winbindd_getgroups: sid type %d "
 					   "for %s is not a domain group\n",
@@ -1122,7 +1121,7 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 			  sid_string_static(&user_sid)));
 		goto done;
 	}
-
+	
 	status = domain->methods->lookup_usergroups(domain, mem_ctx, 
 						    &user_sid, &num_groups, 
 						    &user_grpsids);
