@@ -1,5 +1,8 @@
 2003-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* afslog.c (do_afslog): is cell is unset, set it "<default cell>"
+	for error printing
+
 	* pagsh.c: unconditionally set KRBTKFILE
 	
 2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
