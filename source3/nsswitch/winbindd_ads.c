@@ -694,6 +694,7 @@ done:
 
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
+	True,
 	query_user_list,
 	enum_dom_groups,
 	name_to_sid,
