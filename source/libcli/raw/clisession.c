@@ -247,6 +247,8 @@ static void setup_nt1_signing(struct cli_transport *transport, const char *passw
 	SMBsesskeygen_ntv1(nt_hash, NULL, session_key);
 	nt_response = nt_blob(password, transport->negotiate.secblob);
 
+	cli_transport_set_session_key(transport, session_key);
+
 	cli_transport_simple_set_signing(transport, session_key, nt_response);
 }
 
