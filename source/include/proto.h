@@ -4033,8 +4033,9 @@ BOOL server_validate(char *user, char *domain,
 		     char *ntpass, int ntpasslen);
 BOOL domain_client_validate( char *user, char *domain, char *server_list,
 				char *acct_name, uint16 acct_type,
-                             char *smb_apasswd, int smb_apasslen, 
-                             char *smb_ntpasswd, int smb_ntpasslen);
+				char *smb_apasswd, int smb_apasslen, 
+				char *smb_ntpasswd, int smb_ntpasslen,
+				uchar user_sess_key[16]);
 
 /*The following definitions come from  smbd/pipes.c  */
 
