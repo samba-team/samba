@@ -151,10 +151,10 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	return info;
 }
 
-
 /*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
+
 static void free_samr_users(struct samr_info *info) 
 {
 	int i;
@@ -169,10 +169,10 @@ static void free_samr_users(struct samr_info *info)
 	info->disp_info.num_user_account=0;
 }
 
-
 /*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
+
 static void free_samr_db(struct samr_info *info)
 {
 	/* Groups are talloced */
@@ -182,7 +182,6 @@ static void free_samr_db(struct samr_info *info)
 	info->disp_info.group_dbloaded=False;
 	info->disp_info.num_group_account=0;
 }
-
 
 static void free_samr_info(void *ptr)
 {
@@ -1128,6 +1127,7 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 /*******************************************************************
  samr_reply_query_dispinfo
  ********************************************************************/
+
 NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, 
 			      SAMR_R_QUERY_DISPINFO *r_u)
 {

@@ -853,8 +853,6 @@ void build_options(BOOL screen);
 		exit(1);
 	}
 
-	static_init_auth;
-
 	static_init_rpc;
 
 	init_modules();
