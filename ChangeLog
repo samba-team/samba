@@ -1,3 +1,7 @@
+2000-10-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.c: fix v4 fallback lifetime calculation
+
 2000-10-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/524.c: fix log messge
