@@ -645,7 +645,7 @@ case "$host_os" in
 		*aix*) AC_DEFINE(AIX)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
-			PICFLAG="=O2 -qmaxmem=6000"
+			PICFLAG="-O2 -qmaxmem=6000"
 		;;
 		*hpux*) AC_DEFINE(HPUX)
 			SHLIBEXT="sl"
