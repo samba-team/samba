@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 10
+#define WINBIND_INTERFACE_VERSION 11
 
 /* Socket commands */
 
@@ -169,6 +169,10 @@ struct winbindd_request {
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
 
+	int client_fd; 		/* Uniquely identify a request, used in
+				 * MSG_WINBINDD_FINISHED from dual daemon to
+				 * parent. */
+
 	union {
 		fstring winsreq;     /* WINS request */
 		fstring username;    /* getpwnam */
@@ -217,7 +221,8 @@ struct winbindd_request {
 
 enum winbindd_result {
 	WINBINDD_ERROR,
-	WINBINDD_OK
+	WINBINDD_OK,
+	WINBINDD_PENDING
 };
 
 /* Winbind response structure */

@@ -202,6 +202,10 @@ void do_dual_daemon(void)
 			}
 
 			winbind_process_packet(&state);
+			message_send_pid(getppid(), MSG_WINBIND_FINISHED,
+					 &state.request.client_fd,
+					 sizeof(state.request.client_fd),
+					 True);
 			SAFE_FREE(state.response.extra_data);
 
 			free_getent_state(state.getpwent_state);

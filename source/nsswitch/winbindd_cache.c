@@ -66,6 +66,27 @@ void wcache_flush_cache(void)
 	DEBUG(10,("wcache_flush_cache success\n"));
 }
 
+static BOOL init_wcache(void)
+{
+	if (wcache == NULL) {
+		wcache = smb_xmalloc(sizeof(*wcache));
+		ZERO_STRUCTP(wcache);
+	}
+
+	if (wcache->tdb != NULL)
+		return True;;
+
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
+				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
+
+	if (wcache->tdb == NULL) {
+		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
+		return False;
+	}
+
+	return True;
+}
+
 void winbindd_check_cache_size(time_t t)
 {
 	static time_t last_check_time;
@@ -391,14 +412,15 @@ done:
 /*
   decide if a cache entry has expired
 */
-static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, struct cache_entry *centry)
+static BOOL centry_expired(struct winbindd_domain *domain,
+			   struct cache_entry *centry)
 {
-	/* if the server is OK and our cache entry came from when it was down then
-	   the entry is invalid */
+	/* if the server is OK and our cache entry came from when it was down
+	   then the entry is invalid */
 	if (domain->sequence_number != DOM_SEQUENCE_NONE && 
 	    centry->sequence_number == DOM_SEQUENCE_NONE) {
-		DEBUG(10,("centry_expired: Key %s for domain %s invalid sequence.\n",
-			keystr, domain->name ));
+		DEBUG(10,("centry_expired: Key for domain %s invalid "
+			  "sequence.\n", domain->name ));
 		return True;
 	}
 
@@ -406,13 +428,13 @@ static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, s
 	   current sequence number then it is OK */
 	if (wcache_server_down(domain) || 
 	    centry->sequence_number == domain->sequence_number) {
-		DEBUG(10,("centry_expired: Key %s for domain %s is good.\n",
-			keystr, domain->name ));
+		DEBUG(10,("centry_expired: Key for domain %s is good.\n",
+			  domain->name ));
 		return False;
 	}
 
-	DEBUG(10,("centry_expired: Key %s for domain %s expired\n",
-		keystr, domain->name ));
+	DEBUG(10,("centry_expired: Key for domain %s expired\n",
+		  domain->name ));
 
 	/* it's expired */
 	return True;
@@ -467,7 +489,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->status = NT_STATUS(centry_uint32(centry));
 	centry->sequence_number = centry_uint32(centry);
 
-	if (centry_expired(domain, kstr, centry)) {
+	if (centry_expired(domain, centry)) {
 		extern BOOL opt_dual_daemon;
 
 		DEBUG(10,("wcache_fetch: entry %s expired for domain %s\n",
@@ -1391,3 +1413,343 @@ struct winbindd_methods cache_methods = {
 	domain_sid,
 	alternate_name
 };
+
+static struct cache_entry *
+wcache_fetch_only(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
+
+static struct cache_entry *wcache_fetch_only(const char *format, ...)
+{
+	va_list ap;
+	char *kstr;
+	TDB_DATA data;
+	struct cache_entry *centry;
+	TDB_DATA key;
+
+	if (!init_wcache())
+		return NULL;
+
+	va_start(ap, format);
+	smb_xvasprintf(&kstr, format, ap);
+	va_end(ap);
+	
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+	data = tdb_fetch(wcache->tdb, key);
+	if (!data.dptr) {
+		/* a cache miss */
+		free(kstr);
+		return NULL;
+	}
+
+	centry = smb_xmalloc(sizeof(*centry));
+	centry->data = (unsigned char *)data.dptr;
+	centry->len = data.dsize;
+	centry->ofs = 0;
+
+	if (centry->len < 8) {
+		/* huh? corrupt cache? */
+		DEBUG(10,("wcache_fetch: Corrupt cache for key %s "
+			  "(len < 8) ?\n", kstr));
+		centry_free(centry);
+		free(kstr);
+		return NULL;
+	}
+	
+	centry->status = NT_STATUS(centry_uint32(centry));
+	centry->sequence_number = centry_uint32(centry);
+
+	DEBUG(10,("wcache_fetch: returning entry %s\n", kstr));
+
+	free(kstr);
+	return centry;
+}
+
+enum winbindd_result cache_lookupsid(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	DOM_SID sid;
+	struct cache_entry *centry = NULL;
+	char *dom_name, *name;
+	TALLOC_CTX *mem_ctx;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
+		  state->request.data.sid));
+
+	/* Lookup sid from PDC using lsa_lookup_sids() */
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	domain = find_lookup_domain_from_sid(&sid);
+
+	if (!domain) {
+		DEBUG(1,("Can't find domain from sid\n"));
+		return WINBINDD_ERROR;
+	}
+
+	/* Lookup the sid */
+
+	centry = wcache_fetch_only("SN/%s", sid_string_static(&sid));
+
+	if ((state->continuation != NULL) && /* Here the second time */
+	    (centry == NULL)) {
+		DEBUG(1, ("Internal error, no centry second time\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if ((centry == NULL) || centry_expired(domain, centry))
+		state->send_to_background = True;
+
+	if (centry == NULL) {
+		state->continuation = cache_lookupsid;
+		return WINBINDD_PENDING;
+	}
+
+	if (!NT_STATUS_IS_OK(centry->status)) {
+		centry_free(centry);
+		return WINBINDD_ERROR;
+	}
+
+	mem_ctx = talloc_init("winbindd_sid_to_name");
+	if (mem_ctx == NULL) {
+		centry_free(centry);
+		return WINBINDD_ERROR;
+	}
+
+	state->response.data.name.type =
+		(enum SID_NAME_USE)centry_uint32(centry);
+	dom_name = centry_string(centry, mem_ctx);
+	name = centry_string(centry, mem_ctx);
+	centry_free(centry);
+
+	fstrcpy(state->response.data.name.dom_name, dom_name);
+	fstrcpy(state->response.data.name.name, name);
+
+	talloc_destroy(mem_ctx);
+
+	return WINBINDD_OK;
+}
+
+enum winbindd_result cache_lookupname(struct winbindd_cli_state *state)
+{
+	fstring domain_name, user_name;
+	DOM_SID *sid;
+	struct winbindd_domain *domain;
+	char *p;
+	struct cache_entry *centry = NULL;
+	TALLOC_CTX *mem_ctx;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
+
+	/* cope with the name being a fully qualified name */
+	p = strstr(state->request.data.name.name, lp_winbind_separator());
+	if (p != NULL) {
+		*p = 0;
+		fstrcpy(domain_name, state->request.data.name.name);
+		fstrcpy(user_name, p+1);
+	} else {
+		fstrcpy(domain_name, state->request.data.name.dom_name);
+		fstrcpy(user_name,state->request.data.name.name);
+	}
+
+	strupper_m(domain_name);
+	strupper_m(user_name);
+
+	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
+		  domain_name, lp_winbind_separator(), user_name));
+
+	if ((domain = find_lookup_domain_from_name(domain_name)) == NULL) {
+		DEBUG(0, ("could not find domain entry for domain %s\n", 
+			  domain_name));
+		return WINBINDD_ERROR;
+	}
+
+	centry = wcache_fetch_only("NS/%s/%s", domain_name, user_name);
+
+	if ((state->continuation != NULL) && /* Here the second time */
+	    (centry == NULL)) {
+		DEBUG(1, ("Internal error, no centry second time\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if ((centry == NULL) || centry_expired(domain, centry))
+		state->send_to_background = True;
+
+	if (centry == NULL) {
+		state->continuation = cache_lookupname;
+		return WINBINDD_PENDING;
+	}
+
+	if (!NT_STATUS_IS_OK(centry->status)) {
+		centry_free(centry);
+		return WINBINDD_ERROR;
+	}
+
+	mem_ctx = talloc_init("winbindd_name_to_sid");
+	if (mem_ctx == NULL) {
+		centry_free(centry);
+		return WINBINDD_ERROR;
+	}
+
+	state->response.data.sid.type =
+		(enum SID_NAME_USE)centry_uint32(centry);
+
+	sid = centry_sid(centry, mem_ctx);
+	if (sid == NULL)
+		ZERO_STRUCTP(sid);
+	centry_free(centry);
+
+	sid_to_string(state->response.data.sid.sid, sid);
+
+	talloc_destroy(mem_ctx);
+
+	return WINBINDD_OK;
+}
+
+/* State machine for listing users
+   Look into the cache. 3 cases can happen:
+
+   * Data exist and is fresh
+     -> Fill buffer and directly go to next domain
+   * Data exist and is stale
+     -> Fill buffer, send to dual. When called again check next domain
+   * Data don't exist
+     -> Send to dual. When called again goto next if not there.
+
+*/
+
+struct list_users_private {
+	struct winbindd_domain *domain;
+	BOOL expect_data;
+	char *extra_data;
+	int extra_data_len;
+};
+
+static enum winbindd_result
+cache_list_users_next(struct winbindd_cli_state *state);
+
+enum winbindd_result cache_list_users(struct winbindd_cli_state *state)
+{
+	struct list_users_private *priv;
+
+	if (state->continuation_private != NULL) {
+		DEBUG(0, ("Internal error, continuation_private != NULL\n"));
+		return WINBINDD_ERROR;
+	}
+
+	state->continuation = cache_list_users_next;
+	state->continuation_private = priv =
+		malloc(sizeof(struct list_users_private));
+
+	priv->domain = domain_list();
+	priv->expect_data = False;
+	priv->extra_data = NULL;
+	priv->extra_data_len = 0;
+
+	return cache_list_users_next(state);
+}
+
+static enum winbindd_result
+cache_list_users_next(struct winbindd_cli_state *state)
+{
+	struct cache_entry *centry;
+	struct list_users_private *priv =
+		(struct list_users_private *)state->continuation_private;
+	int i, num_entries;
+	TALLOC_CTX *mem_ctx;
+	BOOL expired = False;
+
+ next_domain:
+
+	centry = wcache_fetch_only("UL/%s", priv->domain->name);
+
+	if ((centry == NULL) && (priv->expect_data)) {
+		/* We've been called again after the dual had been asked to
+		 * query the data */
+		priv->expect_data = False;
+		goto no_entries;
+	}
+
+	priv->expect_data = False;
+
+	if (centry == NULL) {
+		priv->expect_data = True;
+		state->send_to_background = True;
+		fstrcpy(state->request.domain_name, priv->domain->name);
+		return WINBINDD_PENDING;
+	}
+
+	num_entries = centry_uint32(centry);
+
+	priv->extra_data = Realloc(priv->extra_data,
+				   priv->extra_data_len +
+				   sizeof(fstring) * num_entries);
+
+	if (priv->extra_data == NULL) {
+		return WINBINDD_ERROR;
+	}
+
+	mem_ctx = talloc_init("cache_list_users_next");
+
+	for (i=0; i<num_entries; i++) {
+		char *p;
+		fstring acct_name, name;
+
+		p = centry_string(centry, mem_ctx);
+
+		if ((p == NULL) || (*p == '\0'))
+			fstrcpy(acct_name, "");
+		else
+			fstrcpy(acct_name, p);
+
+		fill_domain_username(name, priv->domain->name, acct_name);
+
+		memcpy(&priv->extra_data[priv->extra_data_len], name, 
+		       strlen(name));
+		priv->extra_data_len += strlen(name);
+		priv->extra_data[priv->extra_data_len++] = ',';
+
+		/* Dump full_name, user_sid and group_sid */
+		centry_string(centry, mem_ctx);
+		centry_string(centry, mem_ctx);
+		centry_string(centry, mem_ctx);
+	}
+
+	expired = centry_expired(priv->domain, centry);
+
+	centry_free(centry);
+	talloc_destroy(mem_ctx);
+
+ no_entries:
+
+	priv->domain = priv->domain->next;
+
+	if (priv->domain == NULL) {
+		state->response.length = sizeof(state->response);
+		if (priv->extra_data != NULL) {
+			priv->extra_data[priv->extra_data_len - 1] = '\0';
+			state->response.extra_data = priv->extra_data;
+			state->response.length += priv->extra_data_len;
+		}
+		SAFE_FREE(state->continuation_private);
+		return WINBINDD_OK;
+	}
+
+	if (expired) {
+		state->send_to_background = True;
+		fstrcpy(state->request.domain_name, priv->domain->name);
+		return WINBINDD_PENDING;
+	}
+
+	/* If we had tail recursion, we could call ourselves :-) */
+	goto next_domain;
+}	
