@@ -7,7 +7,8 @@ wbinfo \- Query information from winbind daemon
 .PP 
 \fBwbinfo\fP -u [-g] [-n name]
 [-s sid] [-U uid] [-G gid]
-[-S sid] [-Y sid] 
+[-S sid] [-Y sid] [-t]
+[-m]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -80,6 +81,18 @@ will fail\&.
 Convert a SID to a UNIX group id\&.  If the SID does not correspond to a UNIX
 group mapped by \fBwinbindd(8)\fP then the operation
 will fail\&.
+.IP 
+.IP "\fB-t\fP" 
+.IP 
+Verify that the workstation trust account created when the Samba server is
+added to the Windows NT domain is working\&.
+.IP 
+.IP "\fB-m\fP" 
+.IP 
+Produce a list of domains trusted by the Windows NT server
+\fBwinbindd(8)\fP contacts when resolving names\&.  This
+list does not include the Windows NT domain the server is a Primary Domain
+Controller for\&.
 .IP 
 .PP 
 .SH "EXIT STATUS" 

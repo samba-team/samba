@@ -70,8 +70,8 @@ use debug level 100 (see bf(BUGS.txt)).
 
 label(minusi)
 dit(bf(-i))
-Tells winbindd to not become a daemon and detach from the current terminal.
-This option is used by developers when interactive debugging of winbindd is
+Tells bf(winbindd) to not become a daemon and detach from the current terminal.
+This option is used by developers when interactive debugging of bf(winbindd) is
 required.
 
 enddit()
@@ -157,12 +157,12 @@ dit(winbind cache time)
 
 This parameter specifies the number of seconds the bf(winbindd) daemon will
 cache user and group information before querying a Windows NT server
-again. When a item in the cache is older than this time winbindd will ask
+again. When a item in the cache is older than this time bf(winbindd) will ask
 the domain controller for the sequence number of the servers account
 database. If the sequence number has not changed then the cached item is
 marked as valid for a further "winbind cache time" seconds.  Otherwise the
 item is fetched from the server. This means that as long as the account
-database is not actively changing winbindd will only have to send one
+database is not actively changing bf(winbindd) will only have to send one
 sequence number query packet every "winbind cache time" seconds.
 
   bf(Default:)
@@ -193,7 +193,7 @@ enddit()
 label(EXAMPLESETUP)
 manpagesection(EXAMPLE SETUP)
 
-To setup winbindd for user and group lookups plus authentication from
+To setup bf(winbindd) for user and group lookups plus authentication from
 a domain controller use something like the following setup. This was
 tested on a RedHat 6.2 Linux box.
 
@@ -250,12 +250,12 @@ verb(
         password server = *
 )
 
-Now start winbindd and you should find that your user and group
+Now start bf(winbindd) and you should find that your user and group
 database is expanded to include your NT users and groups, and that you
 can login to your unix box as a domain user, using the tt(DOMAIN+user)
 syntax for the username. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
-winbindd. 
+bf(winbindd). 
 
 label(NOTES)
 manpagesection(NOTES)
@@ -268,10 +268,16 @@ dit()
 url(bf(nmbd))(nmbd.8.html) must be running on the local machine for
 bf(winbindd) to work.
 
+dit()
+bf(winbindd) queries the list of trusted domains for the Windows NT server
+on startup and when a SIGHUP is received.  Thus, for a running bf(winbindd)
+to become aware of new trust relationships between servers, it must be sent
+a SIGHUP signal.
+
 dit() 
 Client processes resolving names through the bf(winbindd) nsswitch module
 read an environment variable named tt(WINBINDD_DOMAIN).  If this variable
-contains a comma separated list of Windows NT domain names, then winbindd
+contains a comma separated list of Windows NT domain names, then bf(winbindd)
 will only resolve users and groups within those Windows NT domains.
 
 dit()
@@ -301,7 +307,8 @@ dit(tt(SIGHUP))
 
 Reload the tt(smb.conf) file and apply any parameter changes to the running
 version of bf(winbindd).  This signal also clears any cached user and group
-information.
+information.  The list of other domains trusted by bf(winbindd) is also
+reloaded. 
 
 dit(tt(SIGUSR1))
 
@@ -353,7 +360,7 @@ label(SEEALSO)
 manpageseealso()
 
 url(bf(samba(7)))(samba.7.html), url(bf(smb.conf(5)))(smb.conf.5.html), 
-bf(nsswitch.conf(5))
+bf(nsswitch.conf(5)), url(bf(wbinfo(1)))(wbinfo.1.html)
 
 label(AUTHOR)
 manpageauthor()

@@ -67,8 +67,8 @@ and 100 is for reams and reams\&. To submit a bug report to the Samba Team,
 use debug level 100 (see \fBBUGS\&.txt\fP)\&.  
 .IP 
 .IP "\fB-i\fP" 
-Tells winbindd to not become a daemon and detach from the current terminal\&.
-This option is used by developers when interactive debugging of winbindd is
+Tells \fBwinbindd\fP to not become a daemon and detach from the current terminal\&.
+This option is used by developers when interactive debugging of \fBwinbindd\fP is
 required\&.
 .IP 
 .PP 
@@ -150,12 +150,12 @@ otherwise\&.
 .IP 
 This parameter specifies the number of seconds the \fBwinbindd\fP daemon will
 cache user and group information before querying a Windows NT server
-again\&. When a item in the cache is older than this time winbindd will ask
+again\&. When a item in the cache is older than this time \fBwinbindd\fP will ask
 the domain controller for the sequence number of the servers account
 database\&. If the sequence number has not changed then the cached item is
 marked as valid for a further "winbind cache time" seconds\&.  Otherwise the
 item is fetched from the server\&. This means that as long as the account
-database is not actively changing winbindd will only have to send one
+database is not actively changing \fBwinbindd\fP will only have to send one
 sequence number query packet every "winbind cache time" seconds\&.
 .IP 
 \fBDefault:\fP
@@ -183,7 +183,7 @@ When filling out the user information for a Windows NT user, the
 .PP 
 .SH "EXAMPLE SETUP" 
 .PP 
-To setup winbindd for user and group lookups plus authentication from
+To setup \fBwinbindd\fP for user and group lookups plus authentication from
 a domain controller use something like the following setup\&. This was
 tested on a RedHat 6\&.2 Linux box\&.
 .PP 
@@ -276,12 +276,12 @@ Finally, setup a smb\&.conf containing directives like the following:
  
 
 .PP 
-Now start winbindd and you should find that your user and group
+Now start \fBwinbindd\fP and you should find that your user and group
 database is expanded to include your NT users and groups, and that you
 can login to your unix box as a domain user, using the \f(CWDOMAIN+user\fP
 syntax for the username\&. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
-winbindd\&. 
+\fBwinbindd\fP\&. 
 .PP 
 .SH "NOTES" 
 .PP 
@@ -293,9 +293,15 @@ The following notes are useful when configuring and running \fBwinbindd\fP:
 \fBwinbindd\fP to work\&.
 .IP 
 .IP "" 
+\fBwinbindd\fP queries the list of trusted domains for the Windows NT server
+on startup and when a SIGHUP is received\&.  Thus, for a running \fBwinbindd\fP
+to become aware of new trust relationships between servers, it must be sent
+a SIGHUP signal\&.
+.IP 
+.IP "" 
 Client processes resolving names through the \fBwinbindd\fP nsswitch module
 read an environment variable named \f(CWWINBINDD_DOMAIN\fP\&.  If this variable
-contains a comma separated list of Windows NT domain names, then winbindd
+contains a comma separated list of Windows NT domain names, then \fBwinbindd\fP
 will only resolve users and groups within those Windows NT domains\&.
 .IP 
 .IP "" 
@@ -322,7 +328,8 @@ The following signals can be used to manipulate the \fBwinbindd\fP daemon\&.
 .IP 
 Reload the \f(CWsmb\&.conf\fP file and apply any parameter changes to the running
 version of \fBwinbindd\fP\&.  This signal also clears any cached user and group
-information\&.
+information\&.  The list of other domains trusted by \fBwinbindd\fP is also
+reloaded\&. 
 .IP 
 .IP "\f(CWSIGUSR1\fP" 
 .IP 
@@ -369,7 +376,7 @@ Storage for cached user and group information\&.
 .SH "SEE ALSO" 
 .PP 
 \fBsamba(7)\fP, \fBsmb\&.conf(5)\fP, 
-\fBnsswitch\&.conf(5)\fP
+\fBnsswitch\&.conf(5)\fP, \fBwbinfo(1)\fP
 .PP 
 .SH "AUTHOR" 
 .PP 

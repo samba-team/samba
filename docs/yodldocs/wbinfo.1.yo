@@ -9,7 +9,8 @@ manpagesynopsis()
 
 bf(wbinfo) link(-u)(minusu) [link(-g)(minusg)] [link(-n name)(minusn)]
 [link(-s sid)(minuss)] [link(-U uid)(minusU)] [link(-G gid)(minusG)]
-[link(-S sid)(minusS)] [link(-Y sid)(minusY)] 
+[link(-S sid)(minusS)] [link(-Y sid)(minusY)] [link(-t)(minust)]
+[link(-m)(minusm)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -93,6 +94,20 @@ dit(bf(-Y sid))
 Convert a SID to a UNIX group id.  If the SID does not correspond to a UNIX
 group mapped by url(bf(winbindd(8)))(winbindd.8.html) then the operation
 will fail.
+
+label(minust)
+dit(bf(-t))
+
+Verify that the workstation trust account created when the Samba server is
+added to the Windows NT domain is working.
+
+label(minusm)
+dit(bf(-m))
+
+Produce a list of domains trusted by the Windows NT server
+url(bf(winbindd(8)))(winbindd.8.html) contacts when resolving names.  This
+list does not include the Windows NT domain the server is a Primary Domain
+Controller for.
 
 enddit()
 
