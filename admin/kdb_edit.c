@@ -37,7 +37,30 @@
  */
 
 #include "admin_locl.h"
+#include <getarg.h>
 #include <sl.h>
+
+RCSID("$Id$");
+
+static char *config_file;
+static char *keyfile;
+static int help_flag;
+static int version_flag;
+
+static struct getargs args[] = {
+    { 
+	"config-file",	'c',	arg_string,	&config_file, 
+	"location of config file",	"file" 
+    },
+    {
+	"key-file",	'k',	arg_string, &keyfile, 
+	"location of master key file", "file"
+    },
+    {	"help",		'h',	arg_flag,   &help_flag },
+    {	"version",	'v',	arg_flag,   &version_flag }
+};
+
+static int num_args = sizeof(args) / sizeof(args[0]);
 
 static SL_cmd commands[] = {
     { "add_new_key",	add_new_key, "add_new_key principal",	"" },
@@ -90,9 +113,60 @@ set_db(int argc, char **argv)
     return 0;
 }
 
+static void
+usage(int ret)
+{
+    arg_printusage (args, num_args, "");
+    exit (ret);
+}
+
 int
 main(int argc, char **argv)
 {
+    krb5_error_code ret;
+    krb5_config_section *cf;
+    int optind = 0;
+    int e;
+    EncryptionKey key;
+
+    set_progname(argv[0]);
+
+    while((e = getarg(args, num_args, argc, argv, &optind)))
+	warnx("error at argument `%s'", argv[optind]);
+
+    if (help_flag)
+	usage (0);
+
+    if (version_flag)
+	krb5_errx(context, 0, "%s", heimdal_version);
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0)
+	usage (1);
+
     krb5_init_context(&context);
+
+    if (config_file == NULL)
+	config_file = HDB_DB_DIR "/kdc.conf";
+
+    if(krb5_config_parse_file(config_file, &cf) == 0) {
+	const char *p = krb5_config_get_string (cf, "kdc", "key-file", NULL);
+	if (p)
+	    keyfile = strdup(p);
+    }
+
+    ret = hdb_read_master_key(context, keyfile, &key);
+    if (ret && ret != ENOENT)
+	krb5_err(context, 1, ret, "Failed to open master key file");
+    if(ret == 0){
+	set_master_key(key);
+	memset(key.keyvalue.data, 0, key.keyvalue.length);
+	free_EncryptionKey(&key);
+	krb5_warnx (context, "Database is encrypted");
+    }else
+	krb5_warnx (context, "Database is not encrypted");
+
     return sl_loop(commands, "kdb_edit> ") != 0;
 }
