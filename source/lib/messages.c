@@ -459,21 +459,48 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 
 /** @} **/
 
+static VOLATILE sig_atomic_t gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
 
 /*
   lock the messaging tdb based on a string - this is used as a primitive form of mutex
   between smbd instances. 
 */
-BOOL message_named_mutex(char *name)
+BOOL message_named_mutex(char *name, unsigned int timeout)
 {
 	TDB_DATA key;
+	int ret;
 
-	if (!message_init()) return False;
+	if (!message_init())
+		return False;
 
 	key.dptr = name;
 	key.dsize = strlen(name)+1;
 
-	return (tdb_chainlock(tdb, key) == 0);
+	if (timeout) {
+		gotalarm = 0;
+		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		alarm(timeout);
+	}
+
+	ret = tdb_chainlock(tdb, key);
+
+	if (timeout) {
+		alarm(0);
+		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		if (gotalarm)
+			return False;
+	}
+
+	return (ret == 0);
 }
 
 /*

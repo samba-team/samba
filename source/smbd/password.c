@@ -1240,10 +1240,12 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
      two connections where one hasn't completed a negprot yet it will send a
      TCP reset to the first connection (tridge) */
 
-  if (!message_named_mutex(server)) {
-          DEBUG(1,("domain mutex failed for %s\n", server));
+  if (!message_named_mutex(server, 20)) {
+          DEBUG(1,("connect_to_domain_password_server: domain mutex failed for %s\n", server));
           return False;
   }
+
+  DEBUG(10, ("connect_to_domain_password_server: got mutex for server %s\n", server ));
 
   if (!cli_connect(pcli, remote_machine, &dest_ip)) {
     DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \

@@ -139,7 +139,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		      const void *buf, size_t len,
 		      BOOL duplicates_allowed,
 		      int *n_sent);
-BOOL message_named_mutex(char *name);
+BOOL message_named_mutex(char *name, unsigned int timeout);
 void message_named_mutex_release(char *name);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
