@@ -2975,7 +2975,7 @@ struct smb_message_struct
    {SMBecho,"SMBecho",reply_echo,0},
    {SMBsesssetupX,"SMBsesssetupX",reply_sesssetup_and_X,0},
    {SMBtconX,"SMBtconX",reply_tcon_and_X,0},
-   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, AS_USER}, 
+   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
    {SMBgetatr,"SMBgetatr",reply_getatr,AS_USER},
    {SMBsetatr,"SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
    {SMBchkpth,"SMBchkpth",reply_chkpth,AS_USER},
