@@ -254,7 +254,7 @@ typedef struct krb5_context_data{
 } krb5_context_data;
 
 enum{
-  KRB5_NT_UNKNOWNN	= 0,
+  KRB5_NT_UNKNOWN	= 0,
   KRB5_NT_PRINCIPAL	= 1,
   KRB5_NT_SRV_INST	= 2,
   KRB5_NT_SRV_HST	= 3,
