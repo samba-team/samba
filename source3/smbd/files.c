@@ -335,7 +335,7 @@ void file_sync_all(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if (fsp->open && (conn == fsp->conn) && (fsp->fd_ptr != NULL)) {
-			sync_file(conn,fsp);
+			conn->vfs_ops.fsync(fsp->fd_ptr->fd);
 		}
 	}
 }

@@ -707,8 +707,8 @@ static void usage(char *pname)
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon();
 	}
-
-    check_kernel_oplocks();
+        
+        check_kernel_oplocks();
 
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);

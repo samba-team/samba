@@ -189,7 +189,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
   if (!st) {
     st = &st1;
-    if (dos_stat(fname,st)) return(-1);
+    if (conn->vfs_ops.stat(dos_to_unix(fname,False),st)) return(-1);
   }
 
   if (S_ISDIR(st->st_mode)) dosmode |= aDIR;
@@ -225,7 +225,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
     unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
   }
 
-  return(dos_chmod(fname,unixmode));
+  return(conn->vfs_ops.chmod(fname,unixmode));
 }
 
 
@@ -241,7 +241,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 
   errno = 0;
 
-  if(dos_utime(fname, times) == 0)
+  if(conn->vfs_ops.utime(dos_to_unix(fname, False), times) == 0)
     return 0;
 
   if((errno != EPERM) && (errno != EACCES))
@@ -256,7 +256,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
      (as DOS does).
    */
 
-  if(dos_stat(fname,&sb) != 0)
+  if(conn->vfs_ops.stat(dos_to_unix(fname,False),&sb) != 0)
     return -1;
 
   /* Check if we have write access. */
@@ -269,7 +269,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
 		  become_root(False);
-		  ret = dos_utime(fname, times);
+		  ret = conn->vfs_ops.utime(dos_to_unix(fname, False), times);
 		  unbecome_root(False);
 	  }
   }

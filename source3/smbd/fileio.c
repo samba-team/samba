@@ -37,7 +37,7 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
   if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
 
-  seek_ret = sys_lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET);
+  seek_ret = fsp->conn->vfs_ops.lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET);
 
   /*
    * We want to maintain the fiction that we can seek
@@ -120,7 +120,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
   }
   
   if (n > 0) {
-    readret = read(fsp->fd_ptr->fd,data,n);
+    readret = fsp->conn->vfs_ops.read(fsp->fd_ptr->fd,data,n);
     if (readret > 0) ret += readret;
   }
 
@@ -173,7 +173,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
     SMB_STRUCT_STAT st;
     fsp->modified = True;
 
-    if (sys_fstat(fsp->fd_ptr->fd,&st) == 0) {
+    if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&st) == 0) {
       int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
       if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode)) {	
         file_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
@@ -644,16 +644,17 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 
   return real_write_file(fsp, wcp->data, wcp->offset, data_size);
 }
+
 /*******************************************************************
 sync a file
 ********************************************************************/
 
-void sync_file(connection_struct *conn, files_struct *fsp)
+void sys_fsync_file(connection_struct *conn, files_struct *fsp)
 {
 #ifdef HAVE_FSYNC
     if(lp_strict_sync(SNUM(conn)) && fsp->fd_ptr != NULL) {
       flush_write_cache(fsp, SYNC_FLUSH);
-      fsync(fsp->fd_ptr->fd);
+      conn->vfs_ops.fsync(fsp->fd_ptr->fd);
     }
 #endif
 }
