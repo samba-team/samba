@@ -902,7 +902,7 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
-	
+
 	for (i=0; i < ARRAY_SIZE(array); i++) {
 		printf("testing DsGetNCChanges level %d\n",
 			array[i].level);
@@ -919,13 +919,13 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req5.destination_dsa_guid		= GUID_random();
 			r.in.req.req5.source_dsa_guid			= null_guid;
 			r.in.req.req5.naming_context			= &nc;
-			r.in.req.req5.replication_state.tmp_highest_usn	= 0;
-			r.in.req.req5.replication_state.reserved_usn	= 0;
-			r.in.req.req5.replication_state.highest_usn	= 0;
-			r.in.req.req5.highwatermark_vector		= NULL;
-			r.in.req.req5.unknown1				= 0;/*0x10201C70;*/
-			r.in.req.req5.unknown2				= 402;
-			r.in.req.req5.unknown3				= 402116;
+			r.in.req.req5.highwatermark.tmp_highest_usn	= 167997;
+			r.in.req.req5.highwatermark.reserved_usn	= 0;
+			r.in.req.req5.highwatermark.highest_usn		= 0;
+			r.in.req.req5.uptodateness_vector		= NULL;
+			r.in.req.req5.replica_flags			= 0;
+			r.in.req.req5.unknown2				= 0;
+			r.in.req.req5.unknown3				= 0;
 			r.in.req.req5.unknown4				= 0;
 			r.in.req.req5.h1				= 0;
 
@@ -938,11 +938,18 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req8.destination_dsa_guid		= GUID_random();
 			r.in.req.req8.source_dsa_guid			= null_guid;
 			r.in.req.req8.naming_context			= &nc;
-			r.in.req.req8.replication_state.tmp_highest_usn	= 0;
-			r.in.req.req8.replication_state.reserved_usn	= 0;
-			r.in.req.req8.replication_state.highest_usn	= 0;
-			r.in.req.req8.highwatermark_vector		= NULL;
-			r.in.req.req8.unknown1				= 0x10201C70;
+			r.in.req.req8.highwatermark.tmp_highest_usn	= 0;
+			r.in.req.req8.highwatermark.reserved_usn	= 0;
+			r.in.req.req8.highwatermark.highest_usn		= 0;
+			r.in.req.req8.uptodateness_vector		= NULL;
+			r.in.req.req8.replica_flags			= 0
+									| DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+									| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+									| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
+									| DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS
+									| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
+									| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES
+									;
 			r.in.req.req8.unknown2				= 402;
 			r.in.req.req8.unknown3				= 402116;
 			r.in.req.req8.unknown4				= 0;

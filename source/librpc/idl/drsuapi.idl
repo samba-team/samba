@@ -172,7 +172,7 @@ interface drsuapi
 		hyper tmp_highest_usn; /* updated after each object update */
 		hyper reserved_usn;
 		hyper highest_usn; /* updated after a full replication cycle */
-	} drsuapi_DsReplicaUsnCtr;
+	} drsuapi_DsReplicaHighWaterMark;
 
 	typedef [public] struct {
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
@@ -187,13 +187,31 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsReplicaCoursor coursors[];
 	} drsuapi_DsReplicaCoursor05Ctr;
 
+	typedef [public] bitmap {
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE				= 0x00000010,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP			= 0x00000020,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS			= 0x00000040,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_USE_ASYNC_INTERSIDE_TRANSPORT	= 0x00000080,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_TWO_WAY_SYNC			= 0x00000200,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS		= 0x00000800,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS			= 0x00010000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_NEXT_PACKET			= 0x00020000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED			= 0x00200000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_PREEMPTED				= 0x01000000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_IGNORE_CHANGE_NOTIFICATIONS	= 0x04000000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_DISABLE_SCHEDULED_SYNC		= 0x08000000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES			= 0x10000000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_NO_CHANGE_NOTIFICATIONS		= 0x20000000,
+		DRSUAPI_DS_REPLICA_NEIGHBOUR_PARTIAL_ATTRIBUTE_SET		= 0x40000000
+	} drsuapi_DsReplicaNeighbourFlags;
+
 	typedef struct {
 		GUID destination_dsa_guid;
 		GUID source_dsa_guid;
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsReplicaUsnCtr replication_state;
-		drsuapi_DsReplicaCoursor05Ctr *highwatermark_vector;
-		uint32 unknown1;
+		drsuapi_DsReplicaHighWaterMark highwatermark;
+		drsuapi_DsReplicaCoursor05Ctr *uptodateness_vector;
+		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint32 unknown2;
 		uint32 unknown3;
 		uint32 unknown4;
@@ -219,9 +237,9 @@ interface drsuapi
 		GUID destination_dsa_guid;
 		GUID source_dsa_guid;
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsReplicaUsnCtr replication_state;
-		drsuapi_DsReplicaCoursor05Ctr *highwatermark_vector;
-		uint32 unknown1;
+		drsuapi_DsReplicaHighWaterMark highwatermark;
+		drsuapi_DsReplicaCoursor05Ctr *uptodateness_vector;
+		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint32 unknown2;
 		uint32 unknown3;
 		uint32 unknown4;
@@ -448,17 +466,18 @@ interface drsuapi
 		drsuapi_DsReplicaMetaDataCtr *meta_data_ctr;
 	} drsuapi_DsReplicaObjectListItemEx;
 
-	typedef struct {
+	typedef [gensize] struct {
 		GUID guid1;
 		GUID guid2;
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsReplicaUsnCtr old_replication_state;
-		drsuapi_DsReplicaUsnCtr new_replication_state;
+		drsuapi_DsReplicaHighWaterMark old_highwatermark;
+		drsuapi_DsReplicaHighWaterMark new_highwatermark;
 		drsuapi_DsReplicaCoursor05Ctr *uptodateness_vector;
 		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
 		uint32 unknown1;
-		uint32 unknown2;
-		uint32 unknown3;
+		uint32 object_count;
+		/* this +55 is sometimes +56, so I don't know where this comes from... --metze */
+		[value(ndr_size_drsuapi_DsGetNCChangesCtr1(r,ndr->flags)+55)] uint32 __ndr_size;
 		drsuapi_DsReplicaObjectListItemEx *first_object;
 		uint32 unknown4;
 	} drsuapi_DsGetNCChangesCtr1;
@@ -477,8 +496,8 @@ interface drsuapi
 		GUID guid1;
 		GUID guid2;
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsReplicaUsnCtr old_replication_state;
-		drsuapi_DsReplicaUsnCtr new_replication_state;
+		drsuapi_DsReplicaHighWaterMark old_highwatermark;
+		drsuapi_DsReplicaHighWaterMark new_highwatermark;
 		drsuapi_DsReplicaCoursor05Ctr *uptodateness_vector;
 		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
 		uint32 unknown1;
@@ -889,7 +908,7 @@ interface drsuapi
 		unistr *source_dsa_obj_dn;
 		unistr *source_dsa_address;
 		unistr *transport_obj_dn;
-		uint32 replica_flags;
+		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint32 reserved;
 		GUID naming_context_obj_guid;
 		GUID source_dsa_obj_guid;
