@@ -1184,6 +1184,9 @@ void unix_clean_name(char *s)
   /* remove any double slashes */
   string_sub(s, "//","/");
 
+  /* Remove leading ./ characters */
+  trim_string(s, "./", NULL);
+
   while ((p = strstr(s,"/../")) != NULL)
     {
       pstring s1;
