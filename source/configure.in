@@ -2016,15 +2016,33 @@ if test x"$with_ads_support" = x"yes"; then
 	AC_DEFINE(HAVE_GSSAPI)])
 fi
 
-##################################################################
-# we might need the lber lib on some systems. To avoid link errors
-# this test must be before the libldap test
-AC_CHECK_LIB(lber, ber_scanf, [LIBS="$LIBS -llber"])
-
 ########################################################
-# now see if we can find the ldap libs in standard paths
-if test x$have_ldap != xyes; then
-AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
+# Compile with LDAP support?
+
+with_ldap_support=yes
+AC_MSG_CHECKING([whether to use LDAP])
+
+AC_ARG_WITH(ldap,
+[   --with-ldap  LDAP support (default yes)],
+[ case "$withval" in
+    no)
+	with_ldap_support=no
+	;;
+  esac ])
+
+AC_MSG_RESULT($with_ldap_support)
+
+if test x"$with_ldap_support" = x"yes"; then
+
+  ##################################################################
+  # we might need the lber lib on some systems. To avoid link errors
+  # this test must be before the libldap test
+  AC_CHECK_LIB(lber, ber_scanf, [LIBS="$LIBS -llber"])
+
+  ########################################################
+  # now see if we can find the ldap libs in standard paths
+  if test x$have_ldap != xyes; then
+  AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
 	AC_DEFINE(HAVE_LDAP)])
 
 	########################################################
@@ -2036,6 +2054,7 @@ AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
 	#include <lber.h>
 	#include <ldap.h>], [ldap_set_rebind_proc(0, 0, 0);], [pam_ldap_cv_ldap_set_rebind_proc=3], [pam_ldap_cv_ldap_set_rebind_proc=2]) ])
 	AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $pam_ldap_cv_ldap_set_rebind_proc)
+  fi
 fi
 
 #################################################
