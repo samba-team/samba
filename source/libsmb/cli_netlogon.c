@@ -197,7 +197,7 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
 	result = new_cli_net_auth2(cli, sec_chan, 0x000001ff, 
 				   &srv_chal);
 	if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed %s\n",
+                DEBUG(1,("cli_nt_setup_creds: auth2 challenge failed %s\n",
 			 nt_errstr(result)));
         }
 

@@ -147,7 +147,7 @@ static int run_rpc_command(const char *pipe_name, int conn_flags,
 	nt_status = fn(domain_sid, cli, mem_ctx, argc, argv);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("rpc command function failed! (%s)\n", nt_errstr(nt_status)));
+		DEBUG(1, ("rpc command function failed! (%s)\n", nt_errstr(nt_status)));
 	} else {
 		DEBUG(5, ("rpc command function succedded\n"));
 	}
