@@ -1,21 +1,65 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
-#reads in the list of parameters from the source 
-#compares this list to the list of parms documented in the docbook source
-#prints out the names of the parameters that are in need of documentation
-# (C) 2002 Bradley W. Langhorst" <brad@langhorst.com>
+my $doc_file = "/docs/docbook/manpages/smb.conf.5.sgml";
+my $source_file = "/source/param/loadparm.c";
 
-my $doc_file = "./docs/docbook/manpages/smb.conf.5.sgml";
-my $source_file = "./source/param/loadparm.c";
-my $ln;
-my %params;
+my %link,%doc,%param;
 
-open(SOURCE, "<$source_file") || 
-  die "Unable to open $source_file for input: $!\n";
-open(DOC, "<$doc_file") || 
-  die "Unable to open $doc_file for input: $!\n";
+# This one shouldn't be documented at all
+$doc{-valid} = "FOUND";
 
-while ($ln= <SOURCE>) {
+$topdir = (shift @ARGV) or $topdir = ".";
+
+##################################################
+
+print "Reading links from manpage\n";
+
+open(IN,$topdir.$doc_file);
+
+while(<IN>) {
+	if( /<listitem><para><link linkend="([^"]*)"><parameter>([^<]*)<\/parameter><\/link><\/para><\/listitem>/g ){
+		$link{$2} = $1;
+		$ref{$1} = $2;
+	}
+}
+
+close(IN);
+
+##################################################
+
+print "Reading documentation from manpage\n";
+
+open(IN,$topdir.$doc_file) || die("Can't open $topdir$doc_file");
+
+while(<IN>) {
+	if( /<term><anchor id="([^"]*)">([^<]*?)([ ]*)\(.\)([ ]*)<\/term>/g ) {
+		$key = $1;
+		$value = $2;
+		$doc{$value} = $key;
+
+		# There is a reference to this entry
+		if($ref{$key} eq $value){
+			$ref{$key} = "FOUND";
+		} else {
+			if($ref{$key}) {
+				print "$key should refer to $value, but refers to " . $ref{$key} . "\n";
+			} else {
+				print "$key should refer to $value, but has no reference!\n";
+			}
+			$ref{$key} = $value;
+		}
+	}
+}
+
+close(IN);
+
+#################################################
+
+print "Reading entries from source code\n";
+
+open(SOURCE,$topdir.$source_file) || die("Can't open $topdir$source_file");
+
+while ($ln = <SOURCE>) {
   last if $ln =~ m/^static\ struct\ parm_struct\ parm_table.*/;
 } #burn through the preceding lines
 
@@ -23,21 +67,28 @@ while ($ln = <SOURCE>) {
   last if $ln =~ m/^\s*\}\;\s*$/;
   #pull in the param names only
   next if $ln =~ m/.*P_SEPARATOR.*/;
-  $ln =~ m/.*\"(.*)\".*/;
-  $params{lc($1)}='not_found'; #not case sensitive
-}
-close SOURCE;
-#now read in the params list from the docs
-@doclines = <DOC>;
-
-foreach $ln (grep (/\<anchor\ id\=/, @doclines)) {
-  $ln =~ m/^.*\<anchor\ id\=\".*\"\>\s*(?:\<.*?\>)*\s*(.*?)(?:\s*\(?[S,G]?\)?\s*(\<\/term\>)?){1}\s*$/;
-  #print "got: $1 from: $ln";
-  if (exists $params{lc($1)}) {
-    $params{$1} = 'found';
+  next unless $ln =~ /.*\"(.*)\".*/;
+  
+  if($doc{lc($1)}) {
+	$doc{lc($1)} = "FOUND";
+  } else {
+	print "$1 is not documented!\n";
   }
 }
+close SOURCE;
 
-foreach (keys %params) {
-  print "$_\n" if $params{$_} eq 'not_found' and $_ cmp "valid" and $_ eq "";
+##################################################
+
+print "Trying to find missing references\n";
+
+foreach (keys %ref) {
+	if($ref{$_} cmp "FOUND") {
+		print "$_ references to " . $ref{$_} . ", but " . $ref{$_} . " isn't an anchor!\n";
+	}
+}
+
+foreach (keys %doc) {
+	if($doc{$_} cmp "FOUND") {
+		print "$_ is documented but is not a configuration option!\n";
+	}
 }
