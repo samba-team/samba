@@ -59,7 +59,6 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
 	NTSTATUS status;
-	struct sec_desc_buf sec_desc;
 	uint32 sec_info = 0;
 
 	printf("\ntesting CreateKey\n");
