@@ -590,6 +590,43 @@ static void run_unlinktest(void)
 
 
 
+static void browse_callback(char *sname, uint32 stype, char *comment)
+{
+	printf("\t%20.20s %08x %s\n", sname, stype, comment);
+}
+
+
+/*
+  This test checks the browse list code
+
+*/
+static void run_browsetest(void)
+{
+	static struct cli_state cli;
+
+	printf("staring browse test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	printf("domain list:\n");
+	cli_NetServerEnum(&cli, workgroup, 
+			  SV_TYPE_DOMAIN_ENUM,
+			  browse_callback);
+
+	printf("machine list:\n");
+	cli_NetServerEnum(&cli, workgroup, 
+			  SV_TYPE_ALL,
+			  browse_callback);
+
+	close_connection(&cli);
+
+	printf("browse test finished\n");
+}
+
+
+
 static void create_procs(int nprocs, int numops)
 {
 	int i, status;
@@ -704,6 +741,7 @@ static void create_procs(int nprocs, int numops)
 	run_locktest2();
 	run_locktest3(numops);
 	run_unlinktest();
+	run_browsetest();
 
 	return(0);
 }
