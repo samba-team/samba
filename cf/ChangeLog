@@ -1,5 +1,9 @@
 2004-02-11  Love  <lha@stacken.kth.se>
 
+	* roken-frag.m4: AC_CHECK_HEADERS(net/if.h netinet6/in6_var.h
+	sys/sysctl.h sys/proc.h, resolv.h) are all special and need extra
+	help
+
 	* test-package.m4: If there is a --with-PACKAGE=path but no
 	--with-PACKAGE-config, go seach for path/PACKEGE-config and use it
 	if it exists.  Inspired by Harald Barth <haba@pdc.kth.se>
