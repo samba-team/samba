@@ -207,8 +207,10 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if ( !list )
 		return; 
 
-	while ( list[i] )
+	while ( list[i] ) {
 		SAFE_FREE( list[i] );
+		i+=1;
+	}
 
 	SAFE_FREE( list );
 }
