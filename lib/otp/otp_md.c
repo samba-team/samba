@@ -50,6 +50,7 @@ RCSID("$Id$");
 /*
  * Compress len bytes from md into key
  */
+
 static void
 compressmd (OtpKey key, unsigned char *md, size_t len)
 {
@@ -86,6 +87,7 @@ otp_md_init (OtpKey key,
   if (p == NULL)
     return -1;
   strcpy (p, seed);
+  strlwr (p);
   strcat (p, pwd);
   (*init)(arg);
   (*update)(arg, p, len);
@@ -208,6 +210,28 @@ otp_md5_next (OtpKey key)
 		      &md5, res, sizeof(res));
 }
 
+/* 
+ * For histerical reasons, in the OTP definition it's said that the
+ * result from SHA must be stored in little-endian order.  See
+ * draft-ietf-otp-01.txt.
+ */
+
+static void
+sha_finito_little_endian (struct sha *m, void *res)
+{
+  u_int32_t tmp[20];
+  unsigned char *p = res;
+  int i, j;
+
+  sha_finito (m, tmp);
+  for (i = 0, j = 0; j < 20; i++, j += 4) {
+    p[j]   = (unsigned char)(tmp[i] & 0xff);
+    p[j+1] = (unsigned char)((tmp[i] >>  8) & 0xff);
+    p[j+2] = (unsigned char)((tmp[i] >> 16) & 0xff);
+    p[j+3] = (unsigned char)((tmp[i] >> 24) & 0xff);
+  }
+}
+
 int
 otp_sha_init (OtpKey key, char *pwd, char *seed)
 {
@@ -217,7 +241,7 @@ otp_sha_init (OtpKey key, char *pwd, char *seed)
   return otp_md_init (key, pwd, seed, 
 		      (void (*)(void *))sha_init, 
 		      (void (*)(void *, void *, size_t))sha_update, 
-		      (void (*)(void *, void *))sha_finito,
+		      (void (*)(void *, void *))sha_finito_little_endian,
 		      &sha, res, sizeof(res));
 }
 
@@ -231,7 +255,7 @@ otp_sha_hash (char *data,
   return otp_md_hash (data, len,
 		      (void (*)(void *))sha_init,
 		      (void (*)(void *, void *, size_t))sha_update, 
-		      (void (*)(void *, void *))sha_finito,
+		      (void (*)(void *, void *))sha_finito_little_endian,
 		      &sha, res, 20);
 }
 
@@ -244,6 +268,6 @@ otp_sha_next (OtpKey key)
   return otp_md_next (key, 
 		      (void (*)(void *))sha_init, 
 		      (void (*)(void *, void *, size_t))sha_update, 
-		      (void (*)(void *, void *))sha_finito,
+		      (void (*)(void *, void *))sha_finito_little_endian,
 		      &sha, res, sizeof(res));
 }
