@@ -25,6 +25,10 @@ AC_ARG_WITH(fontsize,
 [ --with-fontsize          Specify the fontsize in points (default: 10.5) ],
 [ test "$withval" && FONTSIZE="$withval" ])
 
+AC_ARG_ENABLE(printable,
+[ --enable-printable       Printable output (expand ulinks, etc)],
+[ test "$withval" && DUPLICATE_ULINKS="footnote" ])
+
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
