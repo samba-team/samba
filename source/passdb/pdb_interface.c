@@ -1136,7 +1136,10 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 }
 
 /******************************************************************
- Backward compatibility functions for the original passdb interface
+ Wrapper functions for context-based passdb interface (help to avoid
+ creating pdb_context every time).
+ Partly, a backward compatibility functions for the original passdb
+ interface.
 *******************************************************************/
 
 BOOL pdb_setsampwent(BOOL update) 
@@ -1531,6 +1534,91 @@ NTSTATUS pdb_get_privilege_entry(const char *privname, DOM_SID **sid_list, int *
 	}
 
 	return pdb_context->pdb_get_privilege_entry(pdb_context, privname, sid_list, sid_count);
+}
+
+NTSTATUS pdb_settrustpwent(void)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+
+	if (!pdb_ctx) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	return pdb_ctx->pdb_settrustpwent(pdb_ctx);
+}
+
+void pdb_endtrustpwent(void)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+	if (!pdb_ctx) return;
+
+	pdb_ctx->pdb_endtrustpwent(pdb_ctx);
+}
+
+NTSTATUS pdb_gettrustpwent(SAM_TRUST_PASSWD *trust)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+
+	if (!pdb_ctx) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	return pdb_ctx->pdb_gettrustpwent(pdb_ctx, trust);
+}
+
+NTSTATUS pdb_gettrustpwnam(SAM_TRUST_PASSWD *trust, const char *name)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+
+	if (!pdb_ctx) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb_ctx->pdb_gettrustpwnam(pdb_ctx, trust, name);
+}
+
+NTSTATUS pdb_gettrustpwsid(SAM_TRUST_PASSWD *trust, const DOM_SID *sid)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+
+	if (!pdb_ctx) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb_ctx->pdb_gettrustpwsid(pdb_ctx, trust, sid);
+}
+
+NTSTATUS pdb_add_trust_passwd(SAM_TRUST_PASSWD *trust)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+
+	if (!pdb_ctx) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb_ctx->pdb_add_trust_passwd(pdb_ctx, trust);
+}
+
+NTSTATUS pdb_update_trust_passwd(SAM_TRUST_PASSWD *trust)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+
+	if (!pdb_ctx) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	return pdb_ctx->pdb_update_trust_passwd(pdb_ctx, trust);
+}
+
+NTSTATUS pdb_delete_trust_passwd(SAM_TRUST_PASSWD *trust)
+{
+	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
+
+	if (!pdb_ctx) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	return pdb_ctx->pdb_delete_trust_passwd(pdb_ctx, trust);
 }
 
 /***************************************************************
