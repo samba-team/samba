@@ -1,3 +1,9 @@
+1999-08-03  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hpropd.c: v6-ify
+
+	* kdc/hprop.c: v6-ify
+
 1999-08-01  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/mk_req.c (krb5_mk_req): use krb5_expand_hostname
@@ -10,6 +16,10 @@
 	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add exapnd_hostname.c
 
 	* lib/krb5/expand_hostname.c: new file
+
+1999-07-28  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.1l
 
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
