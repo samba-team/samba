@@ -329,22 +329,6 @@ to specify a service name correctly), read on:
 <item> Some clients force service names into upper case.
 </itemize>
 
-<sect1>My client reports "cannot find domain controller", "cannot log on to the network" or similar <p> <label id="cant_see_net">
-Nothing is wrong - Samba does not implement the primary domain name
-controller stuff for several reasons, including the fact that the
-whole concept of a primary domain controller and "logging in to a
-network" doesn't fit well with clients possibly running on multiuser
-machines (such as users of smbclient under Unix). Having said that,
-several developers are working hard on building it in to the next
-major version of Samba. If you can contribute, send a message to
-<htmlurl url="mailto:samba@samba.org" name="samba@samba.org"> !
-
-Seeing this message should not affect your ability to mount redirected
-disks and printers, which is really what all this is about.
-
-For many clients (including Windows for Workgroups and Lan Manager),
-setting the domain to STANDALONE at least gets rid of the message.
-
 <sect1>Printing doesn't work :-(<p> <label id="no_printing"> 
 
 Make sure that the specified print command for the service you are
@@ -371,29 +355,6 @@ If using the Lanman1 protocol (the default) then try switching to
 coreplus.  Also not that print status error messages don't mean
 printing won't work. The print status is received by a different
 mechanism.
-
-<sect1>My programs install on the server OK, but refuse to work properly<p><label id="programs_wont_run">
-There are numerous possible reasons for this, but one MAJOR
-possibility is that your software uses locking. Make sure you are
-using Samba 1.6.11 or later. It may also be possible to work around
-the problem by setting "locking=no" in the Samba configuration file
-for the service the software is installed on. This should be regarded
-as a strictly temporary solution.
-
-In earlier Samba versions there were some difficulties with the very
-latest Microsoft products, particularly Excel 5 and Word for Windows
-6. These should have all been solved. If not then please let Andrew
-Tridgell know via email at <htmlurl url="mailto:samba@samba.org" name="samba@samba.org">.
-
-<sect1>My "server string" doesn't seem to be recognised<p><label id="bad_server_string">
-OR My client reports the default setting, eg. "Samba 1.9.15p4", instead
-of what I have changed it to in the smb.conf file.
-
-You need to use the -C option in nmbd. The "server string" affects
-what smbd puts out and -C affects what nmbd puts out.
- 
-Current versions of Samba (1.9.16 +) have combined these options into
-the "server string" field of smb.conf, -C for nmbd is now obsolete.
 
 <sect1>My client reports "This server is not configured to list shared resources" <p> <label id="cant_list_shares">
 Your guest account is probably invalid for some reason. Samba uses the
@@ -442,51 +403,5 @@ Note: the reason why 65535 is a VERY bad choice of uid and gid is that
 it casts to -1 as a uid, and the setreuid() system call ignores (with
 no error) uid changes to -1. This means any daemon attempting to run
 as uid 65535 will actually run as root. This is not good!
-
-<sect1>Issues specific to IBM OS/2 systems<p><label id="OS2Issues">
-
-<url url="http://carol.wins.uva.nl/~leeuw/samba/samba2.html" name="Samba for OS/2">
-
-<sect1>Issues specific to IBM MVS systems<p><label id="MVSIssues">
-
-<url url="ftp://ftp.mks.com/pub/samba/" name="Samba for OS/390 MVS">
-
-<sect1>Issues specific to Digital VMS systems<p><label id="VMSIssues">
-
-<sect1>Issues specific to Amiga systems<p><label id="AmigaIssues">
-
-<url url="http://www.gbar.dtu.dk/~c948374/Amiga/Samba/" name="Samba for Amiga">
-
-There is a mailing list for Samba on the Amiga.
-
-                                Subscribing.
-
-   Send an email to rask-samba-request@kampsax.dtu.dk with the word subscribe
-in the message. The list server will use the address in the Reply-To: or
-From: header field, in that order.
-
-                               Unsubscribing.
-
-   Send an email to rask-samba-request@kampsax.dtu.dk with the word
-unsubscribe in the message. The list server will use the address in the
-Reply-To: or From: header field, in that order. If you are unsure which
-address you are subscribed with, look at the headers. You should see a
-"From " (no colon) or Return-Path: header looking something like
-
-   rask-samba-owner-myname=my.domain@kampsax.dtu.dk
-
-where myname=my.domain gives you the address myname@my.domain. This also
-means that I will always be able to find out which address is causing
-bounces, for example.
-                                List archive.
-
-   Messages sent to the list are archived in HTML. See the mailing list home
-page at <URL url="http://www.gbar.dtu.dk/~c948374/Amiga/Samba/mailinglist/">
-
-<sect1>Issues specific to Novell IntraNetware systems<p><label id="NetwareIssues">
-
-<sect1>Issues specific to Stratos VOS systems<p><label id="NetwareIssues">
-
-<url url="ftp://ftp.stratus.com/pub/vos/tools/" name="Samba for Stratus VOS">
 
 </article>
