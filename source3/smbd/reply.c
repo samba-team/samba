@@ -3013,19 +3013,12 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
 	
 	if (ret == -1) {
-		NTSTATUS nterr = NT_STATUS_OK;
 	        if(errno == ENOENT) {
-			unix_ERR_class = ERRDOS;
-			if (bad_path) {
-				unix_ERR_code = ERRbadpath;
-				nterr = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			} else {
-				unix_ERR_code = ERRbadfile;
-				nterr = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
+			if (bad_path)
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			else
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
-		if (!NT_STATUS_IS_OK(nterr))
-			return nterr;
 		return map_nt_error_from_unix(errno);
 	}
 	
