@@ -678,8 +678,8 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 
   num_good_receives++;
 
-  DEBUG(5,("%s received a packet of len %d from (%s) port %d\n",
-	   timestring(),length,inet_ntoa(packet->ip),packet->port));
+  DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
+	    length, inet_ntoa(packet->ip), packet->port ) );
 
   return(packet);
 }
@@ -699,8 +699,8 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   sock_out.sin_port = htons( port );
   sock_out.sin_family = AF_INET;
   
-  DEBUG(5,("%s sending a packet of len %d to (%s) on port %d\n",
-	   timestring(),len,inet_ntoa(ip),port));
+  DEBUG( 5, ( "Sending a packet of len %d to (%s) on port %d\n",
+	      len, inet_ntoa(ip), port ) );
 	
   ret = (sendto(fd,buf,len,0,(struct sockaddr *)&sock_out,
 		sizeof(sock_out)) >= 0);

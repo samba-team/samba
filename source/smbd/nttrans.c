@@ -1019,8 +1019,8 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
      * Queue this open message as we are the process of an oplock break.
      */
 
-    DEBUG(2,("%s: reply_nttrans: queueing message NT_TRANSACT_CREATE \
-due to being in oplock break state.\n", timestring() ));
+    DEBUG( 2, ( "reply_nttrans: queueing message NT_TRANSACT_CREATE " ) );
+    DEBUGADD( 2, ( "due to being in oplock break state.\n" ) );
 
     push_oplock_pending_smb_message( inbuf, length);
     return -1;
@@ -1145,8 +1145,8 @@ due to being in oplock break state.\n", timestring() ));
       break;
     default:
       /* Error in request */
-      DEBUG(0,("reply_nttrans: %s Unknown request %d in nttrans call\n",timestring(),
-                 function_code));
+      DEBUG( 0, ( "reply_nttrans: Unknown request %d in nttrans call\n",
+                  function_code ) );
       if(setup)
         free(setup);
       if(params)

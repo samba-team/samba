@@ -161,9 +161,8 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
   SSVAL(smb_buf(outbuf),-2,nread);
   
-  DEBUG(3,("%s readX pnum=%04x cnum=%d min=%d max=%d nread=%d\n",
-	timestring(),pnum,cnum,
-	smb_mincnt,smb_maxcnt,nread));
+  DEBUG( 3, ( "readX pnum=%04x cnum=%d min=%d max=%d nread=%d\n",
+	      pnum, cnum, smb_mincnt, smb_maxcnt, nread ) );
 
   set_chain_pnum(pnum);
 

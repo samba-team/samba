@@ -656,12 +656,12 @@ int main(int argc,char *argv[])
 
   reopen_logs();
 
-  DEBUG(1,("%s netbios nameserver version %s started\n",timestring(),VERSION));
-  DEBUG(1,("Copyright Andrew Tridgell 1994-1997\n"));
+  DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
+  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1997\n" ) );
 
   if( !get_myname( myhostname, NULL) )
   {
-    DEBUG(0,("Unable to get my hostname - exiting.\n"));
+    DEBUG( 0, ( "Unable to get my hostname - exiting.\n" ) );
     return -1;
   }
 
@@ -693,7 +693,7 @@ int main(int argc,char *argv[])
   
   if (is_daemon)
   {
-    DEBUG(2,("%s becoming a daemon\n",timestring()));
+    DEBUG( 2, ( "Becoming a daemon.\n" ) );
     become_daemon();
   }
 

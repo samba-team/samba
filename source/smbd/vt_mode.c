@@ -452,7 +452,7 @@ void VT_Process(void)
 	
 					nread = len + 4;
      	 
-					DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
+					DEBUG( 3, ("Transaction %d of length %d\n", trans_num, nread ) );
 	
 					if(msg_type == 0)
 						VT_Output(InBuffer);

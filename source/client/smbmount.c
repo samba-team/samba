@@ -803,7 +803,7 @@ static void usage(char *pname)
     }
 
 
-  DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
+  DEBUG( 3, ( "Client started (version %s)\n", VERSION ) );
 
   if(!get_myname(myhostname,NULL))
   {

@@ -81,8 +81,13 @@ in workgroup %s on subnet %s\n",
   bzero((char *)&work->dmb_name, sizeof(work->dmb_name));
   putip((char *)&work->dmb_addr, &ipzero);
 
-  DEBUG(0,("\n%s ***** Samba server %s has stopped being a domain master browser \
-for workgroup %s on subnet %s *****\n\n", timestring(), global_myname, work->work_group, subrec->subnet_name));
+  if( DEBUGLVL( 0 ) )
+    {
+    dbgtext( "*****\n\nSamba server %s ", global_myname );
+    dbgtext( "has stopped being a domain master browser " );
+    dbgtext( "for workgroup %s ", work->work_group );
+    dbgtext( "on subnet %s.\n\n*****\n", subrec->subnet_name );
+    }
 
 }
 
@@ -94,8 +99,12 @@ static void unbecome_dmb_fail(struct subnet_record *subrec,
                                  struct response_record *rrec,
                                  struct nmb_name *released_name)
 {
-  DEBUG(0,("unbecome_dmb_fail: Failed to unbecome domain master browser for \
-workgroup %s on subnet %s.\n", released_name->name, subrec->subnet_name));
+  if( DEBUGLVL( 0 ) )
+    {
+    dbgtext( "unbecome_dmb_fail: Failed to unbecome domain master browser " );
+    dbgtext( "for workgroup %s ", released_name->name );
+    dbgtext( "on subnet %s.\n",   subrec->subnet_name );
+    }
 }
 
 /*******************************************************************
@@ -214,11 +223,15 @@ in workgroup %s on subnet %s\n",
   /* Tell the namelist writer to write out a change. */
   subrec->work_changed = True;
 
-  DEBUG(0,("\n%s ***** Samba server %s is now a domain master browser for \
-workgroup %s on subnet %s *****\n\n", timestring(),global_myname, work->work_group, 
-subrec->subnet_name));
+  if( DEBUGLVL( 0 ) )
+    {
+    dbgtext( "*****\n\nSamba server %s ", global_myname );
+    dbgtext( "is now a domain master browser for " );
+    dbgtext( "workgroup %s ", work->work_group );
+    dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
+    }
 
-  if(subrec == unicast_subnet)
+  if( subrec == unicast_subnet )
   {
     struct nmb_name nmbname;
     struct in_addr my_first_ip;
@@ -313,9 +326,13 @@ Continuing with domain master code.\n",
   }
   else
   {
-    DEBUG(0,("%s become_domain_master_query_success: There is already a domain \
-master browser at IP %s for workgroup %s registered on subnet %s.\n",
-          timestring(), inet_ntoa(ip), nmbname->name, subrec->subnet_name));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "become_domain_master_query_success:\n" );
+      dbgtext( "There is already a domain master browser at " );
+      dbgtext( "IP %s for workgroup %s ", inet_ntoa(ip), nmbname->name );
+      dbgtext( "registered on subnet %s.\n", subrec->subnet_name );
+      }
   }
 }
 
@@ -367,9 +384,13 @@ static void become_domain_master_browser_bcast(char *workgroup_name)
 
       if (find_name_on_subnet(subrec, &nmbname, FIND_SELF_NAME) == NULL)
       {
-        DEBUG(0,("become_domain_master_browser_bcast: At time %s attempting to become domain \
-master browser on workgroup %s on subnet %s\n", timestring(), 
-                 workgroup_name, subrec->subnet_name));
+        if( DEBUGLVL( 0 ) )
+          {
+          dbgtext( "become_domain_master_browser_bcast:\n" );
+          dbgtext( "Attempting to become domain master browser on " );
+          dbgtext( "workgroup %s on subnet %s\n",
+                    workgroup_name, subrec->subnet_name );
+          }
 
         /* Send out a query to establish whether there's a 
            domain controller on the local subnet. If not,
@@ -411,9 +432,13 @@ static void become_domain_master_browser_wins(char *workgroup_name)
 
     if (find_name_on_subnet(unicast_subnet, &nmbname, FIND_SELF_NAME) == NULL)
     {
-      DEBUG(0,("%s become_domain_master_browser_wins: attempting to become domain \
-master browser on workgroup %s, subnet %s.\n",
-      timestring(), workgroup_name, unicast_subnet->subnet_name));
+      if( DEBUGLVL( 0 ) )
+        {
+        dbgtext( "become_domain_master_browser_wins:\n" );
+        dbgtext( "Attempting to become domain master browser " );
+        dbgtext( "on workgroup %s, subnet %s.\n",
+                  workgroup_name, unicast_subnet->subnet_name );
+        }
 
       /* Send out a query to establish whether there's a 
          domain master broswer registered with WINS. If not,

@@ -327,8 +327,7 @@ BOOL unbecome_user(void )
   current_user.gid = initial_gid;
   
   if (ChDir(OriginalDir) != 0)
-    DEBUG(0,("%s chdir(%s) failed in unbecome_user\n",
-	     timestring(),OriginalDir));
+    DEBUG( 0, ( "chdir(%s) failed in unbecome_user\n", OriginalDir ) );
 
   DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
 	getuid(),geteuid(),getgid(),getegid()));
