@@ -727,7 +727,7 @@ BOOL pdb_delete_sam_account(char *sname)
 
 static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 {
-	TDB_CONTEXT 	*pwd_tdb;
+	TDB_CONTEXT 	*pwd_tdb = NULL;
 	TDB_DATA 	key, data;
 	uint8		*buf = NULL;
 	fstring 	keystr;
@@ -780,7 +780,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 			if (!pwd_tdb) {
 				DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!\n"));
 				ret = False;
-				goto done;
+				goto reallydone;
 			}
 			newtdb = True;
 		}
@@ -816,6 +816,8 @@ done:
 
 	/* cleanup */
 	tdb_close (pwd_tdb);
+
+reallydone:
 	SAFE_FREE(buf);
 	return (ret);
 }
