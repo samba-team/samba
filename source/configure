@@ -8670,11 +8670,11 @@ echo "configure:8669: checking which sam password database to use" >&5
 if test "${with_sam_pwdb+set}" = set; then
   withval="$with_sam_pwdb"
    case "$withval" in
-  ""|smbpasswd)
+  ""|passdb)
     SAM_PWDB_LIB='$(SAMRPASSLIB)'
     sampwlibname="passdb"
     ;;
-  samtdb)
+  tdb)
     SAM_PWDB_LIB='$(SAMRTDBLIB)'
     sampwlibname="tdb"
     ;;

@@ -677,11 +677,11 @@ AC_ARG_WITH(sam_pwdb,
 [  --with-sam-pwdb={passdb,tdb,nt5ldap}
                           which password-database to use (passdb)],
 [ case "$withval" in
-  ""|smbpasswd)
+  ""|passdb)
     SAM_PWDB_LIB='$(SAMRPASSLIB)'
     sampwlibname="passdb"
     ;;
-  samtdb)
+  tdb)
     SAM_PWDB_LIB='$(SAMRTDBLIB)'
     sampwlibname="tdb"
     ;;
