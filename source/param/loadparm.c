@@ -1179,7 +1179,6 @@ FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
 FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
-static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
@@ -2820,28 +2819,6 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 }
 
 
-#if 0
-/***************************************************************************
- Display the contents of a single copy structure.
-***************************************************************************/
-static void dump_copy_map(BOOL *pcopymap)
-{
-	int i;
-	if (!pcopymap)
-		return;
-
-	printf("\n\tNon-Copied parameters:\n");
-
-	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].class == P_LOCAL &&
-		    parm_table[i].ptr && !pcopymap[i] &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr)))
-		{
-			printf("\t\t%s\n", parm_table[i].label);
-		}
-}
-#endif
-
 /***************************************************************************
  Return TRUE if the passed service number is within range.
 ***************************************************************************/
@@ -3309,58 +3286,9 @@ void lp_copy_service(int snum, const char *new_name)
 /*******************************************************************
  Get the default server type we will announce as via nmbd.
 ********************************************************************/
-
 int lp_default_server_announce(void)
 {
 	return default_server_announce;
-}
-
-/*******************************************************************
- Split the announce version into major and minor numbers.
-********************************************************************/
-
-int lp_major_announce_version(void)
-{
-	static BOOL got_major = False;
-	static int major_version = DEFAULT_MAJOR_VERSION;
-	const char *vers;
-	char *p;
-
-	if (got_major)
-		return major_version;
-
-	got_major = True;
-	if ((vers = lp_announce_version()) == NULL)
-		return major_version;
-
-	if ((p = strchr_m(vers, '.')) == 0)
-		return major_version;
-
-	*p = '\0';
-	major_version = atoi(vers);
-	return major_version;
-}
-
-int lp_minor_announce_version(void)
-{
-	static BOOL got_minor = False;
-	static int minor_version = DEFAULT_MINOR_VERSION;
-	const char *vers;
-	char *p;
-
-	if (got_minor)
-		return minor_version;
-
-	got_minor = True;
-	if ((vers = lp_announce_version()) == NULL)
-		return minor_version;
-
-	if ((p = strchr_m(vers, '.')) == 0)
-		return minor_version;
-
-	p++;
-	minor_version = atoi(p);
-	return minor_version;
 }
 
 const char *lp_printername(int snum)
