@@ -100,7 +100,6 @@ EXTRA_libroken_la_SOURCES =	\
 	freeaddrinfo.c		\
 	freehostent.c		\
 	gai_strerror.c		\
-	getaddrinfo.c		\
 	getdtablesize.c		\
 	getegid.c		\
 	geteuid.c		\
