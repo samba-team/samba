@@ -2976,6 +2976,7 @@ static void remember_query_host(const char *arg,
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	
