@@ -1,3 +1,9 @@
+Sun Jan 31 06:26:36 1999  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c (parse_prots): always bind to AF_INET, there are
+ 	v6-implementations without support for `mapped V4 addresses'.
+  	From Jun-ichiro itojun Hagino <itojun@kame.net>
+
 Sat Jan 30 22:38:27 1999  Assar Westerlund  <assar@juguete.sics.se>
 
 	* Release 0.0u

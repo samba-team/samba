@@ -1,3 +1,8 @@
+Sun Jan 31 06:50:33 1999  Assar Westerlund  <assar@sics.se>
+
+	* krb-ipv6.m4: more magic for different v6 implementations.  From
+ 	Jun-ichiro itojun Hagino <itojun@kame.net>
+
 Sun Nov 22 12:16:06 1998  Assar Westerlund  <assar@sics.se>
 
 	* krb-struct-spwd.m4: new file
