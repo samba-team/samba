@@ -4215,8 +4215,9 @@ static struct {
         {"RPC-MGMT", torture_rpc_mgmt, 0},
         {"RPC-SCANNER", torture_rpc_scanner, 0},
         {"RPC-AUTOIDL", torture_rpc_autoidl, 0},
-	{"NTLMSSP-SELFCHECK", torture_ntlmssp_self_check, 0},
 	{"RPC-MULTIBIND", torture_multi_bind, 0},
+	{"RAP-RAW", torture_raw_rap, 0},
+	{"NTLMSSP-SELFCHECK", torture_ntlmssp_self_check, 0},
 	{NULL, NULL, 0}};
 
 

@@ -71,6 +71,16 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
+# Start SUBSYSTEM TORTURE_RAP
+[SUBSYSTEM::TORTURE_RAP]
+ADD_OBJ_FILES = \
+		torture/rap/rap.o
+REQUIRED_SUBSYSTEMS = \
+		LIBSMB
+# End SUBSYSTEM TORTURE_RAP
+#################################
+
+#################################
 # Start SUBSYSTEM TORTURE_AUTH
 [SUBSYSTEM::TORTURE_AUTH]
 ADD_OBJ_FILES = \
@@ -99,6 +109,7 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_BASIC \
 		TORTURE_RAW \
 		TORTURE_RPC \
+		TORTURE_RAP \
 		TORTURE_AUTH \
 		TORTURE_NBENCH \
 		CONFIG \

@@ -6,6 +6,8 @@ SMB_SUBSYSTEM_MK(TORTURE_RAW,torture/config.mk)
 
 SMB_SUBSYSTEM_MK(TORTURE_RPC,torture/config.mk)
 
+SMB_SUBSYSTEM_MK(TORTURE_RAP,torture/config.mk)
+
 SMB_SUBSYSTEM_MK(TORTURE_AUTH,torture/config.mk)
 
 SMB_SUBSYSTEM_MK(TORTURE_NBENCH,torture/config.mk)
