@@ -345,7 +345,7 @@ DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset)
 /*
   parse a spnego NTLMSSP challenge packet giving two security blobs
 */
-BOOL spnego_parse_challenge(DATA_BLOB blob,
+BOOL spnego_parse_challenge(const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2)
 {
 	BOOL ret;
@@ -387,7 +387,7 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 
 
 /*
- generate a SPNEGO NTLMSSP auth packet. This will contain the encrypted passwords
+ generate a SPNEGO auth packet. This will contain the encrypted passwords
 */
 DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 {
@@ -412,7 +412,7 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 }
 
 /*
- parse a SPNEGO NTLMSSP auth packet. This contains the encrypted passwords
+ parse a SPNEGO auth packet. This contains the encrypted passwords
 */
 BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 {
@@ -461,6 +461,7 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
 	asn1_write_enumerated(&data, negResult);
 	asn1_pop_tag(&data);
+
 	if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
 		asn1_push_tag(&data,ASN1_CONTEXT(1));
 		asn1_write_OID(&data, OID_NTLMSSP);
@@ -478,3 +479,52 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 	asn1_free(&data);
 	return ret;
 }
+
+/*
+ parse a SPNEGO NTLMSSP auth packet. This contains the encrypted passwords
+*/
+BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status, 
+				DATA_BLOB *auth)
+{
+	ASN1_DATA data;
+	uint8 negResult;
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		negResult = SPNEGO_NEG_RESULT_ACCEPT;
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		negResult = SPNEGO_NEG_RESULT_INCOMPLETE;
+	} else {
+		negResult = SPNEGO_NEG_RESULT_REJECT;
+	}
+
+	asn1_load(&data, blob);
+	asn1_start_tag(&data, ASN1_CONTEXT(1));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_check_enumerated(&data, negResult);
+	asn1_end_tag(&data);
+
+	if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
+		asn1_start_tag(&data,ASN1_CONTEXT(1));
+		asn1_check_OID(&data, OID_NTLMSSP);
+		asn1_end_tag(&data);
+		
+		asn1_start_tag(&data,ASN1_CONTEXT(2));
+		asn1_read_OctetString(&data, auth);
+		asn1_end_tag(&data);
+	}
+
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	if (data.has_error) {
+		DEBUG(3,("spnego_parse_auth_response failed at %d\n", (int)data.ofs));
+		asn1_free(&data);
+		data_blob_free(auth);
+		return False;
+	}
+
+	asn1_free(&data);
+	return True;
+}
+

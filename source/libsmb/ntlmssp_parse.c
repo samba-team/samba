@@ -181,7 +181,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 
 /* a helpful macro to avoid running over the end of our blob */
 #define NEED_DATA(amount) \
-if (head_ofs + amount > blob->length) { \
+if ((head_ofs + amount) > blob->length) { \
         return False; \
 }
 
@@ -198,14 +198,14 @@ if (head_ofs + amount > blob->length) { \
   C = constant ascii string
  */
 
-BOOL msrpc_parse(DATA_BLOB *blob,
+BOOL msrpc_parse(const DATA_BLOB *blob,
 		 const char *format, ...)
 {
 	int i;
 	va_list ap;
 	char **ps, *s;
 	DATA_BLOB *b;
-	int head_ofs = 0;
+	size_t head_ofs = 0;
 	uint16 len1, len2;
 	uint32 ptr;
 	uint32 *v;
