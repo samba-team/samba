@@ -160,26 +160,31 @@ it also defines lots of intermediate macros, just ignore those :-)
 */
 
 /* get single value from an SMB buffer */
-#define SVAL(buf,pos) (*(uint16 *)((char *)(buf) + (pos)))
-#define IVAL(buf,pos) (*(uint32 *)((char *)(buf) + (pos)))
-#define SVALS(buf,pos) (*(int16 *)((char *)(buf) + (pos)))
-#define IVALS(buf,pos) (*(int32 *)((char *)(buf) + (pos)))
+#define SVAL(buf,pos) (*(const uint16 *)((const char *)(buf) + (pos)))
+#define IVAL(buf,pos) (*(const uint32 *)((const char *)(buf) + (pos)))
+#define SVALS(buf,pos) (*(const int16 *)((const char *)(buf) + (pos)))
+#define IVALS(buf,pos) (*(const int32 *)((const char *)(buf) + (pos)))
 
 /* store single value in an SMB buffer */
-#define SSVAL(buf,pos,val) SVAL(buf,pos)=((uint16)(val))
-#define SIVAL(buf,pos,val) IVAL(buf,pos)=((uint32)(val))
-#define SSVALS(buf,pos,val) SVALS(buf,pos)=((int16)(val))
-#define SIVALS(buf,pos,val) IVALS(buf,pos)=((int32)(val))
+#define SVALMOD(buf,pos) (*(uint16 *)((char *)(buf) + (pos)))
+#define IVALMOD(buf,pos) (*(uint32 *)((char *)(buf) + (pos)))
+#define SVALSMOD(buf,pos) (*(int16 *)((char *)(buf) + (pos)))
+#define IVALSMOD(buf,pos) (*(int32 *)((char *)(buf) + (pos)))
+
+#define SSVAL(buf,pos,val) SVALMOD(buf,pos)=((uint16)(val))
+#define SIVAL(buf,pos,val) IVALMOD(buf,pos)=((uint32)(val))
+#define SSVALS(buf,pos,val) SVALSMOD(buf,pos)=((int16)(val))
+#define SIVALS(buf,pos,val) IVALSMOD(buf,pos)=((int32)(val))
 
 #endif /* CAREFUL_ALIGNMENT */
 
 /* macros for reading / writing arrays */
 
 #define SMBMACRO(macro,buf,pos,val,len,size) \
-{ int l; for (l = 0; l < (len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
+{ uint32 l; for (l = 0; l < (uint32)(len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
 
 #define SSMBMACRO(macro,buf,pos,val,len,size) \
-{ int l; for (l = 0; l < (len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
+{ uint32 l; for (l = 0; l < (uint32)(len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
 
 /* reads multiple data from an SMB buffer */
 #define PCVAL(buf,pos,val,len) SMBMACRO(CVAL,buf,pos,val,len,1)
@@ -228,7 +233,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), (len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
+	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n")); } 
 
 #define DBG_RW_PSVAL(charmode,string,depth,base,read,big_endian,inbuf,outbuf,len) \
@@ -236,7 +241,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), 2*(len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (outbuf)[idx])); } } \
+	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n")); }
 
 #define DBG_RW_PIVAL(charmode,string,depth,base,read,big_endian,inbuf,outbuf,len) \
@@ -244,7 +249,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), 4*(len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (outbuf)[idx])); } } \
+	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n")); }
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
