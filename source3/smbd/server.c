@@ -645,7 +645,7 @@ static void usage(char *pname)
 			break;
 
 		case 'V':
-			printf("Version %s\n",VERSION);
+			d_printf("Version %s\n",VERSION);
 			exit(0);
 			break;
 		default:
