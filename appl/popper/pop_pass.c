@@ -11,7 +11,7 @@ static char SccsId[] = "@(#)@(#)pop_pass.c	2.3  2.3 4/2/91";
 
 #include <stdio.h>
 #include <sys/types.h>
-#include <strings.h>
+#include <string.h>
 #include <pwd.h>
 #include "popper.h"
 
