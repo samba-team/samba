@@ -23,6 +23,51 @@
 
 #include "python/py_samr.h"
 
+/* 
+ * Exceptions raised by this module 
+ */
+
+PyObject *samr_error;		/* This indicates a non-RPC related error
+				   such as name lookup failure */
+
+PyObject *samr_ntstatus;	/* This exception is raised when a RPC call
+				   returns a status code other than
+				   NT_STATUS_OK */
+
+/* SAMR connect handle object */
+
+static void py_samr_connect_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyMethodDef samr_connect_methods[] = {
+	{ NULL }
+};
+
+static PyObject *py_samr_connect_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_connect_methods, self, attrname);
+}
+
+PyTypeObject samr_connect_hnd_type = {
+	PyObject_HEAD_INIT(NULL)
+	0,
+	"SAMR Connect Handle",
+	sizeof(samr_connect_hnd_object),
+	0,
+	py_samr_connect_hnd_dealloc, /*tp_dealloc*/
+	0,          /*tp_print*/
+	py_samr_connect_hnd_getattr,          /*tp_getattr*/
+	0,          /*tp_setattr*/
+	0,          /*tp_compare*/
+	0,          /*tp_repr*/
+	0,          /*tp_as_number*/
+	0,          /*tp_as_sequence*/
+	0,          /*tp_as_mapping*/
+	0,          /*tp_hash */
+};
+
 PyObject *new_samr_connect_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				      POLICY_HND *pol)
 {
@@ -37,58 +82,31 @@ PyObject *new_samr_connect_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	return (PyObject*)o;
 }
 
-/* 
- * Exceptions raised by this module 
- */
+/* SAMR domain handle object */
 
-PyObject *samr_error;		/* This indicates a non-RPC related error
-				   such as name lookup failure */
-
-PyObject *samr_ntstatus;	/* This exception is raised when a RPC call
-				   returns a status code other than
-				   NT_STATUS_OK */
-
-static void py_samr_connect_hnd_dealloc(PyObject* self)
+static void py_samr_domain_hnd_dealloc(PyObject* self)
 {
 	PyObject_Del(self);
 }
 
-#if 0
-
-static PyObject *py_samr_connect_hnd_getattr(PyObject *self, char *attrname)
-{
-	return Py_FindMethod(samr_connect_methods, self, attrname);
-}
-
-#endif
-
-PyTypeObject samr_connect_hnd_type = {
-	PyObject_HEAD_INIT(NULL)
-	0,
-	"SAMR Connect Handle",
-	sizeof(samr_connect_hnd_object),
-	0,
-	py_samr_connect_hnd_dealloc, /*tp_dealloc*/
-	0,          /*tp_print*/
-//	py_samr_connect_hnd_getattr,          /*tp_getattr*/
-	0,          /*tp_setattr*/
-	0,          /*tp_compare*/
-	0,          /*tp_repr*/
-	0,          /*tp_as_number*/
-	0,          /*tp_as_sequence*/
-	0,          /*tp_as_mapping*/
-	0,          /*tp_hash */
+static PyMethodDef samr_domain_methods[] = {
+	{ NULL }
 };
+
+static PyObject *py_samr_domain_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_domain_methods, self, attrname);
+}
 
 PyTypeObject samr_domain_hnd_type = {
 	PyObject_HEAD_INIT(NULL)
 	0,
 	"SAMR Domain Handle",
-	sizeof(samr_connect_hnd_object),
+	sizeof(samr_domain_hnd_object),
 	0,
-	py_samr_connect_hnd_dealloc, /*tp_dealloc*/
+	py_samr_domain_hnd_dealloc, /*tp_dealloc*/
 	0,          /*tp_print*/
-//	py_samr_connect_hnd_getattr,          /*tp_getattr*/
+	py_samr_domain_hnd_getattr,          /*tp_getattr*/
 	0,          /*tp_setattr*/
 	0,          /*tp_compare*/
 	0,          /*tp_repr*/
@@ -97,16 +115,46 @@ PyTypeObject samr_domain_hnd_type = {
 	0,          /*tp_as_mapping*/
 	0,          /*tp_hash */
 };
+
+PyObject *new_samr_domain_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol)
+{
+	samr_domain_hnd_object *o;
+
+	o = PyObject_New(samr_domain_hnd_object, &samr_domain_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
+/* SAMR user handle object */
+
+static void py_samr_user_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyMethodDef samr_user_methods[] = {
+	{ NULL }
+};
+
+static PyObject *py_samr_user_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_user_methods, self, attrname);
+}
 
 PyTypeObject samr_user_hnd_type = {
 	PyObject_HEAD_INIT(NULL)
 	0,
 	"SAMR User Handle",
-	sizeof(samr_connect_hnd_object),
+	sizeof(samr_user_hnd_object),
 	0,
-	py_samr_connect_hnd_dealloc, /*tp_dealloc*/
+	py_samr_user_hnd_dealloc, /*tp_dealloc*/
 	0,          /*tp_print*/
-//	py_samr_connect_hnd_getattr,          /*tp_getattr*/
+	py_samr_user_hnd_getattr,          /*tp_getattr*/
 	0,          /*tp_setattr*/
 	0,          /*tp_compare*/
 	0,          /*tp_repr*/
@@ -115,16 +163,46 @@ PyTypeObject samr_user_hnd_type = {
 	0,          /*tp_as_mapping*/
 	0,          /*tp_hash */
 };
+
+PyObject *new_samr_user_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol)
+{
+	samr_user_hnd_object *o;
+
+	o = PyObject_New(samr_user_hnd_object, &samr_user_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
+/* SAMR group handle object */
+
+static void py_samr_group_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyMethodDef samr_group_methods[] = {
+	{ NULL }
+};
+
+static PyObject *py_samr_group_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_group_methods, self, attrname);
+}
 
 PyTypeObject samr_group_hnd_type = {
 	PyObject_HEAD_INIT(NULL)
 	0,
 	"SAMR Group Handle",
-	sizeof(samr_connect_hnd_object),
+	sizeof(samr_group_hnd_object),
 	0,
-	py_samr_connect_hnd_dealloc, /*tp_dealloc*/
+	py_samr_group_hnd_dealloc, /*tp_dealloc*/
 	0,          /*tp_print*/
-//	py_samr_connect_hnd_getattr,          /*tp_getattr*/
+	py_samr_group_hnd_getattr,          /*tp_getattr*/
 	0,          /*tp_setattr*/
 	0,          /*tp_compare*/
 	0,          /*tp_repr*/
@@ -133,16 +211,46 @@ PyTypeObject samr_group_hnd_type = {
 	0,          /*tp_as_mapping*/
 	0,          /*tp_hash */
 };
+
+PyObject *new_samr_group_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol)
+{
+	samr_group_hnd_object *o;
+
+	o = PyObject_New(samr_group_hnd_object, &samr_group_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
+/* Alias handle object */
+
+static void py_samr_alias_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyMethodDef samr_alias_methods[] = {
+	{ NULL }
+};
+
+static PyObject *py_samr_alias_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_alias_methods, self, attrname);
+}
 
 PyTypeObject samr_alias_hnd_type = {
 	PyObject_HEAD_INIT(NULL)
 	0,
 	"SAMR Alias Handle",
-	sizeof(samr_connect_hnd_object),
+	sizeof(samr_alias_hnd_object),
 	0,
-	py_samr_connect_hnd_dealloc, /*tp_dealloc*/
+	py_samr_alias_hnd_dealloc, /*tp_dealloc*/
 	0,          /*tp_print*/
-//	py_samr_connect_hnd_getattr,          /*tp_getattr*/
+	py_samr_alias_hnd_getattr,          /*tp_getattr*/
 	0,          /*tp_setattr*/
 	0,          /*tp_compare*/
 	0,          /*tp_repr*/
@@ -152,23 +260,78 @@ PyTypeObject samr_alias_hnd_type = {
 	0,          /*tp_hash */
 };
 
+PyObject *new_samr_alias_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol)
+{
+	samr_alias_hnd_object *o;
+
+	o = PyObject_New(samr_alias_hnd_object, &samr_alias_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
+static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
+{
+	static char *kwlist[] = { "server", "creds", "access", NULL };
+	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
+	char *server_name;
+	struct cli_state *cli;
+	POLICY_HND hnd;
+	TALLOC_CTX *mem_ctx;
+	PyObject *result = NULL, *creds = NULL;
+	NTSTATUS ntstatus;
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|O!i", kwlist, &server_name, &PyDict_Type,
+		    &creds, &desired_access)) 
+		return NULL;
+
+	if (!(cli = open_pipe_creds(server_name, creds, cli_samr_initialise,
+				    NULL))) {
+
+		/* Error state set in open_pipe_creds() */
+
+		goto done;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		PyErr_SetString(samr_ntstatus,
+				"unable to initialise talloc context\n");
+		goto done;
+	}
+
+	ntstatus = cli_samr_connect(cli, mem_ctx, desired_access, &hnd);
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		cli_shutdown(cli);
+		SAFE_FREE(cli);
+		PyErr_SetObject(samr_ntstatus, py_ntstatus_tuple(ntstatus));
+		goto done;
+	}
+
+	result = new_samr_connect_hnd_object(cli, mem_ctx, &hnd);
+
+done:
+	return result;
+}
+
+/*
+ * Module initialisation 
+ */
+
 static PyMethodDef samr_methods[] = {
 
 	/* Open/close samr connect handles */
 	
-#if 0
-	{ "connect", lsa_open_policy, METH_VARARGS | METH_KEYWORDS, 
+	{ "connect", samr_connect, METH_VARARGS | METH_KEYWORDS, 
 	  "Open a connect handle" },
 	
-	{ "close", lsa_close, METH_VARARGS, "Close a policy handle" },
-#endif
-
 	{ NULL }
 };
-
-/*
- * Module initialisation 
-*/
 
 void initsamr(void)
 {
