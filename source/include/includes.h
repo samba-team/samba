@@ -469,6 +469,7 @@ char *mktemp(char *); /* No standard include */
 #define PASSWORD_LENGTH 16
 #define NEED_AUTH_PARAMETERS
 #endif  /* OSF1_ENH_SEC */
+#define USE_SYSV_IPC
 #endif
 
 
