@@ -30,13 +30,17 @@ utmpx_login(char *line, char *user, char *host)
 	    strncpy(ut->ut_line, line, sizeof(ut->ut_line));
 	    strncpy(ut->ut_user, user, sizeof(ut->ut_user));
 	    strncpy(ut->ut_host, host, sizeof(ut->ut_host));
+#ifdef HAVE_UT_SYSLEN
 	    ut->ut_syslen = strlen(host) + 1;
 	    if (ut->ut_syslen > sizeof(ut->ut_host))
 		ut->ut_syslen = sizeof(ut->ut_host);
+#endif
 	    ut->ut_type = USER_PROCESS;
 	    gettimeofday(&(ut->ut_tv), 0);
 	    pututxline(ut);
+#ifdef WTMPX_FILE
 	    updwtmpx(WTMPX_FILE, ut);
+#endif
 	    ret = 0;
 	    break;
 	}

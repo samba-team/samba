@@ -45,7 +45,7 @@ RCSID("$Id$");
 #include <libtelnet/auth.h>
 #endif
 
-#if defined(CRAY) || defined(__hpux)
+#if defined(CRAY) || (defined(__hpux) && !defined(HAVE_UTMPX_H))
 # define PARENT_DOES_UTMP
 #endif
 
@@ -53,7 +53,7 @@ RCSID("$Id$");
 #error NEWINIT not supported
 #endif
 
-#ifdef	HAVE_UTMPX
+#ifdef HAVE_UTMPX
 #include <utmpx.h>
 struct	utmpx wtmp;
 #else
@@ -1634,11 +1634,18 @@ rmut(void)
 	if (utxp) {
 	    strcpy(utxp->ut_user, "");
 	    utxp->ut_type = DEAD_PROCESS;
+#ifdef _STRUCT___EXIT_STATUS
+	    utxp->ut_exit.__e_termination = 0;
+	    utxp->ut_exit.__e_exit = 0;
+#else
 	    utxp->ut_exit.e_termination = 0;
 	    utxp->ut_exit.e_exit = 0;
+#endif
 	    gettimeofday(&utxp->ut_tv, NULL);
 	    pututxline(utxp);
+#ifdef WTMPX_FILE
 	    updwtmpx(WTMPX_FILE, utxp);
+#endif
 	}
 	endutxent();
 }  /* end of rmut */
@@ -1702,7 +1709,7 @@ rmut(void)
 }  /* end of rmut */
 #endif	/* CRAY */
 
-#ifdef __hpux
+#if defined(__hpux) && !defined(HAVE_UTMPX)
 static
 void
 rmut (char *line)
@@ -1802,8 +1809,6 @@ cleanup(int sig)
 }
 
 #else /* PARENT_DOES_UTMP */
-
-extern void rmut(void);
 
 void
 cleanup(int sig)
