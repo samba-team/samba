@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 3.0
    program to send control messages to Samba processes
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) 2001, 2002 by Martin Pool
@@ -139,6 +138,9 @@ void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
 	    case 7:
 		s = "count and time";
 		break;
+	    default:
+		    s = "BOGUS";
+		    break;
 	    }
 	    printf("Profiling %s on PID %u\n",s,(unsigned int)src);
 	} else {
