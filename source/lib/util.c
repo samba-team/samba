@@ -2234,7 +2234,7 @@ char *parent_dirname(const char *path)
  Determine if a pattern contains any Microsoft wildcard characters.
 *******************************************************************/
 
-BOOL ms_has_wild(char *s)
+BOOL ms_has_wild(const char *s)
 {
 	char c;
 	while ((c = *s++)) {
