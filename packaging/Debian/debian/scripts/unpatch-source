@@ -1,6 +1,5 @@
 #!/bin/sh -e
 #
-# $Id: unpatch-source,v 1.3 2003/06/01 07:12:51 peloy Exp $
 #
 
 # We want to reverse the patches in the opposite order we applied

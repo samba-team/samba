@@ -1,6 +1,5 @@
 #!/bin/sh
 #
-# $Id: samba-common.postinst,v 1.2 2003/06/01 07:12:51 peloy Exp $
 #
 
 set -e

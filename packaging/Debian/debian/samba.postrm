@@ -1,6 +1,5 @@
 #!/bin/sh -e
 #
-# $Id: samba.postrm,v 1.3 2003/06/01 07:12:51 peloy Exp $
 #
 
 if [ "$1" = purge ]; then
