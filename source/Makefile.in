@@ -1098,7 +1098,7 @@ bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 
 bin/t_snprintf@EXEEXT@: lib/snprintf.c
 	$(CC) $(FLAGS) -o $@ -DTEST_SNPRINTF lib/snprintf.c -lm
-install: installbin installman installscripts installdat installswat 
+install: installbin installman installscripts installdat installswat installmodules
 
 install-everything: install installmodules
 
