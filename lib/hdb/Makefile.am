@@ -22,7 +22,7 @@ LDADD = libhdb.la \
 lib_LTLIBRARIES = libhdb.la
 libhdb_la_LDFLAGS = -version-info 7:5:0
 
-libhdb_la_SOURCES =				\
+hdb_source =					\
 	common.c				\
 	db.c					\
 	db3.c					\
@@ -31,7 +31,11 @@ libhdb_la_SOURCES =				\
 	keytab.c				\
 	mkey.c					\
 	ndbm.c					\
-	print.c					\
+	privsep.c				\
+	print.c
+
+libhdb_la_SOURCES =				\
+	$(hdb_source)				\
 	$(BUILT_SOURCES)
 
 INCLUDES += $(INCLUDE_openldap)
@@ -43,10 +47,10 @@ libhdb_la_LIBADD = ../krb5/libkrb5.la ../asn1/libasn1.la ../roken/libroken.la $(
 $(libhdb_la_OBJECTS): $(srcdir)/hdb-protos.h $(srcdir)/hdb-private.h
 
 $(srcdir)/hdb-protos.h:
-	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -o hdb-protos.h $(libhdb_la_SOURCES) || rm -f hdb-protos.h
+	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -o hdb-protos.h $(hdb_source) || rm -f hdb-protos.h
 
 $(srcdir)/hdb-private.h:
-	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -p hdb-private.h $(libhdb_la_SOURCES) || rm -f hdb-private.h
+	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -p hdb-private.h $(hdb_source) || rm -f hdb-private.h
 
 $(foo) hdb_asn1.h: asn1_files
 
