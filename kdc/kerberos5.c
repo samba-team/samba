@@ -493,7 +493,7 @@ as_rep(KDC_REQ *req,
     }
 
     {
-	unsigned char buf[1024]; /* XXX The data could be indefinite */
+	unsigned char buf[8192]; /* XXX The data could be indefinite */
 	size_t len;
 
 	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), 
@@ -801,7 +801,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     ek.sname = rep.ticket.sname;
 	    
     {
-	unsigned char buf[1024]; /* XXX The data could be indefinite */
+	unsigned char buf[8192]; /* XXX The data could be indefinite */
 	size_t len;
 	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, 
 				   sizeof(buf), &et, &len);
@@ -871,7 +871,7 @@ tgs_check_authenticator(krb5_auth_context ac,
 {
     krb5_authenticator auth;
     size_t len;
-    unsigned char buf[1024];
+    unsigned char buf[8192];
     krb5_error_code ret;
     
     krb5_auth_getauthenticator(context, ac, &auth);
