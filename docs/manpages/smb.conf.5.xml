@@ -379,13 +379,13 @@ alias|alias|alias|alias...
 		<varlistentry>
 		<term>%a</term>
 		<listitem><para>the architecture of the remote
-		machine.  It currently recognizes Samba (<constant>Samba</constant>, 
-		the Linux CIFS file system (<constant>CIFSFS</constant>, OS/2, (<constant>OS2</constant>),
-		Windows for Workgroups (<constant>WfWg</constant>, Windows 9x/ME 
+		machine.  It currently recognizes Samba (<constant>Samba</constant>), 
+		the Linux CIFS file system (<constant>CIFSFS</constant>), OS/2, (<constant>OS2</constant>),
+		Windows for Workgroups (<constant>WfWg</constant>), Windows 9x/ME 
 		(<constant>Win95</constant>), Windows NT (<constant>WinNT</constant>),
 		Windows 2000 (<constant>Win2K</constant>), Windows XP (<constant>WinXP</constant>),
 		and Windows 2003 (<constant>Win2K3</constant>).  Anything else will be known as 
-		<quote>UNKNOWN</quote>.</para> 
+		<constant>UNKNOWN</constant>.</para> 
 		</varlistentry>
 		
 		<varlistentry>
