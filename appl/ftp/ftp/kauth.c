@@ -32,8 +32,10 @@
  */
 
 #include "ftp_locl.h"
-#include <krb.h>
 RCSID("$Id$");
+
+#ifdef KRB4
+#include <krb.h>
 
 void
 kauth(int argc, char **argv)
@@ -180,6 +182,9 @@ krbtkfile(int argc, char **argv)
     ret = command("SITE KRBTKFILE %s", argv[1]);
     code = (ret == COMPLETE);
 }
+#endif
+
+#if defined(KRB4) || defined(KRB5)
 
 void
 afslog(int argc, char **argv)
@@ -196,3 +201,7 @@ afslog(int argc, char **argv)
 	ret = command("SITE AFSLOG");
     code = (ret == COMPLETE);
 }
+
+#else
+int ftp_afslog_placeholder;
+#endif

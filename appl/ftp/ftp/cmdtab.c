@@ -110,6 +110,8 @@ char	kauthhelp[] = 	"get remote tokens";
 char	klisthelp[] =	"show remote tickets";
 char	kdestroyhelp[] = "destroy remote tickets";
 char	krbtkfilehelp[] = "set filename of remote tickets";
+#endif
+#if defined(KRB4) || defined(KRB5)
 char	afsloghelp[] = 	"obtain remote AFS tokens";
 #endif
 
@@ -193,6 +195,8 @@ struct cmd cmdtab[] = {
 	{ "klist", 	klisthelp, 	0, 	1, 	0,	klist },
 	{ "kdestroy",	kdestroyhelp,	0,	1,	0,	kdestroy },
 	{ "krbtkfile",	krbtkfilehelp,	0,	1,	0,	krbtkfile },
+#endif
+#if defined(KRB4) || defined(KRB5)
 	{ "afslog",	afsloghelp,	0,	1,	0,	afslog },
 #endif
 	
