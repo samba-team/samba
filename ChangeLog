@@ -1,3 +1,8 @@
+2001-05-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c: put referral test code in separate function,
+	and test for KRB5_NT_SRV_INST
+
 2001-05-10  Assar Westerlund  <assar@sics.se>
 
 	* admin/list.c (do_list): do not close the keytab if opening it
