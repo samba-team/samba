@@ -839,3 +839,4 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
+%include "librpc/gen_ndr/winreg.i"
