@@ -1360,17 +1360,21 @@ char *strdup(char *s);
 #define SV_TYPE_DOMAIN_ENUM         0x80000000
 #define SV_TYPE_ALL                 0xFFFFFFFF  
 
-/* what server type are we currently  - JHT Says we ARE 4.20 */
-/* this was set by JHT in liaison with Jeremy Allison early 1997 */
-/* setting to 4.20 at same time as announcing ourselves as NT Server */
-/* History: */
-/* Version 4.0 - never made public */
-/* Version 4.10 - New to 1.9.16p2, lost in space 1.9.16p3 to 1.9.16p9 */
-/*		- Reappeared in 1.9.16p11 with fixed smbd services */
-/* Version 4.20 - To indicate that nmbd and browsing now works better */
+/* This was set by JHT in liaison with Jeremy Allison early 1997
+ * History:
+ * Version 4.0 - never made public
+ * Version 4.10 - New to 1.9.16p2, lost in space 1.9.16p3 to 1.9.16p9
+ *		- Reappeared in 1.9.16p11 with fixed smbd services
+ * Version 4.20 - To indicate that nmbd and browsing now works better
+ * Version 4.50 - Set at release of samba-2.2.0 by JHT
+ *
+ *  Note: In the presence of NT4.X do not set above 4.9
+ *        Setting this above 4.9 can have undesired side-effects.
+ *        This may change again in Samba-3.0 after further testing. JHT
+ */
 
 #define DEFAULT_MAJOR_VERSION 0x04
-#define DEFAULT_MINOR_VERSION 0x02
+#define DEFAULT_MINOR_VERSION 0x05
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
