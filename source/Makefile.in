@@ -124,7 +124,8 @@ SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROG
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/testprns@EXEEXT@ bin/smbstatus@EXEEXT@ 
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
-	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@
+	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@ \
+	bin/tdbtool@EXEEXT@
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
 	bin/smbcquotas@EXEEXT@
@@ -676,6 +677,8 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(SNPRINTF_OBJ) $(TDBBASE_OBJ)
+
+TDBTOOL_OBJ = tdb/tdbtool.o $(TDBBASE_OBJ)
 
 TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ)
 
@@ -1248,6 +1251,10 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBBACKUP_OBJ)
+
+bin/tdbtool@EXEEXT@: $(TDBTOOL_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBTOOL_OBJ)
 
 bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
