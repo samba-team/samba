@@ -44,6 +44,153 @@ NTSTATUS pvfs_check_lock(struct pvfs_state *pvfs,
 			    offset, count, rw);
 }
 
+/* this state structure holds information about a lock we are waiting on */
+struct pending_state {
+	struct pvfs_state *pvfs;
+	union smb_lock *lck;
+	struct pvfs_file *f;
+	struct smbsrv_request *req;
+	int pending_lock;
+	void *wait_handle;
+	time_t end_time;
+};
+
+
+/*
+  a secondary attempt to setup a lock has failed - back out
+  the locks we did get and send an error
+*/
+static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
+				   struct smbsrv_request *req,
+				   struct pvfs_file *f,
+				   struct smb_lock_entry *locks,
+				   int i,
+				   NTSTATUS status)
+{
+	/* undo the locks we just did */
+	for (i=i-1;i>=0;i--) {
+		brl_unlock(pvfs->brl_context,
+			   &f->locking_key,
+			   locks[i].pid,
+			   f->fnum,
+			   locks[i].offset,
+			   locks[i].count);
+	}
+	req->async.status = status;
+	req->async.send_fn(req);
+}
+
+
+/*
+  called when we receive a pending lock notification. It means that
+  either our lock timed out or somoene else has unlocked a overlapping
+  range, so we should try the lock again. Note that on timeout we
+  do retry the lock, giving it a last chance.
+*/
+static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
+{
+	struct pending_state *pending = private;
+	struct pvfs_state *pvfs = pending->pvfs;
+	struct pvfs_file *f = pending->f;
+	struct smbsrv_request *req = pending->req;
+	union smb_lock *lck = pending->lck;
+	struct smb_lock_entry *locks;
+	enum brl_type rw;
+	NTSTATUS status;
+	int i;
+
+	locks = lck->lockx.in.locks + lck->lockx.in.ulock_cnt;
+
+	if (lck->lockx.in.mode & LOCKING_ANDX_SHARED_LOCK) {
+		rw = READ_LOCK;
+	} else {
+		rw = WRITE_LOCK;
+	}
+
+	status = brl_lock(pvfs->brl_context,
+			  &f->locking_key,
+			  req->smbpid,
+			  f->fnum,
+			  locks[pending->pending_lock].offset,
+			  locks[pending->pending_lock].count,
+			  rw, NULL);
+
+	/* if we have failed and timed out, or succeeded, then we
+	   don't need the pending lock any more */
+	if (NT_STATUS_IS_OK(status) || timed_out) {
+		NTSTATUS status2;
+		status2 = brl_remove_pending(pvfs->brl_context, &f->locking_key, pending);
+		if (!NT_STATUS_IS_OK(status2)) {
+			DEBUG(0,("pvfs_lock: failed to remove pending lock - %s\n", nt_errstr(status2)));
+		}
+		talloc_free(pending->wait_handle);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (timed_out) {
+			/* no more chances */
+			pvfs_lock_async_failed(pvfs, req, f, locks, pending->pending_lock, status);
+		}
+		/* we can try again */
+		return;
+	}
+
+	/* if we haven't timed out yet, then we can do more pending locks */
+	if (timed_out) {
+		pending = NULL;
+	} else {
+		if (rw == READ_LOCK) {
+			rw = PENDING_READ_LOCK;
+		} else {
+			rw = PENDING_WRITE_LOCK;
+		}
+	}
+
+	/* we've now got the pending lock. try and get the rest, which might
+	   lead to more pending locks */
+	for (i=pending->pending_lock;i<lck->lockx.in.lock_cnt;i++) {		
+		if (pending) {
+			pending->pending_lock = i;
+		}
+
+		status = brl_lock(pvfs->brl_context,
+				  &f->locking_key,
+				  req->smbpid,
+				  f->fnum,
+				  locks[i].offset,
+				  locks[i].count,
+				  rw, pending);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (pending) {
+				/* a timed lock failed - setup a wait message to handle
+				   the pending lock notification or a timeout */
+				pending->wait_handle = pvfs_wait_message(pvfs, req, MSG_BRL_RETRY, 
+									 pending->end_time,
+									 pvfs_pending_lock_continue,
+									 pending);
+				if (pending->wait_handle == NULL) {
+					pvfs_lock_async_failed(pvfs, req, f, locks, i, NT_STATUS_NO_MEMORY);
+				}
+				return;
+			}
+			pvfs_lock_async_failed(pvfs, req, f, locks, i, status);
+			return;
+		}
+	}
+
+	brl_unlock(pvfs->brl_context,
+		   &f->locking_key,
+		   req->smbpid,
+		   f->fnum,
+		   lck->lock.in.offset,
+		   lck->lock.in.count);
+
+	/* we've managed to get all the locks. Tell the client */
+	req->async.status = NT_STATUS_OK;
+	req->async.send_fn(req);
+}
+
+
 /*
   lock or unlock a byte range
 */
@@ -55,6 +202,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	struct smb_lock_entry *locks;
 	int i;
 	enum brl_type rw;
+	struct pending_state *pending = NULL;
 
 	f = pvfs_find_fd(pvfs, req, lck->generic.in.fnum);
 	if (!f) {
@@ -69,7 +217,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 				f->fnum,
 				lck->lock.in.offset,
 				lck->lock.in.count,
-				WRITE_LOCK);
+				WRITE_LOCK, NULL);
 				
 	case RAW_LOCK_UNLOCK:
 		return brl_unlock(pvfs->brl_context,
@@ -88,11 +236,25 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* now the lockingX case, most common and also most complex */
+	if (lck->lockx.in.timeout != 0) {
+		pending = talloc_p(req, struct pending_state);
+		if (pending == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		pending->pvfs = pvfs;
+		pending->lck = lck;
+		pending->f = f;
+		pending->req = req;
+
+		/* round up to the nearest second */
+		pending->end_time = time(NULL) + ((lck->lockx.in.timeout+999)/1000);
+	}
 
 	if (lck->lockx.in.mode & LOCKING_ANDX_SHARED_LOCK) {
-		rw = READ_LOCK;
+		rw = pending? PENDING_READ_LOCK : READ_LOCK;
 	} else {
-		rw = WRITE_LOCK;
+		rw = pending? PENDING_WRITE_LOCK : WRITE_LOCK;
 	}
 
 	if (lck->lockx.in.mode & 
@@ -125,14 +287,30 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	for (i=0;i<lck->lockx.in.lock_cnt;i++) {
 		NTSTATUS status;
 
+		if (pending) {
+			pending->pending_lock = i;
+		}
+
 		status = brl_lock(pvfs->brl_context,
 				  &f->locking_key,
 				  locks[i].pid,
 				  f->fnum,
 				  locks[i].offset,
 				  locks[i].count,
-				  rw);
+				  rw, pending);
 		if (!NT_STATUS_IS_OK(status)) {
+			if (pending) {
+				/* a timed lock failed - setup a wait message to handle
+				   the pending lock notification or a timeout */
+				pending->wait_handle = pvfs_wait_message(pvfs, req, MSG_BRL_RETRY, 
+									 pending->end_time,
+									 pvfs_pending_lock_continue,
+									 pending);
+				if (pending->wait_handle == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				return NT_STATUS_OK;
+			}
 			/* undo the locks we just did */
 			for (i=i-1;i>=0;i--) {
 				brl_unlock(pvfs->brl_context,

@@ -250,14 +250,15 @@ void messaging_register(void *ctx, void *private,
 /*
   De-register the function for a particular message type.
 */
-void messaging_deregister(void *ctx, uint32_t msg_type)
+void messaging_deregister(void *ctx, uint32_t msg_type, void *private)
 {
 	struct messaging_state *msg = ctx;
 	struct dispatch_fn *d, *next;
 
 	for (d = msg->dispatch; d; d = next) {
 		next = d->next;
-		if (d->msg_type == msg_type) {
+		if (d->msg_type == msg_type && 
+		    d->private == private) {
 			DLIST_REMOVE(msg->dispatch, d);
 			talloc_free(d);
 		}
