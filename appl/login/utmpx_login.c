@@ -65,6 +65,7 @@ utmpx_login(char *line, char *user, char *host)
         struct utmpx newut;
 	memset(&newut, 0, sizeof(newut));
 	newut.ut_pid = mypid;
+	sprintf(newut.ut_id, "lo%04x", mypid);
         utmpx_update(&newut, line, user, host);
 	ret = 0;
     }
