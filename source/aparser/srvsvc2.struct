@@ -1,0 +1,78 @@
+module srvsvc
+
+#define BOOL uint32;
+#define LONG uint32;
+#define DWORD uint32;
+#define STATUS uint32;
+
+typedef struct _UNISTR2 {
+       uint32 max_len;
+       uint32 undoc;
+       uint32 str_len;
+       wchar  buffer[str_len];
+} UNISTR2;
+
+struct LPWSTR {
+       UNISTR2 *str;
+};
+
+	/* -- CHARACTER DEVICE INFORMATION -- */
+
+	typedef struct _CHARDEV_INFO_0 {
+		LPWSTR  pszName;
+	} CHARDEV_INFO_0;
+
+	typedef struct _CHARDEV_INFO_1 {
+		LPWSTR  pszName;
+		DWORD   dwStatus;
+		LPWSTR  pszUser;
+		DWORD   dwTime;
+	} CHARDEV_INFO_1;
+
+	typedef struct _CHARDEV_INFO {
+		DWORD dwLevel;
+		union ctr[dwLevel] {
+		case 1 CHARDEV_INFO_0 *ci0;
+		case 2 CHARDEV_INFO_1 *ci1;
+		}
+	} CHARDEV_INFO;
+
+	typedef struct _CHARDEV_ENUM_0 {
+		DWORD   dwEntries;
+		CHARDEV_INFO_0 ci0[dwEntries];
+	} CHARDEV_ENUM_0;
+
+	typedef struct _CHARDEV_ENUM_1 {
+		DWORD   dwEntries;
+		CHARDEV_INFO_1 ci1[dwEntries];
+	} CHARDEV_ENUM_1;
+
+	typedef struct _CHARDEV_ENUM {
+		DWORD dwLevel;
+		union ctr[dwLevel] {
+			case 0 CHARDEV_ENUM_0 *ce0;
+			case 1 CHARDEV_ENUM_1 *ce1;
+		}
+	} CHARDEV_ENUM;
+
+#	STATUS NetrCharDevEnum(    /* Function 0x00 */
+#	              [in,unique] LPWSTR        pszServer,
+#	                 [in,out] CHARDEV_ENUM* pCharDevEnum,
+#	                     [in] DWORD         dwMaxLen,
+#	                    [out] DWORD*        dwEntries,
+#	                 [in,out] DWORD*        hResume
+#						 );
+
+#	STATUS NetrCharDevGetInfo(     /* Function 0x01 */
+#	              [in,unique] LPWSTR        pszServer,
+#	                 [in,ref] LPWSTR        pszDevice,
+#	                     [in] DWORD         dwLevel,
+#	                    [out] CHARDEV_INFO* pCharDevInfo
+#	                      );
+
+#	STATUS NetrCharDevControl(     /* Function 0x02 */
+#	              [in,unique] LPWSTR pszServer,
+#	                 [in,ref] LPWSTR pszDevice,
+#	                     [in] DWORD  dwOpcode
+#	                      );
+
