@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
 
    Winbind daemon connection manager
 
@@ -72,7 +73,7 @@ struct winbindd_cm_conn {
 	POLICY_HND pol;
 };
 
-static struct winbindd_cm_conn *cm_conns = NULL;
+struct winbindd_cm_conn *cm_conns = NULL;
 
 /* Get a domain controller name.  Cache positive and negative lookups so we
    don't go to the network too often when something is badly broken. */
@@ -146,63 +147,37 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
-
-	/* Pick a nice close server */
-	   
-	if (strequal(lp_passwordserver(), "*")) {
 		
-		/* Look for DC on local net */
+	/* Firstly choose a PDC/BDC who has the same network address as any
+	   of our interfaces. */
+	
+	for (i = 0; i < count; i++) {
+		if(is_local_net(ip_list[i]))
+			goto got_ip;
+	}
 
-		for (i = 0; i < count; i++) {
-			if (is_local_net(ip_list[i]) &&
-			    name_status_find(domain, 0x1c, 0x20,
-					     ip_list[i], srv_name)) {
-				dc_ip = ip_list[i];
-				goto done;
-			}
-			zero_ip(&ip_list[i]);
-		}
-
-		/* Look for other DCs */
-
-		for (i = 0; i < count; i++) {
-			if (!is_zero_ip(ip_list[i]) &&
-			    name_status_find(domain, 0x1c, 0x20,
-					     ip_list[i], srv_name)) {
-				dc_ip = ip_list[i];
-				goto done;
-			}
-		}
-
-		/* No-one to talk to )-: */
-
+	if (count == 0) {
+		DEBUG(3, ("No domain controllers for domain %s\n", domain));
 		return False;
 	}
-
-	/* Return first DC that we can contact */
-
-	for (i = 0; i < count; i++) {
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i],
-				     srv_name)) {
-			dc_ip = ip_list[i];
-			goto done;
-		}
-	}
-
-	return False;		/* Boo-hoo */
 	
- done:
-	/* We have the netbios name and IP address of a domain controller.
-	   Ideally we should sent a SAMLOGON request to determine whether
-	   the DC is alive and kicking.  If we can catch a dead DC before
-	   performing a cli_connect() we can avoid a 30-second timeout. */
+	i = (sys_random() % count);
+	
+ got_ip:
+	dc_ip = ip_list[i];
+	SAFE_FREE(ip_list);
+		
+	/* We really should be doing a GETDC call here rather than a node
+	   status lookup. */
+
+	if (!name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
+		DEBUG(3, ("Error looking up DC name for %s in domain %s\n", inet_ntoa(dc_ip), domain));
+		return False;
+	}
 
 	/* We have a name so make the cache entry positive now */
 
 	fstrcpy(dcc->srv_name, srv_name);
-
-	DEBUG(3, ("Returning DC %s (%s) for domain %s\n", srv_name,
-		  inet_ntoa(dc_ip), domain));
 
 	return True;
 }
@@ -225,6 +200,7 @@ void cm_init_creds(struct ntuser_creds *creds)
 
 	if (username && *username) {
 		pwd_set_cleartext(&creds->pwd, password);
+		pwd_make_lm_nt_16(&creds->pwd, password);
 
 		fstrcpy(creds->user_name, username);
 		fstrcpy(creds->domain, lp_workgroup());
@@ -264,14 +240,14 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 	fstrcpy(new_conn->pipe_name, pipe_name);
 	
 	/* Look for a domain controller for this domain.  Negative results
-	   are cached so don't bother applying the caching for this
-	   function just yet.  */
+		are cached so don't bother applying the caching for this
+		function just yet.  */
 
 	if (!cm_get_dc_name(domain, new_conn->controller))
 		goto done;
 
 	/* Return false if we have tried to look up this domain and netbios
-	   name before and failed. */
+		name before and failed. */
 
 	for (occ = open_connection_cache; occ; occ = occ->next) {
 		
@@ -287,7 +263,7 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 			DEBUG(10, ("cm_open_connection cache entry expired for %s, %s\n", domain, new_conn->controller));
 
 			DLIST_REMOVE(open_connection_cache, occ);
-			free(occ);
+			SAFE_FREE(occ);
 
 			break;
 		}
@@ -709,7 +685,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 		return result;
 	}
 
-	result = new_cli_nt_setup_creds(conn.cli, trust_passwd);
+	result = cli_nt_setup_creds(conn.cli, trust_passwd);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
    
@@ -216,7 +217,7 @@ BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
-DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
+static DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
@@ -485,7 +486,9 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 	va_end(ap);
 
 	/* allocate the space, then scan the format again to fill in the values */
-	*blob = data_blob(NULL, head_size + data_size);
+	blob->data = malloc(head_size + data_size);
+	blob->length = head_size + data_size;
+	if (!blob->data) return False;
 
 	head_ofs = 0;
 	data_ofs = head_size;

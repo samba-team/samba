@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2
    RPC pipe client
 
    Copyright (C) Tim Potter 2000

@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 3.0
  *  error mapping functions
  *  Copyright (C) Andrew Tridgell 2001
  *  

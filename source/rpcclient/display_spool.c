@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996 - 1999

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2
    RPC pipe client utility functions
    Copyright (C) Tim Potter                        2001,
    
@@ -19,9 +20,6 @@
 */
 
 #include "includes.h"
-
-/** \defgroup rpc_client RPC Client routines
- */
 
 /* Opens a SMB connection to a named pipe */
 

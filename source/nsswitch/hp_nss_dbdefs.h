@@ -2,7 +2,8 @@
 #define _HP_NSS_DBDEFS_H
 
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2
  
    Donated by HP to enable Winbindd to build on HPUX 11.x.
    Copyright (C) Jeremy Allison 2002.

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996 - 1999
@@ -22,39 +23,67 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+
 /****************************************************************************
 convert a security permissions into a string
 ****************************************************************************/
-char *get_sec_mask_str(uint32 type)
+static const char *get_sec_mask_str(uint32 type)
 {
-	static fstring typestr="";
+	static fstring typestr;
+	int i;
+
+	switch (type)
+	{
+		case SEC_RIGHTS_FULL_CONTROL:
+		{
+			fstrcpy(typestr, "Full Control");
+			return typestr;
+		}
+
+		case SEC_RIGHTS_READ:
+		{
+			fstrcpy(typestr, "Read");
+			return typestr;
+		}
+		default:
+		{
+			break;
+		}
+	}
 
 	typestr[0] = 0;
+	for (i = 0; i < 32; i++)
+	{
+		if (type & (1 << i))
+		{
+			switch (1 << i)
+			{
+				case SEC_RIGHTS_QUERY_VALUE    : fstrcat(typestr, "Query " ); break;
+				case SEC_RIGHTS_SET_VALUE      : fstrcat(typestr, "Set " ); break;
+				case SEC_RIGHTS_CREATE_SUBKEY  : fstrcat(typestr, "Create "); break;
+				case SEC_RIGHTS_ENUM_SUBKEYS   : fstrcat(typestr, "Enum "); break;
+				case SEC_RIGHTS_NOTIFY         : fstrcat(typestr, "Notify "); break;
+				case SEC_RIGHTS_CREATE_LINK    : fstrcat(typestr, "CreateLink "); break;
+				case DELETE_ACCESS             : fstrcat(typestr, "Delete "); break;
+				case READ_CONTROL_ACCESS       : fstrcat(typestr, "ReadControl "); break;
+				case WRITE_DAC_ACCESS          : fstrcat(typestr, "WriteDAC "); break;
+				case WRITE_OWNER_ACCESS        : fstrcat(typestr, "WriteOwner "); break;
+			}
+			type &= ~(1 << i);
+		}
+	}
 
-	if (type & GENERIC_ALL_ACCESS)
-		fstrcat(typestr, "Generic all access ");
-	if (type & GENERIC_EXECUTE_ACCESS)
-		fstrcat(typestr, "Generic execute access ");
-	if (type & GENERIC_WRITE_ACCESS)
-		fstrcat(typestr, "Generic write access ");
-	if (type & GENERIC_READ_ACCESS)
-		fstrcat(typestr, "Generic read access ");
-	if (type & MAXIMUM_ALLOWED_ACCESS)
-		fstrcat(typestr, "MAXIMUM_ALLOWED_ACCESS ");
-	if (type & SYSTEM_SECURITY_ACCESS)
-		fstrcat(typestr, "SYSTEM_SECURITY_ACCESS ");
-	if (type & SYNCHRONIZE_ACCESS)
-		fstrcat(typestr, "SYNCHRONIZE_ACCESS ");
-	if (type & WRITE_OWNER_ACCESS)
-		fstrcat(typestr, "WRITE_OWNER_ACCESS ");
-	if (type & WRITE_DAC_ACCESS)
-		fstrcat(typestr, "WRITE_DAC_ACCESS ");
-	if (type & READ_CONTROL_ACCESS)
-		fstrcat(typestr, "READ_CONTROL_ACCESS ");
-	if (type & DELETE_ACCESS)
-		fstrcat(typestr, "DELETE_ACCESS ");
+	/* remaining bits get added on as-is */
+	if (type != 0)
+	{
+		fstring tmp;
+		slprintf(tmp, sizeof(tmp)-1, "[%08x]", type);
+		fstrcat(typestr, tmp);
+	}
 
-	printf("\t\tSpecific bits: 0x%lx\n", type&SPECIFIC_RIGHTS_MASK);
+	/* remove last space */
+	i = strlen(typestr)-1;
+	if (typestr[i] == ' ') typestr[i] = 0;
 
 	return typestr;
 }
@@ -62,83 +91,152 @@ char *get_sec_mask_str(uint32 type)
 /****************************************************************************
  display sec_access structure
  ****************************************************************************/
-void display_sec_access(SEC_ACCESS *info)
+static void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *const info)
 {
-	printf("\t\tPermissions: 0x%x: %s\n", info->mask, get_sec_mask_str(info->mask));
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			report(out_hnd, "\t\tPermissions:\t%s\n", 
+			        get_sec_mask_str(info->mask));
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
 }
 
 /****************************************************************************
  display sec_ace structure
  ****************************************************************************/
-void display_sec_ace(SEC_ACE *ace)
+static void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
 {
-	fstring sid_str;
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			report(out_hnd, "\tACE\n");
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring sid_str;
 
-	printf("\tACE\n\t\ttype: ");
-	switch (ace->type) {
-		case SEC_ACE_TYPE_ACCESS_ALLOWED:
-			printf("ACCESS ALLOWED");
+			report(out_hnd,
+			       "\t\tType:%2x  Flags:%2x  Perms:%04x\n",
+			       ace->type, ace->flags,
+			       (uint32) ace->info.mask);
+
+			display_sec_access(out_hnd, ACTION_HEADER   , &ace->info);
+			display_sec_access(out_hnd, ACTION_ENUMERATE, &ace->info);
+			display_sec_access(out_hnd, ACTION_FOOTER   , &ace->info);
+
+			sid_to_string(sid_str, &ace->sid);
+			report(out_hnd, "\t\tSID:\t%s\n", sid_str);
+		}
+		case ACTION_FOOTER:
+		{
 			break;
-		case SEC_ACE_TYPE_ACCESS_DENIED:
-			printf("ACCESS DENIED");
-			break;
-		case SEC_ACE_TYPE_SYSTEM_AUDIT:
-			printf("SYSTEM AUDIT");
-			break;
-		case SEC_ACE_TYPE_SYSTEM_ALARM:
-			printf("SYSTEM ALARM");
-			break;
-		default:
-			printf("????");
-			break;
+		}
 	}
-	printf(" (%d) flags: %d\n", ace->type, ace->flags);
-	display_sec_access(&ace->info);
-	sid_to_string(sid_str, &ace->trustee);
-	printf("\t\tSID: %s\n\n", sid_str);
 }
 
 /****************************************************************************
  display sec_acl structure
  ****************************************************************************/
-void display_sec_acl(SEC_ACL *sec_acl)
+static void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_acl)
 {
-	int i;
+	if (sec_acl == NULL)
+	{
+		return;
+	}
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			report(out_hnd, "\tACL\tNum ACEs:\t%d\trevision:\t%x\n", 
+			                 sec_acl->num_aces, sec_acl->revision); 
+			report(out_hnd, "\t---\n");
 
-	printf("\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
-			 sec_acl->num_aces, sec_acl->revision); 
-	printf("\t---\n");
-
-	if (sec_acl->size != 0 && sec_acl->num_aces != 0)
-		for (i = 0; i < sec_acl->num_aces; i++)
-			display_sec_ace(&sec_acl->ace[i]);
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			if (sec_acl->size != 0 && sec_acl->num_aces != 0)
+			{
+				int i;
+				for (i = 0; i < sec_acl->num_aces; i++)
+				{
+					display_sec_ace(out_hnd, ACTION_HEADER   , &sec_acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_ENUMERATE, &sec_acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_FOOTER   , &sec_acl->ace[i]);
+				}
+			}
 				
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			report(out_hnd, "\n");
+			break;
+		}
+	}
 }
 
 /****************************************************************************
  display sec_desc structure
  ****************************************************************************/
-void display_sec_desc(SEC_DESC *sec)
+void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *const sec)
 {
-	fstring sid_str;
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			report(out_hnd, "\tSecurity Descriptor\trevision:\t%x\ttype:\t%x\n", 
+			                 sec->revision, sec->type); 
+			report(out_hnd, "\t-------------------\n");
 
-	if (sec->off_sacl != 0) {
-		printf("S-ACL\n");
-		display_sec_acl(sec->sacl);
-	}
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring sid_str;
 
-	if (sec->off_dacl != 0) {
-		printf("D-ACL\n");
-		display_sec_acl(sec->dacl);
-	}
-
-	if (sec->off_owner_sid != 0) {
-		sid_to_string(sid_str, sec->owner_sid);
-		printf("\tOwner SID:\t%s\n", sid_str);
-	}
-
-	if (sec->off_grp_sid != 0) {
-		sid_to_string(sid_str, sec->grp_sid);
-		printf("\tParent SID:\t%s\n", sid_str);
+			if (sec->off_sacl != 0)
+			{
+				display_sec_acl(out_hnd, ACTION_HEADER   , sec->sacl);
+				display_sec_acl(out_hnd, ACTION_ENUMERATE, sec->sacl);
+				display_sec_acl(out_hnd, ACTION_FOOTER   , sec->sacl);
+			}
+			if (sec->off_dacl != 0)
+			{
+				display_sec_acl(out_hnd, ACTION_HEADER   , sec->dacl);
+				display_sec_acl(out_hnd, ACTION_ENUMERATE, sec->dacl);
+				display_sec_acl(out_hnd, ACTION_FOOTER   , sec->dacl);
+			}
+			if (sec->off_owner_sid != 0)
+			{
+				sid_to_string(sid_str, sec->owner_sid);
+				report(out_hnd, "\tOwner SID:\t%s\n", sid_str);
+			}
+			if (sec->off_grp_sid != 0)
+			{
+				sid_to_string(sid_str, sec->grp_sid);
+				report(out_hnd, "\tParent SID:\t%s\n", sid_str);
+			}
+				
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			report(out_hnd, "\n");
+			break;
+		}
 	}
 }
+
