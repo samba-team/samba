@@ -254,6 +254,37 @@ static BOOL share_sanity_checks(int snum, char* service, char *dev, int *ecode)
 	return True;
 }
 
+
+/****************************************************************************
+ readonly share?
+****************************************************************************/
+static void set_read_only(connection_struct *conn) 
+{
+	char *service = lp_servicename(conn->service);
+	conn->read_only = lp_readonly(conn->service);
+
+	{
+		char **list;
+
+		lp_list_copy(&list, lp_readlist(conn->service));
+		if(list && lp_list_substitute(list, "%S", service)) {
+			if (user_in_list(conn->user, list))
+				conn->read_only = True;
+		}
+		else DEBUG(0, ("ERROR: read list substitution failed\n"));
+		if (list) lp_list_free(&list);
+
+		lp_list_copy(&list, lp_writelist(conn->service));
+		if(list && lp_list_substitute(list, "%S", service)) {
+			if (user_in_list(conn->user, list))
+				conn->read_only = False;
+		}
+		else DEBUG(0, ("ERROR: write list substitution failed\n"));
+		if (list) lp_list_free(&list);
+	}
+}
+
+
 /****************************************************************************
   make a connection to a service
 ****************************************************************************/
@@ -346,46 +377,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
 
-	conn->read_only = lp_readonly(snum);
-
-
-	{
-		char **list;
-
-		lp_list_copy(&list, lp_readlist(snum));
-		if(list && lp_list_substitute(list, "%S", service)) {
-			if (user_in_list(user, list))
-				conn->read_only = True;
-		}
-		else DEBUG(0, ("ERROR: read list substitution failed\n"));
-		if (list) lp_list_free(&list);
-
-		lp_list_copy(&list, lp_writelist(snum));
-		if(list && lp_list_substitute(list, "%S", service)) {
-			if (user_in_list(user, list))
-				conn->read_only = False;
-		}
-		else DEBUG(0, ("ERROR: write list substitution failed\n"));
-		if (list) lp_list_free(&list);
-	}
-
-	/* admin user check */
-	
-	/* JRA - original code denied admin user if the share was
-	   marked read_only. Changed as I don't think this is needed,
-	   but old code left in case there is a problem here.
-	*/
-	if (user_in_list(user, lp_admin_users(snum)) 
-#if 0
-	    && !conn->read_only
-#endif
-	    ) {
-		conn->admin_user = True;
-		DEBUG(0,("%s logged in as admin user (root privileges)\n",user));
-	} else {
-		conn->admin_user = False;
-	}
-    
 	conn->force_user = force;
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
@@ -405,6 +396,25 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	string_set(&conn->user,user);
 	conn->nt_user_token = NULL;
 	
+	set_read_only(conn);
+
+	/* admin user check */
+	
+	/* JRA - original code denied admin user if the share was
+	   marked read_only. Changed as I don't think this is needed,
+	   but old code left in case there is a problem here.
+	*/
+	if (user_in_list(user, lp_admin_users(snum)) 
+#if 0
+	    && !conn->read_only
+#endif
+	    ) {
+		conn->admin_user = True;
+		DEBUG(0,("%s logged in as admin user (root privileges)\n",user));
+	} else {
+		conn->admin_user = False;
+	}
+    
 	/*
 	 * If force user is true, then store the
 	 * given userid and also the primary groupid
