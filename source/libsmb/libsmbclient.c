@@ -1507,7 +1507,10 @@ int smbc_opendir(const char *fname)
     if (share[0] != (char)0 || path[0] != (char)0) {
     
       errno = EINVAL;
-      if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+      if (smbc_file_table[slot]) {
+	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	free(smbc_file_table[slot]);
+      }
       smbc_file_table[slot] = NULL;
       return -1;
 
@@ -1544,7 +1547,10 @@ int smbc_opendir(const char *fname)
 
     if (!srv) {
 
-      if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+      if (smbc_file_table[slot]) {
+	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	free(smbc_file_table[slot]);
+      }
       smbc_file_table[slot] = NULL;
       return -1;
 
@@ -1557,7 +1563,10 @@ int smbc_opendir(const char *fname)
     if (!cli_NetServerEnum(&srv->cli, lp_workgroup(), 0x80000000, list_fn,
 			   (void *)smbc_file_table[slot])) {
 
-      if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+      if (smbc_file_table[slot]) {
+	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	free(smbc_file_table[slot]);
+      }
       smbc_file_table[slot] = NULL;
       errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
       return -1;
@@ -1571,7 +1580,10 @@ int smbc_opendir(const char *fname)
       if (path[0] != (char)0) { /* Should not have empty share with path */
 
 	errno = EINVAL;
-	if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	if (smbc_file_table[slot]) {
+	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	  free(smbc_file_table[slot]);
+	}
 	smbc_file_table[slot] = NULL;
 	return -1;
 	
@@ -1606,7 +1618,10 @@ int smbc_opendir(const char *fname)
 
 	if (!srv) {
 
-	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	  if (smbc_file_table[slot]) {
+	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	    free(smbc_file_table[slot]);
+	  }
 	  smbc_file_table[slot] = NULL;  /* FIXME: Memory leaks ... */
 	  return -1;
 
@@ -1619,7 +1634,10 @@ int smbc_opendir(const char *fname)
 	if (!cli_NetServerEnum(&srv->cli, server, 0x0000FFFE, list_fn,
 			       (void *)smbc_file_table[slot])) {
 
-	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	  if (smbc_file_table[slot]) {
+	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	    free(smbc_file_table[slot]);
+	  }
 	  smbc_file_table[slot] = NULL;
 	  errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
 	  return -1;
@@ -1639,7 +1657,10 @@ int smbc_opendir(const char *fname)
 
 	  if (!srv) {
 
-	    if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	    if (smbc_file_table[slot]) {
+	      if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	      free(smbc_file_table[slot]);
+	    }
 	    smbc_file_table[slot] = NULL;
 	    return -1;
 
@@ -1653,7 +1674,10 @@ int smbc_opendir(const char *fname)
 				(void *)smbc_file_table[slot]) < 0) {
 
 	    errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
-	    if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	    if (smbc_file_table[slot]) {
+	      if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	      free(smbc_file_table[slot]);
+	    }
 	    smbc_file_table[slot] = NULL;
 	    return -1;
 
@@ -1663,7 +1687,10 @@ int smbc_opendir(const char *fname)
 	else {
 
 	  errno = ENODEV;   /* Neither the workgroup nor server exists */
-	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	  if (smbc_file_table[slot]) {
+	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	    free(smbc_file_table[slot]);
+	  }
 	  smbc_file_table[slot] = NULL;
 	  return -1;
 
@@ -1682,7 +1709,10 @@ int smbc_opendir(const char *fname)
 
       if (!srv) {
 
-	if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	if (smbc_file_table[slot]) {
+	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	  free(smbc_file_table[slot]);
+	}
 	smbc_file_table[slot] = NULL;
 	return -1;
 
@@ -1697,7 +1727,10 @@ int smbc_opendir(const char *fname)
       if (cli_list(&srv->cli, path, aDIR | aSYSTEM | aHIDDEN, dir_list_fn, 
 		   (void *)smbc_file_table[slot]) < 0) {
 
-	if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	if (smbc_file_table[slot]) {
+	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
+	  free(smbc_file_table[slot]);
+	}
 	smbc_file_table[slot] = NULL;
 	errno = smbc_errno(&srv->cli);
 	return -1;
