@@ -190,6 +190,7 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
 	return ret;
     }
     krb5_data_copy(reply, buf + sizeof(buf) - len, len);
+    return 0;
 }
 
 krb5_error_code
