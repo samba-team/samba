@@ -67,3 +67,17 @@ REQUIRED_SUBSYSTEMS = \
 		LIBRPC
 # End BINARY setntacl
 #################################
+
+#################################
+# Start BINARY setnttoken
+[BINARY::setnttoken]
+OBJ_FILES = \
+		utils/setnttoken.o
+REQUIRED_SUBSYSTEMS = \
+		CONFIG \
+		LIBCMDLINE \
+		LIBBASIC \
+		LIBSMB \
+		LIBRPC
+# End BINARY setnttoken
+#################################
