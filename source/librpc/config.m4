@@ -49,6 +49,7 @@ SMB_SUBSYSTEM(LIBRPC_RAW,[],
 		[librpc/rpc/dcerpc.o
 		librpc/rpc/dcerpc_auth.o
 		librpc/rpc/dcerpc_util.o
+		librpc/rpc/dcerpc_error.o
 		librpc/rpc/dcerpc_schannel.o
 		librpc/rpc/dcerpc_ntlm.o
 		librpc/rpc/dcerpc_spnego.o
