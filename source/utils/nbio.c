@@ -37,7 +37,7 @@ static struct {
 
 static struct cli_state *c;
 
-static int sigsegv(int sig)
+static void sigsegv(int sig)
 {
 	char line[200];
 	printf("segv at line %d\n", line_count);
@@ -50,6 +50,8 @@ static int sigsegv(int sig)
 void nb_setup(struct cli_state *cli)
 {
 	signal(SIGSEGV, sigsegv);
+	/* to be like a true Windows client we need to negotiate oplocks */
+	cli->use_oplocks = True;
 	c = cli;
 }
 

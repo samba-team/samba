@@ -88,13 +88,17 @@ static void *shm_setup(int size)
 static BOOL open_connection(struct cli_state *c)
 {
 	struct nmb_name called, calling;
+	struct in_addr ip;
+	extern struct in_addr ipzero;
 
 	ZERO_STRUCTP(c);
 
 	make_nmb_name(&calling, myname, 0x0, "");
 	make_nmb_name(&called , host, 0x20, "");
 
-	if (!cli_initialise(c) || !cli_connect(c, host, NULL)) {
+	ip = ipzero;
+
+	if (!cli_initialise(c) || !cli_connect(c, host, &ip)) {
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
@@ -179,7 +183,7 @@ static BOOL rw_torture(struct cli_state *c)
 	fstring fname;
 	int fnum;
 	int fnum2;
-	int pid2, pid = getpid();
+	pid_t pid2, pid = getpid();
 	int i, j;
 	char buf[1024];
 
@@ -298,6 +302,8 @@ static void run_netbench(int client)
 		line_count++;
 
 		line[strlen(line)-1] = 0;
+
+		/* printf("[%d] %s\n", line_count, line); */
 
 		all_string_sub(line,"CLIENT1", cname);
 		
@@ -824,7 +830,7 @@ static void run_maxfidtest(void)
 
 	fnum = 0;
 	while (1) {
-		slprintf(fname,sizeof(fname)-1,template, fnum,getpid());
+		slprintf(fname,sizeof(fname)-1,template, fnum,(int)getpid());
 		if (cli_open(&cli, fname, 
 			     O_RDWR|O_CREAT|O_TRUNC, DENY_NONE) ==
 		    -1) {
@@ -839,7 +845,7 @@ static void run_maxfidtest(void)
 	printf("cleaning up\n");
 	while (fnum > n) {
 		fnum--;
-		slprintf(fname,sizeof(fname)-1,template, fnum,getpid());
+		slprintf(fname,sizeof(fname)-1,template, fnum,(int)getpid());
 		if (cli_unlink(&cli, fname)) {
 			printf("unlink of %s failed (%s)\n", 
 			       fname, cli_errstr(&cli));
@@ -1113,14 +1119,16 @@ static double create_procs(void (*fn)(int ))
 
 	for (i=0;i<nprocs;i++) {
 		if (fork() == 0) {
-			int mypid = getpid();
-			sys_srandom(mypid ^ time(NULL));
+			pid_t mypid = getpid();
+			sys_srandom(((int)mypid) ^ ((int)time(NULL)));
+
+			slprintf(myname,sizeof(myname),"CLIENT%d", i);
 
 			while (1) {
 				memset(&current_cli, 0, sizeof(current_cli));
 				if (open_connection(&current_cli)) break;
 				if (tries-- == 0) {
-					printf("pid %d failed to start\n", getpid());
+					printf("pid %d failed to start\n", (int)getpid());
 					_exit(1);
 				}
 				msleep(10);
@@ -1258,12 +1266,16 @@ static void usage(void)
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
+	static pstring servicesf = CONFIGFILE;
 
 	dbf = stdout;
 
 	setbuffer(stdout, NULL, 0);
 
 	charset_initialise();
+
+	lp_load(servicesf,True,False,False);
+	load_interfaces();
 
 	if (argc < 2) {
 		usage();

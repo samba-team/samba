@@ -238,8 +238,8 @@ int main(int argc, char *argv[])
   }
   
   if (argc >= 3) {
-      char *cname;
-      char *caddr;
+      char *cname=NULL;
+      char *caddr=NULL;
       
       if (argc == 3) {
 	cname = argv[optind];
