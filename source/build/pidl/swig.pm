@@ -91,7 +91,7 @@ sub FieldFromPython($$)
 
     # Special cases
 
-    if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
+    if ($e->{TYPE} eq "string") {
 	$result .= "\ts->$prefix$e->{NAME} = string_ptr_from_python(mem_ctx, $obj, \"$e->{NAME}\");\n";
 	return $result;
     }
@@ -187,7 +187,7 @@ sub FieldToPython($$)
 
     # Special cases
 
-    if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
+    if ($e->{TYPE} eq "string") {
 	$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", string_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	return $result;
     }
