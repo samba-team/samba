@@ -1,3 +1,7 @@
+2000-12-11  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.3d
+
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): set version to 14:0:0
