@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "26 November 2002" "" ""
+.TH "SMB.CONF" "5" "27 December 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1269,6 +1269,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fImin print space\fR
+.TP 0.2i
+\(bu
+\fImsdfs proxy\fR
 .TP 0.2i
 \(bu
 \fImsdfs root\fR
@@ -4497,14 +4500,29 @@ is 6 hours (21600 seconds).
 
 Default: \fBmin wins ttl = 21600\fR
 .TP
+\fBmsdfs proxy (S)\fR
+This parameter indicates that the share is a
+stand-in for another CIFS share whose location is specified by
+the value of the parameter. When clients attempt to connect to
+this share, they are redirected to the proxied share using
+the SMB-Dfs protocol.
+
+Only Dfs roots can act as proxy shares. Take a look at the
+\fImsdfs root\fR
+and
+\fIhost msdfs\fR
+options to find out how to set up a Dfs root share.
+
+Example: \fBmsdfs proxy = \\otherserver\\someshare\fR
+.TP
 \fBmsdfs root (S)\fR
 This boolean parameter is only available if 
 Samba is configured  and  compiled with the \fB  --with-msdfs\fR option.  If set to yes, 
 Samba treats the share as a Dfs root and  allows clients to browse 
 the distributed file system tree rooted at the share directory. 
 Dfs links are specified  in  the share directory by symbolic 
-links of the form \fImsdfs:serverA\\shareA,serverB\\shareB
-\fR and so on.  For more information on setting up a Dfs tree 
+links of the form \fImsdfs:serverA\\shareA,serverB\\shareB\fR
+and so on.  For more information on setting up a Dfs tree 
 on Samba,  refer to msdfs_setup.html
 
 
@@ -4707,9 +4725,9 @@ This is a boolean option that controls whether
 connections with usernames not in the \fIuser\fR 
 list will be allowed. By default this option is disabled so that a 
 client can supply a username to be used by the server.  Enabling
-this parameter will force the server to only user the login 
+this parameter will force the server to only use the login 
 names from the \fIuser\fR list and is only really
-useful in shave level
+useful in share level
 security.
 
 Note that this also means Samba won't try to deduce 
