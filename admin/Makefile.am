@@ -15,6 +15,6 @@ LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/sl/libsl.a \
+	$(top_builddir)/lib/sl/libsl.la \
 	$(LIB_readline) \
 	$(top_builddir)/lib/roken/libroken.la
