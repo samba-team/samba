@@ -58,14 +58,15 @@ struct print_job_info
 };
 
 typedef struct smb_sign_info {
-	BOOL use_smb_signing;
+	void (*sign_outgoing_message)(struct cli_state *cli);
+	BOOL (*check_incoming_message)(struct cli_state *cli);
+	void (*free_signing_context)(struct cli_state *cli);
+	void *signing_context;
+
 	BOOL negotiated_smb_signing;
-	BOOL temp_smb_signing;
-	size_t mac_key_len;
-	uint8 mac_key[64];
-	uint32 send_seq_num;
-	uint32 reply_seq_num;
 	BOOL allow_smb_signing;
+	BOOL doing_signing;
+	BOOL mandetory_signing;
 } smb_sign_info;
 
 struct cli_state {

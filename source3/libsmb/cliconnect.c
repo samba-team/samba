@@ -228,38 +228,10 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	return True;
 }
 
-static void set_signing_on_cli (struct cli_state *cli, uint8 user_session_key[16], DATA_BLOB response) 
-{
-	uint8 zero_sig[8];
-	ZERO_STRUCT(zero_sig);
-
-	DEBUG(5, ("Server returned security sig:\n"));
-	dump_data(5, &cli->inbuf[smb_ss_field], 8);
-
-	if (cli->sign_info.use_smb_signing) {
-		DEBUG(5, ("smb signing already active on connection\n"));
-	} else if (memcmp(&cli->inbuf[smb_ss_field], zero_sig, 8) != 0) {
-
-		DEBUG(3, ("smb signing enabled!\n"));
-		cli->sign_info.use_smb_signing = True;
-		cli_calculate_mac_key(cli, user_session_key, response);
-	} else {
-		DEBUG(5, ("smb signing NOT enabled!\n"));
-	}
-}
-
 static void set_cli_session_key (struct cli_state *cli, DATA_BLOB session_key) 
 {
 	memcpy(cli->user_session_key, session_key.data, MIN(session_key.length, sizeof(cli->user_session_key)));
 }
-
-
-static void set_temp_signing_on_cli(struct cli_state *cli) 
-{
-	if (cli->sign_info.negotiated_smb_signing)
-		cli->sign_info.temp_smb_signing = True;
-}
-
 
 /****************************************************************************
    do a NT1 NTLM/LM encrypted session setup
@@ -310,8 +282,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			session_key = data_blob(NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 		}
-
-		set_temp_signing_on_cli(cli);
+		cli_simple_set_signing(cli, session_key.data, nt_response); 
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -374,14 +345,14 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	if (session_key.data) {
 		/* Have plaintext orginal */
 		set_cli_session_key(cli, session_key);
-		set_signing_on_cli(cli, session_key.data, nt_response);
 	}
 
+	ret = True;
 end:	
 	data_blob_free(&lm_response);
 	data_blob_free(&nt_response);
 	data_blob_free(&session_key);
-	return True;
+	return ret;
 }
 
 /****************************************************************************
@@ -402,8 +373,6 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 
 	set_message(cli->outbuf,12,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
-
-	set_temp_signing_on_cli(cli);
 
 	cli_setup_packet(cli);
 			
@@ -883,11 +852,6 @@ BOOL cli_negprot(struct cli_state *cli)
 	int numprots;
 	int plength;
 
-	if (cli->sign_info.use_smb_signing) {
-		DEBUG(0, ("Cannot send negprot again, particularly after setting up SMB Signing\n"));
-		return False;
-	}
-
 	if (cli->protocol < PROTOCOL_NT1)
 		cli->use_spnego = False;
 
@@ -1012,11 +976,6 @@ BOOL cli_session_request(struct cli_state *cli,
 	/* 445 doesn't have session request */
 	if (cli->port == 445)
 		return True;
-
-	if (cli->sign_info.use_smb_signing) {
-		DEBUG(0, ("Cannot send session resquest again, particularly after setting up SMB Signing\n"));
-		return False;
-	}
 
 	/* send a session request (RFC 1002) */
 	/* setup the packet length
