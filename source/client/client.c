@@ -4104,6 +4104,12 @@ static void usage(char *pname)
     } else
       return(1);
   }
+
+  if ((p=strchr(query_host,'#'))) {
+	  *p = 0;
+	  p++;
+	  sscanf(p, "%x", &name_type);
+  }
   
   if (*query_host && !nt_domain_logon)
     {
