@@ -15,6 +15,12 @@
 # other data in $prefix, because somebody might unwittingly run this
 # with prefix=/usr.  
 
+# Really what we want is a consistent way to pass the location of the
+# configuration and all other files into *all* Samba programs
+# (smbclient, smd, ...) and be able to set them to a temporary
+# directory when testing.  Some of them take a -c parameter, but tpot
+# says it's not done consistently.
+
 template_smb_conf_setup() {
 	cat basicsmb.smb.conf$1.template | \
               sed "s|PREFIX|$prefix|g" | \
@@ -122,3 +128,29 @@ test_listfilesauth_should_deny() {
 }
 
 echo "LIBSMB_PROG=$LIBSMB_PROG" >&2
+
+
+
+# Give sensible defaults to some variables.  
+
+# "What's my age again?"
+
+if [ ! $USER = "" ]; then
+    whoami=$USER
+else 
+    if [ ! $LOGNAME = "" ]; then
+	whoami=$LOGNAME
+    else
+	whoami=build
+    fi
+fi
+
+
+
+if test -z "$loglevel"
+then
+    loglevel=1
+fi
+
+
+pwd=`pwd`
