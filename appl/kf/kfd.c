@@ -49,7 +49,7 @@ int do_inetd = 0;
 
 static struct getargs args[] = {
     { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
-    { "inetd",'i',arg_flag,&do_inetd,
+    { "inetd",'i',arg_flag, &do_inetd,
        "Not started from inetd", NULL },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
@@ -210,15 +210,15 @@ proto (int sock, const char *service)
 	      krb5_get_err_text(context, status));
 
     status=krb5_read_message (context, &sock, &remotename);
-    if (status)
-       {syslog_and_die("krb5_read_message: %s",
-              krb5_get_err_text(context, status));
-       }
+    if (status) {
+	syslog_and_die("krb5_read_message: %s",
+		       krb5_get_err_text(context, status));
+    }
     status=krb5_read_message (context, &sock, &tk_file);
-    if (status)
-       {syslog_and_die("krb5_read_message: %s",
-              krb5_get_err_text(context, status));
-       }
+    if (status) {
+	syslog_and_die("krb5_read_message: %s",
+		       krb5_get_err_text(context, status));
+    }
 
     krb5_data_zero (&data);
     krb5_data_zero (&packet);
@@ -236,65 +236,71 @@ proto (int sock, const char *service)
                            &packet,
                            &data,
                            NULL);
-    if (status)
-        {syslog_and_cont("krb5_rd_priv: %s",
-              krb5_get_err_text(context, status));
-         goto out;
+    if (status) {
+	syslog_and_cont("krb5_rd_priv: %s",
+			krb5_get_err_text(context, status));
+	goto out;
     }
 
     pwd = getpwnam ((char *)(remotename.data));
-    if (pwd == NULL)
-	{status=1;
-         syslog_and_cont("getpwnam: %s failed",(char *)(remotename.data));
-         goto out;
+    if (pwd == NULL) {
+	status=1;
+	syslog_and_cont("getpwnam: %s failed",(char *)(remotename.data));
+	goto out;
     }
 
     if(!krb5_kuserok (context,
                      ticket->client,
-                     (char *)(remotename.data)))
-        {status=1;
-         syslog_and_cont("krb5_kuserok: permission denied");
-         goto out;
+                     (char *)(remotename.data))) {
+	status=1;
+	syslog_and_cont("krb5_kuserok: permission denied");
+	goto out;
     }
 
-    setgid(pwd->pw_gid);
-    setuid(pwd->pw_uid);
+    if (setgid(pwd->pw_gid) < 0) {
+	syslog_and_cont ("setgid: %s", strerror(errno));
+	goto out;
+    }
+    if (setuid(pwd->pw_uid) < 0) {
+	syslog_and_cont ("setuid: %s", strerror(errno));
+	goto out;
+    }
 
     if (tk_file.length != 1)
-      snprintf (ccname, sizeof(ccname), "%s", (char *)(tk_file.data));
-      else
-      snprintf (ccname, sizeof(ccname), "FILE:/tmp/krb5cc_%u",pwd->pw_uid);
+	snprintf (ccname, sizeof(ccname), "%s", (char *)(tk_file.data));
+    else
+	snprintf (ccname, sizeof(ccname), "FILE:/tmp/krb5cc_%u",pwd->pw_uid);
 
     status = krb5_cc_resolve (context, ccname, &ccache);
-    if (status)
-	{syslog_and_cont("krb5_cc_resolve: %s",
-              krb5_get_err_text(context, status));
+    if (status) {
+	syslog_and_cont("krb5_cc_resolve: %s",
+			krb5_get_err_text(context, status));
         goto out;
     }
     status = krb5_cc_initialize (context, ccache, ticket->client);
-    if (status)
-        {syslog_and_cont("krb5_cc_initialize: %s",
-              krb5_get_err_text(context, status));
+    if (status) {
+	syslog_and_cont("krb5_cc_initialize: %s",
+			krb5_get_err_text(context, status));
         goto out;
-
     }
     status = krb5_rd_cred (context, auth_context, ccache, &data);
     krb5_cc_close (context, ccache);
-    if (status)
-       {syslog_and_cont("krb5_cc_initialize: %s",
-              krb5_get_err_text(context, status));
+    if (status) {
+	syslog_and_cont("krb5_cc_initialize: %s",
+			krb5_get_err_text(context, status));
         goto out;
 
     }
     syslog_and_cont("%s forwarded ticket to %s,%s",
-                     name,
-                     (char *)(remotename.data),ccname);
+		    name,
+		    (char *)(remotename.data),ccname);
 out:
-    if (status)
-      {strcpy(ret_string,"no");
-       syslog_and_cont("failed");
-      }
-      else strcpy(ret_string,"ok");
+    if (status) {
+	strcpy(ret_string, "no");
+	syslog_and_cont("failed");
+    } else  {
+	strcpy(ret_string, "ok");
+    }
 
     krb5_data_free (&tk_file);
     krb5_data_free (&remotename);
@@ -308,13 +314,14 @@ out:
          return 1;
     if (krb5_net_write (context, &sock, ret_string, len) != len)
          return 1;
-    return 0 ;
+    return 0;
 }
 
 static int
 doit (int port, const char *service)
 {
-    if (do_inetd) mini_inetd(port);
+    if (do_inetd)
+	mini_inetd(port);
     return proto (STDIN_FILENO, service);
 }
 
@@ -327,7 +334,7 @@ main(int argc, char **argv)
     set_progname (argv[0]);
     roken_openlog (argv[0], LOG_ODELAY | LOG_PID,LOG_AUTH);
     port = server_setup(&context, argc, argv);
-    ret=doit (port, service);
+    ret = doit (port, service);
     closelog();
     return ret;
 }
