@@ -2146,6 +2146,12 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 		goto out;
 	}
 
+	snum = lp_servicenumber( sharename);
+	if (snum == -1) {
+		errcode = NERR_DestNotFound;
+		goto out;
+	}
+
 	errcode = NERR_notsupported;
 	
 	switch (function) {
@@ -2971,6 +2977,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
     return False;
 
+  snum = lp_servicenumber( sharename);
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
   count = print_queue_status(snum,&queue,&status);
