@@ -212,6 +212,7 @@ share directory listing.
 from Norbert Püschel (Pueschel.Norbert@Walzbarren-VAW.ne.uunet.de).
 62). SWAT fixes for SCO UnixWare (SIGPIPE handling).
 63). Fix for nmbd DOS with redirect recursion.
+64). Fix for log files growing without bound from Mattias Gronlund.
 
 Older release notes for Samba 2.0.x follow.
 

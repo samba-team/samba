@@ -224,6 +224,10 @@ level" option at a high enough level
 - the "path =" line in smb.conf is incorrect. Check it with testparm
 - you enabled password encryption but didn't create the SMB encrypted
 password file
+- The uid for the user in smbpasswd is different from that in /etc/passwd.
+
+If none of these causes appear to be the problem, check the
+samba logs in the log directory (typically /usr/local/samba/var) for more details.
 
 Once connected you should be able to use the commands "dir" "get"
 "put" etc. Type "help <command>" for instructions. You should
