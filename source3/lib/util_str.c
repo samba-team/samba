@@ -243,7 +243,6 @@ BOOL strisnormal(char *s)
 ****************************************************************************/
 void string_replace(char *s,char oldc,char newc)
 {
-	smb_ucs2_t *ptr;
 	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
 	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
 	pull_ucs2(NULL, s, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
