@@ -49,13 +49,18 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
+void	abor(void);
 void	blkfree(char **);
 char  **copyblk(char **);
 void	cwd(char *);
 void	do_delete(char *);
 void	dologout(int);
 void	fatal(char *);
+int	filename_check(char *);
 int	ftpd_pclose(FILE *);
 FILE   *ftpd_popen(char *, char *, int, int);
 char   *getline(char *, int);
@@ -63,6 +68,7 @@ void	logwtmp(char *, char *, char *);
 void	lreply(int, const char *, ...);
 void	makedir(char *);
 void	nack(char *);
+void	nreply(const char *, ...);
 void	pass(char *);
 void	passive(void);
 void	perror_reply(int, char *);
