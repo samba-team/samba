@@ -97,41 +97,31 @@ struct ClearToken {
   int32_t EndTimestamp;
 };
 
-#ifdef __STDC__
-#ifndef __P
-#define __P(x) x
-#endif
-#else
-#ifndef __P
-#define __P(x) ()
-#endif
-#endif
-
 /* Use k_hasafs() to probe if the machine supports AFS syscalls.
    The other functions will generate a SIGSYS if AFS is not supported */
 
-int k_hasafs __P((void));
+int k_hasafs (void);
 
-int krb_afslog __P((const char *cell, const char *realm));
-int krb_afslog_uid __P((const char *cell, const char *realm, uid_t uid));
-int krb_afslog_home __P((const char *cell, const char *realm,
-			 const char *homedir));
-int krb_afslog_uid_home __P((const char *cell, const char *realm, uid_t uid,
-			     const char *homedir));
+int krb_afslog (const char *cell, const char *realm);
+int krb_afslog_uid (const char *cell, const char *realm, uid_t uid);
+int krb_afslog_home (const char *cell, const char *realm,
+			 const char *homedir);
+int krb_afslog_uid_home (const char *cell, const char *realm, uid_t uid,
+			     const char *homedir);
 
-int krb_realm_of_cell __P((const char *cell, char **realm));
+int krb_realm_of_cell (const char *cell, char **realm);
 
 /* compat */
 #define k_afsklog krb_afslog
 #define k_afsklog_uid krb_afslog_uid
 
-int k_pioctl __P((char *a_path,
+int k_pioctl (char *a_path,
 		  int o_opcode,
 		  struct ViceIoctl *a_paramsP,
-		  int a_followSymlinks));
-int k_unlog __P((void));
-int k_setpag __P((void));
-int k_afs_cell_of_file __P((const char *path, char *cell, int len));
+		  int a_followSymlinks);
+int k_unlog (void);
+int k_setpag (void);
+int k_afs_cell_of_file (const char *path, char *cell, int len);
 
 
 
@@ -144,41 +134,41 @@ int k_afs_cell_of_file __P((const char *path, char *cell, int len));
 #define KRB5_H_INCLUDED
 #endif
 
-void kafs_set_verbose __P((void (*kafs_verbose)(void *, const char *), void *));
-int kafs_settoken_rxkad __P((const char *, struct ClearToken *,
-			     void *ticket, size_t ticket_len));
+void kafs_set_verbose (void (*kafs_verbose)(void *, const char *), void *);
+int kafs_settoken_rxkad (const char *, struct ClearToken *,
+			     void *ticket, size_t ticket_len);
 #ifdef KRB_H_INCLUDED
-int kafs_settoken __P((const char*, uid_t, CREDENTIALS*));
+int kafs_settoken (const char*, uid_t, CREDENTIALS*);
 #endif
 #ifdef KRB5_H_INCLUDED
-int kafs_settoken5 __P((krb5_context, const char*, uid_t, krb5_creds*));
+int kafs_settoken5 (krb5_context, const char*, uid_t, krb5_creds*);
 #endif
 
 
 #ifdef KRB5_H_INCLUDED
-krb5_error_code krb5_afslog_uid __P((krb5_context context,
+krb5_error_code krb5_afslog_uid (krb5_context context,
 				     krb5_ccache id,
 				     const char *cell,
 				     krb5_const_realm realm,
-				     uid_t uid));
-krb5_error_code krb5_afslog __P((krb5_context context,
+				     uid_t uid);
+krb5_error_code krb5_afslog (krb5_context context,
 				 krb5_ccache id, 
 				 const char *cell,
-				 krb5_const_realm realm));
-krb5_error_code krb5_afslog_uid_home __P((krb5_context context,
+				 krb5_const_realm realm);
+krb5_error_code krb5_afslog_uid_home (krb5_context context,
 					  krb5_ccache id,
 					  const char *cell,
 					  krb5_const_realm realm,
 					  uid_t uid,
-					  const char *homedir));
+					  const char *homedir);
 
-krb5_error_code krb5_afslog_home __P((krb5_context context,
+krb5_error_code krb5_afslog_home (krb5_context context,
 				      krb5_ccache id,
 				      const char *cell,
 				      krb5_const_realm realm,
-				      const char *homedir));
+				      const char *homedir);
 
-krb5_error_code krb5_realm_of_cell __P((const char *cell, char **realm));
+krb5_error_code krb5_realm_of_cell (const char *cell, char **realm);
 
 #endif
 
