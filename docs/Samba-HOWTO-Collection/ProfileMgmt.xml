@@ -74,7 +74,7 @@ This section documents how to configure Samba for MS Windows client profile supp
 <title>NT4/200x User Profiles</title>
 
 <para>
-For example, to support Windows NT4/200x clients, set the followoing in the [global] section of the &smb.conf; file:
+For example, to support Windows NT4/200x clients, set the following in the [global] section of the &smb.conf; file:
 </para>
 
 <para>
