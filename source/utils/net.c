@@ -601,8 +601,9 @@ static uint32 get_maxrid(void)
 	GROUP_MAP *map = NULL;
 	int num_entries = 0;
 	int i;
+	uint32 acb_mask = ACB_WSTRUST | ACB_NORMAL | ACB_DOMTRUST | ACB_SVRTRUST;
 
-	if (!pdb_setsampwent(False)) {
+	if (!pdb_setsampwent(False, acb_mask)) {
 		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
 		return 0;
 	}
