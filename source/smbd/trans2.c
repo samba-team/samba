@@ -2097,7 +2097,13 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			 * the called hostname and the service name.
 			 */
 			SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(get_local_machine_name())<<16) );
-			len = srvstr_push(outbuf, pdata+l2_vol_szVolLabel, vname, -1, STR_NOALIGN);
+			/*
+			 * Win2k3 and previous mess this up by sending a name length
+			 * one byte short. I believe only older clients (OS/2 Win9x) use
+			 * this call so try fixing this by adding a terminating null to
+			 * the pushed string. The change here was adding the STR_TERMINATE. JRA.
+			 */
+			len = srvstr_push(outbuf, pdata+l2_vol_szVolLabel, vname, -1, STR_NOALIGN|STR_TERMINATE);
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
 			DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
