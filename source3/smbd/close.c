@@ -21,64 +21,65 @@
 #include "includes.h"
 
 /****************************************************************************
-run a file if it is a magic script
+ Run a file if it is a magic script.
 ****************************************************************************/
+
 static void check_magic(files_struct *fsp,connection_struct *conn)
 {
-  if (!*lp_magicscript(SNUM(conn)))
-    return;
+	if (!*lp_magicscript(SNUM(conn)))
+		return;
 
-  DEBUG(5,("checking magic for %s\n",fsp->fsp_name));
+	DEBUG(5,("checking magic for %s\n",fsp->fsp_name));
 
-  {
-    char *p;
-    if (!(p = strrchr_m(fsp->fsp_name,'/')))
-      p = fsp->fsp_name;
-    else
-      p++;
+	{
+		char *p;
+		if (!(p = strrchr_m(fsp->fsp_name,'/')))
+			p = fsp->fsp_name;
+		else
+			p++;
 
-    if (!strequal(lp_magicscript(SNUM(conn)),p))
-      return;
-  }
+		if (!strequal(lp_magicscript(SNUM(conn)),p))
+			return;
+	}
 
-  {
-    int ret;
-    pstring magic_output;
-    pstring fname;
-	SMB_STRUCT_STAT st;
-	int tmp_fd, outfd;
+	{
+		int ret;
+		pstring magic_output;
+		pstring fname;
+		SMB_STRUCT_STAT st;
+		int tmp_fd, outfd;
 
-    pstrcpy(fname,fsp->fsp_name);
-    if (*lp_magicoutput(SNUM(conn)))
-      pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
-    else
-      slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
+		pstrcpy(fname,fsp->fsp_name);
+		if (*lp_magicoutput(SNUM(conn)))
+			pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
+		else
+			slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
 
-    chmod(fname,0755);
-    ret = smbrun(fname,&tmp_fd);
-    DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
-    unlink(fname);
-	if (ret != 0 || tmp_fd == -1) {
-		if (tmp_fd != -1)
+		chmod(fname,0755);
+		ret = smbrun(fname,&tmp_fd);
+		DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
+		unlink(fname);
+		if (ret != 0 || tmp_fd == -1) {
+			if (tmp_fd != -1)
+				close(tmp_fd);
+			return;
+		}
+		outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
+		if (outfd == -1) {
 			close(tmp_fd);
-		return;
-	}
-	outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
-	if (outfd == -1) {
-		close(tmp_fd);
-		return;
-	}
+			return;
+		}
 
-	if (sys_fstat(tmp_fd,&st) == -1) {
+		if (sys_fstat(tmp_fd,&st) == -1) {
+			close(tmp_fd);
+			close(outfd);
+			return;
+		}
+
+		transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
 		close(tmp_fd);
 		close(outfd);
-		return;
 	}
-
-	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
-	close(tmp_fd);
-	close(outfd);
-  }
 }
 
 /****************************************************************************
@@ -97,8 +98,6 @@ static int close_filestruct(files_struct *fsp)
 		delete_write_cache(fsp);
 	}
 
-	fsp->is_directory = False; 
-    
 	conn->num_files_open--;
 	SAFE_FREE(fsp->wbmpx_ptr);
 
@@ -258,17 +257,37 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 		string_free(&fsp->fsp_name);
 	
 	file_free(fsp);
-
 	return 0;
 }
 
 /****************************************************************************
- Close a directory opened by an NT SMB call. 
+ Close a 'stat file' opened internally.
+****************************************************************************/
+  
+static int close_stat(files_struct *fsp)
+{
+	/*
+	 * Do the code common to files and directories.
+	 */
+	close_filestruct(fsp);
+	
+	if (fsp->fsp_name)
+		string_free(&fsp->fsp_name);
+	
+	file_free(fsp);
+	return 0;
+}
+
+/****************************************************************************
+ Close a files_struct.
 ****************************************************************************/
   
 int close_file(files_struct *fsp, BOOL normal_close)
 {
 	if(fsp->is_directory)
 		return close_directory(fsp, normal_close);
-	return close_normal_file(fsp, normal_close);
+	else if (fsp->is_stat)
+		return close_stat(fsp);
+	else
+		return close_normal_file(fsp, normal_close);
 }

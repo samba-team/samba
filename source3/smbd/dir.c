@@ -49,17 +49,17 @@ static int dptrs_open = 0;
 
 void init_dptrs(void)
 {
-  static BOOL dptrs_init=False;
+	static BOOL dptrs_init=False;
 
-  if (dptrs_init)
-    return;
+	if (dptrs_init)
+		return;
 
-  dptr_bmap = bitmap_allocate(MAX_DIRECTORY_HANDLES);
+	dptr_bmap = bitmap_allocate(MAX_DIRECTORY_HANDLES);
 
-  if (!dptr_bmap)
-    exit_server("out of memory in init_dptrs");
+	if (!dptr_bmap)
+		exit_server("out of memory in init_dptrs");
 
-  dptrs_init = True;
+	dptrs_init = True;
 }
 
 /****************************************************************************
@@ -68,12 +68,12 @@ void init_dptrs(void)
 
 static void dptr_idle(dptr_struct *dptr)
 {
-  if (dptr->ptr) {
-    DEBUG(4,("Idling dptr dnum %d\n",dptr->dnum));
-    dptrs_open--;
-    CloseDir(dptr->ptr);
-    dptr->ptr = NULL;
-  }
+	if (dptr->ptr) {
+		DEBUG(4,("Idling dptr dnum %d\n",dptr->dnum));
+		dptrs_open--;
+		CloseDir(dptr->ptr);
+		dptr->ptr = NULL;
+	}
 }
 
 /****************************************************************************
@@ -82,29 +82,29 @@ static void dptr_idle(dptr_struct *dptr)
 
 static void dptr_idleoldest(void)
 {
-  dptr_struct *dptr;
+	dptr_struct *dptr;
 
-  /*
-   * Go to the end of the list.
-   */
-  for(dptr = dirptrs; dptr && dptr->next; dptr = dptr->next)
-    ;
+	/*
+	 * Go to the end of the list.
+	 */
+	for(dptr = dirptrs; dptr && dptr->next; dptr = dptr->next)
+		;
 
-  if(!dptr) {
-    DEBUG(0,("No dptrs available to idle ?\n"));
-    return;
-  }
+	if(!dptr) {
+		DEBUG(0,("No dptrs available to idle ?\n"));
+		return;
+	}
 
-  /*
-   * Idle the oldest pointer.
-   */
+	/*
+	 * Idle the oldest pointer.
+	 */
 
-  for(; dptr; dptr = dptr->prev) {
-    if (dptr->ptr) {
-      dptr_idle(dptr);
-      return;
-    }
-  }
+	for(; dptr; dptr = dptr->prev) {
+		if (dptr->ptr) {
+			dptr_idle(dptr);
+			return;
+		}
+	}
 }
 
 /****************************************************************************
@@ -113,22 +113,22 @@ static void dptr_idleoldest(void)
 
 static dptr_struct *dptr_get(int key, BOOL forclose)
 {
-  dptr_struct *dptr;
+	dptr_struct *dptr;
 
-  for(dptr = dirptrs; dptr; dptr = dptr->next) {
-    if(dptr->dnum == key) {
-      if (!forclose && !dptr->ptr) {
-        if (dptrs_open >= MAX_OPEN_DIRECTORIES)
-          dptr_idleoldest();
-        DEBUG(4,("Reopening dptr key %d\n",key));
-        if ((dptr->ptr = OpenDir(dptr->conn, dptr->path, True)))
-          dptrs_open++;
-      }
-      DLIST_PROMOTE(dirptrs,dptr);
-      return dptr;
-    }
-  }
-  return(NULL);
+	for(dptr = dirptrs; dptr; dptr = dptr->next) {
+		if(dptr->dnum == key) {
+			if (!forclose && !dptr->ptr) {
+				if (dptrs_open >= MAX_OPEN_DIRECTORIES)
+					dptr_idleoldest();
+				DEBUG(4,("Reopening dptr key %d\n",key));
+				if ((dptr->ptr = OpenDir(dptr->conn, dptr->path, True)))
+					dptrs_open++;
+			}
+			DLIST_PROMOTE(dirptrs,dptr);
+			return dptr;
+		}
+	}
+	return(NULL);
 }
 
 /****************************************************************************
@@ -137,11 +137,11 @@ static dptr_struct *dptr_get(int key, BOOL forclose)
 
 static void *dptr_ptr(int key)
 {
-  dptr_struct *dptr = dptr_get(key, False);
+	dptr_struct *dptr = dptr_get(key, False);
 
-  if (dptr)
-    return(dptr->ptr);
-  return(NULL);
+	if (dptr)
+		return(dptr->ptr);
+	return(NULL);
 }
 
 /****************************************************************************
@@ -150,11 +150,11 @@ static void *dptr_ptr(int key)
 
 char *dptr_path(int key)
 {
-  dptr_struct *dptr = dptr_get(key, False);
+	dptr_struct *dptr = dptr_get(key, False);
 
-  if (dptr)
-    return(dptr->path);
-  return(NULL);
+	if (dptr)
+		return(dptr->path);
+	return(NULL);
 }
 
 /****************************************************************************
@@ -163,11 +163,11 @@ char *dptr_path(int key)
 
 char *dptr_wcard(int key)
 {
-  dptr_struct *dptr = dptr_get(key, False);
+	dptr_struct *dptr = dptr_get(key, False);
 
-  if (dptr)
-    return(dptr->wcard);
-  return(NULL);
+	if (dptr)
+		return(dptr->wcard);
+	return(NULL);
 }
 
 /****************************************************************************
@@ -177,13 +177,13 @@ char *dptr_wcard(int key)
 
 BOOL dptr_set_wcard(int key, char *wcard)
 {
-  dptr_struct *dptr = dptr_get(key, False);
+	dptr_struct *dptr = dptr_get(key, False);
 
-  if (dptr) {
-    dptr->wcard = wcard;
-    return True;
-  }
-  return False;
+	if (dptr) {
+		dptr->wcard = wcard;
+		return True;
+	}
+	return False;
 }
 
 /****************************************************************************
@@ -193,13 +193,13 @@ BOOL dptr_set_wcard(int key, char *wcard)
 
 BOOL dptr_set_attr(int key, uint16 attr)
 {
-  dptr_struct *dptr = dptr_get(key, False);
+	dptr_struct *dptr = dptr_get(key, False);
 
-  if (dptr) {
-    dptr->attr = attr;
-    return True;
-  }
-  return False;
+	if (dptr) {
+		dptr->attr = attr;
+		return True;
+	}
+	return False;
 }
 
 /****************************************************************************
@@ -208,11 +208,11 @@ BOOL dptr_set_attr(int key, uint16 attr)
 
 uint16 dptr_attr(int key)
 {
-  dptr_struct *dptr = dptr_get(key, False);
+	dptr_struct *dptr = dptr_get(key, False);
 
-  if (dptr)
-    return(dptr->attr);
-  return(0);
+	if (dptr)
+		return(dptr->attr);
+	return(0);
 }
 
 /****************************************************************************
@@ -221,31 +221,31 @@ uint16 dptr_attr(int key)
 
 static void dptr_close_internal(dptr_struct *dptr)
 {
-  DEBUG(4,("closing dptr key %d\n",dptr->dnum));
+	DEBUG(4,("closing dptr key %d\n",dptr->dnum));
 
-  DLIST_REMOVE(dirptrs, dptr);
+	DLIST_REMOVE(dirptrs, dptr);
 
-  /* 
-   * Free the dnum in the bitmap. Remember the dnum value is always 
-   * biased by one with respect to the bitmap.
-   */
+	/* 
+	 * Free the dnum in the bitmap. Remember the dnum value is always 
+	 * biased by one with respect to the bitmap.
+	 */
 
-  if(bitmap_query( dptr_bmap, dptr->dnum - 1) != True) {
-    DEBUG(0,("dptr_close_internal : Error - closing dnum = %d and bitmap not set !\n",
+	if(bitmap_query( dptr_bmap, dptr->dnum - 1) != True) {
+		DEBUG(0,("dptr_close_internal : Error - closing dnum = %d and bitmap not set !\n",
 			dptr->dnum ));
-  }
+	}
 
-  bitmap_clear(dptr_bmap, dptr->dnum - 1);
+	bitmap_clear(dptr_bmap, dptr->dnum - 1);
 
-  if (dptr->ptr) {
-    CloseDir(dptr->ptr);
-    dptrs_open--;
-  }
+	if (dptr->ptr) {
+		CloseDir(dptr->ptr);
+		dptrs_open--;
+	}
 
-  /* Lanman 2 specific code */
-  SAFE_FREE(dptr->wcard);
-  string_set(&dptr->path,"");
-  SAFE_FREE(dptr);
+	/* Lanman 2 specific code */
+	SAFE_FREE(dptr->wcard);
+	string_set(&dptr->path,"");
+	SAFE_FREE(dptr);
 }
 
 /****************************************************************************
@@ -254,32 +254,32 @@ static void dptr_close_internal(dptr_struct *dptr)
 
 void dptr_close(int *key)
 {
-  dptr_struct *dptr;
+	dptr_struct *dptr;
 
-  if(*key == INVALID_DPTR_KEY)
-    return;
+	if(*key == INVALID_DPTR_KEY)
+		return;
 
-  /* OS/2 seems to use -1 to indicate "close all directories" */
-  if (*key == -1) {
-    dptr_struct *next;
-    for(dptr = dirptrs; dptr; dptr = next) {
-      next = dptr->next;
-      dptr_close_internal(dptr);
-    }
-    *key = INVALID_DPTR_KEY;
-    return;
-  }
+	/* OS/2 seems to use -1 to indicate "close all directories" */
+	if (*key == -1) {
+		dptr_struct *next;
+		for(dptr = dirptrs; dptr; dptr = next) {
+			next = dptr->next;
+			dptr_close_internal(dptr);
+		}
+		*key = INVALID_DPTR_KEY;
+		return;
+	}
 
-  dptr = dptr_get(*key, True);
+	dptr = dptr_get(*key, True);
 
-  if (!dptr) {
-    DEBUG(0,("Invalid key %d given to dptr_close\n", *key));
-    return;
-  }
+	if (!dptr) {
+		DEBUG(0,("Invalid key %d given to dptr_close\n", *key));
+		return;
+	}
 
-  dptr_close_internal(dptr);
+	dptr_close_internal(dptr);
 
-  *key = INVALID_DPTR_KEY;
+	*key = INVALID_DPTR_KEY;
 }
 
 /****************************************************************************
@@ -288,12 +288,12 @@ void dptr_close(int *key)
 
 void dptr_closecnum(connection_struct *conn)
 {
-  dptr_struct *dptr, *next;
-  for(dptr = dirptrs; dptr; dptr = next) {
-    next = dptr->next;
-    if (dptr->conn == conn)
-      dptr_close_internal(dptr);
-  }
+	dptr_struct *dptr, *next;
+	for(dptr = dirptrs; dptr; dptr = next) {
+		next = dptr->next;
+		if (dptr->conn == conn)
+			dptr_close_internal(dptr);
+	}
 }
 
 /****************************************************************************
@@ -302,11 +302,11 @@ void dptr_closecnum(connection_struct *conn)
 
 void dptr_idlecnum(connection_struct *conn)
 {
-  dptr_struct *dptr;
-  for(dptr = dirptrs; dptr; dptr = dptr->next) {
-    if (dptr->conn == conn && dptr->ptr)
-      dptr_idle(dptr);
-  }
+	dptr_struct *dptr;
+	for(dptr = dirptrs; dptr; dptr = dptr->next) {
+		if (dptr->conn == conn && dptr->ptr)
+			dptr_idle(dptr);
+	}
 }
 
 /****************************************************************************
@@ -315,12 +315,12 @@ void dptr_idlecnum(connection_struct *conn)
 
 void dptr_closepath(char *path,uint16 spid)
 {
-  dptr_struct *dptr, *next;
-  for(dptr = dirptrs; dptr; dptr = next) {
-    next = dptr->next;
-    if (spid == dptr->spid && strequal(dptr->path,path))
-      dptr_close_internal(dptr);
-  }
+	dptr_struct *dptr, *next;
+	for(dptr = dirptrs; dptr; dptr = next) {
+		next = dptr->next;
+		if (spid == dptr->spid && strequal(dptr->path,path))
+			dptr_close_internal(dptr);
+	}
 }
 
 /****************************************************************************
@@ -329,27 +329,27 @@ void dptr_closepath(char *path,uint16 spid)
 
 static BOOL start_dir(connection_struct *conn, pstring directory)
 {
-  const char *dir2;
+	const char *dir2;
 
-  DEBUG(5,("start_dir dir=%s\n",directory));
+	DEBUG(5,("start_dir dir=%s\n",directory));
 
-  if (!check_name(directory,conn))
-    return(False);
+	if (!check_name(directory,conn))
+		return(False);
 
-  /* use a const pointer from here on */
-  dir2 = directory;
+	/* use a const pointer from here on */
+	dir2 = directory;
   
-  if (! *dir2)
-    dir2 = ".";
+	if (! *dir2)
+		dir2 = ".";
 
-  conn->dirptr = OpenDir(conn, directory, True);
-  if (conn->dirptr) {    
-    dptrs_open++;
-    string_set(&conn->dirpath,directory);
-    return(True);
-  }
+	conn->dirptr = OpenDir(conn, directory, True);
+	if (conn->dirptr) {    
+		dptrs_open++;
+		string_set(&conn->dirpath,directory);
+		return(True);
+	}
   
-  return(False);
+	return(False);
 }
 
 /****************************************************************************
@@ -360,32 +360,32 @@ static BOOL start_dir(connection_struct *conn, pstring directory)
 
 static void dptr_close_oldest(BOOL old)
 {
-  dptr_struct *dptr;
+	dptr_struct *dptr;
 
-  /*
-   * Go to the end of the list.
-   */
-  for(dptr = dirptrs; dptr && dptr->next; dptr = dptr->next)
-    ;
+	/*
+	 * Go to the end of the list.
+	 */
+	for(dptr = dirptrs; dptr && dptr->next; dptr = dptr->next)
+		;
 
-  if(!dptr) {
-    DEBUG(0,("No old dptrs available to close oldest ?\n"));
-    return;
-  }
+	if(!dptr) {
+		DEBUG(0,("No old dptrs available to close oldest ?\n"));
+		return;
+	}
 
-  /*
-   * If 'old' is true, close the oldest oldhandle dnum (ie. 1 < dnum < 256) that
-   * does not have expect_close set. If 'old' is false, close
-   * one of the new dnum handles.
-   */
+	/*
+	 * If 'old' is true, close the oldest oldhandle dnum (ie. 1 < dnum < 256) that
+	 * does not have expect_close set. If 'old' is false, close
+	 * one of the new dnum handles.
+	 */
 
-  for(; dptr; dptr = dptr->prev) {
-    if ((old && (dptr->dnum < 256) && !dptr->expect_close) ||
-        (!old && (dptr->dnum > 255))) {
-      dptr_close_internal(dptr);
-      return;
-    }
-  }
+	for(; dptr; dptr = dptr->prev) {
+		if ((old && (dptr->dnum < 256) && !dptr->expect_close) ||
+			(!old && (dptr->dnum > 255))) {
+				dptr_close_internal(dptr);
+				return;
+		}
+	}
 }
 
 /****************************************************************************
@@ -399,99 +399,98 @@ static void dptr_close_oldest(BOOL old)
 
 int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid)
 {
-  dptr_struct *dptr;
+	dptr_struct *dptr;
 
-  if (!start_dir(conn,path))
-    return(-2); /* Code to say use a unix error return code. */
+	if (!start_dir(conn,path))
+		return(-2); /* Code to say use a unix error return code. */
 
-  if (dptrs_open >= MAX_OPEN_DIRECTORIES)
-    dptr_idleoldest();
+	if (dptrs_open >= MAX_OPEN_DIRECTORIES)
+		dptr_idleoldest();
 
-  dptr = (dptr_struct *)malloc(sizeof(dptr_struct));
-  if(!dptr) {
-    DEBUG(0,("malloc fail in dptr_create.\n"));
-    return -1;
-  }
+	dptr = (dptr_struct *)malloc(sizeof(dptr_struct));
+	if(!dptr) {
+		DEBUG(0,("malloc fail in dptr_create.\n"));
+		return -1;
+	}
 
-  ZERO_STRUCTP(dptr);
+	ZERO_STRUCTP(dptr);
 
-  if(old_handle) {
+	if(old_handle) {
 
-    /*
-     * This is an old-style SMBsearch request. Ensure the
-     * value we return will fit in the range 1-255.
-     */
+		/*
+		 * This is an old-style SMBsearch request. Ensure the
+		 * value we return will fit in the range 1-255.
+		 */
 
-    dptr->dnum = bitmap_find(dptr_bmap, 0);
+		dptr->dnum = bitmap_find(dptr_bmap, 0);
 
-    if(dptr->dnum == -1 || dptr->dnum > 254) {
+		if(dptr->dnum == -1 || dptr->dnum > 254) {
 
-      /*
-       * Try and close the oldest handle not marked for
-       * expect close in the hope that the client has
-       * finished with that one.
-       */
+			/*
+			 * Try and close the oldest handle not marked for
+			 * expect close in the hope that the client has
+			 * finished with that one.
+			 */
 
-      dptr_close_oldest(True);
+			dptr_close_oldest(True);
 
-      /* Now try again... */
-      dptr->dnum = bitmap_find(dptr_bmap, 0);
+			/* Now try again... */
+			dptr->dnum = bitmap_find(dptr_bmap, 0);
+			if(dptr->dnum == -1 || dptr->dnum > 254) {
+				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
+				SAFE_FREE(dptr);
+				return -1;
+			}
+		}
+	} else {
 
-      if(dptr->dnum == -1 || dptr->dnum > 254) {
-        DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
-        SAFE_FREE(dptr);
-        return -1;
-      }
-    }
-  } else {
+		/*
+		 * This is a new-style trans2 request. Allocate from
+		 * a range that will return 256 - MAX_DIRECTORY_HANDLES.
+		 */
 
-    /*
-     * This is a new-style trans2 request. Allocate from
-     * a range that will return 256 - MAX_DIRECTORY_HANDLES.
-     */
+		dptr->dnum = bitmap_find(dptr_bmap, 255);
 
-    dptr->dnum = bitmap_find(dptr_bmap, 255);
+		if(dptr->dnum == -1 || dptr->dnum < 255) {
 
-    if(dptr->dnum == -1 || dptr->dnum < 255) {
+			/*
+			 * Try and close the oldest handle close in the hope that
+			 * the client has finished with that one. This will only
+			 * happen in the case of the Win98 client bug where it leaks
+			 * directory handles.
+			 */
 
-      /*
-       * Try and close the oldest handle close in the hope that
-       * the client has finished with that one. This will only
-       * happen in the case of the Win98 client bug where it leaks
-       * directory handles.
-       */
+			dptr_close_oldest(False);
 
-      dptr_close_oldest(False);
+			/* Now try again... */
+			dptr->dnum = bitmap_find(dptr_bmap, 255);
 
-      /* Now try again... */
-      dptr->dnum = bitmap_find(dptr_bmap, 255);
+			if(dptr->dnum == -1 || dptr->dnum < 255) {
+				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
+				SAFE_FREE(dptr);
+				return -1;
+			}
+		}
+	}
 
-      if(dptr->dnum == -1 || dptr->dnum < 255) {
-        DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-        SAFE_FREE(dptr);
-        return -1;
-      }
-    }
-  }
+	bitmap_set(dptr_bmap, dptr->dnum);
 
-  bitmap_set(dptr_bmap, dptr->dnum);
+	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
 
-  dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
+	dptr->ptr = conn->dirptr;
+	string_set(&dptr->path,path);
+	dptr->conn = conn;
+	dptr->spid = spid;
+	dptr->expect_close = expect_close;
+	dptr->wcard = NULL; /* Only used in lanman2 searches */
+	dptr->attr = 0; /* Only used in lanman2 searches */
 
-  dptr->ptr = conn->dirptr;
-  string_set(&dptr->path,path);
-  dptr->conn = conn;
-  dptr->spid = spid;
-  dptr->expect_close = expect_close;
-  dptr->wcard = NULL; /* Only used in lanman2 searches */
-  dptr->attr = 0; /* Only used in lanman2 searches */
+	DLIST_ADD(dirptrs, dptr);
 
-  DLIST_ADD(dirptrs, dptr);
+	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
+		dptr->dnum,path,expect_close));  
 
-  DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
-	   dptr->dnum,path,expect_close));  
-
-  return(dptr->dnum);
+	return(dptr->dnum);
 }
 
 /****************************************************************************
@@ -500,19 +499,19 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 
 BOOL dptr_fill(char *buf1,unsigned int key)
 {
-  unsigned char *buf = (unsigned char *)buf1;
-  void *p = dptr_ptr(key);
-  uint32 offset;
-  if (!p) {
-    DEBUG(1,("filling null dirptr %d\n",key));
-    return(False);
-  }
-  offset = TellDir(p);
-  DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
-	   (long)p,(int)offset));
-  buf[0] = key;
-  SIVAL(buf,1,offset | DPTR_MASK);
-  return(True);
+	unsigned char *buf = (unsigned char *)buf1;
+	void *p = dptr_ptr(key);
+	uint32 offset;
+	if (!p) {
+		DEBUG(1,("filling null dirptr %d\n",key));
+		return(False);
+	}
+	offset = TellDir(p);
+	DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
+		(long)p,(int)offset));
+	buf[0] = key;
+	SIVAL(buf,1,offset | DPTR_MASK);
+	return(True);
 }
 
 /****************************************************************************
@@ -521,19 +520,20 @@ BOOL dptr_fill(char *buf1,unsigned int key)
 
 void *dptr_fetch(char *buf,int *num)
 {
-  unsigned int key = *(unsigned char *)buf;
-  void *p = dptr_ptr(key);
-  uint32 offset;
-  if (!p) {
-    DEBUG(3,("fetched null dirptr %d\n",key));
-    return(NULL);
-  }
-  *num = key;
-  offset = IVAL(buf,1)&~DPTR_MASK;
-  SeekDir(p,offset);
-  DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
-	   key,dptr_path(key),offset));
-  return(p);
+	unsigned int key = *(unsigned char *)buf;
+	void *p = dptr_ptr(key);
+	uint32 offset;
+
+	if (!p) {
+		DEBUG(3,("fetched null dirptr %d\n",key));
+		return(NULL);
+	}
+	*num = key;
+	offset = IVAL(buf,1)&~DPTR_MASK;
+	SeekDir(p,offset);
+	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
+		key,dptr_path(key),offset));
+	return(p);
 }
 
 /****************************************************************************
@@ -542,14 +542,14 @@ void *dptr_fetch(char *buf,int *num)
 
 void *dptr_fetch_lanman2(int dptr_num)
 {
-  void *p = dptr_ptr(dptr_num);
+	void *p = dptr_ptr(dptr_num);
 
-  if (!p) {
-    DEBUG(3,("fetched null dirptr %d\n",dptr_num));
-    return(NULL);
-  }
-  DEBUG(3,("fetching dirptr %d for path %s\n",dptr_num,dptr_path(dptr_num)));
-  return(p);
+	if (!p) {
+		DEBUG(3,("fetched null dirptr %d\n",dptr_num));
+		return(NULL);
+	}
+	DEBUG(3,("fetching dirptr %d for path %s\n",dptr_num,dptr_path(dptr_num)));
+	return(p);
 }
 
 /****************************************************************************
@@ -591,96 +591,88 @@ static BOOL mangle_mask_match(connection_struct *conn, char *filename, char *mas
 BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
                    SMB_OFF_T *size,int *mode,time_t *date,BOOL check_descend)
 {
-  char *dname;
-  BOOL found = False;
-  SMB_STRUCT_STAT sbuf;
-  pstring path;
-  pstring pathreal;
-  BOOL isrootdir;
-  pstring filename;
-  BOOL needslash;
+	char *dname;
+	BOOL found = False;
+	SMB_STRUCT_STAT sbuf;
+	pstring path;
+	pstring pathreal;
+	BOOL isrootdir;
+	pstring filename;
+	BOOL needslash;
 
-  *path = *pathreal = *filename = 0;
+	*path = *pathreal = *filename = 0;
 
-  isrootdir = (strequal(conn->dirpath,"./") ||
-	       strequal(conn->dirpath,".") ||
-	       strequal(conn->dirpath,"/"));
+	isrootdir = (strequal(conn->dirpath,"./") ||
+			strequal(conn->dirpath,".") ||
+			strequal(conn->dirpath,"/"));
   
-  needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
+	needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 
-  if (!conn->dirptr)
-    return(False);
+	if (!conn->dirptr)
+		return(False);
 
-  while (!found)
-  {
-    dname = ReadDirName(conn->dirptr);
+	while (!found) {
+		dname = ReadDirName(conn->dirptr);
 
-    DEBUG(6,("readdir on dirptr 0x%lx now at offset %d\n",
-          (long)conn->dirptr,TellDir(conn->dirptr)));
+		DEBUG(6,("readdir on dirptr 0x%lx now at offset %d\n",
+			(long)conn->dirptr,TellDir(conn->dirptr)));
       
-    if (dname == NULL) 
-      return(False);
+		if (dname == NULL) 
+			return(False);
       
-    pstrcpy(filename,dname);      
+		pstrcpy(filename,dname);      
 
-    /* notice the special *.* handling. This appears to be the only difference
-       between the wildcard handling in this routine and in the trans2 routines.
-       see masktest for a demo
-    */
-    if ((strcmp(mask,"*.*") == 0) ||
-	mask_match(filename,mask,False) ||
-        mangle_mask_match(conn,filename,mask))
-    {
-      if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
-        continue;
+		/* notice the special *.* handling. This appears to be the only difference
+			between the wildcard handling in this routine and in the trans2 routines.
+			see masktest for a demo
+		*/
+		if ((strcmp(mask,"*.*") == 0) ||
+				mask_match(filename,mask,False) ||
+				mangle_mask_match(conn,filename,mask)) {
+			if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
+				continue;
 
-      if (!mangle_is_8_3(filename, False)) {
-	      mangle_map(filename,True,False,SNUM(conn));
-      }
+			if (!mangle_is_8_3(filename, False))
+				mangle_map(filename,True,False,SNUM(conn));
 
-      pstrcpy(fname,filename);
-      *path = 0;
-      pstrcpy(path,conn->dirpath);
-      if(needslash)
-        pstrcat(path,"/");
-      pstrcpy(pathreal,path);
-      pstrcat(path,fname);
-      pstrcat(pathreal,dname);
-      if (conn->vfs_ops.stat(conn, pathreal, &sbuf) != 0)
-      {
-        DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
-        continue;
-      }
+			pstrcpy(fname,filename);
+			*path = 0;
+			pstrcpy(path,conn->dirpath);
+			if(needslash)
+				pstrcat(path,"/");
+			pstrcpy(pathreal,path);
+			pstrcat(path,fname);
+			pstrcat(pathreal,dname);
+			if (conn->vfs_ops.stat(conn, pathreal, &sbuf) != 0) {
+				DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
+				continue;
+			}
 	  
-      *mode = dos_mode(conn,pathreal,&sbuf);
+			*mode = dos_mode(conn,pathreal,&sbuf);
 
-      if (!dir_check_ftype(conn,*mode,&sbuf,dirtype)) 
-      {
-        DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
-        continue;
-      }
+			if (!dir_check_ftype(conn,*mode,&sbuf,dirtype)) {
+				DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
+				continue;
+			}
 
-      *size = sbuf.st_size;
-      *date = sbuf.st_mtime;
+			*size = sbuf.st_size;
+			*date = sbuf.st_mtime;
 
-      DEBUG(3,("get_dir_entry mask=[%s] found %s fname=%s\n",mask, pathreal,fname));
-	  
-      found = True;
-    }
-  }
+			DEBUG(3,("get_dir_entry mask=[%s] found %s fname=%s\n",mask, pathreal,fname));
 
-  return(found);
+			found = True;
+		}
+	}
+
+	return(found);
 }
 
-
-
-typedef struct
-{
-  int pos;
-  int numentries;
-  int mallocsize;
-  char *data;
-  char *current;
+typedef struct {
+	int pos;
+	int numentries;
+	int mallocsize;
+	char *data;
+	char *current;
 } Dir;
 
 /*******************************************************************
@@ -718,15 +710,14 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 		 fsp = open_directory(conn, name, pst, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
 	else
-		fsp = open_file_shared1(conn, name, pst, FILE_READ_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+		fsp = open_file_stat(conn, name, pst);
 
 	if (!fsp)
 		return False;
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
 	sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
-	close_file(fsp, False);
+	close_file(fsp, True);
 
 	/* No access if SD get failed. */
 	if (!sd_size)
@@ -933,9 +924,10 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 
 void CloseDir(void *p)
 {
-  if (!p) return;    
-  SAFE_FREE(((Dir *)p)->data);
-  SAFE_FREE(p);
+	if (!p)
+		return;    
+	SAFE_FREE(((Dir *)p)->data);
+	SAFE_FREE(p);
 }
 
 /*******************************************************************
@@ -944,18 +936,18 @@ void CloseDir(void *p)
 
 char *ReadDirName(void *p)
 {
-  char *ret;
-  Dir *dirp = (Dir *)p;
+	char *ret;
+	Dir *dirp = (Dir *)p;
 
-  if (!dirp || !dirp->current || dirp->pos >= dirp->numentries) return(NULL);
+	if (!dirp || !dirp->current || dirp->pos >= dirp->numentries)
+		return(NULL);
 
-  ret = dirp->current;
-  dirp->current = skip_string(dirp->current,1);
-  dirp->pos++;
+	ret = dirp->current;
+	dirp->current = skip_string(dirp->current,1);
+	dirp->pos++;
 
-  return(ret);
+	return(ret);
 }
-
 
 /*******************************************************************
  Seek a dir.
@@ -963,18 +955,20 @@ char *ReadDirName(void *p)
 
 BOOL SeekDir(void *p,int pos)
 {
-  Dir *dirp = (Dir *)p;
+	Dir *dirp = (Dir *)p;
 
-  if (!dirp) return(False);
+	if (!dirp)
+		return(False);
 
-  if (pos < dirp->pos) {
-    dirp->current = dirp->data;
-    dirp->pos = 0;
-  }
+	if (pos < dirp->pos) {
+		dirp->current = dirp->data;
+		dirp->pos = 0;
+	}
 
-  while (dirp->pos < pos && ReadDirName(p)) ;
+	while (dirp->pos < pos && ReadDirName(p))
+		;
 
-  return(dirp->pos == pos);
+	return (dirp->pos == pos);
 }
 
 /*******************************************************************
@@ -983,11 +977,12 @@ BOOL SeekDir(void *p,int pos)
 
 int TellDir(void *p)
 {
-  Dir *dirp = (Dir *)p;
+	Dir *dirp = (Dir *)p;
 
-  if (!dirp) return(-1);
+	if (!dirp)
+		return(-1);
   
-  return(dirp->pos);
+	return(dirp->pos);
 }
 
 /*******************************************************************************
@@ -996,11 +991,11 @@ int TellDir(void *p)
 ********************************************************************************/
 
 typedef struct {
-  ubi_dlNode  node;
-  char       *path;
-  char       *name;
-  char       *dname;
-  int         snum;
+	ubi_dlNode node;
+	char *path;
+	char *name;
+	char *dname;
+	int snum;
 } dir_cache_entry;
 
 static ubi_dlNewList( dir_cache );
@@ -1016,36 +1011,36 @@ static ubi_dlNewList( dir_cache );
 
 void DirCacheAdd( const char *path, char *name, char *dname, int snum )
 {
-  int               pathlen;
-  int               namelen;
-  dir_cache_entry  *entry;
+	int pathlen;
+	int namelen;
+	dir_cache_entry  *entry;
 
-  /* Allocate the structure & string space in one go so that it can be freed
-   * in one call to free().
-   */
-  pathlen = strlen( path ) +1;  /* Bytes required to store path (with nul). */
-  namelen = strlen( name ) +1;  /* Bytes required to store name (with nul). */
-  entry = (dir_cache_entry *)malloc( sizeof( dir_cache_entry )
-                                   + pathlen
-                                   + namelen
-                                   + strlen( dname ) +1 );
-  if( NULL == entry )   /* Not adding to the cache is not fatal,  */
-    return;             /* so just return as if nothing happened. */
+	/*
+	 * Allocate the structure & string space in one go so that it can be freed
+	 * in one call to free().
+	 */
+	pathlen = strlen(path) + 1;  /* Bytes required to store path (with nul). */
+	namelen = strlen(name) + 1;  /* Bytes required to store name (with nul). */
+	entry = (dir_cache_entry *)malloc( sizeof( dir_cache_entry )
+					+ pathlen
+					+ namelen
+					+ strlen( dname ) +1 );
+	if( NULL == entry )   /* Not adding to the cache is not fatal,  */
+		return;             /* so just return as if nothing happened. */
 
-  /* Set pointers correctly and load values. */
-  entry->path  = pstrcpy( (char *)&entry[1],       path);
-  entry->name  = pstrcpy( &(entry->path[pathlen]), name);
-  entry->dname = pstrcpy( &(entry->name[namelen]), dname);
-  entry->snum  = snum;
+	/* Set pointers correctly and load values. */
+	entry->path  = pstrcpy( (char *)&entry[1], path);
+	entry->name  = pstrcpy( &(entry->path[pathlen]), name);
+	entry->dname = pstrcpy( &(entry->name[namelen]), dname);
+	entry->snum  = snum;
 
-  /* Add the new entry to the linked list. */
-  (void)ubi_dlAddHead( dir_cache, entry );
-  DEBUG( 4, ("Added dir cache entry %s %s -> %s\n", path, name, dname ) );
+	/* Add the new entry to the linked list. */
+	(void)ubi_dlAddHead( dir_cache, entry );
+	DEBUG( 4, ("Added dir cache entry %s %s -> %s\n", path, name, dname ) );
 
-  /* Free excess cache entries. */
-  while( DIRCACHESIZE < dir_cache->count )
-    safe_free( ubi_dlRemTail( dir_cache ) );
-
+	/* Free excess cache entries. */
+	while( DIRCACHESIZE < dir_cache->count )
+		safe_free( ubi_dlRemTail( dir_cache ) );
 }
 
 /*****************************************************************************
@@ -1063,22 +1058,20 @@ void DirCacheAdd( const char *path, char *name, char *dname, int snum )
 
 char *DirCacheCheck( const char *path, const char *name, int snum )
 {
-  dir_cache_entry *entry;
+	dir_cache_entry *entry;
 
-  for( entry = (dir_cache_entry *)ubi_dlFirst( dir_cache );
-       NULL != entry;
-       entry = (dir_cache_entry *)ubi_dlNext( entry ) )
-    {
-    if( entry->snum == snum
-        && 0 == strcmp( name, entry->name )
-        && 0 == strcmp( path, entry->path ) )
-      {
-      DEBUG(4, ("Got dir cache hit on %s %s -> %s\n",path,name,entry->dname));
-      return( entry->dname );
-      }
-    }
+	for( entry = (dir_cache_entry *)ubi_dlFirst( dir_cache );
+			NULL != entry;
+			entry = (dir_cache_entry *)ubi_dlNext( entry ) ) {
+		if( entry->snum == snum
+				&& 0 == strcmp( name, entry->name )
+				&& 0 == strcmp( path, entry->path ) ) {
+			DEBUG(4, ("Got dir cache hit on %s %s -> %s\n",path,name,entry->dname));
+			return( entry->dname );
+		}
+	}
 
-  return(NULL);
+	return(NULL);
 }
 
 /*****************************************************************************
