@@ -247,7 +247,7 @@ static size_t weird_pull(char **inbuf, size_t *inbytesleft,
 				    weird_table[i].len) == 0) {
 				if (*inbytesleft < weird_table[i].len) {
 					DEBUG(0,("ERROR: truncated weird string\n"));
-					smb_panic(__FUNCTION__);
+					smb_panic("weird_pull");
 
 				} else {
 					(*outbuf)[0] = weird_table[i].from;
@@ -289,7 +289,7 @@ static size_t weird_push(char **inbuf, size_t *inbytesleft,
 			    (*inbuf)[1] == 0) {
 				if (*outbytesleft < weird_table[i].len) {
 					DEBUG(0,("No room for weird character\n"));
-					smb_panic(__FUNCTION__);
+					smb_panic("weird_push");
 				} else {
 					memcpy(*outbuf, weird_table[i].to, 
 					       weird_table[i].len);
