@@ -42,6 +42,38 @@ static DATA_BLOB unwrap_pac(DATA_BLOB *auth_data)
 	return pac_contents;
 }
 
+static BOOL pac_io_unknown_type_10(const char *desc, UNKNOWN_TYPE_10 *type_10,
+				   prs_struct *ps, int depth)
+{
+	if (NULL == type_10)
+		return False;
+
+	prs_debug(ps, depth, desc, "pac_io_unknown_type_10");
+	depth++;
+
+	if (!smb_io_time("unknown_time", &type_10->unknown_time, ps, depth))
+		return False;
+
+	if (!prs_uint16("len", ps, depth, &type_10->len))
+		return False;
+
+	if (UNMARSHALLING(ps) && type_10->len) {
+		type_10->username = (uint16 *) prs_alloc_mem(ps, type_10->len);
+		if (!type_10->username) {
+			DEBUG(3, ("No memory available\n"));
+			return False;
+		}
+	}
+
+	if (!prs_uint16s(True, "name", ps, depth, type_10->username, 
+			 (type_10->len / sizeof(uint16))))
+		return False;
+
+	return True;
+
+}
+
+
 static BOOL pac_io_krb_sids(const char *desc, KRB_SID_AND_ATTRS *sid_and_attr,
 			    prs_struct *ps, int depth)
 {
@@ -121,6 +153,63 @@ static BOOL pac_io_krb_sid_and_attr_array(const char *desc,
 		if (!pac_io_krb_sids(desc, 
 				     &array->krb_sid_and_attrs[i],
 				     ps, depth))
+			return False;
+
+	}
+
+	return True;
+
+}
+
+static BOOL pac_io_group_membership(const char *desc, 
+				    GROUP_MEMBERSHIP *membership,
+				    prs_struct *ps, int depth)
+{
+	if (NULL == membership)
+		return False;
+
+	prs_debug(ps, depth, desc, "pac_io_group_membership");
+	depth++;
+
+	if (!prs_uint32("rid", ps, depth, &membership->rid))
+		return False;
+	if (!prs_uint32("attrs", ps, depth, &membership->attrs))
+		return False;
+
+	return True;
+}
+
+
+static BOOL pac_io_group_membership_array(const char *desc, 
+					  GROUP_MEMBERSHIP_ARRAY *array,
+					  uint32 num,
+					  prs_struct *ps, int depth)
+{
+	int i;
+
+	if (NULL == array)
+		return False;
+
+	prs_debug(ps, depth, desc, "pac_io_group_membership_array");
+	depth++;
+
+
+	if (!prs_uint32("count", ps, depth, &array->count))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		array->group_membership = (GROUP_MEMBERSHIP *)
+			prs_alloc_mem(ps, sizeof(GROUP_MEMBERSHIP) * num);
+		if (!array->group_membership) {
+			DEBUG(3, ("No memory available\n"));
+			return False;
+		}
+	}
+
+	for (i=0; i<num; i++) {
+		if (!pac_io_group_membership(desc, 
+					     &array->group_membership[i],
+					     ps, depth))
 			return False;
 
 	}
@@ -253,8 +342,7 @@ static BOOL pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info,
 		return False;
 	if (!prs_uint32("res_group_count", ps, depth, &info->res_group_count))
 		return False;
-	if (!prs_uint32("ptr_res_group_sids", ps, depth, 
-			&info->ptr_res_group_sids))
+	if (!prs_uint32("ptr_res_groups", ps, depth, &info->ptr_res_groups))
 		return False;
 
 	if(!smb_io_unistr2("uni_user_name", &info->uni_user_name, 
@@ -276,7 +364,14 @@ static BOOL pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info,
 			   info->hdr_dir_drive.buffer, ps, depth))
 		return False;
 
-	/* the group membership list will need to be handled here */
+	if (info->group_membership_ptr) {
+		if (!pac_io_group_membership_array("group membership",
+						   &info->groups,
+						   info->group_count,
+						   ps, depth))
+			return False;
+	}
+
 
 	if(!smb_io_unistr2("uni_dom_controller", &info->uni_dom_controller,
 			   info->hdr_dom_controller.buffer, ps, depth))
@@ -290,14 +385,24 @@ static BOOL pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info,
 			return False;
 
 	
-	if (info->sid_count && info->ptr_extra_sids) {
+	if (info->sid_count && info->ptr_extra_sids)
 		if (!pac_io_krb_sid_and_attr_array("extra_sids", 
 						   &info->extra_sids,
 						   info->sid_count,
 						   ps, depth))
 			return False;
-	}		
 
+	if (info->ptr_res_group_dom_sid)
+		if (!smb_io_dom_sid2("res_group_dom_sid", 
+				     &info->res_group_dom_sid, ps, depth))
+			return False;
+
+	if (info->ptr_res_groups)
+		if (!pac_io_group_membership_array("res group membership",
+						   &info->res_groups,
+						   info->res_group_count,
+						   ps, depth))
+			return False;
 
 	return True;
 }
@@ -397,6 +502,20 @@ static BOOL pac_io_pac_info_hdr_ctr(const char *desc, PAC_INFO_HDR *hdr,
 		if (!pac_io_pac_signature_data(desc, 
 					       hdr->ctr->pac.privsrv_cksum,
 					       hdr->size, ps, depth))
+			return False;
+		break;
+
+	case PAC_TYPE_UNKNOWN_10:
+		DEBUG(5, ("PAC_TYPE_UNKNOWN_10\n"));
+		if (UNMARSHALLING(ps))
+			hdr->ctr->pac.type_10 = (UNKNOWN_TYPE_10 *)
+				prs_alloc_mem(ps, sizeof(UNKNOWN_TYPE_10));
+		if (!hdr->ctr->pac.type_10) {
+			DEBUG(3, ("No memory available\n"));
+			return False;
+		}
+		if (!pac_io_unknown_type_10(desc, hdr->ctr->pac.type_10,
+					    ps, depth))
 			return False;
 		break;
 

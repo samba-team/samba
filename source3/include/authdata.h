@@ -27,6 +27,13 @@
 #define PAC_TYPE_LOGON_INFO 1
 #define PAC_TYPE_SERVER_CHECKSUM 6
 #define PAC_TYPE_PRIVSVR_CHECKSUM 7
+#define PAC_TYPE_UNKNOWN_10 10
+
+typedef struct unknown_type_10 {
+	NTTIME unknown_time;
+	uint16 len;
+	uint16 *username; /* might not be null terminated, so not UNISTR */
+} UNKNOWN_TYPE_10;
 
 typedef struct pac_signature_data {
 	uint32 type;
@@ -37,6 +44,11 @@ typedef struct group_membership {
 	uint32 rid;
 	uint32 attrs;
 } GROUP_MEMBERSHIP;
+
+typedef struct group_membership_array {
+	uint32 count;
+	GROUP_MEMBERSHIP *group_membership;
+} GROUP_MEMBERSHIP_ARRAY;
 
 typedef struct krb_sid_and_attrs {
 	uint32 sid_ptr;
@@ -93,7 +105,7 @@ typedef struct pac_logon_info {
 
 	uint32 ptr_res_group_dom_sid;
 	uint32 res_group_count;
-	uint32 ptr_res_group_sids;
+	uint32 ptr_res_groups;
 
 	UNISTR2 uni_user_name;    /* user name unicode string header */
 	UNISTR2 uni_full_name;    /* user's full name unicode string header */
@@ -104,12 +116,11 @@ typedef struct pac_logon_info {
 	UNISTR2 uni_dom_controller;
 	UNISTR2 uni_dom_name;
 	DOM_SID2 dom_sid;
-	/* group membership array needs to go in here.  
-	   I've not seen it on the wire */
+	GROUP_MEMBERSHIP_ARRAY groups;
 	KRB_SID_AND_ATTR_ARRAY extra_sids;
 	DOM_SID2 res_group_dom_sid;
-	/* resource group membership array needs to go in here */
-	
+	GROUP_MEMBERSHIP_ARRAY res_groups;
+
 } PAC_LOGON_INFO;
 
 typedef struct pac_info_ctr
@@ -119,6 +130,7 @@ typedef struct pac_info_ctr
 		PAC_LOGON_INFO *logon_info;
 		PAC_SIGNATURE_DATA *srv_cksum;
 		PAC_SIGNATURE_DATA *privsrv_cksum;
+		UNKNOWN_TYPE_10 *type_10;
 	} pac;
 } PAC_INFO_CTR;
 
