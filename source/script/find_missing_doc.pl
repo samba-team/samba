@@ -39,5 +39,5 @@ foreach $ln (grep (/\<anchor\ id\=/, @doclines)) {
 }
 
 foreach (keys %params) {
-  print "$_\n" if $params{$_} eq 'not_found';
+  print "$_\n" if $params{$_} eq 'not_found' and $_ cmp "valid" and $_ eq "";
 }
