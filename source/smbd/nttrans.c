@@ -47,6 +47,15 @@ static char *known_nt_pipes[] = {
   NULL
 };
 
+/* Map generic permissions to file object specific permissions */
+ 
+struct generic_mapping file_generic_mapping = {
+    FILE_GENERIC_READ,
+    FILE_GENERIC_WRITE,
+    FILE_GENERIC_EXECUTE,
+    FILE_GENERIC_ALL
+};
+
 /****************************************************************************
  Send the required number of replies back.
  We assume all fields other than the data fields are
@@ -399,6 +408,12 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname,
 
   *pstat_open_only = False;
 
+  /*
+   * Convert GENERIC bits to specific bits.
+   */
+
+  se_map_generic(&desired_access, &file_generic_mapping);
+
   switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
   case FILE_READ_DATA:
     smb_open_mode = DOS_OPEN_RDONLY;
@@ -462,8 +477,22 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname,
    * JRA.
    */
 
-  if(share_access & FILE_SHARE_DELETE)
+  if(share_access & FILE_SHARE_DELETE) {
     smb_open_mode |= ALLOW_SHARE_DELETE;
+    DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = %x\n", smb_open_mode));
+  }
+
+  /*
+   * We need to store the intent to open for Delete. This
+   * is what determines if a delete on close flag can be set.
+   * This is the wrong way (and place) to store this, but for 2.2 this
+   * is the only practical way. JRA.
+   */
+
+  if(desired_access & DELETE_ACCESS) {
+    smb_open_mode |= DELETE_ACCESS_REQUESTED;
+    DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = %x\n", smb_open_mode));
+  }
 
   /* Add in the requested share mode. */
   switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
