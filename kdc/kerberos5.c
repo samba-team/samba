@@ -202,6 +202,104 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
     return 0;
 }
 
+static int
+realloc_method_data(METHOD_DATA *md)
+{
+    PA_DATA *pa;
+    pa = realloc(md->val, (md->len + 1) * sizeof(*md->val));
+    if(pa == NULL)
+	return ENOMEM;
+    md->val = pa;
+    md->len++;
+    return 0;
+}
+
+static krb5_error_code
+get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
+{
+    krb5_error_code ret;
+    int i;
+    PA_KEY_INFO pa;
+    PA_KEY_INFO_ENTRY *tmp;
+    unsigned char *buf;
+    size_t len;
+    
+    pa.val = NULL;
+    pa.len = 0;
+    for(i = 0; i < client->keys.len; i++){
+#ifndef KTYPE_IS_ETYPE
+	tmp = realloc(pa.val, (pa.len + 1) * sizeof(*pa.val));
+	if(tmp == NULL) {
+	    free_PA_KEY_INFO(&pa);
+	    return ret;
+	}
+	pa.val = tmp;
+	pa.val[pa.len].keytype = client->keys.val[i].key.keytype;
+	if(client->keys.val[i].salt){
+	    pa.val[pa.len].salttype = client->keys.val[i].salt->type;
+	    ALLOC(pa.val[pa.len].salt);
+	    ret = copy_octet_string(&client->keys.val[i].salt->salt,
+				    pa.val[pa.len].salt);
+	    if(tmp == NULL) {
+		free_PA_KEY_INFO(&pa);
+		return ret;
+	    }
+	}
+	else {
+	    pa.val[pa.len].salttype = pa_pw_salt;
+	    pa.val[pa.len].salt = NULL;
+	}
+	pa.len++;
+#else
+	krb5_enctype *etypes, *e;
+	ret = krb5_keytype_to_etypes(context, 
+				     client->keys.val[i].key.keytype,
+				     &etypes);
+	for(e = etypes; *e; e++){
+	    tmp = realloc(pa.val, (pa.len + 1) * sizeof(*pa.val));
+	    if(tmp == NULL) {
+		free_PA_KEY_INFO(&pa);
+		return ret;
+	    }
+	    pa.val = tmp;
+	    pa.val[pa.len].keytype = *e;
+	    if(client->keys.val[i].salt){
+		pa.val[pa.len].salttype = client->keys.val[i].salt->type;
+		ret = copy_octet_string(&client->keys.val[i].salt->salt,
+					&pa.val[pa.len].salt);
+		if(tmp == NULL) {
+		    free_PA_KEY_INFO(&pa);
+		    return ret;
+		}
+	    }
+	    else {
+		pa.val[pa.len].salttype = pa_pw_salt;
+		pa.val[pa.len].salt.data = NULL;
+		pa.val[pa.len].salt.length = 0;
+	    }
+	    pa.len++;
+	}
+#endif
+    }
+    len = length_PA_KEY_INFO(&pa);
+    buf = malloc(len);
+    ret = encode_PA_KEY_INFO(buf + len - 1, len, &pa, &len);
+    free_PA_KEY_INFO(&pa);
+    if(ret) {
+	free(buf);
+	return ret;
+    }
+    ret = realloc_method_data(md);
+    if(ret) {
+	free(buf);
+	return ret;
+    }
+    md->val[md->len - 1].padata_type = pa_key_info;
+    md->val[md->len - 1].padata_value.length = len;
+    md->val[md->len - 1].padata_value.data = buf;
+    return 0;
+}
+
 krb5_error_code
 as_rep(KDC_REQ *req, 
        krb5_data *reply,
@@ -413,25 +511,32 @@ as_rep(KDC_REQ *req,
 	}
     }else if (require_preauth || client->flags.require_preauth || server->flags.require_preauth) {
 	METHOD_DATA method_data;
-	PA_DATA pa_data;
-	u_char buf[16];
+	PA_DATA *pa;
+	unsigned char *buf;
 	size_t len;
 	krb5_data foo_data;
 
     use_pa: 
-	method_data.len = 1;
-	method_data.val = &pa_data;
+	method_data.len = 0;
+	method_data.val = NULL;
 
-	pa_data.padata_type         = pa_enc_timestamp;
-	pa_data.padata_value.length = 0;
-	pa_data.padata_value.data   = NULL;
+	ret = realloc_method_data(&method_data);
+	pa = &method_data.val[method_data.len-1];
+	pa->padata_type		= pa_enc_timestamp;
+	pa->padata_value.length	= 0;
+	pa->padata_value.data	= NULL;
+
+	ret = get_pa_etype_info(&method_data, client);
 	
-	encode_METHOD_DATA(buf + sizeof(buf) - 1,
-			   sizeof(buf),
+	len = length_METHOD_DATA(&method_data);
+	buf = malloc(len);
+	encode_METHOD_DATA(buf + len - 1,
+			   len,
 			   &method_data,
 			   &len);
+	free_METHOD_DATA(&method_data);
 	foo_data.length = len;
-	foo_data.data   = buf + sizeof(buf) - len;
+	foo_data.data   = buf;
 	
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
 	krb5_mk_error(context,
@@ -442,6 +547,7 @@ as_rep(KDC_REQ *req,
 		      server_princ,
 		      0,
 		      reply);
+	free(buf);
 	kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
 	ret = 0;
 	goto out2;
