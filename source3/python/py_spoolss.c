@@ -225,6 +225,10 @@ Set the form given by the dictionary argument.
            METH_VARARGS | METH_KEYWORDS,
           "Notify spooler that a document is about to be printed." },
 
+        { "writeprinter", (PyCFunction)spoolss_writeprinter,
+          METH_VARARGS | METH_KEYWORDS,
+          "Write job data to a printer." },
+
         /* Printer data */
 
         { "getprinterdata", (PyCFunction)spoolss_getprinterdata,
