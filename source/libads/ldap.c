@@ -180,7 +180,7 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
   add an attribute to the list, with values list already constructed
 */
 static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-				  int mod_op, char *name, char **values)
+				  int mod_op, const char *name, char **values)
 {
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) *mods;
@@ -238,7 +238,7 @@ ADS_STATUS ads_mod_repl_list(TALLOC_CTX *ctx, ADS_MODLIST *mods,
   add an attribute to the list, with values list to be built from args
 */
 ADS_STATUS ads_mod_add_var(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-			   int mod_op, char *name, ...)
+			   int mod_op, const char *name, ...)
 {
 	va_list ap;
 	int num_vals, i, do_op;
@@ -267,7 +267,7 @@ ADS_STATUS ads_mod_add_var(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 }
 
 ADS_STATUS ads_mod_add_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-			   int mod_op, char *name, ...)
+			   int mod_op, const char *name, ...)
 {
 	va_list ap;
 	int num_vals, i, do_op;
@@ -308,7 +308,7 @@ ADS_STATUS ads_mod_repl(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 }
 
 ADS_STATUS ads_mod_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-		       char *name, char *val)
+		       const char *name, const char *val)
 {
 	return ads_mod_add_var(ctx, mods, LDAP_MOD_ADD, name, val, NULL);
 }
@@ -329,7 +329,7 @@ ADS_STATUS ads_mod_add_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 }
 
 ADS_STATUS ads_mod_repl_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
-			   char *name, size_t size, char *val)
+			    const char *name, size_t size, char *val)
 {
 	struct berval *bval = NULL;
 
@@ -457,7 +457,8 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ads_mod_add(ctx, &mods, "operatingSystem", "Samba");
 	ads_mod_add(ctx, &mods, "operatingSystemVersion", VERSION);
 
-	ret = ads_gen_add(ads, new_dn, mods);
+	ads_gen_add(ads, new_dn, mods);
+	ret = ads_set_machine_sd(ads, hostname, new_dn);
 
 done:
 	talloc_destroy(ctx);
@@ -493,6 +494,36 @@ static void dump_sid(const char *field, struct berval **values)
 }
 
 /*
+  dump ntSecurityDescriptor
+*/
+static void dump_sd(const char *filed, struct berval **values)
+{
+	prs_struct ps;
+	
+	SEC_DESC   *psd = 0;
+	TALLOC_CTX *ctx = 0;
+
+	if (!(ctx = talloc_init_named("sec_io_desc")))
+		return;
+
+	/* prepare data */
+	prs_init(&ps, values[0]->bv_len, ctx, UNMARSHALL);
+	prs_append_data(&ps, values[0]->bv_val, values[0]->bv_len);
+	ps.data_offset = 0;
+
+	/* parse secdesc */
+	if (!sec_io_desc("sd", &psd, &ps, 1)) {
+		prs_mem_free(&ps);
+		talloc_destroy(ctx);
+		return;
+	}
+	if (psd) ads_disp_sd(psd);
+
+	prs_mem_free(&ps);
+	talloc_destroy(ctx);
+}
+
+/*
   dump a string result from ldap
 */
 static void dump_string(const char *field, struct berval **values)
@@ -517,7 +548,7 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
 		{"objectGUID", dump_binary},
-		{"nTSecurityDescriptor", dump_binary},
+		{"nTSecurityDescriptor", dump_sd},
 		{"objectSid", dump_sid},
 		{NULL, NULL}
 	};
@@ -573,7 +604,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org
 
 	status = ads_find_machine_acct(ads, (void **)&res, host);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
-		DEBUG(0, ("Host account for %s already exists - deleting for readd\n", host));
+		DEBUG(0, ("Host account for %s already exists - deleting old account\n", host));
 		status = ads_leave_realm(ads, host);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("Failed to delete host '%s' from the '%s' realm.\n", 
@@ -637,6 +668,83 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	return status;
 }
 
+/* 
+  add machine account to existing security descriptor 
+*/
+ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
+{
+	const char     *attrs[] = {"ntSecurityDescriptor", "objectSid", 0};
+	char           *exp     = 0;
+	size_t          sd_size = 0;
+	struct berval **bvals   = 0;
+	prs_struct      ps;
+	prs_struct      ps_wire;
+
+	LDAPMessage *res  = 0;
+	LDAPMessage *msg  = 0;
+	ADS_MODLIST  mods = 0;
+
+	NTSTATUS    status;
+	ADS_STATUS  ret;
+	DOM_SID     sid;
+	SEC_DESC   *psd = 0;
+	TALLOC_CTX *ctx = 0;	
+
+	if (!ads) return ADS_ERROR(LDAP_SERVER_DOWN);
+
+	ret = ADS_ERROR(LDAP_SUCCESS);
+
+	asprintf(&exp, "(samAccountName=%s$)", hostname);
+	ret = ads_search(ads, (void *) &res, exp, attrs);
+
+	if (!ADS_ERR_OK(ret)) return ret;
+
+	msg   = ads_first_entry(ads, res);
+	bvals = ldap_get_values_len(ads->ld, msg, attrs[0]);
+	ads_pull_sid(ads, msg, attrs[1], &sid);	
+	ads_msgfree(ads, res);
+#if 0
+	file_save("/tmp/sec_desc.old", bvals[0]->bv_val, bvals[0]->bv_len);
+#endif
+	if (!(ctx = talloc_init_named("sec_io_desc")))
+		return ADS_ERROR(LDAP_NO_MEMORY);
+
+	prs_init(&ps, bvals[0]->bv_len, ctx, UNMARSHALL);
+	prs_append_data(&ps, bvals[0]->bv_val, bvals[0]->bv_len);
+	ps.data_offset = 0;
+	ldap_value_free_len(bvals);
+
+	if (!sec_io_desc("sd", &psd, &ps, 1))
+		goto ads_set_sd_error;
+
+	status = sec_desc_add_sid(ctx, &psd, &sid, SEC_RIGHTS_FULL_CTRL, &sd_size);
+
+	if (!NT_STATUS_IS_OK(status))
+		goto ads_set_sd_error;
+
+	prs_init(&ps_wire, sd_size, ctx, MARSHALL);
+	if (!sec_io_desc("sd_wire", &psd, &ps_wire, 1))
+		goto ads_set_sd_error;
+
+#if 0
+	file_save("/tmp/sec_desc.new", ps_wire.data_p, sd_size);
+#endif
+	if (!(mods = ads_init_mods(ctx))) return ADS_ERROR(LDAP_NO_MEMORY);
+
+	ads_mod_repl_len(ctx, &mods, attrs[0], sd_size, ps_wire.data_p);
+	ret = ads_gen_mod(ads, dn, mods);
+
+	prs_mem_free(&ps);
+	prs_mem_free(&ps_wire);
+	talloc_destroy(ctx);
+	return ret;
+
+ads_set_sd_error:
+	prs_mem_free(&ps);
+	prs_mem_free(&ps_wire);
+	talloc_destroy(ctx);
+	return ADS_ERROR(LDAP_NO_MEMORY);
+}
 
 ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 				    const char *hostname, 
@@ -645,6 +753,11 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 	ADS_STATUS status;
 	char *host = strdup(hostname);
 	char *principal; 
+
+        if (!ads->kdc_server) {
+		DEBUG(0, ("Unable to find KDC server\n"));
+		return ADS_ERROR(LDAP_SERVER_DOWN);
+	}
 
 	strlower(host);
 

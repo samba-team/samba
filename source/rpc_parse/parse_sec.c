@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-#define SD_HEADER_SIZE 0x14
-
 /*******************************************************************
  Sets up a SEC_ACCESS structure.
 ********************************************************************/
@@ -55,6 +53,35 @@ BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 	return True;
 }
 
+/*******************************************************************
+ Check if ACE has OBJECT type.
+********************************************************************/
+
+BOOL sec_ace_object(uint8 type)
+{
+	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+            type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
+            type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
+            type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
+		return True;
+	}
+	return False;
+}
+
+/*******************************************************************
+ copy a SEC_ACE structure.
+********************************************************************/
+void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
+{
+	ace_dest->type  = ace_src->type;
+	ace_dest->flags = ace_src->flags;
+	ace_dest->size  = ace_src->size;
+	ace_dest->info.mask = ace_src->info.mask;
+	ace_dest->obj_flags = ace_src->obj_flags;
+	memcpy(&ace_dest->obj_guid, &ace_src->obj_guid, GUID_SIZE);
+	memcpy(&ace_dest->inh_guid, &ace_src->inh_guid, GUID_SIZE);	
+	sid_copy(&ace_dest->trustee, &ace_src->trustee);
+}
 
 /*******************************************************************
  Sets up a SEC_ACE structure.
@@ -106,13 +133,102 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_dom_sid("trustee  ", &psa->trustee , ps, depth))
-		return False;
+	/* check whether object access is present */
+	if (!sec_ace_object(psa->type)) {
+		if (!smb_io_dom_sid("trustee  ", &psa->trustee , ps, depth))
+			return False;
+	} else {
+		if (!prs_uint32("obj_flags", ps, depth, &psa->obj_flags))
+			return False;
+
+		if (psa->obj_flags & SEC_ACE_OBJECT_PRESENT)
+			if (!prs_uint8s(False, "obj_guid", ps, depth, psa->obj_guid.info, GUID_SIZE))
+				return False;
+
+		if (psa->obj_flags & SEC_ACE_OBJECT_INHERITED_PRESENT)
+			if (!prs_uint8s(False, "inh_guid", ps, depth, psa->inh_guid.info, GUID_SIZE))
+				return False;
+
+		if(!smb_io_dom_sid("trustee  ", &psa->trustee , ps, depth))
+			return False;
+	}
 
 	if(!prs_uint16_post("size ", ps, depth, &psa->size, offset_ace_size, old_offset))
 		return False;
-
 	return True;
+}
+
+/*******************************************************************
+ adds new SID with its permissions to ACE list
+********************************************************************/
+
+NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, size_t *num, DOM_SID *sid, uint32 mask)
+{
+	int i = 0;
+	
+	if (!ctx || !new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
+
+	*num += 1;
+	
+	if((new[0] = (SEC_ACE *) talloc_zero(ctx, *num * sizeof(SEC_ACE))) == 0)
+		return NT_STATUS_NO_MEMORY;
+
+	for (i = 0; i < *num - 1; i ++)
+		sec_ace_copy(&(*new)[i], &old[i]);
+
+	(*new)[i].type  = 0;
+	(*new)[i].flags = 0;
+	(*new)[i].size  = SEC_ACE_HEADER_SIZE + sid_size(sid);
+	(*new)[i].info.mask = mask;
+	sid_copy(&(*new)[i].trustee, sid);
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+  modify SID's permissions at ACL 
+********************************************************************/
+
+NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask)
+{
+	int i = 0;
+
+	if (!ace || !sid)  return NT_STATUS_INVALID_PARAMETER;
+
+	for (i = 0; i < num; i ++) {
+		if (sid_compare(&ace[i].trustee, sid) == 0) {
+			ace[i].info.mask = mask;
+			return NT_STATUS_OK;
+		}
+	}
+	return NT_STATUS_NOT_FOUND;
+}
+
+/*******************************************************************
+ delete SID from ACL
+********************************************************************/
+
+NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, size_t *num, DOM_SID *sid)
+{
+	int i     = 0;
+	int n_del = 0;
+
+	if (!ctx || !new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
+
+	if((new[0] = (SEC_ACE *) talloc_zero(ctx, *num * sizeof(SEC_ACE))) == 0)
+		return NT_STATUS_NO_MEMORY;
+
+	for (i = 0; i < *num; i ++) {
+		if (sid_compare(&old[i].trustee, sid) != 0)
+			sec_ace_copy(&(*new)[i], &old[i]);
+		else
+			n_del ++;
+	}
+	if (n_del == 0)
+		return NT_STATUS_NOT_FOUND;
+	else {
+		*num -= n_del;
+		return NT_STATUS_OK;
+	}
 }
 
 /*******************************************************************
@@ -129,7 +245,7 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 
 	dst->revision = revision;
 	dst->num_aces = num_aces;
-	dst->size = 8;
+	dst->size = SEC_ACL_HEADER_SIZE;
 
 	/* Now we need to return a non-NULL address for the ace list even
 	   if the number of aces required is zero.  This is because there
@@ -244,7 +360,7 @@ size_t sec_desc_size(SEC_DESC *psd)
 
 	if (!psd) return 0;
 
-	offset = SD_HEADER_SIZE;
+	offset = SEC_DESC_HEADER_SIZE;
 
 	if (psd->owner_sid != NULL)
 		offset += ((sid_size(psd->owner_sid) + 3) & ~3);
@@ -482,7 +598,9 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
 {
 	SEC_DESC *dst;
-	uint32 offset;
+	uint32 offset     = 0;
+	uint32 offset_sid = SEC_DESC_HEADER_SIZE;
+	uint32 offset_acl = 0;
 
 	*sd_size = 0;
 
@@ -511,50 +629,58 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 
 	if(dacl && ((dst->dacl = dup_sec_acl(ctx, dacl)) == NULL))
 		goto error_exit;
-		
+
 	offset = 0;
 
 	/*
 	 * Work out the linearization sizes.
 	 */
-
 	if (dst->owner_sid != NULL) {
 
 		if (offset == 0)
-			offset = SD_HEADER_SIZE;
+			offset = SEC_DESC_HEADER_SIZE;
 
-		dst->off_owner_sid = offset;
 		offset += ((sid_size(dst->owner_sid) + 3) & ~3);
 	}
 
 	if (dst->grp_sid != NULL) {
 
 		if (offset == 0)
-			offset = SD_HEADER_SIZE;
+			offset = SEC_DESC_HEADER_SIZE;
 
-		dst->off_grp_sid = offset;
 		offset += ((sid_size(dst->grp_sid) + 3) & ~3);
 	}
 
 	if (dst->sacl != NULL) {
 
-		if (offset == 0)
-			offset = SD_HEADER_SIZE;
+		offset_acl = SEC_DESC_HEADER_SIZE;
 
-		dst->off_sacl = offset;
-		offset += ((dst->sacl->size + 3) & ~3);
+		dst->off_sacl  = offset_acl;
+		offset_acl    += ((dst->sacl->size + 3) & ~3);
+		offset        += dst->sacl->size;
+		offset_sid    += dst->sacl->size;
 	}
 
 	if (dst->dacl != NULL) {
 
-		if (offset == 0)
-			offset = SD_HEADER_SIZE;
+		if (offset_acl == 0)
+			offset_acl = SEC_DESC_HEADER_SIZE;
 
-		dst->off_dacl = offset;
-		offset += ((dst->dacl->size + 3) & ~3);
+		dst->off_dacl  = offset_acl;
+		offset_acl    += ((dst->dacl->size + 3) & ~3);
+		offset        += dst->dacl->size;
+		offset_sid    += dst->dacl->size;
 	}
 
-	*sd_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
+	*sd_size = (size_t)((offset == 0) ? SEC_DESC_HEADER_SIZE : offset);
+
+	dst->off_owner_sid = offset_sid;
+
+	if (dst->owner_sid != NULL)
+		dst->off_grp_sid = offset_sid + sid_size(dst->owner_sid);
+	else
+		dst->off_grp_sid = offset_sid;
+
 	return dst;
 
 error_exit:
@@ -599,6 +725,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
+	uint32 tmp_offset = 0;
+	
 	SEC_DESC *psd;
 
 	if (ppsd == NULL)
@@ -656,10 +784,15 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 				return False;
 		}
 
+		tmp_offset = ps->data_offset;
+		ps->data_offset = psd->off_owner_sid;
+
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
 			return False;
 		if(!prs_align(ps))
 			return False;
+
+		ps->data_offset = tmp_offset;
 	}
 
 	max_offset = MAX(max_offset, prs_offset(ps));
@@ -674,10 +807,15 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 				return False;
 		}
 
+		tmp_offset = ps->data_offset;
+		ps->data_offset = psd->off_grp_sid;
+
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
 			return False;
 		if(!prs_align(ps))
 			return False;
+
+		ps->data_offset = tmp_offset;
 	}
 
 	max_offset = MAX(max_offset, prs_offset(ps));
@@ -802,4 +940,86 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 		return False;
 
 	return True;
+}
+
+/*******************************************************************
+ adds new SID with its permissions to SEC_DESC
+********************************************************************/
+
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 mask, size_t *sd_size)
+{
+	SEC_DESC *sd   = 0;
+	SEC_ACL  *dacl = 0;
+	SEC_ACE  *ace  = 0;
+	NTSTATUS  status;
+
+	*sd_size = 0;
+
+	if (!ctx || !psd || !sid || !sd_size)  return NT_STATUS_INVALID_PARAMETER;
+
+	status = sec_ace_add_sid(ctx, &ace, psd[0]->dacl->ace, &psd[0]->dacl->num_aces, sid, mask);
+	
+	if (!NT_STATUS_IS_OK(status))
+		return status;
+
+	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->owner_sid, 
+		psd[0]->grp_sid, psd[0]->sacl, dacl, sd_size)))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	*psd = sd;
+	 sd  = 0;
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ modify SID's permissions at SEC_DESC
+********************************************************************/
+
+NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask)
+{
+	NTSTATUS status;
+
+	if (!sd || !sid) return NT_STATUS_INVALID_PARAMETER;
+
+	status = sec_ace_mod_sid(sd->dacl->ace, sd->dacl->num_aces, sid, mask);
+
+	if (!NT_STATUS_IS_OK(status))
+		return status;
+	
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ delete SID from SEC_DESC
+********************************************************************/
+
+NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size)
+{
+	SEC_DESC *sd   = 0;
+	SEC_ACL  *dacl = 0;
+	SEC_ACE  *ace  = 0;
+	NTSTATUS  status;
+
+	*sd_size = 0;
+	
+	if (!ctx || !psd[0] || !sid || !sd_size) return NT_STATUS_INVALID_PARAMETER;
+
+	status = sec_ace_del_sid(ctx, &ace, psd[0]->dacl->ace, &psd[0]->dacl->num_aces, sid);
+
+	if (!NT_STATUS_IS_OK(status))
+		return status;
+
+	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->owner_sid, 
+		psd[0]->grp_sid, psd[0]->sacl, dacl, sd_size)))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	*psd = sd;
+	 sd  = 0;
+	return NT_STATUS_OK;
 }
