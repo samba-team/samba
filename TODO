@@ -21,8 +21,6 @@ perhaps rsh and rshd should be able to handle `traditional'
 
 ** appl/telnet
 
-forwarding not implemented.
-
 ** appl/test
 
 should test more stuff

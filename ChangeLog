@@ -1,5 +1,7 @@
 Wed Jul 23 07:53:18 1997  Assar Westerlund  <assar@sics.se>
 
+	* Release 0.0c
+
 	* lib/krb5/rd_cred.c, get_for_creds.c: new files
 
 	* lib/krb5/get_host_realm.c: try default realm as last chance
