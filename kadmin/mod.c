@@ -49,6 +49,7 @@ parse_args(krb5_context context, kadm5_principal_ent_t ent,
     char *max_rlife_str = NULL;
     char *expiration_str = NULL;
     char *pw_expiration_str = NULL;
+    int new_kvno = -1;
     int ret, i;
 
     struct getargs args[] = {
@@ -62,6 +63,8 @@ parse_args(krb5_context context, kadm5_principal_ent_t ent,
 	 NULL, "Expiration time", "time"},
 	{"pw-expiration-time",  0,	arg_string, 
 	 NULL, "Password expiration time", "time"},
+	{"kvno",  0,	arg_integer, 
+	 NULL, "Key version number", "number"},
     };
 
     i = 0;
@@ -70,6 +73,7 @@ parse_args(krb5_context context, kadm5_principal_ent_t ent,
     args[i++].value = &max_rlife_str;
     args[i++].value = &expiration_str;
     args[i++].value = &pw_expiration_str;
+    args[i++].value = &new_kvno;
 
     *optind = 0; /* XXX */
 
@@ -86,6 +90,11 @@ parse_args(krb5_context context, kadm5_principal_ent_t ent,
 		    expiration_str, pw_expiration_str, attr_str);
     if (ret)
 	return ret;
+
+    if(new_kvno != -1) {
+	ent->kvno = new_kvno;
+	*mask |= KADM5_KVNO;
+    }
     return 0;
 }
 
