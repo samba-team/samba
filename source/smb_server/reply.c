@@ -556,7 +556,11 @@ void reply_mknew(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 3);
 	REQ_TALLOC(oi, sizeof(*oi));
 
-	oi->mknew.level = RAW_OPEN_MKNEW;
+	if (CVAL(req->in.hdr, HDR_COM) == SMBmknew) {
+		oi->mknew.level = RAW_OPEN_MKNEW;
+	} else {
+		oi->mknew.level = RAW_OPEN_CREATE;
+	}
 	oi->mknew.in.attrib  = SVAL(req->in.vwv, VWV(0));
 	oi->mknew.in.write_time  = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
