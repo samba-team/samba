@@ -1,6 +1,6 @@
 /* 
    samba -- Unix SMB/Netbios implementation.
-   Copyright (C) 2001 by Martin Pool
+   Copyright (C) 2001, 2002 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,11 +32,17 @@
  **/
 void msg_pool_usage(int msg_type, pid_t src_pid, void *buf, size_t len)
 {
-	char *reply = "no memory usage info yet";
+	char *reply;
+	TALLOC_CTX *reply_pool = talloc_init_named("msg_pool_usage");
 	
 	DEBUG(2,("Got POOL_USAGE\n"));
+
+	reply = talloc_describe_all(reply_pool);
+	
 	message_send_pid(src_pid, MSG_POOL_USAGE,
 			 reply, strlen(reply)+1, True);
+
+	talloc_destroy(reply_pool);
 }
 
 /**
