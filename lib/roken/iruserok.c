@@ -82,7 +82,8 @@ innetgr(const char *netgroup, const char *machine,
  */
 static
 int
-__ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser, const char *ruser)
+__ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser,
+	     const char *ruser)
 {
 	char *user, *p;
 	int ch;
@@ -170,7 +171,8 @@ __ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser, const char *ruser)
 				break;
 			}
 			if (*(user+1) == '@')  /* match a user by netgroup */
-				userok = innetgr(user+2, NULL, ruser, ypdomain);
+				userok = innetgr(user+2, NULL, (char *)ruser,
+						 ypdomain);
 			else	   /* match a user by direct specification */
 				userok = !(strcmp(ruser, user+1));
 			break;
@@ -180,7 +182,7 @@ __ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser, const char *ruser)
 					return(-1);
 				if (*(user+1) == '@') {
 					if (innetgr(user+2, NULL,
-							ruser, ypdomain))
+						    (char *)ruser, ypdomain))
 						return(-1);
 				} else {
 					if (!strcmp(ruser, user+1))
