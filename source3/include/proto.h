@@ -1339,6 +1339,7 @@ BOOL lp_stat_cache(void);
 BOOL lp_allow_trusted_domains(void);
 BOOL lp_restrict_anonymous(void);
 BOOL lp_host_msdfs(void);
+BOOL lp_kernel_oplocks(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -1491,8 +1492,6 @@ int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
-void lp_set_kernel_oplocks(BOOL val);
-BOOL lp_kernel_oplocks(void);
 int lp_security_mask(int snum);
 int lp_force_security_mode(int snum);
 int lp_dir_security_mask(int snum);
@@ -3277,8 +3276,6 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 #if OLD_NTDOMAIN
 int32 get_number_of_exclusive_open_oplocks(void);
-BOOL setup_kernel_oplock_pipe(void);
-BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
@@ -3289,7 +3286,13 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
-void check_kernel_oplocks(void);
+BOOL init_oplocks(void);
+#endif
+
+/*The following definitions come from  smbd/oplock_irix.c  */
+
+#if OLD_NTDOMAIN
+struct kernel_oplocks *irix_init_kernel_oplocks(void) ;
 #endif
 
 /*The following definitions come from  smbd/password.c  */

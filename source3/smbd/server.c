@@ -259,12 +259,6 @@ max can be %d\n",
 				   done correctly in the process.  */
 				reset_globals_after_fork();
 
-				/*
-				 * Ensure this child has kernel oplock
-				 * capabilities, but not it's children.
-				 */
-				oplock_set_capability(True, False);
-
 				return True; 
 			}
 			/* The parent doesn't need this socket */
@@ -723,8 +717,6 @@ static void usage(char *pname)
 		mkdir(lp_lockdir(), 0755);
 	}
 
-	check_kernel_oplocks();
-
 	if (is_daemon) {
 		pidfile_create("smbd");
 	}
@@ -733,20 +725,20 @@ static void usage(char *pname)
 		exit(1);
 
 	/*
-	 * Note that this call should be done after the fork() call
-	 * in open_sockets(), as some versions of the locking shared
-	 * memory code register openers in a flat file.
+	 * everything after this point is run after the fork()
 	 */ 
 
-	if (!locking_init(0))
+	if (!locking_init(0)) {
 		exit(1);
+	}
 
 	if (!print_backend_init()) {
 		exit(1);
 	}
 
-	if(!initialize_password_db())
+	if(!initialize_password_db()) {
 		exit(1);
+	}
 
 	/* possibly reload the services file. */
 	reload_services(True);
@@ -761,9 +753,10 @@ static void usage(char *pname)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	/* Setup the oplock IPC socket. */
-	if( !open_oplock_ipc() )
+	/* Setup oplocks */
+	if (!init_oplocks()) {
 		exit(1);
+	}
 
 	smbd_process();
 	

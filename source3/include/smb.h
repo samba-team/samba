@@ -1598,6 +1598,7 @@ extern int chain_size;
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 
+#define KERNEL_OPLOCK_BREAK_CMD 0x2
 #define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 
 /*
@@ -1618,12 +1619,23 @@ extern int chain_size;
  *  +----+--------+--------+
  */
 
-#define KERNEL_OPLOCK_BREAK_CMD 0x2
 #define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
 #define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */
+
+/* if a kernel does support oplocks then a structure of the following
+   typee is used to describe how to interact with the kernel */
+struct kernel_oplocks {
+	BOOL (*receive_message)(fd_set *fds, char *buffer, int buffer_len);
+	BOOL (*set_oplock)(files_struct *fsp, int oplock_type);
+	void (*release_oplock)(files_struct *fsp);
+	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev);
+	BOOL (*msg_waiting)(fd_set *fds);
+	int notification_fd;
+};
+
 
 #define CMD_REPLY 0x8000
 
