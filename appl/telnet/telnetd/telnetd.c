@@ -31,17 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char copyright[] =
-"@(#) Copyright (c) 1989, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-static char sccsid[] = "@(#)telnetd.c	8.4 (Berkeley) 5/30/95";
-#endif /* not lint */
-
 #include <config.h>
+
+RCSID("$Id");
 
 #include "telnetd.h"
 #include "pathnames.h"
@@ -177,7 +169,10 @@ int main(int argc, char **argv)
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 	int tos = -1;
 #endif
-
+#ifdef ENCRYPTION
+	extern int des_check_key;
+	des_check_key = 1;	/* Kludge for Mac NCSA telnet 2.6 /bg */
+#endif
 	pfrontp = pbackp = ptyobuf;
 	netip = netibuf;
 	nfrontp = nbackp = netobuf;
