@@ -1,5 +1,7 @@
 1999-12-20  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump version to 6:3:1
+
 	* lib/krb5/send_to_kdc.c (send_via_proxy): free data
 	* lib/krb5/send_to_kdc.c (send_via_proxy): new function use
 	getaddrinfo instead of gethostbyname{,2}
