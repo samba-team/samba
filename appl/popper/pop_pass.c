@@ -128,14 +128,25 @@ pop_pass (POP *p)
 		return(pop_msg(p,POP_FAILURE,
 			       "Popping not authorized"));
 	    }
+	    pop_log(p, POP_INFO, "%s: %s.%s@%s -> %s",
+		    p->ipaddr,
+		    p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
+		    p->user);
 	} else
 #endif /* KRB4 */
 	    if (p->version == 5) {
+		char *name;
+
 		if (!krb5_kuserok (p->context, p->principal, p->user)) {
 		    pop_log (p, POP_FAILURE,
 			     "krb5 permission denied");
 		    return pop_msg(p, POP_FAILURE,
 				   "Popping not authorized");
+		}
+		if(krb5_unparse_name (p->context, p->principal, &name) == 0) {
+		    pop_log(p, POP_INFO, "%s: %s -> %s",
+			    p->ipaddr, name, p->user);
+		    free (name);
 		}
 	    } else {
 		pop_log (p, POP_FAILURE, "kerberos authentication failed");
@@ -168,6 +179,8 @@ pop_pass (POP *p)
 		 return pop_msg(p, POP_FAILURE,
 				"Password incorrect");
 	 }
+	 pop_log(p, POP_INFO, "login from %s as %s",
+		 p->ipaddr, p->user);
     }
 
     /*  Build the name of the user's maildrop */
