@@ -593,7 +593,7 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 		return True;
 	}
 
-	if(!prs_grow(ps, offset - ps->offset))
+	if(!prs_grow(ps, offset))
 		return False;
 
 	ps->offset = offset;

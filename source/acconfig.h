@@ -11,6 +11,7 @@
 #undef loff_t
 #undef offset_t
 #undef aclent_t
+#undef wchar_t
 #undef HAVE_CONNECT
 #undef HAVE_SHORT_INO_T
 #undef WITH_SMBWRAPPER
@@ -104,3 +105,5 @@
 #undef USE_SETUIDX
 
 #undef WITH_NT5LDAP
+
+#undef HAVE_VOLATILE

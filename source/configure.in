@@ -6,6 +6,7 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
+AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(HOST_OS)
@@ -26,6 +27,7 @@ AC_SUBST(LIBSAMBA32)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
+AC_SUBST(SHLIBEXT)
 
 # compile with optimisation and without debugging by default
 CFLAGS=${CFLAGS-"-O"}
@@ -34,6 +36,25 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_AWK
+
+dnl Check if C compiler understands -c and -o at the same time
+AC_PROG_CC_C_O
+if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" = no"; then
+      BROKEN_CC=
+else
+      BROKEN_CC=#
+fi
+AC_SUBST(BROKEN_CC)
+
+dnl Check if the C compiler understands volatile (it should, being ANSI).
+AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
+    AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
+       samba_cv_volatile=yes,samba_cv_volatile=no)])
+if test x"$samba_cv_volatile" = x"yes"; then
+   AC_DEFINE(HAVE_VOLATILE)
+fi
+
+
 
 AC_CANONICAL_SYSTEM
 AC_VALIDATE_CACHE_SYSTEM_TYPE
@@ -73,10 +94,15 @@ AC_CHECK_HEADERS(sys/wait.h sys/resource.h sys/ioctl.h sys/mode.h sys/mman.h)
 AC_CHECK_HEADERS(sys/filio.h string.h strings.h stdlib.h sys/socket.h sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
 AC_CHECK_HEADERS(sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
+#
 AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h mysql.h)
+AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
+AC_CHECK_HEADERS(mysql.h)
+
+# For experimental utmp support
+AC_CHECK_HEADERS(utmp.h utmpx.h)
 
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
@@ -103,6 +129,11 @@ AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
+AC_CHECK_TYPE(wchar_t, unsigned short)
+
+# we need libcups for CUPS support...
+AC_CHECK_LIB(cups,httpConnect)
+
 
 AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
     AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
@@ -180,6 +211,7 @@ if test "$ac_cv_header_readline_h" = "yes" ||
   fi
 fi
 
+
 # The following test taken from the cvs sources
 # If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
 # The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
@@ -214,6 +246,13 @@ if test x"$ac_cv_func_connect" = x"no"; then
     fi
 fi
 
+# Check if we have execl, if not we need to compile smbrun.
+AC_CHECK_FUNCS(execl)
+if test x"$ac_cv_func_execl" = x"no"; then
+    RUNPROG="bin/smbrun"
+else
+    RUNPROG=""
+fi
 
 AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown chmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl bzero memset)
@@ -254,6 +293,9 @@ AC_LIBTESTFUNC(sec, putprpwnam)
 AC_LIBTESTFUNC(security, set_auth_parameters)
 AC_LIBTESTFUNC(sec, set_auth_parameters)
 
+# UnixWare 7.x has its getspnam in -lgen
+AC_LIBTESTFUNC(gen, getspnam)
+
 AC_LIBTESTFUNC(security, getspnam)
 AC_LIBTESTFUNC(sec, getspnam)
 
@@ -270,6 +312,8 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
+PICFLAG=""
+SHLIBEXT="so"
 
 # and these are for particular systems
 case "$host_os" in
@@ -303,10 +347,9 @@ case "$host_os" in
 esac
 
 # try to work out how to produce pic code with this compiler
-PICFLAG=""
 AC_PROG_CC_FLAG(fpic)
 if test $ac_cv_prog_cc_fpic = yes; then
-   PICFLAG="-fpic";
+    PICFLAG="-fpic";
 fi
 if test x$PICFLAG = x; then
   AC_PROG_CC_FLAG(Kpic)
@@ -1134,6 +1177,7 @@ AC_ARG_WITH(surstdb,
   AC_MSG_RESULT(no)
 )
 
+
 #################################################
 # check for a LDAP password database
 AC_MSG_CHECKING(whether to use LDAP password database)
@@ -1340,6 +1384,21 @@ AC_ARG_WITH(quotas,
 AC_SUBST(QUOTAOBJS)
 
 #################################################
+# check for experimental utmp accounting
+
+#################################################
+# check for MS Dfs support
+
+#################################################
+# set private directory location
+
+#################################################
+# set lock directory location
+
+#################################################
+# set SWAT directory location
+
+#################################################
 # these tests are taken from the GNU fileutils package
 AC_CHECKING(how to get filesystem space usage)
 space=no
@@ -1349,12 +1408,15 @@ if test $space = no; then
   # SVR4
   AC_CACHE_CHECK([statvfs64 function (SVR4)], fu_cv_sys_stat_statvfs64,
   [AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/statvfs.h>
   main ()
   {
     struct statvfs64 fsd;
-    exit (statfs64 (".", &fsd));
+    exit (statvfs64 (".", &fsd));
   }],
   fu_cv_sys_stat_statvfs64=yes,
   fu_cv_sys_stat_statvfs64=no,

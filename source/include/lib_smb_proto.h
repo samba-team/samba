@@ -23,6 +23,74 @@ void MD5Update(struct MD5Context *ctx, uchar const *buf, unsigned len);
 void MD5Final(uchar digest[16], struct MD5Context *ctx);
 void MD5Transform(uint32 buf[4], const uchar inext[64]);
 
+/*The following definitions come from  lib/util_hnd.c  */
+
+struct policy_cache *get_global_hnd_cache(void);
+struct policy_cache *init_policy_cache(int num_pol_hnds);
+void free_policy_cache(struct policy_cache *cache);
+BOOL policy_hnd_set_name(struct policy_cache *cache,
+			 POLICY_HND *hnd, const char *name);
+const char *policy_hnd_get_name(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL dup_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd,
+				const POLICY_HND *from);
+BOOL register_policy_hnd(struct policy_cache *cache,
+				const vuser_key *key,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd(struct policy_cache *cache, 
+				const vuser_key *key,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd_link(struct policy_cache *cache, 
+				const POLICY_HND *parent_hnd,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
+				void(*fn)(void*), void *dev);
+void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL policy_hnd_set_state_type(struct policy_cache *cache,
+			       POLICY_HND *hnd, int type);
+int policy_hnd_get_state_type(struct policy_cache *cache,
+			      const POLICY_HND *hnd);
+BOOL policy_hnd_check_state_type(struct policy_cache *cache,
+				 const POLICY_HND *hnd, int type);
+BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
+BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
+				POLICY_HND *to);
+const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
+				uchar usr_sess_key[16]);
+
+/*The following definitions come from  lib/vuser.c  */
+
+BOOL is_valid_user_struct(const vuser_key * key);
+user_struct *get_valid_user_struct(const vuser_key * key);
+void invalidate_vuid(vuser_key * key);
+BOOL validated_username(vuser_key * key, char *name, size_t len);
+uint16 create_vuid(pid_t pid,
+		   uid_t uid, gid_t gid,
+		   int n_groups, gid_t * groups,
+		   const char *unix_name,
+		   const char *requested_name,
+		   const char *real_name,
+		   BOOL guest, const NET_USER_INFO_3 * info3);
+uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
+		     const char *unix_name,
+		     const char *requested_name,
+		     BOOL guest, const NET_USER_INFO_3 * info3);
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
+
+/*The following definitions come from  lib/vuser_db.c  */
+
+BOOL tdb_delete_vuid( const vuser_key *uk);
+BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
+BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
+BOOL vuid_init_db(void);
+
 /*The following definitions come from  libsmb/clientgen.c  */
 
 int cli_set_port(struct cli_state *cli, int port);
@@ -239,74 +307,6 @@ char *smb_err_msg(uint8 class, uint32 num);
 BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
 BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
-
-/*The following definitions come from  lib/util_hnd.c  */
-
-struct policy_cache *get_global_hnd_cache(void);
-struct policy_cache *init_policy_cache(int num_pol_hnds);
-void free_policy_cache(struct policy_cache *cache);
-BOOL policy_hnd_set_name(struct policy_cache *cache,
-			 POLICY_HND *hnd, const char *name);
-const char *policy_hnd_get_name(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL dup_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd,
-				const POLICY_HND *from);
-BOOL register_policy_hnd(struct policy_cache *cache,
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd(struct policy_cache *cache, 
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd_link(struct policy_cache *cache, 
-				const POLICY_HND *parent_hnd,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
-				void(*fn)(void*), void *dev);
-void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL policy_hnd_set_state_type(struct policy_cache *cache,
-			       POLICY_HND *hnd, int type);
-int policy_hnd_get_state_type(struct policy_cache *cache,
-			      const POLICY_HND *hnd);
-BOOL policy_hnd_check_state_type(struct policy_cache *cache,
-				 const POLICY_HND *hnd, int type);
-BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
-BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
-				POLICY_HND *to);
-const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
-				uchar usr_sess_key[16]);
-
-/*The following definitions come from  lib/vuser.c  */
-
-BOOL is_valid_user_struct(const vuser_key * key);
-user_struct *get_valid_user_struct(const vuser_key * key);
-void invalidate_vuid(vuser_key * key);
-BOOL validated_username(vuser_key * key, char *name, size_t len);
-uint16 create_vuid(pid_t pid,
-		   uid_t uid, gid_t gid,
-		   int n_groups, gid_t * groups,
-		   const char *unix_name,
-		   const char *requested_name,
-		   const char *real_name,
-		   BOOL guest, const NET_USER_INFO_3 * info3);
-uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
-		     const char *unix_name,
-		     const char *requested_name,
-		     BOOL guest, const NET_USER_INFO_3 * info3);
-BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
-
-/*The following definitions come from  lib/vuser_db.c  */
-
-BOOL tdb_delete_vuid( const vuser_key *uk);
-BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
-BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
-BOOL vuid_init_db(void);
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 

@@ -1,6 +1,7 @@
 /*
  * Unix SMB/Netbios implementation. Version 1.9. SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
+ * Copyright (C) Elrond 2000
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -97,7 +98,7 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
         ZERO_STRUCT(bogus_user_struct);
 
-	user = pwdb_smb_to_sam(getsmbfilepwent(vp));
+	user = pwdb_smb_to_sam(pwdb_smb_map_names(getsmbfilepwent(vp)));
 	if (user == NULL)
 	{
 		return NULL;
@@ -114,6 +115,8 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 	/* HACK to make %U work in substitutions below */
 	fstrcpy(bogus_user_struct.requested_name, user->nt_name);
 	fstrcpy(bogus_user_struct.name          , user->unix_name);
+	DEBUG(7, ("getsamfile21pwent: nt_name=%s, unix_name=%s\n",
+		  user->nt_name, user->unix_name));
  
   	pstrcpy(full_name    , "");
  	pstrcpy(logon_script , lp_logon_script (&bogus_user_struct));

@@ -81,7 +81,7 @@ static void secnamefree(void*inf)
 /****************************************************************************
   set tdb secret name
 ****************************************************************************/
-BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND *hnd,
+static BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb,
 				const UNISTR2 *name)
 {
@@ -111,7 +111,7 @@ BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND *hnd,
 /****************************************************************************
   get tdb secret name
 ****************************************************************************/
-BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND *hnd,
+static BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND *hnd,
 				TDB_CONTEXT **tdb,
 				UNISTR2 *name)
 {
@@ -152,6 +152,9 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    hnd, "open_policy2");
+
 	return NT_STATUS_NOPROBLEMO;
 }
 
@@ -159,8 +162,8 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 lsa_reply_open_policy
  ***************************************************************************/
 uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
-				const LSA_OBJ_ATTR *attr,
-				uint32 des_access)
+			const LSA_OBJ_ATTR *attr,
+			uint32 des_access)
 {
 	if (hnd == NULL)
 	{
@@ -173,6 +176,9 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    hnd, "open_policy");
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -663,6 +669,7 @@ uint32 _lsa_create_secret(const POLICY_HND *hnd,
 	if (tdb_lookup_secret(tdb, secret_name, NULL))
 	{
 		DEBUG(10,("_lsa_create_secret: secret exists\n"));
+		/* XXX - shouldn't tdb be closed here? (Elrond) */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -673,6 +680,9 @@ uint32 _lsa_create_secret(const POLICY_HND *hnd,
 		tdb_close(tdb);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    hnd_secret, "secret (create)");
 
 	if (!set_tdbsecname(get_global_hnd_cache(), hnd_secret, tdb, secret_name))
 	{
@@ -714,6 +724,7 @@ uint32 _lsa_open_secret(const POLICY_HND *hnd,
 
 	if (!tdb_lookup_secret(tdb, secret_name, NULL))
 	{
+		/* XXX - shouldn't tdb be closed here? (Elrond) */
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -724,6 +735,9 @@ uint32 _lsa_open_secret(const POLICY_HND *hnd,
 		tdb_close(tdb);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    hnd_secret, "secret (open)");
 
 	if (!set_tdbsecname(get_global_hnd_cache(), hnd_secret, tdb, secret_name))
 	{

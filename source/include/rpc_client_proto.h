@@ -84,7 +84,7 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 			  const char *myhostname,
 			  const char *trust_acct,
 			  const uchar trust_pwd[16], uint16 sec_chan,
-			uint16 *validation_level);
+			  uint16 * validation_level);
 BOOL cli_nt_srv_pwset(const char *srv_name, const char *myhostname,
 		      const char *trust_acct,
 		      const uchar * new_hashof_trust_pwd, uint16 sec_chan);

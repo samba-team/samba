@@ -497,8 +497,6 @@ BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1, prs_struct * ps,
 BOOL make_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc);
 BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4, prs_struct * ps,
 			 int depth);
-BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr, prs_struct * ps,
-			 int depth);
 BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
 				  POLICY_HND * pol, const char *acct_desc);
 BOOL samr_io_q_create_dom_group(char *desc, SAMR_Q_CREATE_DOM_GROUP * q_e,

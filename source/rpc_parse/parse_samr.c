@@ -40,7 +40,7 @@ BOOL make_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND * hnd)
 
 	DEBUG(5, ("make_samr_q_close_hnd\n"));
 
-	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+	q_c->pol = *hnd;
 
 	return True;
 }
@@ -59,10 +59,7 @@ BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u, prs_struct * ps,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
-
-	return True;
+	return smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
 }
 
 /*******************************************************************
@@ -80,7 +77,6 @@ BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u, prs_struct * ps,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(r_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
@@ -100,7 +96,7 @@ BOOL make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN * q_u,
 
 	DEBUG(5, ("make_samr_q_lookup_domain\n"));
 
-	memcpy(&(q_u->connect_pol), pol, sizeof(*pol));
+	q_u->connect_pol = *pol;
 
 	make_uni_hdr(&(q_u->hdr_domain), len_name);
 	make_unistr2(&(q_u->uni_domain), dom_name, len_name);
@@ -123,7 +119,6 @@ BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("connect_pol", &(q_u->connect_pol), ps, depth);
-	prs_align(ps);
 
 	smb_io_unihdr("hdr_domain", &(q_u->hdr_domain), ps, depth);
 	smb_io_unistr2("uni_domain", &(q_u->uni_domain),
@@ -193,7 +188,7 @@ BOOL make_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D * q_u,
 
 	DEBUG(5, ("samr_make_samr_q_unknown_2d\n"));
 
-	memcpy(&q_u->dom_pol, dom_pol, sizeof(q_u->dom_pol));
+	q_u->dom_pol = *dom_pol;
 	make_dom_sid2(&(q_u->sid), sid);
 
 	return True;
@@ -214,7 +209,6 @@ BOOL samr_io_q_unknown_2d(char *desc, SAMR_Q_UNKNOWN_2D * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("domain_pol", &(q_u->dom_pol), ps, depth);
-	prs_align(ps);
 
 	smb_io_dom_sid2("sid", &(q_u->sid), ps, depth);
 	prs_align(ps);
@@ -254,7 +248,7 @@ BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u,
 
 	DEBUG(5, ("samr_make_samr_q_open_domain\n"));
 
-	memcpy(&q_u->connect_pol, connect_pol, sizeof(q_u->connect_pol));
+	q_u->connect_pol = *connect_pol;
 	q_u->flags = flags;
 	make_dom_sid2(&(q_u->dom_sid), sid);
 
@@ -276,7 +270,6 @@ BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("connect_pol", &(q_u->connect_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("flags", ps, depth, &(q_u->flags));
 
@@ -302,7 +295,6 @@ BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN * r_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("domain_pol", &(r_u->domain_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
@@ -320,11 +312,10 @@ BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO * q_u,
 
 	DEBUG(5, ("samr_make_samr_q_get_usrdom_pwinfo\n"));
 
-	memcpy(&q_u->user_pol, user_pol, sizeof(q_u->user_pol));
+	q_u->user_pol = *user_pol;
 
 	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
@@ -340,10 +331,7 @@ BOOL samr_io_q_get_usrdom_pwinfo(char *desc, SAMR_Q_GET_USRDOM_PWINFO * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth);
-	prs_align(ps);
-
-	return True;
+	return smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth);
 }
 
 /*******************************************************************
@@ -401,7 +389,6 @@ BOOL samr_io_q_query_sec_obj(char *desc, SAMR_Q_QUERY_SEC_OBJ * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("sec_info", ps, depth, &(q_u->sec_info));
 
@@ -440,7 +427,6 @@ BOOL samr_io_q_query_dom_info(char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("domain_pol", &(q_u->domain_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
 	prs_align(ps);
@@ -480,7 +466,6 @@ static BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 * u_3,
 
 	prs_align(ps);
 
-
 	return True;
 }
 
@@ -517,7 +502,6 @@ static BOOL sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 * u_6,
 
 	prs_align(ps);
 
-
 	return True;
 }
 
@@ -548,7 +532,6 @@ static BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 * u_7,
 
 	prs_uint16("unknown_0", ps, depth, &u_7->unknown_0);	/* 0x0003 */
 	prs_align(ps);
-
 
 	return True;
 }
@@ -672,9 +655,7 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 	prs_align(ps);
 	smb_io_unistr2("uni_server", &u_2->uni_server, u_2->hdr_server.buffer,
 		       ps, depth);
-
 	prs_align(ps);
-
 
 	return True;
 }
@@ -756,7 +737,7 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 
 	prs_align(ps);
 
-	prs_uint32("ptr_0       ", ps, depth, &(r_u->ptr_0));
+	prs_uint32("ptr_0 ", ps, depth, &(r_u->ptr_0));
 
 	if (r_u->ptr_0 != 0 && r_u->ctr != NULL)
 	{
@@ -812,15 +793,13 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 				DEBUG(3,
 				      ("samr_io_r_query_dom_info: unknown switch level 0x%x\n",
 				       r_u->switch_value));
-				r_u->status =
-					0xC0000000 |
-					NT_STATUS_INVALID_INFO_CLASS;
+				r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 				return False;
 			}
 		}
 	}
 
-	prs_uint32("status      ", ps, depth, &(r_u->status));
+	prs_uint32("status", ps, depth, &(r_u->status));
 
 	return True;
 }
@@ -1215,8 +1194,7 @@ BOOL samr_io_q_enum_dom_users(char *desc, SAMR_Q_ENUM_DOM_USERS * q_e,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
+	smb_io_pol_hnd("domain_pol", &(q_e->pol), ps, depth);
 
 	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
 	prs_uint16("acb_mask ", ps, depth, &(q_e->acb_mask));
@@ -1287,17 +1265,10 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
-		if (ps->io)
+		if (UNMARSHALLING(ps) && (r_u->num_entries2 != 0))
 		{
-			r_u->sam =
-				(SAM_ENTRY *) Realloc(NULL,
-						      r_u->num_entries2 *
-						      sizeof(r_u->sam[0]));
-			r_u->uni_acct_name =
-				(UNISTR2 *) Realloc(NULL,
-						    r_u->num_entries2 *
-						    sizeof(r_u->
-							   uni_acct_name[0]));
+			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
+			r_u->uni_acct_name = g_new(UNISTR2, r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_acct_name == NULL)
@@ -1306,8 +1277,7 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 			DEBUG(0,
 			      ("NULL pointers in SAMR_R_ENUM_DOM_USERS\n"));
 			r_u->num_entries4 = 0;
-			r_u->status =
-				0xC0000000 | NT_STATUS_MEMORY_NOT_ALLOCATED;
+			r_u->status = NT_STATUS_MEMORY_NOT_ALLOCATED;
 			return False;
 		}
 
@@ -1372,7 +1342,6 @@ BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("domain_pol", &(q_e->domain_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint16("switch_level", ps, depth, &(q_e->switch_level));
 	prs_align(ps);
@@ -1937,7 +1906,6 @@ BOOL samr_io_r_open_group(char *desc, SAMR_R_OPEN_GROUP * r_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(r_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
@@ -2048,8 +2016,8 @@ BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr, prs_struct * ps,
-			 int depth)
+static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR *ctr,
+				prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -2126,7 +2094,6 @@ BOOL samr_io_q_create_dom_group(char *desc, SAMR_Q_CREATE_DOM_GROUP * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	smb_io_unihdr("hdr_acct_desc", &(q_e->hdr_acct_desc), ps, depth);
 	smb_io_unistr2("uni_acct_desc", &(q_e->uni_acct_desc),
@@ -2153,7 +2120,6 @@ BOOL samr_io_r_create_dom_group(char *desc, SAMR_R_CREATE_DOM_GROUP * r_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(r_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("rid   ", ps, depth, &(r_u->rid));
 	prs_uint32("status", ps, depth, &(r_u->status));
@@ -2191,9 +2157,7 @@ BOOL samr_io_q_delete_dom_group(char *desc, SAMR_Q_DELETE_DOM_GROUP * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("group_pol", &(q_u->group_pol), ps, depth);
-
-	return True;
+	return smb_io_pol_hnd("group_pol", &(q_u->group_pol), ps, depth);
 }
 
 /*******************************************************************
@@ -2250,9 +2214,8 @@ BOOL samr_io_q_del_groupmem(char *desc, SAMR_Q_DEL_GROUPMEM * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
-	prs_uint32("rid    ", ps, depth, &(q_e->rid));
+	prs_uint32("rid", ps, depth, &(q_e->rid));
 
 	return True;
 }
@@ -2330,7 +2293,6 @@ BOOL samr_io_q_add_groupmem(char *desc, SAMR_Q_ADD_GROUPMEM * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("rid    ", ps, depth, &(q_e->rid));
 	prs_uint32("unknown", ps, depth, &(q_e->unknown));
@@ -2409,7 +2371,6 @@ BOOL samr_io_q_set_groupinfo(char *desc, SAMR_Q_SET_GROUPINFO * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	samr_group_info_ctr("ctr", q_e->ctr, ps, depth);
 
@@ -2486,7 +2447,6 @@ BOOL samr_io_q_query_groupinfo(char *desc, SAMR_Q_QUERY_GROUPINFO * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint16("switch_level", ps, depth, &(q_e->switch_level));
 
@@ -2568,9 +2528,7 @@ BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("group_pol", &(q_u->group_pol), ps, depth);
-
-	return True;
+	return smb_io_pol_hnd("group_pol", &(q_u->group_pol), ps, depth);
 }
 
 /*******************************************************************
@@ -2720,11 +2678,10 @@ BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS * q_u,
 
 	DEBUG(5, ("make_samr_q_query_usergroups\n"));
 
-	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
+	q_u->pol = *hnd;
 
 	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
@@ -2740,10 +2697,7 @@ BOOL samr_io_q_query_usergroups(char *desc, SAMR_Q_QUERY_USERGROUPS * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
-
-	return True;
+	return smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
 }
 
 /*******************************************************************
@@ -2799,7 +2753,7 @@ BOOL samr_io_gids(char *desc, uint32 * num_gids, DOM_GID ** gid,
 
 	if ((*num_gids) != 0)
 	{
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			(*gid) = g_renew(DOM_GID, (*gid), (*num_gids));
 		}
@@ -2892,7 +2846,6 @@ BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
 	prs_uint32("max_size ", ps, depth, &(q_e->max_size));
@@ -2960,17 +2913,10 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
-			r_u->sam =
-				(SAM_ENTRY *) Realloc(NULL,
-						      r_u->num_entries2 *
-						      sizeof(r_u->sam[0]));
-			r_u->uni_dom_name =
-				(UNISTR2 *) Realloc(NULL,
-						    r_u->num_entries2 *
-						    sizeof(r_u->
-							   uni_dom_name[0]));
+			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
+			r_u->uni_dom_name = g_new(UNISTR2, r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_dom_name == NULL)
@@ -2978,8 +2924,7 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 		{
 			DEBUG(0, ("NULL pointers in SAMR_R_ENUM_DOMAINS\n"));
 			r_u->num_entries4 = 0;
-			r_u->status =
-				0xC0000000 | NT_STATUS_MEMORY_NOT_ALLOCATED;
+			r_u->status = NT_STATUS_MEMORY_NOT_ALLOCATED;
 			return False;
 		}
 
@@ -3046,7 +2991,6 @@ BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
 	prs_uint32("max_size ", ps, depth, &(q_e->max_size));
@@ -3114,17 +3058,10 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
-			r_u->sam =
-				(SAM_ENTRY *) Realloc(NULL,
-						      r_u->num_entries2 *
-						      sizeof(r_u->sam[0]));
-			r_u->uni_grp_name =
-				(UNISTR2 *) Realloc(NULL,
-						    r_u->num_entries2 *
-						    sizeof(r_u->
-							   uni_grp_name[0]));
+			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
+			r_u->uni_grp_name = g_new(UNISTR2, r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_grp_name == NULL)
@@ -3133,8 +3070,7 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 			DEBUG(0,
 			      ("NULL pointers in SAMR_R_ENUM_DOM_GROUPS\n"));
 			r_u->num_entries4 = 0;
-			r_u->status =
-				0xC0000000 | NT_STATUS_MEMORY_NOT_ALLOCATED;
+			r_u->status = NT_STATUS_MEMORY_NOT_ALLOCATED;
 			return False;
 		}
 
@@ -3197,7 +3133,6 @@ BOOL samr_io_q_enum_dom_aliases(char *desc, SAMR_Q_ENUM_DOM_ALIASES * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
 	prs_uint32("max_size ", ps, depth, &(q_e->max_size));
@@ -3265,17 +3200,10 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
-			r_u->sam =
-				(SAM_ENTRY *) Realloc(NULL,
-						      r_u->num_entries2 *
-						      sizeof(r_u->sam[0]));
-			r_u->uni_grp_name =
-				(UNISTR2 *) Realloc(NULL,
-						    r_u->num_entries2 *
-						    sizeof(r_u->
-							   uni_grp_name[0]));
+			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
+			r_u->uni_grp_name = g_new(UNISTR2, r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_grp_name == NULL)
@@ -3284,8 +3212,7 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 			DEBUG(0,
 			      ("NULL pointers in SAMR_R_ENUM_DOM_ALIASES\n"));
 			r_u->num_entries4 = 0;
-			r_u->status =
-				0xC0000000 | NT_STATUS_MEMORY_NOT_ALLOCATED;
+			r_u->status = NT_STATUS_MEMORY_NOT_ALLOCATED;
 			return False;
 		}
 
@@ -3422,9 +3349,9 @@ BOOL samr_io_q_query_aliasinfo(char *desc, SAMR_Q_QUERY_ALIASINFO * q_e,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint16("switch_level", ps, depth, &(q_e->switch_level));
+	/* prs_align(ps); */
 
 	return True;
 }
@@ -3573,7 +3500,6 @@ BOOL samr_io_q_query_useraliases(char *desc, SAMR_Q_QUERY_USERALIASES * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("num_sids1", ps, depth, &(q_u->num_sids1));
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr));
@@ -3695,7 +3621,7 @@ BOOL samr_io_rids(char *desc, uint32 * num_rids, uint32 ** rid,
 
 	if ((*num_rids) != 0)
 	{
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			/* reading */
 			(*rid) = g_renew(uint32, (*rid), (*num_rids));
@@ -3760,7 +3686,7 @@ BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, const POLICY_HND * pol,
 
 	DEBUG(5, ("make_samr_q_open_alias\n"));
 
-	memcpy(&(q_u->dom_pol), pol, sizeof(q_u->dom_pol));
+	q_u->dom_pol = *pol;
 
 	/* example values: 0x0000 0008 */
 	q_u->unknown_0 = unknown_0;
@@ -3784,7 +3710,7 @@ BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("dom_pol", &(q_u->dom_pol), ps, depth);
+	smb_io_pol_hnd("domain_pol", &(q_u->dom_pol), ps, depth);
 
 	prs_uint32("unknown_0", ps, depth, &(q_u->unknown_0));
 	prs_uint32("rid_alias", ps, depth, &(q_u->rid_alias));
@@ -3807,7 +3733,6 @@ BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(r_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
@@ -3852,7 +3777,7 @@ BOOL samr_io_q_lookup_rids(char *desc, SAMR_Q_LOOKUP_RIDS * q_u,
 	prs_debug(ps, depth, desc, "samr_io_q_lookup_rids");
 	depth++;
 
-	if (ps->io)
+	if (UNMARSHALLING(ps))
 	{
 		ZERO_STRUCTP(q_u);
 	}
@@ -3860,7 +3785,6 @@ BOOL samr_io_q_lookup_rids(char *desc, SAMR_Q_LOOKUP_RIDS * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("num_rids1", ps, depth, &(q_u->num_rids1));
 	prs_uint32("flags    ", ps, depth, &(q_u->flags));
@@ -4077,7 +4001,7 @@ BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS * q_u, POLICY_HND * hnd)
 
 	DEBUG(5, ("make_samr_q_delete_alias\n"));
 
-	memcpy(&(q_u->alias_pol), hnd, sizeof(q_u->alias_pol));
+	q_u->alias_pol = *hnd;
 
 	return True;
 }
@@ -4097,9 +4021,7 @@ BOOL samr_io_q_delete_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth);
-
-	return True;
+	return smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth);
 }
 
 /*******************************************************************
@@ -4135,7 +4057,7 @@ BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
 
 	DEBUG(5, ("make_samr_q_create_dom_alias\n"));
 
-	memcpy(&(q_u->dom_pol), hnd, sizeof(q_u->dom_pol));
+	q_u->dom_pol = *hnd;
 
 	make_uni_hdr(&(q_u->hdr_acct_desc), acct_len);
 	make_unistr2(&(q_u->uni_acct_desc), acct_desc, acct_len);
@@ -4144,7 +4066,6 @@ BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
 
 	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
@@ -4207,12 +4128,11 @@ BOOL make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM * q_u, POLICY_HND * hnd,
 
 	DEBUG(5, ("make_samr_q_add_aliasmem\n"));
 
-	memcpy(&(q_u->alias_pol), hnd, sizeof(q_u->alias_pol));
+	q_u->alias_pol = *hnd;
 	make_dom_sid2(&q_u->sid, sid);
 
 	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
@@ -4265,12 +4185,11 @@ BOOL make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM * q_u, POLICY_HND * hnd,
 
 	DEBUG(5, ("make_samr_q_del_aliasmem\n"));
 
-	memcpy(&(q_u->alias_pol), hnd, sizeof(q_u->alias_pol));
+	q_u->alias_pol = *hnd;
 	make_dom_sid2(&q_u->sid, sid);
 
 	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
@@ -4322,7 +4241,7 @@ BOOL make_samr_q_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS * q_c,
 
 	DEBUG(5, ("make_samr_q_delete_dom_alias\n"));
 
-	memcpy(&(q_c->alias_pol), hnd, sizeof(q_c->alias_pol));
+	q_c->alias_pol = *hnd;
 
 	return True;
 }
@@ -4341,9 +4260,7 @@ BOOL samr_io_q_delete_dom_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth);
-
-	return True;
+	return smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth);
 }
 
 /*******************************************************************
@@ -4393,7 +4310,7 @@ BOOL make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM * q_c,
 
 	DEBUG(5, ("make_samr_q_query_aliasmem\n"));
 
-	memcpy(&(q_c->alias_pol), hnd, sizeof(q_c->alias_pol));
+	q_c->alias_pol = *hnd;
 
 	return True;
 }
@@ -4412,9 +4329,7 @@ BOOL samr_io_q_query_aliasmem(char *desc, SAMR_Q_QUERY_ALIASMEM * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth);
-
-	return True;
+	return smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth);
 }
 
 /*******************************************************************
@@ -4510,7 +4425,7 @@ BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
 
 	DEBUG(5, ("make_samr_q_lookup_names\n"));
 
-	memcpy(&(q_u->pol), pol, sizeof(*pol));
+	q_u->pol = *pol;
 
 	q_u->num_names1 = num_names;
 	q_u->flags = flags;
@@ -4541,7 +4456,7 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 	prs_debug(ps, depth, desc, "samr_io_q_lookup_names");
 	depth++;
 
-	if (ps->io)
+	if (UNMARSHALLING(ps))
 	{
 		ZERO_STRUCTP(q_u);
 	}
@@ -4549,7 +4464,6 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("num_names1", ps, depth, &(q_u->num_names1));
 	prs_uint32("flags     ", ps, depth, &(q_u->flags));
@@ -4661,7 +4575,7 @@ BOOL samr_io_r_lookup_names(char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 	prs_debug(ps, depth, desc, "samr_io_r_lookup_names");
 	depth++;
 
-	if (ps->io)
+	if (UNMARSHALLING(ps))
 	{
 		ZERO_STRUCTP(r_u);
 	}
@@ -4681,7 +4595,7 @@ BOOL samr_io_r_lookup_names(char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 			return False;
 		}
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 			r_u->rids = g_new(uint32, r_u->num_rids2);
 
 		if (!r_u->rids)
@@ -4711,7 +4625,7 @@ BOOL samr_io_r_lookup_names(char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 			return False;
 		}
 
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 			r_u->types = g_new(uint32, r_u->num_types2);
 
 		if (!r_u->types)
@@ -4774,7 +4688,7 @@ BOOL make_samr_q_delete_dom_user(SAMR_Q_DELETE_DOM_USER * q_c,
 
 	DEBUG(5, ("make_samr_q_delete_dom_user\n"));
 
-	memcpy(&(q_c->user_pol), hnd, sizeof(q_c->user_pol));
+	q_c->user_pol = *hnd;
 
 	return True;
 }
@@ -4793,9 +4707,7 @@ BOOL samr_io_q_delete_dom_user(char *desc, SAMR_Q_DELETE_DOM_USER * q_u,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth);
-
-	return True;
+	return smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth);
 }
 
 /*******************************************************************
@@ -4830,8 +4742,7 @@ BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER * q_u,
 
 	DEBUG(5, ("samr_make_samr_q_open_user\n"));
 
-	memcpy(&q_u->domain_pol, pol, sizeof(q_u->domain_pol));
-
+	q_u->domain_pol = *pol;
 	q_u->access_mask = access_mask;
 	q_u->user_rid = rid;
 
@@ -4853,7 +4764,6 @@ BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u, prs_struct * ps,
 	prs_align(ps);
 
 	smb_io_pol_hnd("domain_pol", &(q_u->domain_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 	prs_uint32("user_rid ", ps, depth, &(q_u->user_rid));
@@ -4878,12 +4788,12 @@ BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u, prs_struct * ps,
 	prs_align(ps);
 
 	smb_io_pol_hnd("user_pol", &(r_u->user_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
 	return True;
 }
+
 
 /*******************************************************************
 reads or writes a structure.
@@ -4900,7 +4810,7 @@ BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 
 	DEBUG(5, ("samr_make_samr_q_create_user\n"));
 
-	memcpy(&q_u->domain_pol, pol, sizeof(q_u->domain_pol));
+	q_u->domain_pol = *pol;
 
 	make_uni_hdr(&(q_u->hdr_name), len_name);
 	make_unistr2(&(q_u->uni_name), name, len_name);
@@ -4926,7 +4836,6 @@ BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("domain_pol", &(q_u->domain_pol), ps, depth);
-	prs_align(ps);
 
 	smb_io_unihdr("unihdr", &(q_u->hdr_name), ps, depth);
 	smb_io_unistr2("unistr2", &(q_u->uni_name), q_u->hdr_name.buffer, ps,
@@ -4956,7 +4865,6 @@ BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER * r_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("user_pol", &(r_u->user_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("unknown_0", ps, depth, &(r_u->unknown_0));
 	prs_uint32("user_rid ", ps, depth, &(r_u->user_rid));
@@ -4964,6 +4872,7 @@ BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER * r_u,
 
 	return True;
 }
+
 
 /*******************************************************************
 makes a SAMR_Q_QUERY_USERINFO structure.
@@ -4976,12 +4885,11 @@ BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
 
 	DEBUG(5, ("make_samr_q_query_userinfo\n"));
 
-	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
+	q_u->pol = *hnd;
 	q_u->switch_value = switch_value;
 
 	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
@@ -4998,10 +4906,8 @@ BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));	/* 0x0015 or 0x0011 */
-
 	prs_align(ps);
 
 	return True;
@@ -5797,7 +5703,6 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	return True;
 }
 
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -6053,15 +5958,10 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 	{
 		case 0x10:
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				/* reading */
-				ctr->info.id =
-					(SAM_USER_INFO_10 *) Realloc(NULL,
-								     sizeof
-								     (*ctr->
-								      info.
-								      id10));
+				ctr->info.id10 = g_new(SAM_USER_INFO_10, 1);
 			}
 			if (ctr->info.id10 != NULL)
 			{
@@ -6078,15 +5978,10 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 		}
 		case 0x11:
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				/* reading */
-				ctr->info.id =
-					(SAM_USER_INFO_11 *) Realloc(NULL,
-								     sizeof
-								     (*ctr->
-								      info.
-								      id11));
+				ctr->info.id11 = g_new(SAM_USER_INFO_11, 1);
 			}
 			if (ctr->info.id11 != NULL)
 			{
@@ -6103,15 +5998,10 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 		}
 		case 0x12:
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				/* reading */
-				ctr->info.id =
-					(SAM_USER_INFO_12 *) Realloc(NULL,
-								     sizeof
-								     (*ctr->
-								      info.
-								      id12));
+				ctr->info.id12 = g_new(SAM_USER_INFO_12, 1);
 			}
 			if (ctr->info.id12 != NULL)
 			{
@@ -6128,15 +6018,10 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 		}
 		case 21:
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				/* reading */
-				ctr->info.id =
-					(SAM_USER_INFO_21 *) Realloc(NULL,
-								     sizeof
-								     (*ctr->
-								      info.
-								      id21));
+				ctr->info.id21 = g_new(SAM_USER_INFO_21, 1);
 			}
 			if (ctr->info.id21 != NULL)
 			{
@@ -6153,15 +6038,10 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 		}
 		case 23:
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				/* reading */
-				ctr->info.id =
-					(SAM_USER_INFO_23 *) Realloc(NULL,
-								     sizeof
-								     (*ctr->
-								      info.
-								      id23));
+				ctr->info.id23 = g_new(SAM_USER_INFO_23, 1);
 			}
 			if (ctr->info.id23 != NULL)
 			{
@@ -6178,27 +6058,18 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 		}
 		case 24:
 		{
-			if (ps->io)
+			if (UNMARSHALLING(ps))
 			{
 				/* reading */
-				ctr->info.id =
-					(SAM_USER_INFO_24 *) Realloc(NULL,
-								     sizeof
-								     (*ctr->
-								      info.
-								      id24));
+				ctr->info.id24 = g_new(SAM_USER_INFO_24, 1);
 			}
-			if (ctr->info.id24 != NULL)
-			{
-				sam_io_user_info24("", ctr->info.id24, ps,
-						   depth);
-			}
-			else
+			if (ctr->info.id24 == NULL)
 			{
 				DEBUG(2,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
+			sam_io_user_info24("", ctr->info.id24, ps, depth);
 			break;
 		}
 		default:
@@ -6220,10 +6091,8 @@ frees a structure.
 ********************************************************************/
 void free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr)
 {
-	if (ctr->info.id == NULL)
-	{
-		free(ctr->info.id);
-	}
+	if (ctr == NULL) return;
+	safe_free(ctr->info.id);
 	ctr->info.id = NULL;
 }
 
@@ -6300,7 +6169,7 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u,
 
 	DEBUG(5, ("make_samr_q_set_userinfo\n"));
 
-	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
+	q_u->pol = *hnd;
 	q_u->switch_value = switch_value;
 
 	if (!cli_get_usr_sesskey(hnd, sess_key))
@@ -6333,7 +6202,6 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
 	samr_io_userinfo_ctr("ctr", q_u->ctr, ps, depth);
@@ -6352,6 +6220,7 @@ frees a structure.
 ********************************************************************/
 void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u)
 {
+	if (q_u == NULL) return;
 	free_samr_userinfo_ctr(q_u->ctr);
 }
 
@@ -6404,7 +6273,7 @@ BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 
 	DEBUG(5, ("make_samr_q_set_userinfo2\n"));
 
-	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
+	q_u->pol = *hnd;
 	q_u->switch_value = switch_value;
 	q_u->ctr = ctr;
 
@@ -6452,9 +6321,8 @@ BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 * q_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
-	prs_align(ps);
 
-	prs_uint16("switch_value ", ps, depth, &(q_u->switch_value));
+	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
 	samr_io_userinfo_ctr("ctr", q_u->ctr, ps, depth);
 
 	if (!ps->io)
@@ -6549,7 +6417,6 @@ BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u, prs_struct * ps,
 	prs_uint32("ptr_srv_name", ps, depth, &(q_u->ptr_srv_name));
 	smb_io_unistr2("", &(q_u->uni_srv_name), q_u->ptr_srv_name, ps,
 		       depth);
-
 	prs_align(ps);
 
 	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
@@ -6572,7 +6439,6 @@ BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u, prs_struct * ps,
 	prs_align(ps);
 
 	smb_io_pol_hnd("connect_pol", &(r_u->connect_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
@@ -6635,7 +6501,6 @@ BOOL samr_io_r_connect_anon(char *desc, SAMR_R_CONNECT_ANON * r_u,
 	prs_align(ps);
 
 	smb_io_pol_hnd("connect_pol", &(r_u->connect_pol), ps, depth);
-	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
@@ -6658,7 +6523,6 @@ BOOL make_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO * q_u,
 	q_u->ptr = 1;
 	make_uni_hdr(&(q_u->hdr_srv_name), len_srv_name);
 	make_unistr2(&(q_u->uni_srv_name), srv_name, len_srv_name);
-
 
 	return True;
 }

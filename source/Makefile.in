@@ -384,7 +384,8 @@ SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(PRINTING_OBJ) \
            $(SIDDB_OBJ) \
            $(RPC_SRVUTIL_OBJ) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(UBIQX_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ)
+SPOOLSSD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -880,9 +881,9 @@ bin/lsarpcd: $(LSARPCD_LIBS) $(LSARPCD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(LSARPCD_OBJ) $(LSARPCD_LIBS) $(LIBS)
 
-bin/spoolssd: $(SAMBA_LIBS) $(SPOOLSSD_OBJ) bin/.dummy
+bin/spoolssd: $(SPOOLSSD_LIBS) $(SPOOLSSD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SPOOLSSD_OBJ) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(SPOOLSSD_OBJ) $(SPOOLSSD_LIBS) $(LIBS)
 
 bin/srvsvcd: $(SAMBA_LIBS) $(SRVSVCD_OBJ) bin/.dummy
 	@echo Linking $@
