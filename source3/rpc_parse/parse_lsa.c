@@ -820,7 +820,11 @@ void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, i
 
 	prs_align(ps);
 	
-	lsa_io_dom_r_ref  ("dom_ref", r_s->dom_ref, ps, depth); /* domain reference info */
+	prs_uint32("ptr_dom_ref", ps, depth, &(r_s->ptr_dom_ref));
+	if (r_s->ptr_dom_ref != 0)
+	{
+		lsa_io_dom_r_ref  ("dom_ref", r_s->dom_ref, ps, depth); /* domain reference info */
+	}
 	lsa_io_trans_names("names  ", r_s->names  , ps, depth); /* translated names */
 
 	prs_align(ps);
