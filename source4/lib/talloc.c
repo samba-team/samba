@@ -63,6 +63,17 @@ static struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	return tc;
 }
 
+
+/*
+  return the parent chunk of a pointer
+*/
+static struct talloc_chunk *talloc_parent_chunk(const void *ptr)
+{
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	while (tc->prev) tc=tc->prev;
+	return tc->parent;
+}
+
 /* 
    Allocate a bit of memory as a child of an existing pointer
 */
@@ -185,8 +196,7 @@ void *talloc_unreference(const void *context, const void *ptr)
 	}
 
 	for (h=tc->refs;h;h=h->next) {
-		struct talloc_chunk *tc2 = talloc_chunk_from_ptr(h);
-		const void *parent = tc2->parent?tc2->parent+1:null_context;
+		const void *parent = talloc_parent_chunk(h);
 		if (parent == context) break;
 	}
 	if (h == NULL) {
@@ -354,11 +364,12 @@ int talloc_free(void *ptr)
 		void *child = tc->child+1;
 		const void *new_parent = null_context;
 		if (tc->child->refs) {
-			struct talloc_chunk *ref = talloc_chunk_from_ptr(tc->child->refs);
-			if (ref->parent) new_parent = ref->parent+1;
+			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
+			if (p) new_parent = p+1;
 		}
-		if (new_parent == null_context && tc->parent) {
-			new_parent = tc->parent+1;
+		if (new_parent == null_context) {
+			struct talloc_chunk *p = talloc_parent_chunk(ptr);
+			if (p) new_parent = p+1;
 		}
 		talloc_free(talloc_steal(new_parent, child));
 	}
