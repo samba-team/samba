@@ -1992,50 +1992,6 @@ DES3_postproc(krb5_context context,
     des_set_odd_parity((des_cblock*)(k + 16));
 }
 
-#if 0
-/* XXX should be moved someplace else */
-static void
-DES3_postproc(krb5_context context,
-	      unsigned char *k, size_t len, struct key_data *key)
-{
-    unsigned char x[24];
-    int ki = 0, xi = 0, kb = 8, xb = 8;
-    memset(x, 0, sizeof(x));
-    /* insert a parity bit after every seven bits (I'm not
-       convinced that the first 21 bytes has more entropy than the
-       who 24 byte block...) */
-    while(xi < 24) {
-	unsigned u = k[ki] & ((1 << kb) - 1);
-	if(kb == xb)
-	    x[xi] |= u;
-	else if(kb > xb)
-	    x[xi] |= u >> (kb - xb);
-	else /* kb < xb */
-	    x[xi] |= u << (xb - kb);
-	    
-	if(kb < xb - 1) {
-	    xb -= kb;
-	    kb = 8;
-	    ki++;
-	} else {
-	    kb -= xb - 1;
-	    xb = 8;
-	    xi++;
-	}
-    }
-    k = key->key->keyvalue.data;
-    memcpy(k, x, 24);
-    memset(x, 0, sizeof(x));
-    if (key->schedule) {
-	krb5_free_data(context, key->schedule);
-	key->schedule = NULL;
-    }
-    des_set_odd_parity((des_cblock*)k);
-    des_set_odd_parity((des_cblock*)(k + 8));
-    des_set_odd_parity((des_cblock*)(k + 16));
-}
-#endif
-
 static krb5_error_code
 derive_key(krb5_context context,
 	   struct encryption_type *et,
