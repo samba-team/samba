@@ -29,6 +29,7 @@
 
 struct gensec_security;
 struct gensec_user {
+	const char *workstation;
 	const char *domain;
 	const char *realm;
 	const char *name;
@@ -59,7 +60,7 @@ struct gensec_security_ops {
 	const char *name;
 	const char *sasl_name;
 	uint8_t auth_type;  /* 0 if not offered on DCE-RPC */
-	const char *oid;  /* NULL if not offered by SPENGO */
+	const char *oid;  /* NULL if not offered by SPNEGO */
 	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*server_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,

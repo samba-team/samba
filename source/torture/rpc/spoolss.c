@@ -705,6 +705,7 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 				       struct policy_handle *handle)
 {
 	NTSTATUS status;
+	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p2;
 	BOOL ret = True;
 
@@ -715,14 +716,26 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 
 	printf("testing close on secondary pipe\n");
 
-	status = dcerpc_secondary_connection(p, &p2, 
-					     DCERPC_SPOOLSS_NAME, 
-					     DCERPC_SPOOLSS_UUID, 
-					     DCERPC_SPOOLSS_VERSION);
+	status = dcerpc_parse_binding(mem_ctx, p->conn->binding_string, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to parse dcerpc binding '%s'\n", p->conn->binding_string);
+		return False;
+	}
+
+	status = dcerpc_secondary_connection(p, &p2, b);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to create secondary connection\n");
 		return False;
 	}
+
+	status = dcerpc_bind_auth_none(p2, DCERPC_SPOOLSS_UUID, 
+				       DCERPC_SPOOLSS_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to create bind on secondary connection\n");
+		dcerpc_pipe_close(p2);
+
+                return False;
+        }
 
 	if (test_ClosePrinter(p2, mem_ctx, handle)) {
 		printf("ERROR: Allowed close on secondary connection!\n");

@@ -272,24 +272,14 @@ NTSTATUS schannel_sign_packet(struct schannel_state *state,
 }
 
 /*
-  destroy an schannel context
- */
-void schannel_end(struct schannel_state **state)
-{
-	if (*state) {
-		talloc_free(*state);
-		(*state) = NULL;
-	}
-}
-
-/*
   create an schannel context state
 */
-NTSTATUS schannel_start(struct schannel_state **state,
+NTSTATUS schannel_start(TALLOC_CTX *mem_ctx, 
+			struct schannel_state **state,
 			const uint8_t session_key[16],
 			BOOL initiator)
 {
-	(*state) = talloc(NULL, struct schannel_state);
+	(*state) = talloc(mem_ctx, struct schannel_state);
 	if (!(*state)) {
 		return NT_STATUS_NO_MEMORY;
 	}

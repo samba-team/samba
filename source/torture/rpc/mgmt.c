@@ -181,7 +181,7 @@ BOOL torture_rpc_mgmt(void)
 	BOOL ret = True;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	const struct dcerpc_interface_list *l;
-	struct dcerpc_binding b;
+	struct dcerpc_binding *b;
 
 	mem_ctx = talloc_init("torture_rpc_mgmt");
 
@@ -205,8 +205,8 @@ BOOL torture_rpc_mgmt(void)
 
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
-		if (b.transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map_binding(mem_ctx, &b, 
+		if (b->transport == NCACN_IP_TCP) {
+			status = dcerpc_epm_map_binding(mem_ctx, b, 
 							 l->table->uuid,
 							 l->table->if_version);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -214,10 +214,10 @@ BOOL torture_rpc_mgmt(void)
 				continue;
 			}
 		} else {
-			b.endpoint = l->table->name;
+			b->endpoint = talloc_strdup(b, l->table->name);
 		}
 
-		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, &b));
+		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, b));
 
 		status = torture_rpc_connection(&p, 
 						l->table->name,

@@ -230,6 +230,9 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	pipe_state->creds->secure_channel_type = r->in.secure_channel_type;
 
 	pipe_state->creds->rid = *r->out.rid;
+
+	pipe_state->creds->domain = talloc_strdup(pipe_state->creds, lp_workgroup());
+
 	/* remember this session key state */
 	nt_status = schannel_store_session_key(mem_ctx, pipe_state->creds);
 

@@ -40,11 +40,15 @@ struct dcom_client_context *dcom_client_init(struct com_context *ctx, const char
 	return ctx->dcom;
 }
 
-static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dcerpc_binding *b, struct STRINGBINDING *bd)
+static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dcerpc_binding **b_out, struct STRINGBINDING *bd)
 {
 	char *host, *endpoint;
+	struct dcerpc_binding *b;
 
-	ZERO_STRUCTP(b);
+	b = talloc_zero(mem_ctx, struct dcerpc_binding);
+	if (!b) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	
 	b->transport = dcerpc_transport_by_endpoint_protocol(bd->wTowerId);
 
@@ -53,7 +57,7 @@ static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dc
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	host = talloc_strdup(mem_ctx, bd->NetworkAddr);
+	host = talloc_strdup(b, bd->NetworkAddr);
 	endpoint = strchr(host, '[');
 
 	if (endpoint) {
@@ -64,56 +68,61 @@ static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dc
 	}
 
 	b->host = host;
-	b->endpoint = endpoint;
+	b->endpoint = talloc_strdup(b, endpoint);
 
+	*b_out = b;
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **p, const char *server)
 {
-	struct dcerpc_binding bd;
-	enum dcerpc_transport_t available_transports[] = { NCACN_IP_TCP, NCACN_NP };
+	struct dcerpc_binding *bd;
+	const char * available_transports[] = { "ncacn_ip_tcp", "ncacn_np" };
 	int i;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_init("dcom_connect");
 
 	if (server == NULL) { 
-		bd.transport = NCALRPC; 
-		return dcerpc_pipe_connect_b(p, &bd, 
-					DCERPC_IREMOTEACTIVATION_UUID, 
-					DCERPC_IREMOTEACTIVATION_VERSION, 
-					ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
+		return dcerpc_pipe_connect(p, "ncalrpc", 
+					   DCERPC_IREMOTEACTIVATION_UUID, 
+					   DCERPC_IREMOTEACTIVATION_VERSION,
+					   lp_netbios_name(),
+					   ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
 	}
 
 	/* Allow server name to contain a binding string */
 	if (NT_STATUS_IS_OK(dcerpc_parse_binding(mem_ctx, server, &bd))) {
-		status = dcerpc_pipe_connect_b(p, &bd, 
-					DCERPC_IREMOTEACTIVATION_UUID, 
-					DCERPC_IREMOTEACTIVATION_VERSION, 
-					ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
+		status = dcerpc_pipe_connect_b(p, bd, 
+					       DCERPC_IREMOTEACTIVATION_UUID, 
+					       DCERPC_IREMOTEACTIVATION_VERSION, 
+					       lp_netbios_name(),
+					       ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
 
 		talloc_free(mem_ctx);
 		return status;
 	}
-	talloc_free(mem_ctx);
 
-	ZERO_STRUCT(bd);
-	bd.host = server;
-	
 	for (i = 0; i < ARRAY_SIZE(available_transports); i++)
 	{
-		bd.transport = available_transports[i];
+		char *binding = talloc_asprintf(mem_ctx, "%s:%s", available_transports[i], server);
+		if (!binding) {
+			talloc_free(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		
-		status = dcerpc_pipe_connect_b(p, &bd, 
-						DCERPC_IREMOTEACTIVATION_UUID, 
-						DCERPC_IREMOTEACTIVATION_VERSION, 
-						ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
+		status = dcerpc_pipe_connect(p, binding, 
+					     DCERPC_IREMOTEACTIVATION_UUID, 
+					     DCERPC_IREMOTEACTIVATION_VERSION, 
+					     lp_netbios_name(),
+					     ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
 
 		if (NT_STATUS_IS_OK(status)) {
+			talloc_free(mem_ctx);
 			return status;
 		}
 	}
 	
+	talloc_free(mem_ctx);
 	return status;
 }
 
@@ -254,7 +263,7 @@ WERROR dcom_get_class_object(struct com_context *ctx, struct GUID *clsid, const 
 
 NTSTATUS dcom_get_pipe (struct IUnknown *iface, struct dcerpc_pipe **pp)
 {
-	struct dcerpc_binding binding;
+	struct dcerpc_binding *binding;
 	struct GUID iid;
 	uint64_t oxid;
 	NTSTATUS status;
@@ -297,14 +306,16 @@ NTSTATUS dcom_get_pipe (struct IUnknown *iface, struct dcerpc_pipe **pp)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Error parsing string binding"));
 		} else {
-			status = dcerpc_pipe_connect_b(&p, &binding, 
+			status = dcerpc_pipe_connect_b(&p, binding, 
 						       uuid, 0.0, 
-						       iface->ctx->dcom->domain, iface->ctx->dcom->user, 
+						       lp_netbios_name(),
+						       iface->ctx->dcom->domain, 
+						       iface->ctx->dcom->user, 
 						       iface->ctx->dcom->password);
 		}
-
+		talloc_free(binding);
 		i++;
-	} while (NT_STATUS_IS_ERR(status) && ox->bindings.stringbindings[i]);
+	} while (!NT_STATUS_IS_OK(status) && ox->bindings.stringbindings[i]);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("Unable to connect to remote host - %s\n", nt_errstr(status)));

@@ -232,7 +232,7 @@ again:
 	s.in.level = 21;
 
 	u.info21.acct_flags = acct_type;
-	u.info21.fields_present = SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_COMMENT | SAMR_FIELD_FULL_NAME;
+	u.info21.fields_present = SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_DESCRIPTION | SAMR_FIELD_COMMENT | SAMR_FIELD_FULL_NAME;
 	comment.string = talloc_asprintf(join, 
 					 "Tortured by Samba4: %s", 
 					 timestring(join, time(NULL)));
@@ -241,6 +241,10 @@ again:
 					 "Torture account for Samba4: %s", 
 					 timestring(join, time(NULL)));
 	u.info21.full_name = full_name;
+
+	u.info21.description.string = talloc_asprintf(join, 
+					 "Samba4 torture account created by host %s: %s", 
+					 lp_netbios_name(), timestring(join, time(NULL)));
 
 	printf("Resetting ACB flags, force pw change time\n");
 

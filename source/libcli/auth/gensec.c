@@ -148,7 +148,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
  * @param mem_ctx The parent TALLOC memory context.
  * @param parent The parent GENSEC context 
  * @param gensec_security Returned GENSEC context pointer.
- * @note Used by SPENGO in particular, for the actual implementation mechanism
+ * @note Used by SPNEGO in particular, for the actual implementation mechanism
  */
 
 NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx, 
@@ -615,6 +615,34 @@ const char *gensec_get_domain(struct gensec_security *gensec_security)
 		return gensec_security->user.realm;
 	}
 	return gensec_security->default_user.domain;
+}
+
+/** 
+ * Set the client workstation on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_workstation(struct gensec_security *gensec_security, const char *workstation) 
+{
+	gensec_security->user.workstation = talloc_strdup(gensec_security, workstation);
+	if (!gensec_security->user.workstation) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Return the client workstation on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+const char *gensec_get_workstation(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->user.workstation) {
+		return gensec_security->user.workstation;
+	} else {
+		return lp_netbios_name();
+	}
 }
 
 /** 

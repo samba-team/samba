@@ -43,6 +43,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	}
 
 	status = dcerpc_pipe_connect(&(private->c_pipe), binding, iface->uuid, iface->if_version,
+				     lp_netbios_name(),
 				     lp_workgroup(), 
 				     lp_parm_string(-1, "dcerpc_remote", "username"),
 				     lp_parm_string(-1, "dcerpc_remote", "password"));

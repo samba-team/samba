@@ -30,6 +30,7 @@ struct creds_CredentialState {
 	struct netr_Credential client;
 	struct netr_Credential server;
 	uint16_t secure_channel_type;
+	const char *domain;
 	const char *computer_name;
 	const char *account_name;
 	uint32_t rid;

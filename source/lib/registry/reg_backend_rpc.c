@@ -384,6 +384,7 @@ WERROR reg_open_remote (struct registry_context **ctx, const char *user, const c
 	status = dcerpc_pipe_connect(&p, location, 
 				     DCERPC_WINREG_UUID,
 				     DCERPC_WINREG_VERSION,
+				     lp_netbios_name(),
 				     lp_workgroup(),
 				     user, pass);
 	(*ctx)->backend_data = p;

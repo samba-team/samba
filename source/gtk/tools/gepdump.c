@@ -77,7 +77,7 @@ static const char *get_protocol_name(enum epm_protocol protocol)
 
 static void add_epm_entry(TALLOC_CTX *mem_ctx, const char *annotation, struct epm_tower *t)
 {
-	struct dcerpc_binding bd;
+	struct dcerpc_binding *bd;
 	int i;
 	NTSTATUS status;
 	GtkTreeIter toweriter;
@@ -89,10 +89,10 @@ static void add_epm_entry(TALLOC_CTX *mem_ctx, const char *annotation, struct ep
 	}
 	
 	/* Don't show UUID's */
-	ZERO_STRUCT(bd.object);
+	ZERO_STRUCT(bd->object);
 
 	gtk_tree_store_append(store_eps, &toweriter, NULL);
-	gtk_tree_store_set(store_eps, &toweriter, 0, strdup(annotation), 1, strdup(dcerpc_binding_string(mem_ctx, &bd)), 2, t, -1);
+	gtk_tree_store_set(store_eps, &toweriter, 0, strdup(annotation), 1, strdup(dcerpc_binding_string(mem_ctx, bd)), 2, t, -1);
 
 	for (i = 0; i < t->num_floors; i++) {
 		const char *data;
@@ -187,7 +187,9 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 	mem_ctx = talloc_init("connect");
 	bs = gtk_rpc_binding_dialog_get_binding_string (d, mem_ctx);
 
-	status = dcerpc_pipe_connect(&epmapper_pipe, bs, DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, lp_workgroup(), "", "");
+	status = dcerpc_pipe_connect(&epmapper_pipe, bs, 
+				     DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, 
+				     lp_netbios_name(), lp_workgroup(), "", "");
 
 	if (NT_STATUS_IS_ERR(status)) {
 		gtk_show_ntstatus(mainwin, status);

@@ -76,15 +76,21 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   const char *machine_name,
 			   const char *plain_pass,
-			   struct creds_CredentialState *creds)
+			   struct creds_CredentialState **creds_out)
 {
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate a;
 	struct netr_Credential credentials1, credentials2, credentials3;
+	struct creds_CredentialState *creds;
 	struct samr_Password mach_password;
 
 	printf("Testing ServerReqChallenge\n");
+
+	creds = talloc(mem_ctx, struct creds_CredentialState);
+	if (!creds) {
+		return False;
+	}
 
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
@@ -108,7 +114,11 @@ BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	creds_client_init(creds, &credentials1, &credentials2, &mach_password, &credentials3, 
+	creds_client_init(creds, &credentials1, &credentials2, 
+			  machine_name, 
+			  lp_workgroup(),
+			  a.in.account_name,
+			  &mach_password, &credentials3, 
 			  0);
 
 	printf("Testing ServerAuthenticate\n");
@@ -124,6 +134,7 @@ BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	*creds_out = creds;
 	return True;
 }
 
@@ -132,15 +143,21 @@ BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    const char *machine_name,
 			    const char *plain_pass,
 			    int sec_chan_type,
-			    struct creds_CredentialState *creds)
+			    struct creds_CredentialState **creds_out)
 {
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
+	struct creds_CredentialState *creds;
 	struct samr_Password mach_password;
 
 	printf("Testing ServerReqChallenge\n");
+
+	creds = talloc(mem_ctx, struct creds_CredentialState);
+	if (!creds) {
+		return False;
+	}
 
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
@@ -166,7 +183,11 @@ BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	creds_client_init(creds, &credentials1, &credentials2, &mach_password, &credentials3, 
+	creds_client_init(creds, &credentials1, &credentials2, 
+			  machine_name, 
+			  lp_workgroup(),
+			  a.in.account_name,
+			  &mach_password, &credentials3, 
 			  negotiate_flags);
 
 	printf("Testing ServerAuthenticate2\n");
@@ -184,6 +205,7 @@ BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("negotiate_flags=0x%08x\n", negotiate_flags);
 
+	*creds_out = creds;
 	return True;
 }
 
@@ -192,16 +214,22 @@ BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    uint32_t negotiate_flags,
 			    const char *machine_name,
 			    const char *plain_pass,
-			    struct creds_CredentialState *creds)
+			    struct creds_CredentialState **creds_out)
 {
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate3 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
+	struct creds_CredentialState *creds;
 	struct samr_Password mach_password;
 	uint32_t rid;
 
 	printf("Testing ServerReqChallenge\n");
+
+	creds = talloc(mem_ctx, struct creds_CredentialState);
+	if (!creds) {
+		return False;
+	}
 
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
@@ -228,7 +256,11 @@ BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.out.negotiate_flags = &negotiate_flags;
 	a.out.rid = &rid;
 
-	creds_client_init(creds, &credentials1, &credentials2, &mach_password, &credentials3,
+	creds_client_init(creds, &credentials1, &credentials2, 
+			  machine_name, 
+			  lp_workgroup(),
+			  a.in.account_name,
+			  &mach_password, &credentials3,
 			  negotiate_flags);
 
 	printf("Testing ServerAuthenticate3\n");
@@ -246,6 +278,7 @@ BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("negotiate_flags=0x%08x\n", negotiate_flags);
 
+	*creds_out = creds;
 	return True;
 }
 
@@ -257,7 +290,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_ServerPasswordSet r;
 	const char *password;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 
 	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, 
 				   machine_password, &creds)) {
@@ -272,7 +305,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	password = "";
 	E_md4hash(password, r.in.new_password.hash);
 
-	creds_des_encrypt(&creds, &r.in.new_password);
+	creds_des_encrypt(creds, &r.in.new_password);
 	/* by changing the machine password to ""
 	 * we check if the server uses password restrictions
 	 * for ServerPasswordSet2
@@ -281,7 +314,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	printf("Testing a second ServerPasswordSet on machine account\n");
 	printf("Changing machine account password to '%s'\n", password);
 
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -289,7 +322,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -303,12 +336,12 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	password = generate_random_str(mem_ctx, 8);
 	E_md4hash(password, r.in.new_password.hash);
 
-	creds_des_encrypt(&creds, &r.in.new_password);
+	creds_des_encrypt(creds, &r.in.new_password);
 
 	printf("Testing ServerPasswordSet on machine account\n");
 	printf("Changing machine account password to '%s'\n", password);
 
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -316,7 +349,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -327,7 +360,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	printf("Testing a second ServerPasswordSet on machine account\n");
 	printf("Changing machine account password to '%s' (same as previous run)\n", password);
 
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -335,7 +368,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -357,7 +390,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_ServerPasswordSet2 r;
 	const char *password;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 
 	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME,
 				   machine_password, &creds)) {
@@ -371,7 +404,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	password = "";
 	encode_pw_buffer(r.in.new_password.data, password, STR_UNICODE);
-	creds_arcfour_crypt(&creds, r.in.new_password.data, 516);
+	creds_arcfour_crypt(creds, r.in.new_password.data, 516);
 
 	/* by changing the machine password to ""
 	 * we check if the server uses password restrictions
@@ -381,7 +414,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	printf("Testing a second ServerPasswordSet2 on machine account\n");
 	printf("Changing machine account password to '%s'\n", password);
 
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -389,7 +422,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -403,12 +436,12 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	/* now try a random password */
 	password = generate_random_str(mem_ctx, 8);
 	encode_pw_buffer(r.in.new_password.data, password, STR_UNICODE);
-	creds_arcfour_crypt(&creds, r.in.new_password.data, 516);
+	creds_arcfour_crypt(creds, r.in.new_password.data, 516);
 
 	printf("Testing ServerPasswordSet2 on machine account\n");
 	printf("Changing machine account password to '%s'\n", password);
 
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -416,7 +449,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -427,7 +460,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	printf("Testing a second ServerPasswordSet2 on machine account\n");
 	printf("Changing machine account password to '%s' (same as previous run)\n", password);
 
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -435,7 +468,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -460,7 +493,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_NetworkInfo ninfo;
 	const char *username = lp_parm_string(-1, "torture", "username");
 	const char *password = lp_parm_string(-1, "torture", "password");
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 
 	int i;
 	BOOL ret = True;
@@ -494,7 +527,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	for (i=2;i<=3;i++) {
 		ZERO_STRUCT(auth2);
-		creds_client_authenticator(&creds, &auth);
+		creds_client_authenticator(creds, &auth);
 
 		r.in.validation_level = i;
 
@@ -506,7 +539,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			ret = False;
 		}
 
-		if (!creds_client_check(&creds, &r.out.return_authenticator->cred)) {
+		if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 			printf("Credential chaining failed\n");
 		}
 	}
@@ -540,7 +573,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_DatabaseSync r;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
 	BOOL ret = True;
@@ -561,7 +594,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("Testing DatabaseSync of id %d\n", r.in.database_id);
 
 		do {
-			creds_client_authenticator(&creds, &r.in.credential);
+			creds_client_authenticator(creds, &r.in.credential);
 
 			status = dcerpc_netr_DatabaseSync(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status) &&
@@ -571,7 +604,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 				break;
 			}
 
-			if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 				printf("Credential chaining failed\n");
 			}
 
@@ -601,7 +634,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_DatabaseDeltas r;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	BOOL ret = True;
@@ -628,7 +661,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		       r.in.database_id, r.in.sequence_num);
 
 		do {
-			creds_client_authenticator(&creds, &r.in.credential);
+			creds_client_authenticator(creds, &r.in.credential);
 
 			status = dcerpc_netr_DatabaseDeltas(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status) &&
@@ -638,7 +671,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 				break;
 			}
 
-			if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 				printf("Credential chaining failed\n");
 			}
 
@@ -657,7 +690,7 @@ static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_AccountDeltas r;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 	BOOL ret = True;
 
 	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
@@ -667,7 +700,7 @@ static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	ZERO_STRUCT(r.in.return_authenticator);
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 	ZERO_STRUCT(r.in.uas);
 	r.in.count=10;
 	r.in.level=0;
@@ -692,7 +725,7 @@ static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_AccountSync r;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 	BOOL ret = True;
 
 	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
@@ -702,7 +735,7 @@ static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	ZERO_STRUCT(r.in.return_authenticator);
-	creds_client_authenticator(&creds, &r.in.credential);
+	creds_client_authenticator(creds, &r.in.credential);
 	ZERO_STRUCT(r.in.recordid);
 	r.in.reference=0;
 	r.in.level=0;
@@ -886,7 +919,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_DatabaseSync2 r;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	BOOL ret = True;
@@ -910,7 +943,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("Testing DatabaseSync2 of id %d\n", r.in.database_id);
 
 		do {
-			creds_client_authenticator(&creds, &r.in.credential);
+			creds_client_authenticator(creds, &r.in.credential);
 
 			status = dcerpc_netr_DatabaseSync2(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status) &&
@@ -920,7 +953,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 				break;
 			}
 
-			if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
 				printf("Credential chaining failed\n");
 			}
 
@@ -1082,7 +1115,7 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonGetDomainInfo r;
 	struct netr_DomainQuery1 q1;
 	struct netr_Authenticator a;
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 
 	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
 				    TEST_MACHINE_NAME, machine_password, &creds)) {
@@ -1091,7 +1124,7 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	ZERO_STRUCT(r);
 
-	creds_client_authenticator(&creds, &a);
+	creds_client_authenticator(creds, &a);
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = TEST_MACHINE_NAME;
@@ -1119,7 +1152,7 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_client_check(&creds, &a.cred)) {
+	if (!creds_client_check(creds, &a.cred)) {
 		printf("Credential chaining failed\n");
 		return False;
 	}
@@ -1143,8 +1176,8 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_DomainQuery1 q1;
 	struct netr_Authenticator a;
 #define ASYNC_COUNT 100
-	struct creds_CredentialState creds;
-	struct creds_CredentialState creds_async[ASYNC_COUNT];
+	struct creds_CredentialState *creds;
+	struct creds_CredentialState *creds_async[ASYNC_COUNT];
 	struct rpc_request *req[ASYNC_COUNT];
 	int i;
 	int *async_counter = talloc(mem_ctx, int);
@@ -1183,9 +1216,9 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	*async_counter = 0;
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		creds_client_authenticator(&creds, &a);
+		creds_client_authenticator(creds, &a);
 
-		creds_async[i] = creds;
+		creds_async[i] = talloc_memdup(creds, creds, sizeof(*creds));
 		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, mem_ctx, &r);
 
 		req[i]->async.callback = async_callback;
@@ -1206,7 +1239,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			break;
 		}
 
-		if (!creds_client_check(&creds_async[i], &a.cred)) {
+		if (!creds_client_check(creds_async[i], &a.cred)) {
 			printf("Credential chaining failed at async %d\n", i);
 			break;
 		}
@@ -1220,6 +1253,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
+	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p2;
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -1240,14 +1274,24 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	printf("Torturing GetDCName\n");
 
-	status = dcerpc_secondary_connection(p, &p2, 
-					     DCERPC_LSARPC_NAME, 
-					     DCERPC_LSARPC_UUID, 
-					     DCERPC_LSARPC_VERSION);
+	status = dcerpc_parse_binding(mem_ctx, p->conn->binding_string, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to parse dcerpc binding '%s'\n", p->conn->binding_string);
+		return False;
+	}
+
+	status = dcerpc_secondary_connection(p, &p2, b);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to create secondary connection\n");
 		return False;
 	}
+
+	status = dcerpc_bind_auth_none(p2, DCERPC_LSARPC_UUID, 
+				       DCERPC_LSARPC_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+   		printf("Failed to create bind on secondary connection\n");
+		return False;
+        }
 
 	qos.len = 0;
 	qos.impersonation_level = 2;

@@ -180,7 +180,7 @@ static NTSTATUS connect_to_pipe(struct dcerpc_pipe **pp,
 				uint32_t pipe_version)
 {
 	const char *binding = lp_parm_string(-1, "torture", "binding");
-	struct dcerpc_binding b;
+	struct dcerpc_binding *b;
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *tmp_ctx;
@@ -205,46 +205,23 @@ static NTSTATUS connect_to_pipe(struct dcerpc_pipe **pp,
 		return status;
 	}
 
-	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, &b)));
+	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, b)));
 
-	if (b.endpoint == NULL) {
-		const struct dcerpc_interface_table *table =
-			idl_iface_by_uuid(pipe_uuid);
-		struct dcerpc_binding default_binding;
-		int i;
-
-		if (!table) {
-			DEBUG(0,("Unknown interface endpoint '%s'\n",
-				 pipe_uuid));
-			talloc_free(tmp_ctx);
-			return NT_STATUS_INVALID_PARAMETER;
+	/* Look up identifier using the epmapper */
+	if (!b->endpoint) {
+		status = dcerpc_epm_map_binding(tmp_ctx, b, pipe_uuid, pipe_version);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
+				 pipe_uuid, nt_errstr(status)));
+			talloc_free(p);
+			return status;
 		}
-
-		/* Find one of the default pipes for this interface */
-		for (i = 0; i < table->endpoints->count; i++) {
-			const char * const *names = table->endpoints->names;
-			status = dcerpc_parse_binding(tmp_ctx, names[i],
-						      &default_binding);
-
-			if (NT_STATUS_IS_OK(status) &&
-			    default_binding.transport == NCACN_NP) {
-				pipe_name = default_binding.endpoint;	
-				break;
-			}
-		}
-	} else {
-		pipe_name = b.endpoint;
+		DEBUG(1,("Mapped to DCERPC/NP pipe %s\n", b->endpoint));
 	}
 
-	if (!strncasecmp(pipe_name, "/pipe/", 6) || 
-		!strncasecmp(pipe_name, "\\pipe\\", 6)) {
-		pipe_name += 6;
-	}
+	pipe_name = b->endpoint;
 
-	if (pipe_name[0] != '\\') {
-		pipe_name = talloc_asprintf(mem_ctx, "\\%s", pipe_name);
-	}
-	
+
 	status = dcerpc_pipe_open_smb(p->conn, tree, pipe_name);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -502,6 +479,9 @@ static NTSTATUS setup_netlogon_creds(struct smbcli_transport *transport,
 	a.out.credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2,
+			  machine_name, 
+			  domain,
+			  a.in.account_name, 
 			  &mach_password, &credentials3, 
 			  negotiate_flags);
 
@@ -1056,7 +1036,6 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	status = dcerpc_bind_auth_schannel_withkey(netlogon_schannel_pipe,
 						   DCERPC_NETLOGON_UUID,
 						   DCERPC_NETLOGON_VERSION,
-						   "", "", "",
 						   netlogon_creds);
 
 	if (!NT_STATUS_IS_OK(status))
