@@ -838,7 +838,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 	data.dsize += tdb_pack(NULL, 0, NULL, "d", qcount);
 
 	for (i = 0; i < pts->qcount; i++) {
-		data.dsize += tdb_pack(NULL, 0, NULL, "ddddddff",
+		data.dsize += tdb_pack(NULL, 0, "ddddddff",
 				(uint32)queue[i].job,
 				(uint32)queue[i].size,
 				(uint32)queue[i].page_count,
@@ -853,9 +853,9 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 		return;
 
         len = 0;
-	len += tdb_pack(data.dptr + len, data.dsize - len, NULL, "d", qcount);
+	len += tdb_pack(data.dptr + len, data.dsize - len, "d", qcount);
 	for (i = 0; i < pts->qcount; i++) {
-		len += tdb_pack(data.dptr + len, data.dsize - len, NULL, "ddddddff",
+		len += tdb_pack(data.dptr + len, data.dsize - len, "ddddddff",
 				(uint32)queue[i].job,
 				(uint32)queue[i].size,
 				(uint32)queue[i].page_count,
