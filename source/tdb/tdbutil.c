@@ -24,6 +24,30 @@
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
+/* lock a chain by string */
+int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval)
+{
+	TDB_DATA key;
+
+	key.dptr = keyval;
+	key.dsize = strlen(keyval)+1;
+	
+	return tdb_chainlock(tdb, key);
+}
+
+/* unlock a chain by string */
+void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
+{
+	TDB_DATA key;
+
+	key.dptr = keyval;
+	key.dsize = strlen(keyval)+1;
+	
+	tdb_chainunlock(tdb, key);
+}
+
+/* lock a chain by string key */
+
 
 /* fetch a value by a arbitrary blob key, return -1 if not found */
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
@@ -116,7 +140,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 		switch ((c = *fmt++)) {
 		case 'w':
 			len = 2;
-			w = va_arg(ap, uint16);
+			w = (uint16)va_arg(ap, int);
 			if (bufsize >= len) {
 				SSVAL(buf, 0, w);
 			}

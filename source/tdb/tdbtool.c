@@ -14,6 +14,7 @@
 
 static TDB_CONTEXT *tdb;
 
+static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 
 static void print_asc(unsigned char *buf,int len)
 {
@@ -66,6 +67,7 @@ tdbtool:
   store     key  data  : store a record (replace)
   show      key        : show a record by key
   delete    key        : delete a record by key
+  free                 : print the database freelist
 ");
 }
 
@@ -150,11 +152,12 @@ static void show_tdb(void)
 	}
 
 	key.dptr = k;
-	key.dsize = strlen(k);
+	key.dsize = strlen(k)+1;
 
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) terror("fetch failed");
-	printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr);
+	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
+	print_rec(tdb, key, dbuf, NULL);
 }
 
 static void delete_tdb(void)
@@ -222,7 +225,14 @@ int main(int argc, char *argv[])
 {
     char *line;
     char *tok;
-	
+
+    if (argv[1]) {
+	static char tmp[1024];
+        sprintf(tmp, "open %s", argv[1]);
+        tok=strtok(tmp," ");
+        open_tdb();
+    }
+
     while ((line = getline("tdb> "))) {
 
         /* Shell command */
@@ -232,7 +242,9 @@ int main(int argc, char *argv[])
             continue;
         }
         
-        tok = strtok(line," ");
+        if ((tok = strtok(line," "))==NULL) {
+            continue;
+        }
         if (strcmp(tok,"create") == 0) {
             create_tdb();
             continue;
@@ -262,6 +274,8 @@ int main(int argc, char *argv[])
             tdb_traverse(tdb, print_rec, NULL);
         } else if (strcmp(tok,"info") == 0) {
             info_tdb();
+		} else if (strcmp(tok, "free") == 0) {
+			tdb_printfreelist(tdb);
         } else {
             help();
         }

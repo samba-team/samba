@@ -151,7 +151,7 @@ SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) \
 
 LIBSTATUS_OBJ = lib/util_status.o 
 
-TDB_OBJ = tdb/tdb.o tdb/tdbutil.o
+TDB_OBJ = tdb/tdb.o tdb/spinlock.o tdb/tdbutil.o
 
 LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
@@ -168,7 +168,8 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/talloc.o \
 		lib/ms_fnmatch.o \
 		lib/interfaces.o \
-		tdb/tdb.o tdb/tdbutil.o passdb/secrets.o \
+		$(TDB_OBJ) \
+		passdb/secrets.o \
 		lib/util_list.o
 
 STUB_UID_OBJ = lib/stub_uid.o
