@@ -5504,9 +5504,12 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle)
 {
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	fstring name;
-	int snum;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL,
+				*old_printer = NULL;
+	fstring 		name;
+	int 			snum;
+	uint32			result = NT_STATUS_NO_PROBLEMO;
+	
 
 	if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
 		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
@@ -5517,12 +5520,26 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
 	convert_printer_info(info, printer, 2);
+	
+	/* check to see if the printer already exists */
+	result = get_a_printer(&old_printer, 2, printer->info_2->sharename);
+	
+	/* did we find a printer? */
+	if (result == 0) 
+	{
+		DEBUG(5, ("_spoolss_addprinterex: Attempted to add a printer named [%s] when one already existed!\n", 
+			printer->info_2->sharename));
+		free_a_printer(&old_printer, 2);
+		return ERROR_PRINTER_ALREADY_EXISTS;
+	}
+		
 
 	if (*lp_addprinter_cmd() )
-		if ( !add_printer_hook(printer) ) {
+		if ( !add_printer_hook(printer) ) 
+		{
 			free_a_printer(&printer,2);
 			return ERROR_ACCESS_DENIED;
-	}
+		}
 
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname,
              printer->info_2->sharename);

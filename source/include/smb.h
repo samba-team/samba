@@ -196,6 +196,7 @@ implemented */
 #define ERROR_NOTIFY_ENUM_DIR	       (1022) /* Buffer too small to return change notify. */
 #define ERROR_UNKNOWN_PRINTER_DRIVER   (1797)
 #define ERROR_INVALID_PRINTER_NAME     (1801)
+#define ERROR_PRINTER_ALREADY_EXISTS   (1802)
 #define ERROR_INVALID_DATATYPE	       (1804)
 #define ERROR_INVALID_ENVIRONMENT      (1805)
 
