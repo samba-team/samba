@@ -227,11 +227,8 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *
 	char *e;
 	if (ps->error) return False;
 	q = mem_data(&(ps->data), ps->offset);
-	end_offset = ps->offset + len * sizeof(uint8);
+	end_offset = ps->offset + len * sizeof(uint16);
 	e = mem_data(&(ps->data), end_offset-1);
-	char *q = mem_data(&(ps->data), ps->offset);
-	int end_offset = ps->offset + len * sizeof(uint16);
-	char *e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
 	{
@@ -255,7 +252,7 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *
 	char *e;
 	if (ps->error) return False;
 	q = mem_data(&(ps->data), ps->offset);
-	end_offset = ps->offset + len * sizeof(uint8);
+	end_offset = ps->offset + len * sizeof(uint32);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
@@ -281,7 +278,7 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 
 	char *e;
 	if (ps->error) return False;
 	q = mem_data(&(ps->data), ps->offset);
-	end_offset = ps->offset + len * sizeof(uint8);
+	end_offset = ps->offset + str->buf_len;
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
@@ -307,7 +304,7 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 
 	char *e;
 	if (ps->error) return False;
 	q = mem_data(&(ps->data), ps->offset);
-	end_offset = ps->offset + len * sizeof(uint8);
+	end_offset = ps->offset + str->str_str_len * sizeof(uint8);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
@@ -333,7 +330,7 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 
 	char *e;
 	if (ps->error) return False;
 	q = mem_data(&(ps->data), ps->offset);
-	end_offset = ps->offset + len * sizeof(uint8);
+	end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
@@ -359,7 +356,7 @@ BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int d
 	char *e;
 	if (ps->error) return False;
 	q = mem_data(&(ps->data), ps->offset);
-	end_offset = ps->offset + len * sizeof(uint8);
+	end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
