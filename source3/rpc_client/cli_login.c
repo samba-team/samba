@@ -29,11 +29,10 @@ extern int DEBUGLEVEL;
 Initialize domain session credentials.
 ****************************************************************************/
 
-uint32 cli_nt_setup_creds( char* servers, const char* myhostname,
+uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
 				const char* trust_acct,
 				unsigned char trust_pwd[16],
-				uint16 sec_chan,
-				char *srv_name)
+				uint16 sec_chan)
 {
 	DOM_CHAL clnt_chal;
 	DOM_CHAL srv_chal;
@@ -42,25 +41,12 @@ uint32 cli_nt_setup_creds( char* servers, const char* myhostname,
 	uint8 sess_key[16];
 	DOM_CRED clnt_cred;
 
-	/******************* make connection **********************/
-	struct cli_connection *con = NULL;
-
-	if (!cli_connection_init_list(servers, PIPE_NETLOGON, &con))
-	{
-		return False;
-	}
-
-	if (!cli_con_get_srvname(con, srv_name))
-	{
-		return False;
-	}
-
 	/******************* Request Challenge ********************/
 
 	generate_random_buffer( clnt_chal.data, 8, False);
 
 	/* send a client challenge; receive a server challenge */
-	ret = cli_net_req_chal(servers, myhostname, &clnt_chal, &srv_chal);
+	ret = cli_net_req_chal(srv_name, myhostname, &clnt_chal, &srv_chal);
 	if (ret != 0)
 	{
 		DEBUG(1,("cli_nt_setup_creds: request challenge failed\n"));
@@ -247,7 +233,7 @@ BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
 /****************************************************************************
 NT SAM database sync
 ****************************************************************************/
-BOOL net_sam_sync(char* servers, const char* myhostname,
+BOOL net_sam_sync(const char* srv_name, const char* myhostname,
 				const char* trust_acct,
 				uchar trust_passwd[16],
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
@@ -255,17 +241,15 @@ BOOL net_sam_sync(char* servers, const char* myhostname,
 				uint32 *num_deltas)
 {
 	BOOL res = True;
-	fstring srv_name;
 
 	*num_deltas = 0;
 
 	DEBUG(5,("Attempting SAM sync with PDC: %s\n",
 		srv_name));
 
-	res = res ? cli_nt_setup_creds( servers, myhostname,
+	res = res ? cli_nt_setup_creds( srv_name, myhostname,
 	                               trust_acct, 
-	                               trust_passwd, SEC_CHAN_BDC,
-	                               srv_name) == 0x0 : False;
+	                               trust_passwd, SEC_CHAN_BDC) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
 
