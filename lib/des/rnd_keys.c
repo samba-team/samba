@@ -72,6 +72,10 @@ RCSID("$Id$");
 #include <fcntl.h>
 #endif
 
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
 /*
  * Generate "random" data by checksumming a file.
  *
