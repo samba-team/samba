@@ -16,7 +16,6 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <protos.h>
 #define UIDL
 #define XOVER
 #define DEBUG
@@ -83,6 +82,9 @@
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
 #include "version.h"
 
 #ifdef SOCKS
@@ -91,11 +93,13 @@
 
 #include <err.h>
 #include <roken.h>
+#include <getarg.h>
 
 #define KERBEROS
 
-#ifdef KERBEROS
+#ifdef KRB4
 #include <krb.h>
+#include <prot.h>
 #else
 /* Portable file locking */
 #define k_flock(fd, operation) flock((fd), (operation))
@@ -104,6 +108,7 @@
 #define   K_LOCK_NB   LOCK_NB         /* Don't block when locking */
 #define   K_LOCK_UN   LOCK_UN         /* Unlock */
 #endif
+#include <krb5.h>
 
 #define MAXUSERNAMELEN  65
 #define MAXDROPLEN      64
@@ -240,9 +245,12 @@ typedef struct  {                               /*  POP parameter block */
     int                 parm_count;             /*  Number of parameters in 
                                                     parsed list */
     int			kerberosp;		/*  Using KPOP? */
-#ifdef KERBEROS
+#ifdef KRB4
     AUTH_DAT		kdata;
 #endif
+    krb5_context	context;
+    krb5_principal	principal;              /*  principal auth as */
+    int			version;                /*  4 or 5? */
     int			auth_level;		/*  Dont allow cleartext */
     OtpContext		otp_ctx;		/*  OTP context */
 } POP;
