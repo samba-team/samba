@@ -963,13 +963,14 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 
+	/* 
+	 * If so configured, try and get the values from LDAP 
+	 */
 
-	if (lp_ldap_trust_ids() && (get_unix_attributes(ldap_state,sampass, entry))) {
+	if (!lp_ldap_trust_ids() || (!get_unix_attributes(ldap_state, sampass, entry))) {
 		
-	} else {
-
-		/* These values MAY be in LDAP, but they can also be retrieved through 
-		 *  sys_getpw*() which is how we're doing it 
+		/* 
+		 * Otherwise just ask the system getpw() calls.
 		 */
 	
 		pw = getpwnam_alloc(username);
