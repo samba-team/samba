@@ -129,7 +129,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 
 	fstrcpy(user_name, pdb_get_username(sam_pass));
 	grid=pdb_get_group_rid(sam_pass);
-	if (!sid_to_gid(pdb_get_group_sid(sam_pass), &gid)) {
+	if (NT_STATUS_IS_ERR(sid_to_gid(pdb_get_group_sid(sam_pass), &gid))) {
 		/* this should never happen */
 		DEBUG(2,("get_alias_user_groups: sid_to_gid failed!\n"));
 		pdb_free_sam(&sam_pass);

@@ -407,7 +407,7 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 	for (i = 0; i < ptok->num_sids; i++) {
 		gid_t new_grp;
  
-		if (sid_to_gid(&ptok->user_sids[i], &new_grp)) {
+		if (NT_STATUS_IS_OK(sid_to_gid(&ptok->user_sids[i], &new_grp))) {
 			/*
 			 * Don't add the gid_t if it is already in the current group
 			 * list. Some UNIXen don't like the same group more than once.

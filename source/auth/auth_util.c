@@ -611,21 +611,21 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	NT_USER_TOKEN *token;
 	int i;
 
-	if (!uid_to_sid(&user_sid, uid)) {
+	if (NT_STATUS_IS_ERR(uid_to_sid(&user_sid, uid))) {
 		return NULL;
 	}
-	if (!gid_to_sid(&group_sid, gid)) {
+	if (NT_STATUS_IS_ERR(gid_to_sid(&group_sid, gid))) {
 		return NULL;
 	}
 
-	group_sids   = malloc(sizeof(DOM_SID) * ngroups);
+	group_sids = malloc(sizeof(DOM_SID) * ngroups);
 	if (!group_sids) {
 		DEBUG(0, ("create_nt_token: malloc() failed for DOM_SID list!\n"));
 		return NULL;
 	}
 
 	for (i = 0; i < ngroups; i++) {
-		if (!gid_to_sid(&(group_sids)[i], (groups)[i])) {
+		if (NT_STATUS_IS_ERR(gid_to_sid(&(group_sids)[i], (groups)[i]))) {
 			DEBUG(1, ("create_nt_token: failed to convert gid %ld to a sid!\n", (long int)groups[i]));
 			SAFE_FREE(group_sids);
 			return NULL;
@@ -648,7 +648,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
  * If this samba server is a DC of the domain the user belongs to, it returns 
  * both domain groups and local / builtin groups. If the user is in a trusted
  * domain, or samba is a member server of a domain, then this function returns
- * local and builtin groups the user is a member of. 
+ * local and builtin groups the user is a member of.
  *
  * currently this is a hack, as there is no sam implementation that is capable
  * of groups.
@@ -665,7 +665,7 @@ static NTSTATUS get_user_groups_from_local_sam(SAM_ACCOUNT *sampass,
 	*n_groups = 0;
 	*groups   = NULL;
 
-	if (!sid_to_uid(pdb_get_user_sid(sampass), &uid) || !sid_to_gid(pdb_get_group_sid(sampass), &gid)) {
+	if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sampass), &uid)) || NT_STATUS_IS_ERR(sid_to_gid(pdb_get_group_sid(sampass), &gid))) {
 		DEBUG(0, ("get_user_groups_from_local_sam: error fetching uid or gid for user!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -706,7 +706,7 @@ static NTSTATUS get_user_groups_from_local_sam(SAM_ACCOUNT *sampass,
 	*n_groups = n_unix_groups;
 
 	for (i = 0; i < *n_groups; i++) {
-		if (!gid_to_sid(&(*groups)[i], (*unix_groups)[i])) {
+		if (NT_STATUS_IS_ERR(gid_to_sid(&(*groups)[i], (*unix_groups)[i]))) {
 			DEBUG(1, ("get_user_groups_from_local_sam: failed to convert gid %ld to a sid!\n", (long int)(*unix_groups)[i+1]));
 			SAFE_FREE(*groups);
 			SAFE_FREE(*unix_groups);
@@ -723,6 +723,8 @@ static NTSTATUS get_user_groups_from_local_sam(SAM_ACCOUNT *sampass,
 
 static NTSTATUS make_server_info(auth_serversupplied_info **server_info, SAM_ACCOUNT *sampass)
 {
+	NTSTATUS ret;
+
 	*server_info = malloc(sizeof(**server_info));
 	if (!*server_info) {
 		DEBUG(0,("make_server_info: malloc failed!\n"));
@@ -732,10 +734,10 @@ static NTSTATUS make_server_info(auth_serversupplied_info **server_info, SAM_ACC
 
 	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->sam_account    = sampass;
-	if (!sid_to_uid(pdb_get_user_sid(sampass), &((*server_info)->uid)))
-		return NT_STATUS_UNSUCCESSFUL;
-	if (!sid_to_gid(pdb_get_group_sid(sampass), &((*server_info)->gid)))
-		return NT_STATUS_UNSUCCESSFUL;
+	if (NT_STATUS_IS_ERR(ret = sid_to_uid(pdb_get_user_sid(sampass), &((*server_info)->uid))))
+		return ret;
+	if (NT_STATUS_IS_ERR(ret = sid_to_gid(pdb_get_group_sid(sampass), &((*server_info)->gid))))
+		return ret;
 
 	return NT_STATUS_OK;
 }

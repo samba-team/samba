@@ -556,10 +556,6 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
 	return (True);
 }
 
-/*******************************************************************
- Converts NT user RID to a UNIX uid.
- ********************************************************************/
-
 static int algorithmic_rid_base(void)
 {
 	static int rid_offset = 0;
@@ -582,13 +578,15 @@ static int algorithmic_rid_base(void)
 	return rid_offset;
 }
 
+/*******************************************************************
+ Converts NT user RID to a UNIX uid.
+ ********************************************************************/
 
 uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
 {
 	int rid_offset = algorithmic_rid_base();
 	return (uid_t)(((user_rid & (~USER_RID_TYPE)) - rid_offset)/RID_MULTIPLIER);
 }
-
 
 /*******************************************************************
  converts UNIX uid to an NT User RID.
