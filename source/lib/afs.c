@@ -29,12 +29,6 @@
 #include <asm/unistd.h>
 #include <openssl/des.h>
 
-_syscall5(int, afs_syscall, int, subcall,
-	  char *, path,
-	  int, cmd,
-	  char *, cmarg,
-	  int, follow);
-
 struct ClearToken {
 	uint32 AuthHandle;
 	char HandShakeKey[8];
@@ -73,186 +67,6 @@ static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
 
 	return result;
 }
-
-static BOOL afs_decode_token(const char *string, char **cell,
-			     DATA_BLOB *ticket, struct ClearToken *ct)
-{
-	DATA_BLOB blob;
-	struct ClearToken result_ct;
-
-	char *s = strdup(string);
-
-	char *t;
-
-	if ((t = strtok(s, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
-		return False;
-	}
-
-	*cell = strdup(t);
-
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
-		return False;
-	}
-
-	if (sscanf(t, "%u", &result_ct.AuthHandle) != 1) {
-		DEBUG(10, ("sscanf AuthHandle failed\n"));
-		return False;
-	}
-		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
-		return False;
-	}
-
-	blob = base64_decode_data_blob(t);
-
-	if ( (blob.data == NULL) ||
-	     (blob.length != sizeof(result_ct.HandShakeKey) )) {
-		DEBUG(10, ("invalid key: %x/%d\n", (uint32)blob.data,
-			   blob.length));
-		return False;
-	}
-
-	memcpy(result_ct.HandShakeKey, blob.data, blob.length);
-
-	data_blob_free(&blob);
-
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
-		return False;
-	}
-
-	if (sscanf(t, "%u", &result_ct.ViceId) != 1) {
-		DEBUG(10, ("sscanf ViceId failed\n"));
-		return False;
-	}
-		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
-		return False;
-	}
-
-	if (sscanf(t, "%u", &result_ct.BeginTimestamp) != 1) {
-		DEBUG(10, ("sscanf BeginTimestamp failed\n"));
-		return False;
-	}
-		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
-		return False;
-	}
-
-	if (sscanf(t, "%u", &result_ct.EndTimestamp) != 1) {
-		DEBUG(10, ("sscanf EndTimestamp failed\n"));
-		return False;
-	}
-		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
-		return False;
-	}
-
-	blob = base64_decode_data_blob(t);
-
-	if (blob.data == NULL) {
-		DEBUG(10, ("Could not get ticket\n"));
-		return False;
-	}
-
-	*ticket = blob;
-	*ct = result_ct;
-
-	return True;
-}
-
-/*
-  Put an AFS token into the Kernel so that it can authenticate against
-  the AFS server. This assumes correct local uid settings.
-
-  This is currently highly Linux and OpenAFS-specific. The correct API
-  call for this would be ktc_SetToken. But to do that we would have to
-  import a REALLY big bunch of libraries which I would currently like
-  to avoid. 
-*/
-
-static BOOL afs_settoken(const char *cell,
-			 const struct ClearToken *ctok,
-			 DATA_BLOB ticket)
-{
-	int ret;
-	struct {
-		char *in, *out;
-		uint16 in_size, out_size;
-	} iob;
-
-	char buf[1024];
-	char *p = buf;
-	int tmp;
-
-	memcpy(p, &ticket.length, sizeof(uint32));
-	p += sizeof(uint32);
-	memcpy(p, ticket.data, ticket.length);
-	p += ticket.length;
-
-	tmp = sizeof(struct ClearToken);
-	memcpy(p, &tmp, sizeof(uint32));
-	p += sizeof(uint32);
-	memcpy(p, ctok, tmp);
-	p += tmp;
-
-	tmp = 0;
-
-	memcpy(p, &tmp, sizeof(uint32));
-	p += sizeof(uint32);
-
-	tmp = strlen(cell);
-	if (tmp >= MAXKTCREALMLEN) {
-		DEBUG(1, ("Realm too long\n"));
-		return False;
-	}
-
-	strncpy(p, cell, tmp);
-	p += tmp;
-	*p = 0;
-	p +=1;
-
-	iob.in = buf;
-	iob.in_size = PTR_DIFF(p,buf);
-	iob.out = buf;
-	iob.out_size = sizeof(buf);
-
-#if 0
-	file_save("/tmp/ioctlbuf", iob.in, iob.in_size);
-#endif
-
-	ret = afs_syscall(AFSCALL_PIOCTL, 0, VIOCSETTOK, (char *)&iob, 0);
-
-	DEBUG(10, ("afs VIOCSETTOK returned %d\n", ret));
-	return (ret == 0);
-}
-
-BOOL afs_settoken_str(const char *token_string)
-{
-	DATA_BLOB ticket;
-	struct ClearToken ct;
-	BOOL result;
-	char *cell;
-
-	if (!afs_decode_token(token_string, &cell, &ticket, &ct))
-		return False;
-
-	if (geteuid() != 0)
-		ct.ViceId = getuid();
-
-	result = afs_settoken(cell, &ct, ticket);
-
-	SAFE_FREE(cell);
-	data_blob_free(&ticket);
-
-	return result;
-	}
 
 /* Create a ClearToken and an encrypted ticket. ClearToken has not yet the
  * ViceId set, this should be set by the caller. */
@@ -391,6 +205,7 @@ BOOL afs_login(connection_struct *conn)
 	pstring afs_username;
 	char *cell;
 	BOOL result;
+	char *ticket_str;
 
 	struct ClearToken ct;
 
@@ -421,45 +236,11 @@ BOOL afs_login(connection_struct *conn)
 	/* For which Unix-UID do we want to set the token? */
 	ct.ViceId = getuid();
 
-	{
-		char *str, *new_cell;
-		DATA_BLOB test_ticket;
-		struct ClearToken test_ct;
+	ticket_str = afs_encode_token(cell, ticket, &ct);
 
-		hex_encode(ct.HandShakeKey, sizeof(ct.HandShakeKey), &str);
-		DEBUG(10, ("Key: %s\n", str));
-		free(str);
+	result = afs_settoken_str(ticket_str);
 
-		str = afs_encode_token(cell, ticket, &ct);
-
-		if (!afs_decode_token(str, &new_cell, &test_ticket,
-				      &test_ct)) {
-			DEBUG(0, ("Could not decode token"));
-			goto decode_failed;
-		}
-
-		if (strcmp(cell, new_cell) != 0) {
-			DEBUG(0, ("cell changed\n"));
-		}
-
-		if ((ticket.length != test_ticket.length) ||
-		    (memcmp(ticket.data, test_ticket.data,
-			    ticket.length) != 0)) {
-			DEBUG(0, ("Ticket changed\n"));
-		}
-
-		if (memcmp(&ct, &test_ct, sizeof(ct)) != 0) {
-			DEBUG(0, ("ClearToken changed\n"));
-		}
-
-		data_blob_free(&test_ticket);
-
-	decode_failed:
-		SAFE_FREE(str);
-		SAFE_FREE(new_cell);
-	}
-
-	result = afs_settoken(cell, &ct, ticket);
+	SAFE_FREE(ticket_str);
 
 	data_blob_free(&ticket);
 
@@ -471,11 +252,6 @@ BOOL afs_login(connection_struct *conn)
 BOOL afs_login(connection_struct *conn)
 {
 	return True;
-}
-
-BOOL afs_settoken_str(const char *token_string)
-{
-	return False;
 }
 
 char *afs_createtoken_str(const char *username, const char *cell)
