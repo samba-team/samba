@@ -308,6 +308,7 @@ krb5_init_ets(krb5_context context)
 	krb5_add_et_list(context, initialize_krb5_error_table_r);
 	krb5_add_et_list(context, initialize_asn1_error_table_r);
 	krb5_add_et_list(context, initialize_heim_error_table_r);
+	krb5_add_et_list(context, initialize_k524_error_table_r);
     }
 }
 

@@ -22,7 +22,7 @@ libkrb5_la_LIBADD = \
 
 lib_LTLIBRARIES = libkrb5.la
 
-ERR_FILES = krb5_err.c heim_err.c
+ERR_FILES = krb5_err.c heim_err.c k524_err.c
 
 libkrb5_la_SOURCES =				\
 	acl.c					\
@@ -154,14 +154,16 @@ man_MANS =					\
 	krb5_warn.3				\
 	verify_krb5_conf.8
 
-include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_err.h heim_err.h
+include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_err.h heim_err.h k524_err.h
 
-CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h
+CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h k524_err.c k524_err.h
 
-$(libkrb5_la_OBJECTS): krb5_err.h heim_err.h
+$(libkrb5_la_OBJECTS): krb5_err.h heim_err.h k524_err.h
 
 # to help stupid solaris make
 
 krb5_err.h: krb5_err.et
 
 heim_err.h: heim_err.et
+
+k524_err.h: k524_err.et
