@@ -98,7 +98,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT|dbg_Token/ ) {
+  if( $0 ~ /^const|^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT|dbg_Token/ ) {
     gotstart = 1;
   }
   if(!gotstart) {
