@@ -934,53 +934,5 @@ BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd)
 	return ret;
 }
 
-/***********************************************************
- Code to check a plaintext password against smbpasswd entries.
-***********************************************************/
 
-BOOL check_plaintext_password(char *user, char *old_passwd,
-			      int old_passwd_size, SAM_ACCOUNT **hnd)
-{
-	SAM_ACCOUNT  *sampass = NULL;
-	uchar old_pw[16], old_ntpw[16];
-	BOOL ret;
 
-	pdb_init_sam(&sampass);
-
-	become_root();
-	ret = pdb_getsampwnam(sampass, user);
-	unbecome_root();
-
-	*hnd = sampass;
-
-	if (ret == False)
-	{
-		DEBUG(0,("check_plaintext_password: getsmbpwnam returned NULL\n"));
-		return False;
-	}
-
-	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED)
-	{
-		DEBUG(0,("check_plaintext_password: account %s disabled.\n", user));
-		return (False);
-	}
-
-	nt_lm_owf_gen(old_passwd, old_ntpw, old_pw);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("check_plaintext_password: nt_passwd \n"));
-	dump_data(100, pdb_get_nt_passwd(sampass), 16);
-	DEBUG(100, ("check_plaintext_password: old_ntpw \n"));
-	dump_data(100, old_ntpw, 16);
-	DEBUG(100, ("check_plaintext_password: lanman_passwd \n"));
-	dump_data(100, pdb_get_lanman_passwd(sampass), 16);
-	DEBUG(100, ("check_plaintext_password: old_pw\n"));
-	dump_data(100, old_pw, 16);
-#endif
-
-	if (memcmp(pdb_get_nt_passwd(sampass), old_ntpw, 16)
-	    && memcmp(pdb_get_lanman_passwd(sampass), old_pw, 16))
-		return (False);
-	else
-		return (True);
-}

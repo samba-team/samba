@@ -1923,8 +1923,6 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   fstring user;
   fstring pass1,pass2;
 
-  struct passwd *passwd;
-
   pull_ascii_fstring(user,p);
 
   p = skip_string(p,1);
@@ -1945,67 +1943,42 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   DEBUG(3,("Set password for <%s>\n",user));
 
   /*
-   * Pass the user through the NT -> unix user mapping
-   * function.
-   */
-
-  (void)map_username(user);
-
-  /*
-   * Do any UNIX username case mangling.
-   */
-  passwd = Get_Pwnam_Modify( user );
-
-  /*
    * Attempt to verify the old password against smbpasswd entries
    * Win98 clients send old and new password in plaintext for this call.
    */
 
   {
-    fstring saved_pass2;
-    SAM_ACCOUNT *sampass=NULL;
-
-    /*
-     * Save the new password as change_oem_password overwrites it
-     * with zeros.
-     */
-
-    fstrcpy(saved_pass2, pass2);
-
-    if (check_plaintext_password(user,pass1,strlen(pass1),&sampass) &&
-        change_oem_password(sampass,pass2))
-    {
-      SSVAL(*rparam,0,NERR_Success);
-
-      /*
-       * If unix password sync was requested, attempt to change
-       * the /etc/passwd database also. Return failure if this cannot
-       * be done.
-       */
-
-      if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
-        SSVAL(*rparam,0,NERR_badpass);
-    }
- 	pdb_free_sam(&sampass);
- }
-  
-
-  /*
-   * If the above failed, attempt the plaintext password change.
-   * This tests against the /etc/passwd database only.
-   */
-
-  if(SVAL(*rparam,0) != NERR_Success)
-  {
-	  if NT_STATUS_IS_OK(pass_check(passwd, user, pass1, 
-					strlen(pass1), NULL, False)) 
+	  auth_serversupplied_info *server_info = NULL;
+	  DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
+	  if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
+		  if (change_oem_password(server_info->sam_account,pass2))
 		  {
-			  if (chgpasswd(user,pass1,pass2,False)) {
-				  SSVAL(*rparam,0,NERR_Success);
-			  }
+			  SSVAL(*rparam,0,NERR_Success);
 		  }
+		  
+		  /*
+		   * If unix password sync was requested, attempt to change
+		   * the /etc/passwd database also. Return failure if this cannot
+		   * be done.
+		   *
+		   * This occours regardless of the previous result, becouse 
+		   * It might not have been testing the password against the SAM backend.
+		   * (and therefore the change_oem_password would fail).
+		   *
+		   * Conditional on lp_unix_password_sync() becouse we don't want
+                   * to touch the unix db unless we have admin permission.
+		   */
+		  
+		  if(lp_unix_password_sync() && !chgpasswd(pdb_get_username(server_info->sam_account),
+							   pass1,pass2,False)) {
+			  SSVAL(*rparam,0,NERR_badpass);
+		  }
+		  
+		  free_server_info(&server_info);
+	  }
+	  data_blob_clear_free(&password);
   }
-  
+
   /*
    * If the plaintext change failed, attempt
    * the old encrypted method. NT will generate this
