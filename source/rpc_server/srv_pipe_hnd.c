@@ -774,6 +774,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	}
 
 	prs_mem_free(&p->out_data.rdata);
+	prs_mem_free(&p->in_data.data);
 
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
