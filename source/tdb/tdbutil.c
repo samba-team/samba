@@ -135,7 +135,7 @@ va_dcl
 	uint32 d;
 	int i;
 	void *p;
-	int len;
+	int len = 0;
 	char *s;
 	char c;
 #ifdef HAVE_STDARG_H
@@ -243,7 +243,7 @@ va_dcl
 	va_list ap;
 	uint16 *w;
 	uint32 *d;
-	int len;
+	int len = 0;
 	int *i;
 	void **p;
 	char *s, **b;
