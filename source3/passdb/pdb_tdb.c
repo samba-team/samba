@@ -640,7 +640,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT 
 		return nt_status;
 	}
 
-	fstrcpy (name, data.dptr);
+	fstrcpy(name, data.dptr);
 	SAFE_FREE(data.dptr);
 	
 	tdb_close (pwd_tdb);
@@ -771,6 +771,11 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 				ret = False;
 				goto done;
 			}
+			if (!pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED)) {
+				DEBUG(0, ("tdbsam: not able to set new allocated user RID into sam account!\n"));
+				ret = False;
+				goto done;
+			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
 			ret = False;
@@ -794,7 +799,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
   	/* setup the USER index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
 	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
+	key.dsize = strlen(keystr) + 1;
 
 	/* add the account */
 	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS) {
@@ -806,7 +811,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 	}
 	
 	/* setup RID data */
-	data.dsize = sizeof(fstring);
+	data.dsize = strlen(name) + 1;
 	data.dptr = name;
 
 	/* setup the RID index key */
