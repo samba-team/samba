@@ -85,7 +85,7 @@ encrypt of the server challenge originally received. JRA.
 
 NTSTATUS cli_net_auth2(struct cli_state *cli, 
 		       uint16 sec_chan, 
-		       uint32 neg_flags, DOM_CHAL *srv_chal)
+		       uint32 *neg_flags, DOM_CHAL *srv_chal)
 {
         prs_struct qbuf, rbuf;
         NET_Q_AUTH_2 q;
@@ -104,7 +104,7 @@ NTSTATUS cli_net_auth2(struct cli_state *cli,
         /* store the parameters */
         init_q_auth_2(&q, cli->srv_name_slash, cli->mach_acct, 
                       sec_chan, global_myname(), &cli->clnt_cred.challenge, 
-                      neg_flags);
+                      *neg_flags);
 
         /* turn parameters into data stream */
 
@@ -141,6 +141,7 @@ password ?).\n", cli->desthost ));
                         result = NT_STATUS_ACCESS_DENIED;
                         goto done;
                 }
+		*neg_flags = r.srv_flgs.neg_flags;
         }
 
  done:
@@ -195,7 +196,6 @@ NTSTATUS cli_net_auth3(struct cli_state *cli,
         }
 
         result = r.status;
-	*neg_flags = r.srv_flgs.neg_flags;
 
         if (NT_STATUS_IS_OK(result)) {
                 UTIME zerotime;
@@ -217,6 +217,7 @@ password ?).\n", cli->desthost ));
                         result = NT_STATUS_ACCESS_DENIED;
                         goto done;
                 }
+		*neg_flags = r.srv_flgs.neg_flags;
         }
 
  done:
@@ -286,7 +287,7 @@ NTSTATUS cli_nt_setup_creds(struct cli_state *cli,
          */
         switch (level) {
 		case 2:
-			result = cli_net_auth2(cli, sec_chan, *neg_flags, &srv_chal);
+			result = cli_net_auth2(cli, sec_chan, neg_flags, &srv_chal);
 			break;
 		case 3:
 			result = cli_net_auth3(cli, sec_chan, neg_flags, &srv_chal);
