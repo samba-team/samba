@@ -6,9 +6,9 @@ cd $1
 
 ver=`sed -n 's/AM_INIT_AUTOMAKE(.*,\(.*\))/\1/p' configure.in`
 M="*   This is version $ver.   *"
-echo "$M" | sed -e 's/./*/'
+echo "$M" | sed -e 's/./*/g'
 echo "$M"
-echo "$M" | sed -e 's/./*/'
+echo "$M" | sed -e 's/./*/g'
 
 ed -s configure.in << END
 /test -z/s,^,#,
