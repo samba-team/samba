@@ -43,7 +43,7 @@ RCSID("$Id$");
 static struct krb5_keytab_data *kt_types;
 static int num_kt_types;
 
-static krb5_kt_ops fops; /* forward declaration */
+static krb5_kt_ops fops, mops; /* forward declaration */
 
 krb5_error_code
 krb5_kt_register(krb5_context context,
@@ -74,6 +74,8 @@ krb5_kt_resolve(krb5_context context,
     
     if(num_kt_types == 0) {
 	ret = krb5_kt_register(context, &fops);
+	if(ret) return ret;
+	ret = krb5_kt_register(context, &mops);
 	if(ret) return ret;
     }
     
@@ -171,6 +173,23 @@ krb5_kt_close(krb5_context context,
     return ret;
 }
 
+static krb5_boolean
+kt_compare(krb5_context context,
+	   krb5_keytab_entry *entry, 
+	   krb5_const_principal principal,
+	   krb5_kvno vno,
+	   krb5_keytype keytype)
+{
+    if(principal != NULL && 
+       !krb5_principal_compare(context, entry->principal, principal))
+	return FALSE;
+    if(vno && vno != entry->vno)
+	return FALSE;
+    if(keytype && keytype != entry->keyblock.keytype)
+	return FALSE;
+    return TRUE;
+}
+
 krb5_error_code
 krb5_kt_get_entry(krb5_context context,
 		  krb5_keytab id,
@@ -191,11 +210,7 @@ krb5_kt_get_entry(krb5_context context,
 
     entry->vno = 0;
     while (krb5_kt_next_entry(context, id, &tmp, &cursor) == 0) {
-	if ((principal == NULL
-	     || krb5_principal_compare(context,
-				       principal,
-				       tmp.principal))
-	    && (keytype == 0 || keytype == tmp.keyblock.keytype)) {
+	if (kt_compare(context, &tmp, principal, 0, keytype)) {
 	    if (kvno == tmp.vno) {
 		krb5_kt_copy_entry_contents (context, &tmp, entry);
 		krb5_kt_free_entry (context, &tmp);
@@ -448,6 +463,8 @@ krb5_kt_add_entry(krb5_context context,
 		  krb5_keytab id,
 		  krb5_keytab_entry *entry)
 {
+    if(id->add == NULL)
+	return KRB5_KT_NOWRITE;
     return (*id->add)(context, id,entry);
 }
 
@@ -581,7 +598,7 @@ fkt_add_entry(krb5_context context,
     fd = open (d->filename, O_WRONLY | O_APPEND);
     if (fd < 0) {
 	fd = open (d->filename, O_WRONLY | O_CREAT, 0600);
-	if (d < 0)
+	if (fd < 0)
 	    return errno;
 	sp = krb5_storage_from_fd(fd);
 	ret = krb5_store_int16 (sp, 0x0502);
@@ -611,6 +628,42 @@ out:
     return ret;
 }
 
+static krb5_error_code
+fkt_remove_entry(krb5_context context,
+		 krb5_keytab id,
+		 krb5_keytab_entry *entry)
+{
+    krb5_keytab kt;
+    krb5_keytab_entry e;
+    int fd;
+    char n1[1024], *n2;
+    krb5_kt_cursor cursor;
+    krb5_error_code ret;
+    
+    krb5_kt_get_name(context, id, n1, sizeof(n1));
+    asprintf(&n2, "FILE:%s.XXXXXX", n1);
+    fd = mkstemp(n2 + 5);
+    if(fd < 0)
+	return errno;
+    write(fd, "\5\2", 2); /* XXX add header*/
+    close(fd);
+    ret = krb5_kt_resolve(context, n2, &kt);
+    krb5_kt_start_seq_get(context, id, &cursor);
+    while(krb5_kt_next_entry(context, id, &e, &cursor) == 0) {
+	if(!kt_compare(context, &e, entry->principal, 
+		       entry->vno, entry->keyblock.keytype)) {
+	    krb5_kt_add_entry(context, kt, &e);
+	}
+    }
+    krb5_kt_end_seq_get(context, id, &cursor);
+    rename(n2 + 5, n1);
+
+    free(n2);
+    
+    krb5_kt_close(context, kt);
+    return 0;
+}
+
 static krb5_kt_ops fops = {
     "FILE",
     fkt_resolve,
@@ -621,9 +674,131 @@ static krb5_kt_ops fops = {
     fkt_next_entry,
     fkt_end_seq_get,
     fkt_add_entry,
-    NULL /* remove */
+    fkt_remove_entry
 };
 
 
 /* memory operations -------------------------------------------- */
 
+struct mkt_data {
+    krb5_keytab_entry *entries;
+    int num_entries;
+};
+
+static krb5_error_code
+mkt_resolve(krb5_context context, const char *name, krb5_keytab id)
+{
+    struct mkt_data *d;
+    d = malloc(sizeof(*d));
+    if(d == NULL)
+	return ENOMEM;
+    d->entries = NULL;
+    d->num_entries = 0;
+    id->data = d;
+    return 0;
+}
+
+static krb5_error_code
+mkt_close(krb5_context context, krb5_keytab id)
+{
+    struct mkt_data *d = id->data;
+    int i;
+    for(i = 0; i < d->num_entries; i++)
+	krb5_kt_free_entry(context, &d->entries[i]);
+    free(d->entries);
+    free(d);
+    return 0;
+}
+
+static krb5_error_code 
+mkt_get_name(krb5_context context, 
+	     krb5_keytab id, 
+	     char *name, 
+	     size_t namesize)
+{
+    strncpy(name, "", namesize);
+    return 0;
+}
+
+static krb5_error_code
+mkt_start_seq_get(krb5_context context, 
+		  krb5_keytab id, 
+		  krb5_kt_cursor *c)
+{
+    /* XXX */
+    c->fd = 0;
+    return 0;
+}
+
+static krb5_error_code
+mkt_next_entry(krb5_context context, 
+	       krb5_keytab id, 
+	       krb5_keytab_entry *entry, 
+	       krb5_kt_cursor *c)
+{
+    struct mkt_data *d = id->data;
+    if(c->fd >= d->num_entries)
+	return KRB5_KT_END;
+    return krb5_kt_copy_entry_contents(context, &d->entries[c->fd++], entry);
+}
+
+static krb5_error_code
+mkt_end_seq_get(krb5_context context, 
+		krb5_keytab id,
+		krb5_kt_cursor *cursor)
+{
+    return 0;
+}
+
+static krb5_error_code
+mkt_add_entry(krb5_context context,
+	      krb5_keytab id,
+	      krb5_keytab_entry *entry)
+{
+    struct mkt_data *d = id->data;
+    krb5_keytab_entry *tmp;
+    tmp = realloc(d->entries, (d->num_entries + 1) * sizeof(*d->entries));
+    if(tmp == NULL)
+	return ENOMEM;
+    d->entries = tmp;
+    return krb5_kt_copy_entry_contents(context, entry, 
+				       &d->entries[d->num_entries++]);
+}
+
+static krb5_error_code
+mkt_remove_entry(krb5_context context,
+		 krb5_keytab id,
+		 krb5_keytab_entry *entry)
+{
+    struct mkt_data *d = id->data;
+    krb5_keytab_entry *e, *end;
+    
+    /* do this backwards to minimize copying */
+    for(end = d->entries + d->num_entries, e = end - 1; e >= d->entries; e--) {
+	if(kt_compare(context, e, entry->principal, 
+		      entry->vno, entry->keyblock.keytype)) {
+	    krb5_kt_free_entry(context, e);
+	    memmove(e, e + 1, (end - e - 1) * sizeof(*e));
+	    memset(end - 1, 0, sizeof(*end));
+	    d->num_entries--;
+	    end--;
+	}
+    }
+    e = realloc(d->entries, d->num_entries * sizeof(*d->entries));
+    if(e != NULL)
+	d->entries = e;
+    return 0;
+}
+
+static krb5_kt_ops mops = {
+    "MEMORY",
+    mkt_resolve,
+    mkt_get_name,
+    mkt_close,
+    NULL, /* get */
+    mkt_start_seq_get,
+    mkt_next_entry,
+    mkt_end_seq_get,
+    mkt_add_entry,
+    mkt_remove_entry
+};
