@@ -1,3 +1,9 @@
+2001-09-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/principal.c (krb5_425_conv_principal_ext): try using
+	lower case realm as domain, but only when given a verification
+	function
+
 2001-09-20  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/der_put.c (der_put_length): do not even try writing
