@@ -226,11 +226,11 @@ if (@nsswitch) {
 }
 
 print IDB "d 0755 lp sys usr/samba/printer $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/W32ALPHA $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/W32MIPS $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/W32PPC $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 lp sys usr/samba/printer/W32X86 $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 lp sys usr/samba/printer/WIN40 $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "d 0755 lp sys usr/samba/printer/W32MIPS $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "d 0755 lp sys usr/samba/printer/W32ALPHA $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "d 0755 lp sys usr/samba/printer/W32PPC $SRCPFX/packaging/SGI $PKG.sw.base\n";
 
 print IDB "d 0644 root sys usr/samba/private $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "f 0600 root sys usr/samba/private/smbpasswd $SRCPFX/packaging/SGI/smbpasswd $PKG.sw.base config(suggest)\n";
