@@ -1,5 +1,6 @@
 2001-09-03  Assar Westerlund  <assar@sics.se>
 
+	* db.m4: prefer ndbm.h to dbm.h
 	* roken-frag.m4: check for atexit and on_exit
 
 2001-09-02  Assar Westerlund  <assar@sics.se>
