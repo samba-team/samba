@@ -537,8 +537,10 @@
 	steps fail, then the connection request is rejected.  However, if one of the 
 	steps succeeds, then the following steps are not checked.</para>
 
-	<para>If the service is marked "guest only = yes" then
-	steps 1 to 5 are skipped.</para>
+	<para>If the service is marked "guest only = yes" and the
+	server is running with share-level security ("security = share")
+	then steps 1 to 5 are skipped.</para>
+
 
 	<orderedlist numeration="Arabic">
 		<listitem><para>If the client has passed a username/password 
