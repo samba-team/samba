@@ -26,7 +26,7 @@
 /* set the expiry on fixed pages */
 #define EXPIRY_TIME (60*60*24*7)
 
-#define CGI_LOGGING 1
+#define CGI_LOGGING 0
 
 #ifdef DEBUG_COMMENTS
 extern void print_title(char *fmt, ...);

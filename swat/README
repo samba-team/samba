@@ -36,9 +36,9 @@ details of your inetd daemon).
 
 In /etc/inetd.conf you should add a line like this:
 
-swat    stream  tcp     nowait  root    /usr/local/samba/bin/swat swat
+swat    stream  tcp     nowait.400  root    /usr/local/samba/bin/swat swat
 
-If you just want to see a demo of ho swat works and don't want to be
+If you just want to see a demo of how swat works and don't want to be
 able to actually change any Samba config via swat then you may chose
 to change "root" to some other user that does not have permission to
 write to smb.conf.
