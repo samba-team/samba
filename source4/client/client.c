@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "version.h"
 #include "dynconfig.h"
 #include "clilist.h"
 #include "lib/cmdline/popt_common.h"

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "version.h"
 #include <pthread.h>
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
