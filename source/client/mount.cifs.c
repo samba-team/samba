@@ -432,33 +432,32 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags |= MS_NOEXEC;
 		} else if (strncmp(data, "exec", 4) == 0) {
 			*filesys_flags &= ~MS_NOEXEC;
-		} else if (strncmp(data, "ro", 3) == 0) {
+		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
 			*filesys_flags &= ~MS_RDONLY;
 		} /* else if (strnicmp(data, "port", 4) == 0) {
-		if (value && *value) {
-			vol->port =
-				simple_strtoul(value, &value, 0);
-		}
-	} else if (strnicmp(data, "rsize", 5) == 0) {
-		if (value && *value) {
-			vol->rsize =
-				simple_strtoul(value, &value, 0);
-		}
-	} else if (strnicmp(data, "wsize", 5) == 0) {
-		if (value && *value) {
-			vol->wsize =
-				simple_strtoul(value, &value, 0);
-		}
-	} else if (strnicmp(data, "version", 3) == 0) {
-		
-	} else if (strnicmp(data, "rw", 2) == 0) {
-		
-	} else
-		printf("CIFS: Unknown mount option %s\n",data); */
+			if (value && *value) {
+				vol->port =
+					simple_strtoul(value, &value, 0);
+			}
+		} else if (strnicmp(data, "rsize", 5) == 0) {
+			if (value && *value) {
+				vol->rsize =
+					simple_strtoul(value, &value, 0);
+			}
+		} else if (strnicmp(data, "wsize", 5) == 0) {
+			if (value && *value) {
+				vol->wsize =
+					simple_strtoul(value, &value, 0);
+			}
+		} else if (strnicmp(data, "version", 3) == 0) {
+		} else {
+			printf("CIFS: Unknown mount option %s\n",data);
+		} */ /* nothing to do on those four mount options above.
+			Just pass to kernel and ignore them here */
 
-		/* move to next option */
+			/* move to next option */
 		data = next_keyword+1;
 
 		/* put overwritten equals sign back */
@@ -466,7 +465,7 @@ static int parse_options(char * options, int * filesys_flags)
 			value--;
 			*value = '=';
 		}
-		
+	
 		/* put previous overwritten comma back */
 		if(next_keyword)
 			*next_keyword = ',';
