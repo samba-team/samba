@@ -498,7 +498,8 @@ static void send_entry_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
-		pstring name_type, name, ip_str;
+		fstring name_type;
+		pstring name, ip_str;
 		char *p;
 		int type = 0;
 		int nb_flags;

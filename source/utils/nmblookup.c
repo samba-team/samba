@@ -210,7 +210,7 @@ int main(int argc,char *argv[])
 {
   int opt;
   unsigned int lookup_type = 0x0;
-  pstring lookup;
+  fstring lookup;
   extern int optind;
   extern char *optarg;
   BOOL find_master=False;

@@ -1481,7 +1481,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	switch (q_u->info_level) {
 	case 1:
-		fstrcpy(pathname, lp_pathname(snum));
+		pstrcpy(pathname, lp_pathname(snum));
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(comment));
 		type = q_u->info.share.info2.info_2.type;
 		psd = NULL;
@@ -1508,7 +1508,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		map_generic_share_sd_bits(psd);
 		break;
 	case 1004:
-		fstrcpy(pathname, lp_pathname(snum));
+		pstrcpy(pathname, lp_pathname(snum));
 		unistr2_to_ascii(comment, &q_u->info.share.info1004.info_1004_str.uni_remark, sizeof(comment));
 		type = STYPE_DISKTREE;
 		break;
@@ -1518,7 +1518,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		return WERR_ACCESS_DENIED;
 		break;
 	case 1501:
-		fstrcpy(pathname, lp_pathname(snum));
+		pstrcpy(pathname, lp_pathname(snum));
 		fstrcpy(comment, lp_comment(snum));
 		psd = q_u->info.share.info1501.sdb->sec;
 		map_generic_share_sd_bits(psd);

@@ -250,7 +250,8 @@ BOOL initialise_wins(void)
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
-		pstring name_type, name, ip_str;
+		fstring name_type;
+		pstring name, ip_str;
 		char *p;
 		int type = 0;
 		int nb_flags;
