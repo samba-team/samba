@@ -1514,6 +1514,13 @@ void close_file(int fnum, BOOL normal_close)
   DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
 	   timestring(),Connections[cnum].user,fs_p->name,
 	   Connections[cnum].num_files_open));
+
+  if (fs_p->name) {
+	  string_free(&fs_p->name);
+  }
+
+  /* we will catch bugs faster by zeroing this structure */
+  memset(fs_p, 0, sizeof(*fs_p));
 }
 
 enum {AFAIL,AREAD,AWRITE,AALL};
