@@ -1507,6 +1507,19 @@ static nis_result *nisp_get_nis_list (const char *nisname, unsigned int flags)
 	return result;
 }
 
+static void free_private_data(void **vp)
+{
+	struct nisplus_private_info **private = (struct nisplus_private_info **)vp;
+
+	if ((*private)->result) {
+		nis_freeresult ((*private)->result);
+	}
+
+	free(*private);
+
+        /* No need to free any further, as it is talloc()ed */
+}
+
 NTSTATUS pdb_init_nisplussam (PDB_CONTEXT * pdb_context,
 			      PDB_METHODS ** pdb_method, const char *location)
 {
@@ -1535,6 +1548,7 @@ NTSTATUS pdb_init_nisplussam (PDB_CONTEXT * pdb_context,
 	(*pdb_method)->add_sam_account = nisplussam_add_sam_account;
 	(*pdb_method)->update_sam_account = nisplussam_update_sam_account;
 	(*pdb_method)->delete_sam_account = nisplussam_delete_sam_account;
+	(*pdb_method)->free_private_data = free_private_data;
 	(*pdb_method)->private_data = private;
 
 	return NT_STATUS_OK;
