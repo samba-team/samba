@@ -2254,7 +2254,7 @@ encrypt_internal_derived(krb5_context context,
     
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
 
-    sz = et->confoundersize + /* 4 - length */ len;
+    sz = et->confoundersize + len;
     block_sz = (sz + et->blocksize - 1) &~ (et->blocksize - 1); /* pad */
     total_sz = block_sz + checksum_sz;
     p = calloc(1, total_sz);
