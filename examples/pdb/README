@@ -1,0 +1,9 @@
+README for Samba Password Database (PDB) examples
+====================================================
+15-2-2002 Jelmer Vernooij <jelmer@nl.linux.org>
+
+The pdb_test.c file in this directory contains a very basic example of 
+a pdb plugin. It just prints the name of the function that is executed using
+DEBUG. Maybe it's nice to include some of the arguments to the function in the 
+future too..
+
