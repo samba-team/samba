@@ -5978,6 +5978,19 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	 * to lookup previously saved driver initialization info, which is then 
 	 * bound to the new printer, simulating what happens in the Windows arch.
 	 */
+
+	if (!devmode)
+		set_driver_init(printer, 2);
+	else {
+		/* A valid devmode was included, convert and link it
+		*/
+		DEBUGADD(10, ("spoolss_addprinterex_level_2: devmode included, converting\n"));
+
+		if (!convert_devicemode(printer->info_2->printername, devmode,
+				&printer->info_2->devmode))
+			return  WERR_NOMEM;
+	}
+
 	set_driver_init(printer, 2);
 	
 	/* write the ASCII on disk */
