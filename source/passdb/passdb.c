@@ -108,7 +108,8 @@ void pdb_init_sam(SAM_ACCOUNT *user)
 	ZERO_STRUCTP(user);
 
 	user->mem_ctx = talloc_init();
-	DEBUG(10, ("pdb_init_sam: obtained a talloc context of 0x%x\n", user->mem_ctx));
+	DEBUG(10, ("pdb_init_sam: obtained a talloc context of 0x%x\n", 
+		   (unsigned)user->mem_ctx));
 
 	user->logon_time            = (time_t)0;
 	user->logoff_time           = (time_t)-1;
@@ -134,7 +135,7 @@ void pdb_clear_sam(SAM_ACCOUNT *user)
 		return;
 
 	/* free upany memory used */
-	DEBUG(10, ("pdb_clear_sam: releasing memory.  talloc context is 0x%x\n",user->mem_ctx));
+	DEBUG(10, ("pdb_clear_sam: releasing memory.  talloc context is 0x%x\n",(unsigned)user->mem_ctx));
 	talloc_destroy (user->mem_ctx);
 		
 	/* now initialize */

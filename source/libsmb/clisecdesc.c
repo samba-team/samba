@@ -33,7 +33,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
 	int rparam_count=0, rdata_count=0;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx=NULL;
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 
