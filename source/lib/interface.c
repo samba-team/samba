@@ -41,8 +41,8 @@ calculate the default netmask for an address
 ****************************************************************************/
 static void default_netmask(struct in_addr *inm, struct in_addr *iad)
 {
-  unsigned long ad = ntohl(iad->s_addr);
-  unsigned long nm;
+  uint32 ad = ntohl(iad->s_addr);
+  uint32 nm;
   /*
   ** Guess a netmask based on the class of the IP address given.
   */
@@ -227,7 +227,7 @@ static void get_broadcast(struct in_addr *if_ipaddr,
 
   /* sanity check on the netmask */
   {
-    unsigned long nm = ntohl(if_nmask->s_addr);
+    uint32 nm = ntohl(if_nmask->s_addr);
     if ((nm >> 24) != 0xFF) {
       DEBUG(0,("Impossible netmask %s - using defaults\n",inet_ntoa(*if_nmask)));
       default_netmask(if_nmask, if_ipaddr);      
@@ -238,9 +238,9 @@ static void get_broadcast(struct in_addr *if_ipaddr,
      all MS operating systems do, we have to comply even if the unix
      box is setup differently */
   {
-    unsigned long ad = ntohl(if_ipaddr->s_addr);
-    unsigned long nm = ntohl(if_nmask->s_addr);
-    unsigned long bc = (ad & nm) | (0xffffffff & ~nm);
+    uint32 ad = ntohl(if_ipaddr->s_addr);
+    uint32 nm = ntohl(if_nmask->s_addr);
+    uint32 bc = (ad & nm) | (0xffffffff & ~nm);
     if_bcast->s_addr = htonl(bc);
   }
   

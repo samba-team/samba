@@ -49,7 +49,7 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
   if ((offset & mask) != 0)
     offset = (offset & ~mask) | ((offset & mask) >> 2);
 #else
-  unsigned long mask = ((unsigned)1<<31);
+  uint32 mask = ((unsigned)1<<31);
 
   /* interpret negative counts as large numbers */
   if (count < 0)

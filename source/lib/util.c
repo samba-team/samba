@@ -2738,7 +2738,7 @@ true if two IP addresses are equal
 ****************************************************************************/
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2)
 {
-  unsigned long a1,a2;
+  uint32 a1,a2;
   a1 = ntohl(ip1.s_addr);
   a2 = ntohl(ip2.s_addr);
   return(a1 == a2);
@@ -2885,10 +2885,10 @@ int interpret_security(char *str,int def)
 /****************************************************************************
 interpret an internet address or name into an IP address in 4 byte form
 ****************************************************************************/
-unsigned long interpret_addr(char *str)
+uint32 interpret_addr(char *str)
 {
   struct hostent *hp;
-  unsigned long res;
+  uint32 res;
 
   if (strcmp(str,"0.0.0.0") == 0) return(0);
   if (strcmp(str,"255.255.255.255") == 0) return(0xFFFFFFFF);
@@ -2905,7 +2905,7 @@ unsigned long interpret_addr(char *str)
     putip((char *)&res,(char *)hp->h_addr);
   }
 
-  if (res == (unsigned long)-1) return(0);
+  if (res == (uint32)-1) return(0);
 
   return(res);
 }
@@ -2916,7 +2916,7 @@ unsigned long interpret_addr(char *str)
 struct in_addr *interpret_addr2(char *str)
 {
   static struct in_addr ret;
-  unsigned long a = interpret_addr(str);
+  uint32 a = interpret_addr(str);
   ret.s_addr = a;
   return(&ret);
 }
@@ -2926,7 +2926,7 @@ struct in_addr *interpret_addr2(char *str)
   ******************************************************************/
 BOOL zero_ip(struct in_addr ip)
 {
-  unsigned long a;
+  uint32 a;
   putip((char *)&a,(char *)&ip);
   return(a == 0);
 }
@@ -2979,7 +2979,7 @@ are two IPs on the same subnet?
 ********************************************************************/
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 {
-  unsigned long net1,net2,nmask;
+  uint32 net1,net2,nmask;
 
   nmask = ntohl(mask.s_addr);
   net1  = ntohl(ip1.s_addr);
