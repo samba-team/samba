@@ -33,6 +33,11 @@ typedef struct pac_signature_data {
 	uint8 *signature;
 } PAC_SIGNATURE_DATA;
 
+typedef struct group_membership {
+	uint32 rid;
+	uint32 attrs;
+} GROUP_MEMBERSHIP;
+
 typedef struct krb_sid_and_attrs {
 	uint32 sid_ptr;
 	uint32 attrs;
@@ -99,7 +104,11 @@ typedef struct pac_logon_info {
 	UNISTR2 uni_dom_controller;
 	UNISTR2 uni_dom_name;
 	DOM_SID2 dom_sid;
+	/* group membership array needs to go in here.  
+	   I've not seen it on the wire */
 	KRB_SID_AND_ATTR_ARRAY extra_sids;
+	DOM_SID2 res_group_dom_sid;
+	/* resource group membership array needs to go in here */
 	
 } PAC_LOGON_INFO;
 
