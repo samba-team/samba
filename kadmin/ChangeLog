@@ -1,3 +1,15 @@
+2004-03-08  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmin.8: document password-quality
+	
+	* kadmin_locl.h: add prototype for password_quality
+	
+	* kadmin.c: add password-quality/pwq command
+	
+	* Makefile.am: kadmin_SOURCES += pw_quality.c
+	
+	* pw_quality.c: test run the password quality function
+	
 2004-03-07  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* ank.c (add_one_principal): even though the principal is disabled
