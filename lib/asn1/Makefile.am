@@ -53,6 +53,18 @@ asn1_compile_LDADD = -L../roken -lroken @LEXLIB@
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
+incdir = includedir
+inc_DATA = asn1.h
+idir = $(top_builddir)/include
+
+all-local:
+	@for i in $(inc_DATA); do \
+		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
+			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
+			$(INSTALL_DATA) $$i $(idir)/$$i; \
+		fi ; \
+	done
+
 lex.o: parse.h
 parse.c: parse.h
 

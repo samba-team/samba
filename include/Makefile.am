@@ -8,9 +8,9 @@ INCLUDES=-DHOST=\"@CANONICAL_HOST@\"
 
 foodir = $(includedir)
 foo_DATA = \
-	asn1.h asn1_err.h bits.h cache.h config_file.h des.h error.h \
-	getarg.h gssapi.h hdb.h hdb_asn1.h hdb_err.h heim_err.h kafs.h \
-	keytab.h krb5.h krb5_err.h md4.h md5.h otp.h parse_time.h \
+	bits.h cache.h config_file.h des.h error.h \
+	getarg.h gssapi.h hdb.h kafs.h \
+	keytab.h krb5.h md4.h md5.h otp.h parse_time.h \
 	parse_units.h roken.h sha.h sl.h store.h @EXTRA_HDRS@
 
 
@@ -21,10 +21,6 @@ CLEANFILES = $(foo_DATA)
 bits.h: bits
 	./bits bits.h
 
-asn1.h:
-	$(LN_S) ../lib/asn1/asn1.h .
-asn1_err.h:
-	$(LN_S) ../lib/error/asn1_err.h .
 cache.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/cache.h .
 config_file.h:
@@ -41,20 +37,12 @@ gssapi.h:
 	$(LN_S) $(top_srcdir)/lib/gssapi/gssapi.h .
 hdb.h:
 	$(LN_S) $(top_srcdir)/lib/hdb/hdb.h .
-hdb_asn1.h:
-	$(LN_S) ../lib/hdb/hdb_asn1.h .
-hdb_err.h:
-	$(LN_S) ../lib/error/hdb_err.h .
-heim_err.h:
-	$(LN_S) ../lib/error/heim_err.h .
 kafs.h:
 	$(LN_S) $(top_srcdir)/lib/kafs/kafs.h .
 keytab.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/keytab.h .
 krb5.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/krb5.h .
-krb5_err.h:
-	$(LN_S) ../lib/error/krb5_err.h .
 md4.h:
 	$(LN_S) $(top_srcdir)/lib/des/md4.h .
 md5.h:
