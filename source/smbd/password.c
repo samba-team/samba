@@ -1612,11 +1612,47 @@ BOOL server_validate(char *user, char *domain,
 		     char *ntpass, int ntpasslen)
 {
 	extern fstring local_machine;
+        static unsigned char badpass[24];
 
 	if (!cli.initialised) {
 		DEBUG(1,("password server %s is not connected\n", cli.desthost));
 		return(False);
 	}  
+
+        if(badpass[0] == 0) {
+          memset(badpass, 0x1f, sizeof(badpass));
+        }
+
+        if((passlen == sizeof(badpass)) && !memcmp(badpass, pass, passlen)) {
+          /* Very unlikely, our random bad password is the same as the users
+             password. */
+          memset(badpass, badpass[0]+1, sizeof(badpass));
+        }
+
+        /*
+         * Attempt a session setup with a totally incorrect password.
+         * If this succeeds with the guest bit *NOT* set then the password
+         * server is broken and is not correctly setting the guest bit. We
+         * need to detect this as some versions of NT4.x are broken. JRA.
+         */
+
+        if (cli_session_setup(&cli, user, badpass, sizeof(badpass), badpass, sizeof(badpass),
+                                                         domain)) {
+          if ((SVAL(cli.inbuf,smb_vwv2) & 1) == 0) {
+            DEBUG(0,("server_validate: password server %s allows users as non-guest \
+with a bad password.\n", cli.desthost));
+            DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
+use this machine as the password server.\n"));
+            cli_ulogoff(&cli);
+            return False;
+          }
+          cli_ulogoff(&cli);
+        }
+
+        /*
+         * Now we know the password server will correctly set the guest bit, or is
+         * not guest enabled, we can try with the real password.
+         */
 
 	if (!cli_session_setup(&cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
 		DEBUG(1,("password server %s rejected the password\n", cli.desthost));
@@ -1673,6 +1709,7 @@ BOOL server_validate(char *user, char *domain,
 	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
 
 	cli_tdis(&cli);
+        cli_ulogoff(&cli);
 
 	return(True);
 }

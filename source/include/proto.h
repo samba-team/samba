@@ -71,6 +71,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		       char *pass, int passlen,
 		       char *ntpass, int ntpasslen,
 		       char *workgroup);
+BOOL cli_ulogoff(struct cli_state *cli);
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);

@@ -499,6 +499,25 @@ BOOL cli_session_setup(struct cli_state *cli,
       return True;
 }
 
+/****************************************************************************
+ Send a uloggoff.
+*****************************************************************************/
+
+BOOL cli_ulogoff(struct cli_state *cli)
+{
+        bzero(cli->outbuf,smb_size);
+        set_message(cli->outbuf,2,0,True);
+        CVAL(cli->outbuf,smb_com) = SMBulogoffX;
+        cli_setup_packet(cli);
+        SSVAL(cli->outbuf,smb_vwv0,0xFF);
+        SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
+
+        send_smb(cli->fd,cli->outbuf);
+        if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
+                return False;
+ 
+        return CVAL(cli->inbuf,smb_rcls) == 0;
+}
 
 /****************************************************************************
 send a tconX
