@@ -2286,6 +2286,7 @@ sendnaws()
     if (my_state_is_wont(TELOPT_NAWS))
 	return;
 
+#undef PUTSHORT
 #define	PUTSHORT(cp, x) { if ((*cp++ = ((x)>>8)&0xff) == IAC) *cp++ = IAC; \
 			    if ((*cp++ = ((x))&0xff) == IAC) *cp++ = IAC; }
 
