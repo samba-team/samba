@@ -17,6 +17,7 @@ check_PROGRAMS = 				\
 		base64-test			\
 		getaddrinfo-test		\
 		parse_bytes-test		\
+		parse_reply-test		\
 		snprintf-test			\
 		strpftime-test
 
@@ -28,6 +29,9 @@ make_roken_LDADD =
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = strftime.c strptime.c snprintf.c
 libtest_la_CFLAGS = -DTEST_SNPRINTF
+
+parse_reply_test_SOURCES = parse_reply-test.c resolve.c
+parse_reply_test_CFLAGS  = -DTEST_RESOLVE
 
 strpftime_test_SOURCES	= strpftime-test.c
 strpftime_test_LDADD = libtest.la $(LDADD)
