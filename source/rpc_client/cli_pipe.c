@@ -47,18 +47,24 @@ uint32 get_rpc_call_id(void)
  uses SMBreadX to get rest of rpc data
  ********************************************************************/
 static BOOL rpc_read(struct cli_state *cli, int t_idx, uint16 fnum,
-				prs_struct *rdata, uint32 data_to_read)
+				prs_struct *rdata, uint32 data_to_read, uint32 rdata_offset)
 {
-	uint32 data_offset = rdata->data->data_used;
-	int size = 512;
+	int size = 0x1630;
+	int file_offset = rdata_offset;
 	int num_read;
 	char *data = rdata->data->data;
 	uint32 err;
-	data += rdata->data->data_used;
+	uint32 new_data_size = rdata->data->data_used + data_to_read;
+	data += rdata_offset;
 
-	if (data_offset + data_to_read > rdata->data->data_size)
+	file_offset -= rdata_offset;
+
+	DEBUG(5,("rpc_read: data_to_read: %d data offset: %d file offset: %d\n",
+	          data_to_read, rdata_offset, file_offset));
+
+	if (new_data_size > rdata->data->data_size)
 	{
-		mem_grow_data(&rdata->data, True, rdata->data->data_used + data_to_read);
+		mem_grow_data(&rdata->data, True, new_data_size, True);
 		DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data->data_used));
 	}
 
@@ -66,27 +72,29 @@ static BOOL rpc_read(struct cli_state *cli, int t_idx, uint16 fnum,
 	{
 		if (size > data_to_read) size = data_to_read;
 
-		if (data_offset + size > rdata->data->data_size)
+		new_data_size = rdata->data->data_used + size;
+
+		if (new_data_size > rdata->data->data_size)
 		{
-			mem_grow_data(&rdata->data, True, rdata->data->data_used + size);
+			mem_grow_data(&rdata->data, True, new_data_size, True);
 			DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data->data_used));
 		}
 
-		num_read = cli_readx(cli, t_idx, fnum, data, data_offset, size);
+		num_read = cli_readx(cli, t_idx, fnum, data, file_offset + 0x100000, size);
 
 		DEBUG(5,("rpc_read: read offset: %d read: %d to read: %d\n",
-				  data_offset, num_read, data_to_read));
+				  file_offset, num_read, data_to_read));
 
 		data_to_read -= num_read;
-		data_offset  += num_read;
+		file_offset  += num_read;
 		data         += num_read;
 
 		if (cli_error(cli, NULL, &err)) return False;
 
 	} while (num_read > 0 && data_to_read > 0); /* && err == (0x80000000 | STATUS_BUFFER_OVERFLOW)); */
 
-	mem_realloc_data(rdata->data, rdata->data->data_used);
-	rdata->data->offset.end = rdata->data->data_used;
+	mem_realloc_data(rdata->data, file_offset + rdata_offset);
+	rdata->data->offset.end = file_offset + rdata_offset;
 
 	DEBUG(5,("rpc_read: data supposedly left to read:0x%x\n", data_to_read));
 
@@ -97,9 +105,11 @@ static BOOL rpc_read(struct cli_state *cli, int t_idx, uint16 fnum,
  checks the header
  ****************************************************************************/
 static BOOL rpc_check_hdr(prs_struct *rdata, uint8 *pkt_type,
-				BOOL *first, BOOL *last, uint32 *len)
+				BOOL *first, BOOL *last, int *len)
 {
 	RPC_HDR    rhdr;
+
+	DEBUG(5,("rpc_check_hdr: rdata->data->data_used: %d\n", rdata->data->data_used));
 
 	smb_io_rpc_hdr   ("rpc_hdr   ", &rhdr   , rdata, 0);
 
@@ -108,6 +118,8 @@ static BOOL rpc_check_hdr(prs_struct *rdata, uint8 *pkt_type,
 		DEBUG(5,("cli_pipe: error in rpc header\n"));
 		return False;
 	}
+
+	DEBUG(5,("rpc_check_hdr: (after smb_io_rpc_hdr call) rdata->data->data_used: %d\n", rdata->data->data_used));
 
 	(*first   ) = IS_BITS_SET_ALL(rhdr.flags, RPC_FLG_FIRST);
 	(*last    ) = IS_BITS_SET_ALL(rhdr.flags, RPC_FLG_LAST );
@@ -139,7 +151,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, int t_idx,
 				prs_struct *param , prs_struct *data,
 				prs_struct *rparam, prs_struct *rdata)
 {
-	uint32 len;
+	int len;
 
 	uint16 setup[2]; /* only need 2 uint16 setup parameters */
 	uint32 err;
@@ -188,30 +200,31 @@ BOOL rpc_api_pipe(struct cli_state *cli, int t_idx,
 	
 	if (pkt_type == RPC_RESPONSE)
 	{
-		RPC_HDR_RR rhdr_rr;
-		smb_io_rpc_hdr_rr("rpc_hdr_rr", &rhdr_rr, rdata, 0);
+		RPC_HDR_RESP rhdr_resp;
+		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, rdata, 0);
 	}
 
+	DEBUG(5,("rpc_api_pipe: len left: %d smbtrans read: %d\n",
+			len, rdata->data->data_used));
+
+	/* check if data to be sent back was too large for one SMB. */
+	/* err status is only informational: the _real_ check is on the length */
+	if (len > 0) /* || err == (0x80000000 | STATUS_BUFFER_OVERFLOW)) */
+	{
+		if (!rpc_read(cli, t_idx, fnum, rdata, len, rdata->data->data_used)) return False;
+	}
+
+	/* only one rpc fragment, and it has been read */
 	if (first && last)
 	{
 		DEBUG(6,("rpc_api_pipe: fragment first and last both set\n"));
 		return True;
 	}
 
-	/* check if data to be sent back was too large for one SMB. */
-	/* err status is only informational: the _real_ check is on the length */
-	if (len < rdata->data->data_used) /* || err == (0x80000000 | STATUS_BUFFER_OVERFLOW)) */
-	{
-		if (!rpc_read(cli, t_idx, fnum, rdata, len)) return False;
-	}
-
-	/* only one rpc fragment, and it has been read */
-	if (first && last) return True;
-
 	while (!last) /* read more fragments until we get the last one */
 	{
-		RPC_HDR    rhdr;
-		RPC_HDR_RR rhdr_rr;
+		RPC_HDR      rhdr;
+		RPC_HDR_RESP rhdr_resp;
 		int num_read;
 		prs_struct hps;
 
@@ -222,8 +235,8 @@ BOOL rpc_api_pipe(struct cli_state *cli, int t_idx,
 
 		if (num_read != 0x18) return False;
 
-		smb_io_rpc_hdr   ("rpc_hdr   ", &rhdr   , &hps, 0);
-		smb_io_rpc_hdr_rr("rpc_hdr_rr", &rhdr_rr, &hps, 0);
+		smb_io_rpc_hdr     ("rpc_hdr     ", &rhdr     , &hps, 0);
+		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, &hps, 0);
 
 		prs_mem_free(&hps);
 
@@ -239,7 +252,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, int t_idx,
 		}
 
 		len = rhdr.frag_len - hps.offset;
-		if (!rpc_read(cli, t_idx, fnum, rdata, len)) return False;
+		if (!rpc_read(cli, t_idx, fnum, rdata, len, rdata->data->data_used)) return False;
 	}
 
 	return True;
@@ -332,22 +345,22 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
  ********************************************************************/
 static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len)
 {
-	RPC_HDR_RR hdr_rr;
-	RPC_HDR    hdr;
+	RPC_HDR_REQ hdr_req;
+	RPC_HDR     hdr;
 
 	DEBUG(5,("create_rpc_request: opnum: 0x%x data_len: 0x%x\n",
-				op_num, data_len));
+	          op_num, data_len));
 
 	/* create the rpc header RPC_HDR */
-	make_rpc_hdr   (&hdr   , RPC_REQUEST, RPC_FLG_FIRST | RPC_FLG_LAST,
-	                get_rpc_call_id(), data_len + 0x18, 0);
+	make_rpc_hdr(&hdr   , RPC_REQUEST, RPC_FLG_FIRST | RPC_FLG_LAST,
+	             get_rpc_call_id(), data_len + 0x18, 0);
 
-	/* create the rpc request RPC_HDR_RR */
-	make_rpc_hdr_rr(&hdr_rr, data_len, op_num);
+	/* create the rpc request RPC_HDR_REQ */
+	make_rpc_hdr_req(&hdr_req, data_len, op_num);
 
 	/* stream-time... */
-	smb_io_rpc_hdr   ("hdr"   , &hdr   , rhdr, 0);
-	smb_io_rpc_hdr_rr("hdr_rr", &hdr_rr, rhdr, 0);
+	smb_io_rpc_hdr    ("hdr    ", &hdr    , rhdr, 0);
+	smb_io_rpc_hdr_req("hdr_req", &hdr_req, rhdr, 0);
 
 	if (rhdr->data == NULL || rhdr->offset != 0x18) return False;
 
@@ -605,7 +618,7 @@ BOOL do_session_open(struct cli_state *cli, int t_idx,
 
 
 	/******************* open the pipe *****************/
-	if (((*fnum) = cli_open(cli, t_idx, pipe_name, O_CREAT|O_RDONLY, DENY_NONE,
+	if (((*fnum) = cli_open(cli, t_idx, pipe_name, O_CREAT|O_WRONLY, DENY_NONE,
 	                         NULL, NULL, NULL)) == 0xffff)
 	{
 		DEBUG(1,("do_session_open: cli_open failed\n"));
@@ -643,7 +656,7 @@ BOOL do_ntlm_session_open(struct cli_state *cli, int t_idx,
 	RPC_IFACE transfer;
 
 	/******************* open the pipe *****************/
-	if (((*fnum) = cli_open(cli, t_idx, pipe_name, O_CREAT|O_RDONLY, DENY_NONE,
+	if (((*fnum) = cli_open(cli, t_idx, pipe_name, O_CREAT|O_WRONLY, DENY_NONE,
 	                         NULL, NULL, NULL)) == 0xffff)
 	{
 		DEBUG(1,("do_ntlm_session_open: cli_open failed\n"));

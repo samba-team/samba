@@ -46,44 +46,46 @@
  
 typedef struct
 {
-        struct mem_buf *data; /* memory buffer */
-        uint32 offset; /* offset currently being accessed in memory buffer */
-        uint8 align; /* data alignment */
-        BOOL io; /* parsing in or out of data stream */
+	struct mem_buf *data; /* memory buffer */
+	uint32 offset; /* offset currently being accessed in memory buffer */
+	uint8 align; /* data alignment */
+	BOOL io; /* parsing in or out of data stream */
 
 } prs_struct;
 
 typedef struct
 {
-        int cnum; 
-        int uid;
-        BOOL open; /* open connection */
-        uint16 device_state;
-        fstring name;
-        fstring pipe_srv_name;
+	int cnum; 
+	int uid;
+	BOOL open; /* open connection */
+	uint16 device_state;
+	fstring name;
+	fstring pipe_srv_name;
 
-        prs_struct rhdr; /* output header */
-        prs_struct rdata; /* output data */
-        prs_struct rauth; /* output authentication verifier */
- 
-        RPC_HDR     hdr;
-        RPC_HDR_BA  hdr_ba;
-        RPC_HDR_RB  hdr_rb;
-        RPC_HDR_REQ  hdr_req;
-        RPC_HDR_RESP hdr_resp;
+	prs_struct rhdr; /* output header */
+	prs_struct rdata; /* output data */
+	prs_struct rauth; /* output authentication verifier */
 
-        RPC_AUTH_NTLMSSP_REQ  ntlmssp_req;
-        RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
+	RPC_HDR     hdr;
+	RPC_HDR_BA  hdr_ba;
+	RPC_HDR_RB  hdr_rb;
+	RPC_HDR_REQ  hdr_req;
+	RPC_HDR_RESP hdr_resp;
 
-        uint32 max_rdata_len;
-        uint32 hdr_offsets;
+	RPC_AUTH_NTLMSSP_REQ  ntlmssp_req;
+	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
+
+	uint32 file_offset;
+	uint32 hdr_offsets;
+	uint32 frag_len_left;
+	uint32 next_frag_start;
 
 } pipes_struct;
 
 struct acct_info
 {  
-        fstring acct_name; /* account name */
-        uint32 smb_userid; /* domain-relative RID */
+	fstring acct_name; /* account name */
+	uint32 smb_userid; /* domain-relative RID */
 };
 
 struct api_struct
@@ -95,33 +97,33 @@ struct api_struct
 
 struct mem_desc
 {  
-        /* array memory offsets */
-        uint32 start; 
-        uint32 end;
+	/* array memory offsets */
+	uint32 start; 
+	uint32 end;
 };
    
 struct mem_buf
 {  
-        BOOL dynamic; /* True iff data has been dynamically allocated
-                         (and therefore can be freed) */
-        char *data;
-        uint32 data_size;
-        uint32 data_used;
+	BOOL dynamic; /* True iff data has been dynamically allocated
+					 (and therefore can be freed) */
+	char *data;
+	uint32 data_size;
+	uint32 data_used;
 
-        uint32 margin; /* safety margin when reallocing. */
-                       /* this can be abused quite nicely */
-        uint8 align;   /* alignment of data structures (smb, dce/rpc, udp etc) */
+	uint32 margin; /* safety margin when reallocing. */
+				   /* this can be abused quite nicely */
+	uint8 align;   /* alignment of data structures (smb, dce/rpc, udp etc) */
 
-        struct mem_desc offset;
+	struct mem_desc offset;
 
-        struct mem_buf *next;
+	struct mem_buf *next;
 };
 
 typedef struct
 {  
-        uint32 rid;
-        char *name;
-   
+	uint32 rid;
+	char *name;
+
 } rid_name;
 
 #endif /* _NT_DOMAIN_H */
