@@ -273,7 +273,7 @@ static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_group
 
 	str_list_copy(&list, lp_readlist(conn->service));
 	if (list) {
-		if (!str_list_substitute(list, "%S", service)) {
+		if ( !str_list_sub_basic(list, current_user_info.smb_name) ) {
 			DEBUG(0, ("ERROR: read list substitution failed\n"));
 		}
 		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
@@ -283,7 +283,7 @@ static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_group
 	
 	str_list_copy(&list, lp_writelist(conn->service));
 	if (list) {
-		if (!str_list_substitute(list, "%S", service)) {
+		if ( !str_list_sub_basic(list, current_user_info.smb_name) ) {
 			DEBUG(0, ("ERROR: write list substitution failed\n"));
 		}
 		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
