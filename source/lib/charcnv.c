@@ -234,7 +234,7 @@ convert:
 				break;
 		}
 		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
-		talloc_free(outbuf);
+		talloc_free(ob);
 		/* smb_panic(reason); */
 		return (size_t)-1;
 	}
