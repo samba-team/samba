@@ -64,7 +64,7 @@ db_fetch(krb5_principal principal, hdb_entry **h)
 	}
     }
     free(ent);
-    return ENOENT;
+    return HDB_ERR_NOENTRY;
 }
 
 void
