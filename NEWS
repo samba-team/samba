@@ -1,3 +1,24 @@
+Changes in release 0.4f
+
+ * accept addresses with or without ports in krb5_rd_cred
+
+ * make it work with recent CVS openssl
+
+ * use or own string2key function even with openssl (that handles weak
+   keys incorrectly)
+
+ * more system-specific requirements in login
+
+ * do not use getlogin() to determine root in su
+
+ * telnet: abort if telnetd does not support encryption
+
+ * handle non-existant strtok_r and strlcpy better in libkafs
+
+ * update config.guess, config.sub
+
+ * bug fixes
+
 Changes in release 0.4e
 
  * improve libcrypto and database autoconf tests
