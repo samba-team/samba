@@ -62,10 +62,17 @@ _kadm5_set_keys(kadm5_server_context *context,
 	    key->salt = NULL;
 	}
 	krb5_free_keyblock_contents(context->context, &key->key);
-	ret = krb5_string_to_key(password, 
-				 key->salt ? &key->salt->salt : &salt,
-				 key->key.keytype,
-				 &key->key);
+	{
+	    krb5_keytype kt = key->key.keytype;
+	    if(kt == KEYTYPE_DES && 
+	       key->salt && 
+	       key->salt->type == hdb_afs3_salt)
+		kt |= KEYTYPE_USE_AFS3_SALT;
+	    ret = krb5_string_to_key(password, 
+				     key->salt ? &key->salt->salt : &salt,
+				     kt,
+				     &key->key);
+	}
 	if(ret)
 	    break;
     }
