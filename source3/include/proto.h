@@ -771,126 +771,55 @@ unsigned long wins_srv_count( void );
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds);
 void cli_lsa_shutdown(struct cli_state *cli);
-uint32 cli_lsa_open_policy(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	BOOL sec_qos, 
-	uint32 des_access, 
-	POLICY_HND *pol
-);
-uint32 cli_lsa_close(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol
-);
-uint32 cli_lsa_lookup_sids(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	int num_sids, 
-	DOM_SID *sids, 
-	char ***names, 
-	uint32 **types, 
-	int *num_names
-);
-uint32 cli_lsa_lookup_names(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	int num_names, 
-	char **names, 
-	DOM_SID **sids,
-	uint32 **types, 
-	int *num_sids
-);
-uint32 cli_lsa_query_info_policy(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol, 
-	uint16 info_class, 
-	fstring domain_name, 
-	DOM_SID * domain_sid
-);
-uint32 cli_lsa_enum_trust_dom(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol, 
-	uint32 *enum_ctx, 
-	uint32 *num_domains,
-	char ***domain_names, 
-	DOM_SID **domain_sids
-);
+uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   BOOL sec_qos, uint32 des_access, POLICY_HND *pol);
+uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+		     POLICY_HND *pol);
+uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *pol, int num_sids, DOM_SID *sids, 
+			   char ***names, uint32 **types, int *num_names);
+uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    POLICY_HND *pol, int num_names, char **names, 
+			    DOM_SID **sids, uint32 **types, int *num_sids);
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol, uint16 info_class, 
+				 fstring domain_name, DOM_SID *domain_sid);
+uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 *enum_ctx, 
+			      uint32 *num_domains, char ***domain_names, 
+			      DOM_SID **domain_sids);
 
 /*The following definitions come from  libsmb/cli_samr.c  */
 
 struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
 				      struct ntuser_creds *creds);
 void cli_samr_shutdown(struct cli_state *cli);
-uint32 cli_samr_connect(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx, 
-	char *srv_name,
-	uint32 access_mask, 
-	POLICY_HND *connect_pol
-);
-uint32 cli_samr_close(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *connect_pol
-);
-uint32 cli_samr_open_domain(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *connect_pol,
-	uint32 access_mask, 
-	DOM_SID *domain_sid,
-	POLICY_HND *domain_pol
-);
-uint32 cli_samr_open_user(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *domain_pol,
-	uint32 access_mask, 
-	uint32 user_rid,
-	POLICY_HND *user_pol
-);
-uint32 cli_samr_open_group(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx, 
-	POLICY_HND *domain_pol,
-	uint32 access_mask, 
-	uint32 group_rid,
-	POLICY_HND *group_pol
-);
-uint32 cli_samr_query_userinfo(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *user_pol, 
-	uint16 switch_value, 
-	SAM_USERINFO_CTR *ctr
-);
-uint32 cli_samr_query_groupinfo(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *group_pol,
-	uint32 info_level, 
-	GROUP_INFO_CTR *ctr
-);
-uint32 cli_samr_query_usergroups(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx, 
-	POLICY_HND *user_pol,
-	uint32 *num_groups, 
-	DOM_GID **gid
-);
-uint32 cli_samr_query_groupmem(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *group_pol,
-	uint32 *num_mem, 
-	uint32 **rid, 
-	uint32 **attr
-);
+uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			char *srv_name, uint32 access_mask, 
+			POLICY_HND *connect_pol);
+uint32 cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		      POLICY_HND *connect_pol);
+uint32 cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    POLICY_HND *connect_pol, uint32 access_mask, 
+			    DOM_SID *domain_sid, POLICY_HND *domain_pol);
+uint32 cli_samr_open_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  POLICY_HND *domain_pol, uint32 access_mask, 
+			  uint32 user_rid, POLICY_HND *user_pol);
+uint32 cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   POLICY_HND *domain_pol, uint32 access_mask, 
+			   uint32 group_rid, POLICY_HND *group_pol);
+uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *user_pol, uint16 switch_value, 
+			       SAM_USERINFO_CTR *ctr);
+uint32 cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *group_pol, uint32 info_level, 
+				GROUP_INFO_CTR *ctr);
+uint32 cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				 POLICY_HND *user_pol, uint32 *num_groups, 
+				 DOM_GID **gid);
+uint32 cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *group_pol, uint32 *num_mem, 
+			       uint32 **rid, uint32 **attr);
 uint32 cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 				POLICY_HND *pol, uint32 *start_idx, 
 				uint32 size, struct acct_info **dom_groups,
@@ -901,6 +830,13 @@ uint32 cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 uint32 cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 			   POLICY_HND *domain_pol, uint32 access_mask, 
 			   uint32 alias_rid, POLICY_HND *alias_pol);
+uint32 cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *domain_pol, uint16 switch_value,
+			       SAM_UNK_CTR *ctr);
+uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *domain_pol, uint32 *start_idx,
+			       uint16 switch_value, uint32 *num_entries,
+			       uint32 max_entries, SAM_DISPINFO_CTR *ctr);
 
 /*The following definitions come from  libsmb/cli_spoolss.c  */
 
