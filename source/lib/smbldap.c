@@ -855,7 +855,8 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(ldap_state->num_failures ? 2 : 0,
-		      ("failed to bind to server with dn= %s Error: %s\n\t%s\n",
+		      ("failed to bind to server %s with dn=\"%s\" Error: %s\n\t%s\n",
+			       ldap_state->uri,
 			       ldap_dn ? ldap_dn : "(unknown)", ldap_err2string(rc),
 			       ld_error ? ld_error : "(unknown)"));
 		SAFE_FREE(ld_error);
