@@ -59,13 +59,13 @@ sub HeaderElement($)
 		    $res .= "*";
 	    }
     }
-    if (defined $element->{ARRAY_LEN} &&
-	$element->{ARRAY_LEN} eq "*") {
+    if (defined $element->{ARRAY_LEN} && $element->{ARRAY_LEN} eq "*") {
+	    # conformant arrays are ugly! I choose to implement them with
+	    # pointers instead of the [1] method
 	    $res .= "*";
     }
     $res .= "$element->{NAME}";
-    if (defined $element->{ARRAY_LEN} &&
-	$element->{ARRAY_LEN} ne "*") {
+    if (defined $element->{ARRAY_LEN} && $element->{ARRAY_LEN} ne "*") {
 	    $res .= "[$element->{ARRAY_LEN}]";
     }
     $res .= ";\n";

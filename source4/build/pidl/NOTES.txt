@@ -1,0 +1,78 @@
+FIXED ARRAY
+-----------
+
+A fixed array looks like this:
+
+	typedef struct {
+		long s[4];
+	} Struct1;
+
+the NDR representation looks just like 4 separate long
+declarations. The array size is not encoded on the wire.
+
+
+CONFORMANT ARRAYS
+-----------------
+
+A conformant array is one with that ends in [*] or []. The strange
+things about conformant arrays are:
+
+ * they can only appear as the last element of a structure
+
+ * the array size appears before the structure itself on the wire. 
+
+So, in this example:
+
+	typedef struct {
+		long abc;
+		long count;     
+		long foo;
+		[size_is(count)] long s[*];
+	} Struct1;
+
+it appears like this:
+
+[size_is] [abc] [count] [foo] [s...]
+
+the first [size_is] field is the allocation size of the array, and
+occurs before the array elements and even before the structure
+alignment.
+
+Note that size_is() can refer to a constant, but that doesn't change
+the wire representation. It does not make the array a fixed array.
+
+midl.exe would write the above array as the following C header:
+
+       typedef struct {
+		long abc;
+		long count;     
+		long foo;
+		long s[1];
+	} Struct1;
+
+VARYING ARRAYS
+--------------
+
+A varying array looks like this:
+
+	typedef struct {
+		long abc;
+		long count;     
+		long foo;
+		[size_is(count)] long *s;
+	} Struct1;
+
+This will look like this on the wire:
+
+[abc] [count] [foo] [PTR_s]    [count] [s...]
+
+
+VALIDATOR
+---------
+
+We need to write an IDL validator, so we know that we are writing
+valid IDL. Right now the compiler sails on regardless in many cases
+even if the IDL is invalid (for example, I don't check that conformant
+arrays are always the last element in any structure). There are dozens
+of rules that should be checked.
+

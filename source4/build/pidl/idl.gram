@@ -76,7 +76,10 @@ base_element: property_list(s?) type pointer(s?) identifier array_len(?)
               }}
             | <error>
 
-array_len: '[' <commit> constant ']' 
+array_len: 
+	 '[]'
+	 { "*" }
+	 | '[' <commit> constant ']' 
          { $item{constant} }
          | <error?>
 
