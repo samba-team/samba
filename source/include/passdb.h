@@ -344,6 +344,14 @@ typedef struct pdb_context
 					       uint32 **alias_rids,
 					       int *num_alias_rids);
 
+	NTSTATUS (*pdb_lookup_rids)(struct pdb_context *context,
+				    TALLOC_CTX *mem_ctx,
+				    const DOM_SID *domain_sid,
+				    int num_rids,
+				    uint32 *rids,
+				    const char ***names,
+				    uint32 **attrs);
+
 	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
 					   int policy_index, int *value);
 
@@ -453,6 +461,14 @@ typedef struct pdb_methods
 					   int num_members,
 					   uint32 **alias_rids,
 					   int *num_alias_rids);
+
+	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
+				TALLOC_CTX *mem_ctx,
+				const DOM_SID *domain_sid,
+				int num_rids,
+				uint32 *rids,
+				const char ***names,
+				uint32 **attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
 				       int policy_index, int *value);
