@@ -280,7 +280,7 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 	struct cli_state cli;
 	uint32 smb_uid_low;
 	BOOL connected_ok = False;
-	uint32 nt_status;
+	uint32 status;
 
 	/* 
 	 * Check that the requested domain is not our own machine name.
@@ -323,12 +323,16 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 
 	ZERO_STRUCT(info3);
 
-	if (!cli_nt_login_network(&cli, user_info, smb_uid_low, &ctr, &info3)) {
-		nt_status = cli_nt_error(&cli);
-		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user_info->smb_username.str, user_info->domain.str, remote_machine, cli_errstr(&cli)));
+	if ((status = cli_nt_login_network(&cli, user_info, smb_uid_low, 
+                                           &ctr, &info3))
+            != NT_STATUS_NOPROBLEMO) {
+		DEBUG(0,("domain_client_validate: unable to validate password "
+                         "for user %s in domain %s to Domain controller %s. "
+                         "Error was %s.\n", user_info->smb_username.str,
+                         user_info->domain.str, remote_machine, 
+                         get_nt_error_msg(status)));
 	} else {
-		nt_status = NT_STATUS_NOPROBLEMO;
+		status = NT_STATUS_NOPROBLEMO;
 	}
 
 	/*
@@ -342,11 +346,11 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 	 * send here. JRA.
 	 */
 
-	if (nt_status == NT_STATUS_NOPROBLMO) {
+	if (status == NT_STATUS_NOPROBLMO) {
 		if(cli_nt_logoff(&cli, &ctr) == False) {
 			DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
-			nt_status = NT_STATUS_LOGON_FAILURE;
+			status = NT_STATUS_LOGON_FAILURE;
 		}
 	}
 #endif /* 0 */
@@ -358,6 +362,6 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 	cli_nt_session_close(&cli);
 	cli_ulogoff(&cli);
 	cli_shutdown(&cli);
-	return nt_status;
+	return status;
 }
 
