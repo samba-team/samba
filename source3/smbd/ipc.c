@@ -3454,6 +3454,7 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
 {
 	fstring name;
+        int name_offset = 0;
 	char *data=NULL,*params=NULL;
 	uint16 *setup=NULL;
 	int outsize = 0;
@@ -3563,10 +3564,19 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",
 		 name,tdscnt,tpscnt,suwcnt));
 	
-	if (strncmp(name,"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
+        /*
+         * WinCE wierdness....
+         */
+
+        if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine,
+                                strlen(local_machine)) == 0)) {
+          name_offset = strlen(local_machine)+1;
+        }
+
+	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
 		DEBUG(5,("calling named_pipe\n"));
 		outsize = named_pipe(conn,vuid,outbuf,
-				     name+strlen("\\PIPE\\"),setup,data,params,
+				     name+name_offset+strlen("\\PIPE\\"),setup,data,params,
 				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
 	} else {
 		DEBUG(3,("invalid pipe name\n"));
