@@ -783,7 +783,7 @@ uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 clean: delheaders
-	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ $(PROGS) $(SPROGS) 
+	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ $(PROGS) $(SPROGS) .headers.stamp 
 
 winbindd_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
@@ -795,7 +795,7 @@ delheaders:
 	@/bin/rm -f include/proto.h include/build_env.h
 
 # we want our generated headers to be rebuilt if they don't exist, but not rebuilt every time
-.headers.stamp: include/proto.h include/build_env.h
+.headers.stamp:
 	@[ -f $@ ] || touch $@
 
 $(PROTO_OBJ) : .headers.stamp
@@ -808,7 +808,7 @@ include/build_env.h:
 	@echo rebuilding include/build_env.h
 	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
-headers: delheaders include/proto.h include/build_env.h
+headers: delheaders include/proto.h include/build_env.h .headers.stamp
 
 proto: headers winbindd_proto
 
