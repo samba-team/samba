@@ -472,6 +472,8 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		DLIST_ADD(state->getgrent_state, domain_state);
 	}
 	
+	state->getgrent_initialized = True;
+
 	return WINBINDD_OK;
 }
 
@@ -482,6 +484,7 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: endgrent\n", (unsigned long)state->pid));
 
 	free_getent_state(state->getgrent_state);
+	state->getgrent_initialized = False;
 	state->getgrent_state = NULL;
 	
 	return WINBINDD_OK;
@@ -631,6 +634,9 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	state->response.data.num_entries = 0;
 
 	group_list = (struct winbindd_gr *)state->response.extra_data;
+
+	if (!state->getgrent_initialized)
+		winbindd_setgrent(state);
 
 	if (!(ent = state->getgrent_state))
 		return WINBINDD_ERROR;
