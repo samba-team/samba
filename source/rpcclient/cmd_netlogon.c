@@ -79,8 +79,8 @@ void cmd_netlogon_login_test(struct client_info *info)
 
 	DEBUG(5,("do_nt_login_test: username %s\n", nt_user_name));
 
-	res = res ? get_trust_account_password(smb_cli->domain, 
-					       trust_passwd, NULL) : False;
+	res = res ? secrets_fetch_trust_account_password(smb_cli->domain, 
+							 trust_passwd, NULL) : False;
 
 #if 0
 	/* check whether the user wants to change their machine password */
