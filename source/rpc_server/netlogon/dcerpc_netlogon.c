@@ -73,7 +73,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 		return status;
 	}
 	
-	dce_call->conn->private = state;
+	dce_call->context->private = state;
 
 	return NT_STATUS_OK;
 }
@@ -83,7 +83,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 */
 static NTSTATUS netlogon_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *di) 
 {
-	dce_call->conn->private = NULL;
+	dce_call->context->private = NULL;
 
 	/* if this is a schannel bind then we need to reconstruct the pipe state */
 	if (dce_call->conn->auth_state.auth_info &&
@@ -103,15 +103,11 @@ static NTSTATUS netlogon_bind(struct dcesrv_call_state *dce_call, const struct d
 }
 
 /* this function is called when the client disconnects the endpoint */
-static void netlogon_unbind(struct dcesrv_connection *conn, const struct dcesrv_interface *di) 
+static void netlogon_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *di) 
 {
-	struct server_pipe_state *pipe_state = conn->private;
-
-	if (pipe_state) {
-		talloc_free(pipe_state);
-	}
-
-	conn->private = NULL;
+	struct server_pipe_state *pipe_state = context->private;
+	talloc_free(pipe_state);
+	context->private = NULL;
 }
 
 #define DCESRV_INTERFACE_NETLOGON_BIND netlogon_bind
@@ -120,7 +116,7 @@ static void netlogon_unbind(struct dcesrv_connection *conn, const struct dcesrv_
 static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private;
 
 	ZERO_STRUCTP(r->out.credentials);
 
@@ -128,10 +124,10 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 
 	if (pipe_state) {
 		talloc_free(pipe_state);
-		dce_call->conn->private = NULL;
+		dce_call->context->private = NULL;
 	}
 	
-	pipe_state = talloc_p(dce_call->conn, struct server_pipe_state);
+	pipe_state = talloc_p(dce_call->context, struct server_pipe_state);
 	if (!pipe_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -148,7 +144,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 
 	*r->out.credentials = pipe_state->server_challenge;
 
-	dce_call->conn->private = pipe_state;
+	dce_call->context->private = pipe_state;
 
 	return NT_STATUS_OK;
 }
@@ -156,7 +152,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					 struct netr_ServerAuthenticate3 *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private;
 	void *sam_ctx;
 	struct samr_Password *mach_pwd;
 	uint16_t acct_flags;
@@ -339,7 +335,7 @@ static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_stat
 static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_ServerPasswordSet *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private;
 
 	void *sam_ctx;
 	int num_records;
@@ -468,7 +464,7 @@ static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct netr_LogonSamLogonEx *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private;
 
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info;
@@ -539,7 +535,7 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam = talloc_p(mem_ctx, struct netr_SamBaseInfo);
+	sam = talloc_zero(mem_ctx, struct netr_SamBaseInfo);
 	NT_STATUS_HAVE_NO_MEMORY(sam);
 
 	sam->last_logon = server_info->last_logon;
@@ -660,7 +656,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	NTSTATUS nt_status;
 	struct netr_LogonSamLogonEx r2;
 
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private;
 
 	r->out.return_authenticator = talloc_p(mem_ctx, struct netr_Authenticator);
 	if (!r->out.return_authenticator) {
@@ -963,7 +959,7 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx, struct ldb_message *
 static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonGetDomainInfo *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private;
 	const char * const attrs[] = { "name", "dnsDomain", "objectSid", 
 				       "objectGUID", "flatName", "securityIdentifier",
 				       NULL };

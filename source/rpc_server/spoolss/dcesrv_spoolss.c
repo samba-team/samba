@@ -186,26 +186,6 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 }
 
 
-/*
-  destroy connection state
-*/
-static void spoolss_OpenPrinter_close(struct spoolss_openprinter_state *c_state)
-{
-	c_state->reference_count--;
-	if (c_state->reference_count == 0) {
-		talloc_destroy(c_state->mem_ctx);
-	}
-}
-
-/*
-  destroy an open connection. This closes the database connection
-*/
-static void spoolss_OpenPrinter_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
-{
-	struct spoolss_openprinter_state *c_state = h->data;
-	spoolss_OpenPrinter_close(c_state);
-}
-
 /* 
   spoolss_OpenPrinter 
 */
@@ -498,10 +478,7 @@ static WERROR spoolss_ClosePrinter(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 
-	/* this causes the callback s_XXX_destroy() to be called by
-	   the handle destroy code which destroys the state associated
-	   with the handle */
-	dcesrv_handle_destroy(dce_call->conn, h);
+	talloc_free(h);
 
 	ZERO_STRUCTP(r->out.handle);
 
@@ -905,34 +882,24 @@ static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call,
 {
 	struct spoolss_openprinter_state *state;
 	struct dcesrv_handle *handle;
-	TALLOC_CTX *op_mem_ctx;
 
 	/* Check printername is our name */
 
 	if (!strequal(r->in.printername + 2, lp_netbios_name()))
 		return WERR_INVALID_PRINTER_NAME;
 
-	op_mem_ctx = talloc_init("spoolss_OpenPrinter");
-	if (!op_mem_ctx) {
-		return WERR_OK;
-	}
-
-	state = talloc_p(op_mem_ctx, struct spoolss_openprinter_state);
-	if (!state) {
-		return WERR_OK;
-	}
-	state->mem_ctx = op_mem_ctx;
-
-	handle = dcesrv_handle_new(dce_call->conn, SPOOLSS_HANDLE_SERVER);
+	handle = dcesrv_handle_new(dce_call->context, SPOOLSS_HANDLE_SERVER);
 	if (!handle) {
-		talloc_destroy(state->mem_ctx);
 		return WERR_NOMEM;
 	}
 
-	handle->data = state;
-	handle->destroy = spoolss_OpenPrinter_destroy;
+	state = talloc_p(handle, struct spoolss_openprinter_state);
+	if (!state) {
+		return WERR_OK;
+	}
 
-	state->reference_count = 1;
+	handle->data = state;
+
 	state->access_mask = r->in.access_mask;
 	*r->out.handle = handle->wire_handle;
 

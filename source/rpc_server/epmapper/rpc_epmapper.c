@@ -121,8 +121,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	uint32_t num_ents;
 	int i;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.entry_handle, HTYPE_LOOKUP);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.entry_handle, HTYPE_LOOKUP);
 
 	eps = h->data;
 
@@ -150,7 +149,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (num_ents == 0) {
 		r->out.entries = NULL;
 		ZERO_STRUCTP(r->out.entry_handle);
-		dcesrv_handle_destroy(dce_call->conn, h);
+		talloc_free(h);
 		return EPMAPPER_STATUS_NO_MORE_ENTRIES;
 	}
 

@@ -25,57 +25,61 @@
 #include "rpc_server/dcerpc_server.h"
 
 /*
+  destroy a rpc handle
+*/
+static int dcesrv_handle_destructor(void *ptr)
+{
+	struct dcesrv_handle *h = ptr;
+	if (h->destroy) {
+		h->destroy(h->context, h);
+	}
+	DLIST_REMOVE(h->context->handles, h);
+	talloc_free(h);
+	return 0;
+}
+
+
+/*
   allocate a new rpc handle
 */
-struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn, 
+struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *context, 
 					uint8_t handle_type)
 {
 	struct dcesrv_handle *h;
 
-	h = talloc_p(dce_conn, struct dcesrv_handle);
+	h = talloc_p(context, struct dcesrv_handle);
 	if (!h) {
 		return NULL;
 	}
 	h->data = NULL;
 	h->destroy = NULL;
+	h->context = context;
 
 	h->wire_handle.handle_type = handle_type;
 	h->wire_handle.uuid = GUID_random();
 	
-	DLIST_ADD(dce_conn->handles, h);
+	DLIST_ADD(context->handles, h);
+
+	talloc_set_destructor(h, dcesrv_handle_destructor);
 
 	return h;
 }
 
 /*
-  destroy a rpc handle
-*/
-void dcesrv_handle_destroy(struct dcesrv_connection *dce_conn, 
-			   struct dcesrv_handle *h)
-{
-	if (h->destroy) {
-		h->destroy(dce_conn, h);
-	}
-	DLIST_REMOVE(dce_conn->handles, h);
-	talloc_free(h);
-}
-
-
-/*
   find an internal handle given a wire handle. If the wire handle is NULL then
   allocate a new handle
 */
-struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection *dce_conn, 
+struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection_context *context, 
 					  struct policy_handle *p,
 					  uint8_t handle_type)
 {
 	struct dcesrv_handle *h;
 
 	if (policy_handle_empty(p)) {
-		return dcesrv_handle_new(dce_conn, handle_type);
+		return dcesrv_handle_new(context, handle_type);
 	}
 
-	for (h=dce_conn->handles; h; h=h->next) {
+	for (h=context->handles; h; h=h->next) {
 		if (h->wire_handle.handle_type == p->handle_type &&
 		    GUID_equal(&p->uuid, &h->wire_handle.uuid)) {
 			if (handle_type != DCESRV_HANDLE_ANY &&

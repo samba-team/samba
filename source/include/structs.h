@@ -97,6 +97,7 @@ struct pvfs_file_handle;
 struct dcesrv_context;
 struct dcesrv_interface;
 struct dcesrv_connection;
+struct dcesrv_connection_context;
 struct dcesrv_endpoint;
 struct dcesrv_call_state;
 struct dcesrv_auth;

@@ -31,14 +31,6 @@
 
 
 /*
-  destroy a general handle. 
-*/
-static void samr_handle_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
-{
-	talloc_free(h->data);
-}
-
-/*
   This is a bad temporary hack until we have at least some kind of schema
   support
 */
@@ -72,14 +64,13 @@ static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_CONNECT);
+	handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_CONNECT);
 	if (!handle) {
 		talloc_free(c_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	handle->data = c_state;
-	handle->destroy = samr_handle_destroy;
+	handle->data = talloc_steal(handle, c_state);
 
 	c_state->access_mask = r->in.access_mask;
 	*r->out.connect_handle = handle->wire_handle;
@@ -100,10 +91,7 @@ static NTSTATUS samr_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
-	/* this causes the parameters samr_XXX_destroy() to be called by
-	   the handle destroy code which destroys the state associated
-	   with the handle */
-	dcesrv_handle_destroy(dce_call->conn, h);
+	talloc_free(h);
 
 	ZERO_STRUCTP(r->out.handle);
 
@@ -327,14 +315,14 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 	d_state->access_mask = r->in.access_mask;
 
-	h_domain = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_DOMAIN);
+	h_domain = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_DOMAIN);
 	if (!h_domain) {
 		talloc_free(d_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	h_domain->data = d_state;
-	h_domain->destroy = samr_handle_destroy;
+	h_domain->data = talloc_steal(h_domain, d_state);
+
 	*r->out.domain_handle = h_domain->wire_handle;
 
 	return NT_STATUS_OK;
@@ -579,13 +567,12 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	/* create the policy handle */
-	g_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_GROUP);
+	g_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_GROUP);
 	if (!g_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_handle->data = a_state;
-	g_handle->destroy = samr_handle_destroy;
+	g_handle->data = talloc_steal(g_handle, a_state);
 
 	*r->out.group_handle = g_handle->wire_handle;
 	*r->out.rid = rid;	
@@ -862,16 +849,12 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* create the policy handle */
-	u_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_USER);
+	u_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_USER);
 	if (!u_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	u_handle->data = a_state;
-	u_handle->destroy = samr_handle_destroy;
-
-	/* the domain state is in use one more time */
-	
+	u_handle->data = talloc_steal(u_handle, a_state);
 
 	*r->out.user_handle = u_handle->wire_handle;
 	*r->out.access_granted = 0xf07ff; /* TODO: fix access mask calculations */
@@ -1095,12 +1078,11 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	/* create the policy handle */
-	a_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_ALIAS);
+	a_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_ALIAS);
 	if (a_handle == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	a_handle->data = a_state;
-	a_handle->destroy = samr_handle_destroy;
+	a_handle->data = talloc_steal(a_handle, a_state);
 
 	*r->out.alias_handle = a_handle->wire_handle;
 	*r->out.rid = rid;
@@ -1518,13 +1500,12 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 
 	/* create the policy handle */
-	g_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_GROUP);
+	g_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_GROUP);
 	if (!g_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_handle->data = a_state;
-	g_handle->destroy = samr_handle_destroy;
+	g_handle->data = talloc_steal(g_handle, a_state);
 
 	*r->out.group_handle = g_handle->wire_handle;
 
@@ -1993,13 +1974,12 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 
 	/* create the policy handle */
-	g_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_ALIAS);
+	g_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_ALIAS);
 	if (!g_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_handle->data = a_state;
-	g_handle->destroy = samr_handle_destroy;
+	g_handle->data = talloc_steal(g_handle, a_state);
 
 	*r->out.alias_handle = g_handle->wire_handle;
 
@@ -2426,13 +2406,12 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	}
 
 	/* create the policy handle */
-	u_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_USER);
+	u_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_USER);
 	if (!u_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	u_handle->data = a_state;
-	u_handle->destroy = samr_handle_destroy;
+	u_handle->data = talloc_steal(u_handle, a_state);
 
 	*r->out.user_handle = u_handle->wire_handle;
 

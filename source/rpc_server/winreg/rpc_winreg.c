@@ -33,7 +33,7 @@ static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call, const str
 	struct registry_context *ctx;
 	reg_open_local(&ctx);
 
-	dce_call->conn->private = ctx;
+	dce_call->context->private = ctx;
 
 	return NT_STATUS_OK;
 }
@@ -42,11 +42,11 @@ static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call, const str
 
 static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, uint32_t hkey, struct policy_handle **outh)
 {
-	struct registry_context *ctx = dce_call->conn->private;
+	struct registry_context *ctx = dce_call->context->private;
 	struct dcesrv_handle *h; 
 	WERROR error;
 
-	h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); 
+	h = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY); 
 
 	error = reg_get_predefined_key(ctx, hkey, (struct registry_key **)&h->data);
 	if (!W_ERROR_IS_OK(error)) {
@@ -77,14 +77,13 @@ func_winreg_OpenHive(HKPN,HKEY_PERFORMANCE_NLSTEXT)
   winreg_CloseKey 
 */
 static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_CloseKey *r)
+			      struct winreg_CloseKey *r)
 {
 	struct dcesrv_handle *h; 
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	dcesrv_handle_destroy(dce_call->conn, h);
+	talloc_free(h);
 
 	return WERR_OK;
 }
@@ -94,25 +93,23 @@ static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
   winreg_CreateKey 
 */
 static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_CreateKey *r)
+			       struct winreg_CreateKey *r)
 {
 	struct dcesrv_handle *h, *newh;
 	WERROR error;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	
-	newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
+	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
 
 	error = reg_key_add_name(newh, (struct registry_key *)h->data, r->in.key.name, 
-							 r->in.access_mask, 
-							 r->in.sec_desc?r->in.sec_desc->sd:NULL, 
-							 (struct registry_key **)&newh->data);
-
-	if(W_ERROR_IS_OK(error)) {
+				 r->in.access_mask, 
+				 r->in.sec_desc?r->in.sec_desc->sd:NULL, 
+				 (struct registry_key **)&newh->data);
+	if (W_ERROR_IS_OK(error)) {
 		r->out.handle = &newh->wire_handle;
 	} else {
-		dcesrv_handle_destroy(dce_call->conn, newh);
+		talloc_free(newh);
 	}
 
 	return error;
@@ -128,8 +125,7 @@ static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	struct dcesrv_handle *h;
 	WERROR result;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	if (W_ERROR_IS_OK(result)) {
 		return reg_key_del((struct registry_key *)h->data, r->in.key.name);
@@ -148,8 +144,7 @@ static WERROR winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct dcesrv_handle *h;
 	struct registry_key *key;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	key = h->data;
 	
@@ -166,8 +161,7 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	struct dcesrv_handle *h;
 	struct registry_key *key;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	r->out.result = reg_key_get_subkey_by_index(mem_ctx, (struct registry_key *)h->data, r->in.enum_index, &key);
 
@@ -194,8 +188,7 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	struct registry_value *value;
 	WERROR result;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	key = h->data;
 
@@ -224,8 +217,7 @@ static WERROR winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 {
 	struct dcesrv_handle *h;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	return reg_key_flush(h->data);
 }
@@ -239,8 +231,7 @@ static WERROR winreg_GetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_C
 {
 	struct dcesrv_handle *h;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	return WERR_NOT_SUPPORTED;
 }
@@ -275,18 +266,17 @@ static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	struct dcesrv_handle *h, *newh;
 	WERROR result;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
+	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
 
 	result = reg_open_key(newh, (struct registry_key *)h->data, 
-				r->in.keyname.name, (struct registry_key **)&newh->data);
+			      r->in.keyname.name, (struct registry_key **)&newh->data);
 
 	if (W_ERROR_IS_OK(result)) {
 		r->out.handle = &newh->wire_handle; 
 	} else {
-		dcesrv_handle_destroy(dce_call->conn, newh);
+		talloc_free(newh);
 	}
 	
 	return result;
@@ -303,8 +293,8 @@ static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct registry_key *k;
 	WERROR ret;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+
 	k = h->data;
 
 	ret = reg_key_num_subkeys(k, &r->out.num_subkeys);
@@ -349,8 +339,7 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	struct registry_value *val;
 	WERROR result;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	key = h->data;
 	
@@ -425,8 +414,7 @@ static WERROR winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	struct registry_key *key;
 	WERROR result;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	key = h->data;
 	

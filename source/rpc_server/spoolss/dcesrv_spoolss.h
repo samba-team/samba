@@ -32,8 +32,6 @@ enum spoolss_handle {
   state asscoiated with a spoolss_OpenPrinter{,Ex}() operation
 */
 struct spoolss_openprinter_state {
-	int reference_count;
 	void *openprinter_ctx;
-	TALLOC_CTX *mem_ctx;
 	uint32_t access_mask;
 };
