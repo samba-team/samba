@@ -39,10 +39,6 @@ RCSID("$Id$");
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/in_systm.h>
-#include <netinet/ip.h>
 
 #include <ctype.h>
 #include <dirent.h>
