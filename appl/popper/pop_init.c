@@ -16,10 +16,6 @@ RCSID("$Id$");
 AUTH_DAT kdata;
 #endif /* KERBEROS */
 
-#ifndef LOG_DAEMON
-#define SYSLOG42
-#endif
-
 extern int      errno;
 
 static
@@ -91,11 +87,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     k_gethostname(p->myhost,MaxHostNameLen);
 
     /*  Open the log file */
-#ifdef SYSLOG42
-    (void)openlog(p->myname,0);
-#else
     (void)openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
-#endif
 
     /*  Process command line arguments */
     while ((c = getopt(argcount,argmessage,
