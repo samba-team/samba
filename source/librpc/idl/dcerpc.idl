@@ -4,6 +4,9 @@
   the base dcerpc packet definitions - not traditionally coded as IDL,
   but given that pidl can handle it nicely it simplifies things a lot
   to do it this way
+
+  see http://www.opengroup.org/onlinepubs/9629399/chap12.htm for packet
+  layouts
 */
 [] 
 interface dcerpc
