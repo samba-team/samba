@@ -450,11 +450,12 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 	int n_services = lp_numservices();	
 	int snum;
 	fstring sname;
+	int i;
 	int num_subkeys = 0;
 	char *keystr, *key2 = NULL;
 	char *base, *new_path;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	
+	fstring *subkey_names = NULL;
 	
 	DEBUG(10,("print_subpath_printers: key=>[%s]\n", key ? key : "NULL" ));
 	
@@ -481,21 +482,22 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 	keystr = key2;
 	reg_split_path( keystr, &base, &new_path );
 	
-	
-	if ( !new_path ) {
-		/* sanity check on the printer name */
 		if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, base) ) )
 			goto done;
 		
+	num_subkeys = get_printer_subkeys( &printer->info_2->data, new_path?new_path:"", &subkey_names );
+	
+	for ( i=0; i<num_subkeys; i++ )
+		regsubkey_ctr_addkey( subkeys, subkey_names[i] );
+	
 		free_a_printer( &printer, 2 );
 		
-		regsubkey_ctr_addkey( subkeys, SPOOL_PRINTERDATA_KEY );
-	}
-	
 	/* no other subkeys below here */
 
 done:	
 	SAFE_FREE( key2 );
+	SAFE_FREE( subkey_names );
+	
 	return num_subkeys;
 }
 
@@ -514,11 +516,9 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	prs_struct	prs;
 	uint32		offset;
 	int		snum;
-	int		i;
-	fstring		valuename;
-	uint8		*data;
-	uint32		type, data_len;
 	fstring		printername;
+	NT_PRINTER_DATA	*p_data;
+	int		i, key_index;
 	
 	/* 
 	 * There are tw cases to deal with here
@@ -604,43 +604,36 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 
 				
 		prs_mem_free( &prs );
-		free_a_printer( &printer, 2 );	
 		
 		num_values = regval_ctr_numvals( val );	
+		
 		goto done;
 		
 	}
 	
+	/* now enumerate the key */
 	
-	keystr = new_path;
-	reg_split_path( keystr, &base, &new_path );
-	
-	/* here should be no more path components here */
-	
-	if ( new_path || strcmp(base, SPOOL_PRINTERDATA_KEY) )
-		goto done;
-		
-	/* now enumerate the PrinterDriverData key */
 	if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, printername) ) )
 		goto done;
 
-	info2 = printer->info_2;
-		
-	
 	/* iterate over all printer data and fill the regval container */
 	
-#if 0	/* JERRY */
-	for ( i=0; get_specific_param_by_index(*printer, 2, i, valuename, &data, &type, &data_len); i++ )
-	{
-		regval_ctr_addvalue( val, valuename, type, data, data_len );
+	p_data = &printer->info_2->data;
+	if ( (key_index = lookup_printerkey( p_data, new_path )) == -1  ) {
+		DEBUG(10,("print_subpath_values_printer: Unknown keyname [%s]\n", new_path));
+		goto done;
 	}
-#endif
 		
-	free_a_printer( &printer, 2 );
+	num_values = regval_ctr_numvals( &p_data->keys[key_index].values );
+	
+	for ( i=0; i<num_values; i++ )
+		regval_ctr_copyvalue( val, regval_ctr_specific_value(&p_data->keys[key_index].values, i) );
 
-	num_values = regval_ctr_numvals( val );
 	
 done:
+	if ( printer )
+		free_a_printer( &printer, 2 );
+		
 	SAFE_FREE( key2 ); 
 	
 	return num_values;

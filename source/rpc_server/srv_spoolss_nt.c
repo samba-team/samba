@@ -7075,7 +7075,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		 */
 	
 		/* name */
-		
 		*out_max_value_len=(in_value_len/sizeof(uint16));
 		if ( (*out_value = (uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
 		{
@@ -7894,10 +7893,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 		goto done;
 	}
 	   
-	if ( !get_printer_snum(p,handle, &snum) ) {
-		status = WERR_BADFID;
-		goto done;
-	}
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if ( !W_ERROR_IS_OK(status) ) 
@@ -7966,7 +7963,6 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	fstring			valuename;
 	fstring			keyname;
 	char			*oid_string;
-	UNISTR2			uni_oid;
 
 	DEBUG(4,("_spoolss_setprinterdataex\n"));
 
@@ -8029,9 +8025,8 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 		 * this is right.    --jerry
 		 */
 		 
-		init_unistr2(  &uni_oid, oid_string, strlen(oid_string)+1 );	
 		set_printer_dataex( printer, keyname, valuename, 
-		                    REG_SZ, (void*)uni_oid.buffer, uni_oid.uni_str_len*sizeof(uint16) );		
+		                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
 	}
 	
 	free_a_printer(&printer, 2);
