@@ -385,6 +385,7 @@ an Active Directory environment.
 <!ENTITY smbclient '<application>smbclient</application>'>
 <!ENTITY winbindd '<application>winbindd</application>'>
 <!ENTITY smbgroupedit '<application>smbgroupedit</application>'>
+<!ENTITY net '<application>net</application>'>
 
 <!-- We only need this for SGML, and not for XML... -->
 <!ENTITY percnt '%'>
