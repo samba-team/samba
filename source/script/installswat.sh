@@ -3,7 +3,7 @@
 
 SWATDIR=$1
 SRCDIR=$2/
-BOOKDIR=$3
+BOOKDIR=$SWATDIR/using_samba
 
 echo Installing SWAT in $SWATDIR
 echo Installing the Samba Web Administration Tool
