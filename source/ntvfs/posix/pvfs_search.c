@@ -208,15 +208,9 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 		status = fill_search_info(pvfs, level, dir->unix_path, dir->names[i], 
 					  search, i, file);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			talloc_free(file);
-			continue;
-		}
-
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(file);
-			search->current_index = i;
-			return status;
+			continue;
 		}
 
 		if (!callback(search_private, file)) {
