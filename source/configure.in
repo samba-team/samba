@@ -1148,6 +1148,7 @@ AC_ARG_WITH(ldap,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_LDAP)
+    AC_MSG_ERROR([LDAP password database not supported in this version.])
     ;;
   *)
     AC_MSG_RESULT(no)
