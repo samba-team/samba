@@ -14,6 +14,14 @@ while (<IGNORES>) {
 }
 close IGNORES;
 
+# We don't want the files listed in .cvsignore in the source/include tree
+open(IGNORES,"../src/source/include/.cvsignore") || die "Unable to open include/.cvsignore file\n";
+while (<IGNORES>) {
+  chop;
+  $ignores{$_}++;
+}
+close IGNORES;
+
 # get the names of all the binary files to be installed
 open(MAKEFILE,"../../source/Makefile") || die "Unable to open Makefile\n";
 @makefile = <MAKEFILE>;
@@ -32,6 +40,7 @@ if (@sprogs) {
 }
 if (@progs) {
   @progs[0] =~ s/^.*\=//;
+  @progs[0] =~ s/\$\(\S+\)\s//g;
   @progs = split(' ',@progs[0]);
 }
 if (@mprogs) {
@@ -48,6 +57,7 @@ if (@progs2) {
 }
 if (@scripts) {
   @scripts[0] =~ s/^.*\=//;
+  @scripts[0] =~ s/\$\(srcdir\)\///g;
   @scripts = split(' ',@scripts[0]);
 }
 if (@codepage) {
