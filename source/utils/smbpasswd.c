@@ -75,6 +75,7 @@ static void usage(void)
 	printf("otherwise:\n");
 	printf("    smbpasswd [options] [password]\n\n");
 
+	printf("Version: %s\n", VERSION);
 	printf("options:\n");
 	printf("  -L                   local mode (must be first option)\n");
 	printf("  -h                   print this usage message\n");

@@ -787,9 +787,10 @@ struct cli_state *connect_one(char *share)
 
 static void usage(void)
 {
+	printf("Usage: smbcacls //server1/share1 filename [options]\n");
+	printf("Version: %s\n", VERSION);
 	printf(
-"Usage: smbcacls //server1/share1 filename [options]\n\
-\n\
+"\n\
 \t-D <acls>               delete an acl\n\
 \t-M <acls>               modify an acl\n\
 \t-A <acls>               add an acl\n\
