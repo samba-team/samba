@@ -1725,7 +1725,7 @@ ARCFOUR_subencrypt(krb5_context context,
     krb5_keyblock kb;
     unsigned char t[4];
     RC4_KEY rc4_key;
-    char *cdata = (char *)data;
+    unsigned char *cdata = data;
     unsigned char k1_c_data[16], k2_c_data[16], k3_c_data[16];
 
     t[0] = (usage >>  0) & 0xFF;
@@ -1781,7 +1781,7 @@ ARCFOUR_subdecrypt(krb5_context context,
     krb5_keyblock kb;
     unsigned char t[4];
     RC4_KEY rc4_key;
-    char *cdata = (char *)data;
+    unsigned char *cdata = data;
     unsigned char k1_c_data[16], k2_c_data[16], k3_c_data[16];
     unsigned char cksum_data[16];
 
@@ -3000,6 +3000,7 @@ krb5_string_to_key_derived(krb5_context context,
     struct encryption_type *et = _find_enctype(etype);
     krb5_error_code ret;
     struct key_data kd;
+    size_t keylen = et->keytype->bits / 8;
     u_char *tmp;
 
     if(et == NULL) {
@@ -3008,13 +3009,28 @@ krb5_string_to_key_derived(krb5_context context,
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     ALLOC(kd.key, 1);
+    if(kd.key == NULL) {
+	krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    ret = krb5_data_alloc(&kd.key->keyvalue, et->keytype->size);
+    if(ret) {
+	free(kd.key);
+	return ret;
+    }
     kd.key->keytype = etype;
-    tmp = malloc (et->keytype->bits / 8);
-    _krb5_n_fold(str, len, tmp, et->keytype->bits / 8);
-    krb5_data_alloc(&kd.key->keyvalue, et->keytype->size);
+    tmp = malloc (keylen);
+    if(tmp == NULL) {
+	krb5_free_keyblock(context, kd.key);
+	krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    _krb5_n_fold(str, len, tmp, keylen);
     kd.schedule = NULL;
-    DES3_postproc (context, tmp, et->keytype->bits / 8, &kd); /* XXX */
-    ret = derive_key(context,
+    DES3_postproc (context, tmp, keylen, &kd); /* XXX */
+    memset(tmp, 0, keylen);
+    free(tmp);
+    ret = derive_key(context, 
 		     et,
 		     &kd,
 		     "kerberos", /* XXX well known constant */
