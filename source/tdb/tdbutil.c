@@ -399,3 +399,14 @@ TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
 
 	return tdb;
 }
+
+
+/****************************************************************************
+ Allow tdb_delete to be used as a tdb_traversal_fn.
+****************************************************************************/
+
+int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
+                     void *state)
+{
+    return tdb_delete(the_tdb, key);
+}

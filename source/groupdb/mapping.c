@@ -161,7 +161,7 @@ BOOL init_group_mapping(void)
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, vstring);
 	if (tdb_fetch_int(tdb, vstring) != DATABASE_VERSION) {
-		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
+		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
 		tdb_store_int(tdb, vstring, DATABASE_VERSION);
 	}
 	tdb_unlock_bystring(tdb, vstring);
