@@ -27,7 +27,6 @@
 
 int net_join(struct net_context *ctx, int argc, const char **argv) 
 {
-	
 	NTSTATUS status;
 	struct libnet_context *libnetctx;
 	union libnet_Join r;
