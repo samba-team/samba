@@ -161,15 +161,14 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
   DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
-
   /* indicate a "network" login */
   ctr->switch_value = NET_LOGON_TYPE;
 
   /* Create the structure needed for SAM logon. */
-  init_id_info2(&ctr->auth.id2, domain, 0, 
-                smb_userid_low, 0,
-                username, cli->clnt_name_slash,
-                (uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
+  init_id_info2(&ctr->auth.id2, domain, 0, smb_userid_low, 0,
+                username, dos_to_unix(cli->clnt_name_slash, False),
+		(uchar *)lm_chal, (uchar *)lm_chal_resp, 
+		(uchar *)nt_chal_resp);
 
   /* Send client sam-logon request - update credentials on success. */
   return cli_net_sam_logon(cli, ctr, user_info3);
