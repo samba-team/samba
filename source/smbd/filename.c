@@ -369,6 +369,18 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   trim_string(name,"/","/");
 
   /*
+   * If we trimmed down to a single '\0' character
+   * then we should use the "." directory to avoid
+   * searching the cache, but not if we are in a
+   * printing share.
+   */
+
+  if (!*name && (!conn -> printer)) {
+    name[0] = '.';
+    name[1] = '\0';
+  }
+
+  /*
    * Ensure saved_last_component is valid even if file exists.
    */
 
