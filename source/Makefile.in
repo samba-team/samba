@@ -519,13 +519,11 @@ proto_test:
 .PHONY: headers proto
 
 realclean: clean delheaders
-	-rm -f config.log $(BIN_PROGS) $(MODULES) $(SBIN_PROGS) bin/.dummy
+	-rm -f config.log bin/.dummy
 
 distclean: realclean
-	-rm -f include/stamp-h
 	-rm -f include/config.h Makefile
-	-rm -f config.status config.cache so_locations
-	-rm -rf .deps
+	-rm -f config.status config.cache
 
 realdistclean: distclean
 	-rm -f include/config.h.in
@@ -541,52 +539,3 @@ config.status: $(srcdir)/configure
 
 Makefile: $(srcdir)/Makefile.in config.status
 	@echo "WARNING: you need to run ./config.status"
-
-
-#Some Maintainer stuff
-
-etags:
-	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
-
-ctags:
-	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
-
-# this target is really just for my use. It only works on a limited
-# range of machines and is used to produce a list of potentially
-# dead (ie. unused) functions in the code. (tridge)
-finddead:
-	nm */*.o |grep 'U ' | $(AWK) '{print $$2}' | sort -u > nmused.txt
-	nm */*.o |grep 'T ' | $(AWK) '{print $$3}' | sort -u > nmfns.txt
-	comm -13 nmused.txt nmfns.txt 
-
-
-test_prefix=/tmp/test-samba
-# Run regression suite using the external "satyr" framework
-check:
-	@echo "** Sorry, samba self-test without installation does not work "
-	@echo "** yet.  Please try specifying a scratch directory to"
-	@echo "**       ./configure --prefix DIR"
-	@echo "** then run \"make install installcheck\""
-	exit 1
-
-# 	-rm -rf $(test_prefix)/lib
-# 	mkdir $(test_prefix)/lib -p ./testdir 
-# 	PATH=$(builddir)/bin:$(PATH) \
-# 	SATYR_SUITEDIR=../testsuite/build_farm/ prefix=$(test_prefix) \
-# 	testdir=./testdir $(SHELL) satyr
-
-# Run regression suite on the installed version.
-
-# `installcheck'
-#      Perform installation tests (if any).  The user must build and
-#      install the program before running the tests.  You should not
-#      assume that `$(BINDIR)' is in the search path.
-
-dangerous-installcheck:
-	mkdir -p $(BASEDIR)/lib
-	mkdir -p $(BASEDIR)/var
-	PATH=$(BINDIR):$(SBINDIR):$(PATH) \
-	SATYR_DISCOURAGE=1 \
-	SATYR_SUITEDIR=../testsuite/satyr/ prefix=$(BASEDIR) \
-	LIBSMB_PROG=$(SBINDIR)/smbd \
-	testdir=./testdir $(SHELL) satyr
