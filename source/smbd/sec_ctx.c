@@ -59,10 +59,8 @@ static BOOL become_uid(uid_t uid)
 	/* Set effective user id */
 
 	set_effective_uid(uid);
-	current_user.uid = uid;
 
 	DO_PROFILE_INC(uid_changes);
-
 	return True;
 }
 
@@ -88,8 +86,6 @@ static BOOL become_gid(gid_t gid)
 	/* Set effective group id */
 
 	set_effective_gid(gid);
-	current_user.gid = gid;
-	
 	return True;
 }
 

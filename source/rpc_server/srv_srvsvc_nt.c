@@ -1598,7 +1598,9 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 
 	get_current_user(&user, p);	
 	
+	become_root();
 	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
+	unbecome_root();
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to connect to %s\n", qualname));
@@ -1649,7 +1651,7 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	psd->dacl->revision = (uint16) NT4_ACL_REVISION;
 
 	close_file(fsp, True);
-
+	unbecome_user();
 	close_cnum(conn, user.vuid);
 	return r_u->status;
 
@@ -1700,7 +1702,9 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 
 	get_current_user(&user, p);	
 	
+	become_root();
 	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
+	unbecome_root();
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to connect to %s\n", qualname));

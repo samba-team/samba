@@ -120,7 +120,7 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 
 	/* check for sighup processing */
 	if (reload_after_sighup) {
-		unbecome_user();
+		change_to_root_user();
 		DEBUG(1,("Reloading services after SIGHUP\n"));
 		reload_services(False);
 		reload_after_sighup = False;
@@ -702,7 +702,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     /* does this protocol need to be run as root? */
     if (!(flags & AS_USER))
-      unbecome_user();
+      change_to_root_user();
 
     /* does this protocol need a valid tree connection? */
     if ((flags & AS_USER) && !conn) {
@@ -711,7 +711,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
 
     /* does this protocol need to be run as the connected user? */
-    if ((flags & AS_USER) && !become_user(conn,session_tag)) {
+    if ((flags & AS_USER) && !change_to_user(conn,session_tag)) {
       if (flags & AS_GUEST) 
         flags &= ~AS_USER;
       else
@@ -734,13 +734,13 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     }
 
     /* load service specific parameters */
-    if (conn && !become_service(conn,(flags & AS_USER)?True:False)) {
+    if (conn && !set_current_service(conn,(flags & AS_USER)?True:False)) {
       return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     /* does this protocol need to be run as guest? */
     if ((flags & AS_GUEST) && 
-		 (!become_guest() || 
+		 (!change_to_guest() || 
 		!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
       return(ERROR_DOS(ERRSRV,ERRaccess));
     }
@@ -1096,7 +1096,7 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
     last_idle_closed_check = t;
 
   /* become root again if waiting */
-  unbecome_user();
+  change_to_root_user();
 
   /* check if we need to reload services */
   check_reload(t);
