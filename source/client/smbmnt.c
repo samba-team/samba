@@ -23,27 +23,12 @@
 #include <linux/fs.h>
 #endif
 
-static char *progname;
-
-
-static void
-usage(void)
-{
-        printf("usage: %s mount-point [options]\n", progname);
-        printf("Try `%s -h' for more information\n", progname);
-}
-
 static void
 help(void)
 {
         printf("\n");
-        printf("usage: %s mount-point [options]\n", progname);
-        printf("-u uid         uid the mounted files get\n"
-               "-g gid         gid the mounted files get\n"
-               "-f mode        permission the files get (octal notation)\n"
-               "-d mode        permission the dirs get (octal notation)\n"
-	       "-P pid         connection handler's pid\n\n"
-	       "-s share       share name on server\n\n"
+        printf("usage: smbmnt mount-point [options]\n");
+        printf("-s share       share name on server\n"
                "-h             print this help text\n");
 }
 
@@ -54,50 +39,10 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
         struct passwd *pwd;
         struct group  *grp;
 
-        while ((opt = getopt (argc, argv, "u:g:f:d:s:")) != EOF)
+        while ((opt = getopt (argc, argv, "s:")) != EOF)
 	{
                 switch (opt)
 		{
-                case 'u':
-                        if (isdigit(optarg[0]))
-			{
-                                data->uid = atoi(optarg);
-                        }
-			else
-			{
-                                pwd = getpwnam(optarg);
-                                if (pwd == NULL)
-				{
-                                        fprintf(stderr, "Unknown user: %s\n",
-                                                optarg);
-                                        return 1;
-                                }
-                                data->uid = pwd->pw_uid;
-                        }
-                        break;
-                case 'g':
-                        if (isdigit(optarg[0]))
-			{
-                                data->gid = atoi(optarg);
-                        }
-			else
-			{
-                                grp = getgrnam(optarg);
-                                if (grp == NULL)
-				{
-                                        fprintf(stderr, "Unknown group: %s\n",
-                                                optarg);
-                                        return 1;
-                                }
-                                data->gid = grp->gr_gid;
-                        }
-                        break;
-                case 'f':
-                        data->file_mode = strtol(optarg, NULL, 8);
-                        break;
-                case 'd':
-                        data->dir_mode = strtol(optarg, NULL, 8);
-                        break;
                 case 's':
                         *share = optarg;
                         break;
@@ -127,19 +72,16 @@ fullpath(const char *p)
 }
 
 /* Check whether user is allowed to mount on the specified mount point */
-static int
-mount_ok(SMB_STRUCT_STAT *st)
+static int mount_ok(SMB_STRUCT_STAT *st)
 {
-        if (!S_ISDIR(st->st_mode))
-        {
+        if (!S_ISDIR(st->st_mode)) {
                 errno = ENOTDIR;
                 return -1;
         }
 	
-        if (   (getuid() != 0)
-            && (   (getuid() != st->st_uid)
-                || ((st->st_mode & S_IRWXU) != S_IRWXU)))
-        {
+        if ((getuid() != 0) && 
+	    ((getuid() != st->st_uid) || 
+	     ((st->st_mode & S_IRWXU) != S_IRWXU))) {
                 errno = EPERM;
                 return -1;
         }
@@ -147,8 +89,7 @@ mount_ok(SMB_STRUCT_STAT *st)
         return 0;
 }
 
-int 
-main(int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
 	char *mount_point, *share_name = NULL;
 	FILE *mtab;
@@ -158,28 +99,21 @@ main(int argc, char *argv[])
 	SMB_STRUCT_STAT st;
 	struct mntent ment;
 
-        progname = argv[0];
-
 	memset(&data, 0, sizeof(struct smb_mount_data));
 
-	if (   (argc == 2)
-	       && (argv[1][0] == '-')
-	       && (argv[1][1] == 'h')
-	       && (argv[1][2] == '\0'))
-	{
+	if (argv[1][0] == '-') {
 		help();
-		return 0;
+		exit(1);
 	}
 
         if (geteuid() != 0) {
-                fprintf(stderr, "%s must be installed suid root\n", progname);
+                fprintf(stderr, "smbmnt must be installed suid root\n");
                 exit(1);
         }
 
-	if (argc < 2)
-	{
-		usage();
-		return 1;
+	if (argc < 2) {
+		help();
+		exit(1);
 	}
 
         mount_point = argv[1];
@@ -212,7 +146,7 @@ main(int argc, char *argv[])
         data.dir_mode  = 0;
 
         if (parse_args(argc, argv, &data, &share_name) != 0) {
-                usage();
+                help();
                 return -1;
         }
 
