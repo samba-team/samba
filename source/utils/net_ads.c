@@ -1307,6 +1307,8 @@ static int net_ads_test(int argc, const char **argv)
 		destroy_ldap_message(msg);
 		destroy_ldap_message(result);
 	}
+
+	conn->next_msgid = 1000;
 		
 	msg = new_ldap_message();
 
