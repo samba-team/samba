@@ -13,6 +13,7 @@ COPY_IMAGES = ./scripts/copy-images.sh
 THUMBPDF = @THUMBPDF@
 PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@ --file-line-error-style
 LATEX = TEXINPUTS=xslt/latex:.: @LATEX@ --file-line-error-style
+FOP = @FOP@
 RM = @RM@
 PERL = @PERL@
 ifndef DEBUG_LATEX
@@ -32,6 +33,7 @@ EXAMPLESDIR = examples
 SMBDOTCONFDOC = smbdotconf
 DOCBOOKDIR = tmp
 PSDIR = $(OUTPUTDIR)
+FOPDFDIR = $(OUTPUTDIR)/fo-pdf
 PDFDIR = $(OUTPUTDIR)
 DVIDIR = $(OUTPUTDIR)
 FODIR = $(OUTPUTDIR)
