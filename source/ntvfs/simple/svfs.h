@@ -29,7 +29,6 @@ struct svfs_file {
 
 struct search_state {
 	struct search_state *next, *prev;
-	TALLOC_CTX *mem_ctx;
 	uint16_t handle;
 	uint_t current_index;
 	struct svfs_dir *dir;

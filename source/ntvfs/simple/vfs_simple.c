@@ -748,7 +748,6 @@ static NTSTATUS svfs_search_first(struct smbsrv_request *req, union smb_search_f
 	struct svfs_private *private = req->tcon->ntvfs_private;
 	struct search_state *search;
 	union smb_search_data file;
-	TALLOC_CTX *mem_ctx;
 	uint_t max_count;
 
 	if (io->generic.level != RAW_SEARCH_BOTH_DIRECTORY_INFO) {
@@ -764,7 +763,6 @@ static NTSTATUS svfs_search_first(struct smbsrv_request *req, union smb_search_f
 
 	dir = svfs_list(private, req, io->t2ffirst.in.pattern);
 	if (!dir) {
-		talloc_free(mem_ctx);
 		return NT_STATUS_FOOBAR;
 	}
 
