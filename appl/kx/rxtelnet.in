@@ -11,6 +11,7 @@ do
   -t) telnet_args="${telnet_args} $2 "; shift 2;;
   -x) xterm_args="${xterm_args} $2 "; shift 2;;
   -k) kx_args="${kx_args} -k"; shift;;
+  -n) term=none; shift;;
   -w) term=$2; shift 2;;
   -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
   *) break;;
@@ -49,7 +50,7 @@ if test -z "$term"; then
     done
   done
 fi
-if test -n "$term"; then
+if test -n "$term" -a "$term" != "none"; then
   ($term -title $title -n $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port; kill -USR2 $pid) &
 else
   env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port
