@@ -52,15 +52,19 @@ RCSID("$Id$");
 #endif
 #include <roken.h>
 
+#ifdef KRB5
 static char krb5ccname[128];
+#endif
+#ifdef KRB4
 static char krbtkfile[128];
+#endif
 
 /* 
    In some cases is afs_gettktstring called twice (once before
    afs_verify and once after afs_verify).
    In some cases (rlogin with access allowed via .rhosts) 
    afs_verify is not called!
-   So we cann't rely on correct value in krbtkfile in some
+   So we can't rely on correct value in krbtkfile in some
    cases!
 */
 
@@ -86,8 +90,10 @@ static void
 set_krb5ccname(uid_t uid)
 {
     snprintf (krb5ccname, sizeof(krb5ccname), "FILE:/tmp/krb5cc_%d", uid);
+#ifdef KRB4
     snprintf (krbtkfile, sizeof(krbtkfile), "%s%d", TKT_ROOT, (unsigned)uid);
     correct_tkfilename = 1;
+#endif
 }
 #endif
 
@@ -97,14 +103,14 @@ set_spec_krbtkfile(void)
     int fd;
 #ifdef KRB4
     snprintf (krbtkfile, sizeof(krbtkfile), "%s_XXXXXX", TKT_ROOT);
-    fd = mkstem(krbtkfile);
+    fd = mkstemp(krbtkfile);
     close(fd);
     unlink(krbtkfile); 
     krb_set_tkt_string (krbtkfile);
 #endif
 #ifdef KRB5
     snprintf(krb5ccname, sizeof(krb5ccname),"FILE:/tmp/krb5cc_XXXXXX");
-    fd=mkstem(krb5ccname+5);
+    fd=mkstemp(krb5ccname+5);
     close(fd);
     unlink(krb5ccname+5);
 #endif
@@ -262,18 +268,24 @@ afs_gettktstring (void)
 	ptr = getenv("LOGNAME"); 
 	if (ptr != NULL && ((pwd = getpwnam(ptr)) != NULL)) {
 	    set_krb5ccname(pwd->pw_uid);
+#ifdef KRB4
 	    set_krbtkfile(pwd->pw_uid);
 	    if (!pag_set && k_hasafs()) {
                 k_setpag();
                 pag_set=1;
 	    }
+#endif
 	} else {
 	    set_spec_krbtkfile();
 	}
     }
-    setenv("KRBTKFILE",krbtkfile,1);
 #ifdef KRB5
     setenv("KRB5CCNAME",krb5ccname,1);
 #endif
+#ifdef KRB4
+    setenv("KRBTKFILE",krbtkfile,1);
     return krbtkfile;
+#else
+    return "";
+#endif
 }
