@@ -31,7 +31,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 setup basics in a outgoing packet
 ****************************************************************************/
-static void cli_setup_pkt(struct cli_state *cli)
+static void cli_setup_packet(struct cli_state *cli)
 {
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->uid);
@@ -64,7 +64,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 	set_message(cli->outbuf,14+lsetup,0,True);
 	CVAL(cli->outbuf,smb_com) = trans;
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
-	cli_setup_pkt(cli);
+	cli_setup_packet(cli);
 
 	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? strlen(name)+1 : 3);
 	outdata = outparam+this_lparam;
@@ -367,7 +367,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 	if (cli->protocol < PROTOCOL_NT1) {
 		set_message(cli->outbuf,10,1 + strlen(user) + passlen,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-		cli_setup_pkt(cli);
+		cli_setup_packet(cli);
 
 		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 		SSVAL(cli->outbuf,smb_vwv2,cli->max_xmit);
@@ -383,7 +383,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 	} else {
 		set_message(cli->outbuf,13,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-		cli_setup_pkt(cli);
+		cli_setup_packet(cli);
 		
 		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 		SSVAL(cli->outbuf,smb_vwv2,BUFFER_SIZE);
@@ -438,7 +438,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	set_message(cli->outbuf,4,
 		    2 + strlen(share) + passlen + strlen(dev),True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
-	cli_setup_pkt(cli);
+	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv3,passlen);
@@ -474,7 +474,7 @@ BOOL cli_tdis(struct cli_state *cli)
 	set_message(cli->outbuf,0,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBtdis;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_pkt(cli);
+	cli_setup_packet(cli);
 	
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
@@ -513,7 +513,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	}
 
 	CVAL(cli->outbuf,smb_com) = SMBnegprot;
-	cli_setup_pkt(cli);
+	cli_setup_packet(cli);
 
 	CVAL(smb_buf(cli->outbuf),0) = 2;
 
