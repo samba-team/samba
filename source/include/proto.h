@@ -719,6 +719,9 @@ int find_service(char *service);
 int cached_error_packet(char *inbuf,char *outbuf,int fnum,int line);
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
+BOOL oplock_break(uint32 dev, uint32 inode);
+BOOL request_oplock_break(min_share_mode_entry *share_entry, 
+                          uint32 dev, uint32 inode);
 BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
@@ -925,7 +928,9 @@ int read_data(int fd,char *buffer,int N);
 int write_data(int fd,char *buffer,int N);
 int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align);
 int read_smb_length(int fd,char *inbuf,int timeout);
-BOOL receive_smb(int fd,char *buffer,int timeout);
+BOOL receive_smb(int fd,char *buffer, int timeout);
+BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout);
+BOOL push_local_message(char *buf, int msg_len);
 BOOL receive_message_or_smb(int smbfd, int oplock_fd, 
                            char *buffer, int buffer_len, 
                            int timeout, BOOL *got_smb);

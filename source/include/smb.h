@@ -1014,6 +1014,17 @@ extern int unix_ERR_code;
 #define EXTENDED_OPLOCK_REQUEST(inbuf) (((SVAL(inbuf,smb_vwv2)|(1<<1))>>1) | \
                                         ((SVAL(inbuf,smb_vwv2)|(1<<2))>>1))
 
+/* Lock types. */
+#define LOCKING_ANDX_SHARED_LOCK 0x1
+#define LOCKING_ANDX_OPLOCK_RELEASE 0x2
+#define LOCKING_ANDX_CHANGE_LOCKTYPE 0x4
+#define LOCKING_ANDX_CANCEL_LOCK 0x8
+#define LOCKING_ANDX_LARGE_FILES 0x10
+
+/* Oplock levels */
+#define OPLOCKLEVEL_NONE 0
+#define OPLOCKLEVEL_II 1
+
 /*
  * Bits we test with.
  */
@@ -1022,5 +1033,35 @@ extern int unix_ERR_code;
 
 #define CORE_OPLOCK_GRANTED (1<<5)
 #define EXTENDED_OPLOCK_GRANTED (1<<15)
+
+/*
+ * Loopback command offsets.
+ */
+
+#define UDP_CMD_LEN_OFFSET 0
+#define UDP_CMD_PORT_OFFSET 4
+#define UDP_CMD_HEADER_LEN 6
+
+#define UDP_MESSAGE_CMD_OFFSET 0
+
+/*
+ * Oplock break command code to send over the udp socket.
+ * 
+ * Form of this is :
+ *
+ *  0     2       6        10
+ *  +----+--------+--------+--------+
+ *  | cmd| pid    | dev    | inode  |
+ *  +----+--------+--------+--------+
+ */
+
+#define OPLOCK_BREAK_CMD 0x1
+#define OPLOCK_BREAK_PID_OFFSET 2
+#define OPLOCK_BREAK_DEV_OFFSET 6
+#define OPLOCK_BREAK_INODE_OFFSET 10
+#define OPLOCK_BREAK_MSG_LEN 14
+
+
+#define CMD_REPLY 0x8000
 
 /* _SMB_H */

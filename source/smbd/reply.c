@@ -42,6 +42,7 @@ extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
 extern fstring myworkgroup;
 extern int Client;
+extern int global_oplock_break;
 
 /* this macro should always be used to extract an fnum (smb_fid) from
 a packet to ensure chaining works correctly */
@@ -388,7 +389,9 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
     if (smb_apasslen > MAX_PASSWORD_LENGTH)
+    {
 	    overflow_attack(smb_apasslen);
+    }
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
@@ -1163,7 +1166,7 @@ int reply_open(char *inbuf,char *outbuf)
   SSVAL(outbuf,smb_vwv6,rmode);
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    fsp->granted_oplock = True;
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
     
   if(fsp->granted_oplock)
@@ -1250,7 +1253,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    fsp->granted_oplock = True;
+    smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
   if(fsp->granted_oplock)
@@ -1377,7 +1380,7 @@ int reply_mknew(char *inbuf,char *outbuf)
   SSVAL(outbuf,smb_vwv0,fnum);
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    fsp->granted_oplock = True;
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
  
   if(fsp->granted_oplock)
@@ -1453,7 +1456,7 @@ int reply_ctemp(char *inbuf,char *outbuf)
   strcpy(smb_buf(outbuf) + 1,fname2);
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    fsp->granted_oplock = True;
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
   
   if(fsp->granted_oplock)

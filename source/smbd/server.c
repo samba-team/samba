@@ -89,8 +89,10 @@ static int num_connections_open = 0;
 int oplock_sock = -1;
 uint16 oplock_port = 0;
 /* Current number of oplocks we have outstanding. */
-uint32 oplocks_open = 0;
+uint32 global_oplocks_open = 0;
 #endif /* USE_OPLOCKS */
+
+BOOL global_oplock_break = False;
 
 extern fstring remote_machine;
 
@@ -1355,17 +1357,17 @@ void close_file(int fnum)
   fs_p->open = False;
   Connections[cnum].num_files_open--;
   if(fs_p->wbmpx_ptr) 
-    {
-      free((char *)fs_p->wbmpx_ptr);
-      fs_p->wbmpx_ptr = NULL;
-    }
+  {
+    free((char *)fs_p->wbmpx_ptr);
+    fs_p->wbmpx_ptr = NULL;
+  }
 
 #if USE_MMAP
   if(fs_p->mmap_ptr) 
-    {
-      munmap(fs_p->mmap_ptr,fs_p->mmap_size);
-      fs_p->mmap_ptr = NULL;
-    }
+  {
+    munmap(fs_p->mmap_ptr,fs_p->mmap_size);
+    fs_p->mmap_ptr = NULL;
+  }
 #endif
 
   if (lp_share_modes(SNUM(cnum)))
@@ -1668,12 +1670,15 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 
       do
       {
+
         broke_oplock = False;
         for(i = 0; i < num_shares; i++)
         {
+          min_share_mode_entry *share_entry = &old_shares[i];
+
           /* someone else has a share lock on it, check to see 
              if we can too */
-          if(check_share_mode(&old_shares[i], deny_mode, fname, fcbopen, &flags) == False)
+          if(check_share_mode(share_entry, deny_mode, fname, fcbopen, &flags) == False)
           {
             free((char *)old_shares);
             unlock_share_entry(cnum, dev, inode, token);
@@ -1688,23 +1693,31 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
            * has an oplock on this file. If so we must break it before
            * continuing. 
            */
-          if(old_shares[i].op_type != 0)
+          if(share_entry->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
           {
+
+            DEBUG(5,("open file shared: breaking oplock (%x) on file %s, \
+dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
+
             /* Oplock break.... */
             unlock_share_entry(cnum, dev, inode, token);
-#if 0 /* Work in progress..... */
-            if(break_oplock())
+            if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
-              /* Error condition here... */
+              DEBUG(0,("open file shared: FAILED when breaking oplock (%x) on file %s, \
+dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
+              errno = EACCES;
+              unix_ERR_class = ERRDOS;
+              unix_ERR_code = ERRbadshare;
+              return;
             }
             lock_share_entry(cnum, dev, inode, &token);
             broke_oplock = True;
             break;
-#endif
           }
 #endif /* USE_OPLOCKS */
-        }
+        } /* end for */
+
         if(broke_oplock)
         {
           free((char *)old_shares);
@@ -2312,6 +2325,52 @@ static BOOL open_sockets(BOOL is_daemon,int port)
   return True;
 }
 
+/****************************************************************************
+  process an smb from the client - split out from the process() code so
+  it can be used by the oplock break code.
+****************************************************************************/
+
+static void process_smb(char *inbuf, char *outbuf)
+{
+  extern int Client;
+  static int trans_num = 0;
+
+  int msg_type = CVAL(inbuf,0);
+  int32 len = smb_len(outbuf);
+  int nread = len + 4;
+
+  DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
+  DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
+
+#ifdef WITH_VTP
+  if(trans_num == 1 && VT_Check(inbuf)) 
+  {
+    VT_Process();
+    return;
+  }
+#endif
+
+  if (msg_type == 0)
+    show_msg(inbuf);
+
+  nread = construct_reply(inbuf,outbuf,nread,max_send);
+      
+  if(nread > 0) 
+  {
+    if (CVAL(outbuf,0) == 0)
+      show_msg(outbuf);
+	
+    if (nread != smb_len(outbuf) + 4) 
+    {
+      DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
+                 nread, smb_len(outbuf)));
+    }
+    else
+      send_smb(Client,outbuf);
+  }
+  trans_num++;
+}
+
 #ifdef USE_OPLOCKS
 /****************************************************************************
   open the oplock IPC socket communication
@@ -2355,33 +2414,324 @@ static BOOL process_local_message(int oplock_sock, char *buffer, int buf_size)
 {
   int32 msg_len;
   int16 from_port;
-  struct in_addr from_addr;
   char *msg_start;
 
-  msg_len = IVAL(buffer,0);
-  from_port = SVAL(buffer,4);
-  memcpy((char *)&from_addr, &buffer[6], sizeof(struct in_addr));
+  msg_len = IVAL(buffer,UDP_CMD_LEN_OFFSET);
+  from_port = SVAL(buffer,UDP_CMD_PORT_OFFSET);
 
-  msg_start = &buffer[6 + sizeof(struct in_addr)];
+  msg_start = &buffer[UDP_CMD_HEADER_LEN];
 
-  /* Validate message length. */
-  if(msg_len > (buf_size  - (6 + sizeof(struct in_addr))))
+  DEBUG(5,("process_local_message: Got a message of length %d from port (%d)\n", 
+            msg_len, from_port));
+
+  /* Switch on message command - currently OPLOCK_BREAK_CMD is the
+     only valid request. */
+
+  switch(SVAL(msg_start,UDP_MESSAGE_CMD_OFFSET))
   {
-    DEBUG(0,("process_local_message: invalid msg_len (%d) max can be %d\n",
-              msg_len, buf_size  - (6 + sizeof(struct in_addr))));
+    case OPLOCK_BREAK_CMD:
+      /* Ensure that the msg length is correct. */
+      if(msg_len != OPLOCK_BREAK_MSG_LEN)
+      {
+        DEBUG(0,("process_local_message: incorrect length for OPLOCK_BREAK_CMD (was %d, \
+should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
+        return False;
+      }
+      {
+        uint32 remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
+        uint32 dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
+        uint32 inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+        struct sockaddr_in toaddr;
+
+        DEBUG(5,("process_local_message: oplock break request from \
+pid %d, dev %d, inode %d\n", remotepid, dev, inode));
+
+        /*
+         * If we have no record of any currently open oplocks,
+         * it's not an error, as a close command may have
+         * just been issued on the file that was oplocked.
+         * Just return success in this case.
+         */
+
+        if(global_oplocks_open != 0)
+        {
+          if(oplock_break(dev, inode) == False)
+          {
+            DEBUG(0,("process_local_message: oplock break failed - \
+not returning udp message.\n"));
+            return False;
+          }
+        }
+        else
+        {
+          DEBUG(3,("process_local_message: oplock break requested with no outstanding \
+oplocks. Returning success.\n"));
+        }
+
+        /* Send the message back after OR'ing in the 'REPLY' bit. */
+        SSVAL(msg_start,UDP_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD | CMD_REPLY);
+  
+        bzero((char *)&toaddr,sizeof(toaddr));
+        toaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        toaddr.sin_port = htons(from_port);
+        toaddr.sin_family = AF_INET;
+
+        if(sendto( oplock_sock, msg_start, OPLOCK_BREAK_MSG_LEN, 0,
+                (struct sockaddr *)&toaddr, sizeof(toaddr)) < 0) 
+        {
+          DEBUG(0,("process_local_message: sendto process %d failed. Errno was %s\n",
+                    remotepid, strerror(errno)));
+          return False;
+        }
+      }
+      break;
+    default:
+      DEBUG(0,("process_local_message: unknown UDP message command code (%x) - ignoring.\n",
+                (unsigned int)SVAL(msg_start,0)));
+      return False;
+  }
+  return True;
+}
+
+/****************************************************************************
+ Process an oplock break directly.
+****************************************************************************/
+BOOL oplock_break(uint32 dev, uint32 inode)
+{
+  extern int Client;
+  static char *inbuf = NULL;
+  static char *outbuf = NULL;
+  files_struct *fsp = NULL;
+  int fnum;
+
+  if(inbuf == NULL)
+  {
+    inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+    if(inbuf == NULL) {
+      DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
+      return False;
+    } 
+    outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+    if(outbuf == NULL) {
+      DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
+      free(inbuf);
+      inbuf = NULL;
+      return False;
+    }
+  } 
+
+  /* We need to search the file open table for the
+     entry containing this dev and inode, and ensure
+     we have an oplock on it. */
+  for( fnum = 0; fnum < MAX_OPEN_FILES; fnum++)
+  {
+    if(OPEN_FNUM(fnum))
+    {
+      fsp = &Files[fnum];
+      if((fsp->fd_ptr->dev == dev) && (fsp->fd_ptr->inode == inode))
+        break;
+    }
+  }
+
+  if(fsp == NULL)
+  {
+    /* The file could have been closed in the meantime - return success. */
+    DEBUG(3,("oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
+allowing break to succeed.\n", dev, inode, fnum));
+    return True;
+  }
+
+  /* Ensure we have an oplock on the file */
+
+  /* Question - can a client asynchronously break an oplock ? Would it
+     ever do so ? If so this test is invalid for external smbd oplock
+     breaks and we should return True in these cases (JRA).
+   */
+
+  if(!fsp->granted_oplock)
+  {
+    DEBUG(0,("oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock.\n",
+              fsp->name, fnum, dev, inode));
     return False;
   }
 
-  /* Validate message from address (must be localhost). */
-  if(from_addr.s_addr != htonl(INADDR_LOOPBACK))
+  /* Now comes the horrid part. We must send an oplock break to the client,
+     and then process incoming messages until we get a close or oplock release.
+   */
+
+  /* Prepare the SMBlockingX message. */
+  bzero(outbuf,smb_size);
+  set_message(outbuf,8,0,True);
+
+  SCVAL(outbuf,smb_com,SMBlockingX);
+  SSVAL(outbuf,smb_tid,fsp->cnum);
+  SSVAL(outbuf,smb_pid,0xFFFF);
+  SSVAL(outbuf,smb_uid,0);
+  SSVAL(outbuf,smb_mid,0xFFFF);
+  SCVAL(outbuf,smb_vwv0,0xFF);
+  SSVAL(outbuf,smb_vwv2,fnum);
+  SCVAL(outbuf,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
+  /* Change this when we have level II oplocks. */
+  SCVAL(outbuf,smb_vwv3+1,OPLOCKLEVEL_NONE);
+ 
+  send_smb(Client, outbuf);
+
+  global_oplock_break = True;
+ 
+  /* Process incoming messages. */
+  while(global_oplock_break && OPEN_FNUM(fnum))
   {
-    DEBUG(0,("process_local_message: invalid 'from' address \
-(was %x should be 127.0.0.1\n", from_addr.s_addr));
-   return False;
+    if(receive_smb(Client,inbuf,OPLOCK_BREAK_TIMEOUT * 1000) == False)
+    {
+      if (smb_read_error == READ_EOF)
+      {
+        DEBUG(3,("oplock_break: end of file from client\n"));
+        return False;
+      }
+ 
+      if (smb_read_error == READ_ERROR)
+      {
+        DEBUG(3,("oplock_break: receive_smb error (%s)\n",
+                  strerror(errno)));
+        return False;
+      }
+    }
+    process_smb(inbuf, outbuf);
   }
 
   return True;
 }
+
+/****************************************************************************
+Send an oplock break message to another smbd process. If the oplock is held 
+by the local smbd then call the oplock break function directly.
+****************************************************************************/
+
+BOOL request_oplock_break(min_share_mode_entry *share_entry, 
+                          uint32 dev, uint32 inode)
+{
+  char op_break_msg[OPLOCK_BREAK_MSG_LEN];
+  struct sockaddr_in addr_out;
+  int pid = getpid();
+
+  if(pid == share_entry->pid)
+  {
+    /* We are breaking our own oplock, make sure it's us. */
+    if(share_entry->op_port != oplock_port)
+    {
+      DEBUG(0,("request_oplock_break: corrupt share mode entry - pid = %x, port = %d \
+should be %d\n", pid, share_entry->op_port, oplock_port));
+      return False;
+    }
+    /* Call oplock break direct. */
+    return oplock_break(dev, inode);
+  }
+
+  /* We need to send a OPLOCK_BREAK_CMD message to the
+     port in the share mode entry. */
+
+  SSVAL(op_break_msg,UDP_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD);
+  SIVAL(op_break_msg,OPLOCK_BREAK_PID_OFFSET,pid);
+  SIVAL(op_break_msg,OPLOCK_BREAK_DEV_OFFSET,dev);
+  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,inode);
+
+  /* set the address and port */
+  bzero((char *)&addr_out,sizeof(addr_out));
+  addr_out.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  addr_out.sin_port = htons( share_entry->op_port );
+  addr_out.sin_family = AF_INET;
+   
+  DEBUG(3,("request_oplock_break: sending a oplock break message to pid %d on port %d \
+for dev = %x, inode = %x\n", share_entry->pid, share_entry->op_port, dev, inode));
+
+  if(sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
+         (struct sockaddr *)&addr_out,sizeof(addr_out)) < 0)
+  {
+    DEBUG(0,("request_oplock_break: failed when sending a oplock break message \
+to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
+         share_entry->pid, share_entry->op_port, dev, inode,
+         strerror(errno)));
+    return False;
+  }
+
+  /*
+   * Now we must await the oplock broken message coming back
+   * from the target smbd process. Timeout if it fails to
+   * return in OPLOCK_BREAK_TIMEOUT seconds.
+   * While we get messages that aren't ours, loop.
+   */
+
+  while(1)
+  {
+    char op_break_reply[UDP_CMD_HEADER_LEN+OPLOCK_BREAK_MSG_LEN];
+    int32 reply_msg_len;
+    int16 reply_from_port;
+    char *reply_msg_start;
+
+    if(receive_local_message(oplock_sock, op_break_reply, sizeof(op_break_reply),
+                             OPLOCK_BREAK_TIMEOUT * 1000) == False)
+    {
+      if(smb_read_error == READ_TIMEOUT)
+        DEBUG(0,("request_oplock_break: no response received to oplock break request to \
+pid %d on port %d for dev = %x, inode = %x\n", share_entry->pid, 
+                           share_entry->op_port, dev, inode));
+      else
+        DEBUG(0,("request_oplock_break: error in response received to oplock break request to \
+pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", share_entry->pid, 
+                         share_entry->op_port, dev, inode, strerror(errno)));
+      return False;
+    }
+
+    /* 
+     * If the response we got was not an answer to our message, but
+     * was a completely different request, push it onto the pending
+     * udp message stack so that we can deal with it in the main loop.
+     * It may be another oplock break request to us.
+     */
+
+    /*
+     * Local note from JRA. There exists the possibility of a denial
+     * of service attack here by allowing non-root processes running
+     * on a local machine sending many of these pending messages to
+     * a smbd port. Currently I'm not sure how to restrict the messages
+     * I will queue (although I could add a limit to the queue) to
+     * those received by root processes only. There should be a 
+     * way to make this bulletproof....
+     */
+
+    reply_msg_len = IVAL(op_break_reply,UDP_CMD_LEN_OFFSET);
+    reply_from_port = SVAL(op_break_reply,UDP_CMD_PORT_OFFSET);
+
+    reply_msg_start = &op_break_reply[UDP_CMD_HEADER_LEN];
+
+    if(reply_msg_len != OPLOCK_BREAK_MSG_LEN)
+    {
+      /* Ignore it. */
+      DEBUG(0,("request_oplock_break: invalid message length received. Ignoring\n"));
+      continue;
+    }
+
+    if(((SVAL(reply_msg_start,UDP_MESSAGE_CMD_OFFSET) & CMD_REPLY) == 0) ||
+       (reply_from_port != share_entry->op_port) ||
+       (memcmp(&reply_msg_start[OPLOCK_BREAK_PID_OFFSET], 
+               &op_break_msg[OPLOCK_BREAK_PID_OFFSET],
+               OPLOCK_BREAK_MSG_LEN - OPLOCK_BREAK_PID_OFFSET) != 0))
+    {
+      DEBUG(3,("request_oplock_break: received other message whilst awaiting \
+oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
+             share_entry->pid, share_entry->op_port, dev, inode));
+      if(push_local_message(op_break_reply, sizeof(op_break_reply)) == False)
+        return False;
+    }
+
+    break;
+  }
+
+  DEBUG(3,("request_oplock_break: broke oplock.\n"));
+
+  return True;
+}
+
 #endif /* USE_OPLOCKS */
 
 /****************************************************************************
@@ -4054,52 +4404,6 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   if(outsize > 4)
     smb_setlen(outbuf,outsize - 4);
   return(outsize);
-}
-
-/****************************************************************************
-  process an smb from the client - split out from the process() code so
-  it can be used by the oplock break code.
-****************************************************************************/
-
-static void process_smb(char *inbuf, char *outbuf)
-{
-  extern int Client;
-  static int trans_num = 0;
-
-  int msg_type = CVAL(inbuf,0);
-  int32 len = smb_len(outbuf);
-  int nread = len + 4;
-
-  DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
-  DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
-
-#ifdef WITH_VTP
-  if(trans_num == 1 && VT_Check(inbuf)) 
-  {
-    VT_Process();
-    return;
-  }
-#endif
-
-  if (msg_type == 0)
-    show_msg(inbuf);
-
-  nread = construct_reply(inbuf,outbuf,nread,max_send);
-      
-  if(nread > 0) 
-  {
-    if (CVAL(outbuf,0) == 0)
-      show_msg(outbuf);
-	
-    if (nread != smb_len(outbuf) + 4) 
-    {
-      DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
-                 nread, smb_len(outbuf)));
-    }
-    else
-      send_smb(Client,outbuf);
-  }
-  trans_num++;
 }
 
 /****************************************************************************
