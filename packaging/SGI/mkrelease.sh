@@ -14,6 +14,7 @@
 
 doclean=""
 SGI_ABI=-n32
+ISA=-mips3
 CC=cc
 
 if [ ! -f ../../source/Makefile ]; then
@@ -38,7 +39,7 @@ elif [ "$1" = "5" ]; then
   shift
 fi
 
-export SGI_ABI CC
+export SGI_ABI ISA CC
 
 if [ "$doclean" = "clean" ]; then
   cd ../../source
