@@ -351,4 +351,5 @@ hdb_clear_master_key (krb5_context context,
 	krb5_data_free(&db->master_key);
 	db->master_key_set = 0;
     }
+    return 0;
 }
