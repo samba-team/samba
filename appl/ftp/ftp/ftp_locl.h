@@ -7,8 +7,6 @@
 #include <config.h>
 #endif
 
-#include "roken.h"
-
 #include <sys/bitypes.h>
 #include <sys/cdefs.h>
 
