@@ -781,7 +781,14 @@ static void usage(char *pname)
 	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {
-		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+		if (!interactive)
+			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+
+		/*
+		 * Setting is_daemon here prevents us from eventually calling
+		 * the open_sockets_inetd()
+		 */
+
 		is_daemon = True;
 	}
 
