@@ -265,9 +265,10 @@ init_tgs_req (krb5_context context,
 	krb5_auth_con_free(context, ac);
     }
 fail:
-    if (ret)
-	/* XXX - don't free addresses? */
+    if (ret) {
+	t->req_body.addresses = NULL;
 	free_TGS_REQ (t);
+    }
     return ret;
 }
 
@@ -563,6 +564,8 @@ find_cred(krb5_context context,
 {
     krb5_error_code ret;
     krb5_creds mcreds;
+
+    krb5_cc_clear_mcred(&mcreds);
     mcreds.server = server;
     ret = krb5_cc_retrieve_cred(context, id, KRB5_TC_DONT_MATCH_REALM, 
 				&mcreds, out_creds);
