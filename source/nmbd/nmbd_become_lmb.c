@@ -145,8 +145,8 @@ void unbecome_local_master_success(struct subnet_record *subrec,
   /* Now reset the workgroup and server state. */
   reset_workgroup_state( subrec, released_name->name );
 
-  DEBUG(0,("\n*****   Samba name server %s has stopped being a local master browser for workgroup %s \
-on subnet %s *****\n\n", myname, released_name->name, subrec->subnet_name));
+  DEBUG(0,("\n%s *****   Samba name server %s has stopped being a local master browser for workgroup %s \
+on subnet %s *****\n\n", timestring(), myname, released_name->name, subrec->subnet_name));
 
 }
 
@@ -170,8 +170,8 @@ Removing from namelist anyway.\n", namestr(fail_name)));
   /* Now reset the workgroup and server state. */
   reset_workgroup_state( subrec, fail_name->name );
 
-  DEBUG(0,("\n*****   Samba name server %s has stopped being a local master browser for workgroup %s \
-on subnet %s *****\n\n", myname, fail_name->name, subrec->subnet_name));
+  DEBUG(0,("\n%s *****   Samba name server %s has stopped being a local master browser for workgroup %s \
+on subnet %s *****\n\n", timestring(), myname, fail_name->name, subrec->subnet_name));
 
 }
 
@@ -365,8 +365,8 @@ on subnet %s\n", work->work_group, subrec->subnet_name));
      master browser as soon as possible that we are a local master browser. */
   reset_announce_timer();
 
-  DEBUG(0,("\n*****   Samba name server %s is now a local master browser for workgroup %s \
-on subnet %s *****\n\n", myname, work->work_group, subrec->subnet_name));
+  DEBUG(0,("\n%s *****   Samba name server %s is now a local master browser for workgroup %s \
+on subnet %s *****\n\n", timestring(), myname, work->work_group, subrec->subnet_name));
 
 }
 
