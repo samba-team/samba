@@ -49,6 +49,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
 typedef struct HDB{
     void *db;
+    char *name;
 
     krb5_error_code (*close)(krb5_context, struct HDB*);
     krb5_error_code (*fetch)(krb5_context, struct HDB*, hdb_entry*);
@@ -59,6 +60,7 @@ typedef struct HDB{
     krb5_error_code (*lock)(krb5_context, struct HDB*, int operation);
     krb5_error_code (*unlock)(krb5_context, struct HDB*);
     krb5_error_code (*_get)(krb5_context, struct HDB*, krb5_data, krb5_data*);
+    krb5_error_code (*rename)(krb5_context, struct HDB*, const char*);
 }HDB;
 
 void hdb_free_entry(krb5_context, hdb_entry*);
