@@ -68,10 +68,25 @@ krb5_build_ap_req (krb5_context context,
 
 krb5_error_code
 krb5_build_authenticator (krb5_context context,
-			  krb5_principal client,
+			  krb5_auth_context auth_context,
+			  krb5_creds *cred,
 			  Checksum *cksum,
 			  Authenticator **auth,
 			  krb5_data *result);
+
+krb5_error_code
+krb5_encrypt (krb5_context context,
+	      void *ptr,
+	      size_t len,
+	      krb5_keyblock *keyblock,
+	      krb5_data *result);
+
+krb5_error_code
+krb5_decrypt (krb5_context context,
+	      void *ptr,
+	      size_t len,
+	      krb5_keyblock *keyblock,
+	      krb5_data *result);
 
 #define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
 #define FREE(X) do{if(X)free(X);}while(0)
