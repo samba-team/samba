@@ -4,10 +4,6 @@ $Id$
 
 * configure
 
-use more careful checking before starting to use berkeley db.  it only
-makes sense to do so if we have the appropriate library and the header
-file.
-
 handle readline hiding in readline/readline.h
 
 * appl
@@ -39,8 +35,6 @@ prepend a prefix on all generated symbols
 ** lib/auth
 
 ** lib/auth/sia
-
-make it build correctly against libcrypto
 
 PAM
 
