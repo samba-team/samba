@@ -1793,6 +1793,9 @@ sub ParseFunctionPush($)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "in")) {
+			if (util::has_property($e, "ref")) {
+				check_null_pointer("*r->in.$e->{NAME}");
+			} 
 			ParseFunctionElementPush($e, "in");
 		}		
 	}
@@ -1803,6 +1806,9 @@ sub ParseFunctionPush($)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "out")) {
+			if (util::has_property($e, "ref")) {
+				check_null_pointer("*r->out.$e->{NAME}");
+			} 
 			ParseFunctionElementPush($e, "out");
 		}		
 	}
