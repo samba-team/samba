@@ -1078,7 +1078,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
-for ac_prog in gawk mawk nawk awk
+for ac_prog in mawk gawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -13086,6 +13086,56 @@ else
 	WINBIND_PAM_TARGETS=""
 fi
 
+# Check for FreeBSD problem with getgroups
+# It returns EGID too many times in the list of groups
+# and causes a security problem
+echo $ac_n "checking whether or not getgroups returns EDIG too many times""... $ac_c" 1>&6
+echo "configure:13094: checking whether or not getgroups returns EDIG too many times" >&5
+if eval "test \"`echo '$''{'samba_cv_have_getgroups_too_many_egids'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test "$cross_compiling" = yes; then
+  samba_cv_have_getgroups_too_many_egids=cross
+else
+  cat > conftest.$ac_ext <<EOF
+#line 13102 "configure"
+#include "confdefs.h"
+
+#include <sys/types.h>
+#include <stdio.h>
+
+int main(int argc, char *argv[])
+{
+  gid_t groups[10];
+  int n = 10;
+
+  n = getgroups(n, &groups);
+  /* Could actually pass back the number of EGIDs there ... */
+  exit((n > 1 && groups[0] == getegid() %% groups[1] == getegid()) ? 1 : 0);
+}
+EOF
+if { (eval echo configure:13118: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+then
+  samba_cv_have_getgroups_too_many_egids=no
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -fr conftest*
+  samba_cv_have_getgroups_too_many_egids=yes
+fi
+rm -fr conftest*
+fi
+
+fi
+
+echo "$ac_t""$samba_cv_have_getgroups_too_many_egids" 1>&6
+if test x"$samba_cv_have_getgroups_too_many_egids" = x"yes"; then
+    cat >> confdefs.h <<\EOF
+#define HAVE_GETGROUPS_TOO_MANY_EGIDS 1
+EOF
+
+fi
+
 # Substitution time!
 
 
@@ -13114,7 +13164,7 @@ fi
 
 if test x"$INCLUDED_POPT" != x"yes"; then
     echo $ac_n "checking for poptGetContext in -lpopt""... $ac_c" 1>&6
-echo "configure:13118: checking for poptGetContext in -lpopt" >&5
+echo "configure:13168: checking for poptGetContext in -lpopt" >&5
 ac_lib_var=`echo popt'_'poptGetContext | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -13122,7 +13172,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lpopt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 13126 "configure"
+#line 13176 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -13133,7 +13183,7 @@ int main() {
 poptGetContext()
 ; return 0; }
 EOF
-if { (eval echo configure:13137: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:13187: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -13157,7 +13207,7 @@ fi
 fi
 
 echo $ac_n "checking whether to use included popt""... $ac_c" 1>&6
-echo "configure:13161: checking whether to use included popt" >&5
+echo "configure:13211: checking whether to use included popt" >&5
 if test x"$INCLUDED_POPT" = x"yes"; then
     echo "$ac_t""$srcdir/popt" 1>&6
     BUILD_POPT='$(POPT_OBJS)'
@@ -13172,16 +13222,16 @@ fi
 #################################################
 # final configure stuff
 echo $ac_n "checking configure summary""... $ac_c" 1>&6
-echo "configure:13176: checking configure summary" >&5
+echo "configure:13226: checking configure summary" >&5
 if test "$cross_compiling" = yes; then
   echo "configure: warning: cannot run when cross-compiling" 1>&2
 else
   cat > conftest.$ac_ext <<EOF
-#line 13181 "configure"
+#line 13231 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:13185: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13235: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "$ac_t""yes" 1>&6
 else

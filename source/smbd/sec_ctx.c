@@ -156,6 +156,19 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 		return -1;
 	}
 
+#ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
+	if (getegid() == groups[0]) {
+	  int n;
+	  ngroups--;
+	  if (!ngroups) {
+	    SAFE_FREE(groups);
+	    return(ngroups);
+	  }
+	  for (n=0; n < ngroups; n++)
+	    groups[n] = groups[n+1];
+	}
+#endif
+
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
 

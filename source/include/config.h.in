@@ -239,6 +239,7 @@
 #undef HAVE_DEVICE_MAJOR_FN
 #undef HAVE_DEVICE_MINOR_FN
 #undef HAVE_MAKEDEV_FN
+#undef HAVE_GETGROUPS_TOO_MANY_EGIDS
 /*
  * Add these definitions to allow VFS modules to
  * see the CPPFLAGS defines.
