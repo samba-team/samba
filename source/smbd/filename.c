@@ -131,6 +131,7 @@ static hash_table stat_cache;
  case.
 *****************************************************************************/
 
+#if 0 /* This function unused?? */
 static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 {
   BOOL matched = (memcmp( stat_name, orig_name, len) == 0);
@@ -139,6 +140,7 @@ static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 
   return matched;
 }
+#endif
 
 /****************************************************************************
  Add an entry into the stat cache.
@@ -243,7 +245,6 @@ static BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath
                               char **start, SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
-  stat_cache_entry *longest_hit = NULL;
   char *trans_name;
   pstring chk_name;
   int namelen;
