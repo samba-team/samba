@@ -838,11 +838,9 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 			
 			close(fd);
 		}
-	}
 
-	/* Try winbindd */
+	} else if ( winbind_create_group( unix_group, NULL ) ) {
 
-	if ( winbind_create_group( unix_group, NULL ) ) {
 		DEBUG(3,("smb_create_group: winbindd created the group (%s)\n",
 			unix_group));
 		ret = 0;
