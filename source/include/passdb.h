@@ -99,6 +99,7 @@ enum pdb_elements {
 	PDB_UNKNOWN6,
 	PDB_LMPASSWD,
 	PDB_NTPASSWD,
+	PDB_PWHISTORY,
 	PDB_BACKEND_PRIVATE_DATA,
 
 	/* this must be the last element */
@@ -165,16 +166,17 @@ typedef struct sam_passwd
 		const char * dir_drive;    /* home directory drive string */
 		const char * logon_script; /* logon script string */
 		const char * profile_path; /* profile path string */
-		const char * acct_desc  ;  /* user description string */
+		const char * acct_desc;    /* user description string */
 		const char * workstations; /* login from workstations string */
-		const char * unknown_str ; /* don't know what this is, yet. */
-		const char * munged_dial ; /* munged path name and dial-back tel number */
+		const char * unknown_str;  /* don't know what this is, yet. */
+		const char * munged_dial;  /* munged path name and dial-back tel number */
 		
 		DOM_SID user_sid;    /* Primary User SID */
 		DOM_SID group_sid;   /* Primary Group SID */
 		
 		DATA_BLOB lm_pw; /* .data is Null if no password */
 		DATA_BLOB nt_pw; /* .data is Null if no password */
+		DATA_BLOB nt_pw_his; /* nt hashed password history .data is Null if not available */
 		char* plaintext_pw; /* is Null if not available */
 		
 		uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */

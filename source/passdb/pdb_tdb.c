@@ -746,4 +746,3 @@ NTSTATUS pdb_tdbsam_init(void)
 {
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
 }
-
