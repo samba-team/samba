@@ -86,6 +86,12 @@ HOWTO: $(HOWTOSRC)
 	   /bin/rm -f /tmp/jade.log; \
 	done)
 
+
+## I'm using htmldoc here to produc the PDF output.  If you want
+## Postscript output, you can run 
+##
+##           sgmltools -b ps projdoc/samba-doc.sgml
+##
 proj-doc: 
 	echo Building Samba-HOWTO-Collections...
 	@(cd projdoc; $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl samba-doc.sgml > ../samba-doc.html)

@@ -1,7 +1,22 @@
 <chapter>
 
-<title>Printing Support in Samba 2.2.x</title>
 
+<chapterinfo>
+	<author>
+		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address>
+				<email>jerry@samba.org</email>
+			</address>
+		</affiliation>
+	</author>
+	
+		
+	<pubdate>5 Mar 2001</pubdate>
+</chapterinfo>
+
+<title>Printing Support in Samba 2.2.x</title>
 
 <sect1>
 	<title>Introduction</title>

@@ -1,10 +1,26 @@
 <chapter>
 
+<chapterinfo>
+	<author>
+		<firstname>Shirish</firstname><surname>Kalele</surname>
+		<affiliation>
+			<orgname>Samba Team & Veritas Software</orgname>
+			<address>
+				<email>samba@samba.org</email>
+			</address>
+		</affiliation>
+	</author>
+	
+		
+	<pubdate>12 Jul 200</pubdate>
+</chapterinfo>
+
+
 <title>Hosting a Microsoft Distributed File System tree on Samba</title>
 
 <sect1>
 
-	<title>HOWTO</title>
+	<title>Instructions</title>
 
 	<para>The Distributed File System (or Dfs) provides a means of 
 	separating the logical view of files and directories that users 
@@ -71,28 +87,27 @@
 	links linka or linkb (which appear as directories to the client) 
 	takes users directly to the appropriate shares on the network.</para>
 
-</sect1>
+	<sect2>
+		<title>Notes</title>
 
-<sect1>
-	<title>NOTES</title>
-
-	<itemizedlist>
-		<listitem><para>Windows clients need to be rebooted 
-		if a previously mounted non-dfs share is made a dfs 
-		root or vice versa. A better way is to introduce a 
-		new share and make it the dfs root.</para>
-		</listitem>
+		<itemizedlist>
+			<listitem><para>Windows clients need to be rebooted 
+			if a previously mounted non-dfs share is made a dfs 
+			root or vice versa. A better way is to introduce a 
+			new share and make it the dfs root.</para>
+			</listitem>
 			
-		<listitem><para>Currently there's a restriction that msdfs 
-		symlink names should all be lowercase.</para>
-		</listitem>
+			<listitem><para>Currently there's a restriction that msdfs 
+			symlink names should all be lowercase.</para>
+			</listitem>
 			
-		<listitem><para>For security purposes, the directory 
-		acting as the root of the Dfs tree should have ownership 
-		and permissions set so that only designated users can 
-		modify the symbolic links in the directory.</para>
-		</listitem>
-	</itemizedlist>
+			<listitem><para>For security purposes, the directory 
+			acting as the root of the Dfs tree should have ownership 
+			and permissions set so that only designated users can 
+			modify the symbolic links in the directory.</para>
+			</listitem>
+		</itemizedlist>
+	</sect2>
 </sect1>
 
 

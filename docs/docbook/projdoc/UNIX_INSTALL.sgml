@@ -19,7 +19,7 @@
 </sect1>
 
 <sect1>
-	<title>Building the Binaries</title>
+	<title>Step 1: Building the Binaries</title>
 	
 	<para>To do this, first run the program <command>./configure
 	</command> in the source directory. This should automatically 
@@ -303,7 +303,7 @@
 	easier. </para>
 
 	<sect2>
-		<title>DIAGNOSING PROBLEMS</title>
+		<title>Diagnosing Problems</title>
 
 		<para>If you have instalation problems then go to 
 		<filename>DIAGNOSIS.txt</filename> to try to find the 
@@ -311,7 +311,7 @@
 	</sect2>
 	
 	<sect2>
-		<title>SCOPE IDs</title>
+		<title>Scope IDs</title>
 
 		<para>By default Samba uses a blank scope ID. This means 
 		all your windows boxes must also have a blank scope ID. 
@@ -323,7 +323,7 @@
 
 
 	<sect2>
-		<title>CHOOSING THE PROTOCOL LEVEL</title>
+		<title>Choosing the Protocol Level</title>
 
 		<para>The SMB protocol has many dialects. Currently 
 		Samba supports 5, called CORE, COREPLUS, LANMAN1, 
@@ -356,7 +356,7 @@
 	</sect2>
 	
 	<sect2>
-		<title>PRINTING FROM UNIX TO A CLIENT PC</title>
+		<title>Printing from UNIX to a Client PC</title>
 
 		<para>To use a printer that is available via a smb-based 
 		server from a unix host you will need to compile the 
@@ -369,7 +369,7 @@
 	</sect2>
 
 	<sect2>
-		<title>LOCKING</title>
+		<title>Locking</title>
 
 		<para>One area which sometimes causes trouble is locking.</para>
 
@@ -425,7 +425,7 @@
 	</sect2>
 	
 	<sect2>
-		<title>MAPPING USERNAMES</title>
+		<title>Mapping Usernames</title>
 	
 		<para>If you have different usernames on the PCs and 
 		the unix server then take a look at the "username map" option. 
@@ -433,7 +433,7 @@
 	</sect2>
 
 	<sect2>
-		<title>OTHER CHARACTER SETS</title>
+		<title>Other Character Sets</title>
 
 		<para>If you have problems using filenames with accented 
 		characters in them (like the German, French or Scandinavian 

@@ -1,5 +1,21 @@
 <chapter>
 
+<chapterinfo>
+	<author>
+		<firstname>Jeremy</firstname><surname>Allison</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address>
+				<email>samba@samba.org</email>
+			</address>
+		</affiliation>
+	</author>
+	
+		
+	<pubdate>7 Oct 1999</pubdate>
+</chapterinfo>
+
+
 <title>security = domain in Samba 2.x</title>
 
 <sect1>
@@ -45,8 +61,8 @@
 
 	<para>In Samba 2.0.x, the filename looks like this:</para>
 
-	<para><filename><replaceable>&lt;NT DOMAIN NAME&gt;</replaceable>.
-	<replaceable>&lt;Samba Server Name&gt;</replaceable>.mac</filename></para>
+	<para><filename><replaceable>&lt;NT DOMAIN NAME&gt;</replaceable>.<replaceable>&lt;Samba 
+	Server Name&gt;</replaceable>.mac</filename></para>
 	
 	<para>The <filename>.mac</filename> suffix stands for machine account 
 	password file. So in our example above, the file would be called:</para>
