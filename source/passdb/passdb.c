@@ -75,7 +75,6 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	user->logoff_time           = 
 	user->kickoff_time          = 
 	user->pass_must_change_time = get_time_t_max();
-
 	user->unknown_3 = 0x00ffffff; 	/* don't know */
 	user->logon_divs = 168; 	/* hours per week */
 	user->hours_len = 21; 		/* 21 times 8 bits = 168 */
@@ -536,6 +535,11 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 	} else {
 		gid_t gid;
 		struct group *gr; 
+		GROUP_MAP map;
+		DOM_SID local_sid;
+		
+		sid_copy(&local_sid, &global_sam_sid);
+		sid_append_rid(&local_sid, rid);
 
 		/* 
 		 * Don't try to convert the rid to a name if running
@@ -544,6 +548,16 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		
 		if (lp_hide_local_users()) 
 			return False;
+
+		/* check if it's a mapped group */
+		if (get_group_map_from_sid(local_sid, &map)) {
+			if (map.gid!=-1) {
+				DEBUG(5,("local_local_rid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
+				fstrcpy(name, map.nt_name);
+				*psid_name_use = map.sid_name_use;
+				return True;
+			}
+		}
 		
 		gid = pdb_user_rid_to_gid(rid);
 		gr = getgrgid(gid);
@@ -617,13 +631,24 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 		/*
 		 * Maybe it was a group ?
 		 */
-		struct group *grp = getgrnam(user);
+		struct group *grp;
+		GROUP_MAP map;
+		
+		/* check if it's a mapped group */
+		if (get_group_map_from_ntname(user, &map)) {
+			if (map.gid!=-1) {
+				/* yes it's a mapped group to a valid unix group */
+				sid_copy(&local_sid, &map.sid);
+				*psid_name_use = map.sid_name_use;
+			}
+		} else {
+			grp = getgrnam(user);
+			if(!grp)
+				return False;
 
-		if(!grp)
-			return False;
-
-		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
-		*psid_name_use = SID_NAME_ALIAS;
+			sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
+			*psid_name_use = SID_NAME_ALIAS;
+		}
 	}
 
 	sid_copy( psid, &local_sid);

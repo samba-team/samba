@@ -38,7 +38,7 @@ extern int optind;
 static void usage(void)
 {
 	if (getuid() == 0) {
-		printf("groupedit options\n");
+		printf("smbgroupedit options\n");
 	} else {
 		printf("You need to be root to use this tool!\n");
 	}
@@ -47,6 +47,8 @@ static void usage(void)
 	printf("    -n group           NT group name\n");
 	printf("    -p privilege       only local\n");
 	printf("  -v                   list groups\n");
+	printf("    -l                 long list (include details)\n");
+	printf("    -s                 short list (default)\n");
 	printf("  -c SID               change group\n");
 	printf("     -u unix group\n");
 	printf("  -x group             delete this group\n");
@@ -60,15 +62,11 @@ static void usage(void)
 **********************************************************/
 int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcomment, char *privilege)
 {
-	uint32 se_priv;
+	uint32 se_priv[PRIV_ALL_INDEX];
 	gid_t gid;
 	DOM_SID sid;
 	fstring string_sid;
 	fstring name, comment;
-
-/*	convert_priv_from_text(&se_priv, privilege);*/
-
-	se_priv=0x0;
 
 	gid=nametogid(group);
 	if (gid==-1)
@@ -87,6 +85,10 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 	else
 		fstrcpy(comment, ntcomment);
 
+	init_privilege(se_priv);
+	if (privilege!=NULL)
+		convert_priv_from_text(se_priv, privilege);
+
 	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv))
 		return -1;
 
@@ -101,7 +103,7 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 	DOM_SID sid;
 	GROUP_MAP map;
 	gid_t gid;
-	uint32 se_priv;
+	uint32 se_priv[PRIV_ALL_INDEX];
 
 	string_to_sid(&sid, sid_string);
 
@@ -139,8 +141,10 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 
 	/* Change the privilege if new one */
 	if (privilege!=NULL) {
-		convert_priv_from_text(&se_priv, privilege);
-		map.privilege=se_priv;
+		int i;
+		convert_priv_from_text(se_priv, privilege);
+		for(i=0; i<PRIV_ALL_INDEX; i++)
+			map.privileges[i]=se_priv[i];
 	}
 
 	if (!add_mapping_entry(&map, TDB_REPLACE)) {
@@ -169,7 +173,7 @@ BOOL deletegroup(char *group)
 /*********************************************************
  List the groups.
 **********************************************************/
-int listgroup(enum SID_NAME_USE sid_type)
+int listgroup(enum SID_NAME_USE sid_type, BOOL long_list)
 {
 	int entries,i;
 	GROUP_MAP *map=NULL;
@@ -177,7 +181,8 @@ int listgroup(enum SID_NAME_USE sid_type)
 	fstring group_type;
 	fstring priv_text;
 
-	printf("Unix\tSID\ttype\tnt name\tnt comment\tprivilege\n");
+	if (!long_list)
+		printf("NT group (SID) -> Unix group\n");
 		
 	if (!enum_group_mapping(sid_type, &map, &entries, ENUM_ALL_MAPPED))
 		return -1;
@@ -185,10 +190,18 @@ int listgroup(enum SID_NAME_USE sid_type)
 	for (i=0; i<entries; i++) {
 		decode_sid_name_use(group_type, (map[i]).sid_name_use);
 		sid_to_string(string_sid, &map[i].sid);
-		convert_priv_to_text(map[i].privilege, priv_text);
-
-		printf("%s\t%s\t%s\n\t%s\t%s\t%s\n\n", gidtoname(map[i].gid), map[i].nt_name, string_sid, 
-					             group_type, map[i].comment, priv_text);
+		convert_priv_to_text(map[i].privileges, priv_text);
+		
+		if (!long_list)
+			printf("%s (%s) -> %s\n", map[i].nt_name, string_sid, gidtoname(map[i].gid));
+		else {
+			printf("%s\n", map[i].nt_name);
+			printf("\tSID       : %s\n", string_sid);
+			printf("\tUnix group: %s\n", gidtoname(map[i].gid));
+			printf("\tGroup type: %s\n", group_type);
+			printf("\tComment   : %s\n", map[i].comment);
+			printf("\tPrivilege : %s\n\n", priv_text);
+		}
 	}
 
 	return 0;
@@ -207,7 +220,8 @@ int main (int argc, char **argv)
 	BOOL nt_group = False;
 	BOOL priv = False;
 	BOOL group_type = False;
-	
+	BOOL long_list = False;
+
 	char *group = NULL;
 	char *sid = NULL;
 	char *ntgroup = NULL;
@@ -235,7 +249,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 	
-	while ((ch = getopt(argc, argv, "a:c:d:n:p:t:u:vx:")) != EOF) {
+	while ((ch = getopt(argc, argv, "a:c:d:ln:p:st:u:vx:")) != EOF) {
 		switch(ch) {
 		case 'a':
 			add_group = True;
@@ -248,6 +262,9 @@ int main (int argc, char **argv)
 		case 'd':
 			group_desc=optarg;
 			break;
+		case 'l':
+			long_list = True;
+			break;
 		case 'n':
 			nt_group = True;
 			ntgroup=optarg;
@@ -255,6 +272,9 @@ int main (int argc, char **argv)
 		case 'p':
 			priv = True;
 			privilege=optarg;
+			break;
+		case 's':
+			long_list = False;
 			break;
 		case 't':
 			group_type = True;
@@ -325,7 +345,7 @@ int main (int argc, char **argv)
 		return addgroup(group, sid_type, ntgroup, group_desc, privilege);
 
 	if (view_group)
-		return listgroup(sid_type);
+		return listgroup(sid_type, long_list);
 
 	if (delete_group)
 		return deletegroup(group);

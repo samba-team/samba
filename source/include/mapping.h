@@ -20,13 +20,26 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define PRIV_ALL_INDEX		5
+
+#define SE_PRIV_NONE		0x0000
+#define SE_PRIV_ADD_MACHINES	0x0006
+#define SE_PRIV_SEC_PRIV	0x0008
+#define SE_PRIV_TAKE_OWNER	0x0009
+#define SE_PRIV_ADD_USERS	0xff01
+#define SE_PRIV_PRINT_OPERATOR	0xff03
+#define SE_PRIV_ALL		0xffff
+
+#define ENUM_ONLY_MAPPED True
+#define ENUM_ALL_MAPPED False
+
 typedef struct _GROUP_MAP {
 	gid_t gid;
 	DOM_SID sid;
 	enum SID_NAME_USE sid_name_use;
 	fstring nt_name;
 	fstring comment;
-	uint32 privilege;
+	uint32 privileges[PRIV_ALL_INDEX];
 } GROUP_MAP;
 
 typedef struct _PRIVS {
@@ -35,14 +48,3 @@ typedef struct _PRIVS {
 	char *description;
 } PRIVS;
 
-#define SE_PRIV_NONE		0x0000
-#define SE_PRIV_ADD_USERS	0x0001
-#define SE_PRIV_ADD_MACHINES	0x0002
-#define SE_PRIV_PRINT_OPERATOR	0x0004
-#define SE_PRIV_ALL		0xffff
-
-#define PRIV_ALL_INDEX		3
-
-
-#define ENUM_ONLY_MAPPED True
-#define ENUM_ALL_MAPPED False

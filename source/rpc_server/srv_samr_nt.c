@@ -810,7 +810,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
-		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ALL_MAPPED);
+		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED);
 		
 		if (num_entries != 0) {
 			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
