@@ -58,8 +58,7 @@ do_pw_lock(int fd, int waitsecs, int type)
 	return ret;
 }
 
-int 
-pw_file_lock(char *name, int type, int secs)
+int pw_file_lock(char *name, int type, int secs)
 {
 	int             fd = open(name, O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
@@ -71,8 +70,7 @@ pw_file_lock(char *name, int type, int secs)
 	return fd;
 }
 
-int 
-pw_file_unlock(int fd)
+int pw_file_unlock(int fd)
 {
 	do_pw_lock(fd, 5, F_UNLCK);
 	return close(fd);
