@@ -635,12 +635,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
 	}
 
-#if 0 /* JRATEST for signing. */
 	/* if the server supports extended security then use SPNEGO */
 	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
 		return cli_session_setup_spnego(cli, user, pass, workgroup);
 	}
-#endif
 
 	/* otherwise do a NT1 style session setup */
 	return cli_session_setup_nt1(cli, user, 
@@ -825,10 +823,6 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->use_spnego = False;
 	}
 
-#if 1 /* JRA SIGN TEST */
-	cli->use_spnego = False;
-#endif
-
 	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
@@ -893,10 +887,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		if (getenv("CLI_FORCE_SMB_SIGNING"))
 			cli->sign_info.negotiated_smb_signing = True;
                                    
-#if 0
 		if (cli->sign_info.negotiated_smb_signing && !(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
 			cli->sign_info.negotiated_smb_signing = False;
-#endif
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;
