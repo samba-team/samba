@@ -913,7 +913,7 @@ from the share file %s\n", i, num_entries, fname));
     entry.op_port = SVAL(p,SME_PORT_OFFSET);
     entry.op_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
     entry.share_mode = IVAL(p,SME_SHAREMODE_OFFSET);
-    entry.time.tv_sec = IVAL(p,SME_SEC_OFFSET)
+    entry.time.tv_sec = IVAL(p,SME_SEC_OFFSET);
     entry.time.tv_sec = IVAL(p,SME_USEC_OFFSET);
 
     (*mod_fn)( &entry, fsp->fd_ptr->dev, fsp->fd_ptr->inode, param);
@@ -922,11 +922,11 @@ from the share file %s\n", i, num_entries, fname));
      * Now copy any changes the function made back into the buffer.
      */
 
-    SIVAL(p,SME_PID_OFFSET, entry.pid)
+    SIVAL(p,SME_PID_OFFSET, entry.pid);
     SSVAL(p,SME_PORT_OFFSET,entry.op_port);
     SSVAL(p,SME_OPLOCK_TYPE_OFFSET,entry.op_type);
     SIVAL(p,SME_SHAREMODE_OFFSET,entry.share_mode);
-    SIVAL(p,SME_SEC_OFFSET,entry.time.tv_sec)
+    SIVAL(p,SME_SEC_OFFSET,entry.time.tv_sec);
     SIVAL(p,SME_USEC_OFFSET,entry.time.tv_sec);
 
     found = True;
