@@ -96,7 +96,7 @@ struct sig_record {
     unsigned key_tag;
     char     *signer;
     unsigned sig_len;
-    u_char   sig_data[1];	/* also includes signer */
+    char     sig_data[1];	/* also includes signer */
 };
 
 struct cert_record {
