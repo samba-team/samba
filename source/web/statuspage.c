@@ -170,29 +170,39 @@ void status_page(void)
 	printf("<tr><td>version:</td><td>%s</td></tr>",VERSION);
 
 	fflush(stdout);
-	if (smbd_running()) {
-		printf("<tr><td>smbd:</td><td>running</td><td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td><td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td></tr>\n");
-	} else {
-		printf("<tr><td>smbd:</td><td>not running</td><td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td><td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td></tr>\n");
+	printf("<tr><td>smbd:</td><td>%srunning</td>\n",smbd_running()?"":"not ");
+	if (geteuid() == 0) {
+	    if (smbd_running()) {
+		printf("<td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td>\n");
+	    } else {
+		printf("<td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td>\n");
+	    }
+	    printf("<td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td>\n");
 	}
+	printf("</tr>\n");
 
 	fflush(stdout);
-	if (nmbd_running()) {
-		printf("<tr><td>nmbd:</td><td>running</td><td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td><td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td></tr>\n");
-	} else {
-		printf("<tr><td>nmbd:</td><td>not running</td><td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td><td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td></tr>\n");
+	printf("<tr><td>nmbd:</td><td>%srunning</td>\n",nmbd_running()?"":"not ");
+	if (geteuid() == 0) {
+	    if (nmbd_running()) {
+		printf("<td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td>\n");
+	    } else {
+		printf("<td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td>\n");
+	    }
+	    printf("<td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td>\n");
 	}
+	printf("</tr>\n");
 
 	printf("</table>\n");
 	fflush(stdout);
 
-
-	if (geteuid() != 0)
-		printf("<b>NOTE: You are not logged in as root and won't be able to start/stop the server</b><p>\n");
-
 	printf("<p><h3>Active Connections</h3>\n");
 	printf("<table border=1>\n");
-	printf("<tr><th>PID</th><th>Client</th><th>IP address</th><th>Date</th><th>Kill</th></tr>\n");
+	printf("<tr><th>PID</th><th>Client</th><th>IP address</th><th>Date</th>\n");
+	if (geteuid() == 0) {
+		printf("<th>Kill</th>\n");
+	}
+	printf("</tr>\n");
 
 	while (f && !feof(f)) {
 		if (fread(&crec,sizeof(crec),1,f) != 1)
@@ -200,11 +210,15 @@ void status_page(void)
 		if (crec.magic == 0x280267 && 
 		    crec.cnum == -1 &&
 		    process_exists(crec.pid)) {
-			printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td><input type=submit value=\"X\" name=\"kill_%d\"></td></tr>\n",
+			printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
 			       crec.pid,
 			       crec.machine,crec.addr,
-			       tstring(crec.start),
+			       tstring(crec.start));
+			if (geteuid() == 0) {
+			    printf("<td><input type=submit value=\"X\" name=\"kill_%d\"></td>\n",
 			       crec.pid);
+			}
+			printf("</tr>\n");
 		}
 	}
 

@@ -262,6 +262,10 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			if (!(parm->flags & FLAG_BASIC)) {
 				void *ptr = parm->ptr;
 
+				if (parm->class == P_LOCAL && snum >= 0) {
+					ptr = lp_local_ptr(snum, ptr);
+				}
+
 				switch (parm->type) {
 				case P_CHAR:
 					if (*(char *)ptr == (char)(parm->def.cvalue)) continue;
@@ -544,7 +548,8 @@ static void shares_page(void)
 	printf("<FORM name=\"swatform\" method=post>\n");
 
 	printf("<table>\n");
-	printf("<tr><td><input type=submit name=selectshare value=\"Choose Share\"></td>\n");
+	printf("<tr>\n");
+	printf("<td><input type=submit name=selectshare value=\"Choose Share\"></td>\n");
 	printf("<td><select name=share>\n");
 	if (snum < 0)
 		printf("<option value=\" \"> \n");
@@ -556,10 +561,18 @@ static void shares_page(void)
 			       s, s);
 		}
 	}
-	printf("</select></td></tr><p>");
-
-	printf("<tr><td><input type=submit name=createshare value=\"Create Share\"></td>\n");
-	printf("<td><input type=text size=30 name=newshare></td></tr>\n");
+	printf("</select></td>\n");
+	if (have_write_access) {
+		printf("<td><input type=submit name=\"Delete\" value=\"Delete Share\"></td>\n");
+	}
+	printf("</tr>\n");
+	printf("</table>");
+	printf("<table>");
+	if (have_write_access) {
+		printf("<tr>\n");
+		printf("<td><input type=submit name=createshare value=\"Create Share\"></td>\n");
+		printf("<td><input type=text size=30 name=newshare></td></tr>\n");
+	}
 	printf("</table>");
 
 
@@ -568,7 +581,7 @@ static void shares_page(void)
 			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 		}
 
-		printf("<input type=submit name=\"Delete\" value=\"Delete Share\">\n");
+		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 		if (advanced == 0) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
@@ -824,6 +837,12 @@ static void printers_page(void)
 
 	printf("<H2>Printer Parameters</H2>\n");
 
+	printf("<H3>Important Note:</H3>\n");
+	printf("Printer names marked with [*] in the Choose Printer drop-down box ");
+	printf("are autoloaded printers from ");
+	printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">Printcap Name</A>.\n");
+	printf("Attempting to delete these printers from SWAT will have no effect.\n");
+
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
 		advanced = 1;
 
@@ -862,12 +881,23 @@ static void printers_page(void)
 	for (i=0;i<lp_numservices();i++) {
 		s = lp_servicename(i);
 		if (s && (*s) && strcmp(s,"IPC$") && lp_print_ok(i)) {
+                    if (i >= iNumNonAutoPrintServices)
+                        printf("<option %s value=\"%s\">[*]%s\n",
+                               (share && strcmp(share,s)==0)?"SELECTED":"",
+                               s, s);
+                    else
 			printf("<option %s value=\"%s\">%s\n", 
 			       (share && strcmp(share,s)==0)?"SELECTED":"",
 			       s, s);
 		}
 	}
-	printf("</select></td></tr><p>");
+	printf("</select></td>");
+	if (have_write_access) {
+		printf("<td><input type=submit name=\"Delete\" value=\"Delete Printer\"></td>\n");
+	}
+	printf("</tr>");
+	printf("</table>\n");
+	printf("<table>\n");
 
 	printf("<tr><td><input type=submit name=createshare value=\"Create Printer\"></td>\n");
 	printf("<td><input type=text size=30 name=newshare></td></tr>\n");
@@ -878,7 +908,7 @@ static void printers_page(void)
 		if (have_write_access) {
 			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 		}
-		printf("<input type=submit name=\"Delete\" value=\"Delete Printer\">\n");
+		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 		if (advanced == 0) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
