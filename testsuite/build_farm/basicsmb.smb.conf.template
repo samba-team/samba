@@ -15,7 +15,7 @@
 
     add machine script = useradd %u -d /dev/null -s /bin/false
 
-    panic action = echo bt | gdb PREFIX/sbin/smbd %d
+    panic action = /bin/sh BUILD_FARM/samba/testsuite/build_farm/backtrace %d
 
     passdb backend = smbpasswd_nua
 
