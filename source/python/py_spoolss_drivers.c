@@ -177,6 +177,7 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 	int level = 1;
 	uint32 needed;
 	char *arch = "Windows NT x86";
+	int version = 2;
 	static char *kwlist[] = {"level", "arch", NULL};
 
 	/* Parse parameters */
@@ -189,12 +190,12 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 
 	werror = cli_spoolss_getprinterdriver(
 		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, level,
-		arch, &ctr);
+		version, arch, &ctr);
 
 	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
 		werror = cli_spoolss_getprinterdriver(
 			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
-			level, arch, &ctr);
+			level, version, arch, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
