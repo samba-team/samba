@@ -1,3 +1,11 @@
+Changes in release 0.1c:
+
+ * fix ASN.1 encoding of signed integers
+ * somewhat working `ktutil get'
+ * some documentation updates
+ * update to Autoconf 2.13 and Automake 1.4
+ * the usual bug fixes
+
 Changes in release 0.1b:
 
  * some old -> new crypto conversion utils

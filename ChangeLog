@@ -1,3 +1,7 @@
+Fri Mar  5 13:54:13 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Release 0.1c
+
 Mon Mar  1 10:49:14 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/krb5/get_addrs.c: SOCKADDR_HAS_SA_LEN ->
