@@ -38,7 +38,6 @@
 #undef ALLOC
 #include <krb.h>
 #include <kadm.h>
-#include <krb_err.h>
 #include <kadm_err.h>
 
 RCSID("$Id$");
@@ -218,6 +217,7 @@ ent_to_values(krb5_context context,
 {
     krb5_error_code ret;
     char realm[REALM_SZ];
+
     memset(vals, 0, sizeof(*vals));
     if(mask & KADM5_PRINCIPAL) {
 	ret = krb5_524_conv_principal(context, ent->principal, 
@@ -246,8 +246,8 @@ ent_to_values(krb5_context context,
     if(mask & KADM5_KEY_DATA) {
 	if(ent->n_key_data > 0) {
 #ifdef EXTENDED_KADM
-	    vals->key_version = ent->key_data[0].key_data_kvno;
-	    SET_FIELD(KADM_KVNO, vals->fields);
+	vals->key_version = ent->key_data[0].key_data_kvno;
+	SET_FIELD(KADM_KVNO, vals->fields);
 #endif
 	}
 	/* XXX the key itself? */
@@ -351,26 +351,84 @@ values_to_ent(krb5_context context,
     return 0;
 }
 
+/*
+ * Try to translate a KADM5 error code into a v4 kadmin one.
+ */
+
 static int
 error_code(int ret)
 {
-    switch(ret) {
-    case KADM5_UNK_PRINC:
-	return KADM_NOENTRY;
-    case KADM5_DUP:
-	return KADM_INUSE;
-    case KADM5_AUTH_GET:
-    case KADM5_AUTH_ADD:
-    case KADM5_AUTH_MODIFY:
-    case KADM5_AUTH_DELETE:
-    case KADM5_AUTH_INSUFFICIENT:
-	return KADM_UNAUTH;
+    switch (ret) {
     case 0:
 	return 0;
-    default:
-	return KADM_RCSID; /* XXX */
+    case KADM5_FAILURE :
+    case KADM5_AUTH_GET :
+    case KADM5_AUTH_ADD :
+    case KADM5_AUTH_MODIFY :
+    case KADM5_AUTH_DELETE :
+    case KADM5_AUTH_INSUFFICIENT :
+	return KADM_UNAUTH;
+    case KADM5_BAD_DB :
+	return KADM_UK_RERROR;
+    case KADM5_DUP :
+	return KADM_INUSE;
+    case KADM5_RPC_ERROR :
+    case KADM5_NO_SRV :
+	return KADM_NO_SERV;
+    case KADM5_NOT_INIT :
+	return KADM_NO_CONN;
+    case KADM5_UNK_PRINC :
+	return KADM_NOENTRY;
+    case KADM5_PASS_Q_TOOSHORT :
+	return KADM_PASS_Q_TOOSHORT;
+    case KADM5_PASS_Q_CLASS :
+	return KADM_PASS_Q_CLASS;
+    case KADM5_PASS_Q_DICT :
+	return KADM_PASS_Q_DICT;
+    case KADM5_PASS_REUSE :
+    case KADM5_PASS_TOOSOON :
+    case KADM5_BAD_PASSWORD :
+	return KADM_INSECURE_PW;
+    case KADM5_PROTECT_PRINCIPAL :
+	return KADM_IMMUTABLE;
+    case KADM5_POLICY_REF :
+    case KADM5_INIT :
+    case KADM5_BAD_HIST_KEY :
+    case KADM5_UNK_POLICY :
+    case KADM5_BAD_MASK :
+    case KADM5_BAD_CLASS :
+    case KADM5_BAD_LENGTH :
+    case KADM5_BAD_POLICY :
+    case KADM5_BAD_PRINCIPAL :
+    case KADM5_BAD_AUX_ATTR :
+    case KADM5_BAD_HISTORY :
+    case KADM5_BAD_MIN_PASS_LIFE :
+    case KADM5_BAD_SERVER_HANDLE :
+    case KADM5_BAD_STRUCT_VERSION :
+    case KADM5_OLD_STRUCT_VERSION :
+    case KADM5_NEW_STRUCT_VERSION :
+    case KADM5_BAD_API_VERSION :
+    case KADM5_OLD_LIB_API_VERSION :
+    case KADM5_OLD_SERVER_API_VERSION :
+    case KADM5_NEW_LIB_API_VERSION :
+    case KADM5_NEW_SERVER_API_VERSION :
+    case KADM5_SECURE_PRINC_MISSING :
+    case KADM5_NO_RENAME_SALT :
+    case KADM5_BAD_CLIENT_PARAMS :
+    case KADM5_BAD_SERVER_PARAMS :
+    case KADM5_AUTH_LIST :
+    case KADM5_AUTH_CHANGEPW :
+    case KADM5_BAD_TL_TYPE :
+    case KADM5_MISSING_CONF_PARAMS :
+    case KADM5_BAD_SERVER_NAME :
+    default :
+	return KADM_UNAUTH;	/* XXX */
     }
 }
+
+/*
+ * server functions
+ */
 
 static int
 kadm_ser_cpw(krb5_context context,
@@ -383,10 +441,14 @@ kadm_ser_cpw(krb5_context context,
     char *password;
     krb5_error_code ret;
     
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_CPW);
+    if (ret)
+	return error_code (ret);
+
     ret = message->fetch(message, key, 8);
     ret = krb5_ret_stringz(message, &password);
     
-    if(password) 
+    if(password)
 	ret = kadm5_chpass_principal(kadm_handle, principal, password);
     else {
 	krb5_key_data key_data[3];
@@ -412,7 +474,7 @@ kadm_ser_cpw(krb5_context context,
 
     if(ret != 0) {
 	krb5_store_stringz(reply, (char*)krb5_get_err_text(context, ret));
-	return -1;
+	return error_code(ret);
     }
     return 0;
 }
@@ -429,12 +491,15 @@ kadm_ser_add(krb5_context context,
     Kadm_vals values;
     krb5_error_code ret;
 
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_ADD);
+    if (ret)
+	return error_code (ret);
+
     ret_vals(message, &values);
 
     ret = values_to_ent(context, &values, &ent, &mask);
-    if(ret) {
-	kadm5_free_principal_ent(kadm_handle, &ent);
-    }
+    if(ret)
+	return error_code(ret);
 
     ret = kadm5_s_create_principal_with_key(kadm_handle, &ent, mask);
     if(ret) {
@@ -460,11 +525,15 @@ kadm_ser_get(krb5_context context,
 	     krb5_storage *message,
 	     krb5_storage *reply)
 {
+    krb5_error_code ret;
     Kadm_vals values;
     kadm5_principal_ent_rec ent, out;
     int32_t mask;
     char flags[FLDSZ];
-    krb5_error_code ret;
+
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_GET);
+    if (ret)
+	return error_code (ret);
 
     ret_vals(message, &values);
     /* XXX BRAIN DAMAGE! these flags are not stored in the same order
@@ -474,15 +543,16 @@ kadm_ser_get(krb5_context context,
     krb5_ret_int8(message, &flags[1]);
     krb5_ret_int8(message, &flags[0]);
     ret = values_to_ent(context, &values, &ent, &mask);
-    if(ret) {
-	kadm5_free_principal_ent(kadm_handle, &ent);
+    if(ret)
 	return error_code(ret);
-    }
+
     mask = flags_4_to_5(flags);
 
     ret = kadm5_get_principal(kadm_handle, ent.principal, &out, mask);
-    
     kadm5_free_principal_ent(kadm_handle, &ent);
+
+    if (ret)
+	return error_code (ret);
     
     ent_to_values(context, &out, mask, &values);
 
@@ -504,25 +574,29 @@ kadm_ser_mod(krb5_context context,
     int32_t mask;
     krb5_error_code ret;
     
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_MODIFY);
+    if (ret)
+	return error_code (ret);
+
     ret_vals(message, &values1);
     /* why are the old values sent? is the mask the same in the old and
        the new entry? */
     ret_vals(message, &values2);
     
     ret = values_to_ent(context, &values2, &ent, &mask);
-    if(ret) {
-	kadm5_free_principal_ent(kadm_handle, &ent);
+    if(ret)
 	return error_code(ret);
-    }
 
     ret = kadm5_s_modify_principal_with_key(kadm_handle, &ent, mask);
     if(ret) {
+	kadm5_free_principal_ent(kadm_handle, &ent);
 	krb5_warn(context, ret, "kadm5_s_modify_principal");
 	return error_code(ret);
     }
 
     ret = kadm5_get_principal(kadm_handle, ent.principal, &out, mask);
     if(ret) {
+	kadm5_free_principal_ent(kadm_handle, &ent);
 	krb5_warn(context, ret, "kadm5_s_modify_principal");
 	return error_code(ret);
     }
@@ -548,13 +622,15 @@ kadm_ser_del(krb5_context context,
     int32_t mask;
     krb5_error_code ret;
 
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_DELETE);
+    if (ret)
+	return error_code (ret);
+
     ret_vals(message, &values);
 
     ret = values_to_ent(context, &values, &ent, &mask);
-    if(ret) {
-	kadm5_free_principal_ent(kadm_handle, &ent);
+    if(ret)
 	return error_code(ret);
-    }
     
     ret = kadm5_delete_principal(kadm_handle, ent.principal);
 
@@ -563,7 +639,7 @@ kadm_ser_del(krb5_context context,
     return error_code(ret);
 }
 
-static void
+static int
 dispatch(krb5_context context,
 	 void *kadm_handle,
 	 krb5_principal principal,
@@ -572,7 +648,9 @@ dispatch(krb5_context context,
 {
     int retval;
     int8_t command;
-
+    char *operation;
+    char client[128], principal_string[128];
+    kadm5_server_context *kadm5_context = (kadm5_server_context *)kadm_handle;
     krb5_storage *sp_in, *sp_out;
     
     sp_in = krb5_storage_from_data(&msg);
@@ -581,41 +659,61 @@ dispatch(krb5_context context,
     sp_out = krb5_storage_emem();
     sp_out->store(sp_out, KADM_VERSTR, KADM_VERSIZE);
     krb5_store_int32(sp_out, 0);
+
+    krb5_unparse_name_fixed (context, kadm5_context->caller,
+			     client, sizeof(client));
+
+    krb5_unparse_name_fixed (context, principal,
+			     principal_string, sizeof(principal_string));
     
     switch(command) {
     case CHANGE_PW:
+	operation = "changepw";
 	retval = kadm_ser_cpw(context, kadm_handle, principal,
 			      sp_in, sp_out);
 	break;
     case ADD_ENT:
+	operation = "add";
 	retval = kadm_ser_add(context, kadm_handle, principal,
 			      sp_in, sp_out);
 	break;
     case GET_ENT:
+	operation = "get";
 	retval = kadm_ser_get(context, kadm_handle, principal,
 			      sp_in, sp_out);
 	break;
     case MOD_ENT:
+	operation = "mod";
 	retval = kadm_ser_mod(context, kadm_handle, principal,
 			      sp_in, sp_out);
 	break;
     case DEL_ENT:
+	operation = "del";
 	retval = kadm_ser_del(context, kadm_handle, principal,
 			      sp_in, sp_out);
 	break;
     default:
+	operation = "unknown";
 	retval = KADM_NO_OPCODE;
 	break;
     }
     krb5_storage_free(sp_in);
+    krb5_warnx(context, "v4-compat %s: %s %s", client, operation,
+	       principal_string);
     if(retval) {
+	krb5_warnx(context, "v4-compat: %s: %d", operation, retval);
 	krb5_storage_free(sp_out);
 	make_error_packet(retval, reply);
-	return;
+	return retval;
     }
     krb5_storage_to_data(sp_out, reply);
     krb5_storage_free(sp_out);
+    return 0;
 }
+
+/*
+ * Decode a v4 kadmin packet in `message' and create a reply in `reply'
+ */
 
 static void
 decode_packet(krb5_context context,
@@ -633,12 +731,15 @@ decode_packet(krb5_context context,
     char sname[] = "changepw", sinst[] = "kerberos";
     unsigned long checksum;
     des_key_schedule schedule;
-    char *msg = message.data;
-    
+    const char *msg = message.data;
     void *kadm_handle;
     
-    if(message.length < KADM_VERSIZE || strncmp(msg, KADM_VERSTR, KADM_VERSIZE) != 0)
-	;
+    if(message.length < KADM_VERSIZE
+       || strncmp(msg, KADM_VERSTR, KADM_VERSIZE) != 0) {
+	make_error_packet(KADM_BAD_VER, reply);
+	return;
+    }
+
     off = KADM_VERSIZE;
     off += _krb5_get_int(msg + off, &rlen, 4);
     memset(&authent, 0, sizeof(authent));
@@ -649,13 +750,20 @@ decode_packet(krb5_context context,
     {
 	krb5_principal principal;
 	krb5_keyblock *key;
-	krb5_make_principal(context, &principal, NULL,
-			    "changepw", "kerberos", NULL);
+
+	ret = krb5_make_principal(context, &principal, NULL, 
+				  "changepw", "kerberos", NULL);
+	if (ret) {
+	    krb5_warn (context, ret, "krb5_make_principal");
+	    make_error_packet (KADM_NOMEM, reply);
+	    return;
+	}
 	ret = krb5_kt_read_service_key(context, 
 				       NULL,
 				       principal,
 				       0,
-				       ETYPE_DES_CBC_CRC,
+/*				       ETYPE_DES_CBC_CRC,*/
+				       ETYPE_DES_CBC_MD5,
 				       &key);
 	krb5_free_principal(context, principal);
 	if(ret) {
@@ -686,6 +794,7 @@ decode_packet(krb5_context context,
     {
 	krb5_principal client;
 	char *client_str;
+
 	krb5_425_conv_principal(context, ad.pname, ad.pinst, ad.prealm,
 				&client);
 	krb5_unparse_name(context, client, &client_str);
@@ -697,36 +806,54 @@ decode_packet(krb5_context context,
 					   KADM5_ADMIN_SERVICE,
 					   NULL, 0, 0, 
 					   &kadm_handle);
-
 	free(client_str);
+	if (ret) {
+	    krb5_warn (context, ret, "kadm5_init_with_password_ctx");
+	    make_error_packet (KADM_NOMEM, reply);
+	    return;
+	}
     }
     
     checksum = des_quad_cksum((des_cblock*)(msg + off), NULL, rlen, 
 			      0, &ad.session);
-    if(checksum != ad.checksum) 
-	;
+    if(checksum != ad.checksum) {
+	make_error_packet (KADM_BAD_CHK, reply);
+	return;
+    }
     des_set_key(&ad.session, schedule);
     ret = krb_rd_priv(msg + off, rlen, schedule, &ad.session, 
 		      client_addr, admin_addr, &msg_dat);
+    if (ret) {
+	make_error_packet (krb_err_base + ret, reply);
+	krb5_warnx(context, "krb_rd_priv: %d", ret);
+	return;
+    }
 
     {
 	krb5_data d, r;
 	krb5_principal principal;
-	d.data = msg_dat.app_data;
+	int retval;
+
+	d.data   = msg_dat.app_data;
 	d.length = msg_dat.app_length;
 	
 	krb5_425_conv_principal(context, 
 				ad.pname, ad.pinst, ad.prealm, 
 				&principal);
 	
-	dispatch(context, kadm_handle, principal, d, &r);
-	krb5_data_alloc(reply, r.length + 26);
-	reply->length = krb_mk_priv(r.data, reply->data, r.length, 
-				   schedule, &ad.session, 
-				   admin_addr, client_addr);
-	if((ssize_t)reply->length < 0) {
-	    make_error_packet(KADM_NO_ENCRYPT, reply);
-	    return;
+	retval = dispatch(context, kadm_handle, principal, d, &r);
+	if (retval == 0) {
+	    krb5_data_alloc(reply, r.length + 26);
+	    reply->length = krb_mk_priv(r.data, reply->data, r.length, 
+					schedule, &ad.session, 
+					admin_addr, client_addr);
+	    if((ssize_t)reply->length < 0) {
+		make_error_packet(KADM_NO_ENCRYPT, reply);
+		return;
+	    }
+	} else { 
+	    reply->length = r.length;
+	    reply->data   = r.data;
 	}
     }
 }
@@ -749,9 +876,11 @@ handle_v4(krb5_context context,
     krb5_data message, reply;
 
     addr_len = sizeof(client_addr);
-    getsockname(fd, (struct sockaddr*)&admin_addr, &addr_len);
+    if (getsockname(fd, (struct sockaddr*)&admin_addr, &addr_len) < 0)
+	krb5_errx (context, 1, "getsockname");
     addr_len = sizeof(client_addr);
-    getpeername(fd, (struct sockaddr*)&client_addr, &addr_len);
+    if (getpeername(fd, (struct sockaddr*)&client_addr, &addr_len) < 0)
+	krb5_errx (context, 1, "getpeername");
 
     while(1) {
 	if(first) {
@@ -759,14 +888,17 @@ handle_v4(krb5_context context,
                bytes of the version string */
 	    krb5_data_alloc(&message, len);
 	    memcpy(message.data, "KA", 2);
-	    ret = krb5_net_read(context, &fd, (char*)message.data + 2, len - 2);
+	    ret = krb5_net_read(context, &fd, (char*)message.data + 2,
+				len - 2);
 	    first = 0;
 	} else {
 	    char buf[2];
 	    unsigned long tmp;
-	    ret = krb5_net_read(context, &fd, buf, sizeof(2));
-	    if(ret == 0) 
-		exit(0);
+	    ssize_t n;
+
+	    n = krb5_net_read(context, &fd, buf, sizeof(2));
+	    if (n == 0)
+		exit (0);
 	    _krb5_get_int(buf, &tmp, 2);
 	    krb5_data_alloc(&message, tmp);
 	    krb5_net_read(context, &fd, message.data, message.length);
