@@ -1758,9 +1758,8 @@ static BOOL run_unlinktest(int dummy)
 
 
 /*
-test how many open files this server supports on the one socket
+test the timing of deferred open requests
 */
-
 static BOOL run_deferopen(struct cli_state *cli, int dummy)
 {
 	const char *fname = "\\defer_open_test.dat";
@@ -2696,11 +2695,7 @@ static BOOL run_rename(int dummy)
 	cli_unlink(cli1->tree, fname);
 	cli_unlink(cli1->tree, fname1);
 	fnum1 = cli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
-#if 0
-				   NTCREATEX_SHARE_ACCESS_DELETE|NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-#else
 				   NTCREATEX_SHARE_ACCESS_DELETE|NTCREATEX_SHARE_ACCESS_READ, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-#endif
 
 	if (fnum1 == -1) {
 		printf("Second open failed - %s\n", cli_errstr(cli1->tree));
@@ -2731,29 +2726,6 @@ static BOOL run_rename(int dummy)
 	}
 
 
-#if 0
-  {
-  int fnum2;
-
-	fnum2 = cli_nt_create_full(cli1->tree, fname, 0, DELETE_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-
-	if (fnum2 == -1) {
-		printf("Fourth open failed - %s\n", cli_errstr(cli1->tree));
-		return False;
-	}
-	if (!cli_nt_delete_on_close(cli1->tree, fnum2, True)) {
-		printf("[8] setting delete_on_close on file failed !\n");
-		return False;
-	}
-	
-	if (!cli_close(cli1->tree, fnum2)) {
-		printf("close - 4 failed (%s)\n", cli_errstr(cli1->tree));
-		return False;
-	}
-  }
-#endif
-
 	if (NT_STATUS_IS_ERR(cli_rename(cli1->tree, fname, fname1))) {
 		printf("Third rename failed - this should have succeeded - %s\n", cli_errstr(cli1->tree));
 		correct = False;
@@ -2776,6 +2748,10 @@ static BOOL run_rename(int dummy)
 	return correct;
 }
 
+
+/*
+  see how many RPC pipes we can open at once
+*/
 static BOOL run_pipe_number(int dummy)
 {
 	struct cli_state *cli1;
@@ -2797,6 +2773,8 @@ static BOOL run_pipe_number(int dummy)
 			break;
 		}
 		num_pipes++;
+		printf("%d\r", num_pipes);
+		fflush(stdout);
 	}
 
 	printf("pipe_number test - we can open %d %s pipes.\n", num_pipes, pipe_name );
@@ -3643,26 +3621,6 @@ static BOOL run_dirtest(int dummy)
 	return correct;
 }
 
-static void del_fn(file_info *finfo, const char *mask, void *state)
-{
-	struct cli_state *pcli = (struct cli_state *)state;
-	char *fname;
-	asprintf(&fname, "\\LISTDIR\\%s", finfo->name);
-
-	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
-		return;
-
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
-		if (NT_STATUS_IS_ERR(cli_rmdir(pcli->tree, fname)))
-			printf("del_fn: failed to rmdir %s, error=%s\n", fname, cli_errstr(pcli->tree) );
-	} else {
-		if (NT_STATUS_IS_ERR(cli_unlink(pcli->tree, fname)))
-			printf("del_fn: failed to unlink %s, error=%s\n", fname, cli_errstr(pcli->tree) );
-	}
-	free(fname);
-}
-
-
 /*
   sees what IOCTLs are supported
  */
@@ -3693,6 +3651,7 @@ BOOL torture_ioctl_test(int dummy)
 	}
 
 	parms.ioctl.level = RAW_IOCTL_IOCTL;
+	parms.ioctl.in.fnum = fnum;
 	parms.ioctl.in.request = IOCTL_QUERY_JOB_INFO;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &parms);
 	printf("ioctl job info: %s\n", cli_errstr(cli->tree));
@@ -3815,8 +3774,6 @@ static BOOL run_dirtest1(int dummy)
 		return False;
 	}
 
-	cli_list(cli->tree, "\\LISTDIR\\*", 0, del_fn, cli);
-	cli_list(cli->tree, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, del_fn, cli);
 	if (cli_deltree(cli->tree, "\\LISTDIR") == -1) {
 		fprintf(stderr,"Failed to deltree %s, error=%s\n", "\\LISTDIR", cli_errstr(cli->tree));
 		return False;
@@ -3882,9 +3839,10 @@ static BOOL run_dirtest1(int dummy)
 	}
 
 	/* Delete everything. */
-	cli_list(cli->tree, "\\LISTDIR\\*", 0, del_fn, cli);
-	cli_list(cli->tree, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, del_fn, cli);
-	cli_rmdir(cli->tree, "\\LISTDIR");
+	if (cli_deltree(cli->tree, "\\LISTDIR") == -1) {
+		fprintf(stderr,"Failed to deltree %s, error=%s\n", "\\LISTDIR", cli_errstr(cli->tree));
+		return False;
+	}
 
 #if 0
 	printf("Matched %d\n", cli_list(cli->tree, "a*.*", 0, list_fn, NULL));
@@ -4128,53 +4086,46 @@ static struct {
 	BOOL (*fn)(int);
 	uint_t flags;
 } torture_ops[] = {
-	{"FDPASS", run_fdpasstest, 0},
-	{"LOCK1",  run_locktest1,  0},
-	{"LOCK2",  run_locktest2,  0},
-	{"LOCK3",  run_locktest3,  0},
-	{"LOCK4",  run_locktest4,  0},
-	{"LOCK5",  run_locktest5,  0},
-	{"LOCK6",  run_locktest6,  0},
-	{"LOCK7",  run_locktest7,  0},
-	{"UNLINK", run_unlinktest, 0},
-	{"ATTR",   run_attrtest,   0},
-	{"TRANS2", run_trans2test, 0},
-	{"MAXFID", run_maxfidtest, FLAG_MULTIPROC},
-	{"TORTURE",run_torture,    FLAG_MULTIPROC},
-	{"NEGNOWAIT", run_negprot_nowait, 0},
-	{"NBENCH",  torture_nbench, 0},
-	{"DIR",  run_dirtest, 0},
-	{"DIR1",  run_dirtest1, 0},
-	{"DENY1",  torture_denytest1, 0},
-	{"DENY2",  torture_denytest2, 0},
-	{"TCON",  run_tcon_test, 0},
-	{"TCONDEV",  run_tcon_devtype_test, 0},
-	{"VUID", run_vuidtest, 0},
-#if 0
-	{"DFSBASIC", torture_dfs_basic, 0},
-	{"DFSRENAME", torture_dfs_rename, 0},
-	{"DFSRANDOM", torture_dfs_random, 0},
-#endif
-	{"RW1",  run_readwritetest, 0},
-	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
-	{"OPEN", run_opentest, 0},
-	{"DENY3", run_deny3test, 0},
-#if 1
-	{"OPENATTR", run_openattrtest, 0},
-#endif
-	{"DEFER_OPEN", run_deferopen, FLAG_MULTIPROC},
-	{"XCOPY", run_xcopy, 0},
-	{"RENAME", run_rename, 0},
-	{"DELETE", run_deletetest, 0},
-	{"PROPERTIES", run_properties, 0},
-	{"MANGLE", torture_mangle, 0},
-	{"UTABLE", torture_utable, 0},
-	{"CASETABLE", torture_casetable, 0},
-	{"CHARSET", torture_charset, 0},
-	{"PIPE_NUMBER", run_pipe_number, 0},
-	{"IOCTL",  torture_ioctl_test, 0},
-	{"CHKPATH",  torture_chkpath_test, 0},
-	{"HOLDCON",  torture_holdcon, 0},
+	/* base tests */
+	{"BASE-FDPASS", run_fdpasstest, 0},
+	{"BASE-LOCK1",  run_locktest1,  0},
+	{"BASE-LOCK2",  run_locktest2,  0},
+	{"BASE-LOCK3",  run_locktest3,  0},
+	{"BASE-LOCK4",  run_locktest4,  0},
+	{"BASE-LOCK5",  run_locktest5,  0},
+	{"BASE-LOCK6",  run_locktest6,  0},
+	{"BASE-LOCK7",  run_locktest7,  0},
+	{"BASE-UNLINK", run_unlinktest, 0},
+	{"BASE-ATTR",   run_attrtest,   0},
+	{"BASE-TRANS2", run_trans2test, 0},
+	{"BASE-NEGNOWAIT", run_negprot_nowait, 0},
+	{"BASE-DIR",  run_dirtest, 0},
+	{"BASE-DIR1",  run_dirtest1, 0},
+	{"BASE-DENY1",  torture_denytest1, 0},
+	{"BASE-DENY2",  torture_denytest2, 0},
+	{"BASE-TCON",  run_tcon_test, 0},
+	{"BASE-TCONDEV",  run_tcon_devtype_test, 0},
+	{"BASE-VUID", run_vuidtest, 0},
+	{"BASE-RW1",  run_readwritetest, 0},
+	{"BASE-RW2",  run_readwritemulti, FLAG_MULTIPROC},
+	{"BASE-OPEN", run_opentest, 0},
+	{"BASE-DENY3", run_deny3test, 0},
+	{"BASE-DEFER_OPEN", run_deferopen, FLAG_MULTIPROC},
+	{"BASE-XCOPY", run_xcopy, 0},
+	{"BASE-RENAME", run_rename, 0},
+	{"BASE-DELETE", run_deletetest, 0},
+	{"BASE-PROPERTIES", run_properties, 0},
+	{"BASE-MANGLE", torture_mangle, 0},
+	{"BASE-OPENATTR", run_openattrtest, 0},
+	{"BASE-CHARSET", torture_charset, 0},
+	{"BASE-CHKPATH",  torture_chkpath_test, 0},
+
+	/* benchmarking tests */
+	{"BENCH-HOLDCON",  torture_holdcon, 0},
+	{"BENCH-NBENCH",  torture_nbench, 0},
+	{"BENCH-TORTURE",run_torture,    FLAG_MULTIPROC},
+
+	/* RAW smb tests */
 	{"RAW-QFSINFO", torture_raw_qfsinfo, 0},
 	{"RAW-QFILEINFO", torture_raw_qfileinfo, 0},
 	{"RAW-SFILEINFO", torture_raw_sfileinfo, 0},
@@ -4196,10 +4147,19 @@ static struct {
 	{"RAW-RENAME", torture_raw_rename, 0},
 	{"RAW-SEEK", torture_raw_seek, 0},
 	{"RAW-RAP", torture_raw_rap, 0},
+
+	/* protocol scanners */
 	{"SCAN-TRANS2", torture_trans2_scan, 0},
 	{"SCAN-NTTRANS", torture_nttrans_scan, 0},
 	{"SCAN-ALIASES", torture_trans2_aliases, 0},
 	{"SCAN-SMB", torture_smb_scan, 0},
+	{"SCAN-MAXFID", run_maxfidtest, FLAG_MULTIPROC},
+	{"SCAN-UTABLE", torture_utable, 0},
+	{"SCAN-CASETABLE", torture_casetable, 0},
+	{"SCAN-PIPE_NUMBER", run_pipe_number, 0},
+	{"SCAN-IOCTL",  torture_ioctl_test, 0},
+
+	/* rpc testers */
         {"RPC-LSA", torture_rpc_lsa, 0},
         {"RPC-ECHO", torture_rpc_echo, 0},
         {"RPC-DFS", torture_rpc_dfs, 0},
@@ -4219,7 +4179,10 @@ static struct {
         {"RPC-AUTOIDL", torture_rpc_autoidl, 0},
 	{"RPC-MULTIBIND", torture_multi_bind, 0},
 	{"RPC-DRSUAPI", torture_rpc_drsuapi, 0},
-	{"NTLMSSP-SELFCHECK", torture_ntlmssp_self_check, 0},
+
+	/* crypto testers */
+	{"CRYPT-NTLMSSP", torture_ntlmssp_self_check, 0},
+
 	{NULL, NULL, 0}};
 
 
