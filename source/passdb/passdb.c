@@ -2209,26 +2209,34 @@ BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
 	uint16 BadPasswordCount;
 	uint32 resettime; 
 
+	if (!sampass) return False;
+	
 	BadPasswordCount = pdb_get_bad_password_count(sampass);
-	if(BadPasswordCount > 0){
-		if (!account_policy_get(AP_RESET_COUNT_TIME, &resettime)) {
-			DEBUG(0, ("account_policy_get failed.\n"));
-			return False;
-		} else {
-			LastBadPassword = pdb_get_bad_password_time(sampass);
-			DEBUG(10, ("LastBadPassword=%d, resettime=%d.\n", 
-				   (uint32) LastBadPassword, resettime));
-			if (resettime && 
-			    (time(NULL) > (LastBadPassword + 
-					   (time_t)resettime*60))){
-				pdb_set_bad_password_count(sampass, 
-							   0, PDB_CHANGED);
-				pdb_set_bad_password_time(sampass, 0, 
-							  PDB_CHANGED);
-				*updated =True;
-			}		 		 
-		}
+	if (!BadPasswordCount) {
+		DEBUG(9, ("No bad password attempts.\n"));
+		return True;
 	}
+
+	if (!account_policy_get(AP_RESET_COUNT_TIME, &resettime)) {
+		DEBUG(0, ("pdb_update_bad_password_count: account_policy_get failed.\n"));
+		return False;
+	}
+
+	/* First, check if there is a reset time to compare */
+	if (!resettime) {
+		DEBUG(9, ("Reset time = 0, can't reset bad pw count\n"));
+		return True;
+	}
+
+	LastBadPassword = pdb_get_bad_password_time(sampass);
+	DEBUG(7, ("LastBadPassword=%d, resettime=%d, current time=%d.\n", 
+		   (uint32) LastBadPassword, resettime, (uint32)time(NULL)));
+	if (time(NULL) > (LastBadPassword + (time_t)resettime*60)){
+		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
+		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
+		if (updated) *updated = True;
+	}
+
 	return True;
 }
 
@@ -2241,36 +2249,36 @@ BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
 	uint32 duration;
 	time_t LastBadPassword;
 
-	if (!sampass)
-		return False;
+	if (!sampass) return False;
  
-	if (pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK) {
-		if (!account_policy_get(AP_LOCK_ACCOUNT_DURATION, 
-					&duration)) {
-			DEBUG(0, ("pdb_update_autolock_flag: account_policy_get failed.\n"));
-			return False;
-		} else {
-			LastBadPassword = pdb_get_bad_password_time(sampass);
-			DEBUG(10, ("LastBadPassword=%d, duration=%d.\n",
-				   (uint32) LastBadPassword, duration*60 ));
-			if (duration && 
-			    (time(NULL) > 
-			     (LastBadPassword + (time_t)duration*60))){
-				DEBUG(10, ("LastBadPassword=%d, duration=%d.\n",
-					   (uint32) LastBadPassword,
-					   duration*60 ));
-				pdb_set_acct_ctrl(sampass,
-						  pdb_get_acct_ctrl(sampass) & ~ACB_AUTOLOCK,
-						  PDB_CHANGED);
-				pdb_set_bad_password_count(sampass, 
-							   0, PDB_CHANGED);
-				pdb_set_bad_password_time(sampass, 0, 
-							  PDB_CHANGED);
-				*updated =True;
-			}		 		 
-		}
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK)) {
+		DEBUG(9, ("Account not autolocked, no check needed\n"));
+		return True;
 	}
 
+	if (!account_policy_get(AP_LOCK_ACCOUNT_DURATION, &duration)) {
+		DEBUG(0, ("pdb_update_autolock_flag: account_policy_get failed.\n"));
+		return False;
+	}
+
+	/* First, check if there is a duration to compare */
+	if (!duration) {
+		DEBUG(9, ("Lockout duration = 0, can't reset autolock\n"));
+		return True;
+	}
+		      
+	LastBadPassword = pdb_get_bad_password_time(sampass);
+	DEBUG(7, ("LastBadPassword=%d, duration=%d, current time =%d.\n",
+		  (uint32)LastBadPassword, duration*60, (uint32)time(NULL)));
+	if ((time(NULL) > (LastBadPassword + (time_t) duration * 60))) {
+		pdb_set_acct_ctrl(sampass,
+				  pdb_get_acct_ctrl(sampass) & ~ACB_AUTOLOCK,
+				  PDB_CHANGED);
+		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
+		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
+		if (updated) *updated = True;
+	}
+	
 	return True;
 }
 
@@ -2280,46 +2288,54 @@ BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
 
 BOOL pdb_increment_bad_password_count(SAM_ACCOUNT *sampass)
 {
-	uint32 resettime;
 	uint32 account_policy_lockout;
-	time_t LastBadPassword;
+	BOOL autolock_updated = False, badpw_updated = False;
 
 	if (!sampass)
 		return False;
-		 
-	if (!account_policy_get(AP_RESET_COUNT_TIME, &resettime)) {
-		DEBUG(0, ("account_policy_get failed.\n"));
-		return False;
-	} else {
-		LastBadPassword = pdb_get_bad_password_time(sampass);
-		DEBUG(10, ("LastBadPassword=%d, resettime=%d.\n", 
-			   (uint32) LastBadPassword, resettime));
-		DEBUG(10, ("time(null) = %d\n", (uint32) time(NULL)));
-		if ((resettime) && (LastBadPassword) &&
-		    (time(NULL) > (LastBadPassword + (time_t)resettime*60))){
-			pdb_set_bad_password_count(sampass, 1, PDB_CHANGED);
-		} else {
-			pdb_set_bad_password_count(sampass, 
-						   pdb_get_bad_password_count(sampass)+1,
-						   PDB_CHANGED);
-		}
-		pdb_set_bad_password_time(sampass, time(NULL), PDB_CHANGED);
 
-		if (!account_policy_get(AP_BAD_ATTEMPT_LOCKOUT,
-					&account_policy_lockout)) {
-			DEBUG(0, ("account_policy_get failed.\n"));
-			return False;
-		} else {
-			if (account_policy_lockout && 
-			    (pdb_get_bad_password_count(sampass) >= account_policy_lockout)) {
-				if (!pdb_set_acct_ctrl (sampass,
-							pdb_get_acct_ctrl(sampass) |ACB_AUTOLOCK,
-							PDB_CHANGED)) {
-					DEBUG(1, ("pdb_increment_bad_password_count:failed to set 'autolock' flag. \n")); 
-					return False;
-				}
-			}
-		}		 		 
+	/* Retrieve the account lockout policy */
+	if (!account_policy_get(AP_BAD_ATTEMPT_LOCKOUT,
+				&account_policy_lockout)) {
+		DEBUG(0, ("pdb_increment_bad_password_count: account_policy_get failed.\n"));
+		return False;
+	}
+
+	/* If there is no policy, we don't need to continue checking */
+	if (!account_policy_lockout) {
+		DEBUG(9, ("No lockout policy, don't track bad passwords\n"));
 		return True;
 	}
+
+	/* Check if the autolock needs to be cleared */
+	if (!pdb_update_autolock_flag(sampass, &autolock_updated))
+		return False;
+
+	/* Check if the badpw count needs to be reset */
+	if (!pdb_update_bad_password_count(sampass, &badpw_updated))
+		return False;
+
+	/*
+	  Ok, now we can assume that any resetting that needs to be 
+	  done has been done, and just get on with incrementing
+	  and autolocking if necessary
+	*/
+
+	pdb_set_bad_password_count(sampass, 
+				   pdb_get_bad_password_count(sampass)+1,
+				   PDB_CHANGED);
+	pdb_set_bad_password_time(sampass, time(NULL), PDB_CHANGED);
+
+
+	if (pdb_get_bad_password_count(sampass) < account_policy_lockout) 
+		return True;
+
+	if (!pdb_set_acct_ctrl(sampass,
+			       pdb_get_acct_ctrl(sampass) | ACB_AUTOLOCK,
+			       PDB_CHANGED)) {
+		DEBUG(1, ("pdb_increment_bad_password_count:failed to set 'autolock' flag. \n")); 
+		return False;
+	}
+
+	return True;
 }
