@@ -48,7 +48,7 @@ struct vfs_syminfo {
 
 static struct vfs_ops default_vfs = {
 
-	ops: {
+	.ops = {
 		/* Disk operations */
 	
 		vfswrap_dummy_connect,
