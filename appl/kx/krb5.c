@@ -298,10 +298,12 @@ krb5_userok (kx_context *kc, char *user)
     krb5_kx_context *c = (krb5_kx_context *)kc->data;
     krb5_context context = c->context;
     krb5_error_code ret;
+    char *tmp;
 
-    ret = krb5_unparse_name (context, c->client, &kc->user);
+    ret = krb5_unparse_name (context, c->client, &tmp);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
+    kc->user = tmp;
 
     return !krb5_kuserok (context, c->client, user);
 }
