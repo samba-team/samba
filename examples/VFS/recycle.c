@@ -131,29 +131,40 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
 	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	memcpy(&tmp_ops, def_vfs_ops, sizeof(struct vfs_ops));
 	tmp_ops.unlink = recycle_unlink;
+	tmp_ops.connect = recycle_connect;
+	tmp_ops.disconnect = recycle_disconnect;
 	memcpy(&recycle_ops, &tmp_ops, sizeof(struct vfs_ops));
 	return &recycle_ops;
 }
 
 static int recycle_connect(struct connection_struct *conn, char *service, char *user)
 {
-	extern char *vfs_options(int);
 	pstring opts_str;
 	fstring recycle_bin;
 	char *p;
 
-	pstrcpy(opts_str, (const char *)vfs_options(SNUM(conn)));
-	if (!*opts_str)
+	DEBUG(3,("recycle_connect: called for service %s as user %s\n", service, user));
+
+	pstrcpy(opts_str, (const char *)lp_vfs_options(SNUM(conn)));
+	if (!*opts_str) {
+		DEBUG(3,("recycle_connect: No options listed (%s).\n", lp_vfs_options(SNUM(conn)) ));
 		return 0; /* No options. */
+	}
 
 	p = opts_str;
 	if (next_token(&p,recycle_bin,"=",sizeof(recycle_bin))) {
-		if (!strequal("recycle", recycle_bin))
+		if (!strequal("recycle", recycle_bin)) {
+			DEBUG(3,("recycle_connect: option %s is not recycle\n", recycle_bin ));
 			return -1;
+		}
 	}
 
-	if (!next_token(&p,recycle_bin,"=",sizeof(recycle_bin)))
+	if (!next_token(&p,recycle_bin," \n",sizeof(recycle_bin))) {
+		DEBUG(3,("recycle_connect: no option after recycle=\n"));
 		return -1;
+	}
+
+	DEBUG(10,("recycle_connect: recycle name is %s\n", recycle_bin ));
 
 	conn->vfs_private = (void *)strdup(recycle_bin);
 	return 0;
@@ -201,9 +212,10 @@ static SMB_OFF_T recycle_get_file_size(connection_struct *conn, const char *fnam
  Check if file should be recycled
 *********************************************************************/
 
-static int recycle_unlink(connection_struct *conn, const char *fname)
+static int recycle_unlink(connection_struct *conn, const char *inname)
 {
 	fstring recycle_bin;
+	pstring fname;
 	char *base, *ext;
 	pstring bin;
 	int i=1, len, addlen;
@@ -211,6 +223,8 @@ static int recycle_unlink(connection_struct *conn, const char *fname)
 	SMB_BIG_UINT dfree,dsize,bsize;
 
 	*recycle_bin = '\0';
+	pstrcpy(fname, inname);
+
 	if (conn->vfs_private)
 		fstrcpy(recycle_bin, (const char *)conn->vfs_private);
 
@@ -249,12 +263,20 @@ static int recycle_unlink(connection_struct *conn, const char *fname)
 	DEBUG(3, ("recycle bin: moving source=%s to  dest=%s\n", fname, bin));
 	default_vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize);
 	if((unsigned int)dfree > 0) {
+		int ret;
 		if(!recycle_directory_exist(conn,recycle_bin)) {
 			DEBUG(3, ("recycle bin: directory %s nonexistant, creating...\n", recycle_bin));
-			default_vfs_ops.mkdir(conn,recycle_bin,dir_mask);
+			if (default_vfs_ops.mkdir(conn,recycle_bin,dir_mask) == -1) {
+				DEBUG(3, ("recycle bin: unable to create directory %s. Error was %s\n",
+					recycle_bin, strerror(errno) ));
+			}
 		}
-		DEBUG(3, ("recycle bin: move successful\n"));
-		return default_vfs_ops.rename(conn, fname, bin);
+		DEBUG(3, ("recycle bin: move %s -> %s\n", fname, bin));
+
+		ret = default_vfs_ops.rename(conn, fname, bin);
+		if (ret == -1)
+			DEBUG(3, ("recycle bin: move error %d (%s)\n", errno, strerror(errno) ));
+		return ret;
 	} else { 
 		DEBUG(3, ("recycle bin: move failed, purging...\n"));
 		return default_vfs_ops.unlink(conn,fname);
