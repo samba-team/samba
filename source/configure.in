@@ -58,13 +58,17 @@ case "$host_os" in
       fi
 #
 # Defines needed for HPUX support.
+# HPUX has bigcrypt but (sometimes?) doesn't use it for
+# password hashing - hence the USE_BOTH_CRYPT_CALLS define.
 #
       case `uname -r` in
 			*9*|*10*)
 				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE"
+		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS)
 				;;
 			*11*)
 				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_LARGEFILE64_SOURCE"
+		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS)
 				;;
       esac
       ;;
@@ -184,7 +188,8 @@ case "$host_os" in
 		fi
 	;;
 esac
-AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
+AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS(sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)

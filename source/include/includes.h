@@ -211,6 +211,19 @@
 #include <netinet/tcp.h>
 #endif
 
+/*
+ * The next two defines are needed to the IPTOS_* options
+ * on some systems.
+ */
+
+#ifdef HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
+
+#ifdef HAVE_NETINET_IN_IP_H
+#include <netinet/ip.h>
+#endif
+
 #if defined(HAVE_TERMIOS_H)
 /* POSIX terminal handling. */
 #include <termios.h>

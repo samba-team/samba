@@ -687,23 +687,23 @@ static BOOL password_check(char *password)
 	   Hence we make a direct return to avoid a second chance!!!
 	*/
 	return (pam_auth(this_user,password));
-#endif
+#endif /* WITH_PAM */
 	
 #ifdef WITH_AFS
 	if (afs_auth(this_user,password)) return(True);
-#endif
+#endif /* WITH_AFS */
 	
 #ifdef WITH_DFS
 	if (dfs_auth(this_user,password)) return(True);
-#endif 
+#endif /* WITH_DFS */
 
 #ifdef KRB5_AUTH
 	if (krb5_auth(this_user,password)) return(True);
-#endif
+#endif /* KRB5_AUTH */
 
 #ifdef KRB4_AUTH
 	if (krb4_auth(this_user,password)) return(True);
-#endif
+#endif /* KRB4_AUTH */
 
 #ifdef OSF1_ENH_SEC
 	{
@@ -714,26 +714,42 @@ static BOOL password_check(char *password)
 	  }
 	  return ret;
 	}
-#endif
+#endif /* OSF1_ENH_SEC */
 
 #ifdef ULTRIX_AUTH
 	return (strcmp((char *)crypt16(password, this_salt ),this_crypted) == 0);
-#endif
+#endif /* ULTRIX_AUTH */
 
 #ifdef LINUX_BIGCRYPT
 	return(linux_bigcrypt(password,this_salt,this_crypted));
-#endif
+#endif /* LINUX_BIGCRYPT */
+
+#if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
+
+	/*
+	 * Some systems have bigcrypt in the C library but might not
+	 * actually use it for the password hashes (HPUX 10.20) is
+	 * a noteable example. So we try bigcrypt first, followed
+	 * by crypt.
+	 */
+
+	if(strcmp(bigcrypt(password,this_salt),this_crypted) == 0)
+		return True;
+	else 
+		return (strcmp((char *)crypt(password,this_salt),this_crypted) == 0);
+#else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 
 #ifdef HAVE_BIGCRYPT
 	return(strcmp(bigcrypt(password,this_salt),this_crypted) == 0);
-#endif
+#endif /* HAVE_BIGCRYPT */
 
 #ifndef HAVE_CRYPT
 	DEBUG(1,("Warning - no crypt available\n"));
 	return(False);
-#else
+#else /* HAVE_CRYPT */
 	return(strcmp((char *)crypt(password,this_salt),this_crypted) == 0);
-#endif
+#endif /* HAVE_CRYPT */
+#endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 }
 
 
