@@ -37,7 +37,7 @@ SOURCES = \
 	getcwd.c getdtablesize.c getopt.c getusershell.c \
 	hstrerror.c inaddr2str.c inet_aton.c \
 	initgroups.c k_getpwnam.c k_getpwuid.c lstat.c \
-	memmove.c mini_inetd.c putenv.c rcmd.c setegid.c \
+	memmove.c mini_inetd.c mkstemp.c putenv.c rcmd.c setegid.c \
 	setenv.c seteuid.c signal.c snprintf.c \
 	strcasecmp.c strdup.c strerror.c strftime.c \
 	strlwr.c strnlen.c strtok_r.c strupr.c tm2time.c \
