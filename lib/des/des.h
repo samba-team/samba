@@ -292,7 +292,7 @@ void des_rand_data();
 
 #endif
 
-#ifdef cplusplus
+#ifdef __cplusplus
 }
 #endif
 
