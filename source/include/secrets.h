@@ -52,27 +52,6 @@
 #define SECRETS_AUTH_DOMAIN      "SECRETS/AUTH_DOMAIN"
 #define SECRETS_AUTH_PASSWORD  "SECRETS/AUTH_PASSWORD"
 
-/* Trust password flags */
-#define PASS_TRUST_NT               0x0001
-#define PASS_TRUST_ADS              0x0002
-#define PASS_TRUST_MACHINE          0x0004
-#define PASS_TRUST_SERVER           0x0008
-#define PASS_TRUST_DOMAIN           0x000c
-
-/* Trust password type varieties */
-#define PASS_MACHINE_TRUST_NT       (PASS_TRUST_NT  | PASS_TRUST_MACHINE)
-#define PASS_SERVER_TRUST_NT        (PASS_TRUST_NT  | PASS_TRUST_SERVER)
-#define PASS_DOMAIN_TRUST_NT        (PASS_TRUST_NT  | PASS_TRUST_DOMAIN)
-#define PASS_MACHINE_TRUST_ADS      (PASS_TRUST_ADS | PASS_TRUST_MACHINE)
-#define PASS_DOMAIN_TRUST_ADS       (PASS_TRUST_ADS | PASS_TRUST_DOMAIN)
-
-/* Returns secure channel parameter, based on trust flags, for rpc netlogon calls */
-#define SCHANNEL_TYPE(flags) ((flags & PASS_TRUST_MACHINE) ? SEC_CHAN_WKSTA : \
-			      ((flags & PASS_TRUST_SERVER) ? SEC_CHAN_BDC : \
-			       ((flags & PASS_TRUST_DOMAIN) ? SEC_CHAN_DOMAIN : 0)))
-
-#define SECRETS_PASSWORDS_MIGRATED  "SECRETS/PASS_MIGRATED"
-
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
 struct machine_acct_pass {

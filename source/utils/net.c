@@ -251,8 +251,6 @@ NTSTATUS connect_pipe(struct cli_state **cli_dst, int pipe_num, BOOL *got_pipe)
 int net_use_machine_password(void) 
 {
 	char *user_name = NULL;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	SAM_TRUST_PASSWD *trust = NULL;
 
 	if (!secrets_init()) {
 		d_printf("ERROR: Unable to open secrets database\n");
@@ -260,22 +258,8 @@ int net_use_machine_password(void)
 	}
 
 	user_name = NULL;
-
-	nt_status = pdb_init_trustpw(&trust);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		trust->free_fn(&trust);
-		return -1;
-	}
-
-	nt_status = pdb_gettrustpwnam(trust, opt_target_workgroup);
-	if (NT_STATUS_IS_OK(nt_status))
-		opt_password = trust->private.pass.data;
-	else
-		opt_password = NULL;
-
-
+	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
 	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
-		trust->free_fn(&trust);
 		return -1;
 	}
 	opt_user_name = user_name;
@@ -619,7 +603,7 @@ static uint32 get_maxrid(void)
 	int i;
 
 	if (!pdb_setsampwent(False, 0)) {
-		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
+		DEBUG(0, ("get_maxrid: Unable to open passdb.\n"));
 		return 0;
 	}
 

@@ -120,46 +120,38 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 static NTSTATUS setup_schannel( struct cli_state *cli, const char *domain )
 {
 	NTSTATUS ret;
-	SAM_TRUST_PASSWD *trust = NULL;
+	uchar trust_password[16];
 	uint32 sec_channel_type;
-
+	DOM_SID sid;
+	time_t lct;
 
 	/* use the domain trust password if we're on a DC 
 	   and this is not our domain */
 	
-	ret = pdb_init_trustpw(&trust);
-	if (!NT_STATUS_IS_OK(ret)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
 	if ( IS_DC && !strequal(domain, lp_workgroup()) ) {
+		char *pass = NULL;
 		
-		ret = pdb_gettrustpwnam(trust, domain);
-		if (!NT_STATUS_IS_OK(ret)) {
-			trust->free_fn(&trust);
+		if ( !secrets_fetch_trusted_domain_password( domain, 
+			&pass, &sid, &lct) )
+		{
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		if (!(pdb_get_tp_flags(trust) & PASS_TRUST_DOMAIN)) {
-			trust->free_fn(&trust);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		sec_channel_type = SEC_CHAN_DOMAIN;
+		E_md4hash(pass, trust_password);
+		SAFE_FREE( pass );
 
 	} else {
-		ret = pdb_gettrustpwnam(trust, lp_workgroup());
-		if (!NT_STATUS_IS_OK(ret)) {
-			trust->free_fn(&trust);
+		if (!secrets_fetch_trust_account_password(lp_workgroup(),
+			trust_password, NULL, &sec_channel_type)) 
+		{
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		
 	}
-	sec_channel_type = SCHANNEL_TYPE(pdb_get_tp_flags(trust));
 	
 	ret = cli_nt_setup_netsec(cli, sec_channel_type, 
-				  AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN,
-				  pdb_get_tp_pass(trust));
+		AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN, trust_password);
 
-	trust->free_fn(&trust);
 	return ret;
 }
 
@@ -229,7 +221,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 {
 	char *machine_password, *machine_krb5_principal;
 	char *ipc_username, *ipc_domain, *ipc_password;
-	struct ntuser_creds creds;
 
 	BOOL got_mutex;
 	BOOL add_failed_connection = True;
@@ -280,7 +271,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	if ((getpeername((*cli)->fd, &peeraddr, &peeraddr_len) != 0) ||
 	    (peeraddr_len != sizeof(struct sockaddr_in)) ||
 	    (peeraddr_in->sin_family != PF_INET))
+	{
+		DEBUG(0,("cm_prepare_connection: %s\n", strerror(errno)));
 		goto done;
+	}
 
 	if (ntohs(peeraddr_in->sin_port) == 139) {
 		struct nmb_name calling;
@@ -383,9 +377,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		cli_shutdown(*cli);
 		goto done;
 	}
-
-	init_creds(&creds, ipc_username, ipc_domain, ipc_password);
-	cli_init_creds(*cli, &creds);
 
 	secrets_named_mutex_release(controller);
 	got_mutex = False;

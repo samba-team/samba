@@ -5,7 +5,6 @@
    Copyright (C) Luke Kenneth Casson Leighton 1998 - 2000
    Copyright (C) Andrew Bartlett 2002
    Copyright (C) Simo Sorce 2003
-   Copyright (C) Rafal Szczesniak 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -117,15 +116,6 @@ enum pdb_group_elements {
 	PDB_GROUP_COUNT
 };
 
-enum pdb_trust_passwd_elements {
-	PDB_TRUST_PASS,
-	PDB_TRUST_SID,
-	PDB_TRUST_NAME,
-	PDB_TRUST_MODTIME,
-	PDB_TRUST_FLAGS,
-	
-	PDB_TRUST_COUNT
-};
 
 enum pdb_value_state {
 	PDB_DEFAULT=0,
@@ -235,41 +225,12 @@ typedef struct sam_group {
 
 } SAM_GROUP;
 
-
-typedef struct _GROUP_INFO {
-	struct pdb_methods *methods;
-	DOM_SID sid;
-	enum SID_NAME_USE sid_name_use;
-	fstring nt_name;
-	fstring comment;
-} GROUP_INFO;
-
 struct acct_info
 {
     fstring acct_name; /* account name */
     fstring acct_desc; /* account name */
     uint32 rid; /* domain-relative RID */
 };
-
-typedef struct sam_trust_passwd {
-	TALLOC_CTX *mem_ctx;
-	
-	void (*free_fn)(struct sam_trust_passwd **);
-	
-	struct pdb_methods *methods;
-
-	struct trust_passwd_data {
-		uint16 flags;			/* flags */
-		size_t uni_name_len;		/* unicode name length */
-		smb_ucs2_t uni_name[32];	/* unicode domain name */
-		DATA_BLOB pass;			/* trust password */
-		time_t mod_time;		/* last change time */
-		DOM_SID domain_sid;		/* trusted domain sid */
-	} private;
-
-} SAM_TRUST_PASSWD;
-
-
 
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 
@@ -280,7 +241,7 @@ typedef struct sam_trust_passwd {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 11
+#define PASSDB_INTERFACE_VERSION 7
 
 typedef struct pdb_context 
 {
@@ -306,8 +267,6 @@ typedef struct pdb_context
 	
 	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
 
-	/* group mapping functions: to be removed */
-	
 	NTSTATUS (*pdb_getgrsid)(struct pdb_context *context, GROUP_MAP *map, DOM_SID sid);
 	
 	NTSTATUS (*pdb_getgrgid)(struct pdb_context *context, GROUP_MAP *map, gid_t gid);
@@ -375,48 +334,6 @@ typedef struct pdb_context
 					       DOM_SID **aliases,
 					       int *num_aliases);
 
-	/* group functions */
-
-	NTSTATUS (*pdb_get_group_info_by_sid)(struct pdb_context *context, GROUP_INFO *info, const DOM_SID *group);
-
-	NTSTATUS (*pdb_get_group_list)(struct pdb_context *context, GROUP_INFO **info, const enum SID_NAME_USE sid_name_use, int *num_groups);
-
-	NTSTATUS (*pdb_get_group_sids)(struct pdb_context *context, const DOM_SID *group, DOM_SID **members, int *num_members);
-
-	NTSTATUS (*pdb_add_group)(struct pdb_context *context, const SAM_GROUP *group);
-
-	NTSTATUS (*pdb_update_group)(struct pdb_context *context, const SAM_GROUP *group);
-
-	NTSTATUS (*pdb_delete_group)(struct pdb_context *context, const DOM_SID *group);
-
-	NTSTATUS (*pdb_add_sid_to_group)(struct pdb_context *context, const DOM_SID *group, const DOM_SID *member);
-
-	NTSTATUS (*pdb_remove_sid_from_group)(struct pdb_context *context, const DOM_SID *group, const DOM_SID *member);
-
-	NTSTATUS (*pdb_get_group_info_by_name)(struct pdb_context *context, GROUP_INFO *info, const char *name);
-
-	NTSTATUS (*pdb_get_group_info_by_nt_name)(struct pdb_context *context, GROUP_INFO *info, const char *nt_name);
-
-	NTSTATUS (*pdb_get_group_uids)(struct pdb_context *context, const DOM_SID *group, uid_t **members, int *num_members);
-
-	/* trust password functions */
-	
-	NTSTATUS (*pdb_settrustpwent)(struct pdb_context *context);
-
-	void (*pdb_endtrustpwent)(struct pdb_context *);
-
-	NTSTATUS (*pdb_gettrustpwent)(struct pdb_context *context, SAM_TRUST_PASSWD *trust);
-	
-	NTSTATUS (*pdb_gettrustpwnam)(struct pdb_context *context, SAM_TRUST_PASSWD *trust, const char *dom_name);
-	
-	NTSTATUS (*pdb_gettrustpwsid)(struct pdb_context *context, SAM_TRUST_PASSWD *trust, const DOM_SID *sid);
-	
-	NTSTATUS (*pdb_add_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
-	
-	NTSTATUS (*pdb_update_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
-	
-	NTSTATUS (*pdb_delete_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
-
 	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
 					   int policy_index, int *value);
 
@@ -453,9 +370,7 @@ typedef struct pdb_methods
 	NTSTATUS (*update_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
 	NTSTATUS (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
-
-	/* group mapping functions: to be removed */
-
+	
 	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, DOM_SID sid);
 
 	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map, gid_t gid);
@@ -516,30 +431,6 @@ typedef struct pdb_methods
 					   int num_members,
 					   DOM_SID **aliases, int *num);
 
-	/* group functions */
-
-	NTSTATUS (*get_group_info_by_sid)(struct pdb_methods *methods, GROUP_INFO *info, const DOM_SID *group);
-
-	NTSTATUS (*get_group_list)(struct pdb_methods *methods, GROUP_INFO **info, const enum SID_NAME_USE sid_name_use, int *num_groups);
-
-	NTSTATUS (*get_group_sids)(struct pdb_methods *methods, const DOM_SID *group, DOM_SID **members, int *num_members);
-
-	NTSTATUS (*add_group)(struct pdb_methods *methods, const SAM_GROUP *group);
-
-	NTSTATUS (*update_group)(struct pdb_methods *methods, const SAM_GROUP *group);
-
-	NTSTATUS (*delete_group)(struct pdb_methods *methods, const DOM_SID *group);
-
-	NTSTATUS (*add_sid_to_group)(struct pdb_methods *methods, const DOM_SID *group, const DOM_SID *member);
-
-	NTSTATUS (*remove_sid_from_group)(struct pdb_methods *methods, const DOM_SID *group, const DOM_SID *member);
-
-	NTSTATUS (*get_group_info_by_name)(struct pdb_methods *methods, GROUP_INFO *info, const char *name);
-
-	NTSTATUS (*get_group_info_by_nt_name)(struct pdb_methods *methods, GROUP_INFO *info, const char *nt_name);
-
-	NTSTATUS (*get_group_uids)(struct pdb_methods *methods, const DOM_SID *group, uid_t **members, int *num_members);
-
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
 				       int policy_index, int *value);
 
@@ -549,24 +440,6 @@ typedef struct pdb_methods
 	void *private_data;  /* Private data of some kind */
 	
 	void (*free_private_data)(void **);
-	
-	/* trust password functions */
-
-	NTSTATUS (*settrustpwent)(struct pdb_methods *methods);
-	
-	void (*endtrustpwent)(struct pdb_methods *);
-
-	NTSTATUS (*gettrustpwent)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust);
-	
-	NTSTATUS (*gettrustpwnam)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const char *name);
-	
-	NTSTATUS (*gettrustpwsid)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const DOM_SID *sid);
-	
-	NTSTATUS (*add_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
-	
-	NTSTATUS (*update_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
-	
-	NTSTATUS (*delete_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
 
 } PDB_METHODS;
 

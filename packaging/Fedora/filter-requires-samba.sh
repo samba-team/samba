@@ -1,3 +1,4 @@
 #!/bin/sh
 
-/usr/lib/rpm/perl.req $* | grep -v "Net::LDAP"
+/usr/lib/rpm/perl.req $* | grep -E -v '(Net::LDAP|Crypt::SmbHash|CGI)'
+

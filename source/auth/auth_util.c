@@ -585,7 +585,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 			ptoken->num_sids--;
 		}
 	}
-	
+
 	/* add privileges assigned to this user */
 
 	get_privileges_for_sids( &ptoken->privileges, ptoken->user_sids, ptoken->num_sids );
@@ -1416,13 +1416,13 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 
 void delete_nt_token(NT_USER_TOKEN **pptoken)
 {
-    if (*pptoken) {
-	    NT_USER_TOKEN *ptoken = *pptoken;
+	if (*pptoken) {
+		NT_USER_TOKEN *ptoken = *pptoken;
 
-	    SAFE_FREE( ptoken->user_sids );
-	    ZERO_STRUCTP(ptoken);
-    }
-    SAFE_FREE(*pptoken);
+		SAFE_FREE( ptoken->user_sids );
+		ZERO_STRUCTP(ptoken);
+	}
+	SAFE_FREE(*pptoken);
 }
 
 /****************************************************************************
@@ -1436,20 +1436,20 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 	if (!ptoken)
 		return NULL;
 
-    if ((token = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL)
-        return NULL;
+	if ((token = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL)
+		return NULL;
 
-    ZERO_STRUCTP(token);
-
+	ZERO_STRUCTP(token);
+	
 	token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
 	
 	if ( !token ) {
-        SAFE_FREE(token);
-        return NULL;
-    }
+		SAFE_FREE(token);
+		return NULL;
+	}
 
-    token->num_sids = ptoken->num_sids;
-
+	token->num_sids = ptoken->num_sids;
+	
 	/* copy the privileges; don't consider failure to be critical here */
 	
 	if ( !se_priv_copy( &token->privileges, &ptoken->privileges ) ) {
@@ -1498,20 +1498,15 @@ BOOL nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 
 BOOL is_trusted_domain(const char* dom_name)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	SAM_TRUST_PASSWD *trust = NULL;
-	DOM_SID dom_sid;
+	DOM_SID trustdom_sid;
+	char *pass = NULL;
+	time_t lct;
+	BOOL ret;
 
 	/* no trusted domains for a standalone server */
+
 	if ( lp_server_role() == ROLE_STANDALONE )
 		return False;
-
-	/* init trust password structure */
-	nt_status = pdb_init_trustpw(&trust);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Could not initialise trust password\n"));
-		return False;
-	}
 
 	/* if we are a DC, then check for a direct trust relationships */
 
@@ -1519,12 +1514,11 @@ BOOL is_trusted_domain(const char* dom_name)
 		become_root();
 		DEBUG (5,("is_trusted_domain: Checking for domain trust with [%s]\n",
 			dom_name ));
-		nt_status = pdb_gettrustpwnam(trust, dom_name);
+		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
 		unbecome_root();
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			trust->free_fn(&trust);
+		SAFE_FREE(pass);
+		if (ret)
 			return True;
-		}
 	}
 	else {
 		/* if winbindd is not up and we are a domain member) then we need to update the
@@ -1534,18 +1528,14 @@ BOOL is_trusted_domain(const char* dom_name)
 			update_trustdom_cache();
 	}
 
-	sid_copy(&dom_sid, pdb_get_tp_domain_sid(trust));
-
 	/* now the trustdom cache should be available a DC could still
 	 * have a transitive trust so fall back to the cache of trusted
 	 * domains (like a domain member would use  */
 
-	if ( trustdom_cache_fetch(dom_name, &dom_sid) ) {
-		trust->free_fn(&trust);
+	if ( trustdom_cache_fetch(dom_name, &trustdom_sid) ) {
 		return True;
 	}
 
-	trust->free_fn(&trust);
 	return False;
 }
 

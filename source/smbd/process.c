@@ -1324,8 +1324,6 @@ void check_reload(int t)
 
 static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	SAM_TRUST_PASSWD *trust = NULL;
 	static time_t last_keepalive_sent_time = 0;
 	static time_t last_idle_closed_check = 0;
 	time_t t;
@@ -1406,6 +1404,9 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 					password change */
 			lp_security() == SEC_DOMAIN) {
 
+		unsigned char trust_passwd_hash[16];
+		time_t lct;
+
 		/*
 		 * We're in domain level security, and the code that
 		 * read the machine password flagged that the machine
@@ -1421,19 +1422,11 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
 			return True;
 		}
-		
-		nt_status = pdb_init_trustpw(&trust);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Couldn't initialise trust password\n"));
-			return False;
-		}
-		
-		nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
-		if (!NT_STATUS_IS_OK(nt_status)) {			
+
+		if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct, NULL)) {
 			DEBUG(0,("process: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 			secrets_lock_trust_account_password(lp_workgroup(), False);
-			trust->free_fn(&trust);
 			return True;
 		}
 
@@ -1441,10 +1434,9 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 		 * Make sure someone else hasn't already done this.
 		 */
 
-		if(t < pdb_get_tp_mod_time(trust) + lp_machine_password_timeout()) {
+		if(t < lct + lp_machine_password_timeout()) {
 			global_machine_password_needs_changing = False;
 			secrets_lock_trust_account_password(lp_workgroup(), False);
-			trust->free_fn(&trust);
 			return True;
 		}
 
@@ -1453,9 +1445,6 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 		change_trust_account_password( lp_workgroup(), NULL);
 		global_machine_password_needs_changing = False;
 		secrets_lock_trust_account_password(lp_workgroup(), False);
-		
-		/* free trust password structure */
-		trust->free_fn(&trust);
 	}
 
 	/*

@@ -651,200 +651,6 @@ static NTSTATUS context_set_account_policy(struct pdb_context *context,
 }
 
 	
-static NTSTATUS context_settrustpwent(struct pdb_context *context)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	cur_methods = context->pdb_methods;
-	
-	while (cur_methods) {
-		ret = cur_methods->settrustpwent(cur_methods);
-		if (NT_STATUS_IS_OK(ret)) {
-			context->pdb_methods = cur_methods;
-			return ret;
-		}
-		cur_methods = cur_methods->next;
-	}
-	
-	return ret;
-}
-
-static void context_endtrustpwent(struct pdb_context *context)
-{
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return;
-	}
-	
-	cur_methods = context->pdb_methods;
-	
-	cur_methods->endtrustpwent(cur_methods);
-	context->pdb_methods = cur_methods;
-	return;
-}
-
-static NTSTATUS context_gettrustpwent(struct pdb_context *context,
-                                      SAM_TRUST_PASSWD *trust)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	cur_methods = context->pdb_methods;
-	
-	while (cur_methods) {
-		ret = cur_methods->gettrustpwent(cur_methods, trust);
-		if (!NT_STATUS_IS_ERR(ret)) {
-			/* prevent from segfaulting when gettrustpwent
-			   was called just to rewind enumeration */
-			if (trust) trust->methods = cur_methods;
-			return ret;
-		}
-		cur_methods = cur_methods->next;
-	}
-	
-	return ret;
-}
-
-static NTSTATUS context_gettrustpwnam(struct pdb_context *context,
-                                      SAM_TRUST_PASSWD *trust,
-                                      const char *name)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	cur_methods = context->pdb_methods;
-	
-	while (cur_methods) {
-		ret = cur_methods->gettrustpwnam(cur_methods, trust, name);
-		if (NT_STATUS_IS_OK(ret)) {
-			trust->methods = cur_methods;
-			return ret;
-		}
-		cur_methods = cur_methods->next;
-	}
-	
-	return ret;
-}
-
-static NTSTATUS context_gettrustpwsid(struct pdb_context *context,
-                                      SAM_TRUST_PASSWD *trust,
-                                      const DOM_SID *sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	cur_methods = context->pdb_methods;
-	
-	while (cur_methods) {
-		ret = cur_methods->gettrustpwsid(cur_methods, trust, sid);
-		if (NT_STATUS_IS_OK(ret)) {
-			trust->methods = cur_methods;
-			return ret;
-		}
-		cur_methods = cur_methods->next;
-	}
-	
-	return ret;
-}
-
-static NTSTATUS context_add_trust_passwd(struct pdb_context *context,
-                                         SAM_TRUST_PASSWD *trust)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	cur_methods = context->pdb_methods;
-
-	while (cur_methods) {
-		ret = cur_methods->add_trust_passwd(cur_methods, trust);
-		if (!NT_STATUS_EQUAL(ret, NT_STATUS_UNSUCCESSFUL)) {
-			trust->methods = cur_methods;
-			return ret;
-		}
-		cur_methods = cur_methods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_update_trust_passwd(struct pdb_context *context,
-                                            SAM_TRUST_PASSWD *trust)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	cur_methods = context->pdb_methods;
-
-	while (cur_methods) {
-		ret = cur_methods->update_trust_passwd(cur_methods, trust);
-		if (NT_STATUS_IS_OK(ret)) {
-			trust->methods = cur_methods;
-			return ret;
-		}
-		cur_methods = cur_methods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_delete_trust_passwd(struct pdb_context *context,
-                                            SAM_TRUST_PASSWD *trust)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *cur_methods;
-	
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	cur_methods = context->pdb_methods;
-
-	while (cur_methods) {
-		ret = cur_methods->delete_trust_passwd(cur_methods, trust);
-		if (NT_STATUS_IS_OK(ret)) {
-			trust->methods = cur_methods;
-			return ret;
-		}
-		cur_methods = cur_methods->next;
-	}
-
-	return ret;
-}
-
 /******************************************************************
   Free and cleanup a pdb context, any associated data and anything
   that the attached modules might have associated.
@@ -960,7 +766,8 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
 	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
 	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
- 	(*context)->pdb_enum_group_memberships = context_enum_group_memberships;
+	(*context)->pdb_enum_group_memberships = context_enum_group_memberships;
+
 	(*context)->pdb_find_alias = context_find_alias;
 	(*context)->pdb_create_alias = context_create_alias;
 	(*context)->pdb_delete_alias = context_delete_alias;
@@ -971,14 +778,6 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_del_aliasmem = context_del_aliasmem;
 	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
 	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
-	(*context)->pdb_settrustpwent = context_settrustpwent;
-	(*context)->pdb_endtrustpwent = context_endtrustpwent;
-	(*context)->pdb_gettrustpwent = context_gettrustpwent;
-	(*context)->pdb_gettrustpwnam = context_gettrustpwnam;
-	(*context)->pdb_gettrustpwsid = context_gettrustpwsid;
-	(*context)->pdb_add_trust_passwd = context_add_trust_passwd;
-	(*context)->pdb_update_trust_passwd = context_update_trust_passwd;
-	(*context)->pdb_delete_trust_passwd = context_delete_trust_passwd;
 
 	(*context)->pdb_get_account_policy = context_get_account_policy;
 	(*context)->pdb_set_account_policy = context_set_account_policy;
@@ -1435,91 +1234,6 @@ BOOL pdb_enum_alias_memberships(const DOM_SID *members, int num_members,
 							  aliases, num));
 }
 
-NTSTATUS pdb_settrustpwent(void)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-
-	if (!pdb_ctx) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	return pdb_ctx->pdb_settrustpwent(pdb_ctx);
-}
-
-void pdb_endtrustpwent(void)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-	if (!pdb_ctx) return;
-
-	pdb_ctx->pdb_endtrustpwent(pdb_ctx);
-}
-
-NTSTATUS pdb_gettrustpwent(SAM_TRUST_PASSWD *trust)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-
-	if (!pdb_ctx) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	return pdb_ctx->pdb_gettrustpwent(pdb_ctx, trust);
-}
-
-NTSTATUS pdb_gettrustpwnam(SAM_TRUST_PASSWD *trust, const char *name)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-
-	if (!pdb_ctx) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return pdb_ctx->pdb_gettrustpwnam(pdb_ctx, trust, name);
-}
-
-NTSTATUS pdb_gettrustpwsid(SAM_TRUST_PASSWD *trust, const DOM_SID *sid)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-
-	if (!pdb_ctx) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return pdb_ctx->pdb_gettrustpwsid(pdb_ctx, trust, sid);
-}
-
-NTSTATUS pdb_add_trust_passwd(SAM_TRUST_PASSWD *trust)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-
-	if (!pdb_ctx) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return pdb_ctx->pdb_add_trust_passwd(pdb_ctx, trust);
-}
-
-NTSTATUS pdb_update_trust_passwd(SAM_TRUST_PASSWD *trust)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-
-	if (!pdb_ctx) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	return pdb_ctx->pdb_update_trust_passwd(pdb_ctx, trust);
-}
-
-NTSTATUS pdb_delete_trust_passwd(SAM_TRUST_PASSWD *trust)
-{
-	struct pdb_context *pdb_ctx = pdb_get_static_context(False);
-
-	if (!pdb_ctx) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	return pdb_ctx->pdb_delete_trust_passwd(pdb_ctx, trust);
-}
-
 BOOL pdb_get_account_policy(int policy_index, int *value)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -1601,48 +1315,6 @@ static void pdb_default_endsampwent(struct pdb_methods *methods)
 	return; /* NT_STATUS_NOT_IMPLEMENTED; */
 }
 
-static NTSTATUS pdb_default_settrustpwent(struct pdb_methods *methods)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static void pdb_default_endtrustpwent(struct pdb_methods *methods)
-{
-	return;
-}
-
-static NTSTATUS pdb_default_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD* trust)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASSWD* trust,
-                                          const char* name)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASSWD* trust,
-                                          const DOM_SID* sid)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_add_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_update_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_delete_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, int *value)
 {
 	return account_policy_get(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
@@ -1690,19 +1362,8 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->del_aliasmem = pdb_default_del_aliasmem;
 	(*methods)->enum_aliasmem = pdb_default_enum_aliasmem;
 	(*methods)->enum_alias_memberships = pdb_default_alias_memberships;
-	
-	(*methods)->settrustpwent = pdb_default_settrustpwent;
-	(*methods)->endtrustpwent = pdb_default_endtrustpwent;
-	(*methods)->gettrustpwent = pdb_default_gettrustpwent;
-	(*methods)->gettrustpwnam = pdb_default_gettrustpwnam;
-	(*methods)->gettrustpwsid = pdb_default_gettrustpwsid;
-	(*methods)->add_trust_passwd = pdb_default_add_trust_passwd;
-	(*methods)->update_trust_passwd = pdb_default_update_trust_passwd;
-	(*methods)->delete_trust_passwd = pdb_default_delete_trust_passwd;
-
 	(*methods)->get_account_policy = pdb_default_get_account_policy;
 	(*methods)->set_account_policy = pdb_default_set_account_policy;
-
 
 	return NT_STATUS_OK;
 }

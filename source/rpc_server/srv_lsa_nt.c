@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
@@ -488,7 +488,6 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 {
 	struct lsa_info *info;
 	uint32 enum_context = q_u->enum_context;
-	int i = 0;
 
 	/*
 	 * preferred length is set to 5 as a "our" preferred length
@@ -497,7 +496,6 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	 * it needs further investigation how to optimally choose this value
 	 */
 	uint32 max_num_domains = q_u->preferred_len < 5 ? q_u->preferred_len : 10;
-	SAM_TRUST_PASSWD *trust = NULL;
 	TRUSTDOM **trust_doms;
 	uint32 num_domains;
 	NTSTATUS nt_status;
@@ -509,47 +507,15 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	trust_doms = TALLOC_ZERO_ARRAY(p->mem_ctx, TRUSTDOM *, max_num_domains);
+	nt_status = secrets_get_trusted_domains(p->mem_ctx, (int *)&enum_context, max_num_domains, (int *)&num_domains, &trust_doms);
 
-	/* Init trust password */
-	nt_status = pdb_init_trustpw_talloc(p->mem_ctx, &trust);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Could not initialise trust password\n"));
+	if (!NT_STATUS_IS_OK(nt_status) &&
+	    !NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
 		return nt_status;
+	} else {
+		r_u->status = nt_status;
 	}
-
-	/* Accessing passdb requires root privileges */
-	become_root();
-
-	/* Start trust passwords enumeration */
-	nt_status = pdb_settrustpwent();
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Unable to start trusts enumeration\n"));
-		return nt_status;
-	}
-
-	nt_status = pdb_gettrustpwent(trust);
-	while ((NT_STATUS_IS_OK(nt_status) ||
-		NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES)) &&
-	       i < enum_context + max_num_domains) {
-		
-		if (i >= enum_context && i < enum_context + max_num_domains) {
-			TRUSTDOM *trust_dom = TALLOC_P(p->mem_ctx, TRUSTDOM);
-			trust_dom->name = talloc_strdup_w(p->mem_ctx, pdb_get_tp_domain_name(trust));
-			sid_copy(&trust_dom->sid, pdb_get_tp_domain_sid(trust));
-			trust_doms[i - enum_context] = trust_dom;
-		}
-		i++;
-		nt_status = pdb_gettrustpwent(trust);
-	}
-
-	/* End trust passwords enumeration */
-	pdb_endtrustpwent();
-
-	/* Become user back again */
-	unbecome_root();
-	
-	num_domains = i;
 
 	/* set up the lsa_enum_trust_dom response */
 	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, max_num_domains, num_domains, trust_doms);
@@ -805,7 +771,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 
 	if ( enum_context >= num_privs )
 		return NT_STATUS_NO_MORE_ENTRIES;
-
+		
 	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", 
 		enum_context, num_privs));
 	
@@ -823,7 +789,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 
 	if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs )) )
 		return NT_STATUS_NO_MEMORY;
-	
+
 
 	for (i = 0; i < num_privs; i++) {
 		if( i < enum_context) {
@@ -1183,7 +1149,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 
 	if ( !privilege_set_to_se_priv( &mask, set ) )
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
-		
+
 	if ( !grant_privilege( &info->sid, &mask ) ) {
 		DEBUG(3,("_lsa_addprivs: grant_privilege(%s) failed!\n",
 			sid_string_static(&info->sid) ));
@@ -1219,7 +1185,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 
 	if ( !privilege_set_to_se_priv( &mask, set ) )
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
-		
+
 	if ( !revoke_privilege( &info->sid, &mask ) ) {
 		DEBUG(3,("_lsa_removeprivs: revoke_privilege(%s) failed!\n",
 			sid_string_static(&info->sid) ));

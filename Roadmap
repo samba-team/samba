@@ -3,7 +3,7 @@ Copyright (C) 1997-2003 Samba-Team
 The Samba-Team are committed to an aggressive program to deliver quality
 controlled software to a well defined roadmap.
 
-The current Samba Beta series of Samba 3.0.0 is called the "Domain Integration"
+The current Samba series of Samba 3.0.0 is called the "Domain Integration"
 release.
 
 The following development objectives for future releases
@@ -27,4 +27,4 @@ well with whatever "Beta" releases Redmond throws our way :-).
 
 You may also note that the release numbers get fuzzier the
 further into the future the objectives get. This is intentional
-as we cannot yet commit to exact timeframes.
+as we cannot commit to exact timeframes.

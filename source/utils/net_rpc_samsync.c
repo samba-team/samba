@@ -259,7 +259,7 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 			       int argc, const char **argv) 
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	SAM_TRUST_PASSWD *trust = NULL;
+	uchar trust_password[16];
 	DOM_CRED ret_creds;
 	uint32 sec_channel;
 
@@ -267,22 +267,15 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 
 	fstrcpy(cli->domain, domain_name);
 
-	nt_status = pdb_init_trustpw(&trust);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Could not init trust account password\n"));
+	if (!secrets_fetch_trust_account_password(domain_name,
+						  trust_password,
+						  NULL, &sec_channel)) {
+		DEBUG(0,("Could not fetch trust account password\n"));
 		goto fail;
 	}
 
-	nt_status = pdb_gettrustpwnam(trust, domain_name);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Could not fetch trust account password\n"));
-		goto fail;
-	}
-
-	sec_channel = SCHANNEL_TYPE(trust->private.flags);
-
-	nt_status = cli_nt_establish_netlogon(cli, sec_channel, trust->private.pass.data);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_IS_OK(nt_status = cli_nt_establish_netlogon(cli, sec_channel,
+								   trust_password))) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
@@ -295,7 +288,6 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 
 fail:
 	cli_nt_session_close(cli);
-	trust->free_fn(&trust);
 	return nt_status;
 }
 
@@ -454,7 +446,8 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(account, unix_time, PDB_CHANGED);
 	} else {
-	                pdb_set_pass_last_set_time(account, time(NULL), PDB_CHANGED);
+		/* no last set time, make it now */
+		pdb_set_pass_last_set_time(account, time(NULL), PDB_CHANGED);
 	}
 
 #if 0
@@ -1170,7 +1163,7 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 			       int argc, const char **argv) 
 {
         NTSTATUS result;
-	SAM_TRUST_PASSWD *trust = NULL;
+	uchar trust_password[16];
 	DOM_CRED ret_creds;
 	fstring my_dom_sid_str;
 	fstring rem_dom_sid_str;
@@ -1193,22 +1186,16 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 
 	fstrcpy(cli->domain, domain_name);
 
-	result = pdb_init_trustpw(&trust);
-	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Could not init trust password\n");
-		goto fail;
-	}
-
-	result = pdb_gettrustpwnam(trust, domain_name);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!secrets_fetch_trust_account_password(domain_name,
+						  trust_password, NULL,
+						  &sec_channel)) {
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		d_printf("Could not retrieve domain trust secret\n");
 		goto fail;
 	}
-
-	sec_channel = SCHANNEL_TYPE(trust->private.flags);
 	
-	result = cli_nt_establish_netlogon(cli, sec_channel, trust->private.pass.data);
+	result = cli_nt_establish_netlogon(cli, sec_channel, trust_password);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to setup BDC creds\n");
 		goto fail;
@@ -1238,6 +1225,5 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
 
 fail:
-	trust->free_fn(&trust);
 	return result;
 }

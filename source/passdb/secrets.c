@@ -4,7 +4,7 @@
    Copyright (C) Andrew Bartlett      2002
    Copyright (C) Rafal Szczesniak     2002
    Copyright (C) Tim Potter           2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -77,28 +77,6 @@ BOOL secrets_init(void)
 	generate_random_buffer(&dummy, sizeof(dummy));
 
 	return True;
-}
-
-/* Another incarnation of secrets_init that returns the opened
-   tdb context to the caller. Used by tdbsam api to access trust
-   passwords */
-
-TDB_CONTEXT* secrets_open(void)
-{
-	pstring fname;
-
-	if (tdb)
-		return tdb;
-
-	pstrcpy(fname, lp_private_dir());
-	pstrcat(fname,"/secrets.tdb");
-
-	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	if (!tdb) {
-		DEBUG(0,("Failed to open %s\n", fname));
-		return NULL;
-	}
-	return tdb;
 }
 
 /* read a entry from the secrets database - the caller must free the result
@@ -383,6 +361,19 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	return True;
 }
 
+/************************************************************************
+ Routine to set the trust account password for a domain.
+************************************************************************/
+
+BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
+{
+	struct machine_acct_pass pass;
+
+	pass.mod_time = time(NULL);
+	memcpy(pass.hash, new_pwd, 16);
+
+	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
+}
 
 /**
  * Routine to store the password for trusted domain
@@ -842,36 +833,3 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
-
-/**
- * Simple function to check whether or not trust passwords have already
- * been migrated to a passdb backend and, on request, sets the sign
- * that says it's been done.
- *
- * @param set_migrated force to store the sign in secrets.tdb
- * @return true, if migration has been done
- */
-
-BOOL secrets_passwords_migrated(BOOL set_migrated)
-{
- 	BOOL migrated, *mig = NULL;
-	const char *key = SECRETS_PASSWORDS_MIGRATED;
-	size_t keylen;
-
-	/* tdb key to fetch (and maybe store) */
-	keylen = strlen(key);
-	mig = secrets_fetch(key, &keylen);
-
-	if (!set_migrated) {
-		/* if fetching returns NULL, there was definately no migration done yet */
-		if (!mig)
-			return False;
-		else
-			migrated = *mig;
-	} else {
-		/* set "migrated" sign in secrets.tdb */
-		migrated = secrets_store(key, (void*)&set_migrated, sizeof(set_migrated));
-	}
-
-	return migrated;
-}

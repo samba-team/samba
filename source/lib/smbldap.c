@@ -208,18 +208,6 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
-
-/* trust password attributes */
-
-ATTRIB_MAP_ENTRY trustpw_attr_list[] = {
-	{ LDAP_ATTR_DOMAIN,             "sambaDomainName"       },
-	{ LDAP_ATTR_NTPW,		"sambaNTPassword"	},
-	{ LDAP_ATTR_TRUST_PASSWD_FLAGS, "sambaTrustFlags"       },
-	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
-	{ LDAP_ATTR_PWD_LAST_SET,	"sambaPwdLastSet"	},
-	{ LDAP_ATTR_LIST_END,           NULL                    }
-};
-
 /* attributes used for account policies */
 
 ATTRIB_MAP_ENTRY acctpol_attr_list[] = {

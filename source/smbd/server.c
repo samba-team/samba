@@ -520,7 +520,7 @@ BOOL reload_services(BOOL test)
 		return(True);
 
 	lp_killunused(conn_snum_used);
-	
+
 	ret = lp_load(dyn_CONFIGFILE, False, False, True);
 
 	reload_printers();
@@ -659,8 +659,6 @@ void exit_server(const char *reason)
 
 static BOOL init_structs(void )
 {
-	int pass_num = 0;
-
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file.
@@ -679,9 +677,6 @@ static BOOL init_structs(void )
 	init_dptrs();
 
 	secrets_init();
-
-	/* migrate trust passwords to passdb if not migrated yet */
-	pass_num = migrate_trust_passwords();
 
 	return True;
 }
