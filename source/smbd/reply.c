@@ -163,7 +163,6 @@ int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
 	pstring service;
-	pstring user;
 	pstring password;
 	pstring dev;
 	int outsize = 0;
@@ -174,47 +173,19 @@ int reply_tcon(connection_struct *conn,
 
 	START_PROFILE(SMBtcon);
 
-	*service = *user = *password = *dev = 0;
+	*service = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
 	p += srvstr_pull(inbuf, service, p, sizeof(service), -1, STR_TERMINATE) + 1;
 	p += srvstr_pull(inbuf, password, p, sizeof(password), -1, STR_TERMINATE) + 1;
 	p += srvstr_pull(inbuf, dev, p, sizeof(dev), -1, STR_TERMINATE) + 1;
 
-	*user = 0;
-	p = strchr_m(service,'%');
-	if (p != NULL) {
-		*p = 0;
-		fstrcpy(user,p+1);
-	}
-
 	p = strrchr_m(service,'\\');
 	if (p) {
 		pstrcpy(service, p+1);
 	}
 
-    /*
-	 * If the vuid is valid, we should be using that....
-	 */
-
-	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
-		pstrcpy(user,validated_username(vuid));
-	} else {
-		
-		/*
-		 * Pass the user through the NT -> unix user mapping
-		 * function.
-		 */
-		
-		(void)map_username(user);
-		
-		/*
-		 * Do any UNIX username case mangling.
-		 */
-		(void)Get_Pwnam( user, True);
-	}
-
-	conn = make_connection(service,user,password,pwlen,dev,vuid,&ecode);
+	conn = make_connection(service,password,pwlen,dev,vuid,&ecode);
   
 	if (!conn) {
 		END_PROFILE(SMBtcon);
@@ -226,8 +197,8 @@ int reply_tcon(connection_struct *conn,
 	SSVAL(outbuf,smb_vwv1,conn->cnum);
 	SSVAL(outbuf,smb_tid,conn->cnum);
   
-	DEBUG(3,("tcon service=%s user=%s cnum=%d\n", 
-		 service, user, conn->cnum));
+	DEBUG(3,("tcon service=%s cnum=%d\n", 
+		 service, conn->cnum));
   
 	END_PROFILE(SMBtcon);
 	return(outsize);
@@ -240,7 +211,6 @@ int reply_tcon(connection_struct *conn,
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	fstring service;
-	pstring user;
 	pstring password;
 	pstring devicename;
 	NTSTATUS ecode;
@@ -250,7 +220,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	char *p, *q;
 	START_PROFILE(SMBtconX);
 	
-	*service = *user = *password = *devicename = 0;
+	*service = *password = *devicename = 0;
 
 	/* we might have to close an old one */
 	if ((SVAL(inbuf,smb_vwv2) & 0x1) && conn) {
@@ -289,38 +259,11 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	else
 		fstrcpy(service,path);
 		
-	q = strchr_m(service,'%');
-	if (q) {
-		*q++ = 0;
-		fstrcpy(user,q);
-	}
 	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_ASCII);
 
 	DEBUG(4,("Got device type %s\n",devicename));
 
-    /*
-	 * If the vuid is valid, we should be using that....
-	 */
-
-	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
-		pstrcpy(user,validated_username(vuid));
-	} else {
-
-		/*
-		 * Pass the user through the NT -> unix user mapping
-		 * function.
-		 */
-		
-		(void)map_username(user);
-		
-		/*
-		 * Do any UNIX username case mangling.
-		 */
-		(void)Get_Pwnam(user, True);
-		
-	}
-
-	conn = make_connection(service,user,password,passlen,devicename,vuid,&ecode);
+	conn = make_connection(service,password,passlen,devicename,vuid,&ecode);
 	
 	if (!conn) {
 		END_PROFILE(SMBtconX);
@@ -355,8 +298,8 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
   
-	DEBUG(3,("tconX service=%s user=%s\n",
-		 service, user));
+	DEBUG(3,("tconX service=%s \n",
+		 service));
   
 	/* set the incoming and outgoing tid to the just created one */
 	SSVAL(inbuf,smb_tid,conn->cnum);

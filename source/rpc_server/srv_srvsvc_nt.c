@@ -1598,7 +1598,7 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	BOOL bad_path;
 	int access_mode;
 	int action;
-	NTSTATUS ecode;
+	NTSTATUS nt_status;
 	struct current_user user;
 	fstring user_name;
 	connection_struct *conn = NULL;
@@ -1612,14 +1612,11 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
 
-	get_current_user(&user, p);
-	fstrcpy(user_name, uidtoname(user.uid));
-
-	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to connect to %s\n", qualname));
-		r_u->status = ecode;
+		r_u->status = nt_status;
 		goto error_exit;
 	}
 
@@ -1690,7 +1687,7 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 	BOOL bad_path;
 	int access_mode;
 	int action;
-	NTSTATUS ecode;
+	NTSTATUS nt_status;
 	struct current_user user;
 	fstring user_name;
 	connection_struct *conn = NULL;
@@ -1705,14 +1702,11 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
 
-	get_current_user(&user, p);
-	fstrcpy(user_name, uidtoname(user.uid));
-
-	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to connect to %s\n", qualname));
-		r_u->status = ecode;
+		r_u->status = nt_status;
 		goto error_exit;
 	}
 
