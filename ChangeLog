@@ -1,4 +1,4 @@
-2004-07-26  Love  <lha@stacken.kth.se>
+2004-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: man_MANS += krb5_rd_error
 	
