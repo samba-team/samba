@@ -47,7 +47,7 @@ int net_ads_usage(int argc, const char **argv)
 "\nnet ads password <username@realm> -Uadmin_username@realm%%admin_pass"\
 "\n\tchange a user's password using an admin account"\
 "\n\t(note: use realm in UPPERCASE)\n"\
-"\nnet ads chostpass"\
+"\nnet ads changetrustpw"\
 "\n\tchange the trust account password of this machine in the AD tree\n"\
 "\nnet ads printer [info | publish | remove] <printername> <servername>"\
 "\n\t lookup, add, or remove directory entry for a printer\n"\
@@ -929,7 +929,7 @@ static int net_ads_password(int argc, const char **argv)
 }
 
 
-static int net_ads_change_localhost_pass(int argc, const char **argv)
+int net_ads_changetrustpw(int argc, const char **argv)
 {    
     ADS_STRUCT *ads;
     char *host_principal;
@@ -1106,7 +1106,7 @@ int net_ads_help(int argc, const char **argv)
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
 		{"PASSWORD", net_ads_password},
-		{"CHOSTPASS", net_ads_change_localhost_pass},
+		{"CHANGETRUSTPW", net_ads_changetrustpw},
 #endif
 		{NULL, NULL}
 	};
@@ -1125,7 +1125,7 @@ int net_ads(int argc, const char **argv)
 		{"USER", net_ads_user},
 		{"GROUP", net_ads_group},
 		{"PASSWORD", net_ads_password},
-		{"CHOSTPASS", net_ads_change_localhost_pass},
+		{"CHANGETRUSTPW", net_ads_changetrustpw},
 		{"PRINTER", net_ads_printer},
 		{"SEARCH", net_ads_search},
 		{"DN", net_ads_dn},
@@ -1152,6 +1152,11 @@ int net_ads_usage(int argc, const char **argv)
 }
 
 int net_ads_help(int argc, const char **argv)
+{
+	return net_ads_noads();
+}
+
+int net_ads_changetrustpw(int argc, const char **argv)
 {
 	return net_ads_noads();
 }

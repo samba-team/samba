@@ -205,7 +205,7 @@ static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, struct cl
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_changetrustpw(int argc, const char **argv) 
+int net_rpc_changetrustpw(int argc, const char **argv) 
 {
 	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_changetrustpw_internals,
 			       argc, argv);
@@ -2250,7 +2250,7 @@ int net_rpc(int argc, const char **argv)
 		{"group", net_rpc_group},
 		{"share", net_rpc_share},
 		{"file", net_rpc_file},
-		{"changetrustpw", rpc_changetrustpw},
+		{"changetrustpw", net_rpc_changetrustpw},
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
 		{"shutdown", rpc_shutdown},
