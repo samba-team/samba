@@ -2489,9 +2489,9 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
 
 static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 {
-	int low, high;
+	uint32 low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */
@@ -2506,9 +2506,9 @@ static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 
 static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
 {
-	gid_t low, high;
+	uint32 low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */
