@@ -644,10 +644,10 @@
 		
 		<listitem><para><link linkend="LDAPADMINDN"><parameter>ldap admin dn</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPFILTER"><parameter>ldap filter</parameter></link></para></listitem>
-		<listitem><para><link linkend="LDAPPORT"><parameter>ldap port</parameter></link></para></listitem>
-		<listitem><para><link linkend="LDAPSERVER"><parameter>ldap server</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPSSL"><parameter>ldap ssl</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPSUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPUSERSUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPMACHINESUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
 
 		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
@@ -3375,54 +3375,6 @@
 		</varlistentry>
 
 
-
-
-		<varlistentry>
-		<term><anchor id="LDAPPORT">ldap port (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</para>
-		
-		<para>
-		This option is used to control the tcp port number used to contact
-		the <link linkend="LDAPSERVER"><parameter>ldap server</parameter></link>.
-		The default is to use the stand LDAPS port 636.
-		</para>
-
-		<para>See Also: <link linkend="LDAPSSL">ldap ssl</link>
-		</para>
-		
-		<para>Default : <command>ldap port = 636</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
-		<varlistentry>
-		<term><anchor id="LDAPSERVER">ldap server (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</para>
-		
-		<para>
-		This parameter should contains the FQDN of the ldap directory 
-		server which should be queried to locate user account information.
-		</para>
-		
-	
-		
-		<para>Default : <command>ldap server = localhost</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
 		<varlistentry>
 		<term><anchor id="LDAPSSL">ldap ssl (G)</term>
 		<listitem><para>This parameter is only available if Samba has been
@@ -3463,6 +3415,40 @@
 		configure to include the <command>--with-ldapsam</command> option
 		at compile time. This option should be considered experimental and
 		under active development.
+		</para>
+		
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPUSERSUFFIX">ldap user suffix (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development. It specified where users are added to the 
+                tree.
+		</para>
+		
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPSUFFIX">ldap machine suffix (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.  It specifies where machines should be 
+                added to the ldap tree.
 		</para>
 		
 	
