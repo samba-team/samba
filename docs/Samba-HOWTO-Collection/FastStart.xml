@@ -660,7 +660,6 @@ smb: \> <userinput>q</userinput>
 <smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
 <smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
 <smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
 <smbconfoption><name>winbind use default domain</name><value>Yes</value></smbconfoption>
 <smbconfoption><name>use sendfile</name><value>Yes</value></smbconfoption>
 <smbconfoption><name>printing</name><value>cups</value></smbconfoption>
@@ -749,18 +748,18 @@ hosts:  files dns winbind
 			Validate that domain user and group credentials can be correctly resolved by executing:
 <screen>
 &rootprompt;<userinput>wbinfo -u</userinput>
-MIDEARTH+maryo
-MIDEARTH+jackb
-MIDEARTH+ameds
+MIDEARTH\maryo
+MIDEARTH\jackb
+MIDEARTH\ameds
 ...
-MIDEARTH+root
+MIDEARTH\root
 
 &rootprompt;<userinput>wbinfo -g</userinput>
-MIDEARTH+Domain Users
-MIDEARTH+Domain Admins
-MIDEARTH+Domain Guests
+MIDEARTH\Domain Users
+MIDEARTH\Domain Admins
+MIDEARTH\Domain Guests
 ...
-MIDEARTH+Accounts
+MIDEARTH\Accounts
 </screen>
 			</para></step>
 
@@ -1187,7 +1186,6 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
 <smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
 <smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
 <smbconfoption><name>printing</name><value>cups</value></smbconfoption>
 <member>...</member>
 </smbconfexample>
@@ -1250,7 +1248,6 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
 <smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
 <smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
 <smbconfoption><name>printing</name><value>cups</value></smbconfoption>
 <member>...</member>
 </smbconfexample>
