@@ -181,7 +181,7 @@ krb4encpwd_send(ap)
 	Authenticator *ap;
 {
 
-	printf("[ Trying KRB4ENCPWD ... ]\n");
+	printf("[ Trying KRB4ENCPWD ... ]\r\n");
 	if (!UserNameRequested) {
 		return(0);
 	}
@@ -299,7 +299,7 @@ krb4encpwd_reply(ap, data, cnt)
 		auth_send_retry();
 		return;
 	case KRB4_ENCPWD_ACCEPT:
-		printf("[ KRB4_ENCPWD accepts you ]\n");
+		printf("[ KRB4_ENCPWD accepts you ]\r\n");
 		auth_finished(ap, AUTH_USER);
 		return;
 	case KRB4_ENCPWD_CHALLENGE:

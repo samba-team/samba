@@ -179,7 +179,7 @@ rsaencpwd_send(ap)
 	Authenticator *ap;
 {
 
-	printf("[ Trying RSAENCPWD ... ]\n");
+	printf("[ Trying RSAENCPWD ... ]\r\n");
 	if (!UserNameRequested) {
 		return(0);
 	}
@@ -339,7 +339,7 @@ rsaencpwd_reply(ap, data, cnt)
 		auth_send_retry();
 		return;
 	case RSA_ENCPWD_ACCEPT:
-		printf("[ RSA_ENCPWD accepts you ]\n");
+		printf("[ RSA_ENCPWD accepts you ]\r\n");
 		auth_finished(ap, AUTH_USER);
 		return;
 	case RSA_ENCPWD_CHALLENGEKEY:

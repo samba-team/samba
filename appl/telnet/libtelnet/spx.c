@@ -216,7 +216,7 @@ spx_send(ap)
 	int  deleg_flag=1, mutual_flag=0, replay_flag=0, seq_flag=0;
 	char *address;
 
-	printf("[ Trying SPX ... ]\n");
+	printf("[ Trying SPX ... ]\r\n");
 	strcpy(targ_printable, "SERVICE:rcmd@");
 	strcat(targ_printable, RemoteHostName);
 
@@ -429,7 +429,7 @@ spx_reply(ap, data, cnt)
 		auth_send_retry();
 		return;
 	case SPX_ACCEPT:
-		printf("[ SPX accepts you ]\n");
+		printf("[ SPX accepts you ]\r\n");
 		if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
 			/*
 			 * Send over the encrypted challenge.
