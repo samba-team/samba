@@ -162,13 +162,13 @@ Join a domain using the administrator username and password
 /* Macro for checking RPC error codes to make things more readable */
 
 #define CHECK_RPC_ERR(rpc, msg) \
-        if ((result = rpc) != NT_STATUS_NO_PROBLEMO) { \
+        if ((result = rpc) != NT_STATUS_NOPROBLEMO) { \
                 DEBUG(0, (msg ": %s\n", get_nt_error_msg(result))); \
                 goto done; \
         }
 
 #define CHECK_RPC_ERR_DEBUG(rpc, debug_args) \
-        if ((result = rpc) != NT_STATUS_NO_PROBLEMO) { \
+        if ((result = rpc) != NT_STATUS_NOPROBLEMO) { \
                 DEBUG(0, debug_args); \
                 goto done; \
         }

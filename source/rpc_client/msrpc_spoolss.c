@@ -250,7 +250,7 @@ BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags,
 					     needed, &needed, &returned);
 	}
 	
-	if (status!=NT_STATUS_NO_PROBLEMO)
+	if (status!=NT_STATUS_NOPROBLEMO)
 	{
 		DEBUG(0,("spoolss_enum_printers: %s\n", get_nt_error_msg(status)));
 		if (mem_ctx)
@@ -316,7 +316,7 @@ BOOL msrpc_spoolss_enum_ports(char* srv_name,
 	
 	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 	
-	if (status!=NT_STATUS_NO_PROBLEMO)
+	if (status!=NT_STATUS_NOPROBLEMO)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -405,7 +405,7 @@ uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 
-        if (status != NT_STATUS_NO_PROBLEMO) 
+        if (status != NT_STATUS_NOPROBLEMO) 
 	{
                 if (!spoolss_closeprinter(&hnd))
                         return NT_STATUS_ACCESS_DENIED;
@@ -462,7 +462,7 @@ BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 		
-        if (status!=NT_STATUS_NO_PROBLEMO) {
+        if (status!=NT_STATUS_NOPROBLEMO) {
                 if (!spoolss_closeprinter(&hnd))
                         return False;
                 return False;
@@ -540,7 +540,7 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name,
 				 value, rvaluelen, type, datalen, data, rdatalen);
 
 	
-	if (status!=NT_STATUS_NO_PROBLEMO) {
+	if (status!=NT_STATUS_NOPROBLEMO) {
 		/* 
 		 * the check on this if statement is redundant
 		 * since is the status is bad we're going to 
@@ -589,7 +589,7 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 
-        if (status!=NT_STATUS_NO_PROBLEMO)
+        if (status!=NT_STATUS_NOPROBLEMO)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -618,7 +618,7 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 
-        if (status!=NT_STATUS_NO_PROBLEMO) {
+        if (status!=NT_STATUS_NOPROBLEMO) {
                 if (!spoolss_closeprinter(&hnd))
                         return False;
                 return False;
@@ -662,7 +662,7 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 
         /* report(out_hnd, "\tstatus:[%d (%x)]\n", status, status); */
 
-        if (status!=NT_STATUS_NO_PROBLEMO)
+        if (status!=NT_STATUS_NOPROBLEMO)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -688,7 +688,7 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 		
-        if (status!=NT_STATUS_NO_PROBLEMO) {
+        if (status!=NT_STATUS_NOPROBLEMO) {
                 if (!spoolss_closeprinter(&hnd))
                         return False;
                 return False;
@@ -731,7 +731,7 @@ BOOL msrpc_spoolss_enumprinterdrivers( const char* srv_name,
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 
-        if (status!=NT_STATUS_NO_PROBLEMO)
+        if (status!=NT_STATUS_NOPROBLEMO)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -788,7 +788,7 @@ BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 le
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 
-        if (status!=NT_STATUS_NO_PROBLEMO)
+        if (status!=NT_STATUS_NOPROBLEMO)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
