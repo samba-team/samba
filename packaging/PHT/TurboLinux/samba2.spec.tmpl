@@ -78,6 +78,9 @@ install.
 * Sat Nov 04 2000 John H Terpstra <jht@samba.org>
 - Put Symlink for libnss_wins.so back into main install section
 
+* Fri Nov  3 2000 Uros Prestor <uros@turbolinux.com>
+- ported to IA-64
+
 * Mon Oct 09 2000 John H Terpstra <jht@turbolinux.com>
 - Started move to Samba-2.2.0
 - Added nsswitch wins support
@@ -182,10 +185,19 @@ install.
 %patch -p1
 %patch1 -p1
 
+
 %build
 cd source
+
+%ifarch ia64
+libtoolize --copy --force     # get it to recognize IA-64
+autoconf
+autoheader
+EXTRA="-D_LARGEFILE64_SOURCE"
+%endif
+
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
-CFLAGS="$RPM_OPT_FLAGS" ./configure \
+CFLAGS="$RPM_OPT_FLAGS" "$EXTRA" ./configure \
 	--prefix=/usr \
 	--libdir=/etc \
 	--with-lockdir=/var/lock/samba \
@@ -201,8 +213,8 @@ CFLAGS="$RPM_OPT_FLAGS" ./configure \
 	--with-msdfs \
 	--with-netatalk \
 	--with-sambabook=/usr/share/swat/using_samba
-make -j${NUMCPU} all
-make -j${NUMCPU} smbtorture smbfilter debug2html nsswitch/libnss_wins.so locktest2
+make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so
+make -j${NUMCPU} smbtorture debug2html locktest2
 make -j${NUMCPU} masktest bin/smbspool
 #make -j${NUMCPU} rpctorture locktest smbwrapper bin/wbinfo
 
