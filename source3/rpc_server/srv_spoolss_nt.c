@@ -161,7 +161,7 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 
 static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 {
-	NTSTATUS result;
+	WERROR result;
 
 	/* weird if the test succeds !!! */
 	if (smb_connections==0) {
@@ -171,8 +171,9 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 
 	result = cli_spoolss_reply_close_printer(&cli, cli.mem_ctx, handle);
 	
-	if (!NT_STATUS_IS_OK(result))
-		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed.\n"));
+	if (!W_ERROR_IS_OK(result))
+		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
+			werror_str(result)));
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
@@ -568,11 +569,11 @@ static BOOL is_client_monitoring_event(Printer_entry *p, uint32 flags)
  --jerry
  **************************************************************************/
  
-static NTSTATUS srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLOC_CTX *mem_ctx,
+static WERROR srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, PRINTER_MESSAGE_INFO *info,
 					NT_PRINTER_INFO_LEVEL *printer)				
 {
-	NTSTATUS result;
+	WERROR result;
 	uint32 condition = 0x0;
 	
 	if (info->flags & PRINTER_MESSAGE_DRIVER)
@@ -589,16 +590,17 @@ static NTSTATUS srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TAL
  notification
  **********************************************************************/
  
-static NTSTATUS srv_spoolss_send_event_to_client(Printer_entry* Printer, 
+static WERROR srv_spoolss_send_event_to_client(Printer_entry* Printer, 
 	struct cli_state *send_cli,	PRINTER_MESSAGE_INFO *msg, 
 	NT_PRINTER_INFO_LEVEL *info)
 {
-	NTSTATUS result;
+	WERROR result;
 	
 	if (valid_notify_options(Printer)) {
 		/* This is a single call that can send information about multiple changes */
 		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
 			msg->flags |= PRINTER_MESSAGE_ATTRIBUTES;
+
 		result = cli_spoolss_reply_rrpcn(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
 				msg, info);
 	}
@@ -620,8 +622,7 @@ static NTSTATUS srv_spoolss_send_event_to_client(Printer_entry* Printer,
 static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 {
 	Printer_entry *find_printer;
-	NTSTATUS result;
-	WERROR wresult;
+	WERROR result;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
 	if (!msg) {
@@ -686,8 +687,8 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 					printer = NULL;
 				}
 					
-				wresult = get_a_printer(&printer, 2, msg->printer_name);
-				if (! W_ERROR_IS_OK(wresult))
+				result = get_a_printer(&printer, 2, msg->printer_name);
+				if (!W_ERROR_IS_OK(result))
 					continue;
 			}
 
@@ -695,9 +696,9 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 
 			result = srv_spoolss_send_event_to_client(find_printer, &cli, msg, printer);
 			
-			if (!NT_STATUS_IS_OK(result)) {
-				DEBUG(10,("send_spoolss_event_notification: Event notification failed [%s]\n",
-					nt_errstr(result)));
+			if (!W_ERROR_IS_OK(result)) {
+				DEBUG(5,("send_spoolss_event_notification: Event notification failed [%s]\n",
+					werror_str(result)));
 		}
 	}
 }
@@ -1581,7 +1582,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 
 static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uint32 type, POLICY_HND *handle)
 {
-	NTSTATUS result;
+	WERROR result;
 
 	/*
 	 * If it's the first connection, contact the client
@@ -1594,6 +1595,7 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 
 		if(!spoolss_connect_to_client(&cli, unix_printer))
 			return False;
+			
 		message_register(MSG_PRINTER_NOTIFY, srv_spoolss_receive_message);
 
 	}
@@ -1603,7 +1605,11 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 	result = cli_spoolss_reply_open_printer(&cli, cli.mem_ctx, printer, localprinter, 
 			type, handle);
 
-	return (NT_STATUS_IS_OK(result));	
+	if (!W_ERROR_IS_OK(result))
+		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",
+			werror_str(result)));
+
+	return (W_ERROR_IS_OK(result));	
 }
 
 /********************************************************************
