@@ -36,6 +36,7 @@ extern struct in_addr	ipzero;		/* Any address */
  * Local functions...
  */
 
+static void		list_devices(void);
 static struct cli_state	*smb_connect(char *, char *, char *, char *, char *);
 static int		smb_print(struct cli_state *, char *, FILE *);
 
@@ -67,6 +68,18 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 	  argc--;
   }
 
+  if (argc == 1)
+  {
+   /*
+    * NEW!  In CUPS 1.1 the backends are run with no arguments to list the
+    *       available devices.  These can be devices served by this backend
+    *       or any other backends (i.e. you can have an SNMP backend that
+    *       is only used to enumerate the available network printers... :)
+    */
+
+    list_devices();
+    return (0);
+  }
 
   if (argc < 6 || argc > 7)
   {
@@ -217,6 +230,21 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
 
 /*
+ * 'list_devices()' - List the available printers seen on the network...
+ */
+
+static void
+list_devices(void)
+{
+ /*
+  * Eventually, search the local workgroup for available hosts and printers.
+  */
+
+  puts("network smb \"Unknown\" \"Windows Printer via SAMBA\"");
+}
+
+
+/*
  * 'smb_connect()' - Return a connection to a server.
  */
 
@@ -321,8 +349,17 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   int	fnum;		/* File number */
   int	nbytes,		/* Number of bytes read */
 	tbytes;		/* Total bytes read */
-  char	buffer[8192];	/* Buffer for copy */
+  char	buffer[8192],	/* Buffer for copy */
+	*ptr;		/* Pointer into tile */
 
+
+ /*
+  * Sanitize the title...
+  */
+
+  for (ptr = title; *ptr; ptr ++)
+    if (!isalnum(*ptr) && !isspace(*ptr))
+      *ptr = '_';
 
  /*
   * Open the printer device...
