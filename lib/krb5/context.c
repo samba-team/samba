@@ -2,12 +2,6 @@
 
 RCSID("$Id$");
 
-/* XXX */
-
-#ifdef sun
-#define memmove(a,b,c) bcopy(b,a,c)
-#endif
-
 krb5_error_code
 krb5_init_context(krb5_context *context)
 {
@@ -16,9 +10,9 @@ krb5_init_context(krb5_context *context)
   if(!p)
     return ENOMEM;
   memset(p, 0, sizeof(krb5_context_data));
-  krb5_parse_config_file(&p->cf, NULL);
-  krb5_get_lrealm(&p->default_realm);
   krb5_init_ets(p);
+  krb5_config_parse_file (krb5_config_file, &p->cf);
+  krb5_set_default_realm(p, NULL);
   *context = p;
   return 0;
 }
