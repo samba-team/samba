@@ -126,22 +126,22 @@
 
 <sect1>
 	<title>Step 5: Starting the smbd and nmbd</title>
-	
-	<para>You must choose to start smbd and nmbd either 
-	as daemons or from <command>inetd</command>. Don't try 
+
+	<para>You must choose to start smbd and nmbd either
+	as daemons or from <command>inetd</command>. Don't try
 	to do both!  Either you can put them in <filename>
-	inetd.conf</filename> and have them started on demand 
+	inetd.conf</filename> and have them started on demand
 	by <command>inetd</command>, or you can start them as
 	daemons either from the command line or in <filename>
-	/etc/rc.local</filename>. See the man pages for details 
-	on the command line options. Take particular care to read 
-	the bit about what user you need to be in order to start 
+	/etc/rc.local</filename>. See the man pages for details
+	on the command line options. Take particular care to read
+	the bit about what user you need to be in order to start
 	Samba.  In many cases you must be root.</para>
 
 	<para>The main advantage of starting <command>smbd</command>
-	and <command>nmbd</command> as a daemon is that they will 
-	respond slightly more quickly to an initial connection
-	request. This is, however, unlikely to be a problem.</para>
+	and <command>nmbd</command> using the recommended daemon method
+	is that they will respond slightly more quickly to an initial connection
+	request.</para>
 
 	<sect2>
 		<title>Step 5a: Starting from inetd.conf</title>

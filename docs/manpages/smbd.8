@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "31 July 2001" "" ""
+.TH "SMBD" "8" "24 January 2002" "" ""
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
 .sp
-\fBsmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-l <log file>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-O <socket option>\fR ]  [ \fB-s <configuration file>\fR ] 
+\fBsmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-i\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-l <log directory>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-O <socket option>\fR ]  [ \fB-s <configuration file>\fR ] 
 .SH "DESCRIPTION"
 .PP
 This program is part of the Samba suite.
@@ -32,7 +32,7 @@ of running the server.
 .PP
 Please note that there are significant security 
 implications to running this server, and the \fIsmb.conf(5)\fR
-manpage should be regarded as mandatory reading before 
+manpage should be regarded as mandatory reading before
 proceeding with installation.
 .PP
 A session is created whenever a client requests one. 
@@ -64,6 +64,13 @@ If this parameter is specified, each new
 connection will append log messages to the log file. 
 This is the default.
 .TP
+\fB-i\fR
+If this parameter is specified it causes the
+server to run "interactively", not as a daemon, even if the
+server is executed on the command line of a shell. Setting this
+parameter negates the implicit deamon mode when run from the
+command line.
+.TP
 \fB-o\fR
 If this parameter is specified, the 
 log files will be overwritten when opened. By default, 
@@ -92,7 +99,7 @@ The higher this value, the more detail will be
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day to day running - it generates a small amount of
 information about operations carried out.
 
 Levels above 1 will generate considerable 
@@ -105,14 +112,18 @@ Note that specifying this parameter here will
 override the log
 levelfile.
 .TP
-\fB-l <log file>\fR
-If specified, \fIlog file\fR 
-specifies a log filename into which informational and debug 
-messages from the running server will be logged. The log 
+\fB-l <log directory>\fR
+If specified,
+\fIlog directory\fR 
+specifies a log directory into which the "log.smbd" log
+file will be created for informational and debug 
+messages from the running server. The log 
 file generated is never removed by the server although 
 its size may be controlled by the max log size
-option in the \fI smb.conf(5)\fRfile. The default log 
-file name is specified at compile time.
+option in the \fI smb.conf(5)\fRfile.
+
+The default log directory is specified at
+compile time.
 .TP
 \fB-O <socket options>\fR
 See the socket options
@@ -120,14 +131,14 @@ parameter in the \fIsmb.conf(5)
 \fRfile for details.
 .TP
 \fB-p <port number>\fR
-\fIport number\fR is a positive integer 
+\fIport number\fR is a positive integer
 value. The default value if this parameter is not 
 specified is 139.
 
 This number is the port number that will be 
 used when making connections to the server from client 
 software. The standard (well-known) port number for the 
-SMB over TCP is 139, hence the default. If you wish to 
+SMB over TCP is 139, hence the default. If you wish to
 run the server as an ordinary user rather than
 as root, most systems will require you to use a port 
 number greater than 1024 - ask your system administrator 
@@ -149,51 +160,53 @@ information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
 to provide. See \fI smb.conf(5)\fRfor more information.
-The default configuration file name is determined at 
+The default configuration file name is determined at
 compile time.
 .SH "FILES"
 .TP
 \fB\fI/etc/inetd.conf\fB\fR
-If the server is to be run by the 
+If the server is to be run by the
 \fBinetd\fR meta-daemon, this file 
 must contain suitable startup information for the 
-meta-daemon. See the section INSTALLATION below.
+meta-daemon. See the UNIX_INSTALL.html
+document for details.
 .TP
 \fB\fI/etc/rc\fB\fR
-or whatever initialization script your 
+or whatever initialization script your
 system uses).
 
-If running the server as a daemon at startup, 
-this file will need to contain an appropriate startup 
-sequence for the server. See the section INSTALLATION 
-below.
+If running the server as a daemon at startup,
+this file will need to contain an appropriate startup
+sequence for the server. See the UNIX_INSTALL.html
+document for details.
 .TP
 \fB\fI/etc/services\fB\fR
-If running the server via the 
-meta-daemon \fBinetd\fR, this file 
-must contain a mapping of service name (e.g., netbios-ssn) 
-to service port (e.g., 139) and protocol type (e.g., tcp). 
-See the section INSTALLATION below.
+If running the server via the
+meta-daemon \fBinetd\fR, this file
+must contain a mapping of service name (e.g., netbios-ssn)
+to service port (e.g., 139) and protocol type (e.g., tcp).
+See the UNIX_INSTALL.html
+document for details.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
-This is the default location of the 
+This is the default location of the
 \fIsmb.conf\fR
-server configuration file. Other common places that systems 
-install this file are \fI/usr/samba/lib/smb.conf\fR 
+server configuration file. Other common places that systems
+install this file are \fI/usr/samba/lib/smb.conf\fR
 and \fI/etc/smb.conf\fR.
 
-This file describes all the services the server 
+This file describes all the services the server
 is to make available to clients. See  \fIsmb.conf(5)\fRfor more information.
 .SH "LIMITATIONS"
 .PP
-On some systems \fBsmbd\fR cannot change uid back 
-to root after a setuid() call. Such systems are called 
-trapdoor uid systems. If you have such a system, 
-you will be unable to connect from a client (such as a PC) as 
+On some systems \fBsmbd\fR cannot change uid back
+to root after a setuid() call. Such systems are called
+trapdoor uid systems. If you have such a system,
+you will be unable to connect from a client (such as a PC) as
 two different users at once. Attempts to connect the
 second user will result in access denied or 
 similar.
-.SH "ENVIRONMENTVARIABLES"
+.SH "ENVIRONMENT VARIABLES"
 .TP
 \fBPRINTER\fR
 If no printer name is specified to 
@@ -201,184 +214,12 @@ printable services, most systems will use the value of
 this variable (or lp if this variable is 
 not defined) as the name of the printer to use. This 
 is not specific to the server, however.
-.SH "INSTALLATION"
-.PP
-The location of the server and its support files 
-is a matter for individual system administrators. The following 
-are thus suggestions only.
-.PP
-It is recommended that the server software be installed 
-under the \fI/usr/local/samba/\fR hierarchy, 
-in a directory readable by all, writeable only by root. The server 
-program itself should be executable by all, as users may wish to 
-run the server themselves (in which case it will of course run 
-with their privileges). The server should NOT be setuid. On some 
-systems it may be worthwhile to make \fBsmbd\fR setgid to an empty group. 
-This is because some systems may have a security hole where daemon 
-processes that become a user can be attached to with a debugger. 
-Making the \fBsmbd\fR file setgid to an empty group may prevent
-this hole from being exploited. This security hole and the suggested
-fix has only been confirmed on old versions (pre-kernel 2.0) of Linux
-at the time this was written. It is possible that this hole only
-exists in Linux, as testing on other systems has thus far shown them
-to be immune.
-.PP
-The server log files should be put in a directory readable and
-writeable only by root, as the log files may contain sensitive
-information.
-.PP
-The configuration file should be placed in a directory 
-readable and writeable only by root, as the configuration file 
-controls security for the services offered by the server. The 
-configuration file can be made readable by all if desired, but 
-this is not necessary for correct operation of the server and is 
-not recommended. A sample configuration file \fIsmb.conf.sample
-\fRis supplied with the source to the server - this may 
-be renamed to \fIsmb.conf\fR and modified to suit 
-your needs.
-.PP
-The remaining notes will assume the following:
-.TP 0.2i
-\(bu
-\fBsmbd\fR (the server program) 
-installed in \fI/usr/local/samba/bin\fR
-.TP 0.2i
-\(bu
-\fIsmb.conf\fR (the configuration 
-file) installed in \fI/usr/local/samba/lib\fR
-.TP 0.2i
-\(bu
-log files stored in \fI/var/adm/smblogs
-\fR.PP
-The server may be run either as a daemon by users 
-or at startup, or it may be run from a meta-daemon such as 
-\fBinetd\fR upon request. If run as a daemon, 
-the server will always be ready, so starting sessions will be
-faster. If run from a meta-daemon some memory will be saved and
-utilities such as the tcpd TCP-wrapper may be used for extra 
-security. For serious use as file server it is recommended 
-that \fBsmbd\fR be run as a daemon.
-.PP
-.PP
-When you've decided, continue with either
-.PP
-.TP 0.2i
-\(bu
-RUNNING THE SERVER AS A DAEMON or
-.TP 0.2i
-\(bu
-RUNNING THE SERVER ON REQUEST.
-.SH "RUNNING THE SERVER AS A DAEMON"
-.PP
-To run the server as a daemon from the command 
-line, simply put the \fB-D\fR option on the 
-command line. There is no need to place an ampersand at 
-the end of the command line - the \fB-D\fR 
-option causes the server to detach itself from the tty 
-anyway.
-.PP
-Any user can run the server as a daemon (execute 
-permissions permitting, of course). This is useful for 
-testing purposes, and may even be useful as a temporary 
-substitute for something like ftp. When run this way, however, 
-the server will only have the privileges of the user who ran 
-it.
-.PP
-To ensure that the server is run as a daemon whenever 
-the machine is started, and to ensure that it runs as root 
-so that it can serve multiple clients, you will need to modify 
-the system startup files. Wherever appropriate (for example, in 
-\fI/etc/rc\fR), insert the following line, 
-substituting port number, log file location, configuration file 
-location and debug level as desired:
-.PP
-\fB/usr/local/samba/bin/smbd -D -l /var/adm/smblogs/log 
--s /usr/local/samba/lib/smb.conf\fR
-.PP
-(The above should appear in your initialization script 
-as a single line. Depending on your terminal characteristics, 
-it may not appear that way in this man page. If the above appears 
-as more than one line, please treat any newlines or indentation 
-as a single space or TAB character.)
-.PP
-If the options used at compile time are appropriate for 
-your system, all parameters except \fB-D\fR may 
-be omitted. See the section OPTIONS above.
-.SH "RUNNING THE SERVER ON REQUEST"
-.PP
-If your system uses a meta-daemon such as \fBinetd
-\fR, you can arrange to have the \fBsmbd\fR server started 
-whenever a process attempts to connect to it. This requires several 
-changes to the startup files on the host machine. If you are 
-experimenting as an ordinary user rather than as root, you will 
-need the assistance of your system administrator to modify the 
-system files.
-.PP
-You will probably want to set up the NetBIOS name server 
-\fBnmbd\fRat
-the same time as \fBsmbd\fR. To do this refer to the 
-man page for \fBnmbd(8)\fR
-.
-.PP
-First, ensure that a port is configured in the file 
-\fI/etc/services\fR. The well-known port 139 
-should be used if possible, though any port may be used.
-.PP
-Ensure that a line similar to the following is in 
-\fI/etc/services\fR:
-.PP
-\fBnetbios-ssn 139/tcp\fR
-.PP
-Note for NIS/YP users - you may need to rebuild the 
-NIS service maps rather than alter your local \fI/etc/services
-\fRfile.
-.PP
-Next, put a suitable line in the file \fI/etc/inetd.conf
-\fR(in the unlikely event that you are using a meta-daemon 
-other than inetd, you are on your own). Note that the first item 
-in this line matches the service name in \fI/etc/services
-\fR\&. Substitute appropriate values for your system
-in this line (see \fBinetd(8)\fR):
-.PP
-\fBnetbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd 
--d1 -l/var/adm/smblogs/log -s/usr/local/samba/lib/smb.conf\fR
-.PP
-(The above should appear in \fI/etc/inetd.conf\fR 
-as a single line. Depending on your terminal characteristics, it may 
-not appear that way in this man page. If the above appears as more 
-than one line, please treat any newlines or indentation as a single 
-space or TAB character.)
-.PP
-Note that there is no need to specify a port number here, 
-even if you are using a non-standard port number.
-.PP
-Lastly, edit the configuration file to provide suitable 
-services. To start with, the following two services should be 
-all you need:
-.sp
-.nf
-		[homes]
-		writeable = yes
-
-	[printers]
-		writeable = no
-		printable = yes
-		path = /tmp
-		public = yes
-	
-	
-.sp
-.fi
-.PP
-This will allow you to connect to your home directory 
-and print to any printer supported by the host (user privileges 
-permitting).
 .SH "PAM INTERACTION"
 .PP
-Samba uses PAM for authentication (when presented with a plaintext 
+Samba uses PAM for authentication (when presented with a plaintext
 password), for account checking (is this account disabled?) and for
 session management. The degree too which samba supports PAM is restricted
-by the limitations of the SMB protocol and the 
+by the limitations of the SMB protocol and the
 obey pam restricions
 smb.conf paramater. When this is set, the following restrictions apply:
 .TP 0.2i
@@ -390,65 +231,47 @@ login at this time. This also applies to encrypted logins.
 .TP 0.2i
 \(bu
 \fBSession Management\fR: When not using share 
-level secuirty, users must pass PAM's session checks before access 
+level secuirty, users must pass PAM's session checks before access
 is granted. Note however, that this is bypassed in share level secuirty. 
 Note also that some older pam configuration files may need a line 
 added for session support. 
-.SH "TESTING THE INSTALLATION"
-.PP
-If running the server as a daemon, execute it before 
-proceeding. If using a meta-daemon, either restart the system 
-or kill and restart the meta-daemon. Some versions of 
-\fBinetd\fR will reread their configuration
-tables if they receive a HUP signal.
-.PP
-If your machine's name is \fIfred\fR and your 
-name is \fImary\fR, you should now be able to connect 
-to the service \fI\\\\fred\\mary\fR.
-.PP
-To properly test and experiment with the server, we 
-recommend using the \fBsmbclient\fR program (see 
-\fBsmbclient(1)\fR) 
-and also going through the steps outlined in the file 
-\fIDIAGNOSIS.txt\fR in the \fIdocs/\fR
-directory of your Samba installation.
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 2.2 of
 the Samba suite.
 .SH "DIAGNOSTICS"
 .PP
-Most diagnostics issued by the server are logged 
-in a specified log file. The log file name is specified 
+Most diagnostics issued by the server are logged
+in a specified log file. The log file name is specified
 at compile time, but may be overridden on the command line.
 .PP
-The number and nature of diagnostics available depends 
-on the debug level used by the server. If you have problems, set 
+The number and nature of diagnostics available depends
+on the debug level used by the server. If you have problems, set
 the debug level to 3 and peruse the log files.
 .PP
-Most messages are reasonably self-explanatory. Unfortunately, 
-at the time this man page was created, there are too many diagnostics 
-available in the source code to warrant describing each and every 
-diagnostic. At this stage your best bet is still to grep the 
-source code and inspect the conditions that gave rise to the 
+Most messages are reasonably self-explanatory. Unfortunately,
+at the time this man page was created, there are too many diagnostics
+available in the source code to warrant describing each and every
+diagnostic. At this stage your best bet is still to grep the
+source code and inspect the conditions that gave rise to the
 diagnostics you are seeing.
 .SH "SIGNALS"
 .PP
-Sending the \fBsmbd\fR a SIGHUP will cause it to 
-reload its \fIsmb.conf\fR configuration 
+Sending the \fBsmbd\fR a SIGHUP will cause it to
+reload its \fIsmb.conf\fR configuration
 file within a short period of time.
 .PP
-To shut down a user's \fBsmbd\fR process it is recommended 
-that \fBSIGKILL (-9)\fR \fBNOT\fR 
+To shut down a user's \fBsmbd\fR process it is recommended
+that \fBSIGKILL (-9)\fR \fBNOT\fR
 be used, except as a last resort, as this may leave the shared
-memory area in an inconsistent state. The safe way to terminate 
-an \fBsmbd\fR is to send it a SIGTERM (-15) signal and wait for 
+memory area in an inconsistent state. The safe way to terminate
+an \fBsmbd\fR is to send it a SIGTERM (-15) signal and wait for
 it to die on its own.
 .PP
 The debug log level of \fBsmbd\fR may be raised
 or lowered using \fBsmbcontrol(1)
 \fRprogram (SIGUSR[1|2] signals are no longer used in
-Samba 2.2). This is to allow transient problems to be diagnosed, 
+Samba 2.2). This is to allow transient problems to be diagnosed,
 whilst still running at a normally low log level.
 .PP
 Note that as the signal handlers send a debug write, 

@@ -17,12 +17,13 @@
 		<command>smbd</command>
 		<arg choice="opt">-D</arg>
 		<arg choice="opt">-a</arg>
+		<arg choice="opt">-i</arg>
 		<arg choice="opt">-o</arg>
 		<arg choice="opt">-P</arg>
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-l &lt;log file&gt;</arg>
+		<arg choice="opt">-l &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number&gt;</arg>
 		<arg choice="opt">-O &lt;socket option&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
@@ -53,7 +54,7 @@
 	<para>Please note that there are significant security 
 	implications to running this server, and the <ulink
 	url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink> 
-	manpage should be regarded as mandatory reading before 
+	manpage should be regarded as mandatory reading before
 	proceeding with installation.</para>
 
 	<para>A session is created whenever a client requests one. 
@@ -95,6 +96,16 @@
 		</varlistentry>
 		
 		<varlistentry>
+		<term>-i</term>
+		<listitem><para>If this parameter is specified it causes the
+		server to run "interactively", not as a daemon, even if the
+		server is executed on the command line of a shell. Setting this
+		parameter negates the implicit deamon mode when run from the
+		command line.
+		</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
 		<term>-o</term>
 		<listitem><para>If this parameter is specified, the 
 		log files will be overwritten when opened.  By default, 
@@ -131,7 +142,7 @@
 		logged to the log files about the activities of the 
 		server. At level 0, only critical errors and serious 
 		warnings will be logged. Level 1 is a reasonable level for
-		day to day running - it generates a small amount of 
+		day to day running - it generates a small amount of
 		information about operations carried out.</para>
 
 		<para>Levels above 1 will generate considerable 
@@ -148,16 +159,21 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-l &lt;log file&gt;</term>
-		<listitem><para>If specified, <replaceable>log file</replaceable> 
-		specifies a log filename into which informational and debug 
-		messages from the running server will be logged. The log 
+		<term>-l &lt;log directory&gt;</term>
+		<listitem><para>If specified,
+		<replaceable>log directory</replaceable> 
+		specifies a log directory into which the "log.smbd" log
+		file will be created for informational and debug 
+		messages from the running server. The log 
 		file generated is never removed by the server although 
 		its size may be controlled by the <ulink 
 		url="smb.conf.5.html#maxlogsize">max log size</ulink>
 		option in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> file.  The default log 
-		file name is specified at compile time.</para></listitem>
+		smb.conf(5)</filename></ulink> file.
+		</para>
+
+		<para>The default log directory is specified at
+		compile time.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -170,14 +186,14 @@
 		
 		<varlistentry>
 		<term>-p &lt;port number&gt;</term>
-		<listitem><para><replaceable>port number</replaceable> is a positive integer 
+		<listitem><para><replaceable>port number</replaceable> is a positive integer
 		value.  The default value if this parameter is not 
 		specified is 139.</para>
 		
 		<para>This number is the port number that will be 
 		used when making connections to the server from client 
 		software. The standard (well-known) port number for the 
-		SMB over TCP is 139, hence the default. If you wish to 
+		SMB over TCP is 139, hence the default. If you wish to
 		run the server as an ordinary user rather than
 		as root, most systems will require you to use a port 
 		number greater than 1024 - ask your system administrator 
@@ -202,7 +218,7 @@
 		as descriptions of all the services that the server is 
 		to provide. See <ulink url="smb.conf.5.html"><filename>
 		smb.conf(5)</filename></ulink> for more information.
-		The default configuration file name is determined at 
+		The default configuration file name is determined at
 		compile time.</para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -214,42 +230,44 @@
 	<variablelist>
 		<varlistentry>
 		<term><filename>/etc/inetd.conf</filename></term>
-		<listitem><para>If the server is to be run by the 
+		<listitem><para>If the server is to be run by the
 		<command>inetd</command> meta-daemon, this file 
 		must contain suitable startup information for the 
-		meta-daemon. See the section INSTALLATION below.
+		meta-daemon. See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		document for details.
 		</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term><filename>/etc/rc</filename></term>
-		<listitem><para>or whatever initialization script your 
+		<listitem><para>or whatever initialization script your
 		system uses).</para>
 
-		<para>If running the server as a daemon at startup, 
-		this file will need to contain an appropriate startup 
-		sequence for the server. See the section INSTALLATION 
-		below.</para></listitem>
+		<para>If running the server as a daemon at startup,
+		this file will need to contain an appropriate startup
+		sequence for the server. See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		document for details.</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term><filename>/etc/services</filename></term>
-		<listitem><para>If running the server via the 
-		meta-daemon <command>inetd</command>, this file 
-		must contain a mapping of service name (e.g., netbios-ssn) 
-		to service port (e.g., 139) and protocol type (e.g., tcp). 
-		See the section INSTALLATION below.</para></listitem>
+		<listitem><para>If running the server via the
+		meta-daemon <command>inetd</command>, this file
+		must contain a mapping of service name (e.g., netbios-ssn)
+		to service port (e.g., 139) and protocol type (e.g., tcp).
+		See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		document for details.</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term><filename>/usr/local/samba/lib/smb.conf</filename></term>
-		<listitem><para>This is the default location of the 
+		<listitem><para>This is the default location of the
 		<ulink url="smb.conf.5.html"><filename>smb.conf</filename></ulink>
-		server configuration file. Other common places that systems 
-		install this file are <filename>/usr/samba/lib/smb.conf</filename> 
+		server configuration file. Other common places that systems
+		install this file are <filename>/usr/samba/lib/smb.conf</filename>
 		and <filename>/etc/smb.conf</filename>.</para>
-		
-		<para>This file describes all the services the server 
+
+		<para>This file describes all the services the server
 		is to make available to clients. See <ulink url="smb.conf.5.html">
 		<filename>smb.conf(5)</filename></ulink>  for more information.</para>
 		</listitem>
@@ -259,17 +277,17 @@
 
 <refsect1>
 	<title>LIMITATIONS</title>
-	<para>On some systems <command>smbd</command> cannot change uid back 
-	to root after a setuid() call.  Such systems are called 
-	trapdoor uid systems. If you have such a system, 
-	you will be unable to connect from a client (such as a PC) as 
+	<para>On some systems <command>smbd</command> cannot change uid back
+	to root after a setuid() call.  Such systems are called
+	trapdoor uid systems. If you have such a system,
+	you will be unable to connect from a client (such as a PC) as
 	two different users at once. Attempts to connect the
 	second user will result in access denied or 
 	similar.</para>
 </refsect1>
 
 <refsect1>
-	<title>ENVIRONMENTVARIABLES</title>
+	<title>ENVIRONMENT VARIABLES</title>
 
 	<variablelist>
 		<varlistentry>
@@ -283,191 +301,13 @@
 	</variablelist>
 </refsect1>
 
-<refsect1>
-	<title>INSTALLATION</title>
-	
-	<para>The location of the server and its support files 
-	is a matter for individual system administrators. The following 
-	are thus suggestions only.</para>
-
-	<para>It is recommended that the server software be installed 
-	under the <filename>/usr/local/samba/</filename> hierarchy, 
-	in a directory readable by all, writeable only by root. The server 
-	program itself should be executable by all, as users may wish to 
-	run the server themselves (in which case it will of course run 
-	with their privileges).  The server should NOT be setuid. On some 
-	systems it may be worthwhile to make <command>smbd</command> setgid to an empty group. 
-	This is because some systems may have a security hole where daemon 
-	processes that become a user can be attached to with a debugger. 
-	Making the <command>smbd</command> file setgid to an empty group may prevent
-	this hole from being exploited. This security hole and the suggested
-	fix has only been confirmed on old versions (pre-kernel 2.0) of Linux
-	at the time this was written. It is possible that this hole only
-	exists in Linux, as testing on other systems has thus far shown them
-	to be immune.</para>
-
-	<para>The server log files should be put in a directory readable and
-	writeable only by root, as the log files may contain sensitive
-	information.</para>
-
-	<para>The configuration file should be placed in a directory 
-	readable and writeable only by root, as the configuration file 
-	controls security for the services offered by the server. The 
-	configuration file can be made readable by all if desired, but 
-	this is not necessary for correct operation of the server and is 
-	not recommended. A sample configuration file <filename>smb.conf.sample
-	</filename> is supplied with the source to the server - this may 
-	be renamed to <filename>smb.conf</filename> and modified to suit 
-	your needs.</para>
-	
-	<para>The remaining notes will assume the following:</para>
-
-	<itemizedlist>
-		<listitem><para><command>smbd</command> (the server program) 
-		installed in <filename>/usr/local/samba/bin</filename></para>
-		</listitem>
-
-		<listitem><para><filename>smb.conf</filename> (the configuration 
-		file) installed in <filename>/usr/local/samba/lib</filename></para>
-		</listitem>
-
-		<listitem><para>log files stored in <filename>/var/adm/smblogs
-		</filename></para></listitem>
-	</itemizedlist>
-
-	<para>The server may be run either as a daemon by users 
-	or at startup, or it may be run from a meta-daemon such as 
-	<command>inetd</command> upon request. If run as a daemon, 
-	the server will always be ready, so starting sessions will be
-	faster. If run from a meta-daemon some memory will be saved and
-	utilities such as the tcpd TCP-wrapper may be used for extra 
-	security.  For serious use as file server it is recommended 
-	that <command>smbd</command> be run as a daemon.</para>
-
-	<para>When you've decided, continue with either</para>
-	
-	<itemizedlist>
-		<listitem><para>RUNNING THE SERVER AS A DAEMON or</para></listitem>
-		<listitem><para>RUNNING THE SERVER ON REQUEST.</para></listitem>
-	</itemizedlist>
-</refsect1>
-
-<refsect1>
-	<title>RUNNING THE SERVER AS A DAEMON</title>
-
-	<para>To run the server as a daemon from the command 
-	line, simply put the <emphasis>-D</emphasis> option on the 
-	command line. There is no need to place an ampersand at 
-	the end of the command line - the <emphasis>-D</emphasis> 
-	option causes the server to detach itself from the tty 
-	anyway.</para>
-
-	<para>Any user can run the server as a daemon (execute 
-	permissions permitting, of course). This is useful for 
-	testing purposes, and may even be useful as a temporary 
-	substitute for something like ftp. When run this way, however, 
-	the server will only have the privileges of the user who ran 
-	it.</para>
-
-	<para>To ensure that the server is run as a daemon whenever 
-	the machine is started, and to ensure that it runs as root 
-	so that it can serve multiple clients, you will need to modify 
-	the system startup files. Wherever appropriate (for example, in 
-	<filename>/etc/rc</filename>), insert the following line, 
-	substituting port number, log file location, configuration file 
-	location and debug level as desired:</para>
-
-	<para><command>/usr/local/samba/bin/smbd -D -l /var/adm/smblogs/log 
-	-s /usr/local/samba/lib/smb.conf</command></para>
-
-	<para>(The above should appear in your initialization script 
-	as a single line.  Depending on your terminal characteristics, 
-	it may not appear that way in this man page. If the above appears 
-	as more than one line, please treat any newlines or indentation 
-	as a single space or TAB character.)</para>
-
-	<para>If the options used at compile time are appropriate for 
-	your system, all parameters except <emphasis>-D</emphasis> may 
-	be omitted. See the section OPTIONS above.</para>
-</refsect1>
-
-<refsect1>
-	<title>RUNNING THE SERVER ON REQUEST</title>
-
-	<para>If your system uses a meta-daemon such as <command>inetd
-	</command>, you can arrange to have the <command>smbd</command> server started 
-	whenever a process attempts to connect to it. This requires several 
-	changes to the startup files on the host machine. If you are 
-	experimenting as an ordinary user rather than as root, you will 
-	need the assistance of your system administrator to modify the 
-	system files.</para>
-
-	<para>You will probably want to set up the NetBIOS name server 
-	<ulink url="nmbd.8.html"><command>nmbd</command></ulink> at
-	the same time as <command>smbd</command>. To do this refer to the 
-	man page for <ulink url="nmbd.8.html"><command>nmbd(8)</command>
-	</ulink>.</para>
-
-	<para>First, ensure that a port is configured in the file 
-	<filename>/etc/services</filename>. The well-known port 139 
-	should be used if possible, though any port may be used.</para>
-
-	<para>Ensure that a line similar to the following is in 
-	<filename>/etc/services</filename>:</para>
-
-	<para><command>netbios-ssn	139/tcp</command></para>
-
-	<para>Note for NIS/YP users - you may need to rebuild the 
-	NIS service maps rather than alter your local <filename>/etc/services
-	</filename> file.</para>
-
-	<para>Next, put a suitable line in the file <filename>/etc/inetd.conf
-	</filename> (in the unlikely event that you are using a meta-daemon 
-	other than inetd, you are on your own). Note that the first item 
-	in this line matches the service name in <filename>/etc/services
-	</filename>.  Substitute appropriate values for your system
-	in this line (see <command>inetd(8)</command>):</para>
-
-	<para><command>netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd 
-	-d1 -l/var/adm/smblogs/log -s/usr/local/samba/lib/smb.conf</command></para>
-
-	<para>(The above should appear in <filename>/etc/inetd.conf</filename> 
-	as a single line. Depending on your terminal characteristics, it may 
-	not appear that way in this man page.  If the above appears as more 
-	than one line, please treat any newlines or indentation as a single 
-	space or TAB character.)</para>
-
-	<para>Note that there is no need to specify a port number here, 
-	even if you are using a non-standard port number.</para>
-
-	<para>Lastly, edit the configuration file to provide suitable 
-	services. To start with, the following two services should be 
-	all you need:</para>
-	
-	<screen>
-	<computeroutput>
-	[homes]
-		writeable = yes
-
-	[printers]
-		writeable = no
-		printable = yes
-		path = /tmp
-		public = yes
-	</computeroutput>
-	</screen>
-
-	<para>This will allow you to connect to your home directory 
-	and print to any printer supported by the host (user privileges 
-	permitting).</para>
-</refsect1>
 
 <refsect1>
         <title>PAM INTERACTION</title>
-	<para>Samba uses PAM for authentication (when presented with a plaintext 
+	<para>Samba uses PAM for authentication (when presented with a plaintext
 	password), for account checking (is this account disabled?) and for
 	session management.  The degree too which samba supports PAM is restricted
-	by the limitations of the SMB protocol and the 
+	by the limitations of the SMB protocol and the
 	<ulink url="smb.conf.5.html#OBEYPAMRESRICTIONS">obey pam restricions</ulink>
 	smb.conf paramater.  When this is set, the following restrictions apply:
 	</para>
@@ -480,7 +320,7 @@
 	</para></listitem>
 
 	<listitem><para><emphasis>Session Management</emphasis>:  When not using share 
-	level secuirty, users must pass PAM's session checks before access 
+	level secuirty, users must pass PAM's session checks before access
 	is granted.  Note however, that this is bypassed in share level secuirty.  
 	Note also that some older pam configuration files may need a line 
 	added for session support. 
@@ -489,71 +329,49 @@
 </refsect1>
 
 <refsect1>
-	<title>TESTING THE INSTALLATION</title>
-
-	<para>If running the server as a daemon, execute it before 
-	proceeding. If using a meta-daemon, either restart the system 
-	or kill and restart the meta-daemon. Some versions of 
-	<command>inetd</command> will reread their configuration
-	tables if they receive a HUP signal.</para>
-
-	<para>If your machine's name is <replaceable>fred</replaceable> and your 
-	name is <replaceable>mary</replaceable>, you should now be able to connect 
-	to the service <filename>\\fred\mary</filename>.
-	</para>
-
-	<para>To properly test and experiment with the server, we 
-	recommend using the <command>smbclient</command> program (see 
-	<ulink url="smbclient.1.html"><command>smbclient(1)</command></ulink>) 
-	and also going through the steps outlined in the file 
-	<filename>DIAGNOSIS.txt</filename> in the <filename>docs/</filename>
-	directory of your Samba installation.</para>
-</refsect1>
-
-<refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 2.2 of
 	the Samba suite.</para>
 </refsect1>
 
 <refsect1>
 	<title>DIAGNOSTICS</title>
 
-	<para>Most diagnostics issued by the server are logged 
-	in a specified log file. The log file name is specified 
+	<para>Most diagnostics issued by the server are logged
+	in a specified log file. The log file name is specified
 	at compile time, but may be overridden on the command line.</para>
 
-	<para>The number and nature of diagnostics available depends 
-	on the debug level used by the server. If you have problems, set 
+	<para>The number and nature of diagnostics available depends
+	on the debug level used by the server. If you have problems, set
 	the debug level to 3 and peruse the log files.</para>
 
-	<para>Most messages are reasonably self-explanatory. Unfortunately, 
-	at the time this man page was created, there are too many diagnostics 
-	available in the source code to warrant describing each and every 
-	diagnostic. At this stage your best bet is still to grep the 
-	source code and inspect the conditions that gave rise to the 
+	<para>Most messages are reasonably self-explanatory. Unfortunately,
+	at the time this man page was created, there are too many diagnostics
+	available in the source code to warrant describing each and every
+	diagnostic. At this stage your best bet is still to grep the
+	source code and inspect the conditions that gave rise to the
 	diagnostics you are seeing.</para>
 </refsect1>
 
 <refsect1>
 	<title>SIGNALS</title>
 
-	<para>Sending the <command>smbd</command> a SIGHUP will cause it to 
-	reload its <filename>smb.conf</filename> configuration 
+	<para>Sending the <command>smbd</command> a SIGHUP will cause it to
+	reload its <filename>smb.conf</filename> configuration
 	file within a short period of time.</para>
 
-	<para>To shut down a user's <command>smbd</command> process it is recommended 
-	that <command>SIGKILL (-9)</command> <emphasis>NOT</emphasis> 
+	<para>To shut down a user's <command>smbd</command> process it is recommended
+	that <command>SIGKILL (-9)</command> <emphasis>NOT</emphasis>
 	be used, except as a last resort, as this may leave the shared
-	memory area in an inconsistent state. The safe way to terminate 
-	an <command>smbd</command> is to send it a SIGTERM (-15) signal and wait for 
+	memory area in an inconsistent state. The safe way to terminate
+	an <command>smbd</command> is to send it a SIGTERM (-15) signal and wait for
 	it to die on its own.</para>
 
 	<para>The debug log level of <command>smbd</command> may be raised
 	or lowered using <ulink url="smbcontrol.1.html"><command>smbcontrol(1)
 	</command></ulink> program (SIGUSR[1|2] signals are no longer used in
-	Samba 2.2). This is to allow transient problems to be diagnosed, 
+	Samba 2.2). This is to allow transient problems to be diagnosed,
 	whilst still running at a normally low log level.</para>
 
 	<para>Note that as the signal handlers send a debug write, 

@@ -10,10 +10,14 @@ Summary: This describes how to configure Samba for improved browsing.
 
 OVERVIEW:
 =========
+
 SMB networking provides a mechanism by which clients can access a list
-of machines that are available within the network.  This list is called
-the browse list and is heavily used by all SMB clients.  Configuration
-of SMB browsing has been problematic for some Samba users, hence this
+of machines in a network, a so-called "browse list".  This list
+contains machines that are ready to offer file and/or print services
+to other machines within the network. Thus it does not include
+machines which aren't currently able to do server tasks.  The browse
+list is heavily used by all SMB clients.  Configuration of SMB
+browsing has been problematic for some Samba users, hence this
 document.
 
 Browsing will NOT work if name resolution from NetBIOS names to IP
@@ -62,9 +66,10 @@ browsing on another subnet.  It is recommended that this option is only
 used for 'unusual' purposes: announcements over the internet, for
 example.  See "remote announce" in the smb.conf man page.  
 
-If something doesn't work then hopefully the log.nmb file will
-help you track down the problem.  Try a debug level of 2 or 3 for
-finding problems.
+If something doesn't work then hopefully the log.nmb file will help
+you track down the problem.  Try a debug level of 2 or 3 for finding
+problems. Also note that the current browse list usually gets stored
+in text form in a file called browse.dat.
 
 Note that if it doesn't work for you, then you should still be able to
 type the server name as \\SERVER in filemanager then hit enter and

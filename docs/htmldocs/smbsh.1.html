@@ -37,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbsh</B
-> </P
+>  [-W workgroup] [-U username] [-P prefix] [-R &#60;name resolve order&#62;] [-d &#60;debug level&#62;] [-l logfile] [-L libdir]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN11"
+NAME="AEN18"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -72,6 +72,223 @@ CLASS="COMMAND"
 >smbsh</B
 > 
 	to work correctly.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN28"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-W WORKGROUP</DT
+><DD
+><P
+>Override the default workgroup specified in the 
+		workgroup parameter of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file 
+		for this session. This may be needed to connect to some 
+		servers. </P
+></DD
+><DT
+>-U username[%pass]</DT
+><DD
+><P
+>Sets the SMB username or username and password.
+		If this option is not specified, the user will be prompted for 
+		both the username and the password.  If %pass is not specified, 
+		the user will be prompted for the password.
+		</P
+></DD
+><DT
+>-P prefix</DT
+><DD
+><P
+>This option allows
+		the user to set the directory prefix for SMB access. The 
+		default value if this option is not specified is 
+		<EM
+>smb</EM
+>.
+		</P
+></DD
+><DT
+>-R &#60;name resolve order&#62;</DT
+><DD
+><P
+>This option is used to determine what naming 
+		services and in what order to resolve 
+		host names to IP addresses. The option takes a space-separated 
+		string of different name resolution options.</P
+><P
+>The options are :"lmhosts", "host", "wins" and "bcast". 
+		They cause names to be resolved as follows :</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>lmhosts</TT
+> : 
+			Lookup an IP address in the Samba lmhosts file. If the 
+			line in lmhosts has no name type attached to the 
+			NetBIOS name 
+			(see the <A
+HREF="lmhosts.5.html"
+TARGET="_top"
+>lmhosts(5)</A
+>
+			for details) then any name type matches for lookup.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>host</TT
+> : 
+			Do a standard host name to IP address resolution, using
+			the system <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+>, NIS, or DNS
+			lookups. This method of name resolution is operating 
+			system dependent, for instance on IRIX or Solaris this 
+			may be controlled by the <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf
+			</TT
+> file).  Note that this method is only used 
+			if the NetBIOS name type being queried is the 0x20 
+			(server) name type, otherwise it is ignored.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>wins</TT
+> : 
+			Query a name with the IP address listed in the 
+			<TT
+CLASS="PARAMETER"
+><I
+>wins server</I
+></TT
+> parameter.  If no 
+			WINS server has been specified this method will be 
+			ignored.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>bcast</TT
+> : 
+			Do a broadcast on each of the known local interfaces 
+			listed in the <TT
+CLASS="PARAMETER"
+><I
+>interfaces</I
+></TT
+>
+			parameter. This is the least reliable of the name 
+			resolution methods as it depends on the target host 
+			being on a locally connected subnet.
+			</P
+></LI
+></UL
+><P
+>If this parameter is not set then the name resolve order 
+		defined in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file parameter  
+		(name resolve order) will be used. </P
+><P
+>The default order is lmhosts, host, wins, bcast. Without 
+		this parameter or any entry in the <TT
+CLASS="PARAMETER"
+><I
+>name resolve order
+		</I
+></TT
+> parameter of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> 
+		file, the name resolution methods will be attempted in this 
+		order. </P
+></DD
+><DT
+>-d &#60;debug level&#62;</DT
+><DD
+><P
+>debug level is an integer from 0 to 10.</P
+><P
+>The default value if this parameter is not specified
+		is zero.</P
+><P
+>The higher this value, the more detail will be logged
+		about the activities of <B
+CLASS="COMMAND"
+>nmblookup</B
+>. At level
+		0, only critical errors and serious warnings will be logged.
+		</P
+></DD
+><DT
+>-l logfilename</DT
+><DD
+><P
+>If specified causes all debug messages to be
+		written to the file specified by <TT
+CLASS="REPLACEABLE"
+><I
+>logfilename
+		</I
+></TT
+>. If not specified then all messages will be 
+		written to<TT
+CLASS="REPLACEABLE"
+><I
+>stderr</I
+></TT
+>.
+		</P
+></DD
+><DT
+>-L libdir</DT
+><DD
+><P
+>This parameter specifies the location of the 
+		shared libraries used by <B
+CLASS="COMMAND"
+>smbsh</B
+>. The default
+		value is specified at compile time.
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN91"
+></A
+><H2
+>EXAMPLES</H2
 ><P
 >To use the <B
 CLASS="COMMAND"
@@ -158,7 +375,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN40"
+NAME="AEN112"
 ></A
 ><H2
 >VERSION</H2
@@ -169,7 +386,7 @@ NAME="AEN40"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN43"
+NAME="AEN115"
 ></A
 ><H2
 >BUGS</H2
@@ -202,7 +419,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN52"
+NAME="AEN124"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -225,7 +442,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN58"
+NAME="AEN130"
 ></A
 ><H2
 >AUTHOR</H2

@@ -140,6 +140,10 @@ CLASS="FILENAME"
 ><P
 >One of: <TT
 CLASS="CONSTANT"
+>close-share</TT
+>,
+		<TT
+CLASS="CONSTANT"
 >debug</TT
 >, 
 		<TT
@@ -162,6 +166,20 @@ CLASS="CONSTANT"
 		or <TT
 CLASS="CONSTANT"
 >printer-notify</TT
+>.</P
+><P
+>The <TT
+CLASS="CONSTANT"
+>close-share</TT
+> message-type sends a 
+		message to smbd which will then close the client connections to
+		the named share. Note that this doesn't affect client connections
+		to any other shares. This message-type takes an argument of the
+		share name for which client connections will be close, or the
+		"*" character which will close all currently open shares.
+		This message can only be sent to <TT
+CLASS="CONSTANT"
+>smbd</TT
 >.</P
 ><P
 >The <TT
@@ -252,7 +270,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN78"
+NAME="AEN82"
 ></A
 ><H2
 >VERSION</H2
@@ -263,7 +281,7 @@ NAME="AEN78"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN81"
+NAME="AEN85"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -289,7 +307,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN88"
+NAME="AEN92"
 ></A
 ><H2
 >AUTHOR</H2

@@ -77,6 +77,30 @@ CLASS="COMMAND"
 	Windows NT server. The service can also provide authentication
 	services via an associated PAM module. </P
 ><P
+>	The <TT
+CLASS="FILENAME"
+>pam_winbind</TT
+> module in the 2.2.2 release only 
+	supports the <TT
+CLASS="PARAMETER"
+><I
+>auth</I
+></TT
+> and <TT
+CLASS="PARAMETER"
+><I
+>account</I
+></TT
+> 
+	module-types.  The latter is simply
+	performs a getpwnam() to verify that the system can obtain a uid for the
+	user.  If the <TT
+CLASS="FILENAME"
+>libnss_winbind</TT
+> library has been correctly 
+	installed, this should always suceed.
+	</P
+><P
 >The following nsswitch databases are implemented by 
 	the winbindd service: </P
 ><P
@@ -84,6 +108,22 @@ CLASS="COMMAND"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+>hosts</DT
+><DD
+><P
+>User information traditionally stored in 
+		the <TT
+CLASS="FILENAME"
+>hosts(5)</TT
+> file and used by 
+		<B
+CLASS="COMMAND"
+>gethostbyname(3)</B
+> functions. Names are
+		resolved through the WINS server or by broadcast.
+		</P
+></DD
 ><DT
 >passwd</DT
 ><DD
@@ -145,11 +185,22 @@ group:          files winbind
 ></TR
 ></TABLE
 ></P
+><P
+>The following simple configuration in the
+	<TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> file can be used to initially
+	resolve hostnames from <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> and then from the
+	WINS server.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN43"
+NAME="AEN57"
 ></A
 ><H2
 >OPTIONS</H2
@@ -188,7 +239,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN56"
+NAME="AEN70"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -219,7 +270,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN62"
+NAME="AEN76"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -484,7 +535,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN144"
+NAME="AEN158"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -662,7 +713,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN183"
+NAME="AEN197"
 ></A
 ><H2
 >NOTES</H2
@@ -720,7 +771,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN199"
+NAME="AEN213"
 ></A
 ><H2
 >SIGNALS</H2
@@ -771,7 +822,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN216"
+NAME="AEN230"
 ></A
 ><H2
 >FILES</H2
@@ -847,7 +898,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN245"
+NAME="AEN259"
 ></A
 ><H2
 >VERSION</H2
@@ -858,7 +909,7 @@ NAME="AEN245"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN248"
+NAME="AEN262"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -886,7 +937,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN255"
+NAME="AEN269"
 ></A
 ><H2
 >AUTHOR</H2

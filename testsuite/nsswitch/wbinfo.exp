@@ -306,20 +306,20 @@ set goodgroup_sid [util_start "bin/wbinfo" "-n $goodgroup_name"]
 #   - good uid/gid to sid
 
 set errcode_tests [list \
-	{ "no arg" "bin/wbinfo" 1 } \
-	{ "invalid arg" "bin/wbinfo -@" 1 } \
-	{ "list users" "bin/wbinfo -u" 0 } \
-	{ "list groups" "bin/wbinfo -g" 0 } \
-	{ "good name to sid" "bin/wbinfo -n $gooduser_name" 0 } \
-	{ "bad name to sid" "bin/wbinfo -n asmithee" 0 } \
-	{ "good sid to name" "bin/wbinfo -s $gooduser_sid" 0 } \
-	{ "bad sid to name" "bin/wbinfo -s S-1234" 1 } \
-	{ "bad uid to sid" "bin/wbinfo -U 0" 1 } \
-	{ "bad gid to sid" "bin/wbinfo -G 0" 1} \
-	{ "good sid to uid" "bin/wbinfo -S $gooduser_sid" 0 } \
-	{ "bad sid to uid" "bin/wbinfo -S S-1234" 1 } \
-	{ "good sid to gid" "bin/wbinfo -Y $goodgroup_sid" 0 } \
-	{ "bad sid to gid" "bin/wbinfo -Y S-1234" 1 } \
+	{ "exit code, no arg" "bin/wbinfo" 1 } \
+	{ "exit code, invalid arg" "bin/wbinfo -@" 1 } \
+	{ "exit code, list users" "bin/wbinfo -u" 0 } \
+	{ "exit code, list groups" "bin/wbinfo -g" 0 } \
+	{ "exit code, good name to sid" "bin/wbinfo -n $gooduser_name" 0 } \
+	{ "exit code, bad name to sid" "bin/wbinfo -n asmithee" 1 } \
+	{ "exit code, good sid to name" "bin/wbinfo -s $gooduser_sid" 0 } \
+	{ "exit code, bad sid to name" "bin/wbinfo -s S-1234" 1 } \
+	{ "exit code, bad uid to sid" "bin/wbinfo -U 0" 1 } \
+	{ "exit code, bad gid to sid" "bin/wbinfo -G 0" 1} \
+	{ "exit code, good sid to uid" "bin/wbinfo -S $gooduser_sid" 0 } \
+	{ "exit code, bad sid to uid" "bin/wbinfo -S S-1234" 1 } \
+	{ "exit code, good sid to gid" "bin/wbinfo -Y $goodgroup_sid" 0 } \
+	{ "exit code, bad sid to gid" "bin/wbinfo -Y S-1234" 1 } \
 	]
 
 foreach { test } $errcode_tests {

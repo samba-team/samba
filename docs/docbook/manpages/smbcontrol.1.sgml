@@ -70,11 +70,20 @@
 		
 		<varlistentry>
 		<term>message-type</term>
-		<listitem><para>One of: <constant>debug</constant>, 
+		<listitem><para>One of: <constant>close-share</constant>,
+		<constant>debug</constant>, 
 		<constant>force-election</constant>, <constant>ping
 		</constant>, <constant>profile</constant>, <constant>
 		debuglevel</constant>, <constant>profilelevel</constant>, 
 		or <constant>printer-notify</constant>.</para>
+
+		<para>The <constant>close-share</constant> message-type sends a 
+		message to smbd which will then close the client connections to
+		the named share. Note that this doesn't affect client connections
+		to any other shares. This message-type takes an argument of the
+		share name for which client connections will be close, or the
+		"*" character which will close all currently open shares.
+		This message can only be sent to <constant>smbd</constant>.</para>
 
 		<para>The <constant>debug</constant> message-type allows 
 		the debug level to be set to the value specified by the 

@@ -95,74 +95,10 @@ int main(int argc, char *argv[])
 
   if (argc > 1) {
 
-    /* Try to list the print jobs ... */
+    if ((dh1 = smbc_opendir(argv[1]))<1) {
 
-    if (smbc_list_print_jobs("smb://samba/pclp", print_list_fn) < 0) {
-
-      fprintf(stderr, "Could not list print jobs: %s, %d\n", strerror(errno), errno);
-      exit(1);
-
-    }
-
-    /* Try to delete the last job listed */
-
-    if (global_id > 0) {
-
-      fprintf(stdout, "Trying to delete print job %u\n", global_id);
-
-      if (smbc_unlink_print_job("smb://samba/pclp", global_id) < 0) {
-
-	fprintf(stderr, "Failed to unlink job id %u, %s, %u\n", global_id, 
-		strerror(errno), errno);
-
-	exit(1);
-
-      }
-
-    }
-
-    /* Try to print a file ... */
-
-    if (smbc_print_file("smb://samba/public/testfile2.txt", "smb://samba/pclp") < 0) {
-
-      fprintf(stderr, "Failed to print job: %s %u\n", strerror(errno), errno);
-      exit(1);
-
-    }
-
-    /* Try to delete argv[1] as a file ... */
-    
-    if (smbc_unlink(argv[1]) < 0) {
-
-      fprintf(stderr, "Could not unlink: %s, %s, %d\n",
-	      argv[1], strerror(errno), errno);
-
-      exit(0);
-
-    }
-
-    if ((dh1 = smbc_opendir("smb://"))<1) {
-
-      fprintf(stderr, "Could not open directory: smb://: %s\n",
-	      strerror(errno));
-
-      exit(1);
-
-    }
-
-    if ((dh2 = smbc_opendir("smb://sambanet")) < 0) {
-
-      fprintf(stderr, "Could not open directory: smb://sambanet: %s\n",
-	      strerror(errno));
-
-      exit(1);
-
-    }
-
-    if ((dh3 = smbc_opendir("smb://samba")) < 0) {
-
-      fprintf(stderr, "Could not open directory: smb://samba: %s\n",
-	      strerror(errno));
+      fprintf(stderr, "Could not open directory: %s: %s\n",
+	      argv[1], strerror(errno));
 
       exit(1);
 
@@ -202,62 +138,6 @@ int main(int argc, char *argv[])
     }
 
     dirp = (char *)dirbuf;
-
-    if ((dirc = smbc_getdents(dh2, (struct smbc_dirent *)dirp, 
-			      sizeof(dirbuf))) < 0) {
-
-      fprintf(stderr, "Problems getting directory entries: %s\n",
-	      strerror(errno));
-
-      exit(1);
-
-    }
-
-    /* Now, process the list of names ... */
-
-    fprintf(stdout, "\nDirectory listing, size = %u\n", dirc);
-
-    while (dirc > 0) {
-
-      dsize = ((struct smbc_dirent *)dirp)->dirlen;
-      fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
-	      ((struct smbc_dirent *)dirp)->smbc_type, 
-	      ((struct smbc_dirent *)dirp)->name, 
-	      ((struct smbc_dirent *)dirp)->comment);
-
-      dirp += dsize;
-      (char *)dirc -= dsize;
-
-    }
-
-    dirp = (char *)dirbuf;
-
-    if ((dirc = smbc_getdents(dh3, (struct smbc_dirent *)dirp, 
-			      sizeof(dirbuf))) < 0) {
-
-      fprintf(stderr, "Problems getting directory entries: %s\n",
-	      strerror(errno));
-
-      exit(1);
-
-    }
-
-    /* Now, process the list of names ... */
-
-    fprintf(stdout, "Directory listing, size = %u\n", dirc);
-
-    while (dirc > 0) {
-
-      dsize = ((struct smbc_dirent *)dirp)->dirlen;
-      fprintf(stdout, "\nDir Ent, Type: %u, Name: %s, Comment: %s\n",
-	      ((struct smbc_dirent *)dirp)->smbc_type, 
-	      ((struct smbc_dirent *)dirp)->name, 
-	      ((struct smbc_dirent *)dirp)->comment);
-
-      (char *)dirp += dsize;
-      (char *)dirc -= dsize;
-
-    }
 
     exit(1);
 

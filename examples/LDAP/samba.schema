@@ -3,12 +3,16 @@
 ## Schema for storing Samba's smbpasswd file in LDAP
 ## OIDs are owned by the Samba Team
 ##
-## Prerequisite schemas - uid & uidNumber (nis.schema)
+## Prerequisite schemas - uid (cosine.schema)
+##                      - displayName (inetorgperson.schema)
 ##
 ## 1.3.1.5.1.4.1.7165.2.1.x - attributetypes
 ## 1.3.1.5.1.4.1.7165.2.2.x - objectclasses
 ##
 
+##
+## Password hashes
+##
 attributetype ( 1.3.6.1.4.1.7165.2.1.1 NAME 'lmPassword'
 	DESC 'LanManager Passwd'
 	EQUALITY caseIgnoreIA5Match
@@ -19,41 +23,50 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.2 NAME 'ntPassword'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.3 NAME 'pwdLastSet'
-	DESC 'NT pwdLastSet'
-	EQUALITY caseIgnoreIA5Match
-        SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
-
+##
+## Account flags in string format ([UWDX     ])
+##
 attributetype ( 1.3.6.1.4.1.7165.2.1.4 NAME 'acctFlags'
 	DESC 'Account Flags'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{16} SINGLE-VALUE )
 
+## 
+## Password timestamps & policies
+##
+attributetype ( 1.3.6.1.4.1.7165.2.1.3 NAME 'pwdLastSet'
+	DESC 'NT pwdLastSet'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
 attributetype ( 1.3.6.1.4.1.7165.2.1.5 NAME 'logonTime'
 	DESC 'NT logonTime'
-	EQUALITY caseIgnoreIA5Match
-        SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
 attributetype ( 1.3.6.1.4.1.7165.2.1.6 NAME 'logoffTime'
 	DESC 'NT logoffTime'
-	EQUALITY caseIgnoreIA5Match
-        SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
 attributetype ( 1.3.6.1.4.1.7165.2.1.7 NAME 'kickoffTime'
 	DESC 'NT kickoffTime'
-	EQUALITY caseIgnoreIA5Match
-        SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
 attributetype ( 1.3.6.1.4.1.7165.2.1.8 NAME 'pwdCanChange'
 	DESC 'NT pwdCanChange'
-	EQUALITY caseIgnoreIA5Match
-        SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
 attributetype ( 1.3.6.1.4.1.7165.2.1.9 NAME 'pwdMustChange'
 	DESC 'NT pwdMustChange'
-	EQUALITY caseIgnoreIA5Match
-        SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
+##
+## string settings
+##
 attributetype ( 1.3.6.1.4.1.7165.2.1.10 NAME 'homeDrive'
 	DESC 'NT homeDrive'
 	EQUALITY caseIgnoreIA5Match
@@ -74,24 +87,28 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.13 NAME 'userWorkstations'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{255} SINGLE-VALUE )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.14 NAME 'rid'
-	DESC 'NT rid'
-	EQUALITY caseIgnoreIA5Match
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{255} SINGLE-VALUE )
-
-attributetype ( 1.3.6.1.4.1.7165.2.1.15 NAME 'primaryGroupID'
-	DESC 'NT Group RID'
-	EQUALITY caseIgnoreIA5Match
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{255} SINGLE-VALUE )
-
-attributetype ( 1.3.6.1.4.1.7165.2.1.16 NAME 'displayName'
-	DESC 'Friendly User Name'
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{255} SINGLE-VALUE )
-
 attributetype ( 1.3.6.1.4.1.7165.2.1.17 NAME 'smbHome'
 	DESC 'smbHome'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{128} )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.18 NAME 'domain'
+	DESC 'Windows NT domain to which the user belongs'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{128} )
+
+##
+## user and group RID
+##
+attributetype ( 1.3.6.1.4.1.7165.2.1.14 NAME 'rid'
+	DESC 'NT rid'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.15 NAME 'primaryGroupID'
+	DESC 'NT Group RID'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
 ##
 ## The smbPasswordEntry objectclass has been depreciated in favor of the
@@ -104,8 +121,20 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.17 NAME 'smbHome'
 
 objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
 	DESC 'Samba Account'
-	MUST ( uid $ uidNumber ) 
-	MAY  ( cn $ gidNumber $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
+	MUST ( uid $ rid ) 
+	MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
                logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $ 
                displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
-               description $ userWorkstations $ rid $ primaryGroupID ))
+               description $ userWorkstations $ primaryGroupID $ domain ))
+
+##
+## Used for Winbind experimentation
+##
+objectclass ( 1.3.1.5.1.4.1.7165.1.2.2.3 NAME 'uidPool' SUP top AUXILIARY
+	DESC 'Pool for allocating UNIX uids'
+	MUST ( uidNumber $ cn ) )
+
+objectclass ( 1.3.1.5.1.4.1.7165.1.2.2.4 NAME 'gidPool' SUP top AUXILIARY
+	DESC 'Pool for allocating UNIX gids'
+	MUST ( gidNumber $ cn ) )
+

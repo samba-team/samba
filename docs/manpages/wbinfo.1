@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WBINFO" "1" "26 September 2001" "" ""
+.TH "WBINFO" "1" "24 January 2002" "" ""
 .SH NAME
 wbinfo \- Query information from winbind daemon
 .SH SYNOPSIS
 .sp
-\fBwbinfo\fR [ \fB-u\fR ]  [ \fB-g\fR ]  [ \fB-n name\fR ]  [ \fB-s sid\fR ]  [ \fB-U uid\fR ]  [ \fB-G gid\fR ]  [ \fB-S sid\fR ]  [ \fB-Y sid\fR ]  [ \fB-t\fR ]  [ \fB-m\fR ] 
+\fBwbinfo\fR [ \fB-u\fR ]  [ \fB-g\fR ]  [ \fB-h name\fR ]  [ \fB-i ip\fR ]  [ \fB-n name\fR ]  [ \fB-s sid\fR ]  [ \fB-U uid\fR ]  [ \fB-G gid\fR ]  [ \fB-S sid\fR ]  [ \fB-Y sid\fR ]  [ \fB-t\fR ]  [ \fB-m\fR ]  [ \fB-r user\fR ]  [ \fB-a user%password\fR ]  [ \fB-A user%password\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -36,6 +36,18 @@ in the Windows NT domain for which the \fBwinbindd(8)
 will also be listed. Note that this operation does not assign 
 group ids to any groups that have not already been seen by
 \fBwinbindd(8)\fR. 
+.TP
+\fB-h name\fR
+The \fI-h\fR option 
+queries \fBwinbindd(8)\fR to query the WINS
+server for the IP address associated with the NetBIOS name
+specified by the \fIname\fR parameter.
+.TP
+\fB-i ip\fR
+The \fI-i\fR option 
+queries \fBwinbindd(8)\fR to send a node status
+request to get the NetBIOS name associated with the IP address
+specified by the \fIip\fR parameter.
 .TP
 \fB-n name\fR
 The \fI-n\fR option 
@@ -82,6 +94,22 @@ Produce a list of domains trusted by the
 Windows NT server \fBwinbindd(8)\fR contacts 
 when resolving names. This list does not include the Windows 
 NT domain the server is a Primary Domain Controller for.
+.TP
+\fB-r username\fR
+Try to obtain the list of UNIX group ids
+to which the user belongs. This only works for users
+defined on a Domain Controller.
+.TP
+\fB-a username%password\fR
+Attempt to authenticate a user via winbindd. 
+This checks both authenticaion methods and reports its results.
+.TP
+\fB-A username%password\fR
+Store username and password used by winbindd 
+during session setup to a domain controller. This enables
+winbindd to operate in a Windows 2000 domain with Restrict
+Anonymous turned on (a.k.a. Permissions compatiable with
+Windows 2000 servers only).
 .SH "EXIT STATUS"
 .PP
 The wbinfo program returns 0 if the operation 
