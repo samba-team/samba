@@ -41,6 +41,12 @@ typedef struct interactive_password
 	OWF_INFO          nt_owf;              /* NT OWF Password */
 } auth_interactive_password;
 
+#define AUTH_FLAG_NONE        0x000000
+#define AUTH_FLAG_PLAINTEXT   0x000001
+#define AUTH_FLAG_LM_RESP     0x000002
+#define AUTH_FLAG_NTLM_RESP   0x000004
+#define AUTH_FLAG_NTLMv2_RESP 0x000008
+
 typedef struct auth_usersupplied_info
 {
 	
@@ -51,7 +57,7 @@ typedef struct auth_usersupplied_info
 	
 	BOOL encrypted;
 	
-	uint32 ntlmssp_flags;
+	uint32 auth_flags;
 
 	AUTH_STR           client_domain;          /* domain name string */
 	AUTH_STR           domain;               /* domain name after mapping */

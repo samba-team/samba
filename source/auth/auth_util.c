@@ -111,7 +111,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 			   const char *wksta_name, 
 			   DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
 			   DATA_BLOB plaintext, 
-			   uint32 ntlmssp_flags, BOOL encrypted)
+			   uint32 auth_flags, BOOL encrypted)
 {
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
@@ -173,7 +173,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 	(*user_info)->plaintext_password = data_blob(plaintext.data, plaintext.length);
 
 	(*user_info)->encrypted = encrypted;
-	(*user_info)->ntlmssp_flags = ntlmssp_flags;
+	(*user_info)->auth_flags = auth_flags;
 
 	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , internal_username, smb_name));
 
@@ -248,14 +248,14 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
-	uint32 ntlmssp_flags = 0;
+	uint32 auth_flags = AUTH_FLAG_NONE;
 
 	if (lm_pwd_len)
-		ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+		auth_flags |= AUTH_FLAG_LM_RESP;
 	if (nt_pwd_len == 24) {
-		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM; 
+		auth_flags |= AUTH_FLAG_NTLM_RESP; 
 	} else if (nt_pwd_len != 0) {
-		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM2; 
+		auth_flags |= AUTH_FLAG_NTLMv2_RESP; 
 	}
 
 	ret = make_user_info_map(user_info, 
@@ -263,7 +263,7 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				 wksta_name, 
 				 lm_blob, nt_blob,
 				 plaintext_blob, 
-				 ntlmssp_flags, True);
+				 auth_flags, True);
 		
 	data_blob_free(&lm_blob);
 	data_blob_free(&nt_blob);
@@ -289,7 +289,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	unsigned char key[16];
-	uint32 ntlmssp_flags = 0;
+	uint32 auth_flags = AUTH_FLAG_NONE;
 	
 	ZERO_STRUCT(key);
 	memcpy(key, dc_sess_key, 8);
@@ -334,9 +334,9 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 		DATA_BLOB plaintext_blob = data_blob(NULL, 0);
 
 		if (lm_interactive_pwd)
-			ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+			auth_flags |= AUTH_FLAG_LM_RESP;
 		if (nt_interactive_pwd)
-			ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM; 
+			auth_flags |= AUTH_FLAG_NTLM_RESP; 
 
 		ret = make_user_info_map(user_info, 
 					 smb_name, client_domain, 
@@ -344,7 +344,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 local_lm_blob,
 					 local_nt_blob,
 					 plaintext_blob, 
-					 ntlmssp_flags, True);
+					 auth_flags, True);
 		
 		data_blob_free(&local_lm_blob);
 		data_blob_free(&local_nt_blob);
@@ -367,7 +367,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 	DATA_BLOB local_lm_blob;
 	DATA_BLOB local_nt_blob;
 	BOOL ret = False;
-	uint32 ntlmssp_flags = 0;
+	uint32 auth_flags = AUTH_FLAG_NONE;
 			
 	/*
 	 * Not encrypted - do so.
@@ -390,7 +390,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		   case insensitive */
 		local_nt_blob = data_blob(NULL, 0); 
 		
-		ntlmssp_flags = NTLMSSP_NEGOTIATE_OEM;
+		auth_flags = (AUTH_FLAG_PLAINTEXT | AUTH_FLAG_LM_RESP);
 	} else {
 		local_lm_blob = data_blob(NULL, 0); 
 		local_nt_blob = data_blob(NULL, 0); 
@@ -402,7 +402,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 				 local_lm_blob,
 				 local_nt_blob,
 				 plaintext_password, 
-				 ntlmssp_flags, False);
+				 auth_flags, False);
 	
 	data_blob_free(&local_lm_blob);
 	return ret;
@@ -417,18 +417,18 @@ BOOL make_user_info_for_reply_enc(auth_usersupplied_info **user_info,
 			      char *client_domain, 
 			      DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
-	uint32 ntlmssp_flags = 0;
+	uint32 auth_flags = AUTH_FLAG_NONE;
 
 	DATA_BLOB no_plaintext_blob = data_blob(NULL, 0); 
 	
 	if (lm_resp.length == 24) {
-		ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+		auth_flags |= AUTH_FLAG_LM_RESP;
 	}
 	if (nt_resp.length == 0) {
 	} else if (nt_resp.length == 24) {
-		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM;
+		auth_flags |= AUTH_FLAG_NTLM_RESP;
 	} else {
-		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
 	}
 
 	return make_user_info_map(user_info, smb_name, 
@@ -437,7 +437,7 @@ BOOL make_user_info_for_reply_enc(auth_usersupplied_info **user_info,
 				 lm_resp, 
 				 nt_resp, 
 				 no_plaintext_blob, 
-				 ntlmssp_flags, True);
+				 auth_flags, True);
 }
 
 /****************************************************************************
@@ -449,7 +449,7 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 	DATA_BLOB lm_blob = data_blob(NULL, 0);
 	DATA_BLOB nt_blob = data_blob(NULL, 0);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
-	uint32 ntlmssp_flags = 0;
+	uint32 auth_flags = AUTH_FLAG_NONE;
 
 	return make_user_info(user_info, 
 			      "","", 
@@ -457,7 +457,7 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 			      "", 
 			      nt_blob, lm_blob,
 			      plaintext_blob, 
-			      ntlmssp_flags, True);
+			      auth_flags, True);
 }
 
 /***************************************************************************

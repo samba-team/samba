@@ -140,7 +140,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 {
 	uint16 acct_ctrl;
 	const uint8 *nt_pw, *lm_pw;
-	uint32 ntlmssp_flags;
+	uint32 auth_flags;
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) 
@@ -160,16 +160,16 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	nt_pw = pdb_get_nt_passwd(sampass);
 	lm_pw = pdb_get_lanman_passwd(sampass);
 	
-	ntlmssp_flags = user_info->ntlmssp_flags;
+	auth_flags = user_info->auth_flags;
 
 	if (nt_pw == NULL) {
 		DEBUG(3,("sam_password_ok: NO NT password stored for user %s.\n", 
 			 pdb_get_username(sampass)));
 		/* No return, we want to check the LM hash below in this case */
-		ntlmssp_flags &= (~(NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_NTLM2));
+		auth_flags &= (~(AUTH_FLAG_NTLMv2_RESP |  AUTH_FLAG_NTLM_RESP));
 	}
 	
-	if (ntlmssp_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+	if (auth_flags & AUTH_FLAG_NTLMv2_RESP) {
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
@@ -185,7 +185,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			DEBUG(3,("sam_password_ok: NTLMv2 password check failed\n"));
 			return NT_STATUS_WRONG_PASSWORD;
 		}
-	} else if (ntlmssp_flags & NTLMSSP_NEGOTIATE_NTLM) {
+	} else if (auth_flags & AUTH_FLAG_NTLM_RESP) {
 		if (lp_ntlm_auth()) {				
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
@@ -208,10 +208,10 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	
 	if (lm_pw == NULL) {
 		DEBUG(3,("sam_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",pdb_get_username(sampass)));
-		ntlmssp_flags &= (~NTLMSSP_NEGOTIATE_OEM);		
+		auth_flags &= (~AUTH_FLAG_LM_RESP);		
 	}
 	
-	if (ntlmssp_flags & NTLMSSP_NEGOTIATE_OEM) {
+	if (auth_flags & AUTH_FLAG_LM_RESP) {
 		
 		if (user_info->lm_resp.length != 24) {
 			DEBUG(2,("sam_password_ok: invalid LanMan password length (%d) for user %s\n", 

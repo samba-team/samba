@@ -346,6 +346,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	NTSTATUS nt_status;
 	int sess_vuid;
 	BOOL as_guest;
+	uint32 auth_flags = AUTH_FLAG_NONE;
 
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
@@ -382,12 +383,22 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	file_save("lmhash1.dat", lmhash.data, lmhash.length);
 #endif
 
+	if (lmhash.length) {
+		auth_flags |= AUTH_FLAG_LM_RESP;
+	}
+
+	if (nthash.length == 24) {
+		auth_flags |= AUTH_FLAG_NTLM_RESP;
+	} else if (nthash.length > 24) {
+		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
+	}
+
 	if (!make_user_info_map(&user_info, 
 				user, workgroup, 
 				machine, 
 				lmhash, nthash,
 				plaintext_password, 
-				neg_flags, True)) {
+				auth_flags, True)) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
