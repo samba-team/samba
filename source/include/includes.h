@@ -169,7 +169,7 @@ typedef int socklen_t;
   system networking headers everywhere
 */
 struct ipv4_addr {
-	uint32_t s_addr;
+	uint32_t addr;
 };
 
 #ifndef MIN

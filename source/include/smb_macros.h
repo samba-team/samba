@@ -130,6 +130,7 @@ true if two IP addresses are equal
 ****************************************************************************/
 
 #define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
+#define ipv4_equal(ip1,ip2) ((ip1).addr == (ip2).addr)
 
 /*****************************************************************
  splits out the last subkey of a key
