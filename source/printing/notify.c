@@ -26,10 +26,22 @@ static TALLOC_CTX *send_ctx;
 
 static struct notify_queue {
 	struct notify_queue *next, *prev;
-	char *printername;
-	void *buf;
+	struct spoolss_notify_msg *msg;
+	char *buf;
 	size_t buflen;
 } *notify_queue_head = NULL;
+
+
+static BOOL create_send_ctx(void)
+{
+	if (!send_ctx)
+		send_ctx = talloc_init("print notify queue");
+
+	if (!send_ctx)
+		return False;
+
+	return True;
+}
 
 /****************************************************************************
  Turn a queue name into a snum.
@@ -53,6 +65,49 @@ BOOL print_notify_messages_pending(void)
 }
 
 /*******************************************************************
+ Flatten data into a message.
+*******************************************************************/
+
+static BOOL flatten_message(struct notify_queue *q)
+{
+	struct spoolss_notify_msg *msg = q->msg;
+	char *buf = NULL;
+	size_t buflen = 0, len;
+
+again:
+	len = 0;
+
+	/* Pack header */
+
+	len += tdb_pack(buf + len, buflen - len, NULL, "f", msg->printer);
+
+	len += tdb_pack(buf + len, buflen - len, NULL, "ddddd",
+			msg->type, msg->field, msg->id, msg->len, msg->flags);
+
+	/* Pack data */
+
+	if (msg->len == 0)
+		len += tdb_pack(buf + len, buflen - len, NULL, "dd",
+				msg->notify.value[0], msg->notify.value[1]);
+	else
+		len += tdb_pack(buf + len, buflen - len, NULL, "B",
+				msg->len, msg->notify.data);
+
+	if (buflen != len) {
+		buf = talloc_realloc(send_ctx, buf, len);
+		if (!buf)
+			return False;
+		buflen = len;
+		goto again;
+	}
+
+	q->buf = buf;
+	q->buflen = buflen;
+
+	return True;
+}
+
+/*******************************************************************
  Send the batched messages - on a per-printer basis.
 *******************************************************************/
 
@@ -67,7 +122,12 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 
 	/* Count the space needed to send the messages. */
 	for (pq = notify_queue_head; pq; pq = pq->next) {
-		if (strequal(printer, pq->printername)) {
+		if (strequal(printer, pq->msg->printer)) {
+			if (!flatten_message(pq)) {
+				DEBUG(0,("print_notify_send_messages: Out of memory\n"));
+				talloc_destroy_pool(send_ctx);
+				return;
+			}
 			offset += (pq->buflen + 4);
 			msg_count++;
 		}	
@@ -87,7 +147,7 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 	for (pq = notify_queue_head; pq; pq = pq_next) {
 		pq_next = pq->next;
 
-		if (strequal(printer, pq->printername)) {
+		if (strequal(printer, pq->msg->printer)) {
 			SIVAL(buf,offset,pq->buflen);
 			offset += 4;
 			memcpy(buf + offset, pq->buf, pq->buflen);
@@ -121,11 +181,11 @@ void print_notify_send_messages(unsigned int timeout)
 	if (!print_notify_messages_pending())
 		return;
 
-	if (!send_ctx)
+	if (!create_send_ctx())
 		return;
 
 	while (print_notify_messages_pending())
-		print_notify_send_messages_to_printer(notify_queue_head->printername, timeout);
+		print_notify_send_messages_to_printer(notify_queue_head->msg->printer, timeout);
 
 	talloc_destroy_pool(send_ctx);
 }
@@ -136,113 +196,107 @@ void print_notify_send_messages(unsigned int timeout)
 
 static void send_spoolss_notify2_msg(struct spoolss_notify_msg *msg)
 {
-	char *buf = NULL;
-	size_t buflen = 0, len;
 	struct notify_queue *pnqueue, *tmp_ptr;
 
-	/* Let's not waste any time with this */
+	/*
+	 * Ensure we only have one message unique to each name/type/field/id/flags
+	 * tuple. There is no point in sending multiple messages that match
+	 * as they will just cause flickering updates in the client.
+	 */
 
-	if (lp_disable_spoolss())
-		return;
+	for (tmp_ptr = notify_queue_head; tmp_ptr; tmp_ptr = tmp_ptr->next) {
+		if (tmp_ptr->msg->type == msg->type &&
+				tmp_ptr->msg->field == msg->field &&
+				tmp_ptr->msg->id == msg->id &&
+				tmp_ptr->msg->flags == msg->flags &&
+				strequal(tmp_ptr->msg->printer, msg->printer)) {
 
-	if (!send_ctx)
-		send_ctx = talloc_init("print notify queue");
+			DEBUG(5, ("send_spoolss_notify2_msg: replacing message 0x%02x/0x%02x for printer %s \
+in notify_queue\n", msg->type, msg->field, msg->printer));
 
-	if (!send_ctx)
-		goto fail;
-
-	/* Flatten data into a message */
-
-again:
-	len = 0;
-
-	/* Pack header */
-
-	len += tdb_pack(buf + len, buflen - len, "f", msg->printer);
-
-	len += tdb_pack(buf + len, buflen - len, "ddddd",
-			msg->type, msg->field, msg->id, msg->len, msg->flags);
-
-	/* Pack data */
-
-	if (msg->len == 0)
-		len += tdb_pack(buf + len, buflen - len, "dd",
-				msg->notify.value[0], msg->notify.value[1]);
-	else
-		len += tdb_pack(buf + len, buflen - len, "B",
-				msg->len, msg->notify.data);
-
-	if (buflen != len) {
-		buf = talloc_realloc(send_ctx, buf, len);
-		if (!buf)
-			goto fail;
-		buflen = len;
-		goto again;
+			tmp_ptr->msg = msg;
+			return;
+		}
 	}
 
 	/* Store the message on the pending queue. */
 
 	pnqueue = talloc(send_ctx, sizeof(*pnqueue));
-	if (!pnqueue)
-		goto fail;
+	if (!pnqueue) {
+		DEBUG(0,("send_spoolss_notify2_msg: Out of memory.\n"));
+		return;
+	}
 
-	pnqueue->printername = talloc_strdup(send_ctx, msg->printer);
-	if (!pnqueue->printername)
-		 goto fail;
-
-	pnqueue->buf = buf;
-	pnqueue->buflen = buflen;
+	pnqueue->msg = msg;
+	pnqueue->buf = NULL;
+	pnqueue->buflen = 0;
 
 	DEBUG(5, ("send_spoolss_notify2_msg: appending message 0x%02x/0x%02x for printer %s \
 to notify_queue_head\n", msg->type, msg->field, msg->printer));
-		  
-	/* Note we add to the end of the list to ensure
+
+	/*
+	 * Note we add to the end of the list to ensure
 	 * the messages are sent in the order they were received. JRA.
 	 */
+
 	DLIST_ADD_END(notify_queue_head, pnqueue, tmp_ptr);
-
-	return;
-
-  fail:
-
-	DEBUG(0,("send_spoolss_notify2_msg: Out of memory.\n"));
 }
 
 static void send_notify_field_values(const char *printer_name, uint32 type,
 				     uint32 field, uint32 id, uint32 value1, 
 				     uint32 value2, uint32 flags)
 {
-	struct spoolss_notify_msg msg;
+	struct spoolss_notify_msg *msg;
 
-	ZERO_STRUCT(msg);
+	if (lp_disable_spoolss())
+		return;
 
-	fstrcpy(msg.printer, printer_name);
-	msg.type = type;
-	msg.field = field;
-	msg.id = id;
-	msg.notify.value[0] = value1;
-	msg.notify.value[1] = value2;
-	msg.flags = flags;
+	if (!create_send_ctx())
+		return;
 
-	send_spoolss_notify2_msg(&msg);
+	msg = (struct spoolss_notify_msg *)talloc(send_ctx, sizeof(struct spoolss_notify_msg));
+	if (!msg)
+		return;
+
+	ZERO_STRUCTP(msg);
+
+	fstrcpy(msg->printer, printer_name);
+	msg->type = type;
+	msg->field = field;
+	msg->id = id;
+	msg->notify.value[0] = value1;
+	msg->notify.value[1] = value2;
+	msg->flags = flags;
+
+	send_spoolss_notify2_msg(msg);
 }
 
 static void send_notify_field_buffer(const char *printer_name, uint32 type,
 				     uint32 field, uint32 id, uint32 len,
 				     char *buffer)
 {
-	struct spoolss_notify_msg msg;
+	struct spoolss_notify_msg *msg;
 
-	ZERO_STRUCT(msg);
+	if (lp_disable_spoolss())
+		return;
 
-	fstrcpy(msg.printer, printer_name);
-	msg.type = type;
-	msg.field = field;
-	msg.id = id;
-	msg.len = len;
-	msg.notify.data = buffer;
+	if (!create_send_ctx())
+		return;
 
-	send_spoolss_notify2_msg(&msg);
+	msg = (struct spoolss_notify_msg *)talloc(send_ctx, sizeof(struct spoolss_notify_msg));
+	if (!msg)
+		return;
+
+	ZERO_STRUCTP(msg);
+
+	fstrcpy(msg->printer, printer_name);
+	msg->type = type;
+	msg->field = field;
+	msg->id = id;
+	msg->len = len;
+	msg->notify.data = buffer;
+
+	send_spoolss_notify2_msg(msg);
 }
 
 /* Send a message that the printer status has changed */
@@ -447,5 +501,3 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 	SAFE_FREE(data.dptr);
 	return ret;
 }
-
-
