@@ -1,5 +1,7 @@
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.in: add get_default_username
+
 	* get_default_username.c: new file
 
 	* roken.h.in (get_default_username): add prototype

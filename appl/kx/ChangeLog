@@ -1,5 +1,7 @@
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
+	* krb4.c (krb4_authenticate): get rid of a warning
+
 	* kx.h: const-pollution
 
 	* kx.c: use get_default_username and resulting const pollution

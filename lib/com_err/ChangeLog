@@ -1,3 +1,7 @@
+1999-06-13  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in: make it solaris make vpath-safe
+
 Thu Apr  1 11:13:53 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* compile_et.c: use getargs
