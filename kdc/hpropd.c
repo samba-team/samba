@@ -372,8 +372,8 @@ main(int argc, char **argv)
 		    if(ret)
 			krb5_err(context, 1, ret, "db_close");
 		}
-		break;
 	    }
+	    break;
 	}
 	ret = hdb_value2entry(context, &data, &entry);
 	if(ret)
@@ -403,6 +403,7 @@ main(int argc, char **argv)
 	}
 	hdb_free_entry(context, &entry);
     }
-    krb5_log(context, fac, 0, "Received %d principals", nprincs);
+    if (!print_dump)
+	krb5_log(context, fac, 0, "Received %d principals", nprincs);
     exit(0);
 }
