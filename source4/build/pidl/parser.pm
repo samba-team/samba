@@ -232,7 +232,7 @@ sub ParseElementPrintScalar($$)
 	} elsif (util::has_direct_buffers($e)) {
 		$res .= "\tndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});\n";
 		$res .= "\tndr->depth++;\n";
-		ParseElementPrintBuffer($e, "r->");
+		ParseElementPrintBuffer($e, $var_prefix);
 		$res .= "\tndr->depth--;\n";
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPrintSwitch($e, $var_prefix, $switch);
@@ -387,16 +387,12 @@ sub ParseElementPrintBuffer($$)
 	my($var_prefix) = shift;
 	my $cprefix = util::c_push_prefix($e);
 
-	if (util::is_pure_scalar($e)) {
-		return;
-	}
-
 	if (util::need_wire_pointer($e)) {
 		$res .= "\tif ($var_prefix$e->{NAME}) {\n";
 	}
 	    
 	if (util::array_size($e)) {
-		ParseArrayPrint($e, "r->");
+		ParseArrayPrint($e, $var_prefix);
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPrintSwitch($e, $var_prefix, $switch);
 	} else {
@@ -777,7 +773,7 @@ sub ParseTypedefPull($)
 
 
 #####################################################################
-# parse a typedef - push side
+# parse a typedef - print side
 sub ParseTypedefPrint($)
 {
 	my($e) = shift;
@@ -797,6 +793,43 @@ sub ParseTypedefPrint($)
 		ParseTypePrint($e->{DATA});
 		$res .= "}\n\n";
 	}
+}
+
+#####################################################################
+# parse a function - print side
+sub ParseFunctionPrint($)
+{
+	my($fn) = shift;
+
+	$res .= "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, struct $fn->{NAME} *r)";
+	$res .= "\n{\n";
+	$res .= "\tndr_print_struct(ndr, name, \"$fn->{NAME}\");\n";
+	$res .= "\tndr->depth++;\n";
+	
+	$res .= "\tif (flags & NDR_IN) {\n";
+	$res .= "\t\tndr_print_struct(ndr, \"in\", \"$fn->{NAME}\");\n";
+	$res .= "\tndr->depth++;\n";
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "in")) {
+			ParseElementPrintScalar($e, "r->in.");
+		}
+	}
+	$res .= "\tndr->depth--;\n";
+	$res .= "\t}\n";
+	
+	$res .= "\tif (flags & NDR_OUT) {\n";
+	$res .= "\t\tndr_print_struct(ndr, \"out\", \"$fn->{NAME}\");\n";
+	$res .= "\tndr->depth++;\n";
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "out")) {
+			ParseElementPrintScalar($e, "r->out.");
+		}
+	}
+	$res .= "\tndr->depth--;\n";
+	$res .= "\t}\n";
+	
+	$res .= "\tndr->depth--;\n";
+	$res .= "}\n\n";
 }
 
 
@@ -900,6 +933,10 @@ sub ParseInterface($)
 		if ($d->{TYPE} eq "TYPEDEF" &&
 		    !util::has_property($d->{DATA}, "noprint")) {
 			ParseTypedefPrint($d);
+		}
+		if ($d->{TYPE} eq "FUNCTION" &&
+		    !util::has_property($d, "noprint")) {
+			ParseFunctionPrint($d);
 		}
 	}
 }

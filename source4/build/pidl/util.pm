@@ -150,6 +150,10 @@ sub has_property($$)
 	my($e) = shift;
 	my($p) = shift;
 
+	if (!defined $e->{PROPERTIES}) {
+		return;
+	}
+
 	my($props) = $e->{PROPERTIES};
 
 	foreach my $d (@{$props}) {
