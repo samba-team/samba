@@ -101,7 +101,7 @@ statement	: TABLE STRING ';'
 		}
 		| END ';'
 		{
-		    return;
+		    YYACCEPT;
 		}
 		;
 
