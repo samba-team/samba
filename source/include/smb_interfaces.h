@@ -1905,8 +1905,9 @@ union smb_search_data {
 
 	/* RAW_SEARCH_UNIX_INFO interface */
 	struct {
-		large_t end_of_file;
-		large_t num_bytes;
+		uint32 file_index;
+		large_t size;
+		large_t alloc_size;
 		NTTIME status_change_time;
 		NTTIME access_time;
 		NTTIME change_time;
@@ -1918,6 +1919,7 @@ union smb_search_data {
 		large_t unique_id;
 		large_t permissions;
 		large_t nlink;		
+		WIRE_STRING name;
 	} unix_info;
 };
 
