@@ -776,9 +776,8 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 			 struct list_struct *rec)
 {
 	tdb_off next;
-	int first = (tlock->off == 0);
 
-	/* No traversal allows if you've called tdb_lockkeys() */
+	/* No traversal allows sf you've called tdb_lockkeys() */
 	if (tdb->lockedkeys) return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
 
 	/* Lock each chain from the start one. */
@@ -791,15 +790,17 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 				     &tlock->off) == -1)
 				goto fail;
 		} else {
-			/* Othereisre unlock the previous record. */
-			unlock_record(tdb, tlock->off);
-		}
 
-		if (!first) {
-			/* Grab next record */
-			if (rec_read(tdb, tlock->off, rec) == -1) goto fail;
+			/* Get a copy of previous record, to go to next. */
+			if (rec_read(tdb, tlock->off, rec) == -1) {
+				unlock_record(tdb, tlock->off);
+				goto fail;
+			}
+
 			tlock->off = rec->next;
-			first = 0;
+		
+			/* Now unlock the previous record. */
+			unlock_record(tdb, tlock->off);
 		}
 
 		/* Iterate through chain */
