@@ -73,6 +73,7 @@ enum pdb_elements {
 	PDB_LOGONTIME,
 	PDB_LOGOFFTIME,
 	PDB_KICKOFFTIME,
+	PDB_BAD_PASSWORD_TIME,
 	PDB_CANCHANGETIME,
 	PDB_MUSTCHANGETIME,
 	PDB_PLAINTEXT_PW,
@@ -141,6 +142,7 @@ typedef struct sam_passwd
 		time_t logon_time;            /* logon time */
 		time_t logoff_time;           /* logoff time */
 		time_t kickoff_time;          /* kickoff time */
+		time_t bad_password_time;     /* last bad password entered */
 		time_t pass_last_set_time;    /* password last set time */
 		time_t pass_can_change_time;  /* password can change time */
 		time_t pass_must_change_time; /* password must change time */
