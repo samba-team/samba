@@ -891,7 +891,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	fstring nt_samname;
 	char *enc_user_sess_key = NULL;
 	char usr_sess_key[16];
-	char lm_pw8[16];
+	char lm_pw8[40];
 	char *padding = NULL;
 	uint32 status_pwd = 0x0;
 	SAM_USERINFO_CTR ctr;
