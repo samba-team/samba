@@ -2388,6 +2388,7 @@ BOOL directory_has_default_acl(connection_struct *conn, const char *fname)
         if (dir_acl != NULL && (conn->vfs_ops.sys_acl_get_entry(conn, dir_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1))
                 has_acl = True;
 
-        conn->vfs_ops.sys_acl_free_acl(conn, dir_acl);
+	if (dir_acl)
+	        conn->vfs_ops.sys_acl_free_acl(conn, dir_acl);
         return has_acl;
 }
