@@ -3723,17 +3723,19 @@ krb5_decrypt_EncryptedData(krb5_context context,
 static int
 seed_something(void)
 {
-    int fd = -1;
     char buf[1024], seedfile[256];
 
     /* If there is a seed file, load it. But such a file cannot be trusted,
        so use 0 for the entropy estimate */
     if (RAND_file_name(seedfile, sizeof(seedfile))) {
+	int fd;
 	fd = open(seedfile, O_RDONLY);
 	if (fd >= 0) {
-	    read(fd, buf, sizeof(buf));
-	    /* Use the full buffer anyway */
-	    RAND_add(buf, sizeof(buf), 0.0);
+	    ssize_t ret;
+	    ret = read(fd, buf, sizeof(buf));
+	    if (ret > 0)
+		RAND_add(buf, ret, 0.0);
+	    close(fd);
 	} else
 	    seedfile[0] = '\0';
     } else
