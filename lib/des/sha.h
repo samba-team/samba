@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -46,13 +46,14 @@
 #include <ktypes.h>
 #endif
 
-struct sha {
-  unsigned int offset;
-  unsigned int sz;
+struct sha1 {
+  unsigned int sz[2];
   u_int32_t counter[5];
   unsigned char save[64];
 };
 
-void sha_init (struct sha *m);
-void sha_update (struct sha *m, const void *v, size_t len);
-void sha_finito (struct sha *m, void *res);
+typedef struct sha1 SHA1_CTX;
+
+void SHA1Init (struct sha1 *m);
+void SHA1Update (struct sha1 *m, const void *v, size_t len);
+void SHA1Final (void *res, struct sha1 *m);

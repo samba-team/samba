@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -47,12 +47,13 @@
 #endif
 
 struct md4 {
-  unsigned int offset;
-  unsigned int sz;
+  unsigned int sz[2];
   u_int32_t counter[4];
   unsigned char save[64];
 };
 
-void md4_init (struct md4 *m);
-void md4_update (struct md4 *m, const void *p, size_t len);
-void md4_finito (struct md4 *m, void *res);
+typedef struct md4 MD4_CTX;
+
+void MD4Init (struct md4 *m);
+void MD4Update (struct md4 *m, const void *p, size_t len);
+void MD4Final (void *res, struct md4 *m);
