@@ -80,7 +80,7 @@ static void wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
-static void api_wks_query_info( uint16 vuid, prs_struct *data,
+static void api_wks_query_info( pipes_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	WKS_Q_QUERY_INFO q_u;

@@ -4,7 +4,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Jean François Micouleau           1998.
+ *  Copyright (C) Jean François Micouleau      1998-1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -269,6 +269,7 @@ static BOOL set_printer_hnd_printername(PRINTER_HND *hnd, char *printername)
 					{
 						DEBUGADD(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
 						strncpy(Printer[pnum].dev.printername, lp_servicename(snum), strlen(lp_servicename(snum)));
+						free_a_printer(printer, 2);
 						return True;
 						break;	
 					}
@@ -413,7 +414,7 @@ static void spoolss_reply_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *rd
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static void api_spoolss_open_printer(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static void api_spoolss_open_printer(pipes_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_OPEN_PRINTER q_u;
 
@@ -516,7 +517,7 @@ static BOOL getprinterdata_printer(PRINTER_HND *handle, fstring value, uint32 si
 	NT_PRINTER_INFO_LEVEL printer;
 	int pnum=0;
 	int snum=0;
-	uint8 *idata;
+	uint8 *idata=NULL;
 	uint32 len;
 	
 	DEBUG(5,("getprinterdata_printer\n"));
@@ -538,6 +539,7 @@ static BOOL getprinterdata_printer(PRINTER_HND *handle, fstring value, uint32 si
 					bzero(*data, sizeof(uint8)*size);
 					memcpy(*data, idata, len>size?size:len);
 					*needed = len;
+					if (idata) free(idata);
 					break;
 				/*case 4:
 					*numeric_data=atoi(idata);
@@ -545,7 +547,7 @@ static BOOL getprinterdata_printer(PRINTER_HND *handle, fstring value, uint32 si
 			}
 			return (True);
 		}
-
+		free_a_printer(printer, 2);
 	}
 
 	return (False);
@@ -581,6 +583,10 @@ static void spoolss_reply_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct
 	{
 		r_u.size  = q_u->size;
 		r_u.status = 0x0;
+		r_u.type   = 0x4;
+		r_u.needed = 0x0;
+		r_u.data   = NULL;
+		r_u.numeric_data=0x0;
 		
 		unistr2_to_ascii(value, &(q_u->valuename), sizeof(value)-1);
 		
@@ -609,6 +615,7 @@ static void spoolss_reply_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct
 		}
 			
 		spoolss_io_r_getprinterdata("", &r_u, rdata, 0);
+		if (r_u.data) free(r_u.data);
 	}	
 }
 
@@ -617,7 +624,7 @@ static void spoolss_reply_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static void api_spoolss_getprinterdata(uint16 vuid, prs_struct *data, 
+static void api_spoolss_getprinterdata(pipes_struct *p, prs_struct *data, 
                                         prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDATA q_u;
@@ -661,7 +668,7 @@ static void spoolss_reply_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *rd
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static void api_spoolss_closeprinter(uint16 vuid, prs_struct *data, 
+static void api_spoolss_closeprinter(pipes_struct *p, prs_struct *data, 
                                       prs_struct *rdata)
 {
 	SPOOL_Q_CLOSEPRINTER q_u;
@@ -696,7 +703,7 @@ static void spoolss_reply_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, prs_struct *rdata)
  *
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  ********************************************************************/
-static void api_spoolss_rffpcnex(uint16 vuid, prs_struct *data, 
+static void api_spoolss_rffpcnex(pipes_struct *p, prs_struct *data, 
                                   prs_struct *rdata)
 {
 	SPOOL_Q_RFFPCNEX q_u;
@@ -732,7 +739,7 @@ static void api_spoolss_rffpcnex(uint16 vuid, prs_struct *data,
 /*******************************************************************
  * fill a notify_info_data with the servername
  ********************************************************************/
-static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_server_name(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	pstring temp_name;
 
@@ -746,7 +753,7 @@ static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
  * fill a notify_info_data with the servicename
  * jfmxxxx: it's incorrect should be long_printername
  ********************************************************************/
-static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_printer_name(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 /*
 	data->notify_data.data.length=strlen(lp_servicename(snum));
@@ -761,7 +768,7 @@ static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 /*******************************************************************
  * fill a notify_info_data with the servicename
  ********************************************************************/
-static void spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_share_name(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_servicename(snum));
 	ascii_to_unistr(data->notify_data.data.string,
@@ -772,7 +779,7 @@ static void spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 /*******************************************************************
  * fill a notify_info_data with the port name
  ********************************************************************/
-static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_port_name(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	/* even if it's strange, that's consistant in all the code */
 
@@ -787,7 +794,7 @@ static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, pri
  * jfmxxxx: it's incorrect, should be lp_printerdrivername()
  * but it doesn't exist, have to see what to do
  ********************************************************************/
-static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_driver_name(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->drivername);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -798,7 +805,7 @@ static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 /*******************************************************************
  * fill a notify_info_data with the comment
  ********************************************************************/
-static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_comment(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_comment(snum));
 	ascii_to_unistr(data->notify_data.data.string,
@@ -811,7 +818,7 @@ static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
  * jfm:xxxx incorrect, have to create a new smb.conf option
  * location = "Room 1, floor 2, building 3"
  ********************************************************************/
-static void spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_location(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->location);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -823,7 +830,7 @@ static void spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
  * fill a notify_info_data with the device mode
  * jfm:xxxx don't to it for know but that's a real problem !!!
  ********************************************************************/
-static void spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_devmode(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 }
 
@@ -832,7 +839,7 @@ static void spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
  * jfm:xxxx just return no file could add an option to smb.conf
  * separator file = "separator.txt"
  ********************************************************************/
-static void spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_sepfile(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->sepfile);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -844,7 +851,7 @@ static void spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
  * fill a notify_info_data with the print processor
  * jfm:xxxx return always winprint to indicate we don't do anything to it
  ********************************************************************/
-static void spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_print_processor(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->printprocessor);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -856,7 +863,7 @@ static void spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *dat
  * fill a notify_info_data with the print processor options
  * jfm:xxxx send an empty string
  ********************************************************************/
-static void spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_parameters(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->parameters);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -868,7 +875,7 @@ static void spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
  * fill a notify_info_data with the data type
  * jfm:xxxx always send RAW as data type
  ********************************************************************/
-static void spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_datatype(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->datatype);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -881,7 +888,7 @@ static void spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
  * jfm:xxxx send an null pointer to say no security desc
  * have to implement security before !
  ********************************************************************/
-static void spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_security_desc(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=0;
 	data->notify_data.data.string[0]=0x00;
@@ -891,7 +898,7 @@ static void spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data,
  * fill a notify_info_data with the attributes
  * jfm:xxxx a samba printer is always shared
  ********************************************************************/
-static void spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_attributes(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] =   PRINTER_ATTRIBUTE_SHARED   \
 	                             | PRINTER_ATTRIBUTE_NETWORK  \
@@ -901,7 +908,7 @@ static void spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 /*******************************************************************
  * fill a notify_info_data with the priority
  ********************************************************************/
-static void spoolss_notify_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_priority(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->priority;
 }
@@ -909,7 +916,7 @@ static void spoolss_notify_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 /*******************************************************************
  * fill a notify_info_data with the default priority
  ********************************************************************/
-static void spoolss_notify_default_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_default_priority(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->default_priority;
 }
@@ -917,7 +924,7 @@ static void spoolss_notify_default_priority(int snum, SPOOL_NOTIFY_INFO_DATA *da
 /*******************************************************************
  * fill a notify_info_data with the start time
  ********************************************************************/
-static void spoolss_notify_start_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_start_time(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->starttime;
 }
@@ -925,7 +932,7 @@ static void spoolss_notify_start_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 /*******************************************************************
  * fill a notify_info_data with the until time
  ********************************************************************/
-static void spoolss_notify_until_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_until_time(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->untiltime;
 }
@@ -933,7 +940,7 @@ static void spoolss_notify_until_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 /*******************************************************************
  * fill a notify_info_data with the status
  ********************************************************************/
-static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_status(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	int count;
 	print_queue_struct *q=NULL;
@@ -941,28 +948,30 @@ static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 
 	bzero(&status,sizeof(status));
 
-	count=get_printqueue(snum,0,&q,&status);
+	count=get_printqueue(snum, conn, &q, &status);
 
 	data->notify_data.value[0]=(uint32) status.status;
+	if (q) free(q);
 }
 
 /*******************************************************************
  * fill a notify_info_data with the number of jobs queued
  ********************************************************************/
-static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_cjobs(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	print_queue_struct *q=NULL;
 	print_status_struct status;
 
 	bzero(&status,sizeof(status));
 
-	data->notify_data.value[0]=get_printqueue(snum,0,&q,&status);
+	data->notify_data.value[0]=get_printqueue(snum, conn, &q, &status);
+	if (q) free(q);
 }
 
 /*******************************************************************
  * fill a notify_info_data with the average ppm
  ********************************************************************/
-static void spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_average_ppm(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	/* always respond 8 pages per minutes */
 	/* a little hard ! */
@@ -972,7 +981,7 @@ static void spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_username(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->user);
 	ascii_to_unistr(data->notify_data.data.string, queue->user, sizeof(data->notify_data.data.string)-1);
@@ -981,7 +990,7 @@ static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_status(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=queue->status;
 }
@@ -989,7 +998,7 @@ static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_name(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->file);
 	ascii_to_unistr(data->notify_data.data.string, queue->file, sizeof(data->notify_data.data.string)-1);
@@ -998,7 +1007,7 @@ static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_status_string(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen("En attente");
 	ascii_to_unistr(data->notify_data.data.string, "En attente", sizeof(data->notify_data.data.string)-1);
@@ -1007,7 +1016,7 @@ static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *d
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-static void spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_time(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=0x0;
 }
@@ -1015,7 +1024,7 @@ static void spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-static void spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_size(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=queue->size;
 }
@@ -1023,7 +1032,7 @@ static void spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-static void spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_position(connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=queue->job;
 }
@@ -1182,7 +1191,7 @@ static void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, 
  * 
  ********************************************************************/
 static void construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int pnum, 
-					  int snum, int i, uint32 id)
+					  int snum, int i, uint32 id, connection_struct *conn)
 {
 
 	int k,j;
@@ -1215,7 +1224,7 @@ static void construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int pnum,
 				construct_info_data(info_data, type, field, id);
 			
 				DEBUGADD(4,("notify_info_data_table: in\n"));
-				notify_info_data_table[j].fn(snum, info_data, queue, &printer);
+				notify_info_data_table[j].fn(conn,snum, info_data, queue, &printer);
 				DEBUGADD(4,("notify_info_data_table: out\n"));
 				info->count++;
 				info_data=&(info->data[info->count]);
@@ -1232,7 +1241,7 @@ static void construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int pnum,
  * 
  ********************************************************************/
 static void construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_INFO *info,
-                                       int pnum, int snum, int i, uint32 id)
+                                       int pnum, int snum, int i, uint32 id, connection_struct *conn)
 {
 
 	int k,j;
@@ -1261,13 +1270,13 @@ static void construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
 				DEBUGADD(4,("j=[%d]:%s\n", j, notify_info_data_table[j].name));
 				construct_info_data(info_data, type, field, id);
 				DEBUGADD(4,("notify_info_data_table: in\n"));
-				notify_info_data_table[j].fn(snum, info_data, queue, &printer);
+				notify_info_data_table[j].fn(conn, snum, info_data, queue, &printer);
 				DEBUGADD(4,("notify_info_data_table: out\n"));
 				info->count++;
 				info_data=&(info->data[info->count]);
 			}
 		}
-	free_a_printer(printer, 2);
+		free_a_printer(printer, 2);
 	}
 }
 
@@ -1278,7 +1287,7 @@ static void construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void printserver_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info)
+static void printserver_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info, connection_struct *conn)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
@@ -1297,7 +1306,7 @@ static void printserver_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info)
 	  {
 	   if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
 	   {
-		construct_notify_printer_info(info, pnum, snum, i, id);
+		construct_notify_printer_info(info, pnum, snum, i, id, conn);
 		id++;
 	   }
 	  }
@@ -1311,7 +1320,7 @@ static void printserver_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info)
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void printer_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info)
+static void printer_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info, connection_struct *conn)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
@@ -1328,7 +1337,7 @@ static void printer_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info)
 		 {
 		  case PRINTER_NOTIFY_TYPE:
 		   {
-		  	construct_notify_printer_info(info, pnum, snum, i, id);
+		  	construct_notify_printer_info(info, pnum, snum, i, id, conn);
 			id--;
 			break;
 		   }
@@ -1338,11 +1347,12 @@ static void printer_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info)
 			print_queue_struct *queue=NULL;
 			print_status_struct status;
 			bzero(&status, sizeof(status));	
-			count=get_printqueue(snum, 0, &queue, &status);
+			count=get_printqueue(snum, conn, &queue, &status);
 			for (j=0; j<count; j++)
 			{
-			   	construct_notify_jobs_info(&(queue[j]), info, pnum, snum, i, queue[j].job);
+			   	construct_notify_jobs_info(&(queue[j]), info, pnum, snum, i, queue[j].job, conn);
 			}
+			if (queue) free(queue);
 			break;
 		   }
 		 }
@@ -1355,7 +1365,7 @@ static void printer_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info)
  *
  * called from api_spoolss_rfnpcnex (see this to understand)
  ********************************************************************/
-static void spoolss_reply_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata)
+static void spoolss_reply_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata, connection_struct *conn)
 {
 	SPOOL_R_RFNPCNEX r_u;
 	int pnum=find_printer_index_by_hnd(&(q_u->handle));
@@ -1366,10 +1376,10 @@ static void spoolss_reply_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata)
 		switch (Printer[pnum].printer_type)
 		{
 		case PRINTER_HANDLE_IS_PRINTSERVER:
-			printserver_notify_info(&(q_u->handle), &(r_u.info));
+			printserver_notify_info(&(q_u->handle), &(r_u.info), conn);
 			break;
 		case PRINTER_HANDLE_IS_PRINTER:
-			printer_notify_info(&(q_u->handle), &(r_u.info));
+			printer_notify_info(&(q_u->handle), &(r_u.info), conn);
 			break;
 		}
 		
@@ -1383,21 +1393,21 @@ static void spoolss_reply_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_rfnpcnex(uint16 vuid, prs_struct *data, 
+static void api_spoolss_rfnpcnex(pipes_struct *p, prs_struct *data, 
                                   prs_struct *rdata)
 {
 	SPOOL_Q_RFNPCNEX q_u;
 
 	spoolss_io_q_rfnpcnex("", &q_u, data, 0);
 
-	spoolss_reply_rfnpcnex(&q_u,rdata);
+	spoolss_reply_rfnpcnex(&q_u, rdata, p->conn);
 }
 
 /********************************************************************
  * construct_printer_info_0
  * fill a printer_info_1 struct
  ********************************************************************/
-static void construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring servername)
+static void construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring servername, connection_struct *conn)
 {
 	pstring chaine;
 	int count;
@@ -1405,7 +1415,7 @@ static void construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
 	bzero(&status,sizeof(status));	
-	count=get_printqueue(snum,0,&queue,&status);
+	count=get_printqueue(snum, conn ,&queue,&status);
 	
 	/* the description and the name are of the form \\server\share */
 	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, lp_servicename(snum));
@@ -1445,6 +1455,7 @@ static void construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	printer->unknown21    = 0x0648;
 	printer->unknown22    = 0x0;
 	printer->unknown23    = 0x5;
+	if (queue) free(queue);
 	
 }
 
@@ -1452,7 +1463,7 @@ static void construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
  * construct_printer_info_1
  * fill a printer_info_1 struct
  ********************************************************************/
-static BOOL construct_printer_info_1(PRINTER_INFO_1 *printer,int snum, pstring servername)
+static BOOL construct_printer_info_1(PRINTER_INFO_1 *printer,int snum, pstring servername, connection_struct *conn)
 {
 	pstring chaine;
 	NT_PRINTER_INFO_LEVEL ntprinter;
@@ -1544,7 +1555,7 @@ static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
  * construct_printer_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
-static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring servername)
+static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring servername, connection_struct *conn)
 {
 	pstring chaine;
 	int count;
@@ -1554,7 +1565,7 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
 	bzero(&status, sizeof(status));	
-	count=get_printqueue(snum, 0, &queue, &status);
+	count=get_printqueue(snum, conn, &queue, &status);
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
 	{
@@ -1596,6 +1607,8 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
 	construct_dev_mode(devmode, snum, servername);			
 	printer->devmode=devmode;
 	
+	if (queue) free(queue);
+	free_a_printer(ntprinter, 2);
 	return (True);
 }
 
@@ -1603,14 +1616,14 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
  * enum_printer_info_1
  * glue between spoolss_reply_enumprinters and construct_printer_info_1
  ********************************************************************/
-static BOOL enum_printer_info_1(PRINTER_INFO_1 **printer, int snum, int number)
+static BOOL enum_printer_info_1(PRINTER_INFO_1 **printer, int snum, int number, connection_struct *conn)
 {
 	pstring servername;
 
 	*printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
 	DEBUG(4,("Allocated memory for ONE PRINTER_INFO_1 at [%p]\n", *printer));	
 	pstrcpy(servername, global_myname);
-	if (!construct_printer_info_1(*printer, snum, servername))
+	if (!construct_printer_info_1(*printer, snum, servername, conn))
 	{
 		free(*printer);
 		return (False);
@@ -1625,14 +1638,14 @@ static BOOL enum_printer_info_1(PRINTER_INFO_1 **printer, int snum, int number)
  * enum_printer_info_2
  * glue between spoolss_reply_enumprinters and construct_printer_info_2
  ********************************************************************/
-static BOOL enum_printer_info_2(PRINTER_INFO_2 **printer, int snum, int number)
+static BOOL enum_printer_info_2(PRINTER_INFO_2 **printer, int snum, int number, connection_struct *conn)
 {
 	pstring servername;
 
 	*printer=(PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));
 	DEBUG(4,("Allocated memory for ONE PRINTER_INFO_2 at [%p]\n", *printer));	
 	pstrcpy(servername, global_myname);
-	if (!construct_printer_info_2(*printer, snum, servername))
+	if (!construct_printer_info_2(*printer, snum, servername, conn))
 	{
 		free(*printer);
 		return (False);
@@ -1648,7 +1661,7 @@ static BOOL enum_printer_info_2(PRINTER_INFO_2 **printer, int snum, int number)
  *
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
-static void enum_all_printers_info_1(PRINTER_INFO_1 ***printers, uint32 *number)
+static void enum_all_printers_info_1(PRINTER_INFO_1 ***printers, uint32 *number, connection_struct *conn)
 {
 	int snum;
 	int n_services=lp_numservices();
@@ -1662,7 +1675,7 @@ static void enum_all_printers_info_1(PRINTER_INFO_1 ***printers, uint32 *number)
 			DEBUG(4,("Found a printer: %s[%x]\n",lp_servicename(snum),snum));
 			*printers=Realloc(*printers, (*number+1)*sizeof(PRINTER_INFO_1 *));			
 			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1 pointers at [%p]\n", *number+1, *printers));		
-			if (enum_printer_info_1( &((*printers)[*number]), snum, *number) )
+			if (enum_printer_info_1( &((*printers)[*number]), snum, *number, conn) )
 			{			
 				(*number)++;
 			}
@@ -1675,7 +1688,7 @@ static void enum_all_printers_info_1(PRINTER_INFO_1 ***printers, uint32 *number)
  *
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
-static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number)
+static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number, connection_struct *conn)
 {
 	int snum;
 	int n_services=lp_numservices();
@@ -1689,7 +1702,7 @@ static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number)
 			DEBUG(4,("Found a printer: %s[%x]\n",lp_servicename(snum),snum));
 			*printers=Realloc(*printers, (*number+1)*sizeof(PRINTER_INFO_2 *));			
 			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1 pointers at [%p]\n", *number+1, *printers));			
-			if (enum_printer_info_2( &((*printers)[*number]), snum, *number) )
+			if (enum_printer_info_2( &((*printers)[*number]), snum, *number, conn) )
 			{			
 				(*number)++;
 			}
@@ -1755,7 +1768,7 @@ static void free_enum_printers_info(SPOOL_R_ENUMPRINTERS *r_u)
  *
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
-static void spoolss_reply_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rdata)
+static void spoolss_reply_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rdata, connection_struct *conn)
 {
 	SPOOL_R_ENUMPRINTERS r_u;
 	
@@ -1770,14 +1783,14 @@ static void spoolss_reply_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rd
 		case 1:
 			if ( (q_u->flags==PRINTER_ENUM_NAME) || (q_u->flags==PRINTER_ENUM_NETWORK) )
 				/*if (is_a_printerserver(q_u->servername))*/
-					enum_all_printers_info_1(&(r_u.printer.printers_1), &(r_u.returned) );
+					enum_all_printers_info_1(&(r_u.printer.printers_1), &(r_u.returned), conn );
 				/*else	
 					enum_one_printer_info_1(&r_u);*/
 			break;
 		case 2:
 			if ( (q_u->flags==PRINTER_ENUM_NAME) || (q_u->flags==PRINTER_ENUM_NETWORK) )
 				/*if (is_a_printerserver(q_u->servername))*/
-					enum_all_printers_info_2(&(r_u.printer.printers_2), &(r_u.returned) );
+					enum_all_printers_info_2(&(r_u.printer.printers_2), &(r_u.returned), conn );
 				/*else	
 					enum_one_printer_info_2(&r_u);*/
 			break;
@@ -1803,20 +1816,20 @@ static void spoolss_reply_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rd
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_enumprinters(uint16 vuid, prs_struct *data, 
+static void api_spoolss_enumprinters(pipes_struct *p, prs_struct *data, 
                                      prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERS q_u;
 
 	spoolss_io_q_enumprinters("", &q_u, data, 0);
 
-	spoolss_reply_enumprinters(&q_u,rdata);
+	spoolss_reply_enumprinters(&q_u, rdata, p->conn);
 }
 
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
+static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata, connection_struct *conn)
 {
 	SPOOL_R_GETPRINTER r_u;
 	int snum;
@@ -1834,7 +1847,7 @@ static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
 			
 			printer=(PRINTER_INFO_0 *)malloc(sizeof(PRINTER_INFO_0));
 			
-			construct_printer_info_0(printer, snum, servername);
+			construct_printer_info_0(printer, snum, servername, conn);
 			r_u.printer.info0=printer;
 			r_u.status=0x0000;
 			r_u.offered=q_u->offered;
@@ -1852,7 +1865,7 @@ static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
 			
 			printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
 
-			construct_printer_info_1(printer, snum, servername);
+			construct_printer_info_1(printer, snum, servername, conn);
 
 			r_u.printer.info1=printer;			
 			r_u.status=0x0000;
@@ -1869,7 +1882,7 @@ static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
 			PRINTER_INFO_2 *printer;
 			
 			printer=(PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));	
-			construct_printer_info_2(printer, snum, servername);
+			construct_printer_info_2(printer, snum, servername, conn);
 			
 			r_u.printer.info2=printer;	
 			r_u.status=0x0000;
@@ -1890,14 +1903,14 @@ static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_getprinter(uint16 vuid, prs_struct *data, 
+static void api_spoolss_getprinter(pipes_struct *p, prs_struct *data, 
                                    prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTER q_u;
 	
 	spoolss_io_q_getprinter("", &q_u, data, 0);
 
-	spoolss_reply_getprinter(&q_u, rdata);
+	spoolss_reply_getprinter(&q_u, rdata, p->conn);
 }
 
 /********************************************************************
@@ -2103,7 +2116,7 @@ static void spoolss_reply_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_getprinterdriver2(uint16 vuid, prs_struct *data,
+static void api_spoolss_getprinterdriver2(pipes_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDRIVER2 q_u;
@@ -2138,7 +2151,7 @@ static void spoolss_reply_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_st
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_startpageprinter(uint16 vuid, prs_struct *data,
+static void api_spoolss_startpageprinter(pipes_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_STARTPAGEPRINTER q_u;
@@ -2173,7 +2186,7 @@ static void spoolss_reply_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_endpageprinter(uint16 vuid, prs_struct *data,
+static void api_spoolss_endpageprinter(pipes_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_ENDPAGEPRINTER q_u;
@@ -2208,7 +2221,7 @@ static void spoolss_reply_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u, prs_stru
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_startdocprinter(uint16 vuid, prs_struct *data,
+static void api_spoolss_startdocprinter(pipes_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_STARTDOCPRINTER q_u;
@@ -2275,7 +2288,7 @@ static void spoolss_reply_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_enddocprinter(uint16 vuid, prs_struct *data,
+static void api_spoolss_enddocprinter(pipes_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_ENDDOCPRINTER q_u;
@@ -2375,7 +2388,7 @@ static void spoolss_reply_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, prs_struct *rd
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_writeprinter(uint16 vuid, prs_struct *data,
+static void api_spoolss_writeprinter(pipes_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_WRITEPRINTER q_u;
@@ -2390,6 +2403,7 @@ static void api_spoolss_writeprinter(uint16 vuid, prs_struct *data,
 	{
 		fd=Printer[pnum].document_fd;
 		size=write(fd, q_u.buffer, q_u.buffer_size);
+		if (q_u.buffer) free(q_u.buffer);
 		Printer[pnum].document_lastwritten=size;
 	}
 	
@@ -2401,31 +2415,25 @@ static void api_spoolss_writeprinter(uint16 vuid, prs_struct *data,
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void control_printer(PRINTER_HND handle, uint32 command)
+static void control_printer(PRINTER_HND handle, uint32 command, connection_struct *conn)
 {
 	int pnum;
 	int snum;
 	pnum = find_printer_index_by_hnd(&(handle));
 
 	if ( get_printer_snum(&handle, &snum) )
-	{
-		/*
-		 * status_printqueue requires a connection_struct
-		 * 
-		 * anybody want to explain me what value it has here ???
-		 */
-		 
+	{		 
 		switch (command)
 		{
 			case PRINTER_CONTROL_PAUSE:
 				/* pause the printer here */
-				status_printqueue(0, snum, LPSTAT_STOPPED);
+				status_printqueue(conn, snum, LPSTAT_STOPPED);
 				break;
 
 			case PRINTER_CONTROL_RESUME:
 			case PRINTER_CONTROL_UNPAUSE:
 				/* UN-pause the printer here */
-				status_printqueue(0, snum, LPSTAT_OK);
+				status_printqueue(conn, snum, LPSTAT_OK);
 				break;
 			case PRINTER_CONTROL_PURGE:
 				/* Envoi des dragées FUCA dans l'imprimante */
@@ -2522,7 +2530,7 @@ static void spoolss_reply_setprinter(SPOOL_Q_SETPRINTER *q_u, prs_struct *rdata)
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_setprinter(uint16 vuid, prs_struct *data,
+static void api_spoolss_setprinter(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_SETPRINTER q_u;
@@ -2537,7 +2545,7 @@ static void api_spoolss_setprinter(uint16 vuid, prs_struct *data,
 		switch (q_u.level)
 		{
 			case 0:
-				control_printer(q_u.handle, q_u.command);
+				control_printer(q_u.handle, q_u.command, p->conn);
 				break;
 			case 2:
 				update_printer(q_u.handle, q_u.level, q_u.info, q_u.devmode);
@@ -2560,7 +2568,7 @@ static void spoolss_reply_fcpn(SPOOL_Q_FCPN *q_u, prs_struct *rdata)
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_fcpn(uint16 vuid, prs_struct *data,
+static void api_spoolss_fcpn(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_FCPN q_u;
@@ -2583,7 +2591,7 @@ static void spoolss_reply_addjob(SPOOL_Q_ADDJOB *q_u, prs_struct *rdata)
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_addjob(uint16 vuid, prs_struct *data,
+static void api_spoolss_addjob(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ADDJOB q_u;
@@ -2665,7 +2673,7 @@ static void fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata)
+static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata, connection_struct *conn)
 {
 	SPOOL_R_ENUMJOBS r_u;
 	int snum;
@@ -2685,7 +2693,7 @@ static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata)
 
 	if (get_printer_snum(&(q_u->handle), &snum))
 	{
-		count=get_printqueue(snum, 0, &queue, &status);
+		count=get_printqueue(snum, conn, &queue, &status);
 		r_u.numofjobs=count;
 		
 		r_u.level=q_u->level;
@@ -2717,7 +2725,6 @@ static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata)
 				break;
 			}
 		}
-
 	}
 
 	r_u.status=0x0;
@@ -2736,18 +2743,20 @@ static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata)
 			break;
 		}
 	}
+	if (queue) free(queue);
+
 }
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_enumjobs(uint16 vuid, prs_struct *data,
+static void api_spoolss_enumjobs(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMJOBS q_u;
 	
 	spoolss_io_q_enumjobs("", &q_u, data, 0);
 
-	spoolss_reply_enumjobs(&q_u, rdata);
+	spoolss_reply_enumjobs(&q_u, rdata, p->conn);
 }
 
 /****************************************************************************
@@ -2763,7 +2772,7 @@ static void spoolss_reply_schedulejob(SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *rdat
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_schedulejob(uint16 vuid, prs_struct *data,
+static void api_spoolss_schedulejob(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_SCHEDULEJOB q_u;
@@ -2775,7 +2784,7 @@ static void api_spoolss_schedulejob(uint16 vuid, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata)
+static void spoolss_reply_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata, connection_struct *conn)
 {
 	SPOOL_R_SETJOB r_u;
 	int snum;
@@ -2789,7 +2798,7 @@ static void spoolss_reply_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata)
 
 	if (get_printer_snum(&(q_u->handle), &snum))
 	{
-		count=get_printqueue(snum, 0, &queue, &status);		
+		count=get_printqueue(snum, conn, &queue, &status);		
 		while ( (i<count) && found==False )
 		{
 			if ( q_u->jobid == queue[i].job )
@@ -2806,17 +2815,17 @@ static void spoolss_reply_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata)
 				case JOB_CONTROL_CANCEL:
 				case JOB_CONTROL_DELETE:
 				{
-					del_printqueue(0, snum, q_u->jobid);
+					del_printqueue(conn, snum, q_u->jobid);
 					break;
 				}
 				case JOB_CONTROL_PAUSE:
 				{
-					status_printjob(0, snum, q_u->jobid, LPQ_PAUSED);
+					status_printjob(conn, snum, q_u->jobid, LPQ_PAUSED);
 					break;
 				}
 				case JOB_CONTROL_RESUME:
 				{
-					status_printjob(0, snum, q_u->jobid, LPQ_QUEUED);
+					status_printjob(conn, snum, q_u->jobid, LPQ_QUEUED);
 					break;
 				}
 			}
@@ -2824,23 +2833,25 @@ static void spoolss_reply_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata)
 	}
 	r_u.status=0x0;
 	spoolss_io_r_setjob("",&r_u,rdata,0);
+	if (queue) free(queue);
+
 }
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_setjob(uint16 vuid, prs_struct *data,
+static void api_spoolss_setjob(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_SETJOB q_u;
 	
 	spoolss_io_q_setjob("", &q_u, data, 0);
 
-	spoolss_reply_setjob(&q_u, rdata);
+	spoolss_reply_setjob(&q_u, rdata, p->conn);
 }
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *rdata)
+static void spoolss_reply_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *rdata, connection_struct *conn)
 {
 	SPOOL_R_ENUMPRINTERDRIVERS r_u;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2857,7 +2868,7 @@ static void spoolss_reply_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, pr
 	fstrcpy(servername, global_myname);
 
 	unistr2_to_ascii(architecture, &(q_u->environment), sizeof(architecture));
-	count=get_ntdrivers(&list, architecture);
+	count=get_ntdrivers(conn, &list, architecture);
 
 	DEBUGADD(4,("we have: [%d] drivers on archi [%s]\n",count, architecture));
 	for (i=0; i<count; i++)
@@ -2939,14 +2950,14 @@ static void spoolss_reply_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, pr
 /****************************************************************************
 ****************************************************************************/
 
-static void api_spoolss_enumprinterdrivers(uint16 vuid, prs_struct *data,
+static void api_spoolss_enumprinterdrivers(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERDRIVERS q_u;
 	
 	spoolss_io_q_enumprinterdrivers("", &q_u, data, 0);
 
-	spoolss_reply_enumprinterdrivers(&q_u, rdata);
+	spoolss_reply_enumprinterdrivers(&q_u, rdata, p->conn);
 }
 
 
@@ -3014,7 +3025,7 @@ static void spoolss_reply_enumforms(SPOOL_Q_ENUMFORMS *q_u, prs_struct *rdata)
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_enumforms(uint16 vuid, prs_struct *data,
+static void api_spoolss_enumforms(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMFORMS q_u;
@@ -3082,7 +3093,7 @@ static void spoolss_reply_enumports(SPOOL_Q_ENUMPORTS *q_u, prs_struct *rdata)
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_enumports(uint16 vuid, prs_struct *data,
+static void api_spoolss_enumports(pipes_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPORTS q_u;
@@ -3126,7 +3137,7 @@ static void spoolss_reply_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *rd
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_addprinterex(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static void api_spoolss_addprinterex(pipes_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ADDPRINTEREX q_u;
 	NT_PRINTER_INFO_LEVEL printer;	
@@ -3163,7 +3174,7 @@ static void spoolss_reply_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_st
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_addprinterdriver(uint16 vuid, prs_struct *data,
+static void api_spoolss_addprinterdriver(pipes_struct *p, prs_struct *data,
                                          prs_struct *rdata)
 {
 	SPOOL_Q_ADDPRINTERDRIVER q_u;
@@ -3206,7 +3217,7 @@ static void spoolss_reply_getprinterdriverdirectory(SPOOL_Q_GETPRINTERDRIVERDIR 
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_getprinterdriverdirectory(uint16 vuid, prs_struct *data,
+static void api_spoolss_getprinterdriverdirectory(pipes_struct *p, prs_struct *data,
                                                   prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDRIVERDIR q_u;
@@ -3312,7 +3323,7 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_enumprinterdata(uint16 vuid, prs_struct *data,
+static void api_spoolss_enumprinterdata(pipes_struct *p, prs_struct *data,
                                                   prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERDATA q_u;
@@ -3358,7 +3369,7 @@ static void spoolss_reply_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct
 
 /****************************************************************************
 ****************************************************************************/
-static void api_spoolss_setprinterdata(uint16 vuid, prs_struct *data,
+static void api_spoolss_setprinterdata(pipes_struct *p, prs_struct *data,
                                        prs_struct *rdata)
 {
 	SPOOL_Q_SETPRINTERDATA q_u;

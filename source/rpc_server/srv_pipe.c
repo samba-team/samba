@@ -739,7 +739,7 @@ static BOOL api_rpc_command(pipes_struct *p,
 	prs_init(&p->rdata, 1024, 4, SAFETY_MARGIN, False);
 
 	/* do the actual command */
-	api_rpc_cmds[fn_num].fn(p->vuid, data, &(p->rdata));
+	api_rpc_cmds[fn_num].fn(p, data, &(p->rdata));
 
 	if (p->rdata.data == NULL || p->rdata.offset == 0)
 	{
