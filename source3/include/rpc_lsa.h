@@ -73,6 +73,7 @@
 #define LSA_RETRPRIVDATA       0x2b
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_GET_CONNUSER   0x2d /* LsaGetConnectedCredentials ? */
+#define LSA_QUERYINFO2         0x2e
 
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
@@ -260,6 +261,43 @@ typedef struct lsa_r_query_info
 	NTSTATUS status; /* return code */
 
 } LSA_R_QUERY_INFO;
+
+/* LSA_DNS_DOM_INFO - DNS domain info - info class 12*/
+typedef struct lsa_dns_dom_info
+{
+	UNIHDR  hdr_nb_dom_name; /* netbios domain name */
+	UNIHDR  hdr_dns_dom_name;
+	UNIHDR  hdr_forest_name;
+
+	GUID       dom_guid; /* domain GUID */
+
+	UNISTR2 uni_nb_dom_name;
+	UNISTR2 uni_dns_dom_name;
+	UNISTR2 uni_forest_name;
+
+	uint32 ptr_dom_sid;
+	DOM_SID2   dom_sid; /* domain SID */
+} LSA_DNS_DOM_INFO;
+
+typedef union lsa_info2_union
+{
+	LSA_DNS_DOM_INFO dns_dom_info;
+} LSA_INFO2_UNION;
+
+/* LSA_Q_QUERY_INFO2 - LSA query info */
+typedef struct lsa_q_query_info2
+{
+	POLICY_HND pol;    /* policy handle */
+	uint16 info_class; /* info class */
+} LSA_Q_QUERY_INFO2;
+
+typedef struct lsa_r_query_info2
+{
+	uint32 ptr;    /* pointer to info struct */
+	uint16 info_class;
+	LSA_INFO2_UNION info; /* so far the only one */
+	NTSTATUS status;
+} LSA_R_QUERY_INFO2;
 
 /* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
 typedef struct lsa_enum_trust_dom_info

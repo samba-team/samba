@@ -35,6 +35,10 @@
 #define SECRETS_DOMAIN_SID    "SECRETS/SID"
 #define SECRETS_SAM_SID       "SAM/SID"
 
+/* The domain GUID and server GUID (NOT the same) are also not secret */
+#define SECRETS_DOMAIN_GUID   "SECRETS/DOMGUID"
+#define SECRETS_SERVER_GUID   "SECRETS/GUID"
+
 #define SECRETS_LDAP_BIND_PW "SECRETS/LDAP_BIND_PW"
 
 /* Authenticated user info is stored in secrets.tdb under these keys */
