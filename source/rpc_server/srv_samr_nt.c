@@ -1977,7 +1977,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
 	gid_t *unix_gids;
-	int i, num_gids, num_sids;
+	int i, num_gids;
 	uint32 acc_granted;
 	BOOL ret;
 	NTSTATUS result;
@@ -2027,7 +2027,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	}
 
 	sids = NULL;
-	num_sids = 0;
 
 	become_root();
 	result = pdb_enum_group_memberships(pdb_get_username(sam_pass),
@@ -4119,7 +4118,6 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	DOM_SID dom_sid;
 	DOM_SID info_sid;
 	fstring name;
-	struct group *grp;
 	struct samr_info *info;
 	uint32 acc_granted;
 	gid_t gid;
@@ -4166,7 +4164,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
-	if ((grp=getgrgid(gid)) == NULL)
+	if ( getgrgid(gid) == NULL )
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
