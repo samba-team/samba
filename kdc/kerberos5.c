@@ -1130,7 +1130,8 @@ as_rep(KDC_REQ *req,
     reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
-	ret = pk_mk_pa_reply(context, pkp, &reply_key, rep.padata);
+	ret = pk_mk_pa_reply(context, pkp, client, req,
+			     &reply_key, rep.padata);
 	if (ret)
 	    goto out;
     }
