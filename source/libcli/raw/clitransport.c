@@ -480,7 +480,7 @@ void cli_transport_send(struct cli_request *req)
 {
 	/* put it on the outgoing socket queue */
 	req->state = CLI_REQUEST_SEND;
-	DLIST_ADD(req->transport->pending_send, req);
+	DLIST_ADD_END(req->transport->pending_send, req, struct cli_request *);
 
 	/* make sure we look for write events */
 	cli_transport_write_enable(req->transport);
