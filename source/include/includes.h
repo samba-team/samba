@@ -738,6 +738,11 @@ typedef struct smb_wpasswd {
 
 #include "nsswitch/sys_nss.h"
 
+/* forward declaration from prniting.h to get around 
+   header file dependencies */
+
+struct printjob;
+
 /***** automatically generated prototypes *****/
 #include "proto.h"
 

@@ -22,10 +22,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* forward declaration to get around header file dependencies */
-
-struct printjob;
-
 #include "includes.h"
 
 /*
