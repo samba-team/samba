@@ -585,7 +585,7 @@ static NTSTATUS nbench_search_first(struct request_context *req, union smb_searc
 
 	switch (io->generic.level) {
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-		nbench_log(private, "Search \"%s\" %d %d %d %s\n", 
+		nbench_log(private, "FIND_FIRST \"%s\" %d %d %d %s\n", 
 			   io->t2ffirst.in.pattern,
 			   io->generic.level,
 			   io->t2ffirst.in.max_count,
