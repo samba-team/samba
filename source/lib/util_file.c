@@ -351,7 +351,7 @@ void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodifi
 {
 	FILE *f;
 
-	if (file_modified(filename, lastmodified))
+	if (!file_modified(filename, lastmodified))
 	{
 		return NULL;
 	}
