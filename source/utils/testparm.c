@@ -38,6 +38,7 @@
 /* these live in util.c */
 extern FILE *dbf;
 extern int DEBUGLEVEL;
+extern pstring myhostname;
 
  int main(int argc, char *argv[])
 {
@@ -59,6 +60,12 @@ extern int DEBUGLEVEL;
   DEBUGLEVEL = 2;
 
   printf("Load smb config files from %s\n",configfile);
+
+  if(!get_myname(myhostname,NULL))
+  {
+    printf("Failed to get my hostname.\n");
+    return(1);
+  }
 
   if (!lp_load(configfile,False))
     {
