@@ -58,14 +58,9 @@ BOOL initialize_password_db(BOOL reload)
  Fill the SAM_ACCOUNT with default values.
  ***********************************************************/
 
-static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
+static void pdb_fill_default_sam(SAM_ACCOUNT *user)
 {
-	if (user == NULL) {
-		DEBUG(0,("pdb_fill_default_sam: SAM_ACCOUNT was NULL\n"));
-		return False;
-	}
-	
-	ZERO_STRUCTP(user);
+	ZERO_STRUCT(user->private); /* Don't touch the talloc context */
 
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
@@ -85,34 +80,77 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
 	user->private.unknown_5 = 0x00000000; /* don't know */
 	user->private.unknown_6 = 0x000004ec; /* don't know */
-	return True;
 }	
 
+static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
+{
+	if (*user) {
+		talloc_destroy((*user)->mem_ctx);
+		*user = NULL;
+	}
+}
 
-/*************************************************************
- Alloc memory and initialises a struct sam_passwd.
- ************************************************************/
 
-BOOL pdb_init_sam(SAM_ACCOUNT **user)
+/**********************************************************************
+ Alloc memory and initialises a struct sam_passwd on supplied mem_ctx.
+***********************************************************************/
+
+NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
 {
 	if (*user != NULL) {
 		DEBUG(0,("pdb_init_sam: SAM_ACCOUNT was non NULL\n"));
 #if 0
 		smb_panic("NULL pointer passed to pdb_init_sam\n");
 #endif
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
-	*user=(SAM_ACCOUNT *)malloc(sizeof(SAM_ACCOUNT));
+
+	if (!mem_ctx) {
+		DEBUG(0,("pdb_init_sam_talloc: mem_ctx was NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	*user=(SAM_ACCOUNT *)talloc(mem_ctx, sizeof(SAM_ACCOUNT));
 
 	if (*user==NULL) {
 		DEBUG(0,("pdb_init_sam: error while allocating memory\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	pdb_fill_default_sam(*user);
+	(*user)->mem_ctx = mem_ctx;
 
-	return True;
+	(*user)->free_fn = NULL;
+
+	pdb_fill_default_sam(*user);
+	
+	return NT_STATUS_OK;
+}
+
+
+/*************************************************************
+ Alloc memory and initialises a struct sam_passwd.
+ ************************************************************/
+
+NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS nt_status;
+	
+	mem_ctx = talloc_init_named("passdb internal SAM_ACCOUNT allocation");
+
+	if (!mem_ctx) {
+		DEBUG(0,("pdb_init_sam: error while doing talloc_init()\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, user))) {
+		talloc_destroy(mem_ctx);
+		return nt_status;
+	}
+	
+	(*user)->free_fn = destroy_pdb_talloc;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -120,20 +158,21 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
  Initialises a struct sam_passwd with sane values.
  ************************************************************/
 
-BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
+NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 {
 	pstring str;
 	GROUP_MAP map;
 	uint32 rid;
+	NTSTATUS nt_status;
 
 	if (!pwd) {
 		new_sam_acct = NULL;
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!pdb_init_sam(new_sam_acct)) {
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(new_sam_acct))) {
 		new_sam_acct = NULL;
-		return False;
+		return nt_status;
 	}
 
 	pdb_set_username(*new_sam_acct, pwd->pw_name);
@@ -170,7 +209,7 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
 	pdb_set_logon_script(*new_sam_acct, str, False);
 	
-	return True;
+	return NT_STATUS_OK;
 }
 
 
@@ -182,23 +221,13 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
  * @param user SAM_ACCOUNT to free members of.
  **/
 
-static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
+static void pdb_free_sam_contents(SAM_ACCOUNT *user)
 {
-	if (user == NULL) {
-		DEBUG(0,("pdb_free_sam_contents: SAM_ACCOUNT was NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_free_sam_contents\n");
-#endif
-		return False;
-	}
-
 	/* As we start mallocing more strings this is where  
 	   we should free them. */
 
 	data_blob_clear_free(&(user->private.lm_pw));
 	data_blob_clear_free(&(user->private.nt_pw));
-
-	return True;	
 }
 
 
@@ -206,25 +235,21 @@ static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
  Reset the SAM_ACCOUNT and free the NT/LM hashes.
  ***********************************************************/
 
-BOOL pdb_reset_sam(SAM_ACCOUNT *user)
+NTSTATUS pdb_reset_sam(SAM_ACCOUNT *user)
 {
 	if (user == NULL) {
 		DEBUG(0,("pdb_reset_sam: SAM_ACCOUNT was NULL\n"));
 #if 0
 		smb_panic("NULL pointer passed to pdb_free_sam\n");
 #endif
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	if (!pdb_free_sam_contents(user)) {
-		return False;
-	}
+	pdb_free_sam_contents(user);
 
-	if (!pdb_fill_default_sam(user)) {
-		return False;
-	}
+	pdb_fill_default_sam(user);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 
@@ -232,23 +257,23 @@ BOOL pdb_reset_sam(SAM_ACCOUNT *user)
  Free the SAM_ACCOUNT and the member pointers.
  ***********************************************************/
 
-BOOL pdb_free_sam(SAM_ACCOUNT **user)
+NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
 {
 	if (*user == NULL) {
 		DEBUG(0,("pdb_free_sam: SAM_ACCOUNT was NULL\n"));
 #if 0
 		smb_panic("NULL pointer passed to pdb_free_sam\n");
 #endif
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!pdb_free_sam_contents(*user)) {
-		return False;
-	}
-
-	SAFE_FREE(*user);
+	pdb_free_sam_contents(*user);
 	
-	return True;	
+	if ((*user)->free_fn) {
+		(*user)->free_fn(user);
+	}
+
+	return NT_STATUS_OK;	
 }
 
 
@@ -974,7 +999,7 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
-		if (!pdb_init_sam_pw(&sam_pass, pwd)) {
+		if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sam_pass, pwd))){
 			slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
 			return False;
 		}
