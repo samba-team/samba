@@ -1,4 +1,4 @@
 # $Id$
 
 AUTOMAKE_OPTIONS = foreign no-dependencies ansi2knr
-SUBDIRS	= include lib kuser
+SUBDIRS	= include lib kuser kdc
