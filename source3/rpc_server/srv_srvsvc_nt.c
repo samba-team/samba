@@ -95,10 +95,43 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 }
 
 /*******************************************************************
- Fake up a Everyone, full access for now.
+ Create the share security tdb.
  ********************************************************************/
 
-static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
+static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
+#define SHARE_DATABASE_VERSION 1
+
+BOOL share_info_db_init(void)
+{
+    static pid_t local_pid;
+    char *vstring = "INFO/version";
+ 
+    if (share_tdb && local_pid == sys_getpid()) return True;
+    share_tdb = tdb_open(lock_path("share_info.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+    if (!share_tdb) {
+        DEBUG(0,("Failed to open share info database %s (%s)\n",
+				lock_path("share_info.tdb"), strerror(errno) ));
+        return False;
+    }
+ 
+    local_pid = sys_getpid();
+ 
+    /* handle a Samba upgrade */
+    tdb_lock_bystring(share_tdb, vstring);
+    if (tdb_fetch_int(share_tdb, vstring) != SHARE_DATABASE_VERSION) {
+        tdb_traverse(share_tdb, (tdb_traverse_func)tdb_delete, NULL);
+        tdb_store_int(share_tdb, vstring, SHARE_DATABASE_VERSION);
+    }
+    tdb_unlock_bystring(share_tdb, vstring);
+ 
+    return True;
+}
+
+/*******************************************************************
+ Fake up a Everyone, full access as a default.
+ ********************************************************************/
+
+static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *psize)
 {
 	extern DOM_SID global_sid_World;
 	SEC_ACCESS sa;
@@ -119,6 +152,94 @@ static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
 	}
 
 	return psd;
+}
+
+/*******************************************************************
+ Pull a security descriptor from the share tdb.
+ ********************************************************************/
+
+SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
+{
+	prs_struct ps;
+	fstring key;
+	SEC_DESC *psd;
+
+	/* Fetch security descriptor from tdb */
+ 
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+ 
+    if (tdb_prs_fetch(share_tdb, key, &ps, ctx)!=0 ||
+        !sec_io_desc("get_share_security", &psd, &ps, 1)) {
+ 
+        DEBUG(4,("get_share_security: using default secdesc for %s\n", lp_servicename(snum) ));
+ 
+        return get_share_security_default(ctx, snum, psize);
+    }
+
+	prs_mem_free(&ps);
+	return psd;
+}
+
+/*******************************************************************
+ Store a security descriptor in the share db.
+ ********************************************************************/
+
+static BOOL set_share_security(TALLOC_CTX *ctx, int snum, SEC_DESC *psd)
+{
+	prs_struct ps;
+	TALLOC_CTX *mem_ctx = NULL;
+	fstring key;
+	BOOL ret = False;
+
+	mem_ctx = talloc_init();
+	if (mem_ctx == NULL)
+		return False;
+
+	prs_init(&ps, (uint32)sec_desc_size(psd), mem_ctx, MARSHALL);
+ 
+    if (!sec_io_desc("nt_printing_setsec", &psd, &ps, 1)) {
+        goto out;
+    }
+ 
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+ 
+    if (tdb_prs_store(share_tdb, key, &ps)==0) {
+        ret = True;
+        DEBUG(5,("set_share_security: stored secdesc for %s\n", lp_servicename(snum) ));
+    } else {
+        DEBUG(1,("set_share_security: Failed to store secdesc for %s\n", lp_servicename(snum) ));
+    }
+
+    /* Free malloc'ed memory */
+ 
+ out:
+ 
+    prs_mem_free(&ps);
+    if (mem_ctx)
+        talloc_destroy(mem_ctx);
+    return ret;
+}
+
+/*******************************************************************
+ Delete a security descriptor.
+********************************************************************/
+
+static BOOL delete_share_security(int snum)
+{
+	TDB_DATA kbuf;
+	fstring key;
+
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	if (tdb_delete(share_tdb, kbuf) != 0) {
+		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",
+				lp_servicename(snum) ));
+		return False;
+	}
+
+	return True;
 }
 
 /*******************************************************************
@@ -942,62 +1063,6 @@ uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
 }
 
 /*******************************************************************
- Net share set info.
-********************************************************************/
-
-uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
-{
-	fstring share_name;
-	uint32 status = NT_STATUS_NOPROBLEMO;
-	int snum;
-#if 0
-	fstring servicename;
-	fstring comment;
-	pstring pathname;
-#endif
-
-	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
-
-	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
-
-	r_u->switch_value = 0;
-
-	snum = find_service(share_name);
-
-	/* For now we only handle setting the security descriptor. JRA. */
-
-	if (snum >= 0) {
-		switch (q_u->info_level) {
-		case 1:
-			status = ERROR_ACCESS_DENIED;
-			break;
-		case 2:
-			status = ERROR_ACCESS_DENIED;
-			break;
-		case 502:
-			/* we set sd's here. FIXME. JRA */
-			status = ERROR_ACCESS_DENIED;
-			break;
-		case 1005:
-			status = ERROR_ACCESS_DENIED;
-			break;
-		default:
-			DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", q_u->info_level));
-			status = NT_STATUS_INVALID_INFO_CLASS;
-			break;
-		}
-	} else {
-		status = NT_STATUS_BAD_NETWORK_NAME;
-	}
-
-	r_u->status = status;
-
-	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
-
-	return r_u->status;
-}
-
-/*******************************************************************
  Check a given DOS pathname is valid for a share.
 ********************************************************************/
 
@@ -1041,6 +1106,68 @@ static char *valid_share_pathname(char *dos_pathname)
 }
 
 /*******************************************************************
+ Net share set info. Modify share details.
+********************************************************************/
+
+uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
+{
+	struct current_user user;
+	pstring command;
+	fstring share_name;
+	fstring comment;
+	pstring pathname;
+	int type;
+	int snum;
+	int ret;
+	char *ptr;
+	BOOL read_only;
+
+	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
+
+	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
+
+	r_u->switch_value = 0;
+
+	snum = find_service(share_name);
+
+	/* Does this share exist ? */
+	if (snum < 0)
+		return NT_STATUS_BAD_NETWORK_NAME;
+
+	get_current_user(&user,p);
+
+	if (user.uid != 0)
+		return ERROR_ACCESS_DENIED;
+
+	if (!lp_change_share_cmd())
+		return ERROR_ACCESS_DENIED;
+
+	switch (q_u->info_level) {
+	case 1:
+		return ERROR_ACCESS_DENIED;
+		break;
+	case 2:
+		return ERROR_ACCESS_DENIED;
+		break;
+	case 502:
+		/* we set sd's here. FIXME. JRA */
+		return ERROR_ACCESS_DENIED;
+		break;
+	case 1005:
+		return ERROR_ACCESS_DENIED;
+		break;
+	default:
+		DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", q_u->info_level));
+		return NT_STATUS_INVALID_INFO_CLASS;
+		break;
+	}
+
+	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/*******************************************************************
  Net share add. Call 'add_share_command "sharename" "pathname" "comment"'
 ********************************************************************/
 
@@ -1055,6 +1182,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	int snum;
 	int ret;
 	char *ptr;
+	BOOL read_only = False;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
@@ -1077,6 +1205,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info2.info_2.type;
+		read_only = False; /* No SD means "Everyone full access. */
 		break;
 	case 502:
 		/* we set sd's here. FIXME. JRA */
@@ -1107,8 +1236,14 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	if (!(ptr = valid_share_pathname( pathname )))
 		return ERRbadpath;
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
-			lp_add_share_cmd(), share_name, ptr, comment );
+	/* Ensure share name, pathname and comment don't contain '"' characters. */
+	string_replace(share_name, '"', ' ');
+	string_replace(ptr, '"', ' ');
+	string_replace(comment, '"', ' ');
+
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+			lp_add_share_cmd(), share_name, ptr, comment,
+			read_only ? "read only = yes" : "read only = no" );
 	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
@@ -1169,6 +1304,9 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 		DEBUG(0,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
 		return ERROR_ACCESS_DENIED;
 	}
+
+	/* Delete the SD in the database. */
+	delete_share_security(snum);
 
 	/* Send SIGHUP to process group. */
 	kill(0, SIGHUP);
