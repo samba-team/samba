@@ -41,7 +41,7 @@ SOURCES = \
 	seteuid.c signal.c snprintf.c strcasecmp.c strchr.c strdup.c \
 	strerror.c strftime.c strlwr.c strnlen.c strrchr.c \
 	strupr.c tm2time.c unsetenv.c verify.c verr.c \
-	verrx.c vsyslog.c vwarn.c vwarnx.c warn.c warnx.c \
+	verrx.c vwarn.c vwarnx.c warn.c warnx.c \
 	warnerr.c get_window_size.c
 
 OBJECTS = k_getpwuid.o k_getpwnam.o signal.o tm2time.o \

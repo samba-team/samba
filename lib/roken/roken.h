@@ -297,10 +297,6 @@ int get_window_size(int fd, struct winsize *);
 #include <syslog.h>
 /* Misc definitions for old syslogs */
 
-#ifndef HAVE_VSYSLOG
-void vsyslog(int pri, const char *fmt, va_list ap);
-#endif
-
 #ifndef LOG_DAEMON
 #define openlog(id,option,facility) openlog((id),(option))
 #endif
