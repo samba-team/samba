@@ -318,9 +318,9 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
 
-ssize_t cli_write(struct cli_state *cli,
-		  int fnum, uint16 write_mode,
-		  const char *buf, off_t offset, size_t size)
+size_t cli_write(struct cli_state *cli,
+    	         int fnum, uint16 write_mode,
+		 const char *buf, off_t offset, size_t size)
 {
 	int bwritten = 0;
 	int issued = 0;
@@ -358,7 +358,7 @@ ssize_t cli_write(struct cli_state *cli,
 			break;
 
 		bwritten += SVAL(cli->inbuf, smb_vwv2);
-		bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))>>16);
+		bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))<<16);
 	}
 
 	while (received < issued && cli_receive_smb(cli))
