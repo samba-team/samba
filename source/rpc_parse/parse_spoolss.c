@@ -556,15 +556,26 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		fstring		name;
 		uint32*		field;
 	} opt_fields[DM_NUM_OPTIONAL_FIELDS] = {
-		{ "icmmethod",		&devmode->icmmethod  	},
-		{ "icmintent",		&devmode->icmintent  	},
-		{ "mediatype",		&devmode->mediatype  	},
-		{ "dithertype",		&devmode->dithertype 	},
-		{ "reserved1",		&devmode->reserved1  	},
-		{ "reserved2",		&devmode->reserved2	},
-		{ "panningwidth",	&devmode->panningwidth	},
-		{ "panningheight",	&devmode->panningheight	}
+		{ "icmmethod",		NULL },
+		{ "icmintent",		NULL },
+		{ "mediatype",		NULL },
+		{ "dithertype",		NULL },
+		{ "reserved1",		NULL },
+		{ "reserved2",		NULL },
+		{ "panningwidth",	NULL },
+		{ "panningheight",	NULL }
 	};
+
+	/* assign at run time to keep non-gcc vompilers happy */
+
+	opt_fields[0].field = &devmode->icmmethod;
+	opt_fields[1].field = &devmode->icmintent;
+	opt_fields[2].field = &devmode->mediatype;
+	opt_fields[3].field = &devmode->dithertype;
+	opt_fields[4].field = &devmode->reserved1;
+	opt_fields[5].field = &devmode->reserved2;
+	opt_fields[6].field = &devmode->panningwidth;
+	opt_fields[7].field = &devmode->panningheight;
 		
 	
 	prs_debug(ps, depth, desc, "spoolss_io_devmode");
