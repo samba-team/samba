@@ -1220,7 +1220,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
         }
 
 #if HAVE_MMAP
-	if (!(tdb->flags & TDB_NOMMAP)) {
+	if (!(tdb.flags & TDB_NOMMAP)) {
 		tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
 					   tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
 					   MAP_SHARED | MAP_FILE, tdb.fd, 0);
