@@ -64,9 +64,9 @@ fail_verify_is_ok (krb5_context context,
 				 "libdefaults",
 				 "verify_ap_req_nofail",
 				 NULL))
-	return TRUE;
-    else
 	return FALSE;
+    else
+	return TRUE;
 }
 
 krb5_error_code
