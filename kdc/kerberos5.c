@@ -692,7 +692,7 @@ fix_transited_encoding(TransitedEncoding *tr,
 			tr->tr_type);
 		return KRB5KDC_ERR_TRTYPE_NOSUPP;
 	    }
-	    ret = krb5_domain_x500_decode(&tr->contents,
+	    ret = krb5_domain_x500_decode(tr->contents,
 					  &realms, 
 					  &num_realms,
 					  client_realm,
