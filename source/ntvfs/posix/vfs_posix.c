@@ -102,7 +102,6 @@ static NTSTATUS pvfs_disconnect(struct smbsrv_tcon *tcon)
 */
 static NTSTATUS pvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 {
-	DEBUG(0,("pvfs_ioctl not implemented\n"));
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
@@ -130,15 +129,6 @@ static NTSTATUS pvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 	}
 
 	return NT_STATUS_OK;
-}
-
-/*
-  rename a set of files
-*/
-static NTSTATUS pvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
-{
-	DEBUG(0,("pvfs_rename not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /*
