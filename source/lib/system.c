@@ -908,6 +908,8 @@ int sys_popen(const char *command)
 	if((entry = (popen_list *)malloc(sizeof(popen_list))) == NULL)
 		goto err_exit;
 
+	ZERO_STRUCTP(entry);
+
 	/*
 	 * Extract the command and args into a NULL terminated array.
 	 */
@@ -959,6 +961,7 @@ int sys_popen(const char *command)
 	/* Link into popen_chain. */
 	entry->next = popen_chain;
 	popen_chain = entry;
+	entry->fd = parent_end;
 
 	return entry->fd;
 
@@ -1013,17 +1016,3 @@ int sys_pclose(int fd)
 		return -1;
 	return wstatus;
 }
-
-
-
-#if GLIBC_HACK_FCNTL64
-#include <asm/unistd.h>
-/* this is a gross hack. 64 bit locking is completely screwed up on
-   i386 Linux in glibc 2.1.95 (which ships with RedHat 7.0). This hack
-   "fixes" the problem with the current 2.4.0test kernels 
-*/
-int fcntl64(int fd, int cmd, struct flock * lock)
-{
-	return syscall(__NR_fcntl64, fd, cmd, lock);
-}
-#endif /* HACK_FCNTL64 */
