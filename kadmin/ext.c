@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -87,7 +87,6 @@ ext_keytab(int argc, char **argv)
     int i;
     int optind = 0;
     char *keytab = NULL;
-    char keytab_buf[256];
     struct ext_keytab_data data;
     
     args[0].value = &keytab;
@@ -95,17 +94,11 @@ ext_keytab(int argc, char **argv)
 	usage();
 	return 0;
     }
-    if (keytab == NULL) {
-	ret = krb5_kt_default_modify_name (context, keytab_buf,
-					   sizeof(keytab_buf));
-	if (ret) {
-	    krb5_warn(context, ret, "krb5_kt_default_modify_name");
-	    return 0;
-	}
-	keytab = keytab_buf;
-    }
+    if (keytab == NULL)
+	ret = krb5_kt_default(context, &data.keytab);
+    else
+	ret = krb5_kt_resolve(context, keytab, &data.keytab);
 
-    ret = krb5_kt_resolve(context, keytab, &data.keytab);
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_resolve");
 	return 0;
