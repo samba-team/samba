@@ -42,8 +42,8 @@ install_symlink_command2 = @install_symlink_command2@
 
 SOURCES = edit_compat.c editline.c complete.c sysunix.c 
 
-EXTRA_SOURCES = strdup.c 
-EXTRA_OBJECTS = strdup.o
+EXTRA_SOURCES = strdup.c snprintf.c
+EXTRA_OBJECTS = strdup.o snprintf.o
 
 libeditline_a_OBJECTS = editline.o complete.o sysunix.o $(EXTRA_OBJECTS)
 
@@ -103,5 +103,7 @@ $(OBJECTS): ../../include/config.h
 
 strdup.c:
 	$(LN_S) $(srcdir)/../roken/strdup.c .
+snprintf.c:
+	$(LN_S) $(srcdir)/../roken/snprintf.c .
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean
