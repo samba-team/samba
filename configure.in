@@ -127,7 +127,7 @@ changequote(`,')dnl
 changequote([,])dnl
 	va_list arg;
 	va_start(arg, num);
-	vsnprintf(bar, 2, arg);
+	vsnprintf(bar, 2, "%s", arg);
 	va_end(arg);
 	return strcmp(bar, "1");
 }
