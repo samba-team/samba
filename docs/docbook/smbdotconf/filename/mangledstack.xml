@@ -1,4 +1,4 @@
-<samba:parameter name="mangling stack"
+<samba:parameter name="mangled stack"
                  context="G"
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">

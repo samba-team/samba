@@ -1,4 +1,4 @@
-<samba:parameter name="debug level"
+<samba:parameter name="debuglevel"
                  context="G"
 		 hide="1"
                  xmlns:samba="http://samba.org/common">
