@@ -204,6 +204,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 /*The following definitions come from  lib/substitute.c  */
 
 void standard_sub_basic(char *str);
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
 void standard_sub_conn(connection_struct *conn, char *str);
 void standard_sub_snum(int snum, char *str);
 void standard_sub_vuser(char *str, user_struct *vuser);
