@@ -2229,7 +2229,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	escape_name = escape_ldap_string_alloc(username);
 
 	if (escape_name == NULL)
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_MEMORY;
 
 	pstr_sprintf(filter, "(&(objectClass=posixGroup)"
 		     "(|(memberUid=%s)(gidNumber=%d)))",
