@@ -78,14 +78,6 @@
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */
 
-/* These errors seem to be only returned by the NT printer driver system */
-
-#define ERRunknownprinterdriver 1797 /* ERROR_UNKNOWN_PRINTER_DRIVER */
-#define ERRinvalidprintername 1801 /* ERROR_INVALID_PRINTER_NAME */
-#define ERRinvaliddatatype 1804 /* ERROR_INVALID_DATATYPE */
-#define ERRinvalidenvironment 1805 /* ERROR_INVALID_ENVIRONMENT */
-#define ERRprinterdriverinuse 3001 /* ERROR_PRINTER_DRIVER_IN_USE */
-
 /* Error codes for the ERRSRV class */
 
 #define ERRerror 1 /* Non specific error code */
@@ -139,5 +131,20 @@
 #define ERRFCBunavail 35
 #define ERRsharebufexc 36 /* share buffer exceeded */
 #define ERRdiskfull 39
+
+
+/* these are win32 error codes. There are only a few places where
+   these matter for Samba, primarily in the NT printing code */
+#define WERR_OK W_ERROR(0)
+#define WERR_BADFID W_ERROR(6)
+#define WERR_INSUFFICIENT_BUFFER W_ERROR(122)
+#define WERR_NOMEM W_ERROR(8)
+#define WERR_INVALID_NAME W_ERROR(123)
+#define WERR_UNKNOWN_LEVEL W_ERROR(124)
+#define WERR_UNKNOWN_PRINTER_DRIVER W_ERROR(1797)
+#define WERR_INVALID_PRINTER_NAME W_ERROR(1801)
+#define WERR_INVALID_DATATYPE W_ERROR(1804)
+#define WERR_INVALID_ENVIRONMENT W_ERROR(1805)
+#define WERR_PRINTER_DRIVER_IN_USE W_ERROR(3001)
 
 #endif /* _DOSERR_H */

@@ -207,7 +207,13 @@ typedef struct nttime_info
   uint32 high;
 } NTTIME;
 
-#ifdef __GNUC__XX_NOT_YET
+
+/* the following rather strange looking definitions of NTSTATUS and WERROR
+   and there in order to catch common coding errors where different error types
+   are mixed up. This is especially important as we slowly convert Samba
+   from using BOOL for internal functions 
+*/
+#if defined(HAVE_IMMEDIATE_STRUCTURES) && defined(TRIDGE_TEST)
 typedef struct {uint32 v;} NTSTATUS;
 #define NT_STATUS(x) ((NTSTATUS) { x })
 #define NT_STATUS_V(x) ((x).v)
@@ -217,8 +223,20 @@ typedef uint32 NTSTATUS;
 #define NT_STATUS_V(x) (x)
 #endif
 
+#if defined(HAVE_IMMEDIATE_STRUCTURES) && defined(TRIDGE_TEST)
+typedef struct {uint32 v;} WERROR;
+#define W_ERROR(x) ((WERROR) { x })
+#define W_ERROR_V(x) ((x).v)
+#else
+typedef uint32 WERROR;
+#define W_ERROR(x) (x)
+#define W_ERROR_V(x) (x)
+#endif
+
 #define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+#define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
+
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */

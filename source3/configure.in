@@ -52,23 +52,6 @@ if test x"$samba_cv_volatile" = x"yes"; then
 fi
 
 
-#################################################
-# set codepage directory location
-AC_ARG_WITH(codepagedir,
-[  --with-codepagedir=DIR  Where to put codepage files (\$libdir/codepages)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-codepagedir called without argument - will use default])
-  ;;
-  * )
-    codepagedir="$withval"
-    ;;
-  esac])
-
-
 AC_CANONICAL_SYSTEM
 
 dnl Add #include for broken IRIX header files
@@ -326,6 +309,22 @@ fi
 # we need libdl for PAM and the new VFS code
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
+
+
+############################################
+# check if the compiler can do immediate structures
+AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
+    AC_TRY_COMPILE([
+#include <stdio.h>],
+[
+   #define X_FOOBAR(x) ((FOOBAR) { x })
+   typedef struct {unsigned x;} FOOBAR;
+   FOOBAR f = X_FOOBAR(1);   
+],
+	samba_cv_immediate_structures=yes,samba_cv_immediate_structures=no)])
+if test x"$samba_cv_immediate_structures" = x"yes"; then
+   AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES)
+fi
 
 ############################################
 # check for unix domain sockets
