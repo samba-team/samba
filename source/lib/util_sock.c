@@ -605,7 +605,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	memset(buffer,'\0',smb_size + 100);
 
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
-	if (len < 0 || len == 0) {
+	if (len < 0) {
 		DEBUG(10,("receive_smb: length < 0 or == 0!\n"));
 
 		/*
