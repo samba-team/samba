@@ -202,13 +202,23 @@ initialise file structures
 
 void file_init(void)
 {
-	int lim;
+        int request_max_open_files = lp_max_open_files();
+	int real_lim;
 
-	lim = set_maxfiles();
-	lim = MIN(lim, lp_max_open_files());
+	/*
+	 * Set the max_open files to be the requested
+	 * max plus a fudgefactor to allow for the extra
+	 * fd's we need such as log files etc...
+	 */
+	real_lim = set_maxfiles(request_max_open_files + MAX_OPEN_FUDGEFACTOR);
 
-	real_max_open_files = lim - MAX_OPEN_FUDGEFACTOR;
-	
+	real_max_open_files = real_lim - MAX_OPEN_FUDGEFACTOR;
+
+        if(real_max_open_files != request_max_open_files) {
+        	DEBUG(1,("file_init: Information only: requested %d \
+open files, %d are available.\n", request_max_open_files, real_max_open_files));
+	}
+
 	file_bmap = bitmap_allocate(real_max_open_files);
 	
 	if (!file_bmap) {

@@ -4849,9 +4849,9 @@ void zero_free(void *p, size_t size)
 
 
 /*****************************************************************
-set our open file limit to the max and return the limit
+set our open file limit to a requested max and return the limit
 *****************************************************************/  
-int set_maxfiles(void)
+int set_maxfiles(int requested_max)
 {
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	struct rlimit rlp;
@@ -4860,13 +4860,15 @@ int set_maxfiles(void)
 	 * account for the extra fd we need 
 	 * as well as the log files and standard
 	 * handles etc.  */
-	rlp.rlim_cur = rlp.rlim_max;
+	rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
 	setrlimit(RLIMIT_NOFILE, &rlp);
 	getrlimit(RLIMIT_NOFILE, &rlp);
 	return rlp.rlim_cur;
 #else
-	/* just guess ... */
-	return 1024;
+	/*
+	 * No way to know - just guess...
+	 */
+	return requested_max;
 #endif
 }
 
