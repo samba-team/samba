@@ -156,6 +156,9 @@
 /* define if the system is missing a prototype for mkstemp() */
 #undef NEED_MKSTEMP_PROTO
 
+/* define if the system is missing a prototype for glob() */
+#undef NEED_GLOB_PROTO
+
 /* Define this if your `struct tm' has a field `tm_gmtoff' */
 #undef HAVE_STRUCT_TM_TM_GMTOFF
 
