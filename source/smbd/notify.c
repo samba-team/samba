@@ -44,6 +44,7 @@ static struct change_notify *change_notify_list;
 /****************************************************************************
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
+
 static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
@@ -178,7 +179,7 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	struct change_notify *cnbp;
 
 	if((cnbp = (struct change_notify *)malloc(sizeof(*cnbp))) == NULL) {
-		DEBUG(0,("call_nt_transact_notify_change: malloc fail !\n" ));
+		DEBUG(0,("change_notify_set: malloc fail !\n" ));
 		return -1;
 	}
 
@@ -196,6 +197,9 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	}
 
 	DLIST_ADD(change_notify_list, cnbp);
+
+	/* Push the MID of this packet on the signing queue. */
+	srv_defer_sign_response(SVAL(inbuf,smb_mid), True);
 
 	return True;
 }

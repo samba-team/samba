@@ -283,8 +283,12 @@ static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
 		 *	man page appears not to specify (hints non-NULL)
 		 *	A correspondent suggest at least ut_name should be NULL
 		 */
+#if defined(HAVE_UT_UT_NAME)
 		memset((char *)&u->ut_name, '\0', sizeof(u->ut_name));
+#endif
+#if defined(HAVE_UT_UT_HOST)
 		memset((char *)&u->ut_host, '\0', sizeof(u->ut_host));
+#endif
 	}
 	/* Stolen from logwtmp function in libutil.
 	 * May be more locking/blocking is needed?
@@ -406,7 +410,9 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 	else
 		ux.ut_syslen = 0;
 #endif
+#if defined(HAVE_UT_UT_HOST)
 	utmp_strcpy(ux.ut_host, hostname, sizeof(ux.ut_host));
+#endif
 
 	uw_pathname(uname, "utmpx", ux_pathname);
 	uw_pathname(wname, "wtmpx", wx_pathname);
@@ -491,8 +497,8 @@ static BOOL sys_utmp_fill(struct utmp *u,
 	 *	If size limit proves troublesome, then perhaps use "ut_id_encode()".
 	 */
 	if (strlen(id_str) > sizeof(u->ut_line)) {
-		DEBUG(1,("id_str [%s] is too long for %d char utmp field\n",
-			 id_str, sizeof(u->ut_line)));
+		DEBUG(1,("id_str [%s] is too long for %lu char utmp field\n",
+			 id_str, (unsigned long)sizeof(u->ut_line)));
 		return False;
 	}
 	utmp_strcpy(u->ut_line, id_str, sizeof(u->ut_line));

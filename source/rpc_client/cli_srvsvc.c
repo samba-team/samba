@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell 1994-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Tim Potter 2001
-   Copyright (C) Jim McDonough 2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -387,7 +387,6 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		char *cmd = lp_deleteprinter_cmd();
 		pstring command;
 		int ret;
-		int i;
 
 		/* Printer->dev.handlename equals portname equals sharename */
 		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
@@ -406,7 +405,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		/* go ahead and re-read the services immediately */
 		reload_services( False );
 
-		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) < 0 )
+		if ( lp_servicenumber( Printer->dev.handlename )  < 0 )
 			return WERR_ACCESS_DENIED;
 	}
 
@@ -478,7 +477,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	fstring sname;
 	BOOL found=False;
 	
-	DEBUG(4,("Setting printer name=%s (len=%d)\n", handlename, strlen(handlename)));
+	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename, (unsigned long)strlen(handlename)));
 
 	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTSERVER) {
 		ZERO_STRUCT(Printer->dev.printerservername);
@@ -497,7 +496,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		aprinter=handlename;
 	}
 
-	DEBUGADD(5,("searching for [%s] (len=%d)\n", aprinter, strlen(aprinter)));
+	DEBUGADD(5,("searching for [%s] (len=%lu)\n", aprinter, (unsigned long)strlen(aprinter)));
 
 	/*
 	 * The original code allowed smbd to store a printer name that
@@ -563,7 +562,7 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 	
 	new_printer->notify.option=NULL;
 				
-	if ( !(new_printer->ctx = talloc_init("Printer Entry [0x%x]", (uint32)hnd)) ) {
+	if ( !(new_printer->ctx = talloc_init("Printer Entry [%p]", hnd)) ) {
 		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
 		close_printer_handle(p, hnd);
 		return False;
@@ -957,7 +956,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		SPOOL_NOTIFY_INFO_DATA *data;
 		uint32	data_len = 0;
 		uint32 	id;
-		int 	i, event_index;
+		int 	i;
 
 		/* Is there notification on this handle? */
 
@@ -979,8 +978,6 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		
 		data = talloc( mem_ctx, msg_group->num_msgs*sizeof(SPOOL_NOTIFY_INFO_DATA) );
 		ZERO_STRUCTP(data);
-		
-		event_index = 0;
 		
 		/* build the array of change notifications */
 		
@@ -1176,7 +1173,7 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	msg_count = IVAL(buf, 0);
 	msg_ptr = buf + 4;
 
-	DEBUG(5, ("receive_notify2_message_list: got %d messages in list\n", msg_count));
+	DEBUG(5, ("receive_notify2_message_list: got %lu messages in list\n", (unsigned long)msg_count));
 
 	if (msg_count == 0) {
 		DEBUG(0,("receive_notify2_message_list: bad message format (msg_count == 0) !\n"));
@@ -2393,9 +2390,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
-		fstring string;
-
-		fstrcpy(string, string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+		const char *string="C:\\PRINTERS";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
@@ -2411,7 +2406,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "Architecture")) {			
-		pstring string="Windows NT x86";
+		const char *string="Windows NT x86";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
@@ -3755,7 +3750,6 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 	Printer_entry *Printer=find_printer_index_by_hnd(p, hnd);
 	int n_services=lp_numservices();
 	int i;
-	uint32 id;
 	SPOOL_NOTIFY_OPTION *option;
 	SPOOL_NOTIFY_OPTION_TYPE *option_type;
 
@@ -3765,7 +3759,6 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 		return WERR_BADFID;
 
 	option=Printer->notify.option;
-	id=1;
 	info->version=2;
 	info->data=NULL;
 	info->count=0;
@@ -5135,7 +5128,7 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 		else
 			pstrcpy( line, v );
 			
-		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
+		DEBUGADD(6,("%d:%s:%lu\n", i, line, (unsigned long)strlen(line)));
 
 		/* add one extra unit16 for the second terminating NULL */
 		
@@ -6194,11 +6187,8 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p, POLICY_HND *handle,
 	SPOOL_PRINTER_INFO_LEVEL_7 *info7 = info->info_7;
 	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-	WERROR result;
 
 	DEBUG(5,("publish_or_unpublish_printer, action = %d\n",info7->action));
-
-	result = WERR_OK;
 
 	if (!Printer)
 		return WERR_BADFID;
@@ -7102,7 +7092,6 @@ static void fill_port_2(PORT_INFO_2 *port, const char *name)
 	init_unistr(&port->port_name, name);
 	init_unistr(&port->monitor_name, "Local Monitor");
 	init_unistr(&port->description, "Local Port");
-#define PORT_TYPE_WRITE 1
 	port->port_type=PORT_TYPE_WRITE;
 	port->reserved=0x0;	
 }
@@ -7725,7 +7714,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	
-	uint32 		param_index;
 	uint32 		biggest_valuesize;
 	uint32 		biggest_datasize;
 	uint32 		data_len;
@@ -7774,7 +7762,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	{
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
-		param_index       = 0;
 		biggest_valuesize = 0;
 		biggest_datasize  = 0;
 				
@@ -7910,6 +7897,11 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (!Printer) {
 		DEBUG(2,("_spoolss_setprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
+	}
+
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER ) {
+		DEBUG(10,("_spoolss_setprinterdata: Not implemented for server handles yet\n"));
+		return WERR_INVALID_PARAM;
 	}
 
 	if (!get_printer_snum(p,handle, &snum))
@@ -8698,7 +8690,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	/* Is the handle to a printer or to the server? */
 
 	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
-		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
+		DEBUG(10,("_spoolss_getprinterdataex: Not implemented for server handles yet\n"));
 		status = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -8780,8 +8772,13 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
            SetPrinterData if key is "PrinterDriverData" */
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_setprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_setprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
+	}
+
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER ) {
+		DEBUG(10,("_spoolss_setprinterdataex: Not implemented for server handles yet\n"));
+		return WERR_INVALID_PARAM;
 	}
 
 	if ( !get_printer_snum(p,handle, &snum) )
@@ -9092,8 +9089,8 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	{
 		if ( (enum_values=talloc(p->mem_ctx, num_entries*sizeof(PRINTER_ENUM_VALUES))) == NULL )
 		{
-			DEBUG(0,("_spoolss_enumprinterdataex: talloc() failed to allocate memory for [%d] bytes!\n",
-				num_entries*sizeof(PRINTER_ENUM_VALUES)));
+			DEBUG(0,("_spoolss_enumprinterdataex: talloc() failed to allocate memory for [%lu] bytes!\n",
+				(unsigned long)num_entries*sizeof(PRINTER_ENUM_VALUES)));
 			result = WERR_NOMEM;
 			goto done;
 		}
@@ -9178,12 +9175,11 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 {
 	pstring path;
 	pstring long_archi;
-        const char *short_archi;
 	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
 
 	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
 
-	if (!(short_archi = get_short_archi(long_archi)))
+	if (!get_short_archi(long_archi))
 		return WERR_INVALID_ENVIRONMENT;
 
 	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)

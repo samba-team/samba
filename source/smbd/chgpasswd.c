@@ -674,6 +674,8 @@ BOOL check_lanman_password(char *user, uchar * pass1,
  Code to change the lanman hashed password.
  It nulls out the NT hashed password as it will
  no longer be valid.
+ NOTE this function is designed to be called as root. Check the old password
+ is correct before calling. JRA.
 ************************************************************/
 
 BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar *pass2)
@@ -730,9 +732,7 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar *pass2)
 	}
  
 	/* Now flush the sam_passwd struct to persistent storage */
-	become_root();
 	ret = pdb_update_sam_account (sampass);
-	unbecome_root();
 
 	return ret;
 }
@@ -740,32 +740,23 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar *pass2)
 /***********************************************************
  Code to check and change the OEM hashed password.
 ************************************************************/
+
 NTSTATUS pass_oem_change(char *user,
 			 uchar * lmdata, uchar * lmhash,
 			 uchar * ntdata, uchar * nthash)
 {
 	fstring new_passwd;
-	const char *unix_user;
 	SAM_ACCOUNT *sampass = NULL;
-	NTSTATUS nt_status 
-		= check_oem_password(user, lmdata, lmhash, ntdata, nthash,
+	NTSTATUS nt_status = check_oem_password(user, lmdata, lmhash, ntdata, nthash,
 				     &sampass, new_passwd, sizeof(new_passwd));
 
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
-	/* 
-	 * At this point we have the new case-sensitive plaintext
-	 * password in the fstring new_passwd. If we wanted to synchronise
-	 * with UNIX passwords we would call a UNIX password changing 
-	 * function here. However it would have to be done as root
-	 * as the plaintext of the old users password is not 
-	 * available. JRA.
-	 */
-
-	unix_user = pdb_get_username(sampass);
-
+	/* We've already checked the old password here.... */
+	become_root();
 	nt_status = change_oem_password(sampass, NULL, new_passwd);
+	unbecome_root();
 
 	memset(new_passwd, 0, sizeof(new_passwd));
 
@@ -942,6 +933,8 @@ static NTSTATUS check_oem_password(const char *user,
 /***********************************************************
  Code to change the oem password. Changes both the lanman
  and NT hashes.  Old_passwd is almost always NULL.
+ NOTE this function is designed to be called as root. Check the old password
+ is correct before calling. JRA.
 ************************************************************/
 
 NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd)
@@ -997,9 +990,7 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	}
 
 	/* Now write it into the file. */
-	become_root();
 	ret = pdb_update_sam_account (hnd);
-	unbecome_root();
 
 	if (!ret) {
 		return NT_STATUS_ACCESS_DENIED;

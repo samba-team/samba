@@ -71,6 +71,7 @@ AC_DEFUN(SMB_SUBSYSTEM,
 	AC_SUBST($1_STATIC)
 	AC_SUBST($1_MODULES)
 	AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{$init_static_modules_]translit([$1], [A-Z], [a-z])[}], [Static init functions])
+    	ifelse([$2], , :, [touch $2])
 ])
 
 dnl AC_PROG_CC_FLAG(flag)
@@ -110,6 +111,113 @@ AC_DEFUN(AC_LIBTESTFUNC,
   ;;
   esac
 ])
+
+# AC_CHECK_LIB_EXT(LIBRARY, [EXT_LIBS], [FUNCTION],
+#              [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
+#              [ADD-ACTION-IF-FOUND],[OTHER-LIBRARIES])
+# ------------------------------------------------------
+#
+# Use a cache variable name containing both the library and function name,
+# because the test really is for library $1 defining function $3, not
+# just for library $1.  Separate tests with the same $1 and different $3s
+# may have different results.
+#
+# Note that using directly AS_VAR_PUSHDEF([ac_Lib], [ac_cv_lib_$1_$3])
+# is asking for troubles, since AC_CHECK_LIB($lib, fun) would give
+# ac_cv_lib_$lib_fun, which is definitely not what was meant.  Hence
+# the AS_LITERAL_IF indirection.
+#
+# FIXME: This macro is extremely suspicious.  It DEFINEs unconditionnally,
+# whatever the FUNCTION, in addition to not being a *S macro.  Note
+# that the cache does depend upon the function we are looking for.
+#
+# It is on purpose we used `ac_check_lib_ext_save_LIBS' and not just
+# `ac_save_LIBS': there are many macros which don't want to see `LIBS'
+# changed but still want to use AC_CHECK_LIB_EXT, so they save `LIBS'.
+# And ``ac_save_LIBS' is too tempting a name, so let's leave them some
+# freedom.
+AC_DEFUN([AC_CHECK_LIB_EXT],
+[
+AH_CHECK_LIB_EXT([$1])
+ac_check_lib_ext_save_LIBS=$LIBS
+LIBS="-l$1 $$2 $7 $LIBS"
+AS_LITERAL_IF([$1],
+      [AS_VAR_PUSHDEF([ac_Lib_ext], [ac_cv_lib_ext_$1])],
+      [AS_VAR_PUSHDEF([ac_Lib_ext], [ac_cv_lib_ext_$1''])])dnl
+
+m4_ifval([$3],
+ [
+    AH_CHECK_FUNC_EXT([$3])
+    AS_LITERAL_IF([$1],
+              [AS_VAR_PUSHDEF([ac_Lib_func], [ac_cv_lib_ext_$1_$3])],
+              [AS_VAR_PUSHDEF([ac_Lib_func], [ac_cv_lib_ext_$1''_$3])])dnl
+    AC_CACHE_CHECK([for $3 in -l$1], ac_Lib_func,
+	[AC_TRY_LINK_FUNC($3,
+                 [AS_VAR_SET(ac_Lib_func, yes);
+		  AS_VAR_SET(ac_Lib_ext, yes)],
+                 [AS_VAR_SET(ac_Lib_func, no);
+		  AS_VAR_SET(ac_Lib_ext, no)])
+	])
+    AS_IF([test AS_VAR_GET(ac_Lib_func) = yes],
+        [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_$3))])dnl
+    AS_VAR_POPDEF([ac_Lib_func])dnl
+ ],[
+    AC_CACHE_CHECK([for -l$1], ac_Lib_ext,
+	[AC_TRY_LINK_FUNC([main],
+                 [AS_VAR_SET(ac_Lib_ext, yes)],
+                 [AS_VAR_SET(ac_Lib_ext, no)])
+	])
+ ])
+LIBS=$ac_check_lib_ext_save_LIBS
+
+AS_IF([test AS_VAR_GET(ac_Lib_ext) = yes],
+    [m4_default([$4], 
+        [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_LIB$1))
+		case "$$2" in
+		    *-l$1*)
+			;;
+		    *)
+			$2="$$2 -l$1"
+			;;
+		esac])
+		[$6]
+	    ],
+	    [$5])dnl
+AS_VAR_POPDEF([ac_Lib_ext])dnl
+])# AC_CHECK_LIB_EXT
+
+# AH_CHECK_LIB_EXT(LIBNAME)
+# ---------------------
+m4_define([AH_CHECK_LIB_EXT],
+[AH_TEMPLATE(AS_TR_CPP(HAVE_LIB$1),
+             [Define to 1 if you have the `]$1[' library (-l]$1[).])])
+
+# AC_CHECK_FUNCS_EXT(FUNCTION, [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+# -----------------------------------------------------------------
+dnl check for a function in a $LIBS and $OTHER_LIBS libraries variable.
+dnl AC_CHECK_FUNC_EXT(func,OTHER_LIBS,IF-TRUE,IF-FALSE)
+AC_DEFUN([AC_CHECK_FUNC_EXT],
+[
+    AH_CHECK_FUNC_EXT($1)	
+    ac_check_func_ext_save_LIBS=$LIBS
+    LIBS="$2 $LIBS"
+    AS_VAR_PUSHDEF([ac_var], [ac_cv_func_ext_$1])dnl
+    AC_CACHE_CHECK([for $1], ac_var,
+	[AC_LINK_IFELSE([AC_LANG_FUNC_LINK_TRY([$1])],
+                [AS_VAR_SET(ac_var, yes)],
+                [AS_VAR_SET(ac_var, no)])])
+    LIBS=$ac_check_func_ext_save_LIBS
+    AS_IF([test AS_VAR_GET(ac_var) = yes], 
+	    [AC_DEFINE_UNQUOTED(AS_TR_CPP([HAVE_$1])) $3], 
+	    [$4])dnl
+AS_VAR_POPDEF([ac_var])dnl
+])# AC_CHECK_FUNC
+
+# AH_CHECK_FUNC_EXT(FUNCNAME)
+# ---------------------
+m4_define([AH_CHECK_FUNC_EXT],
+[AH_TEMPLATE(AS_TR_CPP(HAVE_$1),
+             [Define to 1 if you have the `]$1[' function.])])
 
 dnl Define an AC_DEFINE with ifndef guard.
 dnl AC_N_DEFINE(VARIABLE [, VALUE])
@@ -341,8 +449,6 @@ AC_ARG_WITH(mysql-prefix,[  --with-mysql-prefix=PFX   Prefix where MYSQL is inst
             mysql_prefix="$withval", mysql_prefix="")
 AC_ARG_WITH(mysql-exec-prefix,[  --with-mysql-exec-prefix=PFX Exec prefix where MYSQL is installed (optional)],
             mysql_exec_prefix="$withval", mysql_exec_prefix="")
-AC_ARG_ENABLE(mysqltest, [  --disable-mysqltest       Do not try to compile and run a test MYSQL program],
-         , enable_mysqltest=yes)
 
   if test x$mysql_exec_prefix != x ; then
      mysql_args="$mysql_args --exec-prefix=$mysql_exec_prefix"
@@ -359,143 +465,21 @@ AC_ARG_ENABLE(mysqltest, [  --disable-mysqltest       Do not try to compile and 
 
   AC_REQUIRE([AC_CANONICAL_TARGET])
   AC_PATH_PROG(MYSQL_CONFIG, mysql_config, no)
-  min_mysql_version=ifelse([$1], ,0.11.0,$1)
-  AC_MSG_CHECKING(for MYSQL - version >= $min_mysql_version)
+  AC_MSG_CHECKING(for MYSQL)
   no_mysql=""
   if test "$MYSQL_CONFIG" = "no" ; then
-    no_mysql=yes
+    MYSQL_CFLAGS=""
+    MYSQL_LIBS=""
+    AC_MSG_RESULT(no)
+     ifelse([$2], , :, [$2])
   else
     MYSQL_CFLAGS=`$MYSQL_CONFIG $mysqlconf_args --cflags | sed -e "s/'//g"`
     MYSQL_LIBS=`$MYSQL_CONFIG $mysqlconf_args --libs | sed -e "s/'//g"`
-
-    mysql_major_version=`$MYSQL_CONFIG $mysql_args --version | \
-           sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\1/'`
-    mysql_minor_version=`$MYSQL_CONFIG $mysql_args --version | \
-           sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\2/'`
-    mysql_micro_version=`$MYSQL_CONFIG $mysql_config_args --version | \
-           sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\3/'`
-    if test "x$enable_mysqltest" = "xyes" ; then
-      ac_save_CFLAGS="$CFLAGS"
-      ac_save_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-      LIBS="$LIBS $MYSQL_LIBS"
-dnl
-dnl Now check if the installed MYSQL is sufficiently new. (Also sanity
-dnl checks the results of mysql_config to some extent
-dnl
-      rm -f conf.mysqltest
-      AC_TRY_RUN([
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <mysql.h>
-
-char*
-my_strdup (char *str)
-{
-  char *new_str;
-
-  if (str)
-    {
-      new_str = (char *)malloc ((strlen (str) + 1) * sizeof(char));
-      strcpy (new_str, str);
-    }
-  else
-    new_str = NULL;
-
-  return new_str;
-}
-
-int main (int argc, char *argv[])
-{
-int major, minor, micro;
-  char *tmp_version;
-
-  /* This hangs on some systems (?)
-  system ("touch conf.mysqltest");
-  */
-  { FILE *fp = fopen("conf.mysqltest", "a"); if ( fp ) fclose(fp); }
-
-  /* HP/UX 9 (%@#!) writes to sscanf strings */
-  tmp_version = my_strdup("$min_mysql_version");
-  if (sscanf(tmp_version, "%d.%d.%d", &major, &minor, &micro) != 3) {
-     printf("%s, bad version string\n", "$min_mysql_version");
-     exit(1);
-   }
-
-   if (($mysql_major_version > major) ||
-      (($mysql_major_version == major) && ($mysql_minor_version > minor)) ||
-      (($mysql_major_version == major) && ($mysql_minor_version == minor) && ($mysql_micro_version >= micro)))
-    {
-      return 0;
-    }
-  else
-    {
-      printf("\n*** 'mysql_config --version' returned %d.%d.%d, but the minimum version\n", $mysql_major_version, $mysql_minor_version, $mysql_micro_version);
-      printf("*** of MYSQL required is %d.%d.%d. If mysql_config is correct, then it is\n", major, minor, micro);
-      printf("*** best to upgrade to the required version.\n");
-      printf("*** If mysql_config was wrong, set the environment variable MYSQL_CONFIG\n");
-      printf("*** to point to the correct copy of mysql_config, and remove the file\n");
-      printf("*** config.cache before re-running configure\n");
-      return 1;
-    }
-}
-
-],, no_mysql=yes,[echo $ac_n "cross compiling; assumed OK... $ac_c"])
-       CFLAGS="$ac_save_CFLAGS"
-       LIBS="$ac_save_LIBS"
-     fi
-  fi
-  if test "x$no_mysql" = x ; then
-     AC_MSG_RESULT(yes)
-     ifelse([$2], , :, [$2])
-  else
-     AC_MSG_RESULT(no)
-     if test "$MYSQL_CONFIG" = "no" ; then
-       echo "*** The mysql_config script installed by MYSQL could not be found"
-       echo "*** If MYSQL was installed in PREFIX, make sure PREFIX/bin is in"
-       echo "*** your path, or set the MYSQL_CONFIG environment variable to the"
-       echo "*** full path to mysql_config."
-     else
-       if test -f conf.mysqltest ; then
-        :
-       else
-          echo "*** Could not run MYSQL test program, checking why..."
-          CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-          LIBS="$LIBS $MYSQL_LIBS"
-          AC_TRY_LINK([
-#include <stdio.h>
-#include <mysql.h>
-
-int main(int argc, char *argv[])
-{ return 0; }
-#undef  main
-#define main K_and_R_C_main
-],      [ return 0; ],
-        [ echo "*** The test program compiled, but did not run. This usually means"
-          echo "*** that the run-time linker is not finding MYSQL or finding the wrong"
-          echo "*** version of MYSQL. If it is not finding MYSQL, you'll need to set your"
-          echo "*** LD_LIBRARY_PATH environment variable, or edit /etc/ld.so.conf to point"
-          echo "*** to the installed location  Also, make sure you have run ldconfig if that"
-          echo "*** is required on your system"
-    echo "***"
-          echo "*** If you have an old version installed, it is best to remove it, although"
-          echo "*** you may also be able to get things to work by modifying LD_LIBRARY_PATH"],
-        [ echo "*** The test program failed to compile or link. See the file config.log for the"
-          echo "*** exact error that occured. This usually means MYSQL was incorrectly installed"
-          echo "*** or that you have moved MYSQL since it was installed. In the latter case, you"
-          echo "*** may want to edit the mysql_config script: $MYSQL_CONFIG" ])
-          CFLAGS="$ac_save_CFLAGS"
-          LIBS="$ac_save_LIBS"
-       fi
-     fi
-     MYSQL_CFLAGS=""
-     MYSQL_LIBS=""
-     ifelse([$3], , :, [$3])
+    AC_MSG_RESULT(yes)
+    ifelse([$1], , :, [$1])
   fi
   AC_SUBST(MYSQL_CFLAGS)
   AC_SUBST(MYSQL_LIBS)
-  rm -f conf.mysqltest
 ])
 
 dnl Removes -I/usr/include/? from given variable
@@ -623,6 +607,25 @@ AC_DEFUN(jm_ICONV,
         LIBS="$LIBS -liconv"
       fi
     fi
+  fi
+])
+
+AC_DEFUN(rjs_CHARSET
+[
+  dnl Find out if we can convert from $1 to UCS2-LE
+  AC_MSG_CHECKING(we can convert from $1 to UCS2-LE)
+  AC_TRY_RUN([
+#include <$jm_cv_include>
+main(){
+    iconv_t cd = iconv_open("$1", "UCS-2LE");
+    if (cd == 0 || cd == (iconv_t)-1) {
+	return -1;
+    }
+    return 0;
+}
+  ],ICONV_CHARSET=$1,ICONV_CHARSET="",])
+  if test x"$ICONV_CHARSET" != x; then
+     AC_MSG_RESULT($ICONV_CHARSET)
   fi
 ])
 

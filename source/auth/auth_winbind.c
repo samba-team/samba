@@ -36,7 +36,7 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 		if (!prs_init(&ps, len, mem_ctx, UNMARSHALL)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		prs_copy_data_in(&ps, info3_ndr, len);
+		prs_copy_data_in(&ps, (char *)info3_ndr, len);
 		prs_set_offset(&ps,0);
 		if (!net_io_user_info3("", info3, &ps, 1, 3)) {
 			DEBUG(2, ("get_info3_from_ndr: could not parse info3 struct!\n"));

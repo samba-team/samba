@@ -55,7 +55,7 @@ int cli_print_queue(struct cli_state *cli,
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	int rdrcnt, rprcnt;
+	unsigned int rdrcnt, rprcnt;
 	pstring param;
 	int result_code=0;
 	int i = -1;
@@ -65,16 +65,16 @@ int cli_print_queue(struct cli_state *cli,
 	p = param;
 	SSVAL(p,0,76);         /* API function number 76 (DosPrintJobEnum) */
 	p += 2;
-	pstrcpy(p,"zWrLeh");   /* parameter description? */
+	pstrcpy_base(p,"zWrLeh", param);   /* parameter description? */
 	p = skip_string(p,1);
-	pstrcpy(p,"WWzWWDDzz");  /* returned data format */
+	pstrcpy_base(p,"WWzWWDDzz", param);  /* returned data format */
 	p = skip_string(p,1);
-	pstrcpy(p,cli->share);    /* name of queue */
+	pstrcpy_base(p,cli->share, param);    /* name of queue */
 	p = skip_string(p,1);
 	SSVAL(p,0,2);   /* API function level 2, PRJINFO_2 data structure */
 	SSVAL(p,2,1000); /* size of bytes of returned data buffer */
 	p += 4;
-	pstrcpy(p,"");   /* subformat */
+	pstrcpy_base(p,"", param);   /* subformat */
 	p = skip_string(p,1);
 
 	DEBUG(4,("doing cli_print_queue for %s\n", cli->share));
@@ -125,7 +125,8 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	int rdrcnt,rprcnt, ret = -1;
+	unsigned int rdrcnt,rprcnt;
+	int ret = -1;
 	pstring param;
 
 	memset(param,'\0',sizeof(param));
@@ -133,9 +134,9 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	p = param;
 	SSVAL(p,0,81);		/* DosPrintJobDel() */
 	p += 2;
-	pstrcpy(p,"W");
+	pstrcpy_base(p,"W", param);
 	p = skip_string(p,1);
-	pstrcpy(p,"");
+	pstrcpy_base(p,"", param);
 	p = skip_string(p,1);
 	SSVAL(p,0,job);     
 	p += 2;

@@ -6,8 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Marc Jacobsen			    1999,
  *  Copyright (C) Jean François Micouleau      1998-2001,
- *  Copyright (C) Anthony Liguori              2002-2003,
- *  Copyright (C) Jim McDonough                     2002.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002-2003.
  *	
  * 	Split into interface and implementation modules by, 
  *
@@ -1443,10 +1442,8 @@ static BOOL api_samr_set_dom_info(pipes_struct *p)
  array of \PIPE\samr operations
  ********************************************************************/
 
-NTSTATUS rpc_samr_init(void)
+static struct api_struct api_samr_cmds [] =
 {
-  static struct api_struct api_samr_cmds [] =
-    {
       {"SAMR_CLOSE_HND"         , SAMR_CLOSE_HND        , api_samr_close_hnd        },
       {"SAMR_CONNECT"           , SAMR_CONNECT          , api_samr_connect          },
       {"SAMR_CONNECT_ANON"      , SAMR_CONNECT_ANON     , api_samr_connect_anon     },
@@ -1500,7 +1497,17 @@ NTSTATUS rpc_samr_init(void)
       {"SAMR_UNKNOWN_2E"        , SAMR_UNKNOWN_2E       , api_samr_unknown_2e       },
       {"SAMR_SET_DOMAIN_INFO"   , SAMR_SET_DOMAIN_INFO  , api_samr_set_dom_info     },
       {"SAMR_CONNECT4"          , SAMR_CONNECT4         , api_samr_connect4         }
-    };
+};
+
+void samr_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_samr_cmds;
+	*n_fns = sizeof(api_samr_cmds) / sizeof(struct api_struct);
+}
+
+
+NTSTATUS rpc_samr_init(void)
+{
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "samr", "lsass", api_samr_cmds,
 				    sizeof(api_samr_cmds) / sizeof(struct api_struct));
 }

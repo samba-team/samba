@@ -47,13 +47,33 @@ static NTSTATUS cmd_ds_dsrole_getprimarydominfo(struct cli_state *cli,
 	return result;
 }
 
+static NTSTATUS cmd_ds_enum_domain_trusts(struct cli_state *cli, 
+				     TALLOC_CTX *mem_ctx, int argc, 
+				     const char **argv) 
+{
+	NTSTATUS 		result;
+	uint32 			flags = 0x1;
+	DS_DOMAIN_TRUSTS	 *trusts = NULL;
+	unsigned int 			num_domains = 0;
+	
+	result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, 
+		&trusts, &num_domains );
+	
+	printf( "%d domains returned\n", num_domains );
+	
+	SAFE_FREE( trusts );
+	
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set ds_commands[] = {
 
 	{ "LSARPC-DS" },
 
-	{ "dsroledominfo", RPC_RTYPE_NTSTATUS, cmd_ds_dsrole_getprimarydominfo, NULL, PI_LSARPC_DS, "Get Primary Domain Information", "" },
+	{ "dsroledominfo",   RPC_RTYPE_NTSTATUS, cmd_ds_dsrole_getprimarydominfo, NULL, PI_LSARPC_DS, "Get Primary Domain Information", "" },
+	{ "dsenumdomtrusts", RPC_RTYPE_NTSTATUS, cmd_ds_enum_domain_trusts,       NULL, PI_NETLOGON,  "Enumerate all trusted domains in an AD forest", "" },
 
 	{ NULL }
 };

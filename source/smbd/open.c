@@ -125,6 +125,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 			   directory.
 			*/
 			flags &= ~O_CREAT;
+			local_flags &= ~O_CREAT;
 		}
 	}
 
@@ -165,6 +166,14 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		if (VALID_STAT(*psbuf) && S_ISFIFO(psbuf->st_mode))
 			local_flags |= O_NONBLOCK;
 #endif
+
+		/* Don't create files with Microsoft wildcard characters. */
+		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf) && ms_has_wild(fname))  {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRinvalidname;
+			unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
+			return False;
+		}
 
 		/* Actually do the open */
 		fsp->fd = fd_open(conn, fname, local_flags, mode);
@@ -218,7 +227,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->dev = psbuf->st_dev;
 	fsp->vuid = current_user.vuid;
 	fsp->size = psbuf->st_size;
-	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = ((flags & O_WRONLY)==0);
 	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
@@ -617,6 +625,12 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 				DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 				
+				/* Ensure the reply for the open uses the correct sequence number. */
+				/* This isn't a real deferred packet as it's response will also increment
+				 * the sequence.
+				 */
+				srv_defer_sign_response(get_current_mid(), False);
+
 				/* Oplock break - unlock to request it. */
 				unlock_share_entry(conn, dev, inode);
 				
@@ -675,8 +689,8 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fname, (unsigned int)dev, (double)inode));
 					
 					if (process_exists(broken_entry.pid)) {
-						DEBUG(0,("open_mode_check: Existent process %d left active oplock.\n",
-							 broken_entry.pid ));
+						DEBUG(0,("open_mode_check: Existent process %lu left active oplock.\n",
+							 (unsigned long)broken_entry.pid ));
 					}
 					
 					if (del_share_entry(dev, inode, &broken_entry, NULL) == -1) {
@@ -874,7 +888,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	if (file_existed && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)) {
 		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode, &new_mode)) {
 			DEBUG(5,("open_file_shared: attributes missmatch for file %s (0%o, 0%o)\n",
-						fname, psbuf->st_mode, mode ));
+						fname, (int)psbuf->st_mode, (int)mode ));
 			file_free(fsp);
 			errno = EACCES;
 			return NULL;
@@ -1290,6 +1304,15 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				return NULL;
 			}
 
+			if (ms_has_wild(fname))  {
+				file_free(fsp);
+				DEBUG(5,("open_directory: failing create on filename %s with wildcards\n", fname));
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRinvalidname;
+				unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
+				return NULL;
+			}
+
 			if(vfs_MkDir(conn,fname, unix_mode(conn,aDIR, fname)) < 0) {
 				DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
@@ -1338,7 +1361,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = psbuf->st_dev;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = False;
@@ -1401,7 +1423,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = (SMB_DEV_T)0;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;

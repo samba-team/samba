@@ -132,6 +132,9 @@ struct smbldap_state {
 	char *bind_secret;
 
 	unsigned int num_failures;
+
+	time_t last_use;
+	smb_event_id_t event_id;
 };
 
 #endif 	/* HAVE_LDAP */

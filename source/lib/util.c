@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001-2002
    Copyright (C) Simo Sorce 2001
-   Copyright (C) Anthony Liguori 2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -311,7 +311,7 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
 
 static const char *Atoic(const char *p, int *n, const char *c)
 {
-	if (!isdigit((const int)*p)) {
+	if (!isdigit((int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
@@ -2247,7 +2247,7 @@ char *pid_path(const char *name)
 char *lib_path(const char *name)
 {
 	static pstring fname;
-	snprintf(fname, sizeof(fname), "%s/%s", dyn_LIBDIR, name);
+	fstr_sprintf(fname, "%s/%s", dyn_LIBDIR, name);
 	return fname;
 }
 
@@ -2335,21 +2335,12 @@ BOOL ms_has_wild_w(const smb_ucs2_t *s)
 
 BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 {
-	fstring p2, s2;
-
 	if (strcmp(string,"..") == 0)
 		string = ".";
 	if (strcmp(pattern,".") == 0)
 		return False;
 	
-	if (is_case_sensitive)
-		return ms_fnmatch(pattern, string, Protocol) == 0;
-
-	fstrcpy(p2, pattern);
-	fstrcpy(s2, string);
-	strlower_m(p2); 
-	strlower_m(s2);
-	return ms_fnmatch(p2, s2, Protocol) == 0;
+	return ms_fnmatch(pattern, string, Protocol, is_case_sensitive) == 0;
 }
 
 /*********************************************************

@@ -2027,7 +2027,7 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
         make_spoolss_q_setprinterdata(
-		&q, hnd, value->valuename, value->type, value->data_p, value->size);
+		&q, hnd, value->valuename, value->type, (char *)value->data_p, value->size);
 
 	/* Marshall data and send request */
 
@@ -2072,7 +2072,7 @@ WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
         make_spoolss_q_setprinterdataex(
-		&q, hnd, keyname, value->valuename, value->type, value->data_p, 
+		&q, hnd, keyname, value->valuename, value->type, (char *)value->data_p, 
 		value->size);
 
 	/* Marshall data and send request */
@@ -2215,7 +2215,7 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		rpcstr_pull(name, v->valuename.buffer, sizeof(name), -1, 
 			    STR_TERMINATE);
-		regval_ctr_addvalue(ctr, name, v->type, v->data, v->data_len);
+		regval_ctr_addvalue(ctr, name, v->type, (const char *)v->data, v->data_len);
 	}
 
  done:

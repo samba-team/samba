@@ -70,18 +70,13 @@ static BOOL winbindd_accountdb_init(void)
 	
 	if ( account_tdb )
 		return True;
-		
-	/* Nope.  Try to open it */
 
-	if (!(account_tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0, 
-		TDB_DEFAULT, O_RDWR | O_CREAT, 0600))) 
-	{
-		/* last chance -- maybe idmap has already opened it */
-		if ( !(account_tdb = idmap_tdb_handle()) ) {
+	/* winbindd_idmap.tdb should always be opened by the idmap_init()
+	   code first */
 
-			DEBUG(0, ("winbindd_idmap_init: Unable to open idmap database\n"));
-			return False;
-		}
+	if ( !(account_tdb = idmap_tdb_handle()) ) {
+		DEBUG(0, ("winbindd_accountdb_init: Unable to retreive handle for database\n"));
+		return False;
 	}
 	
 	/* yeah! */
@@ -136,8 +131,8 @@ static WINBINDD_PW* string2passwd( char *string )
 	/* last minute sanity checks */
 	
 	if ( pw.pw_uid==0 || pw.pw_gid==0 ) {
-		DEBUG(0,("string2passwd: Failure! uid==%d, gid==%d\n",
-			pw.pw_uid, pw.pw_gid));
+		DEBUG(0,("string2passwd: Failure! uid==%lu, gid==%lu\n",
+			(unsigned long)pw.pw_uid, (unsigned long)pw.pw_gid));
 		return NULL;
 	}
 	
@@ -161,17 +156,17 @@ static char* passwd2string( const WINBINDD_PW *pw )
 	DEBUG(10,("passwd2string: converting passwd struct for %s\n", 
 		pw->pw_name));
 
-	ret = snprintf( string, sizeof(string), "%s:%s:%d:%d:%s:%s:%s",
+	ret = pstr_sprintf( string, "%s:%s:%lu:%lu:%s:%s:%s",
 		pw->pw_name, 
 		pw->pw_passwd ? pw->pw_passwd : "x",
-		pw->pw_uid,
-		pw->pw_gid,
+		(unsigned long)pw->pw_uid,
+		(unsigned long)pw->pw_gid,
 		pw->pw_gecos,
 		pw->pw_dir,
 		pw->pw_shell );
 		
 	if ( ret < 0 ) {
-		DEBUG(0,("passwd2string: snprintf() failed!\n"));
+		DEBUG(0,("passwd2string: pstr_sprintf() failed!\n"));
 		return NULL;
 	}
 		
@@ -247,7 +242,7 @@ static WINBINDD_GR* string2group( char *string )
 	/* last minute sanity checks */
 	
 	if ( grp.gr_gid == 0 ) {
-		DEBUG(0,("string2group: Failure! gid==%d\n", grp.gr_gid));
+		DEBUG(0,("string2group: Failure! gid==%lu\n", (unsigned long)grp.gr_gid));
 		SAFE_FREE( gr_members );
 		return NULL;
 	}
@@ -303,16 +298,16 @@ static char* group2string( const WINBINDD_GR *grp )
 		fstrcpy( gr_mem_str, "" );
 	}
 
-	ret = snprintf( string, sizeof(string)-1, "%s:%s:%d:%s",
+	ret = pstr_sprintf( string, "%s:%s:%lu:%s",
 		grp->gr_name, 
 		grp->gr_passwd ? grp->gr_passwd : "*",
-		grp->gr_gid,
+		(unsigned long)grp->gr_gid,
 		gr_mem_str );
 		
 	SAFE_FREE( gr_mem_str );
 		
 	if ( ret < 0 ) {
-		DEBUG(0,("group2string: snprintf() failed!\n"));
+		DEBUG(0,("group2string: pstr_sprintf() failed!\n"));
 		return NULL;
 	}
 		
@@ -326,7 +321,7 @@ static char* acct_userkey_byname( const char *name )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/NAME/%s", WBKEY_PASSWD, name );
+	fstr_sprintf( key, "%s/NAME/%s", WBKEY_PASSWD, name );
 	
 	return key;		
 }
@@ -338,7 +333,7 @@ static char* acct_userkey_byuid( uid_t uid )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/UID/%d", WBKEY_PASSWD, uid );
+	fstr_sprintf( key, "%s/UID/%lu", WBKEY_PASSWD, (unsigned long)uid );
 	
 	return key;		
 }
@@ -350,7 +345,7 @@ static char* acct_groupkey_byname( const char *name )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/NAME/%s", WBKEY_GROUP, name );
+	fstr_sprintf( key, "%s/NAME/%s", WBKEY_GROUP, name );
 	
 	return key;		
 }
@@ -362,7 +357,7 @@ static char* acct_groupkey_bygid( gid_t gid )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/GID/%d", WBKEY_GROUP, gid );
+	fstr_sprintf( key, "%s/GID/%lu", WBKEY_GROUP, (unsigned long)gid );
 	
 	return key;		
 }
@@ -415,7 +410,7 @@ WINBINDD_PW* wb_getpwuid( const uid_t uid )
 	
 	data = tdb_fetch_bystring( account_tdb, acct_userkey_byuid(uid) );
 	if ( !data.dptr ) {
-		DEBUG(4,("wb_getpwuid: failed to locate uid == %d\n", uid));
+		DEBUG(4,("wb_getpwuid: failed to locate uid == %lu\n", (unsigned long)uid));
 		return NULL;
 	}
 	keystr = acct_userkey_byname( data.dptr );
@@ -431,8 +426,8 @@ WINBINDD_PW* wb_getpwuid( const uid_t uid )
 		SAFE_FREE( data.dptr );
 	}
 
-	DEBUG(5,("wb_getpwuid: %s user (uid == %d)\n", 
-		(pw ? "Found" : "Did not find"), uid ));
+	DEBUG(5,("wb_getpwuid: %s user (uid == %lu)\n", 
+		(pw ? "Found" : "Did not find"), (unsigned long)uid ));
 	
 	return pw;
 }
@@ -544,7 +539,8 @@ WINBINDD_GR* wb_getgrgid( gid_t gid )
 	
 	data = tdb_fetch_bystring( account_tdb, acct_groupkey_bygid(gid) );
 	if ( !data.dptr ) {
-		DEBUG(4,("wb_getgrgid: failed to locate gid == %d\n", gid));
+		DEBUG(4,("wb_getgrgid: failed to locate gid == %lu\n", 
+			 (unsigned long)gid));
 		return NULL;
 	}
 	keystr = acct_groupkey_byname( data.dptr );
@@ -560,8 +556,8 @@ WINBINDD_GR* wb_getgrgid( gid_t gid )
 		SAFE_FREE( data.dptr );
 	}
 
-	DEBUG(5,("wb_getgrgid: %s group (gid == %d)\n", 
-		(grp ? "Found" : "Did not find"), gid ));
+	DEBUG(5,("wb_getgrgid: %s group (gid == %lu)\n", 
+		(grp ? "Found" : "Did not find"), (unsigned long)gid ));
 	
 	return grp;
 }
@@ -697,7 +693,7 @@ static int cleangroups_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA
 	fstring key;
 	char *name = (char*)state;
 	
-	snprintf( key, sizeof(key), "%s/NAME", WBKEY_GROUP );
+	fstr_sprintf( key, "%s/NAME", WBKEY_GROUP );
 	len = strlen(key);
 	
 	/* if this is a group entry then, check the members */
@@ -776,7 +772,7 @@ static int isprimarygroup_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 	fstring key;
 	struct _check_primary_grp *check = (struct _check_primary_grp*)params;
 	
-	snprintf( key, sizeof(key), "%s/NAME", WBKEY_PASSWD );
+	fstr_sprintf( key, "%s/NAME", WBKEY_PASSWD );
 	len = strlen(key);
 	
 	/* if this is a group entry then, check the members */
@@ -875,8 +871,8 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 	user  = state->request.data.acct_mgt.username;
 	group = state->request.data.acct_mgt.groupname;
 	
-	DEBUG(3, ("[%5d]: create_user: user=>(%s), group=>(%s)\n", 
-		state->pid, user, group));
+	DEBUG(3, ("[%5lu]: create_user: user=>(%s), group=>(%s)\n", 
+		(unsigned long)state->pid, user, group));
 		
 	if ( !*group )
 		group = lp_template_primary_group();
@@ -965,7 +961,7 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 	state->request.data.acct_mgt.groupname[sizeof(state->request.data.acct_mgt.groupname)-1]='\0';	
 	group = state->request.data.acct_mgt.groupname;
 	
-	DEBUG(3, ("[%5d]: create_group: (%s)\n", state->pid, group));
+	DEBUG(3, ("[%5lu]: create_group: (%s)\n", (unsigned long)state->pid, group));
 	
 	/* get a new uid */
 	
@@ -1025,7 +1021,7 @@ enum winbindd_result winbindd_add_user_to_group(struct winbindd_cli_state *state
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  add_user_to_group: add %s to %s\n", state->pid, 
+	DEBUG(3, ("[%5lu]:  add_user_to_group: add %s to %s\n", (unsigned long)state->pid, 
 		user, group));
 	
 	/* make sure it is a valid user */
@@ -1073,7 +1069,7 @@ enum winbindd_result winbindd_remove_user_from_group(struct winbindd_cli_state *
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  remove_user_to_group: delete %s from %s\n", state->pid, 
+	DEBUG(3, ("[%5lu]:  remove_user_to_group: delete %s from %s\n", (unsigned long)state->pid, 
 		user, group));
 	
 	/* don't worry about checking the username since we're removing it anyways */
@@ -1116,8 +1112,8 @@ enum winbindd_result winbindd_set_user_primary_group(struct winbindd_cli_state *
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  set_user_primary_grou:p group %s for user %s\n", state->pid, 
-		group, user));
+	DEBUG(3, ("[%5lu]:  set_user_primary_group: group %s for user %s\n", 
+		  (unsigned long)state->pid, group, user));
 	
 	/* make sure it is a valid user */
 	
@@ -1158,7 +1154,7 @@ enum winbindd_result winbindd_delete_user(struct winbindd_cli_state *state)
 	state->request.data.acct_mgt.username[sizeof(state->request.data.acct_mgt.username)-1]='\0';	
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  delete_user: %s\n", state->pid, user));
+	DEBUG(3, ("[%5lu]:  delete_user: %s\n", (unsigned long)state->pid, user));
 	
 	/* make sure it is a valid user */
 	
@@ -1189,7 +1185,7 @@ enum winbindd_result winbindd_delete_group(struct winbindd_cli_state *state)
 	state->request.data.acct_mgt.username[sizeof(state->request.data.acct_mgt.groupname)-1]='\0';	
 	group = state->request.data.acct_mgt.groupname;
 	
-	DEBUG(3, ("[%5d]:  delete_group: %s\n", state->pid, group));
+	DEBUG(3, ("[%5lu]:  delete_group: %s\n", (unsigned long)state->pid, group));
 	
 	/* make sure it is a valid group */
 	

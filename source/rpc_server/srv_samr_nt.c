@@ -7,8 +7,7 @@
  *  Copyright (C) Marc Jacobsen			    1999,
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Jean François Micouleau      1998-2001,
- *  Copyright (C) Anthony Liguori                   2002,
- *  Copyright (C) Jim McDonough                     2002.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -914,7 +913,6 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	} else if (sid_equal(sid, get_global_sam_sid()) && !lp_hide_local_users()) {
 		struct sys_grent *glist;
 		struct sys_grent *grp;
-		struct passwd *pw;
 		gid_t winbind_gid_low, winbind_gid_high;
 		BOOL winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
 
@@ -953,7 +951,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 
 			/* Don't return user private groups... */
 
-			if ((pw = Get_Pwnam(smap.nt_name)) != 0) {
+			if (Get_Pwnam(smap.nt_name) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
 				continue;			
 			}
@@ -1014,8 +1012,13 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 	*p_num_entries = 0;
 
+	/* access checks for the users were performed higher up.  become/unbecome_root()
+	   needed for some passdb backends to enumerate groups */
+	   
+	become_root();
 	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
-
+	unbecome_root();
+	
 	num_entries=group_entries-start_idx;
 
 	/* limit the number of entries */
@@ -1517,17 +1520,17 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 
 NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_CHGPASSWD_USER *r_u)
 {
-    fstring user_name;
-    fstring wks;
+	fstring user_name;
+	fstring wks;
 
-    DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+	DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
-    rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
+	rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
+	rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
 
-    DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
+	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -1541,14 +1544,14 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 	 * is case insensitive.
 	 */
 
-    r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
-				  q_u->nt_newpass.pass, q_u->nt_oldhash.hash);
+	r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
+				q_u->nt_newpass.pass, q_u->nt_oldhash.hash);
 
-    init_samr_r_chgpasswd_user(r_u, r_u->status);
+	init_samr_r_chgpasswd_user(r_u, r_u->status);
 
-    DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+	DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -2141,7 +2144,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
-			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
+			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 			
 			init_unk_info3(&ctr->info.inf3, nt_logout);
@@ -2259,7 +2262,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	 * now have some sainity-checking to match. 
 	 */
 
-	DEBUG(10,("checking account %s at pos %d for $ termination\n",account, strlen(account)-1));
+	DEBUG(10,("checking account %s at pos %lu for $ termination\n",account, (unsigned long)strlen(account)-1));
 	
 	/* 
 	 * we used to have code here that made sure the acb_info flags 
@@ -2370,6 +2373,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONNECT_ANON *r_u)
 {
 	struct samr_info *info = NULL;
+	uint32    des_access = q_u->access_mask;
 
 	/* Access check */
 
@@ -2387,6 +2391,13 @@ NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CO
 	if ((info = get_samr_info_by_sid(NULL)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
+	/* don't give away the farm but this is probably ok.  The SA_RIGHT_SAM_ENUM_DOMAINS
+	   was observed from a win98 client trying to enumerate users (when configured  
+	   user level access control on shares)   --jerry */
+	   
+	se_map_generic( &des_access, &sam_generic_mapping );
+	info->acc_granted = des_access & (SA_RIGHT_SAM_ENUM_DOMAINS|SA_RIGHT_SAM_OPEN_DOMAIN);
+	
 	info->status = q_u->unknown_0;
 
 	/* get a (unique) handle.  open a policy on it. */
@@ -2511,7 +2522,9 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 	if (!find_policy_by_hnd(p, &q_u->connect_pol, (void**)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_lookup_domain"))) {
+	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, 
+		SA_RIGHT_SAM_ENUM_DOMAINS, "_samr_lookup_domain"))) 
+	{
 		return r_u->status;
 	}
 
@@ -2761,8 +2774,9 @@ static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
 	grp = getgrgid(gid);
 
 	if (grp == NULL) {
-		DEBUG(2,("Could not find primary group %d for "
-			 "user %s\n", gid, pdb_get_username(sampass)));
+		DEBUG(2,("Could not find primary group %lu for "
+			 "user %s\n", (unsigned long)gid, 
+			 pdb_get_username(sampass)));
 		return False;
 	}
 

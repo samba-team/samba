@@ -48,6 +48,15 @@ BOOL global_machine_password_needs_changing = False;
 extern int max_send;
 
 /****************************************************************************
+ Function to return the current request mid from Inbuffer.
+****************************************************************************/
+
+uint16 get_current_mid(void)
+{
+	return SVAL(InBuffer,smb_mid);
+}
+
+/****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.
 ****************************************************************************/
@@ -86,6 +95,9 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 	msg->msg_len = msg_len;
 
 	ubi_slAddTail( list_head, msg);
+
+	/* Push the MID of this packet on the signing queue. */
+	srv_defer_sign_response(SVAL(buf,smb_mid), True);
 
 	return True;
 }
@@ -1084,13 +1096,18 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 	extern int keepalive;
 
 	if (smb_read_error == READ_EOF) {
-		DEBUG(3,("end of file from client\n"));
+		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
 		return False;
 	}
 
 	if (smb_read_error == READ_ERROR) {
-		DEBUG(3,("receive_smb error (%s) exiting\n",
+		DEBUG(3,("timeout_processing: receive_smb error (%s) Exiting\n",
 			strerror(errno)));
+		return False;
+	}
+
+	if (smb_read_error == READ_BAD_SIG) {
+		DEBUG(3,("timeout_processing: receive_smb error bad smb signature. Exiting\n"));
 		return False;
 	}
 

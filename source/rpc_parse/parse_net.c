@@ -801,7 +801,7 @@ void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
 	DEBUG(5,("init_q_srv_pwset\n"));
 	
 	/* Process the new password. */
-	cred_hash3( nt_cypher, hashed_mach_pwd, sess_key, 1);
+	cred_hash3( nt_cypher, hashed_mach_pwd, (const unsigned char *)sess_key, 1);
 
 	init_clnt_info(&q_s->clnt_id, logon_srv, acct_name, sec_chan, comp_name, cred);
 

@@ -1402,7 +1402,7 @@ static void netsec_digest(struct netsec_auth_struct *a,
 	if (auth_flags & AUTH_PIPE_SEAL) {
 		MD5Update(&ctx3, verf->data8, sizeof(verf->data8));
 	}
-	MD5Update(&ctx3, data, data_len);
+	MD5Update(&ctx3, (const unsigned char *)data, data_len);
 	MD5Final(whole_packet_digest, &ctx3);
 	dump_data_pw("whole_packet_digest:\n", whole_packet_digest, sizeof(whole_packet_digest));
 	
@@ -1429,7 +1429,7 @@ static void netsec_get_sealing_key(struct netsec_auth_struct *a,
 	
 	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
 	
-	/* MD5 of sess_kf0 and the high bytes of the sequence number */
+	/* MD5 of sess_kf0 and 4 zero bytes */
 	hmac_md5(sess_kf0, zeros, 0x4, digest2);
 	dump_data_pw("digest2:\n", digest2, sizeof(digest2));
 	
@@ -1473,7 +1473,7 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 {
 	uchar digest_final[16];
 
-	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%d\n", a->seq_num, data_len));
+	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 
 	RSIVAL(verf->seq_num, 0, a->seq_num);
@@ -1506,9 +1506,9 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 		dump_data_pw("verf->data8_enc:\n", verf->data8, sizeof(verf->data8));
 		
 		/* encode the packet payload */
-		dump_data_pw("data:\n", data, data_len);
-		netsechash(sealing_key, data, data_len);
-		dump_data_pw("data_enc:\n", data, data_len);
+		dump_data_pw("data:\n", (const unsigned char *)data, data_len);
+		netsechash(sealing_key, (unsigned char *)data, data_len);
+		dump_data_pw("data_enc:\n", (const unsigned char *)data, data_len);
 	}
 
 	/* encode the sequence number (key based on packet digest) */
@@ -1544,7 +1544,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		break;
 	}
 
-	DEBUG(10,("SCHANNEL: netsec_decode seq_num=%d data_len=%d\n", a->seq_num, data_len));
+	DEBUG(10,("SCHANNEL: netsec_decode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 
 	dump_data_pw("seq_num:\n", seq_num, sizeof(seq_num));
@@ -1578,9 +1578,9 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 			     sizeof(verf->data8));
 		
 		/* extract the packet payload */
-		dump_data_pw("data   :\n", data, data_len);
-		netsechash(sealing_key, data, data_len);
-		dump_data_pw("datadec:\n", data, data_len);	
+		dump_data_pw("data   :\n", (const unsigned char *)data, data_len);
+		netsechash(sealing_key, (unsigned char *)data, data_len);
+		dump_data_pw("datadec:\n", (const unsigned char *)data, data_len);	
 	}
 
 	/* digest includes 'data' after unsealing */

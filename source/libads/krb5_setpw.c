@@ -143,7 +143,7 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 	else
 		return EINVAL;
 
-	encoded_setpw.data = setpw.data;
+	encoded_setpw.data = (char *)setpw.data;
 	encoded_setpw.length = setpw.length;
 
 	ret = krb5_mk_priv(context, auth_context,

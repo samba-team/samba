@@ -1368,7 +1368,7 @@ BOOL spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, 
 		return False;
 	
 	if (UNMARSHALLING(ps) && r_u->size) {
-		r_u->data = prs_alloc_mem(ps, r_u->size);
+		r_u->data = (unsigned char *)prs_alloc_mem(ps, r_u->size);
 		if(!r_u->data)
 			return False;
 	}
@@ -6178,7 +6178,7 @@ BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND
 	init_unistr2(&q_u->value, value, strlen(value)+1);
 
 	q_u->max_len = q_u->real_len = data_size;
-	q_u->data = data;
+	q_u->data = (unsigned char *)data;
 	
 	return True;
 }
@@ -6195,7 +6195,7 @@ BOOL make_spoolss_q_setprinterdataex(SPOOL_Q_SETPRINTERDATAEX *q_u, const POLICY
 	init_unistr2(&q_u->key, key, strlen(key)+1);
 
 	q_u->max_len = q_u->real_len = data_size;
-	q_u->data = data;
+	q_u->data = (unsigned char *)data;
 	
 	return True;
 }
@@ -6990,7 +6990,7 @@ BOOL spoolss_io_r_getprinterdataex(const char *desc, SPOOL_R_GETPRINTERDATAEX *r
 		return False;
 	
 	if (UNMARSHALLING(ps) && r_u->size) {
-		r_u->data = prs_alloc_mem(ps, r_u->size);
+		r_u->data = (unsigned char *)prs_alloc_mem(ps, r_u->size);
 		if(!r_u->data)
 			return False;
 	}
@@ -7689,7 +7689,7 @@ BOOL make_spoolss_q_writeprinter(SPOOL_Q_WRITEPRINTER *q_u,
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	q_u->buffer_size = q_u->buffer_size2 = data_size;
-	q_u->buffer = data;
+	q_u->buffer = (unsigned char *)data;
 	return True;
 }
 

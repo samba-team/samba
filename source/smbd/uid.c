@@ -370,7 +370,7 @@ BOOL unbecome_user(void)
 }
 
 /*****************************************************************
- Convert the suplimentary SIDs returned in a netlogon into UNIX
+ Convert the supplementary SIDs returned in a netlogon into UNIX
  group gid_t's. Add to the total group array.
 *****************************************************************/
  

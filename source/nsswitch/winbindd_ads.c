@@ -377,8 +377,10 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
 	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_dn);
+	if ( !res )
+		goto failed;
 
-	if (!ADS_ERR_OK(rc)) {
+	if (!res || !ADS_ERR_OK(rc)) {
 		goto failed;
 	}
 
@@ -801,24 +803,91 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***alt_names,
 				DOM_SID **dom_sids)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
+	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
+	DS_DOMAIN_TRUSTS	*domains = NULL;
+	int			count = 0;
+	int			i;
+	struct cli_state	*cli = NULL;
+				/* i think we only need our forest and downlevel trusted domains */
+	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
 	*num_domains = 0;
-	*names = NULL;
-
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
-		domain->last_status = NT_STATUS_SERVER_DISABLED;
+	*alt_names   = NULL;
+	*names       = NULL;
+	*dom_sids    = NULL;
+		
+	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(domain->name, PI_NETLOGON, &cli)) ) {
+		DEBUG(5, ("trusted_domains: Could not open a connection to %s for PIPE_NETLOGON (%s)\n", 
+			  domain->name, nt_errstr(result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	
+	if ( NT_STATUS_IS_OK(result) )
+		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, &domains, (unsigned int *)&count );
+	
+	if ( NT_STATUS_IS_OK(result) && count) {
+	
+		/* Allocate memory for trusted domain names and sids */
 
-	rc = ads_trusted_domains(ads, mem_ctx, num_domains, names, alt_names, dom_sids);
+		if ( !(*names = (char **)talloc(mem_ctx, sizeof(char *) * count)) ) {
+			DEBUG(0, ("trusted_domains: out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
-	return ads_ntstatus(rc);
+		if ( !(*alt_names = (char **)talloc(mem_ctx, sizeof(char *) * count)) ) {
+			DEBUG(0, ("trusted_domains: out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		if ( !(*dom_sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) * count)) ) {
+			DEBUG(0, ("trusted_domains: out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		/* Copy across names and sids */
+
+		for (i = 0; i < count; i++) {
+			fstring tmp;
+			fstring tmp2;
+
+			(*names)[i] = NULL;
+			(*alt_names)[i] = NULL;
+			ZERO_STRUCT( (*dom_sids)[i] );
+
+			if ( domains[i].netbios_ptr ) {
+				unistr2_to_ascii(tmp, &domains[i].netbios_domain, sizeof(tmp) - 1);
+				(*names)[i] = talloc_strdup(mem_ctx, tmp);
+			}
+			
+			if ( domains[i].dns_ptr ) {
+				unistr2_to_ascii(tmp2, &domains[i].dns_domain, sizeof(tmp2) - 1);
+				(*alt_names)[i] = talloc_strdup(mem_ctx, tmp2);
+			}
+			
+			/* sometimes we will get back a NULL SID from this call */
+			
+			if ( domains[i].sid_ptr )
+				sid_copy(&(*dom_sids)[i], &domains[i].sid.sid);
+		}
+
+		*num_domains = count;	
+	}
+
+done:
+
+	SAFE_FREE( domains );
+	
+	/* remove connection;  This is a special case to the \NETLOGON pipe */
+	
+	if ( cli )
+		cli_shutdown( cli );
+
+	return result;
 }
 
 /* find the domain sid for a domain */

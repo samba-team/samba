@@ -4,7 +4,7 @@
    idmap TDB backend
 
    Copyright (C) Tim Potter 2000
-   Copyright (C) Anthony Liguori 2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Simo Sorce 2003
    
    This program is free software; you can redistribute it and/or modify
@@ -46,20 +46,6 @@ static struct idmap_state {
 } idmap_state;
 
 /**********************************************************************
- Return the TDB_CONTEXT* for winbindd_idmap.  I **really** feel
- dirty doing this, but not so dirty that I want to create another 
- tdb
-***********************************************************************/
-
-TDB_CONTEXT *idmap_tdb_handle( void )
-{
-	if ( idmap_tdb )
-		return idmap_tdb;
-	
-	return NULL;
-}
-
-/**********************************************************************
  allocate a new RID; We don't care if is a user or group
 **********************************************************************/
 
@@ -75,7 +61,7 @@ static NTSTATUS db_allocate_rid(uint32 *rid, int rid_type)
 	
 	/* cannot fail since idmap is only called winbindd */
 	
-	idmap_get_free_rid_range( &lowrid, &highrid );
+	get_free_rid_range( &lowrid, &highrid );
 	
 	tmp_rid = lowrid;
 	
@@ -116,12 +102,13 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* check it is in the range */
 			if (hwm > idmap_state.uid_high) {
-				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
+				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.uid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
 			/* fetch a new id and increment it */
-			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, &hwm, 1);
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, (unsigned int *)&hwm, 1);
 			if (!ret) {
 				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
 				return NT_STATUS_UNSUCCESSFUL;
@@ -129,7 +116,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* recheck it is in the range */
 			if (hwm > idmap_state.uid_high) {
-				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
+				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.uid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			
@@ -144,12 +132,13 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* check it is in the range */
 			if (hwm > idmap_state.gid_high) {
-				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %u)\n", idmap_state.gid_high));
+				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.gid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
 			/* fetch a new id and increment it */
-			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_GROUP, &hwm, 1);
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_GROUP, (unsigned int *)&hwm, 1);
 
 			if (!ret) {
 				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
@@ -158,7 +147,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* recheck it is in the range */
 			if (hwm > idmap_state.gid_high) {
-				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %u)\n", idmap_state.gid_high));
+				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.gid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			
@@ -185,10 +175,10 @@ static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 
 	switch (id_type & ID_TYPEMASK) {
 		case ID_USERID:
-			slprintf(keystr, sizeof(keystr), "UID %d", id.uid);
+			slprintf(keystr, sizeof(keystr), "UID %lu", (unsigned long)id.uid);
 			break;
 		case ID_GROUPID:
-			slprintf(keystr, sizeof(keystr), "GID %d", id.gid);
+			slprintf(keystr, sizeof(keystr), "GID %lu", (unsigned long)id.gid);
 			break;
 		default:
 			return NT_STATUS_UNSUCCESSFUL;
@@ -374,9 +364,11 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 			/* Store the UID side */
 			/* Store new id */
 			if (*id_type & ID_USERID) {
-				slprintf(ugid_str, sizeof(ugid_str), "UID %d", (*id).uid);
+				slprintf(ugid_str, sizeof(ugid_str), "UID %lu", 
+					 (unsigned long)((*id).uid));
 			} else {
-				slprintf(ugid_str, sizeof(ugid_str), "GID %d", (*id).gid);
+				slprintf(ugid_str, sizeof(ugid_str), "GID %lu", 
+					 (unsigned long)((*id).gid));
 			}
 			
 			ugid_data.dptr = ugid_str;
@@ -430,9 +422,9 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	ksid.dsize = strlen(ksidstr) + 1;
 
 	if (id_type & ID_USERID) {
-		slprintf(kidstr, sizeof(kidstr), "UID %d", id.uid);
+		slprintf(kidstr, sizeof(kidstr), "UID %lu", (unsigned long)id.uid);
 	} else if (id_type & ID_GROUPID) {
-		slprintf(kidstr, sizeof(kidstr), "GID %d", id.gid);
+		slprintf(kidstr, sizeof(kidstr), "GID %lu", (unsigned long)id.gid);
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -642,6 +634,27 @@ static void db_idmap_status(void)
 	}
 
 	/* Display complete mapping of users and groups to rids */
+}
+
+/**********************************************************************
+ Return the TDB_CONTEXT* for winbindd_idmap.  I **really** feel
+ dirty doing this, but not so dirty that I want to create another 
+ tdb
+***********************************************************************/
+
+TDB_CONTEXT *idmap_tdb_handle( void )
+{
+	if ( idmap_tdb )
+		return idmap_tdb;
+		
+	/* go ahead an open it;  db_idmap_init() doesn't use any params 
+	   right now */
+	   
+	db_idmap_init( NULL );
+	if ( idmap_tdb )
+		return idmap_tdb;
+		
+	return NULL;
 }
 
 static struct idmap_methods db_methods = {

@@ -661,7 +661,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 #else
 	/* the alternative is just to check the directory exists */
 	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
-		DEBUG(0,("'%s' is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(SNUM(conn))));
+		DEBUG(0,("'%s' does not exist or is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(SNUM(conn))));
 		change_to_root_user();
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
@@ -691,6 +691,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(), conn->client_address );
+		dbgtext( "%s", srv_is_signing_active() ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "initially as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );

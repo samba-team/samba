@@ -447,21 +447,3 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return t;
 }
 #endif
-
-#ifndef HAVE_SETENV
- int setenv(const char *name, const char *value, int overwrite) 
-{
-	char *p = NULL;
-	int ret = -1;
-
-	asprintf(&p, "%s=%s", name, value);
-
-	if (overwrite || getenv(name)) {
-		if (p) ret = putenv(p);
-	} else {
-		ret = 0;
-	}
-
-	return ret;	
-}
-#endif

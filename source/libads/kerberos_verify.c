@@ -28,7 +28,7 @@
   verify an incoming ticket and parse out the principal name and 
   authorization_data if available 
 */
-NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket, 
+NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
 			   DATA_BLOB *ap_rep,
 			   uint8 session_key[16])
@@ -60,13 +60,13 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	ZERO_STRUCTP(ap_rep);
 
 	if (!secrets_init()) {
-		DEBUG(1,("secrets_init failed\n"));
+		DEBUG(1,("ads_verify_ticket: secrets_init failed\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
 	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 	if (!password_s) {
-		DEBUG(1,("failed to fetch machine password\n"));
+		DEBUG(1,("ads_verify_ticket: failed to fetch machine password\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -75,13 +75,13 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("krb5_init_context failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_verify_ticket: krb5_init_context failed (%s)\n", error_message(ret)));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	ret = krb5_set_default_realm(context, ads->auth.realm);
+	ret = krb5_set_default_realm(context, realm);
 	if (ret) {
-		DEBUG(1,("krb5_set_default_realm failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_verify_ticket: krb5_set_default_realm failed (%s)\n", error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
@@ -92,7 +92,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 	ret = krb5_auth_con_init(context, &auth_context);
 	if (ret) {
-		DEBUG(1,("krb5_auth_con_init failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_verify_ticket: krb5_auth_con_init failed (%s)\n", error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
@@ -102,66 +102,83 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	asprintf(&host_princ_s, "HOST/%s@%s", myname, lp_realm());
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);
 	if (ret) {
-		DEBUG(1,("krb5_parse_name(%s) failed (%s)\n", host_princ_s, error_message(ret)));
+		DEBUG(1,("ads_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
+					host_princ_s, error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
 
 	/*
-	 * JRA. We must set the rcache and the allowed addresses in the auth_context
-	 * here. This will prevent replay attacks and ensure the client has got a key from
-	 * the correct IP address.
+	 * JRA. We must set the rcache here. This will prevent replay attacks.
 	 */
 
 	ret = krb5_get_server_rcache(context, krb5_princ_component(context, host_princ, 0), &rcache);
 	if (ret) {
-		DEBUG(1,("krb5_get_server_rcache failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_verify_ticket: krb5_get_server_rcache failed (%s)\n", error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
 
 	ret = krb5_auth_con_setrcache(context, auth_context, rcache);
 	if (ret) {
-		DEBUG(1,("krb5_auth_con_setrcache failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_verify_ticket: krb5_auth_con_setrcache failed (%s)\n", error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
 
-	/* Now we need to add the addresses.... JRA. */
+	/* CIFS doesn't use addresses in tickets. This would breat NAT. JRA */
 
-	if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
-		sret = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-	
 	if ((ret = get_kerberos_allowed_etypes(context, &enctypes))) {
-		DEBUG(1,("krb5_get_permitted_enctypes failed (%s)\n", 
+		DEBUG(1,("ads_verify_ticket: krb5_get_permitted_enctypes failed (%s)\n", 
 			 error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
 
-	/* we need to setup a auth context with each possible encoding type in turn */
+	/* Lock a mutex surrounding the replay as there is no locking in the MIT krb5
+	 * code surrounding the replay cache... */
+
+	if (!grab_server_mutex("replay cache mutex")) {
+		DEBUG(1,("ads_verify_ticket: unable to protect replay cache with mutex.\n"));
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
+	}
+
+	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
+		if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
+			sret = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	
 		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
 			continue;
 		}
 
 		krb5_auth_con_setuseruserkey(context, auth_context, key);
 
+		krb5_free_keyblock(context, key);
+
 		packet.length = ticket->length;
 		packet.data = (krb5_pointer)ticket->data;
 
 		if (!(ret = krb5_rd_req(context, &auth_context, &packet, 
 				       NULL, keytab, NULL, &tkt))) {
-			free_kerberos_etypes(context, enctypes);
+			DEBUG(10,("ads_verify_ticket: enc type [%u] decrypted message !\n",
+				(unsigned int)enctypes[i] ));
 			auth_ok = True;
 			break;
 		}
+	
+		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
+				("ads_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
+				(unsigned int)enctypes[i], error_message(ret)));
 	}
 
+	release_server_mutex();
+
 	if (!auth_ok) {
-		DEBUG(3,("krb5_rd_req with auth failed (%s)\n", 
+		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
@@ -169,7 +186,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 	ret = krb5_mk_rep(context, auth_context, &packet);
 	if (ret) {
-		DEBUG(3,("Failed to generate mutual authentication reply (%s)\n",
+		DEBUG(3,("ads_verify_ticket: Failed to generate mutual authentication reply (%s)\n",
 			error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
@@ -178,7 +195,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	*ap_rep = data_blob(packet.data, packet.length);
 	free(packet.data);
 
-	get_krb5_smb_session_key(context, auth_context, session_key);
+	get_krb5_smb_session_key(context, auth_context, session_key, True);
 #ifdef DEBUG_PASSWORD
 	DEBUG(10,("SMB session key (from ticket) follows:\n"));
 	dump_data(10, session_key, 16);
@@ -205,7 +222,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
 				     principal))) {
-		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
+		DEBUG(3,("ads_verify_ticket: krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
@@ -221,8 +238,11 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	if (!NT_STATUS_IS_OK(sret))
 		data_blob_free(ap_rep);
 
-	SAFE_FREE(host_princ_s);
+	krb5_free_principal(context, host_princ);
+	krb5_free_ticket(context, tkt);
+	free_kerberos_etypes(context, enctypes);
 	SAFE_FREE(password_s);
+	SAFE_FREE(host_princ_s);
 
 	if (auth_context)
 		krb5_auth_con_free(context, auth_context);

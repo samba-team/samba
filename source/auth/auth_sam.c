@@ -44,12 +44,12 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 	}
 	
 	if (sec_blob->length != 8) {
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%d)\n", sec_blob->length));
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%lu)\n", (unsigned long)sec_blob->length));
 		return False;
 	}
 	
 	if (nt_response->length != 24) {
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%d)\n", nt_response->length));
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%lu)\n", (unsigned long)nt_response->length));
 		return False;
 	}
 
@@ -103,8 +103,8 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 		/* We MUST have more than 16 bytes, or the stuff below will go
 		   crazy.  No known implementation sends less than the 24 bytes
 		   for LMv2, let alone NTLMv2. */
-		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%d)\n", 
-			  ntv2_response->length));
+		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%lu)\n", 
+			  (unsigned long)ntv2_response->length));
 		return False;
 	}
 
@@ -233,8 +233,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	
 	if (auth_flags & AUTH_FLAG_LM_RESP) {
 		if (user_info->lm_resp.length != 24) {
-			DEBUG(2,("sam_password_ok: invalid LanMan password length (%d) for user %s\n", 
-				 user_info->nt_resp.length, pdb_get_username(sampass)));		
+			DEBUG(2,("sam_password_ok: invalid LanMan password length (%lu) for user %s\n", 
+				 (unsigned long)user_info->nt_resp.length, pdb_get_username(sampass)));		
 		}
 		
 		if (!lp_lanman_auth()) {

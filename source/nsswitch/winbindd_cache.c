@@ -106,7 +106,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		case SEC_ADS: {
 			extern struct winbindd_methods ads_methods;
 			/* always obey the lp_security parameter for our domain */
-			if ( strequal(lp_realm(), domain->alt_name) ) {
+			if ( strequal(lp_realm(), domain->alt_name) || strequal(lp_workgroup(), domain->name) ) {
 				domain->backend = &ads_methods;
 				break;
 			}
@@ -256,7 +256,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
-	snprintf( key, sizeof(key), "SEQNUM/%s", domain->name );
+	fstr_sprintf( key, "SEQNUM/%s", domain->name );
 	
 	data = tdb_fetch_bystring( wcache->tdb, key );
 	if ( !data.dptr || data.dsize!=8 ) {
@@ -295,7 +295,7 @@ static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
-	snprintf( key_str, sizeof(key_str), "SEQNUM/%s", domain->name );
+	fstr_sprintf( key_str, "SEQNUM/%s", domain->name );
 	key.dptr = key_str;
 	key.dsize = strlen(key_str)+1;
 	
@@ -327,6 +327,8 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	unsigned time_diff;
 	time_t t = time(NULL);
 	unsigned cache_time = lp_winbind_cache_time();
+
+	get_cache( domain );
 
 	/* trying to reconnect is expensive, don't do it too often */
 	if (domain->sequence_number == DOM_SEQUENCE_NONE) {
@@ -430,7 +432,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	}
 
 	centry = smb_xmalloc(sizeof(*centry));
-	centry->data = data.dptr;
+	centry->data = (unsigned char *)data.dptr;
 	centry->len = data.dsize;
 	centry->ofs = 0;
 
@@ -574,7 +576,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 
 	key.dptr = kstr;
 	key.dsize = strlen(kstr);
-	data.dptr = centry->data;
+	data.dptr = (char *)centry->data;
 	data.dsize = centry->ofs;
 
 	tdb_store(wcache->tdb, key, data, TDB_REPLACE);
@@ -922,7 +924,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, uname);
 	if (!centry)
 		goto do_query;
-	*type = centry_uint32(centry);
+	*type = (enum SID_NAME_USE)centry_uint32(centry);
 	sid2 = centry_sid(centry, mem_ctx);
 	if (!sid2) {
 		ZERO_STRUCTP(sid);
@@ -986,7 +988,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = centry_uint32(centry);
+		*type = (enum SID_NAME_USE)centry_uint32(centry);
 		*name = centry_string(centry, mem_ctx);
 	}
 	status = centry->status;

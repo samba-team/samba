@@ -5,7 +5,7 @@
    Copyright (C) Gerald Carter			2001-2003
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
-   Copyright (C) Stefan (metze) Metzmacher	2002
+   Copyright (C) Stefan (metze) Metzmacher	2002-2003
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@
 
 #define SMBLDAP_DONT_PING_TIME 10	/* ping only all 10 seconds */
 #define SMBLDAP_NUM_RETRIES 8	        /* retry only 8 times */
+
+#define SMBLDAP_IDLE_TIME 150		/* After 2.5 minutes disconnect */
 
 
 /* attributes used by Samba 2.2 */
@@ -925,6 +927,8 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		smbldap_close(ldap_state);	
 	}
 
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_filter);
 	return rc;
 }
@@ -954,6 +958,8 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		smbldap_close(ldap_state);	
 	}
 	
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -983,6 +989,8 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		smbldap_close(ldap_state);	
 	}
 		
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -1012,6 +1020,8 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		smbldap_close(ldap_state);	
 	}
 		
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -1041,6 +1051,8 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 		smbldap_close(ldap_state);	
 	}
 		
+	ldap_state->last_use = time(NULL);
+
 	return rc;
 }
 
@@ -1071,6 +1083,24 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter,
 	return rc;
 }
 
+static void smbldap_idle_fn(void **data, time_t *interval, time_t now)
+{
+	struct smbldap_state *state = (struct smbldap_state *)(*data);
+
+	if (state->ldap_struct == NULL) {
+		DEBUG(10,("ldap connection not connected...\n"));
+		return;
+	}
+		
+	if ((state->last_use+SMBLDAP_IDLE_TIME) > now) {
+		DEBUG(10,("ldap connection not idle...\n"));
+		return;
+	}
+		
+	DEBUG(7,("ldap connection idle...closing connection\n"));
+	smbldap_close(state);
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -1085,6 +1115,8 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
+
+	smb_unregister_idle_event((*ldap_state)->event_id);
 
 	*ldap_state = NULL;
 
@@ -1109,6 +1141,16 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_
 	} else {
 		(*smbldap_state)->uri = "ldap://localhost";
 	}
+
+	(*smbldap_state)->event_id =
+		smb_register_idle_event(smbldap_idle_fn, (void *)(*smbldap_state),
+					SMBLDAP_IDLE_TIME);
+
+	if ((*smbldap_state)->event_id == SMB_EVENT_ID_INVALID) {
+		DEBUG(0,("Failed to register LDAP idle event!\n"));
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -1130,6 +1172,9 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	LDAPMessage *result = NULL;
 	int num_result;
 	char **attr_list;
+	uid_t u_low, u_high;
+	gid_t g_low, g_high;
+	uint32 rid_low, rid_high;
 
 	slprintf (filter, sizeof (filter) - 1, "(&(%s=%s)(objectclass=%s))", 
 		  get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
@@ -1155,7 +1200,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	DEBUG(3,("Adding new domain\n"));
 	ldap_op = LDAP_MOD_ADD;
 
-	snprintf(dn, sizeof(dn), "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+	pstr_sprintf(dn, "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
 		domain_name, lp_ldap_suffix());
 
 	/* Free original search */
@@ -1175,6 +1220,30 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
 			algorithmic_rid_base_string);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
+	
+	/* add the sambaNext[User|Group]Rid attributes if the idmap ranges are set.
+	   TODO: fix all the places where the line between idmap and normal operations
+	   needed by smbd gets fuzzy   --jerry 2003-08-11                              */
+	
+	if ( lp_idmap_uid(&u_low, &u_high) && lp_idmap_gid(&g_low, &g_high)
+		&& get_free_rid_range(&rid_low, &rid_high) ) 
+	{
+		fstring rid_str;
+		
+		fstr_sprintf( rid_str, "%i", rid_high|USER_RID_TYPE );
+		DEBUG(10,("setting next available user rid [%s]\n", rid_str));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
+			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
+			rid_str);
+			
+		fstr_sprintf( rid_str, "%i", rid_high|GROUP_RID_TYPE );
+		DEBUG(10,("setting next available group rid [%s]\n", rid_str));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
+			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID), 
+			rid_str);
+		
+        }
+
 
 	switch(ldap_op)
 	{
@@ -1220,7 +1289,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	char **attr_list;
 	int count;
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%s))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_DOMINFO,
 		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
 		domain_name);

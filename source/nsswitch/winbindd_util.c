@@ -80,6 +80,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 						  DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
+	char *contact_name;
         
 	/* We can't call domain_list() as this function is called from
 	   init_domain_list() and we'll get stuck in a loop. */
@@ -111,7 +112,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		fstrcpy(domain->name, alt_name);
 		fstrcpy(domain->alt_name, domain_name);
 	} else {
-	fstrcpy(domain->name, domain_name);
+		fstrcpy(domain->name, domain_name);
 		if (alt_name) {
 			fstrcpy(domain->alt_name, alt_name);
 		}
@@ -125,10 +126,12 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		sid_copy(&domain->sid, sid);
 	}
 	
-	/* see if this is a native mode win2k domain */
+	/* see if this is a native mode win2k domain (use realm name if possible) */
 	   
-	domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
-	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
+	contact_name = *domain->alt_name ? domain->alt_name : domain->name;
+	domain->native_mode = cm_check_for_native_mode_win2k( contact_name );
+	
+	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", contact_name,
 		domain->native_mode ? "native" : "mixed (or NT4)" ));
 
 	/* Link to domain list */
@@ -145,50 +148,67 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 /*
   rescan our domains looking for new trusted domains
  */
-void rescan_trusted_domains(BOOL force)
+void add_trusted_domains( struct winbindd_domain *domain )
 {
-	struct winbindd_domain *domain;
 	TALLOC_CTX *mem_ctx;
-	static time_t last_scan;
-	time_t t = time(NULL);
+	NTSTATUS result;
+	time_t t;
+	char **names;
+	char **alt_names;
+	int num_domains = 0;
+	DOM_SID *dom_sids, null_sid;
+	int i;
+	struct winbindd_domain *new_domain;
 
 	/* trusted domains might be disabled */
 	if (!lp_allow_trusted_domains()) {
 		return;
 	}
 
-	/* Only rescan every few minutes but force if necessary */
-
-	if (((unsigned)(t - last_scan) < WINBINDD_RESCAN_FREQ) && !force)
-		return;
-
-	last_scan = t;
-
 	DEBUG(1, ("scanning trusted domain list\n"));
 
 	if (!(mem_ctx = talloc_init("init_domain_list")))
 		return;
+	   
+	ZERO_STRUCTP(&null_sid);
 
-	for (domain = _domain_list; domain; domain = domain->next) {
-		NTSTATUS result;
-		char **names;
-		char **alt_names;
-		int num_domains = 0;
-		DOM_SID *dom_sids;
-		int i;
+	t = time(NULL);
+	
+	/* ask the DC what domains it trusts */
+	
+	result = domain->methods->trusted_domains(domain, mem_ctx, (unsigned int *)&num_domains,
+		&names, &alt_names, &dom_sids);
+		
+	if ( NT_STATUS_IS_OK(result) ) {
 
-		result = domain->methods->trusted_domains(domain, mem_ctx, &num_domains,
-		                                          &names, &alt_names, &dom_sids);
-		if (!NT_STATUS_IS_OK(result)) {
-			continue;
-		}
-
-		/* Add each domain to the trusted domain list. Each domain inherits
-		   the access methods of its parent */
+		/* Add each domain to the trusted domain list */
+		
 		for(i = 0; i < num_domains; i++) {
 			DEBUG(10,("Found domain %s\n", names[i]));
 			add_trusted_domain(names[i], alt_names?alt_names[i]:NULL,
-			                   domain->methods, &dom_sids[i]);
+				domain->methods, &dom_sids[i]);
+					   
+			/* if the SID was empty, we better set it now */
+			
+			if ( sid_equal(&dom_sids[i], &null_sid) ) {
+			
+				new_domain = find_domain_from_name(names[i]);
+				 
+				/* this should never happen */
+				if ( !new_domain ) { 	
+					DEBUG(0,("rescan_trust_domains: can't find the domain I just added! [%s]\n",
+						names[i]));
+					break;
+				}
+				 
+				/* call the cache method; which will operate on the winbindd_domain \
+				   passed in and choose either rpc or ads as appropriate */
+
+				result = domain->methods->domain_sid( new_domain, &new_domain->sid );
+				 
+				if ( NT_STATUS_IS_OK(result) )
+				 	sid_copy( &dom_sids[i], &new_domain->sid );
+			}
 			
 			/* store trusted domain in the cache */
 			trustdom_cache_store(names[i], alt_names ? alt_names[i] : NULL,
@@ -209,7 +229,9 @@ BOOL init_domain_list(void)
 	free_domain_list();
 
 	/* Add ourselves as the first entry */
-	domain = add_trusted_domain(lp_workgroup(), NULL, &cache_methods, NULL);
+	
+	domain = add_trusted_domain( lp_workgroup(), NULL, &cache_methods, NULL);
+	
 	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
 		DEBUG(1, ("Could not fetch sid for our domain %s\n",
 			  domain->name));
@@ -220,7 +242,7 @@ BOOL init_domain_list(void)
 	cache_methods.alternate_name(domain);
 
 	/* do an initial scan for trusted domains */
-	rescan_trusted_domains(True);
+	add_trusted_domains(domain);
 
 	return True;
 }
@@ -782,3 +804,53 @@ BOOL winbindd_upgrade_idmap(void)
 
 	return idmap_convert(idmap_name);
 }
+
+/*******************************************************************
+ wrapper around retrieving the trust account password
+*******************************************************************/
+
+BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
+                          time_t *pass_last_set_time, uint32 *channel)
+{
+	DOM_SID sid;
+	char *pwd;
+
+	/* if we are a DC and this is not our domain, then lookup an account
+	   for the domain trust */
+	   
+	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) 
+	{
+		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
+			pass_last_set_time) ) 
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust account "
+				  "password for trusted domain %s\n", domain));
+			return False;
+		}
+		
+		*channel = SEC_CHAN_DOMAIN;
+		E_md4hash(pwd, ret_pwd);
+		SAFE_FREE(pwd);
+
+		return True;
+	}
+	else 	/* just get the account for our domain (covers 
+		   ROLE_DOMAIN_MEMBER as well */
+	{
+		/* get the machine trust account for our domain */
+
+		if ( !secrets_fetch_trust_account_password (lp_workgroup(), ret_pwd,
+			pass_last_set_time, channel) ) 
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust account "
+				  "password for my domain %s\n", domain));
+			return False;
+		}
+		
+		return True;
+	}
+	
+	/* Failure */
+	return False;
+}
+

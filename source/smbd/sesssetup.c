@@ -3,7 +3,7 @@
    handle SMBsessionsetup
    Copyright (C) Andrew Tridgell 1998-2001
    Copyright (C) Andrew Bartlett      2001
-   Copyright (C) Jim McDonough        2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Luke Howard          2003
 
    This program is free software; you can redistribute it and/or modify
@@ -62,7 +62,7 @@ static int add_signature(char *outbuf, char *p)
 	char *start = p;
 	fstring lanman;
 
-	snprintf( lanman, sizeof(lanman), "Samba %s", VERSION );
+	fstr_sprintf( lanman, "Samba %s", VERSION );
 
 	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
 	p += srvstr_push(outbuf, p, lanman, -1, STR_TERMINATE);
@@ -149,10 +149,10 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB auth_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
-	ADS_STRUCT *ads;
 	uint8 session_key[16];
 	uint8 tok_id[2];
 	BOOL foreign = False;
+	DATA_BLOB nullblob = data_blob(NULL, 0);
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(auth_data);
@@ -164,38 +164,31 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ads = ads_init_simple();
-
-	if (!ads) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-	ads->auth.realm = strdup(lp_realm());
-
-	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data, &ap_rep, session_key);
+	ret = ads_verify_ticket(lp_realm(), &ticket, &client, &auth_data, &ap_rep, session_key);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
-		ads_destroy(&ads);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	data_blob_free(&auth_data);
+	data_blob_free(&ticket);
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
 	p = strchr_m(client, '@');
 	if (!p) {
 		DEBUG(3,("Doesn't look like a valid principal\n"));
-		ads_destroy(&ads);
 		data_blob_free(&ap_rep);
+		SAFE_FREE(client);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	*p = 0;
-	if (strcasecmp(p+1, ads->auth.realm) != 0) {
+	if (strcasecmp(p+1, lp_realm()) != 0) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			data_blob_free(&ap_rep);
+			SAFE_FREE(client);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 		foreign = True;
@@ -212,7 +205,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		user = smb_xstrdup(client);
 	}
 
-	ads_destroy(&ads);
+	SAFE_FREE(client);
 
 	/* setup the string used by %U */
 	sub_set_smb_name(user);
@@ -235,7 +228,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	memcpy(server_info->session_key, session_key, sizeof(session_key));
 
 	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, user);
+	sess_vuid = register_vuid(server_info, nullblob, user);
 
 	free(user);
 
@@ -250,6 +243,16 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		}
 		
 		SSVAL(outbuf, smb_uid, sess_vuid);
+
+		if (!server_info->guest) {
+			/* We need to start the signing engine
+			 * here but a W2K client sends the old
+			 * "BSRSPYL " signature instead of the
+			 * correct one. Subsequent packets will
+			 * be correct.
+			 */
+		       	srv_check_sign_mac(inbuf);
+		}
 	}
 
         /* wrap that up in a nice GSS-API wrapping */
@@ -275,7 +278,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
  End the NTLMSSP exchange context if we are OK/complete fail
 ***************************************************************************/
 
-static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
+static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *outbuf,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
 {
@@ -294,8 +297,10 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		int sess_vuid;
+		DATA_BLOB nullblob = data_blob(NULL, 0);
+
 		/* register_vuid keeps the server info */
-		sess_vuid = register_vuid(server_info, (*auth_ntlmssp_state)->ntlmssp_state->user);
+		sess_vuid = register_vuid(server_info, nullblob, (*auth_ntlmssp_state)->ntlmssp_state->user);
 		(*auth_ntlmssp_state)->server_info = NULL;
 
 		if (sess_vuid == -1) {
@@ -310,6 +315,16 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 			}
 			
 			SSVAL(outbuf,smb_uid,sess_vuid);
+
+			if (!server_info->guest) {
+				/* We need to start the signing engine
+				 * here but a W2K client sends the old
+				 * "BSRSPYL " signature instead of the
+				 * correct one. Subsequent packets will
+				 * be correct.
+				 */
+			       	srv_check_sign_mac(inbuf);
+			}
 		}
 	}
 
@@ -348,16 +363,27 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
+
+	/* only look at the first OID for determining the mechToken --
+	   accoirding to RFC2478, we should choose the one we want 
+	   and renegotiate, but i smell a client bug here..  
+	   
+	   Problem observed when connecting to a member (samba box) 
+	   of an AD domain as a user in a Samba domain.  Samba member 
+	   server sent back krb5/mskrb5/ntlmssp as mechtypes, but the 
+	   client (2ksp3) replied with ntlmssp/mskrb5/krb5 and an 
+	   NTLMSSP mechtoken.                 --jerry              */
 	
+	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 ||
+	    strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
+		got_kerberos = True;
+	}
+		
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("Got OID %s\n", OIDs[i]));
-		if (strcmp(OID_KERBEROS5, OIDs[i]) == 0 ||
-		    strcmp(OID_KERBEROS5_OLD, OIDs[i]) == 0) {
-			got_kerberos = True;
-		}
 		free(OIDs[i]);
 	}
-	DEBUG(3,("Got secblob of size %d\n", secblob.length));
+	DEBUG(3,("Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 #ifdef HAVE_KRB5
 	if (got_kerberos && (SEC_ADS == lp_security())) {
@@ -382,7 +408,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 
 	data_blob_free(&secblob);
 
-	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+	reply_spnego_ntlmssp(conn, inbuf, outbuf, &global_ntlmssp_state,
 			     &chal, nt_status);
 		
 	data_blob_free(&chal);
@@ -419,7 +445,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	data_blob_free(&auth);
 
-	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+	reply_spnego_ntlmssp(conn, inbuf, outbuf, &global_ntlmssp_state,
 			     &auth_reply, nt_status);
 		
 	data_blob_free(&auth_reply);
@@ -742,7 +768,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	free_user_info(&user_info);
 	
 	data_blob_free(&lm_resp);
-	data_blob_free(&nt_resp);
 	data_blob_clear_free(&plaintext_password);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -750,9 +775,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		data_blob_free(&nt_resp);
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
-	
+
 	/* it's ok - setup a reply */
 	set_message(outbuf,3,0,True);
 	if (Protocol >= PROTOCOL_NT1) {
@@ -770,10 +796,15 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	   to a uid can get through without a password, on the same VC */
 
 	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, sub_user);
-  
+	sess_vuid = register_vuid(server_info, nt_resp, sub_user);
+	data_blob_free(&nt_resp);
+
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+ 	if (!server_info->guest && !srv_check_sign_mac(inbuf)) {
+		exit_server("reply_sesssetup_and_X: bad smb signature");
 	}
 
 	SSVAL(outbuf,smb_uid,sess_vuid);

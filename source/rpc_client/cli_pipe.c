@@ -5,6 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
  *  Copyright (C) Paul Ashton                       1998.
  *  Copyright (C) Jeremy Allison                    1999.
+ *  Copyright (C) Andrew Bartlett                   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -263,7 +264,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 			DATA_BLOB ntlmssp_verf = data_blob(NULL, auth_len);
 			
 			/* save the reply away, for use a little later */
-			prs_copy_data_out(ntlmssp_verf.data, &auth_verf, auth_len);
+			prs_copy_data_out((char *)ntlmssp_verf.data, &auth_verf, auth_len);
 
 
 			return (NT_STATUS_IS_OK(ntlmssp_client_store_response(cli->ntlmssp_pipe_state, 
@@ -286,7 +287,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 				return False;
 			}
 			sig = data_blob(NULL, auth_len);
-			prs_copy_data_out(sig.data, &auth_verf, auth_len);
+			prs_copy_data_out((char *)sig.data, &auth_verf, auth_len);
 		}
 	
 		/*
@@ -305,12 +306,12 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 				return False;
 			}
 			nt_status = ntlmssp_client_unseal_packet(cli->ntlmssp_pipe_state, 
-								 reply_data, data_len,
+								 (unsigned char *)reply_data, data_len,
 								 &sig);
 		} 
 		else if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
 			nt_status = ntlmssp_client_check_packet(cli->ntlmssp_pipe_state, 
-								reply_data, data_len,
+								(const unsigned char *)reply_data, data_len,
 								&sig);
 		}
 
@@ -637,7 +638,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 	RPC_HDR_AUTH hdr_auth;
 	int auth_len = 0;
 	int auth_type, auth_level;
-	size_t saved_hdr_offset;
+	size_t saved_hdr_offset = 0;
 
 	prs_struct auth_info;
 	prs_init(&auth_info, RPC_HDR_AUTH_LEN, /* we will need at least this much */
@@ -683,21 +684,22 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 
 		/* Auth len in the rpc header doesn't include auth_header. */
 		auth_len = request.length;
-		prs_copy_data_in(&auth_info, request.data, request.length);
+		prs_copy_data_in(&auth_info, (char *)request.data, request.length);
 
 		DEBUG(5, ("NTLMSSP Negotiate:\n"));
-		dump_data(5, request.data, request.length);
+		dump_data(5, (const char *)request.data, request.length);
 
 		data_blob_free(&request);
 
-	} 
-	else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
+	} else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
 		RPC_AUTH_NETSEC_NEG netsec_neg;
 
 		/* Use lp_workgroup() if domain not specified */
 
-		if (!domain || !domain[0])
+		if (!domain || !domain[0]) {
+			DEBUG(10,("create_rpc_bind_req: no domain; assuming my own\n"));
 			domain = lp_workgroup();
+		}
 
 		init_rpc_auth_netsec_neg(&netsec_neg, domain, my_name);
 
@@ -715,7 +717,8 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 		/* Auth len in the rpc header doesn't include auth_header. */
 		auth_len = prs_offset(&auth_info) - saved_hdr_offset;
 	}
-	/* create the request RPC_HDR */
+
+	/* Create the request RPC_HDR */
 	init_rpc_hdr(&hdr, RPC_BIND, 0x3, rpc_call_id, 
 		RPC_HEADER_LEN + RPC_HDR_RB_LEN + prs_offset(&auth_info),
 		auth_len);
@@ -748,6 +751,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+	prs_mem_free(&auth_info);
 	return NT_STATUS_OK;
 }
 
@@ -807,7 +811,7 @@ static NTSTATUS create_rpc_bind_resp(struct cli_state *cli,
 	 * Append the auth data to the outgoing buffer.
 	 */
 
-	if(!prs_copy_data_in(rpc_out, ntlmssp_reply.data, ntlmssp_reply.length)) {
+	if(!prs_copy_data_in(rpc_out, (char *)ntlmssp_reply.data, ntlmssp_reply.length)) {
 		DEBUG(0,("create_rpc_bind_req: failed to grow parse struct to add auth.\n"));
 		data_blob_free(&ntlmssp_reply);
 		return NT_STATUS_NO_MEMORY;
@@ -1013,7 +1017,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 				/* write auth footer onto the packet */
 				real_auth_len = sign_blob.length;
 				
-				prs_copy_data_in(&sec_blob, sign_blob.data, sign_blob.length);
+				prs_copy_data_in(&sec_blob, (char *)sign_blob.data, sign_blob.length);
 				data_blob_free(&sign_blob);
 
 			}
@@ -1021,11 +1025,6 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 				static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
 				static const uchar nullbytes[8] = { 0,0,0,0,0,0,0,0 };
 				size_t parse_offset_marker;
-				if ((cli->auth_info.seq_num & 1) != 0) {
-					DEBUG(0,("SCHANNEL ERROR: seq_num must be even in client (seq_num=%d)\n",
-						 cli->auth_info.seq_num));
-				}
-				
 				DEBUG(10,("SCHANNEL seq_num=%d\n", cli->auth_info.seq_num));
 				
 				init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes,
@@ -1573,9 +1572,6 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 		}
 	}
 	
-	/* doing schannel, not per-user auth */
-	cli->pipe_auth_flags = AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
-	
 	if (!rpc_pipe_bind(cli, PI_NETLOGON, global_myname())) {
 		DEBUG(2,("rpc bind to %s failed\n", PIPE_NETLOGON));
 		cli_close(cli, cli->nt_pipe_fnum);
@@ -1585,6 +1581,57 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 	return NT_STATUS_OK;
 }
 
+
+NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan,
+			     const uchar trust_password[16])
+{
+	NTSTATUS result;	
+	uint32 neg_flags = 0x000701ff;
+	cli->pipe_auth_flags = 0;
+
+	if (lp_client_schannel() == False) {
+		return NT_STATUS_OK;
+	}
+
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		DEBUG(0, ("Could not initialise %s\n",
+			  get_pipe_name_from_index(PI_NETLOGON)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (lp_client_schannel() != False)
+		neg_flags |= NETLOGON_NEG_SCHANNEL;
+
+	neg_flags |= NETLOGON_NEG_SCHANNEL;
+
+	result = cli_nt_setup_creds(cli, sec_chan, trust_password,
+				    &neg_flags, 2);
+
+	if (!(neg_flags & NETLOGON_NEG_SCHANNEL) 
+	    && lp_client_schannel() == True) {
+		DEBUG(1, ("Could not negotiate SCHANNEL with the DC!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		ZERO_STRUCT(cli->auth_info.sess_key);
+		ZERO_STRUCT(cli->sess_key);
+		cli->pipe_auth_flags = 0;
+		cli_nt_session_close(cli);
+		return result;
+	}
+
+	memcpy(cli->auth_info.sess_key, cli->sess_key,
+	       sizeof(cli->auth_info.sess_key));
+
+	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum;
+	cli->nt_pipe_fnum = 0;
+
+	/* doing schannel, not per-user auth */
+	cli->pipe_auth_flags = AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
+
+	return NT_STATUS_OK;
+}
 
 const char *cli_pipe_get_name(struct cli_state *cli)
 {

@@ -157,6 +157,10 @@ BOOL cli_send_smb(struct cli_state *cli)
 		}
 		nwritten += ret;
 	}
+	/* Increment the mid so we can tell between responses. */
+	cli->mid++;
+	if (!cli->mid)
+		cli->mid++;
 	return True;
 }
 
@@ -206,6 +210,27 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 
         DEBUG(10,("cli_init_creds: user %s domain %s\n",
                cli->user_name, cli->domain));
+}
+
+/****************************************************************************
+ Set the signing state (used from the command line).
+****************************************************************************/
+
+void cli_setup_signing_state(struct cli_state *cli, int signing_state)
+{
+	if (signing_state == Undefined)
+		return;
+
+	if (signing_state == False) {
+		cli->sign_info.allow_smb_signing = False;
+		cli->sign_info.mandatory_signing = False;
+		return;
+	}
+
+	cli->sign_info.allow_smb_signing = True;
+
+	if (signing_state == Required) 
+		cli->sign_info.mandatory_signing = True;
 }
 
 /****************************************************************************
@@ -314,7 +339,9 @@ void cli_nt_session_close(struct cli_state *cli)
 		ntlmssp_client_end(&cli->ntlmssp_pipe_state);
 	}
 
-	cli_close(cli, cli->nt_pipe_fnum);
+	if (cli->nt_pipe_fnum != 0)
+		cli_close(cli, cli->nt_pipe_fnum);
+
 	cli->nt_pipe_fnum = 0;
 	cli->pipe_idx = -1;
 }
@@ -337,6 +364,9 @@ void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
 
 void cli_close_connection(struct cli_state *cli)
 {
+	if ( !cli )
+		return;
+		
 	cli_nt_session_close(cli);
 	cli_nt_netlogon_netsec_session_close(cli);
 

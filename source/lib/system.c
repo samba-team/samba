@@ -1263,6 +1263,16 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 {
 #if defined(HAVE_GETXATTR)
 	return getxattr(path, name, value, size);
+#elif defined(HAVE_ATTR_GET)
+	int retval, flags = 0;
+	int valuelength = (int)size;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
+
+	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
+
+	return retval ? retval : valuelength;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1273,6 +1283,16 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 {
 #if defined(HAVE_LGETXATTR)
 	return lgetxattr(path, name, value, size);
+#elif defined(HAVE_ATTR_GET)
+	int retval, flags = ATTR_DONTFOLLOW;
+	int valuelength = (int)size;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
+
+	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
+
+	return retval ? retval : valuelength;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1283,16 +1303,96 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_FGETXATTR)
 	return fgetxattr(filedes, name, value, size);
+#elif defined(HAVE_ATTR_GETF)
+	int retval, flags = 0;
+	int valuelength = (int)size;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
+
+	retval = attr_getf(filedes, attrname, (char *)value, &valuelength, flags);
+
+	return retval ? retval : valuelength;
 #else
 	errno = ENOSYS;
 	return -1;
 #endif
 }
 
+#if defined(HAVE_ATTR_LIST)
+static char attr_buffer[ATTR_MAX_VALUELEN];
+
+static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t size, int flags)
+{
+	int retval = 0, index;
+	attrlist_cursor_t *cursor = 0;
+	int total_size = 0;
+	attrlist_t * al = (attrlist_t *)attr_buffer;
+	attrlist_ent_t *ae;
+	size_t ent_size, left = size;
+	char *bp = list;
+
+	while (True) {
+	    if (filedes)
+		retval = attr_listf(filedes, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
+	    else
+		retval = attr_list(path, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
+	    if (retval) break;
+	    for (index = 0; index < al->al_count; index++) {
+		ae = ATTR_ENTRY(attr_buffer, index);
+		ent_size = strlen(ae->a_name) + sizeof("user.");
+		if (left >= ent_size) {
+		    strncpy(bp, "user.", sizeof("user."));
+		    strncat(bp, ae->a_name, ent_size - sizeof("user."));
+		    bp += ent_size;
+		    left -= ent_size;
+		} else if (size) {
+		    errno = ERANGE;
+		    retval = -1;
+		    break;
+		}
+		total_size += ent_size;
+	    }
+	    if (al->al_more == 0) break;
+	}
+	if (retval == 0) {
+	    flags |= ATTR_ROOT;
+	    cursor = 0;
+	    while (True) {
+		if (filedes)
+		    retval = attr_listf(filedes, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
+		else
+		    retval = attr_list(path, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
+		if (retval) break;
+		for (index = 0; index < al->al_count; index++) {
+		    ae = ATTR_ENTRY(attr_buffer, index);
+		    ent_size = strlen(ae->a_name) + sizeof("system.");
+		    if (left >= ent_size) {
+			strncpy(bp, "system.", sizeof("system."));
+			strncat(bp, ae->a_name, ent_size - sizeof("system."));
+			bp += ent_size;
+			left -= ent_size;
+		    } else if (size) {
+			errno = ERANGE;
+			retval = -1;
+			break;
+		    }
+		    total_size += ent_size;
+		}
+		if (al->al_more == 0) break;
+	    }
+	}
+	return (ssize_t)(retval ? retval : total_size);
+}
+
+#endif
+
 ssize_t sys_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
 	return listxattr(path, list, size);
+#elif defined(HAVE_ATTR_LIST)
+	return irix_attr_list(path, 0, list, size, 0);
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1301,8 +1401,10 @@ ssize_t sys_listxattr (const char *path, char *list, size_t size)
 
 ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 {
-#if defined(HAVE_GETXATTR)
+#if defined(HAVE_LLISTXATTR)
 	return llistxattr(path, list, size);
+#elif defined(HAVE_ATTR_LIST)
+	return irix_attr_list(path, 0, list, size, ATTR_DONTFOLLOW);
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1313,6 +1415,8 @@ ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 {
 #if defined(HAVE_FLISTXATTR)
 	return flistxattr(filedes, list, size);
+#elif defined(HAVE_ATTR_LISTF)
+	return irix_attr_list(NULL, filedes, list, size, 0);
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1323,6 +1427,13 @@ int sys_removexattr (const char *path, const char *name)
 {
 #if defined(HAVE_REMOVEXATTR)
 	return removexattr(path, name);
+#elif defined(HAVE_ATTR_REMOVE)
+	int flags = 0;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
+
+	return attr_remove(path, attrname, flags);
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1333,6 +1444,13 @@ int sys_lremovexattr (const char *path, const char *name)
 {
 #if defined(HAVE_LREMOVEXATTR)
 	return lremovexattr(path, name);
+#elif defined(HAVE_ATTR_REMOVE)
+	int flags = ATTR_DONTFOLLOW;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
+
+	return attr_remove(path, attrname, flags);
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1343,16 +1461,37 @@ int sys_fremovexattr (int filedes, const char *name)
 {
 #if defined(HAVE_FREMOVEXATTR)
 	return fremovexattr(filedes, name);
+#elif defined(HAVE_ATTR_REMOVEF)
+	int flags = 0;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
+
+	return attr_removef(filedes, attrname, flags);
 #else
 	errno = ENOSYS;
 	return -1;
 #endif
 }
 
+#if !defined(HAVE_SETXATTR)
+#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
+#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
+#endif
+
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_SETXATTR)
 	return setxattr(path, name, value, size, flags);
+#elif defined(HAVE_ATTR_SET)
+	int myflags = 0;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) myflags |= ATTR_ROOT;
+	if (flags & XATTR_CREATE) myflags |= ATTR_CREATE;
+	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
+
+	return attr_set(path, attrname, (const char *)value, size, myflags);
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1363,6 +1502,15 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 {
 #if defined(HAVE_LSETXATTR)
 	return lsetxattr(path, name, value, size, flags);
+#elif defined(HAVE_ATTR_SET)
+	int myflags = ATTR_DONTFOLLOW;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) myflags |= ATTR_ROOT;
+	if (flags & XATTR_CREATE) myflags |= ATTR_CREATE;
+	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
+
+	return attr_set(path, attrname, (const char *)value, size, myflags);
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1373,6 +1521,15 @@ int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size
 {
 #if defined(HAVE_FSETXATTR)
 	return fsetxattr(filedes, name, value, size, flags);
+#elif defined(HAVE_ATTR_SETF)
+	int myflags = 0;
+	char *attrname = strchr(name,'.') +1;
+	
+	if (strncmp(name, "system", 6) == 0) myflags |= ATTR_ROOT;
+	if (flags & XATTR_CREATE) myflags |= ATTR_CREATE;
+	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
+
+	return attr_setf(filedes, attrname, (const char *)value, size, myflags);
 #else
 	errno = ENOSYS;
 	return -1;

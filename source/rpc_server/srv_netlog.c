@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Jeremy Allison               1998-2001,
- *  Copyright (C) Anthony Liguori                   2003.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -320,10 +320,7 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 /*******************************************************************
  array of \PIPE\NETLOGON operations
  ********************************************************************/
-
-NTSTATUS rpc_net_init(void)
-{
-  static struct api_struct api_net_cmds [] =
+static struct api_struct api_net_cmds [] =
     {
       { "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
       { "NET_AUTH"          , NET_AUTH          , api_net_auth           }, 
@@ -336,6 +333,14 @@ NTSTATUS rpc_net_init(void)
       { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     }
     };
 
+void netlog_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_net_cmds;
+	*n_fns = sizeof(api_net_cmds) / sizeof(struct api_struct);
+}
+
+NTSTATUS rpc_net_init(void)
+{
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "NETLOGON", "lsass", api_net_cmds,
 				    sizeof(api_net_cmds) / sizeof(struct api_struct));
 }

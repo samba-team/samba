@@ -39,7 +39,7 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
-	DEBUG(3, ("[%5d]: lookupsid %s\n", state->pid, 
+	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
 		  state->request.data.sid));
 
 	/* Lookup sid from PDC using lsa_lookup_sids() */
@@ -90,7 +90,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
 
-	DEBUG(3, ("[%5d]: lookupname %s%s%s\n", state->pid,
+	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
 		  state->request.data.name.dom_name, 
 		  lp_winbind_separator(),
 		  state->request.data.name.name));
@@ -127,7 +127,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
-	DEBUG(3, ("[%5d]: sid to uid %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
 		  state->request.data.sid));
 
 	/* Split sid into domain sid and user rid */
@@ -159,7 +159,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
-	DEBUG(3, ("[%5d]: sid to gid %s\n", state->pid, 
+	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid, 
 		  state->request.data.sid));
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
@@ -185,20 +185,25 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 
-	/* Bug out if the uid isn't in the winbind range */
-
+#if 0	/* JERRY */
+	/* we cannot do this check this anymore since a domain member of 
+	   a Samba domain may share unix accounts via NIS or LDAP.  In this 
+	   case the uid/gid will be out of winbindd's range but still might
+	   be resolved to a SID via an ldap idmap backend */
+	   
 	if ((state->request.data.uid < server_state.uid_low ) ||
 	    (state->request.data.uid > server_state.uid_high)) {
 		return WINBINDD_ERROR;
 	}
+#endif
 
-	DEBUG(3, ("[%5d]: uid to sid %d\n", state->pid, 
-		  state->request.data.uid));
+	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.uid));
 
 	/* Lookup rid for this uid */
 	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&sid, state->request.data.uid))) {
-		DEBUG(1, ("Could not convert uid %d to rid\n",
-			  state->request.data.uid));
+		DEBUG(1, ("Could not convert uid %lu to rid\n",
+			  (unsigned long)state->request.data.uid));
 		return WINBINDD_ERROR;
 	}
 
@@ -214,20 +219,25 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 
-	/* Bug out if the gid isn't in the winbind range */
-
+#if 0	/* JERRY */
+	/* we cannot do this check this anymore since a domain member of 
+	   a Samba domain may share unix accounts via NIS or LDAP.  In this 
+	   case the uid/gid will be out of winbindd's range but still might
+	   be resolved to a SID via an ldap idmap backend */
+	   
 	if ((state->request.data.gid < server_state.gid_low) ||
 	    (state->request.data.gid > server_state.gid_high)) {
 		return WINBINDD_ERROR;
 	}
+#endif
 
-	DEBUG(3, ("[%5d]: gid to sid %d\n", state->pid,
-		  state->request.data.gid));
+	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid,
+		  (unsigned long)state->request.data.gid));
 
 	/* Lookup sid for this uid */
 	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&sid, state->request.data.gid))) {
-		DEBUG(1, ("Could not convert gid %d to sid\n",
-			  state->request.data.gid));
+		DEBUG(1, ("Could not convert gid %lu to sid\n",
+			  (unsigned long)state->request.data.gid));
 		return WINBINDD_ERROR;
 	}
 

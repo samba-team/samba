@@ -98,7 +98,12 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 		translated_path_length--;
 	}
 
-	original_path = strdup(full_orig_name);
+	if(case_sensitive) {
+		original_path = strdup(full_orig_name);
+	} else {
+		original_path = strdup_upper(full_orig_name);
+	}
+
 	if (!original_path) {
 		SAFE_FREE(translated_path);
 		return;
@@ -110,9 +115,6 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 		original_path[original_path_length-1] = '\0';
 		original_path_length--;
 	}
-
-	if(!case_sensitive)
-		strupper_m(original_path);
 
 	if (original_path_length != translated_path_length) {
 		if (original_path_length < translated_path_length) {
@@ -161,6 +163,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	}
 
 	scp->original_path = scp->names;
+	/* pointer into the structure... */
 	scp->translated_path = scp->names + original_path_length + 1;
 	safe_strcpy(scp->original_path, original_path, original_path_length);
 	safe_strcpy(scp->translated_path, translated_path, translated_path_length);
@@ -194,7 +197,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 		       char **start, SMB_STRUCT_STAT *pst)
 {
 	stat_cache_entry *scp;
-	pstring chk_name;
+	char *chk_name;
 	size_t namelen;
 	hash_element *hash_elem;
 	char *sp;
@@ -218,10 +221,20 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 		return False;
 	}
 
-	pstrcpy(chk_name, name);
+	if (case_sensitive) {
+		chk_name = strdup(name);
+		if (!chk_name) {
+			DEBUG(0, ("stat_cache_lookup: strdup failed!\n"));
+			return False;
+		}
 
-	if(!case_sensitive) {
-		strupper_m( chk_name );
+	} else {
+		chk_name = strdup_upper(name);
+		if (!chk_name) {
+			DEBUG(0, ("stat_cache_lookup: strdup_upper failed!\n"));
+			return False;
+		}
+
 		/*
 		 * In some language encodings the length changes
 		 * if we uppercase. We need to treat this differently
@@ -252,11 +265,13 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 				 * We reached the end of the name - no match.
 				 */
 				DO_PROFILE_INC(statcache_misses);
+				SAFE_FREE(chk_name);
 				return False;
 			}
 			if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
 					|| (strcmp(chk_name, "..") == 0)) {
 				DO_PROFILE_INC(statcache_misses);
+				SAFE_FREE(chk_name);
 				return False;
 			}
 		} else {
@@ -265,6 +280,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 			if(SMB_VFS_STAT(conn,scp->translated_path, pst) != 0) {
 				/* Discard this entry - it doesn't exist in the filesystem.  */
 				hash_remove(&stat_cache, hash_elem);
+				SAFE_FREE(chk_name);
 				return False;
 			}
 
@@ -290,6 +306,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 				++*start;
 
 			pstrcpy(dirpath, scp->translated_path);
+			SAFE_FREE(chk_name);
 			return (namelen == scp->translated_path_length);
 		}
 	}

@@ -58,7 +58,7 @@ void *secrets_fetch(const char *key, size_t *size)
 	secrets_init();
 	if (!tdb)
 		return NULL;
-	kbuf.dptr = key;
+	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb, kbuf);
 	if (size)
@@ -74,9 +74,9 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	secrets_init();
 	if (!tdb)
 		return False;
-	kbuf.dptr = key;
+	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key);
-	dbuf.dptr = data;
+	dbuf.dptr = (char *)data;
 	dbuf.dsize = size;
 	return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) == 0;
 }
@@ -90,7 +90,7 @@ BOOL secrets_delete(const char *key)
 	secrets_init();
 	if (!tdb)
 		return False;
-	kbuf.dptr = key;
+	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key);
 	return tdb_delete(tdb, kbuf) == 0;
 }
@@ -195,11 +195,11 @@ const char *trust_keystr(const char *domain)
  *
  * @return stored password's key
  **/
-char *trustdom_keystr(const char *domain)
+static char *trustdom_keystr(const char *domain)
 {
-	static char* keystr;
+	static pstring keystr;
 
-	asprintf(&keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
+	pstr_sprintf(keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
 	strupper_m(keystr);
 		
 	return keystr;

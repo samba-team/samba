@@ -56,6 +56,7 @@ static struct vfs_ops default_vfs = {
 		vfswrap_disk_free,
 		vfswrap_get_quota,
 		vfswrap_set_quota,
+		vfswrap_get_shadow_copy_data,
 	
 		/* Directory operations */
 	
@@ -140,7 +141,6 @@ static struct vfs_ops default_vfs = {
 		vfswrap_setxattr,
 		vfswrap_lsetxattr,
 		vfswrap_fsetxattr
-
 	}
 };
 

@@ -164,8 +164,8 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 		}
 	}
 
-	DEBUG(5, ("print_notify_send_messages_to_printer: sending %d print notify message%s to printer %s\n", 
-		  msg_count, msg_count != 1 ? "s" : "", printer));
+	DEBUG(5, ("print_notify_send_messages_to_printer: sending %lu print notify message%s to printer %s\n", 
+		  (unsigned long)msg_count, msg_count != 1 ? "s" : "", printer));
 
 	/*
 	 * Get the list of PID's to send to.
@@ -272,8 +272,8 @@ in notify_queue\n", msg->type, msg->field, msg->printer));
 	/* allocate a new msg structure and copy the fields */
 	
 	if ( !(pnqueue->msg = (SPOOLSS_NOTIFY_MSG*)talloc(send_ctx, sizeof(SPOOLSS_NOTIFY_MSG))) ) {
-		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%d] failed!\n", 
-			sizeof(SPOOLSS_NOTIFY_MSG)));
+		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%lu] failed!\n", 
+			(unsigned long)sizeof(SPOOLSS_NOTIFY_MSG)));
 		return;
 	}
 	copy_notify2_msg(pnqueue->msg, msg);

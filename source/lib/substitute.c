@@ -58,8 +58,8 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 
 	fstrcpy(tmp_local_machine,local_name);
 	trim_string(tmp_local_machine," "," ");
-	strlower_m(tmp_local_machine);
 	alpha_strcpy(local_machine,tmp_local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
+	strlower_m(local_machine);
 }
 
 /** 
@@ -80,8 +80,8 @@ void set_remote_machine_name(const char* remote_name, BOOL perm)
 
 	fstrcpy(tmp_remote_machine,remote_name);
 	trim_string(tmp_remote_machine," "," ");
-	strlower_m(tmp_remote_machine);
 	alpha_strcpy(remote_machine,tmp_remote_machine,SAFE_NETBIOS_CHARS,sizeof(remote_machine)-1);
+	strlower_m(remote_machine);
 }
 
 const char* get_remote_machine_name(void) 

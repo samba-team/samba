@@ -596,11 +596,11 @@ NTSTATUS _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u
 		/* security check */
 	alpha_strcpy (chkmsg, message, NULL, sizeof(message));
 	/* timeout */
-	snprintf(timeout, sizeof(timeout), "%d", q_u->timeout);
+	fstr_sprintf(timeout, "%d", q_u->timeout);
 	/* reboot */
-	snprintf(r, sizeof(r), (q_u->reboot) ? SHUTDOWN_R_STRING : "");
+	fstr_sprintf(r, (q_u->reboot) ? SHUTDOWN_R_STRING : "");
 	/* force */
-	snprintf(f, sizeof(f), (q_u->force) ? SHUTDOWN_F_STRING : "");
+	fstr_sprintf(f, (q_u->force) ? SHUTDOWN_F_STRING : "");
 
 	pstrcpy(shutdown_script, lp_shutdown_script());
 

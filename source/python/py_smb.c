@@ -221,10 +221,10 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 {
 	cli_state_object *cli = (cli_state_object *)self;
 	static char *kwlist[] = { "fnum", NULL };
-	PyObject *result;
+	PyObject *result = NULL;
 	SEC_DESC *secdesc = NULL;
 	int fnum;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	/* Parse parameters */
 
@@ -238,7 +238,7 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 
 	if (cli_is_error(cli->cli)) {
 		PyErr_SetString(PyExc_RuntimeError, "query_secdesc failed");
-		return NULL;
+		goto done;
 	}
 
 	if (!secdesc) {
@@ -251,7 +251,6 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 		PyErr_SetString(
 			PyExc_TypeError,
 			"Invalid security descriptor returned");
-		result = NULL;
 		goto done;
 	}
 
@@ -267,11 +266,12 @@ static PyObject *py_smb_set_secdesc(PyObject *self, PyObject *args,
 {
 	cli_state_object *cli = (cli_state_object *)self;
 	static char *kwlist[] = { "fnum", "security_descriptor", NULL };
+	PyObject *result = NULL;
 	PyObject *py_secdesc;
 	SEC_DESC *secdesc;
-	TALLOC_CTX *mem_ctx = talloc_init("py_smb_set_secdesc");
+	TALLOC_CTX *mem_ctx = NULL;
 	int fnum;
-	BOOL result;
+	BOOL err;
 
 	/* Parse parameters */
 
@@ -279,20 +279,26 @@ static PyObject *py_smb_set_secdesc(PyObject *self, PyObject *args,
 		    args, kw, "iO", kwlist, &fnum, &py_secdesc))
 		return NULL;
 
+	mem_ctx = talloc_init("py_smb_set_secdesc");
+
 	if (!py_to_SECDESC(&secdesc, py_secdesc, mem_ctx)) {
 		PyErr_SetString(PyExc_TypeError, 
 				"Invalid security descriptor");
-		return NULL;
+		goto done;
 	}
 
-	result = cli_set_secdesc(cli->cli, fnum, secdesc);
+	err = cli_set_secdesc(cli->cli, fnum, secdesc);
 
 	if (cli_is_error(cli->cli)) {
 		PyErr_SetString(PyExc_RuntimeError, "set_secdesc failed");
-		return NULL;
+		goto done;
 	}
 
-	return PyInt_FromLong(result);
+	result =  PyInt_FromLong(err);
+ done:
+	talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 static PyMethodDef smb_hnd_methods[] = {
@@ -342,11 +348,48 @@ static PyMethodDef smb_methods[] = {
 	{ "connect", (PyCFunction)py_smb_connect, METH_VARARGS | METH_KEYWORDS,
 	  "Connect to a host" },
 
+	/* Other stuff - this should really go into a samba config module
+  	   but for the moment let's leave it here. */
+
+	{ "setup_logging", (PyCFunction)py_setup_logging, 
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Set up debug logging.\n"
+"\n"
+"Initialises Samba's debug logging system.  One argument is expected which\n"
+"is a boolean specifying whether debugging is interactive and sent to stdout\n"
+"or logged to a file.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> smb.setup_logging(interactive = 1)" },
+
+	{ "get_debuglevel", (PyCFunction)get_debuglevel, 
+	  METH_VARARGS, 
+	  "Set the current debug level.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> smb.get_debuglevel()\n"
+"0" },
+
+	{ "set_debuglevel", (PyCFunction)set_debuglevel, 
+	  METH_VARARGS, 
+	  "Get the current debug level.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> smb.set_debuglevel(10)" },
+
 	{ NULL }
 };
 
 static void py_cli_state_dealloc(PyObject* self)
 {
+	cli_state_object *cli = (cli_state_object *)self;
+
+	if (cli->cli)
+		cli_shutdown(cli->cli);
+
 	PyObject_Del(self);
 }
 
@@ -395,5 +438,5 @@ void initsmb(void)
 	py_samba_init();
 
 	setup_logging("smb", True);
-	DEBUGLEVEL = 10;
+	DEBUGLEVEL = 3;
 }

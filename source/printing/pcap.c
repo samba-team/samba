@@ -208,7 +208,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	   /* probably a good printer ???		*/
 		  	   free (line);
 		  	   SAFE_FREE(pName);
-		  	   fclose(pfile);
+		  	   x_fclose(pfile);
 		  	   return(True);
 		  	  }
 		  	
@@ -222,7 +222,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  		/* it's a good virtual printer */
 		  		free (line);
 		  		SAFE_FREE(pName);
-		  		fclose(pfile);
+		  		x_fclose(pfile);
 		  		return(True);
 		  	  }
 		  	  break;

@@ -188,7 +188,7 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		}
 
 		if (vfs_get_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &tmp_qt)!=0) {
-			DEBUG(1,("no quota entry for sid[%s] path[%s]\n",
+			DEBUG(5,("no quota entry for sid[%s] path[%s]\n",
 				sid_string_static(&sid),fsp->conn->connectpath));
 			continue;
 		}

@@ -81,7 +81,7 @@ void E_deshash(const char *passwd, uchar p16[16])
 	push_ascii(dospwd, passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
 
 	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
-	E_P16(dospwd, p16);
+	E_P16((const unsigned char *)dospwd, p16);
 
 	ZERO_STRUCT(dospwd);	
 }
@@ -247,7 +247,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	return True;
 }
 
-/* Does the md5 encryption from the NT hash for NTLMv2. */
+/* Does the md5 encryption from the Key Response for NTLMv2. */
 void SMBOWFencrypt_ntv2(const uchar kr[16],
 			const DATA_BLOB *srv_chal,
 			const DATA_BLOB *cli_chal,

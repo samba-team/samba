@@ -84,7 +84,14 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 					   domain_name, domain_sid);
 	if (!NT_STATUS_IS_OK(result)) {
-		goto error;
+ error:
+		fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			fprintf(stderr, "error: %s\n", nt_errstr(result));
+		}
+
+		exit(1);
 	}
 
 	cli_lsa_close(cli, mem_ctx, &pol);
@@ -92,15 +99,6 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	talloc_destroy(mem_ctx);
 
 	return domain_sid;
-
- error:
-	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		fprintf(stderr, "error: %s\n", nt_errstr(result));
-	}
-
-	exit(1);
 }
 
 /**
@@ -1782,7 +1780,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ip, pdc_name, domain_name)) {
-		DEBUG(0, ("Coulnd find domain controller for domain %s\n", domain_name));
+		DEBUG(0, ("Couldn't find domain controller for domain %s\n", domain_name));
 		return -1;
 	}
 
@@ -1988,8 +1986,8 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	POLICY_HND connect_hnd;
 	
 	/* trusted domains listing variables */
-	int enum_ctx = 0;
-	int num_domains, i, pad_len, col_len = 20;
+	unsigned int num_domains, enum_ctx = 0;
+	int i, pad_len, col_len = 20;
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
 	fstring pdc_name, dummy;

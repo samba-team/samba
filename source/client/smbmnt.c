@@ -94,9 +94,9 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
 static char *
 fullpath(const char *p)
 {
-        char path[MAXPATHLEN];
+        char path[PATH_MAX+1];
 
-	if (strlen(p) > MAXPATHLEN-1) {
+	if (strlen(p) > PATH_MAX) {
 		return NULL;
 	}
 

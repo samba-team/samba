@@ -400,8 +400,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
+static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 {
 	NTSTATUS nt_ret;
 	fstring account;
@@ -429,6 +428,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			    (delta->acb_info & ACB_DOMTRUST) ) {
 			pstrcpy(add_script, lp_addmachine_script());
 		} else {
+			*add_script = '\0';
 			DEBUG(1, ("Unknown user type: %s\n",
 				  smbpasswd_encode_acb_info(delta->acb_info)));
 		}
@@ -439,8 +439,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
-		}
-		else {
+		} else {
 			DEBUG(8,("fetch_account_info: no add user/machine script.  Asking winbindd\n"));
 			
 			/* don't need a RID allocated since the user already has a SID */
@@ -487,8 +486,8 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	} else {
 		if (map.gid != passwd->pw_gid) {
 			if (!(grp = getgrgid(map.gid))) {
-				DEBUG(0, ("Could not find unix group %d for user %s (group SID=%s)\n", 
-					  map.gid, pdb_get_username(sam_account), sid_string_static(&group_sid)));
+				DEBUG(0, ("Could not find unix group %lu for user %s (group SID=%s)\n", 
+					  (unsigned long)map.gid, pdb_get_username(sam_account), sid_string_static(&group_sid)));
 			} else {
 				smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
 			}
@@ -551,7 +550,11 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	map.sid = group_sid;
 	map.sid_name_use = SID_NAME_DOM_GRP;
 	fstrcpy(map.nt_name, name);
-	fstrcpy(map.comment, comment);
+	if (delta->hdr_grp_desc.buffer) {
+		fstrcpy(map.comment, comment);
+	} else {
+		fstrcpy(map.comment, "");
+	}
 
 	if (insert)
 		pdb_add_group_mapping_entry(&map);
@@ -585,7 +588,7 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	}
 
 	if (!(grp = getgrgid(map.gid))) {
-		DEBUG(0, ("Could not find unix group %d\n", map.gid));
+		DEBUG(0, ("Could not find unix group %lu\n", (unsigned long)map.gid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
@@ -912,8 +915,39 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 		fetch_alias_mem(hdr_delta->target_rid,
 				&delta->als_mem_info, dom_sid);
 		break;
+	/* The following types are recognised but not handled */
 	case SAM_DELTA_DOMAIN_INFO:
 		d_printf("SAM_DELTA_DOMAIN_INFO not handled\n");
+		break;
+	case SAM_DELTA_RENAME_GROUP:
+		d_printf("SAM_DELTA_RENAME_GROUP not handled\n");
+		break;
+	case SAM_DELTA_RENAME_USER:
+		d_printf("SAM_DELTA_RENAME_USER not handled\n");
+		break;
+	case SAM_DELTA_RENAME_ALIAS:
+		d_printf("SAM_DELTA_RENAME_ALIAS not handled\n");
+		break;
+	case SAM_DELTA_POLICY_INFO:
+		d_printf("SAM_DELTA_POLICY_INFO not handled\n");
+		break;
+	case SAM_DELTA_TRUST_DOMS:
+		d_printf("SAM_DELTA_TRUST_DOMS not handled\n");
+		break;
+	case SAM_DELTA_PRIVS_INFO:
+		d_printf("SAM_DELTA_PRIVS_INFO not handled\n");
+		break;
+	case SAM_DELTA_SECRET_INFO:
+		d_printf("SAM_DELTA_SECRET_INFO not handled\n");
+		break;
+	case SAM_DELTA_DELETE_GROUP:
+		d_printf("SAM_DELTA_DELETE_GROUP not handled\n");
+		break;
+	case SAM_DELTA_DELETE_USER:
+		d_printf("SAM_DELTA_DELETE_USER not handled\n");
+		break;
+	case SAM_DELTA_MODIFIED_COUNT:
+		d_printf("SAM_DELTA_MODIFIED_COUNT not handled\n");
 		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);

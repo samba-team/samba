@@ -120,18 +120,31 @@ static BOOL api_sink_data(pipes_struct *p)
 \pipe\rpcecho commands
 ********************************************************************/
 
+struct api_struct api_echo_cmds[] = {
+	{"ADD_ONE",       ECHO_ADD_ONE,     api_add_one },
+	{"ECHO_DATA",     ECHO_DATA,        api_echo_data },
+	{"SOURCE_DATA",   ECHO_SOURCE_DATA, api_source_data },
+	{"SINK_DATA",     ECHO_SINK_DATA,   api_sink_data },
+};
+
+
+void echo_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_echo_cmds;
+	*n_fns = sizeof(api_echo_cmds) / sizeof(struct api_struct);
+}
+
 NTSTATUS rpc_echo_init(void)
 {
-	struct api_struct api_echo_cmds[] = {
-		{"ADD_ONE",       ECHO_ADD_ONE,     api_add_one },
-		{"ECHO_DATA",     ECHO_DATA,        api_echo_data },
-		{"SOURCE_DATA",   ECHO_SOURCE_DATA, api_source_data },
-		{"SINK_DATA",     ECHO_SINK_DATA,   api_sink_data },
-	};
-
 	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION,
 		"rpcecho", "rpcecho", api_echo_cmds,
 		sizeof(api_echo_cmds) / sizeof(struct api_struct));
 }
 
+#else /* DEVELOPER */
+
+NTSTATUS rpc_echo_init(void)
+{
+	return NT_STATUS_OK;
+}
 #endif /* DEVELOPER */

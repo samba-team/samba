@@ -27,14 +27,31 @@
 /* Opcodes available on PIPE_LSARPC_DS */
 
 #define DS_GETPRIMDOMINFO      0x00
+#define DS_NOP                 0xFF	/* no op -- placeholder */
+
+/* Opcodes available on PIPE_NETLOGON */
+
+#define DS_ENUM_DOM_TRUSTS      0x28
 
 
 /* macros for RPC's */
+
+/* DSROLE_PRIMARY_DOMAIN_INFO_BASIC */
+
+/* flags */
 
 #define DSROLE_PRIMARY_DS_RUNNING           0x00000001
 #define DSROLE_PRIMARY_DS_MIXED_MODE        0x00000002
 #define DSROLE_UPGRADE_IN_PROGRESS          0x00000004
 #define DSROLE_PRIMARY_DOMAIN_GUID_PRESENT  0x01000000
+
+/* machine role */
+
+#define DSROLE_STANDALONE_SRV		2	
+#define DSROLE_DOMAIN_MEMBER_SRV	3
+#define DSROLE_BDC			4
+#define DSROLE_PDC			5
+
 
 typedef struct
 {
@@ -50,10 +67,9 @@ typedef struct
 	GUID		domain_guid;
 	
 	UNISTR2	netbios_domain;
-	/* these 2 might be reversed in order.  I can't tell from 
-	   my tests as both values are the same --jerry */
-	UNISTR2	dns_domain;
-	UNISTR2	forest_domain;
+
+	UNISTR2	dns_domain;	/* our dns domain */
+	UNISTR2	forest_domain;	/* root domain of the forest to which we belong */
 } DSROLE_PRIMARY_DOMAIN_INFO_BASIC;
 
 typedef struct
@@ -85,7 +101,58 @@ typedef struct
 	NTSTATUS status;
 } DS_R_GETPRIMDOMINFO;
 
+typedef struct {
+	/* static portion of structure */
+	uint32		netbios_ptr;
+	uint32		dns_ptr;
+	uint32		flags;
+	uint32		parent_index;
+	uint32		trust_type;
+	uint32		trust_attributes;
+	uint32		sid_ptr;
+	GUID		guid;
+	
+	UNISTR2		netbios_domain;
+	UNISTR2		dns_domain;
+	DOM_SID2	sid;
 
+} DS_DOMAIN_TRUSTS;
+
+typedef struct {
+
+	uint32			ptr;
+	uint32			max_count;
+	DS_DOMAIN_TRUSTS 	*trusts;
+	
+} DS_DOMAIN_TRUSTS_CTR;
+
+#define DS_DOMAIN_IN_FOREST           0x0001 	/* domains in the forest to which 
+						   we belong; even different domain trees */
+#define DS_DOMAIN_DIRECT_OUTBOUND     0x0002  	/* trusted domains */
+#define DS_DOMAIN_TREE_ROOT           0x0004  	/* root of our forest; also available in
+						   DsRoleGetPrimaryDomainInfo() */
+#define DS_DOMAIN_PRIMARY             0x0008  	/* our domain */
+#define DS_DOMAIN_NATIVE_MODE         0x0010  	/* native mode AD servers */
+#define DS_DOMAIN_DIRECT_INBOUND      0x0020 	/* trusting domains */
+
+/* DS_Q_ENUM_DOM_TRUSTS - DsEnumerateDomainTrusts() request */
+typedef struct 
+{
+	uint32		server_ptr;
+	UNISTR2		server;
+	uint32		flags;
+	
+} DS_Q_ENUM_DOM_TRUSTS;
+
+/* DS_R_ENUM_DOM_TRUSTS - DsEnumerateDomainTrusts() response */
+typedef struct 
+{
+	uint32			num_domains;
+	DS_DOMAIN_TRUSTS_CTR	domains;
+		
+	NTSTATUS status;
+
+} DS_R_ENUM_DOM_TRUSTS;
 
 
 #endif /* _RPC_DS_H */

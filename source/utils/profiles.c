@@ -448,7 +448,7 @@ static int get_sid(DOM_SID *sid, const unsigned char *sid_str)
 
     SIVAL(&sid->sub_auths[i], 0, auth);
     i++;
-    lstr = strchr(lstr + 1, '-'); 
+    lstr = (const unsigned char *)strchr(lstr + 1, '-'); 
   }
 
   return 1;

@@ -28,7 +28,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
-	int rparam_count=0, rdata_count=0;
+	unsigned int rparam_count=0, rdata_count=0;
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 
@@ -78,7 +78,7 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
-	int rparam_count=0, rdata_count=0;
+	unsigned int rparam_count=0, rdata_count=0;
 	uint32 sec_info = 0;
 	TALLOC_CTX *mem_ctx;
 	prs_struct pd;

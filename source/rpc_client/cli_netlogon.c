@@ -332,8 +332,7 @@ NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
-Generate the next creds to use.  Yuck - this is a cut&paste from another
-file.  They should be combined at some stage.  )-:
+Generate the next creds to use.
 ****************************************************************************/
 
 static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
@@ -515,7 +514,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, cli->clnt_name_slash,
-                              cli->sess_key, lm_owf_user_pwd,
+                              (const char *)cli->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
                 break;
@@ -708,9 +707,9 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		 credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 	
         /* store the parameters */
-	init_q_srv_pwset(&q_s, cli->srv_name_slash, cli->sess_key,
+	init_q_srv_pwset(&q_s, cli->srv_name_slash, (const char *)cli->sess_key,
 			 mach_acct, sec_chan_type, machine_name, 
-			 &new_clnt_cred, (char *)hashed_mach_pwd);
+			 &new_clnt_cred, hashed_mach_pwd);
 	
 	/* turn parameters into data stream */
 	if(!net_io_q_srv_pwset("", &q_s,  &qbuf, 0)) {

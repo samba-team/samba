@@ -37,7 +37,7 @@
  **/
 BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
-	const char *s;
+	char *s;
 	char *pbuf;
 	BOOL quoted;
 	size_t len=1;
@@ -45,7 +45,7 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	if (!ptr)
 		return(False);
 
-	s = *ptr;
+	s = (char *)*ptr;
 
 	/* default to simple separators */
 	if (!sep)
@@ -88,7 +88,7 @@ BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	BOOL ret;
 	if (!ptr)
-		ptr = (const char **)&last_ptr;
+		ptr = &last_ptr;
 
 	ret = next_token(ptr, buff, sep, bufsize);
 	last_ptr = *ptr;
@@ -109,7 +109,7 @@ void set_first_token(char *ptr)
 
 char **toktocliplist(int *ctok, const char *sep)
 {
-	char *s=last_ptr;
+	char *s=(char *)last_ptr;
 	int ictok=0;
 	char **ret, **iret;
 
@@ -132,7 +132,7 @@ char **toktocliplist(int *ctok, const char *sep)
 	} while(*s);
 	
 	*ctok=ictok;
-	s=last_ptr;
+	s=(char *)last_ptr;
 	
 	if (!(ret=iret=malloc(ictok*sizeof(char *))))
 		return NULL;
@@ -181,7 +181,9 @@ int StrCaseCmp(const char *s, const char *t)
 {
 
 	const char * ps, * pt;
-	pstring buf1, buf2;
+	size_t size;
+	smb_ucs2_t *buffer_s, *buffer_t;
+	int ret;
 
 	for (ps = s, pt = t; ; ps++, pt++) {
 		char us, ut;
@@ -206,16 +208,25 @@ int StrCaseCmp(const char *s, const char *t)
 			return +1;
 	}
 
-	/* TODO: Don't do this with a fixed-length buffer.  This could
-	 * still be much more efficient. */
-	/* TODO: Hardcode a char-by-char comparison for UTF-8, which
-	 * can be much faster. */
-	/* TODO: Test case for this! */
-
-	unix_strupper(ps, strlen(ps)+1, buf1, sizeof(buf1));
-	unix_strupper(pt, strlen(pt)+1, buf2, sizeof(buf2));
-
-	return strcmp(buf1, buf2);
+	size = push_ucs2_allocate(&buffer_s, s);
+	if (size == (size_t)-1) {
+		return strcmp(s, t); 
+		/* Not quite the right answer, but finding the right one
+		   under this failure case is expensive, and it's pretty close */
+	}
+	
+	size = push_ucs2_allocate(&buffer_t, t);
+	if (size == (size_t)-1) {
+		SAFE_FREE(buffer_s);
+		return strcmp(s, t); 
+		/* Not quite the right answer, but finding the right one
+		   under this failure case is expensive, and it's pretty close */
+	}
+	
+	ret = strcasecmp_w(buffer_s, buffer_t);
+	SAFE_FREE(buffer_s);
+	SAFE_FREE(buffer_t);
+	return ret;
 }
 
 
@@ -351,7 +362,7 @@ BOOL strisnormal(const char *s)
  NOTE: oldc and newc must be 7 bit characters
 **/
 
-void string_replace(char *s,char oldc,char newc)
+void string_replace(pstring s,char oldc,char newc)
 {
 	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
 	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
@@ -1156,21 +1167,6 @@ void strlower_m(char *s)
 }
 
 /**
- Duplicate convert a string to lower case.
-**/
-
-char *strdup_lower(const char *s)
-{
-	char *t = strdup(s);
-	if (t == NULL) {
-		DEBUG(0, ("strdup_lower: Out of memory!\n"));
-		return NULL;
-	}
-	strlower_m(t);
-	return t;
-}
-
-/**
  Convert a string to upper case.
 **/
 
@@ -1192,21 +1188,6 @@ void strupper_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
-}
-
-/**
- Convert a string to upper case.
-**/
-
-char *strdup_upper(const char *s)
-{
-	char *t = strdup(s);
-	if (t == NULL) {
-		DEBUG(0, ("strdup_upper: Out of memory!\n"));
-		return NULL;
-	}
-	strupper_m(t);
-	return t;
 }
 
 /**
@@ -1575,7 +1556,7 @@ int ipstr_list_parse(const char* ipstr_list, struct ip_service **ip_list)
 	
 	count = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
 	if ( (*ip_list = (struct ip_service*)malloc(count * sizeof(struct ip_service))) == NULL ) {
-		DEBUG(0,("ipstr_list_parse: malloc failed for %d entries\n", count));
+		DEBUG(0,("ipstr_list_parse: malloc failed for %lu entries\n", (unsigned long)count));
 		return 0;
 	}
 	

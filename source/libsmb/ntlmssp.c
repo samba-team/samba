@@ -23,6 +23,12 @@
 
 #include "includes.h"
 
+#if 0
+/* we currently do not know how to get the right session key for this, so
+   we cannot enable it by default... :-( */
+#define USE_NTLM2 1
+#endif
+
 /**
  * Print out the NTLMSSP flags for debugging 
  * @param neg_flags The flags from the packet
@@ -140,7 +146,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 				 &cliname,
 				 &domname)) {
 			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP:\n"));
-			dump_data(2, request.data, request.length);
+			dump_data(2, (const char *)request.data, request.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
@@ -171,6 +177,9 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 
 	target_name = ntlmssp_target_name(ntlmssp_state, 
 					  neg_flags, &chal_flags); 
+
+	if (target_name == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
 
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dnsdomname[0] = '\0';
@@ -273,14 +282,14 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &sess_key,
 			 &neg_flags)) {
 		DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
-		dump_data(2, request.data, request.length);
+		dump_data(2, (const char *)request.data, request.length);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	data_blob_free(&sess_key);
 	
-	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%d len2=%d\n",
-		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, ntlmssp_state->lm_resp.length, ntlmssp_state->nt_resp.length));
+	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%lu len2=%lu\n",
+		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, (unsigned long)ntlmssp_state->lm_resp.length, (unsigned long)ntlmssp_state->nt_resp.length));
 
 #if 0
 	file_save("nthash1.dat",  &ntlmssp_state->nt_resp.data,  &ntlmssp_state->nt_resp.length);
@@ -412,6 +421,10 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_client_state *ntlmssp_stat
 	if (ntlmssp_state->use_ntlmv2) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
+
+#ifdef USE_NTLM2
+	ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+#endif	
 	
 	/* generate the ntlmssp negotiate packet */
 	msrpc_gen(next_request, "CddAA",
@@ -463,7 +476,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 			 &server_domain_blob,
 			 &chal_flags)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#1)\n"));
-		dump_data(2, reply.data, reply.length);
+		dump_data(2, (const char *)reply.data, reply.length);
 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -525,9 +538,12 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 			 &unkn1, &unkn2,
 			 &struct_blob)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#2)\n"));
-		dump_data(2, reply.data, reply.length);
+		dump_data(2, (const char *)reply.data, reply.length);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	ntlmssp_state->server_domain = talloc_strdup(ntlmssp_state->mem_ctx,
+						     server_domain);
 
 	SAFE_FREE(server_domain);
 	if (challenge_blob.length != 8) {
@@ -535,7 +551,9 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (ntlmssp_state->use_ntlmv2) {
+	if (!ntlmssp_state->password) {
+		/* do nothing - blobs are zero length */
+	} else if (ntlmssp_state->use_ntlmv2) {
 
 		if (!struct_blob.length) {
 			/* be lazy, match win2k - we can't do NTLMv2 without it */
@@ -554,7 +572,34 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 			data_blob_free(&struct_blob);
 			return NT_STATUS_NO_MEMORY;
 		}
+#ifdef USE_NTLM2 
+	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		struct MD5Context md5_session_nonce_ctx;
+		uchar nt_hash[16];
+		uchar session_nonce[16];
+		E_md4hash(ntlmssp_state->password, nt_hash);
+		
+		generate_random_buffer(lm_response.data, 8, False);
+		memset(lm_response.data+8, 0, 16);
+		
+		MD5Init(&md5_session_nonce_ctx);
+		MD5Update(&md5_session_nonce_ctx, challenge_blob.data, 8);
+		MD5Update(&md5_session_nonce_ctx, lm_response.data, 8);
+		MD5Final(session_nonce, &md5_session_nonce_ctx);
+		
+		nt_response = data_blob(NULL, 24);
+		SMBNTencrypt(ntlmssp_state->password,
+			     challenge_blob.data,
+			     nt_response.data);
+
+		/* This is *NOT* the correct session key algorithm - just 
+		   fill in the bytes with something... */
+		session_key = data_blob(NULL, 16);
+		SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+#endif 
 	} else {
+		
+		
 		uchar lm_hash[16];
 		uchar nt_hash[16];
 		E_deshash(ntlmssp_state->password, lm_hash);
@@ -565,15 +610,15 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 			lm_response = data_blob(NULL, 24);
 			SMBencrypt(ntlmssp_state->password,challenge_blob.data,
 				   lm_response.data);
-		}
+			}
 		
 		nt_response = data_blob(NULL, 24);
 		SMBNTencrypt(ntlmssp_state->password,challenge_blob.data,
 			     nt_response.data);
-
+		
 		session_key = data_blob(NULL, 16);
 		if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
-		      && lp_client_lanman_auth()) {
+		    && lp_client_lanman_auth()) {
 			SMBsesskeygen_lmv1(lm_hash, lm_response.data, 
 					   session_key.data);
 		} else {
@@ -706,9 +751,13 @@ NTSTATUS ntlmssp_set_username(NTLMSSP_CLIENT_STATE *ntlmssp_state, const char *u
 
 NTSTATUS ntlmssp_set_password(NTLMSSP_CLIENT_STATE *ntlmssp_state, const char *password) 
 {
-	ntlmssp_state->password = talloc_strdup(ntlmssp_state->mem_ctx, password);
-	if (!ntlmssp_state->password) {
-		return NT_STATUS_NO_MEMORY;
+	if (!password) {
+		ntlmssp_state->password = NULL;
+	} else {
+		ntlmssp_state->password = talloc_strdup(ntlmssp_state->mem_ctx, password);
+		if (!ntlmssp_state->password) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	return NT_STATUS_OK;
 }

@@ -259,14 +259,14 @@ static PyObject *py_config_dict(void)
 	PyDict_SetItemString(result, "template_shell", 
 			     PyString_FromString(lp_template_shell()));
 
-	/* Winbind uid/gid range */
+	/* idmap uid/gid range */
 
-	if (lp_winbind_uid(&ulow, &uhi)) {
+	if (lp_idmap_uid(&ulow, &uhi)) {
 		PyDict_SetItemString(result, "uid_low", PyInt_FromLong(ulow));
 		PyDict_SetItemString(result, "uid_high", PyInt_FromLong(uhi));
 	}
 
-	if (lp_winbind_gid(&glow, &ghi)) {
+	if (lp_idmap_gid(&glow, &ghi)) {
 		PyDict_SetItemString(result, "gid_low", PyInt_FromLong(glow));
 		PyDict_SetItemString(result, "gid_high", PyInt_FromLong(ghi));
 	}
@@ -427,7 +427,10 @@ static PyObject *py_auth_crap(PyObject *self, PyObject *args, PyObject *kw)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.data.auth_crap.user, username);
+	if (push_utf8_fstring(request.data.auth_crap.user, username) == -1) {
+		PyErr_SetString(winbind_error, "unable to create utf8 string");
+		return NULL;
+	}
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
@@ -473,7 +476,10 @@ static PyObject *py_auth_smbd(PyObject *self, PyObject *args, PyObject *kw)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.data.smbd_auth_crap.user, username);
+	if (push_utf8_fstring(request.data.auth_crap.user, username) == -1) {
+		PyErr_SetString("unable to create utf8 string");
+		return NULL;
+	}
 
 	generate_random_buffer(request.data.smbd_auth_crap.chal, 8, False);
         

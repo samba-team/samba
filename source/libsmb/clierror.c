@@ -371,6 +371,9 @@ BOOL cli_is_error(struct cli_state *cli)
 {
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), rcls = 0;
 
+	if (cli->fd == -1 && cli->smb_rw_error != 0)
+		return True;
+
         if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
                 /* Return error is error bits are set */
                 rcls = IVAL(cli->inbuf, smb_rcls);

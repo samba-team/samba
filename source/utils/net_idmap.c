@@ -95,9 +95,13 @@ static int net_idmap_restore(int argc, const char **argv)
 		if ( (len > 0) && (line[len-1] == '\n') )
 			line[len-1] = '\0';
 
+		/* Yuck - this is broken for sizeof(gid_t) != sizeof(int) */
+
 		if (sscanf(line, "GID %d %s", &id.gid, sid_string) == 2) {
 			type = ID_GROUPID;
 		}
+
+		/* Yuck - this is broken for sizeof(uid_t) != sizeof(int) */
 
 		if (sscanf(line, "UID %d %s", &id.uid, sid_string) == 2) {
 			type = ID_USERID;
@@ -114,9 +118,10 @@ static int net_idmap_restore(int argc, const char **argv)
 		}
 
 		if (!NT_STATUS_IS_OK(idmap_set_mapping(&sid, id, type))) {
-			d_printf("Could not set mapping of %s %d to sid %s\n",
+			d_printf("Could not set mapping of %s %lu to sid %s\n",
 				 (type == ID_GROUPID) ? "GID" : "UID",
-				 (type == ID_GROUPID) ? id.gid : id.uid,
+				 (type == ID_GROUPID) ? (unsigned long)id.gid:
+				 (unsigned long)id.uid, 
 				 sid_string_static(&sid));
 			continue;
 		}

@@ -437,6 +437,10 @@
 #include <com_err.h>
 #endif
 
+#if HAVE_SYS_ATTRIBUTES_H
+#include <sys/attributes.h>
+#endif
+
 #if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
 #endif
@@ -835,6 +839,8 @@ extern int errno;
 
 #include "nsswitch/winbind_client.h"
 
+#include "spnego.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.
@@ -954,10 +960,6 @@ struct smb_ldap_privates;
 
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1
-#endif
-
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 256
 #endif
 
 #ifndef SEEK_SET
@@ -1232,6 +1234,14 @@ int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
+/* Fix prototype problem with non-C99 compliant snprintf implementations, esp
+   HPUX 11.  Don't change the sense of this #if statement.  Read the comments
+   in lib/snprint.c if you think you need to.  See also bugzilla bug 174. */
+
+#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
+#define snprintf smb_snprintf
+#endif
+
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
 
 int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1288,7 +1298,7 @@ krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
-BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16]);
+BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16], BOOL remote);
 #endif /* HAVE_KRB5 */
 
 /* TRUE and FALSE are part of the C99 standard and gcc, but

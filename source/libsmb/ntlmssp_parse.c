@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
-   Copyright (C) Jim McDonough   2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Andrew Bartlett 2002-2003
    
    This program is free software; you can redistribute it and/or modify
@@ -153,7 +153,8 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			memcpy(blob->data+data_ofs, b, n);
+			if (n && b) /* don't follow null pointers... */
+				memcpy(blob->data+data_ofs, b, n);
 			data_ofs += n;
 			break;
 		case 'd':

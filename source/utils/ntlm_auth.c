@@ -32,7 +32,9 @@
 enum squid_mode {
 	SQUID_2_4_BASIC,
 	SQUID_2_5_BASIC,
-	SQUID_2_5_NTLMSSP
+	SQUID_2_5_NTLMSSP,
+	GSS_SPNEGO,
+	GSS_SPNEGO_CLIENT
 };
 	
 
@@ -198,10 +200,24 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	request.flags = flags;
 
-	fstrcpy(request.data.auth_crap.user, username);
+	if (push_utf8_fstring(request.data.auth_crap.user, username) == -1) {
+		*error_string = smb_xstrdup(
+			"unable to create utf8 string for username");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-	fstrcpy(request.data.auth_crap.domain, domain);
-	fstrcpy(request.data.auth_crap.workstation, workstation);
+	if (push_utf8_fstring(request.data.auth_crap.domain, domain) == -1) {
+		*error_string = smb_xstrdup(
+			"unable to create utf8 string for domain");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (push_utf8_fstring(request.data.auth_crap.workstation, 
+			      workstation) == -1) {
+		*error_string = smb_xstrdup(
+			"unable to create utf8 string for workstation");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	memcpy(request.data.auth_crap.chal, challenge->data, MIN(challenge->length, 8));
 
@@ -294,7 +310,7 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
-	dump_data(10, request.data, request.length);
+	dump_data(10, (const char *)request.data, request.length);
 
 	nt_status = ntlmssp_server_update(ntlmssp_state, request, &reply);
 	
@@ -342,6 +358,677 @@ static void manage_squid_basic_request(enum squid_mode squid_mode,
 	}
 }
 
+static void offer_gss_spnego_mechs(void) {
+
+	DATA_BLOB token;
+	SPNEGO_DATA spnego;
+	ssize_t len;
+	char *reply_base64;
+
+	pstring principal;
+	pstring myname_lower;
+
+	ZERO_STRUCT(spnego);
+
+	pstrcpy(myname_lower, global_myname());
+	strlower_m(myname_lower);
+
+	pstr_sprintf(principal, "%s$@%s", myname_lower, lp_realm());
+
+	/* Server negTokenInit (mech offerings) */
+	spnego.type = SPNEGO_NEG_TOKEN_INIT;
+	spnego.negTokenInit.mechTypes = smb_xmalloc(sizeof(char *) * 3);
+#ifdef HAVE_KRB5
+	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
+	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
+	spnego.negTokenInit.mechTypes[2] = NULL;
+#else
+	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_NTLMSSP);
+	spnego.negTokenInit.mechTypes[1] = NULL;
+#endif
+
+
+	spnego.negTokenInit.mechListMIC = data_blob(principal,
+						    strlen(principal));
+
+	len = write_spnego_data(&token, &spnego);
+	free_spnego_data(&spnego);
+
+	if (len == -1) {
+		DEBUG(1, ("Could not write SPNEGO data blob\n"));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	reply_base64 = base64_encode_data_blob(token);
+	x_fprintf(x_stdout, "TT %s *\n", reply_base64);
+
+	SAFE_FREE(reply_base64);
+	data_blob_free(&token);
+	DEBUG(10, ("sent SPNEGO negTokenInit\n"));
+	return;
+}
+
+static void manage_gss_spnego_request(enum squid_mode squid_mode,
+				      char *buf, int length) 
+{
+	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	SPNEGO_DATA request, response;
+	DATA_BLOB token;
+	NTSTATUS status;
+	ssize_t len;
+
+	char *user = NULL;
+	char *domain = NULL;
+
+	const char *reply_code;
+	char       *reply_base64;
+	pstring     reply_argument;
+
+	if (strlen(buf) < 2) {
+
+		if (ntlmssp_state != NULL) {
+			DEBUG(1, ("Request for initial SPNEGO request where "
+				  "we already have a state\n"));
+			x_fprintf(x_stdout, "BH\n");
+			return;
+		}
+
+		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if ( (strlen(buf) == 2) && (strcmp(buf, "YR") == 0) ) {
+
+		/* Initial request, get the negTokenInit offering
+                   mechanisms */
+
+		offer_gss_spnego_mechs();
+		return;
+	}
+
+	/* All subsequent requests are "KK" (Knock, Knock ;)) and have
+	   a blob. This might be negTokenInit or negTokenTarg */
+
+	if ( (strlen(buf) <= 3) || (strncmp(buf, "KK", 2) != 0) ) {
+		DEBUG(1, ("GSS-SPNEGO query [%s] invalid\n", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	token = base64_decode_data_blob(buf + 3);
+	len = read_spnego_data(token, &request);
+	data_blob_free(&token);
+
+	if (len == -1) {
+		DEBUG(1, ("GSS-SPNEGO query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (request.type == SPNEGO_NEG_TOKEN_INIT) {
+
+		/* Second request from Client. This is where the
+		   client offers its mechanism to use. We currently
+		   only support NTLMSSP, the decision for Kerberos
+		   would be taken here. */
+
+		if ( (request.negTokenInit.mechTypes == NULL) ||
+		     (request.negTokenInit.mechTypes[0] == NULL) ) {
+			DEBUG(1, ("Client did not offer any mechanism"));
+			x_fprintf(x_stdout, "BH\n");
+			return;
+		}
+
+		if (strcmp(request.negTokenInit.mechTypes[0], OID_NTLMSSP) == 0) {
+
+			if ( request.negTokenInit.mechToken.data == NULL ) {
+				DEBUG(1, ("Client did not provide  NTLMSSP data\n"));
+				x_fprintf(x_stdout, "BH\n");
+				return;
+			}
+
+			if ( ntlmssp_state != NULL ) {
+				DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
+					  "already got one\n"));
+				x_fprintf(x_stdout, "BH\n");
+				ntlmssp_server_end(&ntlmssp_state);
+				return;
+			}
+
+			ntlmssp_server_start(&ntlmssp_state);
+			ntlmssp_state->check_password = winbind_pw_check;
+			ntlmssp_state->get_domain = get_winbind_domain;
+			ntlmssp_state->get_global_myname = get_winbind_netbios_name;
+
+			DEBUG(10, ("got NTLMSSP packet:\n"));
+			dump_data(10, (const char *)request.negTokenInit.mechToken.data,
+				  request.negTokenInit.mechToken.length);
+
+			response.type = SPNEGO_NEG_TOKEN_TARG;
+			response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+
+			status = ntlmssp_server_update(ntlmssp_state,
+						       request.negTokenInit.mechToken,
+						       &response.negTokenTarg.responseToken);
+		}
+
+#ifdef HAVE_KRB5
+		if (strcmp(request.negTokenInit.mechTypes[0], OID_KERBEROS5_OLD) == 0) {
+
+			char *principal;
+			DATA_BLOB auth_data;
+			DATA_BLOB ap_rep;
+			uint8 session_key[16];
+
+			if ( request.negTokenInit.mechToken.data == NULL ) {
+				DEBUG(1, ("Client did not provide Kerberos data\n"));
+				x_fprintf(x_stdout, "BH\n");
+				return;
+			}
+
+			response.type = SPNEGO_NEG_TOKEN_TARG;
+			response.negTokenTarg.supportedMech = strdup(OID_KERBEROS5_OLD);
+			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+			response.negTokenTarg.responseToken = data_blob(NULL, 0);
+
+			status = ads_verify_ticket(lp_realm(),
+						   &request.negTokenInit.mechToken,
+						   &principal, &auth_data, &ap_rep,
+						   session_key);
+
+			/* Now in "principal" we have the name we are
+                           authenticated as. */
+
+			if (NT_STATUS_IS_OK(status)) {
+
+				domain = strchr(principal, '@');
+
+				if (domain == NULL) {
+					DEBUG(1, ("Did not get a valid principal "
+						  "from ads_verify_ticket\n"));
+					x_fprintf(x_stdout, "BH\n");
+					return;
+				}
+
+				*domain++ = '\0';
+				domain = strdup(domain);
+				user = strdup(principal);
+
+				data_blob_free(&ap_rep);
+				data_blob_free(&auth_data);
+
+				SAFE_FREE(principal);
+			}
+		}
+#endif
+
+	} else {
+
+		if ( (request.negTokenTarg.supportedMech == NULL) ||
+		     ( strcmp(request.negTokenTarg.supportedMech, OID_NTLMSSP) != 0 ) ) {
+			/* Kerberos should never send a negTokenTarg, OID_NTLMSSP
+			   is the only one we support that sends this stuff */
+			DEBUG(1, ("Got a negTokenTarg for something non-NTLMSSP: %s\n",
+				  request.negTokenTarg.supportedMech));
+			x_fprintf(x_stdout, "BH\n");
+			return;
+		}
+
+		if (request.negTokenTarg.responseToken.data == NULL) {
+			DEBUG(1, ("Got a negTokenTarg without a responseToken!\n"));
+			x_fprintf(x_stdout, "BH\n");
+			return;
+		}
+
+		status = ntlmssp_server_update(ntlmssp_state,
+					       request.negTokenTarg.responseToken,
+					       &response.negTokenTarg.responseToken);
+
+		response.type = SPNEGO_NEG_TOKEN_TARG;
+		response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+		response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+
+		if (NT_STATUS_IS_OK(status)) {
+			user = strdup(ntlmssp_state->user);
+			domain = strdup(ntlmssp_state->domain);
+			ntlmssp_server_end(&ntlmssp_state);
+		}
+	}
+
+	free_spnego_data(&request);
+
+	if (NT_STATUS_IS_OK(status)) {
+		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
+		reply_code = "AF";
+		pstr_sprintf(reply_argument, "%s\\%s", domain, user);
+	} else if (NT_STATUS_EQUAL(status,
+				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		response.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+		reply_code = "TT";
+		pstr_sprintf(reply_argument, "*");
+	} else {
+		response.negTokenTarg.negResult = SPNEGO_REJECT;
+		reply_code = "NA";
+		pstrcpy(reply_argument, nt_errstr(status));
+	}
+
+	SAFE_FREE(user);
+	SAFE_FREE(domain);
+
+	len = write_spnego_data(&token, &response);
+	free_spnego_data(&response);
+
+	if (len == -1) {
+		DEBUG(1, ("Could not write SPNEGO data blob\n"));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	reply_base64 = base64_encode_data_blob(token);
+
+	x_fprintf(x_stdout, "%s %s %s\n",
+		  reply_code, reply_base64, reply_argument);
+
+	SAFE_FREE(reply_base64);
+	data_blob_free(&token);
+
+	return;
+}
+
+static NTLMSSP_CLIENT_STATE *client_ntlmssp_state = NULL;
+
+static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
+{
+	NTSTATUS status;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB to_server;
+	char *to_server_base64;
+	const char *my_mechs[] = {OID_NTLMSSP, NULL};
+
+	DEBUG(10, ("Got spnego negTokenInit with NTLMSSP\n"));
+
+	if (client_ntlmssp_state != NULL) {
+		DEBUG(1, ("Request for initial SPNEGO request where "
+			  "we already have a state\n"));
+		return False;
+	}
+
+	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
+		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
+		return False;
+	}
+
+	if (opt_password == NULL) {
+
+		/* Request a password from the calling process.  After
+		   sending it, the calling process should retry with
+		   the negTokenInit. */
+
+		DEBUG(10, ("Requesting password\n"));
+		x_fprintf(x_stdout, "PW\n");
+		return True;
+	}
+
+	status = ntlmssp_client_start(&client_ntlmssp_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return False;
+	}
+
+	status = ntlmssp_set_username(client_ntlmssp_state, opt_username);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set username: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return False;
+	}
+
+	status = ntlmssp_set_domain(client_ntlmssp_state, opt_domain);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set domain: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return False;
+	}
+
+	status = ntlmssp_set_password(client_ntlmssp_state, opt_password);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set password: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return False;
+	}
+
+	spnego.type = SPNEGO_NEG_TOKEN_INIT;
+	spnego.negTokenInit.mechTypes = my_mechs;
+	spnego.negTokenInit.reqFlags = 0;
+	spnego.negTokenInit.mechListMIC = null_blob;
+
+	status = ntlmssp_client_update(client_ntlmssp_state, null_blob,
+				       &spnego.negTokenInit.mechToken);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED, got: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return False;
+	}
+
+	write_spnego_data(&to_server, &spnego);
+	data_blob_free(&spnego.negTokenInit.mechToken);
+
+	to_server_base64 = base64_encode_data_blob(to_server);
+	data_blob_free(&to_server);
+	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
+	SAFE_FREE(to_server_base64);
+	return True;
+}
+
+static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
+{
+	NTSTATUS status;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB request;
+	DATA_BLOB to_server;
+	char *to_server_base64;
+
+	DEBUG(10, ("Got spnego negTokenTarg with NTLMSSP\n"));
+
+	if (client_ntlmssp_state == NULL) {
+		DEBUG(1, ("Got NTLMSSP tArg without a client state\n"));
+		x_fprintf(x_stdout, "BH\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
+		x_fprintf(x_stdout, "NA\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	if (spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_COMPLETED) {
+		x_fprintf(x_stdout, "AF\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	status = ntlmssp_client_update(client_ntlmssp_state,
+				       spnego.negTokenTarg.responseToken,
+				       &request);
+		
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED from "
+			  "ntlmssp_client_update, got: %s\n",
+			  nt_errstr(status)));
+		x_fprintf(x_stdout, "BH\n");
+		data_blob_free(&request);
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	spnego.type = SPNEGO_NEG_TOKEN_TARG;
+	spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+	spnego.negTokenTarg.supportedMech = OID_NTLMSSP;
+	spnego.negTokenTarg.responseToken = request;
+	spnego.negTokenTarg.mechListMIC = null_blob;
+	
+	write_spnego_data(&to_server, &spnego);
+	data_blob_free(&request);
+
+	to_server_base64 = base64_encode_data_blob(to_server);
+	data_blob_free(&to_server);
+	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
+	SAFE_FREE(to_server_base64);
+	return;
+}
+
+#ifdef HAVE_KRB5
+
+static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
+{
+	char *principal;
+	DATA_BLOB tkt, to_server;
+	unsigned char session_key_krb5[16];
+	SPNEGO_DATA reply;
+	char *reply_base64;
+	
+	const char *my_mechs[] = {OID_KERBEROS5_OLD, NULL};
+	ssize_t len;
+
+	if ( (spnego.negTokenInit.mechListMIC.data == NULL) ||
+	     (spnego.negTokenInit.mechListMIC.length == 0) ) {
+		DEBUG(1, ("Did not get a principal for krb5\n"));
+		return False;
+	}
+
+	principal = malloc(spnego.negTokenInit.mechListMIC.length+1);
+
+	if (principal == NULL) {
+		DEBUG(1, ("Could not malloc principal\n"));
+		return False;
+	}
+
+	memcpy(principal, spnego.negTokenInit.mechListMIC.data,
+	       spnego.negTokenInit.mechListMIC.length);
+	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
+
+	tkt = cli_krb5_get_ticket(principal, 0, session_key_krb5);
+
+	if (tkt.data == NULL) {
+
+		pstring user;
+
+		/* Let's try to first get the TGT, for that we need a
+                   password. */
+
+		if (opt_password == NULL) {
+			DEBUG(10, ("Requesting password\n"));
+			x_fprintf(x_stdout, "PW\n");
+			return True;
+		}
+
+		pstr_sprintf(user, "%s@%s", opt_username, opt_domain);
+
+		if (kerberos_kinit_password(user, opt_password, 0) != 0) {
+			DEBUG(10, ("Requesting TGT failed\n"));
+			x_fprintf(x_stdout, "NA\n");
+			return True;
+		}
+
+		tkt = cli_krb5_get_ticket(principal, 0, session_key_krb5);
+	}
+
+	ZERO_STRUCT(reply);
+
+	reply.type = SPNEGO_NEG_TOKEN_INIT;
+	reply.negTokenInit.mechTypes = my_mechs;
+	reply.negTokenInit.reqFlags = 0;
+	reply.negTokenInit.mechToken = tkt;
+	reply.negTokenInit.mechListMIC = data_blob(NULL, 0);
+
+	len = write_spnego_data(&to_server, &reply);
+	data_blob_free(&tkt);
+
+	if (len == -1) {
+		DEBUG(1, ("Could not write SPNEGO data blob\n"));
+		return False;
+	}
+
+	reply_base64 = base64_encode_data_blob(to_server);
+	x_fprintf(x_stdout, "KK %s *\n", reply_base64);
+
+	SAFE_FREE(reply_base64);
+	data_blob_free(&to_server);
+	DEBUG(10, ("sent GSS-SPNEGO KERBEROS5 negTokenInit\n"));
+	return True;
+}
+
+static void manage_client_krb5_targ(SPNEGO_DATA spnego)
+{
+	switch (spnego.negTokenTarg.negResult) {
+	case SPNEGO_ACCEPT_INCOMPLETE:
+		DEBUG(1, ("Got a Kerberos negTokenTarg with ACCEPT_INCOMPLETE\n"));
+		x_fprintf(x_stdout, "BH\n");
+		break;
+	case SPNEGO_ACCEPT_COMPLETED:
+		DEBUG(10, ("Accept completed\n"));
+		x_fprintf(x_stdout, "AF\n");
+		break;
+	case SPNEGO_REJECT:
+		DEBUG(10, ("Rejected\n"));
+		x_fprintf(x_stdout, "NA\n");
+		break;
+	default:
+		DEBUG(1, ("Got an invalid negTokenTarg\n"));
+		x_fprintf(x_stdout, "AF\n");
+	}
+}
+
+#endif
+
+static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
+					     char *buf, int length) 
+{
+	DATA_BLOB request;
+	SPNEGO_DATA spnego;
+	ssize_t len;
+
+	if (strlen(buf) <= 3) {
+		DEBUG(1, ("SPNEGO query [%s] too short\n", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	request = base64_decode_data_blob(buf+3);
+
+	if (strncmp(buf, "PW ", 3) == 0) {
+
+		/* We asked for a password and obviously got it :-) */
+
+		opt_password = strndup((const char *)request.data, request.length);
+
+		if (opt_password == NULL) {
+			DEBUG(1, ("Out of memory\n"));
+			x_fprintf(x_stdout, "BH\n");
+			data_blob_free(&request);
+			return;
+		}
+
+		x_fprintf(x_stdout, "OK\n");
+		data_blob_free(&request);
+		return;
+	}
+
+	if ( (strncmp(buf, "TT ", 3) != 0) &&
+	     (strncmp(buf, "AF ", 3) != 0) &&
+	     (strncmp(buf, "NA ", 3) != 0) ) {
+		DEBUG(1, ("SPNEGO request [%s] invalid\n", buf));
+		x_fprintf(x_stdout, "BH\n");
+		data_blob_free(&request);
+		return;
+	}
+
+	/* So we got a server challenge to generate a SPNEGO
+           client-to-server request... */
+
+	len = read_spnego_data(request, &spnego);
+	data_blob_free(&request);
+
+	if (len == -1) {
+		DEBUG(1, ("Could not read SPNEGO data for [%s]\n", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (spnego.type == SPNEGO_NEG_TOKEN_INIT) {
+
+		/* The server offers a list of mechanisms */
+
+		const char **mechType = spnego.negTokenInit.mechTypes;
+
+		while (*mechType != NULL) {
+
+#ifdef HAVE_KRB5
+			if ( (strcmp(*mechType, OID_KERBEROS5_OLD) == 0) ||
+			     (strcmp(*mechType, OID_KERBEROS5) == 0) ) {
+				if (manage_client_krb5_init(spnego))
+					goto out;
+			}
+#endif
+
+			if (strcmp(*mechType, OID_NTLMSSP) == 0) {
+				if (manage_client_ntlmssp_init(spnego))
+					goto out;
+			}
+
+			mechType++;
+		}
+
+		DEBUG(1, ("Server offered no compatible mechanism\n"));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (spnego.type == SPNEGO_NEG_TOKEN_TARG) {
+
+		if (spnego.negTokenTarg.supportedMech == NULL) {
+			/* On accept/reject Windows does not send the
+                           mechanism anymore. Handle that here and
+                           shut down the mechanisms. */
+
+			switch (spnego.negTokenTarg.negResult) {
+			case SPNEGO_ACCEPT_COMPLETED:
+				x_fprintf(x_stdout, "AF\n");
+				break;
+			case SPNEGO_REJECT:
+				x_fprintf(x_stdout, "NA\n");
+				break;
+			default:
+				DEBUG(1, ("Got a negTokenTarg with no mech and an "
+					  "unknown negResult: %d\n",
+					  spnego.negTokenTarg.negResult));
+				x_fprintf(x_stdout, "BH\n");
+			}
+
+			ntlmssp_client_end(&client_ntlmssp_state);
+			goto out;
+		}
+
+		if (strcmp(spnego.negTokenTarg.supportedMech,
+			   OID_NTLMSSP) == 0) {
+			manage_client_ntlmssp_targ(spnego);
+			goto out;
+		}
+
+#if HAVE_KRB5
+		if (strcmp(spnego.negTokenTarg.supportedMech,
+			   OID_KERBEROS5_OLD) == 0) {
+			manage_client_krb5_targ(spnego);
+			goto out;
+		}
+#endif
+
+	}
+
+	DEBUG(1, ("Got an SPNEGO token I could not handle [%s]!\n", buf));
+	x_fprintf(x_stdout, "BH\n");
+	return;
+
+ out:
+	free_spnego_data(&spnego);
+	return;
+}
+
 static void manage_squid_request(enum squid_mode squid_mode) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
@@ -383,6 +1070,10 @@ static void manage_squid_request(enum squid_mode squid_mode)
 		manage_squid_basic_request(squid_mode, buf, length);
 	} else if (squid_mode == SQUID_2_5_NTLMSSP) {
 		manage_squid_ntlmssp_request(squid_mode, buf, length);
+	} else if (squid_mode == GSS_SPNEGO) {
+		manage_gss_spnego_request(squid_mode, buf, length);
+	} else if (squid_mode == GSS_SPNEGO_CLIENT) {
+		manage_gss_spnego_client_request(squid_mode, buf, length);
 	}
 }
 
@@ -424,8 +1115,8 @@ static BOOL check_auth_crap(void)
 					      &opt_lm_response, 
 					      &opt_nt_response, 
 					      flags,
-					      lm_key, 
-					      nt_key, 
+					      (unsigned char *)lm_key, 
+					      (unsigned char *)nt_key, 
 					      &error_string);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -439,7 +1130,7 @@ static BOOL check_auth_crap(void)
 	if (request_lm_key 
 	    && (memcmp(zeros, lm_key, 
 		       sizeof(lm_key)) != 0)) {
-		hex_encode(lm_key,
+		hex_encode((const unsigned char *)lm_key,
 			   sizeof(lm_key),
 			   &hex_lm_key);
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
@@ -448,7 +1139,7 @@ static BOOL check_auth_crap(void)
 	if (request_nt_key 
 	    && (memcmp(zeros, nt_key, 
 		       sizeof(nt_key)) != 0)) {
-		hex_encode(nt_key, 
+		hex_encode((const unsigned char *)nt_key, 
 			   sizeof(nt_key), 
 			   &hex_nt_key);
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_nt_key);
@@ -522,16 +1213,16 @@ static BOOL test_lm(void)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 	}
 	if (memcmp(lm_hash, nt_key, 8) != 0) {
 		DEBUG(1, ("Session Key (first 8, lm hash) does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 8);
+		dump_data(1, (const char *)nt_key, 8);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 	}
         return True;
 }
@@ -594,18 +1285,18 @@ static BOOL test_lm_ntlm(void)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
         return pass;
@@ -637,10 +1328,10 @@ static BOOL test_ntlm(void)
 	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
-	E_md4hash(opt_password, nt_hash);
-	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+	E_md4hash(opt_password, (unsigned char *)nt_hash);
+	SMBsesskeygen_ntv1((const unsigned char *)nt_hash, NULL, session_key.data);
 
-	E_deshash(opt_password, lm_hash); 
+	E_deshash(opt_password, (unsigned char *)lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -648,8 +1339,8 @@ static BOOL test_ntlm(void)
 					      NULL,
 					      &nt_response,
 					      flags,
-					      lm_key,
-					      nt_key,
+					      (unsigned char *)lm_key,
+					      (unsigned char *)nt_key,
 					      &error_string);
 	
 	data_blob_free(&nt_response);
@@ -677,7 +1368,7 @@ static BOOL test_ntlm(void)
  		DEBUG(1, ("nt_key:\n"));
 		dump_data(1, nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
         return pass;
@@ -733,17 +1424,17 @@ static BOOL test_ntlm_in_lm(void)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(lm_hash, nt_key, 8) != 0) {
 		DEBUG(1, ("Session Key (first 8 lm hash) does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
         return pass;
@@ -775,10 +1466,10 @@ static BOOL test_ntlm_in_both(void)
 	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
-	E_md4hash(opt_password, nt_hash);
-	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+	E_md4hash(opt_password, (unsigned char *)nt_hash);
+	SMBsesskeygen_ntv1((const unsigned char *)nt_hash, NULL, session_key.data);
 
-	E_deshash(opt_password, lm_hash); 
+	E_deshash(opt_password, (unsigned char *)lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -786,8 +1477,8 @@ static BOOL test_ntlm_in_both(void)
 					      &nt_response,
 					      &nt_response,
 					      flags,
-					      lm_key,
-					      nt_key,
+					      (unsigned char *)lm_key,
+					      (unsigned char *)nt_key,
 					      &error_string);
 	
 	data_blob_free(&nt_response);
@@ -815,7 +1506,7 @@ static BOOL test_ntlm_in_both(void)
  		DEBUG(1, ("nt_key:\n"));
 		dump_data(1, nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
 
@@ -877,9 +1568,9 @@ static BOOL test_ntlmv2(void)
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, nt_session_key.data, nt_session_key.length);
+		dump_data(1, (const char *)nt_session_key.data, nt_session_key.length);
 		pass = False;
 	}
         return pass;
@@ -941,9 +1632,9 @@ static BOOL test_lmv2_ntlmv2(void)
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, nt_session_key.data, nt_session_key.length);
+		dump_data(1, (const char *)nt_session_key.data, nt_session_key.length);
 		pass = False;
 	}
         return pass;
@@ -1056,18 +1747,18 @@ static BOOL test_ntlm_broken(BOOL break_lm)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
         return pass;
@@ -1334,6 +2025,10 @@ enum {
 			squid_stream(SQUID_2_5_BASIC);
 		} else if (strcmp(helper_protocol, "squid-2.4-basic")== 0) {
 			squid_stream(SQUID_2_4_BASIC);
+		} else if (strcmp(helper_protocol, "gss-spnego")== 0) {
+			squid_stream(GSS_SPNEGO);
+		} else if (strcmp(helper_protocol, "gss-spnego-client") == 0) {
+			squid_stream(GSS_SPNEGO_CLIENT);
 		} else {
 			x_fprintf(x_stderr, "unknown helper protocol [%s]\n", helper_protocol);
 			exit(1);
@@ -1372,7 +2067,7 @@ enum {
 	} else {
 		fstring user;
 
-		snprintf(user, sizeof(user)-1, "%s%c%s", opt_domain, winbind_separator(), opt_username);
+		fstr_sprintf(user, "%s%c%s", opt_domain, winbind_separator(), opt_username);
 		if (!check_plaintext_auth(user, opt_password, True)) {
 			exit(1);
 		}

@@ -6,7 +6,7 @@
  *  Copyright (C) Jean François Micouleau      1998-2000,
  *  Copyright (C) Jeremy Allison                    2001,
  *  Copyright (C) Gerald Carter                2001-2002,
- *  Copyright (C) Anthony Liguori                   2003.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1580,8 +1580,6 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
 \pipe\spoolss commands
 ********************************************************************/
 
-NTSTATUS rpc_spoolss_init(void)
-{
   struct api_struct api_spoolss_cmds[] = 
     {
  {"SPOOLSS_OPENPRINTER",               SPOOLSS_OPENPRINTER,               api_spoolss_open_printer              },
@@ -1640,6 +1638,15 @@ NTSTATUS rpc_spoolss_init(void)
  {"SPOOLSS_REPLYCLOSEPRINTER",         SPOOLSS_REPLYCLOSEPRINTER,         api_spoolss_replycloseprinter         }
 #endif
     };
+
+void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_spoolss_cmds;
+	*n_fns = sizeof(api_spoolss_cmds) / sizeof(struct api_struct);
+}
+
+NTSTATUS rpc_spoolss_init(void)
+{
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss", api_spoolss_cmds,
 				    sizeof(api_spoolss_cmds) / sizeof(struct api_struct));
 }
