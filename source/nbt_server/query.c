@@ -28,11 +28,11 @@
 /*
   send a name query reply
 */
-static void nbt_name_query_reply(struct nbt_name_socket *nbtsock, 
-				 struct nbt_name_packet *request_packet, 
-				 const char *src_address, int src_port,
-				 struct nbt_name *name, uint32_t ttl,
-				 uint16_t nb_flags, const char *address)
+static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock, 
+				  struct nbt_name_packet *request_packet, 
+				  const char *src_address, int src_port,
+				  struct nbt_name *name, uint32_t ttl,
+				  uint16_t nb_flags, const char *address)
 {
 	struct nbt_name_packet *packet;
 
@@ -77,9 +77,9 @@ failed:
 /*
   answer a name query
 */
-void nbt_request_query(struct nbt_name_socket *nbtsock, 
-		       struct nbt_name_packet *packet, 
-		       const char *src_address, int src_port)
+void nbtd_request_query(struct nbt_name_socket *nbtsock, 
+			struct nbt_name_packet *packet, 
+			const char *src_address, int src_port)
 {
 	struct nbt_iface_name *iname;
 	struct nbt_name *name;
@@ -89,14 +89,14 @@ void nbt_request_query(struct nbt_name_socket *nbtsock,
 	/* see if its a node status query */
 	if (packet->qdcount == 1 &&
 	    packet->questions[0].question_type == NBT_QTYPE_STATUS) {
-		nbt_query_status(nbtsock, packet, src_address, src_port);
+		nbtd_query_status(nbtsock, packet, src_address, src_port);
 		return;
 	}
 
 	/* if its a WINS query then direct to our WINS server */
 	if ((packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
 	    !(packet->operation & NBT_FLAG_BROADCAST)) {
-		nbt_query_wins(nbtsock, packet, src_address, src_port);
+		nbtd_query_wins(nbtsock, packet, src_address, src_port);
 		return;
 	}
 
@@ -107,14 +107,14 @@ void nbt_request_query(struct nbt_name_socket *nbtsock,
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
 
-	iname = nbt_find_iname(iface, name, NBT_NM_ACTIVE);
+	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
 	if (iname == NULL) {
 		DEBUG(7,("Query for %s<%02x> from %s - not found on %s\n",
 			 name->name, name->type, src_address, iface->ip_address));
 		return;
 	}
 
-	nbt_name_query_reply(nbtsock, packet, src_address, src_port,
-			     &iname->name, iname->ttl, iname->nb_flags, 
-			     iface->ip_address);
+	nbtd_name_query_reply(nbtsock, packet, src_address, src_port,
+			      &iname->name, iname->ttl, iname->nb_flags, 
+			      iface->ip_address);
 }

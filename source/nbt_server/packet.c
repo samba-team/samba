@@ -27,8 +27,8 @@
 /*
   we received a badly formed packet - log it
 */
-void nbt_bad_packet(struct nbt_name_packet *packet, 
-		    const char *src_address, const char *reason)
+void nbtd_bad_packet(struct nbt_name_packet *packet, 
+		     const char *src_address, const char *reason)
 {
 	DEBUG(2,("nbtd: bad packet '%s' from %s\n", reason, src_address));
 	if (DEBUGLVL(5)) {
