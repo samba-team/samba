@@ -559,10 +559,16 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 	extern DOM_SID global_sid_World;
 	fstring u_name;
 	fstring g_name;
+	extern struct current_user current_user;
 
 	/* "Everyone" always matches every uid. */
 
 	if (sid_equal(&group_ace->trustee, &global_sid_World))
+		return True;
+
+	/* Assume that the current user is in the current group (force group) */
+
+	if (uid_ace->unix_ug.uid == current_user.uid && group_ace->unix_ug.gid == current_user.gid)
 		return True;
 
 	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
@@ -600,6 +606,14 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	BOOL got_other = False;
 	canon_ace *pace_other = NULL;
 	canon_ace *pace_group = NULL;
+	connection_struct *conn = fsp->conn;
+	SMB_ACL_T current_posix_acl = NULL;
+	mode_t current_user_perms = 0;
+	mode_t current_grp_perms = 0;
+	mode_t current_other_perms = 0;
+	BOOL got_current_user = False;
+	BOOL got_current_grp = False;
+	BOOL got_current_other = False;
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
 		if (pace->type == SMB_ACL_USER_OBJ) {
@@ -632,6 +646,62 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		}
 	}
 
+	/*
+	 * When setting ACLs and missing one out of SMB_ACL_USER_OBJ,
+	 * SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER, try to retrieve current
+	 * values. For user and other a simple vfs_stat would do, but
+	 * we would get mask instead of group. Let's do it via ACL.
+	 */
+
+	if (setting_acl && (!got_user || !got_grp || !got_other)) {
+
+		SMB_ACL_ENTRY_T entry;
+		int entry_id = SMB_ACL_FIRST_ENTRY;
+
+		if(fsp->is_directory || fsp->fd == -1) {
+			current_posix_acl = conn->vfs_ops.sys_acl_get_file(conn, fsp->fsp_name, SMB_ACL_TYPE_ACCESS);
+		} else {
+			current_posix_acl = conn->vfs_ops.sys_acl_get_fd(fsp, fsp->fd);
+		}
+
+		if (current_posix_acl) {
+			while (conn->vfs_ops.sys_acl_get_entry(conn, current_posix_acl, entry_id, &entry) == 1) {
+				SMB_ACL_TAG_T tagtype;
+				SMB_ACL_PERMSET_T permset;
+
+				/* get_next... */
+				if (entry_id == SMB_ACL_FIRST_ENTRY)
+					entry_id = SMB_ACL_NEXT_ENTRY;
+
+				/* Is this a MASK entry ? */
+				if (conn->vfs_ops.sys_acl_get_tag_type(conn, entry, &tagtype) == -1)
+					continue;
+
+				if (conn->vfs_ops.sys_acl_get_permset(conn, entry, &permset) == -1)
+					continue;
+
+				switch(tagtype) {
+					case SMB_ACL_USER_OBJ:
+						current_user_perms = convert_permset_to_mode_t(conn, permset);
+						got_current_user = True;
+						break;
+					case SMB_ACL_GROUP_OBJ:
+						current_grp_perms = convert_permset_to_mode_t(conn, permset);
+						got_current_grp = True;
+						break;
+					case SMB_ACL_OTHER:
+						current_other_perms = convert_permset_to_mode_t(conn, permset);
+						got_current_other = True;
+						break;
+				}
+			}
+			conn->vfs_ops.sys_acl_free_acl(conn, current_posix_acl);
+		} else {
+			DEBUG(10,("ensure_canon_entry_valid: failed to retrieve current ACL of %s\n",
+				fsp->fsp_name));
+		}
+	}
+
 	if (!got_user) {
 		if ((pace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
@@ -646,13 +716,19 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->attr = ALLOW_ACE;
 
 		if (setting_acl) {
-			/* If we only got an "everyone" perm, just use that. */
-			if (!got_grp && got_other)
-				pace->perms = pace_other->perms;
-			else if (got_grp && uid_entry_in_group(pace, pace_group))
-				pace->perms = pace_group->perms;
-			else
-				pace->perms = 0;
+			if (got_current_user) {
+				pace->perms = current_user_perms;
+			} else {
+				/* If we only got an "everyone" perm, just use that. */
+				if (!got_grp && got_other)
+					pace->perms = pace_other->perms;
+				else if (got_grp && uid_entry_in_group(pace, pace_group))
+					pace->perms = pace_group->perms;
+				else
+					pace->perms = 0;
+
+			}
+
 			apply_default_perms(fsp, pace, S_IRUSR);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
@@ -674,11 +750,15 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->trustee = *pfile_grp_sid;
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
-			/* If we only got an "everyone" perm, just use that. */
-			if (got_other)
-				pace->perms = pace_other->perms;
-			else
-				pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
+			if (got_current_grp) {
+				pace->perms = current_grp_perms;
+			} else {
+				/* If we only got an "everyone" perm, just use that. */
+				if (got_other)
+					pace->perms = pace_other->perms;
+				else
+					pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
+			}
 			apply_default_perms(fsp, pace, S_IRGRP);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
@@ -700,7 +780,10 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->trustee = global_sid_World;
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
-			pace->perms = 0;
+			if (got_current_other)
+				pace->perms = current_other_perms;
+			else
+				pace->perms = 0;
 			apply_default_perms(fsp, pace, S_IROTH);
 		} else
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
@@ -1734,6 +1817,11 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	BOOL needs_mask = False;
 	mode_t mask_perms = 0;
 
+#if defined(POSIX_ACL_NEEDS_MASK)
+	/* HP-UX always wants to have a mask (called "class" there). */
+	needs_mask = True;
+#endif
+
 	if (the_acl == NULL) {
 
 		if (errno != ENOSYS) {
@@ -1746,6 +1834,13 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		}
 		*pacl_set_support = False;
 		return False;
+	}
+
+	if( DEBUGLVL( 10 )) {
+		dbgtext("set_canon_ace_list: setting ACL:\n");
+		for (i = 0, p_ace = the_ace; p_ace; p_ace = p_ace->next, i++ ) {
+			print_canon_ace( p_ace, i);
+		}
 	}
 
 	for (i = 0, p_ace = the_ace; p_ace; p_ace = p_ace->next, i++ ) {
@@ -2460,6 +2555,8 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	mode_t orig_mode = (mode_t)0;
 	uid_t orig_uid;
 	gid_t orig_gid;
+	BOOL need_chown = False;
+	extern struct current_user current_user;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
@@ -2496,7 +2593,15 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Do we need to chown ?
 	 */
 
-	if((user != (uid_t)-1 || grp != (uid_t)-1) && (orig_uid != user || orig_gid != grp)) {
+	need_chown = (user != (uid_t)-1 && orig_uid != user || grp != (uid_t)-1 && orig_gid != grp);
+
+	/*
+	 * Chown before setting ACL only if we don't change the user, or
+	 * if we change to the current user, but not if we want to give away
+	 * the file.
+	 */
+
+	if (need_chown && (user == (uid_t)-1 || user == current_user.uid)) {
 
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -2533,6 +2638,9 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		orig_mode = sbuf.st_mode;
 		orig_uid = sbuf.st_uid;
 		orig_gid = sbuf.st_gid;
+
+		/* We did it, don't try again */
+		need_chown = False;
 	}
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
@@ -2540,97 +2648,110 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
 									&file_ace_list, &dir_ace_list, security_info_sent, psd);
 
-	if ((file_ace_list == NULL) && (dir_ace_list == NULL)) {
-		/* W2K traverse DACL set - ignore. */
-		return True;
-    }
+	/* Ignore W2K traverse DACL set. */
+	if (file_ace_list || dir_ace_list) {
 
-	if (!acl_perms) {
-		DEBUG(3,("set_nt_acl: cannot set permissions\n"));
-		free_canon_ace_list(file_ace_list);
-		free_canon_ace_list(dir_ace_list); 
-		return False;
-	}
-
-	/*
-	 * Only change security if we got a DACL.
-	 */
-
-	if((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl != NULL)) {
-
-		BOOL acl_set_support = False;
-		BOOL ret = False;
-
-		/*
-		 * Try using the POSIX ACL set first. Fall back to chmod if
-		 * we have no ACL support on this filesystem.
-		 */
-
-		if (acl_perms && file_ace_list) {
-			ret = set_canon_ace_list(fsp, file_ace_list, False, &acl_set_support);
-			if (acl_set_support && ret == False) {
-				DEBUG(3,("set_nt_acl: failed to set file acl on file %s (%s).\n", fsp->fsp_name, strerror(errno) ));
-				free_canon_ace_list(file_ace_list);
-				free_canon_ace_list(dir_ace_list); 
-				return False;
-			}
+		if (!acl_perms) {
+			DEBUG(3,("set_nt_acl: cannot set permissions\n"));
+			free_canon_ace_list(file_ace_list);
+			free_canon_ace_list(dir_ace_list); 
+			return False;
 		}
 
-		if (acl_perms && acl_set_support && fsp->is_directory) {
-			if (dir_ace_list) {
-				if (!set_canon_ace_list(fsp, dir_ace_list, True, &acl_set_support)) {
-					DEBUG(3,("set_nt_acl: failed to set default acl on directory %s (%s).\n", fsp->fsp_name, strerror(errno) ));
+		/*
+		 * Only change security if we got a DACL.
+		 */
+
+		if((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl != NULL)) {
+
+			BOOL acl_set_support = False;
+			BOOL ret = False;
+
+			/*
+			 * Try using the POSIX ACL set first. Fall back to chmod if
+			 * we have no ACL support on this filesystem.
+			 */
+
+			if (acl_perms && file_ace_list) {
+				ret = set_canon_ace_list(fsp, file_ace_list, False, &acl_set_support);
+				if (acl_set_support && ret == False) {
+					DEBUG(3,("set_nt_acl: failed to set file acl on file %s (%s).\n", fsp->fsp_name, strerror(errno) ));
 					free_canon_ace_list(file_ace_list);
 					free_canon_ace_list(dir_ace_list); 
 					return False;
 				}
-			} else {
+			}
 
-				/*
-				 * No default ACL - delete one if it exists.
-				 */
+			if (acl_perms && acl_set_support && fsp->is_directory) {
+				if (dir_ace_list) {
+					if (!set_canon_ace_list(fsp, dir_ace_list, True, &acl_set_support)) {
+						DEBUG(3,("set_nt_acl: failed to set default acl on directory %s (%s).\n", fsp->fsp_name, strerror(errno) ));
+						free_canon_ace_list(file_ace_list);
+						free_canon_ace_list(dir_ace_list); 
+						return False;
+					}
+				} else {
 
-				if (conn->vfs_ops.sys_acl_delete_def_file(conn, fsp->fsp_name) == -1) {
-					DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
-					free_canon_ace_list(file_ace_list);
-					return False;
+					/*
+					 * No default ACL - delete one if it exists.
+					 */
+
+					if (conn->vfs_ops.sys_acl_delete_def_file(conn, fsp->fsp_name) == -1) {
+						DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
+						free_canon_ace_list(file_ace_list);
+						free_canon_ace_list(dir_ace_list);
+						return False;
+					}
 				}
 			}
-		}
 
-		/*
-		 * If we cannot set using POSIX ACLs we fall back to checking if we need to chmod.
-		 */
+			/*
+			 * If we cannot set using POSIX ACLs we fall back to checking if we need to chmod.
+			 */
 
-		if(!acl_set_support && acl_perms) {
-			mode_t posix_perms;
+			if(!acl_set_support && acl_perms) {
+				mode_t posix_perms;
 
-			if (!convert_canon_ace_to_posix_perms( fsp, file_ace_list, &posix_perms)) {
-				free_canon_ace_list(file_ace_list);
-				free_canon_ace_list(dir_ace_list);
-				DEBUG(3,("set_nt_acl: failed to convert file acl to posix permissions for file %s.\n",
-					fsp->fsp_name ));
-				return False;
-			}
-
-			if (orig_mode != posix_perms) {
-
-				DEBUG(3,("set_nt_acl: chmod %s. perms = 0%o.\n",
-					fsp->fsp_name, (unsigned int)posix_perms ));
-
-				if(conn->vfs_ops.chmod(conn,fsp->fsp_name, posix_perms) == -1) {
-					DEBUG(3,("set_nt_acl: chmod %s, 0%o failed. Error = %s.\n",
-							fsp->fsp_name, (unsigned int)posix_perms, strerror(errno) ));
+				if (!convert_canon_ace_to_posix_perms( fsp, file_ace_list, &posix_perms)) {
 					free_canon_ace_list(file_ace_list);
 					free_canon_ace_list(dir_ace_list);
+					DEBUG(3,("set_nt_acl: failed to convert file acl to posix permissions for file %s.\n",
+						fsp->fsp_name ));
 					return False;
+				}
+
+				if (orig_mode != posix_perms) {
+
+					DEBUG(3,("set_nt_acl: chmod %s. perms = 0%o.\n",
+						fsp->fsp_name, (unsigned int)posix_perms ));
+
+					if(conn->vfs_ops.chmod(conn,fsp->fsp_name, posix_perms) == -1) {
+						DEBUG(3,("set_nt_acl: chmod %s, 0%o failed. Error = %s.\n",
+								fsp->fsp_name, (unsigned int)posix_perms, strerror(errno) ));
+						free_canon_ace_list(file_ace_list);
+						free_canon_ace_list(dir_ace_list);
+						return False;
+					}
 				}
 			}
 		}
+
+		free_canon_ace_list(file_ace_list);
+		free_canon_ace_list(dir_ace_list); 
 	}
 
-	free_canon_ace_list(file_ace_list);
-	free_canon_ace_list(dir_ace_list); 
+	/* Any chown pending? */
+	if (need_chown) {
+
+		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
+			fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+
+		if(try_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
+			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error = %s.\n",
+				fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+			return False;
+		}
+	}
 
 	return True;
 }

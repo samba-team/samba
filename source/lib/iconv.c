@@ -35,7 +35,7 @@ static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
   a ucs2 buffer, and a function that pushes to a ucs2 buffer 
 */
 static struct {
-	char *name;
+	const char *name;
 	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
 	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
@@ -357,8 +357,8 @@ static size_t ucs2hex_push(void *cd, char **inbuf, size_t *inbytesleft,
    support and finding bugs. Don't use on a production system! 
 */
 static struct {
-	char from;
-	char *to;
+	const char from;
+	const char *to;
 	int len;
 } weird_table[] = {
 	{'q', "^q^", 3},
