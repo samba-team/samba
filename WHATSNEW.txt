@@ -13,7 +13,7 @@ we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
 
-Common bugs fixed in Samba 3.0.4 include:
+Common bugs fixed in this preview release include:
 
   o Schannel failure in winbindd.
   o Numerous memory leaks.
