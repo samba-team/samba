@@ -283,8 +283,10 @@ change (krb5_context context,
 	e = malloc(sizeof(*e));
 	e->time = time(NULL);
 	krb5_copy_principal (context, principal, &e->principal);
-	free_Event (ent.modified_by);
-	free (ent.modified_by);
+	if (ent.modified_by) {
+	    free_Event (ent.modified_by);
+	    free (ent.modified_by);
+	}
 	ent.modified_by = e;
 	ret = db->store (context, db, &ent);
     }
@@ -380,7 +382,8 @@ static void
 process (krb5_context context,
 	 krb5_principal server,
 	 int s,
-	 struct sockaddr_in *addr,
+	 void *this_addr,
+	 struct sockaddr_in *other_addr,
 	 u_char *msg,
 	 int len)
 {
@@ -388,21 +391,51 @@ process (krb5_context context,
     krb5_auth_context auth_context = NULL;
     krb5_data out_data;
     krb5_ticket *ticket;
+    krb5_address remote_addr, local_addr;
 
     krb5_data_zero (&out_data);
 
+    ret = krb5_auth_con_init (context, &auth_context);
+    if (ret) {
+	syslog (LOG_ERR, "krb5_auth_con_init: %s",
+		krb5_get_err_text(context, ret));
+	return;
+    }
+
+    krb5_auth_con_setflags (context, auth_context,
+			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
+
+    local_addr.addr_type       = AF_INET;
+    local_addr.address.length  = sizeof(other_addr->sin_addr);
+    local_addr.address.data    = this_addr;
+
+    remote_addr.addr_type      = AF_INET;
+    remote_addr.address.length = sizeof(other_addr->sin_addr);
+    remote_addr.address.data   = &other_addr->sin_addr;
+
+    ret = krb5_auth_con_setaddrs (context,
+				  auth_context,
+				  &local_addr,
+				  &remote_addr);
+    if (ret) {
+	syslog (LOG_ERR, "krb5_auth_con_setaddr: %s",
+		krb5_get_err_text(context, ret));
+	goto out;
+    }
+
     if (verify (context, &auth_context, server, &ticket, &out_data,
-		s, addr, msg, len) == 0) {
+		s, other_addr, msg, len) == 0) {
 	change (context,
 		auth_context,
 		ticket->client,
 		s,
-		addr,
+		other_addr,
 		&out_data);
 	krb5_free_ticket (context, ticket);
 	free (ticket);
     }
 
+out:
     krb5_data_free (&out_data);
     krb5_auth_con_free (context, auth_context);
 }
@@ -414,8 +447,12 @@ doit (int port)
     krb5_context context;
     krb5_principal server;
     struct sockaddr_in addr;
-    int s;
+    int *sockets;
+    int maxfd;
     char *realm;
+    krb5_addresses addrs;
+    unsigned n, i;
+    fd_set real_fdset;
 
     ret = krb5_init_context (&context);
     if (ret)
@@ -442,44 +479,64 @@ doit (int port)
 
     free (realm);
 
-    s = socket (AF_INET, SOCK_DGRAM, 0);
-    if (s < 0)
-	syslog_and_die ("socket: %m");
-    memset (&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = port;
-    if (bind (s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-	syslog_and_die ("bind: %m");
+    ret = krb5_get_all_client_addrs (&addrs);
+    if (ret)
+	syslog_and_die ("krb5_get_all_clients_addrs: %s",
+			krb5_get_err_text(context, ret));
+
+    n = addrs.len;
+
+    sockets = malloc (n * sizeof(*sockets));
+    maxfd = 0;
+    FD_ZERO(&real_fdset);
+    for (i = 0; i < n; ++i) {
+	struct sockaddr_in addr;
+
+	sockets[i] = socket (AF_INET, SOCK_DGRAM, 0);
+	if (sockets[i] < 0)
+	    syslog_and_die ("socket: %m");
+	memset (&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	memcpy (&addr.sin_addr, addrs.val[i].address.data,
+		sizeof(addr.sin_addr));
+	addr.sin_port = port;
+
+	if (bind (sockets[i], (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	    syslog_and_die ("bind: %m");
+	maxfd = max (maxfd, sockets[i]);
+	FD_SET(sockets[i], &real_fdset);
+    }
+
     while(exit_flag == 0) {
-	struct sockaddr_in other_addr;
-	struct fd_set fdset;
 	u_char buf[BUFSIZ];
 	int ret;
-	int addrlen = sizeof(other_addr);
+	struct fd_set fdset = real_fdset;
 
-	FD_ZERO(&fdset);
-	FD_SET(s, &fdset);
-
-	ret = select (s + 1, &fdset, NULL, NULL, NULL);
+	ret = select (maxfd + 1, &fdset, NULL, NULL, NULL);
 	if (ret < 0)
 	    if (errno == EINTR)
 		continue;
 	    else
 		syslog_and_die ("select: %m");
-	if (!FD_ISSET(s, &fdset))
-	    continue;
+	for (i = 0; i < n; ++i)
+	    if (FD_ISSET(sockets[i], &fdset)) {
+		struct sockaddr_in other_addr;
+		u_char buf[BUFSIZ];
+		int addrlen = sizeof(other_addr);
 
-	ret = recvfrom (s, buf, sizeof(buf), 0,
-			(struct sockaddr *)&other_addr,
-			&addrlen);
-	if (ret < 0)
-	    if(errno == EINTR)
-		break;
-	    else
-		syslog_and_die ("recvfrom: %m");
-	process (context, server, s, &other_addr, buf, ret);
+		ret = recvfrom (sockets[i], buf, sizeof(buf), 0,
+				(struct sockaddr *)&other_addr,
+				&addrlen);
+		if (ret < 0)
+		    if(errno == EINTR)
+			break;
+		    else
+			syslog_and_die ("recvfrom: %m");
+		process (context, server, sockets[i],
+			 addrs.val[i].address.data, &other_addr, buf, ret);
+	    }
     }
+    krb5_free_addresses (context, &addrs);
     krb5_free_principal (context, server);
     krb5_free_context (context);
     return 0;
