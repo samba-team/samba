@@ -177,7 +177,15 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
 
-	key = h->data;
+	r->out.result = reg_key_get_subkey_by_index(mem_ctx, (struct registry_key *)h->data, r->in.enum_index, &key);
+
+	if (W_ERROR_IS_OK(r->out.result)) {
+		r->out.key_name_len = strlen(key->name);
+		r->out.out_name = talloc_zero_p(mem_ctx, struct winreg_EnumKeyNameResponse);
+		r->out.out_name->name = key->name;
+		r->out.class = talloc_zero_p(mem_ctx, struct winreg_String);
+		r->out.last_changed_time = talloc_zero_p(mem_ctx, struct winreg_Time);
+	}
 	
 	return WERR_NOT_SUPPORTED;
 }
