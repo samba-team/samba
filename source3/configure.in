@@ -321,7 +321,7 @@ AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
 
 ############################################
-# we need krb5 for w2k ADS authentication
+# we need kerberos 5 for w2k ADS authentication
 AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
 	AC_DEFINE(HAVE_KRB5)])
 
@@ -1612,21 +1612,22 @@ AC_ARG_WITH(krb4,
 )
 
 #################################################
-# check for Kerberos 5 auth system
-AC_MSG_CHECKING(whether to use Kerberos 5)
+# check for location of Kerberos 5 install
+AC_MSG_CHECKING(for kerberos 5 install)
 AC_ARG_WITH(krb5,
 [  --with-krb5=base-dir    Include Kerberos 5 support (default=no)],
 [ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(KRB5_AUTH)
-    LIBS="$LIBS -ldes425 -lkrb5 -lcrypto -lcom_err"
-    CFLAGS="$CFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"
-    AC_DEFINE_UNQUOTED(KRB5_DIR,${withval})
+  no)
+    AC_MSG_RESULT(no)
     ;;
   *)
-    AC_MSG_RESULT(no)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(KRB5_AUTH)
+    LIBS="$LIBS -lkrb5"
+    CFLAGS="$CFLAGS -I$withval/include"
+    LDFLAGS="$LDFLAGS -L$withval/lib"
+    AC_DEFINE(HAVE_KRB5)
+    AC_DEFINE_UNQUOTED(KRB5_DIR,${withval})
     ;;
   esac ],
   AC_MSG_RESULT(no)
