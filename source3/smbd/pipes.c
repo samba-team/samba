@@ -67,7 +67,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 			break;
 
 	if (pipe_names[i].client_pipe == NULL)
-		return(ERROR_DOS(ERRSRV,ERRaccess));
+		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
 
 	/* Strip \PIPE\ off the name. */
 	pstrcpy(fname, pipe_name + PIPELEN);
