@@ -854,11 +854,15 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 	nt_status = in->pdb_update_trust_passwd(in, &trust);
 
 	talloc_destroy(mem_ctx);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		printf("Coulnd't modify trust password\n");
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return 0;
+
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
+		printf("Error: this functionality is not supported by your current passdb backend!\n");
+		return -1;
 	}
 
-	return NT_STATUS_IS_OK(nt_status) ? 0 : -1;
+	return -1;
 }
 
 
