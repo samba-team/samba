@@ -151,7 +151,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 {
 	TDB_CONTEXT *tdb2;
 
-	tdb2 = tdb_open(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
+	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb2) return NULL;
 
 	matched_packet = NULL;
