@@ -407,6 +407,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
 	uint32 share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
+	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
 	uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
 			       ((uint32)sizeof(fname)-1));
 	int smb_ofun;
@@ -521,7 +522,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
-	if(flags & OPEN_DIRECTORY) {
+	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
 		open_directory(fsp, conn, fname, smb_ofun, 
@@ -699,6 +700,7 @@ static int call_nt_transact_create(connection_struct *conn,
   uint32 file_attributes = IVAL(params,20);
   uint32 share_access = IVAL(params,24);
   uint32 create_disposition = IVAL(params,28);
+  uint32 create_options = IVAL(params,32);
   uint32 fname_len = MIN(((uint32)IVAL(params,44)),
                          ((uint32)sizeof(fname)-1));
   int smb_ofun;
@@ -781,7 +783,7 @@ static int call_nt_transact_create(connection_struct *conn,
      * If it's a request for a directory open, deal with it separately.
      */
 
-    if(flags & OPEN_DIRECTORY) {
+    if(create_options & FILE_DIRECTORY_FILE) {
 
       oplock_request = 0;
 
