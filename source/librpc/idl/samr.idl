@@ -48,7 +48,7 @@
 	/* Function: 0x02 */
 
 	typedef struct {
-		[value(ndr_size_security_descriptor(r->sd))] uint32 sd_size;
+		[range(0,262144),value(ndr_size_security_descriptor(r->sd))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} samr_SdBuf;
 
@@ -328,7 +328,7 @@
 	} samr_SidType;
 
 	typedef struct {
-		uint32 count;
+		[range(0,1024)]  uint32 count;
 		[size_is(count)] uint32 *ids;
 	} samr_Ids;
 
@@ -343,7 +343,7 @@
 
 	NTSTATUS samr_LookupNames(
 		[in,ref]      policy_handle *domain_handle,
-		[in]          uint32 num_names,
+		[in,range(0,1000)] uint32 num_names,
 		[in,ref,size_is(1000),length_is(num_names)] samr_Name *names,
 		[out]         samr_Ids rids,
 		[out]         samr_Ids types
@@ -360,7 +360,7 @@
 
 	NTSTATUS samr_LookupRids(
 		[in,ref]      policy_handle *domain_handle,
-		[in]          uint32 num_rids,
+		[in,range(0,1000)] uint32 num_rids,
 		[in,ref,size_is(1000),length_is(num_rids)] uint32 *rids,
 		[out]         samr_Names names,
 		[out]         samr_Ids types
