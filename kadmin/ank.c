@@ -74,7 +74,9 @@ add_one_principal (const char *name,
 		   char *password,
 		   const char *max_ticket_life,
 		   const char *max_renewable_life,
-		   const char *attributes)
+		   const char *attributes,
+		   const char *expiration,
+		   const char *pw_expiration)
 {
     krb5_error_code ret;
     kadm5_principal_ent_rec princ;
@@ -94,7 +96,8 @@ add_one_principal (const char *name,
     mask |= KADM5_PRINCIPAL;
 
     ret = set_entry(context, &princ, &mask,
-		    max_ticket_life, max_renewable_life, attributes);
+		    max_ticket_life, max_renewable_life, 
+		    expiration, pw_expiration, attributes);
     if (ret)
 	goto out;
 
@@ -168,10 +171,16 @@ out:
 static struct getargs args[] = {
     { "random-key",	'r',	arg_flag,	NULL, "set random key" },
     { "password",	'p',	arg_string,	NULL, "princial's password" },
-    { "max-ticket-life",  0,	arg_string,	NULL, "max ticket lifetime" },
+    { "max-ticket-life",  0,	arg_string,	NULL, "max ticket lifetime",
+      "lifetime"},
     { "max-renewable-life",  0,	arg_string,	NULL,
-      "max renewable lifetime" },
-    { "attributes",	0,	arg_string,	NULL, "attributes" }
+      "max renewable lifetime", "lifetime" },
+    { "attributes",	0,	arg_string,	NULL, "principal attributes",
+      "attributes"},
+    { "expiration-time",0,	arg_string,	NULL, "Expiration time",
+      "time"},
+    { "pw-expiration-time", 0,  arg_string,	NULL,
+      "Password expiration time", "time"}
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
@@ -196,6 +205,8 @@ add_new_key(int argc, char **argv)
     char *max_ticket_life	= NULL;
     char *max_renewable_life	= NULL;
     char *attributes		= NULL;
+    char *expiration		= NULL;
+    char *pw_expiration		= NULL;
     int i;
 
     args[0].value = &rkey;
@@ -203,6 +214,8 @@ add_new_key(int argc, char **argv)
     args[2].value = &max_ticket_life;
     args[3].value = &max_renewable_life;
     args[4].value = &attributes;
+    args[5].value = &expiration;
+    args[6].value = &pw_expiration;
     
     if(getarg(args, num_args, argc, argv, &optind)) {
 	usage ();
@@ -217,7 +230,9 @@ add_new_key(int argc, char **argv)
 	ret = add_one_principal (argv[i], rkey, password,
 				 max_ticket_life,
 				 max_renewable_life,
-				 attributes);
+				 attributes,
+				 expiration,
+				 pw_expiration);
 	if (ret) {
 	    krb5_warn (context, ret, "adding %s", argv[i]);
 	    break;
