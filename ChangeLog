@@ -1,5 +1,9 @@
 Fri Jul 18 02:54:58 1997  Assar Westerlund  <assar@sics.se>
 
+	* admin/kdb_edit: updated to new sl
+
+	* lib/sl: sl_func now returns an int. != 0 means to exit.
+
 	* kpasswd/kpasswdd: A crude (but somewhat working) implementation
  	of `draft-ietf-cat-kerb-chg-password-00.txt'
 
