@@ -483,6 +483,54 @@ static void run_readwritemulti(int dummy)
 	close_connection(&cli);
 }
 
+static void run_readwritelarge(int dummy)
+{
+    static struct cli_state cli1;
+	int fnum1;
+	char *lockfname = "\\large.dat";
+	size_t fsize;
+	char buf[0x10000];
+ 
+    if (!open_connection(&cli1)) {
+        return;
+    }
+    cli_sockopt(&cli1, sockops);
+	memset(buf,'\0',sizeof(buf));
+
+	cli1.max_xmit = 0x11000;
+ 
+    printf("starting readwritelarge\n");
+ 
+	cli_unlink(&cli1, lockfname);
+
+	fnum1 = cli_open(&cli1, lockfname, O_RDWR | O_CREAT | O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open read/write of %s failed (%s)\n", lockfname, cli_errstr(&cli1));
+		return;
+	}
+   
+	cli_write(&cli1, fnum1, 0, buf, 0, sizeof(buf));
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	if (!cli_qpathinfo(&cli1, lockfname, NULL, NULL, NULL, &fsize, NULL)) {
+		printf("qpathinfo failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	if (fsize == sizeof(buf))
+		printf("readwritelarge test succeeded (size = %x)\n", fsize);
+	else
+		printf("readwritelarge test failed (size = %x)\n", fsize);
+
+	if (!cli_unlink(&cli1, lockfname)) {
+		printf("unlink failed (%s)\n", cli_errstr(&cli1));
+	}
+
+    close_connection(&cli1);
+}
+
 int line_count = 0;
 
 /* run a test that simulates an approximate netbench client load */
@@ -2722,6 +2770,7 @@ static struct {
 	{"TCON",  run_tcon_test, 0},
 	{"RW1",  run_readwritetest, 0},
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
+	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
 	{"DELETE", run_deletetest, 0},
 	{NULL, NULL, 0}};
@@ -2808,6 +2857,8 @@ static void usage(void)
 	setbuffer(stdout, NULL, 0);
 
 	charset_initialise();
+
+	codepage_initialise(lp_client_code_page());
 
 	lp_load(servicesf,True,False,False);
 	load_interfaces();

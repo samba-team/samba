@@ -2666,6 +2666,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   unsigned int smb_doff = SVAL(inbuf,smb_vwv11);
   unsigned int smblen = smb_len(inbuf);
   char *data;
+  BOOL large_writeX = ((CVAL(inbuf,smb_wct) == 14) && (smblen > 0xFFFF));
   START_PROFILE(SMBwriteX);
 
   /* If it's an IPC, pass off the pipe handler. */
@@ -2679,7 +2680,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   CHECK_ERROR(fsp);
 
   /* Deal with possible LARGE_WRITEX */
-  if (smblen > 0xFFFF)
+  if (large_writeX)
     numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
 
   if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
@@ -2734,7 +2735,9 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   set_message(outbuf,6,0,True);
   
   SSVAL(outbuf,smb_vwv2,nwritten);
-  
+  if (large_writeX)
+    SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
+
   if (nwritten < (ssize_t)numtowrite) {
     CVAL(outbuf,smb_rcls) = ERRHRD;
     SSVAL(outbuf,smb_err,ERRdiskfull);      

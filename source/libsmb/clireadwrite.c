@@ -138,7 +138,10 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,12,size,True);
+	if (size > 0xFFFF)
+		set_message(cli->outbuf,14,size,True);
+	else
+		set_message(cli->outbuf,12,size,True);
 	
 	CVAL(cli->outbuf,smb_com) = SMBwriteX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -152,6 +155,7 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
 	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
+	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
