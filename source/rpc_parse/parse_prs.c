@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "sma.h"
 
-
 /*******************************************************************
  SMA stuff
  ********************************************************************/
@@ -80,6 +79,9 @@ void prs_debug(prs_struct *ps, int depth, const char *desc,
 void prs_debug_out(const prs_struct *ps, char *msg, int level)
 {
 	CHECK_STRUCT(ps);
+
+	if (DEBUGLEVEL < level) return;
+
 	DEBUG(level, ("%s ps: io %s align %d offset %d err %d data %p\n",
 		      msg, BOOLSTR(ps->io), ps->align, ps->offset, ps->error,
 		      ps->data));
