@@ -45,6 +45,8 @@ static char *config_file;
 static char *keyfile;
 static int help_flag;
 static int version_flag;
+static char *realm;
+static char *admin_server;
 
 static struct getargs args[] = {
     { 
@@ -55,6 +57,14 @@ static struct getargs args[] = {
 	"key-file",	'k',	arg_string, &keyfile, 
 	"location of master key file", "file"
     },
+    {	
+	"realm",	'r',	arg_string,   &realm, 
+	"realm to use", "realm" 
+    },
+    {	
+	"admin-server",	'a',	arg_string,   &admin_server, 
+	"server to contact", "host" 
+    },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
 };
@@ -62,15 +72,16 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 static SL_cmd commands[] = {
-    { "add_new_key",	add_new_key, "add_new_key principal"},
+    { "add_new_key",	add_new_key, 	"add_new_key principal"},
     { "ank"},
-    { "cpw",		cpw_entry, "cpw_entry principal..."},
+    { "cpw",		cpw_entry, 	"cpw_entry principal..."},
     { "change_password"},
     { "passwd"},
-    { "del_entry",	del_entry, "del_entry principal..."},
+    { "del_entry",	del_entry, 	"del_entry principal..."},
     { "delete" },
-    { "ext_keytab",	ext_keytab, "ext_keytab principal..."},
-    { "get_entry",	get_entry, "get_entry principal"},
+    { "ext_keytab",	ext_keytab, 	"ext_keytab principal..."},
+    { "get_entry",	get_entry, 	"get_entry principal"},
+    { "rename",		rename_entry, 	"rename source target"},
     { "help",		help, "help"},
     { "?"},
     { "exit",		exit_kadmin, "exit"},
@@ -105,6 +116,7 @@ main(int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_config_section *cf;
+    kadm5_config_params conf;
     int optind = 0;
     int e;
 
@@ -133,13 +145,24 @@ main(int argc, char **argv)
 	    keyfile = strdup(p);
     }
 
+    memset(&conf, 0, sizeof(conf));
+    conf.realm = realm;
+    conf.mask |= KADM5_CONFIG_REALM;
+    krb5_set_default_realm(context, realm); /* XXX should be fixed
+					       some other way */
+    conf.admin_server = admin_server;
+    conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
+
     ret = kadm5_init_with_password_ctx(context, 
+				       /* XXX these are not used */
 				       "client", 
 				       "password", 
 				       "service",
-				       NULL, 0, 0, 
+				       &conf, 0, 0, 
 				       &kadm_handle);
 
+    if(ret)
+	krb5_err(context, 1, ret, "kadm5_init_with_password");
     if (argc != 0)
 	exit(sl_command(commands, argc, argv));
 
