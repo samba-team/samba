@@ -105,7 +105,22 @@ static NTSTATUS lsa_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 static NTSTATUS lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			   struct lsa_Delete *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	int ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
+	if (h->wire_handle.handle_type == LSA_HANDLE_SECRET) {
+		struct lsa_secret_state *secret_state = h->data;
+		ret = samdb_delete(secret_state->sam_ctx, mem_ctx, secret_state->secret_dn);
+		talloc_free(h);
+		if (ret != 0) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+
+		return NT_STATUS_OK;
+	} 
+	
+	return NT_STATUS_INVALID_HANDLE;
 }
 
 
@@ -195,66 +210,61 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	/* make sure the sam database is accessible */
 	state->sam_ctx = samdb_connect(state);
 	if (state->sam_ctx == NULL) {
-		talloc_free(state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
 	state->sidmap = sidmap_open(state);
 	if (state->sidmap == NULL) {
-		talloc_free(state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
 	/* work out the domain_dn - useful for so many calls its worth
 	   fetching here */
-	state->domain_dn = samdb_search_string(state->sam_ctx, state, NULL,
-					       "dn", "(&(objectClass=domain)(!(objectclass=builtinDomain)))");
+	state->domain_dn = talloc_reference(state, 
+					    samdb_search_string(state->sam_ctx, mem_ctx, NULL,
+								"dn", "(&(objectClass=domain)(!(objectclass=builtinDomain)))"));
 	if (!state->domain_dn) {
-		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
-	state->builtin_dn = samdb_search_string(state->sam_ctx, state, NULL,
-						"dn", "objectClass=builtinDomain");
+	state->builtin_dn = talloc_reference(state, 
+					     samdb_search_string(state->sam_ctx, mem_ctx, NULL,
+						"dn", "objectClass=builtinDomain"));
 	if (!state->builtin_dn) {
-		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	/* work out the system_dn - useful for so many calls its worth
 	   fetching here */
-	state->system_dn = samdb_search_string(state->sam_ctx, state, state->domain_dn,
-					       "dn", "(&(objectClass=container)(cn=System))");
+	state->system_dn = talloc_reference(state, 
+					     samdb_search_string(state->sam_ctx, mem_ctx, state->domain_dn,
+					       "dn", "(&(objectClass=container)(cn=System))"));
 	if (!state->system_dn) {
-		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
-	sid_str = samdb_search_string(state->sam_ctx, state, NULL,
+	sid_str = samdb_search_string(state->sam_ctx, mem_ctx, NULL,
 				      "objectSid", "dn=%s", state->domain_dn);
 	if (!sid_str) {
-		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	state->domain_sid = dom_sid_parse_talloc(state, sid_str);
 	if (!state->domain_sid) {
-		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	state->builtin_sid = dom_sid_parse_talloc(state, SID_BUILTIN);
 	if (!state->builtin_sid) {
-		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
-	state->domain_name = samdb_search_string(state->sam_ctx, state, NULL,
-						 "name", "dn=%s", state->domain_dn);
+	state->domain_name = talloc_reference(state, 
+					      samdb_search_string(state->sam_ctx, mem_ctx, NULL,
+								  "name", "dn=%s", state->domain_dn));
 	if (!state->domain_name) {
-		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
