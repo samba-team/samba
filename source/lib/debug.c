@@ -248,7 +248,7 @@ void force_check_log_size( void )
  * ************************************************************************** **
  */
 static void check_log_size( void )
-  {
+{
   int         maxlog;
   SMB_STRUCT_STAT st;
 
@@ -275,8 +275,23 @@ static void check_log_size( void )
       reopen_logs();
       }
     }
+  /*
+   * Here's where we need to panic if dbf == NULL..
+   */
+  if(dbf == NULL) {
+    dbf = sys_fopen( "/dev/console", "w" );
+    if(dbf) {
+      DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
+            debugf ));
+    } else {
+      /*
+       * We cannot continue without a debug file handle.
+       */
+      abort();
+    }
+  }
   debug_count = 0;
-  } /* check_log_size */
+} /* check_log_size */
 
 /* ************************************************************************** **
  * Write an debug message on the debugfile.
