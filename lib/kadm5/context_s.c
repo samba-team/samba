@@ -66,6 +66,10 @@ set_field(krb5_context context, krb5_config_binding *binding,
 	  char **variable)
 {
     const char *p;
+
+    if (*variable != NULL)
+	free (*variable);
+
     p = krb5_config_get_string(context, binding, name, NULL);
     if(p)
 	*variable = strdup(p);
@@ -153,10 +157,10 @@ find_db_spec(kadm5_server_context *ctx)
     if(default_binding)
 	set_config(ctx, default_binding);
     else {
-	ctx->config.dbname = strdup(HDB_DEFAULT_DB);
-	ctx->config.acl_file = HDB_DB_DIR "/kadmind.acl";
-	ctx->config.stash_file = HDB_DB_DIR "/m-key";
-	ctx->log_context.log_file = HDB_DB_DIR "/log";
+	ctx->config.dbname        = strdup(HDB_DEFAULT_DB);
+	ctx->config.acl_file      = strdup(HDB_DB_DIR "/kadmind.acl");
+	ctx->config.stash_file    = strdup(HDB_DB_DIR "/m-key");
+	ctx->log_context.log_file = strdup(HDB_DB_DIR "/log");
 	memset(&ctx->log_context.socket_name, 0, 
 	       sizeof(ctx->log_context.socket_name));
 	ctx->log_context.socket_name.sun_family = AF_UNIX;
