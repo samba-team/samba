@@ -213,10 +213,10 @@ SMB_INFO_MODULES="$SMB_INFO_MODULES
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{NAME} = \"$1\";
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{SUBSYSTEM} = \"$2\";
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{DEFAULT_BUILD} = \"$[SMB_MODULE_DEFAULT_][$1]\";
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{INIT_OBJ_FILES}} = str2array(\"$4\");
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{ADD_OBJ_FILES}} = str2array(\"$5\");
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_LIBRARIES}} = str2array(\"$6\");
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$7\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{INIT_OBJ_FILES}} = input::str2array(\"$4\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{ADD_OBJ_FILES}} = input::str2array(\"$5\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_LIBRARIES}} = input::str2array(\"$6\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_SUBSYSTEMS}} = input::str2array(\"$7\");
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{INIT_FUNCTION} = \"\";
 #
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{CHOSEN_BUILD} = \"$[SMB_MODULE_][$1]\";
@@ -252,11 +252,11 @@ SMB_INFO_MODULES="$SMB_INFO_MODULES
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{NAME} = \"$1\";
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{SUBSYSTEM} = \"$2\";
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{DEFAULT_BUILD} = \"$[SMB_MODULE_DEFAULT_][$1]\";
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{INIT_OBJ_FILES}} = module_get_array(\"$4\", \"$1\", \"INIT_OBJ_FILES\");
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{ADD_OBJ_FILES}} = module_get_array(\"$4\", \"$1\", \"ADD_OBJ_FILES\");
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_LIBRARIES}} = module_get_array(\"$4\", \"$1\", \"REQUIRED_LIBRARIES\");
-@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_SUBSYSTEMS}} = module_get_array(\"$4\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
-\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{INIT_FUNCTION} = module_get_var(\"$4\", \"$1\", \"INIT_FUNCTION\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{INIT_OBJ_FILES}} = config_mk::module_get_array(\"$4\", \"$1\", \"INIT_OBJ_FILES\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{ADD_OBJ_FILES}} = config_mk::module_get_array(\"$4\", \"$1\", \"ADD_OBJ_FILES\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_LIBRARIES}} = config_mk::module_get_array(\"$4\", \"$1\", \"REQUIRED_LIBRARIES\");
+@{\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{REQUIRED_SUBSYSTEMS}} = config_mk::module_get_array(\"$4\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
+\$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{INIT_FUNCTION} = config_mk::module_get_var(\"$4\", \"$1\", \"INIT_FUNCTION\");
 #
 \$SMB_BUILD_CTX->{INPUT}{MODULES}{$1}{CHOSEN_BUILD} = \"$[SMB_MODULE_][$1]\";
 # End MODULE $1
@@ -303,11 +303,11 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{NAME} = \"$1\";
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{INIT_OBJ_FILES}} = str2array(\"$2\");
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ADD_OBJ_FILES}} = str2array(\"$3\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{INIT_OBJ_FILES}} = input::str2array(\"$2\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ADD_OBJ_FILES}} = input::str2array(\"$3\");
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{INIT_FUNCTION} = \"\";
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_LIBRARIES}} = str2array(\"$4\");
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$5\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_LIBRARIES}} = input::str2array(\"$4\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = input::str2array(\"$5\");
 #
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{NOPROTO} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
@@ -335,11 +335,11 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{NAME} = \"$1\";
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{INIT_OBJ_FILES}} = subsystem_get_array(\"$2\", \"$1\", \"INIT_OBJ_FILES\");
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ADD_OBJ_FILES}} = subsystem_get_array(\"$2\", \"$1\", \"ADD_OBJ_FILES\");
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_LIBRARIES}} = subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_LIBRARIES\");
-@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
-\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{INIT_FUNCTION} = subsystem_get_var(\"$2\", \"$1\", \"INIT_FUNCTION\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{INIT_OBJ_FILES}} = config_mk::subsystem_get_array(\"$2\", \"$1\", \"INIT_OBJ_FILES\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ADD_OBJ_FILES}} = config_mk::subsystem_get_array(\"$2\", \"$1\", \"ADD_OBJ_FILES\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_LIBRARIES}} = config_mk::subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_LIBRARIES\");
+@{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = config_mk::subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
+\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{INIT_FUNCTION} = config_mk::subsystem_get_var(\"$2\", \"$1\", \"INIT_FUNCTION\");
 #
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{NOPROTO} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
@@ -423,10 +423,10 @@ SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 ###################################
 # Start Ext Lib $1
 \$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{NAME} = \"$1\";
-@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{LIBS}} = str2array(\"$2\");
-@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{CFLAGS}} = str2array(\"$3\");
-@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{CPPFLAGS}} = str2array(\"$4\");
-@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{LDFLAGS}} = str2array(\"$5\");
+@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{LIBS}} = input::str2array(\"$2\");
+@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{CFLAGS}} = input::str2array(\"$3\");
+@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{CPPFLAGS}} = input::str2array(\"$4\");
+@{\$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{LDFLAGS}} = input::str2array(\"$5\");
 #
 \$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$1}{ENABLE} = \"$[SMB_EXT_LIB_ENABLE_][$1]\";
 # End Ext Lib $1
@@ -467,9 +467,9 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MAJOR_VERSION} = \"$2\";
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MINOR_VERSION} = \"$3\";
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{RELEASE_VERSION} = \"$4\";
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{OBJ_FILES}} = str2array(\"$5\");
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_LIBRARIES}} = str2array(\"$6\");
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$7\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{OBJ_FILES}} = input::str2array(\"$5\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_LIBRARIES}} = input::str2array(\"$6\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_SUBSYSTEMS}} = input::str2array(\"$7\");
 #
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{ENABLE} = \"$[SMB_LIBRARY_ENABLE_][$1]\";
 # End Library $1
@@ -492,12 +492,12 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{NAME} = \"$1\";
-\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MAJOR_VERSION} = library_get_var(\"$2\", \"$1\", \"MAJOR_VERSION\");
-\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MINOR_VERSION} = library_get_var(\"$2\", \"$1\", \"MINOR_VERSION\");
-\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{RELEASE_VERSION} = library_get_var(\"$2\", \"$1\", \"RELEASE_VERSION\");
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{OBJ_FILES}} = library_get_array(\"$2\", \"$1\", \"OBJ_FILES\");
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_LIBRARIES}} = library_get_array(\"$2\", \"$1\", \"REQUIRED_LIBRARIES\");
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_SUBSYSTEMS}} = library_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MAJOR_VERSION} = config_mk::library_get_var(\"$2\", \"$1\", \"MAJOR_VERSION\");
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MINOR_VERSION} = config_mk::library_get_var(\"$2\", \"$1\", \"MINOR_VERSION\");
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{RELEASE_VERSION} = config_mk::library_get_var(\"$2\", \"$1\", \"RELEASE_VERSION\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{OBJ_FILES}} = config_mk::library_get_array(\"$2\", \"$1\", \"OBJ_FILES\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_LIBRARIES}} = config_mk::library_get_array(\"$2\", \"$1\", \"REQUIRED_LIBRARIES\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_SUBSYSTEMS}} = config_mk::library_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
 #
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{ENABLE} = \"$[SMB_LIBRARY_ENABLE_][$1]\";
 # End Library $1
@@ -533,11 +533,11 @@ SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 ###################################
 # Start Binary $1
 \$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{NAME} = \"$1\";
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{BUILD_TARGETS}} = str2array(\"$2\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{INSTALL_PATH}} = str2array(\"$3\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{OBJ_FILES}} = str2array(\"$4\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_LIBRARIES}} = str2array(\"$5\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$6\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{BUILD_TARGETS}} = input::str2array(\"$2\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{INSTALL_PATH}} = input::str2array(\"$3\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{OBJ_FILES}} = input::str2array(\"$4\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_LIBRARIES}} = input::str2array(\"$5\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_SUBSYSTEMS}} = input::str2array(\"$6\");
 #
 \$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{ENABLE} = \"$[SMB_BINARY_ENABLE_][$1]\";
 # End Binary $1
@@ -560,11 +560,11 @@ SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 ###################################
 # Start Binary $1
 \$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{NAME} = \"$1\";
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{BUILD_TARGETS}} = binary_get_array(\"$2\", \"$1\", \"BUILD_TARGETS\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{INSTALL_PATH}} = binary_get_array(\"$2\", \"$1\", \"INSTALL_PATH\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{OBJ_FILES}} = binary_get_array(\"$2\", \"$1\", \"OBJ_FILES\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_LIBRARIES}} = binary_get_array(\"$2\", \"$1\",\"REQUIRED_LIBRARIES\");
-@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_SUBSYSTEMS}} = binary_get_array(\"$2\", \"$1\",\"REQUIRED_SUBSYSTEMS\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{BUILD_TARGETS}} = config_mk::binary_get_array(\"$2\", \"$1\", \"BUILD_TARGETS\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{INSTALL_PATH}} = config_mk::binary_get_array(\"$2\", \"$1\", \"INSTALL_PATH\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{OBJ_FILES}} = config_mk::binary_get_array(\"$2\", \"$1\", \"OBJ_FILES\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_LIBRARIES}} = config_mk::binary_get_array(\"$2\", \"$1\",\"REQUIRED_LIBRARIES\");
+@{\$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{REQUIRED_SUBSYSTEMS}} = config_mk::binary_get_array(\"$2\", \"$1\",\"REQUIRED_SUBSYSTEMS\");
 #
 \$SMB_BUILD_CTX->{INPUT}{BINARIES}{$1}{ENABLE} = \"$[SMB_BINARY_ENABLE_][$1]\";
 # End Binary $1

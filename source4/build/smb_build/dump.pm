@@ -6,8 +6,12 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+package dump;
+use strict;
+
 use Data::Dumper;
-sub _dump_ctx($)
+
+sub dump_ctx($)
 {
 	my $ctx = shift;
 
@@ -16,8 +20,6 @@ sub _dump_ctx($)
 	print DUMP Dumper($ctx);
 
 	close(DUMP);
-
-	return;
 }
 
-_dump_ctx($SMB_BUILD_CTX);
+1;
