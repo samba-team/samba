@@ -291,7 +291,7 @@ typedef struct
 	BOOL bKernelChangeNotify;
 	int restrict_anonymous;
 	int name_cache_timeout;
-	BOOL client_signing;
+	int client_signing;
 	param_opt_struct *param_opt;
 }
 global;
@@ -687,6 +687,25 @@ static const struct enum_list enum_csc_policy[] = {
 	{-1, NULL}
 };
 
+/* SMB signing types. */
+static const struct enum_list enum_smb_signing_vals[] = {
+	{False, "No"},
+	{False, "False"},
+	{False, "0"},
+	{False, "Off"},
+	{True, "Yes"},
+	{True, "True"},
+	{True, "1"},
+	{True, "On"},
+	{Required, "Required"},
+	{Required, "Mandatory"},
+	{Required, "Force"},
+	{Required, "Forced"},
+	{Required, "Enforced"},
+	{-1, NULL}
+};
+
+
 /* 
    Do you want session setups at user level security with a invalid
    password to be rejected or allowed in as guest? WinNT rejects them
@@ -874,7 +893,7 @@ static struct parm_struct parm_table[] = {
 	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, FLAG_DEVELOPER},
-	{"client signing", P_BOOL, P_GLOBAL, &Globals.client_signing, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client signing", P_ENUM, P_GLOBAL, &Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_DEVELOPER},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},

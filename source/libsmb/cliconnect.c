@@ -541,7 +541,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 	ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
 
 	if (cli->sign_info.negotiated_smb_signing 
-	    || cli->sign_info.mandetory_signing) {
+	    || cli->sign_info.mandatory_signing) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	}
@@ -1013,11 +1013,23 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED))
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)) {
+			/* Fail if signing is mandatory and we don't want to support it. */
+			if (!lp_client_signing()) {
+				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
+				return False;
+			}
 			cli->sign_info.negotiated_smb_signing = True;
+		}
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) && cli->sign_info.allow_smb_signing)
 			cli->sign_info.negotiated_smb_signing = True;
+
+		/* Fail if signing is mandatory and the server doesn't support it. */
+		if (cli->sign_info.mandatory_signing && !(cli->sign_info.negotiated_smb_signing)) {
+			DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
+			return False;
+		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;

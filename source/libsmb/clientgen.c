@@ -261,6 +261,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 	if (lp_client_signing()) 
 		cli->sign_info.allow_smb_signing = True;
+
+	if (lp_client_signing() == Required) 
+		cli->sign_info.mandatory_signing = True;
                                    
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;

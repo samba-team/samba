@@ -72,7 +72,7 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
 static BOOL cli_set_smb_signing_common(struct cli_state *cli) 
 {
 	if (!cli->sign_info.negotiated_smb_signing 
-	    && !cli->sign_info.mandetory_signing) {
+	    && !cli->sign_info.mandatory_signing) {
 		return False;
 	}
 
@@ -96,7 +96,7 @@ static BOOL cli_set_smb_signing_common(struct cli_state *cli)
 
 static BOOL cli_set_smb_signing_real_common(struct cli_state *cli) 
 {
-	if (cli->sign_info.mandetory_signing) {
+	if (cli->sign_info.mandatory_signing) {
 		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
 		cli->sign_info.doing_signing = True;
 	}
@@ -458,4 +458,3 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
 
 	return True;
 }
-
