@@ -1,3 +1,8 @@
+###################################################
+# dump function for IDL structures
+# Copyright tridge@samba.org 2000
+# released under the GNU GPL
+
 package IdlDump;
 
 use Data::Dumper;
