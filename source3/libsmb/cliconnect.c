@@ -1206,9 +1206,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct cli_state *cli;
 	struct in_addr ip;
 	
-	if (!output_cli) {
+	if (!output_cli)
 		DEBUG(0, ("output_cli is NULL!?!"));
-	}
 
 	*output_cli = NULL;
 	
@@ -1217,9 +1216,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 
 again:
 
-	if (!(cli = cli_initialise(NULL))) {
+	if (!(cli = cli_initialise(NULL)))
 		return NT_STATUS_NO_MEMORY;
-	}
 	
 	if (cli_set_port(cli, port) != port) {
 		cli_shutdown(cli);
@@ -1228,11 +1226,9 @@ again:
 
 	ip = *dest_ip;
 	
-	DEBUG(3,("Connecting to host=%s share=%s\n\n", 
-		 dest_host, service));
+	DEBUG(3,("Connecting to host=%s share=%s\n", dest_host, service));
 	
-	if (!cli_connect(cli, dest_host, &ip))
-	{
+	if (!cli_connect(cli, dest_host, &ip)) {
 		DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
 			 nmb_namestr(&called), inet_ntoa(*dest_ip)));
 		cli_shutdown(cli);
@@ -1255,35 +1251,31 @@ again:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!cli_negprot(cli))
-	{
+	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		cli_shutdown(cli);
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user,
-	                       password, pass_len,
-	                       NULL, 0,
-	                       domain))
-	{
+	if (!cli_session_setup(cli, user, password, pass_len, NULL, 0, 
+			       domain)) {
 		DEBUG(1,("failed session setup\n"));
 		nt_status = cli_nt_error(cli);
 		cli_shutdown(cli);
-		if (NT_STATUS_IS_OK(nt_status)) nt_status = NT_STATUS_UNSUCCESSFUL;
+		if (NT_STATUS_IS_OK(nt_status)) 
+			nt_status = NT_STATUS_UNSUCCESSFUL;
 		return nt_status;
 	} 
 
-	if (service)
-	{
+	if (service) {
 		if (!cli_send_tconX(cli, service, service_type,
-				    (char*)password, pass_len))
-		{
+				    (char*)password, pass_len)) {
 			DEBUG(1,("failed tcon_X\n"));
 			nt_status = cli_nt_error(cli);
 			cli_shutdown(cli);
-			if (NT_STATUS_IS_OK(nt_status)) nt_status = NT_STATUS_UNSUCCESSFUL;
+			if (NT_STATUS_IS_OK(nt_status)) 
+				nt_status = NT_STATUS_UNSUCCESSFUL;
 			return nt_status;
 		}
 	}
