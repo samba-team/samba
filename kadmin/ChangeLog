@@ -1,3 +1,8 @@
+1999-09-20  Assar Westerlund  <assar@sics.se>
+
+	* mod.c (mod_entry): print the correct principal name in error
+ 	messages.  From Love <lha@e.kth.se>
+
 1999-09-10  Assar Westerlund  <assar@sics.se>
 
 	* init.c (init): also create `changepw/kerberos'

@@ -1,3 +1,8 @@
+1999-09-26  Assar Westerlund  <assar@sics.se>
+
+	* acl.c (_kadm5_privs_to_string): forgot one strcpy_truncate ->
+ 	strlcpy
+
 1999-09-13  Assar Westerlund  <assar@sics.se>
 
 	* chpass_c.c (kadm5_c_chpass_principal): new _kadm5_client_recv

@@ -1,3 +1,11 @@
+1999-09-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/asn1_print.c: add err.h
+
+	* kdc/config.c (configure): use parse_bytes
+
+	* appl/test/nt_gss_common.c: use the correct header file
+
 1999-09-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/klist.c: add a `--cache' flag

@@ -1,3 +1,7 @@
+1999-09-26  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: add parse_bytes.[ch]
+
 1999-09-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* getarg.3: getarg manpage
