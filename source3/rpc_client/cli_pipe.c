@@ -1233,10 +1233,12 @@ static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *
 
 static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFACE *transfer)
 {
-# if 0	/* JERRY -- apparently ASU forgets to fill in the server pipe name sometimes */
-	if ( hdr_ba->addr.len <= 0)
-		return False;
+	if ( hdr_ba->addr.len == 0) {
+		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));
+	}
+
 		
+# if 0	/* JERRY -- apparently ASU forgets to fill in the server pipe name sometimes */
 	if ( !strequal(hdr_ba->addr.str, pipe_names[pipe_idx].client_pipe) &&
 	     !strequal(hdr_ba->addr.str, pipe_names[pipe_idx].server_pipe) )
 	{
