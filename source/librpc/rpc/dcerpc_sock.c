@@ -335,7 +335,7 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	c->transport.peer_name = sock_peer_name;
 	
 	sock->sock = socket_ctx;
-	sock->server_name = talloc_strdup(sock, server);
+	sock->server_name = strupper_talloc(sock, server);
 	sock->event_ctx = event_context_init(sock);
 	sock->pending_send = NULL;
 	sock->recv.received = 0;
