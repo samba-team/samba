@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -77,6 +77,12 @@
 #endif
 #ifdef HAVE_SHADOW_H
 #include <shadow.h>
+#endif
+#ifdef HAVE_NETGROUP_H
+#include <netgroup.h>
+#endif
+#ifdef HAVE_RPCSVC_YPCLNT_H
+#include <rpcsvc/ypclnt.h>
 #endif
 #ifdef KRB4
 #include <krb.h>
