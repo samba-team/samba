@@ -2727,7 +2727,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	struct nmb_name calling, called;
 	BOOL connected_ok = True;
 
-	ZERO_STRUCT(cli);
+	ZERO_STRUCTP(cli);
 
 	if (!cli_initialise(cli))
 	{
