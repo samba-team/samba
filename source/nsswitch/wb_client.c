@@ -332,7 +332,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
 				sid_to_string(sid_str, psid) ));
 
-		return local_sid_to_uid(psid, puid, sidtype);
+		return local_sid_to_uid(puid, psid, sidtype);
 	}
 
 	/*
@@ -383,7 +383,7 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
 				sid_to_string(sid_str, psid) ));
 
-		return local_sid_to_gid(psid, pgid, sidtype);
+		return local_sid_to_gid(pgid, psid, sidtype);
 	}
 
 	/*
@@ -394,7 +394,7 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a know group (%u)\n",
 				(unsigned int)name_type ));
 
-		return local_sid_to_gid(psid, pgid, sidtype);
+		return local_sid_to_gid(pgid, psid, sidtype);
 	}
 
 	*sidtype = name_type;
