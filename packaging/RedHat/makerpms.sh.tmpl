@@ -22,8 +22,6 @@ USERID=`id -u`
 GRPID=`id -g`
 VERSION='PVERSION'
 SPECFILE="samba3.spec"
-REQUIRESCMD="find-requires"
-
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpm"
 echo The RPM Version on this machine is: $RPMVER
@@ -31,27 +29,22 @@ echo The RPM Version on this machine is: $RPMVER
 case $RPMVER in
     2*)
        echo Building for RPM v2.x or v3.x
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec |\
-          sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
        ;;
     4.0*)
        ## catch rpm v4.0.x first
        echo Building for RPM v4.0
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec |\
-         sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
     4.1*)
        echo Building for RPM v4.1
        RPM="rpmbuild"
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec |\
-         sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
     4.2*)
        echo Building for RPM v4.2
        RPM="rpmbuild"
-       REQUIRESCMD="perl.req"
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec |\
-         sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
     *)
        echo "Unknown RPM version: `rpm --version`"
@@ -64,21 +57,13 @@ esac
 
 ( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
 
-## build the filter script
-
-cat << EOR > filter-requires-samba.sh
-#!/bin/sh
-/usr/lib/rpm/$REQUIRESCMD $* | grep -v "Net::LDAP"
-EOR
-
-chmod 755 filter-requires-samba.sh
-
-/bin/cp -p filter-requires-samba.sh ${SRCDIR}
+/bin/cp -p filter-requires-samba_rh8.sh ${SRCDIR}
+/bin/cp -p filter-requires-samba_rh9.sh ${SRCDIR}
 /bin/cp -av $SPECFILE ${SPECDIR}
 
 echo Getting Ready to build release package
 cd ${SPECDIR}
-${RPM} -ba -v --clean --rmsource $SPECFILE
+${RPM} --define="rpm_version $RPMVER" -ba -v --clean --rmsource $SPECFILE
 
 echo Done.
 
