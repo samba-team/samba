@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -265,7 +265,7 @@ append_char(struct state *state,
 if (long_flag) \
      res = (unsig long)va_arg(arg, unsig long); \
 else if (short_flag) \
-     res = (unsig short)va_arg(arg, unsig short); \
+     res = (unsig short)va_arg(arg, unsig int); \
 else \
      res = (unsig int)va_arg(arg, unsig int)
 
