@@ -996,11 +996,11 @@ static int write_lock_record(TDB_CONTEXT *tdb, tdb_off off)
 	for (i = &tdb->travlocks; i; i = i->next)
 		if (i->off == off)
 			return -1;
-	return tdb_brlock(tdb, off, F_WRLCK, F_SETLKW, 1);
+	return tdb_brlock(tdb, off, F_WRLCK, F_SETLK, 1);
 }
 static int write_unlock_record(TDB_CONTEXT *tdb, tdb_off off)
 {
-	return tdb_brlock(tdb, off, F_UNLCK, F_SETLKW, 0);
+	return tdb_brlock(tdb, off, F_UNLCK, F_SETLK, 0);
 }
 /* fcntl locks don't stack: avoid unlocking someone else's */
 static int unlock_record(TDB_CONTEXT *tdb, tdb_off off)
