@@ -1642,9 +1642,10 @@ fi
 ########################################################
 # now see if we can find the ldap libs in standard paths
 if test x$have_ldap != xyes; then
-AC_CHECK_LIB(ldap, ldap_open, [LIBS="$LIBS -lldap -llber";
+AC_CHECK_LIB(ldap, ldap_open, [LIBS="$LIBS -lldap";
 	AC_DEFINE(HAVE_LDAP)])
 fi
+AC_CHECK_LIB(lber, ber_scanf, [LIBS="$LIBS -llber"])
 
 
 #################################################
