@@ -58,6 +58,7 @@ struct ldap_parse_tree {
 };
 
 #define LDAP_ALL_SEP "()&|=!"
+#define LDAP_CONNECTION_TIMEOUT 10000
 
 /*
   return next token element. Caller frees
@@ -1534,6 +1535,8 @@ struct ldap_connection *new_ldap_connection(void)
 	result->outstanding = NULL;
 	result->searchid = 0;
 	result->search_entries = NULL;
+	result->auth_dn = NULL;
+	result->simple_pw = NULL;
 	return result;
 }
 
@@ -1553,7 +1556,7 @@ BOOL ldap_connect(struct ldap_connection *conn, const char *url)
 
 	putip((char *)&ip, (char *)hp->h_addr);
 
-	conn->sock = open_socket_out(SOCK_STREAM, &ip, conn->port, 10000);
+	conn->sock = open_socket_out(SOCK_STREAM, &ip, conn->port, LDAP_CONNECTION_TIMEOUT);
 
 	return (conn->sock >= 0);
 }
@@ -1753,9 +1756,17 @@ BOOL ldap_setup_connection(struct ldap_connection *conn,
 	msg->messageid = conn->next_msgid++;
 	msg->type = LDAP_TAG_BindRequest;
 	msg->r.BindRequest.version = 3;
-	msg->r.BindRequest.dn = conn->auth_dn;
+	if (conn->auth_dn) {
+		msg->r.BindRequest.dn = conn->auth_dn;
+	} else {
+		msg->r.BindRequest.dn = "";
+	}
 	msg->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
-	msg->r.BindRequest.creds.password = conn->simple_pw;
+	if (conn->simple_pw) {
+		msg->r.BindRequest.creds.password = conn->simple_pw;
+	} else {
+		msg->r.BindRequest.creds.password = "";
+	}
 
 	if ((response = ldap_transaction(conn, msg)) == NULL)
 		return False;
