@@ -1,6 +1,6 @@
-diff -uNr samba-PVERSION/source/Makefile.in samba-kgc/source/Makefile.in
---- samba-PVERSION/source/Makefile.in	Wed Dec  2 14:35:18 1998
-+++ samba-kgc/source/Makefile.in	Wed Dec  2 15:06:02 1998
+diff -uNr samba-orig/source/Makefile.in samba/source/Makefile.in
+--- samba-orig/source/Makefile.in	Tue Jan 19 19:51:09 2000
++++ samba/source/Makefile.in	Wed Jan 20 02:04:50 2000
 @@ -27,7 +27,7 @@
  # the previous releases of Samba
  SBINDIR = @bindir@
@@ -10,17 +10,19 @@ diff -uNr samba-PVERSION/source/Makefile.in samba-kgc/source/Makefile.in
  MANDIR = @mandir@
  
  # The permissions to give the executables
-@@ -36,23 +36,23 @@
- # set these to where to find various files
+@@ -37,25 +37,25 @@
  # These can be overridden by command line switches (see smbd(8))
  # or in smb.conf (see smb.conf(5))
--SMBLOGFILE = $(VARDIR)/log.smb
--NMBLOGFILE = $(VARDIR)/log.nmb
-+SMBLOGFILE = $(VARDIR)/log/samba/log.smb
-+NMBLOGFILE = $(VARDIR)/log/samba/log.nmb
+ LOGFILEBASE = $(VARDIR)
+-SMBLOGFILE = $(LOGFILEBASE)/log.smb
+-NMBLOGFILE = $(LOGFILEBASE)/log.nmb
++SMBLOGFILE = $(LOGFILEBASE)/log/samba/log.smb
++NMBLOGFILE = $(LOGFILEBASE)/log/samba/log.nmb
  CONFIGFILE = $(LIBDIR)/smb.conf
  LMHOSTSFILE = $(LIBDIR)/lmhosts
  DRIVERFILE = $(LIBDIR)/printers.def
+ FORMSFILE = $(LIBDIR)/ntforms.def
+ NTDRIVERSDIR = $(LIBDIR)
  PASSWD_PROGRAM = /bin/passwd
 -SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
 -SMB_PASSGRP_FILE = $(BASEDIR)/private/smbpassgrp
