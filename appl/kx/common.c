@@ -270,11 +270,13 @@ X_UNIX_PATH "%u",
 NULL
 };
 
+#ifdef MAY_HAVE_X11_PIPES
 static char *x_pipes[] = {
 X_PIPE_PATH "%u",
 "/var/X/.X11-pipe/X" "%u",
 NULL
 };
+#endif
 
 static void
 try_mkdir (const char *path)
@@ -311,7 +313,6 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
      try_mkdir (X_PIPE_PATH);
 
      for(dpy = 4; dpy < 256; ++dpy) {
-	 int tcpfd;
 	 char **path;
 	 int tmp;
 
