@@ -107,7 +107,7 @@ typedef struct sam_group_handle {
 		char *name;
 		char *comment;
 		DOM_SID sid;
-		int32 flags; /* specifies if the group is a lokal group or a global group */
+		int32 flags; /* specifies if the group is a local group or a global group */
 		uint32 num_members;
 		PRIVILEGE_SET privileges;
 	} private;
