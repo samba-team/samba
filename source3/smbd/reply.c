@@ -122,7 +122,7 @@ int reply_special(char *inbuf,char *outbuf)
 		
 	case 0x89: /* session keepalive request 
 		      (some old clients produce this?) */
-		CVAL(outbuf,0) = 0x85;
+		CVAL(outbuf,0) = SMBkeepalive;
 		CVAL(outbuf,3) = 0;
 		break;
 		
@@ -132,7 +132,7 @@ int reply_special(char *inbuf,char *outbuf)
 		DEBUG(0,("Unexpected session response\n"));
 		break;
 		
-	case 0x85: /* session keepalive */
+	case SMBkeepalive: /* session keepalive */
 	default:
 		return(0);
 	}

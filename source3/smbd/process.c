@@ -254,7 +254,7 @@ BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
 	do {
 		ret = receive_message_or_smb(inbuf,bufsize,timeout);
 		
-		got_keepalive = (ret && (CVAL(inbuf,0) == 0x85));
+		got_keepalive = (ret && (CVAL(inbuf,0) == SMBkeepalive));
 	} while (ret && got_keepalive);
 
 	return ret;
@@ -867,7 +867,7 @@ void process_smb(char *inbuf, char *outbuf)
 
   if (msg_type == 0)
     show_msg(inbuf);
-  else if(msg_type == 0x85)
+  else if(msg_type == SMBkeepalive)
     return; /* Keepalive packet. */
 
   nread = construct_reply(inbuf,outbuf,nread,max_send);
