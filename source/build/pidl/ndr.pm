@@ -5,7 +5,7 @@
 # Copyright jelmer@samba.org 2004
 # released under the GNU GPL
 
-package IdlParser;
+package NdrParser;
 
 use strict;
 use needed;
@@ -13,9 +13,139 @@ use needed;
 # list of known types
 my %typedefs;
 
+my %type_alignments = 
+    (
+     "char"           => 1,
+     "int8"           => 1,
+     "uint8"          => 1,
+     "short"          => 2,
+     "wchar_t"        => 2,
+     "int16"          => 2,
+     "uint16"         => 2,
+     "long"           => 4,
+     "int32"          => 4,
+     "uint32"         => 4,
+     "dlong"          => 4,
+     "udlong"         => 4,
+     "NTTIME"         => 4,
+     "NTTIME_1sec"    => 4,
+     "time_t"         => 4,
+     "DATA_BLOB"      => 4,
+     "error_status_t" => 4,
+     "WERROR"         => 4,
+     "boolean32"      => 4,
+     "unsigned32"     => 4,
+     "ipv4address"    => 4,
+     "hyper"          => 8,
+     "NTTIME_hyper"   => 8
+     );
+
+sub is_scalar_type($)
+{
+    my $type = shift;
+
+    if (defined $type_alignments{$type}) {
+	    return 1;
+    }
+    if (util::is_enum($type)) {
+	    return 1;
+    }
+    if (util::is_bitmap($type)) {
+	    return 1;
+    }
+
+    return 0;
+}
+
+# determine if an element needs a reference pointer on the wire
+# in its NDR representation
+sub need_wire_pointer($)
+{
+	my $e = shift;
+	if ($e->{POINTERS} && 
+	    !util::has_property($e, "ref")) {
+		return $e->{POINTERS};
+	}
+	return undef;
+}
+
+# determine if an element is a pure scalar. pure scalars do not
+# have a "buffers" section in NDR
+sub is_pure_scalar($)
+{
+	my $e = shift;
+	if (util::has_property($e, "ref")) {
+		return 1;
+	}
+	if (is_scalar_type($e->{TYPE}) && 
+	    !$e->{POINTERS} && 
+	    !util::array_size($e)) {
+		return 1;
+	}
+	return 0;
+}
+
+# see if a variable needs to be allocated by the NDR subsystem on pull
+sub need_alloc($)
+{
+	my $e = shift;
+
+	if (util::has_property($e, "ref")) {
+		return 0;
+	}
+
+	if ($e->{POINTERS} || util::array_size($e)) {
+		return 1;
+	}
+
+	return 0;
+}
+
+
+# determine the C prefix used to refer to a variable when passing to a push
+# function. This will be '*' for pointers to scalar types, '' for scalar
+# types and normal pointers and '&' for pass-by-reference structures
+sub c_push_prefix($)
+{
+	my $e = shift;
+
+	if ($e->{TYPE} =~ "string") {
+		return "";
+	}
+
+	if (is_scalar_type($e->{TYPE}) &&
+	    $e->{POINTERS}) {
+		return "*";
+	}
+	if (!is_scalar_type($e->{TYPE}) &&
+	    !$e->{POINTERS} &&
+	    !util::array_size($e)) {
+		return "&";
+	}
+	return "";
+}
+
+
+# determine the C prefix used to refer to a variable when passing to a pull
+# return '&' or ''
+sub c_pull_prefix($)
+{
+	my $e = shift;
+
+	if (!$e->{POINTERS} && !util::array_size($e)) {
+		return "&";
+	}
+
+	if ($e->{TYPE} =~ "string") {
+		return "&";
+	}
+
+	return "";
+}
+my $res = "";
 sub pidl($)
 {
-	print OUT shift;
+	$res .= shift;
 }
 
 #####################################################################
@@ -184,7 +314,11 @@ sub struct_alignment
 	for my $e (@{$s->{ELEMENTS}}) {
 		my $a = 1;
 
-		$a = align_type($e);
+		if (need_wire_pointer($e)) {
+			$a = 4; 
+		} else { 
+			$a = align_type($e->{TYPE}); 
+		}
 
 		if ($align < $a) {
 			$align = $a;
@@ -209,7 +343,11 @@ sub union_alignment
 			next;
 		}
 
-		$a = align_type($e->{DATA});
+		if (need_wire_pointer($e->{DATA})) {
+			$a = 4;
+		} else {
+			$a = align_type($e->{DATA}->{TYPE});
+		}
 
 		if ($align < $a) {
 			$align = $a;
@@ -225,20 +363,28 @@ sub align_type
 {
 	my $e = shift;
 
-	if (!util::need_wire_pointer($e)
-	    && defined $typedefs{$e->{TYPE}}) {
-		if ($typedefs{$e->{TYPE}}->{DATA}->{TYPE} eq "STRUCT") {
-			return struct_alignment($typedefs{$e->{TYPE}}->{DATA});
-		} elsif ($typedefs{$e->{TYPE}}->{DATA}->{TYPE} eq "UNION") {
-			if (defined $typedefs{$e->{TYPE}}->{DATA}) {
-				return union_alignment($typedefs{$e->{TYPE}}->{DATA});
+	# Scalar type
+	if (my $ret = $type_alignments{$e}) {
+	    return $ret;
+    }
+
+	if (defined $typedefs{$e}) {
+		if ($typedefs{$e}->{DATA}->{TYPE} eq "STRUCT") {
+			return struct_alignment($typedefs{$e}->{DATA});
+		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "UNION") {
+			if (defined $typedefs{$e}->{DATA}) {
+				return union_alignment($typedefs{$e}->{DATA});
 			}
-		} elsif ($typedefs{$e->{TYPE}}->{DATA}->{TYPE} eq "ENUM") {
-			return util::type_align($e);
+		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "ENUM") {
+	    	return align_type(util::enum_type_fn(util::get_enum($e)));
+		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "BITMAP") {
+			return align_type(util::bitmap_type_fn(util::get_bitmap($e)));
 		}
-	} else {
-		return util::type_align($e);
-	}
+	} 
+
+    # it must be an external type - all we can do is guess 
+	# print "Warning: assuming alignment of unknown type '$e' is 4\n";
+    return 4;
 }
 
 #####################################################################
@@ -265,7 +411,7 @@ sub ParseArrayPush($$$)
 		$size = $length;
 	}
 
-	if (util::is_scalar_type($e->{TYPE})) {
+	if (is_scalar_type($e->{TYPE})) {
 		pidl "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));\n";
 	} else {
 		pidl "\t\tNDR_CHECK(ndr_push_array(ndr, $ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
@@ -285,7 +431,7 @@ sub ParseArrayPrint($$)
 		$size = find_size_var($e, $length, $var_prefix);
 	}
 
-	if (util::is_scalar_type($e->{TYPE})) {
+	if (is_scalar_type($e->{TYPE})) {
 		pidl "\t\tndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME}, $size);\n";
 	} else {
 		pidl "\t\tndr_print_array(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_print_fn_t)ndr_print_$e->{TYPE});\n";
@@ -348,7 +494,7 @@ sub ParseArrayPull($$$)
 		$alloc_size = "ndr_get_array_size(ndr, &$var_prefix$e->{NAME})";
 	}
 
-	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
+	if ((need_alloc($e) && !util::is_fixed_array($e)) ||
 	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, $alloc_size);\n";
@@ -369,7 +515,7 @@ sub ParseArrayPull($$$)
 	}
 
 	check_null_pointer($size);
-	if (util::is_scalar_type($e->{TYPE})) {
+	if (is_scalar_type($e->{TYPE})) {
 		pidl "\t\tNDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));\n";
 	} else {
 		pidl "\t\tNDR_CHECK(ndr_pull_array(ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
@@ -384,7 +530,7 @@ sub ParseElementPushScalar($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
-	my $cprefix = util::c_push_prefix($e);
+	my $cprefix = c_push_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
 	start_flags($e);
@@ -397,9 +543,9 @@ sub ParseElementPushScalar($$$)
 		pidl "\tNDR_CHECK(ndr_push_relative1(ndr, $var_prefix$e->{NAME}));\n";
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
-	} elsif (util::need_wire_pointer($e)) {
+	} elsif (need_wire_pointer($e)) {
 		pidl "\tNDR_CHECK(ndr_push_ptr(ndr, $var_prefix$e->{NAME}));\n";
-	} elsif (util::need_alloc($e)) {
+	} elsif (need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPushSwitch($e, $var_prefix, $ndr_flags, $switch);
@@ -418,7 +564,7 @@ sub ParseElementPrintScalar($$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
-	my $cprefix = util::c_push_prefix($e);
+	my $cprefix = c_push_prefix($e);
 
 	if (util::has_property($e, "noprint")) {
 		return;
@@ -454,7 +600,7 @@ sub ParseElementPullSwitch($$$$)
 	my $switch = shift;
 	my $switch_var = find_size_var($e, $switch, $var_prefix);
 
-	my $cprefix = util::c_pull_prefix($e);
+	my $cprefix = c_pull_prefix($e);
 
 	my $utype = $typedefs{$e->{TYPE}};
 
@@ -506,7 +652,7 @@ sub ParseElementPushSwitch($$$$)
 	my($ndr_flags) = shift;
 	my $switch = shift;
 	my $switch_var = find_size_var($e, $switch, $var_prefix);
-	my $cprefix = util::c_push_prefix($e);
+	my $cprefix = c_push_prefix($e);
 
 	check_null_pointer($switch_var);
 
@@ -537,7 +683,7 @@ sub ParseElementPrintSwitch($$$)
 	my($var_prefix) = shift;
 	my $switch = shift;
 	my $switch_var = find_size_var($e, $switch, $var_prefix);
-	my $cprefix = util::c_push_prefix($e);
+	my $cprefix = c_push_prefix($e);
 
 	check_null_pointer_void($switch_var);
 
@@ -552,14 +698,14 @@ sub ParseElementPullScalar($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
-	my $cprefix = util::c_pull_prefix($e);
+	my $cprefix = c_pull_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
 	start_flags($e);
 
 	if (util::is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
-	} elsif (util::need_wire_pointer($e)) {
+	} elsif (need_wire_pointer($e)) {
 		pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
 		pidl "\tif (_ptr_$e->{NAME}) {\n";
 		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
@@ -569,7 +715,7 @@ sub ParseElementPullScalar($$$)
 		pidl "\t} else {\n";
 		pidl "\t\t$var_prefix$e->{NAME} = NULL;\n";
 		pidl "\t}\n";
-	} elsif (util::need_alloc($e)) {
+	} elsif (need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
@@ -594,16 +740,16 @@ sub ParseElementPushBuffer($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
-	my $cprefix = util::c_push_prefix($e);
+	my $cprefix = c_push_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
-	if (util::is_pure_scalar($e)) {
+	if (is_pure_scalar($e)) {
 		return;
 	}
 
 	start_flags($e);
 
-	if (util::need_wire_pointer($e)) {
+	if (need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		if (util::has_property($e, "relative")) {
 			pidl "\t\tNDR_CHECK(ndr_push_relative2(ndr, $var_prefix$e->{NAME}));\n";
@@ -630,7 +776,7 @@ sub ParseElementPushBuffer($$$)
 		pidl "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 
-	if (util::need_wire_pointer($e)) {
+	if (need_wire_pointer($e)) {
 		pidl "\t}\n";
 	}	
 
@@ -643,9 +789,9 @@ sub ParseElementPrintBuffer($$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
-	my $cprefix = util::c_push_prefix($e);
+	my $cprefix = c_push_prefix($e);
 
-	if (util::need_wire_pointer($e)) {
+	if (need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 	}
 	    
@@ -657,7 +803,7 @@ sub ParseElementPrintBuffer($$)
 		pidl "\t\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});\n";
 	}
 
-	if (util::need_wire_pointer($e)) {
+	if (need_wire_pointer($e)) {
 		pidl "\t}\n";
 	}	
 }
@@ -670,16 +816,16 @@ sub ParseElementPullBuffer($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
-	my $cprefix = util::c_pull_prefix($e);
+	my $cprefix = c_pull_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
-	if (util::is_pure_scalar($e)) {
+	if (is_pure_scalar($e)) {
 		return;
 	}
 
 	start_flags($e);
 
-	if (util::need_wire_pointer($e)) {
+	if (need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		if (util::has_property($e, "relative")) {
 			pidl "\t\tstruct ndr_pull_save _relative_save;\n";
@@ -708,7 +854,7 @@ sub ParseElementPullBuffer($$$)
 		pidl "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 
-	if (util::need_wire_pointer($e)) {
+	if (need_wire_pointer($e)) {
 		if (util::has_property($e, "relative")) {
 			pidl "\t\tndr_pull_restore(ndr, &_relative_save);\n";
 		}
@@ -956,7 +1102,7 @@ sub ParseStructPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		if (util::need_wire_pointer($e)) {
+		if (need_wire_pointer($e)) {
 			pidl "\tuint32_t _ptr_$e->{NAME};\n";
 		}
 	}
@@ -1020,7 +1166,7 @@ sub ParseUnionNdrSize($)
 	my $static = fn_prefix($t);
 	my $sizevar;
 
-	pidl "size_t ndr_size_$t->{NAME}(const union $t->{NAME} *r, uint32_t level, int flags)\n";
+	pidl "size_t ndr_size_$t->{NAME}(const union $t->{NAME} *r, int level, int flags)\n";
 	pidl "{\n";
 	if (my $flags = util::has_property($t, "flag")) {
 		pidl "\tflags |= $flags;\n";
@@ -1430,7 +1576,7 @@ sub ParseFunctionPrint($)
 	}
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
 		my $cprefix = "&";
-		$cprefix = "" if (util::is_scalar_type($fn->{RETURN_TYPE})) ; # FIXME: Should really use util::c_push_prefix here
+		$cprefix = "" if (is_scalar_type($fn->{RETURN_TYPE})) ; # FIXME: Should really use util::c_push_prefix here
 		pidl "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", $cprefix"."r->out.result);\n";
 	}
 	pidl "\tndr->depth--;\n";
@@ -1449,7 +1595,7 @@ sub ParseFunctionElementPush($$)
 	my $inout = shift;
 
 	if (util::array_size($e)) {
-		if (util::need_wire_pointer($e)) {
+		if (need_wire_pointer($e)) {
 			pidl "\tNDR_CHECK(ndr_push_ptr(ndr, r->$inout.$e->{NAME}));\n";
 			pidl "\tif (r->$inout.$e->{NAME}) {\n";
 			ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
@@ -1459,6 +1605,7 @@ sub ParseFunctionElementPush($$)
 		}
 	} else {
 		ParseElementPushScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+
 		if ($e->{POINTERS}) {
 			ParseElementPushBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		}
@@ -1507,7 +1654,7 @@ sub ParseFunctionElementPull($$)
 	my $inout = shift;
 
 	if (util::array_size($e)) {
-		if (util::need_wire_pointer($e)) {
+		if (need_wire_pointer($e)) {
 			pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
 			pidl "\tr->$inout.$e->{NAME} = NULL;\n";
 			pidl "\tif (_ptr_$e->{NAME}) {\n";
@@ -1582,7 +1729,7 @@ sub ParseFunctionPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
-		if (util::need_wire_pointer($e)) {
+		if (need_wire_pointer($e)) {
 			pidl "\tuint32_t _ptr_$e->{NAME};\n";
 		}
 	}
@@ -1787,12 +1934,11 @@ sub Parse($$)
 	my($idl) = shift;
 	my($filename) = shift;
 	my $h_filename = $filename;
+	$res = "";
 
 	if ($h_filename =~ /(.*)\.c/) {
 		$h_filename = "$1.h";
 	}
-
-	open(OUT, ">$filename") || die "can't open $filename";    
 
 	pidl "/* parser auto-generated by pidl */\n\n";
 	pidl "#include \"includes.h\"\n";
@@ -1807,7 +1953,7 @@ sub Parse($$)
 
 	RegistrationFunction($idl, $filename);
 
-	close(OUT);
+	return $res;
 }
 
 1;

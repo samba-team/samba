@@ -280,106 +280,12 @@ sub bitmap_type_decl($)
 }
 
 
-my %type_alignments = 
-    (
-     "char"           => 1,
-     "int8"           => 1,
-     "uint8"          => 1,
-     "short"          => 2,
-     "wchar_t"        => 2,
-     "int16"          => 2,
-     "uint16"         => 2,
-     "long"           => 4,
-     "int32"          => 4,
-     "uint32"         => 4,
-     "dlong"          => 4,
-     "udlong"         => 4,
-     "NTTIME"         => 4,
-     "NTTIME_1sec"    => 4,
-     "time_t"         => 4,
-     "DATA_BLOB"      => 4,
-     "error_status_t" => 4,
-     "WERROR"         => 4,
-     "boolean32"      => 4,
-     "unsigned32"     => 4,
-     "ipv4address"    => 4,
-     "hyper"          => 8,
-     "NTTIME_hyper"   => 8
-     );
-
-sub is_scalar_type($)
-{
-    my $type = shift;
-
-    if (defined $type_alignments{$type}) {
-	    return 1;
-    }
-    if (is_enum($type)) {
-	    return 1;
-    }
-    if (is_bitmap($type)) {
-	    return 1;
-    }
-
-    return 0;
-}
-
-# return the NDR alignment for a type
-sub type_align($)
-{
-    my($e) = shift;
-    my $type = $e->{TYPE};
-
-    if (need_wire_pointer($e)) {
-	    return 4;
-    }
-
-    if (is_enum($type)) {
-	    $type = enum_type_fn(get_enum($type));
-    }
-
-    if (my $ret = $type_alignments{$type}) {
-	    return $ret;
-    }
-
-    # it must be an external type - all we can do is guess 
-    return 4;
-}
-
-# determine if an element needs a reference pointer on the wire
-# in its NDR representation
-sub need_wire_pointer($)
-{
-	my $e = shift;
-	if ($e->{POINTERS} && 
-	    !has_property($e, "ref")) {
-		return $e->{POINTERS};
-	}
-	return undef;
-}
-
 # determine if an element is a pass-by-reference structure
 sub is_ref_struct($)
 {
 	my $e = shift;
 	if (!is_scalar_type($e->{TYPE}) &&
 	    has_property($e, "ref")) {
-		return 1;
-	}
-	return 0;
-}
-
-# determine if an element is a pure scalar. pure scalars do not
-# have a "buffers" section in NDR
-sub is_pure_scalar($)
-{
-	my $e = shift;
-	if (has_property($e, "ref")) {
-		return 1;
-	}
-	if (is_scalar_type($e->{TYPE}) && 
-	    !$e->{POINTERS} && 
-	    !array_size($e)) {
 		return 1;
 	}
 	return 0;
@@ -398,63 +304,6 @@ sub array_size($)
 		return $size;
 	}
 	return undef;
-}
-
-# see if a variable needs to be allocated by the NDR subsystem on pull
-sub need_alloc($)
-{
-	my $e = shift;
-
-	if (has_property($e, "ref")) {
-		return 0;
-	}
-
-	if ($e->{POINTERS} || array_size($e)) {
-		return 1;
-	}
-
-	return 0;
-}
-
-# determine the C prefix used to refer to a variable when passing to a push
-# function. This will be '*' for pointers to scalar types, '' for scalar
-# types and normal pointers and '&' for pass-by-reference structures
-sub c_push_prefix($)
-{
-	my $e = shift;
-
-	if ($e->{TYPE} =~ "string") {
-		return "";
-	}
-
-	if (is_scalar_type($e->{TYPE}) &&
-	    $e->{POINTERS}) {
-		return "*";
-	}
-	if (!is_scalar_type($e->{TYPE}) &&
-	    !$e->{POINTERS} &&
-	    !array_size($e)) {
-		return "&";
-	}
-	return "";
-}
-
-
-# determine the C prefix used to refer to a variable when passing to a pull
-# return '&' or ''
-sub c_pull_prefix($)
-{
-	my $e = shift;
-
-	if (!$e->{POINTERS} && !array_size($e)) {
-		return "&";
-	}
-
-	if ($e->{TYPE} =~ "string") {
-		return "&";
-	}
-
-	return "";
 }
 
 # determine if an element has a direct buffers component
