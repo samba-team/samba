@@ -93,6 +93,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	extern struct current_user current_user;
 	pstring fname;
 	int accmode = (flags & O_ACCMODE);
+	int local_flags = flags;
 
 	fsp->fd = -1;
 	fsp->oplock_type = NO_OPLOCK;
@@ -127,8 +128,23 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		}
 	}
 
+	/*
+	 * This little piece of insanity is inspired by the
+	 * fact that an NT client can open a file for O_RDONLY,
+	 * but set the create disposition to FILE_EXISTS_TRUNCATE.
+	 * If the client *can* write to the file, then it expects to
+	 * truncate the file, even though it is opening for readonly.
+	 * Quicken uses this stupid trick in backup file creation...
+	 * Thanks *greatly* to "David W. Chapman Jr." <dwcjr@inethouston.net>
+	 * for helping track this one down. It didn't bite us in 2.0.x
+	 * as we always opened files read-write in that release. JRA.
+	 */
+
+	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC))
+		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
+
 	/* actually do the open */
-	fsp->fd = fd_open(conn, fname, flags, mode);
+	fsp->fd = fd_open(conn, fname, local_flags, mode);
 
 	if (fsp->fd == -1)  {
 		DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
@@ -647,22 +663,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 			flags = O_RDWR; 
 			break;
 		default:
-			/*
-			 * This little piece of insanity is inspired by the
-			 * fact that an NT client can open a file for O_RDONLY,
-			 * but set the create disposition to FILE_EXISTS_TRUNCATE.
-			 * If the client *can* write to the file, then it expects to
-			 * truncate the file, even though it is opening for readonly.
-			 * Quicken uses this stupid trick in backup file creation...
-			 * Thanks *greatly* to "David W. Chapman Jr." <dwcjr@inethouston.net>
-			 * for helping track this one down. It didn't bite us in 2.0.x
-			 * as we always opened files read-write in that release. JRA.
-			 */
-
-			if (flags2 & O_TRUNC)
-				flags = O_RDWR; 
-			else
-				flags = O_RDONLY;
+			flags = O_RDONLY;
 			break;
 	}
 
