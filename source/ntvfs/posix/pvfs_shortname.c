@@ -93,6 +93,10 @@
 
 #define FLAG_CHECK(c, flag) (ctx->char_flags[(uint8_t)(c)] & (flag))
 
+static const char *reserved_names[] = 
+{ "AUX", "CON", "COM1", "COM2", "COM3", "COM4",
+  "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
+
 
 /* 
    hash a string of the specified length. The string does not need to be
@@ -367,11 +371,8 @@ static BOOL is_reserved_name(struct pvfs_mangle_context *ctx, const char *name)
 	    FLAG_CHECK(name[3], FLAG_POSSIBLE4)) {
 		/* a likely match, scan the lot */
 		int i;
-		for (i=0; ctx->reserved_names[i]; i++) {
-			int len = strlen(ctx->reserved_names[i]);
-			/* note that we match on COM1 as well as COM1.foo */
-			if (strncasecmp(name, ctx->reserved_names[i], len) == 0 &&
-			    (name[len] == '.' || name[len] == 0)) {
+		for (i=0; reserved_names[i]; i++) {
+			if (strcasecmp(name, reserved_names[i]) == 0) {
 				return True;
 			}
 		}
@@ -387,10 +388,6 @@ static BOOL is_reserved_name(struct pvfs_mangle_context *ctx, const char *name)
 */
 static BOOL is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
 {
-	const char *dot_pos = NULL;
-	BOOL alldots = True;
-	size_t numdots = 0;
-
 	while (*name) {
 		size_t c_size;
 		codepoint_t c = next_codepoint(name, &c_size);
@@ -405,23 +402,7 @@ static BOOL is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
 		if (FLAG_CHECK(c, FLAG_ILLEGAL)) {
 			return False;
 		}
-		if (name[0] == '.') {
-			dot_pos = name;
-			numdots++;
-		} else {
-			alldots = False;
-		}
-
 		name += c_size;
-	}
-
-	if (dot_pos) {
-		if (alldots && (numdots == 1 || numdots == 2))
-			return True; /* . or .. is a valid name */
-
-		/* A valid long name cannot end in '.' */
-		if (dot_pos[1] == '\0')
-			return False;
 	}
 
 	return True;
@@ -567,10 +548,6 @@ static void init_tables(struct pvfs_mangle_context *ctx)
 	const char *basechars = MANGLE_BASECHARS;
 	int i;
 	/* the list of reserved dos names - all of these are illegal */
-	const char *reserved_names[] = 
-		{ "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
-		  "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
-
 
 	ZERO_STRUCT(ctx->char_flags);
 
@@ -598,17 +575,15 @@ static void init_tables(struct pvfs_mangle_context *ctx)
 		ctx->base_reverse[(uint8_t)basechars[i]] = i;
 	}	
 
-	ctx->reserved_names = reserved_names;
-
 	/* fill in the reserved names flags. These are used as a very
 	   fast filter for finding possible DOS reserved filenames */
-	for (i=0; ctx->reserved_names[i]; i++) {
+	for (i=0; reserved_names[i]; i++) {
 		unsigned char c1, c2, c3, c4;
 
-		c1 = (unsigned char)ctx->reserved_names[i][0];
-		c2 = (unsigned char)ctx->reserved_names[i][1];
-		c3 = (unsigned char)ctx->reserved_names[i][2];
-		c4 = (unsigned char)ctx->reserved_names[i][3];
+		c1 = (unsigned char)reserved_names[i][0];
+		c2 = (unsigned char)reserved_names[i][1];
+		c3 = (unsigned char)reserved_names[i][2];
+		c4 = (unsigned char)reserved_names[i][3];
 
 		ctx->char_flags[c1] |= FLAG_POSSIBLE1;
 		ctx->char_flags[c2] |= FLAG_POSSIBLE2;
@@ -701,4 +676,13 @@ char *pvfs_mangled_lookup(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return talloc_steal(mem_ctx, ret);
 	}
 	return NULL;
+}
+
+
+/*
+  look for a DOS reserved name
+*/
+BOOL pvfs_is_reserved_name(struct pvfs_state *pvfs, const char *name)
+{
+	return is_reserved_name(pvfs->mangle_ctx, name);
 }

@@ -84,6 +84,9 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 		components[i] = p;
 		p = strchr(p, '/');
 		if (p) *p++ = 0;
+		if (pvfs_is_reserved_name(pvfs, components[i])) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	partial_name = talloc_strdup(name, components[0]);
