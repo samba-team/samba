@@ -1,3 +1,13 @@
+Fri Aug 15 00:09:37 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c (tgs_check_autenticator): Return error code
+
+Thu Aug 14 21:29:03 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c (tgs_make_reply): Fix endtime in reply.
+
+	* lib/krb5/store_emem.c: Fix reallocation bug.
+
 Tue Aug 12 01:29:46 1997  Assar Westerlund  <assar@sics.se>
 
 	* appl/telnet/libtelnet/kerberos5.c, appl/popper/pop_init.c,
