@@ -1,3 +1,5 @@
+@c $Id$
+
 @node Windows 2000 compatability, Acknowledgments, Migration, Top
 @comment  node-name,  next,  previous,  up
 @chapter Windows 2000 compatability
@@ -128,12 +130,10 @@ similar to the following if you have it, at least while adding the
 principals that are going to share keys with Windows 2000.
 
 @example
-	[kadmin]use_v4_salt=yes
+	[kadmin]default_keys = des3:pw-salt des:pw-salt des:pw-salt:
 @end example
 
 You must also set:
-
-@comment XXX Should add [kadmin]default_keys = des3:pw-salt des:pw-salt des:pw-salt: ?
 
 Once that is also done, you can add the required inter-realm keys:
 
