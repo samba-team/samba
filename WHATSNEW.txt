@@ -1,6 +1,54 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha16
+- LDAP schema updates (jerry)
+- initial ADS LDAP printer advertising (jmcd)
+- spoolss and printing updates (tpot, jerry)
+  (the is the major update in this alpha, and work continues)
+- Winbindd connection cache improvements (abartlet)
+- spnego segfault fixes (abartlet)
+- net ads segfault fixes ( Alexander Bokovoy <a.bokovoy@sam-solutions.net>)
+- header cleanups (tpot)
+- Serialise domain auth requests - win2k bug (tridge)
+- fix winbind talloced memory leak (dleducq@arkoon.net, tridge)
+- call unmangle in don_unmangle (abartlet)
+- UTF8 Charset functions - for ADS LDAP calls (Hasch@t-online.de)
+- Fix security tab for mapped drives on unicode clients (tridge)
+- Better configure tests for snprintf and immidiate structures (abartlet)
+- allow 'passdb backend = plugin : /path/to/plugin.so : plguin args'
+  (loads a passdb module) (Jelmer Vernooij <jelmer@nl.linux.org>)
+- change the way we store our domain join info - you will need to
+rejoin the domain (tridge)
+- xcopy /o fixes (tridge)
+- fix the 'convert_string' level 0 debugs.
+- Patch for Domain users not showing up from "Ivan Zhakov" <vunny@mail.ru>
+- tdb backup support
+- The beginning of trusted and trusting domain support - net commands
+  (Rafal Szczesniak <mimir@diament.ists.pwr.wroc.pl>)
+- nmbd signal processing fixes (jra)
+- lseek-on-pipe support (jra)
+- Allow Samba to trust NT4 Domains (abartlet)
+- LDAPsam updates (abartlet):
+    - Now runtime selectable (when configured)
+    - ldap user suffix and ldap group suffix support.
+    - non unix account support
+    - select with 'passdb backend = ldapsam' or 'passdb backend =
+    ldapsam_nua'
+- start to allow NT4 domains to trust Samba, netlogon fixes (abartlet)
+- make default unix charset UTF8 (tridge)
+- Fix SIGSEGV on error message when trying to add a user to smbpasswd
+file without a unix account (jmcd)
+- better detection of dead ADS connections, so we have some chance of
+reconnecting (tridge)
+- removed bogus prepend_domain() call which was screwing up getpwuid()
+with the new default domain code
+- Domain/workstation SID fixes.
+- patch from Alexey Kotovich <a.kotovich@sam-solutions.net> that adds 
+  the security decsriptor code for ADS workstation accounts. 
+  (allow self password change, self remove) 
+  (after much review and disscussion with abartlet and tridge)
+
 Changes in alpha15
 - Improvements in pam_winbind/winbindd_pam.c: (abartlet)
   - Much better error reporting
