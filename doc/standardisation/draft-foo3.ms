@@ -74,9 +74,9 @@ Distribution of this memo is unlimited.  Please send comments to the
 <cat-ietf@mit.edu> mailing list.
 .HH 1 "Abstract"
 .lp
-Kerberos and firewalls both deal with security, but because of the
-anti-social nature of firewalls, they don't get along very well. This
-memo discusses ways to use Kerberos in a firewalled environment.
+Kerberos and firewalls both deal with security, but doesn't get along
+very well. This memo discusses ways to use Kerberos in a firewalled
+environment.
 .HH 1 "Introduction"
 .lp
 Kerberos[RFC1510]
@@ -94,15 +94,15 @@ with firewalls are many, but to name a few:
 .np
 Firewalls usually doesn't allow people to use UDP. The reason for this
 is that UDP is (by firewall advocates) considered insecure. This
-belief is probably based on the fact that many \(*lqinsecure\*(rq
+belief is probably based on the fact that many \*(lqinsecure\*(rq
 protocols (like NFS) use UDP. UDP packets are also considered easy to
 fake.
 .np
 Firewalls usually doesn't allow people to connect to arbitrary ports,
 such as the ports used when talking to the KDC.
 .np
-In many non-computer organisations, the computer staff isn't what you
-would call a \(*lqwizards\*(rq; a typical case an academic
+In many non-computer organisations, the computer staff isn't what
+you'd call \*(lqwizards\*(rq; a typical case is an academic
 institution, where someone is taking care of the computers part time,
 and is doing research the rest of the time. Adding a complex device
 like a firewall to an environment like this, often leads to poorly run
@@ -157,8 +157,8 @@ hitch a ride on some other protocol, that's already beeing handled by
 the proxy.
 .)f
 .lp
-This type of firewall might also cause extra trouble when used with
-kerberised versions of protocols that the proxy understands, in
+The last type of firewall might also cause extra trouble when used
+with kerberised versions of protocols that the proxy understands, in
 addition to the ones mentioned below. This is the case with the FTP
 Security Extensions [RFC2228],
 .(d
