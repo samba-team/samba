@@ -1718,6 +1718,9 @@ void cli_shutdown(struct cli_state *cli)
 {
 	if (cli->outbuf) free(cli->outbuf);
 	if (cli->inbuf) free(cli->inbuf);
+#ifdef USE_SSL
+    if (cli->fd != -1) sslutil_disconnect(cli->fd);
+#endif /* USE_SSL */
 	if (cli->fd != -1) close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
 }

@@ -5017,25 +5017,6 @@ int unistrcpy(char *dst, char *src)
 }
 
 /*******************************************************************
-Create  a string of size size+1 (for the null)
-*******************************************************************/
-char *string_create_s(int size)
-{
-  char *tmp;
-
-  tmp = (char *)malloc(size+1);
-
-  if (tmp == NULL) {
-
-    DEBUG(0, ("Out of memory in string_create_s\n"));
-
-  }
-
-  return(tmp);
-
-}
-
-/*******************************************************************
 safe string copy into a known length string. maxlength does not
 include the terminating zero.
 ********************************************************************/
