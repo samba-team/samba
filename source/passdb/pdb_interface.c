@@ -232,12 +232,26 @@ static NTSTATUS context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sa
 static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	const char *lm_pw, *nt_pw;
+	uint16 acb_flags;
 
 	if ((!context) || (!context->pdb_methods)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return ret;
 	}
 
+	/* disable acccounts with no passwords (that has not 
+	   been allowed by the  ACB_PWNOTREQ bit */
+	
+	lm_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_lanman_passwd( sam_acct );
+	acb_flags = pdb_get_acct_ctrl( sam_acct );
+	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
+		acb_flags |= ACB_DISABLED;
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
+		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
+	}
+	
 	/** @todo  This is where a 're-read on add' should be done */
 	/* We now add a new account to the first database listed. 
 	 * Should we? */
@@ -248,6 +262,8 @@ static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT
 static NTSTATUS context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	const char *lm_pw, *nt_pw;
+	uint16 acb_flags;
 
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
@@ -259,6 +275,18 @@ static NTSTATUS context_update_sam_account(struct pdb_context *context, SAM_ACCO
 		return ret;
 	}
 
+	/* disable acccounts with no passwords (that has not 
+	   been allowed by the  ACB_PWNOTREQ bit */
+	
+	lm_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_lanman_passwd( sam_acct );
+	acb_flags = pdb_get_acct_ctrl( sam_acct );
+	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
+		acb_flags |= ACB_DISABLED;
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
+		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
+	}
+	
 	/** @todo  This is where a 're-read on update' should be done */
 
 	return sam_acct->methods->update_sam_account(sam_acct->methods, sam_acct);
@@ -708,48 +736,20 @@ BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
-	const char *lm_pw, *nt_pw;
-	uint16 acb_flags;
 
 	if (!pdb_context) {
 		return False;
 	}
 	
-	/* disable acccounts with no passwords (that has not 
-	   been allowed by the  ACB_PWNOTREQ bit */
-
-	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_lanman_passwd( sam_acct );
-	acb_flags = pdb_get_acct_ctrl( sam_acct );
-	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
-		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
-		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
-	}
-
 	return NT_STATUS_IS_OK(pdb_context->pdb_add_sam_account(pdb_context, sam_acct));
 }
 
 BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
-	const char *lm_pw, *nt_pw;
-	uint16 acb_flags;
 
 	if (!pdb_context) {
 		return False;
-	}
-
-	/* disable acccounts with no passwords (that has not 
-	   been allowed by the  ACB_PWNOTREQ bit */
-	
-	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_lanman_passwd( sam_acct );
-	acb_flags = pdb_get_acct_ctrl( sam_acct );
-	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
-		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
-		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_update_sam_account(pdb_context, sam_acct));
