@@ -36,6 +36,7 @@ interface epmapper
 	const string NDR_GUID_VERSION = 2;
 
 	const uint32 EPMAPPER_PORT = 135;
+	const string EPMAPPER_IDENTIFIER = "EPMAPPER";
 
 	typedef struct {
 		GUID uuid;
