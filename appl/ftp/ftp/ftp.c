@@ -583,7 +583,7 @@ set_buffer_size(int fd, int read)
     size_t size = 1048576;
     while(size >= 131072 && 
 	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
-		     &size, sizeof(size)) < 0)
+		     (void *)&size, sizeof(size)) < 0)
 	size /= 2;
 #endif
 }
