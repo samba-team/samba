@@ -1,3 +1,7 @@
+2001-01-09  Assar Westerlund  <assar@sics.se>
+
+	* appl/kf/kfd.c (proto): use krb5_rd_cred2 instead of krb5_rd_cred
+
 2001-01-05  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.c: call a time `time', and not `seconds'

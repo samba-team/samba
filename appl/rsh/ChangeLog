@@ -1,3 +1,8 @@
+2001-01-09  Assar Westerlund  <assar@sics.se>
+
+	* rshd.c (save_krb5_creds): use krb5_rd_cred2 instead of
+	krb5_rd_cred
+
 2000-12-31  Assar Westerlund  <assar@sics.se>
 
 	* rshd.c (main): handle krb5_init_context failure consistently
