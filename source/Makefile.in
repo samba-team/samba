@@ -1028,7 +1028,7 @@ bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
 
 bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
 bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)

@@ -66,8 +66,12 @@ static struct charset_functions *charsets = NULL;
 static struct charset_functions *find_charset_functions(const char *name) 
 {
 	struct charset_functions *c = charsets;
+	pstring stripped;
+
+	module_path_get_name(name, stripped);
+	
 	while(c) {
-		if (strcasecmp(name, c->name) == 0)return c;
+		if (strequal(stripped, c->name) == 0)return c;
 		c = c->next;
 	}
 
@@ -103,9 +107,8 @@ void lazy_initialize_iconv(void)
 		initialized = True;
 		for(i = 0; builtin_functions[i].name; i++) 
 			smb_register_charset(&builtin_functions[i]);
+		static_init_charset;
 	}
-
-	static_init_charset;
 }
 
 /* if there was an error then reset the internal state,

@@ -132,7 +132,7 @@ void module_path_get_name(char *path, pstring name)
 	char *s;
 
 	/* First, make the path relative */
-	s = strrchr_m(path, '/');
+	s = strrchr(path, '/');
 	if(s) pstrcpy(name, s+1);
 	else pstrcpy(name, path);
 	
