@@ -323,6 +323,7 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
         errno = 0;
         continue;
       }
+	  break;
     }
 
     if (wpid < 0) {

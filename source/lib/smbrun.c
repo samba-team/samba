@@ -115,9 +115,17 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 #else
 	/* in this newer method we will exec /bin/sh with the correct
 	   arguments, after first setting stdout to point at the file */
-	
+
+	/*
+	 * We need to temporarily stop CatchChild from eating
+	 * SIGCLD signals as it also eats the exit status code. JRA.
+	 */
+
+	CatchChildLeaveStatus();
+                                   	
 	if ((pid=fork()) < 0) {
 		DEBUG(0,("smbrun: fork failed with error %s\n", strerror(errno) ));
+		CatchChild(); 
 		return errno;
     }
 
@@ -128,13 +136,18 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 		int status=0;
 		pid_t wpid;
 
+		
 		/* the parent just waits for the child to exit */
 		while((wpid = sys_waitpid(pid,&status,0)) < 0) {
 			if(errno == EINTR) {
 				errno = 0;
 				continue;
 			}
+			break;
 		}
+
+		CatchChild(); 
+
 		if (wpid != pid) {
 			DEBUG(2,("waitpid(%d) : %s\n",pid,strerror(errno)));
 			return -1;
@@ -142,6 +155,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 		return status;
 	}
 	
+	CatchChild(); 
 	
 	/* we are in the child. we exec /bin/sh to do the work for us. we
 	   don't directly exec the command we want because it may be a
