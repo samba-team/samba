@@ -1204,6 +1204,20 @@ krb5_error_code
 krb5_get_default_principal (krb5_context context,
 			    krb5_principal *princ);
 
+krb5_error_code
+krb5_change_password (krb5_context	context,
+		      krb5_creds	*creds,
+		      char		*newpw,
+		      int		*result_code,
+		      krb5_data		*result_code_string,
+		      krb5_data		*result_string);
+
+#define KRB5_KPASSWD_SUCCESS	0
+#define KRB5_KPASSWD_MALFORMED	0
+#define KRB5_KPASSWD_HARDERROR	0
+#define KRB5_KPASSWD_AUTHERROR	0
+#define KRB5_KPASSWD_SOFTERROR	0
+
 /* XXX these are glue functions and really don't belong here */
 
 krb5_error_code krb5_principal2principalname (PrincipalName *p, 
