@@ -945,25 +945,12 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 	if ( (grp=getgrgid(gid)) == NULL)
 		return False;
 
-	/*
-	 * make a group map from scratch if doesn't exist.
-	 */
-	
 	become_root();
 	ret = pdb_getgrgid(map, gid);
 	unbecome_root();
 	
 	if ( !ret ) {
-		map->gid=gid;
-		map->sid_name_use=SID_NAME_ALIAS;
-
-		/* interim solution until we have a last RID allocated */
-
-		sid_copy(&map->sid, get_global_sam_sid());
-		sid_append_rid(&map->sid, pdb_gid_to_group_rid(gid));
-
-		fstrcpy(map->nt_name, grp->gr_name);
-		fstrcpy(map->comment, "Local Unix Group");
+		return False;
 	}
 	
 	return True;
