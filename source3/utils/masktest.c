@@ -379,14 +379,16 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	DEBUG(0,("seed=%d\n", seed));
-	srandom(seed);
 
 	cli = connect_one(share);
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);
 	}
+
+	/* need to init seed after connect as clientgen uses random numbers */
+	DEBUG(0,("seed=%d\n", seed));
+	srandom(seed);
 
 	test_mask(argc, argv, cli);
 
