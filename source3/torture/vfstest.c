@@ -207,7 +207,8 @@ static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	talloc_destroy(global_ctx);
 	global_ctx = NULL;
 	vfs->data = NULL;
-	vfs->data_size = NULL;
+	vfs->data_size = 0;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
@@ -420,27 +421,13 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
-	extern pstring 		global_myname;
-	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
-	int 			olddebug;
 	static char		*cmdstr = "";
-	const char *server;
-	struct cli_state	*cli;
-	fstring 		password="",
-				username="",
-				domain="";
-	static char 		*opt_authfile=NULL,
-				*opt_username=NULL,
-				*opt_domain=NULL,
-				*opt_configfile=NULL,
-				*opt_logfile=NULL;
+	static char *opt_logfile=NULL;
 	static int		opt_debuglevel;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
-	struct in_addr 		server_ip;
-	NTSTATUS 		nt_status;
 	extern BOOL 		AllowDebugChange;
 	static struct vfs_state vfs;
 	int i;
