@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smbd)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smbd)(8)(23 Oct 1998)(Samba)(SAMBA)
 
 manpagename(smbd)(server to provide SMB/CIFS services to clients)
 
