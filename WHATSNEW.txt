@@ -2,8 +2,8 @@
                            June 7 2003
                   ==============================
 
-This is a beta of Samba 3.0. This is a non-production release intended 
-for testing purposes.  Use at your own risk. 
+This is a beta release of Samba 3.0.0. This is a non-production release 
+intended for testing purposes.  Use at your own risk. 
 
 The purpose of this beta release is to get wider testing of the major
 new pieces of code in the current Samba 3.0 development tree. We have
