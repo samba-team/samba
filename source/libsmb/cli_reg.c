@@ -25,15 +25,6 @@
 
 #include "includes.h"
 
-/* Opens a SMB connection to the WINREG pipe */
-
-struct cli_state *cli_winreg_initialise(struct cli_state *cli, 
-                                        char *system_name,
-                                        struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_WINREG, creds);
-}
-
 /* Shutdown a server */
 
 NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,

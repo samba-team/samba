@@ -38,19 +38,6 @@
  * security authority", which is half of a password database.
  **/
 
-/** Opens a SMB connection and connects to the LSARPC pipe.
- *
- * @param cli Uninitialised client handle.
- * @param system_name NETBIOS name of the machine to connect to.
- * @param creds User credentials to connect as.
- * @returns Initialised client handle.
- */
-struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
-				     struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_LSARPC, creds);
-}
-
 /** Open a LSA policy handle
  *
  * @param cli Handle on an initialised SMB connection */

@@ -24,14 +24,6 @@
 
 #include "includes.h"
 
-/* Opens a SMB connection to the SAMR pipe */
-
-struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
-				      struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_SAMR, creds);
-}
-
 /* Connect to SAMR database */
 
 NTSTATUS cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx, 

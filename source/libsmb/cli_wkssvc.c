@@ -24,24 +24,6 @@
 #include "includes.h"
 
 /**
- * Opens a SMB connection to the wkssvc pipe
- *
- * @param cli client structure (not yet initialised)
- * @param system_name called rpc server name
- * @param creds user credentials
- *
- * @return client structure with opened pipe
- **/
-
-struct cli_state *cli_wkssvc_initialise(struct cli_state *cli, 
-					char *system_name,
-					struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_WKSSVC, creds);
-}
-
-
-/**
  * WksQueryInfo rpc call (like query for server's capabilities)
  *
  * @param initialised client structure with \PIPE\wkssvc opened
