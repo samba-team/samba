@@ -93,6 +93,10 @@ SMB_OFF_T dos_file_size(char *file_name);
 int dos_ChDir(char *path);
 char *dos_GetWd(char *path);
 
+/*The following definitions come from  lib/error.c  */
+
+uint32 map_nt_error_from_unix(int unix_error);
+
 /*The following definitions come from  lib/fault.c  */
 
 void fault_setup(void (*fn)(void *));
@@ -1709,8 +1713,7 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
-BOOL print_access_check(struct current_user *user, int snum,
-			uint32 required_access);
+BOOL print_access_check(struct current_user *user, int snum, int access_type);
 BOOL print_time_access_check(int snum);
 #endif
 
