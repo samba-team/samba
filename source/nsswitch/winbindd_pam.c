@@ -108,9 +108,9 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	
 		sid_copy(&all_sids[j], &(info3->dom_sid.sid));
 		
-		if (!sid_append_rid(&all_sids[j], info3->gids[j].g_rid)) {
+		if (!sid_append_rid(&all_sids[j], info3->gids[i].g_rid)) {
 			DEBUG(3,("could not append additional group rid 0x%x\n",
-				info3->gids[j].g_rid));			
+				info3->gids[i].g_rid));			
 				
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -125,7 +125,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < info3->num_other_sids; i++) {
 		sid_copy(&all_sids[info3->num_groups2 + i + 2],
-			 &info3->other_sids[j].sid);
+			 &info3->other_sids[i].sid);
 		j++;
 	}
 
