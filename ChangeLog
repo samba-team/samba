@@ -1,3 +1,28 @@
+Wed Mar 24 04:02:03 1999  Assar Westerlund  <assar@sics.se>
+
+	* admin/srvcreate.c: new file. contributed by Daniel Kouril
+ 	<kouril@informatics.muni.cz>
+
+	* admin/ktutil.c: srvcreate: new command
+
+	* kuser/klist.c: add support for printing AFS tokens
+
+	* kuser/kdestroy.c: add support for destroying v4 tickets and AFS
+ 	tokens.  based on code by Love <lha@stacken.kth.se>
+
+	* kuser/Makefile.am (kdestroy_LDADD, klist_LDADD): more libraries
+
+	* configure.in: sys/ioccom.h: test for
+
+	* kuser/klist.c (main): don't print `no ticket file' with --test.
+  	From: Love <lha@e.kth.se>
+
+	* kpasswd/kpasswdd.c (doit): more braces to make gcc happy
+
+	* kdc/connect.c (init_socket): get rid of a stupid warning
+
+	* include/bits.c (my_strupr): cast away some stupid warnings
+
 Tue Mar 23 00:00:45 1999  Assar Westerlund  <assar@sics.se>
 
 	* lib/kadm5/Makefile.am (install_build_headers): recover from make
