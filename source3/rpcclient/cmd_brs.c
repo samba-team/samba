@@ -33,8 +33,6 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
-
 extern FILE* out_hnd;
 
 
@@ -43,7 +41,6 @@ Browser get info query
 ****************************************************************************/
 void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
 	fstring dest_brs;
 	BRS_INFO_100 ctr;
 	uint32 info_level = 100;
@@ -64,17 +61,8 @@ void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 	DEBUG(4,("cmd_brs_query_info: server:%s info level: %d\n",
 				dest_brs, info_level));
 
-	DEBUG(5, ("cmd_brs_query_info: smb_cli->fd:%d\n", smb_cli->fd));
-
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_BROWSER, &nt_pipe_fnum) : False;
-
 	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_brs_query_info(smb_cli, nt_pipe_fnum,
-				dest_brs, info_level, &ctr) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	res = res ? brs_query_info( dest_brs, info_level, &ctr) : False;
 
 	if (res)
 	{
