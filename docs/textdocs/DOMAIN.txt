@@ -1,5 +1,5 @@
 !==
-!== DOMAIN.txt for Samba release 2.0.0 15 Jan 1999
+!== DOMAIN.txt for Samba release 2.0.1 06 Feb 1999
 !==
 Contributor:	Samba Team
 Updated:	December 4, 1998 (John H Terpstra)

@@ -1,5 +1,5 @@
 !==
-!== NTDOMAIN.txt for Samba release 2.0.0 15 Jan 1999
+!== NTDOMAIN.txt for Samba release 2.0.1 06 Feb 1999
 !==
 Contributor:	Luke Kenneth Casson Leighton (samba-bugs@samba.org)
 		Copyright (C) 1997 Luke Kenneth Casson Leighton
