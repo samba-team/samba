@@ -378,13 +378,11 @@ char *StrCpy(char *dest,char *src)
 {
   char *d = dest;
 
-#if AJT
   /* I don't want to get lazy with these ... */
   if (!dest || !src) {
-    DEBUG(0,("ERROR: NULL StrCpy() called!\n"));
-    ajt_panic();
+	  DEBUG(0,("ERROR: NULL StrCpy() called!\n"));
+	  smb_panic("invalid StrCpy");
   }
-#endif
 
   if (!dest) return(NULL);
   if (!src) {
@@ -4320,15 +4318,17 @@ char *gidtoname(int gid)
 	return(name);
 }
 
-#if AJT
 /*******************************************************************
-my own panic function - not suitable for general use
+something really nasty happened - panic!
 ********************************************************************/
-void ajt_panic(void)
+void smb_panic(char *why)
 {
-	system("/usr/bin/X11/xedit -display :0 /tmp/ERROR_FAULT");
+	char *cmd = lp_panic_action();
+	if (cmd && *cmd) {
+		system(cmd);
+		exit(1);
+	}
 }
-#endif
 
 
 /*******************************************************************
