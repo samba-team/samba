@@ -42,12 +42,13 @@
 RCSID("$Id$");
 
 struct encryption_type {
-    int type;
+    krb5_enctype type;
     size_t blocksize;
     size_t confoundersize;
     void (*encrypt)(void *, size_t, const krb5_keyblock *, int);
     krb5_keytype keytype;
     krb5_cksumtype cksumtype;
+    const char *name;
 };
 
 static void
@@ -77,22 +78,39 @@ DES_encrypt_key_ivec(void *p, size_t len,
     memcpy(&key, keyblock->keyvalue.data, sizeof(key));
     des_set_key(&key, schedule);
     des_cbc_encrypt(p, p, len, schedule, &key, encrypt);
+    memset(&key, 0, sizeof(key));
+    memset(&schedule, 0, sizeof(schedule));
 }
 
 static void
-DES3_encrypt(void *p, size_t len, const krb5_keyblock *keyblock, int encrypt)
+DES3_encrypt_null_ivec(void *p, size_t len, 
+		       const krb5_keyblock *keyblock, int encrypt)
 {
-    abort ();
+    des_cblock key;
+    des_key_schedule schedule[3];
+    int i;
+    for(i = 0; i < 3; i++){
+	memcpy(&key, (char*)keyblock->keyvalue.data + 8*i, 8);
+	des_set_key(&key, schedule[i]);
+    }
+    memset(&key, 0, sizeof(key));
+    des_ede3_cbc_encrypt(p, p, len, schedule[0], schedule[1], schedule[2],
+			 &key, encrypt);
+    memset(&schedule, 0, sizeof(schedule));
 }
 
 static struct encryption_type em [] = {
     { ETYPE_DES_CBC_CRC, 8, 8, DES_encrypt_key_ivec,
-      KEYTYPE_DES,  CKSUMTYPE_CRC32 },
+      KEYTYPE_DES,  CKSUMTYPE_CRC32, "des-cbc-crc" },
     { ETYPE_DES_CBC_MD4, 8, 8, DES_encrypt_null_ivec,
-      KEYTYPE_DES,  CKSUMTYPE_RSA_MD4 },
+      KEYTYPE_DES,  CKSUMTYPE_RSA_MD4, "des-cbc-md4" },
     { ETYPE_DES_CBC_MD5, 8, 8, DES_encrypt_null_ivec,
-      KEYTYPE_DES,  CKSUMTYPE_RSA_MD5 },
-    { ETYPE_NULL,        1, 0, NULL_encrypt, KEYTYPE_NULL, CKSUMTYPE_NONE },
+      KEYTYPE_DES,  CKSUMTYPE_RSA_MD5, "des-cbc-md5" },
+    { ETYPE_DES3_CBC_MD5, 8, 8, DES3_encrypt_null_ivec, 
+      KEYTYPE_DES3, CKSUMTYPE_RSA_MD5, "des3-cbc-md5" },
+    { ETYPE_DES3_CBC_SHA1, 8, 8, DES3_encrypt_null_ivec, 
+      KEYTYPE_DES3, CKSUMTYPE_HMAC_SHA1_DES3, "des3-cbc-sha1" },
+    { ETYPE_NULL, 1, 0, NULL_encrypt, KEYTYPE_NULL, CKSUMTYPE_NONE, "null" },
 };
 
 static int num_etypes = sizeof(em) / sizeof(em[0]);
@@ -108,9 +126,22 @@ find_encryption_type(int etype)
 }
 
 krb5_error_code
-krb5_etype2keytype(krb5_context context,
-		   krb5_enctype etype,
-		   krb5_keytype *keytype)
+krb5_etype_to_string(krb5_context context,
+		     krb5_enctype etype,
+		     char **string)
+{
+    struct encryption_type *e;
+    e = find_encryption_type(etype);
+    if(e == NULL)
+	return KRB5_PROG_ETYPE_NOSUPP;
+    *string = strdup(e->name);
+    return 0;
+}
+
+krb5_error_code
+krb5_etype_to_keytype(krb5_context context,
+		      krb5_enctype etype,
+		      krb5_keytype *keytype)
 {
     struct encryption_type *e;
     e = find_encryption_type(etype);
@@ -259,6 +290,82 @@ krb5_decrypt (krb5_context context,
 }
 
 krb5_error_code
+krb5_decrypt_EncryptedData (krb5_context context,
+			    EncryptedData *e,
+			    const krb5_keyblock *keyblock,
+			    krb5_data *result)
+{
+    return krb5_decrypt(context, e->cipher.data, e->cipher.length, e->etype, 
+			keyblock, result);
+}
+
+static krb5_error_code
+DES_random_key(krb5_data *key)
+{
+    unsigned char *p;
+    key->length = 8;
+    p = malloc(key->length);
+    if(p == NULL)
+	return ENOMEM;
+    des_new_random_key((void*)p);
+    key->data = p;
+    return 0;
+}
+
+static krb5_error_code
+DES3_random_key(krb5_data *key)
+{
+    unsigned char *p;
+    key->length = 24;
+    p = malloc(key->length);
+    if(p == NULL)
+	return ENOMEM;
+    des_new_random_key((void*)p);
+    des_new_random_key((void*)(p + 8));
+    des_new_random_key((void*)(p + 16));
+    key->data = p;
+    return 0;
+}
+
+static struct key_type {
+    krb5_keytype ktype;
+    krb5_error_code (*random_key)(krb5_data *);
+    krb5_enctype best_etype;
+    const char *name;
+} km [] = {
+    { KEYTYPE_NULL,	NULL,		ETYPE_NULL,		"null" },
+    { KEYTYPE_DES,	DES_random_key,	ETYPE_DES_CBC_MD5,	"des" },
+    { KEYTYPE_DES3,	DES3_random_key,ETYPE_DES3_CBC_MD5,	"des3" }
+};
+
+static struct key_type*
+find_key_type(krb5_keytype ktype)
+{
+    int i;
+    for(i = 0; i < sizeof(km) / sizeof(km[0]); i++)
+	if(km[i].ktype == ktype)
+	    return &km[i];
+    return NULL;
+}
+
+krb5_error_code
+krb5_generate_random_keyblock(krb5_context context,
+			      krb5_keytype ktype,
+			      krb5_keyblock *key)
+{
+    krb5_error_code ret;
+    struct key_type *k = find_key_type(ktype);
+    if(k == NULL)
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    ret = (*k->random_key)(&key->keyvalue);
+    if(ret)
+	return ret;
+    key->keytype = ktype;
+    return 0;
+}
+
+
+krb5_error_code
 krb5_key_to_string(krb5_context context,
 		   krb5_keyblock key,
 		   krb5_boolean include_keydata,
@@ -266,20 +373,18 @@ krb5_key_to_string(krb5_context context,
 {
     char *s;
     char tmp[32]; /* enough to hold name of key type */
-    switch(key.keytype){
-    case KEYTYPE_DES:
-	snprintf(tmp, sizeof(tmp), "DES");
-	break;
-    default:
-	if(include_keydata)
-	    snprintf(tmp, sizeof(tmp), "<keytype %u>", key.keytype);
-	else
-	    snprintf(tmp, sizeof(tmp), "<keytype %u, length %u>", 
-		     key.keytype, key.keyvalue.length);
-	break;
-    }
+    int i;
+    if(include_keydata)
+	snprintf(tmp, sizeof(tmp), "<keytype %u>", key.keytype);
+    else
+	snprintf(tmp, sizeof(tmp), "<keytype %u, length %u>", 
+		 key.keytype, key.keyvalue.length);
+    for(i = 0; i < sizeof(km) / sizeof(km[0]); i++)
+	if(km[i].ktype == key.keytype){
+	    snprintf(tmp, sizeof(tmp), "%s", km[i].name);
+	    break;
+	}
     if(include_keydata){
-	int i;
 	char *k = malloc(2 * key.keyvalue.length + 1);
 	*k = 0;
 	for(i = 0; i < key.keyvalue.length; i++){
@@ -290,5 +395,43 @@ krb5_key_to_string(krb5_context context,
 	free(k);
     }else
 	*string = strdup(tmp);
+    return 0;
+}
+
+
+krb5_error_code
+krb5_keytype_to_etype(krb5_context context, krb5_keytype ktype, 
+		      krb5_enctype *etype)
+{
+    struct key_type *k = find_key_type(ktype);
+    if(k == NULL)
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    *etype = k->best_etype;
+    return 0;
+}
+
+
+krb5_error_code
+krb5_string_to_keytype(krb5_context context, const char *string,
+		       krb5_keytype *ktype)
+{
+    int i;
+    for(i = 0; i < sizeof(km) / sizeof(km[0]); i++)
+	if(strcasecmp(km[i].name, string) == 0){
+	    *ktype = km[i].ktype;
+	    return 0;
+	}
+    return KRB5_PROG_KEYTYPE_NOSUPP;
+}
+
+krb5_error_code
+krb5_keytype_to_string(krb5_context context, krb5_keytype ktype, char **string)
+{
+    struct key_type *k = find_key_type(ktype);
+    if(k == NULL)
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    *string = strdup(k->name);
+    if(*string == NULL)
+	return ENOMEM;
     return 0;
 }
