@@ -2141,7 +2141,7 @@ BOOL net_rpc_check(unsigned flags)
 
 	/* flags (i.e. server type) may depend on command */
 	if (!net_find_server(flags, &server_ip, &server_name))
-		goto done;
+		return False;
 
 	ZERO_STRUCT(cli);
 	if (cli_initialise(&cli) == False)
