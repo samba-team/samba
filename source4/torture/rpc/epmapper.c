@@ -213,7 +213,7 @@ static BOOL test_Insert(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct epm_Insert r;
-	struct dcerpc_binding bd;
+	struct dcerpc_binding *bd;
 
 	r.in.num_ents = 1;
 
@@ -228,7 +228,7 @@ static BOOL test_Insert(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.entries[0].tower = talloc(mem_ctx, struct epm_twr_t);
 
-	status = dcerpc_binding_build_tower(mem_ctx, &bd, &r.in.entries[0].tower->tower);
+	status = dcerpc_binding_build_tower(mem_ctx, bd, &r.in.entries[0].tower->tower);
 	if (NT_STATUS_IS_ERR(status)) {
 		printf("Unable to build tower from binding struct\n");
 		return False;

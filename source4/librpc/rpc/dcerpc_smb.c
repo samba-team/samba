@@ -375,7 +375,19 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 	struct smb_private *smb;
         NTSTATUS status;
 	union smb_open io;
+	char *pipe_name_talloc;
 
+	if (!strncasecmp(pipe_name, "/pipe/", 6) || 
+	    !strncasecmp(pipe_name, "\\pipe\\", 6)) {
+		pipe_name += 6;
+	}
+
+	if (pipe_name[0] != '\\') {
+		pipe_name_talloc = talloc_asprintf(NULL, "\\%s", pipe_name);
+	} else {
+		pipe_name_talloc = talloc_strdup(NULL, pipe_name);
+	}
+	
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.root_fid = 0;
@@ -394,9 +406,11 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
 	io.ntcreatex.in.security_flags = 0;
-	io.ntcreatex.in.fname = pipe_name;
+	io.ntcreatex.in.fname = pipe_name_talloc;
 
 	status = smb_raw_open(tree, tree, &io);
+
+	talloc_free(pipe_name_talloc);
 
 	if (!NT_STATUS_IS_OK(status)) {
                 return status;

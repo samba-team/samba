@@ -212,7 +212,7 @@ struct dcesrv_context {
 	struct dcesrv_endpoint {
 		struct dcesrv_endpoint *next, *prev;
 		/* the type and location of the endpoint */
-		struct dcerpc_binding ep_description;
+		struct dcerpc_binding *ep_description;
 		/* the security descriptor for smb named pipes */
 		struct security_descriptor *sd;
 		/* the list of interfaces available on this endpoint */

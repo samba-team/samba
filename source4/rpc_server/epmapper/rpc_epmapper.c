@@ -64,7 +64,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 
 	for (d=endpoint_list; d; d=d->next) {
 		struct dcesrv_if_list *iface;
-		struct dcerpc_binding description;
+		struct dcerpc_binding *description;
 
 		for (iface=d->interface_list;iface;iface=iface->next) {
 			(*eps) = talloc_realloc(mem_ctx, 
@@ -77,10 +77,10 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			(*eps)[total].name = iface->iface.name;
 
 			description = d->ep_description;
-			GUID_from_string(iface->iface.uuid, &description.object);
-			description.object_version = iface->iface.if_version;
+			GUID_from_string(iface->iface.uuid, &description->object);
+			description->object_version = iface->iface.if_version;
 
-			status = dcerpc_binding_build_tower(mem_ctx, &description, &(*eps)[total].ep);
+			status = dcerpc_binding_build_tower(mem_ctx, description, &(*eps)[total].ep);
 			if (NT_STATUS_IS_ERR(status)) {
 				DEBUG(1, ("Unable to build tower for %s\n", iface->iface.name));
 				continue;

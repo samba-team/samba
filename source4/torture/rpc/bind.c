@@ -37,12 +37,12 @@
 BOOL torture_multi_bind(void) 
 {
 	struct dcerpc_pipe *p;
+	const char *workstation = lp_netbios_name();
 	const char *domain = lp_parm_string(-1, "torture", "userdomain");
 	const char *username = lp_parm_string(-1, "torture", "username");
 	const char *password = lp_parm_string(-1, "torture", "password");
 	const char *pipe_uuid = DCERPC_LSARPC_UUID;
 	uint32_t pipe_version = DCERPC_LSARPC_VERSION;
-	struct dcerpc_binding b;
 	struct dcerpc_binding *binding;
 	const char *binding_string = lp_parm_string(-1, "torture", "binding");
 	TALLOC_CTX *mem_ctx;
@@ -51,14 +51,12 @@ BOOL torture_multi_bind(void)
 
 	mem_ctx = talloc_init("torture_multi_bind");
 
-	status = dcerpc_parse_binding(mem_ctx, binding_string, &b);
+	status = dcerpc_parse_binding(mem_ctx, binding_string, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to parse dcerpc binding '%s'\n", binding_string);
 		talloc_free(mem_ctx);
 		return False;
 	}
-
-	binding = &b;
 
 	status = torture_rpc_connection(&p, 
 					NULL,
@@ -69,24 +67,8 @@ BOOL torture_multi_bind(void)
 		return False;
 	}
 
-	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
-		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
-						   domain, username, password);
-	} else if (username && username[0]) {
-		uint8_t auth_type;
-		if (binding->flags & DCERPC_AUTH_SPNEGO) {
-			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-		} else {
-			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-		}
-
-		status = dcerpc_bind_auth_password(p, pipe_uuid, pipe_version, 
-						   domain, username, password, 
-						   auth_type,
-						   binding->authservice);
-	} else {
-		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
-	}
+	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, 
+				  workstation, domain, username, password);
 
 	if (NT_STATUS_IS_OK(status)) {
 		printf("(incorrectly) allowed re-bind to uuid %s - %s\n", 

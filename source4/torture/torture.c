@@ -138,6 +138,7 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 	}
 
 	status = dcerpc_pipe_connect(p, binding, pipe_uuid, pipe_version,
+				     lp_netbios_name(),
 				     lp_parm_string(-1, "torture", "userdomain"), 
 				     lp_parm_string(-1, "torture", "username"),
 				     lp_parm_string(-1, "torture", "password"));
@@ -154,7 +155,7 @@ NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p,
 {
         NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
-	struct dcerpc_binding b;
+	struct dcerpc_binding *b;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_connection_smb");
 
 	if (!binding) {
@@ -169,9 +170,10 @@ NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p,
 		return status;
 	}
 
-	b.transport = transport;
+	b->transport = transport;
 
-	status = dcerpc_pipe_connect_b(p, &b, pipe_uuid, pipe_version,
+	status = dcerpc_pipe_connect_b(p, b, pipe_uuid, pipe_version,
+				       lp_netbios_name(),
 				       lp_parm_string(-1, "torture", "userdomain"), 
 				       lp_parm_string(-1, "torture", "username"),
 				       lp_parm_string(-1, "torture", "password"));
@@ -2597,7 +2599,7 @@ static void usage(poptContext pc)
 static BOOL is_binding_string(const char *binding_string)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("is_binding_string");
-	struct dcerpc_binding binding_struct;
+	struct dcerpc_binding *binding_struct;
 	NTSTATUS status;
 	
 	status = dcerpc_parse_binding(mem_ctx, binding_string, &binding_struct);

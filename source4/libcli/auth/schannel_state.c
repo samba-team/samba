@@ -127,6 +127,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_string(ldb, msg, "secureChannelType", sct);
 	ldb_msg_add_string(ldb, msg, "accountName", creds->account_name);
 	ldb_msg_add_string(ldb, msg, "computerName", creds->computer_name);
+	ldb_msg_add_string(ldb, msg, "flatname", creds->domain);
 	ldb_msg_add_string(ldb, msg, "rid", rid);
 
 	ldb_delete(ldb, msg->dn);
@@ -155,6 +156,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 				    const char *computer_name, 
+				    const char *domain,
 				    struct creds_CredentialState **creds)
 {
 	struct ldb_context *ldb;
@@ -174,7 +176,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	expr = talloc_asprintf(mem_ctx, "(dn=computerName=%s)", computer_name);
+	expr = talloc_asprintf(mem_ctx, "(&(computerName=%s)(flatname=%s))", computer_name, domain);
 	if (expr == NULL) {
 		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
@@ -216,6 +218,8 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "accountName", NULL));
 
 	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "computerName", NULL));
+
+	(*creds)->domain = talloc_reference(*creds, ldb_msg_find_string(res[0], "flatname", NULL));
 
 	(*creds)->rid = ldb_msg_find_uint(res[0], "rid", 0);
 

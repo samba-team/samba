@@ -143,6 +143,7 @@ done:
 */
 NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 				   const char *uuid, uint_t version,
+				   const char *workstation,
 				   const char *domain,
 				   const char *username,
 				   const char *password,
@@ -158,6 +159,13 @@ NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 	status = gensec_client_start(p, &p->conn->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	status = gensec_set_workstation(p->conn->security_state.generic_state, workstation);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client workstation name to %s: %s\n", 
+			  workstation, nt_errstr(status)));
 		return status;
 	}
 
