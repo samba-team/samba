@@ -190,7 +190,7 @@
 #include <pwdadj.h>
 #endif
 
-#if defined(SHADOW_PWD) && !defined(NETBSD) && !defined(CONVEX)
+#if defined(SHADOW_PWD) && !defined(NETBSD) && !defined(FreeBSD) && !defined(CONVEX)
 #include <shadow.h>
 #endif
 
@@ -469,7 +469,16 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #define SIGNAL_CAST (void (*)())
+#define USE_SETVBUF
+#define USE_SETSID
+#define USE_GETCWD
+#define USE_WAITPID
 #define USE_DIRECT
+#define HAVE_MEMMOVE
+#define HAVE_BZERO
+#define HAVE_GETTIMEOFDAY
+#define HAVE_PATHCONF
+#define HAVE_GETGRNAM 1
 #endif 
 
 
