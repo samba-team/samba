@@ -6,12 +6,12 @@ if test $# -ne 1; then
 fi
 host=$1
 bindir=%bindir%
-set foo `$bindir/kx $host`
-if test $# -ne 4; then
+set -- `$bindir/kx $host`
+if test $# -ne 3; then
   exit 1
 fi
-pid=$2
-disp=:$3
-auth=$4
+pid=$1
+disp=:$2
+auth=$3
 kill -USR1 $pid
 $bindir/rsh -n $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $host -n $host &"
