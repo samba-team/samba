@@ -123,16 +123,6 @@ BOOL torture_close_connection(struct smbcli_state *c)
 	return ret;
 }
 
-/* initialise a DCOM context */
-NTSTATUS torture_dcom_init(struct dcom_context **ctx)
-{
-	dcom_init(ctx, lp_parm_string(-1, "torture", "userdomain"),
-				 	lp_parm_string(-1, "torture", "username"), 
-					lp_parm_string(-1, "torture", "password"));
-
-	return NT_STATUS_OK;
-}
-
 /* open a rpc connection to the chosen binding string */
 NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
 				const char *pipe_name,
@@ -2416,9 +2406,6 @@ static struct {
 	{"RPC-ROT", torture_rpc_rot, 0},
 	{"RPC-DSSETUP", torture_rpc_dssetup, 0},
         {"RPC-ALTERCONTEXT", torture_rpc_alter_context, 0},
-
-	/* Distributed COM testers */
-	{"DCOM-SIMPLE", torture_dcom_simple, 0},
 
 	/* local (no server) testers */
 	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},

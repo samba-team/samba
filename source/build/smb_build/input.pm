@@ -77,6 +77,11 @@ sub check_module($$)
 		return;
 	}
 
+	if ($mod->{ENABLE} ne "YES")
+	{
+		$mod->{CHOSEN_BUILD} = "NOT";
+	}
+
 	if (not defined($mod->{CHOSEN_BUILD}) or $mod->{CHOSEN_BUILD} eq "DEFAULT") {
 		$mod->{CHOSEN_BUILD} = $mod->{DEFAULT_BUILD};
 	}
