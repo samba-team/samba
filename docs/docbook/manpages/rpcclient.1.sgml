@@ -135,7 +135,7 @@
 		<term>-U username[%password]</term>
 		<listitem><para>Sets the SMB username or username and password. </para>
 		
-		<para>If %password is not specified, The user will be prompted. The 
+		<para>If %password is not specified, the user will be prompted. The 
 		client will first check the <envar>USER</envar> environment variable, then the 
 		<envar>LOGNAME</envar> variable and if either exists, the 
 		string is uppercased. If these environmental variables are not 

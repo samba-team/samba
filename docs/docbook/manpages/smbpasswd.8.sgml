@@ -28,6 +28,7 @@
 		<arg choice="opt">-U username[%password]</arg>	
 		<arg choice="opt">-h</arg>	
 		<arg choice="opt">-s</arg>	
+		<arg choice="opt">-w pass</arg>	
 		<arg choice="opt">username</arg>	
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -342,6 +343,22 @@
 		</listitem>
 		</varlistentry>
 		
+
+		<varlistentry>
+		<term>-w password</term>
+		<listitem><para>This parameter is only available is Samba
+		has been configured to use the experiemental
+		<command>--with-ldapsam</command> option. The <parameter>-w</parameter> 
+		switch is used to specify the password to be used with the 
+		<ulink url="smb.conf.5.html#LDAPADMINDN"><parameter>ldap admin 
+		dn</parameter></ulink>.  Note that the password is stored in
+		the <filename>private/secrets.tdb</filename> and is keyed off 
+		of the admin's DN.  This means that if the value of <parameter>ldap
+		admin dn</parameter> ever changes, the password will beed to be 
+		manually updated as well.
+		</para>
+		</listitem>
+		</varlistentry>
 		
 		
 		<varlistentry>

@@ -1,4 +1,4 @@
-Contributor:    lkcl - samba-bugs@arvidsjaur.anu.edu.au
+Contributor:    lkcl - samba@samba.org
                 Copyright 1997  Luke Kenneth Casson Leighton 
 Date:           March 1997
 Status:         Current

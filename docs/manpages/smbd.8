@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "10 October 2001" "" ""
+.TH "SMBD" "8" "06 December 2001" "" ""
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
 .sp
-\fBsmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-l <log file>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-O <socket option>\fR ]  [ \fB-s <configuration file>\fR ] 
+\fBsmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-l <log directory>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-O <socket option>\fR ]  [ \fB-s <configuration file>\fR ] 
 .SH "DESCRIPTION"
 .PP
 This program is part of the Samba suite.
@@ -105,14 +105,18 @@ Note that specifying this parameter here will
 override the log
 levelfile.
 .TP
-\fB-l <log file>\fR
-If specified, \fIlog file\fR 
-specifies a log filename into which informational and debug 
-messages from the running server will be logged. The log 
+\fB-l <log directory>\fR
+If specified,
+\fIlog directory\fR 
+specifies a log directory into which the "log.smbd" log
+file will be created for informational and debug 
+messages from the running server. The log 
 file generated is never removed by the server although 
 its size may be controlled by the max log size
-option in the \fI smb.conf(5)\fRfile. The default log 
-file name is specified at compile time.
+option in the \fI smb.conf(5)\fRfile.
+
+The default log directory is specified at
+compile time.
 .TP
 \fB-O <socket options>\fR
 See the socket options

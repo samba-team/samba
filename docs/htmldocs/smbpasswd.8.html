@@ -36,12 +36,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbpasswd</B
->  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-j DOMAIN] [-U username[%password]] [-h] [-s] [username]</P
+>  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-j DOMAIN] [-U username[%password]] [-h] [-s] [-w pass] [username]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN25"
+NAME="AEN26"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -110,7 +110,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN41"
+NAME="AEN42"
 ></A
 ><H2
 >OPTIONS</H2
@@ -512,6 +512,47 @@ CLASS="COMMAND"
 		is to aid people writing scripts to drive smbpasswd</P
 ></DD
 ><DT
+>-w password</DT
+><DD
+><P
+>This parameter is only available is Samba
+		has been configured to use the experiemental
+		<B
+CLASS="COMMAND"
+>--with-ldapsam</B
+> option. The <TT
+CLASS="PARAMETER"
+><I
+>-w</I
+></TT
+> 
+		switch is used to specify the password to be used with the 
+		<A
+HREF="smb.conf.5.html#LDAPADMINDN"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap admin 
+		dn</I
+></TT
+></A
+>.  Note that the password is stored in
+		the <TT
+CLASS="FILENAME"
+>private/secrets.tdb</TT
+> and is keyed off 
+		of the admin's DN.  This means that if the value of <TT
+CLASS="PARAMETER"
+><I
+>ldap
+		admin dn</I
+></TT
+> ever changes, the password will beed to be 
+		manually updated as well.
+		</P
+></DD
+><DT
 >username</DT
 ><DD
 ><P
@@ -529,7 +570,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN171"
+NAME="AEN182"
 ></A
 ><H2
 >NOTES</H2
@@ -572,7 +613,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN181"
+NAME="AEN192"
 ></A
 ><H2
 >VERSION</H2
@@ -583,7 +624,7 @@ NAME="AEN181"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN184"
+NAME="AEN195"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -606,7 +647,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN190"
+NAME="AEN201"
 ></A
 ><H2
 >AUTHOR</H2

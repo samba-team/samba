@@ -77,6 +77,30 @@ CLASS="COMMAND"
 	Windows NT server. The service can also provide authentication
 	services via an associated PAM module. </P
 ><P
+>	The <TT
+CLASS="FILENAME"
+>pam_winbind</TT
+> module in the 2.2.2 release only 
+	supports the <TT
+CLASS="PARAMETER"
+><I
+>auth</I
+></TT
+> and <TT
+CLASS="PARAMETER"
+><I
+>account</I
+></TT
+> 
+	module-types.  The latter is simply
+	performs a getpwnam() to verify that the system can obtain a uid for the
+	user.  If the <TT
+CLASS="FILENAME"
+>libnss_winbind</TT
+> library has been correctly 
+	installed, this should always suceed.
+	</P
+><P
 >The following nsswitch databases are implemented by 
 	the winbindd service: </P
 ><P
@@ -149,7 +173,7 @@ group:          files winbind
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN43"
+NAME="AEN48"
 ></A
 ><H2
 >OPTIONS</H2
@@ -188,7 +212,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN56"
+NAME="AEN61"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -219,7 +243,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN62"
+NAME="AEN67"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -484,7 +508,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN144"
+NAME="AEN149"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -662,7 +686,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN183"
+NAME="AEN188"
 ></A
 ><H2
 >NOTES</H2
@@ -720,7 +744,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN199"
+NAME="AEN204"
 ></A
 ><H2
 >SIGNALS</H2
@@ -771,7 +795,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN216"
+NAME="AEN221"
 ></A
 ><H2
 >FILES</H2
@@ -847,7 +871,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN245"
+NAME="AEN250"
 ></A
 ><H2
 >VERSION</H2
@@ -858,7 +882,7 @@ NAME="AEN245"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN248"
+NAME="AEN253"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -886,7 +910,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN255"
+NAME="AEN260"
 ></A
 ><H2
 >AUTHOR</H2

@@ -157,15 +157,24 @@ Samba implementation for your Unix/Linux system. The
 CLASS="FILENAME"
 >pam_smbpass.so</TT
 > module is provided by 
-Samba version 2.2.1 or later. It can be compiled only if the 
-<TT
-CLASS="CONSTANT"
->--with-pam --with-pam_smbpass</TT
-> options are both 
-provided to the Samba <B
+Samba version 2.2.1 or later. It can be compiled by specifying the 
+<B
 CLASS="COMMAND"
->configure</B
-> program.</P
+>--with-pam_smbpass</B
+> options when running Samba's
+<TT
+CLASS="FILENAME"
+>configure</TT
+> script.  For more information
+on the <TT
+CLASS="FILENAME"
+>pam_smbpass</TT
+> module, see the documentation
+in the <TT
+CLASS="FILENAME"
+>source/pam_smbpass</TT
+> directory of the Samba 
+source distribution.</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -235,7 +244,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN45"
+NAME="AEN47"
 >Distributed Authentication</A
 ></H1
 ><P
@@ -268,7 +277,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN52"
+NAME="AEN54"
 >PAM Configuration in smb.conf</A
 ></H1
 ><P
