@@ -61,8 +61,10 @@ emem_store(krb5_storage *sp, const void *data, size_t size)
     if(size > s->base + s->size - s->ptr){
 	void *base;
 	size_t sz, off;
-	sz = 2 * (size + (s->ptr - s->base)); /* XXX */
 	off = s->ptr - s->base;
+	sz = off + size;
+	if (sz < 4096)
+	    sz *= 2;
 	base = realloc(s->base, sz);
 	if(base == NULL)
 	    return 0;
