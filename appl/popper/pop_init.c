@@ -88,7 +88,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 #ifdef KERBEROS
 		       "k"
 #endif
-		       "a:dip:t:")) != EOF)
+		       "a:dip:T:t:")) != EOF)
         switch (c) {
 	    /*  Auth level */
 	    case 'a':
@@ -145,7 +145,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     /*  Exit if bad options specified */
     if (errflag) {
         fprintf(stderr,
-		"Usage: %s [-T timeout] [-a] [-d] [-k] [-i]\n",
+		"Usage: %s [-T timeout] [-a] [-d] [-k] [-i] [-t tracefile]\n",
 		argmessage[0]);
         exit (1);
     }
