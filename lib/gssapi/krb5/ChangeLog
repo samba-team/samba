@@ -1,3 +1,11 @@
+1999-12-26  Assar Westerlund  <assar@sics.se>
+
+	* accept_sec_context.c (gss_accept_sec_context): always set
+ 	`output_token'
+	* init_sec_context.c (init_auth): always initialize `output_token'
+	* delete_sec_context.c (gss_delete_sec_context): always set
+ 	`output_token'
+
 1999-12-06  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 0:3:0

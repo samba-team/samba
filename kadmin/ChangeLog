@@ -1,3 +1,9 @@
+2000-01-02  Assar Westerlund  <assar@sics.se>
+
+	* server.c: check initial flag in ticket and allow users to change
+	their own password if it's set
+	* ext.c (do_ext_keytab): set timestamp
+
 1999-12-14  Assar Westerlund  <assar@sics.se>
 
 	* del_enctype.c (usage): don't use arg_printusage
