@@ -62,6 +62,10 @@ static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned 
 		if (gotalarm) {
 			DEBUG(0,("tdb_chainlock_with_timeout: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb->name ));
+			/* TODO: If we time out waiting for a lock, it might
+			 * be nice to use F_GETLK to get the pid of the
+			 * process currently holding the lock and print that
+			 * as part of the debugging message. -- mbp */
 			return -1;
 		}
 	}
