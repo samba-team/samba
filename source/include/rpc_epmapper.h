@@ -70,7 +70,6 @@ typedef struct
 
 typedef struct
 {
-	uint32 referent_id;
 	uint32 max_length;
 	uint32 length;
 	uint16 num_floors;
@@ -80,7 +79,8 @@ typedef struct
 
 typedef struct
 {
-	EPM_HANDLE handle;    
+	EPM_HANDLE handle;
+	uint32 tower_ref_id;
 	EPM_TOWER *tower;
 	EPM_HANDLE term_handle; /* in/out */       
 	uint32 max_towers;  
@@ -91,6 +91,7 @@ typedef struct
 	uint32 max_count;
 	uint32 offset;
 	uint32 count;
+	uint32 *tower_ref_ids;
 	EPM_TOWER *towers;
 } EPM_TOWER_ARRAY;
 
