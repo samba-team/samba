@@ -90,4 +90,7 @@ crypto: allow scather/gather creation of checksums
 verify_user: handle non-secure verification failing because of
 host->realm mapping
 
+figure out how forwardable/no-addresses and other init_creds related
+settings are supposed to be set in /etc/krb5.conf and how they are read
+
 ** lib/roken
