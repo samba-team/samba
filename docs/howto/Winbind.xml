@@ -91,8 +91,8 @@
 
 	<!--	<figure id="winbind_idmap"><title></title>
 	<mediaobject>
-	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/idmap_winbind_no_loop" scale="50" scalefit="1"/></imageobject>
-	<imageobject><imagedata fileref="projdoc/imagefiles/idmap_winbind_no_loop.png" scale="50" scalefit="1"/></imageobject>
+	<imageobject role="latex"><imagedata fileref="howto/imagefiles/idmap_winbind_no_loop" scale="50" scalefit="1"/></imageobject>
+	<imageobject><imagedata fileref="howto/imagefiles/idmap_winbind_no_loop.png" scale="50" scalefit="1"/></imageobject>
 	</mediaobject>
 	</figure>-->
 
