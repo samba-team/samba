@@ -1,9 +1,9 @@
-While this article is specific to the recent Nimda worm, 
+While this article is specific to the Nimda worm, 
 the information can be applied to preventing the spread
 of many Win32 viruses.  Thanks to the Samba Users Group of Japan
 (SUGJ) for this article.
 ===============================================================================
-Steps againt Nimba Worm for Samba
+Steps against Nimba Worm for Samba
 
 Author: HASEGAWA Yosuke
 Translator: TAKAHASHI Motonobu <monyo@samba.gr.jp>
@@ -14,11 +14,11 @@ The information in this article applies to
     Windows 95/98/Me/NT/2000
 
 SYMPTOMS
-  This article has described the measure against Nimba Worm for Samba
+  This article describes measures against Nimba Worm for Samba
   server.
 
 DESCRIPTION
-  Nimba Worm is infected through the shared disk on a network besides
+  Nimba Worm is infected through shared disks on a network, as well as through
   Microsoft IIS, Internet Explorer and mailer of Outlook series.
 
   At this time, the worm copies itself by the name *.nws and *.eml on
@@ -36,23 +36,22 @@ DESCRIPTION
   veto files = /*.eml/*.nws/riched20.dll/
 -----
 
-  Setting up "veto files" parameter, the matched files on the Samba
-  server are completely hidden from the clients and become impossible
+  By setting the "veto files" parameter, matched files on the Samba
+  server are completely hidden from the clients and making it impossible
   to access them at all.
 
-  In addition to it, the following setting are also pointed out by the
+  In addition to it, the following setting is also pointed out by the
   samba-jp:09448 thread: when the
-  "(Jreadme.txt.{3050F4D8-98B5-11CF-BB82-00AA00BDCE0B}"(B file exists on
-  a Samba server, it is visible only with "readme.txt" and a dangerous
-  code may be performed when this file is double-clicked.
+  "readme.txt.{3050F4D8-98B5-11CF-BB82-00AA00BDCE0B}" file exists on
+  a Samba server, it is visible only as "readme.txt" and dangerous
+  code may be executed if this file is double-clicked.
 
   Setting the following,
 -----
   veto files = /*.{*}/
 -----
-  no files having CLSID in its file extension can be accessed from any
+  any files having CLSID in its file extension will be inaccessible from any
   clients.
 
 This technical article is created based on the discussion of
 samba-jp:09448 and samba-jp:10900 threads.
-

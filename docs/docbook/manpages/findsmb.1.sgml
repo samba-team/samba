@@ -45,7 +45,7 @@
 		</command> will probe the subnet of the machine where 
 		<command>findsmb</command> is run. This value is passed 
 		to <command>nmblookup</command> as part of the 
-		<constant>-B</constant> option</para></listitem>
+		<constant>-B</constant> option.</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
@@ -73,7 +73,7 @@
 	get proper responses  from Windows 95 and Windows 98 machines, 
 	the command must be run as root. </para>
 
-	<para>For example running <command>findsmb</command> on a machine 
+	<para>For example, running <command>findsmb</command> on a machine 
 	without <command>nmbd</command> running would yield output similar
 	to the following</para>
 

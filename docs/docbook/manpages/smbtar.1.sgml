@@ -164,7 +164,7 @@
 	<title>BUGS</title>
 
 	<para>The <command>smbtar</command> script has different 
-	options from ordinary tar and tar called from smbclient. </para>
+	options from ordinary tar and from smbclient's tar command. </para>
 
 </refsect1>
 
@@ -173,7 +173,7 @@
 
 	<para>Sites that are more careful about security may not like 
 	the way the script handles PC passwords. Backup and restore work 
-	on entire shares, should work on file lists. smbtar works best
+	on entire shares; should work on file lists. smbtar works best
 	with GNU tar and may not work well with other versions. </para>
 </refsect1>
 
