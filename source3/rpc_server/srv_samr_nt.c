@@ -802,7 +802,6 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 	} else if (sid_equal(sid, &global_sam_sid) && !lp_hide_local_users()) {
 		char *sep;
 		struct group *grp;
-		fstring sid_string;
 	
 		sep = lp_winbind_separator();
 
@@ -2106,7 +2105,6 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
 static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 {
 	SAM_ACCOUNT *pwd = NULL;
-	BOOL ret;
 
 	pdb_init_sam(&pwd);
 
