@@ -1743,7 +1743,7 @@ out:
 		      cusec,
 		      data);
     }
-    free(ctime);
+    free(csec);
     free(cusec);
     return 0;
 }
