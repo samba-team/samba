@@ -2702,10 +2702,10 @@ startit()
 it() a network interface name (such as eth0). This may include
      shell-like wildcards so eth* will match any interface starting
      with the substring "eth"
-if() a IP address. In this case the netmask is determined
+it() an IP address. In this case the netmask is determined
      from the list of interfaces obtained from the kernel
-if() a IP/mask pair. 
-if() a broadcast/mask pair. 
+it() an IP/mask pair. 
+it() a broadcast/mask pair. 
 endit()
 
 The "mask" parameters can either be a bit length (such as 24 for a C
