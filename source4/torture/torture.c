@@ -1437,101 +1437,6 @@ static BOOL run_xcopy(int dummy)
 	return correct;
 }
 
-/*
-  Test rename on files open with share delete and no share delete.
- */
-static BOOL run_rename(int dummy)
-{
-	struct smbcli_state *cli1;
-	const char *fname = "\\test.txt";
-	const char *fname1 = "\\test1.txt";
-	BOOL correct = True;
-	int fnum1;
-
-	printf("starting rename test\n");
-	
-	if (!torture_open_connection(&cli1)) {
-		return False;
-	}
-	
-	smbcli_unlink(cli1->tree, fname);
-	smbcli_unlink(cli1->tree, fname1);
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_READ, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-
-	if (fnum1 == -1) {
-		printf("First open failed - %s\n", smbcli_errstr(cli1->tree));
-		return False;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_rename(cli1->tree, fname, fname1))) {
-		printf("First rename failed (this is correct) - %s\n", smbcli_errstr(cli1->tree));
-	} else {
-		printf("First rename succeeded - this should have failed !\n");
-		correct = False;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("close - 1 failed (%s)\n", smbcli_errstr(cli1->tree));
-		return False;
-	}
-
-	smbcli_unlink(cli1->tree, fname);
-	smbcli_unlink(cli1->tree, fname1);
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_DELETE|NTCREATEX_SHARE_ACCESS_READ, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-
-	if (fnum1 == -1) {
-		printf("Second open failed - %s\n", smbcli_errstr(cli1->tree));
-		return False;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_rename(cli1->tree, fname, fname1))) {
-		printf("Second rename failed - this should have succeeded - %s\n", smbcli_errstr(cli1->tree));
-		correct = False;
-	} else {
-		printf("Second rename succeeded\n");
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("close - 2 failed (%s)\n", smbcli_errstr(cli1->tree));
-		return False;
-	}
-
-	smbcli_unlink(cli1->tree, fname);
-	smbcli_unlink(cli1->tree, fname1);
-
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, STD_RIGHT_READ_CONTROL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-
-	if (fnum1 == -1) {
-		printf("Third open failed - %s\n", smbcli_errstr(cli1->tree));
-		return False;
-	}
-
-
-	if (NT_STATUS_IS_ERR(smbcli_rename(cli1->tree, fname, fname1))) {
-		printf("Third rename failed - this should have succeeded - %s\n", smbcli_errstr(cli1->tree));
-		correct = False;
-	} else {
-		printf("Third rename succeeded\n");
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("close - 3 failed (%s)\n", smbcli_errstr(cli1->tree));
-		return False;
-	}
-
-	smbcli_unlink(cli1->tree, fname);
-	smbcli_unlink(cli1->tree, fname1);
-
-	if (!torture_close_connection(cli1)) {
-		correct = False;
-	}
-	
-	return correct;
-}
-
 
 /*
   see how many RPC pipes we can open at once
@@ -2896,7 +2801,7 @@ static struct {
 	{"BASE-DENY3", run_deny3test, 0},
 	{"BASE-DEFER_OPEN", run_deferopen, FLAG_MULTIPROC},
 	{"BASE-XCOPY", run_xcopy, 0},
-	{"BASE-RENAME", run_rename, 0},
+	{"BASE-RENAME", torture_test_rename, 0},
 	{"BASE-DELETE", torture_test_delete, 0},
 	{"BASE-PROPERTIES", run_properties, 0},
 	{"BASE-MANGLE", torture_mangle, 0},
