@@ -23,697 +23,739 @@ extern pstring scope;
 extern pstring myhostname;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
+extern int DEBUGLEVEL;
 
-static char *prog_name;
+
+/*********************************************************
+a strdup with exit
+**********************************************************/
+static char *xstrdup(char *s)
+{
+	s = strdup(s);
+	if (!s) {
+		fprintf(stderr,"out of memory\n");
+		exit(1);
+	}
+	return s;
+}
+
 
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
-
-static void usage(char *name, BOOL is_root)
+static void usage(void)
 {
-	if(is_root)
-		fprintf(stderr, "Usage is : %s [-D DEBUGLEVEL] [-h] [-a] [-d] [-e] [-m] [-n] [-s] [username] [password]\n\
-%s: [-R <name resolve order>] [-D DEBUGLEVEL] [-j DOMAINNAME] [-r machine] [-U remote_username] [username] [password]\n%s: [-h]\n", name, name, name);
-	else
-		fprintf(stderr, "Usage is : %s [-h] [-s] [-D DEBUGLEVEL] [-r machine] [-U remote_username] [password]\n", name);
+	if (getuid() == 0) {
+		printf("smbpasswd [options] [username] [password]\n");
+	} else {
+		printf("smbpasswd [options] [password]\n");
+	}
+	printf("options:\n");
+	printf("  -s                   use stdin for password prompt\n");
+	printf("  -D LEVEL             debug level\n");
+	printf("  -U USER              remote username\n");
+	printf("  -r MACHINE           remote machine\n");
+
+	if (getuid() == 0) {
+		printf("  -R ORDER             name resolve order\n");
+		printf("  -j DOMAIN            join domain name\n");
+		printf("  -a                   add user\n");
+		printf("  -d                   delete user\n");
+		printf("  -e                   enable user\n");
+		printf("  -n                   set no password\n");
+		printf("  -m                   machine trust account\n");
+	}
 	exit(1);
 }
 
 /*********************************************************
 Join a domain.
 **********************************************************/
-
-static int join_domain( char *domain, char *remote)
+static int join_domain(char *domain, char *remote)
 {
-  pstring remote_machine;
-  fstring trust_passwd;
-  unsigned char orig_trust_passwd_hash[16];
-  BOOL ret;
+	pstring remote_machine;
+	fstring trust_passwd;
+	unsigned char orig_trust_passwd_hash[16];
+	BOOL ret;
 
-  pstrcpy(remote_machine, remote ? remote : "");
-  fstrcpy(trust_passwd, global_myname);
-  strlower(trust_passwd);
-  E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
+	pstrcpy(remote_machine, remote ? remote : "");
+	fstrcpy(trust_passwd, global_myname);
+	strlower(trust_passwd);
+	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
-  /* Ensure that we are not trying to join a
-     domain if we are locally set up as a domain
-     controller. */
+	/* Ensure that we are not trying to join a
+	   domain if we are locally set up as a domain
+	   controller. */
 
-  if(strequal(remote, global_myname)) {
-    fprintf(stderr, "%s: Cannot join domain %s as the domain controller name is our own. \
-We cannot be a domain controller for a domain and also be a domain member.\n", prog_name, domain);
-    return 1;
-  }
+	if(strequal(remote, global_myname)) {
+		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
+		return 1;
+	}
 
-  /*
-   * Create the machine account password file.
-   */
-  if(!trust_password_lock( domain, global_myname, True)) {
-    fprintf(stderr, "%s: unable to open the machine account password file for \
-machine %s in domain %s.\n", prog_name, global_myname, domain); 
-    return 1;
-  }
+	/*
+	 * Create the machine account password file.
+	 */
+	if(!trust_password_lock( domain, global_myname, True)) {
+		fprintf(stderr, "unable to open the machine account password file for \
+machine %s in domain %s.\n", global_myname, domain); 
+		return 1;
+	}
 
-  /*
-   * Write the old machine account password.
-   */
+	/*
+	 * Write the old machine account password.
+	 */
+	
+	if(!set_trust_account_password( orig_trust_passwd_hash)) {              
+		fprintf(stderr, "unable to write the machine account password for \
+machine %s in domain %s.\n", global_myname, domain);
+		trust_password_unlock();
+		return 1;
+	}
+	
+	/*
+	 * If we are given a remote machine assume this is the PDC.
+	 */
+	
+	if(remote == NULL) {
+		pstrcpy(remote_machine, lp_passwordserver());
+	}
 
-  if(!set_trust_account_password( orig_trust_passwd_hash)) {              
-    fprintf(stderr, "%s: unable to write the machine account password for \
-machine %s in domain %s.\n", prog_name, global_myname, domain);
-    trust_password_unlock();
-    return 1;
-  }
+	if(!*remote_machine) {
+		fprintf(stderr, "No password server list given in smb.conf - \
+unable to join domain.\n");
+		trust_password_unlock();
+		return 1;
+	}
 
-  /*
-   * If we are given a remote machine assume this is the PDC.
-   */
+	ret = change_trust_account_password( domain, remote_machine);
+	trust_password_unlock();
+	
+	if(!ret) {
+		trust_password_delete( domain, global_myname);
+		fprintf(stderr,"Unable to join domain %s.\n",domain);
+	} else {
+		printf("Joined domain %s.\n",domain);
+	}
+	
+	return (int)ret;
+}
 
-  if(remote == NULL)
-    pstrcpy(remote_machine, lp_passwordserver());
 
-  if(!*remote_machine) {
-    fprintf(stderr, "%s: No password server list given in smb.conf - \
-unable to join domain.\n", prog_name);
-    trust_password_unlock();
-    return 1;
-  }
-
-  ret = change_trust_account_password( domain, remote_machine);
-  trust_password_unlock();
-
-  if(!ret) {
-    trust_password_delete( domain, global_myname);
-    fprintf(stderr,"%s: Unable to join domain %s.\n", prog_name, domain);
-  } else {
-    printf("%s: Joined domain %s.\n", prog_name, domain);
-  }
-
-  return (int)ret;
+static void set_line_buffering(FILE *f)
+{
+	setvbuf(f, NULL, _IOLBF, 0);
 }
 
 /*************************************************************
  Utility function to prompt for passwords from stdin. Each
  password entered must end with a newline.
 *************************************************************/
-
 static char *stdin_new_passwd(void)
 {
-  static fstring new_passwd;
-  size_t len;
+	static fstring new_passwd;
+	size_t len;
 
-  memset( new_passwd, '\0', sizeof(new_passwd));
+	ZERO_STRUCT(new_passwd);
 
-  /*
-   * if no error is reported from fgets() and string at least contains
-   * the newline that ends the password, then replace the newline with
-   * a null terminator.
-   */
-  if ( fgets(new_passwd, sizeof(new_passwd), stdin) != NULL) {
-    if ((len = strlen(new_passwd)) > 0) {
-      if(new_passwd[len-1] == '\n')
-        new_passwd[len - 1] = 0; 
-    }
-  }
-  return(new_passwd);
+	/*
+	 * if no error is reported from fgets() and string at least contains
+	 * the newline that ends the password, then replace the newline with
+	 * a null terminator.
+	 */
+	if ( fgets(new_passwd, sizeof(new_passwd), stdin) != NULL) {
+		if ((len = strlen(new_passwd)) > 0) {
+			if(new_passwd[len-1] == '\n')
+				new_passwd[len - 1] = 0; 
+		}
+	}
+	return(new_passwd);
 }
+
 
 /*************************************************************
  Utility function to get passwords via tty or stdin
  Used if the '-s' option is set to silently get passwords
  to enable scripting.
 *************************************************************/
-
 static char *get_pass( char *prompt, BOOL stdin_get)
 {
-  if (stdin_get)
-    return( stdin_new_passwd());
-  else
-    return( getpass( prompt));
+	char *p;
+	if (stdin_get) {
+		p = stdin_new_passwd();
+	} else {
+		p = getpass(prompt);
+	}
+	return xstrdup(p);
 }
 
 /*************************************************************
  Utility function to prompt for new password.
 *************************************************************/
-
-static void prompt_for_new_password(char *new_passwd, BOOL stdin_get)
+static char *prompt_for_new_password(BOOL stdin_get)
 {
-  char *p;
+	char *p;
+	fstring new_passwd;
 
-  new_passwd[0] = '\0';
+	ZERO_STRUCT(new_passwd);
  
-  p = get_pass("New SMB password:", stdin_get);
+	p = get_pass("New SMB password:", stdin_get);
 
-  strncpy(new_passwd, p, sizeof(fstring));
-  new_passwd[sizeof(fstring)-1] = '\0';
+	fstrcpy(new_passwd, p);
 
-  p = get_pass("Retype new SMB password:", stdin_get);
+	p = get_pass("Retype new SMB password:", stdin_get);
 
-  if (strncmp(p, new_passwd, sizeof(fstring)-1))
-  {
-    fprintf(stderr, "%s: Mismatch - password unchanged.\n", prog_name);
-    exit(1);
-  }
+	if (strcmp(p, new_passwd)) {
+		fprintf(stderr, "Mismatch - password unchanged.\n");
+		return NULL;
+	}
 
-  if (new_passwd[0] == '\0') {
-    printf("Password not set\n");
-    exit(0);
-  }
+	return xstrdup(p);
 }
+
+
+
+
+/*************************************************************
+change a password on a remote machine using IPC calls
+*************************************************************/
+static BOOL remote_password_change(const char *remote_machine, const char *user_name, 
+				   const char *old_passwd, const char *new_passwd)
+{
+	struct nmb_name calling, called;
+	struct cli_state cli;
+	struct in_addr ip;
+
+	if(!resolve_name( remote_machine, &ip, 0x20)) {
+		fprintf(stderr, "unable to find an IP address for machine %s.\n",
+			remote_machine );
+		return False;
+	}
+ 
+	ZERO_STRUCT(cli);
+ 
+	if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
+		fprintf(stderr, "unable to connect to SMB server on machine %s. Error was : %s.\n",
+			remote_machine, cli_errstr(&cli) );
+		return False;
+	}
+  
+	make_nmb_name(&calling, global_myname , 0x0 , scope);
+	make_nmb_name(&called , remote_machine, 0x20, scope);
+	
+	if (!cli_session_request(&cli, &calling, &called)) {
+		fprintf(stderr, "machine %s rejected the session setup. Error was : %s.\n",
+			remote_machine, cli_errstr(&cli) );
+		cli_shutdown(&cli);
+		return False;
+	}
+  
+	cli.protocol = PROTOCOL_NT1;
+
+	if (!cli_negprot(&cli)) {
+		fprintf(stderr, "machine %s rejected the negotiate protocol. Error was : %s.\n",        
+			remote_machine, cli_errstr(&cli) );
+		cli_shutdown(&cli);
+		return False;
+	}
+  
+	/*
+	 * We should connect as the anonymous user here, in case
+	 * the server has "must change password" checked...
+	 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
+	 */
+
+	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
+		fprintf(stderr, "machine %s rejected the session setup. Error was : %s.\n",        
+			remote_machine, cli_errstr(&cli) );
+		cli_shutdown(&cli);
+		return False;
+	}               
+
+	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+		fprintf(stderr, "machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
+			remote_machine, cli_errstr(&cli) );
+		cli_shutdown(&cli);
+		return False;
+	}
+
+	if(!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
+		fprintf(stderr, "machine %s rejected the password change: Error was : %s.\n",
+			remote_machine, cli_errstr(&cli) );
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	cli_shutdown(&cli);
+	return True;
+}
+
+
+/*************************************************************
+add a new user to the local smbpasswd file
+*************************************************************/
+static BOOL add_new_user(char *user_name, uid_t uid, BOOL trust_account, 
+			 BOOL disable_user, BOOL set_no_password,
+			 char *new_p16, char *new_nt_p16)
+{
+	struct smb_passwd new_smb_pwent;
+
+	/* Create a new smb passwd entry and set it to the given password. */
+	new_smb_pwent.smb_userid = uid;
+	new_smb_pwent.smb_name = user_name; 
+	new_smb_pwent.smb_passwd = NULL;
+	new_smb_pwent.smb_nt_passwd = NULL;
+	new_smb_pwent.acct_ctrl = (trust_account ? ACB_WSTRUST : ACB_NORMAL);
+	
+	if(disable_user) {
+		new_smb_pwent.acct_ctrl |= ACB_DISABLED;
+	} else if (set_no_password) {
+		new_smb_pwent.acct_ctrl |= ACB_PWNOTREQ;
+	} else {
+		new_smb_pwent.smb_passwd = new_p16;
+		new_smb_pwent.smb_nt_passwd = new_nt_p16;
+	}
+	
+	return add_smbpwd_entry(&new_smb_pwent);
+}
+
+
+/*************************************************************
+change a password entry in the local smbpasswd file
+*************************************************************/
+static BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
+				 BOOL enable_user, BOOL disable_user, BOOL set_no_password,
+				 char *new_passwd)
+{
+	struct passwd  *pwd;
+	void *vp;
+	struct smb_passwd *smb_pwent;
+	uchar           new_p16[16];
+	uchar           new_nt_p16[16];
+
+	pwd = getpwnam(user_name);
+	
+	/*
+	 * Check for a machine account.
+	 */
+	
+	if(trust_account && !pwd) {
+		fprintf(stderr, "User %s does not exist in system password file (usually /etc/passwd). Cannot add machine account without a valid system user.\n",
+			user_name);
+		return False;
+	}
+
+	/* Calculate the MD4 hash (NT compatible) of the new password. */
+	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
+
+	/*
+	 * Open the smbpaswd file.
+	 */
+	vp = startsmbpwent(True);
+	if (!vp && errno == ENOENT) {
+		FILE *fp;
+		fprintf(stderr,"smbpasswd file did not exist - attempting to create it.\n");
+		fp = fopen(lp_smb_passwd_file(), "w");
+		if (fp) {
+			fprintf(fp, "# Samba SMB password file\n");
+			fclose(fp);
+			vp = startsmbpwent(True);
+		}
+	}
+
+	if (!vp) {
+		perror(lp_smb_passwd_file());
+		return False;
+	}
+  
+	/* Get the smb passwd entry for this user */
+	smb_pwent = getsmbpwnam(user_name);
+	if (smb_pwent == NULL) {
+		if(add_user == False) {
+			fprintf(stderr, "Failed to find entry for user %s.\n",
+				pwd->pw_name);
+			endsmbpwent(vp);
+			return False;
+		}
+
+		if (add_new_user(user_name, pwd->pw_uid, trust_account, disable_user,
+				 set_no_password, new_p16, new_nt_p16)) {
+			printf("Added user %s.\n", user_name);
+			endsmbpwent(vp);
+			return True;
+		} else {
+			fprintf(stderr, "Failed to add entry for user %s.\n", user_name);
+			endsmbpwent(vp);
+			return False;
+		}
+	} else {
+		/* the entry already existed */
+		add_user = False;
+	}
+
+	/*
+	 * We are root - just write the new password
+	 * and the valid last change time.
+	 */
+
+	if(disable_user) {
+		smb_pwent->acct_ctrl |= ACB_DISABLED;
+	} else if (enable_user) {
+		if(smb_pwent->smb_passwd == NULL) {
+			smb_pwent->smb_passwd = new_p16;
+			smb_pwent->smb_nt_passwd = new_nt_p16;
+		}
+		smb_pwent->acct_ctrl &= ~ACB_DISABLED;
+	} else if (set_no_password) {
+		smb_pwent->acct_ctrl |= ACB_PWNOTREQ;
+		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
+		smb_pwent->smb_passwd = NULL;
+		smb_pwent->smb_nt_passwd = NULL;
+	} else {
+		smb_pwent->acct_ctrl &= ~ACB_PWNOTREQ;
+		smb_pwent->smb_passwd = new_p16;
+		smb_pwent->smb_nt_passwd = new_nt_p16;
+	}
+	
+	if(mod_smbpwd_entry(smb_pwent,True) == False) {
+		fprintf(stderr, "Failed to modify entry for user %s.\n",
+			pwd->pw_name);
+		endsmbpwent(vp);
+		return False;
+	}
+
+	endsmbpwent(vp);
+
+	return True;
+}
+
+
+/*************************************************************
+change a password either locally or remotely
+*************************************************************/
+static BOOL password_change(const char *remote_machine, char *user_name, 
+			    char *old_passwd, char *new_passwd, 
+			    BOOL add_user, BOOL enable_user, 
+			    BOOL disable_user, BOOL set_no_password,
+			    BOOL trust_account)
+{
+	if (remote_machine != NULL) {
+		if (add_user || enable_user || disable_user || set_no_password || trust_account) {
+			/* these things can't be done remotely yet */
+			return False;
+		}
+		return remote_password_change(remote_machine, user_name, old_passwd, new_passwd);
+	}
+	
+	return local_password_change(user_name, trust_account, add_user, enable_user, 
+				     disable_user, set_no_password, new_passwd);
+}
+
+
+/*************************************************************
+handle password changing for root
+*************************************************************/
+static int process_root(int argc, char *argv[])
+{
+	struct passwd  *pwd;
+	int ch;
+	BOOL joining_domain = False;
+	BOOL trust_account = False;
+	BOOL add_user = False;
+	BOOL disable_user = False;
+	BOOL enable_user = False;
+	BOOL set_no_password = False;
+	BOOL stdin_passwd_get = False;
+	char *user_name = NULL;
+	char *new_domain = NULL;
+	char *new_passwd = NULL;
+	char *old_passwd = NULL;
+	char *remote_machine = NULL;
+
+	while ((ch = getopt(argc, argv, "adehmnj:r:sR:D:U:")) != EOF) {
+		switch(ch) {
+		case 'a':
+			add_user = True;
+			break;
+		case 'd':
+			disable_user = True;
+			new_passwd = "XXXXXX";
+			break;
+		case 'e':
+			enable_user = True;
+			break;
+		case 'D':
+			DEBUGLEVEL = atoi(optarg);
+			break;
+		case 'n':
+			set_no_password = True;
+			new_passwd = "NO PASSWORD";
+		case 'r':
+			remote_machine = optarg;
+			break;
+		case 's':
+			set_line_buffering(stdin);
+			set_line_buffering(stdout);
+			set_line_buffering(stderr);
+			stdin_passwd_get = True;
+			break;
+		case 'R':
+			lp_set_name_resolve_order(optarg);
+			break;
+		case 'm':
+			trust_account = True;
+			break;
+		case 'j':
+			new_domain = optarg;
+			strupper(new_domain);
+			joining_domain = True;
+			break;
+		case 'U':
+			user_name = optarg;
+			break;
+		default:
+			usage();
+		}
+	}
+	
+	argc -= optind;
+	argv += optind;
+
+
+	/*
+	 * Ensure add_user and either remote machine or join domain are
+	 * not both set.
+	 */	
+	if(add_user && ((remote_machine != NULL) || joining_domain)) {
+		usage();
+	}
+	
+	if(joining_domain) {
+		if (argc != 0) usage();
+		return join_domain(new_domain, remote_machine);
+	}
+
+	/*
+	 * Deal with root - can add a user, but only locally.
+	 */
+
+	switch(argc) {
+	case 0:
+		break;
+	case 1:
+		user_name = argv[0];
+		break;
+	case 2:
+		user_name = argv[0];
+		new_passwd = argv[1];
+		break;
+	default:
+		usage();
+	}
+
+	if (!user_name && (pwd = getpwuid(0))) {
+		user_name = xstrdup(pwd->pw_name);
+	} 
+
+	if (!user_name) {
+		fprintf(stderr,"You must specify a username\n");
+		exit(1);
+	}
+
+	if (!remote_machine && !Get_Pwnam(user_name, True)) {
+		fprintf(stderr, "User \"%s\" was not found in system password file.\n", 
+			user_name);
+		exit(1);
+	}
+
+	if (user_name[strlen(user_name)-1] == '$') {
+		user_name[strlen(user_name)-1] = 0;
+	}
+
+	if (trust_account) {
+		/* add the $ automatically */
+		static fstring buf;
+
+		if (add_user) {
+			new_passwd = xstrdup(user_name);
+			strlower(new_passwd);
+		}
+
+		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
+		user_name = buf;
+	}
+
+	if (remote_machine != NULL) {
+		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
+	}
+	
+	if (!new_passwd) {
+		new_passwd = prompt_for_new_password(stdin_passwd_get);
+	}
+	
+	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
+			     add_user, enable_user, disable_user, set_no_password,
+			     trust_account)) {
+		fprintf(stderr,"Failed to change password entry for %s\n", user_name);
+		return 1;
+	} 
+
+	if(disable_user) {
+		printf("User %s disabled.\n", user_name);
+	} else if(enable_user) {
+		printf("User %s enabled.\n", user_name);
+	} else if (set_no_password) {
+		printf("User %s - set to no password.\n", user_name);
+	} else {
+		printf("Password changed for user %s\n", user_name);
+	}
+	return 0;
+}
+
+
+/*************************************************************
+handle password changing for non-root
+*************************************************************/
+static int process_nonroot(int argc, char *argv[])
+{
+	struct passwd  *pwd = NULL;
+	int ch;
+	BOOL stdin_passwd_get = False;
+	char *old_passwd = NULL;
+	char *remote_machine = NULL;
+	char *user_name = NULL;
+	char *new_passwd = NULL;
+
+	while ((ch = getopt(argc, argv, "hD:r:sU:")) != EOF) {
+		switch(ch) {
+		case 'D':
+			DEBUGLEVEL = atoi(optarg);
+			break;
+		case 'r':
+			remote_machine = optarg;
+			break;
+		case 's':
+			set_line_buffering(stdin);
+			set_line_buffering(stdout);
+			set_line_buffering(stderr);
+			stdin_passwd_get = True;
+			break;
+		case 'U':
+			user_name = optarg;
+			break;
+		default:
+			usage();
+		}
+	}
+	
+	argc -= optind;
+	argv += optind;
+
+	if(argc > 1) {
+		usage();
+	}
+	
+	if (argc == 1) {
+		new_passwd = argv[0];
+	}
+	
+	if (!user_name) {
+		pwd = getpwuid(getuid());
+		if (pwd) {
+			user_name = xstrdup(pwd->pw_name);
+		} else {
+			fprintf(stderr,"you don't exist - go away\n");
+			exit(1);
+		}
+	}
+	
+	/*
+	 * A non-root user is always setting a password
+	 * via a remote machine (even if that machine is
+	 * localhost).
+	 */	
+	if (remote_machine == NULL) {
+		remote_machine = "127.0.0.1";
+	}
+
+
+	if (remote_machine != NULL) {
+		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
+	}
+	
+	if (!new_passwd) {
+		new_passwd = prompt_for_new_password(stdin_passwd_get);
+	}
+	
+	if (!new_passwd) {
+		printf("unable to get new password\n");
+		exit(0);
+	}
+
+	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
+			     False, False, False, False, False)) {
+		fprintf(stderr,"Failed to change password for %s\n", user_name);
+		return 1;
+	}
+
+	printf("Password changed for user %s\n", user_name);
+	return 0;
+}
+
+
 
 /*********************************************************
  Start here.
 **********************************************************/
-
 int main(int argc, char **argv)
-{
-  extern char *optarg;
-  extern int optind;
-  extern int DEBUGLEVEL;
-  uid_t             real_uid;
-  uid_t             eff_uid;
-  struct passwd  *pwd = NULL;
-  fstring         old_passwd;
-  fstring         new_passwd;
-  uchar           new_p16[16];
-  uchar           new_nt_p16[16];
-  char           *p;
-  struct smb_passwd *smb_pwent;
-  FILE           *fp;
-  int             ch;
-  int             err;
-  BOOL is_root = False;
-  pstring  user_name;
-  BOOL remote_user_name = False;
-  char *remote_machine = NULL;
-  BOOL add_user = False;
-  BOOL got_new_pass = False;
-  BOOL trust_account = False;
-  BOOL disable_user = False;
-  BOOL enable_user = False;
-  BOOL set_no_password = False;
-  BOOL joining_domain = False;
-  BOOL stdin_passwd_get = False;
-  char *new_domain = NULL;
-  pstring servicesf = CONFIGFILE;
-  void           *vp;
-  struct nmb_name calling, called;
-  
+{	
+	static pstring servicesf = CONFIGFILE;
 
-  new_passwd[0] = '\0';
-  user_name[0] = '\0';
+	TimeInit();
+	
+	setup_logging("smbpasswd", True);
+	
+	charset_initialise();
+	
+	if(!initialize_password_db()) {
+		fprintf(stderr, "Can't setup password database vectors.\n");
+		exit(1);
+	}
 
-  memset(old_passwd, '\0', sizeof(old_passwd));
-  memset(new_passwd, '\0', sizeof(new_passwd));
+	if (!lp_load(servicesf,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+			servicesf);
+		exit(1);
+	}
 
-  prog_name = argv[0];
+	if(!get_myname(myhostname,NULL)) {
+		fprintf(stderr, "unable to get my hostname.\n");
+		exit(1);
+	}
 
-  TimeInit();
-
-  setup_logging(prog_name,True);
-  
-  charset_initialise();
-
-  if(!initialize_password_db()) {
-    fprintf(stderr, "%s: Can't setup password database vectors.\n", prog_name);
-    exit(1);
-  }
-
-  if (!lp_load(servicesf,True,False,False)) {
-    fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n", prog_name, servicesf);
-    exit(1);
-  }
-
-  if(!get_myname(myhostname,NULL)) {
-    fprintf(stderr, "%s: unable to get my hostname.\n", prog_name );
-    exit(1);
-  }
-
-  /*
-   * Set the machine NETBIOS name if not already
-   * set from the config file. 
-   */ 
+	/*
+	 * Set the machine NETBIOS name if not already
+	 * set from the config file. 
+	 */ 
     
-  if (!*global_myname)
-  {   
-    fstrcpy( global_myname, myhostname );
-    p = strchr( global_myname, '.' );
-    if (p) 
-      *p = 0;
-  }           
-  strupper( global_myname );
+	if (!*global_myname) {   
+		char *p;
+		fstrcpy(global_myname, myhostname);
+		p = strchr(global_myname, '.' );
+		if (p) *p = 0;
+	}           
+	strupper(global_myname);
 
-  codepage_initialise(lp_client_code_page());
+	codepage_initialise(lp_client_code_page());
 
-  /* Get the real and effective uids */
-  real_uid = getuid();
-  eff_uid = geteuid();
- 
-  /* Check the effective uid */
-  if ((eff_uid == (uid_t)0) && (real_uid != (uid_t)0)) {
-    fprintf(stderr, "%s: Must *NOT* be setuid root.\n", prog_name);
-    exit(1);
-  }
+	/* Check the effective uid - make sure we are not setuid */
+	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {
+		fprintf(stderr, "smbpasswd must *NOT* be setuid root.\n");
+		exit(1);
+	}
 
-  is_root = (eff_uid == (uid_t)0);
+	if (getuid() == 0) {
+		return process_root(argc, argv);
+	} 
 
-  while ((ch = getopt(argc, argv, "adehmnj:r:sR:D:U:")) != EOF) {
-    switch(ch) {
-    case 'a':
-      if(is_root)
-        add_user = True;
-      else
-        usage(prog_name, is_root);
-      break;
-    case 'd':
-      if(is_root) {
-        disable_user = True;
-        got_new_pass = True;
-        fstrcpy(new_passwd, "XXXXXX");
-      } else
-        usage(prog_name, is_root);
-      break;
-    case 'e':
-      if(is_root) {
-        enable_user = True;
-        got_new_pass = True;
-        fstrcpy(new_passwd, "XXXXXX");
-      } else
-        usage(prog_name, is_root);
-      break;
-    case 'D':
-      DEBUGLEVEL = atoi(optarg);
-      break;
-    case 'n':
-      if(is_root) {
-        set_no_password = True;
-        got_new_pass = True;
-        fstrcpy(new_passwd, "NO PASSWORD");
-      } else
-        usage(prog_name, is_root);
-    case 'r':
-      remote_machine = optarg;
-      break;
-    case 's':
-      /*
-       * Ensure stdin/stdout are line buffered.
-       */
-      if (setvbuf( stdin, NULL, _IOLBF, 0) != 0) {
-        fprintf(stderr, "%s: setvbuf error on stdin. Error was %s\n", prog_name, strerror(errno));
-        exit(1);
-      }
-
-      if (setvbuf( stdout, NULL, _IOLBF, 0) != 0) {
-        fprintf(stderr, "%s: setvbuf error on stdout. Error was %s\n", prog_name, strerror(errno));
-        exit(1);
-      }
-
-      if (setvbuf( stderr, NULL, _IOLBF, 0) != 0) {
-        fprintf(stderr, "%s: setvbuf error on stderr. Error was %s\n", prog_name, strerror(errno));
-        perror("setvbuf error on stdout");
-        exit(1);
-      }
-
-      stdin_passwd_get = True;
-      break;
-    case 'R':
-      if(is_root) {
-        lp_set_name_resolve_order(optarg);
-        break;
-      } else
-        usage(prog_name, is_root);
-    case 'm':
-      if(is_root) {
-        trust_account = True;
-      } else
-        usage(prog_name, is_root);
-      break;
-    case 'j':
-      if(is_root) {
-        new_domain = optarg;
-        strupper(new_domain);
-        joining_domain = True;
-      } else
-        usage(prog_name, is_root);  
-      break;
-    case 'U':
-      remote_user_name = True;
-      pstrcpy(user_name, optarg);
-      break;
-    case 'h':
-    default:
-      usage(prog_name, is_root);
-    }
-  }
-
-  argc -= optind;
-  argv += optind;
-
-  if (!is_root && remote_user_name && !remote_machine) {
-    fprintf(stderr, "%s: You can only use -U with -r.\n", prog_name);
-    usage(prog_name, False);
-  }
-
-  /*
-   * Ensure add_user and either remote machine or join domain are
-   * not both set.
-   */
-
-  if(add_user && ((remote_machine != NULL) || joining_domain))
-    usage(prog_name, True);
-
-  /*
-   * Deal with joining a domain.
-   */
-  if(joining_domain && argc != 0)
-    usage(prog_name, True);
-
-  if(joining_domain) {
-    return join_domain( new_domain, remote_machine);
-  }
-
-  if(is_root) {
-
-    /*
-     * Deal with root - can add a user, but only locally.
-     */
-
-    switch(argc) {
-      case 0:
-        break;
-      case 1:
-        /* If we are root we can change another's password. */
-        pstrcpy(user_name, argv[0]);
-        break;
-      case 2:
-        pstrcpy(user_name, argv[0]);
-        fstrcpy(new_passwd, argv[1]);
-        got_new_pass = True;
-        break;
-      default:
-        usage(prog_name, True);
-    }
-
-    if(*user_name) {
-
-      if(trust_account) {
-        int username_len = strlen(user_name);
-        if(username_len >= sizeof(pstring) - 1) {
-          fprintf(stderr, "%s: machine account name too long.\n", user_name);
-          exit(1);
-        }
-
-        if(user_name[username_len-1] != '$') {
-          user_name[username_len] = '$';
-          user_name[username_len+1] = '\0';
-        }
-      }
-
-      if(!remote_machine && ((pwd = Get_Pwnam(user_name, True)) == NULL)) {
-        fprintf(stderr, "%s: User \"%s\" was not found in system password file.\n", 
-                    prog_name, user_name);
-        exit(1);
-      }
-    } else {
-      if((pwd = getpwuid(eff_uid)) != NULL)
-        pstrcpy( user_name, pwd->pw_name);
-    }
-
-  } else {
-
-    if(add_user) {
-      fprintf(stderr, "%s: Only root can add a user.\n", prog_name);
-      usage(prog_name, False);
-    }
-
-    if(disable_user) {
-      fprintf(stderr, "%s: Only root can disable a user.\n", prog_name);
-      usage(prog_name, False);
-    }
-
-    if(enable_user) {
-      fprintf(stderr, "%s: Only root can enable a user.\n", prog_name);
-      usage(prog_name, False);
-    }
-
-    if(argc > 1)
-      usage(prog_name, False);
-
-    if(argc == 1) {
-      fstrcpy(new_passwd, argv[0]);
-      got_new_pass = True;
-    }
-
-    if(!remote_user_name && ((pwd = getpwuid(eff_uid)) != NULL))
-      pstrcpy( user_name, pwd->pw_name);
-
-    /*
-     * A non-root user is always setting a password
-     * via a remote machine (even if that machine is
-     * localhost).
-     */
-
-    if(remote_machine == NULL)
-      remote_machine = "127.0.0.1";
-  }
-    
-  if (*user_name == '\0') {
-    fprintf(stderr, "%s: Unable to get a user name for password change.\n", prog_name);
-    exit(1);
-  }
-
-  /*
-   * If we are adding a machine account then pretend
-   * we already have the new password, we will be using
-   * the machinename as the password.
-   */
-
-  if(add_user && trust_account) {
-    got_new_pass = True;
-    strncpy(new_passwd, user_name, sizeof(fstring));
-    new_passwd[sizeof(fstring)-1] = '\0';
-    strlower(new_passwd);
-    if(new_passwd[strlen(new_passwd)-1] == '$')
-      new_passwd[strlen(new_passwd)-1] = '\0';
-  }
-
-  /* 
-   * If we are root we don't ask for the old password (unless it's on a
-   * remote machine.
-   */
-
-  if (remote_machine != NULL) {
-    p = get_pass("Old SMB password:",stdin_passwd_get);
-    fstrcpy(old_passwd, p);
-  }
-
-  if (!got_new_pass)
-    prompt_for_new_password(new_passwd,stdin_passwd_get);
-  
-  if (new_passwd[0] == '\0') {
-    printf("Password not set\n");
-    exit(0);
-  }
- 
-  /* 
-   * Now do things differently depending on if we're changing the
-   * password on a remote machine. Remember - a normal user is
-   * always using this code, looping back to the local smbd.
-   */
-
-  if(remote_machine != NULL) {
-    struct cli_state cli;
-    struct in_addr ip;
-
-    if(!resolve_name( remote_machine, &ip, 0x20)) {
-      fprintf(stderr, "%s: unable to find an IP address for machine %s.\n",
-              prog_name, remote_machine );
-      exit(1);
-    }
- 
-    ZERO_STRUCT(cli);
- 
-    if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
-      fprintf(stderr, "%s: unable to connect to SMB server on machine %s. Error was : %s.\n",
-              prog_name, remote_machine, cli_errstr(&cli) );
-      exit(1);
-    }
-  
-	make_nmb_name(&calling, global_myname , 0x0 , scope);
-	make_nmb_name(&called , remote_machine, 0x20, scope);
-
-	if (!cli_session_request(&cli, &calling, &called))
-	{
-      fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",
-              prog_name, remote_machine, cli_errstr(&cli) );
-      cli_shutdown(&cli);
-      exit(1);
-    }
-  
-    cli.protocol = PROTOCOL_NT1;
-
-    if (!cli_negprot(&cli)) {
-      fprintf(stderr, "%s: machine %s rejected the negotiate protocol. Error was : %s.\n",        
-              prog_name, remote_machine, cli_errstr(&cli) );
-      cli_shutdown(&cli);
-      exit(1);
-    }
-  
-    /*
-     * We should connect as the anonymous user here, in case
-     * the server has "must change password" checked...
-     * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
-     */
-
-    if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-      fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",        
-              prog_name, remote_machine, cli_errstr(&cli) );
-      cli_shutdown(&cli);
-      exit(1);
-    }               
-
-    if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-      fprintf(stderr, "%s: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
-              prog_name, remote_machine, cli_errstr(&cli) );
-      cli_shutdown(&cli);
-      exit(1);
-    }
-
-    if(!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
-      fprintf(stderr, "%s: machine %s rejected the password change: Error was : %s.\n",
-              prog_name, remote_machine, cli_errstr(&cli) );
-      cli_shutdown(&cli);
-      exit(1);
-    }
-
-    cli_shutdown(&cli);
-    exit(0);
-  }
-
-  /*
-   * Check for a machine account.
-   */
-
-  if(trust_account && !pwd) {
-    fprintf(stderr, "%s: User %s does not exist in system password file \
-(usually /etc/passwd). Cannot add machine account without a valid system user.\n",
-           prog_name, user_name);
-    exit(1);
-  }
-
-  /* Calculate the MD4 hash (NT compatible) of the new password. */
-  
-  nt_lm_owf_gen( new_passwd, new_nt_p16, new_p16);
-
-  /*
-   * Open the smbpaswd file.
-   */
-  vp = startsmbpwent(True);
-  if (!vp && errno == ENOENT) {
-      fprintf(stderr,"%s: smbpasswd file did not exist - attempting to create it.\n", prog_name);
-	  fp = fopen(lp_smb_passwd_file(), "w");
-	  if (fp) {
-		  fprintf(fp, "# Samba SMB password file\n");
-		  fclose(fp);
-		  vp = startsmbpwent(True);
-	  }
-  }
-  if (!vp) {
-	  err = errno;
-	  fprintf(stderr, "%s: Failed to open password file %s.\n",
-		  prog_name, lp_smb_passwd_file());
-	  errno = err;
-	  perror(prog_name);
-	  exit(err);
-  }
-  
-  /* Get the smb passwd entry for this user */
-  smb_pwent = getsmbpwnam(user_name);
-  if (smb_pwent == NULL) {
-    if(add_user == False) {
-      fprintf(stderr, "%s: Failed to find entry for user %s.\n",
-  	      prog_name, pwd->pw_name);
-      endsmbpwent(vp);
-      exit(1);
-    }
-
-    /* Create a new smb passwd entry and set it to the given password. */
-    {
-      struct smb_passwd new_smb_pwent;
-
-      new_smb_pwent.smb_userid = pwd->pw_uid;
-      new_smb_pwent.smb_name = pwd->pw_name; 
-      new_smb_pwent.smb_passwd = NULL;
-      new_smb_pwent.smb_nt_passwd = NULL;
-      new_smb_pwent.acct_ctrl = (trust_account ? ACB_WSTRUST : ACB_NORMAL);
-
-      if(disable_user) {
-        new_smb_pwent.acct_ctrl |= ACB_DISABLED;
-      } else if (set_no_password) {
-        new_smb_pwent.acct_ctrl |= ACB_PWNOTREQ;
-      } else {
-        new_smb_pwent.smb_passwd = new_p16;
-        new_smb_pwent.smb_nt_passwd = new_nt_p16;
-      }
-
-      if(add_smbpwd_entry(&new_smb_pwent) == False) {
-        fprintf(stderr, "%s: Failed to add entry for user %s.\n", 
-                prog_name, pwd->pw_name);
-        endsmbpwent(vp);
-        exit(1);
-      }
-      
-      endsmbpwent(vp);
-      printf("%s: Added user %s.\n", prog_name, user_name);
-      exit(0);
-    }
-  } else {
-	  /* the entry already existed */
-	  add_user = False;
-  }
-
-  /*
-   * We are root - just write the new password
-   * and the valid last change time.
-   */
-
-  if(disable_user)
-    smb_pwent->acct_ctrl |= ACB_DISABLED;
-  else if (enable_user) {
-    if(smb_pwent->smb_passwd == NULL) {
-      prompt_for_new_password(new_passwd,stdin_passwd_get);
-      nt_lm_owf_gen( new_passwd, new_nt_p16, new_p16);
-      smb_pwent->smb_passwd = new_p16;
-      smb_pwent->smb_nt_passwd = new_nt_p16;
-    }
-    smb_pwent->acct_ctrl &= ~ACB_DISABLED;
-  } else if (set_no_password) {
-    smb_pwent->acct_ctrl |= ACB_PWNOTREQ;
-    /* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
-    smb_pwent->smb_passwd = NULL;
-    smb_pwent->smb_nt_passwd = NULL;
-  } else {
-    smb_pwent->acct_ctrl &= ~ACB_PWNOTREQ;
-    smb_pwent->smb_passwd = new_p16;
-    smb_pwent->smb_nt_passwd = new_nt_p16;
-  }
-
-  if(mod_smbpwd_entry(smb_pwent,True) == False) {
-    fprintf(stderr, "%s: Failed to modify entry for user %s.\n",
-            prog_name, pwd->pw_name);
-    endsmbpwent(vp);
-    exit(1);
-  }
-
-  endsmbpwent(vp);
-  if(disable_user)
-    printf("User %s disabled.\n", user_name);
-  else if(enable_user)
-    printf("User %s enabled.\n", user_name);
-  else if (set_no_password)
-    printf("User %s - set to no password.\n", user_name);
-  else
-    printf("Password changed for user %s.\n", user_name);
-  return 0;
+	return process_nonroot(argc, argv);
 }

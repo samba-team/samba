@@ -258,7 +258,7 @@ BOOL matchname(char *remotehost,struct in_addr  addr);
 void standard_sub_basic(char *str);
 void standard_sub(connection_struct *conn,char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
-struct hostent *Get_Hostbyname(char *name);
+struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(int pid);
 char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
@@ -333,9 +333,9 @@ char *client_addr(int fd);
 void set_first_token(char *ptr);
 BOOL next_token(char **ptr,char *buff,char *sep, int bufsize);
 char **toktocliplist(int *ctok, char *sep);
-int StrCaseCmp(char *s, char *t);
+int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(char *s, char *t, int n);
-BOOL strequal(char *s1, char *s2);
+BOOL strequal(const char *s1, const char *s2);
 BOOL strnequal(char *s1,char *s2,int n);
 BOOL strcsequal(char *s1,char *s2);
 void strlower(char *s);
@@ -352,8 +352,8 @@ int count_chars(char *s,char c);
 char *safe_strcpy(char *dest,const char *src, int maxlength);
 char *safe_strcat(char *dest, char *src, int maxlength);
 char *StrCpy(char *dest,char *src);
-char *StrnCpy(char *dest,char *src,int n);
-char *strncpyn(char *dest, char *src,int n, char c);
+char *StrnCpy(char *dest,const char *src,int n);
+char *strncpyn(char *dest, const char *src,int n, char c);
 int strhex_to_str(char *p, int len, const char *strhex);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
 BOOL string_init(char **dest,char *src);
@@ -372,7 +372,7 @@ char *unistr2_to_str(UNISTR2 *str);
 uint32 buffer2_to_uint32(BUFFER2 *str);
 char *buffer2_to_str(BUFFER2 *str);
 char *buffer2_to_multistr(BUFFER2 *str);
-int struni2(uint16 *p, char *buf);
+int struni2(uint16 *p, const char *buf);
 char *unistr(char *buf);
 int unistrcpy(char *dst, char *src);
 
@@ -435,12 +435,12 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   time_t *w_time, SMB_INO_T *ino);
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
 	     void (*fn)(file_info *, const char *));
-BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
-                             char *old_password);
+BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
+                             const char *old_password);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
-BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
+BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
@@ -482,12 +482,12 @@ BOOL deal_with_creds(uchar sess_key[8],
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 		 struct in_addr to_ip,char *master,char *rname,
 		 void (*fn)(struct packet_struct *));
-struct in_addr *name_query(int fd,char *name,int name_type, BOOL bcast,BOOL recurse,
+struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOOL recurse,
          struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *));
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
-BOOL resolve_name(char *name, struct in_addr *return_ip, int name_type);
+BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
 
 /*The following definitions come from  libsmb/nmblib.c  */
@@ -497,7 +497,7 @@ char *namestr(struct nmb_name *n);
 struct packet_struct *copy_packet(struct packet_struct *packet);
 void free_packet(struct packet_struct *packet);
 struct packet_struct *read_packet(int fd,enum packet_type packet_type);
-void make_nmb_name( struct nmb_name *n, char *name, int type, char *this_scope );
+void make_nmb_name( struct nmb_name *n, const char *name, int type, const char *this_scope );
 BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 BOOL send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
@@ -540,7 +540,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
-BOOL make_oem_passwd_hash(char data[516], char *passwd, uchar old_pw_hash[16], BOOL unicode);
+BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
 
 /*The following definitions come from  libsmb/smberr.c  */
 

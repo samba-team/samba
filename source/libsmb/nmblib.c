@@ -762,7 +762,7 @@ static int build_dgram(char *buf,struct packet_struct *p)
 /*******************************************************************
   build a nmb name
  *******************************************************************/
-void make_nmb_name( struct nmb_name *n, char *name, int type, char *this_scope )
+void make_nmb_name( struct nmb_name *n, const char *name, int type, const char *this_scope )
 {
   memset( (char *)n, '\0', sizeof(struct nmb_name) );
   StrnCpy( n->name, name, 15 );

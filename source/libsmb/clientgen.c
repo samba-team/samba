@@ -2087,8 +2087,8 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 Send a SamOEMChangePassword command
 ****************************************************************************/
 
-BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
-                             char *old_password)
+BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
+                             const char *old_password)
 {
   char param[16+sizeof(fstring)];
   char data[532];
@@ -2317,7 +2317,7 @@ retry:
 /****************************************************************************
 open the client sockets
 ****************************************************************************/
-BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
+BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern struct in_addr ipzero;
 

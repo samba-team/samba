@@ -115,7 +115,7 @@ char **toktocliplist(int *ctok, char *sep)
 /*******************************************************************
   case insensitive string compararison
 ********************************************************************/
-int StrCaseCmp(char *s, char *t)
+int StrCaseCmp(const char *s, const char *t)
 {
   /* compare until we run out of string, either t or s, or find a difference */
   /* We *must* use toupper rather than tolower here due to the
@@ -272,7 +272,7 @@ int StrnCaseCmp(char *s, char *t, int n)
 /*******************************************************************
   compare 2 strings 
 ********************************************************************/
-BOOL strequal(char *s1, char *s2)
+BOOL strequal(const char *s1, const char *s2)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2) return(False);
@@ -819,7 +819,7 @@ char *StrCpy(char *dest,char *src)
 /****************************************************************************
 like strncpy but always null terminates. Make sure there is room!
 ****************************************************************************/
-char *StrnCpy(char *dest,char *src,int n)
+char *StrnCpy(char *dest,const char *src,int n)
 {
   char *d = dest;
   if (!dest) return(NULL);
@@ -837,7 +837,7 @@ char *StrnCpy(char *dest,char *src,int n)
 like strncpy but copies up to the character marker.  always null terminates.
 returns a pointer to the character marker in the source string (src).
 ****************************************************************************/
-char *strncpyn(char *dest, char *src,int n, char c)
+char *strncpyn(char *dest, const char *src,int n, char c)
 {
 	char *p;
 	int str_len;

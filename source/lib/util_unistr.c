@@ -189,7 +189,7 @@ return number of unicode chars copied, excluding the null character.
 only handles ascii strings
 ********************************************************************/
 #define MAXUNI 1024
-int struni2(uint16 *p, char *buf)
+int struni2(uint16 *p, const char *buf)
 {
 	int len = 0;
 
