@@ -44,19 +44,18 @@ class gtdbtool:
         scrolled_win = GtkScrolledWindow()
         scrolled_win.set_policy(POLICY_AUTOMATIC, POLICY_AUTOMATIC)
         vbox.pack_start(scrolled_win)
-        scrolled_win.set_usize(350,400)
         scrolled_win.show()
 
         hbox = GtkHBox()
-        vbox.pack_end(hbox)
+        vbox.pack_end(hbox, expand = 0, padding = 5)
         hbox.show()
 
         label = GtkLabel("Filter:")
-        hbox.pack_start(label, expand = 0)
+        hbox.pack_start(label, expand = 0, padding = 5)
         label.show()
 
         self.entry = GtkEntry()
-        hbox.pack_end(self.entry)
+        hbox.pack_end(self.entry, padding = 5)
         self.entry.show()
 
         self.entry.connect("activate", self.filter_activated)
