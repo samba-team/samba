@@ -149,6 +149,7 @@ a crude inode number generator
 *******************************************************/
 ino_t smbw_inode(const char *name)
 {
+	if (!*name) return 2;
 	return (ino_t)str_checksum(name);
 }
 
@@ -1194,7 +1195,8 @@ off_t smbw_lseek(int fd, off_t offset, int whence)
 		break;
 	case SEEK_END:
 		if (!cli_qfileinfo(&file->srv->cli, file->f->cli_fd, 
-				   NULL, &size, NULL, NULL, NULL) &&
+				   NULL, &size, NULL, NULL, NULL, 
+				   NULL, NULL) &&
 		    !cli_getattrE(&file->srv->cli, file->f->cli_fd, 
 				  NULL, &size, NULL, NULL, NULL)) {
 			errno = EINVAL;

@@ -1432,6 +1432,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       CVAL(pdata,20) = 0;
       CVAL(pdata,21) = (mode&aDIR)?1:0;
       pdata += 24;
+      SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino); 
       pdata += 8; /* index number */
       pdata += 4; /* EA info */
       if (mode & aRONLY)

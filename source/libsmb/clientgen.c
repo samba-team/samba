@@ -1669,7 +1669,8 @@ send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, size_t *size, uint32 *mode)
+		    time_t *w_time, size_t *size, uint32 *mode,
+		    SMB_INO_T *ino)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -1721,6 +1722,9 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	if (mode) {
 		*mode = IVAL(rdata, 32);
 	}
+	if (ino) {
+		*ino = IVAL(rdata, 64);
+	}
 
 	if (rdata) free(rdata);
 	if (rparam) free(rparam);
@@ -1733,7 +1737,8 @@ send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint32 *mode, size_t *size,
-		   time_t *c_time, time_t *a_time, time_t *m_time)
+		   time_t *c_time, time_t *a_time, time_t *m_time, 
+		   time_t *w_time, SMB_INO_T *ino)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -1745,7 +1750,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 
 	memset(param, 0, param_len);
 	SSVAL(param, 0, fnum);
-	SSVAL(param, 2, SMB_INFO_STANDARD);
+	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
                             NULL, 0,                        /* name, length */
@@ -1768,19 +1773,25 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	}
 
 	if (c_time) {
-		*c_time = make_unix_date2(rdata+0);
+		*c_time = interpret_long_date(rdata+0) - cli->serverzone;
 	}
 	if (a_time) {
-		*a_time = make_unix_date2(rdata+4);
+		*a_time = interpret_long_date(rdata+8) - cli->serverzone;
 	}
 	if (m_time) {
-		*m_time = make_unix_date2(rdata+8);
+		*m_time = interpret_long_date(rdata+16) - cli->serverzone;
+	}
+	if (w_time) {
+		*w_time = interpret_long_date(rdata+24) - cli->serverzone;
 	}
 	if (size) {
-		*size = IVAL(rdata, 12);
+		*size = IVAL(rdata, 40);
 	}
 	if (mode) {
-		*mode = SVAL(rdata,l1_attrFile);
+		*mode = IVAL(rdata, 32);
+	}
+	if (ino) {
+		*ino = IVAL(rdata, 64);
 	}
 
 	if (rdata) free(rdata);
