@@ -161,7 +161,7 @@ LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o passdb/secrets.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o passdb/smbpasschange.o \
-	     passdb/tdbpass.o
+	     passdb/tdbpass.o passdb/pampass.o
 
 PROFILE_OBJ = profile/profile.o
 
