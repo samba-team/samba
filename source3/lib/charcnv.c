@@ -354,7 +354,13 @@ int pull_ascii(char *dest, const void *src, int dest_len, int src_len, int flags
 		dest_len = sizeof(pstring);
 	}
 
-	if (src_len == -1 && (flags & STR_TERMINATE)) src_len = strlen(src)+1;
+	if (flags & STR_TERMINATE) {
+		if (src_len == -1) {
+			src_len = strlen(src)+1;
+		} else {
+			src_len = strnlen(src, src_len) + 1;
+		}
+	}
 
 	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
 
@@ -543,7 +549,13 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 		if (src_len > 0) src_len--;
 	}
 
-	if (src_len == -1 && (flags & STR_TERMINATE)) src_len = strlen_w(src)*2+2;
+	if (flags & STR_TERMINATE) {
+		if (src_len == -1) {
+			src_len = strlen_w(src)*2+2;
+		} else {
+			src_len = strnlen_w(src, src_len/2)*2+2;
+		}
+	}
 
 	/* ucs2 is always a multiple of 2 bytes */
 	src_len &= ~1;
@@ -609,7 +621,13 @@ int pull_utf8(char *dest, const void *src, int dest_len, int src_len, int flags)
 		dest_len = sizeof(pstring);
 	}
 
-	if (src_len == -1 && (flags & STR_TERMINATE)) src_len = strlen(src)+1;
+	if (flags & STR_TERMINATE) {
+		if (src_len == -1) {
+			src_len = strlen(src)+1;
+		} else {
+			src_len = strnlen(src, src_len) + 1;
+		}
+	}
 
 	ret = convert_string(CH_UTF8, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;

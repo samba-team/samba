@@ -1001,3 +1001,15 @@ some platforms don't have strndup
 	return ret;
 }
 #endif
+
+#ifndef HAVE_STRNLEN
+/*******************************************************************
+some platforms don't have strndup
+********************************************************************/
+ size_t strnlen(const char *s, size_t n)
+{
+	int i;
+	for (i=0; s[i] && i<n; i++) /* noop */ ;
+	return i;
+}
+#endif
