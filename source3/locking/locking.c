@@ -39,40 +39,11 @@ extern int DEBUGLEVEL;
 static TDB_CONTEXT *tdb;
 
 /****************************************************************************
- Utility function to map a lock type correctly depending on the real open
- mode of a file.
-****************************************************************************/
-static int map_lock_type(files_struct *fsp, int lock_type)
-{
-	if((lock_type == F_WRLCK) && (fsp->fd_ptr->real_open_flags == O_RDONLY)) {
-		/*
-		 * Many UNIX's cannot get a write lock on a file opened read-only.
-		 * Win32 locking semantics allow this.
-		 * Do the best we can and attempt a read-only lock.
-		 */
-		DEBUG(10,("map_lock_type: Downgrading write lock to read due to read-only file.\n"));
-		return F_RDLCK;
-	} else if( (lock_type == F_RDLCK) && (fsp->fd_ptr->real_open_flags == O_WRONLY)) {
-		/*
-		 * Ditto for read locks on write only files.
-		 */
-		DEBUG(10,("map_lock_type: Changing read lock to write due to write-only file.\n"));
-		return F_WRLCK;
-	}
-	
-	/*
-	 * This return should be the most normal, as we attempt
-	 * to always open files read/write.
-	 */
-	
-	return lock_type;
-}
-
-/****************************************************************************
  Utility function called to see if a file region is locked.
 ****************************************************************************/
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       SMB_OFF_T count,SMB_OFF_T offset, int lock_type)
+	       SMB_OFF_T count,SMB_OFF_T offset, 
+	       enum lock_type lock_type)
 {
 	int snum = SNUM(conn);
 	
@@ -82,13 +53,9 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	if (!lp_locking(snum) || !lp_strict_locking(snum))
 		return(False);
 
-	/*
-	 * Note that most UNIX's can *test* for a write lock on
-	 * a read-only fd, just not *set* a write lock on a read-only
-	 * fd. So we don't need to use map_lock_type here.
-	 */
-	
-	return(fcntl_lock(fsp->fd_ptr->fd,SMB_F_GETLK,offset,count,lock_type));
+	return !brl_locktest(fsp->fd_ptr->inode, fsp->fd_ptr->dev,
+			     1, getpid(), conn->cnum, 
+			     offset, count, lock_type);
 }
 
 
@@ -96,7 +63,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-             SMB_OFF_T count,SMB_OFF_T offset,int lock_type,
+             SMB_OFF_T count,SMB_OFF_T offset,enum lock_type lock_type,
              int *eclass,uint32 *ecode)
 {
 	BOOL ok = False;
@@ -113,9 +80,12 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 	DEBUG(10,("do_lock: lock type %d start=%.0f len=%.0f requested for file %s\n",
 		  lock_type, (double)offset, (double)count, fsp->fsp_name ));
 
-	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
-		ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,
-				map_lock_type(fsp,lock_type));
+	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
+		ok = brl_lock(fsp->fd_ptr->inode, fsp->fd_ptr->dev,
+			      1, getpid(), conn->cnum, 
+			      offset, count, 
+			      lock_type);
+	}
 
 	if (!ok) {
 		*eclass = ERRDOS;
@@ -130,7 +100,8 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
  Utility function called by unlocking requests.
 ****************************************************************************/
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
-               SMB_OFF_T count,SMB_OFF_T offset,int *eclass,uint32 *ecode)
+               SMB_OFF_T count,SMB_OFF_T offset, 
+	       int *eclass,uint32 *ecode)
 {
 	BOOL ok = False;
 	
@@ -140,8 +111,11 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
 		  (double)offset, (double)count, fsp->fsp_name ));
 	
-	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
-		ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,F_UNLCK);
+	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
+		ok = brl_unlock(fsp->fd_ptr->inode, fsp->fd_ptr->dev,
+				1, getpid(), conn->cnum, 
+				offset, count);
+	}
    
 	if (!ok) {
 		*eclass = ERRDOS;
@@ -156,6 +130,8 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 ****************************************************************************/
 BOOL locking_init(int read_only)
 {
+	brl_init();
+
 	if (tdb) return True;
 
 	tdb = tdb_open(lock_path("locking.tdb"), 
