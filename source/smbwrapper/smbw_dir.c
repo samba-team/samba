@@ -78,7 +78,7 @@ static struct smbw_dir *cur_dir;
 /***************************************************** 
 add a entry to a directory listing
 *******************************************************/
-static void smbw_dir_add(struct file_info *finfo, const char *mask)
+static void smbw_dir_add(struct file_info *finfo, const char *mask, void * NULL)
 {
 	DEBUG(5,("%s\n", finfo->name));
 
@@ -100,7 +100,8 @@ static void smbw_dir_add(struct file_info *finfo, const char *mask)
 /***************************************************** 
 add a entry to a directory listing
 *******************************************************/
-static void smbw_share_add(const char *share, uint32 type, const char *comment)
+static void smbw_share_add(const char *share, uint32 type, 
+                           const char *comment, void *state)
 {
 	struct file_info finfo;
 
@@ -119,7 +120,7 @@ static void smbw_share_add(const char *share, uint32 type, const char *comment)
 add a server to a directory listing
 *******************************************************/
 static void smbw_server_add(const char *name, uint32 type, 
-			    const char *comment)
+			    const char *comment, void *state)
 {
 	struct file_info finfo;
 
@@ -201,30 +202,30 @@ int smbw_dir_open(const char *fname)
 
 	if ((p=strstr(srv->server_name,"#01"))) {
 		*p = 0;
-		smbw_server_add(".",0,"");
-		smbw_server_add("..",0,"");
+		smbw_server_add(".",0,"", NULL);
+		smbw_server_add("..",0,"", NULL);
 		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_DOMAIN_ENUM,
-				  smbw_server_add);
+				  smbw_server_add, NULL);
 		*p = '#';
 	} else if ((p=strstr(srv->server_name,"#1D"))) {
 		DEBUG(4,("doing NetServerEnum\n"));
 		*p = 0;
-		smbw_server_add(".",0,"");
-		smbw_server_add("..",0,"");
+		smbw_server_add(".",0,"", NULL);
+		smbw_server_add("..",0,"", NULL);
 		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
-				  smbw_server_add);
+				  smbw_server_add, NULL);
 		*p = '#';
 	} else if (strcmp(srv->cli.dev,"IPC") == 0) {
 		DEBUG(4,("doing NetShareEnum\n"));
-		smbw_share_add(".",0,"");
-		smbw_share_add("..",0,"");
-		if (cli_RNetShareEnum(&srv->cli, smbw_share_add) < 0) {
+		smbw_share_add(".",0,"", NULL);
+		smbw_share_add("..",0,"", NULL);
+		if (cli_RNetShareEnum(&srv->cli, smbw_share_add, NULL) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
 	} else if (strncmp(srv->cli.dev,"LPT",3) == 0) {
-		smbw_share_add(".",0,"");
-		smbw_share_add("..",0,"");
+		smbw_share_add(".",0,"", NULL);
+		smbw_share_add("..",0,"", NULL);
 		if (cli_print_queue(&srv->cli, smbw_printjob_add) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
@@ -237,7 +238,7 @@ int smbw_dir_open(const char *fname)
 		}
 #endif
 		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, 
-			     smbw_dir_add) < 0) {
+			     smbw_dir_add, NULL) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}

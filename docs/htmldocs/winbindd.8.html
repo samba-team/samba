@@ -149,6 +149,25 @@ database is not actively changing <strong>winbindd</strong> will only have to se
 sequence number query packet every "winbind cache time" seconds.
 <p><strong>Default:</strong>
 <code>     winbind cache time = 15</code>
+<p><p></p><dt><strong>winbind enum users</strong><dd>
+<p>On large installations it may be necessary to suppress the enumeration of
+users through the <code>setpwent</code>, <code>getpwent</code> and <code>endpwent</code> group of
+system calls.  If the <code>winbind enum users</code> parameter is false, calls to
+the <code>getpwent</code> system call will not return any data.
+<p>Warning: Turning off user enumeration may cause some programs to behave
+oddly.  For example, the finger program relies on having access to the full
+user list when searching for matching usernames.
+<p><strong>Default:</strong>
+<code>     winbind enum users = true</code>
+<p><p></p><dt><strong>winbind enum groups</strong><dd>
+<p>On large installations it may be necessary to suppress the enumeration of
+groups through the <code>setgrent</code>, <code>getgrent</code> and <code>endgrent</code> group of
+system calls.  If the <code>winbind enum groups</code> parameter is false, calls to
+the <code>getgrent</code> system call will not return any data.
+<p>Warning: Turning off group enumeration may cause some programs to behave
+oddly.
+<p><strong>Default:</strong>
+<code>     winbind enum groups = true</code>
 <p><p></p><dt><strong>template homedir</strong><dd>
 <p>When filling out the user information for a Windows NT user, the
 <strong>winbindd</strong> daemon uses this parameter to fill in the home directory for
@@ -204,7 +223,8 @@ program like this:
 
 </pre>
 
-<p>Then within samedit run the command:
+<p>The username after the -U can be any Domain user that has administrator 
+priviliges on the machine. Next from within samedit, run the command:
 <pre>
 
 	createuser MACHINE$ -j DOMAIN -L

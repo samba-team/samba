@@ -168,6 +168,33 @@ sequence number query packet every "winbind cache time" seconds.
   bf(Default:)
 tt(     winbind cache time = 15)
 
+dit(winbind enum users)
+
+On large installations it may be necessary to suppress the enumeration of
+users through the tt(setpwent), tt(getpwent) and tt(endpwent) group of
+system calls.  If the tt(winbind enum users) parameter is false, calls to
+the tt(getpwent) system call will not return any data.
+
+Warning: Turning off user enumeration may cause some programs to behave
+oddly.  For example, the finger program relies on having access to the full
+user list when searching for matching usernames.
+
+  bf(Default:)
+tt(     winbind enum users = true)
+
+dit(winbind enum groups)
+
+On large installations it may be necessary to suppress the enumeration of
+groups through the tt(setgrent), tt(getgrent) and tt(endgrent) group of
+system calls.  If the tt(winbind enum groups) parameter is false, calls to
+the tt(getgrent) system call will not return any data.
+
+Warning: Turning off group enumeration may cause some programs to behave
+oddly.
+
+  bf(Default:)
+tt(     winbind enum groups = true)
+
 dit(template homedir)
 
 When filling out the user information for a Windows NT user, the
@@ -225,7 +252,8 @@ verb(
 	samedit -S '*' -W DOMAIN -UAdministrator
 )
 
-Then within samedit run the command:
+The username after the -U can be any Domain user that has administrator 
+priviliges on the machine. Next from within samedit, run the command:
 verb(
 	createuser MACHINE$ -j DOMAIN -L
 )
