@@ -864,6 +864,8 @@ uint32 lookup_group_rid(char *group_name, uint32 *rid);
 uint32 lookup_alias_rid(char *alias_name, uint32 *rid);
 uint32 lookup_user_rid(char *user_name, uint32 *rid);
 BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
+uint32 uid_to_user_rid(uint32 uid);
+uint32 gid_to_group_rid(uint32 gid);
 
 /*The following definitions come from  lib/rpc/server/srv_wkssvc.c  */
 

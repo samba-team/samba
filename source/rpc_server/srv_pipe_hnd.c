@@ -244,8 +244,6 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 		else if (data_hdr_pos == p->next_frag_start)
 		{
 			DEBUG(6,("read_pipe: next fragment expected\n"));
-
-			/* advance to the next fragment */
 		}
 
 		p->file_offset  += num;
