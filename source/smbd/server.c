@@ -1466,6 +1466,8 @@ void close_file(int fnum, BOOL normal_close)
   uint32 inode = fs_p->fd_ptr->inode;
   int token;
 
+  Files[fnum].reserved = False;
+
 #if USE_READ_PREDICTION
   invalidate_read_prediction(fs_p->fd_ptr->fd);
 #endif
@@ -3671,21 +3673,23 @@ int find_free_file(void )
 		if (first_file == 0) first_file = 1;
 	}
 
-	if (first_file == MAX_OPEN_FILES)
-		first_file = 0;
+	if (first_file >= MAX_OPEN_FILES)
+		first_file = 1;
 
 	for (i=first_file;i<MAX_OPEN_FILES;i++)
-		if (!Files[i].open) {
+		if (!Files[i].open && !Files[i].reserved) {
 			memset(&Files[i], 0, sizeof(Files[i]));
-			first_file++;
+			first_file = i+1;
+			Files[i].reserved = True;
 			return(i);
 		}
 
 	/* returning a file handle of 0 is a bad idea - so we start at 1 */
 	for (i=1;i<first_file;i++)
-		if (!Files[i].open) {
+		if (!Files[i].open && !Files[i].reserved) {
 			memset(&Files[i], 0, sizeof(Files[i]));
-			first_file++;
+			first_file = i+1;
+			Files[i].reserved = True;
 			return(i);
 		}
 
