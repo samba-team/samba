@@ -85,7 +85,7 @@ closedir(DIR);
 # install the swat files
 chdir "$SRCDIR/source";
 system("chmod +x ./script/installswat.sh");
-system("./script/installswat.sh  ../packaging/SGI/swat ./");
+system("./script/installswat.sh  ../packaging/SGI/swat ./ ../packaging/SGI/swat/using_samba");
 system("cp -f ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
@@ -100,6 +100,7 @@ chdir $curdir;
 # the files installed in docs include all the original files in docs plus all
 # the "*.doc" files from the source tree
 @docs = sort byfilename grep (!/^docs\/$/ & (/^source\/.*\.doc$/ | /^docs\//),@allfiles);
+@docs = grep(!/htmldocs\/using_samba/, @docs);
 
 @swatfiles = sort grep(/^packaging\/SGI\/swat/, @allfiles);
 @catman = sort grep(/^packaging\/SGI\/catman/ & !/\/$/, @allfiles);
