@@ -144,6 +144,7 @@ struct cli_state {
 	uint16 max_recv_frag;
 
 	BOOL use_kerberos;
+	BOOL fallback_after_kerberos;
 	BOOL use_spnego;
 
 	BOOL use_oplocks; /* should we use oplocks? */
