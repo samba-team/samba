@@ -232,7 +232,7 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
     current_user.groups = conn->groups;
     current_user.igroups = conn->igroups;
     current_user.ngroups = conn->ngroups;
-    current_user.attrs   = vuser->attrs;
+    current_user.attrs   = conn->attrs;
   }
   else
   {

@@ -144,7 +144,7 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
   this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
   this_ldata = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
 
-  align = (this_lparam%4)+1;
+  align = (this_lparam%4);
 
   set_message(outbuf,10+lsetup,align+this_ldata+this_lparam,True);
   if (this_lparam)
