@@ -79,13 +79,13 @@ krb5_storage_seek(krb5_storage *sp, off_t offset, int whence)
     return (*sp->seek)(sp, offset, whence);
 }
 
-ssize_t
+krb5_ssize_t
 krb5_storage_read(krb5_storage *sp, void *buf, size_t len)
 {
     return sp->fetch(sp, buf, len);
 }
 
-ssize_t
+krb5_ssize_t
 krb5_storage_write(krb5_storage *sp, const void *buf, size_t len)
 {
     return sp->store(sp, buf, len);
