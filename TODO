@@ -6,8 +6,6 @@ $Id$
 
 add some kind of remote admin protocol
 
-allow changing of all fields with kdb_edit
-
 * kpasswdd
 
 configuration control for password expiration
