@@ -330,14 +330,15 @@ Set save_dir if you also need to save/restore the CWD
 ****************************************************************************/
 void become_root(BOOL save_dir) 
 {
-	if (become_root_depth) {
-		DEBUG(0,("ERROR: become root depth is non zero\n"));
+	if (become_root_depth < 0)
+	{
+		DEBUG(0,("ERROR: become root depth is negative!\n"));
 	}
 	if (save_dir)
 		dos_GetWd(become_root_dir);
 
 	current_user_saved = current_user;
-	become_root_depth = 1;
+	become_root_depth++;
 
 	become_uid(0);
 	become_gid(0);
@@ -350,7 +351,8 @@ Set save_dir if you also need to save/restore the CWD
 ****************************************************************************/
 void unbecome_root(BOOL restore_dir)
 {
-	if (become_root_depth != 1) {
+	if (become_root_depth <= 0)
+	{
 		DEBUG(0,("ERROR: unbecome root depth is %d\n",
 			 become_root_depth));
 	}
@@ -387,5 +389,5 @@ void unbecome_root(BOOL restore_dir)
 
 	current_user = current_user_saved;
 
-	become_root_depth = 0;
+	become_root_depth--;
 }
