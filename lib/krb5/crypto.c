@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -2173,18 +2173,18 @@ krb5_error_code
 krb5_keytype_to_enctypes (krb5_context context,
 			  krb5_keytype keytype,
 			  unsigned *len,
-			  int **val)
+			  krb5_enctype **val)
 {
     int i;
     unsigned n = 0;
-    int *ret;
+    krb5_enctype *ret;
 
     for (i = num_etypes - 1; i >= 0; --i) {
 	if (etypes[i]->keytype->type == keytype
 	    && !(etypes[i]->flags & F_PSEUDO))
 	    ++n;
     }
-    ret = malloc(n * sizeof(int));
+    ret = malloc(n * sizeof(*ret));
     if (ret == NULL && n != 0) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
@@ -2209,10 +2209,10 @@ krb5_error_code
 krb5_keytype_to_enctypes_default (krb5_context context,
 				  krb5_keytype keytype,
 				  unsigned *len,
-				  int **val)
+				  krb5_enctype **val)
 {
     int i, n;
-    int *ret;
+    krb5_enctype *ret;
 
     if (keytype != KEYTYPE_DES || context->etypes_des == NULL)
 	return krb5_keytype_to_enctypes (context, keytype, len, val);

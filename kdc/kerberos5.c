@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -109,7 +109,7 @@ find_keys(hdb_entry *client,
 	  krb5_enctype *cetype,
 	  Key **skey,
 	  krb5_enctype *setype, 
-	  int *etypes,
+	  krb5_enctype *etypes,
 	  unsigned num_etypes)
 {
     krb5_error_code ret;
