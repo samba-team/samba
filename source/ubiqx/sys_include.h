@@ -43,7 +43,7 @@
 
 /* The main Samba system-adaptive header file.
  */
-#include "../includes.h"
+#include "includes.h"
 
 #endif /* _INCLUDES_H */
 
