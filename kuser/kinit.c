@@ -44,6 +44,7 @@ int renewable;
 int version_flag = 0;
 int help_flag = 0;
 char *lifetime = NULL;
+char *server = NULL;
 
 struct getargs args[] = {
     { "forwardable",		'f', arg_flag, &forwardable, 
@@ -52,6 +53,8 @@ struct getargs args[] = {
       "get renewable tickets", NULL },
     { "lifetime",		'l', arg_string, &lifetime,
       "lifetime of tickets", "seconds"},
+    { "server", 		's', arg_string, &server,
+      "server to get ticket for", "principal" },
     { "version", 		0,   arg_flag, &version_flag, 
       NULL, NULL },
     { "help",			0,   arg_flag, &help_flag, 
@@ -133,7 +136,7 @@ main (int argc, char **argv)
 					krb5_prompter_posix,
 					NULL,
 					0,
-					NULL,
+					server,
 					&opt);
     switch(ret){
     case 0:
