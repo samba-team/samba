@@ -542,6 +542,59 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 	return !cli_is_error(cli);
 }
 
+
+/****************************************************************************
+ send a lock with a specified locktype 
+ this is used for testing LOCKING_ANDX_CANCEL_LOCK
+****************************************************************************/
+NTSTATUS cli_locktype(struct cli_state *cli, int fnum, 
+		      uint32 offset, uint32 len, int timeout, unsigned char locktype)
+{
+	char *p;
+	int saved_timeout = cli->timeout;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0', smb_size);
+
+	set_message(cli->outbuf,8,0,True);
+
+	SCVAL(cli->outbuf,smb_com,SMBlockingX);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	SCVAL(cli->outbuf,smb_vwv3,locktype);
+	SIVALS(cli->outbuf, smb_vwv4, timeout);
+	SSVAL(cli->outbuf,smb_vwv6,0);
+	SSVAL(cli->outbuf,smb_vwv7,1);
+
+	p = smb_buf(cli->outbuf);
+	SSVAL(p, 0, cli->pid);
+	SIVAL(p, 2, offset);
+	SIVAL(p, 6, len);
+
+	p += 10;
+
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+
+	if (timeout != 0) {
+		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+	}
+
+	if (!cli_receive_smb(cli)) {
+		cli->timeout = saved_timeout;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	cli->timeout = saved_timeout;
+
+	return cli_nt_error(cli);
+}
+
+
 /****************************************************************************
  Lock a file.
 ****************************************************************************/
@@ -745,6 +798,7 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 
 	return True;
 }
+
 
 /****************************************************************************
  Do a SMBgetattrE call.
