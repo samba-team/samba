@@ -23,7 +23,7 @@ a very mystical tool. There is a great deal of uncertainty regarding CUPS and ho
 it works. The result is seen in a large number of posting on the samba mailing lists
 expressing frustration when MS Windows printers appear not to work with a CUPS
 backr-end.
-/para>
+</para>
 
 <para>
 This is a good time to point out how CUPS can be used and what it does. CUPS is more
@@ -112,8 +112,8 @@ do any print file format conversion work.
 The CUPS files that need to be correctly set for RAW mode printers to work are:
 
 <itemizedlist>
-	<listitem><para><filename>/etc/cups/mime.types</filename><para></listitem>
-	<listitem><para><filename>/etc/cups/mime.convs</filename><para></listitem>
+	<listitem><para><filename>/etc/cups/mime.types</filename></para></listitem>
+	<listitem><para><filename>/etc/cups/mime.convs</filename></para></listitem>
 </itemizedlist>
 
 Both contain entries that must be uncommented to allow <emphasis>RAW</emphasis> mode
@@ -172,6 +172,7 @@ the process of determining proper treatment while in the print queue system.
 		<listitem><para>* application/vnd.cups-postscript</para></listitem>
 	</itemizedlist>
 	</para>
+	</listitem>
 </itemizedlist>
 </para>
 
@@ -186,14 +187,14 @@ the filtered file could possibly have an unwanted PJL header.
 
 <para>
 "application/postscript" will be all files with a ".ps", ".ai", ".eps" suffix or which
-have as their first character string one of "%!" or "<04>%".
+have as their first character string one of "%!" or "&gt;04&lt;%".
 </para>
 
 <para>
 "application/vnd.cups-postscript" will files which contain the string
 "LANGUAGE=POSTSCRIPT" (or similar variations with different capitalization) in the
 first 512 bytes, and also contain the "PJL super escape code" in the first 128 bytes
-("<1B>%-12345X"). Very likely, most PostScript files generated on Windows using a CUPS
+("&gt;1B&lt;%-12345X"). Very likely, most PostScript files generated on Windows using a CUPS
 or other PPD, will have to be auto-typed as "vnd.cups-postscript".  A file produced
 with a "Generic PostScript driver" will just be tagged "application/postscript".
 </para>
@@ -1072,7 +1073,7 @@ The recommended driver is "ljet4". It has a link to the page for the ljet4
 driver too:
 </para>
 
-<para><ulink url="http://www.linuxprinting.org/show_driver.cgi?driver=ljet4">http://www.linuxprinting.org/show_driver.cgi?driver=ljet4</ulink>
+<para><ulink url="http://www.linuxprinting.org/show_driver.cgi?driver=ljet4">http://www.linuxprinting.org/show_driver.cgi?driver=ljet4</ulink></para>
 
 <para>
 On the driver's page, you'll find important and detailed info about how to use
@@ -1173,6 +1174,7 @@ Summary - You need:
 	<member>Ghostscript (because it is called and controlled by the PPD/cupsomatic combo in a way to fit your printermodel/driver combo.</member>
 	<member>Ghostscript *must*, depending on the driver/model, contain support for a certain "device" (as shown by "gs -h")</member>
 </simplelist>
+</para>
 
 <para>
 In the case of the "hpijs" driver, you need a Ghostscript version, which
@@ -1226,6 +1228,8 @@ for the whereabouts of your Windows-originating printjobs:
 	<member>are there "filter" available for this MIME type?</member>
 	<member>are there "filter rules" defined in "/etc/cups/mime.convs" for this MIME type?</member>
 </simplelist>
+
+</sect2>
 
 </sect1>
 
