@@ -83,7 +83,7 @@ static int tcsetattr(int fd, int flags, struct sgttyb *t)
 static struct termios t;
 #endif /* SYSV_TERMIO */
 
-char *getsmbpass(char *prompt)
+char *getsmbpass(const char *prompt)
 {
   FILE *in, *out;
   int echo_off;

@@ -1040,7 +1040,7 @@ BOOL get_mydomname(fstring my_domname)
  Interpret a protocol description string, with a default.
 ****************************************************************************/
 
-int interpret_protocol(char *str,int def)
+int interpret_protocol(const char *str,int def)
 {
 	if (strequal(str,"NT1"))
 		return(PROTOCOL_NT1);
