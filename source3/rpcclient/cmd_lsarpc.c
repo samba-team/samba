@@ -297,7 +297,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 /* Enumerates privileges */
 
 static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli, 
-                                          TALLOC_CTX *mem_ctx, int argc, 
+				       TALLOC_CTX *mem_ctx, int argc, 
                                           char **argv) 
 {
 	POLICY_HND pol;
@@ -388,7 +388,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct cli_state *cli,
 /* Enumerate the LSA SIDS */
 
 static NTSTATUS cmd_lsa_enum_sids(struct cli_state *cli, 
-                                     TALLOC_CTX *mem_ctx, int argc, 
+				  TALLOC_CTX *mem_ctx, int argc, 
                                      char **argv) 
 {
 	POLICY_HND pol;
@@ -533,6 +533,50 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 
 	for (i = 0; i < count; i++) {
 		printf("\t%s\n", rights[i]);
+	}
+
+ done:
+	return result;
+}
+
+
+/* Enumerate the accounts with a specific right */
+
+static NTSTATUS cmd_lsa_enum_acct_with_right(struct cli_state *cli, 
+					     TALLOC_CTX *mem_ctx, int argc, 
+					     const char **argv) 
+{
+	POLICY_HND dom_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	DOM_SID *sids;
+	uint32 count;
+	const char *right;
+
+	int i;
+
+	if (argc != 2 ) {
+		printf("Usage: %s <RIGHT>\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	right = argv[1];
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_enum_account_with_right(cli, mem_ctx, &dom_pol, right, &count, &sids);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	printf("found %d SIDs for '%s'\n", count, right);
+
+	for (i = 0; i < count; i++) {
+		printf("\t%s\n", sid_string_static(&sids[i]));
 	}
 
  done:
@@ -703,6 +747,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaenumsid",          cmd_lsa_enum_sids,          PI_LSARPC, "Enumerate the LSA SIDS",               "" },
 	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
 	{ "lsaenumacctrights",   cmd_lsa_enum_acct_rights,   PI_LSARPC, "Enumerate the rights of an SID",   "" },
+	{ "lsaenumacctwithright",cmd_lsa_enum_acct_with_right,PI_LSARPC,"Enumerate accounts with a right",   "" },
 	{ "lsaaddacctrights",    cmd_lsa_add_acct_rights,    PI_LSARPC, "Add rights to an account",   "" },
 	{ "lsaremoveacctrights", cmd_lsa_remove_acct_rights, PI_LSARPC, "Remove rights from an account",   "" },
 	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PI_LSARPC, "Get a privilege value given its name", "" },
