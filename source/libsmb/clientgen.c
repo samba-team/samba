@@ -259,7 +259,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int this_data,this_param;
 	
 	*data_len = *param_len = 0;
-	
+
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
@@ -1373,7 +1373,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
 /****************************************************************************
 send a qpathinfo call
 ****************************************************************************/
-BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
+BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   size_t *size, uint32 *mode)
 {
