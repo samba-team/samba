@@ -124,9 +124,23 @@ static BOOL open_nbt_connection(struct cli_state *c)
 	if (use_level_II_oplocks) c->use_level_II_oplocks = True;
 
 	if (!cli_session_request(c, &calling, &called)) {
-		printf("%s rejected the session\n",host);
-		cli_shutdown(c);
-		return False;
+		/*
+		 * Well, that failed, try *SMBSERVER ... 
+		 * However, we must reconnect as well ...
+		 */
+		if (!cli_connect(c, host, &ip)) {
+			printf("Failed to connect with %s\n", host);
+			return False;
+		}
+
+		make_nmb_name(&called, "*SMBSERVER", 0x20);
+		if (!cli_session_request(c, &calling, &called)) {
+			printf("%s rejected the session\n",host);
+			printf("We tried with a called name of %s & %s\n",
+				host, "*SMBSERVER");
+			cli_shutdown(c);
+			return False;
+		}
 	}
 
 	return True;
