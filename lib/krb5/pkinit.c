@@ -566,42 +566,24 @@ _krb5_pk_mk_ContentInfo(krb5_context context,
     return 0;
 }
 
-krb5_error_code 
-_krb5_pk_mk_padata(krb5_context context,
-		   void *c,
-		   const KDC_REQ_BODY *req_body,
-		   unsigned nonce,
-		   METHOD_DATA *md)
+static krb5_error_code
+pk_mk_padata(krb5_context context,
+	     int win2k_compat,
+	     krb5_pk_init_ctx ctx,
+	     const KDC_REQ_BODY *req_body,
+	     unsigned nonce,
+	     METHOD_DATA *md)
 {
-    krb5_pk_init_ctx ctx = c;
     krb5_error_code ret;
     const heim_oid *oid;
     PA_PK_AS_REQ req;
     size_t size;
     krb5_data buf, sd_buf;
     int pa_type;
-    const char *provisioning_server;
-    int win2k_compat;
-
-    provisioning_server =
-	krb5_config_get_string(context, NULL,
-			       "realms",
-			       req_body->realm,
-			       "packet-cable-provisioning-server",
-			       NULL);
 
     krb5_data_zero(&buf);
     krb5_data_zero(&sd_buf);
     memset(&req, 0, sizeof(req));
-
-    win2k_compat = krb5_config_get_bool_default(context, NULL,
-						FALSE,
-						"realms",
-						req_body->realm,
-						"win2k_pkinit",
-						NULL);
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
-	win2k_compat = 1;
 
     if (win2k_compat) {
 	AuthPack_Win2k ap;
@@ -703,8 +685,51 @@ _krb5_pk_mk_padata(krb5_context context,
     ret = krb5_padata_add(context, md, pa_type, buf.data, buf.length);
     if (ret)
 	free(buf.data);
+ out:
+    return ret;
+}
 
-    if (ret == 0 && provisioning_server) {
+
+krb5_error_code 
+_krb5_pk_mk_padata(krb5_context context,
+		   void *c,
+		   const KDC_REQ_BODY *req_body,
+		   unsigned nonce,
+		   METHOD_DATA *md)
+{
+    krb5_pk_init_ctx ctx = c;
+    krb5_error_code ret;
+    size_t size;
+    krb5_data buf;
+    const char *provisioning_server;
+    int win2k_compat;
+
+    win2k_compat = krb5_config_get_bool_default(context, NULL,
+						TRUE,
+						"realms",
+						req_body->realm,
+						"win2k_pkinit",
+						NULL);
+    if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
+	win2k_compat = 1;
+
+    if (win2k_compat) {
+	ret = pk_mk_padata(context, 1, ctx, req_body, nonce, md);
+	if (ret)
+	    goto out;
+    }
+    ret = pk_mk_padata(context, 0, ctx, req_body, nonce, md);
+    if (ret)
+	goto out;
+
+    provisioning_server =
+	krb5_config_get_string(context, NULL,
+			       "realms",
+			       req_body->realm,
+			       "packet-cable-provisioning-server",
+			       NULL);
+
+    if (provisioning_server) {
 	/* PacketCable requires the PROV-SRV-LOCATION authenticator */
 	const PROV_SRV_LOCATION prov_server = (char *)provisioning_server;
 
@@ -720,10 +745,7 @@ _krb5_pk_mk_padata(krb5_context context,
 	if (ret)
 	    free(buf.data);
     }
-
  out:
-    free_PA_PK_AS_REQ(&req);
-
     return ret;
 }
 
