@@ -27,9 +27,7 @@ extern BOOL short_case_preserve;
 extern BOOL case_mangle;
 extern BOOL case_sensitive;
 extern BOOL use_mangled_map;
-extern fstring remote_machine;
 extern userdom_struct current_user_info;
-extern fstring remote_machine;
 
 
 /****************************************************************************
@@ -636,7 +634,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	   I have disabled this chdir check (tridge) */
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
-			 remote_machine, conn->client_address,
+			 get_remote_machine_name(), conn->client_address,
 			 conn->connectpath,strerror(errno)));
 		change_to_root_user();
 		yield_connection(conn, lp_servicename(SNUM(conn)));
@@ -676,7 +674,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
-		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
+		dbgtext( "%s (%s) ", get_remote_machine_name(), conn->client_address );
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "initially as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
@@ -825,7 +823,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		}
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
-			 remote_machine, client_addr(), service));
+			 get_remote_machine_name(), client_addr(), service));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
@@ -847,7 +845,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
-				 remote_machine,conn->client_address,
+				 get_remote_machine_name(),conn->client_address,
 				 lp_servicename(SNUM(conn))));
 
 	if (conn->vfs_ops.disconnect != NULL) {

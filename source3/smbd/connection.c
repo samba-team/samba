@@ -20,7 +20,6 @@
 
 #include "includes.h"
 
-extern fstring remote_machine;
 static TDB_CONTEXT *tdb;
 
 /****************************************************************************
@@ -178,7 +177,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	}
 	crec.start = time(NULL);
 	
-	StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
+	StrnCpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine)-1);
 	StrnCpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
 
 	dbuf.dptr = (char *)&crec;

@@ -303,7 +303,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 /****************************************************************************
 add a name to the session users list
 ****************************************************************************/
-void add_session_user(char *user)
+void add_session_user(const char *user)
 {
   fstring suser;
   StrnCpy(suser,user,sizeof(suser)-1);

@@ -607,7 +607,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	extern BOOL global_encrypted_passwords_negotiated;
 	extern BOOL global_spnego_negotiated;
 	extern int Protocol;
-	extern fstring remote_machine;
 	extern userdom_struct current_user_info;
 	extern int max_send;
 
@@ -736,7 +735,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, remote_machine));
+	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, get_remote_machine_name()));
 
 	if (*user) {
 		if (global_spnego_negotiated) {
