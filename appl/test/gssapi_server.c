@@ -115,6 +115,8 @@ proto (int sock, const char *service)
     struct gss_channel_bindings_struct input_chan_bindings;
     gss_cred_id_t delegated_cred_handle = NULL;
     krb5_ccache ccache;
+    u_char init_buf[4];
+    u_char acct_buf[4];
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -128,10 +130,20 @@ proto (int sock, const char *service)
 
     input_chan_bindings.initiator_addrtype = GSS_C_AF_INET;
     input_chan_bindings.initiator_address.length = 4;
-    input_chan_bindings.initiator_address.value = &remote.sin_addr.s_addr;
+    init_buf[0] = (remote.sin_addr.s_addr >> 24) & 0xFF;
+    init_buf[1] = (remote.sin_addr.s_addr >> 16) & 0xFF;
+    init_buf[2] = (remote.sin_addr.s_addr >>  8) & 0xFF;
+    init_buf[3] = (remote.sin_addr.s_addr >>  0) & 0xFF;
+
+    input_chan_bindings.initiator_address.value = init_buf;
     input_chan_bindings.acceptor_addrtype = GSS_C_AF_INET;
+
     input_chan_bindings.acceptor_address.length = 4;
-    input_chan_bindings.acceptor_address.value = &local.sin_addr.s_addr;
+    acct_buf[0] = (local.sin_addr.s_addr >> 24) & 0xFF;
+    acct_buf[1] = (local.sin_addr.s_addr >> 16) & 0xFF;
+    acct_buf[2] = (local.sin_addr.s_addr >>  8) & 0xFF;
+    acct_buf[3] = (local.sin_addr.s_addr >>  0) & 0xFF;
+    input_chan_bindings.acceptor_address.value = acct_buf;
     input_chan_bindings.application_data.value = malloc(4);
 #if 0
     * (unsigned short *)input_chan_bindings.application_data.value =

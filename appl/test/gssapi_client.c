@@ -96,6 +96,8 @@ proto (int sock, const char *hostname, const char *service)
     gss_name_t server;
     gss_buffer_desc name_token;
     struct gss_channel_bindings_struct input_chan_bindings;
+    u_char init_buf[4];
+    u_char acct_buf[4];
 
     name_token.length = asprintf ((char **)&name_token.value,
 				  "%s@%s", service, hostname);
@@ -123,10 +125,19 @@ proto (int sock, const char *hostname, const char *service)
 
     input_chan_bindings.initiator_addrtype = GSS_C_AF_INET;
     input_chan_bindings.initiator_address.length = 4;
-    input_chan_bindings.initiator_address.value = &local.sin_addr.s_addr;
+    init_buf[0] = (local.sin_addr.s_addr >> 24) & 0xFF;
+    init_buf[1] = (local.sin_addr.s_addr >> 16) & 0xFF;
+    init_buf[2] = (local.sin_addr.s_addr >>  8) & 0xFF;
+    init_buf[3] = (local.sin_addr.s_addr >>  0) & 0xFF;
+    input_chan_bindings.initiator_address.value = init_buf;
+
     input_chan_bindings.acceptor_addrtype = GSS_C_AF_INET;
     input_chan_bindings.acceptor_address.length = 4;
-    input_chan_bindings.acceptor_address.value = &remote.sin_addr.s_addr;
+    acct_buf[0] = (remote.sin_addr.s_addr >> 24) & 0xFF;
+    acct_buf[1] = (remote.sin_addr.s_addr >> 16) & 0xFF;
+    acct_buf[2] = (remote.sin_addr.s_addr >>  8) & 0xFF;
+    acct_buf[3] = (remote.sin_addr.s_addr >>  0) & 0xFF;
+    input_chan_bindings.acceptor_address.value = acct_buf;
     
 #if 0
     input_chan_bindings.application_data.value = malloc(4);
