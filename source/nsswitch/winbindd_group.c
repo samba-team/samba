@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter 2000
    Copyright (C) Jeremy Allison 2001.
    Copyright (C) Gerald (Jerry) Carter 2003.
+   Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1232,6 +1233,46 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 
 	if (num_groups == 0) {
 		goto no_groups;
+	}
+
+	domain = find_our_domain();
+
+	if (domain == NULL) {
+		DEBUG(0, ("Could not find our domain\n"));
+		goto done;
+	}
+
+	/* Note that I do not check for AD or its mode. XP in a real NT4
+	 * domain also asks for this info. -- vl */
+
+	if (!IS_DC) {
+		uint32_t *alias_rids = NULL;
+		int num_aliases;
+
+		/* We need to include the user SID to expand */
+		user_grpsids = TALLOC_REALLOC_ARRAY(mem_ctx, user_grpsids,
+						    DOM_SID *, num_groups+1);
+		user_grpsids[num_groups] = &user_sid;
+
+		status = domain->methods->lookup_useraliases(domain, mem_ctx,
+							     num_groups,
+							     user_grpsids+1,
+							     &num_aliases,
+							     &alias_rids);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not expand alias sids: %s\n",
+				  nt_errstr(status)));
+			goto done;
+		}
+
+		for (i=0; i<num_aliases; i++) {
+			DOM_SID sid;
+			sid_copy(&sid, &domain->sid);
+			sid_append_rid(&sid, alias_rids[i]);
+			add_sid_to_parray_unique(mem_ctx, &sid, &user_grpsids,
+						 &num_groups);
+		}
 	}
 
 	if (lp_winbind_nested_groups()) {
