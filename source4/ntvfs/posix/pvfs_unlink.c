@@ -100,7 +100,8 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	for (i=0;i<dir->count;i++) {
-		status = pvfs_unlink_one(pvfs, req, dir->unix_path, dir->names[i], unl->in.attrib);
+		status = pvfs_unlink_one(pvfs, req, dir->unix_path, 
+					 dir->names[i], unl->in.attrib);
 		if (NT_STATUS_IS_OK(status)) {
 			total_deleted++;
 		}
