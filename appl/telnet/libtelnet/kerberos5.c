@@ -719,6 +719,8 @@ kerberos5_forward(Authenticator *ap)
 	return;
     }
 
+    memset (&creds, 0, sizeof(creds));
+
     creds.client = principal;
     
     ret = krb5_build_principal (context,
