@@ -82,6 +82,7 @@
 #ifdef KRB5
 #include <krb5.h>
 #endif
+#include <kafs.h>
 
 #ifndef _PATH_BSHELL
 #define _PATH_BSHELL "/bin/sh"
