@@ -139,7 +139,7 @@ BOOL secrets_named_mutex(const char *name, uint_t timeout, size_t *p_ref_count)
 		return False;
 
 	if (ref_count == 0) {
-		ret = tdb_lock_bystring(tdb->tdb, name, timeout);
+		ret = tdb_lock_bystring(tdb->tdb, name);
 		if (ret == 0)
 			DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
 	}
