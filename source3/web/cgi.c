@@ -26,7 +26,7 @@
 /* set the expiry on fixed pages */
 #define EXPIRY_TIME (60*60*24*7)
 
-#define CGI_LOGGING 0
+#define CGI_LOGGING 1
 
 #ifdef DEBUG_COMMENTS
 extern void print_title(char *fmt, ...);
@@ -687,4 +687,16 @@ char *cgi_remote_addr(void)
 		return client_addr(1);
 	}
 	return getenv("REMOTE_ADDR");
+}
+
+
+/***************************************************************************
+return True if the request was a POST
+  ***************************************************************************/
+BOOL cgi_waspost(void)
+{
+	if (baseurl) {
+		return request_post;
+	}
+	return strequal(getenv("REQUEST_METHOD"), "POST");
 }
