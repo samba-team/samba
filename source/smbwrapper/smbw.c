@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "wrapper.h"
 
-pstring smb_cwd;
+pstring smbw_cwd;
 
 static struct smbw_file *smbw_files;
 static struct smbw_server *smbw_srvs;
@@ -30,6 +30,8 @@ static struct smbw_server *smbw_srvs;
 struct bitmap *smbw_file_bmap;
 extern pstring global_myname;
 extern int DEBUGLEVEL;
+
+fstring smbw_prefix = SMBW_PREFIX;
 
 int smbw_busy=0;
 
@@ -77,12 +79,18 @@ void smbw_init(void)
 		DEBUGLEVEL = atoi(p);
 	}
 
+	if ((p=getenv("SMBW_PREFIX"))) {
+		slprintf(smbw_prefix,sizeof(fstring)-1, "/%s/", p);
+		string_sub(smbw_prefix,"//", "/");
+		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
+	}
+
 	if ((p=getenv(SMBW_PWD_ENV))) {
-		pstrcpy(smb_cwd, p);
-		DEBUG(4,("Initial cwd from smb_cwd is %s\n", smb_cwd));
+		pstrcpy(smbw_cwd, p);
+		DEBUG(4,("Initial cwd from smbw_cwd is %s\n", smbw_cwd));
 	} else {
-		sys_getwd(smb_cwd);
-		DEBUG(4,("Initial cwd from getwd is %s\n", smb_cwd));
+		sys_getwd(smbw_cwd);
+		DEBUG(4,("Initial cwd from getwd is %s\n", smbw_cwd));
 	}
 	smbw_busy--;
 
@@ -207,21 +215,21 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 {
 	static pstring s;
 	char *p, *p2;
-	int len = strlen(SMBW_PREFIX)-1;
+	int len = strlen(smbw_prefix)-1;
 
 	*server = *share = *path = 0;
 
 	if (fname[0] == '/') {
 		pstrcpy(s, fname);
 	} else {
-		slprintf(s,sizeof(s)-1, "%s/%s", smb_cwd, fname);
+		slprintf(s,sizeof(s)-1, "%s/%s", smbw_cwd, fname);
 	}
 	clean_fname(s);
 
 	DEBUG(5,("cleaned %s (fname=%s cwd=%s)\n", 
-		 s, fname, smb_cwd));
+		 s, fname, smbw_cwd));
 
-	if (strncmp(s,SMBW_PREFIX,len) || 
+	if (strncmp(s,smbw_prefix,len) || 
 	    (s[len] != '/' && s[len] != 0)) return s;
 
 	p = s + len;
@@ -278,7 +286,7 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 
  ok:
 	DEBUG(5,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
-		 fname, smb_cwd,
+		 fname, smbw_cwd,
 		 server, share, path));
 
 	return s;
@@ -293,22 +301,24 @@ int smbw_path(const char *path)
 	fstring server, share;
 	pstring s;
 	char *cwd;
-	int l=strlen(SMBW_PREFIX)-1;
+	int len;
 
-	if (path[0] == '/' && strncmp(path,SMBW_PREFIX,l)) {
+	smbw_init();
+
+	len = strlen(smbw_prefix)-1;
+
+	if (path[0] == '/' && strncmp(path,smbw_prefix,len)) {
 		return 0;
 	}
 
 	if (smbw_busy) return 0;
 
-	smbw_init();
-
 	DEBUG(3,("smbw_path(%s)\n", path));
 
 	cwd = smbw_parse_path(path, server, share, s);
 
-	if (strncmp(cwd,SMBW_PREFIX,l) == 0 &&
-	    (cwd[l] == '/' || cwd[l] == 0)) {
+	if (strncmp(cwd,smbw_prefix,len) == 0 &&
+	    (cwd[len] == '/' || cwd[len] == 0)) {
 		return 1;
 	}
 
