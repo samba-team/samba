@@ -1,3 +1,7 @@
+2002-03-10  Assar Westerlund  <assar@sics.se>
+
+	* com_err.c (error_message): do not call strerror with a negative error
+
 2001-05-17  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 2:0:1
