@@ -7,6 +7,12 @@ INCLUDES = -I$(top_builddir)/include
 lib_LIBRARIES = libdes.a
 include_HEADERS = des.h
 
+noinst_PROGRAMS = destest mdtest
+
+bin_PROGRAMS = des rpw speed
+
+LDADD = $(lib_LIBRARIES)
+
 libdes_a_SOURCES = \
 	cbc3_enc.c cbc_cksm.c cbc_enc.c \
 	cfb64ede.c cfb64enc.c cfb_enc.c des_enc.c \
@@ -14,4 +20,4 @@ libdes_a_SOURCES = \
 	enc_writ.c fcrypt.c key_par.c md4.c md5.c \
 	ncbc_enc.c ofb64ede.c ofb64enc.c ofb_enc.c \
 	pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c \
-	set_key.c sha.c str2key.c
+	set_key.c sha.c str2key.c xcbc_enc.c
