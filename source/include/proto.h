@@ -102,8 +102,11 @@ void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp,
 		 DOM_CHAL *cred);
 int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 		UTIME timestamp);
-BOOL srv_deal_with_creds(struct dcinfo *dc, DOM_CRED *clnt_cred, DOM_CRED *srv_cred);
-BOOL clnt_deal_with_creds(struct dcinfo *dc, DOM_CRED *srv_cred, DOM_CRED *clnt_cred);
+BOOL clnt_deal_with_creds(uint32 sess_key[2],
+		DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
+BOOL deal_with_creds(uint32 sess_key[2],
+		DOM_CRED *sto_clnt_cred, 
+		DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
 
 /*The following definitions come from  dir.c  */
 
@@ -891,7 +894,7 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
-void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16]);
+void nt_lm_owf_gen(char *pwd, char *nt_p16, char *p16);
 
 /*The following definitions come from  smbparse.c  */
 

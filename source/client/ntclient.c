@@ -293,13 +293,14 @@ static BOOL do_lsa_auth2(uint16 fnum,
 	return valid_chal;
 }
 
-/****************************************************************************
+/***************************************************************************
 do a LSA SAM Logon
 ****************************************************************************/
-static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CHAL *clnt_chal,
+static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
+		LSA_USER_INFO *user_info,
 		DOM_CRED *srv_cred)
 {
 	char *rparam = NULL;
@@ -312,7 +313,7 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CHAL *clnt_cha
 	int call_id = 0x1;
     BOOL valid_cred = False;
 
-	if (srv_cred == NULL || clnt_cred == NULL || rtn_cred == NULL) return False;
+	if (srv_cred == NULL || clnt_cred == NULL || rtn_cred == NULL || user_info == NULL) return False;
 
 	/* create and send a MSRPC command with api LSA_SAMLOGON */
 
@@ -343,31 +344,12 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CHAL *clnt_cha
 				NULL, data, setup,
 				&rparam,&rdata))
 	{
-		DOM_CRED clnt_cred1;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		clnt_cred1.timestamp.time = clnt_cred->timestamp.time + 1;
-
-		/* calculate sam logon credentials at time+1, just like server does */
-		cred_create(sess_key, clnt_chal, clnt_cred1.timestamp,
-	                                     &(clnt_cred1.challenge));
-
-#if 0
-		LSA_R_AUTH_2 r_a;
+		LSA_R_SAM_LOGON r_s;
 		RPC_HDR hdr;
 		int hdr_len;
 		int pkt_len;
 
-		/* check sam logon credentials at time+1, just like server does */
-		if (cred_assert(r_s....creds, sess_key, clnt_chal, clnt_cred->timestamp + 1))
-		{
-			DEBUG(5, ("do_lsa_sam_logon: server credential check OK\n"));
-		}
-		else
-		{
-			DEBUG(5, ("do_lsa_sam_logon: server credential check failed\n"));
-		}
+		r_s.user = user_info;
 
 		DEBUG(5, ("cli_call_api: return OK\n"));
 
@@ -381,45 +363,166 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CHAL *clnt_cha
 		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_auth2: hdr_len %x != frag_len-alloc_hint\n",
+			DEBUG(2,("do_lsa_sam_logon: hdr_len %x != frag_len-alloc_hint\n",
 			          hdr_len, hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
-		if (p) p = lsa_io_r_auth_2(True, &r_a, p, rdata, 4, 0);
+		if (p) p = lsa_io_r_sam_logon(True, &r_s, p, rdata, 4, 0);
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
 		if (p && pkt_len != hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_auth2: pkt_len %x != frag_len \n",
+			DEBUG(2,("do_lsa_sam_logon: pkt_len %x != frag_len \n",
 			                           pkt_len, hdr.frag_len));
 			p = NULL;
 		}
 
-		if (p && r_a.status != 0)
+		if (p && r_s.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("LSA_AUTH2: nt_status error %lx\n", r_a.status));
+			DEBUG(0,("LSA_SAMLOGON: nt_status error %lx\n", r_s.status));
 			p = NULL;
 		}
 
-		if (p && r_a.srv_flgs.neg_flags != q_a.clnt_flgs.neg_flags)
+		if (p && r_s.switch_value != 3)
 		{
-			/* report different neg_flags */
-			DEBUG(0,("LSA_AUTH2: error neg_flags (q,r) differ - (%lx,%lx)\n",
-					q_a.clnt_flgs.neg_flags, r_a.srv_flgs.neg_flags));
+			/* report different switch_value */
+			DEBUG(0,("LSA_SAMLOGON: switch_value of 3 expected %x\n",
+					r_s.switch_value));
 			p = NULL;
 		}
 
 		if (p)
 		{
-			/* ok, at last: we're happy. return the challenge */
-			memcpy(srv_chal, r_a.srv_chal.data, sizeof(srv_chal->data));
-			valid_chal = True;
+			if (clnt_deal_with_creds(sess_key, sto_clnt_cred, &(r_s.srv_creds)))
+			{
+				DEBUG(5, ("do_lsa_sam_logon: server credential check OK\n"));
+				/* ok, at last: we're happy. return the challenge */
+				memcpy(srv_cred, &(r_s.srv_creds), sizeof(r_s.srv_creds));
+				valid_cred = True;
+			}
+			else
+			{
+				DEBUG(5, ("do_lsa_sam_logon: server credential check failed\n"));
+			}
 		}
 #endif
+	}
+
+	if (rparam) free(rparam);
+	if (rdata) free(rdata);
+
+	return valid_cred;
+}
+
+/***************************************************************************
+do a LSA SAM Logoff
+****************************************************************************/
+static BOOL do_lsa_sam_logoff(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
+		char *logon_srv, char *comp_name,
+        DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
+		DOM_CRED *srv_cred)
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt,rprcnt;
+	pstring data; /* only 1024 bytes */
+	uint16 setup[2]; /* only need 2 uint16 setup parameters */
+	LSA_Q_SAM_LOGOFF q_s;
+	int call_id = 0x1;
+    BOOL valid_cred = False;
+
+	if (srv_cred == NULL || clnt_cred == NULL || rtn_cred == NULL) return False;
+
+	/* create and send a MSRPC command with api LSA_SAMLOGON */
+
+	DEBUG(4,("LSA SAM Logoff: srv:%s mc:%s clnt %lx %lx %lx rtn: %lx %lx %lx ll: %d\n",
+	          logon_srv, comp_name,
+	          clnt_cred->challenge.data[0], clnt_cred->challenge.data[1], clnt_cred->timestamp.time,
+	          rtn_cred ->challenge.data[0], rtn_cred ->challenge.data[1], rtn_cred ->timestamp.time,
+	          logon_level));
+
+	/* store the parameters */
+	make_sam_info(&(q_s.sam_id), logon_srv, comp_name,
+	             clnt_cred, rtn_cred, logon_level, switch_value, id1);
+
+	/* turn parameters into data stream */
+	p = lsa_io_q_sam_logoff(False, &q_s, data + 0x18, data, 4, 0);
+
+	/* create the request RPC_HDR _after_ the main data: length is now known */
+	create_rpc_request(call_id, LSA_SAMLOGOFF, data, PTR_DIFF(p, data));
+
+	/* create setup parameters. */
+	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
+	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+
+	/* send the data on \PIPE\ */
+	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
+                BUFFER_SIZE,
+				&rprcnt,&rdrcnt,
+				NULL, data, setup,
+				&rparam,&rdata))
+	{
+		LSA_R_SAM_LOGOFF r_s;
+		RPC_HDR hdr;
+		int hdr_len;
+		int pkt_len;
+
+		DEBUG(5, ("cli_call_api: return OK\n"));
+
+		p = rdata;
+
+		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
+
+		hdr_len = PTR_DIFF(p, rdata);
+
+		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		{
+			/* header length not same as calculated header length */
+			DEBUG(2,("do_lsa_sam_logoff: hdr_len %x != frag_len-alloc_hint\n",
+			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			p = NULL;
+		}
+
+		if (p) p = lsa_io_r_sam_logoff(True, &r_s, p, rdata, 4, 0);
+		
+		pkt_len = PTR_DIFF(p, rdata);
+
+		if (p && pkt_len != hdr.frag_len)
+		{
+			/* packet data size not same as reported fragment length */
+			DEBUG(2,("do_lsa_sam_logoff: pkt_len %x != frag_len \n",
+			                           pkt_len, hdr.frag_len));
+			p = NULL;
+		}
+
+		if (p && r_s.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_SAMLOGOFF: nt_status error %lx\n", r_s.status));
+			p = NULL;
+		}
+
+		if (p)
+		{
+			if (clnt_deal_with_creds(sess_key, sto_clnt_cred, &(r_s.srv_creds)))
+			{
+				DEBUG(5, ("do_lsa_sam_logoff: server credential check OK\n"));
+				/* ok, at last: we're happy. return the challenge */
+				memcpy(srv_cred, &(r_s.srv_creds), sizeof(r_s.srv_creds));
+				valid_cred = True;
+			}
+			else
+			{
+				DEBUG(5, ("do_lsa_sam_logoff: server credential check failed\n"));
+			}
+		}
 	}
 
 	if (rparam) free(rparam);
@@ -437,14 +540,20 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	DOM_CHAL clnt_chal;
 	DOM_CHAL srv_chal;
 
-	DOM_CHAL auth2_clnt_chal;
+	DOM_CRED clnt_cred;
+
 	DOM_CHAL auth2_srv_chal;
 
-	DOM_CRED sam_log_clnt_cred;
-	DOM_CRED sam_log_rtn_cred;
-	DOM_CRED sam_log_srv_cred;
+	DOM_CRED sam_logon_clnt_cred;
+	DOM_CRED sam_logon_rtn_cred;
+	DOM_CRED sam_logon_srv_cred;
+
+	DOM_CRED sam_logoff_clnt_cred;
+	DOM_CRED sam_logoff_rtn_cred;
+	DOM_CRED sam_logoff_srv_cred;
 
 	DOM_ID_INFO_1 id1;
+	LSA_USER_INFO user_info1;
 
 	UTIME zerotime;
 
@@ -526,11 +635,11 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	/******************* Authenticate 2 ********************/
 
 	/* calculate auth-2 credentials */
-	cred_create(sess_key, &clnt_chal, zerotime, &auth2_clnt_chal);
+	cred_create(sess_key, &clnt_chal, zerotime, &(clnt_cred.challenge));
 
 	/* send client auth-2 challenge; receive an auth-2 challenge */
 	if (!do_lsa_auth2(fnum, desthost, mach_acct, 2, myhostname,
-	                  &auth2_clnt_chal, 0x000001ff, &auth2_srv_chal))
+	                  &(clnt_cred.challenge), 0x000001ff, &auth2_srv_chal))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 		free(inbuf); free(outbuf);
@@ -548,32 +657,47 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/*********************** SAM Logon **********************/
 
-	sam_log_clnt_cred.timestamp.time = time(NULL);
+	clnt_cred.timestamp.time = sam_logon_clnt_cred.timestamp.time = time(NULL);
 
 	/* calculate sam logon credentials, using the auth2 client challenge */
-	cred_create(sess_key, &auth2_clnt_chal, sam_log_clnt_cred.timestamp,
-	                                  &(sam_log_clnt_cred.challenge));
+	cred_create(sess_key, &(clnt_cred.challenge), sam_logon_clnt_cred.timestamp,
+	                                  &(sam_logon_clnt_cred.challenge));
 
 	/* send client sam-logon challenge; receive a sam-logon challenge */
-	if (!do_lsa_sam_logon(fnum, sess_key, &auth2_clnt_chal, 
+	if (!do_lsa_sam_logon(fnum, sess_key, &clnt_cred, 
 	                  desthost, mach_acct, 
-	                  &sam_log_clnt_cred, &sam_log_rtn_cred,
-	                  1, 1, &id1,
-	                  &sam_log_srv_cred))
+	                  &sam_logon_clnt_cred, &sam_logon_rtn_cred,
+	                  1, 1, &id1, &user_info1,
+	                  &sam_logon_srv_cred))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 		free(inbuf); free(outbuf);
 		return False;
 	}
 
-#if 0
-	cli_lsa_sam_logoff();
-#endif
+	/*********************** SAM Logoff *********************/
+
+	clnt_cred.timestamp.time = sam_logoff_clnt_cred.timestamp.time = time(NULL);
+
+	/* calculate sam logoff credentials, using the sam logon return challenge */
+	cred_create(sess_key, &(clnt_cred.challenge),
+	                        sam_logoff_clnt_cred.timestamp,
+	                      &(sam_logoff_clnt_cred.challenge));
+
+	/* send client sam-logoff challenge; receive a sam-logoff challenge */
+	if (!do_lsa_sam_logoff(fnum, sess_key, &clnt_cred,
+	                  desthost, mach_acct, 
+	                  &sam_logoff_clnt_cred, &sam_logoff_rtn_cred,
+	                  1, 1, &id1,
+	                  &sam_logoff_srv_cred))
+	{
+		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+		free(inbuf); free(outbuf);
+		return False;
+	}
 
 	cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 	free(inbuf); free(outbuf);
 
 	return True;
 }
-
-#endif
