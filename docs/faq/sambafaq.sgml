@@ -570,7 +570,7 @@ To syncronize your PC's clock with your Samba server:
 <item> Close the properties dialog box by choosing 'OK'
 </itemize>
 Each time you start your computer (or login for Win95) your PC will
-synchronize it's clock with your Samba server.
+synchronize its clock with your Samba server.
 
 Alternativley, if you clients support Domain Logons, you can setup Domain Logons with Samba
  - see: <url url="ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt" name="BROWSING.txt"> *** for more information.

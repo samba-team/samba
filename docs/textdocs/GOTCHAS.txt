@@ -48,10 +48,10 @@ Details:
 		Windows NT checks at start up to see if any domain logon
 		controllers are already running within the domain. It finds
 		Samba claiming to offer the service and therefore does NOT
-		start it's Network Logon Service.
+		start its Network Logon Service.
 
 		Windows NT needs the Windows NT network logon service to gain
-		from it's Domain controller's SAM database the security
+		from its Domain controller's SAM database the security
 		identifier for the user loging on.
 
 Work-around:	Stop the Samba nmbd and smbd processes, then on the Windows

@@ -1,29 +1,20 @@
 Contributor:	Samba Team
-Updated:	August 25, 1997
+Updated:	June 27, 1997
 
 Subject:	Network Logons and Roving Profiles
 ===========================================================================
 
 A domain and a workgroup are exactly the same thing in terms of network
-traffic, except for the client logon sequence. Some kind of distributed
-authentication database is associated with a domain (there are quite a few
-choices) and this adds so much flexibility that many people think of a
-domain as a completely different entity to a workgroup. From Samba's 
-point of view a client connecting to a service presents an authentication
-token, and it if it is valid they have access. Samba does not care what
-mechanism was used to generate that token in the first place.
+browsing.  The difference is that a distributable authentication
+database is associated with a domain, for secure login access to a
+network.  Also, different access rights can be granted to users if they
+successfully authenticate against a domain logon server (samba does not
+support this, but NT server and other systems based on NT server do).
 
 The SMB client logging on to a domain has an expectation that every other
 server in the domain should accept the same authentication information.
 However the network browsing functionality of domains and workgroups is
 identical and is explained in BROWSING.txt.
-
-There are some implementation differences: Windows 95 can be a member of
-both a workgroup and a domain, but Windows NT cannot. Windows 95 also
-has the concept of an "alternative workgroup". Samba can only be a
-member of a single workgroup or domain, although this is due to change
-with a future version when nmbd will be split into two daemons, one
-for WINS and the other for browsing (NetBIOS.txt explains what WINS is.)
 
 Issues related to the single-logon network model are discussed in this
 document.  Samba supports domain logons, network logon scripts, and user
@@ -32,10 +23,8 @@ profiles.  The support is still experimental, but it seems to work.
 The support is also not complete.  Samba does not yet support the sharing
 of the Windows NT-style SAM database with other systems.  However this is
 only one way of having a shared user database: exactly the same effect can
-be achieved by having all servers in a domain share a distributed NIS,
-Kerberos or other authentication database. These other options may or may
-not involve changes to the client software, that depends on the combination
-of client OS, server OS and authentication protocol.
+be achieved by having all servers in a domain share a distributed NIS or
+Kerberos authentication database.
 
 When an SMB client in a domain wishes to logon it broadcast requests for a
 logon server.  The first one to reply gets the job, and validates its
@@ -147,8 +136,9 @@ In the [global] section of smb.conf set the following (for example):
 
   logon path = \\profileserver\profileshare\profilepath\%U\moreprofilepath
 
-The default for this option is \\%L\%U, namely \\sambaserver\username,
-The \\L%\%U services is created automatically by the [homes] service.
+The default for this option is \\%L\%U\profile, namely
+\\sambaserver\username\profile.  The \\L%\%U services is created
+automatically by the [homes] service.
 
 If you are using a samba server for the profiles, you _must_ make the
 share specified in the logon path browseable.  Windows 95 appears to
@@ -157,6 +147,10 @@ specified by the logon path option, rather than just connecting straight
 away.  It also attempts to create the components of the full path for
 you.  If the creation of any component fails, or if it cannot see any
 component of the path, the profile creation / reading fails.
+
+[lkcl 26aug96 - we have discovered a problem where Windows clients can
+maintain a connection to the [homes] share in between logins.  The
+[homes] share must NOT therefore be used in a profile path.]
 
 
 Windows 95
@@ -281,8 +275,10 @@ to specify the location of the profile.  Samba cannot be a domain
 logon server for NT, therefore you will need to manually configure
 each and every account.  [lkcl 10aug97 - i tried setting the path
 in each account to \\samba-server\homes\profile, and discovered that
-this fails for some reason.  you have to have \\samba-server\user\profile,
-where user is the username created from the [homes] share].
+this fails because a background process maintains the connection to
+the [homes] share which does _not_ close down in between user logins.
+you have to have \\samba-server\user\profile, where user is the
+username created from the [homes] share].
 
 The entry for the NT 4.0 profile is a _directory_ not a file.  The NT
 help on profiles mentions that a directory is also created with a .PDS

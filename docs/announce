@@ -28,7 +28,7 @@ allows you to access a SMB printer (such as one attached to an OS/2 or
 WfWg server) from Unix, using an entry in /etc/printcap, or by
 explicitly specifying the command used to print files.
 
-What are it's features?
+What are its features?
 ------------------------
 
 Samba supports many features that are not supported in other SMB

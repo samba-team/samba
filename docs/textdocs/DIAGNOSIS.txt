@@ -69,7 +69,12 @@ run ping.
 If you get a message saying "host not found" or similar then your DNS
 software or /etc/hosts file is not correctly setup. It is possible to
 run samba without DNS entries for the server and client, but I assume
-you do have correct entries for the remainder of these tests.
+you do have correct entries for the remainder of these tests. 
+
+Another reason why ping might fail is if your host is running firewall 
+software. You will need to relax the rules to let in the workstation
+in question, perhaps by allowing access from another subnet (on Linux
+this is done via the ipfwadm program.)
 
 
 TEST 3:
@@ -208,6 +213,10 @@ same fixes apply as they did for the "smbclient -L" test above. In
 particular, make sure your "hosts allow" line is correct (see the man
 pages)
 
+If you get "specified computer is not receiving requests" or similar
+it probably means that the host is not contactable via tcp services.
+Check to see if the host is running tcp wrappers, and if so add an entry in
+the hosts.allow file for your client (or subnet, etc.)
 
 
 TEST 9:
