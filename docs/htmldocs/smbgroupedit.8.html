@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbgroupedit</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="SMBGROUPEDIT"
->smbgroupedit</A
-></H1
+></A
+>smbgroupedit</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -36,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbroupedit</B
->  [-v [l|s]] [-a UNIX-groupname [-d NT-groupname|-p prividge|]</P
+>  [-v [l|s]] [-a UNIX-groupname [-d NT-groupname|-p privilege|]]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -88,12 +89,6 @@ CLASS="VARIABLELIST"
 ><P
 >give a long listing, of the format:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >"NT Group Name"
@@ -102,30 +97,18 @@ CLASS="PROGRAMLISTING"
     Group type     :
     Comment        :
     Privilege      :</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >For examples,</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >Users
-    SID : S-1-5-32-545
+    SID       : S-1-5-32-545
     Unix group: -1
     Group type: Local group
-    Comment :
+    Comment   :
     Privilege : No privilege</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DD
 ><DT
@@ -134,34 +117,16 @@ CLASS="PROGRAMLISTING"
 ><P
 >display a short listing of the format:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >NTGroupName(SID) -&#62; UnixGroupName</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >For example,</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >Users (S-1-5-32-545) -&#62; -1</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DD
 ></DL
@@ -246,12 +211,6 @@ TYPE="a"
 >Get the SID for the Windows NT "Domain Admins"
 		group:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 ><TT
@@ -262,9 +221,6 @@ CLASS="COMMAND"
 >smbgroupedit -vs | grep "Domain Admins"</B
 >
 Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; -1</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></LI
 ><LI
@@ -273,12 +229,6 @@ Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; -1</PRE
 		"Domain Admins" group, by running the command:
 		</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 ><TT
@@ -290,13 +240,14 @@ CLASS="COMMAND"
 -c S-1-5-21-1108995562-3116817432-1375597819-512 \
 -u domadm</B
 ></PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
->		<EM
->warning:</EM
+>		<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>warning:</I
+></SPAN
 > don't copy and paste this sample, the
 		Domain Admins SID (the S-1-5-21-...-512) is different for every PDC.
 		</P
@@ -305,14 +256,8 @@ CLASS="COMMAND"
 ></LI
 ></OL
 ><P
->To verify that you mapping has taken effect:</P
+>To verify that your mapping has taken effect:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 ><TT
@@ -323,21 +268,12 @@ CLASS="COMMAND"
 >smbgroupedit -vs|grep "Domain Admins"</B
 >
 Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; domadm</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >To give access to a certain directory on a domain member machine (an
 NT/W2K or a samba server running winbind) to some users who are member
 of a group on your samba PDC, flag that group as a domain group:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 ><TT
@@ -347,9 +283,6 @@ CLASS="PROMPT"
 CLASS="COMMAND"
 >smbgroupedit -a unixgroup -td</B
 ></PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ><DIV

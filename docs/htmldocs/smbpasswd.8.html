@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbpasswd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="SMBPASSWD"
->smbpasswd</A
-></H1
+></A
+>smbpasswd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -36,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbpasswd</B
->  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-j DOMAIN] [-U username[%password]] [-h] [-s] [-w pass] [username]</P
+>  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &lt;remote machine&gt;] [-R &lt;name resolve order&gt;] [-m] [-U username[%password]] [-h] [-s] [-w pass] [username]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN26"
+NAME="AEN25"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -53,8 +54,12 @@ TARGET="_top"
 > suite.</P
 ><P
 >The smbpasswd program has several different 
-	functions, depending on whether it is run by the <EM
->root</EM
+	functions, depending on whether it is run by the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>root</I
+></SPAN
 > 
 	user or not. When run as a normal user it allows the user to change 
 	the password used for their SMB sessions on any machines that store 
@@ -70,8 +75,12 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >smbpasswd</B
 > differs from how the passwd program works 
-	however in that it is not <EM
->setuid root</EM
+	however in that it is not <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>setuid root</I
+></SPAN
 > but works in 
 	a client-server mode and communicates with a locally running
 	<B
@@ -85,13 +94,13 @@ CLASS="FILENAME"
 >smbpasswd(5)</TT
 > file. </P
 ><P
->When run by an ordinary user with no options. smbpasswd 
+>When run by an ordinary user with no options, smbpasswd 
 	will prompt them for their old SMB password and then ask them 
 	for their new password twice, to ensure that the new password
 	was typed correctly. No passwords will be echoed on the screen 
 	whilst being typed. If you have a blank SMB password (specified by 
 	the string "NO PASSWORD" in the smbpasswd file) then just press 
-	the &#60;Enter&#62; key when asked for your old password. </P
+	the &lt;Enter&gt; key when asked for your old password. </P
 ><P
 >smbpasswd can also be used by a normal user to change their
 	SMB password on remote machines, such as Windows NT Primary Domain 
@@ -110,7 +119,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN42"
+NAME="AEN41"
 ></A
 ><H2
 >OPTIONS</H2
@@ -125,7 +134,7 @@ CLASS="VARIABLELIST"
 ><P
 >This option specifies that the username 
 		following should be added to the local smbpasswd file, with the 
-		new password typed (type &#60;Enter&#62; for the old password). This 
+		new password typed (type &lt;Enter&gt; for the old password). This 
 		option is ignored if the username following already exists in 
 		the smbpasswd file and it is treated like a regular change 
 		password command.  Note that the default passdb backends require 
@@ -134,7 +143,7 @@ CLASS="VARIABLELIST"
 CLASS="FILENAME"
 >/etc/passwd</TT
 >), else the request to add the 
-                user will fail.  </P
+                user will fail. </P
 ><P
 >This option is only available when running smbpasswd 
 		as root. </P
@@ -294,8 +303,12 @@ CLASS="PARAMETER"
 		copy of the user account database and will not allow the password 
 		change).</P
 ><P
-><EM
->Note</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Note</I
+></SPAN
 > that Windows 95/98 do not have 
 		a real password database so it is not possible to change passwords 
 		specifying a Win95/98  machine as remote machine target. </P
@@ -304,12 +317,12 @@ CLASS="PARAMETER"
 >-R name resolve order</DT
 ><DD
 ><P
->This option allows the user of smbpasswd to determine 
+>This option allows the user of smbpasswd to determine
 		what name resolution services to use when looking up the NetBIOS
 		name of the host being connected to. </P
 ><P
->The options are :"lmhosts", "host", "wins" and "bcast". They cause 
-		names to be resolved as follows : </P
+>The options are :"lmhosts", "host", "wins" and "bcast". They
+		 cause names to be resolved as follows : </P
 ><P
 ></P
 ><UL
@@ -359,8 +372,8 @@ CLASS="PARAMETER"
 >wins server</I
 ></TT
 > 
-				parameter.  If no WINS server has been specified this method 
-				will be ignored.</P
+	    parameter.  If no WINS server has been specified this method 
+	    will be ignored.</P
 ></LI
 ><LI
 ><P
@@ -375,8 +388,8 @@ CLASS="PARAMETER"
 >interfaces</I
 ></TT
 > parameter. This is the least 
-				reliable of the name resolution methods as it depends on the 
-				target host being on a locally connected subnet.</P
+	    reliable of the name resolution methods as it depends on the 
+	    target host being on a locally connected subnet.</P
 ></LI
 ></UL
 ><P
@@ -399,7 +412,7 @@ CLASS="FILENAME"
 		being changed is a MACHINE account. Currently this is used 
 		when Samba is being used as an NT Primary Domain Controller.</P
 ><P
->This option is only available when running smbpasswd as root. 	
+>This option is only available when running smbpasswd as root.
 		</P
 ></DD
 ><DT
@@ -448,8 +461,8 @@ CLASS="COMMAND"
 >-w password</DT
 ><DD
 ><P
->This parameter is only available is Samba
-		has been configured to use the experiemental
+>This parameter is only available if Samba
+		has been configured to use the experimental
 		<B
 CLASS="COMMAND"
 >--with-ldapsam</B
@@ -481,7 +494,7 @@ CLASS="PARAMETER"
 >ldap
 		admin dn</I
 ></TT
-> ever changes, the password will beed to be 
+> ever changes, the password will need to be 
 		manually updated as well.
 		</P
 ></DD
@@ -490,8 +503,12 @@ CLASS="PARAMETER"
 ><DD
 ><P
 >This specifies the username for all of the 
-		<EM
->root only</EM
+		<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>root only</I
+></SPAN
 > options to operate on. Only root 
 		can specify this parameter as only root has the permission needed 
 		to modify attributes directly in the local smbpasswd file. 
@@ -503,7 +520,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN163"
+NAME="AEN162"
 ></A
 ><H2
 >NOTES</H2
@@ -546,7 +563,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN173"
+NAME="AEN172"
 ></A
 ><H2
 >VERSION</H2
@@ -557,7 +574,7 @@ NAME="AEN173"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN176"
+NAME="AEN175"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -580,7 +597,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN182"
+NAME="AEN181"
 ></A
 ><H2
 >AUTHOR</H2
