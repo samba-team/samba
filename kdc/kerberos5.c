@@ -1420,9 +1420,9 @@ tgs_rep2(KDC_REQ_BODY *b,
 
 	ret = krb5_auth_getauthenticator(context, ac, &auth);
 	if (ret == 0) {
-	    csec = auth->csec;
-	    auth->csec = NULL;
-	    cusec = auth->cusec;
+	    *csec = &auth->ctime;
+	    auth->ctime = NULL;
+	    *cusec = &auth->cusec;
 	    auth->cusec = NULL;
 	    krb5_free_authenticator(context, &auth);
 	}
@@ -1697,7 +1697,8 @@ tgs_rep(KDC_REQ *req,
 	kdc_log(0, "TGS-REQ from %s without PA-TGS-REQ", from);
 	goto out;
     }
-    ret = tgs_rep2(&req->req_body, tgs_req, data, from, from_addr);
+    ret = tgs_rep2(&req->req_body, tgs_req, data, from, from_addr,
+		   &csec, &cusec);
 out:
     if(ret && data->data == NULL){
 	krb5_mk_error(context,
@@ -1706,7 +1707,7 @@ out:
 		      NULL,
 		      NULL,
 		      NULL,
-		      ctime,
+		      csec,
 		      cusec,
 		      data);
     }
