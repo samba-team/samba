@@ -54,7 +54,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
-	char *username, *domain, *password;
+	const char *username, *domain, *password;
 	struct smbcli_session *session;
 	struct smbcli_session *session2;
 	struct smbcli_session *session3;
@@ -196,7 +196,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
-	char *share;
+	const char *share;
 	struct smbcli_tree *tree;
 	union smb_tcon tcon;
 	union smb_open io;
