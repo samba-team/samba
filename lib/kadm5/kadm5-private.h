@@ -223,7 +223,14 @@ _kadm5_unmarshal_params __P((krb5_context context,
 			     krb5_data *in,
 			     kadm5_config_params *params));
 
+void
+_kadm5_free_keys (kadm5_server_context *context,
+		  int len, Key *keys);
 
+void
+_kadm5_init_keys (Key *keys, int len);
 
+int
+_kadm5_cmp_keys(Key *keys1, int len1, Key *keys2, int len2);
 
 #endif /* __kadm5_privatex_h__ */
