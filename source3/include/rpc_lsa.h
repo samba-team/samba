@@ -41,13 +41,19 @@ enum SID_NAME_USE
 
 /* ntlsa pipe */
 #define LSA_CLOSE              0x00
+#define LSA_ENUM_PRIVS         0x02
+#define LSA_OPENPOLICY         0x06
 #define LSA_QUERYINFOPOLICY    0x07
+#define LSA_ENUM_ACCOUNTS      0x0b
 #define LSA_ENUMTRUSTDOM       0x0d
 #define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
-#define LSA_OPENPOLICY         0x06
-#define LSA_OPENPOLICY2        0x2c
+#define LSA_OPENACCOUNT		0x11
+#define LSA_ENUMPRIVSACCOUNT	0x12
+#define LSA_GETSYSTEMACCOUNT	0x17
 #define LSA_OPENSECRET         0x1C
+#define LSA_PRIV_GET_DISPNAME  0x21
+#define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_GET_CONNUSER   0x2d /* LsaGetConnectedCredentials ? */
 
 /* XXXX these are here to get a compile! */
@@ -381,6 +387,72 @@ typedef struct lsa_r_open_secret
 	uint32 status;
 } LSA_R_OPEN_SECRET;
 
+typedef struct lsa_enum_priv_entry
+{
+	UNIHDR hdr_name;
+	uint32 luid_low;
+	uint32 luid_high;
+	UNISTR2 name;
+	
+} LSA_PRIV_ENTRY;
+
+/* LSA_Q_ENUM_PRIVS - LSA enum privileges */
+typedef struct lsa_q_enum_privs
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 enum_context;
+	uint32 pref_max_length;
+} LSA_Q_ENUM_PRIVS;
+
+typedef struct lsa_r_enum_privs
+{
+	uint32 enum_context;
+	uint32 count;
+	uint32 ptr;
+	uint32 count1;
+
+	LSA_PRIV_ENTRY *privs;
+
+	uint32 status;
+} LSA_R_ENUM_PRIVS;
+
+/* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */
+typedef struct lsa_q_priv_get_dispname
+{
+	POLICY_HND pol; /* policy handle */
+	UNIHDR hdr_name;
+	UNISTR2 name;
+	uint16 lang_id;
+	uint16 lang_id_sys;
+} LSA_Q_PRIV_GET_DISPNAME;
+
+typedef struct lsa_r_priv_get_dispname
+{
+	uint32 ptr_info;
+	UNIHDR hdr_desc;
+	UNISTR2 desc;
+	/* Don't align ! */
+	uint16 lang_id;
+	/* align */
+	uint32 status;
+} LSA_R_PRIV_GET_DISPNAME;
+
+/* LSA_Q_ENUM_ACCOUNTS */
+typedef struct lsa_q_enum_accounts
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 enum_context;
+	uint32 pref_max_length;
+} LSA_Q_ENUM_ACCOUNTS;
+
+/* LSA_R_ENUM_ACCOUNTS */
+typedef struct lsa_r_enum_accounts
+{
+	uint32 enum_context;
+	LSA_SID_ENUM sids;
+	uint32 status;
+} LSA_R_ENUM_ACCOUNTS;
+
 /* LSA_Q_UNK_GET_CONNUSER - gets username\domain of connected user
                   called when "Take Ownership" is clicked -SK */
 typedef struct lsa_q_unk_get_connuser
@@ -408,4 +480,80 @@ typedef struct lsa_r_unk_get_connuser
   uint32 status;
 } LSA_R_UNK_GET_CONNUSER;
 
+
+typedef struct lsa_q_openaccount
+{
+	POLICY_HND pol; /* policy handle */
+	DOM_SID2 sid;
+	uint32 access; /* desired access */
+} LSA_Q_OPENACCOUNT;
+
+typedef struct lsa_r_openaccount
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 status;
+} LSA_R_OPENACCOUNT;
+
+typedef struct lsa_q_enumprivsaccount
+{
+	POLICY_HND pol; /* policy handle */
+} LSA_Q_ENUMPRIVSACCOUNT;
+
+
+typedef struct LUID
+{
+	uint32 low;
+	uint32 high;
+} LUID;
+
+typedef struct LUID_ATTR
+{
+	LUID luid;
+	uint32 attr;
+} LUID_ATTR ;
+
+typedef struct privilege_set
+{
+	uint32 count;
+	uint32 control;
+	LUID_ATTR *set;
+} PRIVILEGE_SET;
+
+typedef struct lsa_r_enumprivsaccount
+{
+	uint32 ptr;
+	uint32 count;
+	PRIVILEGE_SET set;
+	uint32 status;
+} LSA_R_ENUMPRIVSACCOUNT;
+
+typedef struct lsa_q_getsystemaccount
+{
+	POLICY_HND pol; /* policy handle */
+} LSA_Q_GETSYSTEMACCOUNT;
+
+typedef struct lsa_r_getsystemaccount
+{
+	uint32 access;
+	uint32 status;
+} LSA_R_GETSYSTEMACCOUNT;
+
+
 #endif /* _RPC_LSA_H */
+/*
+
+opnum 11: opensid: query: handle du domaine, sid du user
+reply: handle, status
+
+opnum 12: getlistofprivs: query: handle du user
+reply: ptr, nombre, nombre, tableau de 3 uint32: flag+priv.low+priv.high
+uint32 0, status 
+
+opnum 17: ?? query: handle
+reply: uint32 + status
+
+
+*/
+
+
+
