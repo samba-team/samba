@@ -176,7 +176,8 @@ BOOL lang_tdb_init(const char *lang)
 const char *lang_msg(const char *msgid)
 {
 	TDB_DATA key, data;
-	char *p, *q, *msgid_quoted;
+	const char *p;
+	char *q, *msgid_quoted;
 	int count;
 
 	lang_tdb_init(NULL);
