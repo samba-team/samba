@@ -362,7 +362,7 @@ do_klogin(char *host)
 	    fprintf(stderr, "KERBEROS_V4 rejected as security mechanism.\n");
 	}else if(ret == ERROR)
 	    fprintf(stderr, "The server doesn't understand the FTP "
-		    "security extentions.\n");
+		    "security extensions.\n");
 	verbose = old_verbose;
 	return -1;
     }
