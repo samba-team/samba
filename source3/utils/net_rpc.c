@@ -2209,6 +2209,83 @@ static int rpc_group_members(int argc, const char **argv)
 			       argc, argv);
 }
 
+static NTSTATUS 
+rpc_group_rename_internals(const DOM_SID *domain_sid,
+			    const char *domain_name, 
+			    struct cli_state *cli,
+			    TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	NTSTATUS result;
+	POLICY_HND connect_pol, domain_pol, group_pol;
+	uint32 num_rids, *rids, *rid_types;
+	GROUP_INFO_CTR ctr;
+
+	if (argc != 2) {
+		d_printf("Usage: 'net rpc group rename group newname'\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
+				       1, argv, &num_rids, &rids, &rid_types);
+
+	if (num_rids != 1) {
+		d_printf("Couldn't find group %s\n", argv[0]);
+		return result;
+	}
+
+	if (rid_types[0] != SID_NAME_DOM_GRP) {
+		d_printf("Can only rename domain groups\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS,
+				     rids[0], &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	ZERO_STRUCT(ctr);
+
+	ctr.switch_value1 = 2;
+	init_samr_group_info2(&ctr.group.info2, argv[1]);
+
+	result = cli_samr_set_groupinfo(cli, mem_ctx, &group_pol, &ctr);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	return NT_STATUS_NO_SUCH_GROUP;
+}
+
+static int rpc_group_rename(int argc, const char **argv)
+{
+	if (argc != 2) {
+		return rpc_group_usage(argc, argv);
+	}
+
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_rename_internals,
+			       argc, argv);
+}
+
 /** 
  * 'net rpc group' entrypoint.
  * @param argc  Standard main() style argc
@@ -2225,6 +2302,7 @@ int net_rpc_group(int argc, const char **argv)
 		{"delmem", rpc_group_delmem},
 		{"list", rpc_group_list},
 		{"members", rpc_group_members},
+		{"rename", rpc_group_rename},
 		{NULL, NULL}
 	};
 	
