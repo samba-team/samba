@@ -4,10 +4,10 @@ Version: PVERSION
 Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-PVERSION.tar.gz
+Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
 Patch: makefile-path.patch
 Patch1: smbw.patch
-Packager: John H Terpstra [Samba-Team] <jht@samba.anu.edu.au>
+Packager: John H Terpstra [Samba-Team] <jht@samba.org>
 Requires: pam >= 0.64
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
@@ -38,25 +38,25 @@ for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
 enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %changelog
-* Sun Oct 25 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Sun Oct 25 1998 John H Terpstra <jht@samba.org>
  - Added parameters to /config to ensure smb.conf, lmhosts, 
 	and smbusers never gets over-written.
 
-* Sat Oct 24 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Sat Oct 24 1998 John H Terpstra <jht@samba.org>
  - removed README.smbsh file from docs area
 
-* Mon Oct 05 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Mon Oct 05 1998 John H Terpstra <jht@samba.org>
  - Added rpcclient to binaries list
  - Added smbwrapper stuff
 
-* Fri Aug 21 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Fri Aug 21 1998 John H Terpstra <jht@samba.org>
  - Updated for Samba version 2.0 building
 
 * Tue Jul 07 1998 Erik Troan <ewt@redhat.com>
   - updated postun triggerscript to check $0
   - clear /etc/codepages from %preun instead of %postun
 
-* Sat Jul 04 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Sat Jul 04 1998 John H Terpstra <jht@samba.org>
  - fixed codepage preservation during update via -Uvh
 
 * Mon Jun 08 1998 Erik Troan <ewt@redhat.com>
@@ -67,18 +67,18 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
   - migrated %triggerpostun from Red Hat's samba package to work around
     packaging problems in some Red Hat samba releases
 
-* Sun Apr 26 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Sun Apr 26 1998 John H Terpstra <jht@samba.org>
  - Tidy up for early alpha releases
  - added findsmb from SGI packaging
 
-* Thu Apr 09 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Thu Apr 09 1998 John H Terpstra <jht@samba.org>
  - Updated spec file
  - Included new codepage.936
 
 * Sat Mar 20 1998 John H Terpstra <jht@samba.anu.edu/au>
  - Added swat facility
 
-* Sat Jan 24 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Sat Jan 24 1998 John H Terpstra <jht@samba.org>
  - Many optimisations (some suggested by Manoj Kasichainula <manojk@io.com>
   - Use of chkconfig in place of individual symlinks to /etc/rc.d/init/smb
   - Compounded make line
