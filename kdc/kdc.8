@@ -11,8 +11,6 @@ Kerberos 5 server
 .Nm
 .Op Fl c Ar file
 .Op Fl -config-file= Ns Ar file
-.Op Fl k Ar file
-.Op Fl -key-file= Ns Ar file
 .Op Fl p
 .Op Fl -no-require-preauth
 .Op Fl r Ar realm
@@ -31,12 +29,6 @@ Options supported:
 Specifies the location of the config file, the default is
 .Pa /var/heimdal/kdc.conf .
 This is the only value that can't be specified in the config file.
-.It Fl k Ar file
-.It Fl -key-file= Ns Ar file
-The location of the master-key file. All keys in the database is
-encrypted with this master key. The use of a master key is currently
-optional, so there is no default. 
-.Em "Don't specify a master key file if your database is not encrypted."
 .It Fl p
 .It Fl -no-require-preauth
 Turn off the requirement for pre-autentication in the initial
