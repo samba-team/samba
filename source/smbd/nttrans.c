@@ -1541,18 +1541,20 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
 
 /****************************************************************************
  Process the change notify queue. Note that this is only called as root.
+ Returns True if there are still outstanding change notify requests on the
+ queue.
 *****************************************************************************/
 
-void process_pending_change_notify_queue(time_t t)
+BOOL process_pending_change_notify_queue(time_t t)
 {
   change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
   change_notify_buf *prev = NULL;
 
   if(cnbp == NULL)
-    return;
+    return False;
 
   if(cnbp->next_check_time >= t)
-    return;
+    return True;
 
   /*
    * It's time to check. Go through the queue and see if
@@ -1630,6 +1632,18 @@ directory %s\n", cnbp->fsp->fsp_name ));
     prev = cnbp;
     cnbp = (change_notify_buf *)ubi_slNext(cnbp);
   }
+
+  return (cnbp != NULL);
+}
+
+/****************************************************************************
+ Return true if there are pending change notifies.
+****************************************************************************/
+
+BOOL change_notifies_pending(void)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  return (cnbp != NULL);
 }
 
 /****************************************************************************

@@ -2463,7 +2463,8 @@ int reply_nttranss(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
 void remove_pending_change_notify_requests_by_filename(files_struct *fsp);
-void process_pending_change_notify_queue(time_t t);
+BOOL process_pending_change_notify_queue(time_t t);
+BOOL change_notifies_pending(void);
 int reply_nttrans(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize);
 

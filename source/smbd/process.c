@@ -787,6 +787,29 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
+ Setup the needed select timeout.
+****************************************************************************/
+
+static int setup_select_timeout(void)
+{
+  int change_notify_timeout = lp_change_notify_timeout() * 1000;
+  int select_timeout;
+
+  /*
+   * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
+   * have removed any blocking locks. JRA.
+   */
+
+  select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
+                                              SMBD_SELECT_TIMEOUT*1000;
+
+  if (change_notifies_pending())
+    select_timeout = MIN(select_timeout, change_notify_timeout);
+
+  return select_timeout;
+}
+
+/****************************************************************************
  Process any timeout housekeeping. Return False if the caler should exit.
 ****************************************************************************/
 
@@ -942,12 +965,11 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
   process_pending_change_notify_queue(t);
 
   /*
-   * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
-   * have removed any blocking locks. JRA.
+   * Modify the select timeout depending upon
+   * what we have remaining in our queues.
    */
 
-  *select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
-                                              SMBD_SELECT_TIMEOUT*1000;
+  *select_timeout = setup_select_timeout();
 
   return True;
 }
@@ -991,7 +1013,7 @@ void smbd_process(void)
   {
     int deadtime = lp_deadtime()*60;
     BOOL got_smb = False;
-    int select_timeout = SMBD_SELECT_TIMEOUT*1000;
+    int select_timeout = setup_select_timeout();
 
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;
