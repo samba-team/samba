@@ -49,15 +49,15 @@
 
 int audit_connect(struct connection_struct *conn, char *svc, char *user);
 void audit_disconnect(struct connection_struct *conn);
-DIR *audit_opendir(struct connection_struct *conn, char *fname);
-int audit_mkdir(struct connection_struct *conn, char *path, mode_t mode);
-int audit_rmdir(struct connection_struct *conn, char *path);
-int audit_open(struct connection_struct *conn, char *fname, int flags, mode_t mode);
+DIR *audit_opendir(struct connection_struct *conn, const char *fname);
+int audit_mkdir(struct connection_struct *conn, const char *path, mode_t mode);
+int audit_rmdir(struct connection_struct *conn, const char *path);
+int audit_open(struct connection_struct *conn, const char *fname, int flags, mode_t mode);
 int audit_close(struct files_struct *fsp, int fd);
-int audit_rename(struct connection_struct *conn, char *old, char *new);
-int audit_unlink(struct connection_struct *conn, char *path);
-int audit_chmod(struct connection_struct *conn, char *path, mode_t mode);
-int audit_chmod_acl(struct connection_struct *conn, char *name, mode_t mode);
+int audit_rename(struct connection_struct *conn, const char *old, const char *new);
+int audit_unlink(struct connection_struct *conn, const char *path);
+int audit_chmod(struct connection_struct *conn, const char *path, mode_t mode);
+int audit_chmod_acl(struct connection_struct *conn, const char *name, mode_t mode);
 int audit_fchmod(struct files_struct *fsp, int fd, mode_t mode);
 int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode);
 
@@ -188,7 +188,7 @@ void audit_disconnect(struct connection_struct *conn)
 	default_vfs_ops.disconnect(conn);
 }
 
-DIR *audit_opendir(struct connection_struct *conn, char *fname)
+DIR *audit_opendir(struct connection_struct *conn, const char *fname)
 {
 	DIR *result = default_vfs_ops.opendir(conn, fname);
 
@@ -200,7 +200,7 @@ DIR *audit_opendir(struct connection_struct *conn, char *fname)
 	return result;
 }
 
-int audit_mkdir(struct connection_struct *conn, char *path, mode_t mode)
+int audit_mkdir(struct connection_struct *conn, const char *path, mode_t mode)
 {
 	int result = default_vfs_ops.mkdir(conn, path, mode);
 
@@ -212,7 +212,7 @@ int audit_mkdir(struct connection_struct *conn, char *path, mode_t mode)
 	return result;
 }
 
-int audit_rmdir(struct connection_struct *conn, char *path)
+int audit_rmdir(struct connection_struct *conn, const char *path)
 {
 	int result = default_vfs_ops.rmdir(conn, path);
 
@@ -224,7 +224,7 @@ int audit_rmdir(struct connection_struct *conn, char *path)
 	return result;
 }
 
-int audit_open(struct connection_struct *conn, char *fname, int flags, mode_t mode)
+int audit_open(struct connection_struct *conn, const char *fname, int flags, mode_t mode)
 {
 	int result = default_vfs_ops.open(conn, fname, flags, mode);
 
@@ -249,7 +249,7 @@ int audit_close(struct files_struct *fsp, int fd)
 	return result;
 }
 
-int audit_rename(struct connection_struct *conn, char *old, char *new)
+int audit_rename(struct connection_struct *conn, const char *old, const char *new)
 {
 	int result = default_vfs_ops.rename(conn, old, new);
 
@@ -261,7 +261,7 @@ int audit_rename(struct connection_struct *conn, char *old, char *new)
 	return result;    
 }
 
-int audit_unlink(struct connection_struct *conn, char *path)
+int audit_unlink(struct connection_struct *conn, const char *path)
 {
 	int result = default_vfs_ops.unlink(conn, path);
 
@@ -273,7 +273,7 @@ int audit_unlink(struct connection_struct *conn, char *path)
 	return result;
 }
 
-int audit_chmod(struct connection_struct *conn, char *path, mode_t mode)
+int audit_chmod(struct connection_struct *conn, const char *path, mode_t mode)
 {
 	int result = default_vfs_ops.chmod(conn, path, mode);
 
@@ -285,7 +285,7 @@ int audit_chmod(struct connection_struct *conn, char *path, mode_t mode)
 	return result;
 }
 
-int audit_chmod_acl(struct connection_struct *conn, char *path, mode_t mode)
+int audit_chmod_acl(struct connection_struct *conn, const char *path, mode_t mode)
 {
 	int result = default_vfs_ops.chmod_acl(conn, path, mode);
 

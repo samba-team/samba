@@ -59,7 +59,7 @@ static SMB_BIG_UINT skel_disk_free(struct connection_struct *conn, char *path,
 					 dfree, dsize);
 }
 
-static DIR *skel_opendir(struct connection_struct *conn, char *fname)
+static DIR *skel_opendir(struct connection_struct *conn, const char *fname)
 {
 	return default_vfs_ops.opendir(conn, fname);
 }
@@ -69,12 +69,12 @@ static struct dirent *skel_readdir(struct connection_struct *conn, DIR *dirp)
 	return default_vfs_ops.readdir(conn, dirp);
 }
 
-static int skel_mkdir(struct connection_struct *conn, char *path, mode_t mode)
+static int skel_mkdir(struct connection_struct *conn, const char *path, mode_t mode)
 {
 	return default_vfs_ops.mkdir(conn, path, mode);
 }
 
-static int skel_rmdir(struct connection_struct *conn, char *path)
+static int skel_rmdir(struct connection_struct *conn, const char *path)
 {
 	return default_vfs_ops.rmdir(conn, path);
 }
@@ -84,7 +84,7 @@ static int skel_closedir(struct connection_struct *conn, DIR *dir)
 	return default_vfs_ops.closedir(conn, dir);
 }
 
-static int skel_open(struct connection_struct *conn, char *fname, int flags, mode_t mode)
+static int skel_open(struct connection_struct *conn, const char *fname, int flags, mode_t mode)
 {
 	return default_vfs_ops.open(conn, fname, flags, mode);
 }
@@ -109,7 +109,7 @@ static SMB_OFF_T skel_lseek(struct files_struct *fsp, int filedes, SMB_OFF_T off
 	return default_vfs_ops.lseek(fsp, filedes, offset, whence);
 }
 
-static int skel_rename(struct connection_struct *conn, char *old, char *new)
+static int skel_rename(struct connection_struct *conn, const char *old, const char *new)
 {
 	return default_vfs_ops.rename(conn, old, new);
 }
@@ -119,7 +119,7 @@ static int skel_fsync(struct files_struct *fsp, int fd)
 	return default_vfs_ops.fsync(fsp, fd);
 }
 
-static int skel_stat(struct connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf)
+static int skel_stat(struct connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf)
 {
 	return default_vfs_ops.stat(conn, fname, sbuf);
 }
@@ -129,17 +129,17 @@ static int skel_fstat(struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
 	return default_vfs_ops.fstat(fsp, fd, sbuf);
 }
 
-static int skel_lstat(struct connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf)
+static int skel_lstat(struct connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	return default_vfs_ops.lstat(conn, path, sbuf);
 }
 
-static int skel_unlink(struct connection_struct *conn, char *path)
+static int skel_unlink(struct connection_struct *conn, const char *path)
 {
 	return default_vfs_ops.unlink(conn, path);
 }
 
-static int skel_chmod(struct connection_struct *conn, char *path, mode_t mode)
+static int skel_chmod(struct connection_struct *conn, const char *path, mode_t mode)
 {
 	return default_vfs_ops.chmod(conn, path, mode);
 }
@@ -149,7 +149,7 @@ static int skel_fchmod(struct files_struct *fsp, int fd, mode_t mode)
 	return default_vfs_ops.fchmod(fsp, fd, mode);
 }
 
-static int skel_chown(struct connection_struct *conn, char *path, uid_t uid, gid_t gid)
+static int skel_chown(struct connection_struct *conn, const char *path, uid_t uid, gid_t gid)
 {
 	return default_vfs_ops.chown(conn, path, uid, gid);
 }
@@ -159,7 +159,7 @@ static int skel_fchown(struct files_struct *fsp, int fd, uid_t uid, gid_t gid)
 	return default_vfs_ops.fchown(fsp, fd, uid, gid);
 }
 
-static int skel_chdir(struct connection_struct *conn, char *path)
+static int skel_chdir(struct connection_struct *conn, const char *path)
 {
 	return default_vfs_ops.chdir(conn, path);
 }
@@ -169,7 +169,7 @@ static char *skel_getwd(struct connection_struct *conn, char *buf)
 	return default_vfs_ops.getwd(conn, buf);
 }
 
-static int skel_utime(struct connection_struct *conn, char *path, struct utimbuf *times)
+static int skel_utime(struct connection_struct *conn, const char *path, struct utimbuf *times)
 {
 	return default_vfs_ops.utime(conn, path, times);
 }
@@ -214,7 +214,7 @@ static size_t skel_fget_nt_acl(struct files_struct *fsp, int fd, struct security
 	return default_vfs_ops.fget_nt_acl(fsp, fd, ppdesc);
 }
 
-static size_t skel_get_nt_acl(struct files_struct *fsp, char *name, struct security_descriptor_info **ppdesc)
+static size_t skel_get_nt_acl(struct files_struct *fsp, const char *name, struct security_descriptor_info **ppdesc)
 {
 	return default_vfs_ops.get_nt_acl(fsp, name, ppdesc);
 }
@@ -224,12 +224,12 @@ static BOOL skel_fset_nt_acl(struct files_struct *fsp, int fd, uint32 security_i
 	return default_vfs_ops.fset_nt_acl(fsp, fd, security_info_sent, psd);
 }
 
-static BOOL skel_set_nt_acl(struct files_struct *fsp, char *name, uint32 security_info_sent, struct security_descriptor_info *psd)
+static BOOL skel_set_nt_acl(struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd)
 {
 	return default_vfs_ops.set_nt_acl(fsp, name, security_info_sent, psd);
 }
 
-static BOOL skel_chmod_acl(struct connection_struct *conn, char *name, mode_t mode)
+static BOOL skel_chmod_acl(struct connection_struct *conn, const char *name, mode_t mode)
 {
 	return default_vfs_ops.chmod_acl(conn, name, mode);
 }
