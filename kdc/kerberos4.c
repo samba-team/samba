@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -454,7 +454,7 @@ encrypt_v4_ticket(void *buf, size_t len, des_cblock *key, EncryptedData *reply)
     reply->kvno = NULL;
     reply->cipher.length = len;
     reply->cipher.data = malloc(len);
-    if(reply->cipher.data == NULL)
+    if(len != 0 && reply->cipher.data == NULL)
 	return ENOMEM;
     des_set_key(key, schedule);
     des_pcbc_encrypt(buf,
