@@ -472,7 +472,7 @@ NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	   or we are dead in the water */
 
 	if ( !winbind_sid_to_gid(pgid, psid) ) {
-		DEBUG(10,("sid_to_uid: winbind failed to allocate a new gid for sid %s\n",
+		DEBUG(10,("sid_to_gid: winbind failed to allocate a new gid for sid %s\n",
 			sid_to_string(sid_str, psid) ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

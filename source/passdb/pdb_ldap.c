@@ -2741,7 +2741,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		(struct ldapsam_privates *)methods->private_data;
 	LDAP *ldap_struct;
 
-	const char *attrs[] = { LDAP_ATTRIBUTE_SID, NULL };
+	char *attrs[] = { LDAP_ATTRIBUTE_SID, NULL };
 
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
