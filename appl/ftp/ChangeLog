@@ -1,3 +1,7 @@
+2001-08-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftp/gssapi.c: try using "host" if there's no "ftp" principal
+
 2001-08-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ls.c: implement -R
