@@ -727,7 +727,7 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 		ifip = interpret_addr2(mem_ctx, lp_socket_address());
 		add_socket(service, model_ops, NULL, ifip);
 
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 	}
 }
 
@@ -783,7 +783,7 @@ static void smbsrv_close(struct server_connection *conn, const char *reason)
 
 	conn_close_all(smb_conn);
 
-	talloc_destroy(smb_conn->mem_ctx);
+	talloc_free(smb_conn->mem_ctx);
 
 	return;
 }

@@ -52,7 +52,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 	}
 	state = talloc_p(mem_ctx, struct server_pipe_state);
 	if (state == NULL) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(state);
@@ -60,7 +60,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 	state->authenticated = True;
 	
 	if (dce_call->conn->auth_state.session_info == NULL) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		smb_panic("No session info provided by schannel level setup!");
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
@@ -71,7 +71,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("getting schannel credentials failed with %s\n", nt_errstr(status)));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 	
@@ -110,7 +110,7 @@ static void netlogon_unbind(struct dcesrv_connection *conn, const struct dcesrv_
 	struct server_pipe_state *pipe_state = conn->private;
 
 	if (pipe_state) {
-		talloc_destroy(pipe_state->mem_ctx);
+		talloc_free(pipe_state->mem_ctx);
 	}
 
 	conn->private = NULL;
@@ -130,7 +130,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	/* destroyed on pipe shutdown */
 
 	if (pipe_state) {
-		talloc_destroy(pipe_state->mem_ctx);
+		talloc_free(pipe_state->mem_ctx);
 		dce_call->conn->private = NULL;
 	}
 	
@@ -143,7 +143,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 
 	pipe_state = talloc_p(pipe_mem_ctx, struct server_pipe_state);
 	if (!pipe_state) {
-		talloc_destroy(pipe_mem_ctx);
+		talloc_free(pipe_mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 

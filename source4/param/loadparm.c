@@ -1125,7 +1125,7 @@ void lp_talloc_free(void)
 {
 	if (!lp_talloc)
 		return;
-	talloc_destroy(lp_talloc);
+	talloc_free(lp_talloc);
 	lp_talloc = NULL;
 }
 
