@@ -375,14 +375,14 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	/* search for the secret record */
 	ret = samdb_search(ldb,
 			   mem_ctx, base_dn, &msgs, attrs,
-			   "(&(cn=%s)(objectclass=primaryDomain))", 
+			   "(&(flatname=%s)(objectclass=primaryDomain))", 
 			   r->generic.in.domain_name);
 	if (ret == 0) {
-		msg->dn = talloc_asprintf(mem_ctx, "cn=%s,%s", 
+		msg->dn = talloc_asprintf(mem_ctx, "flatname=%s,%s", 
 					  r->generic.in.domain_name,
 					  base_dn);
 		
-		samdb_msg_add_string(ldb, mem_ctx, msg, "cn", r->generic.in.domain_name);
+		samdb_msg_add_string(ldb, mem_ctx, msg, "flatname", r->generic.in.domain_name);
 		samdb_msg_add_string(ldb, mem_ctx, msg, "objectClass", "primaryDomain");
 		samdb_msg_add_string(ldb, mem_ctx, msg, "secret", r2.generic.out.join_password);
 
