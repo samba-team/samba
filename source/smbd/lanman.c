@@ -445,7 +445,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 
   PACKI(desc,"W",queue->job); /* uJobId */
   if (uLevel == 1) {
-    PACKS(desc,"B21",queue->user); /* szUserName */
+    PACKS(desc,"B21",queue->fs_user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
     PACKS(desc,"B16","");	/* szNotifyName */
     PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
@@ -455,17 +455,17 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
     PACKS(desc,"z","");		/* pszStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
-    PACKS(desc,"z",queue->file); /* pszComment */
+    PACKS(desc,"z",queue->fs_file); /* pszComment */
   }
   if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
     PACKI(desc,"W",queue->priority);		/* uPriority */
-    PACKS(desc,"z",queue->user); /* pszUserName */
+    PACKS(desc,"z",queue->fs_user); /* pszUserName */
     PACKI(desc,"W",n+1);		/* uPosition */
     PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z","Samba");	/* pszComment */
-    PACKS(desc,"z",queue->file); /* pszDocument */
+    PACKS(desc,"z",queue->fs_file); /* pszDocument */
     if (uLevel == 3) {
       PACKS(desc,"z","");	/* pszNotifyName */
       PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
