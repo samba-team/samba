@@ -1422,7 +1422,7 @@ env_opt_start()
 			free (opt_reply);
 			opt_reply = NULL;
 		}
-	else
+	} else
 		opt_reply = (unsigned char *)malloc(OPT_REPLY_SIZE);
 	if (opt_reply == NULL) {
 /*@*/		printf("env_opt_start: malloc()/realloc() failed!!!\n");
