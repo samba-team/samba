@@ -121,7 +121,7 @@ Master key:
 Verifying password - Master key: 
 @end example
 
-To initialize the database use the @code{kadmin} program, with the
+To initialise the database use the @code{kadmin} program, with the
 @samp{-l} option (to enable local database mode). First issue a
 @kbd{init MY.REALM} command. This will create the database and insert
 default principals for that realm. You can have more than one realm in

@@ -71,7 +71,7 @@ Note that you should not use any Kerberos function before
 @code{krb5_init_context()} have completed successfully. That is the
 reson @code{err()} is used when @code{krb5_init_context()} fails.
 
-First the client needs to call @code{krb5_init_context} to initialize
+First the client needs to call @code{krb5_init_context} to initialise
 the Kerberos 5 library. This is only needed once per thread
 in the program. If the function returns a non-zero value it indicates
 that either the Kerberos implemtation is failing or its disabled on
@@ -277,7 +277,7 @@ See the manual page for @manpage{krb5_verify_user,3}.
 @node API diffrences to MIT Kerberos, , Validating a password in a server application, Programming with Kerberos
 @section API diffrences to MIT Kerberos
 
-This section is somewhat unorganized, but so far there is no overall
+This section is somewhat unorganised, but so far there is no overall
 structure to the diffrecies, though some of the have their root in
 that heimdal uses a ASN.1 compiler and MIT doesn't.
 
@@ -305,7 +305,7 @@ To get the error string, Heimdal users uses
 @manpage{error_message,3} returns.
 
 Heimdal uses a threadsafe(er) version of the com_err interface, the
-global com_err table isn't initialized, then @manpage{error_message,3}
+global com_err table isn't initialised, then @manpage{error_message,3}
 returns quite boring error string (just the error code itself).
 
 
