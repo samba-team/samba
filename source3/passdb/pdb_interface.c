@@ -1023,16 +1023,15 @@ BOOL pdb_find_alias(const char *name, DOM_SID *sid)
 							     name, sid));
 }
 
-BOOL pdb_create_alias(const char *name, uint32 *rid)
+NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_create_alias(pdb_context,
-							     name, rid));
+	return pdb_context->pdb_create_alias(pdb_context, name, rid);
 }
 
 BOOL pdb_delete_alias(const DOM_SID *sid)
