@@ -162,10 +162,18 @@ krb5_get_in_tkt(krb5_context context,
      free (key);
      if (rep.enc_part2.key_expiration)
 	  free (rep.enc_part2.key_expiration);
-     if (rep.enc_part2.starttime)
+     if (rep.enc_part2.starttime) {
+	  creds->times.starttime = *rep.enc_part2.starttime;
 	  free (rep.enc_part2.starttime);
-     if (rep.enc_part2.renew_till)
+     } else
+	  creds->times.starttime = rep.enc_part2.authtime;
+     if (rep.enc_part2.renew_till) {
+	  creds->times.renew_till = *rep.enc_part2.renew_till;
 	  free (rep.enc_part2.renew_till);
+     } else
+	  creds->times.renew_till = rep.enc_part2.endtime;
+     creds->times.authtime = rep.enc_part2.authtime;
+     creds->times.endtime  = rep.enc_part2.endtime;
      if (rep.enc_part2.req.values)
 	  free (rep.enc_part2.req.values);
      if (rep.enc_part2.caddr.addrs) {
