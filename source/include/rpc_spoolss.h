@@ -1117,6 +1117,7 @@ typedef struct spool_q_setjob
 typedef struct spool_r_setjob
 {
 	uint32 status;
+
 } SPOOL_R_SETJOB;
 
 typedef struct spool_q_enumprinterdrivers
@@ -1126,19 +1127,17 @@ typedef struct spool_q_enumprinterdrivers
 	uint32 level;
 	BUFFER buffer;
 	uint32 buf_size;
+
 } SPOOL_Q_ENUMPRINTERDRIVERS;
 
 typedef struct spool_r_enumprinterdrivers
 {
 	uint32 level;
-	union {
-		DRIVER_INFO_1 *driver_info_1;
-		DRIVER_INFO_2 *driver_info_2;
-		DRIVER_INFO_3 *driver_info_3;
-	} driver;
+	DRIVER_INFO ctr;
 	uint32 offered;
 	uint32 numofdrivers;
 	uint32 status;
+
 } SPOOL_R_ENUMPRINTERDRIVERS;
 
 typedef struct spool_form_1

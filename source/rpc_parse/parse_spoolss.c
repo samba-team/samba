@@ -2863,7 +2863,7 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 		case 1:
 		{
 			DRIVER_INFO_1 *driver_info_1;
-			driver_info_1=r_u->driver.driver_info_1;
+			driver_info_1=r_u->ctr.driver.info1;
 			
 			for (i=0; i<r_u->numofdrivers; i++)
 			{
@@ -2874,7 +2874,7 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 		case 2:
 		{
 			DRIVER_INFO_2 *driver_info_2;
-			driver_info_2=r_u->driver.driver_info_2;
+			driver_info_2=r_u->ctr.driver.info2;
 			
 			for (i=0; i<r_u->numofdrivers; i++)
 			{
@@ -2885,7 +2885,7 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 		case 3:
 		{
 			DRIVER_INFO_3 *driver_info_3;
-			driver_info_3=r_u->driver.driver_info_3;
+			driver_info_3=r_u->ctr.driver.info3;
 			
 			for (i=0; i<r_u->numofdrivers; i++)
 			{
@@ -2926,7 +2926,7 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 				DRIVER_INFO_1 *info;
 				for (i=0; i<r_u->numofdrivers; i++)
 				{
-					info = &(r_u->driver.driver_info_1[i]);
+					info = &(r_u->ctr.driver.info1[i]);
 					smb_io_printer_driver_info_1(desc, info, ps, depth, &start_offset, &end_offset);
 				}
 				break;
@@ -2936,7 +2936,7 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 				DRIVER_INFO_2 *info;
 				for (i=0; i<r_u->numofdrivers; i++)
 				{
-					info = &(r_u->driver.driver_info_2[i]);
+					info = &(r_u->ctr.driver.info2[i]);
 					smb_io_printer_driver_info_2(desc, info, ps, depth, &start_offset, &end_offset);
 				}
 				break;
@@ -2946,7 +2946,7 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 				DRIVER_INFO_3 *info;
 				for (i=0; i<r_u->numofdrivers; i++)
 				{
-					info = &(r_u->driver.driver_info_3[i]);
+					info = &(r_u->ctr.driver.info3[i]);
 					smb_io_printer_driver_info_3(desc, info, ps, depth, &start_offset, &end_offset);
 				}
 				break;
@@ -2966,6 +2966,54 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 	prs_uint32("status", ps, depth, &(r_u->status));
 
 	return True;
+}
+
+
+void free_spoolss_r_enumdrivers(SPOOL_R_ENUMPRINTERDRIVERS *r_u)
+{
+	switch (r_u->level)
+	{
+		case 1:
+		{
+			DRIVER_INFO_1 *driver_info_1;
+			driver_info_1=r_u->ctr.driver.info1;
+			
+			free(driver_info_1);
+			break;
+		}
+		case 2:
+		{
+			DRIVER_INFO_2 *driver_info_2;
+			driver_info_2=r_u->ctr.driver.info2;
+			
+			free(driver_info_2);
+			break;
+		}
+		case 3:
+		{
+			DRIVER_INFO_3 *driver_info_3;
+			
+			UNISTR **dependentfiles;
+			int i;
+
+			driver_info_3=r_u->ctr.driver.info3;
+			
+			for (i=0; i<r_u->numofdrivers; i++)
+			{
+				int j=0;
+				dependentfiles=(driver_info_3[i]).dependentfiles;
+				while ( dependentfiles[j] != NULL )
+				{
+					free(dependentfiles[j]);
+					j++;
+				}
+				
+				free(dependentfiles);		
+			}
+			free(driver_info_3);
+			break;
+		}
+	}
 }
 
 /*******************************************************************

@@ -553,131 +553,6 @@ static void api_spoolss_getprinter(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_r_getprinter("",&r_u,rdata,0);
 }
 
-/********************************************************************
- * construct_printer_driver_info_1
- * fill a construct_printer_driver_info_1 struct
- ********************************************************************/
-static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, 
-                                       NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
-{
-	make_unistr( &(info->name), driver.info_3->name);
-}
-
-/********************************************************************
- * copy a strings array and convert to UNICODE
- ********************************************************************/
-static void make_unistr_array(UNISTR ***uni_array, char **char_array, char *where)
-{
-	int i=0;
-	char *v;
-	pstring line;
-
-	DEBUG(6,("make_unistr_array\n"));
-
-	for (v=char_array[i]; *v!='\0'; v=char_array[i])
-	{
-		DEBUGADD(6,("i:%d:", i));
-		DEBUGADD(6,("%s:%d:", v, strlen(v)));
-	
-		*uni_array=(UNISTR **)Realloc(*uni_array, sizeof(UNISTR *)*(i+1));
-		DEBUGADD(7,("realloc:[%p],", *uni_array));
-			
-		(*uni_array)[i]=(UNISTR *)malloc( sizeof(UNISTR) );
-		DEBUGADD(7,("alloc:[%p],", (*uni_array)[i]));
-
-		snprintf(line, sizeof(line)-1, "%s%s", where, v);
-		make_unistr( (*uni_array)[i], line );
-		DEBUGADD(7,("copy\n"));
-			
-		i++;
-	}
-	DEBUGADD(7,("last one\n"));
-	
-	*uni_array=(UNISTR **)Realloc(*uni_array, sizeof(UNISTR *)*(i+1));
-	(*uni_array)[i]=0x0000;
-	DEBUGADD(6,("last one:done\n"));
-}
-
-/********************************************************************
- * construct_printer_info_3
- * fill a printer_info_3 struct
- ********************************************************************/
-static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, 
-                                       NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
-{
-	pstring where;
-	pstring temp_driverpath;
-	pstring temp_datafile;
-	pstring temp_configfile;
-	pstring temp_helpfile;
-	fstring short_archi;
-	
-	get_short_archi(short_archi, architecture);
-	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
-	
-	info->version=driver.info_3->cversion;
-
-	make_unistr( &(info->name),         driver.info_3->name );	
-	make_unistr( &(info->architecture), architecture );
-	
-	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "%s%s", where, driver.info_3->driverpath);		 
-	make_unistr( &(info->driverpath), temp_driverpath );
-	
-	snprintf(temp_datafile,   sizeof(temp_datafile)-1,   "%s%s", where, driver.info_3->datafile); 
-	make_unistr( &(info->datafile), temp_datafile );
-	
-	snprintf(temp_configfile, sizeof(temp_configfile)-1, "%s%s", where, driver.info_3->configfile);
-	make_unistr( &(info->configfile), temp_configfile );	
-	
-	snprintf(temp_helpfile,   sizeof(temp_helpfile)-1,   "%s%s", where, driver.info_3->helpfile);
-	make_unistr( &(info->helpfile), temp_helpfile );
-
-	make_unistr( &(info->monitorname), driver.info_3->monitorname );	
-	make_unistr( &(info->defaultdatatype), driver.info_3->defaultdatatype );
-
-	info->dependentfiles=NULL;
-	make_unistr_array(&(info->dependentfiles), driver.info_3->dependentfiles, where);
-}
-
-
-/********************************************************************
- * construct_printer_driver_info_2
- * fill a printer_info_2 struct
- ********************************************************************/
-static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, 
-                                       NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
-{
-	pstring where;
-	pstring temp_driverpath;
-	pstring temp_datafile;
-	pstring temp_configfile;
-	fstring short_archi;
-
-	get_short_archi(short_archi,architecture);
-	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
-
-	info->version=driver.info_3->cversion;
-
-	make_unistr( &(info->name),         driver.info_3->name );
-	make_unistr( &(info->architecture), architecture );
-	
-	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "%s%s", where, 
-	         driver.info_3->driverpath);
-	make_unistr( &(info->driverpath),   temp_driverpath );
-
-	snprintf(temp_datafile,   sizeof(temp_datafile)-1, "%s%s", where, 
-	         driver.info_3->datafile);
-	make_unistr( &(info->datafile),     temp_datafile );
-
-	snprintf(temp_configfile, sizeof(temp_configfile)-1, "%s%s", where, 
-	         driver.info_3->configfile);
-	make_unistr( &(info->configfile),   temp_configfile );	
-}
 
 /********************************************************************
  * api_spoolss_getprinter
@@ -1014,129 +889,26 @@ static void api_spoolss_setjob(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMPRINTERDRIVERS r_u;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	int count;
-	int i;
-	fstring *list;
-	DRIVER_INFO_1 *driver_info_1=NULL;
-	DRIVER_INFO_2 *driver_info_2=NULL;
-	DRIVER_INFO_3 *driver_info_3=NULL;
-	fstring servername;
-	fstring architecture;
-
-	DEBUG(4,("spoolss_reply_enumdrivers\n"));
-	fstrcpy(servername, global_myname);
-
-	unistr2_to_ascii(architecture, &(q_u->environment), sizeof(architecture));
-	count=get_ntdrivers(&list, architecture);
-
-	DEBUGADD(4,("we have: [%d] drivers on archi [%s]\n",count, architecture));
-	for (i=0; i<count; i++)
-	{
-		DEBUGADD(5,("driver [%s]\n",list[i]));
-	}
-	
-	r_u.offered=q_u->buf_size;
-	r_u.numofdrivers=count;
-	r_u.level=q_u->level;
-	
-	switch (r_u.level)
-	{
-		case 1:
-		{
-			driver_info_1=(DRIVER_INFO_1 *)malloc(count*sizeof(DRIVER_INFO_1));
-
-			for (i=0; i<count; i++)
-			{
-				get_a_printer_driver(&driver, 3, list[i], architecture);
-				fill_printer_driver_info_1(&(driver_info_1[i]), driver, servername, architecture );
-				free_a_printer_driver(driver, 3);
-			}
-   			r_u.driver.driver_info_1=driver_info_1;
-   			break;
-   		}
-   		case 2:
-   		{
-   			driver_info_2=(DRIVER_INFO_2 *)malloc(count*sizeof(DRIVER_INFO_2));
-
-   			for (i=0; i<count; i++)
-   			{
-				get_a_printer_driver(&driver, 3, list[i], architecture);
-   				fill_printer_driver_info_2(&(driver_info_2[i]), driver, servername, architecture );
-				free_a_printer_driver(driver, 3);
-   			}
-   			r_u.driver.driver_info_2=driver_info_2;
-   			break;
-   		}
-   		case 3:
-   		{
-   			driver_info_3=(DRIVER_INFO_3 *)malloc(count*sizeof(DRIVER_INFO_3));
-
-   			for (i=0; i<count; i++)
-   			{
-				get_a_printer_driver(&driver, 3, list[i], architecture);
-   				fill_printer_driver_info_3(&(driver_info_3[i]), driver, servername, architecture );
-				free_a_printer_driver(driver, 3);
-   			}
-   			r_u.driver.driver_info_3=driver_info_3;
-   			break;
-   		}
-	}
-
-	r_u.status=0x0;
-
-	spoolss_io_r_enumdrivers("",&r_u,rdata,0);
-
-	switch (r_u.level)
-	{
-		case 1:
-		{
-			free(driver_info_1);
-			break;
-		}
-		case 2:
-		{
-			free(driver_info_2);
-			break;
-		}
-		case 3:
-		{
-			UNISTR **dependentfiles;
-			
-			for (i=0; i<count; i++)
-			{
-				int j=0;
-				dependentfiles=(driver_info_3[i]).dependentfiles;
-				while ( dependentfiles[j] != NULL )
-				{
-					free(dependentfiles[j]);
-					j++;
-				}
-				
-				free(dependentfiles);		
-			}
-			free(driver_info_3);
-			break;
-		}
-	}
-}
-
-/****************************************************************************
-****************************************************************************/
 
 static void api_spoolss_enumprinterdrivers(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERDRIVERS q_u;
+	SPOOL_R_ENUMPRINTERDRIVERS r_u;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_enumprinterdrivers("", &q_u, data, 0);
 
-	spoolss_reply_enumprinterdrivers(&q_u, rdata);
-	
-	spoolss_io_free_buffer(&(q_u.buffer));
+	r_u.offered = q_u.buf_size;
+	r_u.status = _spoolss_enumprinterdrivers(&q_u.name,
+				&q_u.environment, q_u. level,
+				&r_u.ctr, &r_u.offered, &r_u.numofdrivers);
+
+	spoolss_io_free_buffer(&q_u.buffer);
+	spoolss_io_r_enumdrivers("",&r_u,rdata,0);
+	free_spoolss_r_enumdrivers(&r_u);
 }
 
 

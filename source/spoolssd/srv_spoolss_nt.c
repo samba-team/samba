@@ -2770,27 +2770,26 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *rdata)
+uint32 _spoolss_enumprinterdrivers( const UNISTR2 *name,
+				const UNISTR2 *environment,
+				uint32 level,
+				DRIVER_INFO *ctr,
+				uint32 *offered,
+				uint32 *numofdrivers)
 {
-	SPOOL_R_ENUMPRINTERDRIVERS r_u;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	int count;
 	int i;
 	fstring *list;
-	DRIVER_INFO_1 *driver_info_1=NULL;
-	DRIVER_INFO_2 *driver_info_2=NULL;
-	DRIVER_INFO_3 *driver_info_3=NULL;
 	fstring servername;
 	fstring architecture;
 
 	DEBUG(4,("spoolss_enumdrivers\n"));
 	fstrcpy(servername, global_myname);
 
-	unistr2_to_ascii(architecture, &(environment), sizeof(architecture));
+	unistr2_to_ascii(architecture, environment, sizeof(architecture));
 	count=get_ntdrivers(&list, architecture);
 
 	DEBUGADD(4,("we have: [%d] drivers on archi [%s]\n",count, architecture));
@@ -2799,14 +2798,13 @@ uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *
 		DEBUGADD(5,("driver [%s]\n",list[i]));
 	}
 	
-	offered=buf_size;
-	numofdrivers=count;
-	level=level;
+	(*numofdrivers)=count;
 	
 	switch (level)
 	{
 		case 1:
 		{
+			DRIVER_INFO_1 *driver_info_1=NULL;
 			driver_info_1=(DRIVER_INFO_1 *)malloc(count*sizeof(DRIVER_INFO_1));
 
 			for (i=0; i<count; i++)
@@ -2815,11 +2813,12 @@ uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *
 				fill_printer_driver_info_1(&(driver_info_1[i]), driver, servername, architecture );
 				free_a_printer_driver(driver, 3);
 			}
-   			driver.driver_info_1=driver_info_1;
+   			ctr->driver.info1=driver_info_1;
    			break;
    		}
    		case 2:
    		{
+			DRIVER_INFO_2 *driver_info_2=NULL;
    			driver_info_2=(DRIVER_INFO_2 *)malloc(count*sizeof(DRIVER_INFO_2));
 
    			for (i=0; i<count; i++)
@@ -2828,11 +2827,12 @@ uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *
    				fill_printer_driver_info_2(&(driver_info_2[i]), driver, servername, architecture );
 				free_a_printer_driver(driver, 3);
    			}
-   			driver.driver_info_2=driver_info_2;
+   			ctr->driver.info2=driver_info_2;
    			break;
    		}
    		case 3:
    		{
+			DRIVER_INFO_3 *driver_info_3=NULL;
    			driver_info_3=(DRIVER_INFO_3 *)malloc(count*sizeof(DRIVER_INFO_3));
 
    			for (i=0; i<count; i++)
@@ -2841,48 +2841,19 @@ uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *
    				fill_printer_driver_info_3(&(driver_info_3[i]), driver, servername, architecture );
 				free_a_printer_driver(driver, 3);
    			}
-   			driver.driver_info_3=driver_info_3;
+   			ctr->driver.info3=driver_info_3;
    			break;
    		}
-	}
-
-	status=0x0;
-
-	spoolss_io_r_enumdrivers("",&r_u,rdata,0);
-
-	switch (level)
-	{
-		case 1:
+		default:
 		{
-			free(driver_info_1);
-			break;
-		}
-		case 2:
-		{
-			free(driver_info_2);
-			break;
-		}
-		case 3:
-		{
-			UNISTR **dependentfiles;
-			
-			for (i=0; i<count; i++)
-			{
-				int j=0;
-				dependentfiles=(driver_info_3[i]).dependentfiles;
-				while ( dependentfiles[j] != NULL )
-				{
-					free(dependentfiles[j]);
-					j++;
-				}
-				
-				free(dependentfiles);		
-			}
-			free(driver_info_3);
-			break;
+			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
+	return 0x0;
+
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
