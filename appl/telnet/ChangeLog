@@ -1,3 +1,7 @@
+2001-08-10  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/sys_term.c (getpty): call openpty if it exists
+
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/global.c (output_data): make sure of not forwarding

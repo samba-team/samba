@@ -1,3 +1,7 @@
+2001-08-10  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libroken_la_LDFLAGS): update to 14:2:5
+
 2001-08-08  Assar Westerlund  <assar@sics.se>
 
 	* hstrerror.c: move h_errno to its own file (h_errno.c)

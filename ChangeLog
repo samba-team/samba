@@ -1,3 +1,7 @@
+2001-08-10  Assar Westerlund  <assar@sics.se>
+
+	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): update to 7:4:0
+
 2001-08-08  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: just add -L (if required) from krb4 when testing
