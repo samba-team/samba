@@ -228,7 +228,7 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 	*out = data_blob(NULL, 0);
 
 	if (ntlmssp_state->expected_state == NTLMSSP_DONE) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_OK;
 	}
 
 	if (!out_mem_ctx) {
