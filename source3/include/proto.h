@@ -1224,9 +1224,7 @@ BOOL lp_wins_support(void);
 BOOL lp_we_are_a_wins_server(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_local_master(void);
-BOOL lp_domain_master(void);
 BOOL lp_domain_logons(void);
-BOOL lp_preferred_master(void);
 BOOL lp_load_printers(void);
 BOOL lp_use_rhosts(void);
 BOOL lp_readprediction(void);
@@ -1386,6 +1384,8 @@ void lp_set_name_resolve_order(char *new_order);
 void lp_set_kernel_oplocks(BOOL val);
 BOOL lp_kernel_oplocks(void);
 int lp_server_role(void);
+BOOL lp_domain_master(void);
+BOOL lp_preferred_master(void);
 
 /*The following definitions come from  param/params.c  */
 
@@ -3081,7 +3081,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t write_file(files_struct *fsp,char *data,size_t n);
-void sys_sync_file(struct connection_struct *conn, files_struct *fsp);
+void sys_sync_file(int fd);
 
 /*The following definitions come from  smbd/filename.c  */
 
@@ -3348,6 +3348,9 @@ void unbecome_root(BOOL restore_dir);
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
+int vfswrap_dummy_connect(struct vfs_connection_struct *conn, char *service,
+			  char *user);
+void vfswrap_dummy_disconnect(void);
 SMB_BIG_UINT vfswrap_disk_free(char *path, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 DIR *vfswrap_opendir(char *fname);
@@ -3361,7 +3364,7 @@ ssize_t vfswrap_read(int fd, char *data, size_t n);
 ssize_t vfswrap_write(int fd, char *data, size_t n);
 SMB_OFF_T vfswrap_lseek(int filedes, SMB_OFF_T offset, int whence);
 int vfswrap_rename(char *old, char *new);
-void vfswrap_sync_file(struct connection_struct *conn, files_struct *fsp);
+void vfswrap_sync_file(int fd);
 int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf);
 int vfswrap_fstat(int fd, SMB_STRUCT_STAT *sbuf);
 int vfswrap_lstat(char *path, 
@@ -3374,11 +3377,9 @@ int vfswrap_utime(char *path, struct utimbuf *times);
 
 /*The following definitions come from  smbd/vfs.c  */
 
-BOOL do_vfs_init(char *vfs_object);
 int vfs_init_default(connection_struct *conn);
-int vfs_init_custom(connection_struct *conn);
+BOOL vfs_init_custom(connection_struct *conn);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
-ssize_t vfs_read_data(files_struct *fsp,char *buffer,size_t N);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 
 			    int out_fd, files_struct *out_fsp,
