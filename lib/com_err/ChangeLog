@@ -1,3 +1,7 @@
+Thu Apr  1 11:13:53 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* compile_et.c: use getargs
+
 Sat Mar 20 00:16:30 1999  Assar Westerlund  <assar@sics.se>
 
 	* compile_et.c: static-ize
