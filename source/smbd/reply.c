@@ -226,9 +226,9 @@ int reply_tcon(connection_struct *conn,
      * Ensure the user and password names are in UNIX codepage format.
      */
 
-    dos_to_unix(user,True);
+    pstrcpy(user,dos_to_unix(user,False));
 	if (!doencrypt)
-    	dos_to_unix(password,True);
+    	pstrcpy(password,dos_to_unix(password,False));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -318,9 +318,9 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	 * Ensure the user and password names are in UNIX codepage format.
 	 */
 
-	dos_to_unix(user,True);
+	pstrcpy(user,dos_to_unix(user,False));
 	if (!doencrypt)
-		dos_to_unix(password,True);
+		pstrcpy(password,dos_to_unix(password,False));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -701,12 +701,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   BOOL guest=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
-  char *domain = "";
+  fstring domain;
   START_PROFILE(SMBsesssetupX);
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
-  
+  *domain = 0;
+
   smb_bufsize = SVAL(inbuf,smb_vwv2);
 
   if (Protocol < PROTOCOL_NT1) {
@@ -721,7 +722,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user is in DOS codepage format. Convert
      * to UNIX.
      */
-    dos_to_unix(user,True);
+    pstrcpy(user,dos_to_unix(user,False));
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
       smb_apasslen = strlen(smb_apasswd);
@@ -806,8 +807,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
        * Ensure the plaintext passwords are in UNIX format.
        */
       if(!doencrypt) {
-        dos_to_unix(smb_apasswd,True);
-        dos_to_unix(smb_ntpasswd,True);
+        pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
+        pstrcpy(smb_ntpasswd,dos_to_unix(smb_ntpasswd,False));
       }
 
     } else {
@@ -817,7 +818,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       /*
        * Ensure the plaintext password is in UNIX format.
        */
-      dos_to_unix(smb_apasswd,True);
+      pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
       
       /* trim the password */
       smb_apasslen = strlen(smb_apasswd);
@@ -836,9 +837,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user and domain are in DOS codepage format. Convert
      * to UNIX.
      */
-    dos_to_unix(user,True);
-    domain = p;
-    dos_to_unix(domain, True);
+    pstrcpy(user,dos_to_unix(user,False));
+    fstrcpy(domain, dos_to_unix(p, False));
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     domain,skip_string(p,1),skip_string(p,2)));
   }

@@ -112,7 +112,8 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 			memcpy(dest, src, len);
 			dest[len] = 0;
 		}
-		if (flags & STR_CONVERT) dos_to_unix(dest,True);
+		if (flags & STR_CONVERT) 
+			safe_strcpy(dest,dos_to_unix(dest,False),dest_len);
 		return len;
 	}
 
@@ -129,7 +130,8 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		*dest++ = 0;
 		len = src_len;
 	}
-	if (flags & STR_CONVERT) dos_to_unix(dest,True);
+	if (flags & STR_CONVERT)
+		safe_strcpy(dest,dos_to_unix(dest,False),dest_len);
 	return len;
 }
 
