@@ -12,10 +12,6 @@ file.
 
 more programs here
 
-** appl/login
-
-/etc/environment etc.
-
 ** appl/popper
 
 Implement RFC1731 and 1734, pop over GSS-API
@@ -46,8 +42,6 @@ is in need of a major cleanup
 
 prepend a prefix on all generated symbols
 
-make asn1_compile use enum types where applicable
-
 ** lib/auth
 
 PAM
@@ -66,11 +60,9 @@ set minor_status in all functions
 
 init_sec_context: `initiator_cred_handle' and `time_req' ignored.
 
-input channel bindings are not supported
-
-delegation not implemented
-
 anonymous credentials not implemented
+
+add 3DES
 
 ** lib/hdb
 
