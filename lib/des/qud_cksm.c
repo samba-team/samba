@@ -122,9 +122,14 @@ des_cblock (*seed);
 				}
 			else
 				{
+#if 0
 				lp=output[out_count-i-1];
 				l2n(z1,lp);
 				l2n(z0,lp);
+#else
+				l2n(z0,lp);
+				l2n(z1,lp);
+#endif
 				}
 			}
 		}
