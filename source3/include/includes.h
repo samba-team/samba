@@ -737,6 +737,13 @@ typedef struct smb_wpasswd {
 	wpstring       pw_shell;
 } SMB_STRUCT_WPASSWD;
 
+/* used in net.c */
+struct functable {
+	char *funcname;
+	int (*fn)();
+};
+
+
 /* Defines for wisXXX functions. */
 #define UNI_UPPER    0x1
 #define UNI_LOWER    0x2

@@ -37,11 +37,6 @@
 
 #include <includes.h>
 
-struct functable {
-	char *funcname;
-	int (*fn)();
-};
-
 /***********************************************************************/
 /* Beginning of internationalization section.  Translatable constants  */
 /* should be kept in this area and referenced in the rest of the code. */
@@ -315,8 +310,8 @@ static struct in_addr dest_ip;
   run a function from a function table. If not found then
   call the specified usage function 
 */
-static int run_function(int argc, const char **argv, struct functable *table, 
-			int (*usage_fn)(void))
+int net_run_function(int argc, const char **argv, struct functable *table, 
+		     int (*usage_fn)(void))
 {
 	int i;
 	if (argc < 1) {
@@ -506,16 +501,9 @@ static BOOL make_ipc_connection(unsigned flags)
 	return True;
 }
 
-static int net_usage(void)
-{
-	d_printf(NET_USAGE);
-	return -1;
-}
 
-static int file_usage(void)
+static int general_usage(void)
 {
-	d_printf(NET_FILE_USAGE); /* command syntax */
-	
 	d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
 	d_printf(SERVER_USAGE);
 	d_printf(IPADDRESS_USAGE);
@@ -527,6 +515,20 @@ static int file_usage(void)
 	d_printf(MYNAME_USAGE);
 	d_printf(USER_USAGE);
 	d_printf(CONF_USAGE);
+	return -1;
+}
+
+static int net_usage(void)
+{
+	d_printf(NET_USAGE);
+	return -1;
+}
+
+static int file_usage(void)
+{
+	d_printf(NET_FILE_USAGE); /* command syntax */
+
+	general_usage();
 	return -1;
 }
 
@@ -594,26 +596,13 @@ static int net_file(int argc, const char **argv)
 		return cli_NetFileEnum(cli, NULL, NULL, file_fn);
 	}
 
-	return run_function(argc, argv, func, file_usage);
+	return net_run_function(argc, argv, func, file_usage);
 }
 		       
 static int share_usage(void)
 {
 	d_printf(NET_SHARE_USAGE); /* command syntax */
-	
-	d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(COMMENT_USAGE);
-	d_printf(MAXUSERS_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 
@@ -686,7 +675,7 @@ static int net_share(int argc, const char **argv)
 		return cli_RNetShareEnum(cli, share_fn, NULL);
 	}
 
-	return run_function(argc, argv, func, share_usage);
+	return net_run_function(argc, argv, func, share_usage);
 }
 		    
 		
@@ -694,17 +683,7 @@ static int session_usage(void)
 {
 	d_printf(NET_SESSION_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, LOCAL_HOST); /* Target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* Misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
     
@@ -781,7 +760,7 @@ static int net_session(int argc, const char **argv)
 		return cli_NetSessionEnum(cli, list_sessions_func);
 	}
 
-	return run_function(argc, argv, func, session_usage);
+	return net_run_function(argc, argv, func, session_usage);
 }
 	
 /****************************************************************************
@@ -797,18 +776,7 @@ static int server_usage(void)
 {
 	d_printf(NET_SERVER_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, DOMAIN_MASTER); /* Target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	d_printf(WORKGROUP_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* Misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 		    
@@ -823,17 +791,7 @@ static int domain_usage(void)
 {
 	d_printf(NET_DOMAIN_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 
@@ -849,18 +807,7 @@ static int printq_usage(void)
 {
 	d_printf(NET_PRINTQ_USAGE);
 	
-	d_printf(TARGET_USAGE, LOCAL_HOST);
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	
-	d_printf(MISC_OPT_USAGE);
-	d_printf(PORT_USAGE);
-	d_printf(JOBID_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }	
 
@@ -949,7 +896,7 @@ static int net_printq(int argc, const char **argv)
 		return cli_NetPrintQEnum(cli, enum_queue, enum_jobs);
 	}
 
-	return run_function(argc, argv, func, printq_usage);
+	return net_run_function(argc, argv, func, printq_usage);
 }
 
 	
@@ -957,20 +904,7 @@ static int user_usage(void)
 {
 	d_printf(NET_USER_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	d_printf(WORKGROUP_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(COMMENT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
-	d_printf(LONG_USAGE);
+	general_usage();
 	return -1;
 } 
 	
@@ -1047,7 +981,7 @@ int net_user(int argc, const char **argv)
 		return cli_RNetUserEnum(cli, user_fn, NULL); 
 	}
 
-	return run_function(argc, argv, func, user_usage);
+	return net_run_function(argc, argv, func, user_usage);
 }
 
 
@@ -1055,20 +989,7 @@ static int group_usage(void)
 {
 	d_printf(NET_GROUP_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(COMMENT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(WORKGROUP_USAGE);
-	d_printf(CONF_USAGE);
-	d_printf(LONG_USAGE);
+	general_usage();
 	return -1;
 }
 
@@ -1122,25 +1043,14 @@ static int net_group(int argc, const char **argv)
 		return cli_RNetGroupEnum(cli, group_fn, NULL); 
 	}
 
-	return run_function(argc, argv, func, group_usage);
+	return net_run_function(argc, argv, func, group_usage);
 }
 
 static int groupmember_usage(void)
 {
 	d_printf(NET_GROUPMEMBER_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(WORKGROUP_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 
@@ -1181,25 +1091,14 @@ static int net_groupmember(int argc, const char **argv)
 		{NULL, NULL}
 	};
 	
-	return run_function(argc, argv, func, groupmember_usage);
+	return net_run_function(argc, argv, func, groupmember_usage);
 }
 
 static int validate_usage(void)
 {
 	d_printf(NET_VALIDATE_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	d_printf(WORKGROUP_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 
@@ -1213,17 +1112,7 @@ static int service_usage(void)
 {
 	d_printf(NET_SERVICE_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 
@@ -1257,25 +1146,14 @@ static int net_service(int argc, const char **argv)
 		return cli_RNetServiceEnum(cli, group_fn, NULL); 
 	}
 
-	return run_function(argc, argv, func, service_usage);
+	return net_run_function(argc, argv, func, service_usage);
 }
 
 static int password_usage(void)
 {
 	d_printf(NET_PASSWORD_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	d_printf(WORKGROUP_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 
@@ -1294,35 +1172,12 @@ static int admin_usage(void)
 {
 	d_printf(NET_ADMIN_USAGE); /* command syntax */
 	
-	d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-	d_printf(SERVER_USAGE);
-	d_printf(IPADDRESS_USAGE);
-	d_printf(WORKGROUP_USAGE);
-	
-	d_printf(MISC_OPT_USAGE); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	general_usage();
 	return -1;
 }
 
 
 static int net_admin(int argc, const char **argv)
-{
-	d_printf(ERRMSG_NOT_IMPLEMENTED);
-	return 0;
-}
-
-static int join_usage(void)
-{
-	d_printf(ERRMSG_NOT_IMPLEMENTED);
-	return -1;
-}
-
-static int net_join(int argc, const char **argv)
 {
 	d_printf(ERRMSG_NOT_IMPLEMENTED);
 	return 0;
@@ -1358,10 +1213,10 @@ static int net_help(int argc, const char **argv)
 		{"ADMIN", admin_usage},
 		{"SERVICE", service_usage},
 		{"PASSWORD", password_usage},
-		{"JOIN", join_usage},
+		{"JOIN", net_join_usage},
 		{NULL, NULL}};
 
-	return run_function(argc, argv, func, help_usage);
+	return net_run_function(argc, argv, func, help_usage);
 };
 
 /* main function table */
@@ -1397,6 +1252,7 @@ int main(int argc,char *argv[])
 	const char ** argv_new;
 	poptContext pc;
 	char *servicesf = dyn_CONFIGFILE;
+	extern pstring global_myname;
 
 	struct poptOption long_options[] = {
 		{"help",        'h', POPT_ARG_NONE,   0,     'h'},
@@ -1479,10 +1335,17 @@ int main(int argc,char *argv[])
 	if (!opt_workgroup) {
 		opt_workgroup = lp_workgroup();
 	}
+
+	if (!*global_myname) {
+		char *p;
+		fstrcpy(global_myname, myhostname());
+		p = strchr_m(global_myname, '.');
+		if (p) *p = 0;
+	}
 	
 	load_interfaces();
 
-	rc = run_function(argc_new-1, argv_new+1, net_func, net_usage);
+	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_usage);
 	
 	DEBUG(2,("return code = %d\n", rc));
 	return rc;

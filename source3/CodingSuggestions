@@ -115,6 +115,23 @@ Here are some other suggestions:
     comment start / ** so that they can be picked up by Doxygen, as in
     this file.
 
+23) Keep the scope narrow. This means making functions/variables
+    static whenever possible. We don't want our namespace
+    polluted. Each module should have a minimal number of externally
+    visible functions or variables.
+
+24) Use function pointers to keep knowledge about particular pieces of
+    code isolated in one place. We don't want a particular piece of
+    functionality to be spread out across lots of places - that makes
+    for fragile, hand to maintain code. Instead, design an interface
+    and use tables containing function pointers to implement specific
+    functionality. This is particularly important for command
+    interpreters. 
+
+25) Think carefully about what it will be like for someone else to add
+    to and maintain your code. If it would be hard for someone else to
+    maintain then do it another way. 
+
 The suggestions above are simply that, suggestions, but the information may
 help in reducing the routine rework done on new code.  The preceeding list
 is expected to change routinely as new support routines and macros are

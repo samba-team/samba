@@ -2159,7 +2159,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 			       password, strlen(password),
 			       workgroup)) {
 		/* if a password was not supplied then try again with a null username */
-		if (password[0] || !username[0] || 
+		if (password[0] || !username[0] || use_kerberos ||
 		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c));
 			cli_shutdown(c);

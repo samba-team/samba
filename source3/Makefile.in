@@ -131,7 +131,7 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 
 PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 
-LIBADS_OBJ = libads/ldap.o
+LIBADS_OBJ = libads/ldap.o libads/krb5_setpw.o libads/kerberos.o passdb/secrets.o 
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
@@ -179,7 +179,7 @@ RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
-PASSDB_OBJ = passdb/passdb.o passdb/secrets.o \
+PASSDB_OBJ = passdb/passdb.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 		passdb/pdb_tdb.o passdb/pdb_ldap.o \
 		passdb/pdb_nisplus.o
@@ -319,8 +319,8 @@ CLIENT_OBJ = client/client.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(READLINE_OBJ)
 
-NET_OBJ = utils/net.o  $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-          @BUILD_POPT@
+NET_OBJ = utils/net.o utils/net_join.o \
+	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) @BUILD_POPT@
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -375,7 +375,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
 	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) $(AUTH_OBJ)
+	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) $(AUTH_OBJ) $(NET_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)

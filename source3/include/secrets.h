@@ -22,7 +22,13 @@
 #ifndef _SECRETS_H
 #define _SECRETS_H
 
+/* the first one is for the hashed password (NT4 style) the latter
+   for plaintext (ADS 
+*/
 #define SECRETS_MACHINE_ACCT_PASS "SECRETS/$MACHINE.ACC"
+#define SECRETS_MACHINE_PASSWORD "SECRETS/MACHINE_PASSWORD"
+
+
 #define SECRETS_DOMAIN_SID    "SECRETS/SID"
 #define SECRETS_SAM_SID       "SAM/SID"
 

@@ -1,8 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0.
-   Samba registry functions
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell 1992-2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,7 +52,7 @@ void *secrets_fetch(char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
 	if (!tdb)
-		return False;
+		return NULL;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb, kbuf);
@@ -142,7 +141,17 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
+	char *plaintext;
 	size_t size;
+
+	plaintext = secrets_fetch_machine_password();
+	if (plaintext) {
+		/* we have an ADS password - use that */
+		DEBUG(4,("Using ADS machine password\n"));
+		E_md4hash((uchar *)plaintext, ret_pwd);
+		SAFE_FREE(plaintext);
+		return True;
+	}
 
 	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) || 
 	    size != sizeof(*pass))
@@ -167,6 +176,27 @@ BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16])
 
 	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
 }
+
+/************************************************************************
+ Routine to set the plaintext machine account password for a realm
+the password is assumed to be a null terminated ascii string
+************************************************************************/
+BOOL secrets_store_machine_password(char *pass)
+{
+	return secrets_store(SECRETS_MACHINE_PASSWORD, pass, strlen(pass)+1);
+}
+
+
+/************************************************************************
+ Routine to fetch the plaintext machine account password for a realm
+the password is assumed to be a null terminated ascii string
+************************************************************************/
+char *secrets_fetch_machine_password(void)
+{
+	return (char *)secrets_fetch(SECRETS_MACHINE_PASSWORD, NULL);
+}
+
+
 
 /************************************************************************
  Routine to delete the trust account password file for a domain.

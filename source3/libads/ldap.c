@@ -44,7 +44,7 @@ static char *ads_build_dn(const char *realm)
 
 	len = (numdots+1)*4 + strlen(r) + 1;
 
-ret = malloc(len);
+	ret = malloc(len);
 	strlcpy(ret,"dc=", len);
 	p=strtok(r,"."); 
 	strlcat(ret, p, len);
@@ -68,6 +68,25 @@ char *ads_errstr(int rc)
 }
 
 /*
+  find the ldap server from DNS
+  this won't work till we add a DNS packet parser. Talk about a 
+  lousy resolv interface! 
+*/
+static char *find_ldap_server(ADS_STRUCT *ads)
+{
+	char *list = NULL;
+
+	if (ldap_domain2hostlist(ads->realm, &list) == LDAP_SUCCESS) {
+		char *p;
+		p = strchr(list, ':');
+		if (p) *p = 0;
+		return list;
+	}
+
+	return NULL;
+}
+
+/*
   initialise a ADS_STRUCT, ready for some ads_ ops
 */
 ADS_STRUCT *ads_init(const char *realm, 
@@ -76,7 +95,8 @@ ADS_STRUCT *ads_init(const char *realm,
 {
 	ADS_STRUCT *ads;
 	
-	ads = (ADS_STRUCT *)xmalloc(sizeof(*ads));
+	ads = (ADS_STRUCT *)malloc(sizeof(*ads));
+	if (!ads) return NULL;
 	memset(ads, 0, sizeof(*ads));
 	
 	ads->realm = realm? strdup(realm) : NULL;
@@ -84,17 +104,42 @@ ADS_STRUCT *ads_init(const char *realm,
 	ads->bind_path = bind_path? strdup(bind_path) : NULL;
 	ads->ldap_port = LDAP_PORT;
 
+	if (!ads->realm) {
+		ads->realm = lp_realm();
+	}
 	if (!ads->bind_path) {
 		ads->bind_path = ads_build_dn(ads->realm);
+	}
+	if (!ads->ldap_server) {
+		ads->ldap_server = find_ldap_server(ads);
+	}
+	if (!ads->kdc_server) {
+		/* assume its the same as LDAP */
+		ads->kdc_server = ads->ldap_server? strdup(ads->ldap_server) : NULL;
 	}
 
 	return ads;
 }
 
+/*
+  free the memory used by the ADS structure initialized with 'ads_init(...)'
+*/
+void ads_destroy(ADS_STRUCT *ads)
+{
+	if (ads->ld) ldap_unbind(ads->ld);
+	SAFE_FREE(ads->realm);
+	SAFE_FREE(ads->ldap_server);
+	SAFE_FREE(ads->kdc_server);
+	SAFE_FREE(ads->bind_path);
+	ZERO_STRUCTP(ads);
+	free(ads);
+}
 
 /*
   this is a minimal interact function, just enough for SASL to talk
   GSSAPI/kerberos to W2K
+  Error handling is a bit of a problem. I can't see how to get Cyrus-sasl
+  to give sensible errors
 */
 static int sasl_interact(LDAP *ld,unsigned flags,void *defaults,void *in)
 {
@@ -102,7 +147,7 @@ static int sasl_interact(LDAP *ld,unsigned flags,void *defaults,void *in)
 
 	while (interact->id != SASL_CB_LIST_END) {
 		interact->result = strdup("");
-		interact->len = 0;
+		interact->len = strlen(interact->result);
 		interact++;
 	}
 	
@@ -123,7 +168,8 @@ int ads_connect(ADS_STRUCT *ads)
 	}
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-	rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 0,
+	rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
+					  LDAP_SASL_QUIET,
 					  sasl_interact, NULL);
 
 	return rc;
@@ -290,12 +336,11 @@ int ads_join_realm(ADS_STRUCT *ads, const char *hostname)
 {
 	int rc;
 	LDAPMessage *res;
-	char *principal;
 
 	rc = ads_find_machine_acct(ads, (void **)&res, hostname);
 	if (rc == LDAP_SUCCESS && ads_count_replies(ads, res) == 1) {
 		DEBUG(0, ("Host account for %s already exists\n", hostname));
-		goto set_password;
+		return LDAP_SUCCESS;
 	}
 
 	rc = ads_add_machine_acct(ads, hostname);
@@ -311,14 +356,48 @@ int ads_join_realm(ADS_STRUCT *ads, const char *hostname)
 		return -1;
 	}
 
-set_password:
-	asprintf(&principal, "HOST/%s@%s", hostname, ads->realm);
-#if 0
-	krb5_set_principal_password(principal, ads->ldap_server, hostname, ads->realm);
-#endif
-	free(principal);
-
 	return LDAP_SUCCESS;
+}
+
+/*
+  delete a machine from the realm
+*/
+int ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
+{
+	int rc;
+	void *res;
+	char *hostnameDN; 
+
+	rc = ads_find_machine_acct(ads, &res, hostname);
+	if (rc != LDAP_SUCCESS || ads_count_replies(ads, res) != 1) {
+	    DEBUG(0, ("Host account for %s does not exist.\n", hostname));
+	    return -1;
+	}
+
+	hostnameDN = ldap_get_dn(ads->ld, (LDAPMessage *)res);
+	rc = ldap_delete_s(ads->ld, hostnameDN);
+	ldap_memfree(hostnameDN);
+	if (rc != LDAP_SUCCESS) {
+	    DEBUG(0, ("ldap_delete_s: %s\n", ads_errstr(rc)));
+	    return rc;
+	}
+
+	rc = ads_find_machine_acct(ads, &res, hostname);
+	if (rc == LDAP_SUCCESS && ads_count_replies(ads, res) == 1 ) {
+	    DEBUG(0, ("Failed to remove host account.\n"));
+	    /*hmmm, we need NTSTATUS */
+	    return -1;
+	}
+	
+	return LDAP_SUCCESS;
+}
+
+
+NTSTATUS ads_set_machine_password(ADS_STRUCT *ads,
+				  const char *hostname, 
+				  const char *password)
+{
+	return krb5_set_password(ads->kdc_server, hostname, ads->realm, password);
 }
 
 #endif

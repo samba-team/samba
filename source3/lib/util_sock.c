@@ -905,6 +905,37 @@ connect_again:
   return res;
 }
 
+/*
+  open a connected UDP socket to host on port
+*/
+int open_udp_socket(const char *host, int port)
+{
+	int type = SOCK_DGRAM;
+	struct sockaddr_in sock_out;
+	int res;
+	struct in_addr *addr;
+
+	addr = interpret_addr2(host);
+
+	res = socket(PF_INET, type, 0);
+	if (res == -1) {
+		return -1;
+	}
+
+	memset((char *)&sock_out,'\0',sizeof(sock_out));
+	putip((char *)&sock_out.sin_addr,(char *)addr);
+	sock_out.sin_port = htons(port);
+	sock_out.sin_family = PF_INET;
+
+	if (connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out))) {
+		close(res);
+		return -1;
+	}
+
+	return res;
+}
+
+
 /* the following 3 client_*() functions are nasty ways of allowing
    some generic functions to get info that really should be hidden in
    particular modules */
