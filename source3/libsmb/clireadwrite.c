@@ -55,8 +55,6 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 {
 	char *p;
 	int total = -1;
-	int issued=0;
-	int received=0;
 /*
  * There is a problem in this code when mpx is more than one.
  * for some reason files can get corrupted when being read.
@@ -68,11 +66,23 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 #else
 	int mpx = 1;
 #endif
-	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
+	int block;
 	int mid;
-	int blocks = (size + (block-1)) / block;
+	int blocks;
+	/* issued is the number of readX requests we have sent so far */
+	int issued=0;
+	/* received is the number of readX replies we have received */
+	int received=0;
 
+	/* maybe its a very silly request? */
 	if (size == 0) return 0;
+
+	/* set block to the maximum size we can handle in one readX,
+           rounded down to a multiple of 1024 */
+	block = (cli->max_xmit - (smb_size+32)) & ~1023;
+
+	/* work out how many readX calls we will need in total */
+	blocks = (size + (block-1)) / block;
 
 	while (received < blocks) {
 		int size2;
