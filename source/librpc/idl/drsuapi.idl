@@ -181,7 +181,7 @@ interface drsuapi
 
 	WERROR drsuapi_DsCrackNames(
 		[in,ref] policy_handle *bind_handle,
-		[in, out] uint32 level,
+		[in, out] int32 level,
 		[in,switch_is(level)] drsuapi_DsNameRequest req,
 		[out,switch_is(level)] drsuapi_DsNameCtr ctr
 		);
@@ -216,7 +216,7 @@ interface drsuapi
 
 	WERROR drsuapi_DsWriteAccountSpn(
 		[in,ref] policy_handle *bind_handle,
-		[in, out] uint32 level,
+		[in, out] int32 level,
 		[in,switch_is(level)] drsuapi_DsWriteAccountSpnRequest req,
 		[out,switch_is(level)] drsuapi_DsWriteAccountSpnResult res
 		);
