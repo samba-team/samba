@@ -170,6 +170,7 @@ void standard_sub_basic(char *str)
 {
 	char *p, *s;
 	fstring pidstr;
+	struct passwd *pass;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
 		fstring tmp_str;
@@ -181,6 +182,13 @@ void standard_sub_basic(char *str)
 			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
 			strlower(tmp_str);
 			string_sub(p,"%U",tmp_str,l);
+			break;
+		case 'G' :
+			if ((pass = Get_Pwnam(current_user_info.smb_name, False))!=NULL) {
+				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
+			} else {
+				p += 2;
+			}
 			break;
 		case 'D' :
 			fstrcpy(tmp_str, current_user_info.domain);
@@ -218,19 +226,11 @@ void standard_sub_basic(char *str)
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
 	char *p, *s, *home;
-	struct passwd *pass;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {
-		case 'G' :
-			if ((pass = Get_Pwnam(user,False))!=NULL) {
-				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
-			} else {
-				p += 2;
-			}
-			break;
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
 			if ((home = get_user_home_dir(user))) {
