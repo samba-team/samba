@@ -109,6 +109,10 @@
 #define _PATH_DEVNULL "/dev/null"
 #endif
 
+#ifndef _PATH_HEQUIV
+#define _PATH_HEQUIV "/etc/hosts.equiv"
+#endif
+
 #ifndef MAXPATHLEN
 #define MAXPATHLEN (1024+4)
 #endif
