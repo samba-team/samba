@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
-#ifdef NISPLUS_HOME
+#ifdef WITH_NISPLUS_HOME
 #include <rpcsvc/nis.h>
 #else
 #include "rpcsvc/ypclnt.h"
@@ -3737,7 +3737,7 @@ static void strip_mount_options( pstring *str)
  As we may end up doing both, cache the last YP result. 
 *******************************************************************/
 
-#ifdef NISPLUS_HOME
+#ifdef WITH_NISPLUS_HOME
 static char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
@@ -3791,7 +3791,7 @@ static char *automount_lookup(char *user_name)
   DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;
 }
-#else /* NISPLUS_HOME */
+#else /* WITH_NISPLUS_HOME */
 static char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
@@ -3840,7 +3840,7 @@ static char *automount_lookup(char *user_name)
   DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;
 }
-#endif /* NISPLUS_HOME */
+#endif /* WITH_NISPLUS_HOME */
 #endif
 
 /*******************************************************************
