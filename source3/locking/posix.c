@@ -246,9 +246,6 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 			}
 		}
 
-		if (fd_array)
-			free((char *)fd_array);
-
 		/*
 		 * Delete all fd's stored in the tdb
 		 * for this dev/inode pair.

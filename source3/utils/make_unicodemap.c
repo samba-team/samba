@@ -139,6 +139,7 @@ static int do_compile(const char *codepage, const char *input_file, const char *
   size_t size = 0;
   size_t offset = 0;
   char *buf = NULL;
+  char *orig_buf = NULL;
   char *output_buf = NULL;
   uint16 cp_to_ucs2[65536];
   uint16 ucs2_to_cp[65536];
@@ -185,6 +186,8 @@ static int do_compile(const char *codepage, const char *input_file, const char *
    */
 
   num_lines = clean_data( &buf, &size);
+
+  orig_buf = buf; /* Store for free(). */
 
   /*
    * Initialize the output data.
@@ -285,7 +288,9 @@ static int do_compile(const char *codepage, const char *input_file, const char *
   }  
 
   fclose(fp);
-
+  
+  free(orig_buf);
+  free(output_buf);
   return 0;
 }
 
