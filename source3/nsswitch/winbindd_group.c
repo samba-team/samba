@@ -1144,7 +1144,7 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 	ofs = 0;
 	for (i = 0; i < num_groups; i++) {
 		const char *s = sid_string_static(user_grpsids[i]);
-		safe_strcpy(ret + ofs, s, ret_size - ofs);
+		safe_strcpy(ret + ofs, s, ret_size - ofs - 1);
 		ofs += strlen(ret+ofs) + 1;
 	}
 
