@@ -22,8 +22,8 @@
 
 #include "includes.h"
 
-static fstring password;
-static fstring username;
+static fstring password[2];
+static fstring username[2];
 static int got_pass;
 static BOOL use_kerberos;
 static int numops = 1000;
@@ -34,10 +34,10 @@ static BOOL use_oplocks;
 static unsigned lock_range = 100;
 static unsigned lock_base = 0;
 static unsigned min_length = 0;
+static BOOL exact_error_codes;
+static BOOL zero_zero;
 
 #define FILENAME "\\locktest.dat"
-
-#define ZERO_ZERO 0
 
 #define READ_PCT 50
 #define LOCK_PCT 45
@@ -136,7 +136,7 @@ static void show_locks(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *connect_one(char *share)
+struct cli_state *connect_one(char *share, int snum)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
@@ -193,13 +193,19 @@ struct cli_state *connect_one(char *share)
 	if (!got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(password, pass);
+			pstrcpy(password[0], pass);
+			pstrcpy(password[1], pass);
 		}
 	}
 
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
+	if (got_pass == 1) {
+		pstrcpy(password[1], password[0]);
+		pstrcpy(username[1], username[0]);
+	}
+
+	if (!cli_session_setup(c, username[snum], 
+			       password[snum], strlen(password[snum]),
+			       password[snum], strlen(password[snum]),
 			       lp_workgroup())) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		return NULL;
@@ -220,7 +226,7 @@ struct cli_state *connect_one(char *share)
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
+			    password[snum], strlen(password[snum])+1)) {
 		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
 		return NULL;
@@ -243,12 +249,15 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NS
 	for (conn=0;conn<NCONNECTIONS;conn++) {
 		if (cli[server][conn]) {
 			for (f=0;f<NFILES;f++) {
-				cli_close(cli[server][conn], fnum[server][conn][f]);
+				if (fnum[server][conn][f] != -1) {
+					cli_close(cli[server][conn], fnum[server][conn][f]);
+					fnum[server][conn][f] = -1;
+				}
 			}
 			cli_ulogoff(cli[server][conn]);
 			cli_shutdown(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(share[server]);
+		cli[server][conn] = connect_one(share[server], server);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
 			exit(1);
@@ -269,6 +278,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	enum brl_type op = rec->lock_type;
 	int server;
 	BOOL ret[NSERVERS];
+	NTSTATUS status[NSERVERS];
 
 	switch (rec->lock_op) {
 	case OP_LOCK:
@@ -277,16 +287,22 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			ret[server] = cli_lock64(cli[server][conn], 
 						 fnum[server][conn][f],
 						 start, len, LOCK_TIMEOUT, op);
+			status[server] = cli_nt_error(cli[server][conn]);
+			if (!exact_error_codes && 
+			    NT_STATUS_EQUAL(status[server], 
+					    NT_STATUS_FILE_LOCK_CONFLICT)) {
+				status[server] = NT_STATUS_LOCK_NOT_GRANTED;
+			}
 		}
-		if (showall || ret[0] != ret[1]) {
-			printf("lock   conn=%u f=%u range=%.0f(%.0f) op=%s -> %u:%u\n",
+		if (showall || !NT_STATUS_EQUAL(status[0],status[1])) {
+			printf("lock   conn=%u f=%u range=%.0f(%.0f) op=%s -> %s:%s\n",
 			       conn, f, 
 			       (double)start, (double)len,
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
-			       ret[0], ret[1]);
+			       get_nt_error_msg(status[0]), get_nt_error_msg(status[1]));
 		}
-		if (showall || ret[0] != ret[1]) show_locks();
-		if (ret[0] != ret[1]) return False;
+		if (showall || !NT_STATUS_EQUAL(status[0],status[1])) show_locks();
+		if (!NT_STATUS_EQUAL(status[0],status[1])) return False;
 		break;
 		
 	case OP_UNLOCK:
@@ -295,21 +311,25 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			ret[server] = cli_unlock64(cli[server][conn], 
 						   fnum[server][conn][f],
 						   start, len);
+			status[server] = cli_nt_error(cli[server][conn]);
 		}
-		if (showall || (!hide_unlock_fails && (ret[0] != ret[1]))) {
-			printf("unlock conn=%u f=%u range=%.0f(%.0f)       -> %u:%u\n",
+		if (showall || 
+		    (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1]))) {
+			printf("unlock conn=%u f=%u range=%.0f(%.0f)       -> %s:%s\n",
 			       conn, f, 
 			       (double)start, (double)len,
-			       ret[0], ret[1]);
+			       get_nt_error_msg(status[0]), get_nt_error_msg(status[1]));
 		}
-		if (showall || ret[0] != ret[1]) show_locks();
-		if (!hide_unlock_fails && ret[0] != ret[1]) return False;
+		if (showall || !NT_STATUS_EQUAL(status[0],status[1])) show_locks();
+		if (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1])) 
+			return False;
 		break;
 
 	case OP_REOPEN:
 		/* reopen the file */
 		for (server=0;server<NSERVERS;server++) {
 			cli_close(cli[server][conn], fnum[server][conn][f]);
+			fnum[server][conn][f] = -1;
 		}
 		for (server=0;server<NSERVERS;server++) {
 			fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
@@ -432,12 +452,9 @@ static void test_locks(char *share[NSERVERS])
 				recorded[n].lock_op = OP_REOPEN;
 			}
 			recorded[n].needed = True;
-#if !ZERO_ZERO
-			if (recorded[n].start == 0 &&
-			    recorded[n].len == 0) {
+			if (!zero_zero && recorded[n].start==0 && recorded[n].len==0) {
 				recorded[n].len = 1;
 			}
-#endif
 #if PRESETS
 		}
 #endif
@@ -523,7 +540,7 @@ static void usage(void)
 "Usage:\n\
   locktest //server1/share1 //server2/share2 [options..]\n\
   options:\n\
-        -U user%%pass\n\
+        -U user%%pass        (may be specified twice)\n\
         -k               use kerberos\n\
         -s seed\n\
         -o numops\n\
@@ -531,6 +548,8 @@ static void usage(void)
         -a          (show all ops)\n\
         -A          analyse for minimal ops\n\
         -O          use oplocks\n\
+        -E          enable exact error code checking\n\
+        -Z          enable the zero/zero lock\n\
         -R range    set lock range\n\
         -B base     set lock base\n\
         -M min      set min lock length\n\
@@ -572,12 +591,13 @@ static void usage(void)
 	load_interfaces();
 
 	if (getenv("USER")) {
-		pstrcpy(username,getenv("USER"));
+		pstrcpy(username[0],getenv("USER"));
+		pstrcpy(username[1],getenv("USER"));
 	}
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OkR:B:M:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OkR:B:M:EZ")) != EOF) {
 		switch (opt) {
 		case 'k':
 #ifdef HAVE_KRB5
@@ -589,12 +609,16 @@ static void usage(void)
 #endif
 			break;
 		case 'U':
-			pstrcpy(username,optarg);
-			p = strchr_m(username,'%');
+			if (got_pass == 2) {
+				d_printf("Max of 2 usernames\n");
+				exit(1);
+			}
+			pstrcpy(username[got_pass],optarg);
+			p = strchr_m(username[got_pass],'%');
 			if (p) {
 				*p = 0;
-				pstrcpy(password, p+1);
-				got_pass = 1;
+				pstrcpy(password[got_pass], p+1);
+				got_pass++;
 			}
 			break;
 		case 'R':
@@ -623,6 +647,12 @@ static void usage(void)
 			break;
 		case 'A':
 			analyze = True;
+			break;
+		case 'Z':
+			zero_zero = True;
+			break;
+		case 'E':
+			exact_error_codes = True;
 			break;
 		case 'h':
 			usage();
