@@ -40,11 +40,6 @@ char STRING[] = "****************";
 
 #define MAX_PASSWD_LENGTH (sizeof(STRING))
 
-/* The program should be something that outputs a small amount of text */
-#define DEFAULT_PROGRAM "fortune -s"
-#define DEFAULT_TEXT    "I'm out running around."
-#define FONT_NAME	"-*-new century schoolbook-*-*-*-18-*"
-
 #ifndef MAXPATHLEN
 #define MAXPATHLEN BUFSIZ
 #endif /* MAXPATHLEN */
@@ -73,7 +68,6 @@ Pixel		Black, White;
 XFontStruct    *font;
 struct passwd  *pw;
 char		root_pw[16];
-char           *def_words = DEFAULT_TEXT;
 int		time_left, prompt_x, prompt_y, time_x, time_y;
 unsigned long	interval;
 Pixmap		left0, left1, right0, right1, left_front,
@@ -81,12 +75,6 @@ Pixmap		left0, left1, right0, right1, left_front,
 int test;
 
 #define MAXLINES 40
-
-#define FROM_ARGV    1
-#define FROM_PROGRAM 2
-#define FROM_FILE    3
-#define FROM_RESRC   4
-int getwordsfrom = FROM_RESRC;
 
 #define IS_MOVING  1
 #define GET_PASSWD 2
@@ -96,154 +84,154 @@ int ALLOW_LOGOUT = (60*10);	/* Allow logout after nn seconds */
 char LOGOUT_PASSWD[] = "LOGOUT"; /* when given password "xx" */
 time_t locked_at;
 
-struct _resrcs {
-    Pixel fg, bg;
+struct appres_t {
     XFontStruct *font;
     Boolean ignore_passwd;
     Boolean do_reverse;
     Boolean accept_root;
     char *text, *text_prog, *file;
-} Resrcs;
+    Boolean no_screensaver;
+} appres;
 
 static XtResource resources[] = {
     { XtNfont, XtCFont, XtRFontStruct, sizeof (XFontStruct *),
-	XtOffsetOf(struct _resrcs,font), XtRImmediate, NULL },
-    { XtNforeground, XtCForeground, XtRPixel, sizeof (Pixel),
-	/* note: the background is really the foreground color */
-	XtOffsetOf(struct _resrcs,fg), XtRString, XtDefaultBackground },
-    { XtNbackground, XtCBackground, XtRPixel, sizeof (Pixel),
-	/* note: the foreground is really the background color */
-	XtOffsetOf(struct _resrcs,bg), XtRString, XtDefaultForeground },
-    { XtNreverseVideo, XtCReverseVideo, XtRBoolean, sizeof(Boolean),
-	XtOffsetOf(struct _resrcs,do_reverse), XtRImmediate, (char *)False },
+      XtOffsetOf(struct appres_t, font), XtRImmediate, NULL },
+
     { "ignorePasswd", "IgnorePasswd", XtRBoolean, sizeof(Boolean),
-	XtOffsetOf(struct _resrcs,ignore_passwd), XtRImmediate, (char *)False },
+      XtOffsetOf(struct appres_t,ignore_passwd),XtRImmediate,(XtPointer)False },
+
     { "acceptRootPasswd", "AcceptRootPasswd", XtRBoolean, sizeof(Boolean),
-	XtOffsetOf(struct _resrcs,accept_root), XtRImmediate, (char *)True },
-    { "text", "Text", XtRString, sizeof(char *),
-	XtOffsetOf(struct _resrcs,text), XtRImmediate, DEFAULT_TEXT },
-    { "program", "Program", XtRString, sizeof(char *),
-	XtOffsetOf(struct _resrcs,text_prog), XtRImmediate, DEFAULT_PROGRAM },
-    { "file", "File", XtRString, sizeof(char *),
-	XtOffsetOf(struct _resrcs,file), XtRImmediate, NULL },
+      XtOffsetOf(struct appres_t, accept_root), XtRImmediate, (XtPointer)True },
+
+    { "text", "Text", XtRString, sizeof(String),
+      XtOffsetOf(struct appres_t, text), XtRImmediate, NULL },
+    
+    { "program", "Program", XtRString, sizeof(String),
+      XtOffsetOf(struct appres_t, text_prog), XtRImmediate, NULL },
+
+    { "file", "File", XtRString, sizeof(String),
+      XtOffsetOf(struct appres_t,file), XtRImmediate, NULL },
+
+    { "noScreenSaver", "NoScreenSaver", XtRBoolean, sizeof(Boolean),
+      XtOffsetOf(struct appres_t,no_screensaver), XtRImmediate, (XtPointer)False },
 };
+
+String fallback[]={ 
+    "*font	 : -*-new century schoolbook-*-*-*-18-*",
+    "*background : black",
+    "*foreground : white",
+    "*text	 : I'm out running around.",
+    0 
+};
+
+Widget *xshell, *xcore;
 
 static XrmOptionDescRec options[] = {
-    { "-fn", "font", XrmoptionSepArg, NULL },
-    { "-fg", "foreground", XrmoptionSepArg, NULL },
-    { "-bg", "background", XrmoptionSepArg, NULL },
-    { "-rv", "reverseVideo", XrmoptionNoArg, "True" },
-    { "-norv", "reverseVideo", XrmoptionNoArg, "False" },
-    { "-ip", "ignorePasswd", XrmoptionNoArg, "True" },
-    { "-noip", "ignorePasswd", XrmoptionNoArg, "False" },
-    { "-ar",  "acceptRootPasswd", XrmoptionNoArg, "True" },
-    { "-noar", "acceptRootPasswd", XrmoptionNoArg, "False" },
+    { "-ip", ".ignorePasswd", XrmoptionNoArg, "True" },
+    { "-noip", ".ignorePasswd", XrmoptionNoArg, "False" },
+    { "-ar",  ".acceptRootPasswd", XrmoptionNoArg, "True" },
+    { "-noar", ".acceptRootPasswd", XrmoptionNoArg, "False" },
+    { "-noscreensaver", ".noScreenSaver", XrmoptionNoArg, "True" },
 };
 
-static char *
-get_words(char **argv)
+static char*
+get_words(void)
 {
-    FILE *pp = 0;
+    FILE *pp = NULL;
     static char buf[BUFSIZ];
     register char *p = buf;
 
-    if (getwordsfrom == FROM_RESRC)
-	return Resrcs.text;
-    if (getwordsfrom == FROM_PROGRAM) {
-	if (!(pp = popen(Resrcs.text_prog, "r"))) {
-	    perror(Resrcs.text_prog);
-	    return def_words;
+    if(appres.text_prog){
+	pp = popen(appres.text_prog, "r");
+	if(!pp){
+	    perror(appres.text_prog);
+	    return appres.text;
 	}
-    } else if (getwordsfrom == FROM_FILE)
-	if (!(pp = fopen(Resrcs.file, "r"))) {
-	    perror(Resrcs.file);
-	    return def_words;
+	fread(buf, BUFSIZ, 1, pp);
+	pclose(pp);
+	return buf;
+    }
+    if(appres.file){
+	pp = fopen(appres.file, "r");
+	if(!pp){
+	    perror(appres.file);
+	    return appres.text;
 	}
-    else if (getwordsfrom != FROM_PROGRAM && getwordsfrom != FROM_FILE)
-	return def_words;
-
-    buf[0] = 0;
-    if (getwordsfrom == FROM_ARGV) {
-	while (*argv) {
-	    p += strlen(strcpy(p, *argv));
-	    if (*++argv)
-		strcpy(p++, " ");
-	}
+	fread(buf, BUFSIZ, 1, pp);
+	fclose(pp);
 	return buf;
     }
 
-    /* BUG Alert: does not check for overflow */
-    while (fgets(p, sizeof buf, pp))
-	p += strlen(p);
-    if (getwordsfrom == FROM_PROGRAM)
-	(void) pclose(pp);
-    else
-	(void) fclose (pp);
-    if (!buf[0])
-	return def_words;
-    return buf;
+    return appres.text;
+}
+
+void usage(void)
+{
+    fprintf(stderr, "usage: %s [options] [message]\n", ProgName);
+    fprintf(stderr, "-fg color     foreground color\n");
+    fprintf(stderr, "-bg color     background color\n");
+    fprintf(stderr, "-rv           reverse foreground/background colors\n");
+    fprintf(stderr, "-nrv          no reverse video\n");
+    fprintf(stderr, "-ip           ignore passwd\n");
+    fprintf(stderr, "-nip          don't ignore passwd\n");
+    fprintf(stderr, "-ar           accept root's passwd to unlock\n");
+    fprintf(stderr, "-nar          don't accept root's passwd\n");
+    fprintf(stderr, "-f [file]     message is read from file or ~/.msgfile\n");
+    fprintf(stderr, "-prog program  text is gotten from executing `program'\n");
+    exit(1);
 }
 
 static void
 init_words (int argc, char **argv)
 {
+    int c;
     char buf[BUFSIZ];
+    int i = 0;
 
-    while (*argv && **argv == '-') {
-	switch(argv[0][1]) {
-	    case 'p':
-		getwordsfrom = FROM_PROGRAM;
-		if (!*++argv)
-		    puts("specify a program name to get text from!"), exit(1);
-		Resrcs.text_prog = *argv;
-	    case 'f':
-		getwordsfrom = FROM_FILE;
-		if (argv[1])
-		    Resrcs.file = *++argv;
-		else {
-		    sprintf(buf, "%s/.msgfile", pw->pw_dir);
-		    Resrcs.file = strcpy(XtMalloc(strlen(buf)+1), buf);
-		}
-	    default :
-		printf("usage: %s [options] [message]\n", ProgName);
-		puts("-fg color     foreground color");
-		puts("-bg color     background color");
-		puts("-rv           reverse foreground/background colors");
-		puts("-nrv          no reverse video");
-		puts("-ip           ignore passwd");
-		puts("-nip          don't ignore passwd");
-		puts("-ar           accept root's passwd to unlock");
-		puts("-nar          don't accept root's passwd");
-		puts("-f [file]     message is read from file or ~/.msgfile");
-		puts("-prog program  text is gotten from executing `program'");
-		exit(1);
+    while(argv[i]){
+	if(strcmp(argv[i], "-p") == 0){
+	    i++;
+	    if(argv[i]){
+		appres.text_prog = argv[i];
+		i++;
+	    }else{
+		fprintf(stderr, "-p requires an argument\n");
+		usage();
+	    }
+	}else if(strcmp(argv[i], "-f") == 0){
+	    i++;
+	    if(argv[i]){
+		appres.file = argv[i];
+		i++;
+	    }else{
+		sprintf(buf, "%s/.msgfile", getenv("HOME"));
+		appres.file = strdup(buf);
+	    }
+	}else{
+	    strcpy(buf, "");
+	    while(argv[i]){
+		strcat(buf, argv[i]);
+		strcat(buf, " ");
+		i++;
+	    }
+	    appres.text = strdup(buf);
 	}
-	argv++;
     }
-    if (*argv) {
-	if (getwordsfrom != FROM_RESRC)
-	    puts("I don't know what text you want displayed.");
-	getwordsfrom = FROM_ARGV;
-    } else if (!getwordsfrom)
-	if (Resrcs.text)
-	    getwordsfrom = FROM_RESRC;
-	else if (Resrcs.file)
-	    getwordsfrom = FROM_FILE;
-	else
-	    getwordsfrom = FROM_PROGRAM;
-    words = get_words(argv); /* if getwordsfrom != FROM_ARGV, argv is a nop */
 }
 
 static void
 ScreenSaver(int save)
 {
     static int timeout, interval, prefer_blank, allow_exp;
-    if (save) {
-	XGetScreenSaver(dpy, &timeout, &interval, &prefer_blank, &allow_exp);
-	XSetScreenSaver(dpy, 0, interval, prefer_blank, allow_exp);
-    } else
-	/* restore state */
-	XSetScreenSaver(dpy, timeout, interval, prefer_blank, allow_exp);
+    if(!appres.no_screensaver){
+	if (save) {
+	    XGetScreenSaver(dpy, &timeout, &interval, 
+			    &prefer_blank, &allow_exp);
+	    XSetScreenSaver(dpy, 0, interval, prefer_blank, allow_exp);
+	} else
+	    /* restore state */
+	    XSetScreenSaver(dpy, timeout, interval, prefer_blank, allow_exp);
+    }
 }
 
 /* Forward decls necessary */
@@ -275,12 +263,8 @@ zrefresh()
 static void
 leave(void)
 {
-#if 0
-    XUngrabServer(dpy);
-#else
     XUngrabPointer(dpy, CurrentTime);
     XUngrabKeyboard(dpy, CurrentTime);
-#endif
     ScreenSaver(0);
     zrefresh();
     exit(0);
@@ -355,8 +339,7 @@ think(void)
     if (rand() & 1)
 	walk(FRONT);
     if (rand() & 1) {
-	if (getwordsfrom > 1)
-	    words = get_words((char **)NULL);
+	words = get_words();
 	return 1;
     }
     return 0;
@@ -484,11 +467,6 @@ ClearWindow(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     XExposeEvent *event = (XExposeEvent *)_event;
     if (!XtIsRealized(w))
 	return;
-    XSetForeground(dpy, gc, Black);
-    XFillRectangle(dpy, XtWindow(w), gc,
-	event->x, event->y, event->width, event->height);
-    XSetForeground(dpy, gc, White);
-    XSetBackground(dpy, gc, Black);
     if (state == GET_PASSWD)
 	post_prompt_box(XtWindow(w));
     if (timeout_id == 0 && event->count == 0) {
@@ -505,7 +483,7 @@ static void
 countdown(XtPointer _t, XtIntervalId *_d)
 {
     int *timeout = (int *)_t;
-    char buf[16];
+    char buf[128];
     time_t seconds;
 
     if (--(*timeout) < 0) {
@@ -550,7 +528,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	/* guy is running around--change to post prompt box. */
 	XtRemoveTimeOut(timeout_id);
 	state = GET_PASSWD;
-	if (Resrcs.ignore_passwd || !strlen(pw->pw_passwd))
+	if (appres.ignore_passwd || !strlen(pw->pw_passwd))
 	    leave();
 	post_prompt_box(XtWindow(w));
 	cnt = 0;
@@ -579,7 +557,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	/*
 	 * First try with root password, if allowed.
 	 */
-	if (Resrcs.accept_root &&
+	if (appres.accept_root &&
 	    (root_pw[0] == 0 && cnt == 0 ||
 	     cnt && root_pw[0] && !strcmp(crypt(passwd, root_pw), root_pw)))
 	    leave();
@@ -689,7 +667,7 @@ init_images(void)
     for (i = 0; i < XtNumber(images); i++)
 	if (!(*images[i] =
 		XCreatePixmapFromBitmapData(dpy, DefaultRootWindow(dpy),
-		    bits[i], 64, 64, 1, 0, 1)))
+		    (char*)(bits[i]), 64, 64, 1, 0, 1)))
 	    XtError("Can't load nose images");
 }
 
@@ -713,7 +691,7 @@ talk(int force_erase)
 	} else if (talking == 1) {
 	    XSetForeground(dpy, gc, Black);
 	    XFillRectangle(dpy, XtWindow(widget), gc, s_rect.x-5, s_rect.y-5,
-		       s_rect.width+10, s_rect.height+10);
+			   s_rect.width+10, s_rect.height+10);
 	    XSetForeground(dpy, gc, White);
 	}
 	talking = 0;
@@ -730,7 +708,7 @@ talk(int force_erase)
     /* possibly avoid a lot of work here
      * if no CR or only one, then just print the line
      */
-    if (!(p2 = index(p, '\n')) || !p2[1]) {
+    if (!(p2 = strchr(p, '\n')) || !p2[1]) {
 	register int w;
 
 	if (p2)
@@ -765,7 +743,7 @@ talk(int force_erase)
 	    break;
 	}
 	p = p2+1;
-	if (!(p2 = index(p, '\n')))
+	if (!(p2 = strchr(p, '\n')))
 	    break;
     }
     height++;
@@ -843,13 +821,15 @@ main (int argc, char **argv)
     XGCValues gcvalues;
     char **list;
 
+    int nscr;
+
     srand(getpid());
     for (i = 0; i < (sizeof(STRING)-2); i++)
 	STRING[i] = ((unsigned long)rand() % ('~' - ' ')) + ' ';
 
     locked_at = time(0);
 
-    if ((ProgName = rindex(*argv, '/')) != 0)
+    if ((ProgName = strrchr(*argv, '/')) != 0)
 	ProgName++;
     else
 	ProgName = *argv;
@@ -891,11 +871,17 @@ main (int argc, char **argv)
 	    }
     }
     
-    XtToolkitInitialize();
-    app = XtCreateApplicationContext();
-    dpy = XtOpenDisplay(app, NULL,
-	"xnlock", "XNlock", options, XtNumber(options), &argc, argv);
 
+    override = XtVaAppInitialize(&app, "XNlock", options, XtNumber(options),
+				 &argc, argv, fallback, 
+				 XtNoverrideRedirect, True, 
+				 NULL);
+    
+    XtVaGetApplicationResources(override,(XtPointer)&appres,
+				resources,XtNumber(resources),
+				NULL);
+    dpy = XtDisplay(override);
+    
     if (dpy == 0)
       {
 	fprintf(stderr, "Error: Can't open display:\n");
@@ -904,43 +890,50 @@ main (int argc, char **argv)
 
     Width = DisplayWidth(dpy, DefaultScreen(dpy)) + 2;
     Height = DisplayHeight(dpy, DefaultScreen(dpy)) + 2;
-    override = XtVaAppCreateShell("xnlock", "XNlock",
-				  overrideShellWidgetClass, dpy, 
-				  XtNx, -1, 
-				  XtNy, -1, 
-				  NULL);
+    
+    nscr = ScreenCount(dpy) - 1;
+    
+    if(nscr > 0){
+      xshell = (Widget*)malloc(nscr*sizeof(Widget));
+      xcore = (Widget*)malloc(nscr*sizeof(Widget));
+    }
 
-    XtGetApplicationResources(override, &Resrcs,
-	resources, XtNumber(resources), NULL, 0);
+    for(i = 0; i < nscr; i++){
+      char name[32];
+      sprintf(name, "xnlock%d", i+1);
+      xshell[i] = XtVaAppCreateShell(NULL, NULL, /*name, "XNlock", */
+				     applicationShellWidgetClass, dpy, 
+				     XtNscreen, ScreenOfDisplay(dpy, i+1), 
+				     XtNoverrideRedirect, True, 
+				     XtNx, -1, 
+				     XtNy, -1,
+				     NULL);
+      
+      xcore[i] = XtVaCreateManagedWidget("_foo", widgetClass, xshell[i], 
+					 XtNwidth, Width,
+					 XtNheight, Height, 
+					 NULL);
+      XtRealizeWidget(xshell[i]);
+    }
 
     widget = XtVaCreateManagedWidget("_foo", widgetClass, override,
-	XtNwidth,	Width,
-	XtNheight,	Height,
-	NULL);
+				     XtNwidth,	Width,
+				     XtNheight,	Height,
+				     NULL);
 
     init_words(--argc, ++argv);
     init_images();
 
     /* the background is black and the little guy is white */
-    Black = Resrcs.do_reverse? Resrcs.fg : Resrcs.bg;
-    White = Resrcs.do_reverse? Resrcs.bg : Resrcs.fg;
+    XtVaGetValues(override,
+		  XtNbackground, &Black,
+		  XtNforeground, &White,
+		  NULL);
     gcvalues.foreground = Black;
     gcvalues.background = White;
 
-    if (!(font = Resrcs.font)) {
-	list = XListFonts(dpy, FONT_NAME, 32767, &foo);
-	for (i = 0; i < foo; i++)
-	    if ((font = XLoadQueryFont(dpy, list[i])) != 0)
-		break;
-	if (!font)
-	  {
-	  list = XListFonts(dpy, "fixed", 1, &foo);
-	  font = XLoadQueryFont(dpy, list[0]);
-	  }
-	if (!font)
-	  XtError("Can't find a font (so call me stupid).");
-	XFreeFontNames(list);
-    }
+
+    font = appres.font;
     gcvalues.font = font->fid;
     gcvalues.graphics_exposures = False;
     gc = XCreateGC(dpy, DefaultRootWindow(dpy),
@@ -969,14 +962,10 @@ main (int argc, char **argv)
     }
 
     XtRealizeWidget(override);
-#if 0
-    XGrabServer(dpy);
-#else
     XGrabPointer(dpy, XtWindow(widget), TRUE, 0, GrabModeAsync,
 		 GrabModeAsync, XtWindow(widget), None, CurrentTime);
     XGrabKeyboard(dpy, XtWindow(widget), TRUE, GrabModeAsync,
 		  GrabModeAsync, CurrentTime);
-#endif
     ScreenSaver(1);
     XtAppMainLoop(app);
     exit(0);
