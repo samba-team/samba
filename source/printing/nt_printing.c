@@ -126,7 +126,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 
        if((f = sys_fopen(file, "w")) == NULL)
        {
-	       DEBUG(1, ("cannot create forms file [%s]\n", file));
+	       DEBUG(0, ("write_ntforms: Cannot create forms file [%s]. Error was %s\n", file, strerror(errno) ));
 	       return(0);
        }
 
@@ -334,7 +334,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 		
 	if((f = sys_fopen(file, "w")) == NULL)
 	{
-		DEBUG(1, ("cannot create driver file [%s]\n", file));
+		DEBUG(0, ("add_a_printer_driver_3: Cannot create driver file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
 	}
 
@@ -624,7 +624,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	
 	if((f = sys_fopen(file, "w")) == NULL)
 	{
-		DEBUG(1, ("cannot create printer file [%s]\n", file));
+		DEBUG(0, ("add_a_printer_2: Cannot create printer file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
 	}
 
