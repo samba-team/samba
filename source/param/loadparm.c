@@ -2526,9 +2526,9 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	add_to_file_list(pszParmValue, fname);
-
 	standard_sub_basic(fname,sizeof(fname));
+
+	add_to_file_list(pszParmValue, fname);
 
 	string_set(ptr, fname);
 
