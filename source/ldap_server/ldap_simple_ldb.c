@@ -379,15 +379,12 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 				result = 2;
 				goto invalid_input;
 			case LDAP_MODIFY_ADD:
-				DEBUG(0,("mod_add: %s\n",msg->elements[i].name));
 				msg->elements[i].flags = LDB_FLAG_MOD_ADD;
 				break;
 			case LDAP_MODIFY_DELETE:
-				DEBUG(0,("mod_del: %s\n",msg->elements[i].name));
 				msg->elements[i].flags = LDB_FLAG_MOD_DELETE;
 				break;
 			case LDAP_MODIFY_REPLACE:
-				DEBUG(0,("mod_replace: %s\n",msg->elements[i].name));
 				msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 				break;
 			}
@@ -441,7 +438,7 @@ invalid_input:
 	} else {
 		errstr = talloc_strdup(modify_reply,"invalid input data");
 	}
-DEBUG(0,("mod result: %d, %s\n",result, errstr));
+
 	modify_result->resultcode = result;
 	modify_result->errormessage = errstr;
 	modify_result->referral = NULL;
