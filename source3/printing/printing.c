@@ -154,6 +154,7 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 	struct tdb_print_db *p = NULL, *last_entry = NULL;
 	int num_open = 0;
 	pstring printdb_path;
+	BOOL done_become_root = False;
 
 	for (p = print_db_head, last_entry = print_db_head; p; p = p->next) {
 		/* Ensure the list terminates... JRA. */
@@ -209,9 +210,15 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 	pstrcat(printdb_path, printername);
 	pstrcat(printdb_path, ".tdb");
 
-	become_root();
+	if (geteuid() != 0) {
+		become_root();
+		done_become_root = True;
+	}
+
 	p->tdb = tdb_open_log(printdb_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	unbecome_root();
+
+	if (done_become_root)
+		unbecome_root();
 
 	if (!p->tdb) {
 		DEBUG(0,("get_print_db: Failed to open printer backend database %s.\n",
@@ -255,8 +262,7 @@ static void close_all_print_db(void)
 }
 
 /****************************************************************************
- Initialise the printing backend. Called once at startup. 
- Does not survive a fork
+ Initialise the printing backend. Called once at startup before the fork().
 ****************************************************************************/
 
 BOOL print_backend_init(void)
@@ -316,16 +322,7 @@ BOOL print_backend_init(void)
 
 void printing_end(void)
 {
-	struct tdb_print_db *p;
-
-	for (p = print_db_head; p; ) {
-		struct tdb_print_db *next_p = p->next;
-		if (p->tdb)
-			tdb_close(p->tdb);
-		DLIST_REMOVE(print_db_head, p);
-		SAFE_FREE(p);
-		p = next_p;
-	}
+	close_all_print_db(); /* Don't leave any open. */
 }
 
 /****************************************************************************
