@@ -1458,7 +1458,7 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 	if (conn == NULL)
 		return result;
 
-	status = gensec_client_start(&conn->gensec);
+	status = gensec_client_start(conn, &conn->gensec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
 		return result;

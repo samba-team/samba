@@ -88,7 +88,6 @@ typedef NTSTATUS (*gensec_password_callback)(struct gensec_security *gensec_secu
 #define GENSEC_INTERFACE_VERSION 0
 
 struct gensec_security {
-	TALLOC_CTX *mem_ctx;
 	gensec_password_callback password_callback;
 	void *password_callback_private;
 	const struct gensec_security_ops *ops;

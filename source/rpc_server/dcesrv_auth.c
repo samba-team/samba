@@ -48,7 +48,7 @@ NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
 		 */
 	}
 
-	status = gensec_server_start(&auth->gensec_security);
+	status = gensec_server_start(dce_conn, &auth->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 		return status;

@@ -306,7 +306,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		struct gensec_security *gensec_security;
 		DATA_BLOB null_data_blob = data_blob(NULL, 0);
 		DATA_BLOB blob;
-		NTSTATUS nt_status = gensec_server_start(&gensec_security);
+		NTSTATUS nt_status = gensec_server_start(req->smb_conn, &gensec_security);
 		
 		if (req->smb_conn->negotiate.auth_context) {
 			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");

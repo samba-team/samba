@@ -395,7 +395,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 
 	smbcli_temp_set_signing(session->transport);
 
-	status = gensec_client_start(&session->gensec);
+	status = gensec_client_start(session, &session->gensec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
 		goto done;

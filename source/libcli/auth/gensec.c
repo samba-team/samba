@@ -114,26 +114,22 @@ const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip)
 	return oid_list;
 }
 
-static NTSTATUS gensec_start(struct gensec_security **gensec_security) 
+/*
+  note that memory context is the parent context to hang this gensec context off. It may be NULL.
+*/
+static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security) 
 {
-	TALLOC_CTX *mem_ctx;
 	/* awaiting a correct fix from metze */
 	if (!gensec_init()) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	mem_ctx = talloc_init("gensec_security struct");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*gensec_security) = talloc_p(mem_ctx, struct gensec_security);
+	(*gensec_security) = talloc_p(NULL, struct gensec_security);
 	if (!(*gensec_security)) {
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_set_name(*gensec_security, "gensec_start");
 
-	(*gensec_security)->mem_ctx = mem_ctx;
 	(*gensec_security)->ops = NULL;
 
 	ZERO_STRUCT((*gensec_security)->user);
@@ -141,8 +137,8 @@ static NTSTATUS gensec_start(struct gensec_security **gensec_security)
 	ZERO_STRUCT((*gensec_security)->default_user);
 
 	(*gensec_security)->default_user.name = "";
-	(*gensec_security)->default_user.domain = talloc_strdup(mem_ctx, lp_workgroup());
-	(*gensec_security)->default_user.realm = talloc_strdup(mem_ctx, lp_realm());
+	(*gensec_security)->default_user.domain = talloc_strdup(*gensec_security, lp_workgroup());
+	(*gensec_security)->default_user.realm = talloc_strdup(*gensec_security, lp_realm());
 
 	(*gensec_security)->subcontext = False;
 	(*gensec_security)->want_features = 0;
@@ -158,7 +154,7 @@ static NTSTATUS gensec_start(struct gensec_security **gensec_security)
 NTSTATUS gensec_subcontext_start(struct gensec_security *parent, 
 				 struct gensec_security **gensec_security)
 {
-	(*gensec_security) = talloc_p(parent->mem_ctx, struct gensec_security);
+	(*gensec_security) = talloc_p(parent, struct gensec_security);
 	if (!(*gensec_security)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -172,10 +168,10 @@ NTSTATUS gensec_subcontext_start(struct gensec_security *parent,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gensec_client_start(struct gensec_security **gensec_security)
+NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
-	status = gensec_start(gensec_security);
+	status = gensec_start(mem_ctx, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -187,10 +183,10 @@ NTSTATUS gensec_client_start(struct gensec_security **gensec_security)
 	return status;
 }
 
-NTSTATUS gensec_server_start(struct gensec_security **gensec_security)
+NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
-	status = gensec_start(gensec_security);
+	status = gensec_start(mem_ctx, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -443,7 +439,7 @@ void gensec_end(struct gensec_security **gensec_security)
 
 	if (!(*gensec_security)->subcontext) {
 		/* don't destory this if this is a subcontext - it belongs to the parent */
-		talloc_destroy((*gensec_security)->mem_ctx);
+		talloc_free(*gensec_security);
 	}
 	gensec_security = NULL;
 }
@@ -467,7 +463,7 @@ void gensec_want_feature(struct gensec_security *gensec_security,
 NTSTATUS gensec_set_unparsed_username(struct gensec_security *gensec_security, const char *user) 
 {
 	char *p;
-	char *u = talloc_strdup(gensec_security->mem_ctx, user);
+	char *u = talloc_strdup(gensec_security, user);
 	if (!u) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -476,12 +472,12 @@ NTSTATUS gensec_set_unparsed_username(struct gensec_security *gensec_security, c
 	
 	if (p) {
 		*p = '\0';
-		gensec_security->user.name = talloc_strdup(gensec_security->mem_ctx, u);
+		gensec_security->user.name = talloc_strdup(gensec_security, u);
 		if (!gensec_security->user.name) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		gensec_security->user.realm = talloc_strdup(gensec_security->mem_ctx, p+1);
+		gensec_security->user.realm = talloc_strdup(gensec_security, p+1);
 		if (!gensec_security->user.realm) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -495,11 +491,11 @@ NTSTATUS gensec_set_unparsed_username(struct gensec_security *gensec_security, c
 	
 	if (p) {
 		*p = '\0';
-		gensec_security->user.domain = talloc_strdup(gensec_security->mem_ctx, u);
+		gensec_security->user.domain = talloc_strdup(gensec_security, u);
 		if (!gensec_security->user.domain) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		gensec_security->user.name = talloc_strdup(gensec_security->mem_ctx, p+1);
+		gensec_security->user.name = talloc_strdup(gensec_security, p+1);
 		if (!gensec_security->user.name) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -521,7 +517,7 @@ NTSTATUS gensec_set_unparsed_username(struct gensec_security *gensec_security, c
 
 NTSTATUS gensec_set_username(struct gensec_security *gensec_security, const char *user) 
 {
-	gensec_security->user.name = talloc_strdup(gensec_security->mem_ctx, user);
+	gensec_security->user.name = talloc_strdup(gensec_security, user);
 	if (!gensec_security->user.name) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -548,7 +544,7 @@ const char *gensec_get_username(struct gensec_security *gensec_security)
 
 NTSTATUS gensec_set_domain(struct gensec_security *gensec_security, const char *domain) 
 {
-	gensec_security->user.domain = talloc_strdup(gensec_security->mem_ctx, domain);
+	gensec_security->user.domain = talloc_strdup(gensec_security, domain);
 	if (!gensec_security->user.domain) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -577,7 +573,7 @@ const char *gensec_get_domain(struct gensec_security *gensec_security)
 
 NTSTATUS gensec_set_realm(struct gensec_security *gensec_security, const char *realm) 
 {
-	gensec_security->user.realm = talloc_strdup(gensec_security->mem_ctx, realm);
+	gensec_security->user.realm = talloc_strdup(gensec_security, realm);
 	if (!gensec_security->user.realm) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -625,7 +621,7 @@ char *gensec_get_client_principal(struct gensec_security *gensec_security, TALLO
 NTSTATUS gensec_set_password(struct gensec_security *gensec_security,
 			     const char *password) 
 {
-	gensec_security->user.password = talloc_strdup(gensec_security->mem_ctx, password);
+	gensec_security->user.password = talloc_strdup(gensec_security, password);
 	if (!gensec_security->user.password) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -639,7 +635,7 @@ NTSTATUS gensec_set_password(struct gensec_security *gensec_security,
 
 NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal) 
 {
-	gensec_security->target.principal = talloc_strdup(gensec_security->mem_ctx, principal);
+	gensec_security->target.principal = talloc_strdup(gensec_security, principal);
 	if (!gensec_security->target.principal) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -653,7 +649,7 @@ NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, co
 
 NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service) 
 {
-	gensec_security->target.service = talloc_strdup(gensec_security->mem_ctx, service);
+	gensec_security->target.service = talloc_strdup(gensec_security, service);
 	if (!gensec_security->target.service) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -667,7 +663,7 @@ NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, cons
 
 NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname) 
 {
-	gensec_security->target.hostname = talloc_strdup(gensec_security->mem_ctx, hostname);
+	gensec_security->target.hostname = talloc_strdup(gensec_security, hostname);
 	if (!gensec_security->target.hostname) {
 		return NT_STATUS_NO_MEMORY;
 	}
