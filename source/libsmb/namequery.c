@@ -276,7 +276,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
     struct timeval tval2;
 
     GetTimeOfDay(&tval2);
-    if (first_send ) /* || TvalDiff(&tval,&tval2) > retry_time) */
+    if (first_send || TvalDiff(&tval,&tval2) > retry_time)
     {
 	first_send = False;
       if (!found && !send_packet(&p))
