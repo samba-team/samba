@@ -41,8 +41,12 @@ void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 	if (!IS_DOS_READONLY(mode)) st->st_mode |= S_IWUSR;
 
 	st->st_size = size;
+#ifdef HAVE_STAT_ST_BLKSIZE
 	st->st_blksize = 512;
+#endif
+#ifdef HAVE_STAT_ST_BLOCKS
 	st->st_blocks = (size+511)/512;
+#endif
 	st->st_uid = getuid();
 	st->st_gid = getgid();
 	if (IS_DOS_DIR(mode)) {
