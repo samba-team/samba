@@ -2610,3 +2610,11 @@ builddir=`pwd`
 AC_SUBST(builddir)
 
 AC_OUTPUT(include/stamp-h Makefile)
+
+#################################################
+# Print very concise instructions on building/use
+if test "x$enable_dmalloc" = xyes
+then
+	AC_MSG_RESULT([Note: The dmalloc debug library will be included.])
+	AC_MSG_RESULT([      Use the \"dmalloc\" command to turn it on.])
+fi
