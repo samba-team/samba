@@ -363,7 +363,7 @@ static NTSTATUS db_idmap_init( char *params )
 	/* Open tdb cache */
 	if (!(idmap_tdb = tdb_open_log(tdbfile, 0,
 				       TDB_DEFAULT, O_RDWR | O_CREAT,
-				       0600))) {
+				       0644))) {
 		DEBUG(0, ("idmap_init: Unable to open idmap database\n"));
 		SAFE_FREE(tdbfile);
 		return NT_STATUS_UNSUCCESSFUL;
