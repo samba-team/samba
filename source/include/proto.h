@@ -32,19 +32,31 @@ void cmd_help(void);
 BOOL reopen_connection(char *inbuf,char *outbuf);
 char *smb_errstr(char *inbuf);
 
+/*The following definitions come from  clientgen.c  */
+
+BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
+BOOL cli_session_setup(struct cli_state *cli, 
+		       char *user, 
+		       char *pass, int passlen,
+		       char *ntpass, int ntpasslen,
+		       char *workgroup);
+BOOL cli_send_tconX(struct cli_state *cli, 
+		    char *share, char *dev, char *pword, int passlen);
+BOOL cli_tdis(struct cli_state *cli);
+BOOL cli_negprot(struct cli_state *cli);
+BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
+			 char *myname);
+BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
+BOOL cli_initialise(struct cli_state *cli);
+void cli_shutdown(struct cli_state *cli);
+
 /*The following definitions come from  clientutil.c  */
 
-void cli_setup_pkt(char *outbuf);
-BOOL cli_receive_trans_response(char *inbuf,int trans,int *data_len,
-				int *param_len, char **data,char **param);
-BOOL cli_send_session_request(char *inbuf, char *outbuf);
 BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setup);
 void cli_send_logout(void);
 BOOL cli_call_api(int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
-	      int *rdrcnt, char *param,char *data, char **rparam,char **rdata);
-BOOL cli_send_trans_request(char *outbuf, int trans, char *name, int fid, int flags,
-			char *data,char *param,uint16 *setup, int ldata,int lparam,
-			int lsetup,int mdata,int mparam,int msetup);
+		  int *rdrcnt, char *param,char *data, 
+		  char **rparam, char **rdata);
 BOOL cli_open_sockets(int port);
 BOOL cli_reopen_connection(char *inbuf,char *outbuf);
 char *smb_errstr(char *inbuf);
@@ -585,8 +597,11 @@ BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
 BOOL check_hosts_equiv(char *user);
-BOOL server_cryptkey(char *buf);
-BOOL server_validate(char *buf);
+struct cli_state *server_client(void);
+struct cli_state *server_cryptkey(void);
+BOOL server_validate(char *user, char *domain, 
+		     char *pass, int passlen,
+		     char *ntpass, int ntpasslen);
 
 /*The following definitions come from  pcap.c  */
 

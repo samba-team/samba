@@ -2004,6 +2004,8 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
+
+    DEBUG(4,("RNetUserGetInfo level=%d\n", uLevel));
   
 	/* check it's a supported variant */
 	if (strcmp(str1,"zWrLh") != 0) return False;

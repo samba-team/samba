@@ -147,10 +147,6 @@
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
-/* keep the password server open, this uses up a aocket, but is needed
-   by many apps */
-#define KEEP_PASSWORD_SERVER_OPEN 1
-
 /* how long to wait for a socket connect to happen */
 #define LONG_CONNECT_TIMEOUT 30
 #define SHORT_CONNECT_TIMEOUT 5

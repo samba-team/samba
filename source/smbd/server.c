@@ -2222,22 +2222,21 @@ static int sig_cld()
   **************************************************************************/
 static int sig_pipe()
 {
-  extern int password_client;
-  BlockSignals(True,SIGPIPE);
+	struct cli_state *cli;
+	BlockSignals(True,SIGPIPE);
 
-  if (password_client != -1) {
-    DEBUG(3,("lost connection to password server\n"));
-    close(password_client);
-    password_client = -1;
+	if ((cli = server_client()) && cli->initialised) {
+		DEBUG(3,("lost connection to password server\n"));
+		cli_shutdown(cli);
 #ifndef DONT_REINSTALL_SIG
-    signal(SIGPIPE, SIGNAL_CAST sig_pipe);
+		signal(SIGPIPE, SIGNAL_CAST sig_pipe);
 #endif
-    BlockSignals(False,SIGPIPE);
-    return 0;
-  }
+		BlockSignals(False,SIGPIPE);
+		return 0;
+	}
 
-  exit_server("Got sigpipe\n");
-  return(0);
+	exit_server("Got sigpipe\n");
+	return(0);
 }
 
 /****************************************************************************
@@ -2892,11 +2891,6 @@ int reply_lanman1(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
-  /* We need to save and restore this as it can be destroyed
-     if we call another server if security=server
-     Thanks to Paul Nelson @ Thursby for pointing this out.
-   */
-  uint16 mid = SVAL(outbuf, smb_mid);
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
@@ -2911,15 +2905,7 @@ int reply_lanman1(char *outbuf)
 
   Protocol = PROTOCOL_LANMAN1;
 
-  if (lp_security() == SEC_SERVER && server_cryptkey(outbuf)) {
-    DEBUG(3,("using password server validation\n"));
-#ifdef SMB_PASSWD
-  if (doencrypt) set_challenge(smb_buf(outbuf));    
-#endif
-  }
-
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
-  SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */
   SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
   SSVAL(outbuf,smb_vwv4,1);
@@ -2943,36 +2929,45 @@ int reply_lanman2(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
-  /* We need to save and restore this as it can be destroyed
-     if we call another server if security=server
-     Thanks to Paul Nelson @ Thursby for pointing this out.
-   */
-  uint16 mid = SVAL(outbuf, smb_mid);
+  struct cli_state *cli = NULL;
+  char cryptkey[8];
+  char crypt_len = 0;
+
+  if (lp_security() == SEC_SERVER) {
+	  cli = server_cryptkey();
+  }
+
+  if (cli) {
+	  DEBUG(3,("using password server validation\n"));
+	  doencrypt = ((cli->sec_mode & 2) != 0);
+  }
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
 
+  if (doencrypt) {
+	  crypt_len = 8;
+	  if (!cli) {
+#ifdef SMB_PASSWD
+		  generate_next_challenge(cryptkey);
+#endif
+	  } else {
+		  memcpy(cryptkey, cli->cryptkey, 8);
+#ifdef SMB_PASSWD
+		  set_challenge(cli->cryptkey);
+#endif
+	  }
+  }
+
   set_message(outbuf,13,doencrypt?8:0,True);
   SSVAL(outbuf,smb_vwv1,secword); 
-#ifdef SMB_PASSWD
-  /* Create a token value and add it to the outgoing packet. */
-  if (doencrypt) 
-    generate_next_challenge(smb_buf(outbuf));
-#endif
-
   SIVAL(outbuf,smb_vwv6,getpid());
+  if (doencrypt) 
+	  memcpy(smb_buf(outbuf), cryptkey, 8);
 
   Protocol = PROTOCOL_LANMAN2;
 
-  if (lp_security() == SEC_SERVER && server_cryptkey(outbuf)) {
-    DEBUG(3,("using password server validation\n"));
-#ifdef SMB_PASSWD
-    if (doencrypt) set_challenge(smb_buf(outbuf));    
-#endif
-  }
-
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
-  SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */
   SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
   SSVAL(outbuf,smb_vwv4,1);
@@ -3002,13 +2997,32 @@ int reply_nt1(char *outbuf)
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
   int data_len;
-  int encrypt_len;
-  char challenge_len = 8;
-  /* We need to save and restore this as it can be destroyed
-     if we call another server if security=server
-     Thanks to Paul Nelson @ Thursby for pointing this out.
-   */
-  uint16 mid = SVAL(outbuf, smb_mid);
+  struct cli_state *cli = NULL;
+  char cryptkey[8];
+  char crypt_len = 0;
+
+  if (lp_security() == SEC_SERVER) {
+	  cli = server_cryptkey();
+  }
+
+  if (cli) {
+	  DEBUG(3,("using password server validation\n"));
+	  doencrypt = ((cli->sec_mode & 2) != 0);
+  }
+
+  if (doencrypt) {
+	  crypt_len = 8;
+	  if (!cli) {
+#ifdef SMB_PASSWD
+		  generate_next_challenge(cryptkey);
+#endif
+	  } else {
+		  memcpy(cryptkey, cli->cryptkey, 8);
+#ifdef SMB_PASSWD
+		  set_challenge(cli->cryptkey);
+#endif
+	  }
+  }
 
   if (lp_readraw() && lp_writeraw())
   {
@@ -3021,44 +3035,18 @@ int reply_nt1(char *outbuf)
   /* decide where (if) to put the encryption challenge, and
      follow it with the OEM'd domain name
    */
-  encrypt_len = doencrypt?challenge_len:0;
-#if UNICODE
-  data_len = encrypt_len + 2*(strlen(myworkgroup)+1);
-#else
-  data_len = encrypt_len + strlen(myworkgroup) + 1;
-#endif
+  data_len = crypt_len + strlen(myworkgroup) + 1;
 
   set_message(outbuf,17,data_len,True);
-
-#if UNICODE
-  /* put the OEM'd domain name */
-  PutUniCode(smb_buf(outbuf)+encrypt_len,myworkgroup);
-#else
-  strcpy(smb_buf(outbuf)+encrypt_len, myworkgroup);
-#endif
+  strcpy(smb_buf(outbuf)+crypt_len, myworkgroup);
 
   CVAL(outbuf,smb_vwv1) = secword;
-#ifdef SMB_PASSWD
-  /* Create a token value and add it to the outgoing packet. */
-  if (doencrypt)
-  {
-    generate_next_challenge(smb_buf(outbuf));
-
-    /* Tell the nt machine how long the challenge is. */
-    SSVALS(outbuf,smb_vwv16+1,challenge_len);
-  }
-#endif
+  SSVALS(outbuf,smb_vwv16+1,crypt_len);
+  if (doencrypt) 
+	  memcpy(smb_buf(outbuf), cryptkey, 8);
 
   Protocol = PROTOCOL_NT1;
 
-  if (lp_security() == SEC_SERVER && server_cryptkey(outbuf)) {
-    DEBUG(3,("using password server validation\n"));
-#ifdef SMB_PASSWD
-    if (doencrypt) set_challenge(smb_buf(outbuf));    
-#endif
-  }
-
-  SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */
   SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
   SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
   SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
@@ -4127,16 +4115,16 @@ static void process(void)
 	  }
 
 	  if (keepalive && (counter-last_keepalive)>keepalive) {
-	    extern int password_client;
-	    if (!send_keepalive(Client)) {
-	      DEBUG(2,("%s Keepalive failed - exiting\n",timestring()));
-	      return;
-	    }	    
-	    /* also send a keepalive to the password server if its still
-	       connected */
-	    if (password_client != -1)
-	      send_keepalive(password_client);
-	    last_keepalive = counter;
+		  struct cli_state *cli = server_client();
+		  if (!send_keepalive(Client)) { 
+			  DEBUG(2,("%s Keepalive failed - exiting\n",timestring()));
+			  return;
+		  }	    
+		  /* also send a keepalive to the password server if its still
+		     connected */
+		  if (cli && cli->initialised)
+			  send_keepalive(cli->fd);
+		  last_keepalive = counter;
 	  }
 
 	  /* check for connection timeouts */
