@@ -275,6 +275,15 @@ if test x"$samba_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
     AC_DEFINE(HAVE_SOCK_SIN_LEN)
 fi
 
+AC_CACHE_CHECK([whether seekdir returns void],samba_cv_SEEKDIR_RETURNS_VOID,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <dirent.h>],
+[void seekdir(DIR *d, long loc) { return; }],
+samba_cv_SEEKDIR_RETURNS_VOID=yes,samba_cv_SEEKDIR_RETURNS_VOID=no)])
+if test x"$samba_cv_SEEKDIR_RETURNS_VOID" = x"yes"; then
+    AC_DEFINE(SEEKDIR_RETURNS_VOID)
+fi
+
 AC_CACHE_CHECK([for __FILE__ macro],samba_cv_HAVE_FILE_MACRO,[
 AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FILE__);],
 samba_cv_HAVE_FILE_MACRO=yes,samba_cv_HAVE_FILE_MACRO=no)])
