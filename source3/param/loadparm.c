@@ -89,6 +89,7 @@ typedef struct
 {
 	char *dos_charset;
 	char *unix_charset;
+	char *display_charset;
 	char *szPrintcapname;
 	char *szEnumPortsCommand;
 	char *szAddPrinterCommand;
@@ -639,6 +640,7 @@ static struct parm_struct parm_table[] = {
 
 	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, NULL, NULL, 0},
 	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, NULL, NULL, 0},
+	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, NULL, NULL, 0},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, 0},
@@ -1418,6 +1420,9 @@ static char *lp_string(const char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
+FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
+FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
+FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
@@ -3277,7 +3282,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 		string_set(&Globals.szWINSserver, "127.0.0.1");
 	}
 
-	init_iconv(Globals.unix_charset, Globals.dos_charset);
+	init_iconv();
 
 	return (bRetval);
 }

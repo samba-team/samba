@@ -169,12 +169,12 @@ static void send_message(void)
 	int grp_id;
 
 	if (!cli_message_start(cli, desthost, username, &grp_id)) {
-		DEBUG(0,("message start: %s\n", cli_errstr(cli)));
+		d_printf("message start: %s\n", cli_errstr(cli));
 		return;
 	}
 
 
-	printf("Connected. Type your message, ending it with a Control-D\n");
+	d_printf("Connected. Type your message, ending it with a Control-D\n");
 
 	while (!feof(stdin) && total_len < 1600) {
 		int maxlen = MIN(1600 - total_len,127);
@@ -191,7 +191,7 @@ static void send_message(void)
 		}
 
 		if (!cli_message_text(cli, msg, l, grp_id)) {
-			printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
+			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
 			return;
 		}      
 		
@@ -199,12 +199,12 @@ static void send_message(void)
 	}
 
 	if (total_len >= 1600)
-		printf("the message was truncated to 1600 bytes\n");
+		d_printf("the message was truncated to 1600 bytes\n");
 	else
-		printf("sent %d bytes\n",total_len);
+		d_printf("sent %d bytes\n",total_len);
 
 	if (!cli_message_end(cli, grp_id)) {
-		printf("SMBsendend failed (%s)\n",cli_errstr(cli));
+		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli));
 		return;
 	}      
 }
@@ -219,12 +219,12 @@ static void do_dskattr(void)
 	int total, bsize, avail;
 
 	if (!cli_dskattr(cli, &bsize, &total, &avail)) {
-		DEBUG(0,("Error in dskattr: %s\n",cli_errstr(cli))); 
+		d_printf("Error in dskattr: %s\n",cli_errstr(cli)); 
 		return;
 	}
 
-	DEBUG(0,("\n\t\t%d blocks of size %d. %d blocks available\n",
-		 total, bsize, avail));
+	d_printf("\n\t\t%d blocks of size %d. %d blocks available\n",
+		 total, bsize, avail);
 }
 
 /****************************************************************************
@@ -232,8 +232,8 @@ show cd/pwd
 ****************************************************************************/
 static void cmd_pwd(void)
 {
-	DEBUG(0,("Current directory is %s",service));
-	DEBUG(0,("%s\n",cur_dir));
+	d_printf("Current directory is %s",service);
+	d_printf("%s\n",cur_dir);
 }
 
 
@@ -265,7 +265,7 @@ static void do_cd(char *newdir)
 	
 	if (!strequal(cur_dir,"\\")) {
 		if (!cli_chkpath(cli, dname)) {
-			DEBUG(0,("cd %s: %s\n", dname, cli_errstr(cli)));
+			d_printf("cd %s: %s\n", dname, cli_errstr(cli));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
@@ -283,7 +283,7 @@ static void cmd_cd(void)
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
 		do_cd(buf);
 	else
-		DEBUG(0,("Current directory is %s\n",cur_dir));
+		d_printf("Current directory is %s\n",cur_dir);
 }
 
 
@@ -320,11 +320,11 @@ static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-		DEBUG(0,("  %-30s%7.7s %8.0f  %s",
+		d_printf("  %-30s%7.7s %8.0f  %s",
 			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
-			 asctime(LocalTime(&t))));
+			 asctime(LocalTime(&t)));
 		dir_total += finfo->size;
 	}
 }
@@ -381,8 +381,8 @@ static void init_do_list_queue(void)
 	do_list_queue_size = 1024;
 	do_list_queue = malloc(do_list_queue_size);
 	if (do_list_queue == 0) { 
-		DEBUG(0,("malloc fail for size %d\n",
-			 (int)do_list_queue_size));
+		d_printf("malloc fail for size %d\n",
+			 (int)do_list_queue_size);
 		reset_do_list_queue();
 	} else {
 		memset(do_list_queue, 0, do_list_queue_size);
@@ -424,8 +424,8 @@ static void add_to_do_list_queue(const char* entry)
 			 (int)do_list_queue_size));
 		dlq = Realloc(do_list_queue, do_list_queue_size);
 		if (! dlq) {
-			DEBUG(0,("failure enlarging do_list_queue to %d bytes\n",
-				 (int)do_list_queue_size));
+			d_printf("failure enlarging do_list_queue to %d bytes\n",
+				 (int)do_list_queue_size);
 			reset_do_list_queue();
 		}
 		else
@@ -546,7 +546,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 						strlen(next_file) - 2;
 					*save_ch = '\0';
 				}
-				DEBUG(0,("\n%s\n",next_file));
+				d_printf("\n%s\n",next_file);
 				if (save_ch)
 				{
 					*save_ch = '\\';
@@ -558,7 +558,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	{
 		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1)
 		{
-			DEBUG(0, ("%s listing %s\n", cli_errstr(cli), mask));
+			d_printf("%s listing %s\n", cli_errstr(cli), mask);
 		}
 	}
 
@@ -629,7 +629,7 @@ static void cmd_du(void)
 
 	do_dskattr();
 
-	DEBUG(0, ("Total number of bytes: %.0f\n", dir_total));
+	d_printf("Total number of bytes: %.0f\n", dir_total);
 }
 
 
@@ -656,7 +656,7 @@ static void do_get(char *rname,char *lname)
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
-		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
+		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
 		return;
 	}
 
@@ -667,7 +667,7 @@ static void do_get(char *rname,char *lname)
 		newhandle = True;
 	}
 	if (handle < 0) {
-		DEBUG(0,("Error opening local file %s\n",lname));
+		d_printf("Error opening local file %s\n",lname);
 		return;
 	}
 
@@ -676,7 +676,7 @@ static void do_get(char *rname,char *lname)
 			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
 	    !cli_getattrE(cli, fnum, 
 			  &attr, &size, NULL, NULL, NULL)) {
-		DEBUG(0,("getattrib: %s\n",cli_errstr(cli)));
+		d_printf("getattrib: %s\n",cli_errstr(cli));
 		return;
 	}
 
@@ -684,7 +684,7 @@ static void do_get(char *rname,char *lname)
 		 lname, (double)size, lname));
 
 	if(!(data = (char *)malloc(read_size))) { 
-		DEBUG(0,("malloc fail for size %d\n", read_size));
+		d_printf("malloc fail for size %d\n", read_size);
 		cli_close(cli, fnum);
 		return;
 	}
@@ -695,7 +695,7 @@ static void do_get(char *rname,char *lname)
 		if (n <= 0) break;
  
 		if (writefile(handle,data, n) != n) {
-			DEBUG(0,("Error writing local file\n"));
+			d_printf("Error writing local file\n");
 			break;
 		}
       
@@ -710,7 +710,7 @@ static void do_get(char *rname,char *lname)
 	free(data);
 	
 	if (!cli_close(cli, fnum)) {
-		DEBUG(0,("Error %s closing remote file\n",cli_errstr(cli)));
+		d_printf("Error %s closing remote file\n",cli_errstr(cli));
 	}
 
 	if (newhandle) {
@@ -754,7 +754,7 @@ static void cmd_get(void)
 	p = rname + strlen(rname);
 	
 	if (!next_token_nr(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
-		DEBUG(0,("get <filename>\n"));
+		d_printf("get <filename>\n");
 		return;
 	}
 	pstrcpy(lname,p);
@@ -780,7 +780,7 @@ static void do_mget(file_info *finfo)
 		return;
 
 	if (abort_mget)	{
-		DEBUG(0,("mget aborted\n"));
+		d_printf("mget aborted\n");
 		return;
 	}
 
@@ -812,13 +812,13 @@ static void do_mget(file_info *finfo)
 	
 	if (!directory_exist(finfo->name,NULL) && 
 	    mkdir(finfo->name,0777) != 0) {
-		DEBUG(0,("failed to create directory %s\n",finfo->name));
+		d_printf("failed to create directory %s\n",finfo->name);
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
 	
 	if (chdir(finfo->name) != 0) {
-		DEBUG(0,("failed to chdir to directory %s\n",finfo->name));
+		d_printf("failed to chdir to directory %s\n",finfo->name);
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
@@ -847,13 +847,13 @@ static void cmd_more(void)
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
 	if (fd == -1) {
-		DEBUG(0,("failed to create temporary file for more\n"));
+		d_printf("failed to create temporary file for more\n");
 		return;
 	}
 	close(fd);
 
 	if (!next_token_nr(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
-		DEBUG(0,("more <filename>\n"));
+		d_printf("more <filename>\n");
 		unlink(lname);
 		return;
 	}
@@ -916,8 +916,8 @@ make a directory of name "name"
 static BOOL do_mkdir(char *name)
 {
 	if (!cli_mkdir(cli, name)) {
-		DEBUG(0,("%s making remote directory %s\n",
-			 cli_errstr(cli),name));
+		d_printf("%s making remote directory %s\n",
+			 cli_errstr(cli),name);
 		return(False);
 	}
 
@@ -948,7 +948,7 @@ static void cmd_mkdir(void)
 
 	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		if (!recurse)
-			DEBUG(0,("mkdir <dirname>\n"));
+			d_printf("mkdir <dirname>\n");
 		return;
 	}
 	pstrcat(mask,p);
@@ -992,7 +992,7 @@ static void do_put(char *rname,char *lname)
 	fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
   
 	if (fnum == -1) {
-		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
+		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
 		return;
 	}
 
@@ -1006,7 +1006,7 @@ static void do_put(char *rname,char *lname)
 	}
 
 	if (!f) {
-		DEBUG(0,("Error opening local file %s\n",lname));
+		d_printf("Error opening local file %s\n",lname);
 		return;
 	}
 
@@ -1016,7 +1016,7 @@ static void do_put(char *rname,char *lname)
   
 	buf = (char *)malloc(maxwrite);
 	if (!buf) {
-		DEBUG(0, ("ERROR: Not enough memory!\n"));
+		d_printf("ERROR: Not enough memory!\n");
 		return;
 	}
 	while (!feof(f)) {
@@ -1027,14 +1027,14 @@ static void do_put(char *rname,char *lname)
 			if((n == 0) && feof(f))
 				break; /* Empty local file. */
 
-			DEBUG(0,("Error reading local file: %s\n", strerror(errno) ));
+			d_printf("Error reading local file: %s\n", strerror(errno));
 			break;
 		}
 
 		ret = cli_write(cli, fnum, 0, buf, nread, n);
 
 		if (n != ret) {
-			DEBUG(0,("Error writing file: %s\n", cli_errstr(cli)));
+			d_printf("Error writing file: %s\n", cli_errstr(cli));
 			break;
 		} 
 
@@ -1042,7 +1042,7 @@ static void do_put(char *rname,char *lname)
 	}
 
 	if (!cli_close(cli, fnum)) {
-		DEBUG(0,("%s closing remote file %s\n",cli_errstr(cli),rname));
+		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
 		fclose(f);
 		if (buf) free(buf);
 		return;
@@ -1090,7 +1090,7 @@ static void cmd_put(void)
 	pstrcat(rname,"\\");
   
 	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
-		DEBUG(0,("put <filename>\n"));
+		d_printf("put <filename>\n");
 		return;
 	}
 	pstrcpy(lname,p);
@@ -1108,7 +1108,7 @@ static void cmd_put(void)
 		   jdblair, 24.jun.98 */
 		if (!file_exist(lname,&st) &&
 		    (strcmp(lname,"-"))) {
-			DEBUG(0,("%s does not exist\n",lname));
+			d_printf("%s does not exist\n",lname);
 			return;
 		}
 	}
@@ -1205,7 +1205,7 @@ static int file_find(struct file_list **list, const char *directory,
 						ret = file_find(list, path, expression, False);
 					}
 				} else {
-					DEBUG(0,("file_find: cannot stat file %s\n", path));
+					d_printf("file_find: cannot stat file %s\n", path);
 				}
 				
 				if (ret == -1) {
@@ -1216,7 +1216,7 @@ static int file_find(struct file_list **list, const char *directory,
 			}
 			entry = (struct file_list *) malloc(sizeof (struct file_list));
 			if (!entry) {
-				DEBUG(0,("Out of memory in file_find\n"));
+				d_printf("Out of memory in file_find\n");
 				closedir(dir);
 				return -1;
 			}
@@ -1319,9 +1319,9 @@ static void cmd_mput(void)
 static void do_cancel(int job)
 {
 	if (cli_printjob_del(cli, job)) {
-		printf("Job %d cancelled\n",job);
+		d_printf("Job %d cancelled\n",job);
 	} else {
-		printf("Error cancelling job %d : %s\n",job,cli_errstr(cli));
+		d_printf("Error cancelling job %d : %s\n",job,cli_errstr(cli));
 	}
 }
 
@@ -1335,7 +1335,7 @@ static void cmd_cancel(void)
 	int job; 
 
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		printf("cancel <jobid> ...\n");
+		d_printf("cancel <jobid> ...\n");
 		return;
 	}
 	do {
@@ -1355,7 +1355,7 @@ static void cmd_print(void)
 	char *p;
 
 	if (!next_token_nr(NULL,lname,NULL, sizeof(lname))) {
-		DEBUG(0,("print <filename>\n"));
+		d_printf("print <filename>\n");
 		return;
 	}
 
@@ -1378,7 +1378,7 @@ static void cmd_print(void)
 ****************************************************************************/
 static void queue_fn(struct print_job_info *p)
 {
-	DEBUG(0,("%-6d   %-9d    %s\n", (int)p->id, (int)p->size, p->name));
+	d_printf("%-6d   %-9d    %s\n", (int)p->id, (int)p->size, p->name);
 }
 
 /****************************************************************************
@@ -1403,7 +1403,7 @@ static void do_del(file_info *finfo)
 		return;
 
 	if (!cli_unlink(cli, mask)) {
-		DEBUG(0,("%s deleting remote file %s\n",cli_errstr(cli),mask));
+		d_printf("%s deleting remote file %s\n",cli_errstr(cli),mask);
 	}
 }
 
@@ -1422,7 +1422,7 @@ static void cmd_del(void)
 	pstrcpy(mask,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		DEBUG(0,("del <filename>\n"));
+		d_printf("del <filename>\n");
 		return;
 	}
 	pstrcat(mask,buf);
@@ -1440,7 +1440,7 @@ static void cmd_open(void)
 	pstrcpy(mask,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		DEBUG(0,("del <filename>\n"));
+		d_printf("del <filename>\n");
 		return;
 	}
 	pstrcat(mask,buf);
@@ -1460,14 +1460,14 @@ static void cmd_rmdir(void)
 	pstrcpy(mask,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		DEBUG(0,("rmdir <dirname>\n"));
+		d_printf("rmdir <dirname>\n");
 		return;
 	}
 	pstrcat(mask,buf);
 
 	if (!cli_rmdir(cli, mask)) {
-		DEBUG(0,("%s removing remote directory file %s\n",
-			 cli_errstr(cli),mask));
+		d_printf("%s removing remote directory file %s\n",
+			 cli_errstr(cli),mask);
 	}  
 }
 
@@ -1484,7 +1484,7 @@ static void cmd_rename(void)
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
 	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		DEBUG(0,("rename <src> <dest>\n"));
+		d_printf("rename <src> <dest>\n");
 		return;
 	}
 
@@ -1492,7 +1492,7 @@ static void cmd_rename(void)
 	pstrcat(dest,buf2);
 
 	if (!cli_rename(cli, src, dest)) {
-		DEBUG(0,("%s renaming files\n",cli_errstr(cli)));
+		d_printf("%s renaming files\n",cli_errstr(cli));
 		return;
 	}  
 }
@@ -1527,7 +1527,7 @@ static void cmd_newer(void)
 	}
 
 	if (ok && newer_than == 0)
-		DEBUG(0,("Error setting newer-than time\n"));
+		d_printf("Error setting newer-than time\n");
 }
 
 /****************************************************************************
@@ -1540,7 +1540,7 @@ static void cmd_archive(void)
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		archive_level = atoi(buf);
 	} else
-		DEBUG(0,("Archive level is %d\n",archive_level));
+		d_printf("Archive level is %d\n",archive_level);
 }
 
 /****************************************************************************
@@ -1644,7 +1644,7 @@ static void browse_fn(const char *name, uint32 m,
           case STYPE_IPC:
             fstrcpy(typestr,"IPC"); break;
         }
-	printf("\t%-15.15s%-10.10s%s\n",
+	d_printf("\t%-15.15s%-10.10s%s\n",
                name,typestr,comment);
 }
 
@@ -1656,11 +1656,11 @@ static BOOL browse_host(BOOL sort)
 {
 	int ret;
 
-        printf("\n\tSharename      Type      Comment\n");
-        printf("\t---------      ----      -------\n");
+        d_printf("\n\tSharename      Type      Comment\n");
+        d_printf("\t---------      ----      -------\n");
 
 	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
-		printf("Error returning browse list: %s\n", cli_errstr(cli));
+		d_printf("Error returning browse list: %s\n", cli_errstr(cli));
 
 	return (ret != -1);
 }
@@ -1671,7 +1671,7 @@ list a server name
 static void server_fn(const char *name, uint32 m, 
                       const char *comment, void *state)
 {
-        printf("\t%-16.16s     %s\n", name, comment);
+        d_printf("\t%-16.16s     %s\n", name, comment);
 }
 
 /****************************************************************************
@@ -1681,13 +1681,13 @@ static BOOL list_servers(char *wk_grp)
 {
 	if (!cli->server_domain) return False;
 	
-        printf("\n\tServer               Comment\n");
-        printf("\t---------            -------\n");
+        d_printf("\n\tServer               Comment\n");
+        d_printf("\t---------            -------\n");
 
 	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn, NULL);
 
-        printf("\n\tWorkgroup            Master\n");
-        printf("\t---------            -------\n");
+        d_printf("\n\tWorkgroup            Master\n");
+        d_printf("\t---------            -------\n");
 
 	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn, NULL);
 	return True;
@@ -1794,14 +1794,14 @@ static NTSTATUS cmd_help(void)
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		if ((i = process_tok(buf)) >= 0)
-			DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
+			d_printf("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description);
 	} else {
 		while (commands[i].description) {
 			for (j=0; commands[i].description && (j<5); j++) {
-				DEBUG(0,("%-15s",commands[i].name));
+				d_printf("%-15s",commands[i].name);
 				i++;
 			}
-			DEBUG(0,("\n"));
+			d_printf("\n");
 		}
 	}
 	return NT_STATUS_OK;
@@ -1838,9 +1838,9 @@ static void process_command_string(char *cmd)
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
 		} else if (i == -2) {
-			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
+			d_printf("%s: command abbreviation ambiguous\n",tok);
 		} else {
-			DEBUG(0,("%s: command not found\n",tok));
+			d_printf("%s: command not found\n",tok);
 		}
 	}
 }	
@@ -1952,9 +1952,9 @@ static void process_stdin(void)
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
 		} else if (i == -2) {
-			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
+			d_printf("%s: command abbreviation ambiguous\n",tok);
 		} else {
-			DEBUG(0,("%s: command not found\n",tok));
+			d_printf("%s: command not found\n",tok);
 		}
 	}
 }
@@ -1998,7 +1998,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
 	    !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
+		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
 	}
 
@@ -2006,8 +2006,8 @@ struct cli_state *do_connect(const char *server, const char *share)
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
-		DEBUG(0,("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c)));
+		d_printf("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(c));
 		cli_shutdown(c);
 		free(c);
 		if ((p=strchr_m(called.name, '.'))) {
@@ -2024,7 +2024,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 	DEBUG(4,(" session request ok\n"));
 
 	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
+		d_printf("protocol negotiation failed\n");
 		cli_shutdown(c);
 		free(c);
 		return NULL;
@@ -2044,12 +2044,12 @@ struct cli_state *do_connect(const char *server, const char *share)
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || 
 		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
-			DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+			d_printf("session setup failed: %s\n", cli_errstr(c));
 			cli_shutdown(c);
 			free(c);
 			return NULL;
 		}
-		DEBUG(0,("Anonymous login successful\n"));
+		d_printf("Anonymous login successful\n");
 	}
 
 	/*
@@ -2069,7 +2069,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 
 	if (!cli_send_tconX(c, sharename, "?????",
 			    password, strlen(password)+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
+		d_printf("tree connect failed: %s\n", cli_errstr(c));
 		cli_shutdown(c);
 		free(c);
 		return NULL;
@@ -2108,34 +2108,34 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  DEBUG(0,("Usage: %s service <password> [options]", pname));
+  d_printf("Usage: %s service <password> [options]", pname);
 
-  DEBUG(0,("\nVersion %s\n",VERSION));
-  DEBUG(0,("\t-s smb.conf           pathname to smb.conf file\n"));
-  DEBUG(0,("\t-O socket_options     socket options to use\n"));
-  DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
-  DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
-  DEBUG(0,("\t-i scope              use this NetBIOS scope\n"));
-  DEBUG(0,("\t-N                    don't ask for a password\n"));
-  DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
-  DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
-  DEBUG(0,("\t-P                    connect to service as a printer\n"));
-  DEBUG(0,("\t-p port               connect to the specified port\n"));
-  DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
-  DEBUG(0,("\t-h                    Print this help message.\n"));
-  DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
-  DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
-  DEBUG(0,("\t-U username           set the network username\n"));
-  DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
-  DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-  DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
-  DEBUG(0,("\t-A filename           get the credentials from a file\n"));
-  DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
-  DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
-  DEBUG(0,("\t-D directory          start from directory\n"));
-  DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
-  DEBUG(0,("\t-b xmit/send buffer   changes the transmit/send buffer (default: 65520)\n"));
-  DEBUG(0,("\n"));
+  d_printf("\nVersion %s\n",VERSION);
+  d_printf("\t-s smb.conf           pathname to smb.conf file\n");
+  d_printf("\t-O socket_options     socket options to use\n");
+  d_printf("\t-R name resolve order use these name resolution services only\n");
+  d_printf("\t-M host               send a winpopup message to the host\n");
+  d_printf("\t-i scope              use this NetBIOS scope\n");
+  d_printf("\t-N                    don't ask for a password\n");
+  d_printf("\t-n netbios name.      Use this name as my netbios name\n");
+  d_printf("\t-d debuglevel         set the debuglevel\n");
+  d_printf("\t-P                    connect to service as a printer\n");
+  d_printf("\t-p port               connect to the specified port\n");
+  d_printf("\t-l log basename.      Basename for log/debug files\n");
+  d_printf("\t-h                    Print this help message.\n");
+  d_printf("\t-I dest IP            use this IP to connect to\n");
+  d_printf("\t-E                    write messages to stderr instead of stdout\n");
+  d_printf("\t-U username           set the network username\n");
+  d_printf("\t-L host               get a list of shares available on a host\n");
+  d_printf("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
+  d_printf("\t-m max protocol       set the max protocol level\n");
+  d_printf("\t-A filename           get the credentials from a file\n");
+  d_printf("\t-W workgroup          set the workgroup name\n");
+  d_printf("\t-T<c|x>IXFqgbNan      command line tar\n");
+  d_printf("\t-D directory          start from directory\n");
+  d_printf("\t-c command string     execute semicolon separated commands\n");
+  d_printf("\t-b xmit/send buffer   changes the transmit/send buffer (default: 65520)\n");
+  d_printf("\n");
 }
 
 
@@ -2255,12 +2255,12 @@ static int do_message_op(void)
 	if (have_ip) ip = dest_ip;
 
 	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) || !cli_connect(cli, desthost, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", desthost));
+		d_printf("Connection to %s failed\n", desthost);
 		return 1;
 	}
 
 	if (!cli_session_request(cli, &calling, &called)) {
-		DEBUG(0,("session request failed\n"));
+		d_printf("session request failed\n");
 		cli_shutdown(cli);
 		return 1;
 	}
@@ -2401,7 +2401,7 @@ static int do_message_op(void)
 		
 		if (count_chars(service,'\\') < 3) {
 			usage(pname);
-			printf("\n%s: Not enough '\\' characters in service\n",service);
+			d_printf("\n%s: Not enough '\\' characters in service\n",service);
 			exit(1);
 		}
 
@@ -2472,6 +2472,7 @@ static int do_message_op(void)
 			}
 			break;
 		case 'E':
+			display_set_stderr();
 			dbf = stderr;
 			break;
 		case 'U':
@@ -2497,7 +2498,7 @@ static int do_message_op(void)
 	                        if ((auth=sys_fopen(optarg, "r")) == NULL)
 				{
 					/* fail if we can't open the credentials file */
-					DEBUG(0,("ERROR: Unable to open credentials file!\n"));
+					d_printf("ERROR: Unable to open credentials file!\n");
 					exit (-1);
 				}
                                 

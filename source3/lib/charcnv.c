@@ -26,32 +26,56 @@ extern int DEBUGLEVEL;
 
 static pstring cvtbuf;
 
-static smb_iconv_t 
-	ucs2_to_unix=(smb_iconv_t)-1, /*ucs2 (MS) <-> unix format */  
-      	unix_to_ucs2=(smb_iconv_t)-1,		
-      	dos_to_unix=(smb_iconv_t)-1, /*unix format <-> dos codepage*/
-      	unix_to_dos=(smb_iconv_t)-1;  /*for those clients who does not support unicode*/
+static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
+
+/****************************************************************************
+return the name of a charset to give to iconv()
+****************************************************************************/
+static char *charset_name(charset_t ch)
+{
+	char *ret = NULL;
+
+	if (ch == CH_UCS2) ret = "UCS-2LE";
+	else if (ch == CH_UNIX) ret = lp_unix_charset();
+	else if (ch == CH_DOS) ret = lp_dos_charset();
+	else if (ch == CH_DISPLAY) ret = lp_display_charset();
+
+	if (!ret || !*ret) ret = "ASCII";
+	return ret;
+}
 
 /****************************************************************************
  Initialize iconv conversion descriptors 
 ****************************************************************************/
-void init_iconv(char *unix_charset, char *dos_charset)
+void init_iconv(void)
 {
-#define ICONV(descr, from_name, to_name)\
-	if(descr!=(smb_iconv_t)-1) smb_iconv_close(descr);\
-	  descr = smb_iconv_open(to_name, from_name);\
-	  if(descr==(smb_iconv_t)-1)\
-		DEBUG(0,("Conversion from %s to %s is not supported\n",from_name,to_name));
+	int c1, c2;
 
-	if (!unix_charset || !*unix_charset) unix_charset = "ASCII";
-	if (!dos_charset || !*dos_charset) dos_charset = "ASCII";
+	/* so that charset_name() works we need to get the UNIX<->UCS2 going
+	   first */
+	if (!conv_handles[CH_UNIX][CH_UCS2]) {
+		conv_handles[CH_UNIX][CH_UCS2] = smb_iconv_open("UCS-2LE", "ASCII");
+	}
+	if (!conv_handles[CH_UCS2][CH_UNIX]) {
+		conv_handles[CH_UCS2][CH_UNIX] = smb_iconv_open("ASCII", "UCS-2LE");
+	}
 	
-	ICONV(ucs2_to_unix, "UCS-2LE", unix_charset)
-	ICONV(unix_to_ucs2, unix_charset, "UCS-2LE")
-	ICONV(dos_to_unix, dos_charset, unix_charset)
-	ICONV(unix_to_dos, unix_charset, dos_charset)
 
-#undef ICONV	
+	for (c1=0;c1<NUM_CHARSETS;c1++) {
+		for (c2=0;c2<NUM_CHARSETS;c2++) {
+			char *n1 = charset_name(c1);
+			char *n2 = charset_name(c2);
+			if (conv_handles[c1][c2]) {
+				smb_iconv_close(conv_handles[c1][c2]);
+			}
+			conv_handles[c1][c2] = smb_iconv_open(n2,n1);
+			if (conv_handles[c1][c2] == (smb_iconv_t)-1) {
+				DEBUG(0,("Conversion from %s to %s not supported\n",
+					 charset_name(c1), charset_name(c2)));
+				conv_handles[c1][c2] = NULL;
+			}
+		}
+	}
 }
 
 /****************************************************************************
@@ -64,22 +88,25 @@ void init_iconv(char *unix_charset, char *dos_charset)
 	destlen - maximal length allowed for string
 return the number of bytes occupied in the destination
 ****************************************************************************/
-static size_t convert_string(smb_iconv_t *descriptor, 
-			     void const *src, size_t srclen, 
-			     void *dest, size_t destlen)
+size_t convert_string(charset_t from, charset_t to,
+		      void const *src, size_t srclen, 
+		      void *dest, size_t destlen)
 {
 	size_t i_len, o_len;
 	size_t retval;
 	char* inbuf = (char*)src;
 	char* outbuf = (char*)dest;
 	static int initialised;
-	
+	smb_iconv_t descriptor;
+
 	if (!initialised) {
 		initialised = 1;
-		init_iconv(NULL, NULL);
+		init_iconv();
 	}
 
-	if (*descriptor == (smb_iconv_t)-1) {
+	descriptor = conv_handles[from][to];
+
+	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, use as is */
 		int len = MIN(srclen,destlen);
 		memcpy(dest,src,len);
@@ -88,7 +115,7 @@ static size_t convert_string(smb_iconv_t *descriptor,
 
 	i_len=srclen;
 	o_len=destlen;
-	retval=smb_iconv(*descriptor,&inbuf, &i_len, &outbuf, &o_len);
+	retval=smb_iconv(descriptor,&inbuf, &i_len, &outbuf, &o_len);
 	if(retval==-1) 		
 	{    	char *reason="unknown error";
 		switch(errno)
@@ -109,20 +136,20 @@ int unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	int size,len;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
-	size=convert_string(&unix_to_ucs2, src, srclen, buffer, sizeof(cvtbuf));
+	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
 	len=size/2;
 	strupper_w(buffer);
-	return convert_string(&ucs2_to_unix, buffer, size, dest, destlen);
+	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }
 
 int unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	int size,len;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
-	size=convert_string(&unix_to_ucs2, src, srclen, buffer, sizeof(cvtbuf));
+	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
 	len=size/2;
 	strlower_w(buffer);
-	return convert_string(&ucs2_to_unix, buffer, size, dest, destlen);
+	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }
 
 
@@ -162,7 +189,7 @@ int push_ascii(void *dest, const char *src, int dest_len, int flags)
 		src_len++;
 	}
 
-	return convert_string(&unix_to_dos, src, src_len, dest, dest_len);
+	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
 }
 
 int push_ascii_fstring(void *dest, const char *src)
@@ -200,7 +227,7 @@ int pull_ascii(char *dest, const void *src, int dest_len, int src_len, int flags
 
 	if (flags & STR_TERMINATE) src_len = strlen(src)+1;
 
-	ret = convert_string(&dos_to_unix, src, src_len, dest, dest_len);
+	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
 
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
 
@@ -258,7 +285,7 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	len += convert_string(&unix_to_ucs2, src, src_len, dest, dest_len);
+	len += convert_string(CH_UNIX, CH_UCS2, src, src_len, dest, dest_len);
 	return len;
 }
 
@@ -291,7 +318,7 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 	/* ucs2 is always a multiple of 2 bytes */
 	src_len &= ~1;
 	
-	ret = convert_string(&ucs2_to_unix, src, src_len, dest, dest_len);
+	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;

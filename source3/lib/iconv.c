@@ -142,12 +142,12 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	if (!charsets[from].name) {
 		ret->pull = sys_iconv;
 		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
-		if (!ret->cd_pull) goto failed;
+		if (ret->cd_pull == (iconv_t)-1) goto failed;
 	}
 	if (!charsets[to].name) {
 		ret->push = sys_iconv;
 		ret->cd_push = iconv_open(tocode, "UCS-2LE");
-		if (!ret->cd_push) goto failed;
+		if (ret->cd_push == (iconv_t)-1) goto failed;
 	}
 #else
 	if (!charsets[from].name || !charsets[to].name) {
