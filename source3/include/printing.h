@@ -65,7 +65,7 @@ extern struct printif	generic_printif;
 extern struct printif	cups_printif;
 #endif /* HAVE_CUPS */
 
-#define PRINT_MAX_JOBID 10000
+/* PRINT_MAX_JOBID is now defined in local.h */
 #define UNIX_JOB_START PRINT_MAX_JOBID
 #define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)
 

@@ -210,4 +210,7 @@
 /* this enables the "rabbit pellet" fix for SMBwritebraw */
 #define RABBIT_PELLET_FIX 1
 
+/* Max number of jobs per print queue. */
+#define PRINT_MAX_JOBID 10000
+
 #endif
