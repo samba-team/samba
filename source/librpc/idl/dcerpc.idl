@@ -36,6 +36,7 @@ interface dcerpc
 
 
 	const uint8 DCERPC_REQUEST_LENGTH = 24;
+	const uint8 DCERPC_MAX_SIGN_SIZE  = 32;
 
 	typedef struct {
 		uint32 alloc_hint;
