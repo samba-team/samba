@@ -63,6 +63,8 @@
 #include <io.h>
 #endif
 
+#include <protos.h>
+
 #include <otp.h>
 
 #include <xdbm.h>
