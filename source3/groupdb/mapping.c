@@ -1050,6 +1050,7 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 		all_string_sub(add_script, "%g", unix_group, sizeof(add_script));
 		all_string_sub(add_script, "%u", unix_user, sizeof(add_script));
 		ret = smbrun(add_script,NULL);
+		flush_pwnam_cache();
 		DEBUG(ret ? 0 : 3,("smb_set_primary_group: "
 			 "Running the command `%s' gave %d\n",add_script,ret));
 		return ret;
@@ -1060,6 +1061,7 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 	if ( winbind_set_user_primary_group( unix_user, unix_group ) ) {
 		DEBUG(3,("smb_delete_group: winbindd set the group (%s) as the primary group for user (%s)\n",
 			unix_group, unix_user));
+		flush_pwnam_cache();
 		return 0;
 	}		
 	

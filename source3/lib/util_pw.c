@@ -70,6 +70,20 @@ static void init_pwnam_cache(void)
 	return;
 }
 
+void flush_pwnam_cache(void)
+{
+	int i;
+
+	init_pwnam_cache();
+
+	for (i=0; i<PWNAMCACHE_SIZE; i++) {
+		if (pwnam_cache[i] == NULL)
+			continue;
+
+		passwd_free(&pwnam_cache[i]);
+	}
+}
+
 struct passwd *getpwnam_alloc(const char *name) 
 {
 	int i;
