@@ -153,6 +153,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	uint8 tok_id[2];
 	BOOL foreign = False;
 
+	ZERO_STRUCT(ticket);
+	ZERO_STRUCT(auth_data);
+	ZERO_STRUCT(ap_rep);
+	ZERO_STRUCT(ap_rep_wrapped);
+	ZERO_STRUCT(response);
+
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
