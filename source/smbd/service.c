@@ -788,6 +788,9 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	DirCacheFlush(SNUM(conn));
 
+	file_close_conn(conn);
+	dptr_closecnum(conn);
+
 	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
@@ -798,9 +801,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	SMB_VFS_DISCONNECT(conn);
 
 	yield_connection(conn, lp_servicename(SNUM(conn)));
-
-	file_close_conn(conn);
-	dptr_closecnum(conn);
 
 	/* make sure we leave the directory available for unmount */
 	vfs_ChDir(conn, "/");
