@@ -64,7 +64,6 @@ static int timestamps_search_free(struct ldb_module *module, struct ldb_message 
 static int add_time_element(struct ldb_module *module, struct ldb_message *msg, 
 			    const char *attr_name, const char *time_string, unsigned int flags)
 {
-	struct private_data *data = (struct private_data *)module->private_data;
 	struct ldb_val *values;
 	char *name, *timestr;
 	int i;
@@ -99,7 +98,6 @@ static int add_time_element(struct ldb_module *module, struct ldb_message *msg,
 /* add_record: add crateTimestamp/modifyTimestamp attributes */
 static int timestamps_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct private_data *data = (struct private_data *)module->private_data;
 	struct ldb_message *msg2 = NULL;
 	struct tm *tm;
 	char *timestr;
@@ -156,7 +154,6 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 /* modify_record: change modifyTimestamp as well */
 static int timestamps_modify_record(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct private_data *data = (struct private_data *)module->private_data;
 	struct ldb_message *msg2 = NULL;
 	struct tm *tm;
 	char *timestr;
