@@ -1332,13 +1332,9 @@ void reply_echo(struct smbsrv_request *req)
 
 	memcpy(req->out.data, req->in.data, req->in.data_size);
 
-	/* we need to make sure the request isn't destroyed till the
-	 * last packet */
-	req->control_flags |= REQ_CONTROL_PROTECTED;
-
 	for (i=1; i <= count;i++) {
-		if (i == count) {
-			req->control_flags &= ~REQ_CONTROL_PROTECTED;
+		if (i != count) {
+			talloc_increase_ref_count(req);
 		}
 
 		SSVAL(req->out.vwv, VWV(0), i);

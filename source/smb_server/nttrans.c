@@ -198,8 +198,6 @@ void reply_nttrans(struct smbsrv_request *req)
 	params      = trans.out.params.data;
 	data        = trans.out.data.data;
 
-	req->control_flags |= REQ_CONTROL_PROTECTED;
-
 	/* we need to divide up the reply into chunks that fit into
 	   the negotiated buffer size */
 	do {
@@ -254,9 +252,9 @@ void reply_nttrans(struct smbsrv_request *req)
 		params += this_param;
 		data += this_data;
 
-		/* if this is the last chunk then the request can be destroyed */
-		if (params_left == 0 && data_left == 0) {
-			req->control_flags &= ~REQ_CONTROL_PROTECTED;
+		/* don't destroy unless this is the last segment */
+		if (params_left != 0 || data_left != 0) {
+			talloc_increase_ref_count(req);
 		}
 
 		req_send_reply(req);
