@@ -303,7 +303,7 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 	{
 		if (type != DOM_MAP_USER)
 		{
-			DEBUG(0,("well-known NT user %s\%s listed in wrong map file\n",
+			DEBUG(0,("well-known NT user %s\\%s listed in wrong map file\n",
 			          grp->nt_domain, grp->nt_name));
 			return False;
 		}
@@ -313,7 +313,7 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 	{
 		if (type != DOM_MAP_DOMAIN)
 		{
-			DEBUG(0,("well-known NT group %s\%s listed in wrong map file\n",
+			DEBUG(0,("well-known NT group %s\\%s listed in wrong map file\n",
 			          grp->nt_domain, grp->nt_name));
 			return False;
 		}

@@ -310,6 +310,7 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 					fstrcpy(name    , unistr2_to_str(&t_names.uni_name[i]));
 					
 					memset(full_name, 0, sizeof(full_name));
+
 					slprintf(full_name, sizeof(full_name)-1, "%s\\%s",
 						 dom_name, name);
 
