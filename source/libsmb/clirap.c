@@ -283,8 +283,6 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   char param[16+sizeof(fstring)];
   char data[532];
   char *p = param;
-  fstring upper_case_old_pw;
-  fstring upper_case_new_pw;
   unsigned char old_pw_hash[16];
   unsigned char new_pw_hash[16];
   int data_len;
@@ -316,9 +314,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    * Get the Lanman hash of the old password, we
    * use this as the key to make_oem_passwd_hash().
    */
-  memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
-  clistr_push(cli, upper_case_old_pw, old_password, -1,STR_TERMINATE|STR_UPPER|STR_ASCII);
-  E_P16((uchar *)upper_case_old_pw, old_pw_hash);
+  E_deshash(old_password, old_pw_hash);
 
   clistr_push(cli, dos_new_password, new_password, -1, STR_TERMINATE|STR_ASCII);
 
@@ -328,10 +324,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   /* 
    * Now place the old password hash in the data.
    */
-  memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
-  clistr_push(cli, upper_case_new_pw, new_password, -1, STR_TERMINATE|STR_UPPER|STR_ASCII);
-
-  E_P16((uchar *)upper_case_new_pw, new_pw_hash);
+  E_deshash(new_password, new_pw_hash);
 
   E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
 
