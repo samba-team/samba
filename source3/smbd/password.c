@@ -259,8 +259,18 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	{
 		/* Keep the homedir handy */
 		const char *homedir = pdb_get_homedir(server_info->sam_account);
+		const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account);
+		const char *logon_script = pdb_get_logon_script(server_info->sam_account);
 		if (homedir) {
 			vuser->homedir = smb_xstrdup(homedir);
+		}
+
+		if (unix_homedir) {
+			vuser->unix_homedir = smb_xstrdup(unix_homedir);
+		}
+
+		if (logon_script) {
+			vuser->logon_script = smb_xstrdup(logon_script);
 		}
 	}
 
@@ -301,9 +311,9 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	}
 
 	/* Register a home dir service for this user */
-	if ((!vuser->guest) && vuser->homedir && *(vuser->homedir)
+	if ((!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)
 		&& (lp_servicenumber(vuser->user.unix_name) < 0)) {
-		add_home_service(vuser->user.unix_name, vuser->homedir);	  
+		add_home_service(vuser->user.unix_name, vuser->unix_homedir);	  
 	}
 	
 	return vuser->vuid;

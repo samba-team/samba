@@ -339,7 +339,7 @@ static int ldapsam_search_one_user_by_rid (struct ldapsam_privates *ldap_state,
 search an attribute and return the first value found.
 ******************************************************************/
 static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
-				  char *attribute, char *value)
+				  char *attribute, pstring value)
 {
 	char **values;
 
@@ -521,11 +521,13 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	
 		pw = getpwnam_alloc(username);
 		if (pw == NULL) {
-			DEBUG (2,("init_sam_from_ldap: User [%s] does not have a uid!\n", username));
+			DEBUG (2,("init_sam_from_ldap: User [%s] does not ave a uid!\n", username));
 			return False;
 		}
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
+
+		pdb_set_unix_homedir(sampass, pw->pw_dir);
 
 		passwd_free(&pw);
 
@@ -603,37 +605,41 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive)) {
-		pstrcpy(dir_drive, lp_logon_drive());
-		standard_sub_advanced(-1, username, "", gid, username, dir_drive);
-		DEBUG(5,("homeDrive fell back to %s\n",dir_drive));
-		pdb_set_dir_drive(sampass, dir_drive, False);
+		pdb_set_dir_drive(sampass, standard_sub_specified(sampass->mem_ctx, 
+								  lp_logon_path(),
+								  username, domain, 
+								  uid, gid),
+				  False);
 	} else {
 		pdb_set_dir_drive(sampass, dir_drive, True);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
-		pstrcpy(homedir, lp_logon_home());
-		standard_sub_advanced(-1, username, "", gid, username, homedir);
-		DEBUG(5,("smbHome fell back to %s\n",homedir));
-		pdb_set_homedir(sampass, homedir, False);
+		pdb_set_dir_drive(sampass, standard_sub_specified(sampass->mem_ctx, 
+								  lp_logon_home(),
+								  username, domain, 
+								  uid, gid), 
+				  False);
 	} else {
 		pdb_set_homedir(sampass, homedir, True);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "scriptPath", logon_script)) {
-		pstrcpy(logon_script, lp_logon_script());
-		standard_sub_advanced(-1, username, "", gid, username, logon_script);
-		DEBUG(5,("scriptPath fell back to %s\n",logon_script));
-		pdb_set_logon_script(sampass, logon_script, False);
+		pdb_set_logon_script(sampass, standard_sub_specified(sampass->mem_ctx, 
+								     lp_logon_script(),
+								     username, domain, 
+								     uid, gid), 
+				     False);
 	} else {
 		pdb_set_logon_script(sampass, logon_script, True);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "profilePath", profile_path)) {
-		pstrcpy(profile_path, lp_logon_path());
-		standard_sub_advanced(-1, username, "", gid, username, profile_path);
-		DEBUG(5,("profilePath fell back to %s\n",profile_path));
-		pdb_set_profile_path(sampass, profile_path, False);
+		pdb_set_profile_path(sampass, standard_sub_specified(sampass->mem_ctx, 
+								     lp_logon_path(),
+								     username, domain, 
+								     uid, gid), 
+				     False);
 	} else {
 		pdb_set_profile_path(sampass, profile_path, True);
 	}
@@ -740,7 +746,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	} else if (ldap_state->permit_non_unix_accounts) {
 		rid = ldapsam_get_next_available_nua_rid(ldap_state);
 		if (rid == 0) {
-			DEBUG(0, ("NO user RID specified on account %s, and finding next available NUA RID failed, cannot store!\n", pdb_get_username(sampass)));
+			DEBUG(0, ("NO user RID specified on account %s, and findining next available NUA RID failed, cannot store!\n", pdb_get_username(sampass)));
 			return False;
 		}
 	} else {
@@ -1097,7 +1103,7 @@ static BOOL ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (ldap_count_entries(ldap_struct, result) < 1)
 	{
 		DEBUG(4,
-		      ("We didn't find the user [%s] count=%d\n", sname,
+		      ("We don't find this user [%s] count=%d\n", sname,
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
 		return False;
@@ -1151,7 +1157,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (ldap_count_entries(ldap_struct, result) < 1)
 	{
 		DEBUG(0,
-		      ("We didn't find the rid [%i] count=%d\n", rid,
+		      ("We don't find this rid [%i] count=%d\n", rid,
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
 		return False;
@@ -1205,7 +1211,7 @@ static BOOL ldapsam_delete_sam_account(struct pdb_methods *my_methods, const SAM
 	
 	if (!ldapsam_connect_system(ldap_state, ldap_struct)) {
 		ldap_unbind (ldap_struct);
-		DEBUG(0, ("failed to delete user %s from the LDAP database.\n", sname));
+		DEBUG(0, ("Failed to delete user %s from LDAP.\n", sname));
 		return False;
 	}
 

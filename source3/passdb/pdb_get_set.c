@@ -138,6 +138,21 @@ const uint8* pdb_get_lanman_passwd (const SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
+/* Return the plaintext password if known.  Most of the time
+   it isn't, so don't assume anything magic about this function.
+   
+   Used to pass the plaintext to passdb backends that might 
+   want to store more than just the NTLM hashes.
+*/
+const char* pdb_get_plaintext_passwd (const SAM_ACCOUNT *sampass)
+{
+	if (sampass) {
+		return ((char*)sampass->private.plaintext_pw.data);
+	}
+	else
+		return (NULL);
+}
+
 uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
@@ -220,6 +235,14 @@ const char* pdb_get_homedir (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->private.home_dir);
+	else
+		return (NULL);
+}
+
+const char* pdb_get_unix_homedir (const SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->private.unix_home_dir);
 	else
 		return (NULL);
 }
@@ -618,7 +641,7 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
 	}
 	
 	if (store) {
-		DEBUG(10, ("pdb_set_logon_script: setting logon script sam flag!"));
+		DEBUG(10, ("pdb_set_logon_script: setting logon script sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
 	}
 
@@ -650,7 +673,7 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
 	}
 
 	if (store) {
-		DEBUG(10, ("pdb_set_profile_path: setting profile path sam flag!"));
+		DEBUG(10, ("pdb_set_profile_path: setting profile path sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
 	}
 
@@ -682,7 +705,7 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 	}
 	
 	if (store) {
-		DEBUG(10, ("pdb_set_dir_drive: setting dir drive sam flag!"));
+		DEBUG(10, ("pdb_set_dir_drive: setting dir drive sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
 	}
 
@@ -716,6 +739,34 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, BOOL store)
 	if (store) {
 		DEBUG(10, ("pdb_set_homedir: setting home dir sam flag!"));
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
+	}
+
+	return True;
+}
+
+/*********************************************************************
+ Set the user's unix home directory.
+ ********************************************************************/
+
+BOOL pdb_set_unix_homedir (SAM_ACCOUNT *sampass, const char *unix_home_dir)
+{
+	if (!sampass)
+		return False;
+
+	if (unix_home_dir) { 
+		DEBUG(10, ("pdb_set_homedir: setting home dir %s, was %s\n", unix_home_dir,
+			(sampass->private.unix_home_dir)?(sampass->private.unix_home_dir):"NULL"));
+ 
+		sampass->private.unix_home_dir = talloc_strdup(sampass->mem_ctx, 
+							  unix_home_dir);
+		
+		if (!sampass->private.unix_home_dir) {
+			DEBUG(0, ("pdb_set_unix_home_dir: talloc_strdup() failed!\n"));
+			return False;
+		}
+
+	} else {
+		sampass->private.unix_home_dir = PDB_NOT_QUITE_NULL;
 	}
 
 	return True;
@@ -840,7 +891,7 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
  Set the user's LM hash.
  ********************************************************************/
 
-BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
+BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[16])
 {
 	if (!sampass)
 		return False;
@@ -848,6 +899,23 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
 	data_blob_clear_free(&sampass->private.lm_pw);
 	
 	sampass->private.lm_pw = data_blob(pwd, LM_HASH_LEN);
+
+	return True;
+}
+
+/*********************************************************************
+ Set the user's plaintext password only (base procedure, see helper
+ below)
+ ********************************************************************/
+
+BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const uint8 *password, size_t len)
+{
+	if (!sampass)
+		return False;
+
+	data_blob_clear_free(&sampass->private.plaintext_pw);
+	
+	sampass->private.plaintext_pw = data_blob(password, len);
 
 	return True;
 }

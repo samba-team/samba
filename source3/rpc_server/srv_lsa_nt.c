@@ -259,6 +259,8 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		if (!status) {
 			sid_name_use = SID_NAME_UNKNOWN;
+		} else {
+			(*mapped_count)++;
 		}
 
 		/* Store domain sid in ref array */
@@ -271,8 +273,6 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
 			  "referenced list.\n", dom_name, name ));
-
-		(*mapped_count)++;
 
 		init_lsa_trans_name(&trn->name[total], &trn->uni_name[total],
 					sid_name_use, name, dom_idx);

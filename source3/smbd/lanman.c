@@ -1933,7 +1933,7 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 
 	while ( pdb_getsampwent(pwd) ) {
 		const char *name=pdb_get_username(pwd);	
-		if( *(name+strlen(name)-1)!='$' ) { 
+		if ((name) && (*(name+strlen(name)-1)!='$')) { 
 			count_total++;
 			if(count_total>=resume_context) {
 				if( ((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)  ) {
@@ -2793,8 +2793,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_home());
-		standard_sub_conn(conn, p2);
+		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2830,15 +2829,13 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_home());
-		standard_sub_conn(conn, p2);
+		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
-		pstrcpy(p2,lp_logon_script());
-		standard_sub_conn( conn, p2 );             
+		pstrcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "");
 		p2 = skip_string(p2,1);
 		if (uLevel == 2)
 		{
@@ -2888,6 +2885,12 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   int uLevel;
   struct pack_desc desc;
   char* name;
+    /* With share level security vuid will always be zero.
+       Don't depend on vuser being non-null !!. JRA */
+    user_struct *vuser = get_valid_user_struct(vuid);
+    if(vuser != NULL)
+      DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, 
+	       vuser->user.unix_name));
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2931,15 +2934,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
     }
     PACKS(&desc,"z",global_myworkgroup);/* domain */
 
-/* JHT - By calling lp_logon_script() and standard_sub() we have */
-/* made sure all macros are fully substituted and available */
-    {
-      pstring logon_script;
-      pstrcpy(logon_script,lp_logon_script());
-      standard_sub_conn( conn, logon_script );
-      PACKS(&desc,"z", logon_script);		/* script path */
-    }
-/* End of JHT mods */
+    PACKS(&desc,"z", vuser && vuser->logon_script ? vuser->logon_script :"");		/* script path */
 
     PACKI(&desc,"D",0x00000000);		/* reserved */
   }
@@ -3458,7 +3453,7 @@ static int gather_sessioninfo(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
   struct sessions_info *sinfo = state;
   struct session_info *curinfo = NULL;
-  struct sessionid *sessid = (struct sessionid *) dbuf.dptr;
+  const struct sessionid *sessid = (const struct sessionid *) dbuf.dptr;
 
   sinfo->count += 1;
   sinfo->session_list = REALLOC(sinfo->session_list, sinfo->count * sizeof(struct session_info));

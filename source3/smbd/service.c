@@ -81,9 +81,6 @@ BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 int add_home_service(const char *service, const char *homedir)
 {
 	int iHomeService;
-	int iService;
-	fstring new_service;
-	fstring domain;
 
 	if (!service || !homedir)
 		return -1;
@@ -98,11 +95,19 @@ int add_home_service(const char *service, const char *homedir)
 	 * include any macros.
 	 */
 
-	split_domain_and_name(service, domain, new_service);
-	lp_add_home(new_service, iHomeService, homedir);
-	iService = lp_servicenumber(new_service);
+	{
+		const char *p = strchr(service,*lp_winbind_separator());
 
-	return iService;
+		/* We only want the 'user' part of the string */
+		if (p) {
+			service = p + 1;
+		}
+	}
+
+	lp_add_home(service, iHomeService, homedir);
+	
+	return lp_servicenumber(service);
+
 }
 
 

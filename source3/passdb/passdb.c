@@ -30,6 +30,7 @@
  */
 
 extern DOM_SID global_sam_sid;
+extern pstring global_myname;
 
 /************************************************************
  Fill the SAM_ACCOUNT with default values.
@@ -150,11 +151,91 @@ NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
  Initialises a struct sam_passwd with sane values.
  ************************************************************/
 
-NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
+NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 {
-	pstring str;
 	GROUP_MAP map;
 	uint32 rid;
+
+	if (!pwd) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	pdb_fill_default_sam(sam_account);
+
+	pdb_set_username(sam_account, pwd->pw_name);
+	pdb_set_fullname(sam_account, pwd->pw_gecos);
+
+	pdb_set_unix_homedir(sam_account, pwd->pw_dir);
+
+	pdb_set_domain (sam_account, lp_workgroup());
+
+	pdb_set_uid(sam_account, pwd->pw_uid);
+	pdb_set_gid(sam_account, pwd->pw_gid);
+	
+	/* When we get a proper uid -> SID and SID -> uid allocation
+	   mechinism, we should call it here.  
+	   
+	   We can't just set this to 0 or allow it only to be filled
+	   in when added to the backend, becouse the user's SID 
+	   may already be in security descriptors etc.
+	   
+	   -- abartlet 11-May-02
+	*/
+
+	pdb_set_user_rid(sam_account, 
+			 fallback_pdb_uid_to_user_rid(pwd->pw_uid));
+
+	/* call the mapping code here */
+	if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
+		sid_peek_rid(&map.sid, &rid);
+	} 
+	else {
+		rid=pdb_gid_to_group_rid(pwd->pw_gid);
+	}
+		
+	pdb_set_group_rid(sam_account, rid);
+
+	/* check if this is a user account or a machine account */
+	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
+	{
+		pdb_set_profile_path(sam_account, 
+				     standard_sub_specified((sam_account)->mem_ctx, 
+							    lp_logon_path(), 
+							    pwd->pw_name, global_myname, 
+							    pwd->pw_uid, pwd->pw_gid), 
+				     False);
+		
+		pdb_set_homedir(sam_account, 
+				standard_sub_specified((sam_account)->mem_ctx, 
+						       lp_logon_home(),
+						       pwd->pw_name, global_myname, 
+						       pwd->pw_uid, pwd->pw_gid),
+				False);
+		
+		pdb_set_dir_drive(sam_account, 
+				  standard_sub_specified((sam_account)->mem_ctx, 
+							 lp_logon_drive(),
+							 pwd->pw_name, global_myname, 
+							 pwd->pw_uid, pwd->pw_gid),
+				  False);
+		
+		pdb_set_logon_script(sam_account, 
+				     standard_sub_specified((sam_account)->mem_ctx, 
+							    lp_logon_script(),
+							    pwd->pw_name, global_myname, 
+							    pwd->pw_uid, pwd->pw_gid), 
+				     False);
+	}
+	return NT_STATUS_OK;
+}
+
+
+/*************************************************************
+ Initialises a struct sam_passwd with sane values.
+ ************************************************************/
+
+NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
+{
 	NTSTATUS nt_status;
 
 	if (!pwd) {
@@ -167,42 +248,12 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 		return nt_status;
 	}
 
-	pdb_set_username(*new_sam_acct, pwd->pw_name);
-	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
-
-	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
-	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
-	
-	/* let the backends set the rid!!
-	pdb_set_user_rid(*new_sam_acct, pdb_uid_to_user_rid(pwd->pw_uid));
-	-- simo */
-
-	/* call the mapping code here */
-	if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
-		sid_peek_rid(&map.sid, &rid);
-	} 
-	else {
-		rid=pdb_gid_to_group_rid(pwd->pw_gid);
+	if (!NT_STATUS_IS_OK(nt_status = pdb_fill_sam_pw(*new_sam_acct, pwd))) {
+		pdb_free_sam(new_sam_acct);
+		new_sam_acct = NULL;
+		return nt_status;
 	}
-		
-	pdb_set_group_rid(*new_sam_acct, rid);
 
-	pstrcpy(str, lp_logon_path());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
-	pdb_set_profile_path(*new_sam_acct, str, False);
-	
-	pstrcpy(str, lp_logon_home());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
-	pdb_set_homedir(*new_sam_acct, str, False);
-	
-	pstrcpy(str, lp_logon_drive());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
-	pdb_set_dir_drive(*new_sam_acct, str, False);
-
-	pstrcpy(str, lp_logon_script());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
-	pdb_set_logon_script(*new_sam_acct, str, False);
-	
 	return NT_STATUS_OK;
 }
 
@@ -210,18 +261,21 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 /**
  * Free the contets of the SAM_ACCOUNT, but not the structure.
  *
- * Also wipes the LM and NT hashes from memory.
+ * Also wipes the LM and NT hashes and plaintext passwrod from 
+ * memory.
  *
  * @param user SAM_ACCOUNT to free members of.
  **/
 
 static void pdb_free_sam_contents(SAM_ACCOUNT *user)
 {
-	/* As we start mallocing more strings this is where  
-	   we should free them. */
+
+	/* Kill off sensitive data.  Free()ed by the
+	   talloc mechinism */
 
 	data_blob_clear_free(&(user->private.lm_pw));
 	data_blob_clear_free(&(user->private.nt_pw));
+	data_blob_clear_free(&(user->private.plaintext_pw));
 }
 
 
@@ -519,12 +573,8 @@ BOOL pdb_rid_is_user(uint32 rid)
 BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use)
 {
 	uint32 rid;
-	BOOL is_user;
 	SAM_ACCOUNT *sam_account = NULL;
-	uid_t uid;
-	struct passwd *pass;
 	GROUP_MAP map;
-	
 
 	sid_peek_rid(sid, &rid);
 	*psid_name_use = SID_NAME_UNKNOWN;
@@ -564,6 +614,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		return False;
 	}
 		
+	/* This now does the 'generic' mapping in pdb_unix */
 	if (pdb_getsampwrid(sam_account, rid)) {
 		fstrcpy(name, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
@@ -572,47 +623,36 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			
 		return True;
 	}
-		
+
 	pdb_free_sam(&sam_account);
 		
 	if (get_group_map_from_sid(*sid, &map, MAPPING_WITHOUT_PRIV)) {
 		if (map.gid!=-1) {
 			DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
-			fstrcpy(name, map.nt_name);
-			*psid_name_use = map.sid_name_use;
-			return True;
+		} else {
+			DEBUG(5,("local_lookup_sid: mapped group %s to no unix gid.  Returning name.\n", map.nt_name));
 		}
-	}
-		
-	is_user = pdb_rid_is_user(rid);
 
-	DEBUG(5, ("assuming RID %u is a %s\n", (unsigned)rid, is_user ? "user" : "group"));
+		fstrcpy(name, map.nt_name);
+		*psid_name_use = map.sid_name_use;
+		return True;
+	}
 
 	if (pdb_rid_is_user(rid)) {
-		uid = fallback_pdb_user_rid_to_uid(rid);
-		pass = getpwuid_alloc(uid);
-			
-		*psid_name_use = SID_NAME_USER;
-			
-		DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
-			 pass ? "succeeded" : "failed" ));
-			
-		if(!pass) {
-			slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);
-			return True;
-		}
-			
-		fstrcpy(name, pass->pw_name);
-			
-		DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
-			 (unsigned int)rid ));
-			
-		passwd_free(&pass);
-			
+		uid_t uid;
+
+		DEBUG(5, ("assuming RID %u is a user\n", (unsigned)rid));
+
+       		uid = fallback_pdb_user_rid_to_uid(rid);
+		slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);	
+
+		return False;  /* Indicates that this user was 'not mapped' */
 	} else {
 		gid_t gid;
 		struct group *gr; 
 			
+		DEBUG(5, ("assuming RID %u is a group\n", (unsigned)rid));
+
 		gid = pdb_group_rid_to_gid(rid);
 		gr = getgrgid(gid);
 			
@@ -623,15 +663,15 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			
 		if(!gr) {
 			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
-			return False;
+			return False; /* Indicates that this group was 'not mapped' */
 		}
 			
 		fstrcpy( name, gr->gr_name);
 			
 		DEBUG(5,("local_lookup_sid: found group %s for rid %u\n", name,
 			 (unsigned int)rid ));
+		return True;   
 	}
-	return True;
 }
 
 /*******************************************************************
@@ -641,11 +681,12 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use)
 {
 	extern DOM_SID global_sid_World_Domain;
-	struct passwd *pass = NULL;
 	DOM_SID local_sid;
 	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
-	
+	struct group *grp;
+	GROUP_MAP map;
+		
 	*psid_name_use = SID_NAME_UNKNOWN;
 
 	/*
@@ -691,52 +732,45 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 
 	pdb_free_sam(&sam_account);
 
-	if ((pass = Get_Pwnam(user))) {
-		sid_append_rid( &local_sid, fallback_pdb_uid_to_user_rid(pass->pw_uid));
-		*psid_name_use = SID_NAME_USER;
+	/*
+	 * Maybe it was a group ?
+	 */
 
-	} else {
-		/*
-		 * Maybe it was a group ?
-		 */
-		struct group *grp;
-		GROUP_MAP map;
-		
-		/* check if it's a mapped group */
-		if (get_group_map_from_ntname(user, &map, MAPPING_WITHOUT_PRIV)) {
-			if (map.gid!=-1) {
-				/* yes it's a mapped group to a valid unix group */
-				sid_copy(&local_sid, &map.sid);
-				*psid_name_use = map.sid_name_use;
-			}
-			else
-				/* it's a correct name but not mapped so it points to nothing*/
-				return False;
-		} else {
-			/* it's not a mapped group */
-			grp = getgrnam(user);
-			if(!grp)
-				return False;
-
-			/* 
-			 *check if it's mapped, if it is reply it doesn't exist
-			 *
-			 * that's to prevent this case:
-			 *
-			 * unix group ug is mapped to nt group ng
-			 * someone does a lookup on ug
-			 * we must not reply as it doesn't "exist" anymore
-			 * for NT. For NT only ng exists.
-			 * JFM, 30/11/2001
-			 */
-			
-			if(get_group_map_from_gid(grp->gr_gid, &map, MAPPING_WITHOUT_PRIV)){
-				return False;
-			}
-
-			sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
-			*psid_name_use = SID_NAME_ALIAS;
+	/* check if it's a mapped group */
+	if (get_group_map_from_ntname(user, &map, MAPPING_WITHOUT_PRIV)) {
+		if (map.gid!=-1) {
+			/* yes it's a mapped group to a valid unix group */
+			sid_copy(&local_sid, &map.sid);
+			*psid_name_use = map.sid_name_use;
 		}
+		else {
+       			/* it's a correct name but not mapped so it points to nothing*/
+			return False;
+		}
+	} else {
+		/* it's not a mapped group */
+		grp = getgrnam(user);
+		if(!grp)
+			return False;
+		
+		/* 
+		 *check if it's mapped, if it is reply it doesn't exist
+		 *
+		 * that's to prevent this case:
+		 *
+		 * unix group ug is mapped to nt group ng
+		 * someone does a lookup on ug
+		 * we must not reply as it doesn't "exist" anymore
+		 * for NT. For NT only ng exists.
+		 * JFM, 30/11/2001
+		 */
+		
+		if (get_group_map_from_gid(grp->gr_gid, &map, MAPPING_WITHOUT_PRIV)){
+			return False;
+		}
+		
+		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
+		*psid_name_use = SID_NAME_ALIAS;
 	}
 
 	sid_copy( psid, &local_sid);
@@ -824,15 +858,9 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
 			  (unsigned int)*puid, pdb_get_username(sam_user)));
 	} else {
-		if ((pdb_rid_is_user(rid))) {
-			*puid = fallback_pdb_user_rid_to_uid(rid);
-			DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (non-passdb user).\n", sid_to_string( str, psid),
-				  (unsigned int)*puid));
-		} else {
-			DEBUG(5,("local_sid_to_uid: SID %s not mapped becouse RID isn't a user.\n", sid_to_string( str, psid)));
-			pdb_free_sam(&sam_user);
-			return False;
-		}
+		DEBUG(5,("local_sid_to_uid: SID %s not mapped becouse RID was not found in passdb.\n", sid_to_string( str, psid)));
+		pdb_free_sam(&sam_user);
+		return False;
 	}
 	pdb_free_sam(&sam_user);
 
@@ -919,7 +947,7 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
  * @return static buffer containing the converted string
  **/
 
-static char *pdb_convert(const UNISTR2 *from)
+const char *pdb_unistr2_convert(const UNISTR2 *from)
 {
 	static pstring convert_buffer;
 	*convert_buffer = 0;
@@ -950,25 +978,25 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	pdb_set_pass_last_set_time(to, nt_time_to_unix(&from->pass_last_set_time));
 
 	if (from->uni_user_name.buffer)
-		pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
+		pdb_set_username(to      , pdb_unistr2_convert(&from->uni_user_name   ));
 	if (from->uni_full_name.buffer)
-		pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
+		pdb_set_fullname(to      , pdb_unistr2_convert(&from->uni_full_name   ));
 	if (from->uni_home_dir.buffer)
-		pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
+		pdb_set_homedir(to       , pdb_unistr2_convert(&from->uni_home_dir    ), True);
 	if (from->uni_dir_drive.buffer)
-		pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
+		pdb_set_dir_drive(to     , pdb_unistr2_convert(&from->uni_dir_drive   ), True);
 	if (from->uni_logon_script.buffer)
-		pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
+		pdb_set_logon_script(to  , pdb_unistr2_convert(&from->uni_logon_script), True);
 	if (from->uni_profile_path.buffer)
-		pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
+		pdb_set_profile_path(to  , pdb_unistr2_convert(&from->uni_profile_path), True);
 	if (from->uni_acct_desc.buffer)
-		pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
+		pdb_set_acct_desc(to     , pdb_unistr2_convert(&from->uni_acct_desc   ));
 	if (from->uni_workstations.buffer)
-		pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
+		pdb_set_workstations(to  , pdb_unistr2_convert(&from->uni_workstations));
 	if (from->uni_unknown_str.buffer)
-		pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
+		pdb_set_unknown_str(to   , pdb_unistr2_convert(&from->uni_unknown_str ));
 	if (from->uni_munged_dial.buffer)
-		pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
+		pdb_set_munged_dial(to   , pdb_unistr2_convert(&from->uni_munged_dial ));
 
 	if (from->user_rid)
 		pdb_set_user_rid(to, from->user_rid);
@@ -1005,25 +1033,25 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	pdb_set_pass_last_set_time(to, nt_time_to_unix(&from->pass_last_set_time));
 
 	if (from->uni_user_name.buffer)
-		pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
+		pdb_set_username(to      , pdb_unistr2_convert(&from->uni_user_name   ));
 	if (from->uni_full_name.buffer)
-		pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
+		pdb_set_fullname(to      , pdb_unistr2_convert(&from->uni_full_name   ));
 	if (from->uni_home_dir.buffer)
-		pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
+		pdb_set_homedir(to       , pdb_unistr2_convert(&from->uni_home_dir    ), True);
 	if (from->uni_dir_drive.buffer)
-		pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
+		pdb_set_dir_drive(to     , pdb_unistr2_convert(&from->uni_dir_drive   ), True);
 	if (from->uni_logon_script.buffer)
-		pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
+		pdb_set_logon_script(to  , pdb_unistr2_convert(&from->uni_logon_script), True);
 	if (from->uni_profile_path.buffer)
-		pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
+		pdb_set_profile_path(to  , pdb_unistr2_convert(&from->uni_profile_path), True);
 	if (from->uni_acct_desc.buffer)
-		pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
+		pdb_set_acct_desc(to     , pdb_unistr2_convert(&from->uni_acct_desc   ));
 	if (from->uni_workstations.buffer)
-		pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
+		pdb_set_workstations(to  , pdb_unistr2_convert(&from->uni_workstations));
 	if (from->uni_unknown_str.buffer)
-		pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
+		pdb_set_unknown_str(to   , pdb_unistr2_convert(&from->uni_unknown_str ));
 	if (from->uni_munged_dial.buffer)
-		pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
+		pdb_set_munged_dial(to   , pdb_unistr2_convert(&from->uni_munged_dial ));
 
 	if (from->user_rid)
 		pdb_set_user_rid(to, from->user_rid);

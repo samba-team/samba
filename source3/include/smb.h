@@ -581,7 +581,7 @@ typedef struct {
 #define FLAG_SAM_KICKOFFTIME	0x00000100
 #define FLAG_SAM_CANCHANGETIME	0x00000200
 #define FLAG_SAM_MUSTCHANGETIME	0x00000400
-
+#define FLAG_SAM_PLAINTEXT_PW   0x00000800
 
 #define IS_SAM_UNIX_USER(x) \
 	((pdb_get_init_flag(x) & FLAG_SAM_UID) \
@@ -595,7 +595,7 @@ typedef struct sam_passwd
 	
 	void (*free_fn)(struct sam_passwd **);
 
-    struct pdb_methods *methods;
+	struct pdb_methods *methods;
 
 	struct user_data {
 		/* initiailization flags */
@@ -612,6 +612,7 @@ typedef struct sam_passwd
 		char * domain;       /* Windows Domain name */
 		char * nt_username;  /* Windows username string */
 		char * full_name;    /* user's full name string */
+		char * unix_home_dir;     /* UNIX home directory string */
 		char * home_dir;     /* home directory string */
 		char * dir_drive;    /* home directory drive string */
 		char * logon_script; /* logon script string */
@@ -628,6 +629,7 @@ typedef struct sam_passwd
 		
 		DATA_BLOB lm_pw; /* .data is Null if no password */
 		DATA_BLOB nt_pw; /* .data is Null if no password */
+		DATA_BLOB plaintext_pw; /* .data is Null if not available */
 		
 		uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
 		uint32 unknown_3; /* 0x00ff ffff */
@@ -639,6 +641,7 @@ typedef struct sam_passwd
 		uint32 unknown_5; /* 0x0002 0000 */
 		uint32 unknown_6; /* 0x0000 04ec */
 	} private;
+
 	/* Lets see if the remaining code can get the hint that you
 	   are meant to use the pdb_...() functions. */
 	
@@ -1578,6 +1581,8 @@ typedef struct user_struct
 
 	userdom_struct user;
 	char *homedir;
+	char *unix_homedir;
+	char *logon_script;
 	
 	BOOL guest;
 
