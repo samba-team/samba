@@ -1,4 +1,4 @@
-.\" Copyright (c) 1999 - 2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1999 - 2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -185,6 +185,9 @@ Try to keep track of the time differential between the local machine
 and the KDC, and then compensate for that when issuing requests.
 .It Li max_retries = Va number
 The max number of times to try to contact each KDC.
+.It Li large_msg_size = Va number
+The threshold where protocols with tiny maximum message sizes are not
+considered usable to send messages to the KDC.
 .It Li ticket_lifetime = Va time
 Default ticket lifetime.
 .It Li renew_lifetime = Va time
