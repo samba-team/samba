@@ -894,6 +894,9 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	file_close_conn(conn);
 	dptr_closecnum(conn);
 
+	/* make sure we leave the directory available for unmount */
+	vfs_ChDir(conn, "/");
+
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
 	    change_to_user(conn, vuid))  {
@@ -912,9 +915,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		standard_sub_conn(conn,cmd,sizeof(cmd));
 		smbrun(cmd,NULL);
 	}
-
-	/* make sure we leave the directory available for unmount */
-	vfs_ChDir(conn, "/");
 
 	conn_free(conn);
 }
