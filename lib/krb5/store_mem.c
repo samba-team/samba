@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -107,4 +107,8 @@ krb5_storage_from_mem(void *buf, size_t len)
     return sp;
 }
 
-
+krb5_storage *
+krb5_storage_from_data(krb5_data *data)
+{
+	return krb5_storage_from_mem(data->data, data->length);
+}
