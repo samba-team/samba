@@ -46,7 +46,6 @@ libgssapi_la_SOURCES =		\
 	inquire_cred_by_mech.c	\
 	inquire_mechs_for_name.c \
 	inquire_names_for_mech.c \
-	kuserok.c		\
 	release_buffer.c	\
 	release_cred.c		\
 	release_name.c		\
