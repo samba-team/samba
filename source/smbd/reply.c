@@ -260,7 +260,6 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int connection_num;
   uint16 vuid = SVAL(inbuf,smb_uid);
   int passlen = SVAL(inbuf,smb_vwv3);
-  BOOL doencrypt = SMBENCRYPT();
 
   *service = *user = *password = *devicename = 0;
 
@@ -279,7 +278,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     password[passlen]=0;    
     path = smb_buf(inbuf) + passlen;
 
-    if (!doencrypt || passlen != 24) {
+    if (passlen != 24) {
       if (strequal(password," "))
 	*password = 0;
       passlen = strlen(password);
@@ -412,9 +411,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     }
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
+    smb_apasswd[smb_apasslen] = 0;
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
 
-    if (lp_security() != SEC_SERVER && !doencrypt) {
+    if (!doencrypt && (lp_security() != SEC_SERVER)) {
 	    smb_apasslen = strlen(smb_apasswd);
     }
   } else {
@@ -448,12 +448,14 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
     passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
-    if(doencrypt) {
+    if(doencrypt || (lp_security() == SEC_SERVER)) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
       memcpy(smb_apasswd,p,smb_apasslen);
+      smb_apasswd[smb_apasslen] = 0;
       smb_ntpasslen = passlen2;
       memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
+      smb_ntpasswd[smb_ntpasslen] = 0;
     } else {
       /* both Win95 and WinNT stuff up the password lengths for
 	 non-encrypting systems. Uggh. 

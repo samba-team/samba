@@ -1454,6 +1454,7 @@ typedef struct
   BOOL print_file;
   BOOL modified;
   BOOL granted_oplock;
+  BOOL sent_oplock_break;
   char *name;
 } files_struct;
 
