@@ -47,6 +47,7 @@ tdbbackup
 testparm
 testprns
 vfstest
+log2pcap
 wbinfo
 winbindd
 wrepld
