@@ -399,6 +399,7 @@ typedef struct krb5_storage {
     size_t (*store)(struct krb5_storage*, void*, size_t);
     off_t (*seek)(struct krb5_storage*, off_t, int);
     void (*free)(struct krb5_storage*);
+    krb5_boolean host_byteorder;
 } krb5_storage;
 
 typedef struct krb5_keytab_entry {
