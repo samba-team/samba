@@ -28,6 +28,8 @@
 
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/sendauth.c: close ccache if we opened it
+
 	* appl/kf/kf.c: handle new protocol
 
 	* appl/kf/kfd.c: use krb5_err instead of sysloging directly,
