@@ -1221,6 +1221,30 @@ BOOL spoolss_io_r_open_printer_ex(const char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u
 /*******************************************************************
  * init a structure.
  ********************************************************************/
+BOOL make_spoolss_q_deleteprinterdriverex( TALLOC_CTX *mem_ctx,
+                                           SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, 
+                                           const char *server,
+                                           const char* arch, 
+                                           const char* driver )
+{
+	DEBUG(5,("make_spoolss_q_deleteprinterdriverex\n"));
+ 
+	q_u->server_ptr = (server!=NULL)?1:0;
+	q_u->delete_flags = DPD_DELETE_UNUSED_FILES;
+ 
+	/* these must be NULL terminated or else NT4 will
+	   complain about invalid parameters --jerry */
+	init_unistr2(&q_u->server, server, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->arch, arch, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->driver, driver, UNI_STR_TERMINATE);
+ 
+	return True;
+}
+
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
 BOOL make_spoolss_q_deleteprinterdriver(
 	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_DELETEPRINTERDRIVER *q_u, 

@@ -1545,6 +1545,65 @@ done:
 }
 
 
+static WERROR cmd_spoolss_deletedriverex(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, const char **argv)
+{
+	WERROR result, ret = WERR_UNKNOWN_PRINTER_DRIVER;
+ 
+	fstring   servername;
+	int   i;
+	int vers = -1;
+ 
+	const char *arch = NULL;
+ 
+	/* parse the command arguements */
+	if (argc < 2 || argc > 4) {
+		printf ("Usage: %s <driver> [arch] [version]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 3)
+		arch = argv[2];
+	if (argc == 4)
+		vers = atoi (argv[3]);
+ 
+ 
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+ 
+	/* delete the driver for all architectures */
+	for (i=0; archi_table[i].long_archi; i++) {
+
+		if (arch &&  strcmp ( archi_table[i].long_archi, arch)) 
+			continue;
+
+		if (vers >= 0 && archi_table[i].version != vers)
+			continue;
+
+		/* make the call to remove the driver */
+		result = cli_spoolss_deleteprinterdriverex(
+			cli, mem_ctx, archi_table[i].long_archi, argv[1]);
+
+		if ( !W_ERROR_IS_OK(result) ) 
+		{
+			if ( !W_ERROR_EQUAL(result, WERR_UNKNOWN_PRINTER_DRIVER) ) {
+				printf ("Failed to remove driver %s for arch [%s] - error 0x%x!\n", 
+					argv[1], archi_table[i].long_archi, W_ERROR_V(result));
+			}
+		} 
+		else 
+		{
+			printf ("Driver %s and files removed for arch [%s].\n", argv[1], 
+			archi_table[i].long_archi);
+			ret = WERR_OK;
+		}
+	}
+  
+	return ret;
+}
+
+
 static WERROR cmd_spoolss_deletedriver(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
@@ -2403,13 +2462,14 @@ struct cmd_set spoolss_commands[] = {
 	{ "SPOOLSS"  },
 
 	{ "adddriver",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_addprinterdriver,	PI_SPOOLSS, "Add a print driver",                  "" },
-	{ "addprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_addprinterex,	PI_SPOOLSS, "Add a printer",                       "" },
+	{ "addprinter",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_addprinterex,	PI_SPOOLSS, "Add a printer",                       "" },
 	{ "deldriver",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_deletedriver,	PI_SPOOLSS, "Delete a printer driver",             "" },
+	{ "deldriverex",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_deletedriverex, PI_SPOOLSS, "Delete a printer driver with files",      "" },
 	{ "enumdata",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_data,		PI_SPOOLSS, "Enumerate printer data",              "" },
-	{ "enumdataex",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_data_ex,	PI_SPOOLSS, "Enumerate printer data for a key",    "" },
+	{ "enumdataex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_data_ex,	PI_SPOOLSS, "Enumerate printer data for a key",    "" },
 	{ "enumkey",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printerkey,	PI_SPOOLSS, "Enumerate printer keys",              "" },
 	{ "enumjobs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_jobs,          PI_SPOOLSS, "Enumerate print jobs",                "" },
-	{ "enumports", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_ports, 	PI_SPOOLSS, "Enumerate printer ports",             "" },
+	{ "enumports", 		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_ports, 	PI_SPOOLSS, "Enumerate printer ports",             "" },
 	{ "enumdrivers", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_drivers, 	PI_SPOOLSS, "Enumerate installed printer drivers", "" },
 	{ "enumprinters", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printers, 	PI_SPOOLSS, "Enumerate printers",                  "" },
 	{ "getdata",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprinterdata,	PI_SPOOLSS, "Get print driver data",               "" },
@@ -2418,14 +2478,14 @@ struct cmd_set spoolss_commands[] = {
 	{ "getdriverdir",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriverdir,	PI_SPOOLSS, "Get print driver upload directory",   "" },
 	{ "getprinter", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprinter, 	PI_SPOOLSS, "Get printer info",                    "" },
 	{ "openprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_open_printer_ex,	PI_SPOOLSS, "Open printer handle",                 "" },
-	{ "setdriver", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setdriver,		PI_SPOOLSS, "Set printer driver",                  "" },
+	{ "setdriver", 		RPC_RTYPE_WERROR, NULL, cmd_spoolss_setdriver,		PI_SPOOLSS, "Set printer driver",                  "" },
 	{ "getprintprocdir",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprintprocdir,    PI_SPOOLSS, "Get print processor directory",       "" },
 	{ "addform",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_addform,            PI_SPOOLSS, "Add form",                            "" },
 	{ "setform",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_setform,            PI_SPOOLSS, "Set form",                            "" },
 	{ "getform",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_getform,            PI_SPOOLSS, "Get form",                            "" },
-	{ "deleteform",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_deleteform,         PI_SPOOLSS, "Delete form",                         "" },
+	{ "deleteform",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_deleteform,         PI_SPOOLSS, "Delete form",                         "" },
 	{ "enumforms",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_forms,         PI_SPOOLSS, "Enumerate forms",                     "" },
-	{ "setprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinter,         PI_SPOOLSS, "Set printer comment",                 "" },
+	{ "setprinter",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinter,         PI_SPOOLSS, "Set printer comment",                 "" },
 	{ "setprintername",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprintername,         PI_SPOOLSS, "Set printername",                 "" },
 	{ "setprinterdata",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinterdata,     PI_SPOOLSS, "Set REG_SZ printer data",             "" },
 	{ "rffpcnex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_rffpcnex,           PI_SPOOLSS, "Rffpcnex test", "" },
