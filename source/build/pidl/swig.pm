@@ -69,15 +69,13 @@ sub ArrayFromPython($$)
     $result .= "\t\tint i;\n\n";
     $result .= "\t\tfor (i = 0; i < $array_len; i++) {\n";
     if (util::is_scalar_type($e->{TYPE})) {
-	$result .= "\t\t\ts->$prefix$e->{NAME}\[i\] = $e->{TYPE}_from_python(PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i));\n";
+	$result .= "\t\t\ts->$prefix$e->{NAME}\[i\] = $e->{TYPE}_from_python(PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i), \"$e->{NAME}\");\n";
     } else {
-	$result .= "\t\t\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}\[i\], PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i));\n";
+	$result .= "\t\t\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}\[i\], PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i), \"$e->{NAME}\");\n";
     }
     $result .= "\t\t}\n";
 
     $result .= "\t}\n";
-
-#    $result .= "\tmemcpy(s->$prefix$e->{NAME}, PyString_AsString(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))), PyString_Size(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))));\n";
 
     return $result;
 }
@@ -92,7 +90,7 @@ sub XFromPython($$)
     # Special cases
 
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = string_ptr_from_python(mem_ctx, $obj);\n";
+	$result .= "\ts->$prefix$e->{NAME} = string_ptr_from_python(mem_ctx, $obj, \"$e->{NAME}\");\n";
 	return $result;
     }
 
@@ -103,7 +101,7 @@ sub XFromPython($$)
 	    if ($e->{ARRAY_LEN}) {
 		$result .= ArrayFromPython($e, $prefix);
 	    } else {
-		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj);\n";
+		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj, \"$e->{NAME}\");\n";
 	    }
 	} else {
 	    $result .= "\t// Pointer to scalar\n";
@@ -114,10 +112,10 @@ sub XFromPython($$)
 	    if ($e->{ARRAY_LEN}) {
 		$result .= ArrayFromPython($e, $prefix);
 	    } else {
-		$result .= "\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj);\n";
+		$result .= "\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj, \"$e->{NAME}\");\n";
 	    }
 	} else {
-	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj);\n";
+	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj, \"$e->{NAME}\");\n";
 	}
     }
 
@@ -215,10 +213,17 @@ sub ParseFunction($)
 
     $res .= "/* Convert Python dict to struct $fn->{NAME}.in */\n\n";
 
-    $res .= "struct $fn->{NAME} *$fn->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
+    $res .= "struct $fn->{NAME} *$fn->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj, char *name)\n";
     $res .= "{\n";
 
-    $res .= "\tstruct $fn->{NAME} *s = talloc(mem_ctx, sizeof(struct $fn->{NAME}));\n\n";
+    $res .= "\tstruct $fn->{NAME} *s;\n\n";
+
+    $res .= "\tif (!PyDict_Check(obj)) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\treturn NULL;\n";
+    $res .= "\t}\n\n";
+
+    $res .= "\ts = talloc(mem_ctx, sizeof(struct $fn->{NAME}));\n\n";
 
     # Remove this when all elements are initialised
     $res .= "\tmemset(s, 0, sizeof(struct $fn->{NAME}));\n\n";
@@ -252,7 +257,7 @@ sub ParseFunction($)
 
     $res .= "%typemap(in) struct $fn->{NAME} * {\n";
     $res .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(int) $fn->{NAME}\");\n\n";
-    $res .= "\t\$1 = $fn->{NAME}_ptr_from_python(mem_ctx, \$input);\n";
+    $res .= "\t\$1 = $fn->{NAME}_ptr_from_python(mem_ctx, \$input, \"<function params>\");\n";
     $res .= "}\n\n";
 
     # Output typemap
@@ -262,6 +267,10 @@ sub ParseFunction($)
     $res .= "\tlong status = PyLong_AsLong(resultobj);\n";
     $res .= "\tPyObject *dict;\n";
     $res .= "\n";
+
+    $res .= "\tif (PyErr_Occurred())\n";
+    $res .= "\t\t\treturn NULL;\n\n";
+
     $res .= "\tif (status != 0) {\n";
     $res .= "\t\tset_ntstatus_exception(status);\n";
     $res .= "\t\treturn NULL;\n";
@@ -285,11 +294,16 @@ sub ParseStruct($)
     $res .= "%{\n\n";
     $res .= "/* Convert Python dict to struct $s->{NAME} pointer */\n\n";
     
-    $res .= "struct $s->{NAME} *$s->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
+    $res .= "struct $s->{NAME} *$s->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj, char *name)\n";
     $res .= "{\n";
     $res .= "\tstruct $s->{NAME} *s;\n\n";
 
     $res .= "\tif (obj == Py_None) {\n";
+    $res .= "\t\treturn NULL;\n";
+    $res .= "\t}\n\n";
+
+    $res .= "\tif (!PyDict_Check(obj)) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n\n";
 
@@ -305,8 +319,13 @@ sub ParseStruct($)
 
     $res .= "/* Convert Python dict to struct $s->{NAME} */\n\n";
     
-    $res .= "void $s->{NAME}_from_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s, PyObject *obj)\n";
+    $res .= "void $s->{NAME}_from_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s, PyObject *obj, char *name)\n";
     $res .= "{\n";
+
+    $res .= "\tif (!PyDict_Check(obj)) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\treturn;\n";
+    $res .= "\t}\n\n";
 
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
 	$res .= XFromPython($e, "");
@@ -344,18 +363,25 @@ sub ParseUnion($)
     $res .= "%{\n\n";
     $res .= "/* Convert Python dict to union $u->{NAME} pointer */\n\n";
 
-    $res .= "union $u->{NAME} *$u->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
+    $res .= "union $u->{NAME} *$u->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj, char *name)\n";
     $res .= "{\n";
 
-    $res .= "\tunion $u->{NAME} *u = talloc(mem_ctx, sizeof(union $u->{NAME}));\n";
+    $res .= "\tunion $u->{NAME} *u;\n";
     $res .= "\tPyObject *dict;\n\n";
     
+    $res .= "\tif (!PyDict_Check(obj)) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\treturn NULL;\n";
+    $res .= "\t}\n\n";
+
+    $res .= "\tu = talloc(mem_ctx, sizeof(union $u->{NAME}));\n\n";
+
     for my $e (@{$u->{DATA}{DATA}}) {
 	$res .= "\tif ((dict = PyDict_GetItem(obj, PyString_FromString(\"$e->{DATA}{NAME}\")))) {\n";
 	if ($e->{DATA}{POINTERS} == 0) {
-	    $res .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict);\n";
+	    $res .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict, \"$e->{DATA}{NAME}\");\n";
 	} elsif ($e->{DATA}{POINTERS} == 1) {
-	    $res .= "\t\tu->$e->{DATA}{NAME} = $e->{DATA}{TYPE}_ptr_from_python(mem_ctx, dict);\n";
+	    $res .= "\t\tu->$e->{DATA}{NAME} = $e->{DATA}{TYPE}_ptr_from_python(mem_ctx, dict, \"$e->{DATA}{NAME}\");\n";
 	} else {
 	    $res .= "\t\t// $e->{DATA}{TYPE} pointers=$e->{DATA}{POINTERS}\n";
 	}
@@ -382,15 +408,21 @@ sub ParseUnion($)
 
     $res .= "/* Convert Python dict to union $u->{NAME} */\n\n";
 
-    $res .= "void $u->{NAME}_from_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u, PyObject *obj)\n";
+    $res .= "void $u->{NAME}_from_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u, PyObject *obj, char *name)\n";
     $res .= "{\n";
     $res .= "\tPyObject *dict;\n\n";
+
+    $res .= "\tif (!PyDict_Check(obj)) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\treturn;\n";
+    $res .= "\t}\n\n";
+
     for my $e (@{$u->{DATA}{DATA}}) {
 	$res .= "\tif ((dict = PyDict_GetItem(obj, PyString_FromString(\"$e->{DATA}{NAME}\")))) {\n";
 	if ($e->{DATA}{POINTERS} == 0) {
-	    $res .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict);\n";
+	    $res .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict, \"$e->{DATA}{NAME}\");\n";
 	} elsif ($e->{DATA}{POINTERS} == 1) {
-	    $res .= "\t\tu->$e->{DATA}{NAME} = $e->{DATA}{TYPE}_ptr_from_python(mem_ctx, dict);\n";
+	    $res .= "\t\tu->$e->{DATA}{NAME} = $e->{DATA}{TYPE}_ptr_from_python(mem_ctx, dict, \"$e->{DATA}{NAME}\");\n";
 	} else {
 	    $res .= "\t\t// $e->{DATA}{TYPE} pointers=$e->{DATA}{POINTERS}\n";
 	}
