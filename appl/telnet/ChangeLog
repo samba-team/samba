@@ -1,3 +1,13 @@
+1999-07-26  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/ext.h: update prototypes
+	
+	* telnetd/telnetd.c: make it handle v4 and v6 sockets.  (it
+	doesn't handle being given a v6 socket that's really talking to an
+	v4 adress (mapped) because the rest of the code in telnetd is not
+	able to handle it anyway).  please run two telnetd from your
+	inetd, one for v4 and one for v6.
+
 1999-07-07  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): extra bogus const-cast
