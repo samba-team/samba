@@ -73,6 +73,11 @@ static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	io.in.pattern = fname;
+	io.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
 	printf("Trying a directory\n");
 	io.in.pattern = BASEDIR;
 	io.in.attrib = 0;
