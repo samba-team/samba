@@ -124,9 +124,10 @@ static void fetch_machine_sid(struct cli_state *cli)
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
 	uint32 info_class = 5;
-	fstring domain_name;
+	char *domain_name = NULL;
 	static BOOL got_domain_sid;
 	TALLOC_CTX *mem_ctx;
+	DOM_SID *dom_sid = NULL;
 
 	if (got_domain_sid) return;
 
@@ -150,12 +151,13 @@ static void fetch_machine_sid(struct cli_state *cli)
 	}
 
 	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
-					   domain_name, &domain_sid);
+					   &domain_name, &dom_sid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
 	got_domain_sid = True;
+	sid_copy( &domain_sid, dom_sid );
 
 	cli_lsa_close(cli, mem_ctx, &pol);
 	cli_nt_session_close(cli);
