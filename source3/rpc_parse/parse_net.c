@@ -2760,8 +2760,6 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 	if (!prs_uint32("sync_context", ps, depth, &r_s->sync_context))
                 return False;
 
-	d_printf("Got sync context %u\n", r_s->sync_context);
-
 	if (!prs_uint32("ptr_deltas", ps, depth, &r_s->ptr_deltas))
                 return False;
 	if (r_s->ptr_deltas != 0)
