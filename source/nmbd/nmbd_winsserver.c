@@ -881,6 +881,10 @@ static void wins_multihomed_register_query_success(struct subnet_record *subrec,
     DEBUG(3,("wins_multihomed_register_query_success: name %s is not in the correct state to add \
 a subsequent IP addess.\n", namestr(question_name) ));
     send_wins_name_registration_response(RFS_ERR, 0, orig_reg_packet);
+
+    orig_reg_packet->locked = False;
+    free_packet(orig_reg_packet);
+
     return;
   }
 
@@ -889,6 +893,8 @@ a subsequent IP addess.\n", namestr(question_name) ));
   update_name_ttl(namerec, ttl);
   send_wins_name_registration_response(0, ttl, orig_reg_packet);
 
+  orig_reg_packet->locked = False;
+  free_packet(orig_reg_packet);
 }
 
 /***********************************************************************
@@ -912,6 +918,9 @@ static void wins_multihomed_register_query_fail(struct subnet_record *subrec,
   DEBUG(3,("wins_multihomed_register_query_fail: Registering machine at IP %s failed to answer \
 query successfully for name %s.\n", inet_ntoa(orig_reg_packet->ip), namestr(question_name) ));
   send_wins_name_registration_response(RFS_ERR, 0, orig_reg_packet);
+
+  orig_reg_packet->locked = False;
+  free_packet(orig_reg_packet);
   return;
 }
 
@@ -1100,20 +1109,21 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
     userdata->userdata_len = sizeof(struct packet_struct *);
     memcpy(userdata->data, (char *)&p, sizeof(struct packet_struct *) );
 
-    /*
-     * As query_name uses the subnet broadcast address as the destination
-     * of the packet we temporarily change the subnet broadcast address to
-     * be the IP address of the requesting machine and send the packet. This
-     * is a *horrible* hack but the alternative is to add the destination
-     * address parameter to all query_name() calls. I hate this code :-).
+    /* 
+     * Use the new call to send a query directly to an IP address.
+     * This sends the query directly to the IP address, and ensures
+     * the recursion desired flag is not set (you were right Luke :-).
+     * This function should *only* be called from the WINS server
+     * code. JRA.
      */
 
-    subrec->bcast_ip = p->ip;
-    query_name( subrec, question->name, question->name_type,
-                wins_multihomed_register_query_success, 
-                wins_multihomed_register_query_fail,
-                userdata);
-    subrec->bcast_ip = ipzero;
+    query_name_from_wins_server( p->ip,
+                                 question->name,
+                                 question->name_type, 
+                                 wins_multihomed_register_query_success,
+                                 wins_multihomed_register_query_fail,
+                                 userdata );
+
     return;
   }
 
