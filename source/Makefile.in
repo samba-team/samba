@@ -611,7 +611,7 @@ SMB_AGENT_OBJ = utils/smb-agent.o  \
 
 SMB_CLIENT_OBJ = smb-client.o 
 
-SMBTORTURE_OBJ = utils/torture.o \
+SMBTORTURE_OBJ = utils/torture.o
 
 SMBFILTER_OBJ = utils/smbfilter.o \
                  rpc_parse/parse_creds.o \
