@@ -2022,6 +2022,9 @@ uint32 del_a_printer(char *sharename)
 	kbuf.dsize=strlen(key)+1;
 
 	tdb_delete(tdb_printers, kbuf);
+
+	notify_printer_delete(sharename);
+
 	return 0;
 }
 

@@ -204,7 +204,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				 printing/print_cups.o printing/print_generic.o \
 				printing/lpq_parse.o printing/load.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 

@@ -35,9 +35,10 @@
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
 
-/* rpc messages */
-#define MSG_PRINTER_NOTIFY 	2001
+/* printing messages */
+/* #define MSG_PRINTER_NOTIFY 	2001*/ /* Obsolete */
 #define MSG_PRINTER_DRVUPGRADE	2002
+#define MSG_PRINTER_NOTIFY2     2003
 
 /* smbd messages */
 #define MSG_SMB_CONF_UPDATED 3001
