@@ -61,26 +61,43 @@ void smbd_set_server_fd(int fd)
 }
 
 /****************************************************************************
-  when exiting, take the whole family
+ Terminate signal.
 ****************************************************************************/
-static void *dflt_sig(void)
+
+VOLATILE sig_atomic_t got_sig_term = 0;
+
+static void sig_term(void)
 {
-	exit_server("caught signal");
-	return NULL;
+	got_sig_term = 1;
+	sys_select_signal();
+}
+
+/****************************************************************************
+ Catch a sighup.
+****************************************************************************/
+
+VOLATILE sig_atomic_t reload_after_sighup = 0;
+
+static void sig_hup(int sig)
+{
+	reload_after_sighup = 1;
+	sys_select_signal();
 }
 
 /****************************************************************************
   Send a SIGTERM to our process group.
 *****************************************************************************/
+
 static void  killkids(void)
 {
-	if(am_parent) kill(0,SIGTERM);
+	if(am_parent)
+		kill(0,SIGTERM);
 }
 
-
 /****************************************************************************
-  open the socket communication
+ Open the socket communication - inetd.
 ****************************************************************************/
+
 static BOOL open_sockets_inetd(void)
 {
 	/* Started from inetd. fd 0 is the socket. */
@@ -97,10 +114,10 @@ static BOOL open_sockets_inetd(void)
 	return True;
 }
 
-
 /****************************************************************************
-  open the socket communication
+ Open the socket communication.
 ****************************************************************************/
+
 static BOOL open_sockets(BOOL is_daemon,BOOL interactive, int port)
 {
 	int num_interfaces = iface_count();
@@ -212,10 +229,13 @@ max can be %d\n",
 		num = sys_select(FD_SETSIZE,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
-			extern VOLATILE sig_atomic_t reload_after_sighup;
+			if (got_sig_term) {
+				exit_server("Caught TERM signal");
+			}
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
+				DEBUG(0,("Got SIGHUP\n"));
 				change_to_root_user();
 				DEBUG(1,("Reloading services after SIGHUP\n"));
 				reload_services(False);
@@ -320,8 +340,9 @@ max can be %d\n",
 }
 
 /****************************************************************************
-  reload the services file
-  **************************************************************************/
+ Reload the services file.
+ **************************************************************************/
+
 BOOL reload_services(BOOL test)
 {
 	BOOL ret;
@@ -370,30 +391,11 @@ BOOL reload_services(BOOL test)
 	return(ret);
 }
 
-
-
-/****************************************************************************
- Catch a sighup.
-****************************************************************************/
-
-VOLATILE sig_atomic_t reload_after_sighup = False;
-
-static void sig_hup(int sig)
-{
-	BlockSignals(True,SIGHUP);
-	DEBUG(0,("Got SIGHUP\n"));
-
-	sys_select_signal();
-	reload_after_sighup = True;
-	BlockSignals(False,SIGHUP);
-}
-
-
-
 #if DUMP_CORE
 /*******************************************************************
-prepare to dump a core file - carefully!
+ Prepare to dump a core file - carefully !
 ********************************************************************/
+
 static BOOL dump_core(void)
 {
 	char *p;
@@ -443,8 +445,9 @@ static void decrement_smbd_process_count(void)
 }
 
 /****************************************************************************
-exit the server
+ Exit the server.
 ****************************************************************************/
+
 void exit_server(char *reason)
 {
 	static int firsttime=1;
@@ -494,8 +497,9 @@ void exit_server(char *reason)
 }
 
 /****************************************************************************
-  initialise connect, service and file structs
+ Initialise connect, service and file structs.
 ****************************************************************************/
+
 static void init_structs(void )
 {
 	/*
@@ -526,8 +530,9 @@ static void init_structs(void )
 }
 
 /****************************************************************************
-usage on the program
+ Usage on the program.
 ****************************************************************************/
+
 static void usage(char *pname)
 {
 
@@ -548,10 +553,10 @@ static void usage(char *pname)
 	printf("\n");
 }
 
-
 /****************************************************************************
-  main program
+ main program.
 ****************************************************************************/
+
  int main(int argc,char *argv[])
 {
 	extern BOOL append_log;
@@ -668,7 +673,8 @@ static void usage(char *pname)
 	gain_root_group_privilege();
 
 	fault_setup((void (*)(void *))exit_server);
-	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
+	CatchSignal(SIGTERM , SIGNAL_CAST sig_term);
+	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
@@ -687,6 +693,7 @@ static void usage(char *pname)
 	 * these signals masked, we will have problems, as we won't recieve them. */
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGTERM);
 
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
@@ -737,8 +744,6 @@ static void usage(char *pname)
 
 	fstrcpy(global_myworkgroup, lp_workgroup());
 
-	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
-	
 	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {

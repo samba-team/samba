@@ -47,6 +47,7 @@ extern int global_oplock_break;
 extern userdom_struct current_user_info;
 extern int smb_read_error;
 extern VOLATILE sig_atomic_t reload_after_sighup;
+extern VOLATILE sig_atomic_t got_sig_term;
 extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
@@ -108,14 +109,19 @@ BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 }
 
 /****************************************************************************
-do all async processing in here. This includes UDB oplock messages, kernel
-oplock messages, change notify events etc.
+ Do all async processing in here. This includes UDB oplock messages, kernel
+ oplock messages, change notify events etc.
 ****************************************************************************/
+
 static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 {
 	/* check for oplock messages (both UDP and kernel) */
 	if (receive_local_message(fds, buffer, buffer_len, 0)) {
 		process_local_message(buffer, buffer_len);
+	}
+
+	if (got_sig_term) {
+		exit_server("Caught TERM signal");
 	}
 
 	/* check for async change notify events */
@@ -126,7 +132,7 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 		change_to_root_user();
 		DEBUG(1,("Reloading services after SIGHUP\n"));
 		reload_services(False);
-		reload_after_sighup = False;
+		reload_after_sighup = 0;
 	}
 }
 
@@ -1063,7 +1069,7 @@ void check_reload(int t)
   if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK))
   {
     reload_services(True);
-    reload_after_sighup = False;
+    reload_after_sighup = 0;
     last_smb_conf_reload_time = t;
   }
 }
