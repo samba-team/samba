@@ -366,6 +366,8 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 
   trim_string(name,"/","/");
 
+  /* I've disabled this till we fix printing (probably a getatr problem) (tridge) */
+#if TRIM_NULL_NAMES
   /*
    * If we trimmed down to a single '\0' character
    * then we should use the "." directory to avoid
@@ -376,6 +378,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
     name[0] = '.';
     name[1] = '\0';
   }
+#endif
 
   /*
    * Ensure saved_last_component is valid even if file exists.
