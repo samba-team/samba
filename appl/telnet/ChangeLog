@@ -1,3 +1,7 @@
+Tue Dec  9 19:26:50 1997  Assar Westerlund  <assar@sics.se>
+
+	* telnet/main.c (main): add 'b' to getopt
+
 Sat Nov 29 03:28:54 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* telnet/telnet.c: Change binary mode to do just that, and add a
