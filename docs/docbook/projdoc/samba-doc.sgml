@@ -24,6 +24,7 @@
 <!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
 <!ENTITY oplocks SYSTEM "oplocks.sgml">
 <!ENTITY pdb-mysql SYSTEM "pdb_mysql.sgml">
+<!ENTITY pdb-xml SYSTEM "pdb_xml.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -111,6 +112,7 @@ part each cover one specific feature.</para>
 &SECURITY-LEVEL;
 &WINBIND;
 &pdb-mysql;
+&pdb-xml;
 &Samba-LDAP;
 &CVS-Access;
 &GROUP-MAPPING-HOWTO;
