@@ -4623,13 +4623,17 @@ BOOL samr_io_r_query_aliasmem(const char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 
 			for (i = 0; i < r_u->num_sids1; i++) {
 				ptr_sid[i] = 1;
-				if(!prs_uint32("", ps, depth, &ptr_sid[i]))
+				if(!prs_uint32("ptr_sid", ps, depth, &ptr_sid[i]))
 				  return False;
+			}
+
+			if (UNMARSHALLING(ps)) {
+				r_u->sid = talloc(ps->mem_ctx, r_u->num_sids1 * sizeof(DOM_SID));
 			}
 
 			for (i = 0; i < r_u->num_sids1; i++) {
 				if (ptr_sid[i] != 0) {
-					if(!smb_io_dom_sid2("", &r_u->sid[i], ps, depth))
+					if(!smb_io_dom_sid2("sid", &r_u->sid[i], ps, depth))
 						return False;
 				}
 			}
