@@ -185,7 +185,12 @@ static char ttyline[20];
  * 2 only authorized and anonymous connections,
  * 3 only authorized
  */
-static int auth_level = 1;
+#define AUTH_NONE 0
+#define AUTH_OTP  1
+#define AUTH_SAFE 2
+#define AUTH_USER 3
+
+static int auth_level = AUTH_SAFE;
 
 /*
  * Timeout intervals for retrying connections
@@ -282,13 +287,13 @@ main(int argc, char **argv)
 		case 'a':
 		{
 		    if(strcmp(optarg, "none") == 0)
-			auth_level = 0;
+			auth_level = AUTH_NONE;
 		    else if(strcmp(optarg, "otp") == 0)
-			auth_level = 1;
+			auth_level = AUTH_OTP;
 		    else if(strcmp(optarg, "safe") == 0)
-			auth_level = 2;
+			auth_level = AUTH_SAFE;
 		    else if(strcmp(optarg, "user") == 0)
-			auth_level = 3;
+			auth_level = AUTH_USER;
 		    else
 			warnx("bad value for -a");
 		    break;
@@ -516,7 +521,7 @@ user(char *name)
 {
 	char *cp, *shell;
 
-	if(auth_level == 3 && !auth_complete){
+	if(auth_level == AUTH_USER && !auth_complete){
 	    reply(530, "No login allowed without authorization.");
 	    return;
 	}
@@ -549,7 +554,7 @@ user(char *name)
 		       "ANONYMOUS FTP LOGIN REFUSED FROM %s", remotehost);
 	    return;
 	}
-	if(auth_level == 2 && !auth_complete){
+	if(auth_level == AUTH_SAFE && !auth_complete){
 	    reply(530, "Only authorized and anonymous login allowed.");
 	    return;
 	}
@@ -582,7 +587,7 @@ user(char *name)
 			reply(331, "Password %s for %s required.",
 			      ss, name);
 			askpasswd = 1;
-		} else if (auth_level == 0) {
+		} else if (auth_level == AUTH_NONE) {
 			reply(331, "Password required for %s.", name);
 			askpasswd = 1;
 		} else {
@@ -750,7 +755,7 @@ pass(char *passwd)
 			rval = 1;	/* failure below */
 		else if (otp_verify_user (&otp_ctx, passwd) == 0) {
 			rval = 0;
-		} else if(auth_level == 0) {
+		} else if(auth_level == AUTH_NONE) {
 		    char realm[REALM_SZ];
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name, "", realm, 
