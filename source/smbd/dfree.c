@@ -36,11 +36,11 @@ static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
 		   errors */
 	}  
 
-	while (*dfree > WORDMAX || *dsize > WORDMAX || *bsize < 512) {
-		*dfree /= 2;
-		*dsize /= 2;
-		*bsize *= 2;
-		if(small_query) {	
+	if(small_query) {	
+		while (*dfree > WORDMAX || *dsize > WORDMAX || *bsize < 512) {
+			*dfree /= 2;
+			*dsize /= 2;
+			*bsize *= 2;
 			/*
 			 * Force max to fit in 16 bit fields.
 			 */
