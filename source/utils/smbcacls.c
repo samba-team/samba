@@ -31,6 +31,9 @@ static fstring server;
 static int got_pass;
 static int test_args;
 
+#define CREATE_ACCESS_READ READ_CONTROL_ACCESS
+#define CREATE_ACCESS_WRITE (WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS)
+
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
 static int numeric;
@@ -451,7 +454,7 @@ static int cacl_dump(struct cli_state *cli, char *filename)
 
 	if (test_args) return EXIT_OK;
 
-	fnum = cli_nt_create(cli, filename, 0x20000);
+	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
@@ -486,9 +489,7 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 	SEC_DESC *sd, *old;
 	size_t sd_size;
 
-	fnum = cli_nt_create(cli, filename, 
-			     READ_CONTROL_ACCESS | WRITE_DAC_ACCESS
-			     | WRITE_OWNER_ACCESS);
+	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
 
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
@@ -500,10 +501,24 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 
 	old = cli_query_secdesc(cli, fnum);
 
+	cli_close(cli, fnum);
+
+	if (!old) {
+		printf("owner_set: Failed to query old descriptor\n");
+		return EXIT_FAILED;
+	}
+
 	sd = make_sec_desc(old->revision,
 				(change_mode == REQUEST_CHOWN) ? &sid : old->owner_sid,
 				(change_mode == REQUEST_CHGRP) ? &sid : old->grp_sid,
 			   NULL, old->dacl, &sd_size);
+
+	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_WRITE);
+
+	if (fnum == -1) {
+		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+		return EXIT_FAILED;
+	}
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
@@ -582,15 +597,21 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	fnum = cli_nt_create(cli, filename, 
-			     MAXIMUM_ALLOWED_ACCESS | 0x60000);
+	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
 
 	if (fnum == -1) {
-		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
 	}
 
 	old = cli_query_secdesc(cli, fnum);
+
+	if (!old) {
+		printf("calc_set: Failed to query old descriptor\n");
+		return EXIT_FAILED;
+	}
+
+	cli_close(cli, fnum);
 
 	/* the logic here is rather more complex than I would like */
 	switch (mode) {
@@ -672,6 +693,13 @@ static int cacl_set(struct cli_state *cli, char *filename,
 
 	sd = make_sec_desc(old->revision, old->owner_sid, old->grp_sid, 
 			   NULL, old->dacl, &sd_size);
+
+	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_WRITE);
+
+	if (fnum == -1) {
+		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
+		return EXIT_FAILED;
+	}
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
