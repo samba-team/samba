@@ -295,7 +295,10 @@ sub ParseArrayPull($$$)
 			pidl "\t\tif ($size != _array_size) {\n";
 		}
 		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should be %u\", _array_size, $size);\n";
-		pidl "\t\t} else { $size = _array_size; }\n";
+		pidl "\t\t}\n";
+		if ($size =~ /r->/) {
+			pidl "else { $size = _array_size; }\n";
+		}
 		pidl "\t}\n";
 	}
 
@@ -425,7 +428,10 @@ sub ParseElementPullSwitch($$$$)
 		} else {
 			pidl "\t\tif (_level != $switch_var) {\n";
 		}
-		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\t\t} else { $switch_var = _level; }\n";
+		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\t\t}\n";
+		if ($switch =~ /r->/) {
+			pidl "else { $switch_var = _level; }\n";
+		}
 		pidl "\t}\n";
 	}
 
