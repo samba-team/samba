@@ -68,8 +68,8 @@ install-build-headers:: $(include_HEADERS) $(build_HEADERZ)
 		else file="$$f"; fi; \
 		if cmp -s  $$file $(buildinclude)/$$f 2> /dev/null ; then \
 		: ; else \
-			echo " $(INSTALL_DATA) $$file $(buildinclude)/$$f"; \
-			$(INSTALL_DATA) $$file $(buildinclude)/$$f; \
+			echo " cp $$file $(buildinclude)/$$f"; \
+			cp $$file $(buildinclude)/$$f; \
 		fi ; \
 	done
 
