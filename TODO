@@ -48,12 +48,6 @@ make everything work with openssl and make prototypes compatible
 
 ** lib/gssapi
 
-process_context_token, add_cred, inquire_cred_by_mech,
-inquire_names_for_mech, and
-inquire_mechs_for_name not implemented.
-
-set minor_status in all functions
-
 anonymous credentials not implemented
 
 add rc4
