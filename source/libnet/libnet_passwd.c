@@ -574,7 +574,7 @@ UserInfo24:
 	ZERO_STRUCT(u_info);
 	encode_pw_buffer(u_info.info24.password.data, r->samr.in.newpassword, STR_UNICODE);
 	/* w2k3 ignores this length */
-	u_info.info24.pw_len = str_charnum(r->samr.in.newpassword)*2;
+	u_info.info24.pw_len = strlen_m(r->samr.in.newpassword)*2;
 
 	status = dcerpc_fetch_session_key(c.pdc.out.dcerpc_pipe, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
