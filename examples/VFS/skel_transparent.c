@@ -65,6 +65,11 @@ static int skel_set_quota(vfs_handle_struct *handle, connection_struct *conn, en
 	return SMB_VFS_NEXT_SET_QUOTA(handle, conn, qtype, id, dq);
 }
 
+static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+{
+	return SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data, labels);
+}
+
 static DIR *skel_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
 {
 	return SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
@@ -437,7 +442,8 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_disk_free),			SMB_VFS_OP_DISK_FREE,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_get_quota),			SMB_VFS_OP_GET_QUOTA,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_set_quota),			SMB_VFS_OP_SET_QUOTA,		SMB_VFS_LAYER_TRANSPARENT},
-	
+	{SMB_VFS_OP(skel_get_shadow_copy_data),		SMB_VFS_OP_GET_SHADOW_COPY_DATA,SMB_VFS_LAYER_TRANSPARENT},
+
 	/* Directory operations */
 
 	{SMB_VFS_OP(skel_opendir),			SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_TRANSPARENT},
