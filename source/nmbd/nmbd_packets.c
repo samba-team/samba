@@ -1204,7 +1204,6 @@ static BOOL listening(struct packet_struct *p,struct nmb_name *nbname)
 /****************************************************************************
   Process udp 138 datagrams
 ****************************************************************************/
-
 static void process_dgram(struct packet_struct *p)
 {
   char *buf;
@@ -1215,20 +1214,22 @@ static void process_dgram(struct packet_struct *p)
   /* If we aren't listening to the destination name then ignore the packet */
   if (!listening(p,&dgram->dest_name))
   {
-    DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from %s\n",
-           nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip)));
-    return;
+	  unexpected_packet(p);
+	  DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from %s\n",
+		   nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip)));
+	  return;
   }
 
   if (dgram->header.msg_type != 0x10 &&
       dgram->header.msg_type != 0x11 &&
       dgram->header.msg_type != 0x12) 
   {
-    /* Don't process error packets etc yet */
-    DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from IP %s as it is \
-           an error packet of type %x\n",
-           nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip), dgram->header.msg_type));
-    return;
+	  unexpected_packet(p);
+	  /* Don't process error packets etc yet */
+	  DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from IP %s as it is \
+an error packet of type %x\n",
+		   nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip), dgram->header.msg_type));
+	  return;
   }
 
   buf = &dgram->data[0];
@@ -1275,6 +1276,8 @@ static void process_dgram(struct packet_struct *p)
     process_logon_packet(p,buf2,len,NT_LOGON_MAILSLOT);
     return;
   }
+
+  unexpected_packet(p);
 }
 
 /****************************************************************************

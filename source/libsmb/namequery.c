@@ -161,7 +161,7 @@ static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
 		  retries--;
 	  }
 
-	  if ((p2=receive_reply_packet(fd,90,nmb->header.name_trn_id))) {     
+	  if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
 		  struct nmb_packet *nmb2 = &p2->packet.nmb;
 		  debug_nmb_packet(p2);
 
@@ -269,7 +269,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 		  retries--;
 	  }
 	  
-	  if ((p2=receive_reply_packet(fd,90,nmb->header.name_trn_id))) {     
+	  if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
 		  struct nmb_packet *nmb2 = &p2->packet.nmb;
 		  debug_nmb_packet(p2);
 		  
@@ -712,259 +712,189 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 	return False;
 }
 
-/********************************************************
- Internal function to extract the MACHINE<0x20> name.
-*********************************************************/
-
-static void _lookup_pdc_name(char *p, char *master,char *rname)
-{
-  int numnames = CVAL(p,0);
-
-  *rname = '\0';
-
-  p += 1;
-  while (numnames--) {
-    int type = CVAL(p,15);
-    if(type == 0x20) {
-      StrnCpy(rname,p,15);
-      trim_string(rname,NULL," ");
-      return;
-    }
-    p += 18;
-  }
-}
 
 /********************************************************
  Lookup a PDC name given a Domain name and IP address.
 *********************************************************/
-
 BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name)
 {
-#if !defined(I_HATE_WINDOWS_REPLY_CODE)
+	int retries = 3;
+	int retry_time = 2000;
+	struct timeval tval;
+	struct packet_struct p;
+	struct dgram_packet *dgram = &p.packet.dgram;
+	char *ptr,*p2;
+	char tmp[4];
+	int len;
+	struct sockaddr_in sock_name;
+	int sock_len = sizeof(sock_name);
+	const char *mailslot = "\\MAILSLOT\\NET\\NETLOGON";
+	char *mailslot_name;
+	char buffer[1024];
+	char *bufp;
+	int dgm_id = generate_trn_id();
+	int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
+	
+	if(sock == -1)
+		return False;
+	
+	/* Find out the transient UDP port we have been allocated. */
+	if(getsockname(sock, (struct sockaddr *)&sock_name, &sock_len)<0) {
+		DEBUG(0,("lookup_pdc_name: Failed to get local UDP port. Error was %s\n",
+			 strerror(errno)));
+		close(sock);
+		return False;
+	}
 
-  fstring pdc_name;
-  BOOL ret;
+	/*
+	 * Create the request data.
+	 */
 
-  /*
-   * Due to the fact win WinNT *sucks* we must do a node status
-   * query here... JRA.
-   */
+	memset(buffer,'\0',sizeof(buffer));
+	bufp = buffer;
+	SSVAL(bufp,0,QUERYFORPDC);
+	bufp += 2;
+	fstrcpy(bufp,srcname);
+	bufp += (strlen(bufp) + 1);
+	slprintf(bufp, sizeof(fstring), "\\MAILSLOT\\NET\\GETDC%d", dgm_id);
+	mailslot_name = bufp;
+	bufp += (strlen(bufp) + 1);
+	bufp = align2(bufp, buffer);
+	dos_PutUniCode(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1);
+	bufp = skip_unicode_string(bufp, 1);
+	SIVAL(bufp,0,1);
+	SSVAL(bufp,4,0xFFFF); 
+	SSVAL(bufp,6,0xFFFF); 
+	bufp += 8;
+	len = PTR_DIFF(bufp,buffer);
 
-  int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
+	memset((char *)&p,'\0',sizeof(p));
 
-  if(sock == -1)
-    return False;
+	/* DIRECT GROUP or UNIQUE datagram. */
+	dgram->header.msg_type = 0x10;
+	dgram->header.flags.node_type = M_NODE;
+	dgram->header.flags.first = True;
+	dgram->header.flags.more = False;
+	dgram->header.dgm_id = dgm_id;
+	dgram->header.source_ip = *iface_ip(*pdc_ip);
+	dgram->header.source_port = ntohs(sock_name.sin_port);
+	dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
+	dgram->header.packet_offset = 0;
+	
+	make_nmb_name(&dgram->source_name,srcname,0,scope);
+	make_nmb_name(&dgram->dest_name,domain,0x1B,scope);
+	
+	ptr = &dgram->data[0];
+	
+	/* Setup the smb part. */
+	ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
+	memcpy(tmp,ptr,4);
+	set_message(ptr,17,17 + len,True);
+	memcpy(ptr,tmp,4);
 
-  *pdc_name = '\0';
+	CVAL(ptr,smb_com) = SMBtrans;
+	SSVAL(ptr,smb_vwv1,len);
+	SSVAL(ptr,smb_vwv11,len);
+	SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
+	SSVAL(ptr,smb_vwv13,3);
+	SSVAL(ptr,smb_vwv14,1);
+	SSVAL(ptr,smb_vwv15,1);
+	SSVAL(ptr,smb_vwv16,2);
+	p2 = smb_buf(ptr);
+	pstrcpy(p2,mailslot);
+	p2 = skip_string(p2,1);
+	
+	memcpy(p2,buffer,len);
+	p2 += len;
+	
+	dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
+	
+	p.ip = *pdc_ip;
+	p.port = DGRAM_PORT;
+	p.fd = sock;
+	p.timestamp = time(NULL);
+	p.packet_type = DGRAM_PACKET;
+	
+	GetTimeOfDay(&tval);
+	
+	if (!send_packet(&p)) {
+		DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+		close(sock);
+		return False;
+	}
+	
+	retries--;
+	
+	while (1) {
+		struct timeval tval2;
+		struct packet_struct *p_ret;
+		
+		GetTimeOfDay(&tval2);
+		if (TvalDiff(&tval,&tval2) > retry_time) {
+			if (!retries)
+				break;
+			if (!send_packet(&p)) {
+				DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+				close(sock);
+				return False;
+			}
+			GetTimeOfDay(&tval);
+			retries--;
+		}
 
-  ret = internal_name_status(sock,"*SMBSERVER",0x20,True,
-			     *pdc_ip,NULL,pdc_name,False,
-			     _lookup_pdc_name);
+		if ((p_ret = receive_dgram_packet(sock,90,mailslot_name))) {
+			struct dgram_packet *dgram2 = &p_ret->packet.dgram;
+			char *buf;
+			char *buf2;
 
-  close(sock);
+			buf = &dgram2->data[0];
+			buf -= 4;
 
-  if(ret && *pdc_name) {
-    fstrcpy(ret_name, pdc_name);
-    return True;
-  }
+			if (CVAL(buf,smb_com) != SMBtrans) {
+				DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
+					 CVAL(buf,smb_com), (unsigned int)SMBtrans ));
+				free_packet(p_ret);
+				continue;
+			}
+			
+			len = SVAL(buf,smb_vwv11);
+			buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
+			
+			if (len <= 0) {
+				DEBUG(0,("lookup_pdc_name: datagram len < 0 (%d)\n", len ));
+				free_packet(p_ret);
+				continue;
+			}
 
-  return False;
+			DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
+				 nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
+				 inet_ntoa(p_ret->ip), smb_buf(buf),SVAL(buf2,0),len));
 
-#else /* defined(I_HATE_WINDOWS_REPLY_CODE) */
-  /*
-   * Sigh. I *love* this code, it took me ages to get right and it's
-   * completely *USELESS* because NT 4.x refuses to send the mailslot
-   * reply back to the correct port (it always uses 138).
-   * I hate NT when it does these things... JRA.
-   */
+			if(SVAL(buf2,0) != QUERYFORPDC_R) {
+				DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
+					 (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
+				free_packet(p_ret);
+				continue;
+			}
 
-  int retries = 3;
-  int retry_time = 2000;
-  struct timeval tval;
-  struct packet_struct p;
-  struct dgram_packet *dgram = &p.packet.dgram;
-  char *ptr,*p2;
-  char tmp[4];
-  int len;
-  struct sockaddr_in sock_name;
-  int sock_len = sizeof(sock_name);
-  const char *mailslot = "\\MAILSLOT\\NET\\NETLOGON";
-  char buffer[1024];
-  char *bufp;
-  int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
-
-  if(sock == -1)
-    return False;
-
-  /* Find out the transient UDP port we have been allocated. */
-  if(getsockname(sock, (struct sockaddr *)&sock_name, &sock_len)<0) {
-    DEBUG(0,("lookup_pdc_name: Failed to get local UDP port. Error was %s\n",
-            strerror(errno)));
-    close(sock);
-    return False;
-  }
-
-  /*
-   * Create the request data.
-   */
-
-  memset(buffer,'\0',sizeof(buffer));
-  bufp = buffer;
-  SSVAL(bufp,0,QUERYFORPDC);
-  bufp += 2;
-  fstrcpy(bufp,srcname);
-  bufp += (strlen(bufp) + 1);
-  fstrcpy(bufp,"\\MAILSLOT\\NET\\GETDC411");
-  bufp += (strlen(bufp) + 1);
-  bufp = align2(bufp, buffer);
-  dos_PutUniCode(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1);
-  bufp = skip_unicode_string(bufp, 1);
-  SIVAL(bufp,0,1);
-  SSVAL(bufp,4,0xFFFF); 
-  SSVAL(bufp,6,0xFFFF); 
-  bufp += 8;
-  len = PTR_DIFF(bufp,buffer);
-
-  memset((char *)&p,'\0',sizeof(p));
-
-  /* DIRECT GROUP or UNIQUE datagram. */
-  dgram->header.msg_type = 0x10;
-  dgram->header.flags.node_type = M_NODE;
-  dgram->header.flags.first = True;
-  dgram->header.flags.more = False;
-  dgram->header.dgm_id = generate_trn_id();
-  dgram->header.source_ip = sock_name.sin_addr;
-  dgram->header.source_port = ntohs(sock_name.sin_port);
-  dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
-  dgram->header.packet_offset = 0;
- 
-  make_nmb_name(&dgram->source_name,srcname,0,scope);
-  make_nmb_name(&dgram->dest_name,domain,0x1B,scope);
-
-  ptr = &dgram->data[0];
-
-  /* Setup the smb part. */
-  ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
-  memcpy(tmp,ptr,4);
-  set_message(ptr,17,17 + len,True);
-  memcpy(ptr,tmp,4);
-
-  CVAL(ptr,smb_com) = SMBtrans;
-  SSVAL(ptr,smb_vwv1,len);
-  SSVAL(ptr,smb_vwv11,len);
-  SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
-  SSVAL(ptr,smb_vwv13,3);
-  SSVAL(ptr,smb_vwv14,1);
-  SSVAL(ptr,smb_vwv15,1);
-  SSVAL(ptr,smb_vwv16,2);
-  p2 = smb_buf(ptr);
-  pstrcpy(p2,mailslot);
-  p2 = skip_string(p2,1);
-
-  memcpy(p2,buffer,len);
-  p2 += len;
-
-  dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
-
-  p.ip = *pdc_ip;
-  p.port = DGRAM_PORT;
-  p.fd = sock;
-  p.timestamp = time(NULL);
-  p.packet_type = DGRAM_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p)) {
-    DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
-    close(sock);
-    return False;
-  }
-
-  retries--;
-
-  while (1) {
-    struct timeval tval2;
-    struct packet_struct *p_ret;
-
-    GetTimeOfDay(&tval2);
-    if (TvalDiff(&tval,&tval2) > retry_time) {
-      if (!retries)
-        break;
-      if (!send_packet(&p)) {
-        DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
-        close(sock);
-        return False;
-      }
-      GetTimeOfDay(&tval);
-      retries--;
-    }
-
-    if ((p_ret = receive_packet(sock,NMB_PACKET,90))) {
-      struct nmb_packet *nmb2 = &p_ret->packet.nmb;
-      struct dgram_packet *dgram2 = &p_ret->packet.dgram;
-      char *buf;
-      char *buf2;
-
-      debug_nmb_packet(p_ret);
-
-      if (memcmp(&p.ip, &p_ret->ip, sizeof(p.ip))) {
-        /* 
-         * Not for us.
-         */
-        DEBUG(0,("lookup_pdc_name: datagram return IP %s doesn't match\n", inet_ntoa(p_ret->ip) ));
-        free_packet(p_ret);
-        continue;
-      }
-
-      buf = &dgram2->data[0];
-      buf -= 4;
-
-      if (CVAL(buf,smb_com) != SMBtrans) {
-        DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)CVAL(buf,smb_com),
-              (unsigned int)SMBtrans ));
-        free_packet(p_ret);
-        continue;
-      }
-
-      len = SVAL(buf,smb_vwv11);
-      buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
-
-      if (len <= 0) {
-        DEBUG(0,("lookup_pdc_name: datagram len < 0 (%d)\n", len ));
-        free_packet(p_ret);
-        continue;
-      }
-
-      DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
-       nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
-       inet_ntoa(p_ret->ip), smb_buf(buf),CVAL(buf2,0),len));
-
-      if(SVAL(buf,0) != QUERYFORPDC_R) {
-        DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
-              (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
-        free_packet(p_ret);
-        continue;
-      }
-
-      buf += 2;
-      /* Note this is safe as it is a bounded strcpy. */
-      fstrcpy(ret_name, buf);
-      ret_name[sizeof(fstring)-1] = '\0';
-      close(sock);
-      free_packet(p_ret);
-      return True;
-    }
-  }
-
-  close(sock);
-  return False;
-#endif /* I_HATE_WINDOWS_REPLY_CODE */
+			buf2 += 2;
+			/* Note this is safe as it is a bounded strcpy. */
+			fstrcpy(ret_name, buf2);
+			ret_name[sizeof(fstring)-1] = '\0';
+			close(sock);
+			free_packet(p_ret);
+			return True;
+		}
+	}
+	
+	close(sock);
+	return False;
 }
+
 
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.
 *********************************************************/
-
 BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count)
 {
 	return internal_resolve_name(group, 0x1C, ip_list, count);

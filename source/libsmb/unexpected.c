@@ -111,24 +111,28 @@ void clear_unexpected(time_t t)
 
 
 static struct packet_struct *matched_packet;
-static int match_trn_id;
+static int match_id;
+static enum packet_type match_type;
+static char *match_name;
 
 /****************************************************************************
 tdb traversal fn to find a matching 137 packet
   **************************************************************************/
-static int traverse_match_137(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf)
 {
 	struct unexpected_key key;
 	struct packet_struct *p;
 
 	memcpy(&key, kbuf.dptr, sizeof(key));
 
-	if (key.packet_type != NMB_PACKET) return 0;
+	if (key.packet_type != match_type) return 0;
 
-	p = parse_packet(dbuf.dptr, dbuf.dsize, NMB_PACKET);
+	p = parse_packet(dbuf.dptr, dbuf.dsize, match_type);
 
-	if (p->packet_type == NMB_PACKET &&
-	    p->packet.nmb.header.name_trn_id == match_trn_id) {
+	if ((match_type == NMB_PACKET && 
+	     p->packet.nmb.header.name_trn_id == match_id) ||
+	    (match_type == DGRAM_PACKET && 
+	     match_mailslot_name(p, match_name))) {
 		matched_packet = p;
 		return -1;
 	}
@@ -142,7 +146,8 @@ static int traverse_match_137(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf)
 /****************************************************************************
 check for a particular packet in the unexpected packet queue
   **************************************************************************/
-struct packet_struct *receive_unexpected_137(int trn_id)
+struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
+					 char *mailslot_name)
 {
 	TDB_CONTEXT *tdb2;
 
@@ -150,9 +155,11 @@ struct packet_struct *receive_unexpected_137(int trn_id)
 	if (!tdb2) return NULL;
 
 	matched_packet = NULL;
-	match_trn_id = trn_id;
+	match_id = id;
+	match_type = packet_type;
+	match_name = mailslot_name;
 
-	tdb_traverse(tdb2, traverse_match_137);
+	tdb_traverse(tdb2, traverse_match);
 
 	tdb_close(tdb2);
 
