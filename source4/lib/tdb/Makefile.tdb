@@ -26,4 +26,4 @@ bin/tdbbackup: tools/tdbbackup.o $(TDB_OBJ)
 	$(CC) $(CFLAGS) -o tdbbackup tools/tdbbackup.o $(TDB_OBJ)
 
 clean:
-	rm -f $(PROGS) common/*.o *~ *.bak */*~ */*.bak *% core test.db test.tdb test.gdbm
+	rm -f $(PROGS) common/*.o tools/*.o *~ *.bak */*~ */*.bak *% core test.db test.tdb test.gdbm
