@@ -479,8 +479,8 @@ int main(int argc, char **argv)
 	int opt;
 
 	poptContext pc;
-	char *string_arg;
-	int int_arg;
+	static char *string_arg;
+	static int int_arg;
 	BOOL got_command = False;
 
 	struct poptOption long_options[] = {
