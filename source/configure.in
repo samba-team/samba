@@ -1544,7 +1544,7 @@ for i in $LOOK_DIRS ; do
     save_LIBS=$LIBS
     save_LDFLAGS=$LDFLAGS
     save_CPPFLAGS=$CPPFLAGS
-    CPPFLAGS="-I$i/include"
+    CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
     if test x"$ICONV_PATH_SPEC" = "xyes" ; then
        LDFLAGS="-L$i/lib"
