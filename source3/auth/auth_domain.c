@@ -510,10 +510,12 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	/* Test if machine password is expired and need to be changed */
-	if (time(NULL) > last_change_time + lp_machine_password_timeout())
-	{
-		global_machine_password_needs_changing = True;
+	/* Test if machine password has expired and needs to be changed */
+	if (lp_machine_password_timeout()) {
+		if (time(NULL) > (last_change_time + 
+				  lp_machine_password_timeout())) {
+			global_machine_password_needs_changing = True;
+		}
 	}
 
 	/*
