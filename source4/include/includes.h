@@ -673,6 +673,7 @@ extern int errno;
 #include "gtk/common/select.h"
 
 #include "libnet/libnet.h"
+#include "utils/net/net.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
