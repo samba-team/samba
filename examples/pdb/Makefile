@@ -8,7 +8,7 @@ SAMBA_SRC = ../../source
 SAMBA_INCL = ../../source/include
 UBIQX_SRC = ../../source/ubiqx
 SMBWR_SRC = ../../source/smbwrapper
-CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g
+CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g -I/usr/include/heimdal -fPIC
 PDB_OBJS = pdb_test.so
 
 # Default target
