@@ -46,7 +46,7 @@ Wall:
 
 install: all
 	$(MKDIRHIER) $(bindir)
-	for x in $(PROG_LIBEXEC); do $(INSTALL) $$x $(bindir); done
+	for x in $(PROG_LIBEXEC); do $(INSTALL) $$x $(prefix)/libexec; done
 
 uninstall:
 
