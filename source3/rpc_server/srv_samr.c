@@ -862,7 +862,7 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 	uint32 status = 0;
 
 	LOCAL_GRP_MEMBER *mem_grp = NULL;
-	DOM_SID *sid = NULL;
+	DOM_SID2 *sid = NULL;
 	int num_sids = 0;
 	DOM_SID alias_sid;
 	uint32 alias_rid;
@@ -892,7 +892,7 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 			DEBUG(10,("lookup on S-1-5-20\n"));
 
 			become_root(True);
-			status = getbuiltinrid(alias_rid, &mem_grp, &num_sids) ? 0xC0000000 | NT_STATUS_NO_SUCH_GROUP : 0x0;
+			status = getbuiltinrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
 			unbecome_root(True);
 		}
 		else if (sid_equal(&alias_sid, &global_sam_sid))
@@ -900,7 +900,7 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			status = getaliasrid(alias_rid, &mem_grp, &num_sids) ? 0xC0000000 | NT_STATUS_NO_SUCH_GROUP : 0x0;
+			status = getaliasrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
 			unbecome_root(True);
 		}
 		else
@@ -917,7 +917,7 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 			int i;
 			for (i = 0; i < num_sids; i++)
 			{
-				sid[i] = mem_grp[i].sid;
+				make_dom_sid2(&sid[i], &mem_grp[i].sid);
 			}
 			free(mem_grp);
 		}
@@ -1773,6 +1773,11 @@ static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 	/* set up the SAMR open_alias response */
 
 	r_u.status = 0x0;
+	if (r_u.status == 0x0 && !get_lsa_policy_samr_sid(&q_u->dom_pol, &sid))
+	{
+		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* get a (unique) handle.  open a policy on it. */
 	if (r_u.status == 0x0 && !(pol_open = open_lsa_policy_hnd(&(r_u.pol))))
 	{
@@ -1786,7 +1791,6 @@ static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	sid_copy(&sid, &global_sid_S_1_5_20);
 	sid_append_rid(&sid, q_u->rid_alias);
 
 	/* associate an alias SID with the (unique) handle. */

@@ -2081,12 +2081,14 @@ void samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs
 /*******************************************************************
 makes a SAMR_Q_OPEN_ALIAS structure.
 ********************************************************************/
-void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
+void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u, POLICY_HND *pol,
 				uint32 unknown_0, uint32 rid)
 {
 	if (q_u == NULL) return;
 
 	DEBUG(5,("make_samr_q_open_alias\n"));
+
+	memcpy(&(q_u->dom_pol), pol, sizeof(q_u->dom_pol));
 
 	/* example values: 0x0000 0008 */
 	q_u->unknown_0 = unknown_0; 
@@ -2105,6 +2107,8 @@ void samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, i
 	depth++;
 
 	prs_align(ps);
+
+	smb_io_pol_hnd("dom_pol", &(q_u->dom_pol), ps, depth); 
 
 	prs_uint32("unknown_0", ps, depth, &(q_u->unknown_0));
 	prs_uint32("rid_alias", ps, depth, &(q_u->rid_alias));
@@ -2523,7 +2527,7 @@ void samr_io_q_query_aliasmem(char *desc,  SAMR_Q_QUERY_ALIASMEM *q_u, prs_struc
 makes a SAMR_R_QUERY_ALIASMEM structure.
 ********************************************************************/
 void make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
-		uint32 num_sids, DOM_SID *sid, uint32 status)
+		uint32 num_sids, DOM_SID2 *sid, uint32 status)
 {
 	if (r_u == NULL) return;
 
@@ -2531,9 +2535,9 @@ void make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
 
 	if (status == 0x0)
 	{
-		r_u->num_sids = num_sids;
-		r_u->ptr      = (num_sids != 0) ? 1 : 0;
-		r_u->num_sids = num_sids;
+		r_u->num_sids  = num_sids;
+		r_u->ptr       = (num_sids != 0) ? 1 : 0;
+		r_u->num_sids1 = num_sids;
 
 		r_u->sid = sid;
 	}
@@ -2561,12 +2565,11 @@ void samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struc
 
 	prs_align(ps);
 
+	prs_uint32("num_sids ", ps, depth, &(r_u->num_sids));
 	prs_uint32("ptr", ps, depth, &(r_u->ptr));
 
 	if (r_u->ptr != 0)
 	{
-		prs_uint32("num_sids ", ps, depth, &(r_u->num_sids));
-
 		SMB_ASSERT_ARRAY(ptr_sid, r_u->num_sids);
 
 		if (r_u->num_sids != 0)
@@ -2584,7 +2587,7 @@ void samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struc
 				prs_grow(ps);
 				if (ptr_sid[i] != 0)
 				{
-					smb_io_dom_sid("", &(r_u->sid[i]), ps, depth);
+					smb_io_dom_sid2("", &(r_u->sid[i]), ps, depth);
 				}
 			}
 		}

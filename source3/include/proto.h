@@ -2086,7 +2086,7 @@ void samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs
 void make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
 		uint32 num_rids, uint32 *rid, uint32 status);
 void samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth);
-void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
+void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u, POLICY_HND *pol,
 				uint32 unknown_0, uint32 rid);
 void samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, int depth);
@@ -2116,7 +2116,7 @@ void samr_io_r_add_aliasmem(char *desc,  SAMR_R_ADD_ALIASMEM *r_u, prs_struct *p
 void make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_c, POLICY_HND *hnd);
 void samr_io_q_query_aliasmem(char *desc,  SAMR_Q_QUERY_ALIASMEM *q_u, prs_struct *ps, int depth);
 void make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
-		uint32 num_sids, DOM_SID *sid, uint32 status);
+		uint32 num_sids, DOM_SID2 *sid, uint32 status);
 void samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
 void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
