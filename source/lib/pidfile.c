@@ -41,7 +41,7 @@ pid_t pidfile_pid(char *name)
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
-	fd = sys_open(pidFile, O_NONBLOCK | O_RDWR, 0644);
+	fd = sys_open(pidFile, O_NONBLOCK | O_RONLY, 0644);
 	if (fd == -1) {
 		return 0;
 	}
@@ -49,24 +49,24 @@ pid_t pidfile_pid(char *name)
 	ZERO_ARRAY(pidstr);
 
 	if (read(fd, pidstr, sizeof(pidstr)-1) <= 0) {
-		goto ok;
+		goto noproc;
 	}
 
 	ret = atoi(pidstr);
 	
 	if (!process_exists((pid_t)ret)) {
-		goto ok;
+		goto noproc;
 	}
 
-	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)) {
+	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_RDLCK)) {
 		/* we could get the lock - it can't be a Samba process */
-		goto ok;
+		goto noproc;
 	}
 
 	close(fd);
 	return (pid_t)ret;
 
- ok:
+ noproc:
 	close(fd);
 	unlink(pidFile);
 	return 0;
