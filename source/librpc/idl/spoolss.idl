@@ -329,7 +329,9 @@
 
 	/******************/
 	/* Function: 0x1f */
-	WERROR spoolss_1f(
+	WERROR spoolss_DeleteForm(
+		[in,ref] policy_handle *handle,
+		[in] unistr formname
 	);
 
 	/******************/
