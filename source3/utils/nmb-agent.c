@@ -37,143 +37,15 @@ extern int DEBUGLEVEL;
 
 static int ClientNMB = -1;
 
-struct sock_redir
-{
-	int c;
-	int s;
-	int c_trn_id;
-	int s_trn_id;
-	struct nmb_state *n;
-};
-
-static uint32 num_socks = 0;
-static struct sock_redir **socks = NULL;
-
 /****************************************************************************
 terminate sockent connection
 ****************************************************************************/
-static void sock_redir_free(struct sock_redir *sock)
+static void free_sock(void *sock)
 {
-	DEBUG(10,("sock_redir_free: %d\n", sock->c));
-	if (sock->c != -1)
-	{
-		close(sock->c);
-		sock->c = -1;
-	}
-	if (sock->n != NULL)
-	{
-		free(sock->n);
-		sock->n = NULL;
-	}
-	free(sock);
-}
-
-/****************************************************************************
-free a sockent array
-****************************************************************************/
-static void free_sock_array(uint32 num_entries, struct sock_redir **entries)
-{
-	void(*fn)(void*) = (void(*)(void*))&sock_redir_free;
-	free_void_array(num_entries, (void**)entries, *fn);
-}
-
-/****************************************************************************
-add a sockent state to the array
-****************************************************************************/
-static struct sock_redir* add_sock_to_array(uint32 *len,
-				struct sock_redir ***array,
-				struct sock_redir *sock)
-{
-	int i;
-	for (i = 0; i < num_socks; i++)
-	{
-		if (socks[i] == NULL)
-		{
-			socks[i] = sock;
-			return sock;
-		}
-	}
-
-	return (struct sock_redir*)add_item_to_array(len,
-	                     (void***)array, (void*)sock);
-				
-}
-
-/****************************************************************************
-initiate sockent array
-****************************************************************************/
-void init_sock_redir(void)
-{
-	socks = NULL;
-	num_socks = 0;
-}
-
-/****************************************************************************
-terminate sockent array
-****************************************************************************/
-void free_sock_redir(void)
-{
-	free_sock_array(num_socks, socks);
-	init_sock_redir();
-}
-
-/****************************************************************************
-create a new sockent state from user credentials
-****************************************************************************/
-static struct sock_redir *sock_redir_get(int fd)
-{
-	struct sock_redir *sock;
-
-	sock = (struct sock_redir*)malloc(sizeof(*sock));
-
-	if (sock == NULL)
-	{
-		return NULL;
-	}
-
-	ZERO_STRUCTP(sock);
-
-	sock->c = fd;
-	sock->s = -1;
-	sock->n = NULL;
-
-	DEBUG(10,("sock_redir_get:\tfd:\t%d\t\n", fd));
-
-	return sock;
-}
-
-/****************************************************************************
-init sock state
-****************************************************************************/
-static void sock_add(int fd)
-{
-	struct sock_redir *sock;
-	sock = sock_redir_get(fd);
 	if (sock != NULL)
 	{
-		add_sock_to_array(&num_socks, &socks, sock);
+		free(sock);
 	}
-}
-
-/****************************************************************************
-delete a sockent state
-****************************************************************************/
-static BOOL sock_del(int fd)
-{
-	int i;
-
-	for (i = 0; i < num_socks; i++)
-	{
-		if (socks[i] == NULL) continue;
-		if (socks[i]->c == fd) 
-		{
-			sock_redir_free(socks[i]);
-			socks[i] = NULL;
-			return True;
-		}
-	}
-
-	return False;
 }
 
 static void filter_reply(struct packet_struct *p, int tr_id)
@@ -181,13 +53,15 @@ static void filter_reply(struct packet_struct *p, int tr_id)
 	p->packet.nmb.header.name_trn_id = tr_id;
 }
 
-static BOOL process_cli_sock(struct sock_redir **sock)
+static BOOL process_cli_sock(struct sock_redir **socks,
+				uint32 num_socks,
+				struct sock_redir *sock)
 {
 	struct packet_struct *p;
 	struct nmb_state *nmb;
 	static uint16 trn_id = 0x0;
 
-	p = receive_packet((*sock)->c, NMB_SOCK_PACKET, 0);
+	p = receive_packet(sock->c, NMB_SOCK_PACKET, 0);
 	if (p == NULL)
 	{
 		DEBUG(0,("client closed connection\n"));
@@ -201,10 +75,11 @@ static BOOL process_cli_sock(struct sock_redir **sock)
 		return False;
 	}
 
-	(*sock)->s = ClientNMB;
-	(*sock)->n = nmb;
-	(*sock)->c_trn_id = p->packet.nmb.header.name_trn_id;
-	(*sock)->s_trn_id = trn_id;
+	sock->s = ClientNMB;
+	sock->n = nmb;
+	sock->c_id = p->packet.nmb.header.name_trn_id;
+	sock->s_id = trn_id;
+
 	trn_id++;
 	if (trn_id > 0xffff)
 	{
@@ -213,7 +88,7 @@ static BOOL process_cli_sock(struct sock_redir **sock)
 
 	DEBUG(10,("new trn_id: %d\n", trn_id));
 
-	filter_reply(p, (*sock)->s_trn_id);
+	filter_reply(p, sock->s_id);
 
 	nmb->ip = p->ip;
 	nmb->port = p->port;
@@ -231,7 +106,9 @@ static BOOL process_cli_sock(struct sock_redir **sock)
 	return True;
 }
 
-static BOOL process_srv_sock(int fd)
+static BOOL process_srv_sock(struct sock_redir **socks,
+				uint32 num_socks,
+				int fd)
 {
 	int nmb_id;
 	int tr_id;
@@ -261,11 +138,11 @@ static BOOL process_srv_sock(int fd)
 			continue;
 		}
 
-		tr_id = socks[i]->s_trn_id;
+		tr_id = socks[i]->s_id;
 
-		DEBUG(10,("list:\tfd:\t%d\tc_trn_id:\t%d\ttr_id:\t%d\n",
+		DEBUG(10,("list:\tfd:\t%d\tc_id:\t%d\ttr_id:\t%d\n",
 			   socks[i]->c,
-			   socks[i]->c_trn_id,
+			   socks[i]->c_id,
 			   tr_id));
 
 		if (nmb_id != tr_id)
@@ -273,7 +150,7 @@ static BOOL process_srv_sock(int fd)
 			continue;
 		}
 
-		filter_reply(p, socks[i]->c_trn_id);
+		filter_reply(p, socks[i]->c_id);
 		p->fd = socks[i]->c;
 		p->packet_type = NMB_SOCK_PACKET;
 
@@ -287,9 +164,9 @@ static BOOL process_srv_sock(int fd)
 	return False;
 }
 
-static void start_agent(void)
+static int get_agent_sock(void*id)
 {
-	int s, c;
+	int s;
 	struct sockaddr_un sa;
 	fstring path;
 	fstring dir;
@@ -303,7 +180,7 @@ static void start_agent(void)
 	if (chmod(dir, 0777) < 0)
 	{
 		fprintf(stderr, "chmod on %s failed\n", sa.sun_path);
-		exit(1);
+		return -1;
 	}
 
 
@@ -313,7 +190,7 @@ static void start_agent(void)
 	if (s < 0)
 	{
 		fprintf(stderr, "socket open failed\n");
-		exit(1);
+		return -1;
 	}
 
 	ZERO_STRUCT(sa);
@@ -325,103 +202,43 @@ static void start_agent(void)
 		fprintf(stderr, "socket bind to %s failed\n", sa.sun_path);
 		close(s);
 		remove(path);
-		exit(1);
+		return -1;
 	}
 
 	if (s == -1)
 	{
 		DEBUG(0,("bind failed\n"));
 		remove(path);
-		exit(1);
+		return -1;
 	}
+
+	chmod(path, 0666);
 
 	if (listen(s, 5) == -1)
 	{
 		DEBUG(0,("listen failed\n"));
-		remove(path);
+		return -1;
 	}
 
-	while (1)
+	return s;
+}
+
+static void start_nmb_agent(void)
+{
+	struct vagent_ops va =
 	{
-		int i;
-		fd_set fds;
-		int num;
-		struct sockaddr_un addr;
-		int in_addrlen = sizeof(addr);
-		int maxfd = s;
-		
-		FD_ZERO(&fds);
-		FD_SET(s, &fds);
+		free_sock,
+		get_agent_sock,
+		process_cli_sock,
+		process_srv_sock,
+		NULL,
+		NULL,
+		0
+	};
+	
+	CatchChild();
 
-		for (i = 0; i < num_socks; i++)
-		{
-			if (socks[i] != NULL)
-			{
-				int fd = socks[i]->c;
-				FD_SET(fd, &fds);
-				maxfd = MAX(maxfd, fd);
-
-				fd = socks[i]->s;
-				if (fd != -1)
-				{
-					FD_SET(fd, &fds);
-					maxfd = MAX(maxfd, fd);
-				}
-			}
-		}
-
-		dbgflush();
-		num = sys_select(maxfd+1,&fds,NULL, NULL);
-
-		if (num <= 0)
-		{
-			continue;
-		}
-
-		if (FD_ISSET(s, &fds))
-		{
-			FD_CLR(s, &fds);
-			c = accept(s, (struct sockaddr*)&addr, &in_addrlen);
-			if (c != -1)
-			{
-				sock_add(c);
-			}
-		}
-
-		for (i = 0; i < num_socks; i++)
-		{
-			if (socks[i] == NULL)
-			{
-				continue;
-			}
-			if (FD_ISSET(socks[i]->c, &fds))
-			{
-				FD_CLR(socks[i]->c, &fds);
-				if (!process_cli_sock(&socks[i]))
-				{
-					sock_redir_free(socks[i]);
-					socks[i] = NULL;
-				}
-			}
-			if (socks[i] == NULL)
-			{
-				continue;
-			}
-			if (socks[i]->n == NULL)
-			{
-				continue;
-			}
-			if (FD_ISSET(socks[i]->s, &fds))
-			{
-				FD_CLR(socks[i]->s, &fds);
-				if (!process_srv_sock(socks[i]->s))
-				{
-					sock_redir_free(socks[i]);
-					socks[i] = NULL;
-				}
-			}
-		}
-	}
+	start_agent(&va);
 }
 
 /******************************************************************************
@@ -517,7 +334,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	start_agent();
+	start_nmb_agent();
 
 	return 0;
 }
