@@ -50,6 +50,7 @@ open the NT printing tdb
 BOOL nt_printing_init(void)
 {
 	static pid_t local_pid;
+	char *vstring = "INFO/version";
 
 	if (tdb && local_pid == sys_getpid()) return True;
 	tdb = tdb_open(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
@@ -61,12 +62,12 @@ BOOL nt_printing_init(void)
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
-	tdb_writelock(tdb);
-	if (tdb_fetch_int(tdb, "INFO/version") != DATABASE_VERSION) {
+	tdb_lock_bystring(tdb, vstring);
+	if (tdb_fetch_int(tdb, vstring) != DATABASE_VERSION) {
 		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
-		tdb_store_int(tdb, "INFO/version", DATABASE_VERSION);
+		tdb_store_int(tdb, vstring, DATABASE_VERSION);
 	}
-	tdb_writeunlock(tdb);
+	tdb_unlock_bystring(tdb, vstring);
 
 	return True;
 }
@@ -1347,7 +1348,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->scale            = 0x64;
 	nt_devmode->copies           = 01;
 	nt_devmode->defaultsource    = BIN_FORMSOURCE;
-	nt_devmode->printquality     = RES_HIGH;           /* 0x0258; */
+	nt_devmode->printquality     = RES_HIGH;           /* 0x0258 */
 	nt_devmode->color            = COLOR_MONOCHROME;
 	nt_devmode->duplex           = DUP_SIMPLEX;
 	nt_devmode->yresolution      = 0;

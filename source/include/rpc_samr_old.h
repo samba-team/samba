@@ -77,32 +77,34 @@ SamrTestPrivateFunctionsUser
 
 ********************************************************************/
 
+#define SAMR_CONNECT_ANON      0x00
 #define SAMR_CLOSE_HND         0x01
+#define SAMR_UNKNOWN_3         0x03
 #define SAMR_LOOKUP_DOMAIN     0x05
 #define SAMR_ENUM_DOMAINS      0x06
 #define SAMR_OPEN_DOMAIN       0x07
 #define SAMR_QUERY_DOMAIN_INFO 0x08
+#define SAMR_ENUM_DOM_USERS    0x0d
+#define SAMR_ENUM_DOM_ALIASES  0x0f
 #define SAMR_LOOKUP_IDS        0x10
 #define SAMR_LOOKUP_NAMES      0x11
-#define SAMR_UNKNOWN_3         0x03
-#define SAMR_QUERY_DISPINFO    0x28
+#define SAMR_LOOKUP_RIDS       0x12
+#define SAMR_OPEN_ALIAS        0x1b
+#define SAMR_QUERY_ALIASINFO   0x1c
+#define SAMR_UNKNOWN_21        0x21
 #define SAMR_OPEN_USER         0x22
 #define SAMR_QUERY_USERINFO    0x24
+#define SAMR_SET_USERINFO2     0x25
 #define SAMR_QUERY_USERGROUPS  0x27
-#define SAMR_UNKNOWN_12        0x12
-#define SAMR_UNKNOWN_21        0x21
+#define SAMR_QUERY_DISPINFO    0x28
 #define SAMR_UNKNOWN_2C        0x2c
+#define SAMR_ENUM_DOM_GROUPS   0x30
 #define SAMR_CREATE_USER       0x32
 #define SAMR_UNKNOWN_34        0x34
 #define SAMR_CHGPASSWD_USER    0x37
 #define SAMR_UNKNOWN_38        0x38
 #define SAMR_CONNECT           0x39
-#define SAMR_CONNECT_ANON      0x00
-#define SAMR_OPEN_ALIAS        0x1b
-#define SAMR_QUERY_ALIASINFO   0x1c
-#define SAMR_ENUM_DOM_USERS    0x0d
-#define SAMR_ENUM_DOM_ALIASES  0x0f
-#define SAMR_ENUM_DOM_GROUPS   0x30
+#define SAMR_SET_USERINFO      0x3A
 
 
 typedef struct logon_hours_info
@@ -139,7 +141,7 @@ typedef struct sam_user_info_21
 	uint32 user_rid;      /* Primary User ID */
 	uint32 group_rid;     /* Primary Group ID */
 
-	uint16 acb_info; /* account info (ACB_xxxx bit-mask) */
+	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 	/* uint8 pad[2] */
 
 	uint32 unknown_3; /* 0x00ff ffff */
@@ -351,6 +353,14 @@ typedef struct q_samr_query_domain_info
 
 } SAMR_Q_QUERY_DOMAIN_INFO;
 
+typedef struct sam_unknown_info_1_inf
+{
+	uint8 padding[12]; /* 12 bytes zeros */
+	uint32 unknown_1; /* 0x8000 0000 */
+	uint32 unknown_2; /* 0x0000 0000 */
+
+} SAM_UNK_INFO_1;
+
 typedef struct sam_unkown_info_2_info
 {
 	uint32 unknown_0; /* 0x0000 0000 */
@@ -382,13 +392,49 @@ typedef struct sam_unkown_info_2_info
 
 } SAM_UNK_INFO_2;
 
+typedef struct sam_unknown_info_3_info
+{
+	uint32 unknown_0; /* 0x0000 0000 */
+	uint32 unknown_1; /* 0x8000 0000 */
+
+} SAM_UNK_INFO_3;
+
+typedef struct sam_unknown_info_6_info
+{
+	uint32 unknown_0; /* 0x0000 0000 */
+
+	uint32 ptr_0;     /* pointer to unknown structure */
+	uint8  padding[12]; /* 12 bytes zeros */
+
+} SAM_UNK_INFO_6;
+
+typedef struct sam_unknown_info_7_info
+{
+	uint16 unknown_0; /* 0x0003 */
+
+} SAM_UNK_INFO_7;
+
+typedef struct sam_unknown_info_12_inf
+{
+	uint32 unknown_0; /* 0xcf1d cc00 */
+	uint32 unknown_1; /* 0xffff fffb */
+	uint32 unknown_2; /* 0xcf1d cc00 */
+	uint32 unknown_3; /* 0xffff fffb */
+
+	uint32 unknown_4; /* 0x8a88 0000 */
+
+} SAM_UNK_INFO_12;
 
 typedef struct sam_unknown_ctr_info
 {
 	union
 	{
+		SAM_UNK_INFO_1 inf1;
 		SAM_UNK_INFO_2 inf2;
-
+		SAM_UNK_INFO_3 inf3;
+		SAM_UNK_INFO_6 inf6;
+		SAM_UNK_INFO_7 inf7;
+		SAM_UNK_INFO_12 inf12;
 	} info;
 
 } SAM_UNK_CTR;
@@ -896,12 +942,12 @@ typedef struct r_samr_lookup_names_info
 } SAMR_R_LOOKUP_NAMES;
 
 /****************************************************************************
-SAMR_Q_UNKNOWN_12 - do a conversion from RID groups to something.
+SAMR_Q_LOOKUP_RIDS - do a conversion from RID groups to something.
 
 called to resolve domain RID groups.
 *****************************************************************************/
-/* SAMR_Q_UNKNOWN_12 */
-typedef struct q_samr_unknown_12_info
+/* SAMR_Q_LOOKUP_RIDS */
+typedef struct q_samr_lookup_rids_info
 {
     POLICY_HND pol;       /* policy handle */
 
@@ -912,17 +958,17 @@ typedef struct q_samr_unknown_12_info
 
 	uint32 gid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
 
-} SAMR_Q_UNKNOWN_12;
+} SAMR_Q_LOOKUP_RIDS;
 
 
 /****************************************************************************
-SAMR_R_UNKNOWN_12 - do a conversion from group RID to names
+SAMR_R_LOOKUP_RIDS - do a conversion from group RID to names
 
 *****************************************************************************/
-/* SAMR_R_UNKNOWN_12 */
-typedef struct r_samr_unknown_12_info
+/* SAMR_R_LOOKUP_RIDS */
+typedef struct r_samr_lookup_rids_info
 {
-    POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 
 	uint32 num_aliases1;      /* number of aliases being looked up */
 	uint32 ptr_aliases;       /* pointer to aliases */
@@ -939,13 +985,13 @@ typedef struct r_samr_unknown_12_info
 
 	uint32 status;
 
-} SAMR_R_UNKNOWN_12;
+} SAMR_R_LOOKUP_RIDS;
 
 
 /* SAMR_Q_OPEN_USER - probably an open */
 typedef struct q_samr_open_user_info
 {
-    POLICY_HND domain_pol;       /* policy handle */
+	POLICY_HND domain_pol;       /* policy handle */
 	uint32 unknown_0;     /* 32 bit unknown - 0x02011b */
 	uint32 user_rid;      /* user RID */
 
@@ -955,7 +1001,7 @@ typedef struct q_samr_open_user_info
 /* SAMR_R_OPEN_USER - probably an open */
 typedef struct r_samr_open_user_info
 {
-    POLICY_HND user_pol;       /* policy handle associated with unknown id */
+	POLICY_HND user_pol;       /* policy handle associated with unknown id */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_USER;
@@ -964,7 +1010,7 @@ typedef struct r_samr_open_user_info
 /* SAMR_Q_UNKNOWN_13 - probably an open alias in domain */
 typedef struct q_samr_unknown_13_info
 {
-    POLICY_HND alias_pol;        /* policy handle */
+	POLICY_HND alias_pol;        /* policy handle */
 
 	uint16 unknown_1;            /* 16 bit unknown - 0x0200 */
 	uint16 unknown_2;            /* 16 bit unknown - 0x0000 */
@@ -975,7 +1021,7 @@ typedef struct q_samr_unknown_13_info
 /* SAMR_Q_UNKNOWN_21 - probably an open group in domain */
 typedef struct q_samr_unknown_21_info
 {
-    POLICY_HND group_pol;        /* policy handle */
+	POLICY_HND group_pol;        /* policy handle */
 
 	uint16 unknown_1;            /* 16 bit unknown - 0x0477 */
 	uint16 unknown_2;            /* 16 bit unknown - 0x0000 */
@@ -1011,6 +1057,7 @@ typedef struct r_samr_create_user_info
 /* SAMR_Q_OPEN_ALIAS - probably an open */
 typedef struct q_samr_open_alias_info
 {
+	POLICY_HND dom_pol;       /* policy handle */
 	uint32 unknown_0;         /* 0x0000 0008 */
 	uint32 rid_alias;        /* rid */
 
@@ -1126,6 +1173,143 @@ typedef struct r_samr_chgpasswd_user_info
 	uint32 status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
 
 } SAMR_R_CHGPASSWD_USER;
+
+
+/* SAM_USER_INFO_7 */
+typedef struct sam_user_info_7
+{
+	UNIHDR hdr_user_name;
+	UNISTR2 uni_user_name;
+
+} SAM_USER_INFO_7;
+
+/* SAM_USER_INFO_12 */
+typedef struct sam_user_info_12
+{
+	uint8 lm_pwd[16];    /* lm user passwords */
+	uint8 nt_pwd[16];    /* nt user passwords */
+
+	uint8 lm_pwd_active; 
+	uint8 nt_pwd_active; 
+
+} SAM_USER_INFO_12;
+
+/* SAM_USER_INFO_23 */
+typedef struct sam_user_info_23
+{
+	/* TIMES MAY NOT IN RIGHT ORDER!!!! */
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* NULL - user name unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home drive unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_acct_desc  ;  /* user description */
+	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
+	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
+
+	uint8 lm_pwd[16];    /* lm user passwords */
+	uint8 nt_pwd[16];    /* nt user passwords */
+
+	uint32 user_rid;      /* Primary User ID */
+	uint32 group_rid;     /* Primary Group ID */
+
+	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
+
+	uint32 unknown_3; /* 0x09f8 27fa */
+
+	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
+	/* uint8 pad[2] */
+	uint32 ptr_logon_hrs; /* pointer to logon hours */
+
+	uint8 padding1[8];
+
+	uint32 unknown_5;     /* 0x0001 0000 */
+
+	uint8 pass[516];
+
+	UNISTR2 uni_user_name;    /* NULL - username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
+	UNISTR2 uni_workstations; /* login from workstations unicode string */
+	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
+
+	uint32 unknown_6; /* 0x0000 04ec */
+	uint32 padding4;
+
+	LOGON_HRS logon_hrs;
+
+} SAM_USER_INFO_23;
+
+/* SAM_USER_INFO_24 */
+typedef struct sam_user_info_24
+{
+	uint8 pass[516];
+} SAM_USER_INFO_24;
+
+/* SAM_USERINFO_CTR - sam user info */
+typedef struct sam_userinfo_ctr_info
+{
+	uint16 switch_value;
+	union
+	{
+		SAM_USER_INFO_7 *id7;
+		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
+		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
+		SAM_USER_INFO_12 *id12; /* auth-level 0x12 */
+		SAM_USER_INFO_21 *id21; /* auth-level 21 */
+		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
+		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
+		void* id; /* to make typecasting easy */
+	} info;
+
+} SAM_USERINFO_CTR;
+
+/* SAMR_Q_SET_USERINFO - set sam info */
+typedef struct q_samr_set_user_info
+{
+	POLICY_HND pol;          /* policy handle associated with user */
+	uint16 switch_value;
+	SAM_USERINFO_CTR *ctr;
+
+} SAMR_Q_SET_USERINFO;
+
+/* SAMR_R_SET_USERINFO - set sam info */
+typedef struct r_samr_set_user_info
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_SET_USERINFO;
+
+/* SAMR_Q_SET_USERINFO2 - set sam info */
+typedef struct q_samr_set_user_info2
+{
+	POLICY_HND pol;          /* policy handle associated with user */
+	uint16 switch_value;      /* 0x0010 */
+
+	SAM_USERINFO_CTR *ctr;
+
+} SAMR_Q_SET_USERINFO2;
+
+/* SAMR_R_SET_USERINFO2 - set sam info */
+typedef struct r_samr_set_user_info2
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_SET_USERINFO2;
 
 #endif /* _RPC_SAMR_H */
 

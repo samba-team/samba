@@ -494,7 +494,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
  Create a UNIX user on demand.
 ****************************************************************************/
 
-static int smb_create_user(char *unix_user)
+int smb_create_user(char *unix_user)
 {
   pstring add_script;
   int ret;

@@ -248,10 +248,10 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		int myargc;
 
 		printf("smbcontrol> ");
-		if (!gets(temp)) break;
+		if (!fgets(temp, sizeof(temp)-1, stdin)) break;
 		myargc = 0;
 		while ((myargc < 3) && 
-		       (myargv[myargc] = strtok(myargc?NULL:temp," \t"))) {
+		       (myargv[myargc] = strtok(myargc?NULL:temp," \t\n"))) {
 			myargc++;
 		}
 		if (!myargc) break;
