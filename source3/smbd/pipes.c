@@ -81,7 +81,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   /* See if it is one we want to handle. */
   for( i = 0; pipe_names[i].client_pipe ; i++ )
-    if( strcmp(fname,pipe_names[i].client_pipe) == 0 )
+    if( strequal(fname,pipe_names[i].client_pipe) )
       break;
 
   if ( pipe_names[i].client_pipe == NULL )

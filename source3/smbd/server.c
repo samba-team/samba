@@ -2153,9 +2153,9 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
 
     if (action) 
     {
-      if (file_existed && !(flags2 & O_TRUNC)) *action = 1;
-      if (!file_existed) *action = 2;
-      if (file_existed && (flags2 & O_TRUNC)) *action = 3;
+      if (file_existed && !(flags2 & O_TRUNC)) *action = FILE_WAS_OPENED;
+      if (!file_existed) *action = FILE_WAS_CREATED;
+      if (file_existed && (flags2 & O_TRUNC)) *action = FILE_WAS_OVERWRITTEN;
     }
     /* We must create the share mode entry before truncate as
        truncate can fail due to locking and have to close the

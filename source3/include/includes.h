@@ -596,6 +596,9 @@ char *mktemp(char *); /* No standard include */
 #include <sys/vfs.h>
 #include <sys/id.h>
 #include <sys/priv.h>
+#ifdef ALLOW_CHANGE_PASSWORD
+#include <termios.h>  
+#endif /* ALLOW_CHANGE_PASSWORD */
 /* According to AIX 4.1 man pages, inet_ntoa needs the following headers */
 #include <sys/socket.h>
 #include <netinet/in.h>

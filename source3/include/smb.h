@@ -1112,11 +1112,25 @@ struct parm_struct
 #define FILE_FLAG_POSIX_SEMANTICS  0x01000000L
 
 /* CreateDisposition field. */
-#define CREATE_NEW 1
-#define CREATE_ALWAYS 2
-#define OPEN_EXISTING 3
-#define OPEN_ALWAYS 4
-#define TRUNCATE_EXISTING 5
+#define FILE_SUPERSEDE 0
+#define FILE_OPEN 1
+#define FILE_CREATE 2
+#define FILE_OPEN_IF 3
+#define FILE_OVERWRITE 4
+#define FILE_OVERWRITE_IF 5
+
+/* Responses when opening a file. */
+#define FILE_WAS_OPENED 1
+#define FILE_WAS_CREATED 2
+#define FILE_WAS_OVERWRITTEN 3
+
+/* File type flags */
+#define FILE_TYPE_DISK  0
+#define FILE_TYPE_BYTE_MODE_PIPE 1
+#define FILE_TYPE_MESSAGE_MODE_PIPE 2
+#define FILE_TYPE_PRINTER 3
+#define FILE_TYPE_COMM_DEVICE 4
+#define FILE_TYPE_UNKNOWN 0xFFFF
 
 /* Flag for NT transact rename call. */
 #define RENAME_REPLACE_IF_EXISTS 1
