@@ -58,16 +58,6 @@ case "$host_os" in
     *aix4*)
       CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
       ;;    
-#
-# Irix needs standards.h to detect netinet
-#
-    *irix*)
-	AC_CHECK_HEADERS(standards.h,
-		cat >> confdefs.h <<EOF
-#include <standards.h>
-EOF
-)
-      ;;
 esac
 
 AC_INLINE
