@@ -602,15 +602,16 @@ showlayout:
 
 SBIN_PROGS = bin/smbd
 
-BIN_PROGS = bin/smbclient 
+BIN_PROGS = bin/smbclient \\
+		bin/net \\
+		bin/nmblookup \\
+		bin/ntlm_auth
 
 TORTURE_PROGS = bin/smbtorture \\
 		bin/gentest \\
 		bin/locktest \\
 		bin/masktest \\
-		bin/ndrdump \\
-		bin/net \\
-		bin/nmblookup
+		bin/ndrdump
 
 LDB_PROGS = 	bin/ldbadd \\
 		bin/ldbdel \\
