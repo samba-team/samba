@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static char *so_path = "/usr/lib/libnss_winbind.so";
+static char *so_path = "/lib/libnss_winbind.so";
 static int nss_errno;
 
 static void *find_fn(const char *name)
