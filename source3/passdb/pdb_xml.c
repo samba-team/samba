@@ -28,7 +28,7 @@
  */
 
 
-#define XML_URL "http://samba.org/~jelmer/sambapdb.dtd"
+#define XML_URL "http://samba.org/samba/DTD/passdb"
 
 #include "includes.h"
 
