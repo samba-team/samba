@@ -7,7 +7,7 @@ AC_CONFIG_AUX_DIR_DEFAULT
 if test "`uname`" = AIX; then
 	INSTALL="$ac_install_sh"
 fi
-AM_INIT_AUTOMAKE(heimdal,0.0u)
+AM_INIT_AUTOMAKE(heimdal,0.1)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -720,7 +720,6 @@ AC_OUTPUT(Makefile 			\
 	appl/popper/Makefile		\
 	appl/push/Makefile		\
 	appl/login/Makefile		\
-	appl/su/Makefile		\
 	appl/telnet/Makefile		\
 	appl/telnet/libtelnet/Makefile	\
 	appl/telnet/telnet/Makefile	\
