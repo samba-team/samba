@@ -131,7 +131,8 @@ verify_user_otp(char *username)
     }
 
     snprintf (prompt, sizeof(prompt), "%s's %s Password: ", username, ss);
-    des_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0);
+    if(des_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0))
+	return 1;
     return otp_verify_user (&ctx, passwd);
 }
 
