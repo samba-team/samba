@@ -68,7 +68,7 @@ static const struct {
 	{ SQUID_2_5_BASIC, "squid-2.5-basic", manage_squid_basic_request},
 	{ SQUID_2_5_NTLMSSP, "squid-2.5-ntlmssp", manage_gensec_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gensec_request},
-	{ GSS_SPNEGO_SERVER, "gss-spnego-server", manage_gensec_request},
+	{ GSS_SPNEGO_SERVER, "gss-spnego", manage_gensec_request},
 	{ NTLMSSP_CLIENT_1, "ntlmssp-client-1", manage_gensec_request},
 	{ NTLM_SERVER_1, "ntlm-server-1", manage_ntlm_server_1_request},
 	{ NUM_HELPER_MODES, NULL, NULL}
@@ -444,13 +444,10 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 	switch (stdio_helper_mode) {
 	case GSS_SPNEGO_SERVER:
-		if (out_base64) {
-			x_fprintf(x_stdout, "%s %s %s\n", reply_code, out_base64, reply_arg);
-		} else if (reply_arg) {
-			x_fprintf(x_stdout, "%s %s\n", reply_code, reply_arg);
-		} else {
-			x_fprintf(x_stdout, "%s\n", reply_code);
-		}
+		x_fprintf(x_stdout, "%s %s %s\n", reply_code, 
+			  out_base64 ? out_base64 : "*", 
+			  reply_arg ? reply_arg : "*");
+
 	default:
 		if (out_base64) {
 			x_fprintf(x_stdout, "%s %s\n", reply_code, out_base64);
