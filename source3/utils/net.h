@@ -57,6 +57,11 @@ extern const char *opt_user_name;
 extern const char *opt_password;
 extern BOOL opt_user_specified;
 
+extern BOOL opt_localgroup;
+extern BOOL opt_domaingroup;
+extern const char *opt_newntname;
+extern int opt_rid;
+
 extern BOOL opt_have_ip;
 extern struct in_addr opt_dest_ip;
 

@@ -73,6 +73,10 @@ int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
+BOOL opt_localgroup = False;
+BOOL opt_domaingroup = False;
+const char *opt_newntname = "";
+int opt_rid = 0;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -680,6 +684,13 @@ static struct functable net_func[] = {
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
+
+		/* Options for 'net groupmap set' */
+		{"local",       'L', POPT_ARG_NONE,   &opt_localgroup},
+		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},
+		{"ntname",      'N', POPT_ARG_STRING, &opt_newntname},
+		{"rid",         'R', POPT_ARG_INT,    &opt_rid},
+
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};
