@@ -615,6 +615,8 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   int outsize = 0;
   extern int global_smbpid;
 
+  type &= 0xff;
+
   if (pid == (pid_t)-1)
     pid = sys_getpid();
 

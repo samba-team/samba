@@ -3942,6 +3942,7 @@ void exit_server(char *reason);
 
 #if OLD_NTDOMAIN
 BOOL become_service(connection_struct *conn,BOOL do_chdir);
+int add_home_service(char *service, char *homedir);
 int find_service(char *service);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
 void close_cnum(connection_struct *conn, uint16 vuid);
