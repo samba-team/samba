@@ -317,14 +317,14 @@ krb5_cc_initialize(krb5_context context,
   int ret;
   int fd;
 
-  krb5_fcache *f;
+  char *f;
 
-  f = (krb5_fcache*)id->data.data;
+  f = krb5_cc_get_name(context, id);
   
-  if(ret = erase_file(f->filename))
+  if(ret = erase_file(f))
     return ret;
   
-  fd = open(f->filename, O_RDWR | O_CREAT | O_EXCL, 0600);
+  fd = open(f, O_RDWR | O_CREAT | O_EXCL, 0600);
   if(fd == -1)
     return errno;
   store_int16(fd, 0x503);
@@ -359,15 +359,13 @@ krb5_error_code
 krb5_cc_destroy(krb5_context context,
 		krb5_ccache id)
 {
-  krb5_fcache *f;
+  char *f;
   int ret;
-  f = (krb5_fcache*)id->data.data;
+  f = krb5_cc_get_name(context, id);
 
-  ret = erase_file(f->filename);
+  ret = erase_file(f);
   
-  free(f->filename);
-  free(f);
-  free(id);
+  krb5_free_ccache(id);
   return ret;
 }
 
