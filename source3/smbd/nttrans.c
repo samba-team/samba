@@ -700,8 +700,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		open_directory(fsp, conn, fname, smb_ofun, 
-			       unixmode, &smb_action);
+		open_directory(fsp, conn, fname, smb_ofun, unixmode, 
+			       &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -727,7 +727,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		open_file_shared(fsp,conn,fname,smb_open_mode,
+   	        open_file_shared(fsp,conn,fname,smb_open_mode,
 				 smb_ofun,unixmode,
 				 oplock_request,&rmode,&smb_action);
 
@@ -751,7 +751,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			if(errno == EISDIR) {
 				oplock_request = 0;
 				
-				open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+				open_directory(fsp, conn, fname, 
+					       smb_ofun, unixmode, 
+					       &smb_action);
 				
 				if(!fsp->open) {
 					file_free(fsp);
@@ -774,13 +776,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	if(fsp->is_directory) {
-		if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+		if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
+					   &sbuf) != 0) {
 			close_directory(fsp);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+		if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) 
+		    != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -1006,8 +1010,8 @@ static int call_nt_transact_create(connection_struct *conn,
        * Ordinary file case.
        */
 
-      open_file_shared(fsp,conn,fname,smb_open_mode,smb_ofun,unixmode,
-                       oplock_request,&rmode,&smb_action);
+      open_file_shared(fsp,conn,fname,smb_open_mode,smb_ofun,
+		       unixmode,oplock_request,&rmode,&smb_action);
 
       if (!fsp->open) { 
         if((errno == ENOENT) && bad_path) {
@@ -1021,7 +1025,7 @@ static int call_nt_transact_create(connection_struct *conn,
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       } 
   
-      if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
         close_file(fsp,False);
 
         restore_case_semantics(file_attributes);
@@ -1329,7 +1333,7 @@ void process_pending_change_notify_queue(time_t t)
       continue;
     }
 
-    if(dos_stat(fsp->fsp_name, &st) < 0) {
+    if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &st) < 0) {
       DEBUG(0,("process_pending_change_notify_queue: Unable to stat directory %s. \
 Error was %s.\n", fsp->fsp_name, strerror(errno) ));
       /*
@@ -1408,7 +1412,7 @@ static int call_nt_transact_notify_change(connection_struct *conn,
    * Store the current timestamp on the directory we are monitoring.
    */
 
-  if(dos_stat(fsp->fsp_name, &st) < 0) {
+  if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &st) < 0) {
     DEBUG(0,("call_nt_transact_notify_change: Unable to stat name = %s. \
 Error was %s\n", fsp->fsp_name, strerror(errno) ));
     free((char *)cnbp);
