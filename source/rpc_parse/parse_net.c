@@ -338,13 +338,16 @@ BOOL net_io_q_req_chal(char *desc, NET_Q_REQ_CHAL * q_c, prs_struct * ps,
 
 	prs_uint32("undoc_buffer", ps, depth, &(q_c->undoc_buffer));
 
-	smb_io_unistr2("", &(q_c->uni_logon_srv), True, ps, depth);	/* logon server unicode string */
-	smb_io_unistr2("", &(q_c->uni_logon_clnt), True, ps, depth);	/* logon client unicode string */
+	smb_io_unistr2("logon_srv", &(q_c->uni_logon_srv), True, ps, depth);
+	prs_align(ps);
 
+	/* client challenge is _not_ aligned after the unicode strings */
 	old_align = ps->align;
 	ps->align = 0;
-	/* client challenge is _not_ aligned after the unicode strings */
-	smb_io_chal("", &(q_c->clnt_chal), ps, depth);	/* client challenge */
+
+	smb_io_unistr2("logon_clnt", &(q_c->uni_logon_clnt), True, ps, depth);
+	smb_io_chal("clnt_chal", &(q_c->clnt_chal), ps, depth);	
+
 	ps->align = old_align;
 
 	return True;
