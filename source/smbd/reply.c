@@ -603,7 +603,12 @@ user %s attempted down-level SMB connection\n", user));
 
           if passlen1>0 and passlen2>0 then maybe its a NT box and its
           setting passlen2 to some random value which really stuffs
-          things up. we need to fix that one.  */
+          things up. we need to fix that one.
+
+          LKCLXXXX: the random value can be random 16 bit.  old test
+          used to have ... && passlen <= 24) which of course fails
+          most of the time.
+        */
 
       if (passlen1 > 0 && passlen2 > 0 && passlen2 != 1)
         passlen2 = 0;
