@@ -136,8 +136,8 @@ typedef struct rpc_hdr_info
 typedef struct rpc_hdr_req_info
 {
   uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
-  uint16 context_id;   /* 0 - presentation context identifier */
-  uint16  opnum;        /* opnum */
+  uint16 context_id;   /* presentation context identifier */
+  uint16  opnum;       /* opnum */
 
 } RPC_HDR_REQ;
 

@@ -644,9 +644,8 @@ static BOOL api_lsa_query_info2(pipes_struct *p)
 /***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
-NTSTATUS rpc_lsa_init(void)
-{
-static const struct api_struct api_lsa_cmds[] =
+ 
+static struct api_struct api_lsa_cmds[] =
 {
 	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
 	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },
@@ -671,17 +670,33 @@ static const struct api_struct api_lsa_cmds[] =
 	   ADS DC capabilities                                               */
 	{ "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      }
 };
-/*
- * NOTE: Certain calls can not be enabled if we aren't an ADS DC.  Make sure
- * these calls are always last and that you decrement by the amount of calls
- * to disable.
- */
-  int funcs = sizeof(api_lsa_cmds) / sizeof(struct api_struct);
 
-  if (!(SEC_ADS == lp_security() && ROLE_DOMAIN_PDC == lp_server_role())) {
-	  funcs -= 1;
-  }
+static int count_fns(void)
+{
+	int funcs = sizeof(api_lsa_cmds) / sizeof(struct api_struct);
+	
+	/*
+	 * NOTE: Certain calls can not be enabled if we aren't an ADS DC.  Make sure
+	 * these calls are always last and that you decrement by the amount of calls
+	 * to disable.
+	 */
+	if (!(SEC_ADS == lp_security() && ROLE_DOMAIN_PDC == lp_server_role())) {
+		funcs -= 1;
+	}
 
-  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsass", api_lsa_cmds, 
-				    funcs);
+	return funcs;
+}
+void lsa_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_lsa_cmds;
+	*n_fns = count_fns();
+}
+
+
+NTSTATUS rpc_lsa_init(void)
+{
+	int funcs = count_fns();
+
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsass", api_lsa_cmds, 
+		funcs);
 }
