@@ -1,6 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
+
    Windows NT Domain nsswitch module
 
    Copyright (C) Tim Potter 2000
@@ -21,69 +22,130 @@
    
 */
 
-#include <stdio.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <nss.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include "includes.h"
+#include <nss.h>
+
+/*
+ * Utility and helper functions
+ */
+
+#ifdef strcpy
+#undef strcpy      /* I think I know what I'm doing here (-: */
+#endif
 
 /* Connect to winbindd socket */
 
-int connect_sock(void)
+static int open_root_pipe_sock(void)
 {
-    int sock, result;
+    static int established_socket = -1;
     struct sockaddr_un sunaddr;
-    fd_set writefd;
-    struct timeval timeout;
+    static pid_t our_pid;
     struct stat st;
+    fstring path;
+
+    if (our_pid != getpid()) {
+        if (established_socket != -1) close(established_socket);
+        established_socket = -1;
+        our_pid = getpid();
+    }
+
+    if (established_socket != -1) {
+        return established_socket;
+    }
 
     /* Check permissions on unix socket file and directory */
 
-    if (lstat(WINBINDD_SOCKET_DIR, &st) < 0) {
+    if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
         return -1;
     }
 
-    if (!S_ISDIR(st.st_mode) || (st.st_uid != 0) || 
-        ((st.st_mode & 0777) != 0755)) {
+    if (!S_ISDIR(st.st_mode) || (st.st_uid != 0)) {
+        return -1;
+    }
+
+    /* Create socket */
+
+    if ((established_socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         return -1;
     }
 
     /* Connect to socket */
 
+    strncpy(path, WINBINDD_SOCKET_DIR, sizeof(path) - 1);
+    path[sizeof(path) - 1] = '\0';
+
+    strncat(path, "/", sizeof(path) - 1);
+    path[sizeof(path) - 1] = '\0';
+
+    strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1);
+    path[sizeof(path) - 1] = '\0';
+
+    ZERO_STRUCT(sunaddr);
     sunaddr.sun_family = AF_UNIX;
-    strncpy(sunaddr.sun_path, WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME, 
-            sizeof(sunaddr.sun_path));
+    strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
 
-    if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+    if (connect(established_socket, (struct sockaddr *)&sunaddr, 
+                sizeof(sunaddr)) == -1) {
+        close(established_socket);
+        established_socket = -1;
         return -1;
     }
 
-    /* Attempt to connect.  Use select as the connect() call can block
-       for a long time if the winbindd is suspended (e.g in gdb). */
+    return established_socket;
+}
 
-    if (fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL)) < 0) {
-        return -1;
+/* Write data to winbindd socket with timeout */
+
+int write_sock(int sock, void *buffer, int count)
+{
+    int result, nwritten;
+
+    /* Write data to socket */
+
+    nwritten = 0;
+
+    while(nwritten < count) {
+
+        result = write(sock, (char *)buffer + nwritten, count - nwritten);
+        
+        if ((result == -1) || (result == 0)) {
+
+            /* Write failed */
+            
+            return result;
+        }
+
+        nwritten += result;
     }
-
-    FD_ZERO(&writefd);
-    FD_SET(sock, &writefd);
-    timeout.tv_sec = WINBINDD_TIMEOUT_SEC;
-    timeout.tv_usec = 0;
     
-    if ((result = select(sock + 1, NULL, &writefd, NULL, 
-                         &timeout)) <= 0) {
-        return -1;
+    return nwritten;
+}
+
+/* Read data from winbindd socket with timeout */
+
+int read_sock(int sock, void *buffer, int count)
+{
+    int result, nread;
+
+    /* Read data from socket */
+
+    nread = 0;
+
+    while(nread < count) {
+
+        result = read(sock, (char *)buffer + nread, count - nread);
+        
+        if ((result == -1) || (result == 0)) {
+
+            /* Read failed */
+            
+            return result;
+        }
+        
+        nread += result;
     }
 
-    if (connect(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) < 0) {
-        return -1;
-    }
-
-    return sock;
+    return nread;
 }
 
 /* Allocate some space from the nss static buffer.  The buffer and buflen
@@ -110,6 +172,56 @@ static char *get_static(char **buffer, int *buflen, int len)
     return result;
 }
 
+/* I've copied the strtok() replacement function next_token() from
+   lib/util_str.c as I really don't want to have to link in any other
+   objects if I can possibly avoid it. */
+
+#ifdef strchr /* Aargh! This points at multibyte_strchr(). )-: */
+#undef strchr
+#endif
+
+static char *last_ptr = NULL;
+
+BOOL next_token(char **ptr, char *buff, char *sep, size_t bufsize)
+{
+    char *s;
+    BOOL quoted;
+    size_t len=1;
+    
+    if (!ptr) ptr = &last_ptr;
+    if (!ptr) return(False);
+    
+    s = *ptr;
+    
+    /* default to simple separators */
+    if (!sep) sep = " \t\n\r";
+    
+    /* find the first non sep char */
+    while(*s && strchr(sep,*s)) s++;
+    
+    /* nothing left? */
+    if (! *s) return(False);
+    
+    /* copy over the token */
+    for (quoted = False; 
+         len < bufsize && *s && (quoted || !strchr(sep,*s)); 
+         s++) {
+
+        if (*s == '\"') {
+            quoted = !quoted;
+        } else {
+            len++;
+            *buff++ = *s;
+        }
+    }
+    
+    *ptr = (*s) ? s+1 : s;  
+    *buff = 0;
+    last_ptr = *ptr;
+  
+    return(True);
+}
+
 /* Fill a pwent structure from a winbindd_response structure.  We use
    the static data passed to us by libc to put strings and stuff in.
    Return errno = ERANGE and NSS_STATUS_TRYAGAIN if we run out of
@@ -132,7 +244,7 @@ static int fill_pwent(struct passwd *result,
         return NSS_STATUS_TRYAGAIN;
     }
 
-    fstrcpy(result->pw_name, pw->pw_name);
+    strcpy(result->pw_name, pw->pw_name);
 
     /* Password */
 
@@ -145,7 +257,7 @@ static int fill_pwent(struct passwd *result,
         return NSS_STATUS_TRYAGAIN;
     }
 
-    fstrcpy(result->pw_passwd, pw->pw_passwd);
+    strcpy(result->pw_passwd, pw->pw_passwd);
         
     /* [ug]id */
 
@@ -163,7 +275,7 @@ static int fill_pwent(struct passwd *result,
         return NSS_STATUS_TRYAGAIN;
     }
 
-    fstrcpy(result->pw_gecos, pw->pw_gecos);
+    strcpy(result->pw_gecos, pw->pw_gecos);
 
     /* Home directory */
 
@@ -176,7 +288,7 @@ static int fill_pwent(struct passwd *result,
         return NSS_STATUS_TRYAGAIN;
     }
 
-    fstrcpy(result->pw_dir, pw->pw_dir);
+    strcpy(result->pw_dir, pw->pw_dir);
 
     /* Logon shell */
 
@@ -189,7 +301,7 @@ static int fill_pwent(struct passwd *result,
         return NSS_STATUS_TRYAGAIN;
     }
 
-    fstrcpy(result->pw_shell, pw->pw_shell);
+    strcpy(result->pw_shell, pw->pw_shell);
 
     return NSS_STATUS_SUCCESS;
 }
@@ -204,7 +316,8 @@ static int fill_grent(struct group *result,
                       char **buffer, int *buflen, int *errnop)
 {
     struct winbindd_gr *gr = &response->data.gr;
-    char *name;
+    fstring name;
+    char *mem;
     int i;
 
     /* Group name */
@@ -218,7 +331,7 @@ static int fill_grent(struct group *result,
         return NSS_STATUS_TRYAGAIN;
     }
 
-    fstrcpy(result->gr_name, gr->gr_name);
+    strcpy(result->gr_name, gr->gr_name);
 
     /* Password */
 
@@ -231,7 +344,7 @@ static int fill_grent(struct group *result,
         return NSS_STATUS_TRYAGAIN;
     }
 
-    fstrcpy(result->gr_passwd, gr->gr_passwd);
+    strcpy(result->gr_passwd, gr->gr_passwd);
 
     /* gid */
 
@@ -266,20 +379,22 @@ static int fill_grent(struct group *result,
 
     i = 0;
 
-    for(name = strtok(gr->gr_mem, ","); name; name = strtok(NULL, ",")) {
+    mem = gr->gr_mem;
 
+    while(next_token(&mem, name, ",", sizeof(fstring))) {
+        
         /* Allocate space for member */
-
+        
         if (((result->gr_mem)[i] = 
              get_static(buffer, buflen, strlen(name) + 1)) == NULL) {
-
+            
             /* Out of memory */
-
+            
             *errnop = ERANGE;
             return NSS_STATUS_TRYAGAIN;
         }        
-
-        fstrcpy((result->gr_mem)[i], name);
+        
+        strcpy((result->gr_mem)[i], name);
         i++;
     }
 
@@ -303,29 +418,25 @@ _nss_ntdom_setpwent(void)
     struct winbindd_response response;
     int sock, result;
     
-    /* Connect to agent socket */
-  
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETPWENT;
-    request.pid = getpid();
 
-    if ((result = write_sock(sock, &request, sizeof(request))) < 0) {
+    if ((result = write_sock(sock, &request, sizeof(request))) == -1) {
+        close(sock);
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -347,27 +458,24 @@ _nss_ntdom_endpwent(void)
     
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDPWENT;
-    request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -390,27 +498,25 @@ _nss_ntdom_getpwent_r(struct passwd *result, char *buffer,
 
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWENT;
-    request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
+        close(sock);
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -434,28 +540,25 @@ _nss_ntdom_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWNAM_FROM_UID;
-    request.pid = getpid();
     request.data.uid = uid;
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -481,27 +584,26 @@ _nss_ntdom_getpwnam_r(const char *name, struct passwd *result, char *buffer,
     
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWNAM_FROM_USER;
-    request.pid = getpid();
-    fstrcpy(request.data.username, name);
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    strncpy(request.data.username, name, sizeof(request.data.username) - 1);
+    request.data.username[sizeof(request.data.username) - 1] = '\0';
+
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -529,27 +631,24 @@ _nss_ntdom_setgrent(void)
     
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETGRENT;
-    request.pid = getpid();
 
-    if ((result = write_sock(sock, &request, sizeof(request))) < 0) {
+    if ((result = write_sock(sock, &request, sizeof(request))) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -571,27 +670,24 @@ _nss_ntdom_endgrent(void)
     
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDGRENT;
-    request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -614,27 +710,24 @@ _nss_ntdom_getgrent_r(struct group *result,
 
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETGRENT;
-    request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -658,29 +751,27 @@ _nss_ntdom_getgrnam_r(const char *name,
 
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETGRNAM_FROM_GROUP;
-    request.pid = getpid();
 
-    fstrcpy(request.data.groupname, name);
+    strncpy(request.data.groupname, name, sizeof(request.data.groupname));
+    request.data.groupname[sizeof(request.data.groupname) - 1] = '\0';
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
@@ -704,28 +795,25 @@ _nss_ntdom_getgrgid_r(gid_t gid,
 
     /* Connect to agent socket */
   
-    if ((sock = connect_sock()) < 0) {
+    if ((sock = open_root_pipe_sock()) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETGRNAM_FROM_GID;
-    request.pid = getpid();
     request.data.gid = gid;
 
-    if (write_sock(sock, &request, sizeof(request)) < 0) {
+    if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) < 0) {
+    if (read_sock(sock, &response, sizeof(response)) == -1) {
         close(sock);
         return NSS_STATUS_UNAVAIL;
     }
-
-    close(sock);
 
     /* Copy reply data from socket */
 
