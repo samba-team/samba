@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "nsswitch/nss.h"
 
 NSS_STATUS winbindd_request(int req_type,
                                  struct winbindd_request *request,
