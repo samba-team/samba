@@ -394,8 +394,8 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) printing/notify.o \
-	printing/printing_db.o
+	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) \
+	printing/notify.o printing/printing_db.o
 
 SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) \
@@ -787,9 +787,9 @@ bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
-bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) bin/.dummy
+bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
+	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@
 
 bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
