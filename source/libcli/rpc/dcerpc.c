@@ -620,7 +620,7 @@ NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p,
 	
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
-	DATA_BLOB blob_in, blob_out;
+	DATA_BLOB blob_in, blob_out, payload;
 
 	init_dcerpc_hdr(&pkt.hdr);
 
@@ -647,11 +647,57 @@ NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p,
 	}
 
 	if (pkt.hdr.ptype != DCERPC_PKT_RESPONSE) {
-		status = NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!(pkt.hdr.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
+		/* something is badly wrong! */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	payload = pkt.out.response.stub_data;
+
+	/* continue receiving fragments */
+	while (!(pkt.hdr.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		uint32 length;
+
+		status = dcerpc_raw_packet_secondary(p, mem_ctx, &blob_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = dcerpc_pull(&blob_out, mem_ctx, &pkt);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (pkt.hdr.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
+			/* start of another packet!? */
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if (pkt.hdr.ptype != DCERPC_PKT_RESPONSE) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		length = pkt.out.response.stub_data.length;
+
+		payload.data = talloc_realloc(mem_ctx, 
+					      payload.data, 
+					      payload.length + length);
+		if (!payload.data) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		memcpy(payload.data + payload.length,
+		       pkt.out.response.stub_data.data,
+		       length);
+
+		payload.length += length;
 	}
 
 	if (stub_data_out) {
-		*stub_data_out = pkt.out.response.stub_data;
+		*stub_data_out = payload;
 	}
 
 	return status;
