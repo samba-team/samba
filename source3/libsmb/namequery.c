@@ -704,8 +704,8 @@ success:
  Resolve via "lmhosts" method.
 *********************************************************/
 
-BOOL resolve_lmhosts(const char *name, int name_type,
-		     struct in_addr **return_iplist, int *return_count)
+static BOOL resolve_lmhosts(const char *name, int name_type,
+                         struct in_addr **return_iplist, int *return_count)
 {
 	/*
 	 * "lmhosts" means parse the local lmhosts file.
