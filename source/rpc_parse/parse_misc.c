@@ -475,6 +475,8 @@ creates a UNISTR2 structure.
 ********************************************************************/
 void make_unistr2(UNISTR2 *str, char *buf, int len)
 {
+    ZERO_STRUCTP(str);
+
 	/* set up string lengths. */
 	str->uni_max_len = len;
 	str->undoc       = 0;
