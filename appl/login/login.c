@@ -37,6 +37,12 @@
  */
 
 #include "login_locl.h"
+#ifdef HAVE_CAPABILITY_H
+#include <capability.h>
+#endif
+#ifdef HAVE_SYS_CAPABILITY_H
+#include <sys/capability.h>
+#endif
 
 RCSID("$Id$");
 
@@ -494,6 +500,32 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
 
 	nice(udb->ue_nice[UDBRC_INTER]);
     }
+#endif
+#if defined(HAVE_SGI_GETCAPABILITYBYNAME) && defined(HAVE_CAP_SET_PROC)
+	/* XXX SGI capability hack IRIX 6.x (x >= 0?) has something
+	   called capabilities, that allow you to give away
+	   permissions (such as chown) to specific processes. From 6.5
+	   this is default on, and the default capability set seems to
+	   not always be the empty set. The problem is that the
+	   runtime linker refuses to do just about anything if the
+	   process has *any* capabilities set, so we have to remove
+	   them here (unless otherwise instructed by /etc/capability).
+	   In IRIX < 6.5, these functions was called sgi_cap_setproc,
+	   etc, but we ignore this fact (it works anyway). */
+	{
+	    struct user_cap *ucap = sgi_getcapabilitybyname(pwd->pw_name);
+	    cap_t cap;
+	    if(ucap == NULL)
+		cap = cap_from_text("all=");
+	    else
+		cap = cap_from_text(ucap->ca_default);
+	    if(cap == NULL)
+		err(1, "cap_from_text");
+	    if(cap_set_proc(cap) < 0)
+		err(1, "cap_set_proc");
+	    cap_free(cap);
+	    free(ucap);
+	}
 #endif
     if (chdir(pwd->pw_dir) < 0) {
 	fprintf(stderr, "No home directory \"%s\"!\n", pwd->pw_dir);
