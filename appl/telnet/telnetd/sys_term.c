@@ -1579,6 +1579,8 @@ start_login(host, autologin, name)
 	struct arg_val argv;
 	extern char *getenv();
 #ifdef	HAVE_UTMPX_H
+	char id_buf[3];
+	int ptynum;
 	register int pid = getpid();
 	struct utmpx utmpx;
 #endif
@@ -1596,10 +1598,14 @@ start_login(host, autologin, name)
 	SCPYN(utmpx.ut_user, ".telnet");
 	SCPYN(utmpx.ut_line, line + sizeof("/dev/") - 1);
 	utmpx.ut_pid = pid;
+	/* Derive utmp ID from pty slave number */
+	if(sscanf(line, "%*[^0-9]%d", &ptynum) != 1 || ptynum > 255)
+	    fatal(net, "pty slave number incorrect");
+	sprintf(id_buf, "%02x", ptynum);
 	utmpx.ut_id[0] = 't';
 	utmpx.ut_id[1] = 'n';
-	utmpx.ut_id[2] = SC_WILDC;
-	utmpx.ut_id[3] = SC_WILDC;
+	utmpx.ut_id[2] = id_buf[0];
+	utmpx.ut_id[3] = id_buf[1];
 	utmpx.ut_type = LOGIN_PROCESS;
 	(void) time(&utmpx.ut_tv.tv_sec);
 	if (pututxline(&utmpx) == NULL)
