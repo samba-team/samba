@@ -129,9 +129,18 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status)) {
+		extern struct winbindd_methods msrpc_methods;
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
 			 domain->name, ads_errstr(status)));
 		ads_destroy(&ads);
+
+		/* if we get ECONNREFUSED then it might be a NT4
+                   server, fall back to MSRPC */
+		if (status.error_type == ADS_ERROR_SYSTEM &&
+		    status.rc == ECONNREFUSED) {
+			DEBUG(1,("Trying MSRPC methods\n"));
+			domain->methods = &msrpc_methods;
+		}
 		return NULL;
 	}
 
