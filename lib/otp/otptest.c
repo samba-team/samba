@@ -46,58 +46,60 @@ RCSID("$Id$");
 #include <otp.h>
 
 static int
+test_one(OtpKey key1, char *name, char *val, void (*print)(OtpKey,char*),
+	 OtpAlgorithm *alg)
+{
+  char buf[256];
+  OtpKey key2;
+
+  (*print)(key1, buf);
+  printf ("%s: %s, ", name, buf);
+  if (strcmp (buf, val) != 0) {
+    printf ("failed(*%s* != *%s*)\n", buf, val);
+    return 1;
+  }
+  if (otp_parse (key2, buf, alg)) {
+    printf ("parse of %s failed\n", name);
+    return 1;
+  }
+  if (memcmp (key1, key2, OTPKEYSIZE) != 0) {
+    printf ("key1 != key2\n");
+    return 1;
+  }
+  printf ("success\n");
+  return 0;
+}
+
+static int
 test ()
 {
   OtpAlgorithm *alg = otp_find_alg ("md5");
   char *passphrase = "This is a test.";
   char *seed = "ke1234";
   char *hex = "5bf075d9959d036f";
+  char *hex_extended = "hex:5bf075d9959d036f";
   char *standard_word = "BOND FOGY DRAB NE RISE MART";
-  OtpKey key1, key2;
+  char *standard_word_extended = "word:BOND FOGY DRAB NE RISE MART";
+  OtpKey key;
   int i;
   int n = 499;
-  char buf[1024];
 
   if (alg == NULL) {
     printf ("Could not find md5\n");
     return 1;
   }
-  if(alg->init (key1, passphrase, seed))
+  if(alg->init (key, passphrase, seed))
     return 1;
   for (i = 0; i < n; ++i) {
-    if (alg->next (key1))
+    if (alg->next (key))
       return 1;
   }
-  otp_print_hex (key1, buf);
-  printf ("hexadecimal: %s\n", buf);
-  if (strcmp (buf, hex) != 0) {
-    printf ("failed(*%s* != *%s*)\n", buf, hex);
-    return 1;
-  }
-  if (otp_parse (key2, buf, alg)) {
-    printf ("parse of hex failed\n");
-    return 1;
-  }
-  if (memcmp (key1, key2, OTPKEYSIZE) != 0) {
-    printf ("key1 != key2\n");
-    return 1;
-  }
-
-  otp_print_stddict (key1, buf);
-  printf ("standard word: %s\n", buf);
-  if (strcmp (buf, standard_word) != 0) {
-    printf ("failed(*%s* != *%s*)!\n", buf, standard_word);
-    return 1;
-  }
-  if (otp_parse (key2, buf, alg)) {
-    printf ("parse of word failed\n");
-    return 1;
-  }
-  if (memcmp (key1, key2, OTPKEYSIZE) != 0) {
-    printf ("key1 != key2\n");
-    return 1;
-  }
-  return 0;
+  return test_one (key, "hexadecimal", hex, otp_print_hex, alg) +
+    test_one (key, "extended hexadecimal", hex_extended,
+	      otp_print_hex_extended, alg) +
+    test_one (key, "standard word", standard_word, otp_print_stddict, alg) +
+    test_one (key, "extended standard word", standard_word_extended,
+	      otp_print_stddict_extended, alg);
 }
 
 int
