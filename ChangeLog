@@ -1,3 +1,8 @@
+2002-09-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/changepw.c (process_reply): fix reply length check
+	calculation (reported by various people)
+
 2002-09-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/keytab_file.c (fkt_remove_entry): check return value
