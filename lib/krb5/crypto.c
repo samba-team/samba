@@ -385,7 +385,7 @@ DES3_string_to_key(krb5_context context,
 	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
 	    des_set_odd_parity(keys + i);
 	    if(des_is_weak_key(keys + i))
-		xor(keys + i, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
+		xor(keys + i, (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
 	    des_set_key(keys + i, s[i]);
 	}
 	memset(&ivec, 0, sizeof(ivec));
@@ -398,7 +398,7 @@ DES3_string_to_key(krb5_context context,
 	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
 	    des_set_odd_parity(keys + i);
 	    if(des_is_weak_key(keys + i))
-		xor(keys + i, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
+		xor(keys + i, (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
 	}
 	memset(tmp, 0, sizeof(tmp));
     }
