@@ -41,7 +41,7 @@ RCSID("$Id$");
  * the current et_list.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_add_et_list (krb5_context context,
 		  void (*func)(struct et_list **))
 {
