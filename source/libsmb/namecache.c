@@ -4,6 +4,7 @@
    NetBIOS name cache module.
 
    Copyright (C) Tim Potter, 2002-2003
+   Copyright (C) Jeremy Allison, 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -142,10 +143,19 @@ void namecache_store(const char *name, int name_type,
 	   otherwise if we lock on to a bad DC we can potentially be
 	   out of action for the entire cache timeout time! */
 
+#if 0
+	/*
+	 * I don't think we need to do this. We are
+	 * checking at a higher level for failed DC
+	 * connections. JRA.
+	 */
+
 	if (name_type == 0x1b || name_type == 0x1c)
 		expiry = time(NULL) + 15;
 	else
 		expiry = time(NULL) + lp_name_cache_timeout();
+#endif
+	expiry = time(NULL) + lp_name_cache_timeout();
 
 	value = namecache_value(ip_list, num_names, expiry);
 
@@ -353,4 +363,133 @@ void namecache_wins_set(char *keystr, time_t timeout)
 	value.dsize = sizeof(timeout);
 
 	tdb_store(namecache_tdb, key, value, TDB_REPLACE);
+}
+
+/* Construct a name status record key. */
+
+static TDB_DATA namecache_status_record_key(const char *name, int name_type1,
+			int name_type2, struct in_addr keyip)
+{
+	TDB_DATA retval;
+	char *keystr;
+
+	asprintf(&keystr, "%s#%02X.%02X.%s",
+			strupper_static(name),
+			name_type1, name_type2,
+			inet_ntoa(keyip));
+
+	retval.dsize = strlen(keystr) + 1;
+	retval.dptr = keystr;
+
+	return retval;
+}
+
+/* Store a name status record. */
+
+void namecache_status_store(const char *keyname, int keyname_type,
+			int name_type, struct in_addr keyip,
+			const char *srvname)
+{
+	TDB_DATA key, value;
+	char srv_rec[sizeof(time_t) + 16];
+	time_t expiry;
+
+	if ( !done_namecache_init )
+		return;
+
+	key = namecache_status_record_key(keyname, keyname_type,
+					name_type, keyip);
+	
+	expiry = time(NULL) + lp_name_cache_timeout();
+
+	memcpy(srv_rec, &expiry, sizeof(expiry));
+	strlcpy(&srv_rec[sizeof(expiry)], srvname, sizeof(srv_rec));
+
+	value.dptr = srv_rec;
+	value.dsize = sizeof(srv_rec);
+
+	tdb_store(namecache_tdb, key, value, TDB_REPLACE);
+
+	DEBUG(5, ("namecache_status_store: entry %s -> %s\n",
+		key.dptr, srvname ));
+
+	free(key.dptr);
+}
+
+BOOL namecache_status_fetch(const char *keyname, int keyname_type,
+			int name_type, struct in_addr keyip,
+			char *srvname_out)
+{
+	TDB_DATA key, value;
+	time_t expiry, now;
+	BOOL ret = False;
+
+	if ( !done_namecache_init )
+		return False;
+
+	ZERO_STRUCT(key);
+	ZERO_STRUCT(value);
+
+	key = namecache_status_record_key(keyname, keyname_type,
+					name_type, keyip);
+
+	value = tdb_fetch(namecache_tdb, key);
+	
+	if (!value.dptr) {
+		DEBUG(5, ("namecache_status_fetch: %s not found\n",
+			  key.dptr));
+		goto done;
+	}
+
+	if (value.dsize != (sizeof(time_t) + 16)) {
+		DEBUG(5, ("namecache_status_fetch: %s corrupt\n",
+			  key.dptr));
+		goto done;
+	}
+
+	memcpy(&expiry, value.dptr, sizeof(expiry));
+
+	/* Check expiry time */
+
+	now = time(NULL);
+
+	if (now > expiry) {
+
+		DEBUG(5, ("namecache_status_fetch: entry for %s expired\n",
+			  key.dptr));
+
+		tdb_delete(namecache_tdb, key);
+
+		SAFE_FREE(value.dptr);
+		value = tdb_null;
+
+		goto done;
+	}
+
+	if ((expiry - now) > lp_name_cache_timeout()) {
+
+		/* Someone may have changed the system time on us */
+
+		DEBUG(5, ("namecache_status_fetch: entry for %s has bad expiry\n",
+			  key.dptr));
+
+		tdb_delete(namecache_tdb, key);
+
+		SAFE_FREE(value.dptr);
+		value = tdb_null;
+
+		goto done;
+	}
+
+	strlcpy(srvname_out, &value.dptr[sizeof(expiry)], 16);
+	ret = True;
+
+	DEBUG(5, ("namecache_status_fetch: entry %s returning %s\n",
+		key.dptr, srvname_out ));
+
+  done:
+
+	SAFE_FREE(key.dptr);
+	SAFE_FREE(value.dptr);
+	return ret;
 }

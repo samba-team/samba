@@ -311,9 +311,15 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 	}
 
 done:
+
+#if 0
+	/*
+	 * I don't think we need to shutdown here ? JRA.
+	 */
 	if ( conn.cli )
 		cli_shutdown( conn.cli );
-	
+#endif
+
 	return ret;
 }
 

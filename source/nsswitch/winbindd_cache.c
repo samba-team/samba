@@ -677,7 +677,7 @@ do_cached:
 	} else
 		status = centry->status;
 
-	DEBUG(10,("query_user_list: [Cached] - cached list for domain %s status %s\n",
+	DEBUG(3,("query_user_list: [Cached] - cached list for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -703,7 +703,7 @@ do_query:
 	retry = 0;
 	do {
 
-		DEBUG(10,("query_user_list: [Cached] - doing backend query for list for domain %s\n",
+		DEBUG(3,("query_user_list: [Cached] - doing backend query for list for domain %s\n",
 			domain->name ));
 
 		status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
@@ -792,7 +792,7 @@ do_cached:
 	} else
 		status = centry->status;
 
-        DEBUG(10,("enum_dom_groups: [Cached] - cached list for domain %s status %s\n",
+        DEBUG(3,("enum_dom_groups: [Cached] - cached list for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -807,7 +807,7 @@ do_query:
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	DEBUG(10,("enum_dom_groups: [Cached] - doing backend query for list for domain %s\n",
+	DEBUG(3,("enum_dom_groups: [Cached] - doing backend query for list for domain %s\n",
 		domain->name ));
 
 	status = cache->backend->enum_dom_groups(domain, mem_ctx, num_entries, info);
@@ -874,7 +874,7 @@ do_cached:
 	} else
 		status = centry->status;
 
-	DEBUG(10,("enum_local_groups: [Cached] - cached list for domain %s status %s\n",
+	DEBUG(3,("enum_local_groups: [Cached] - cached list for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -889,7 +889,7 @@ do_query:
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	DEBUG(10,("enum_local_groups: [Cached] - doing backend query for list for domain %s\n",
+	DEBUG(3,("enum_local_groups: [Cached] - doing backend query for list for domain %s\n",
 		domain->name ));
 
 	status = cache->backend->enum_local_groups(domain, mem_ctx, num_entries, info);
@@ -936,7 +936,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	status = centry->status;
 
-	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status %s\n",
+	DEBUG(3,("name_to_sid: [Cached] - cached name for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -956,7 +956,7 @@ do_query:
 	      || NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)))
 		return domain->last_status;
 
-	DEBUG(10,("name_to_sid: [Cached] - doing backend query for name for domain %s\n",
+	DEBUG(3,("name_to_sid: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
 	status = cache->backend->name_to_sid(domain, name, sid, type);
@@ -998,7 +998,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	}
 	status = centry->status;
 
-	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status %s\n",
+	DEBUG(3,("sid_to_name: [Cached] - cached name for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -1019,7 +1019,7 @@ do_query:
 	      || NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)))
 		return domain->last_status;
 
-	DEBUG(10,("sid_to_name: [Cached] - doing backend query for name for domain %s\n",
+	DEBUG(3,("sid_to_name: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
 	status = cache->backend->sid_to_name(domain, mem_ctx, sid, name, type);
@@ -1069,7 +1069,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->group_rid = centry_uint32(centry);
 	status = centry->status;
 
-	DEBUG(10,("query_user: [Cached] - cached info for domain %s status %s\n",
+	DEBUG(3,("query_user: [Cached] - cached info for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -1083,7 +1083,7 @@ do_query:
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	DEBUG(10,("sid_to_name: [Cached] - doing backend query for info for domain %s\n",
+	DEBUG(3,("sid_to_name: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	status = cache->backend->query_user(domain, mem_ctx, user_rid, info);
@@ -1142,7 +1142,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 do_cached:	
 	status = centry->status;
 
-	DEBUG(10,("lookup_usergroups: [Cached] - cached info for domain %s status %s\n",
+	DEBUG(3,("lookup_usergroups: [Cached] - cached info for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -1157,7 +1157,7 @@ do_query:
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info for domain %s\n",
+	DEBUG(3,("lookup_usergroups: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_rid, num_groups, user_gids);
@@ -1218,7 +1218,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 do_cached:	
 	status = centry->status;
 
-	DEBUG(10,("lookup_groupmem: [Cached] - cached info for domain %s status %s\n",
+	DEBUG(3,("lookup_groupmem: [Cached] - cached info for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
 
 	centry_free(centry);
@@ -1235,7 +1235,7 @@ do_query:
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	DEBUG(10,("lookup_groupmem: [Cached] - doing backend query for info for domain %s\n",
+	DEBUG(3,("lookup_groupmem: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	status = cache->backend->lookup_groupmem(domain, mem_ctx, group_rid, num_names, 
@@ -1278,7 +1278,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 {
 	struct winbind_cache *cache = get_cache(domain);
 
-	DEBUG(10,("trusted_domains: [Cached] - doing backend query for info for domain %s\n",
+	DEBUG(3,("trusted_domains: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	/* we don't cache this call */
@@ -1291,7 +1291,7 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 {
 	struct winbind_cache *cache = get_cache(domain);
 
-	DEBUG(10,("domain_sid: [Cached] - doing backend query for info for domain %s\n",
+	DEBUG(3,("domain_sid: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	/* we don't cache this call */

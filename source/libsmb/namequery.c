@@ -175,9 +175,13 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	int sock;
 	BOOL result = False;
 
-
 	DEBUG(10, ("name_status_find: looking up %s#%02x at %s\n", q_name, 
 		   q_type, inet_ntoa(to_ip)));
+
+	/* Check the cache first. */
+
+	if (namecache_status_fetch(q_name, q_type, type, to_ip, name))
+		return True;
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
 	if (sock == -1)
@@ -197,21 +201,24 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 		goto done;
 
 	StrnCpy(name, status[i].name, 15);
+
+	/* Store the result in the cache. */
+	namecache_status_store(q_name, q_type, type, to_ip, name);
 	result = True;
 
  done:
 	SAFE_FREE(status);
 
-	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
+	DEBUG(10, ("name_status_find: %sfound", name, result ? "" : "not "));
 
 	if (result)
-		DEBUGADD(10, (", ip address is %s", inet_ntoa(to_ip)));
+		DEBUGADD(10, (", name %s ip address is %s",
+			name, inet_ntoa(to_ip)));
   
 	DEBUG(10, ("\n"));	
 
 	return result;
-  }
-
+}
 
 /*
   comparison function used by sort_ip_list

@@ -83,7 +83,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name,
 	   init_domain_list() and we'll get stuck in a loop. */
 
 	for (domain = _domain_list; domain; domain = domain->next) {
-		if (strcmp(domain_name, domain->name) == 0) {
+		if (strequal_unix(domain_name, domain->name)) {
 			DEBUG(3, ("domain %s already in domain list\n", 
 				  domain_name));
 			return domain;
@@ -107,8 +107,8 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name,
 	
 	/* see if this is a native mode win2k domain */
 	   
-		domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
-		DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
+	domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
+	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
 		domain->native_mode ? "native" : "mixed (or NT4)" ));
 
 	/* Link to domain list */
@@ -182,10 +182,12 @@ done:
 struct winbindd_domain *find_domain_from_name(const char *domain_name)
 {
 	struct winbindd_domain *domain;
-
+	int i = 0;
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		DEBUG(10,("domain list[%d] = %s\n", i++, domain->name ));
+
 		if (strequal_unix(domain_name, domain->name) ||
 		    strequal_unix(domain_name, domain->full_name))
 			return domain;

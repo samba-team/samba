@@ -59,6 +59,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 
+	DEBUG(3,("query_user_list [rpc] for domain %s\n", domain->name ));
+
 	retry = 0;
 	do {
 		/* Get sam handle */
@@ -151,6 +153,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 
+	DEBUG(3,("enum_dom_groups [rpc] for domain %s\n", domain->name ));
+
 	retry = 0;
 	do {
 		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
@@ -215,6 +219,8 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 
 	*num_entries = 0;
 	*info = NULL;
+
+	DEBUG(3,("enum_local_groups [rpc] for domain %s\n", domain->name ));
 
 	retry = 0;
 	do {
@@ -291,6 +297,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name, domain->name ));
+
 	retry = 0;
 	do {
 		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain->name, &hnd))) {
@@ -330,6 +338,9 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	NTSTATUS result;
 	int retry;
 		
+	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_static(sid),
+			domain->name ));
+
 	retry = 0;
 	do {
 		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain->name, &hnd)))
@@ -367,6 +378,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	BOOL got_dom_pol = False, got_user_pol = False;
 	SAM_USERINFO_CTR *ctr;
 	int retry;
+
+	DEBUG(3,("query_user [rpc] RID %u for domain %s\n", (uint32)user_rid,
+			domain->name ));
 
 	retry = 0;
 	do {
@@ -470,6 +484,9 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*num_groups = 0;
 	*user_gids = NULL;
 
+	DEBUG(3,("lookup_usergroups [rpc] RID %u for domain %s\n", (uint32)user_rid,
+			domain->name ));
+
 	retry = 0;
 	do {
 		/* Get sam handle */
@@ -567,6 +584,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	int retry;
 
 	*num_names = 0;
+
+	DEBUG(3,("lookup_groupmem [rpc] RID %u for domain %s\n", (uint32)group_rid,
+			domain->name ));
 
 	retry = 0;
 	do {
@@ -834,6 +854,8 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	*seq = DOM_SEQUENCE_NONE;
 
+	DEBUG(3,("sequence_number [rpc] for domain %s\n", domain->name ));
+
 	if (!(mem_ctx = talloc_init_named("sequence_number[rpc]")))
 		return NT_STATUS_NO_MEMORY;
 				
@@ -915,6 +937,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 	*num_domains = 0;
 
+	DEBUG(3,("trusted_domains [rpc] for domain %s\n", domain->name ));
+
 	retry = 0;
 	do {
 		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(lp_workgroup_unix(), &hnd)))
@@ -941,6 +965,8 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 
 	if (!(mem_ctx = talloc_init_named("domain_sid[rpc]")))
 		return NT_STATUS_NO_MEMORY;
+
+	DEBUG(3,("domain_sid [rpc] for domain %s\n", domain->name ));
 
 	retry = 0;
 	do {

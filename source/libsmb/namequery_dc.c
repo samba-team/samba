@@ -229,6 +229,26 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 		}
 
 		/*
+		 * Try looking in the name status cache for an
+		 * entry we already have. We know that already
+		 * resolved ok.
+		 */
+
+		for (i = 0; i < count; i++) {
+			if (is_zero_ip(ip_list[i]))
+				continue;
+
+			if (namecache_status_fetch(domain, 0x1c, 0x20,
+						ip_list[i], srv_name)) {
+				result = check_negative_conn_cache( domain, srv_name );
+				if ( NT_STATUS_IS_OK(result) ) {
+					dc_ip = ip_list[i];
+					goto done;
+				}
+			}
+		}
+		
+		/*
 		 * Secondly try and contact a random PDC/BDC.
 		 */
 
@@ -281,5 +301,3 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	return True;
 }
-
-

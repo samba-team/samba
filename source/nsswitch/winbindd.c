@@ -810,6 +810,8 @@ BOOL winbind_setup_common(void)
 	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
 
+	init_domain_list();
+
 	return True;
 }
 
