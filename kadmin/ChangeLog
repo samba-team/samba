@@ -1,3 +1,8 @@
+1999-10-01  Assar Westerlund  <assar@sics.se>
+
+	* ank.c (add_one_principal): `password' can cactually be NULL in
+ 	the overwrite code, check for it.
+
 1999-09-20  Assar Westerlund  <assar@sics.se>
 
 	* mod.c (mod_entry): print the correct principal name in error

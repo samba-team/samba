@@ -21,6 +21,8 @@
 
 1999-09-28  Assar Westerlund  <assar@sics.se>
 
+	* kdc/hpropd.c (dump_krb4): kludge default_realm
+
 	* lib/asn1/check-der.c: add test cases for Generalized time and
  	make sure we return the correct value
 
