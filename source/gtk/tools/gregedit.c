@@ -582,7 +582,7 @@ static GtkWidget* create_mainwin (void)
 
 		g_signal_connect ((gpointer) open_nt4, "activate",
 						  G_CALLBACK (on_open_file_activate),
-						  (gconstpointer)"nt4");
+						  (gpointer)"nt4");
 	}
 
 	if(reg_has_backend("w95")) {
@@ -591,7 +591,7 @@ static GtkWidget* create_mainwin (void)
 
 		g_signal_connect ((gpointer) open_w95, "activate",
 						  G_CALLBACK (on_open_file_activate),
-						  (gconstpointer)"w95");
+						  (gpointer)"w95");
 	}
 
 	if(reg_has_backend("gconf")) {
@@ -618,7 +618,7 @@ static GtkWidget* create_mainwin (void)
 
 		g_signal_connect ((gpointer) open_ldb, "activate",
 						  G_CALLBACK (on_open_file_activate),
-						  (gconstpointer)"ldb");
+						  (gpointer)"ldb");
 	}
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);
