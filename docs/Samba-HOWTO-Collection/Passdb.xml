@@ -94,6 +94,9 @@ as follows:
 
 </sect2>
 
+<sect2>
+<title>New Backends</title>
+
 <para>
 Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
@@ -101,9 +104,6 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>mysqlsam</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>xmlsam</secondary></indexterm>
 </para>
-
-<sect2>
-<title>New Backends</title>
 
 <variablelist>
 	<varlistentry><term>tdbsam</term>
@@ -231,7 +231,10 @@ Samba-3 introduces a number of new password backend capabilities.
 	</para>
 
 
-	<image scale="50" id="idmap-sid2uid"><imagedescription>IDMAP: Resolution of SIDs to UIDs.</imagedescription><imagefile>idmap-sid2uid</imagefile></image>
+	<image id="idmap-sid2uid">
+		<imagedescription>IDMAP: Resolution of SIDs to UIDs.</imagedescription>
+		<imagefile scale="50">idmap-sid2uid</imagefile>
+	</image>
 
 	<para>
 <indexterm><primary>SID</primary></indexterm>
@@ -240,7 +243,10 @@ Samba-3 introduces a number of new password backend capabilities.
 	<link linkend="idmap-uid2sid">resolution of UIDs to SIDs</link> diagrams.
 	</para>
 
-	<image scale="50" id="idmap-uid2sid"><imagedescription>IDMAP: Resolution of UIDs to SIDs.</imagedescription><imagefile>idmap-uid2sid</imagefile></image>
+	<image id="idmap-uid2sid">
+		<imagedescription>IDMAP: Resolution of UIDs to SIDs.</imagedescription>
+		<imagefile scale="50">idmap-uid2sid</imagefile>
+	</image>
 
 	<sect2>
 	<title>Important Notes About Security</title>
@@ -416,10 +422,9 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
 <smbconfexample id="idmapbackendexample">
 <title>Example configuration with the LDAP idmap backend</title>
-<indexterm><primary>SAM backend</primary><secondary>xmlsam</secondary></indexterm>
 <smbconfsection>[global]</smbconfsection>
 <smbconfoption name="idmap backend">ldap:ldap://ldap-server.quenya.org:636</smbconfoption>
-<smbcomment>Alternately, this could be specified as:</smbcomment>
+<smbconfcomment>Alternately, this could be specified as:</smbconfcomment>
 <smbconfoption name="idmap backend">ldap:ldaps://ldap-server.quenya.org</smbconfoption>
 </smbconfexample>
 	</para>
@@ -1107,7 +1112,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 
 <smbconfcomment>define the DN to use when binding to the directory servers</smbconfcomment>
 <smbconfcomment>The password for this DN is not stored in smb.conf. Rather it</smbconfcomment>
-<smbconfcomment>must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the</smbconfcomment>
+<smbconfcomment>must be set by using 'smbpasswd -w secretpw' to store the</smbconfcomment>
 <smbconfcomment>passphrase in the secrets.tdb file. If the "ldap admin dn" values</smbconfcomment>
 <smbconfcomment>change, this password will need to be reset.</smbconfcomment>
 <smbconfoption name="ldap admin dn">"cn=Manager,dc=quenya,dc=org"</smbconfoption>
@@ -1423,7 +1428,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 		<para>The <smbconfoption name="ldap passwd sync"/> options can have the  values shown in
 		<link linkend="ldappwsync">the next table</link>.</para>
 
-		<table iframe="all" id="ldappwsync">
+		<table frame="all" id="ldappwsync">
 			<title>Possible <emphasis>ldap passwd sync</emphasis> values</title>
 		<tgroup cols="2">
 			<colspec align="left" colwidth="1*"/>

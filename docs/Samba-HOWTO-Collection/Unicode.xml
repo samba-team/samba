@@ -116,7 +116,7 @@ Samba knows of three kinds of character sets:
 		<listitem><para>This is the charset Samba uses when communicating with 
 		DOS and Windows 9x/Me clients. It will talk unicode to all newer clients.
 		The default depends on the charsets you have installed on your system.
-		Run <command>testparm -v | grep <quote>dos charset</quote></command> to see 
+		Run <command>testparm -v | grep &quot;dos charset&quot;</command> to see 
 		what the default is on your system. 
 		</para></listitem>
 	</varlistentry>
@@ -376,10 +376,11 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 
 <smbconfexample><title>VFS CAP</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption name="dos charset">CP932<footnote><para>the locale name "CP932" may be different name</para></footnote></smbconfoption>
+<smbconfcomment>the locale name "CP932" may be different</smbconfcomment>
+<smbconfoption name="dos charset">CP932</smbconfoption>
 <smbconfoption name="unix charset">CP932</smbconfoption>
 
-<member><para>...</para></member>
+<member>...</member>
 
 <smbconfsection>[cap-share]</smbconfsection>
 <smbconfoption name="vfs option">cap</smbconfoption>
