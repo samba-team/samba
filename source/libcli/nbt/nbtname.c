@@ -55,8 +55,9 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 			if (1 + *offset >= ndr->data_size) {
 				return NT_STATUS_BAD_NETWORK_NAME;
 			}
+			*max_offset = MAX(*max_offset, *offset + 2);
 			*offset = ((len&0x3F)<<8) | ndr->data[1 + *offset];
-			*max_offset = MAX(*max_offset, *offset + 1);
+			*max_offset = MAX(*max_offset, *offset);
 			loops++;
 			continue;
 		}
