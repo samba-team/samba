@@ -18,6 +18,8 @@ $1 == "error_table" {
 #	name = foo[1]
 	c_file = name "_err.c"
 	h_file = name "_err.h"
+	H_FILE = "__" toupper(h_file) "__"
+	gsub("[^A-Z0-9_]", "_", H_FILE)
 	number = 0
 	print "/* Generated from " FILENAME " */" > c_file
 	print "#include <krb5_locl.h>" > c_file
@@ -26,7 +28,13 @@ $1 == "error_table" {
 	print "static const char *text[] = {" > c_file
 
 	print "/* Generated from " FILENAME " */" > h_file
+	print "" > h_file
+	print "#ifndef " H_FILE > h_file
+	print "#define " H_FILE > h_file
+	print "" > h_file
 #	print "#include <krb5.h>" > h_file
+	print "" > h_file
+	print "struct error_list;" > h_file
 	print "" > h_file
 	print "void initialize_" name "_error_table(struct error_list**);" > h_file
 	print "" > h_file
@@ -52,6 +60,8 @@ function end_file(c_file, h_file){
 	close(c_file)
 	print "\t" name "_num_errors = " number > h_file
 	print "};" > h_file
+	print "" > h_file
+	print "#endif /* " H_FILE " */" > h_file
 	close(h_file)
 }
 
