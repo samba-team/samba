@@ -1276,8 +1276,8 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
   }
   
   if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
-    DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
-session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+    DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS session request.\n", 
+      remote_machine));
     return False;
   }
   

@@ -76,6 +76,11 @@ char *cli_errstr(struct cli_state *cli)
 	uint32 nt_rpc_error;
 	int i;      
 
+	if (!cli->initialised) {
+		fstrcpy(error_message, "[Programmer's error] cli_errstr called on unitialized cli_stat struct!\n");
+		return error_message;
+	}
+
 	/*  
 	 * Errors are of three kinds - smb errors,
 	 * dealt with by cli_smb_errstr, NT errors,
