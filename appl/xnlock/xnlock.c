@@ -796,12 +796,13 @@ main (int argc, char **argv)
 
 #ifdef KERBEROS
     {
-	int code;
+	int code = KSUCCESS;
 	char *file;
 	strcpy(name, pw->pw_name); /* Unix name is default name */
 	if ((file =  getenv("KRBTKFILE")) == 0)
 	    file = TKT_FILE;  
-	if (tf_init(file, R_TKT_FIL) == KSUCCESS)
+	code = tf_init(file, R_TKT_FIL);
+	if (code == KSUCCESS)
 	    {
 		(void) tf_close();
 		if ((code = krb_get_tf_realm(file, realm)) == KSUCCESS &&
@@ -813,12 +814,12 @@ main (int argc, char **argv)
 			dest_tkt(); /* Nuke old ticket file */
 			creat(file, 0600); /* but keep a place holder */
 		    }
-		else
-		    {
-			code = krb_get_lrealm(realm, 1);
-			if (code != KSUCCESS)
-			    realm[0] = 0; /* No kerberos today */
-		    }
+	    }
+	if (code != KSUCCESS)
+	    {
+		code = krb_get_lrealm(realm, 1);
+		if (code != KSUCCESS)
+		    realm[0] = 0; /* No kerberos today */
 	    }
     }
 #endif /* KERBEROS */
