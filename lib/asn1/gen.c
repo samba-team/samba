@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -125,6 +125,10 @@ define_asn1 (int level, Type *t)
     case TInteger:
 	space(level);
 	fprintf (headerfile, "INTEGER");
+	break;
+    case TUInteger:
+	space(level);
+	fprintf (headerfile, "UNSIGNED INTEGER");
 	break;
     case TOctetString:
 	space(level);
