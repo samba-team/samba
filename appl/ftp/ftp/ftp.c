@@ -363,7 +363,7 @@ getreply(int expecteof)
 		    fprintf(stdout, "%s%s\n", lead_string, buf);
 		if(buf[3] == ' '){
 		    strcpy(reply_string, buf);
-		    if (code < 200)
+		    if (code >= 200)
 			cpend = 0;
 		    sigaction(SIGINT, &osa, NULL);
 		    if (code == 421)
