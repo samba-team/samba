@@ -1,3 +1,7 @@
+Wed Mar 24 23:24:51 1999  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am.common (install-build-headers): simplify loop
+
 Tue Mar 23 17:31:23 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* check-getpwnam_r-posix.m4: check for getpwnam_r, and if it's

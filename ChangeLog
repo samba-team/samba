@@ -1,5 +1,20 @@
 Wed Mar 24 04:02:03 1999  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password):
+ 	re-organize the code to always free `kdc_reply'
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): be more careful about
+ 	freeing memory
+
+	* lib/krb5/fcache.c (fcc_destroy): don't call fcc_close
+
+	* lib/krb5/crypto.c (krb5_crypto_destroy): free `crypto'
+
+	* lib/hdb/hdb_locl.h: try db_185.h first in case db.h is a DB 2.0
+ 	header
+
+	* configure.in (db_185.h): check for
+
 	* admin/srvcreate.c: new file. contributed by Daniel Kouril
  	<kouril@informatics.muni.cz>
 
