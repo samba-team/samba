@@ -1376,7 +1376,7 @@ static int addarg(struct arg_val *argv, char *val)
 static void
 rmut(void)
 {
-    struct utmpx *utxp, utmpx;
+    struct utmpx *utxp, utmpx, *non_save_utxp;
     char *clean_tty = clean_ttyname(line);
 
     /*
@@ -1387,8 +1387,13 @@ rmut(void)
     memset(&utmpx, 0, sizeof(utmpx));
     strncpy(utmpx.ut_line, clean_tty, sizeof(utmpx.ut_line));
     utmpx.ut_type = LOGIN_PROCESS;
-    utxp = getutxline(&utmpx);
-    if (utxp) {
+    non_save_utxp = getutxline(&utmpx);
+    if (non_save_utxp) {
+	char user0;
+
+	utxp = malloc(sizeof(struct utmpx));
+	*utxp = *non_save_utxp;
+	user0 = utxp->ut_user[0];
 	utxp->ut_user[0] = '\0';
 	utxp->ut_type = DEAD_PROCESS;
 #ifdef HAVE_STRUCT_UTMPX_UT_EXIT
@@ -1406,6 +1411,7 @@ rmut(void)
 	gettimeofday(&utxp->ut_tv, NULL);
 	pututxline(utxp);
 #ifdef WTMPX_FILE
+	utxp->ut_user[0] = user0;
 	updwtmpx(WTMPX_FILE, utxp);
 #elif defined(WTMP_FILE)
 	/* This is a strange system with a utmpx and a wtmp! */
