@@ -88,7 +88,7 @@ char *smb_readline(char *prompt, void (*callback)(void),
 /****************************************************************************
 history
 ****************************************************************************/
-void cmd_history(void)
+int cmd_history(void)
 {
 #if defined(HAVE_LIBREADLINE)
 	HIST_ENTRY **hlist;
@@ -102,4 +102,6 @@ void cmd_history(void)
 #else
 	DEBUG(0,("no history without readline support\n"));
 #endif
+
+	return 0;
 }
