@@ -85,7 +85,7 @@ static void nss_wins_init(void)
 
 	TimeInit();
 	setup_logging("nss_wins",False);
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(CONFIGFILE,True,False,False);
 	load_interfaces();
 	codepage_initialise(lp_client_code_page());
 }
@@ -320,4 +320,3 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 	return NSS_STATUS_SUCCESS;
 }
 #endif
-
