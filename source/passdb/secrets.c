@@ -30,15 +30,11 @@ static TDB_CONTEXT *tdb;
 BOOL secrets_init(void)
 {
 	pstring fname;
-	char *p;
 
-	if (tdb) return True;
+	if (tdb)
+		return True;
 
-	pstrcpy(fname, lp_smb_passwd_file());
-	p = strrchr(fname, '/');
-	if(!p) return False;
-
-	*p = 0;
+	get_private_directory(fname);
 	pstrcat(fname,"/secrets.tdb");
 
 	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);

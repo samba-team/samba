@@ -61,7 +61,6 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
 BOOL pdb_generate_sam_sid(void)
 {
 	int fd;
-	char *p;
 	pstring sid_file;
 	fstring sid_string;
 	SMB_STRUCT_STAT st;
@@ -69,11 +68,7 @@ BOOL pdb_generate_sam_sid(void)
 
 	generate_wellknown_sids();
 
-	pstrcpy(sid_file, lp_smb_passwd_file());
-	p = strrchr(sid_file, '/');
-	if(p != NULL) {
-		*++p = '\0';
-	}
+	get_private_directory(sid_file);
 
 	if (!directory_exist(sid_file, NULL)) {
 		if (mkdir(sid_file, 0700) != 0) {

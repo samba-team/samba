@@ -3651,3 +3651,24 @@ char *lp_printername(int snum)
 
 	return ret;
 }
+
+/***********************************************************
+ Return a pointer to the private directory (containing
+ smbpasswd etc.).
+************************************************************/
+
+void get_private_directory(pstring priv_dir)
+{
+	char *p;
+
+	*priv_dir = 0;
+
+#ifdef WITH_TDBSAM
+	pstrcpy(priv_dir, lp_tdb_passwd_file());
+#else
+	pstrcpy(priv_dir, lp_smb_passwd_file());
+#endif
+
+	p = strrchr(priv_dir, '/');
+	*p = 0;
+}

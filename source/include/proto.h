@@ -1997,6 +1997,7 @@ int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
 char *lp_printername(int snum);
+void get_private_directory(pstring priv_dir);
 
 /*The following definitions come from  param/params.c  */
 

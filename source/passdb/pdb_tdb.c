@@ -340,7 +340,7 @@ BOOL pdb_setsampwent(BOOL update)
 {
 	pstring		tdbfile;
 	
-	pstrcpy (tdbfile, lp_private_dir());
+	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* Open tdb passwd */
@@ -467,7 +467,7 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 
 	fstrcpy (name, sname);
 	strlower (name);
-	pstrcpy (tdbfile, lp_private_dir());
+	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
@@ -568,7 +568,7 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
 		return False;
 	}
 
-	pstrcpy (tdbfile, lp_private_dir());
+	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
@@ -618,7 +618,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	fstrcpy (name, sname);
 	strlower (name);
 	
-	pstrcpy (tdbfile, lp_private_dir());
+	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 
 	/* open the TDB */
@@ -706,7 +706,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	fstring		name;
 	int		newtdb = False;
 	
-	pstrcpy (tdbfile, lp_private_dir());
+	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	if ( (!newpwd->uid) || (!newpwd->gid) )
