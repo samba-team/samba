@@ -493,8 +493,7 @@ char *string_truncate(char *s, int length);
 int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
-char *skip_unibuf(char *src, int len);
-char *skip_unicode_string(char *buf,int n);
+char *skip_unibuf(char *src, size_t len);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
 char *dos_unistr2_to_str(UNISTR2 *str);
@@ -1602,7 +1601,7 @@ int print_queue_snum(char *qname);
 BOOL print_queue_pause(int snum);
 BOOL print_queue_resume(int snum);
 BOOL print_queue_purge(int snum);
-void print_fsp_open(files_struct *fsp,connection_struct *conn,char *jobname);
+files_struct *print_fsp_open(connection_struct *conn,char *jobname);
 void print_fsp_end(files_struct *fsp);
 
 /*The following definitions come from  profile/profile.c  */
@@ -2928,6 +2927,7 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 
 /*The following definitions come from  smbd/close.c  */
 
+void close_filestruct(files_struct *fsp);
 int close_file(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  smbd/conn.c  */
@@ -3092,11 +3092,11 @@ int reply_nttrans(connection_struct *conn,
 /*The following definitions come from  smbd/open.c  */
 
 int fd_close(struct connection_struct *conn, files_struct *fsp);
-void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
+files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
-int open_file_stat(files_struct *fsp,connection_struct *conn,
+files_struct *open_file_stat(connection_struct *conn,
 		   char *fname, int smb_ofun, SMB_STRUCT_STAT *pst, int *action);
-int open_directory(files_struct *fsp,connection_struct *conn,
+files_struct *open_directory(connection_struct *conn,
 		   char *fname, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
@@ -3311,6 +3311,7 @@ int vfswrap_lstat(char *path,
 int vfswrap_unlink(char *path);
 int vfswrap_chmod(char *path, mode_t mode);
 int vfswrap_utime(char *path, struct utimbuf *times);
+int vfswrap_ftruncate(int fd, SMB_OFF_T offset);
 
 /*The following definitions come from  smbd/vfs.c  */
 

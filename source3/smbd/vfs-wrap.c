@@ -297,3 +297,11 @@ int vfswrap_utime(char *path, struct utimbuf *times)
     result = utime(path, times);
     return result;
 }
+
+int vfswrap_ftruncate(int fd, SMB_OFF_T offset)
+{
+    int result;
+
+    result = sys_ftruncate(fd, offset);
+    return result;
+}

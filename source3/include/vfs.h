@@ -136,6 +136,7 @@ struct vfs_ops {
     int (*unlink)(char *path);
     int (*chmod)(char *path, mode_t mode);
     int (*utime)(char *path, struct utimbuf *times);
+	int (*ftruncate)(int fd, SMB_OFF_T offset);
 };
 
 struct vfs_options {
