@@ -93,7 +93,7 @@ void smbw_init(void)
 
 	if ((p=smbw_getshared("PREFIX"))) {
 		slprintf(smbw_prefix,sizeof(fstring)-1, "/%s/", p);
-		fstring_sub(smbw_prefix,"//", "/");
+		all_string_sub(smbw_prefix,"//", "/", 0);
 		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
 	}
 
@@ -320,7 +320,7 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 
 	pstrcpy(path,p);
 
-	pstring_sub(path, "/", "\\");
+	all_string_sub(path, "/", "\\", 0);
 
  ok:
 	DEBUG(4,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
