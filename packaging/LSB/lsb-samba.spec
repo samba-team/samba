@@ -4,8 +4,8 @@
 
 Summary: SAMBA
 Name: lsb-samba
-Version: 2.2.1
-Release: 0
+Version: PVERSION
+Release: PRELEASE
 Copyright: GPL
 Group: System Environment/Daemons
 Source: ftp://ftp.samba.org/pub/samba/samba-%{version}.tar.gz

@@ -1071,10 +1071,10 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 
 	for (i = 0; i < num_names; i++) {
 		int len;
-		len = strlen(names[i]);
+		len = strlen(unix_to_dos_static(names[i]));
 
 		init_uni_hdr(&q_l->hdr_name[i], len);
-		init_unistr2(&q_l->uni_name[i], names[i], len);
+		init_unistr2(&q_l->uni_name[i], unix_to_dos_static(names[i]), len);
 	}
 }
 

@@ -56,7 +56,7 @@ char* debug_classname_from_index(int ndx);
 int debug_lookup_classname(char* classname);
 BOOL debug_parse_params(char **params, int *debuglevel_class);
 BOOL debug_parse_levels(char *params_str);
-void debug_message(int msg_level, pid_t src, void *buf, size_t len);
+void debug_message(int msg_type, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
 void setup_logging(char *pname, BOOL interactive);
 BOOL reopen_logs( void );
@@ -139,7 +139,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		      const void *buf, size_t len,
 		      BOOL duplicates_allowed,
 		      int *n_sent);
-BOOL message_named_mutex(char *name, unsigned int timeout);
+BOOL message_named_mutex(const char *name, unsigned int timeout);
 void message_named_mutex_release(char *name);
 
 /* The following definitions come from lib/ms_fnmatch.c  */
@@ -697,7 +697,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 		   struct in_addr to_ip, int *count);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count);
+			   struct in_addr to_ip, int *count, int *flags);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
@@ -705,6 +705,7 @@ BOOL name_register_wins(const char *name, int name_type);
 BOOL name_resolve_bcast(const char *name, int name_type,
 			struct in_addr **return_ip_list, int *return_count);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
+BOOL resolve_name_2(const char *name, struct in_addr **return_ip, int *count, int name_type);
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
                                 struct in_addr *ip);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
@@ -1348,8 +1349,8 @@ char *dos_unistr2(uint16 *src);
 char *dos_unistr2_to_str(UNISTR2 *str);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);
-char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str);
+void unistr2_to_dos(char *dest, const UNISTR2 *str, size_t maxlen);
+void unistr2_to_unix(char *dest, const UNISTR2 *str, size_t maxlen);
 uint32 buffer2_to_uint32(BUFFER2 *str);
 char *dos_buffer2_to_str(BUFFER2 *str);
 char *dos_buffer2_to_multistr(BUFFER2 *str);
@@ -1944,6 +1945,7 @@ int lp_ldap_ssl(void);
 char *lp_add_share_cmd(void);
 char *lp_change_share_cmd(void);
 char *lp_delete_share_cmd(void);
+char *lp_mangling_method(void);
 int lp_ssl_version(void);
 char *lp_ssl_hosts(void);
 char *lp_ssl_hosts_resign(void);
@@ -2122,6 +2124,7 @@ BOOL lp_inherit_acls(int );
 BOOL lp_use_client_driver(int );
 BOOL lp_default_devmode(int );
 BOOL lp_nt_acl_support(int );
+BOOL lp_force_unknown_acl_user(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int lp_security_mask(int );
@@ -2406,6 +2409,7 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
 void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname);
 WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
+BOOL del_driver_init(char *drivername);
 uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param);
 WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
@@ -4425,12 +4429,24 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
 /* The following definitions come from smbd/mangle.c  */
 
-BOOL is_mangled( char *s );
-BOOL is_8_3( char *fname, BOOL check_case );
-void reset_mangled_cache( void );
-BOOL check_mangled_cache( char *s );
-void mangle_name_83( char *s);
-BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum);
+void mangle_reset_cache(void);
+BOOL mangle_is_mangled(const char *s);
+BOOL mangle_is_8_3(const char *fname, BOOL check_case);
+BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case);
+BOOL mangle_check_cache(char *s);
+void mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum);
+
+/* The following definitions come from smbd/mangle_hash2.c  */
+
+struct mangle_fns *mangle_hash2_init(void);
+
+/* The following definitions come from smbd/mangle_hash.c  */
+
+struct mangle_fns *mangle_hash_init(void);
+
+/* The following definitions come from smbd/mangle_map.c  */
+
+void mangle_map_filename(char *fname, int snum);
 
 /* The following definitions come from smbd/message.c  */
 
@@ -4501,7 +4517,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 int32 get_number_of_exclusive_open_oplocks(void);
 BOOL oplock_message_waiting(fd_set *fds);
-BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
+BOOL receive_local_message( char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 BOOL remove_oplock(files_struct *fsp, BOOL break_to_none);
@@ -4706,6 +4722,7 @@ BOOL reset_stat_cache( void );
 
 /* The following definitions come from smbd/trans2.c  */
 
+time_t interpret_long_unix_date(char *p);
 NTSTATUS set_bad_path_error(int err, BOOL bad_path);
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
 int reply_findclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);

@@ -3,6 +3,7 @@
 <!ENTITY ENCRYPTION SYSTEM "ENCRYPTION.sgml">
 <!ENTITY MS-Dfs-Setup SYSTEM "msdfs_setup.sgml">
 <!ENTITY PRINTER-DRIVER2 SYSTEM "printer_driver2.sgml">
+<!ENTITY CUPS SYSTEM "cups.sgml">
 <!ENTITY DOMAIN-MEMBER SYSTEM "DOMAIN_MEMBER.sgml">
 <!ENTITY WINBIND SYSTEM "winbind.sgml">
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
@@ -63,6 +64,7 @@ Cheers, jerry
 &MS-Dfs-Setup;
 &NT-Security;
 &PRINTER-DRIVER2;
+&CUPS;
 &DOMAIN-MEMBER;
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;

@@ -295,10 +295,15 @@ make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smb
 
 # Now build the VFS modules
 cd ../examples/VFS
-make
+CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
+        --with-fhs \
+        --prefix='$(DESTDIR)/usr' \
+        --localstatedir='$(DESTDIR)/var' \
+        --libdir='$(DESTDIR)%{EtcSamba}'
 cd block
 mv block.c block.c.old
-sed 's/etc\/samba/etc\/samba\.d/g' < block.c.old > block.c
+sed 's/etc\/samba/etc\/samba\.d\/vfs/g' < block.c.old > block.c
+cd ..
 make
  
 
@@ -314,7 +319,7 @@ mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR/etc/skel/Samba
 mkdir -p $DESTDIR/usr/share/samba/codepages/src $DESTDIR/sbin
 mkdir -p $DESTDIR/%{SVIdir}
-mkdir -p $DESTDIR/usr/{include,lib/samba}
+mkdir -p $DESTDIR/usr/{include,lib/samba/vfs}
 
 make LOGFILEBASE=/var/log/samba.d -C source  install
 
@@ -338,10 +343,13 @@ ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
 ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
 
 # Adding VFS modules
-install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba
-install -m 755 examples/VFS/recycle.so $DESTDIR/usr/lib/samba
-install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba
-install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/recycle/recycle.so $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/recycle/recycle.conf $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba/vfs
+install -m 644 examples/VFS/block/samba-block.conf $DESTDIR/etc/samba.d/samba-block.conf.example
+install -m 644 examples/VFS/block/smb.conf $DESTDIR/etc/samba.d/smb.conf.example-with-block-use
 
 install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
@@ -363,7 +371,6 @@ cp -p $VVS/smbadduser $DESTDIR/usr/bin/smbadduser
 #cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/bin/convertsmbpasswd
 #cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/bin/updatesmbpasswd
 
-cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
 cp -p $VVS/winbind.daemon $DESTDIR/etc/sysconfig/daemons/winbind
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba

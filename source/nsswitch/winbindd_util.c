@@ -151,7 +151,7 @@ BOOL init_domain_list(void)
 
 	DEBUG(1, ("getting trusted domain list\n"));
 
-	result = cache_methods.trusted_domains(domain, mem_ctx, &num_domains,
+	result = cache_methods.trusted_domains(domain, mem_ctx, (uint *)&num_domains,
 					       &names, &dom_sids);
 
 	/* Add each domain to the trusted domain list */

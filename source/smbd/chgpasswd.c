@@ -193,16 +193,16 @@ static int dochild(int master, char *slavedev, char *name,
 	}
 	stermios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 	stermios.c_lflag |= ICANON;
+#ifdef ONLCR
  	stermios.c_oflag &= ~(ONLCR);
-	if (tcsetattr(0, TCSANOW, &stermios) < 0)
-	{
+#endif
+	if (tcsetattr(0, TCSANOW, &stermios) < 0) {
 		DEBUG(3, ("could not set attributes of pty\n"));
 		return (False);
 	}
 
 	/* make us completely into the right uid */
-	if (!as_root)
-	{
+	if (!as_root) {
 		become_user_permanently(uid, gid);
 	}
 

@@ -23,6 +23,24 @@
 
 #include "winbindd.h"
 
+/*******************************************************************
+ Duplicate a UNISTR2 string into a UNIX codepage null terminated char*
+ using a talloc context
+********************************************************************/
+
+static char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
+{
+	char *s;
+	int maxlen = (str->uni_str_len+1)*4;
+	if (!str->buffer)
+		return NULL;
+	s = (char *)talloc(ctx, maxlen); /* convervative */
+	if (!s)
+		return NULL;
+	unistr2_to_unix(s, str, maxlen);
+	return s;
+}
+
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
@@ -92,6 +110,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		for (j=0;j<count;i++, j++) {
+			/* unistr2_tdup converts to UNIX charset. */
 			(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_acct_name);
 			(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_full_name);
 			(*info)[i].user_rid = info1.sam[j].rid_user;

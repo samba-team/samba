@@ -50,14 +50,21 @@ static BOOL reload_services_file(BOOL test)
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);
 
-	reopen_logs();
+	if (!reopen_logs()) {
+		fprintf(stderr, "Could not open logfile: %s\n", logfile);
+		fprintf(stderr, "Continuing in the hope that that is OK\n");
+	}
 
 	ret = lp_load(servicesf,False,False,True);
 
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);
 
-	reopen_logs();
+	if (!reopen_logs()) {
+		fprintf(stderr, "Could not open logfile: %s\n", logfile);
+		fprintf(stderr, "Continuing in the hope that that is OK\n");
+	}
+
 	load_interfaces();
 
 	return(ret);
@@ -228,7 +235,9 @@ static struct dispatch_table dispatch_table[] = {
 	/* PAM auth functions */
 
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
+#ifdef WITH_WINBIND_AUTH_CRAP
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
+#endif
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 
 	/* Enumeration functions */
@@ -750,7 +759,10 @@ int main(int argc, char **argv)
 	lp_set_logfile(logfile);
 
 	setup_logging("winbindd", interactive);
-	reopen_logs();
+	if (!reopen_logs()) {
+		fprintf(stderr, "Could not open logfile: %s\n", logfile);
+		fprintf(stderr, "Continuing in the hope that that is OK\n");
+	}
 
 	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
 	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
@@ -759,8 +771,6 @@ int main(int argc, char **argv)
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
-
-	pidfile_create("winbindd");
 
 	codepage_initialise(lp_client_code_page());
 
@@ -777,8 +787,11 @@ int main(int argc, char **argv)
 
         fstrcpy(global_myworkgroup, lp_workgroup());
 
-	if (!interactive)
+	if (!interactive) {
 		become_daemon();
+		pidfile_create("winbindd");
+	}
+
 
 #if HAVE_SETPGID
 	/*
@@ -791,7 +804,12 @@ int main(int argc, char **argv)
 
 	load_interfaces();
 
-	secrets_init();
+	if (!secrets_init()) {
+
+		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
+		return 1;
+
+	}
 
 	/* Get list of domains we look up requests for.  This includes the
 	   domain which we are a member of as well as any trusted

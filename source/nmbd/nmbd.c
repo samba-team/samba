@@ -77,7 +77,7 @@ static void terminate(void)
  Catch a SIGTERM signal.
  **************************************************************************** */
 
-static VOLATILE sig_atomic_t got_sig_term;
+static SIG_ATOMIC_T got_sig_term;
 
 static void sig_term(int sig)
 {
@@ -89,7 +89,7 @@ static void sig_term(int sig)
  Catch a SIGHUP signal.
  **************************************************************************** */
 
-static VOLATILE sig_atomic_t reload_after_sighup;
+static SIG_ATOMIC_T reload_after_sighup;
 
 static void sig_hup(int sig)
 {

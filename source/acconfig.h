@@ -72,6 +72,7 @@
 #undef REPLACE_INET_NTOA
 #undef HAVE_FILE_MACRO
 #undef HAVE_FUNCTION_MACRO
+#undef HAVE_VA_COPY
 #undef HAVE_SETRESUID_DECL
 #undef HAVE_SETRESUID
 #undef WITH_NETATALK
@@ -177,6 +178,8 @@
 #undef HAVE_DEVICE_MINOR_FN
 #undef HAVE_MAKEDEV_FN
 #undef HAVE_GETGROUPS_TOO_MANY_EGIDS
+#undef HAVE_PASSWD_PW_COMMENT
+#undef HAVE_PASSWD_PW_AGE
 /*
  * Add these definitions to allow VFS modules to
  * see the CPPFLAGS defines.

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "02 May 2002" "" ""
+.TH "SMBPASSWD" "8" "06 June 2002" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
@@ -68,13 +68,6 @@ permissions for the user running the command.
 This option prints the help string for 
 \fBsmbpasswd\fR. 
 .TP
-\fB-s\fR
-This option causes smbpasswd to be silent (i.e. 
-not issue prompts) and to read its old and new passwords from 
-standard input, rather than from \fI/dev/tty\fR 
-(like the \fBpasswd(1)\fR program does). This option 
-is to aid people writing scripts to drive smbpasswd
-.TP
 \fB-c smb.conf file\fR
 This option specifies that the configuration
 file specified should be used instead of the default value
@@ -119,6 +112,28 @@ change).
 \fBNote\fR that Windows 95/98 do not have 
 a real password database so it is not possible to change passwords 
 specifying a Win95/98 machine as remote machine target. 
+.TP
+\fB-s\fR
+This option causes smbpasswd to be silent (i.e. 
+not issue prompts) and to read its old and new passwords from 
+standard input, rather than from \fI/dev/tty\fR 
+(like the \fBpasswd(1)\fR program does). This option 
+is to aid people writing scripts to drive smbpasswd
+.TP
+\fB-S\fR
+This option causes \fBsmbpasswd\fR
+to query a domain controller of the domain specified 
+by the workgroup
+parameter in \fIsmb.conf\fR and store the
+domain SID in the \fIsecrets.tdb\fR file
+as its own machine SID. This is only useful when configuring
+a Samba PDC and Samba BDC, or when migrating from a Windows PDC
+to a Samba PDC. 
+
+The \fI-r\fR options can be used
+as well to indicate a specific domain controller which should
+be contacted. In this case, the domain SID obtained is the 
+one for the domain to which the remote machine belongs.
 .TP
 \fB-U username[%pass]\fR
 This option may only be used in conjunction 
@@ -200,7 +215,7 @@ switch is used to specify the password to be used with the
 dn\fR. Note that the password is stored in
 the \fIprivate/secrets.tdb\fR and is keyed off 
 of the admin's DN. This means that if the value of \fIldap
-admin dn\fR ever changes, the password will beed to be 
+admin dn\fR ever changes, the password will need to be 
 manually updated as well.
 .TP
 \fB-x\fR

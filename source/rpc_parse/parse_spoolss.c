@@ -544,8 +544,40 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
  * on reading allocate memory for the private member
  ********************************************************************/
 
+#define DM_NUM_OPTIONAL_FIELDS 		8
+
 BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
 {
+	uint32 available_space;		/* size of the device mode left to parse */
+					/* only important on unmarshalling       */
+	int i = 0;
+					
+	struct optional_fields {
+		fstring		name;
+		uint32*		field;
+	} opt_fields[DM_NUM_OPTIONAL_FIELDS] = {
+		{ "icmmethod",		NULL },
+		{ "icmintent",		NULL },
+		{ "mediatype",		NULL },
+		{ "dithertype",		NULL },
+		{ "reserved1",		NULL },
+		{ "reserved2",		NULL },
+		{ "panningwidth",	NULL },
+		{ "panningheight",	NULL }
+	};
+
+	/* assign at run time to keep non-gcc vompilers happy */
+
+	opt_fields[0].field = &devmode->icmmethod;
+	opt_fields[1].field = &devmode->icmintent;
+	opt_fields[2].field = &devmode->mediatype;
+	opt_fields[3].field = &devmode->dithertype;
+	opt_fields[4].field = &devmode->reserved1;
+	opt_fields[5].field = &devmode->reserved2;
+	opt_fields[6].field = &devmode->panningwidth;
+	opt_fields[7].field = &devmode->panningheight;
+		
+	
 	prs_debug(ps, depth, desc, "spoolss_io_devmode");
 	depth++;
 
@@ -557,8 +589,27 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 
 	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
 		return False;
+	
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
-		return False;
+		return False;	
+		
+	/* Sanity Check - look for unknown specversions, but don't fail if we see one.
+	   Let the size determine that */
+	   
+	switch (devmode->specversion) {
+		case 0x0320:
+		case 0x0400:
+		case 0x0401:
+			break;
+			
+		default:
+			DEBUG(0,("spoolss_io_devmode: Unknown specversion in devicemode [0x%x]\n",
+				devmode->specversion));
+			DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
+			break;
+	}
+			
+	
 	if (!prs_uint16("driverversion",    ps, depth, &devmode->driverversion))
 		return False;
 	if (!prs_uint16("size",             ps, depth, &devmode->size))
@@ -614,44 +665,49 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		return False;
 	if (!prs_uint32("displayfrequency", ps, depth, &devmode->displayfrequency))
 		return False;
-
+	/* 
+	 * every device mode I've ever seen on the wire at least has up 
+	 * to the displayfrequency field.   --jerry (05-09-2002)
+	 */
+	 
+	/* add uint32's + uint16's + two UNICODE strings */
+	 
+	available_space = devmode->size - (sizeof(uint32)*6 + sizeof(uint16)*18 + sizeof(uint16)*64);
+	
+	/* Sanity check - we only have uint32's left tp parse */
+	
+	if ( available_space && ((available_space % sizeof(uint32)) != 0) ) {
+		DEBUG(0,("spoolss_io_devmode: available_space [%d] no in multiple of 4 bytes (size = %d)!\n",
+			available_space, devmode->size));
+		DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
+		return False;
+	}
+	
 	/* 
 	 * Conditional parsing.  Assume that the DeviceMode has been 
 	 * zero'd by the caller. 
 	 */
-	switch(devmode->specversion) {
-	
-		/* Used by spooler when issuing OpenPrinter() calls.  NT 3.5x? */
-		case 0x0320:
-			break;
-		
-		/* See the comments on the DEVMODE in the msdn GDI documentation */
-		case 0x0400:
-		case 0x0401:
-			if (!prs_uint32("icmmethod",        ps, depth, &devmode->icmmethod))
-				return False;
-			if (!prs_uint32("icmintent",        ps, depth, &devmode->icmintent))
-				return False;
-			if (!prs_uint32("mediatype",        ps, depth, &devmode->mediatype))
-				return False;
-			if (!prs_uint32("dithertype",       ps, depth, &devmode->dithertype))
-				return False;
-			if (!prs_uint32("reserved1",        ps, depth, &devmode->reserved1))
-				return False;
-			if (!prs_uint32("reserved2",        ps, depth, &devmode->reserved2))
-				return False;
-			if (!prs_uint32("panningwidth",     ps, depth, &devmode->panningwidth))
-				return False;
-			if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
-				return False;
-			break;
 
-		/* log an error if we see something else */
-		default:
-			DEBUG(0,("spoolss_io_devmode: Unknown specversion [0x%x]!\n", devmode->specversion));
-			DEBUG(0,("spoolss_io_devmode: Please report to samba-technical@samba.org\n"));
-			break;
+	while ((available_space > 0) && (i < DM_NUM_OPTIONAL_FIELDS))
+	{
+		DEBUG(10, ("spoolss_io_devmode: [%d] bytes left to parse in devmode\n", available_space));
+		if (!prs_uint32(opt_fields[i].name, ps, depth, opt_fields[i].field))
+			return False;
+		available_space -= sizeof(uint32);
+		i++;
+	}	 
+	
+	/* Sanity Check - we should no available space at this point unless 
+	   MS changes the device mode structure */
+	   
+	if (available_space) {
+		DEBUG(0,("spoolss_io_devmode: I've parsed all I know and there is still stuff left|\n"));
+		DEBUG(0,("spoolss_io_devmode: available_space = [%d], devmode_size = [%d]!\n",
+			available_space, devmode->size));
+		DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
+		return False;
 	}
+	
 
 	if (devmode->driverextra!=0) {
 		if (UNMARSHALLING(ps)) {
@@ -2225,7 +2281,9 @@ BOOL smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info,
 BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
-
+	uint32 dm_offset, sd_offset, current_offset;
+	uint32 dummy_value = 0;
+	
 	prs_debug(ps, depth, desc, "smb_io_printer_info_2");
 	depth++;	
 	
@@ -2246,10 +2304,11 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 	if (!smb_io_relstr("location", buffer, depth, &info->location))
 		return False;
 
-	/* NT parses the DEVMODE at the end of the struct */
-	if (!smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
+	/* save current offset and wind forwared by a uint32 */
+	dm_offset = prs_offset(ps);
+	if (!prs_uint32("devmode", ps, depth, &dummy_value))
 		return False;
-	
+
 	if (!smb_io_relstr("sepfile", buffer, depth, &info->sepfile))
 		return False;
 	if (!smb_io_relstr("printprocessor", buffer, depth, &info->printprocessor))
@@ -2259,7 +2318,29 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 	if (!smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
+	/* save current offset for the sec_desc */
+	sd_offset = prs_offset(ps);
+	if (!prs_uint32("sec_desc", ps, depth, &dummy_value))
+		return False;
+
+	
+	/* save current location so we can pick back up here */
+	current_offset = prs_offset(ps);
+	
+	/* parse the devmode */
+	if (!prs_set_offset(ps, dm_offset))
+		return False;
+	if (!smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
+		return False;
+	
+	/* parse the sec_desc */
+	if (!prs_set_offset(ps, sd_offset))
+		return False;
 	if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
+		return False;
+		
+	/* pick up where we left off */
+	if (!prs_set_offset(ps, current_offset))
 		return False;
 
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
@@ -3034,10 +3115,10 @@ return the size required by a struct in the stream
 
 uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 {
-	uint32 size=0;
+	uint32 size=0;	 
 		
 	size += 4;
-	/* JRA !!!! TESTME - WHAT ABOUT prs_align.... !!! */
+	
 	size += sec_desc_size( info->secdesc );
 
 	size+=size_of_device_mode( info->devmode );
@@ -3063,6 +3144,16 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	size+=size_of_uint32( &info->status );
 	size+=size_of_uint32( &info->cjobs );
 	size+=size_of_uint32( &info->averageppm );	
+		
+	/* 
+	 * add any adjustments for alignment.  This is
+	 * not optimal since we could be calling this
+	 * function from a loop (e.g. enumprinters), but 
+	 * it is easier to maintain the calculation here and
+	 * not place the burden on the caller to remember.   --jerry
+	 */
+	size += size % 4;
+	
 	return size;
 }
 
@@ -5171,14 +5262,14 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 
 	d->cversion=uni->cversion;
 
-	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
-	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
-	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
-	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
-	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
-	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
-	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
-	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
+	unistr2_to_dos(d->name,            &uni->name,            sizeof(d->name)-1);
+	unistr2_to_dos(d->environment,     &uni->environment,     sizeof(d->environment)-1);
+	unistr2_to_dos(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
+	unistr2_to_dos(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
+	unistr2_to_dos(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
+	unistr2_to_dos(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
+	unistr2_to_dos(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
+	unistr2_to_dos(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
 
 	DEBUGADD(8,( "version:         %d\n", d->cversion));
 	DEBUGADD(8,( "name:            %s\n", d->name));
@@ -5218,14 +5309,14 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 
 	d->version=uni->version;
 
-	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
-	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
-	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
-	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
-	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
-	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
-	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
-	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
+	unistr2_to_dos(d->name,            &uni->name,            sizeof(d->name)-1);
+	unistr2_to_dos(d->environment,     &uni->environment,     sizeof(d->environment)-1);
+	unistr2_to_dos(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
+	unistr2_to_dos(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
+	unistr2_to_dos(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
+	unistr2_to_dos(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
+	unistr2_to_dos(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
+	unistr2_to_dos(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
 
 	DEBUGADD(8,( "version:         %d\n", d->version));
 	DEBUGADD(8,( "name:            %s\n", d->name));
@@ -5283,17 +5374,17 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	d->status=uni->status;
 	d->cjobs=uni->cjobs;
 	
-	unistr2_to_ascii(d->servername, &uni->servername, sizeof(d->servername)-1);
-	unistr2_to_ascii(d->printername, &uni->printername, sizeof(d->printername)-1);
-	unistr2_to_ascii(d->sharename, &uni->sharename, sizeof(d->sharename)-1);
-	unistr2_to_ascii(d->portname, &uni->portname, sizeof(d->portname)-1);
-	unistr2_to_ascii(d->drivername, &uni->drivername, sizeof(d->drivername)-1);
-	unistr2_to_ascii(d->comment, &uni->comment, sizeof(d->comment)-1);
-	unistr2_to_ascii(d->location, &uni->location, sizeof(d->location)-1);
-	unistr2_to_ascii(d->sepfile, &uni->sepfile, sizeof(d->sepfile)-1);
-	unistr2_to_ascii(d->printprocessor, &uni->printprocessor, sizeof(d->printprocessor)-1);
-	unistr2_to_ascii(d->datatype, &uni->datatype, sizeof(d->datatype)-1);
-	unistr2_to_ascii(d->parameters, &uni->parameters, sizeof(d->parameters)-1);
+	unistr2_to_dos(d->servername, &uni->servername, sizeof(d->servername)-1);
+	unistr2_to_dos(d->printername, &uni->printername, sizeof(d->printername)-1);
+	unistr2_to_dos(d->sharename, &uni->sharename, sizeof(d->sharename)-1);
+	unistr2_to_dos(d->portname, &uni->portname, sizeof(d->portname)-1);
+	unistr2_to_dos(d->drivername, &uni->drivername, sizeof(d->drivername)-1);
+	unistr2_to_dos(d->comment, &uni->comment, sizeof(d->comment)-1);
+	unistr2_to_dos(d->location, &uni->location, sizeof(d->location)-1);
+	unistr2_to_dos(d->sepfile, &uni->sepfile, sizeof(d->sepfile)-1);
+	unistr2_to_dos(d->printprocessor, &uni->printprocessor, sizeof(d->printprocessor)-1);
+	unistr2_to_dos(d->datatype, &uni->datatype, sizeof(d->datatype)-1);
+	unistr2_to_dos(d->parameters, &uni->parameters, sizeof(d->parameters)-1);
 
 	return True;
 }
@@ -5859,7 +5950,7 @@ BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 		memset((char *)*param, '\0', sizeof(NT_PRINTER_PARAM));
 		DEBUGADD(6,("Allocated a new PARAM struct\n"));
 	}
-	unistr2_to_ascii((*param)->value, value, sizeof((*param)->value)-1);
+	unistr2_to_dos((*param)->value, value, sizeof((*param)->value)-1);
 	(*param)->type = type;
 	
 	/* le champ data n'est pas NULL termine */

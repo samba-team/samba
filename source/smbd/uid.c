@@ -114,8 +114,10 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		return(True);
 	} else if ((current_user.conn == conn) && 
 		   (vuser != 0) && (current_user.vuid == vuid) && 
-		   (current_user.uid == vuser->uid)) {
+		   (current_user.uid == vuser->uid)) 
+	{
 		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
+		return True;
 	}
 
 	snum = SNUM(conn);

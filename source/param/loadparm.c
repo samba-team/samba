@@ -175,6 +175,7 @@ typedef struct
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
+	char *szManglingMethod;
 	int max_log_size;
 	int mangled_stack;
 	int max_xmit;
@@ -408,6 +409,7 @@ typedef struct
 	BOOL bUseClientDriver;
 	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
+	BOOL bForceUnknownAclUser;
 
 	char dummy[3];		/* for alignment */
 }
@@ -527,6 +529,7 @@ static service sDefault = {
 	False,			/* bUseClientDriver */
 	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
+	False,			/* bForceUnknownAclUser */
 
 	""			/* dummy */
 };
@@ -655,7 +658,8 @@ static struct enum_list enum_csc_policy[] = {
 	{CSC_POLICY_MANUAL, "manual"},
 	{CSC_POLICY_DOCUMENTS, "documents"},
 	{CSC_POLICY_PROGRAMS, "programs"},
-	{CSC_POLICY_DISABLE, "disable"}
+	{CSC_POLICY_DISABLE, "disable"},
+	{-1,NULL}
 };
 
 /* 
@@ -779,6 +783,7 @@ static struct parm_struct parm_table[] = {
 	{"force directory mode", P_OCTAL, P_LOCAL, &sDefault.iDir_force_mode, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"directory security mask", P_OCTAL, P_LOCAL, &sDefault.iDir_Security_mask, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"force directory security mode", P_OCTAL, P_LOCAL, &sDefault.iDir_Security_force_mode, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"force unknown acl user", P_OCTAL, P_LOCAL, &sDefault.bForceUnknownAclUser, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"inherit permissions", P_BOOL, P_LOCAL, &sDefault.bInheritPerms, NULL, NULL, FLAG_SHARE},
 	{"inherit acls", P_BOOL, P_LOCAL, &sDefault.bInheritACLS, NULL, NULL, FLAG_SHARE},
 	{"guest only", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_SHARE},
@@ -831,7 +836,7 @@ static struct parm_struct parm_table[] = {
 	{"debug pid", P_BOOL, P_GLOBAL, &Globals.bDebugPid, NULL, NULL, 0},
 	{"debug uid", P_BOOL, P_GLOBAL, &Globals.bDebugUid, NULL, NULL, 0},
 	
-	{"status", P_BOOL, P_LOCAL, &sDefault.status, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE | FLAG_PRINT},
+	{"status", P_BOOL, P_LOCAL, &sDefault.status, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE | FLAG_PRINT | FLAG_DEPRECATED},
 
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
@@ -919,7 +924,8 @@ static struct parm_struct parm_table[] = {
 	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL | FLAG_DEPRECATED},
 
 	{"Filename Handling", P_SEP, P_SEPARATOR},
-	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, 0},
+	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, FLAG_DEPRECATED },
+	{"mangling method", P_STRING, P_GLOBAL, &Globals.szManglingMethod, NULL, NULL, 0},
 	
 	{"character set", P_STRING, P_GLOBAL, &Globals.szCharacterSet, handle_character_set, NULL, 0},
 	{"mangled stack", P_INTEGER, P_GLOBAL, &Globals.mangled_stack, NULL, NULL, 0},
@@ -1256,6 +1262,10 @@ static void init_globals(void)
 #else
 	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
 #endif
+
+	/* use the old 'hash' method by default */
+	string_set(&Globals.szManglingMethod, "hash");
+
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
@@ -1582,6 +1592,7 @@ FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
+FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 
 #ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion)
@@ -1769,6 +1780,7 @@ FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
+FN_LOCAL_BOOL(lp_force_unknown_acl_user, bForceUnknownAclUser)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
@@ -2620,54 +2632,55 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
 
 static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 {
-	int low, high;
+	unsigned int low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */
 
 	string_set(ptr, pszParmValue);
 
-        winbind_uid_low = low;
-        winbind_uid_high = high;
+        winbind_uid_low = (uid_t)low;
+        winbind_uid_high = (uid_t)high;
 
 	return True;
 }
 
 static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
 {
-	gid_t low, high;
+	unsigned int low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */
 
 	string_set(ptr, pszParmValue);
 
-        winbind_gid_low = low;
-        winbind_gid_high = high;
+        winbind_gid_low = (gid_t)low;
+        winbind_gid_high = (gid_t)high;
 
 	return True;
 }
 
 /***************************************************************************
- Handle the WINS SERVER list
+ Handle the WINS SERVER list.
 ***************************************************************************/
+
 static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
-  {
-  if( !wins_srv_load_list( pszParmValue ) )
-    return( False );  /* Parse failed. */
+{
+	if( !wins_srv_load_list( pszParmValue ) )
+		return( False );  /* Parse failed. */
 
-  string_set( ptr, pszParmValue );
-  return( True );
-  }
-
+	string_set( ptr, pszParmValue );
+	return( True );
+}
 
 /***************************************************************************
- Handle the DEBUG level list
+ Handle the DEBUG level list.
 ***************************************************************************/
+
 static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 {
 	pstring pszParmValue;
@@ -2678,8 +2691,9 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 
 
 /***************************************************************************
-initialise a copymap
+ Initialise a copymap.
 ***************************************************************************/
+
 static void init_copymap(service * pservice)
 {
 	int i;
@@ -3834,10 +3848,12 @@ const char *get_called_name(void)
 
 	/*
 	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"
+	 * arrggg!!! but we've already rewritten the client's
+	 * netbios name at this point...
 	 */
 
 	if (*local_machine) {
-		if (!StrCaseCmp(local_machine, "*SMBSERVER") || !StrCaseCmp(local_machine, "*SMBSERV")) {
+		if (!StrCaseCmp(local_machine, "_SMBSERVER") || !StrCaseCmp(local_machine, "_SMBSERV")) {
 			fstrcpy(called_name, get_my_primary_ip());
 			DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
 				called_name));

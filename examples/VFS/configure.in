@@ -1,0 +1,92 @@
+dnl Samba VFS Modules
+
+AC_INIT
+
+uname=`uname`
+
+dnl Check programs needed
+AC_PROG_CC
+
+dnl ensure libtool is installed
+AC_PATH_PROG(LIBTOOL, libtool,,)
+if test "$LIBTOOL" = ""; then
+        echo
+        echo 'FATAL ERROR: libtool does not seem to be installed.'
+        echo $pkg_name cannot be built without a working libtool installation.
+        exit 1
+fi
+
+#
+# Config CFLAGS settings
+#
+CFLAGS="-Wall"
+
+case "$uname" in
+	AIX)
+		if test "${GCC}" = "yes"; then
+			CFLAGS="$CFLAGS -I/usr/include -D_LINUX_SOURCE_COMPAT"
+		else
+			CFLAGS="-D_LINUX_SOURCE_COMPAT"
+		fi
+		;;
+	SunOS)
+		if test "${GCC}" = "yes"; then
+			CFLAGS="$CFLAGS"
+		else
+			CFLAGS=""
+		fi
+		;;	
+#	Linux)
+#		CFLAGS="-Wall"
+#		;;
+esac
+
+#
+# Config LDLAGS settings
+#
+LDFLAGS="-shared"
+
+case "$uname" in
+	AIX)
+		LDFLAGS="-Wl,-G,-bexpall,-bnoentry"
+		;;
+	SunOS)
+		LDFLAGS="-G"
+		;;
+#	Linux)
+#		echo "Linux found"
+#		LDFLAGS="-shared"
+#		;;
+esac
+
+#################################################
+# Check to see if we should use the included popt
+
+AC_ARG_WITH(included-popt,
+[  --with-included-popt    use bundled popt library, not from system],
+[
+  case "$withval" in
+        yes)
+                INCLUDED_POPT=yes
+                ;;
+        no)
+                INCLUDED_POPT=no
+                ;;
+  esac ],
+)
+if test x"$INCLUDED_POPT" != x"yes"; then
+    AC_CHECK_LIB(popt, poptGetContext,
+                 INCLUDED_POPT=no, INCLUDED_POPT=yes)
+fi
+
+AC_MSG_CHECKING(whether to use included popt)
+if test x"$INCLUDED_POPT" = x"yes"; then
+	AC_MSG_RESULT($srcdir/popt)
+	CFLAGS="$CFLAGS -I../../source/popt"
+else
+	AC_MSG_RESULT(no)    
+fi
+
+CFLAGS="$CFLAGS -I../../source -I../../source/include -I../../source/ubiqx -I../../source/smbwrapper"
+
+AC_OUTPUT([Makefile])

@@ -657,10 +657,10 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
 		/*
 		 * JRA. I think this should include the null. TNG does not.
 		 */
-		int len = strlen(grp[i].name)+1;
+		int len = strlen(unix_to_dos_static(grp[i].name))+1;
 
 		init_sam_entry(&sam[i], len, grp[i].rid);
-		init_unistr2(&uni_name[i], grp[i].name, len);
+		init_unistr2(&uni_name[i], unix_to_dos_static(grp[i].name), len);
 	}
 
 	*sam_pp = sam;

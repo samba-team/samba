@@ -126,6 +126,7 @@ done:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 	
+#ifdef WITH_WINBIND_AUTH_CRAP
 /* Challenge Response Authentication Protocol */
 
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
@@ -216,6 +217,8 @@ done:
 	
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
+
+#endif	/* WITH_WINBIND_AUTH_CRAP */
 
 /* Change a user password */
 

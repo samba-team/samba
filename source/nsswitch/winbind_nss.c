@@ -659,6 +659,17 @@ static NSS_STATUS fill_pwent(struct passwd *result,
 
 	strcpy(result->pw_shell, pw->pw_shell);
 
+	/* The struct passwd for Solaris has some extra fields which must
+	   be initialised or nscd crashes. */
+
+#if HAVE_PASSWD_PW_COMMENT
+	result->pw_comment = "";
+#endif
+
+#if HAVE_PASSWD_PW_AGE
+	result->pw_age = "";
+#endif
+
 	return NSS_STATUS_SUCCESS;
 }
 
@@ -856,7 +867,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		}
 
 		ret = fill_pwent(result, &pw_cache[ndx_pw_cache],
-				 &buffer, &buflen);
+ &buffer, (int *)&buflen);
 		
 		/* Out of memory - try again */
 
@@ -906,7 +917,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_pwent(result, &response.data.pw, 
-					 &buffer, &buflen);
+					&buffer, (int *)&buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
@@ -919,7 +930,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		/* We've been called again */
 
-		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
+		ret = fill_pwent(result, &response.data.pw, &buffer, (int *)&buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -968,7 +979,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_pwent(result, &response.data.pw, &buffer,
-					 &buflen);
+					(int *)&buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
@@ -981,7 +992,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 
 		/* We've been called again */
 
-		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
+		ret = fill_pwent(result, &response.data.pw, &buffer, (int *)&buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -1105,7 +1116,7 @@ _nss_winbind_getgrent_r(struct group *result,
 
 		ret = fill_grent(result, &gr_cache[ndx_gr_cache],
 				 ((char *)getgrent_response.extra_data)+mem_ofs,
-				 &buffer, &buflen);
+				&buffer, (int *)&buflen);
 		
 		/* Out of memory - try again */
 
@@ -1165,7 +1176,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response.data.gr, 
 					 response.extra_data,
-					 &buffer, &buflen);
+					&buffer, (int *)&buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
@@ -1179,7 +1190,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		/* We've been called again */
 		
 		ret = fill_grent(result, &response.data.gr, 
-				 response.extra_data, &buffer, &buflen);
+				response.extra_data, &buffer, (int *)&buflen);
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -1228,7 +1239,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 			ret = fill_grent(result, &response.data.gr, 
 					 response.extra_data, 
-					 &buffer, &buflen);
+					&buffer, (int *)&buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
@@ -1242,7 +1253,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 		/* We've been called again */
 
 		ret = fill_grent(result, &response.data.gr, 
-				 response.extra_data, &buffer, &buflen);
+				response.extra_data, &buffer, (int *)&buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;

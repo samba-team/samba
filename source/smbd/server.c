@@ -64,7 +64,7 @@ void smbd_set_server_fd(int fd)
  Terminate signal.
 ****************************************************************************/
 
-VOLATILE sig_atomic_t got_sig_term = 0;
+SIG_ATOMIC_T got_sig_term = 0;
 
 static void sig_term(void)
 {
@@ -76,7 +76,7 @@ static void sig_term(void)
  Catch a sighup.
 ****************************************************************************/
 
-VOLATILE sig_atomic_t reload_after_sighup = 0;
+SIG_ATOMIC_T reload_after_sighup = 0;
 
 static void sig_hup(int sig)
 {
@@ -382,7 +382,7 @@ BOOL reload_services(BOOL test)
 		}
 	}
 
-	reset_mangled_cache();
+	mangle_reset_cache();
 	reset_stat_cache();
 
 	/* this forces service parameters to be flushed */

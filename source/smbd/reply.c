@@ -553,6 +553,15 @@ static int smb_delete_user(char *unix_user)
 	pstring del_script;
 	int ret;
 
+	/*
+	 * Sanity check -- do not delete 'root' account
+	 */
+
+	if (StrCaseCmp("root", unix_user) == 0) {
+		DEBUG(0,("smb_delete_user: Will not delete the [%s] user account!\n", unix_user));
+		return -1;
+	}
+
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)
 		return -1;
@@ -2052,8 +2061,8 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && is_mangled(mask))
-		check_mangled_cache( mask );
+	if (!rc && mangle_is_mangled(mask))
+		mangle_check_cache( mask );
 
 	has_wild = ms_has_wild(mask);
 
@@ -3764,8 +3773,8 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && is_mangled(mask))
-		check_mangled_cache( mask );
+	if (!rc && mangle_is_mangled(mask))
+		mangle_check_cache( mask );
 
 	has_wild = ms_has_wild(mask);
 
@@ -3776,7 +3785,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 		/*
 		 * No wildcards - just process the one file.
 		 */
-		BOOL is_short_name = is_8_3(name, True);
+		BOOL is_short_name = mangle_is_8_3(name, True);
 
 		/* Add a terminating '/' to the directory name. */
 		pstrcat(directory,"/");
@@ -3792,7 +3801,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 		}
 		
 		DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, \
-directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
+directory = %s, newname = %s, newname_last_component = %s, mangle_is_8_3 = %d\n", 
 			 case_sensitive, case_preserve, short_case_preserve, directory, 
 			 newname, newname_last_component, is_short_name));
 
@@ -4173,8 +4182,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
    * Tine Smukavec <valentin.smukavec@hermes.si>.
    */
 
-  if (!rc && is_mangled(mask))
-    check_mangled_cache( mask );
+  if (!rc && mangle_is_mangled(mask))
+    mangle_check_cache( mask );
 
   has_wild = ms_has_wild(mask);
 

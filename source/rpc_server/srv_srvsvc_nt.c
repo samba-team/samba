@@ -1240,7 +1240,7 @@ WERROR _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));
 
 	/* Create the list of shares for the response. */
-	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
+	unistr2_to_dos(share_name, &q_u->uni_share_name, sizeof(share_name));
 	init_srv_r_net_share_get_info(p, r_u, share_name, q_u->info_level);
 
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));
@@ -1308,7 +1308,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
-	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
+	unistr2_to_dos(share_name, &q_u->uni_share_name, sizeof(share_name));
 
 	r_u->switch_value = 0;
 
@@ -1335,14 +1335,14 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		/* Not enough info in a level 1 to do anything. */
 		return WERR_ACCESS_DENIED;
 	case 2:
-		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
-		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
+		unistr2_to_dos(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
+		unistr2_to_dos(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info2.info_2.type;
 		psd = NULL;
 		break;
 	case 502:
-		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
-		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
+		unistr2_to_dos(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
+		unistr2_to_dos(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info502.info_502.type;
 		psd = q_u->info.share.info502.info_502_str.sd;
 		map_generic_share_sd_bits(psd);
@@ -1456,15 +1456,15 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		/* Not enough info in a level 1 to do anything. */
 		return WERR_ACCESS_DENIED;
 	case 2:
-		unistr2_to_ascii(share_name, &q_u->info.share.info2.info_2_str.uni_netname, sizeof(share_name));
-		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
-		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
+		unistr2_to_dos(share_name, &q_u->info.share.info2.info_2_str.uni_netname, sizeof(share_name));
+		unistr2_to_dos(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
+		unistr2_to_dos(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info2.info_2.type;
 		break;
 	case 502:
-		unistr2_to_ascii(share_name, &q_u->info.share.info502.info_502_str.uni_netname, sizeof(share_name));
-		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
-		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
+		unistr2_to_dos(share_name, &q_u->info.share.info502.info_502_str.uni_netname, sizeof(share_name));
+		unistr2_to_dos(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
+		unistr2_to_dos(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info502.info_502.type;
 		psd = q_u->info.share.info502.info_502_str.sd;
 		map_generic_share_sd_bits(psd);
@@ -1543,7 +1543,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
 
-	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
+	unistr2_to_dos(share_name, &q_u->uni_share_name, sizeof(share_name));
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
 		return WERR_ACCESS_DENIED;
@@ -1656,7 +1656,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	r_u->status = WERR_OK;
 
-	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
+	unistr2_to_dos(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
@@ -1681,7 +1681,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	}
     became_user = True;
 
-	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
+	unistr2_to_dos(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
 	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDONLY),
 				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
@@ -1761,7 +1761,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	r_u->status = WERR_OK;
 
-	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
+	unistr2_to_dos(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
@@ -1786,7 +1786,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	}
 	became_user = True;
 
-	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
+	unistr2_to_dos(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
 
 	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDWR),
@@ -1929,7 +1929,7 @@ WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 		/*check if share name is ok*/
 		/*also check if we already have a share with this name*/
 
-		unistr2_to_ascii(share_name, &q_u->uni_name, sizeof(share_name));
+		unistr2_to_dos(share_name, &q_u->uni_name, sizeof(share_name));
 		snum = find_service(share_name);
 
 		/* Share already exists. */

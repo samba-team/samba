@@ -322,8 +322,8 @@ void message_dispatch(void)
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
-		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%d\n",
-			  msg_type, (int) src));
+		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%u\n",
+			  msg_type, (unsigned int) src));
 		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
@@ -334,8 +334,8 @@ void message_dispatch(void)
 		}
 		if (!n_handled) {
 			DEBUG(5,("message_dispatch: warning: no handlers registed for "
-				 "msg_type %d in pid%d\n",
-				 msg_type, getpid()));
+				 "msg_type %d in pid%u\n",
+				 msg_type, (unsigned int)getpid()));
 		}
 		SAFE_FREE(buf);
 	}
@@ -459,7 +459,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 
 /** @} **/
 
-static VOLATILE sig_atomic_t gotalarm;
+static SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
  Signal function to tell us we timed out.
@@ -474,7 +474,7 @@ static void gotalarm_sig(void)
   lock the messaging tdb based on a string - this is used as a primitive form of mutex
   between smbd instances. 
 */
-BOOL message_named_mutex(char *name, unsigned int timeout)
+BOOL message_named_mutex(const char *name, unsigned int timeout)
 {
 	TDB_DATA key;
 	int ret;
@@ -482,7 +482,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 	if (!message_init())
 		return False;
 
-	key.dptr = name;
+	key.dptr = (char *)name;
 	key.dsize = strlen(name)+1;
 
 	if (timeout) {

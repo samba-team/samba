@@ -307,12 +307,16 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 {	
 	int len;
 	char *ret;
+	va_list ap2;
 	
-	len = vsnprintf(NULL, 0, fmt, ap);
+	VA_COPY(ap2, ap);  /* for systems were va_list is a struct */
+	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	ret = talloc(t, len+1);
-	if (ret)
-		vsnprintf(ret, len+1, fmt, ap);
+	if (ret) {
+		VA_COPY(ap2, ap);
+		vsnprintf(ret, len+1, fmt, ap2);
+	}
 
 	return ret;
 }
@@ -345,14 +349,17 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 			       const char *fmt, va_list ap)
 {	
 	int len, s_len;
+	va_list ap2;
 
+	VA_COPY(ap2, ap);
 	s_len = strlen(s);
-	len = vsnprintf(NULL, 0, fmt, ap);
+	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	s = talloc_realloc(t, s, s_len + len+1);
 	if (!s) return NULL;
 
-	vsnprintf(s+s_len, len+1, fmt, ap);
+	VA_COPY(ap2, ap);
+	vsnprintf(s+s_len, len+1, fmt, ap2);
 
 	return s;
 }

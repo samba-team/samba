@@ -93,17 +93,6 @@
 		
 		
 		<varlistentry>
-		<term>-s</term>
-		<listitem><para>This option causes smbpasswd to be silent (i.e. 
-		not issue prompts) and to read its old and new passwords from 
-		standard  input, rather than from <filename>/dev/tty</filename> 
-		(like the <command>passwd(1)</command> program does). This option 
-		is to aid people writing scripts to drive smbpasswd</para>
-		</listitem>
-		</varlistentry>
-		
-
-		<varlistentry>
 		<term>-c smb.conf file</term>
 		<listitem><para>This option specifies that the configuration
 		file specified should be used instead of the default value
@@ -159,6 +148,40 @@
 		</varlistentry>
 		
 		
+
+		<varlistentry>
+		<term>-s</term>
+		<listitem><para>This option causes smbpasswd to be silent (i.e. 
+		not issue prompts) and to read its old and new passwords from 
+		standard  input, rather than from <filename>/dev/tty</filename> 
+		(like the <command>passwd(1)</command> program does). This option 
+		is to aid people writing scripts to drive smbpasswd</para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term>-S</term>
+		<listitem><para>This option causes <command>smbpasswd</command>
+		to query a domain controller of the domain specified 
+		by the <ulink url="smb.conf.5.html#WORKGROUP">workgroup</ulink>
+		parameter in <filename>smb.conf</filename> and store the
+		domain SID in the <filename>secrets.tdb</filename> file
+		as its own machine SID.  This is only useful when configuring
+		a Samba PDC and Samba BDC, or when migrating from a Windows PDC
+		to a Samba PDC.  </para>
+
+		<para>The <parameter>-r</parameter> options can be used
+		as well to indicate a specific domain controller which should
+		be contacted.  In this case, the domain SID obtained is the 
+		one for the domain to which the remote machine belongs.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		
+
 		<varlistentry>
 		<term>-U username[%pass]</term>
 		<listitem><para>This option may only be used in conjunction 
@@ -267,7 +290,7 @@ run as root or in local mode.</command>
 		dn</parameter></ulink>.  Note that the password is stored in
 		the <filename>private/secrets.tdb</filename> and is keyed off 
 		of the admin's DN.  This means that if the value of <parameter>ldap
-		admin dn</parameter> ever changes, the password will beed to be 
+		admin dn</parameter> ever changes, the password will need to be 
 		manually updated as well.
 		</para>
 		</listitem>

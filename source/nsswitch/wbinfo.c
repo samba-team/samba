@@ -3,7 +3,7 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter      2000
+   Copyright (C) Tim Potter      2000-2002
    Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
@@ -257,11 +257,11 @@ static BOOL wbinfo_check_secret(void)
 
         if (result) {
 
-                if (response.data.num_entries == 0)
+                if (response.data.auth.nt_status == 0)
                         printf("Secret is good\n");
                 else
                         printf("Secret is bad\n0x%08x\n", 
-			       response.data.num_entries);
+			       response.data.auth.nt_status);
 
                 return True;
         }
@@ -458,6 +458,8 @@ static BOOL wbinfo_auth(char *username)
         return result == NSS_STATUS_SUCCESS;
 }
 
+#ifdef WITH_WINBIND_AUTH_CRAP
+
 /* Authenticate a user with a challenge/response */
 
 static BOOL wbinfo_auth_crap(char *username)
@@ -511,6 +513,8 @@ static BOOL wbinfo_auth_crap(char *username)
 
         return result == NSS_STATUS_SUCCESS;
 }
+
+#endif	/* WITH_WINBIND_AUTH_CRAP */
 
 /* Print domain users */
 
@@ -593,8 +597,10 @@ static BOOL wbinfo_set_auth_user(char *username)
 
 	/* Store in secrets.tdb */
 
-	if (!secrets_store(SECRETS_AUTH_USER, username, 
-			   strlen(username) + 1) ||
+	secrets_init();
+
+	if (!secrets_store(SECRETS_AUTH_USER, user, 
+			   strlen(user) + 1) ||
 	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, 
 			   strlen(domain) + 1) ||
 	    !secrets_store(SECRETS_AUTH_PASSWORD, password,
@@ -625,7 +631,7 @@ static BOOL wbinfo_ping(void)
 static void usage(void)
 {
 	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
-               "| -a user%%password\n");
+               "| -[aA] user%%password\n");
 	printf("\t-u\t\t\tlists all domain users\n");
 	printf("\t-g\t\t\tlists all domain groups\n");
 	printf("\t-n name\t\t\tconverts name to sid\n");
@@ -640,6 +646,7 @@ static void usage(void)
 	printf("\t-m\t\t\tlist trusted domains\n");
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
+	printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
 	printf("\t-p 'ping' winbindd to see if it is alive\n");
 	printf("\t--sequence\t\tshow sequence numbers of all domains\n");
 }
@@ -648,7 +655,7 @@ static void usage(void)
 
 enum {
 	OPT_SET_AUTH_USER = 1000,
-	OPT_SEQUENCE,
+	OPT_SEQUENCE
 };
 
 int main(int argc, char **argv)
@@ -683,7 +690,7 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
-		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
+		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
 		{ 0, 0, 0, 0 }
 	};
@@ -838,13 +845,13 @@ int main(int argc, char **argv)
                                        "plaintext password\n", string_arg);
                                 got_error = True;
                         }
-
+#ifdef WITH_WINBIND_AUTH_CRAP
                         if (!wbinfo_auth_crap(string_arg)) {
                                 printf("Could not authenticate user %s with "
                                        "challenge/response\n", string_arg);
                                 got_error = True;
                         }
-			
+#endif
                         if (got_error)
                                 goto done;
                         break;

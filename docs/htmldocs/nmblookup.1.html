@@ -37,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >nmblookup</B
->  [-M] [-R] [-S] [-r] [-A] [-h] [-B &#60;broadcast address&#62;] [-U &#60;unicast address&#62;] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-i &#60;NetBIOS scope&#62;] [-T] {name}</P
+>  [-f] [-M] [-R] [-S] [-r] [-A] [-h] [-B &#60;broadcast address&#62;] [-U &#60;unicast address&#62;] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-i &#60;NetBIOS scope&#62;] [-T] {name}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN24"
+NAME="AEN25"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -65,7 +65,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN30"
+NAME="AEN31"
 ></A
 ><H2
 >OPTIONS</H2
@@ -74,6 +74,15 @@ NAME="AEN30"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+>-f</DT
+><DD
+><P
+>Causes nmblookup to print out the flags
+		in the NMB packet headers. These flags will print out as 
+		strings like Authoritative, Recursion_Desired, Recursion_available, etc.
+		</P
+></DD
 ><DT
 >-M</DT
 ><DD
@@ -293,7 +302,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN110"
+NAME="AEN115"
 ></A
 ><H2
 >EXAMPLES</H2
@@ -330,7 +339,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN122"
+NAME="AEN127"
 ></A
 ><H2
 >VERSION</H2
@@ -341,7 +350,7 @@ NAME="AEN122"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN125"
+NAME="AEN130"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -368,7 +377,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN132"
+NAME="AEN137"
 ></A
 ><H2
 >AUTHOR</H2

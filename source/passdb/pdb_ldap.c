@@ -48,6 +48,10 @@
 #include <lber.h>
 #include <ldap.h>
 
+#ifndef LDAP_OPT_SUCCESS
+#define LDAP_OPT_SUCCESS LDAP_SUCCESS
+#endif
+
 #ifndef SAM_ACCOUNT
 #define SAM_ACCOUNT struct sam_passwd
 #endif
@@ -72,21 +76,40 @@ extern BOOL sam_logon_in_ssb;
 static BOOL ldap_open_connection (LDAP ** ldap_struct)
 {
 	int port;
-	int version, rc;
-	int tls = LDAP_OPT_X_TLS_HARD;
+	int version;
+	int tls;
+	uid_t uid = geteuid();
+	struct passwd* pass;
 	
-	if (geteuid() != 0) {
-		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root..\n"));
+	DEBUG(5,("ldap_open_connection: starting...\n"));
+	/*
+	 * using sys_getpwnam() here since I'm assuming that the 
+ 	 * ldapsam is only used on a standalone server or PDC.
+	 * winbind not in the picture....
+	 */
+	
+	if ( (pass=sys_getpwuid(uid)) == NULL ) {
+		DEBUG(0,("ldap_open_connection: Can't determine user of running process!\n"));
 		return False;
 	}
 
-	if (lp_ldap_ssl() == LDAP_SSL_ON && lp_ldap_port() == 389) {
-		port = 636;
-	}
-	else {
-		port = lp_ldap_port();
+	/* check that the user is in the domain admin group for connecting */
+
+	if ( (uid != 0) && !user_in_list(pass->pw_name, lp_domain_admin_group()) ) {
+		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root or a member of domain admin group..\n"));
+		return False;
 	}
 
+	port = lp_ldap_port();
+	
+	/* remap default port is no SSL */
+	if ( (lp_ldap_ssl() == LDAP_SSL_OFF) && (lp_ldap_port() == 636) ) {
+		port = 389;
+	}
+
+	DEBUG(10,("Initializing connection to %s on port %d\n", 
+		lp_ldap_server(), port ));
+		
 	if ((*ldap_struct = ldap_init(lp_ldap_server(), port)) == NULL)	{
 		DEBUG(0, ("The LDAP server is not responding !\n"));
 		return False;
@@ -105,6 +128,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	switch (lp_ldap_ssl())
 	{
 		case LDAP_SSL_START_TLS:
+#ifdef HAVE_LDAP_START_TLS_S
 			if (ldap_get_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, 
 				&version) == LDAP_OPT_SUCCESS)
 			{
@@ -122,13 +146,25 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 				return False;
 			}
 			DEBUG (2, ("StartTLS issued: using a TLS connection\n"));
+#else
+			DEBUG(0,("ldap_open_connection: StartTLS not supported by LDAP client libraries!\n"));
+                        return False;
+#endif
 			break;
 			
 		case LDAP_SSL_ON:
+#ifdef LDAP_OPT_X_TLS
+			tls = LDAP_OPT_X_TLS_HARD;
 			if (ldap_set_option (*ldap_struct, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS)
 			{
 				DEBUG(0, ("Failed to setup a TLS session\n"));
 			}
+			
+			DEBUG(0,("LDAPS option set...!\n"));
+#else
+			DEBUG(0,("ldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
+			return False;
+#endif
 			break;
 			
 		case LDAP_SSL_OFF:
@@ -188,7 +224,7 @@ static int ldap_search_one_user (LDAP * ldap_struct, const char *filter, LDAPMes
 
 	DEBUG(2, ("ldap_search_one_user: searching for:[%s]\n", filter));
 
-	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, filter, NULL, 0, result);
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, (char*)filter, NULL, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
 		DEBUG(0,("ldap_search_one_user: Problem during the LDAP search: %s\n", 
@@ -268,17 +304,17 @@ static int ldap_search_one_user_by_rid (LDAP * ldap_struct, uint32 rid,
 }
 
 /*******************************************************************
-search an attribute and return the first value found.
+ search an attribute and return the first value found.
+ the string in 'value' is unchanged if the attribute does not exist
 ******************************************************************/
+
 static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 		     char *attribute, char *value)
 {
 	char **values;
 
 	if ((values = ldap_get_values (ldap_struct, entry, attribute)) == NULL) {
-		value = NULL;
-		DEBUG (2, ("get_single_attribute: [%s] = [<does not exist>]\n", attribute));
-		
+		DEBUG (2, ("get_single_attribute: [%s] = [<does not exist>]\n", attribute));	
 		return False;
 	}
 
@@ -290,10 +326,10 @@ static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 }
 
 /************************************************************************
-Routine to manage the LDAPMod structure array
-manage memory used by the array, by each struct, and values
-
+ Routine to manage the LDAPMod structure array
+ manage memory used by the array, by each struct, and values
 ************************************************************************/
+
 static void make_a_mod (LDAPMod *** modlist, int modop, char *attribute, char *value)
 {
 	LDAPMod **mods;
@@ -427,23 +463,31 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	pstrcpy(domain, lp_workgroup());
 
-	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
-	pass_last_set_time = (time_t) atol(temp);
+	pass_last_set_time 	= TIME_T_MAX;
+	logon_time 		= TIME_T_MAX;
+	logoff_time 		= TIME_T_MAX;
+	kickoff_time 		= TIME_T_MAX;
+	pass_can_change_time 	= TIME_T_MAX;
+	pass_must_change_time 	= TIME_T_MAX;
+	
 
-	get_single_attribute(ldap_struct, entry, "logonTime", temp);
-	logon_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "pwdLastSet", temp))
+		pass_last_set_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "logoffTime", temp);
-	logoff_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "logonTime", temp))
+		logon_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "kickoffTime", temp);
-	kickoff_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "logoffTime", temp))
+		logoff_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "pwdCanChange", temp);
-	pass_can_change_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "kickoffTime", temp))
+		kickoff_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "pwdMustChange", temp);
-	pass_must_change_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "pwdCanChange", temp))
+		pass_can_change_time = (time_t) atol(temp);
+
+	if (get_single_attribute(ldap_struct, entry, "pwdMustChange", temp))
+		pass_must_change_time = (time_t) atol(temp);
 
 	/* recommend that 'gecos' and 'displayName' should refer to the same
 	 * attribute OID.  userFullName depreciated, only used by Samba

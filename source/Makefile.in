@@ -9,6 +9,7 @@ mandir=@mandir@
 sysconfdir=@sysconfdir@
 
 LIBS=@LIBS@
+LDAPLIBS=@LDAPLIBS@
 CC=@CC@
 SHLD=@SHLD@ 
 CFLAGS=@CFLAGS@
@@ -51,7 +52,7 @@ LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 DRIVERFILE = $(CONFIGDIR)/printers.def
-PASSWD_PROGRAM = /bin/passwd
+PASSWD_PROGRAM = @passwd_program@
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
 
@@ -102,7 +103,7 @@ PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest bin/locktest2
 SHLIBS = libsmbclient
 
-SCRIPTS = $(srcdir)/script/smbtar 
+SCRIPTS = $(srcdir)/script/smbtar  $(srcdir)/script/findsmb
 
 QUOTAOBJS=@QUOTAOBJS@
 
@@ -188,8 +189,8 @@ NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/utmp.o smbd/session.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
-            smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
-            smbd/message.o smbd/nttrans.o smbd/pipes.o \
+            smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/mangle_hash2.o smbd/mangle_hash.o \
+	    smbd/mangle_map.o smbd/negprot.o smbd/message.o smbd/nttrans.o smbd/pipes.o \
             smbd/reply.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	    smbd/blocking.o smbd/sec_ctx.o \
@@ -505,7 +506,7 @@ bin/.dummy:
 
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
 bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -513,11 +514,11 @@ bin/nmbd: $(NMBD_OBJ) bin/.dummy
 
 bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS) 
 
 bin/rpcclient: $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) $(LDAPLIBS)
 
 bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -557,11 +558,11 @@ bin/smbcontrol: $(SMBCONTROL_OBJ) bin/.dummy
 
 bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
 bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
 bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
@@ -593,7 +594,7 @@ bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
 
 bin/smbcacls: $(SMBCACLS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
 bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
@@ -635,7 +636,7 @@ bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 
 bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32) bin/.dummy
 	@echo Linking shared library $@
-	@$(SHLD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS) \
+	@$(SHLD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LDFLAGS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`
 
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
@@ -649,7 +650,7 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ) bin/.dummy
 	@echo Linking shared library $@
-	$(SHLD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc \
+	$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc \
 		@SONAMEFLAG@`basename $@`
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
@@ -659,9 +660,14 @@ nsswitch/libnss_wins.so: $(NSS_OBJ)
 
 bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) 
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) $(LDAPLIBS)
 
-@WINBIND_LTARGETS@: $(WINBIND_NSS_PICOBJS)
+nsswitch/libns_winbind.so: $(WINBIND_NSS_PICOBJS)
+	@echo "Linking $@"
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
+		@SONAMEFLAG@`basename $@`
+
+nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
 		@SONAMEFLAG@`basename $@`

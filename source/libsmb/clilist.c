@@ -177,7 +177,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,8,0);
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, -1, 
-					 STR_TERMINATE);
+					 STR_TERMINATE|STR_CONVERT);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -187,7 +187,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, -1, 
-					 STR_TERMINATE);
+					 STR_TERMINATE|STR_CONVERT);
 		}
 
 		param_len = PTR_DIFF(p, param);
@@ -369,7 +369,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
       
-		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE);
+		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE|STR_CONVERT);
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);

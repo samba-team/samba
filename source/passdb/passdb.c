@@ -737,7 +737,7 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 static void select_name(pstring string, const UNISTR2 *from)
 {
 	if (from->buffer != 0)
-		unistr2_to_ascii(string, from, sizeof(pstring));
+		unistr2_to_dos(string, from, sizeof(pstring));
 }
 
 /*************************************************************
@@ -900,7 +900,7 @@ account without a valid local system user.\n", user_name);
 		}
 
 		sam_pass = NULL;
-		if (!pdb_init_sam_pw(&sam_pass, pwd)) {
+		if (!pdb_init_sam_pw(&sam_pass, sys_getpwnam(user_name))) {
 			return False;
 		}
 
@@ -1729,7 +1729,8 @@ BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
 	 */
 	 
 	if ((pw=sys_getpwuid(uid)) == NULL)  {
-		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist in Unix accounts!\n", uid));
+		DEBUG(0,("pdb_getsampwuid: getpwuid(%u) return NULL. User does not exist in Unix accounts!\n",
+					(unsigned int)uid));
 		return False;
 	}
 	

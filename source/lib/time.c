@@ -33,14 +33,6 @@ int extra_time_offset = 0;
 #define CHAR_BIT 8
 #endif
 
-#ifndef TIME_T_MIN
-#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
-		    : ~ (time_t) 0 << (sizeof (time_t) * CHAR_BIT - 1))
-#endif
-#ifndef TIME_T_MAX
-#define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
-#endif
-
 /*******************************************************************
  External access to time_t_min and time_t_max.
 ********************************************************************/
@@ -414,7 +406,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	}		
 
 	/* this converts GMT to kludge-GMT */
-	t -= LocTimeDiff(t) - get_serverzone(); 
+	t -= TimeDiff(t) - get_serverzone(); 
 
 	d = (double)(t);
 	d += TIME_FIXUP_CONSTANT;

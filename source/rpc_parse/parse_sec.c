@@ -620,9 +620,16 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_desc");
 	depth++;
-
+	
+#if 0	/* JERRY */
+	/*
+	 * if alignment is needed, should be done by the the 
+	 * caller.  Not here.  This caused me problems when marshalling
+	 * printer info into a buffer.   --jerry
+	 */
 	if(!prs_align(ps))
 		return False;
+#endif
 	
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = prs_offset(ps);

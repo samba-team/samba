@@ -11,11 +11,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <syslog.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
 
 /*
  * here is the string to inform the user that the new passwords they

@@ -46,8 +46,8 @@ extern int last_message;
 extern int global_oplock_break;
 extern userdom_struct current_user_info;
 extern int smb_read_error;
-extern VOLATILE sig_atomic_t reload_after_sighup;
-extern VOLATILE sig_atomic_t got_sig_term;
+SIG_ATOMIC_T reload_after_sighup;
+SIG_ATOMIC_T got_sig_term;
 extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
@@ -113,10 +113,12 @@ BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
  oplock messages, change notify events etc.
 ****************************************************************************/
 
-static void async_processing(fd_set *fds, char *buffer, int buffer_len)
+static void async_processing(char *buffer, int buffer_len)
 {
+	DEBUG(10,("async_processing: Doing async processing.\n"));
+
 	/* check for oplock messages (both UDP and kernel) */
-	if (receive_local_message(fds, buffer, buffer_len, 0)) {
+	if (receive_local_message(buffer, buffer_len, 1)) {
 		process_local_message(buffer, buffer_len);
 	}
 
@@ -197,6 +199,27 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 */
 
 	FD_ZERO(&fds);
+
+	/*
+	 * Ensure we process oplock break messages by preference.
+	 * We have to do this before the select, after the select
+	 * and if the select returns EINTR. This is due to the fact
+	 * that the selects called from async_processing can eat an EINTR
+	 * caused by a signal (we can't take the break message there).
+	 * This is hideously complex - *MUST* be simplified for 3.0 ! JRA.
+	 */
+
+	if (oplock_message_waiting(&fds)) {
+		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
+		async_processing(buffer, buffer_len);
+		/*
+		 * After async processing we must go and do the select again, as
+		 * the state of the flag in fds for the server file descriptor is
+		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
+		 */
+		goto again;
+	}
+	
 	FD_SET(smbd_server_fd(),&fds);
 	maxfd = setup_oplock_select_set(&fds);
 
@@ -210,7 +233,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	   is the best we can do until the oplock code knows more about
 	   signals */
 	if (selrtn == -1 && errno == EINTR) {
-		async_processing(&fds, buffer, buffer_len);
+		async_processing(buffer, buffer_len);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -240,7 +263,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 
 	if (oplock_message_waiting(&fds)) {
 		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
-		async_processing(&fds, buffer, buffer_len);
+		async_processing(buffer, buffer_len);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -280,7 +303,6 @@ BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
 void respond_to_all_remaining_local_messages(void)
 {
   char buffer[1024];
-  fd_set fds;
 
   /*
    * Assert we have no exclusive open oplocks.
@@ -293,23 +315,12 @@ void respond_to_all_remaining_local_messages(void)
   }
 
   /*
-   * Setup the select read fd set.
-   */
-
-  FD_ZERO(&fds);
-  if(!setup_oplock_select_set(&fds))
-    return;
-
-  /*
    * Keep doing receive_local_message with a 1 ms timeout until
    * we have no more messages.
    */
-  while(receive_local_message(&fds, buffer, sizeof(buffer), 1)) {
+  while(receive_local_message(buffer, sizeof(buffer), 1)) {
 	  /* Deal with oplock break requests from other smbd's. */
 	  process_local_message(buffer, sizeof(buffer));
-
-	  FD_ZERO(&fds);
-	  (void)setup_oplock_select_set(&fds);
   }
 
   return;

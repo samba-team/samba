@@ -394,7 +394,12 @@
 		<term>%L</term>
 		<listitem><para>the NetBIOS name of the server. This allows you 
 		to change your config based on what the client calls you. Your 
-		server can have a "dual personality".</para></listitem>
+		server can have a "dual personality".</para>
+
+                <para>Note that this paramater is not available when Samba listens
+                on port 445, as clients no longer send this information </para>
+                </listitem>
+
 		</varlistentry>
 		
 		<varlistentry>
@@ -484,6 +489,21 @@
 	<variablelist>
 	
 	<varlistentry>
+		<term>mangling method</term>
+		<listitem><para> controls the algorithm used for the generating
+		the mangled names. Can take two different values, "hash" and
+		"hash2". "hash" is  the default and is the algorithm that has been
+		used in Samba for many years. "hash2" is a newer and considered
+		a better algorithm (generates less collisions) in the names.
+		However, many Win32 applications store the
+		mangled names and so changing to the new algorithm must not be done
+		lightly as these applications may break unless reinstalled.
+		New installations of Samba may set the default to hash2.
+		Default <emphasis>hash</emphasis>.</para></listitem>
+		</varlistentry>
+		
+	
+		<varlistentry>
 		<term>mangle case = yes/no</term>
 		<listitem><para> controls if names that have characters that 
 		aren't of the "default" case are mangled. For example, 
@@ -662,6 +682,7 @@
 		<listitem><para><link linkend="LPQCACHETIME"><parameter>lpq cache time</parameter></link></para></listitem>
 		<listitem><para><link linkend="MACHINEPASSWORDTIMEOUT"><parameter>machine password timeout</parameter></link></para></listitem>
 		<listitem><para><link linkend="MANGLEDSTACK"><parameter>mangled stack</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLINGMETHOD"><parameter>mangling method</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAPTOGUEST"><parameter>map to guest</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAXDISKSIZE"><parameter>max disk size</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAXLOGSIZE"><parameter>max log size</parameter></link></para></listitem>
@@ -820,6 +841,7 @@
 		<listitem><para><link linkend="FORCEDIRECTORYSECURITYMODE"><parameter>force directory security mode</parameter></link></para></listitem>
 		<listitem><para><link linkend="FORCEGROUP"><parameter>force group</parameter></link></para></listitem>
 		<listitem><para><link linkend="FORCESECURITYMODE"><parameter>force security mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="FORCEUNKNOWNACLUSER"><parameter>force unknown acl user</parameter></link></para></listitem>
 		<listitem><para><link linkend="FORCEUSER"><parameter>force user</parameter></link></para></listitem>
 		<listitem><para><link linkend="FSTYPE"><parameter>fstype</parameter></link></para></listitem>
 		<listitem><para><link linkend="GROUP"><parameter>group</parameter></link></para></listitem>
@@ -1163,7 +1185,7 @@
 		<term><anchor id="ANNOUNCEVERSION">announce version (G)</term>
 		<listitem><para>This specifies the major and minor version numbers 
 		that nmbd will use when announcing itself as a server. The default 
-		is 4.2.  Do not change this parameter unless you have a specific 
+		is 4.5.  Do not change this parameter unless you have a specific 
 		need to set a Samba server to be a downlevel server.</para>
 
 		<para>Default: <command>announce version = 4.5</command></para>
@@ -2836,6 +2858,34 @@
 		
 		
 		<varlistentry>
+		<term><anchor id="FORCEUNKNOWNACLUSER">force unknown acl user (S)</term>
+		<listitem><para>If this parameter is set, a Windows NT ACL that contains
+		an unknown SID (security descriptor, or representation of a user or group id)
+		as the owner or group owner of the file will be silently mapped into the
+		current UNIX uid or gid of the currently connected user.</para>
+
+		<para>This is designed to allow Windows NT clients to copy files and
+		folders containing ACLs that were created locally on the client machine
+		and contain users local to that machine only (no domain users) to be
+		copied to a Samba server (usually with XCOPY /O) and have the unknown
+		userid and groupid of the file owner map to the current connected user.
+		This can only be fixed correctly when winbindd allows arbitrary mapping
+		from any Windows NT SID to a UNIX uid or gid.</para>
+
+		<para>Try using this parameter when XCOPY /O gives an ACCESS_DENIED error.
+		</para>
+
+		<para>See also <link linkend="FORCEGROUP"><parameter>force group
+		</parameter></link></para>
+
+		<para>Default: <emphasis>False</emphasis></para>
+		<para>Example: <command>force unknown acl user = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
 		<term><anchor id="FORCEUSER">force user (S)</term>
 		<listitem><para>This specifies a UNIX user name that will be 
 		assigned as the default user for all users connecting to this service. 
@@ -3502,7 +3552,8 @@
 		<para>See Also: <link linkend="LDAPSSL">ldap ssl</link>
 		</para>
 		
-		<para>Default : <command>ldap port = 636</command></para>
+		<para>Default : <command>ldap port = 636 ; if ldap ssl = on</command></para>
+		<para>Default : <command>ldap port = 389 ; if ldap ssl = off</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -4273,7 +4324,7 @@
 		<para>See the section on <link linkend="NAMEMANGLINGSECT">
 		NAME MANGLING</link> for details on how to control the mangling process.</para>
 
-		<para>If mangling is used then the mangling algorithm is as follows:</para>
+		<para>If mangling algorithm "hash" is used then the mangling algorithm is as follows:</para>
 
 		<itemizedlist>
 			<listitem><para>The first (up to) five alphanumeric characters 
@@ -4312,6 +4363,40 @@
 		<para>This algorithm can cause name collisions only if files 
 		in a directory share the same first five alphanumeric characters. 
 		The probability of such a clash is 1/1300.</para>
+
+		<para>If mangling algorithm "hash2" is used then the mangling algorithm is as follows:</para>
+
+		<itemizedlist>
+			<listitem><para>The first alphanumeric character 
+			before the rightmost dot of the filename is preserved, forced 
+			to upper case, and appears as the first character of the mangled name.
+			</para></listitem>
+		
+			<listitem><para>A base63 hash of 5 characters is generated and the
+			first 4 characters of that hash are appended to the first character.
+			</para></listitem>
+
+			<listitem><para>A tilde "~" is appended to the first part of the mangled
+			name, followed by the final character of the base36 hash of the name.
+			</para>
+
+			<para>Note that the character to use may be specified using 
+			the <link linkend="MANGLINGCHAR"><parameter>mangling char</parameter>
+			</link> option, if you don't like '~'.</para></listitem>
+
+			<listitem><para>The first three alphanumeric characters of the final 
+			extension are preserved, forced to upper case and appear as the 
+			extension of the mangled name. The final extension is defined as that 
+			part of the original filename after the rightmost dot. If there are no 
+			dots in the filename, the mangled name will have no extension (except 
+			in the case of "hidden files" - see below).</para></listitem>
+
+			<listitem><para>Files whose UNIX name begins with a dot will be 
+			presented as DOS hidden files. The mangled name will be created as 
+			for other filenames, but with the leading dot removed and "___" as 
+			its extension regardless of actual original extension (that's three 
+			underscores).</para></listitem>
+		</itemizedlist>
 
 		<para>The name mangling (if enabled) allows a file to be 
 		copied between UNIX directories from Windows/DOS while retaining 
@@ -4366,6 +4451,21 @@
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term><anchor id="MANGLINGMETHOD">mangling mathod(G)</term>
+                <listitem><para> controls the algorithm used for the generating
+                the mangled names. Can take two different values, "hash" and
+                "hash2". "hash" is  the default and is the algorithm that has been
+                used in Samba for many years. "hash2" is a newer and considered
+                a better algorithm (generates less collisions) in the names.
+                However, many Win32 applications store the mangled names and so
+		changing to the new algorithm must not be done
+                lightly as these applications may break unless reinstalled.
+                New installations of Samba may set the default to hash2.</para>
+		<para>Default: <command>mangling method = hash</command></para>
+		<para>Example: <command>mangling method = hash2</command></para>
+		</listitem>
+		</varlistentry>
 
 
 
@@ -7478,9 +7578,11 @@
 
 		<varlistentry>
 		<term><anchor id="STRIPDOT">strip dot (G)</term>
-		<listitem><para>This is a boolean that controls whether to 
-		strip trailing dots off UNIX filenames. This helps with some 
-		CDROMs that have filenames ending in a single dot.</para>
+		<listitem><para>This parameter is now unused in Samba (2.2.5 and above).
+		It used strip trailing dots off UNIX filenames but was not correctly implmented.
+		In Samba 2.2.5 and above UNIX filenames ending in a dot are invalid Windows long
+		filenames (as they are in Windows NT and above) and are mangled to 8.3 before
+		being returned to a client.</para>
 
 		<para>Default: <command>strip dot = no</command></para>
 		</listitem>
@@ -8338,23 +8440,22 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		</varlistentry>
 
 
-
-
 		<varlistentry>
-		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain (G)</term>
-		<listitem><para>This option controls whether or not smbd
-		should lookup 'username' as 'DOMAIN\username' when winbindd is
-		running on a system.  This is most useful when used in conjunction
-		with pam_winbind.so to prevent a Windows user from having to enter
-		commands like "ssh 'DOMAIN\username@hostname'".  This option is disabled 
-		by default, thus requiring that the DOMAIN\username format be used.</para>
-
-		<para>Default: <command>winbind use default domain = no</command>
-		</para></listitem>
+		<term>winbind use default domain</term>
+		
+		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain</term>
+		<listitem><para>This parameter specifies whether the <ulink url="winbindd.8.html">
+		winbindd(8)</ulink>
+		daemon should operate on users without domain component in their username.  
+                Users without a domain component are treated as is part of the winbindd server's 
+                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+                function in a way much closer to the way they would in a native unix system.</para>
+		
+		<para>Default: <command>winbind use default domain = &lt;falseg&gt; 
+		</command></para>
+		<para>Example: <command>winbind use default domain = true</command></para>
+		</listitem>
 		</varlistentry>
-
-
-
 
 
 		<varlistentry>

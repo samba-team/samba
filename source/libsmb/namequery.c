@@ -292,7 +292,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 ****************************************************************************/
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count)
+			   struct in_addr to_ip, int *count, int *flags)
 {
 	BOOL found=False;
 	int i, retries = 3;
@@ -305,6 +305,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
 	memset((char *)&p,'\0',sizeof(p));
 	(*count) = 0;
+	(*flags) = 0;
 
 	nmb->header.name_trn_id = generate_trn_id();
 	nmb->header.opcode = 0;
@@ -428,6 +429,19 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
 			found=True;
 			retries=0;
+			/* We add the flags back ... */
+			if (nmb2->header.response)
+			  (*flags) |= NM_FLAGS_RS;
+			if (nmb2->header.nm_flags.authoritative)
+			  (*flags) |= NM_FLAGS_AA;
+			if (nmb2->header.nm_flags.trunc)
+			  (*flags) |= NM_FLAGS_TC;
+			if (nmb2->header.nm_flags.recursion_desired)
+			  (*flags) |= NM_FLAGS_RD;
+			if (nmb2->header.nm_flags.recursion_available)
+			  (*flags) |= NM_FLAGS_RA;
+			if (nmb2->header.nm_flags.bcast)
+			  (*flags) |= NM_FLAGS_B;
 			free_packet(p2);
 
 			/*
@@ -655,10 +669,11 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	 */
 	for( i = num_interfaces-1; i >= 0; i--) {
 		struct in_addr sendto_ip;
+		int flags;
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_bcast(*iface_n_ip(i));
 		*return_ip_list = name_query(sock, name, name_type, True, 
-				    True, sendto_ip, return_count);
+				    True, sendto_ip, return_count, &flags);
 		if(*return_ip_list != NULL) {
 			close(sock);
 			return True;
@@ -715,10 +730,11 @@ static BOOL resolve_wins(const char *name, int name_type,
 					interpret_addr(lp_socket_address()),
 					True );
 		if (sock != -1) {
+		        int flags;
 			*return_iplist = name_query( sock,      name,
 						     name_type, False, 
 						     True,      wins_ip,
-						     return_count);
+						     return_count, &flags);
 			if(*return_iplist != NULL) {
 				close(sock);
 				return True;
@@ -792,15 +808,17 @@ static BOOL resolve_hosts(const char *name,
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-		struct in_addr return_ip;
-		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+		int i = 0, j;
+		while (hp->h_addr_list[i]) i++;
+		DEBUG(10, ("%d addresses returned\n", i));
+		*return_iplist = (struct in_addr *)malloc(i*sizeof(struct in_addr));
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			return False;
 		}
-		**return_iplist = return_ip;
-		*return_count = 1;
+                for (j = 0; j < i; j++)
+			putip(&(*return_iplist)[j], (char *)hp->h_addr_list[j]);
+		*return_count = i;
 		return True;
 	}
 	return False;
@@ -973,6 +991,15 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	return False;
 }
 
+/**************************************************************************
+ Resolve a name to a list of addresses
+**************************************************************************/
+BOOL resolve_name_2(const char *name, struct in_addr **return_ip, int *count, int name_type)
+{
+
+	return internal_resolve_name(name, name_type, return_ip, count);
+
+} 
 
 /********************************************************
  resolve a name of format \\server_name or \\ipaddress
@@ -1267,7 +1294,7 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 		char *p;
 		char *pserver = lp_passwordserver();
 		fstring name;
-		int num_adresses = 0;
+		int num_addresses = 0;
 		struct in_addr *return_iplist = NULL;
 
 		if (! *pserver)
@@ -1284,12 +1311,12 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 					return True;
 				return internal_resolve_name(group, 0x1B, ip_list, count);
 			}
-			num_adresses++;
+			num_addresses++;
 		}
-		if (num_adresses == 0)
+		if (num_addresses == 0)
 			return internal_resolve_name(group, name_type, ip_list, count);
 
-		return_iplist = (struct in_addr *)malloc(num_adresses * sizeof(struct in_addr));
+		return_iplist = (struct in_addr *)malloc(num_addresses * sizeof(struct in_addr));
 		if(return_iplist == NULL) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
 			return False;
@@ -1297,10 +1324,22 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 		p = pserver;
 		*count = 0;
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			struct in_addr name_ip;
-			if (resolve_name( name, &name_ip, 0x20) == False)
+			struct in_addr *more_ip, *tmp;
+			int count_more;
+			if (resolve_name_2( name, &more_ip, &count_more, 0x20) == False)
 				continue;
-			return_iplist[(*count)++] = name_ip;
+			tmp = (struct in_addr *)realloc(return_iplist,(num_addresses + count_more) * sizeof(struct in_addr));
+			if (return_iplist == NULL) {
+				DEBUG(3, ("realloc failed with %d addresses\n", num_addresses + count_more));
+				SAFE_FREE(return_iplist);
+				SAFE_FREE(more_ip);
+				return False;
+			}
+			return_iplist = tmp;
+			memmove(&return_iplist[(*count)], more_ip, count_more * sizeof(struct in_addr));
+			SAFE_FREE(more_ip); /* Done with this ... */
+			*count += count_more;
+			num_addresses += count_more - 1;
 		}
 		*ip_list = return_iplist;
 		return (*count != 0);

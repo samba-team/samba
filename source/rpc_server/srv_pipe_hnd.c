@@ -270,8 +270,10 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	if (is_spoolss_pipe)
 		current_spoolss_pipes_open++;
 
-	/* Ensure the connection isn't idled whilst this pipe is open. */
-	conn->num_files_open++;
+	/*
+	 * The connection can be idled whilst this pipe is open
+	 * if there are no handles open. JRA.
+	 */
 
 	return chain_p;
 }
@@ -963,8 +965,6 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	ZERO_STRUCTP(p);
 
 	SAFE_FREE(p);
-
-	conn->num_files_open--;
 
 	return True;
 }

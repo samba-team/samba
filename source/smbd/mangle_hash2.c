@@ -53,12 +53,6 @@
 
 #include "includes.h"
 
-#if 0
-#define M_DEBUG(level, x) DEBUG(level, x)
-#else
-#define M_DEBUG(level, x)
-#endif
-
 /* these flags are used to mark characters in as having particular
    properties */
 #define FLAG_BASECHAR 1
@@ -124,7 +118,7 @@ static u32 mangle_hash(const char *key, unsigned length)
 	   function */
 	strncpy(str, key, length);
 	str[length] = 0;
-	strupper_m(str);
+	strupper(str);
 
 	/* the length of a multi-byte string can change after a strupper_m */
 	length = strlen(str);
@@ -200,7 +194,7 @@ static BOOL is_mangled_component(const char *name)
 {
 	int len, i;
 
-	M_DEBUG(0,("is_mangled_component %s ?\n", name));
+	DEBUG(10,("is_mangled_component %s ?\n", name));
 
 	/* the best distinguishing characteristic is the ~ */
 	if (name[6] != '~') return False;
@@ -234,7 +228,7 @@ static BOOL is_mangled_component(const char *name)
 		}
 	}
 
-	M_DEBUG(0,("is_mangled %s -> yes\n", name));
+	DEBUG(10,("is_mangled %s -> yes\n", name));
 
 	return True;
 }
@@ -257,7 +251,7 @@ static BOOL is_mangled(const char *name)
 	const char *p;
 	const char *s;
 
-	M_DEBUG(0,("is_mangled %s ?\n", name));
+	DEBUG(10,("is_mangled %s ?\n", name));
 
 	for (s=name; (p=strchr(s, '/')); s=p+1) {
 		char *component = strndup(s, PTR_DIFF(p, s));
@@ -367,7 +361,7 @@ static BOOL check_cache(char *name)
 
 	/* make sure that this is a mangled name from this cache */
 	if (!is_mangled(name)) {
-		M_DEBUG(0,("check_cache: %s -> not mangled\n", name));
+		DEBUG(10,("check_cache: %s -> not mangled\n", name));
 		return False;
 	}
 
@@ -382,7 +376,7 @@ static BOOL check_cache(char *name)
 	/* now look in the prefix cache for that hash */
 	prefix = cache_lookup(hash);
 	if (!prefix) {
-		M_DEBUG(0,("check_cache: %s -> %08X -> not found\n", name, hash));
+		DEBUG(10,("check_cache: %s -> %08X -> not found\n", name, hash));
 		return False;
 	}
 
@@ -395,10 +389,10 @@ static BOOL check_cache(char *name)
 	}
 
 	if (extension[0]) {
-		M_DEBUG(0,("check_cache: %s -> %s.%s\n", name, prefix, extension));
+		DEBUG(10,("check_cache: %s -> %s.%s\n", name, prefix, extension));
 		slprintf(name, sizeof(fstring), "%s.%s", prefix, extension);
 	} else {
-		M_DEBUG(0,("check_cache: %s -> %s\n", name, prefix));
+		DEBUG(10,("check_cache: %s -> %s\n", name, prefix));
 		fstrcpy(name, prefix);
 	}
 
@@ -573,7 +567,7 @@ static void name_map(char *name, BOOL need83, BOOL cache83)
 		cache_insert(name, prefix_len, hash);
 	}
 
-	M_DEBUG(0,("name_map: %s -> %08X -> %s (cache=%d)\n", 
+	DEBUG(10,("name_map: %s -> %08X -> %s (cache=%d)\n", 
 		   name, hash, new_name, cache83));
 
 	/* and overwrite the old name */

@@ -22,8 +22,9 @@
 #include "includes.h"
 
 /****************************************************************************
-normalise for DOS usage 
+ Normalise for DOS usage.
 ****************************************************************************/
+
 static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	/* check if the disk is beyond the max disk size */
@@ -60,7 +61,7 @@ static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
 
 
 /****************************************************************************
-  return number of 1K blocks available on a path and total number 
+ Return number of 1K blocks available on a path and total number.
 ****************************************************************************/
 
 static SMB_BIG_UINT disk_free(char *path, BOOL small_query, 
@@ -154,10 +155,10 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 	return(dfree_retval);
 }
 
-
 /****************************************************************************
-wrap it to get filenames right
+ Wrap it to get filenames right.
 ****************************************************************************/
+
 SMB_BIG_UINT sys_disk_free(const char *path, BOOL small_query, 
                            SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {

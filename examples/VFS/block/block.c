@@ -47,6 +47,7 @@
 
 
 
+
 DIR *block_opendir(struct connection_struct *conn, const char *fname);
 int block_connect(struct connection_struct *conn, const char *service, const char *user);    
 void block_disconnect(struct connection_struct *conn);    
@@ -461,7 +462,18 @@ BOOL search(struct stat *stat_buf)
 
 BOOL dir_search(char *link, const char *dir)
 {
-	char buf[PATH_MAX +1], *ext_path;
+	char *ext_path;
+
+#ifdef PATH_MAX
+	char buf[PATH_MAX +1];
+#else
+#ifdef MAXPATHLEN
+	char buf[MAXPATHLEN +1];
+#else
+	char buf[BUFSIZ];
+#endif
+#endif
+
 	int len = 0;
 	struct block_dir *tmp_pblock = pblock_dir;
 	

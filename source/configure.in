@@ -182,6 +182,11 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_AWK
+dnl Check if we use GNU ld
+LD=ld
+AC_PROG_LD_GNU
+AC_PATH_PROG(passwd_program, passwd, /bin/passwd)
+AC_SUBST(passwd_program)
 
 dnl Check if C compiler understands -c and -o at the same time
 AC_PROG_CC_C_O
@@ -302,7 +307,6 @@ case "$host_os" in
 						;;
 				esac
 			else
-				DYNEXP="-dc -dp"
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 				AC_DEFINE(_LARGEFILE64_SOURCE)
 				AC_DEFINE(_FILE_OFFSET_BITS,64)
@@ -422,8 +426,9 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
 AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
+AC_CHECK_HEADERS(stdlib.h string.h strings.h syslog.h sys/file.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
-AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
+AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h sys/socket.h)
 AC_CHECK_HEADERS(syslog.h sys/syslog.h sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h synch.h pthread.h nsswitch.h)
@@ -482,16 +487,17 @@ AC_CHECK_TYPE(wchar_t, unsigned short)
 ############################################
 # for cups support we need libcups, and a handful of header files
 
-AC_CHECK_LIB(cups,httpConnect)
+AC_ARG_ENABLE(cups,
+[  --enable-cups           Turn on CUPS support (default=auto)])
 
-# I wonder if there is a nicer way of doing this?
+if test x$enable_cups != xno; then
+	AC_PATH_PROG(CUPS_CONFIG, cups-config)
 
-if test x"$ac_cv_lib_cups_httpConnect" = x"yes"; then
-        AC_CHECK_HEADERS(cups/cups.h cups/language.h)
-        if test x"$ac_cv_header_cups_cups_h" = x"yes"; then
-                if test x"$ac_cv_header_cups_language_h" = x"yes"; then
-                        AC_DEFINE(HAVE_CUPS)
-                fi
+        if test "x$CUPS_CONFIG" != x; then
+	        AC_DEFINE(HAVE_CUPS)
+		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
+		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
+		LIBS="$LIBS `$CUPS_CONFIG --libs`"
         fi
 fi
 
@@ -713,7 +719,7 @@ else
     RUNPROG=""
 fi
 
-AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot link)
+AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset strlcpy strlcat setpgid mknod mknod64)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
@@ -853,10 +859,16 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-h "
-			if test "${ac_cv_prog_CC}" = "gcc"; then
+			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
+				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
+					DYNEXP="-Wl,-E"
+				fi
 			else
 				PICFLAG="-KPIC"
+				## ${CFLAGS} added for building 64-bit shared 
+				## libs using Sun's Compiler
+				LDSHFLAGS="-G \${CFLAGS}"
 				POBAD_CC=""
 				PICSUFFIX="po.o"
 			fi
@@ -870,6 +882,7 @@ case "$host_os" in
 		;;
 		*bsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
+			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
@@ -884,7 +897,7 @@ case "$host_os" in
 			LDSHFLAGS="-set_version sgi1.0 -shared"
 			SONAMEFLAG="-soname "
 			SHLD="\${LD}" 
-			if test "${ac_cv_prog_CC}" = "gcc"; then
+			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 			else 
 				PICFLAG="-KPIC"
@@ -894,7 +907,15 @@ case "$host_os" in
 		*aix*) AC_DEFINE(AIX)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
-			PICFLAG="-O2 -qmaxmem=6000"
+			DYNEXP="-Wl,-brtl,-bexpall"
+			if test "${GCC}" = "yes"; then
+				PICFLAG="-O2"
+			else
+				PICFLAG="-O2 -qmaxmem=6000"
+				## for funky AIX compiler using strncpy()
+				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT"
+			fi
+
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE)
 		;;
 		*hpux*) AC_DEFINE(HPUX)
@@ -1059,7 +1080,7 @@ AC_TRY_COMPILE([
 #include <dirent.h>],
 [struct dirent64 de;],
 samba_cv_HAVE_STRUCT_DIRENT64=yes,samba_cv_HAVE_STRUCT_DIRENT64=no)])
-if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes"; then
+if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
     AC_DEFINE(HAVE_STRUCT_DIRENT64)
 fi
 
@@ -1148,6 +1169,14 @@ main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}],
            samba_cv_HAVE_GETTIMEOFDAY_TZ=yes,samba_cv_HAVE_GETTIMEOFDAY_TZ=no,samba_cv_HAVE_GETTIMEOFDAY_TZ=cross)])
 if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ)
+fi
+
+AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE_VA_COPY,[
+AC_TRY_LINK([#include <stdarg.h>
+va_list ap1,ap2;], [__va_copy(ap1,ap2);],
+samba_cv_HAVE_VA_COPY=yes,samba_cv_HAVE_VA_COPY=no)])
+if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
+    AC_DEFINE(HAVE_VA_COPY)
 fi
 
 AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
@@ -1347,7 +1376,7 @@ main() {
 }
 ],
 samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=yes,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=no,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=cross)])
-if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
+if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes" && test x"$target_cpu" != x"s390"; then
     AC_DEFINE(HAVE_KERNEL_CHANGE_NOTIFY)
 fi
 
@@ -1493,7 +1522,7 @@ fi
 
 AC_CACHE_CHECK([whether getpass should be replaced],samba_cv_REPLACE_GETPASS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/smbwrapper"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper"
 AC_TRY_COMPILE([
 #define REPLACE_GETPASS 1
 #define NO_CONFIG_H 1
@@ -2042,8 +2071,12 @@ AC_ARG_WITH(ldapsam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_LDAP_SAM)
-    LIBS="-lldap -llber -lresolv $LIBS"
+    LDAPLIBS="-lldap"
+    AC_CHECK_LIB(lber, ber_bvfree, [LDAPLIBS="$LDAPLIBS -llber"])
+    LDAPLIBS="-lresolv $LDAPLIBS"
+    AC_CHECK_FUNCS(ldap_start_tls_s)
     with_smbpasswd_sam=no
+    AC_SUBST(LDAPLIBS)
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -2221,26 +2254,6 @@ AC_ARG_WITH(quotas,
   yes)
     AC_MSG_RESULT(yes)
     QUOTAOBJS=smbd/quotas.o
-    case "$host_os" in
-      *linux*)
-        # Check for kernel 2.4.x quota braindamage...
-	AC_CACHE_CHECK([for linux 2.4.x quota braindamage..],samba_cv_linux_2_4_quota_braindamage, [
-        AC_TRY_COMPILE([#include <stdio.h>
-#include <sys/types.h>
-#include <asm/types.h>
-#include <linux/quota.h>
-#include <mntent.h>
-#include <linux/unistd.h>],[struct mem_dqblk D;],
-	samba_cv_linux_2_4_quota_braindamage=yes,samba_cv_linux_2_4_quota_braindamage=no)])
-if test x"$samba_cv_linux_2_4_quota_braindamage" = x"yes"; then
-        AC_DEFINE(LINUX_QUOTAS_2)
-else
-        AC_DEFINE(LINUX_QUOTAS_1)
-fi
-        ;;
-      *)
-        ;;
-    esac
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -2639,11 +2652,14 @@ case "$host_os" in
 	*hpux11*)
 		HAVE_WINBIND=yes
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
+               ;;
+	*aix4*)
+		HAVE_WINBIND=yes
 		;;
         *)
 		HAVE_WINBIND=no
                 winbind_no_reason=", unsupported on $host_os"
-                ;;
+		;;
 esac
 
 # Check the setting of --with-winbindd
@@ -2703,6 +2719,20 @@ else
 	WINBIND_PAM_TARGETS=""
 fi
 
+
+AC_ARG_WITH(winbind,
+[  --with-winbind-auth-challenge   Enable winbindd_pam_auth_crap() functionality (default no)],
+[ 
+  case "$withval" in
+	yes)
+		WITH_WINBIND_AUTH_CRAP=yes
+		;;
+        no)
+		WITH_WINBIND_AUTH_CRAP=no
+                ;;
+  esac ],
+)
+
 # Check for FreeBSD problem with getgroups
 # It returns EGID too many times in the list of groups
 # and causes a security problem
@@ -2733,6 +2763,33 @@ AC_SUBST(WINBIND_LTARGETS)
 AC_SUBST(WINBIND_PAM_TARGETS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
+
+# Solaris has some extra fields in struct passwd that need to be
+# initialised otherwise nscd crashes.  Unfortunately autoconf < 2.50
+# doesn't have the AC_CHECK_MEMBER macro which would be handy for checking
+# this.
+
+#AC_CHECK_MEMBER(struct passwd.pw_comment,
+#		AC_DEFINE(HAVE_PASSWD_PW_COMMENT, 1, [Defined if struct passwd has pw_comment field]),
+#		[#include <pwd.h>])
+
+AC_CACHE_CHECK([whether struct passwd has pw_comment],samba_cv_passwd_pw_comment, [
+	AC_TRY_COMPILE([#include <pwd.h>],[struct passwd p; p.pw_comment;],
+	samba_cv_passwd_pw_comment=yes,samba_cv_passwd_pw_comment=no)])
+if test x"$samba_cv_passwd_pw_comment" = x"yes"; then
+	AC_DEFINE(HAVE_PASSWD_PW_COMMENT)
+fi
+
+#AC_CHECK_MEMBER(struct passwd.pw_age,
+#		AC_DEFINE(HAVE_PASSWD_PW_AGE, 1, [Defined if struct passwd has pw_age field]),
+#		[#include <pwd.h>])
+
+AC_CACHE_CHECK([whether struct passwd has pw_age],samba_cv_passwd_pw_age, [
+	AC_TRY_COMPILE([#include <pwd.h>],[struct passwd p; p.pw_age;],
+	samba_cv_passwd_pw_age=yes,samba_cv_passwd_pw_age=no)])
+if test x"$samba_cv_passwd_pw_age" = x"yes"; then
+	AC_DEFINE(HAVE_PASSWD_PW_AGE)
+fi
 
 #################################################
 # Check to see if we should use the included popt
@@ -2777,4 +2834,4 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb)

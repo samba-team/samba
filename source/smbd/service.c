@@ -41,7 +41,6 @@ extern fstring remote_machine;
 
 BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 {
-	extern char magic_char;
 	static connection_struct *last_conn;
 	int snum;
 
@@ -72,7 +71,6 @@ BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 	short_case_preserve = lp_shortpreservecase(snum);
 	case_mangle = lp_casemangle(snum);
 	case_sensitive = lp_casesensitive(snum);
-	magic_char = lp_magicchar(snum);
 	use_mangled_map = (*lp_mangled_map(snum) ? True:False);
 	return(True);
 }
@@ -227,7 +225,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+#if !CHECK_PATH_ON_TCONX
 	struct stat st;
+#endif
 	uid_t euid;
 	int ret;
 

@@ -17,14 +17,9 @@ construction.  The following VFS modules are given:
 		connect/disconnect, directory opens/create/remove,
 		file open/close/rename/unlink/chmod.
 
-	recycle
-		Add a recycle bin facility to a samba share
-		Copy this to somewhere like /usr/local/samba/lib/recycle.so
-		and then add these options on a per-share basis to enable the
-		recycle bin :
-
-		        vfs object = /usr/local/samba/lib/recycle.so
-		        vfs options= recycle=.recycle
+	recycle/
+		Add a recycle bin facility to a samba share.
+		see recycle/README for details
 
 	block/
 

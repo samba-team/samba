@@ -119,7 +119,7 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 }
 
 /****************************************************************************
- Like atoi but gets the value up to the separater character.
+ Like atoi but gets the value up to the separator character.
 ****************************************************************************/
 
 char *Atoic(char *p, int *n, char *c)
@@ -1783,7 +1783,11 @@ char *smb_xstrdup(const char *s)
 int smb_xvasprintf(char **ptr, const char *format, va_list ap)
 {
 	int n;
-	n = vasprintf(ptr, format, ap);
+	va_list ap2;
+
+	VA_COPY(ap2, ap);
+
+	n = vasprintf(ptr, format, ap2);
 	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");
 	}

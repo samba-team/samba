@@ -73,7 +73,10 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 	    $name = "unknown nis name";
 	}
     } else {
-	/(\S+)/;
+# The Netbios name can contain lot of characters also '<' '>'
+# and spaces. The follwing cure inside name space but not
+# names starting or ending with spaces
+	/(.{1,15})\s+<00>\s+/;
 	$name = $1;
     }
 
@@ -103,7 +106,8 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
       @name = grep(/<00> - <GROUP>/,@nmblookup);
       $_ = @name[0];
       if ($_) {
-        /(\S+)/;
+# Same as before for space and characters
+        /(.{1,15})\s+<00>\s+/;
         $_ = "[$1]";
       } else {
 	$_ = "Unknown Workgroup";

@@ -63,17 +63,8 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
 # get the first <00> name
 
-  @name = grep(/<00> - /,@nmblookup);
+  @name = grep(/<00>/,@nmblookup);
   $_ = @name[0];
-  if (not $_) {
-# try without the -r option
-    open(NMBLOOKUP,"$SAMBABIN/nmblookup -A $ip|") ||
-        die("Can't get nmb name list.\n");
-    @nmblookup = <NMBLOOKUP>;
-    close NMBLOOKUP;
-    @name = grep(/<00> - /,@nmblookup);
-    $_ = @name[0];
-  }
   if ($_) {                     # we have a netbios name
     if (/GROUP/) {		# is it a group name
 	($name, $aliases, $type, $length, @addresses) = 
@@ -82,13 +73,16 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 	    $name = "unknown nis name";
 	}
     } else {
-	/(\S+)/;
+# The Netbios name can contain lot of characters also '<' '>'
+# and spaces. The follwing cure inside name space but not
+# names starting or ending with spaces
+	/(.{1,15})\s+<00>\s+/;
 	$name = $1;
     }
 
 # do an smbclient command on the netbios name.
 
-    open(SMB,"$SAMBABIN/smbclient -N -L '$name' -I $ip -U% |") ||
+    open(SMB,"$SAMBABIN/smbclient -N -L $name -I $ip -U% |") ||
 	die("Can't do smbclient command.\n");
     @smb = <SMB>;
     close SMB;
@@ -104,7 +98,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
     @info = grep(/OS=/,@smb);
     $_ = @info[0];
     if ($_) {				# we found response
-      s/.*Domain=|OS=|Server=|\n//g;	# strip out descriptions to make line shorter
+      s/Domain=|OS=|Server=|\n//g;	# strip out descriptions to make line shorter
 
     } else {				# no OS= string in response (WIN95 client)
 
@@ -112,7 +106,8 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
       @name = grep(/<00> - <GROUP>/,@nmblookup);
       $_ = @name[0];
       if ($_) {
-        /(\S+)/;
+# Same as before for space and characters
+        /(.{1,15})\s+<00>\s+/;
         $_ = "[$1]";
       } else {
 	$_ = "Unknown Workgroup";

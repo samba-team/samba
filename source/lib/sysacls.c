@@ -2937,7 +2937,7 @@ int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl
 		memcpy(acl_entry->ace_id->id_data, &user_id, sizeof(uid_t));
 	}
 
-	rc = chacl(name,file_acl,file_acl->acl_len);
+	rc = chacl((char *)name,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
 	SAFE_FREE(file_acl);

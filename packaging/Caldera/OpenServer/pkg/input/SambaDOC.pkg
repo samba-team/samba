@@ -11,12 +11,19 @@ owner = root
 group = sys
 flags = 
 
+FILE:SambaDOC:SHARED:doc/samba.directory:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/share/meta/doc/NetworkDoc/WinConnect/Samba/.directory
+
 FILE:SambaDOC:SHARED:doc/samba.desktop:
 mode  = 0644
 owner = root
 group = sys
 flags = 
-exportPath = /usr/share/meta/doc/NetworkDoc/WinConnect/samba.desktop
+exportPath = /usr/share/meta/doc/NetworkDoc/WinConnect/Samba/samba.desktop
 
 FILE:SambaDOC:SHARED:doc/index.html:
 mode  = 0644

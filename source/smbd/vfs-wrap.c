@@ -409,6 +409,7 @@ int vfswrap_chown(connection_struct *conn, const char *path, uid_t uid, gid_t gi
 
 int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid)
 {
+#ifdef HAVE_FCHOWN
     int result;
 
     START_PROFILE(syscall_fchown);
@@ -416,6 +417,10 @@ int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid)
     result = fchown(fd, uid, gid);
     END_PROFILE(syscall_fchown);
     return result;
+#else
+    errno = ENOSYS;
+    return -1;
+#endif
 }
 
 int vfswrap_chdir(connection_struct *conn, const char *path)

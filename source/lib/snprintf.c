@@ -105,8 +105,16 @@
 #define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
 #endif
 
+#ifndef VA_COPY
+#ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) __va_copy(dest, src)
+#else
+#define VA_COPY(dest, src) (dest) = (src)
+#endif
+#endif
+
 static size_t dopr(char *buffer, size_t maxlen, const char *format, 
-		   va_list args);
+		   va_list args_in);
 static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
 		    char *value, int flags, int min, int max);
 static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
@@ -149,7 +157,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c);
 #define MAX(p,q) (((p) >= (q)) ? (p) : (q))
 #endif
 
-static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args)
+static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args_in)
 {
 	char ch;
 	LLONG value;
@@ -161,7 +169,10 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 	int flags;
 	int cflags;
 	size_t currlen;
+	va_list args;
 	
+	VA_COPY(args, args_in);
+
 	state = DP_S_DEFAULT;
 	currlen = flags = cflags = min = 0;
 	max = -1;
@@ -793,13 +804,16 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
  int vasprintf(char **ptr, const char *format, va_list ap)
 {
 	int ret;
+	va_list ap2;
 	
-	ret = vsnprintf(NULL, 0, format, ap);
+	VA_COPY(ap2, ap);
+	ret = vsnprintf(NULL, 0, format, ap2);
 	if (ret <= 0) return ret;
 
 	(*ptr) = (char *)malloc(ret+1);
 	if (!*ptr) return -1;
-	ret = vsnprintf(*ptr, ret+1, format, ap);
+	VA_COPY(ap2, ap);
+	ret = vsnprintf(*ptr, ret+1, format, ap2);
 
 	return ret;
 }

@@ -208,7 +208,9 @@
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
@@ -388,8 +390,12 @@
 /*
  * Define additional missing types
  */
-#ifndef HAVE_SIG_ATOMIC_T_TYPE
-typedef int sig_atomic_t;
+#if defined(HAVE_SIG_ATOMIC_T_TYPE) && defined(AIX)
+typedef sig_atomic_t SIG_ATOMIC_T;
+#elif defined(HAVE_SIG_ATOMIC_T_TYPE) && !defined(AIX)
+typedef sig_atomic_t VOLATILE SIG_ATOMIC_T;
+#else
+typedef int VOLATILE SIG_ATOMIC_T;
 #endif
 
 #ifndef HAVE_SOCKLEN_T_TYPE
@@ -688,6 +694,8 @@ extern int errno;
 
 #include "popt.h"
 
+#include "mangle.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
@@ -873,6 +881,14 @@ size_t strlcat(char *d, const char *s, size_t bufsize);
 
 #ifndef HAVE_FTRUNCATE
 int ftruncate(int f,long l);
+#endif
+
+#ifndef HAVE_STRNDUP
+char *strndup(const char *s, size_t n);
+#endif
+
+#ifndef HAVE_STRNLEN
+size_t strnlen(const char *s, size_t n);
 #endif
 
 #ifndef HAVE_STRTOUL
@@ -1071,6 +1087,13 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
    for snprintf and vsnprintf */
 #define slprintf snprintf
 #define vslprintf vsnprintf
+
+/* we need to use __va_copy() on some platforms */
+#ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) __va_copy(dest, src)
+#else
+#define VA_COPY(dest, src) (dest) = (src)
+#endif
 
 #endif /* _INCLUDES_H */
 

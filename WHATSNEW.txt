@@ -138,8 +138,8 @@ Known Bugs
 
 * Under certain conditions when serving the MS Access 2000
   executable file and an Access database from a Samba share,
-  it is possible to experience data corruption.  This pug does
-  does occur when the database is served from a Samba file share
+  it is possible to experience data corruption.  This bug does not
+  occur when the database is served from a Samba file share
   but the Access *.exe is stored on the client's local file system.
   The exact reason for this bug is unknown at this time.
 

@@ -641,12 +641,15 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
-		printf("connections.tdb not initialised\n");
-		if (!lp_status(-1))
+		printf("%s not initialized.\n", lock_path("connections.tdb"));
+		printf("This is normal if an SMB client has never connected to your server.\n");
+		if (!lp_status(-1)) {
 			printf("You need to have status=yes in your smb config file\n");
+		}
 		return(0);
 	}  else if (verbose) {
-		printf("Opened status file %s\n", fname);
+		slprintf (fname, sizeof(fname)-1, "%s/%s", lp_lockdir(), "connections.tdb");
+		printf("Opened %s\n", fname);
 	}
 
 	if (locks_only) goto locks;
@@ -660,6 +663,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		printf("----------------------------------------------\n");
 	}
 	tdb_traverse(tdb, traverse_fn1, NULL);
+	
 
  locks:
 	if (processes_only) exit(0);

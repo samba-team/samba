@@ -1,0 +1,31 @@
+##########################################################################
+# Makefile.in for Samba VFS modules 
+###########################################################################
+
+CC=@CC@
+LIBTOOL=@LIBTOOL@
+CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@
+
+VFS_OBJS=audit.so skel.so block/block.so recycle/recycle.so
+
+SHELL=/bin/sh
+
+default: $(VFS_OBJS)
+
+# Pattern rules
+
+%.so: %.lo
+	@echo Linking $<
+	@$(LIBTOOL) --mode=link $(CC) -o $@ $< $(LDFLAGS)
+
+%.lo: %.c
+	@echo Compiling $<
+	@$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# Misc targets
+
+clean:
+	rm -rf .libs */.libs
+	rm -f core *~ *% *.bak *.o */*.o *.lo $(VFS_OBJS)
+

@@ -152,6 +152,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 		/* Split name into domain and user component */
 
 		pstrcpy(full_name, dos_unistr2_to_str(&name[i]));
+		dos_to_unix(full_name); /* full name should be in unix charset. */
 		split_domain_name(full_name, dom_name, user);
 
 		/* Lookup name */
@@ -595,7 +596,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
+	unistr2_to_dos(name_asc, &q_u->name, sizeof(name_asc));
 
 	DEBUG(0,("_lsa_priv_get_dispname: %s", name_asc));
 

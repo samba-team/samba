@@ -399,7 +399,7 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 	ret |= ((perms & UNIX_SET_GID ) ? S_ISGID : 0);
 #endif
 #ifdef S_ISUID
-	ret |= ((perms & UNIX_SET_UID ) ? S_ISVTX : 0);
+	ret |= ((perms & UNIX_SET_UID ) ? S_ISUID : 0);
 #endif
 
 	if (VALID_STAT(*pst) && S_ISDIR(pst->st_mode)) {
@@ -414,6 +414,21 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 	}
 
 	return ret;
+}
+
+/****************************************************************************
+checks for SMB_TIME_NO_CHANGE and if not found
+calls interpret_long_date
+****************************************************************************/
+time_t interpret_long_unix_date(char *p)
+{
+	DEBUG(1,("interpret_long_unix_date\n"));
+	if(IVAL(p,0) == SMB_TIME_NO_CHANGE_LO &&
+	   IVAL(p,4) == SMB_TIME_NO_CHANGE_HI) {
+		return -1;
+	} else {
+		return interpret_long_date(p);
+	}
 }
 
 /****************************************************************************
@@ -490,7 +505,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
 			got_match = mask_match(fname, mask, case_sensitive);
 
-		if(!got_match && !is_8_3(fname, False)) {
+		if(!got_match && !mangle_is_8_3(fname, False)) {
 
 			/*
 			 * It turns out that NT matches wildcards against
@@ -501,7 +516,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 			pstring newname;
 			pstrcpy( newname, fname);
-			name_map_mangle( newname, True, False, SNUM(conn));
+			mangle_map( newname, True, False, SNUM(conn));
 			if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
 				got_match = mask_match(newname, mask, case_sensitive);
 		}
@@ -571,7 +586,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		}
 	}
 
-	name_map_mangle(fname,False,True,SNUM(conn));
+	mangle_map(fname,False,True,SNUM(conn));
 
 	p = pdata;
 	nameptr = p;
@@ -648,7 +663,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			break;
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-			was_8_3 = is_8_3(fname, True);
+			was_8_3 = mangle_is_8_3(fname, True);
 			len = 94+strlen(fname);
 			len = (len + 3) & ~3;
 			SIVAL(p,0,len); p += 4;
@@ -665,8 +680,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,0); p += 4;
 			if (!was_8_3) {
 				fstrcpy(p+2,fname);
-				if(!name_map_mangle(p+2,True,True,SNUM(conn)))
-					(p+2)[12] = 0; 
+				mangle_map(p+2,True,True,SNUM(conn));
 				strupper(p+2);
 				SSVAL(p, 0, strlen(p+2));
 			} else {
@@ -1031,8 +1045,8 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 	 * (see PR#13758). JRA.
 	 */
 
-	if(!is_8_3( mask, False))
-		name_map_mangle(mask, True, True, SNUM(conn));
+	if(!mangle_is_8_3_wildcards( mask, False))
+		mangle_map(mask, True, True, SNUM(conn));
 
 	return(-1);
 }
@@ -1194,7 +1208,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			 */
 
 			if(dname != NULL)
-				name_map_mangle( dname, False, True, SNUM(conn));
+				mangle_map( dname, False, True, SNUM(conn));
 
 			if(dname && strcsequal( resume_name, dname)) {
 				SeekDir(dirptr, current_pos+1);
@@ -1220,7 +1234,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 				 */
 
 				if(dname != NULL)
-					name_map_mangle( dname, False, True, SNUM(conn));
+					mangle_map( dname, False, True, SNUM(conn));
 
 				if(dname && strcsequal( resume_name, dname)) {
 					SeekDir(dirptr, current_pos+1);
@@ -1424,6 +1438,12 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SMB_BIG_UINT dfree,dsize,bsize,secs_per_unit;;
 			data_len = 24;
 			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
+			if (bsize < 1024) {
+				SMB_BIG_UINT factor = 1024/bsize;
+				bsize = 1024;
+				dsize /= factor;
+				dfree /= factor;
+			}
 			secs_per_unit = 2;
 			SBIG_UINT(pdata,0,dsize*(bsize/(512*secs_per_unit)));
 			SBIG_UINT(pdata,8,dfree*(bsize/(512*secs_per_unit)));
@@ -1437,11 +1457,11 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SMB_BIG_UINT dfree,dsize,bsize;
 			data_len = 32;
 			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
-			SBIG_UINT(pdata,0,dsize);
-			SBIG_UINT(pdata,8,dsize);
-			SBIG_UINT(pdata,16,dfree);
-			SIVAL(pdata,24,bsize/512);
-			SIVAL(pdata,28,512);
+			SBIG_UINT(pdata,0,dsize); /* Total Allocation units. */
+			SBIG_UINT(pdata,8,dfree); /* Caller available allocation units. */
+			SBIG_UINT(pdata,16,dfree); /* Actual available allocation units. */
+			SIVAL(pdata,24,bsize/512); /* Sectors per allocation unit. */
+			SIVAL(pdata,28,512); /* Bytes per sector. */
 			break;
 		}
 
@@ -1795,9 +1815,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		pstring short_name;
 		pstrcpy(short_name,p);
 		/* Mangle if not already 8.3 */
-		if(!is_8_3(short_name, True)) {
-			if(!name_map_mangle(short_name,True,True,SNUM(conn)))
-				*short_name = '\0';
+		if(!mangle_is_8_3(short_name, True)) {
+			mangle_map(short_name,True,True,SNUM(conn));
 		}
 		strupper(short_name);
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
@@ -2355,10 +2374,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	SSVAL(params,0,0);
 
-    if (fsp) {
+	if (fsp) {
 		/* the pending modtime overrides the current modtime */
 		sbuf.st_mtime = fsp->pending_modtime;
-    }
+	}
 
 	size = sbuf.st_size;
 	tvs.modtime = sbuf.st_mtime;
@@ -2368,12 +2387,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	set_owner = VALID_STAT(sbuf) ? sbuf.st_uid : (uid_t)SMB_UID_NO_CHANGE;
 	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)SMB_GID_NO_CHANGE;
-
-	if (total_data > 4 && IVAL(pdata,0) == total_data) {
-		/* uggh, EAs for OS2 */
-		DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-		return ERROR_DOS(ERRDOS,ERReasnotsupported);
-	}
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
@@ -2575,16 +2588,19 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			if (total_data < 100)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-			size=IVAL(pdata,0); /* first 8 Bytes are size */
+			if(IVAL(pdata, 0) != SMB_SIZE_NO_CHANGE_LO &&
+			   IVAL(pdata, 4) != SMB_SIZE_NO_CHANGE_HI) {
+				size=IVAL(pdata,0); /* first 8 Bytes are size */
 #ifdef LARGE_SMB_OFF_T
-			size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+				size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
+					return ERROR_DOS(ERRDOS,ERRunknownlevel);
 #endif /* LARGE_SMB_OFF_T */
+			}
 			pdata+=24;          /* ctime & st_blocks are not changed */
-			tvs.actime = interpret_long_date(pdata); /* access_time */
-			tvs.modtime = interpret_long_date(pdata+8); /* modification_time */
+			tvs.actime = interpret_long_unix_date(pdata); /* access_time */
+			tvs.modtime = interpret_long_unix_date(pdata+8); /* modification_time */
 			pdata+=16;
 			set_owner = (uid_t)IVAL(pdata,0);
 			pdata += 8;
@@ -2656,7 +2672,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 			if (raw_unixmode != SMB_MODE_NO_CHANGE) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC setting mode 0%o for file %s\n",
-					unixmode, fname ));
+					(unsigned int)unixmode, fname ));
 				if (vfs_chmod(conn,fname,unixmode) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}

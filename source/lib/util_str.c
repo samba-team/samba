@@ -1332,3 +1332,37 @@ char *binary_string(char *buf, int len)
 	s[j] = 0;
 	return s;
 }
+
+#ifndef HAVE_STRNLEN
+/*******************************************************************
+ Some platforms don't have strnlen
+********************************************************************/
+
+ size_t strnlen(const char *s, size_t n)
+{
+	int i;
+	for (i=0; s[i] && i<n; i++)
+		/* noop */ ;
+	return i;
+}
+#endif
+
+#ifndef HAVE_STRNDUP
+/*******************************************************************
+ Some platforms don't have strndup.
+********************************************************************/
+
+ char *strndup(const char *s, size_t n)
+{
+	char *ret;
+
+	n = strnlen(s, n);
+	ret = malloc(n+1);
+	if (!ret)
+		return NULL;
+	memcpy(ret, s, n);
+	ret[n] = 0;
+
+	return ret;
+}
+#endif
