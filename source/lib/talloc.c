@@ -582,4 +582,13 @@ void *talloc_strdup_w(TALLOC_CTX *mem_ctx, void *s)
 	return talloc_memdup(mem_ctx, s, (len+1)*2);
 }
 
+/*
+  a alloc function for ldb that uses talloc
+*/
+void *talloc_ldb_alloc(void *context, void *ptr, size_t size)
+{
+	return talloc_realloc((TALLOC_CTX *)context, ptr, size);
+}
+
+
 /** @} */
