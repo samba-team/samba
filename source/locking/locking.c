@@ -53,11 +53,14 @@ static const char *lock_type_name(enum brl_type lock_type)
 
 /****************************************************************************
  Utility function called to see if a file region is locked.
+ If check_self is True, then checks on our own fd with the same locking context
+ are still made. If check_self is False, then checks are not made on our own fd
+ with the same locking context are not made.
 ****************************************************************************/
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       enum brl_type lock_type)
+	       enum brl_type lock_type, BOOL check_self)
 {
 	int snum = SNUM(conn);
 	BOOL ret;
@@ -70,15 +73,24 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 
 	ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
 			     global_smbpid, sys_getpid(), conn->cnum, 
-			     offset, count, lock_type);
+			     offset, count, lock_type, check_self);
+
+	DEBUG(10,("is_locked: brl start=%.0f len=%.0f %s for file %s\n",
+			(double)offset, (double)count, ret ? "locked" : "unlocked",
+			fsp->fsp_name ));
 
 	/*
 	 * There is no lock held by an SMB daemon, check to
 	 * see if there is a POSIX lock from a UNIX or NFS process.
 	 */
 
-	if(!ret && lp_posix_locking(snum))
+	if(!ret && lp_posix_locking(snum)) {
 		ret = is_posix_locked(fsp, offset, count, lock_type);
+
+		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for file %s\n",
+				(double)offset, (double)count, ret ? "locked" : "unlocked",
+				fsp->fsp_name ));
+	}
 
 	return ret;
 }

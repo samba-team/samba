@@ -341,13 +341,33 @@ smbpid = %u, pid = %u, tid = %u\n",
 }
 
 /****************************************************************************
+ Check to see if this lock conflicts, but ignore our own locks on the
+ same fnum only.
+****************************************************************************/
+
+static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
+{
+	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
+		return False;
+
+	if (brl_same_context(&lck1->context, &lck2->context) &&
+				lck1->fnum == lck2->fnum)
+		return False;
+
+	if (lck1->start >= (lck2->start + lck2->size) ||
+	    lck2->start >= (lck1->start + lck1->size)) return False;
+	    
+	return True;
+} 
+
+/****************************************************************************
  Test if we could add a lock if we wanted to.
 ****************************************************************************/
 
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum brl_type lock_type)
+		  enum brl_type lock_type, int check_self)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -373,8 +393,15 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		locks = (struct lock_struct *)dbuf.dptr;
 		count = dbuf.dsize / sizeof(*locks);
 		for (i=0; i<count; i++) {
-			if (brl_conflict(&locks[i], &lock)) {
-				goto fail;
+			if (check_self) {
+				if (brl_conflict(&locks[i], &lock))
+					goto fail;
+			} else {
+				/*
+				 * Our own locks don't conflict.
+				 */
+				if (brl_conflict_other(&locks[i], &lock))
+					goto fail;
 			}
 		}
 	}
