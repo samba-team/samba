@@ -33,6 +33,8 @@
 
 #include "krb5_locl.h"
 
+RCSID("$Id$");
+
 struct krb5_rcache_data {
     char *name;
 };
