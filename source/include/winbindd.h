@@ -24,12 +24,10 @@
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX socket */
-#define WINBINDD_TIMEOUT_SEC 30                /* Read/write timeout */
 
 /* Naughty global stuff */
 
 extern int DEBUGLEVEL;
-extern pstring debugf;
 
 /* Socket commands */
 
@@ -50,11 +48,10 @@ enum winbindd_cmd {
 
 struct winbindd_request {
     enum winbindd_cmd cmd;
-    pid_t pid;
 
     union {
-        char username[1024];
-        char groupname[1024];
+        pstring username;
+        pstring groupname;
         uid_t uid;
         gid_t gid;
     } data;
@@ -77,47 +74,74 @@ struct winbindd_response {
         /* getpwnam_from_user, getpwnam_from_uid */
 
         struct winbindd_pw {
-            char pw_name[1024];
-            char pw_passwd[1024];
+            pstring pw_name;
+            pstring pw_passwd;
             uid_t pw_uid;
             gid_t pw_gid;
-            char pw_gecos[1024];
-            char pw_dir[1024];
-            char pw_shell[1024];
+            pstring pw_gecos;
+            pstring pw_dir;
+            pstring pw_shell;
         } pw;
 
         /* getgrnam_from_group, get_grnam_from_gid */
 
         struct winbindd_gr {
-            char gr_name[1024];
-            char gr_passwd[1024];
+            pstring gr_name;
+            pstring gr_passwd;
             gid_t gr_gid;
-            char gr_mem[1024];
+            pstring gr_mem;
             int num_gr_mem;
         } gr;
 
     } data;
 };
 
+/* Client state structure */
+
+struct winbindd_state {
+    struct winbindd_state *prev, *next;       /* Linked list pointers */
+    int sock;                                 /* Open socket from client */
+    int read_buf_len, write_buf_len;          /* Indexes in request/response */
+    BOOL finished;                            /* Can delete from list */
+    struct winbindd_request request;          /* Request from client */
+    struct winbindd_response response;        /* Respose to client */
+    struct getent_state *getpwent_state;      /* State for getpwent() */
+    struct getent_state *getgrent_state;      /* State for getgrent() */
+};
+
+struct getent_state {
+    struct getent_state *prev, *next;
+    POLICY_HND sam_handle;
+    POLICY_HND sam_dom_handle;
+    struct acct_info *sam_entries;
+    uint32 sam_entry_index, num_sam_entries;  
+    fstring domain_name;
+    BOOL got_sam_entries;
+};
+
+extern struct winbindd_domain_uid *domain_uid_list;
+extern struct winbindd_domain_gid *domain_gid_list;
+extern struct winbindd_domain *domain_list;
+
 /* Structures to hold domain list */
 
-struct winbind_domain {
-    pstring domain_name;                     /* Domain name */
+struct winbindd_domain {
+    fstring domain_name;                     /* Domain name */
     fstring domain_controller;               /* NetBIOS name of DC */
     DOM_SID domain_sid;                      /* SID for this domain */
-    struct winbind_domain *prev, *next;
+    struct winbindd_domain *prev, *next;
 };
 
-struct winbind_domain_uid {
-    struct winbind_domain *domain;           /* Domain info */
-    uid_t uid_low, uid_high;                 /* Range of uids to allocate */
-    struct winbind_domain_uid *prev, *next;
+struct winbindd_domain_uid {
+    struct winbindd_domain *domain;           /* Domain info */
+    uid_t uid_low, uid_high;                  /* Range of uids to allocate */
+    struct winbindd_domain_uid *prev, *next;
 };
 
-struct winbind_domain_gid {
-    struct winbind_domain *domain;           /* Domain info */
-    gid_t gid_low, gid_high;                 /* Range of gids to allocate */
-    struct winbind_domain_gid *prev, *next;
+struct winbindd_domain_gid {
+    struct winbindd_domain *domain;           /* Domain info */
+    gid_t gid_low, gid_high;                  /* Range of gids to allocate */
+    struct winbindd_domain_gid *prev, *next;
 };
 
 #include "rpc_parse.h"
