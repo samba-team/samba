@@ -66,7 +66,7 @@ BOOL init_account_policy(void)
 /****************************************************************************
 ****************************************************************************/
 
-static char *decode_account_policy_name(field)
+static char *decode_account_policy_name(int field)
 {
 	switch (field) {
 		case AP_MIN_PASSWORD_LEN:
@@ -109,6 +109,8 @@ BOOL account_policy_get(int field, int *value)
 {
 	fstring name;
 
+	init_account_policy();
+
 	fstrcpy(name, decode_account_policy_name(field));
 	*value=tdb_fetch_int(tdb, name);
 	DEBUG(10,("account_policy_get: %s:%d\n", name, *value));
@@ -121,6 +123,8 @@ BOOL account_policy_get(int field, int *value)
 BOOL account_policy_set(int field, int value)
 {
 	fstring name;
+
+	init_account_policy();
 
 	fstrcpy(name, decode_account_policy_name(field));
 	if ( tdb_store_int(tdb, name, value)== -1)
