@@ -1171,12 +1171,16 @@ static int call_trans2qfsinfo(connection_struct *conn,
       SIVAL(pdata,4,0); /* characteristics */
       break;
     case SMB_MAC_QUERY_FS_INFO:
-      /*
-       * Thursby MAC extension...
-       */
-      data_len = 88;
-      SIVAL(pdata,84,0x100); /* Don't support mac... */
-      break;
+	    /*
+	     * Thursby MAC extension... ONLY on NTFS filesystems
+	     * once we do streams then we don't need this
+	     */
+	    if (strequal(lp_fstype(SNUM(conn)),"NTFS")) {
+		    data_len = 88;
+		    SIVAL(pdata,84,0x100); /* Don't support mac... */
+		    break;
+	    }
+	    /* drop through */
     default:
       return(ERROR(ERRDOS,ERRunknownlevel));
   }
