@@ -111,6 +111,10 @@ _kadm5_set_modifier __P((
 	hdb_entry *ent));
 
 kadm5_ret_t
+_kadm5_bump_pw_expire __P((kadm5_server_context *context,
+			   hdb_entry *ent));
+
+kadm5_ret_t
 _kadm5_setup_entry __P((
 	kadm5_server_context *context,
 	hdb_entry *ent,
@@ -121,8 +125,10 @@ _kadm5_setup_entry __P((
 	u_int32_t def_mask));
 
 kadm5_ret_t
-kadm5_log_get_version (int fd,
-		       u_int32_t *ver);
+kadm5_log_get_version_fd (int fd, u_int32_t *ver);
+
+kadm5_ret_t
+kadm5_log_get_version (kadm5_server_context *context, u_int32_t *ver);
 
 kadm5_ret_t
 kadm5_log_set_version (kadm5_server_context *context, u_int32_t vno);
@@ -212,6 +218,9 @@ kadm5_log_previous (krb5_storage *sp,
 		    time_t *timestamp,
 		    enum kadm_ops *op,
 		    u_int32_t *len);
+
+kadm5_ret_t
+kadm5_log_truncate (kadm5_server_context *server_context);
 
 kadm5_ret_t
 _kadm5_marshal_params __P((krb5_context context, 
