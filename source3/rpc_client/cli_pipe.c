@@ -1466,6 +1466,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 		return False;
 	}
 
+	cli->pipe_idx = pipe_idx;
+
 	/* 
 	 * Setup the remote server name prefixed by \ and the machine account name.
 	 */

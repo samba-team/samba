@@ -3521,7 +3521,7 @@ BOOL samr_io_alias_info1(const char *desc, ALIAS_INFO1 * al1,
 inits a ALIAS_INFO3 structure.
 ********************************************************************/
 
-void init_samr_alias_info3(ALIAS_INFO3 * al3, char *acct_desc)
+void init_samr_alias_info3(ALIAS_INFO3 * al3, const char *acct_desc)
 {
 	DEBUG(5, ("init_samr_alias_info3\n"));
 
@@ -4232,7 +4232,7 @@ inits a SAMR_Q_CREATE_DOM_ALIAS structure.
 ********************************************************************/
 
 void init_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
-				  POLICY_HND *hnd, char *acct_desc)
+				  POLICY_HND *hnd, const char *acct_desc)
 {
 	DEBUG(5, ("init_samr_q_create_dom_alias\n"));
 
@@ -4241,7 +4241,7 @@ void init_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
 	init_unistr2(&q_u->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
 	init_uni_hdr(&q_u->hdr_acct_desc, &q_u->uni_acct_desc);
 
-	q_u->access_mask = 0x001f000f;
+	q_u->access_mask = MAXIMUM_ALLOWED_ACCESS;
 }
 
 /*******************************************************************
