@@ -1,3 +1,9 @@
+1999-08-12  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (ACLOCAL): just use `cf', this variable is only used
+ 	when the current directory is $(top_srcdir) anyways and having
+ 	$(top_srcdir) there breaks if it's a relative path
+
 1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: check for setproctitle
