@@ -73,9 +73,9 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 			continue ;
 
 		if (S.st_dev == devno) {
-			(*mntpath) = strdup(mnt->mnt_dir);
-			(*bdev) = strdup(mnt->mnt_fsname);
-			(*fs)   = strdup(mnt->mnt_type);
+			(*mntpath) = SMB_STRDUP(mnt->mnt_dir);
+			(*bdev) = SMB_STRDUP(mnt->mnt_fsname);
+			(*fs)   = SMB_STRDUP(mnt->mnt_type);
 			if ((*mntpath)&&(*bdev)&&(*fs)) {
 				ret = 0;
 			} else {
@@ -124,8 +124,8 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	 * but I don't know how
 	 * --metze
 	 */
-	(*mntpath) = strdup(path);
-	(*bdev) = strdup(dev_disk);
+	(*mntpath) = SMB_STRDUP(path);
+	(*bdev) = SMB_STRDUP(dev_disk);
 	if ((*mntpath)&&(*bdev)) {
 		ret = 0;
 	} else {
@@ -152,7 +152,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	(*bdev) = NULL;
 	(*fs) = NULL;
 	
-	(*mntpath) = strdup(path);
+	(*mntpath) = SMB_STRDUP(path);
 	if (*mntpath) {
 		ret = 0;
 	} else {
