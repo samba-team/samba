@@ -718,7 +718,13 @@ static NTSTATUS tdbsam_settrustpwent(struct pdb_methods *methods)
 
 	if (!methods)
 		return NT_STATUS_UNSUCCESSFUL;
-	
+
+	if (!secrets_tdb) {
+		DEBUG(1, ("pdb_settrustpwent: couldn't open secrets.tdb file.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(7, ("pdb_settrustpwent: opening trust passwords database.\n"));
 	asprintf(&trustpw_pattern, "%s*", TRUSTPW_PREFIX);
 	tp_key_list = tdb_search_keys(secrets_tdb, trustpw_pattern);
 
@@ -731,6 +737,7 @@ static void tdbsam_endtrustpwent(struct pdb_methods *methods)
 {
 	tdb_search_list_free(tp_key_list);
 	tp_key_list = NULL;
+	DEBUG(7, ("pdb_endtrustpwent: closing trust passwords database.\n"));
 }
 
 
@@ -751,11 +758,13 @@ static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASS
 	TDB_CONTEXT *secrets_tdb = secrets_open();
 
 	if (!secrets_tdb) {
+		DEBUG(0, ("pdb_gettrustpwent: couldn't open secrets.tdb file!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	tp_key = tp_key_list;
 	if (!tp_key || !tp_key->node_key.dptr) {
+		DEBUG(7, ("pdb_gettrustpwent: end of search keys list.\n"));
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
@@ -766,11 +775,15 @@ static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASS
 	SAFE_FREE(tp_key);
 
 	if (!tp_data.dptr) {
+		DEBUG(5, ("pdb_gettrustpwent: no database entry found. Deleted password ?\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	pdb_init_trustpw_from_buffer(trust, (const char**)&tp_data.dptr,
-	                             tp_data.dsize);
+	if (!pdb_init_trustpw_from_buffer(trust, (const char**)&tp_data.dptr,
+	                                  tp_data.dsize)) {
+		DEBUG(0, ("pdb_gettrustpwent: Bad SAM_TRUST_PASSWD entry returned from TDB!\n"));
+	}
+
 	nt_status = STATUS_MORE_ENTRIES;
 
 	SAFE_FREE(tp_data.dptr);
@@ -796,9 +809,23 @@ static NTSTATUS tdbsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASS
 	size_t domain_name_len = sizeof(domain_name);
 	size_t uni_name_len;
 	
-	if (!methods || !trust || !name) return nt_status;
-	methods->settrustpwent(methods);
-	
+	if (!methods) return nt_status;
+
+	if (!trust) {
+		DEBUG(0, ("pdb_gettrustpwnam: SAM_TRUST_PASSWD is NULL\n"));
+		return nt_status;
+	}
+
+	if (!name) {
+		DEBUG(0, ("pdb_gettrustpwnam: char *name is NULL\n"));
+		return nt_status;
+	}
+
+	nt_status = methods->settrustpwent(methods);
+	if (!NT_STATUS_IS_OK(nt_status))
+		return nt_status;
+
+	DEBUG(7, ("pdb_gettrustpwnam: Searching for trust password %s", name));
 	do {
 		/* get trust password (next in turn) */
 		nt_status = methods->gettrustpwent(methods, trust);
@@ -810,11 +837,16 @@ static NTSTATUS tdbsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASS
 		          sizeof(trust->private.uni_name), 0);
 		uni_name_len = trust->private.uni_name_len;
 		domain_name[uni_name_len > 32 ? 32 : uni_name_len] = 0;
-		if (!StrnCaseCmp(domain_name, name, sizeof(domain_name)))
+
+		DEBUG(10, ("Trust password: %s\n", domain_name));
+		if (!StrnCaseCmp(domain_name, name, sizeof(domain_name))) {
+			DEBUG(7, ("pdb_gettrustpwnam: Trust password %s found!\n", domain_name));
 			return NT_STATUS_OK;
+		}
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
-	
+
+	DEBUG(7, ("pdb_gettrustpwnam: Trust password not found"));	
 	methods->endtrustpwent(methods);
 	return nt_status;
 }
@@ -835,17 +867,36 @@ static NTSTATUS tdbsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASS
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;	
 	
-	if (!methods || !trust || !sid) return nt_status;
-	methods->settrustpwent(methods);
-	
+	if (!methods) return nt_status;
+
+	if (!trust) {
+		DEBUG(0, ("pdb_gettrustpwsid: SAM_TRUST_PASSWD is NULL\n"));
+		return nt_status;
+	}
+
+	if (!sid) {
+		DEBUG(0, ("pdb_gettrustpwsid: DOM_SID is NULL\n"));
+		return nt_status;
+	}
+
+	nt_status = methods->settrustpwent(methods);
+	if (!NT_STATUS_IS_OK(nt_status))
+		return nt_status;
+
+	DEBUG(7, ("pdb_gettrustpwsid: Searching for trust password %s\n", sid_string_static(sid)));
 	do {
 		nt_status = tdbsam_gettrustpwent(methods, trust);
 
-		if (sid_equal(&trust->private.domain_sid, sid))
+		DEBUG(10, ("Trust password: %s\n", sid_string_static(&trust->private.domain_sid)));
+		if (sid_equal(&trust->private.domain_sid, sid)) {
+			DEBUG(7, ("pdb_gettrustpwsid: Trust password %s found!\n",
+			          sid_string_static(&trust->private.domain_sid)));
 			return NT_STATUS_OK;
+		}
 	
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
-	
+
+	DEBUG(7, ("pdb_gettrustpwsid: Trust password not found"));
 	methods->endtrustpwent(methods);
 	return nt_status;
 }
@@ -863,22 +914,28 @@ static NTSTATUS tdb_update_trustpw(const SAM_TRUST_PASSWD *pass, int tdb_flag)
 	size_t buffer_len;
 
 	secrets_tdb = secrets_open();
-	if (!secrets_tdb)
+	if (!secrets_tdb) {
+		DEBUG(1, ("tdb_update_trustpw: couldn't open secrets.tdb file!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 	
 	mem_ctx = talloc_init("tdbsam_add_trust_passwd: storing new trust password");
-	if (!mem_ctx)
+	if (!mem_ctx) {
+		DEBUG(0, ("tdb_update_trustpw: couldn't create talloc context. Out of memory ?\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
 		
 	/* convert unicode name to char* and create the key for tdb record */
 	pull_ucs2_talloc(mem_ctx, &domain, pass->private.uni_name);
 	if (!domain) {
+		DEBUG(0, ("tdb_update_trustpw: couldn't allocate talloc memory. Out of memory?\n"));
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	tp_key = talloc_asprintf(mem_ctx, "%s%s", TRUSTPW_PREFIX, domain);
 	if (!tp_key) {
+		DEBUG(0, ("tdb_update_trustpw: couldn't allocate talloc memory. Out of memory?\n"));
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -893,10 +950,12 @@ static NTSTATUS tdb_update_trustpw(const SAM_TRUST_PASSWD *pass, int tdb_flag)
 
 	/* write the packed structure in secrets.tdb */
 	if (tdb_store(secrets_tdb, key, data, tdb_flag) != TDB_SUCCESS) {
+		DEBUG(1, ("tdb_update_trustpw: couldn't write SAM_TRUST_PASSWD structure in secrets.tdb!\n"));
 		talloc_destroy(mem_ctx);
 		return nt_status;
 	}
-	
+
+	DEBUG(7, ("tdb_update_trustpw: SAM_TRUST_PASSWD structure stored successfully.\n"));
 	nt_status = NT_STATUS_OK;
 	talloc_destroy(mem_ctx);
 	return nt_status;
@@ -914,6 +973,7 @@ static NTSTATUS tdb_update_trustpw(const SAM_TRUST_PASSWD *pass, int tdb_flag)
 
 static NTSTATUS tdbsam_add_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD *trust)
 {
+	DEBUG(7, ("pdb_add_trust_passwd: adding new trust password\n"));
 	return tdb_update_trustpw(trust, TDB_INSERT);
 }
 
@@ -929,6 +989,7 @@ static NTSTATUS tdbsam_add_trust_passwd(struct pdb_methods *methods, const SAM_T
 
 static NTSTATUS tdbsam_update_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
 {
+	DEBUG(7, ("pdb_update_trust_passwd: updating trust password\n"));
 	return tdb_update_trustpw(trust, TDB_MODIFY);
 }
 
@@ -952,27 +1013,49 @@ static NTSTATUS tdbsam_delete_trust_passwd(struct pdb_methods *methods, const SA
 	char *domain = NULL;
 	struct trust_passwd_data t;
 	
-	if (!methods || !trust) return nt_status;
+	if (!methods) return nt_status;
+
+	if (!trust) {
+		DEBUG(0, ("pdb_delete_trust_passwd: SAM_TRUST_PASSWD is NULL\n"));
+		return nt_status;
+	}
 	t = trust->private;
 
 	secrets_tdb = secrets_open();
-	if (!secrets_tdb)
+	if (!secrets_tdb) {
+		DEBUG(1, ("pdb_delete_trust_passwd: couldn't open secrets.tdb file!\n"));
 		return nt_status;
+	}
 	
 	mem_ctx = talloc_init("tdbsam_delete_trust_passwd: deleting trust password");
+	if (!mem_ctx) {
+		DEBUG(0, ("pdb_delete_trust_passwd: couln't create talloc context. Out of memory ?\n"));
+		return nt_status;
+	}
 	
 	/* convert unicode name to char* and make sure it's null-terminated */
 	pull_ucs2_talloc(mem_ctx, &domain, t.uni_name);
-	if (!domain)
+	if (!domain) {
+		DEBUG(0, ("pdb_delete_trust_passwd: couldn't allocate talloc memory. Out of memory?\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	domain_key.dptr  = talloc_asprintf(mem_ctx, "%s%s", TRUSTPW_PREFIX, domain);
 	domain_key.dsize = strlen(TRUSTPW_PREFIX) + t.uni_name_len;
-	if (!domain_key.dptr)
+	if (!domain_key.dptr) {
+		DEBUG(0, ("pdb_delete_trust_passwd: couldn't allocate talloc memory. Out of memory?\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = tdb_delete(secrets_tdb, domain_key);
-	
+	if (status) {
+		DEBUG(0, ("pdb_delete_trust_passwd: couldn't delete %s record from secrets.tdb!\n",
+		           domain_key.dptr));
+	} else {
+		DEBUG(0, ("pdb_delete_trust_passwd: trust password %s successfully deleted\n",
+		          domain));
+	}
+
 	talloc_destroy(mem_ctx);
 	return status ? NT_STATUS_UNSUCCESSFUL : NT_STATUS_OK;
 }
