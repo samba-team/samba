@@ -460,7 +460,7 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
  Make a user_info struct
 ***************************************************************************/
 
-BOOL make_server_info(auth_serversupplied_info **server_info) 
+static BOOL make_server_info(auth_serversupplied_info **server_info) 
 {
 	*server_info = malloc(sizeof(**server_info));
 	if (!*server_info) {
@@ -566,6 +566,179 @@ BOOL make_server_info_guest(auth_serversupplied_info **server_info)
 }
 
 /***************************************************************************
+ Make a server_info struct from the info3 returned by a domain logon 
+***************************************************************************/
+
+NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
+				const char *domain,
+				auth_serversupplied_info **server_info, 
+				NET_USER_INFO_3 *info3) 
+{
+	NTSTATUS nt_status = NT_STATUS_OK;
+
+	char *nt_domain;
+	char *nt_username;
+
+	SAM_ACCOUNT *sam_account = NULL;
+	DOM_SID user_sid;
+	DOM_SID group_sid;
+
+	struct passwd *passwd;
+
+	uid_t uid;
+	gid_t gid;
+
+	/* 
+	   Here is where we should check the list of
+	   trusted domains, and verify that the SID 
+	   matches.
+	*/
+
+	sid_copy(&user_sid, &info3->dom_sid.sid);
+	if (!sid_append_rid(&user_sid, info3->user_rid)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	sid_copy(&group_sid, &info3->dom_sid.sid);
+	if (!sid_append_rid(&group_sid, info3->group_rid)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!(nt_username = unistr2_tdup(mem_ctx, &(info3->uni_user_name)))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!(nt_domain = unistr2_tdup(mem_ctx, &(info3->uni_logon_dom)))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (winbind_sid_to_uid(&uid, &user_sid) 
+	    && winbind_sid_to_gid(&gid, &group_sid) 
+	    && ((passwd = getpwuid_alloc(uid)))) {
+		nt_status = pdb_init_sam_pw(&sam_account, passwd);
+		passwd_free(&passwd);
+	} else {
+		char *dom_user;
+		dom_user = talloc_asprintf(mem_ctx, "%s%s%s", 
+					   nt_domain,
+					   lp_winbind_separator(),
+					   nt_username);
+		
+		if (!dom_user) {
+			DEBUG(0, ("talloc_asprintf failed!\n"));
+			return NT_STATUS_NO_MEMORY;
+		} else { 
+		
+			if (!(passwd = Get_Pwnam(dom_user))
+				/* Only lookup local for the local
+				   domain, we don't want this for
+				   trusted domains */
+			    && strequal(nt_domain, lp_workgroup())) {
+				passwd = Get_Pwnam(nt_username);
+			}
+			    
+			if (passwd) {
+				return NT_STATUS_NO_SUCH_USER;
+			} else {
+				nt_status = pdb_init_sam_pw(&sam_account, passwd);
+			}
+		}
+	}
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("make_server_info_info3: pdb_init_sam failed!\n"));
+		return nt_status;
+	}
+		
+	if (!pdb_set_user_sid(sam_account, &user_sid)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!pdb_set_group_sid(sam_account, &group_sid)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+		
+	if (!pdb_set_nt_username(sam_account, nt_username)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_domain(sam_account, nt_domain)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_fullname(sam_account, pdb_unistr2_convert(&(info3->uni_full_name)))) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_logon_script(sam_account, pdb_unistr2_convert(&(info3->uni_logon_script)), True)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_profile_path(sam_account, pdb_unistr2_convert(&(info3->uni_profile_path)), True)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_homedir(sam_account, pdb_unistr2_convert(&(info3->uni_home_dir)), True)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_dir_drive(sam_account, pdb_unistr2_convert(&(info3->uni_dir_drive)), True)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!make_server_info_sam(server_info, sam_account)) { 
+		DEBUG(0, ("make_server_info_info3: make_server_info_sam failed!\n"));
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Store the user group information in the server_info 
+	   returned to the caller. */
+	
+	if (info3->num_groups2 != 0) {
+		int i;
+		NT_USER_TOKEN *ptok;
+		auth_serversupplied_info *pserver_info = *server_info;
+		
+		if ((pserver_info->ptok = malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+			DEBUG(0, ("domain_client_validate: out of memory allocating rid group membership\n"));
+			nt_status = NT_STATUS_NO_MEMORY;
+			free_server_info(server_info);
+			return nt_status;
+		}
+		
+		ptok = pserver_info->ptok;
+		ptok->num_sids = (size_t)info3->num_groups2;
+		
+		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
+			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
+			nt_status = NT_STATUS_NO_MEMORY;
+			free_server_info(server_info);
+			return nt_status;
+		}
+		
+		for (i = 0; i < ptok->num_sids; i++) {
+			sid_copy(&ptok->user_sids[i], &(info3->dom_sid.sid));
+			if (!sid_append_rid(&ptok->user_sids[i], info3->gids[i].g_rid)) {
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+				free_server_info(server_info);
+				return nt_status;
+			}
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
  Make an auth_methods struct
 ***************************************************************************/
 
@@ -596,9 +769,9 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 void delete_nt_token(NT_USER_TOKEN **pptoken)
 {
     if (*pptoken) {
-		NT_USER_TOKEN *ptoken = *pptoken;
-        SAFE_FREE( ptoken->user_sids );
-        ZERO_STRUCTP(ptoken);
+	    NT_USER_TOKEN *ptoken = *pptoken;
+	    SAFE_FREE( ptoken->user_sids );
+	    ZERO_STRUCTP(ptoken);
     }
     SAFE_FREE(*pptoken);
 }
