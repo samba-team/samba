@@ -511,7 +511,7 @@ NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 		inode = name->st.st_ino;
 	}
 
-	if (name->exists && (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
+	if (fd == -1) {
 		if (stat(name->full_name, &name->st) == -1) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
