@@ -3123,6 +3123,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
 static void api_rpc_trans_reply(char *outbuf,
 				pipes_struct *p)
 {
+	prs_debug_out(&p->rsmb_pdu, "api_rpc_trans_reply", 200);
 	send_trans_reply(outbuf, &p->rsmb_pdu, NULL, NULL, 0, p->file_offset);
 
 	if (prs_buf_len(&p->rsmb_pdu) <= p->file_offset)
@@ -3423,16 +3424,15 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
     api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
 
-      
   prs_create(&rdata_buf , rdata , rdata_len , 0, False);
   prs_create(&rparam_buf, rparam, rparam_len, 0, False);
 
   /* now send the reply */
   send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0);
 
-	prs_free_data(&rdata_buf);
-	prs_free_data(&rparam_buf);
-  
+  prs_free_data(&rdata_buf );
+  prs_free_data(&rparam_buf);
+
   return(-1);
 }
 

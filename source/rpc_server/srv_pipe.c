@@ -948,6 +948,10 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 	if (reply)
 	{
 		/* flatten the data into a single pdu */
+		DEBUG(200,("rpc_redir_local: %d\n", __LINE__));
+		prs_init(resp, 0, 4, False);
+		prs_debug_out(resp    , "redir_local resp", 200);
+		prs_debug_out(&l->rhdr, "send_rcv rhdr", 200);
 		reply = prs_copy(resp, &l->rhdr);
 	}
 
@@ -973,6 +977,8 @@ BOOL rpc_send_and_rcv_pdu(pipes_struct *p)
 			BOOL ret = create_rpc_reply(p->l, p->l->rdata_offset);
 			/* flatten the data into a single pdu */
 			if (!ret) return False;
+			prs_debug_out(&p->rsmb_pdu, "send_rcv rsmb_pdu", 200);
+			prs_debug_out(&p->l->rhdr , "send_rcv rhdr", 200);
 			return prs_copy(&p->rsmb_pdu, &p->l->rhdr);
 		}
 		else

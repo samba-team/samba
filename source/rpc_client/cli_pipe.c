@@ -291,6 +291,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	prs_struct hdr_auth;
 	prs_struct auth_verf;
 	int data_len;
+	int frag_len;
 	int auth_len;
 	BOOL auth_verify;
 	BOOL auth_seal;
@@ -322,10 +323,10 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	(*data_end) += data_len;
 
 	/* happen to know that NTLMSSP authentication verifier is 16 bytes */
-	data_len               = data_len + auth_len + (auth_verify ? 8 : 0) + 0x18;
+	frag_len = data_len + auth_len + (auth_verify ? 8 : 0) + 0x18;
 
 	prs_init(&data_t   , 0       , 4, False);
-	prs_init(&hdr      , data_len, 4, False);
+	prs_init(&hdr      , frag_len, 4, False);
 	prs_init(&hdr_auth , 8       , 4, False);
 	prs_init(&auth_verf, auth_len, 4, False);
 
@@ -333,12 +334,12 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	data_t.end = data_t.data_size;
 	data_t.offset = data_t.data_size;
 
-	create_rpc_request(&hdr, op_num, flags, data_len, auth_len);
+	create_rpc_request(&hdr, op_num, flags, frag_len, auth_len);
 
 	if (auth_seal)
 	{
-		crc32 = crc32_calc_buffer(data_len, d);
-		NTLMSSPcalc_ap(nt, (uchar*)d, data_len);
+		crc32 = crc32_calc_buffer(frag_len, d);
+		NTLMSSPcalc_ap(nt, (uchar*)d, frag_len);
 	}
 
 	if (auth_seal || auth_verify)
@@ -371,8 +372,8 @@ static BOOL create_request_pdu(struct cli_connection *con,
 		prs_link(&hdr, &data_t, NULL   );
 	}
 
-	DEBUG(100,("data_len: 0x%x data_calc_len: 0x%x\n",
-		data_len, prs_buf_len(&data_t)));
+	DEBUG(100,("frag_len: 0x%x data_len: 0x%x data_calc_len: 0x%x\n",
+		frag_len, data_len, prs_buf_len(&data_t)));
 
 	if (data_len != prs_buf_len(&data_t))
 	{
@@ -384,9 +385,14 @@ static BOOL create_request_pdu(struct cli_connection *con,
 		return False;
 	}
 
+	DEBUG(100,("create_request_pdu: %d\n", __LINE__));
+
 	/* this is all a hack */
-	prs_init(dataa, data_len, 4, False);
-	prs_buf_copy(dataa->data, &hdr, 0, data_len);
+	prs_init(dataa, prs_buf_len(&hdr), 4, False);
+	prs_debug_out(dataa, "create_request_pdu", 200);
+	prs_buf_copy(dataa->data, &hdr, 0, frag_len);
+
+	DEBUG(100,("create_request_pdu: %d\n", __LINE__));
 
 	prs_free_data(&hdr_auth );
 	prs_free_data(&auth_verf);
@@ -463,6 +469,7 @@ BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data, prs_struct 
 	}
 
 	DEBUG(6,("cli_pipe: fragment first and last both set\n"));
+
 	return True;
 }
 
@@ -507,6 +514,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		}
 		
 		DEBUG(10,("rpc_api_pipe_req: end: %d\n", data_end));
+		dbgflush();
 
 		if (!rpc_api_send_rcv_pdu(con, &data_t, &rpdu))
 		{

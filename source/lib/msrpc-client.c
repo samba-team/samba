@@ -87,6 +87,8 @@ BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps)
 
 	memcpy(data, smb_base(msrpc->inbuf), len);
 
+	prs_debug_out(ps, "msrpc_receive_prs", 200);
+
 	return True;
 }
 

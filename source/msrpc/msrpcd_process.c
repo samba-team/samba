@@ -152,11 +152,7 @@ static int do_message(pipes_struct *p,
 {
 	static int pid= -1;
 
-	prs_struct pd;
 	int outsize = -1;
-
- 	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_create(&pd, smb_base(inbuf), smb_len(inbuf), 4, True);
 
   if (pid == -1)
     pid = getpid();
@@ -175,10 +171,6 @@ static int do_message(pipes_struct *p,
 	}
 
 	DEBUG(10,("do_message: returned %d bytes\n", outsize));
-
-	/* DO NOT free pd with prs_free_data because the memory it
-	 * uses is inbuf, which is not controlled by this function
-	 */
 
 	return outsize;
 }

@@ -37,14 +37,17 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 /*******************************************************************
  debug a parse structure
  ********************************************************************/
-void prs_debug_out(prs_struct *ps, char *msg, int level)
+void prs_debug_out(const prs_struct *ps, char *msg, int level)
 {
 	CHECK_STRUCT(ps);
 	DEBUG(level,("%s ps: io %s align %d offset %d err %d data %p len %d\n",
 		msg, BOOLSTR(ps->io), ps->align, ps->offset, ps->error,
 		ps->data, prs_buf_len(ps)));
 
-	dump_data(level, ps->data, prs_buf_len(ps));
+	if (ps->data != NULL)
+	{
+		dump_data(level, ps->data, prs_buf_len(ps));
+	}
 }
 
 /*******************************************************************
@@ -80,6 +83,9 @@ void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
  ********************************************************************/
 void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io)
 {
+	DEBUG(200,("prs_create: data:%p size:%d align:%d io:%s\n",
+	            data, size, align, BOOLSTR(io)));
+
 	prs_init(ps, 0, align, io);
 	ps->data = data;
 	ps->data_size = size;
@@ -184,6 +190,8 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 	CHECK_STRUCT(buf);
 	DEBUG(200,("prs_struct_copy: data[%d..%d] offset %d len %d\n",
 	            buf->start, data_len, offset, len));
+
+	prs_debug_out(bcp, "prs_struct_copy", 200);
 
 	/* there's probably an off-by-one bug, here, and i haven't even tested the code :-) */
 	while (offset < end && ((q = prs_data(bcp, offset)) != NULL))
@@ -397,12 +405,9 @@ void prs_align(prs_struct *ps)
  ********************************************************************/
 BOOL prs_grow(prs_struct *ps, uint32 new_size)
 {
-	BOOL ret;
 	CHECK_STRUCT(ps);
 	if (ps->error) return False;
-	ret = prs_grow_data(ps, ps->io, new_size, False);
-	prs_debug_out(ps, "prs_grow", 200);
-	return ret;
+	return prs_grow_data(ps, ps->io, new_size, False);
 }
 
 /*******************************************************************
