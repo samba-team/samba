@@ -241,7 +241,7 @@ void cli_connection_free(struct cli_connection *con)
 		{
 			case MSRPC_LOCAL:
 			{
-				DEBUG(10,("msrpc locak connection\n"));
+				DEBUG(10,("msrpc local connection\n"));
 				msrpc_use_del(con->srv_name, NULL, False, &closed);
 				oldcli = con->msrpc.local;
 				con->msrpc.local = NULL;
