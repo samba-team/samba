@@ -1962,10 +1962,6 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 
 	pstrcpy(add_script, lp_addmachine_script());
 
-	if (!*add_script) {
-		pstrcpy(add_script, lp_adduser_script());
-	}
-
 	if(*add_script) {
 		int add_ret;
 		all_string_sub(add_script, "%u", mach_acct, sizeof(mach_acct));
