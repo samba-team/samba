@@ -891,6 +891,20 @@ typedef int mode_t;
 #endif
 
 
+#ifdef BOS
+#define SIGNAL_CAST (void (*)(int))
+#include <string.h>
+#include <sys/dir.h>
+#include <sys/select.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/statfs.h>
+#include <sys/bsdioctl.h>
+#endif
+
+
+
 /*******************************************************************
 end of the platform specific sections
 ********************************************************************/
