@@ -421,15 +421,16 @@ fi
 AC_SUBST(DBLIB)dnl
 
 AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf fcntl)
-AC_CHECK_FUNCS(getlogin)
 AC_CHECK_FUNCS(getmsg getrlimit getspnam getspuid gettimeofday getuid)
 AC_CHECK_FUNCS(grantpt mktime ptsname rand random)
-AC_CHECK_FUNCS(revoke select setitimer setlogin setpcred setpgid)
+AC_CHECK_FUNCS(revoke select setitimer setpcred setpgid)
 AC_CHECK_FUNCS(setregid setresgid setresuid setreuid setutent)
 AC_CHECK_FUNCS(setsid setsockopt sigaction strstr)
 AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
 AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
 AC_CHECK_FUNCS(yp_get_default_domain)
+
+AC_FUNC_GETLOGIN
 
 AC_CHECK_GETPWNAM_R_POSIX
 
