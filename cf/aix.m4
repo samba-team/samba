@@ -1,3 +1,7 @@
+dnl
+dnl $Id$
+dnl
+
 AC_DEFUN(KRB_AIX,[
 AM_CONDITIONAL(AIX, test "$aix" != no)dnl
 AM_CONDITIONAL(AIX4, test "$aix" = 4)
