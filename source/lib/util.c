@@ -3736,7 +3736,7 @@ void reset_globals_after_fork(void)
    * sequence.
    */
   {
-    char dummy;
+    unsigned char dummy;
     generate_random_buffer( &dummy, 1, True);
   } 
 }
