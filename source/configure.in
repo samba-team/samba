@@ -13,14 +13,15 @@ AC_ARG_WITH(fhs,
 [  --with-fhs              Use FHS-compliant paths (default=no)],
     configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/cache/samba"
-    piddir="\$(VARDIR)/run/samba"
+    piddir="\${VARDIR}/run/samba"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
+    libdir="\${prefix}/lib/samba"
     swatdir="\${DATADIR}/samba/swat",
-    configdir="\$(LIBDIR)"
-    logfilebase="\$(VARDIR)"
+    configdir="\${LIBDIR}"
+    logfilebase="\${VARDIR}"
     lockdir="\${VARDIR}/locks"
-    piddir="\$(VARDIR)/locks"
+    piddir="\${VARDIR}/locks"
     privatedir="\${prefix}/private"
     swatdir="\${prefix}/swat")
 
@@ -3162,10 +3163,7 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-# I added make files that are outside /source directory.
-# I know this is not a good solution, will work out a better
-# solution soon.			--simo
-AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb)
 
 #################################################
 # Print very concise instructions on building/use

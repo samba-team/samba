@@ -14,7 +14,6 @@ BuildRoot: /var/tmp/samba
 Prefix: /usr
 
 %description
-Users are advised to use Samba-2.2 as a Windows NT4
 Samba provides an SMB/CIFS server which can be used to provide
 network file and print services to SMB/CIFS clients, including 
 various versions of MS Windows, OS/2, and other Linux machines. 
@@ -22,6 +21,9 @@ Samba also provides some SMB clients, which complement the
 built-in SMB filesystem in Linux. Samba uses NetBIOS over TCP/IP 
 (NetBT) protocols and does NOT need NetBEUI (Microsoft Raw NetBIOS 
 frame) protocol.
+
+Samba 3.0 also introduces UNICODE support and kerberos/ldap
+integration as a member server in a Windows 2000 domain.
 
 Please refer to the WHATSNEW.txt document for fixup information.
 
@@ -109,14 +111,15 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 #  sombody else can maintain for us.  
 cd source
 make BASEDIR=$RPM_BUILD_ROOT/usr \
-	LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+	CONFIGDIR=$RPM_BUILD_ROOT/etc/samba \
+	LIBDIR=$RPM_BUILD_ROOT%{prefix}/lib/samba \
 	VARDIR=$RPM_BUILD_ROOT/var \
 	SBINDIR=$RPM_BUILD_ROOT%{prefix}/sbin \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
-	SWATDIR=$RPM_BUILD_ROOT/usr/share/swat \
-	SAMBABOOK=$RPM_BUILD_ROOT/usr/share/swat/using_samba \
-	installman installswat
+	SWATDIR=$RPM_BUILD_ROOT%{prefix}/share/swat \
+	SAMBABOOK=$RPM_BUILD_ROOT%{prefix}/share/swat/using_samba \
+	installman installswat installdat installmodules
 cd ..
 
 # Install the nsswitch wins library
@@ -132,32 +135,26 @@ install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
-# Install the VFS modules
-install -m755 source/bin/vfs_recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m755 source/bin/vfs_audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m755 source/bin/vfs_netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-
 # libsmbclient
 install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 
 # Install SWAT helper files
-for i in swat/help/*.html docs/htmldocs/*.html
-do
-	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
-done
-for i in swat/images/*.gif
-do
-	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
-done
-for i in swat/include/*.html
-do
-	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
-done
+#for i in swat/help/*.html docs/htmldocs/*.html
+#do
+#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
+#done
+#for i in swat/images/*.gif
+#do
+#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
+#done
+#for i in swat/include/*.html
+#do
+#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
+#done
 
 # Install the miscellany
-install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
@@ -356,11 +353,6 @@ if [ $1 = 0 ] ; then
 	fi
 fi
 
-%triggerpostun -- samba < samba-2.0.0
-if [ $0 != 0 ]; then
-    /sbin/chkconfig --add smb
-fi
-
 %files
 %defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
@@ -375,6 +367,9 @@ fi
 %{prefix}/sbin/smbmount
 %{prefix}/sbin/smbumount
 %{prefix}/sbin/winbindd
+%{prefix}/sbin/wrepld
+%{prefix}/sbin/samba
+%{prefix}/sbin/debug2html
 /sbin/mount.smbfs
 /sbin/mount.smb
 %{prefix}/bin/mksmbpasswd.sh
@@ -390,17 +385,25 @@ fi
 %{prefix}/bin/smbtar
 %{prefix}/bin/smbprint
 %{prefix}/bin/smbcontrol
-%{prefix}/bin/smbcacls
 %{prefix}/bin/wbinfo
+%{prefix}/bin/net
+%{prefix}/bin/smbgroupedit
+%{prefix}/bin/smbcacls
+%{prefix}/bin/pdbedit
+%{prefix}/bin/tdbbackup
+%{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%attr(755,root,root) %{prefix}/lib/samba/*.dat
 %{prefix}/include/libsmbclient.h
 %{prefix}/lib/libsmbclient.a
 %{prefix}/lib/libsmbclient.so
 %{prefix}/share/swat/help/*
 %{prefix}/share/swat/images/*
-%{prefix}/share/swat/include/header.html
-%{prefix}/share/swat/include/footer.html
+%{prefix}/share/swat/include/*.html
+%{prefix}/share/swat/lang/*/help/*
+%{prefix}/share/swat/lang/*/images/*
+%{prefix}/share/swat/lang/*/include/*.html
 %{prefix}/share/swat/using_samba/*
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf

@@ -46,6 +46,8 @@ BINDIR = @bindir@
 # sbindir is mapped to bindir when compiling SAMBA in 2.0.x compatibility mode.
 SBINDIR = @sbindir@
 LIBDIR = @libdir@
+VFSLIBDIR = $(LIBDIR)/vfs
+CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
 
@@ -56,9 +58,9 @@ INSTALLPERMS = 0755
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
 LOGFILEBASE = @logfilebase@
-CONFIGFILE = $(LIBDIR)/smb.conf
-LMHOSTSFILE = $(LIBDIR)/lmhosts
-DRIVERFILE = $(LIBDIR)/printers.def
+CONFIGFILE = $(CONFIGDIR)/smb.conf
+LMHOSTSFILE = $(CONFIGDIR)/lmhosts
+
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
 
@@ -93,8 +95,9 @@ PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
 PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" -DDRIVERFILE=\"$(DRIVERFILE)\" 
 PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
 PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
-PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\"
-PATH_FLAGS = $(PATH_FLAGS5) $(PASSWD_FLAGS)
+PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\" 
+PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGFIR)\"
+PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
 WINBIND_PROGS = @WINBIND_TARGETS@
 WINBIND_SPROGS = @WINBIND_STARGETS@
@@ -855,31 +858,31 @@ install: installbin installman installscripts installdat installswat
 install-everything: install installmodules
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(BASEDIR) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(CONFIGDIR)
 
 installservers: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
 
 installbin: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
 
 installmodules: all installdirs
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(BASEDIR) $(VFSLIBDIR) $(MODULES)
 
 installscripts: installdirs
-	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 installdat: installdirs
-	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installdat.sh $(LIBDIR) $(srcdir)
 
 installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
-	-$(INSTALLCMD) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
-	-$(INSTALLCMD) -d $(DESTDIR)${prefix}/include
-	-$(INSTALLCMD) include/libsmbclient.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) bin/libsmbclient.@SHLIBEXT@ ${prefix}/lib
+	-$(INSTALLCMD) -d ${prefix}/include
+	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 
 # Python extensions
 
@@ -934,7 +937,7 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS)
 
 installman:
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs) "@ROFF@"
+	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir) $(man_langs) "@ROFF@"
 
 .PHONY: showlayout
 
@@ -951,17 +954,17 @@ showlayout:
 uninstall: uninstallman uninstallbin uninstallscripts
 
 uninstallman:
-	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs)
+	@$(SHELL) $(srcdir)/script/uninstallman.sh $(MANDIR) $(srcdir) $(man_langs)
 
 uninstallbin:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SPROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
 
 uninstallmodules:
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(BASEDIR) $(LIBDIR) $(MODULES)
 
 uninstallscripts:
-	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 # Toplevel clean files
 TOPFILES=dynconfig.o dynconfig.po
