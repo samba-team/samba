@@ -381,7 +381,6 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	fstring sid_str;
 	xmlNodePtr cur, user, pass, root;
 	pdb_xml *data;
-	uint32 store = pdb_get_init_flag(u);
 
 	DEBUG(10, ("xmlsam_add_sam_account called!\n"));
 
@@ -409,7 +408,7 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	user = xmlNewChild(data->users, data->ns, "user", NULL);
 	xmlNewProp(user, "sid",
 			   sid_to_string(sid_str, pdb_get_user_sid(u)));
-	if (store & PDB_UID)
+	if (pdb_get_init_flags(u, PDB_UID) != PDB_DEFAULT)
 		xmlNewProp(user, "uid", iota(pdb_get_uid(u)));
 
 	if (pdb_get_username(u) && strcmp(pdb_get_username(u), ""))
@@ -419,18 +418,18 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	
 	xmlNewProp(cur, "sid",
 			   sid_to_string(sid_str, pdb_get_group_sid(u)));
-	if (store & PDB_GID)
+	if (pdb_get_init_flags(u, PDB_GID) != PDB_DEFAULT)
 		xmlNewProp(cur, "gid", iota(pdb_get_gid(u)));
 
-	if (store & PDB_LOGONTIME)
+	if (pdb_get_init_flags(u, PDB_LOGONTIME) != PDB_DEFAULT)
 		xmlNewChild(user, data->ns, "login_time",
 					iota(pdb_get_logon_time(u)));
 
-	if (store & PDB_LOGOFFTIME)
+	if (pdb_get_init_flags(u, PDB_LOGOFFTIME) != PDB_DEFAULT)
 		xmlNewChild(user, data->ns, "logoff_time",
 					iota(pdb_get_logoff_time(u)));
 
-	if (store & PDB_KICKOFFTIME)
+	if (pdb_get_init_flags(u, PDB_KICKOFFTIME) != PDB_DEFAULT)
 		xmlNewChild(user, data->ns, "kickoff_time",
 					iota(pdb_get_kickoff_time(u)));
 
@@ -475,11 +474,11 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	pass = xmlNewChild(user, data->ns, "password", NULL);
 	if (pdb_get_pass_last_set_time(u))
 		xmlNewProp(pass, "last_set", iota(pdb_get_pass_last_set_time(u)));
-	if (store & PDB_CANCHANGETIME)
+	if (pdb_get_init_flags(u, PDB_CANCHANGETIME) != PDB_DEFAULT)
 		xmlNewProp(pass, "can_change",
 				   iota(pdb_get_pass_can_change_time(u)));
 
-	if (store & PDB_MUSTCHANGETIME)
+	if (pdb_get_init_flags(u, PDB_MUSTCHANGETIME) != PDB_DEFAULT)
 		xmlNewProp(pass, "must_change",
 				   iota(pdb_get_pass_must_change_time(u)));
 
