@@ -647,42 +647,6 @@ size_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
 }
 
 /**
- Copy a string from a utf-8 source to a unix char* destination.
- Flags can have:
-  STR_TERMINATE means the string in src is null terminated.
- if STR_TERMINATE is set then src_len is ignored.
- src_len is the length of the source area in bytes
- Return the number of bytes occupied by the string in src.
- The resulting string in "dest" is always null terminated.
-**/
-
-static size_t pull_utf8(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
-{
-	size_t ret;
-
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
-
-	if (flags & STR_TERMINATE) {
-		if (src_len == (size_t)-1) {
-			src_len = strlen(src) + 1;
-		} else {
-			size_t len = strnlen(src, src_len);
-			if (len < src_len)
-				len++;
-			src_len = len;
-		}
-	}
-
-	ret = convert_string(CH_UTF8, CH_UNIX, src, src_len, dest, dest_len);
-	if (dest_len)
-		dest[MIN(ret, dest_len-1)] = 0;
-
-	return src_len;
-}
-#endif
-
-/**
  * Copy a string from a UTF-8 src to a unix char * destination, allocating a buffer using talloc
  *
  * @param dest always set at least to NULL 
