@@ -284,7 +284,6 @@ fi
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
-AC_PROG_AWK
 AC_PATH_PROG(PERL, perl)
 
 dnl Check if we use GNU ld
