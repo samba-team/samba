@@ -790,7 +790,7 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				struct samr_CreateUser *r)
 {
 	struct samr_CreateUser2 r2;
-	uint32_t access_granted;
+	uint32_t access_granted = 0;
 
 
 	/* a simple wrapper around samr_CreateUser2 works nicely */
