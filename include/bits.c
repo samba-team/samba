@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,9 +49,10 @@ static void
 my_strupr(char *s)
 {
     char *p = s;
+
     while(*p){
-	if(islower(*p))
-	    *p = toupper(*p);
+	if(islower((unsigned char)*p))
+	    *p = toupper((unsigned char)*p);
 	p++;
     }	
 }
