@@ -208,7 +208,7 @@
 
 		<para>For example, running :</para>
 
-		<para><command>nmblookup -U samba.org -R IRIX#1B'</command></para>
+		<para><command>nmblookup -U samba.org -R 'IRIX#1B'</command></para>
 
 		<para>would query the WINS server samba.org for the domain 
 		master browser (1B name type) for the IRIX workgroup.</para>
