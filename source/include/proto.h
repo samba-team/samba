@@ -96,6 +96,15 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
 
 char *getsmbpass(char *prompt)    ;
 
+/*The following definitions come from  lib/hash.c  */
+
+BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compare_func);
+int string_hash(int hash_size, const char *key);
+hash_element *hash_lookup(hash_table *table, char *key);
+hash_element *hash_insert(hash_table *table, char *value, char *key);
+void hash_remove(hash_table *table, hash_element *hash_elem);
+void hash_clear(hash_table *table);
+
 /*The following definitions come from  lib/interface.c  */
 
 void load_interfaces(void);
@@ -2458,6 +2467,7 @@ void print_stat_cache_statistics(void);
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
                   BOOL *bad_path, SMB_STRUCT_STAT *pst);
 BOOL check_name(char *name,connection_struct *conn);
+BOOL reset_stat_cache( void );
 
 /*The following definitions come from  smbd/files.c  */
 

@@ -615,6 +615,7 @@ extern int errno;
 #include "dlinklist.h"
 #include "talloc.h"
 #include "interfaces.h"
+#include "hash.h"
 
 #ifdef HAVE_FNMATCH
 #include <fnmatch.h>
