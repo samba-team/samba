@@ -81,6 +81,7 @@ int enable_kaserver = -1;
 int enable_524 = -1;
 int enable_v4_cross_realm = -1;
 
+static int builtin_hdb_flag;
 static int help_flag;
 static int version_flag;
 
@@ -144,6 +145,8 @@ static struct getargs args[] = {
 	"addresses to listen on", "list of addresses" },
     {	"disable-des",	0,	arg_flag, &disable_des,
 	"disable DES" },
+    {	"builtin-hdb",	0,	arg_flag,   &builtin_hdb_flag,
+	"list builtin hdb backends"},
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
 };
@@ -255,6 +258,7 @@ add_one_address (const char *str, int first)
 void
 configure(int argc, char **argv)
 {
+    krb5_error_code ret;
     int optind = 0;
     const char *p;
     
@@ -269,6 +273,16 @@ configure(int argc, char **argv)
 	exit(0);
     }
 
+    if (builtin_hdb_flag) {
+	char *list;
+	ret = hdb_list_builtin(context, &list);
+	if (ret)
+	    krb5_err(context, 1, ret, "listing builtin hdb backends");
+	printf("builtin hdb backends: %s\n", list);
+	free(list);
+	exit(0);
+    }
+
     argc -= optind;
     argv += optind;
 
@@ -276,7 +290,6 @@ configure(int argc, char **argv)
 	usage(1);
     
     {
-	krb5_error_code ret;
 	char **files;
 
 	if(config_file == NULL)
