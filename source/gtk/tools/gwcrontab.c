@@ -91,7 +91,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 	TALLOC_CTX *mem_ctx;
 
 	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE, NULL));
-    result = gtk_dialog_run(GTK_DIALOG(d));
+	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 		case GTK_RESPONSE_ACCEPT:
 			break;
@@ -103,12 +103,18 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 	mem_ctx = talloc_init("gwcrontab_connect");
 	/* If connected, get list of jobs */
 	
-	status = dcerpc_pipe_connect_b(&at_pipe, gtk_rpc_binding_dialog_get_binding(d, mem_ctx), DCERPC_ATSVC_UUID, DCERPC_ATSVC_VERSION, lp_workgroup(), gtk_rpc_binding_dialog_get_username(d), gtk_rpc_binding_dialog_get_password(d));
-	
+	status = dcerpc_pipe_connect_b(&at_pipe,
+					gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
+					DCERPC_ATSVC_UUID,
+					DCERPC_ATSVC_VERSION,
+					gtk_rpc_binding_dialog_get_userdomain(d),
+					gtk_rpc_binding_dialog_get_username(d),
+					gtk_rpc_binding_dialog_get_password(d));
+
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
 		at_pipe = NULL;
-        gtk_widget_destroy(GTK_WIDGET(d));
+		gtk_widget_destroy(GTK_WIDGET(d));
 		talloc_destroy(mem_ctx);
 		return;
 	}

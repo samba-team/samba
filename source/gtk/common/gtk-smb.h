@@ -39,6 +39,7 @@ struct _GtkRpcBindingDialog
 	GtkWidget *frame_host;
 	GtkWidget *entry_host;
 	GtkWidget *entry_username;
+	GtkWidget *entry_userdomain;
 	GtkWidget *entry_password;
 	GtkWidget *krb5_chk_button;
 	GtkWidget *frame_credentials;
@@ -71,6 +72,7 @@ GType gtk_select_host_dialog_get_type (void);
 void gtk_show_werror(GtkWidget *win, WERROR err);
 const char *gtk_rpc_binding_dialog_get_binding_string(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx);
 const char *gtk_rpc_binding_dialog_get_username(GtkRpcBindingDialog *d);
+const char *gtk_rpc_binding_dialog_get_userdomain(GtkRpcBindingDialog *d);
 const char *gtk_rpc_binding_dialog_get_password(GtkRpcBindingDialog *d);
 const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d);
 GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe);

@@ -26,10 +26,11 @@
 void gtk_show_werror(GtkWidget *win, WERROR err) 
 {
 	GtkWidget *dialog = gtk_message_dialog_new( GTK_WINDOW(win), 
-		 GTK_DIALOG_DESTROY_WITH_PARENT,
-         GTK_MESSAGE_ERROR,
-         GTK_BUTTONS_CLOSE,
-		 "Windows error: %s\n", win_errstr(err));
+						    GTK_DIALOG_DESTROY_WITH_PARENT,
+						    GTK_MESSAGE_ERROR,
+    						    GTK_BUTTONS_CLOSE,
+						    "Windows error: %s\n",
+						    win_errstr(err));
 	gtk_dialog_run (GTK_DIALOG (dialog));
  	gtk_widget_destroy (dialog);
 }
@@ -37,10 +38,11 @@ void gtk_show_werror(GtkWidget *win, WERROR err)
 void gtk_show_ntstatus(GtkWidget *win, NTSTATUS status) 
 {
 	GtkWidget *dialog = gtk_message_dialog_new( GTK_WINDOW(win), 
-		 GTK_DIALOG_DESTROY_WITH_PARENT,
-         GTK_MESSAGE_ERROR,
-         GTK_BUTTONS_CLOSE,
-		 "Windows error: %s\n", nt_errstr(status));
+						    GTK_DIALOG_DESTROY_WITH_PARENT,
+						    GTK_MESSAGE_ERROR,
+						    GTK_BUTTONS_CLOSE,
+						    "Windows error: %s\n",
+						    nt_errstr(status));
 	gtk_dialog_run (GTK_DIALOG (dialog));
  	gtk_widget_destroy (dialog);
 }
@@ -81,6 +83,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GtkWidget *label3;
 	GtkWidget *table1;
 	GtkWidget *lbl_username;
+	GtkWidget *lbl_userdomain;
 	GtkWidget *lbl_password;
 	GtkWidget *btn_browse;
 	GtkWidget *label9;
@@ -170,42 +173,55 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_rpc_binding_dialog->frame_credentials = gtk_frame_new (NULL);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), gtk_rpc_binding_dialog->frame_credentials, TRUE, TRUE, 0);
 
-	table1 = gtk_table_new (3, 2, FALSE);
+	table1 = gtk_table_new (4, 2, FALSE);
 	gtk_container_add (GTK_CONTAINER (gtk_rpc_binding_dialog->frame_credentials), table1);
 
 	lbl_username = gtk_label_new ("Username:");
-	gtk_table_attach (GTK_TABLE (table1), lbl_username, 0, 1, 0, 1,
+	gtk_table_attach (GTK_TABLE (table1), lbl_username, 0,1, 0,1,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (lbl_username), 0, 0.5);
 
+	lbl_userdomain= gtk_label_new ("Domain:");
+	gtk_table_attach (GTK_TABLE (table1), lbl_userdomain, 0,1, 1,2,
+					  (GtkAttachOptions) (GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
+	gtk_misc_set_alignment (GTK_MISC (lbl_userdomain), 0, 0.5);
+
 	lbl_password = gtk_label_new ("Password:");
-	gtk_table_attach (GTK_TABLE (table1), lbl_password, 0, 1, 1, 2,
+	gtk_table_attach (GTK_TABLE (table1), lbl_password, 0,1, 2,3,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (lbl_password), 0, 0.5);
 
 	label9 = gtk_label_new ("");
-	gtk_table_attach (GTK_TABLE (table1), label9, 0, 1, 2, 3,
+	gtk_table_attach (GTK_TABLE (table1), label9, 0,1, 3,4,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (label9), 0, 0.5);
 
-	gtk_rpc_binding_dialog->entry_password = gtk_entry_new ();
-	gtk_entry_set_visibility (GTK_ENTRY (gtk_rpc_binding_dialog->entry_password), FALSE);
-	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_password, 1, 2, 1, 2,
-					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-					  (GtkAttachOptions) (0), 0, 0);
-
 	gtk_rpc_binding_dialog->entry_username = gtk_entry_new ();
-	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_username, 1, 2, 0, 1,
+	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_username, 1,2, 0,1,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
 	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_username), getenv("LOGNAME"));
 
+	gtk_rpc_binding_dialog->entry_userdomain = gtk_entry_new ();
+	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_userdomain, 1,2, 1,2,
+					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
+
+	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_userdomain), lp_workgroup());
+
+	gtk_rpc_binding_dialog->entry_password = gtk_entry_new ();
+	gtk_entry_set_visibility (GTK_ENTRY (gtk_rpc_binding_dialog->entry_password), FALSE);
+	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_password, 1,2, 2,3,
+					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
+
 	gtk_rpc_binding_dialog->krb5_chk_button = gtk_check_button_new_with_mnemonic ("_Use kerberos");
-	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->krb5_chk_button, 1, 2, 2, 3,
+	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->krb5_chk_button, 1,2, 3,4,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
@@ -286,6 +302,11 @@ const char *gtk_rpc_binding_dialog_get_username(GtkRpcBindingDialog *d)
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_username));
 }
 
+const char *gtk_rpc_binding_dialog_get_userdomain(GtkRpcBindingDialog *d)
+{
+	return gtk_entry_get_text(GTK_ENTRY(d->entry_userdomain));
+}
+
 const char *gtk_rpc_binding_dialog_get_password(GtkRpcBindingDialog *d)
 {
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_password));
@@ -339,8 +360,9 @@ GtkWidget *create_gtk_samba_about_dialog (const char *appname)
 	GtkWidget *samba_about_dialog;
 	GtkWidget *dialog_vbox1;
 	GtkWidget *label1;
-	GtkWidget *label3;
 	GtkWidget *label2;
+	GtkWidget *label3;
+	GtkWidget *label4;
 	GtkWidget *dialog_action_area1;
 	GtkWidget *okbutton1;
 
@@ -355,11 +377,14 @@ GtkWidget *create_gtk_samba_about_dialog (const char *appname)
 	label1 = gtk_label_new (appname);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label1, FALSE, FALSE, 0);
 
+	label2 = gtk_label_new (samba_version_string());
+	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, FALSE, FALSE, 0);
+
 	label3 = gtk_label_new_with_mnemonic ("Part of Samba <http://www.samba.org/>");
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label3, FALSE, FALSE, 0);
 
-	label2 = gtk_label_new ("\302\251 1992-2004 The Samba Team");
-	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, FALSE, FALSE, 0);
+	label4 = gtk_label_new ("\302\251 1992-2004 The Samba Team");
+	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label4, FALSE, FALSE, 0);
 
 	dialog_action_area1 = GTK_DIALOG (samba_about_dialog)->action_area;
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);

@@ -128,7 +128,12 @@ static void connect_sam(void)
 
 	mem_ctx = talloc_init("gwsam_connect");
 	/* If connected, get list of jobs */
-	status = dcerpc_pipe_connect_b(&sam_pipe, gtk_rpc_binding_dialog_get_binding(d, mem_ctx), DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, lp_workgroup(), gtk_rpc_binding_dialog_get_username(d), gtk_rpc_binding_dialog_get_password(d));
+	status = dcerpc_pipe_connect_b(&sam_pipe,
+					gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
+					DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION,
+					gtk_rpc_binding_dialog_get_userdomain(d),
+					gtk_rpc_binding_dialog_get_username(d),
+					gtk_rpc_binding_dialog_get_password(d));
 
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
