@@ -74,7 +74,7 @@ OM_uint32 gss_accept_sec_context
   }
 
   kret = krb5_copy_principal (gssapi_krb5_context,
-			      ticket->enc_part2.client,
+			      ticket->client,
 			      &(*context_handle)->source);
   if (kret) {
     ret = GSS_S_FAILURE;
@@ -83,7 +83,7 @@ OM_uint32 gss_accept_sec_context
 
   if (src_name) {
     kret = krb5_copy_principal (gssapi_krb5_context,
-				ticket->enc_part2.client,
+				ticket->client,
 				src_name);
     if (kret) {
       ret = GSS_S_FAILURE;
