@@ -1,5 +1,5 @@
 !==
-!== ENCRYPTION.txt for Samba release 1.9.18p3 18 Feb 1998
+!== ENCRYPTION.txt for Samba release 1.9.18p3 19 Feb 1998
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.anu.edu.au>
 Updated:	June 27, 1997

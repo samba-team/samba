@@ -1,5 +1,5 @@
 !==
-!== UNIX-SMB.txt for Samba release 1.9.18p3 18 Feb 1998
+!== UNIX-SMB.txt for Samba release 1.9.18p3 19 Feb 1998
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
 Date:		April 1995
