@@ -869,10 +869,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 	  }
   }
 
-  if((*return_iplist) != NULL) {
-    SAFE_FREE(*return_iplist);
-    *return_iplist = NULL;
-  }
+  SAFE_FREE(*return_iplist);
   return False;
 }
 
@@ -959,7 +956,7 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 	}
 	if(internal_resolve_name(group, 0x1B, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		SAFE_FREE((ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
 
