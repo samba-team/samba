@@ -626,9 +626,17 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 
 	/* If we're using big-endian, reverse to get little-endian. */
 	if(ps->bigendian_data)
-		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len)
+	{
+		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, 
+			     ps->io, ps->bigendian_data, q, p, 
+			     str->uni_str_len)
+	}
 	else
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->uni_str_len * sizeof(uint16))
+	{
+		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, 
+			     ps->io, q, p, str->uni_str_len * sizeof(uint16))
+	}
+	
 	ps->data_offset += (str->uni_str_len * sizeof(uint16));
 
 	return True;
@@ -762,12 +770,21 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 				p += 2;
 				q += 2;
 			} else {
+#if WORDS_BIGENDIAN
+				RW_CVAL(ps->io, q+1, *p, 0);
+				p++;
+				RW_CVAL(ps->io, q, *p, 0);
+				p++;
+				q+=2;
+#else
 				RW_CVAL(ps->io, q, *p, 0);
 				p++;
 				q++;
 				RW_CVAL(ps->io, q, *p, 0);
 				p++;
 				q++;
+#endif	/* WORDS_BIGENDIAN */
+
 			}
 
 			len++;
