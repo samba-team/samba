@@ -486,16 +486,25 @@ DES3_random_to_key(krb5_context context,
 		   const void *data,
 		   size_t size)
 {
-    u_char *p = key->keyvalue.data;
+    unsigned char *x = key->keyvalue.data;
     const u_char *q = data;
     DES_cblock *k;
     int i, j;
 
-    p[7] = p[15] = p[23] = 0;
-    for (j = 0, i = 0; i < 21; i++) {
-	j = i / 7;
-	p[j + i] = q[i] & 0x7f;
-	p[(j * 8) + 7] = (p[(j * 8) + 7] << 1) | (q[i] >> 7);
+    memset(x, 0, sizeof(x));
+    for (i = 0; i < 3; ++i) {
+	unsigned char foo;
+	for (j = 0; j < 7; ++j) {
+	    unsigned char b = q[7 * i + j];
+
+	    x[8 * i + j] = b;
+	}
+	foo = 0;
+	for (j = 6; j >= 0; --j) {
+	    foo |= q[7 * i + j] & 1;
+	    foo <<= 1;
+	}
+	x[8 * i + 7] = foo;
     }
     k = key->keyvalue.data;
     for (i = 0; i < 3; i++) {
@@ -3489,35 +3498,12 @@ static void
 DES3_postproc(krb5_context context,
 	      unsigned char *k, size_t len, struct key_data *key)
 {
-    unsigned char x[24];
-    int i, j;
+    DES3_random_to_key(context, key->key, k, len);
 
-    memset(x, 0, sizeof(x));
-    for (i = 0; i < 3; ++i) {
-	unsigned char foo;
-
-	for (j = 0; j < 7; ++j) {
-	    unsigned char b = k[7 * i + j];
-
-	    x[8 * i + j] = b;
-	}
-	foo = 0;
-	for (j = 6; j >= 0; --j) {
-	    foo |= k[7 * i + j] & 1;
-	    foo <<= 1;
-	}
-	x[8 * i + 7] = foo;
-    }
-    k = key->key->keyvalue.data;
-    memcpy(k, x, 24);
-    memset(x, 0, sizeof(x));
     if (key->schedule) {
 	krb5_free_data(context, key->schedule);
 	key->schedule = NULL;
     }
-    DES_set_odd_parity((DES_cblock*)k);
-    DES_set_odd_parity((DES_cblock*)(k + 8));
-    DES_set_odd_parity((DES_cblock*)(k + 16));
 }
 
 static krb5_error_code
@@ -3923,7 +3909,7 @@ krb5_random_to_key(krb5_context context,
 			      type);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
-    if (et->keytype->size > size) {
+    if ((et->keytype->bits + 7) / 8 > size) {
 	krb5_set_error_string(context, "encryption key %s needs %d bytes "
 			      "of random to make an encryption key out of it",
 			      et->name, et->keytype->size);
