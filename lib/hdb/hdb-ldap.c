@@ -1199,8 +1199,8 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	if (flags_len < 2)
 	    goto out2;
 
-	if (samba_acct_flags[0] == '[' 
-	    && samba_acct_flags[flags_len - 1] == ']') 
+	if (samba_acct_flags[0] != '[' 
+	    || samba_acct_flags[flags_len - 1] != ']') 
 	    goto out2;
 
 	for (i=0; i < flags_len; i++) {
