@@ -1,3 +1,14 @@
+2004-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gssapi.h: add gss_krb5_get_tkt_flags
+	
+	* Makefile.am: add ticket_flags.c
+	
+	* ticket_flags.c: Get ticket-flags from acceptor ticket From: Luke
+	Howard <lukeh@PADL.COM>
+	
+	* gss_acquire_cred.3: document gss_krb5_get_tkt_flags
+	
 2004-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* acquire_cred.c (gss_acquire_cred): check usage before even
