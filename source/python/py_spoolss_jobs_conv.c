@@ -101,4 +101,3 @@ BOOL py_to_DOC_INFO_1(DOC_INFO_1 *info, PyObject *dict)
 	to_struct(info, dict, py_DOC_INFO_1);
 	return True;
 }
-
