@@ -703,10 +703,10 @@ typedef struct smb_wpasswd {
 #define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 
 /* smb_ucs2_t versions of the above. */
-#define wpstrcpy(d,s) safe_wstrcpy((d),(s),sizeof(wpstring))
-#define wpstrcat(d,s) safe_wstrcat((d),(s),sizeof(wpstring))
-#define wfstrcpy(d,s) safe_wstrcpy((d),(s),sizeof(wfstring))
-#define wfstrcat(d,s) safe_wstrcat((d),(s),sizeof(wfstring))
+#define wpstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wpstring))
+#define wpstrcat(d,s) safe_strcat_w((d),(s),sizeof(wpstring))
+#define wfstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wfstring))
+#define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
 
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
