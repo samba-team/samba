@@ -40,7 +40,7 @@ extern struct user_creds *usr_creds;
 function to do the mapping between the long architecture name and
 the short one.
 ****************************************************************************/
-static BOOL get_short_archi(char *short_archi, char *long_archi)
+BOOL get_short_archi(char *short_archi, char *long_archi)
 {
         struct table {
                 char *long_archi;
