@@ -1,5 +1,14 @@
 Tue Mar 11 20:22:17 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/krb5.h: Add EncTicketPart to krb5_ticket.
+
+	* lib/krb5/rd_req.c: Return whole asn.1 ticket in
+ 	krb5_ticket->tkt.
+
+	* lib/krb5/get_in_tkt.c: TGS -> AS
+
+	* kuser/kfoo.c: Print error string rather than number.
+
 	* kdc/kdc.c: Some kind of non-working TGS support.
 
 Mon Mar 10 01:43:22 1997  Assar Westerlund  <assar@sics.se>
