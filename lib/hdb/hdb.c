@@ -51,14 +51,14 @@ static struct hdb_method methods[] = {
 #if HAVE_NDBM
     {"ndbm:",	hdb_ndbm_create},
 #endif
-#ifdef OPENLDAP
+#if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
     {"ldap:",	hdb_ldap_create},
 #endif
 #if HAVE_DB1 || HAVE_DB3
     {"",	hdb_db_create},
 #elif defined(HAVE_NDBM)
     {"",	hdb_ndbm_create},
-#elif defined(OPENLDAP)
+#elif defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
     {"",	hdb_ldap_create},
 #endif
     {NULL,	NULL}
