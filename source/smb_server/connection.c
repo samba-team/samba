@@ -166,7 +166,7 @@ BOOL claim_connection(struct smbsrv_tcon *tcon, const char *name,int max_connect
 	crec.bcast_msg_flags = msg_flags;
 	
 	StrnCpy(crec.machine,sub_get_remote_machine(),sizeof(crec.machine)-1);
-	StrnCpy(crec.addr,tcon?tcon->smb_conn->socket.client_addr:"NONE",sizeof(crec.addr)-1);
+	StrnCpy(crec.addr,tcon?tcon->smb_conn->connection->socket->client_addr:"NONE",sizeof(crec.addr)-1);
 
 	dbuf.dptr = (char *)&crec;
 	dbuf.dsize = sizeof(crec);

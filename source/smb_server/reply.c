@@ -2300,7 +2300,7 @@ void reply_special(struct smbsrv_request *req)
 	switch (msg_type) {
 	case 0x81: /* session request */
 		if (req->smb_conn->negotiate.done_nbt_session) {
-			exit_server(req->smb_conn, "multiple session request not permitted");
+			smbsrv_terminate_connection(req->smb_conn, "multiple session request not permitted");
 		}
 		
 		SCVAL(buf,0,0x82);

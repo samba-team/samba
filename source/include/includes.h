@@ -668,6 +668,8 @@ extern int errno;
 
 #include "librpc/rpc/dcerpc.h"
 
+#include "smbd/server.h"
+#include "smbd/service.h"
 #include "rpc_server/dcerpc_server.h"
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"

@@ -3,6 +3,7 @@
    process model manager - main loop
    Copyright (C) Andrew Tridgell 1992-2003
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
+   Copyright (C) Stefan (metze) Metzmacher 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +23,8 @@
 #ifndef SAMBA_PROCESS_MODEL_H
 #define SAMBA_PROCESS_MODEL_H
 
+struct server_service_connection;
+
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct process_model_critical_sizes.
@@ -40,19 +43,13 @@ struct model_ops {
 
 	/* function to accept new connection */
 	void (*accept_connection)(struct event_context *, struct fd_event *, time_t, uint16_t);
-
-	/* function to accept new rpc over tcp connection */
-	void (*accept_rpc_connection)(struct event_context *, struct fd_event *, time_t, uint16_t);
-				
+			
 	/* function to terminate a connection */
-	void (*terminate_connection)(struct smbsrv_connection *smb, const char *reason);
+	void (*terminate_connection)(struct server_connection *srv_conn, const char *reason);
 
-	/* function to terminate a connection */
-	void (*terminate_rpc_connection)(void *r, const char *reason);
-	
 	/* function to exit server */
-	void (*exit_server)(struct smbsrv_connection *smb, const char *reason);
-	
+	void (*exit_server)(struct server_context *srv_ctx, const char *reason);
+
 	/* returns process or thread id */
 	int (*get_id)(struct smbsrv_request *req);
 };

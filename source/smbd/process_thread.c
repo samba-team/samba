@@ -3,6 +3,7 @@
    thread model: standard (1 thread per client connection)
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
+   Copyright (C) Stefan (metze) Metzmacher 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,19 +26,19 @@
 #include "execinfo.h"
 #endif
 
-static void *connection_thread(void *thread_parm)
+static void *thread_connection_fn(void *thread_parm)
 {
 	struct event_context *ev = thread_parm;
 	/* wait for action */
 	event_loop_wait(ev);
-	
+
 #if 0
 	pthread_cleanup_pop(1);  /* will invoke terminate_mt_connection() */
 #endif
 	return NULL;
 }
 
-static int get_id(struct smbsrv_request *req)
+static int thread_get_id(struct smbsrv_request *req)
 {
 	return (int)pthread_self();
 }
@@ -45,21 +46,24 @@ static int get_id(struct smbsrv_request *req)
 /*
   called when a listening socket becomes readable
 */
-static void accept_connection(struct event_context *ev, struct fd_event *fde, 
+static void thread_accept_connection(struct event_context *ev, struct fd_event *srv_fde, 
 			      time_t t, uint16_t flags)
-{
+{		
 	int accepted_fd, rc;
 	struct sockaddr addr;
 	socklen_t in_addrlen = sizeof(addr);
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
-	struct model_ops *model_ops = fde->private;
-	
-	/* accept an incoming connection */
-	accepted_fd = accept(fde->fd,&addr,&in_addrlen);
-			
+	struct fd_event fde;
+	struct timed_event idle;
+	struct server_socket *server_socket = srv_fde->private;
+	struct server_connection *conn;
+	TALLOC_CTX *mem_ctx;
+
+	/* accept an incoming connection. */
+	accepted_fd = accept(srv_fde->fd,&addr,&in_addrlen);
 	if (accepted_fd == -1) {
-		DEBUG(0,("accept_connection_thread: accept: %s\n",
+		DEBUG(0,("standard_accept_connection: accept: %s\n",
 			 strerror(errno)));
 		return;
 	}
@@ -70,52 +74,80 @@ static void accept_connection(struct event_context *ev, struct fd_event *fde,
 	   with the main event loop, then return. When we return the
 	   main event_context is continued.
 	*/
+
+
 	ev = event_context_init();
-	MUTEX_LOCK_BY_ID(MUTEX_SMBD);
-	init_smbsession(ev, model_ops, accepted_fd, smbd_read_handler);
-	MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
-	
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-	rc = pthread_create(&thread_id, &thread_attr, &connection_thread, ev);
-	pthread_attr_destroy(&thread_attr);
-	if (rc == 0) {
-		DEBUG(4,("accept_connection_thread: created thread_id=%lu for fd=%d\n", 
-			(unsigned long int)thread_id, accepted_fd));
-	} else {
-		DEBUG(0,("accept_connection_thread: thread create failed for fd=%d, rc=%d\n", accepted_fd, rc));
+	if (!ev) {
+		DEBUG(0,("thread_accept_connection: failed to create event_context!\n"));
+		return; 
 	}
-}
 
-
-/*
-  called when a rpc listening socket becomes readable
-*/
-static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
-{
-	int accepted_fd, rc;
-	struct sockaddr addr;
-	socklen_t in_addrlen = sizeof(addr);
-	pthread_t thread_id;
-	pthread_attr_t thread_attr;
-	
-	/* accept an incoming connection */
-	accepted_fd = accept(fde->fd,&addr,&in_addrlen);
-			
-	if (accepted_fd == -1) {
-		DEBUG(0,("accept_connection_thread: accept: %s\n",
-			 strerror(errno)));
+	mem_ctx = talloc_init("server_service_connection");
+	if (!mem_ctx) {
+		DEBUG(0,("talloc_init(server_service_connection) failed\n"));
 		return;
 	}
-	
-	ev = event_context_init();
+
+	conn = talloc_p(mem_ctx, struct server_connection);
+	if (!conn) {
+		DEBUG(0,("talloc_p(mem_ctx, struct server_service_connection) failed\n"));
+		talloc_destroy(mem_ctx);
+		return;
+	}
+
+	ZERO_STRUCTP(conn);
+	conn->mem_ctx = mem_ctx;
+
+	fde.private 	= conn;
+	fde.fd		= accepted_fd;
+	fde.flags	= EVENT_FD_READ;
+	fde.handler	= server_io_handler;
+
+	idle.private 	= conn;
+	idle.next_event	= t + 300;
+	idle.handler	= server_idle_handler;
+
+	conn->event.ctx		= ev;
+	conn->event.fde		= &fde;
+	conn->event.idle	= &idle;
+	conn->event.idle_time	= 300;
+
+	conn->server_socket	= server_socket;
+	conn->service		= server_socket->service;
+
+	/* TODO: we need a generic socket subsystem */
+	conn->socket		= talloc_p(conn->mem_ctx, struct socket_context);
+	if (!conn->socket) {
+		DEBUG(0,("talloc_p(conn->mem_ctx, struct socket_context) failed\n"));
+		talloc_destroy(mem_ctx);
+		return;
+	}
+	conn->socket->private_data	= NULL;
+	conn->socket->ops		= NULL;
+	conn->socket->client_addr	= NULL;
+	conn->socket->pkt_count		= 0;
+	conn->socket->fde		= conn->event.fde;
+
+	/* create a smb server context and add it to out event
+	   handling */
+	server_socket->service->ops->accept_connection(conn);
+
+	/* accpect_connection() of the service may changed idle.next_event */
+	conn->event.fde		= event_add_fd(ev,&fde);
+	conn->event.idle	= event_add_timed(ev,&idle);
+
+	conn->socket->fde	= conn->event.fde;
+
+	/* TODO: is this MUTEX_LOCK in the right place here?
+	 *       --metze
+	 */
 	MUTEX_LOCK_BY_ID(MUTEX_SMBD);
-	init_rpc_session(ev, fde->private, accepted_fd);
+	DLIST_ADD(server_socket->connection_list,conn);
 	MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
 	
 	pthread_attr_init(&thread_attr);
 	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-	rc = pthread_create(&thread_id, &thread_attr, &connection_thread, ev);
+	rc = pthread_create(&thread_id, &thread_attr, thread_connection_fn, ev);
 	pthread_attr_destroy(&thread_attr);
 	if (rc == 0) {
 		DEBUG(4,("accept_connection_thread: created thread_id=%lu for fd=%d\n", 
@@ -126,19 +158,10 @@ static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde
 }
 
 /* called when a SMB connection goes down */
-static void terminate_connection(struct smbsrv_connection *server, const char *reason) 
+static void thread_terminate_connection(struct server_connection *conn, const char *reason) 
 {
-	server_terminate(server);
-
-	/* terminate this thread */
-	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
-}
-
-/* called when a rpc connection goes down */
-static void terminate_rpc_connection(void *r, const char *reason) 
-{
-	rpc_server_terminate(r);
-
+	DEBUG(0,("thread_terminate_connection: reason[%s]\n",reason));
+	conn->service->ops->close_connection(conn,reason);
 	/* terminate this thread */
 	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
 }
@@ -431,7 +454,7 @@ static void thread_fault_handler(int sig)
 /*
   called when the process model is selected
 */
-static void model_startup(void)
+static void thread_model_startup(void)
 {
 	struct mutex_ops m_ops;
 	struct debug_ops d_ops;
@@ -465,7 +488,7 @@ static void model_startup(void)
 	register_debug_handlers("thread", &d_ops);	
 }
 
-static void thread_exit_server(struct smbsrv_connection *smb, const char *reason)
+static void thread_exit_server(struct server_context *srv_ctx, const char *reason)
 {
 	DEBUG(1,("thread_exit_server: reason[%s]\n",reason));
 }
@@ -484,13 +507,11 @@ NTSTATUS process_model_thread_init(void)
 	ops.name = "thread";
 
 	/* fill in all the operations */
-	ops.model_startup = model_startup;
-	ops.accept_connection = accept_connection;
-	ops.accept_rpc_connection = accept_rpc_connection;
-	ops.terminate_connection = terminate_connection;
-	ops.terminate_rpc_connection = terminate_rpc_connection;
+	ops.model_startup = thread_model_startup;
+	ops.accept_connection = thread_accept_connection;
+	ops.terminate_connection = thread_terminate_connection;
 	ops.exit_server = thread_exit_server;
-	ops.get_id = get_id;
+	ops.get_id = thread_get_id;
 
 	/* register ourselves with the PROCESS_MODEL subsystem. */
 	ret = register_backend("process_model", &ops);

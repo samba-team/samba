@@ -342,10 +342,8 @@ struct smbsrv_connection {
 
 	struct dcesrv_context dcesrv;
 
-	const struct model_ops *model_ops;
-
-	struct event_context *events;
-
 	/* the pid of the process handling this session */
 	pid_t pid;
+	
+	struct server_connection *connection;
 };

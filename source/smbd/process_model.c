@@ -24,8 +24,7 @@
 /*
   setup the events for the chosen process model
 */
-void process_model_startup(struct event_context *events, 
-				const char *model)
+const struct model_ops *process_model_startup(const char *model)
 {
 	const struct model_ops *ops;
 
@@ -37,12 +36,7 @@ void process_model_startup(struct event_context *events,
 
 	ops->model_startup();
 
-	/* now setup the listening sockets, adding 
-	   event handlers to the events structure */
-	open_sockets_smbd(events, ops);
-
-	/* setup any sockets we need to listen on for RPC over TCP */
-	open_sockets_rpc(events, ops);
+	return ops;
 }
 
 /* the list of currently registered process models */

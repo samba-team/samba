@@ -39,7 +39,7 @@ struct dcesrv_ep_description {
 	enum endpoint_type type;
 	union {
 		const char *smb_pipe;
-		uint32_t tcp_port;
+		uint16_t tcp_port;
 	} info;
 };
 
@@ -132,6 +132,8 @@ struct dcesrv_connection {
 
 	/* the current authentication state */
 	struct dcesrv_auth auth_state;
+
+	struct server_connection *srv_conn;
 };
 
 
