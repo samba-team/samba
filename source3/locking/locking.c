@@ -616,7 +616,7 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
 #ifdef SECURE_SHARE_MODES
     fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0600);
 #else /* SECURE_SHARE_MODES */
-    fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0644);
+    fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0666);
 #endif /* SECURE_SHARE_MODES */
     umask(old_umask);
     if(!become_user(cnum,Connections[cnum].vuid))

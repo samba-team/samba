@@ -813,53 +813,59 @@ int StrCaseCmp(const char *s, const char *t)
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-  int diff;
-  for (;;)
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+  if(lp_client_code_page() == KANJI_CODEPAGE)
   {
-    if (!*s || !*t)
-	  return toupper (*s) - toupper (*t);
-    else if (is_sj_alph (*s) && is_sj_alph (*t))
-	{
-	  diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
-	  if (diff)
-	    return diff;
-	  s += 2;
-	  t += 2;
-	}
-    else if (is_shift_jis (*s) && is_shift_jis (*t))
-	{
-	  diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
-	  if (diff)
-	    return diff;
-	  diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
-	  if (diff)
-	    return diff;
-	  s += 2;
-	  t += 2;
-	}
-    else if (is_shift_jis (*s))
-	  return 1;
-    else if (is_shift_jis (*t))
-	  return -1;
-    else 
-	{
-	  diff = toupper (*s) - toupper (*t);
-	  if (diff)
-	    return diff;
-	  s++;
-	  t++;
-	}
+    /* Win95 treats full width ascii characters as case sensitive. */
+    int diff;
+    for (;;)
+    {
+      if (!*s || !*t)
+	    return toupper (*s) - toupper (*t);
+      else if (is_sj_alph (*s) && is_sj_alph (*t))
+      {
+        diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
+        if (diff)
+          return diff;
+        s += 2;
+        t += 2;
+      }
+      else if (is_shift_jis (*s) && is_shift_jis (*t))
+      {
+        diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
+        if (diff)
+          return diff;
+        diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
+        if (diff)
+          return diff;
+        s += 2;
+        t += 2;
+      }
+      else if (is_shift_jis (*s))
+        return 1;
+      else if (is_shift_jis (*t))
+        return -1;
+      else 
+      {
+        diff = toupper (*s) - toupper (*t);
+        if (diff)
+          return diff;
+        s++;
+        t++;
+      }
+    }
   }
-#else /* KANJI */
-  while (*s && *t && toupper(*s) == toupper(*t))
+  else
+#endif /* KANJI_WIN95_COMPATIBILITY */
   {
-    s++; t++;
-  }
+    while (*s && *t && toupper(*s) == toupper(*t))
+    {
+      s++;
+      t++;
+    }
 
-  return(toupper(*s) - toupper(*t));
-#endif /* KANJI */
+    return(toupper(*s) - toupper(*t));
+  }
 }
 
 /*******************************************************************
@@ -871,61 +877,69 @@ int StrnCaseCmp(const char *s, const char *t, int n)
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-  int diff;
-  for (;n > 0;)
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+  if(lp_client_code_page() == KANJI_CODEPAGE)
   {
-    if (!*s || !*t)
-	  return toupper (*s) - toupper (*t);
-    else if (is_sj_alph (*s) && is_sj_alph (*t))
-	{
-	  diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
-	  if (diff)
-	    return diff;
-	  s += 2;
-	  t += 2;
-	  n -= 2;
-	}
-    else if (is_shift_jis (*s) && is_shift_jis (*t))
-	{
-	  diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
-	  if (diff)
-	    return diff;
-	  diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
-	  if (diff)
-	    return diff;
-	  s += 2;
-	  t += 2;
-	  n -= 2;
-	}
-    else if (is_shift_jis (*s))
-	  return 1;
-    else if (is_shift_jis (*t))
-	  return -1;
-    else 
-	{
-	  diff = toupper (*s) - toupper (*t);
-	  if (diff)
-	    return diff;
-	  s++;
-	  t++;
-	  n--;
-	}
+    /* Win95 treats full width ascii characters as case sensitive. */
+    int diff;
+    for (;n > 0;)
+    {
+      if (!*s || !*t)
+        return toupper (*s) - toupper (*t);
+      else if (is_sj_alph (*s) && is_sj_alph (*t))
+      {
+        diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
+        if (diff)
+          return diff;
+        s += 2;
+        t += 2;
+        n -= 2;
+      }
+      else if (is_shift_jis (*s) && is_shift_jis (*t))
+      {
+        diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
+        if (diff)
+          return diff;
+        diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
+        if (diff)
+          return diff;
+        s += 2;
+        t += 2;
+        n -= 2;
+      }
+      else if (is_shift_jis (*s))
+        return 1;
+      else if (is_shift_jis (*t))
+        return -1;
+      else 
+      {
+        diff = toupper (*s) - toupper (*t);
+        if (diff)
+          return diff;
+        s++;
+        t++;
+        n--;
+      }
+    }
+    return 0;
   }
-  return 0;
-#else /* KANJI */
-  while (n-- && *s && *t && toupper(*s) == toupper(*t))
+  else
+#endif /* KANJI_WIN95_COMPATIBILITY */
   {
-    s++; t++;
+    while (n-- && *s && *t && toupper(*s) == toupper(*t))
+    {
+      s++;
+      t++;
+    }
+
+    /* not run out of chars - strings are different lengths */
+    if (n) 
+      return(toupper(*s) - toupper(*t));
+
+    /* identical up to where we run out of chars, 
+       and strings are same length */
+    return(0);
   }
-
-  /* not run out of chars - strings are different lengths */
-  if (n) return(toupper(*s) - toupper(*t));
-
-  /* identical up to where we run out of chars, and strings are same length */
-  return(0);
-#endif /* KANJI */
 }
 
 /*******************************************************************
@@ -968,27 +982,36 @@ BOOL strcsequal(char *s1,char *s2)
 void strlower(char *s)
 {
   while (*s)
+  {
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-	if (is_shift_jis (*s)) {
-	    if (is_sj_upper (s[0], s[1])) {
-	  	  s[1] = sj_tolower2 (s[1]);
-	    }
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (isupper(*s))
-		*s = tolower(*s);
-	    s++;
-	}
-#else /* KANJI */
-      if (isupper(*s))
-	  *s = tolower(*s);
-      s++;
-#endif /* KANJI */
+      /* Win95 treats full width ascii characters as case sensitive. */
+      if (is_shift_jis (*s))
+      {
+        if (is_sj_upper (s[0], s[1]))
+          s[1] = sj_tolower2 (s[1]);
+        s += 2;
+      }
+      else if (is_kana (*s))
+      {
+        s++;
+      }
+      else
+      {
+        if (isupper(*s))
+          *s = tolower(*s);
+        s++;
+      }
     }
+    else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+    {
+      if (isupper(*s))
+        *s = tolower(*s);
+      s++;
+    }
+  }
 }
 
 /*******************************************************************
@@ -997,27 +1020,36 @@ void strlower(char *s)
 void strupper(char *s)
 {
   while (*s)
+  {
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-	if (is_shift_jis (*s)) {
-	    if (is_sj_lower (s[0], s[1])) {
-		  s[1] = sj_toupper2 (s[1]);
-	    }
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (islower(*s))
-		*s = toupper(*s);
-	    s++;
-	}
-#else /* KANJI */
-      if (islower(*s))
-	*s = toupper(*s);
-      s++;
-#endif /* KANJI */
+      /* Win95 treats full width ascii characters as case sensitive. */
+      if (is_shift_jis (*s))
+      {
+        if (is_sj_lower (s[0], s[1]))
+          s[1] = sj_toupper2 (s[1]);
+        s += 2;
+      }
+      else if (is_kana (*s))
+      {
+        s++;
+      }
+      else
+      {
+        if (islower(*s))
+          *s = toupper(*s);
+        s++;
+      }
     }
+    else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+    {
+      if (islower(*s))
+        *s = toupper(*s);
+      s++;
+    }
+  }
 }
 
 /*******************************************************************
@@ -1049,24 +1081,30 @@ BOOL strisnormal(char *s)
 void string_replace(char *s,char oldc,char newc)
 {
   while (*s)
+  {
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (oldc == *s)
-		*s = newc;
-	    s++;
-	}
-#else /* KANJI */
-      if (oldc == *s)
-	*s = newc;
-      s++;
-#endif /* KANJI */
+      /* Win95 treats full width ascii characters as case sensitive. */
+      if (is_shift_jis (*s))
+        s += 2;
+      else if (is_kana (*s))
+        s++;
+      else
+      {
+        if (oldc == *s)
+          *s = newc;
+        s++;
+      }
     }
+    else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+    {
+      if (oldc == *s)
+        *s = newc;
+      s++;
+    }
+  }
 }
 
 /****************************************************************************
@@ -1688,22 +1726,30 @@ does a string have any uppercase chars in it?
 BOOL strhasupper(char *s)
 {
   while (*s) 
+  {
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (isupper(*s)) return(True);
-	    s++;
-	}
-#else /* KANJI */
-      if (isupper(*s)) return(True);
-      s++;
-#endif /* KANJI */
+      /* Win95 treats full width ascii characters as case sensitive. */
+      if (is_shift_jis (*s))
+        s += 2;
+      else if (is_kana (*s))
+        s++;
+      else
+      {
+        if (isupper(*s))
+          return(True);
+        s++;
+      }
     }
+    else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+    {
+      if (isupper(*s))
+        return(True);
+      s++;
+    }
+  }
   return(False);
 }
 
@@ -1713,24 +1759,38 @@ does a string have any lowercase chars in it?
 BOOL strhaslower(char *s)
 {
   while (*s) 
+  {
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-	if (is_shift_jis (*s)) {
-	    if (is_sj_upper (s[0], s[1])) return(True);
-	    if (is_sj_lower (s[0], s[1])) return (True);
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (islower(*s)) return(True);
-	    s++;
-	}
-#else /* KANJI */
-      if (islower(*s)) return(True);
-      s++;
-#endif /* KANJI */
+      /* Win95 treats full width ascii characters as case sensitive. */
+      if (is_shift_jis (*s))
+      {
+        if (is_sj_upper (s[0], s[1]))
+          return(True);
+        if (is_sj_lower (s[0], s[1]))
+          return (True);
+        s += 2;
+      }
+      else if (is_kana (*s))
+      {
+        s++;
+      }
+      else
+      {
+        if (islower(*s))
+          return(True);
+        s++;
+      }
     }
+    else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+    {
+      if (islower(*s))
+        return(True);
+      s++;
+    }
+  }
   return(False);
 }
 
@@ -1740,27 +1800,33 @@ find the number of chars in a string
 int count_chars(char *s,char c)
 {
   int count=0;
-#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
-  /* Win95 treats full width ascii characters as case sensitive. */
-  while (*s) 
+
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+  if(lp_client_code_page() == KANJI_CODEPAGE)
+  {
+    /* Win95 treats full width ascii characters as case sensitive. */
+    while (*s) 
     {
-    if (is_shift_jis (*s))
-	  s += 2;
-    else 
-	{
+      if (is_shift_jis (*s))
+        s += 2;
+      else 
+      {
+        if (*s == c)
+          count++;
+        s++;
+      }
+    }
+  }
+  else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+  {
+    while (*s) 
+    {
       if (*s == c)
-	count++;
+        count++;
       s++;
     }
   }
-#else /* KANJI */
-  while (*s) 
-    {
-      if (*s == c)
-	count++;
-      s++;
-    }
-#endif /* KANJI */
   return(count);
 }
 

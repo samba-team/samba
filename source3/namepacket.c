@@ -199,11 +199,6 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   
   p = *p1;
 
-  if (recursion_available && lp_wins_server())
-  {
-    DEBUG(0,("reply_netbios_packet: r_a not to be used when not a WINS server\n"));
-  }
-
   switch (rcv_code)
   {
     case NMB_STATUS:

@@ -49,6 +49,11 @@
 
 #include "includes.h"
 
+/* Set default coding system for KANJI if none specified in Makefile. */
+#ifndef KANJI
+#define KANJI "sjis"
+#endif /* KANJI */
+
 BOOL bLoaded = False;
 
 extern int DEBUGLEVEL;
@@ -97,9 +102,7 @@ int keepalive=0;
 extern BOOL use_getwd_cache;
 
 extern int extra_time_offset;
-#ifdef KANJI
 extern int coding_system;
-#endif
 
 /* 
  * This structure describes global (ie., server-wide) parameters.
@@ -367,9 +370,7 @@ static BOOL handle_case(char *pszParmValue,int *val);
 static BOOL handle_printing(char *pszParmValue,int *val);
 static BOOL handle_character_set(char *pszParmValue,int *val);
 static BOOL handle_announce_as(char *pszParmValue, int *val);
-#ifdef KANJI
 static BOOL handle_coding_system(char *pszParmValue,int *val);
-#endif /* KANJI */
 
 static void set_default_server_announce_type(void);
 
@@ -452,9 +453,7 @@ struct parm_struct
   {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL},
   {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL},
   {"shared file entries",  P_INTEGER, P_GLOBAL, &Globals.shmem_hash_size, NULL},
-#ifdef KANJI
   {"coding system",    P_INTEGER, P_GLOBAL, &coding_system, handle_coding_system},
-#endif /* KANJI */
   {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL},
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL},
@@ -646,9 +645,7 @@ static void init_globals(void)
   Globals.bNISHomeMap = False;
   string_set(&Globals.szNISHomeMapName, "auto.home");
 #endif
-#ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
-#endif /* KANJI */
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
 
@@ -1418,7 +1415,6 @@ BOOL lp_file_list_changed(void)
   return(False);
 }
 
-#ifdef KANJI
 /***************************************************************************
   handle the interpretation of the coding system parameter
   *************************************************************************/
@@ -1427,7 +1423,6 @@ static BOOL handle_coding_system(char *pszParmValue,int *val)
   *val = interpret_coding_system(pszParmValue,*val);
   return(True);
 }
-#endif /* KANJI */
 
 /***************************************************************************
 handle the interpretation of the character set system parameter

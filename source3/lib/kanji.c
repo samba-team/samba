@@ -23,7 +23,6 @@
      and add all jis codes sequence type at 1995.8.16
      Notes: Hexadecimal code by <ohki@gssm.otuka.tsukuba.ac.jp>
 */
-#ifdef KANJI
 
 #define _KANJI_C_
 #include "includes.h"
@@ -888,7 +887,3 @@ int interpret_coding_system(char *str, int def)
     }	
     return setup_string_function (codes);
 }
-#else 
- int kanji_dummy_procedure(void)
-{return 0;}
-#endif /* KANJI */
