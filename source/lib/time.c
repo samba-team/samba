@@ -99,6 +99,9 @@ static int TimeZone(time_t t)
 /*******************************************************************
 init the time differences
 ********************************************************************/
+
+static struct timeval start_time_hires;
+
 void TimeInit(void)
 {
   serverzone = TimeZone(time(NULL));
@@ -108,8 +111,29 @@ void TimeInit(void)
   }
 
   DEBUG(4,("Serverzone is %d\n",serverzone));
+  /* Save the start time of this process. */
+  GetTimeOfDay(&start_time_hires);
 }
 
+/**********************************************************************
+ Return a timeval struct of the uptime of this process. As TimeInit is
+ done before a daemon fork then this is the start time from the parent
+ daemon start. JRA.
+***********************************************************************/
+
+void get_process_uptime(struct timeval *ret_time)
+{
+	struct timeval time_now_hires;
+
+	GetTimeOfDay(&time_now_hires);
+	ret_time->tv_sec = time_now_hires.tv_sec - start_time_hires.tv_sec;
+	ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
+	if (time_now_hires.tv_usec < start_time_hires.tv_usec) {
+		ret_time->tv_sec -= 1;
+		ret_time->tv_usec = 1000000 + (time_now_hires.tv_usec - start_time_hires.tv_usec);
+	} else
+		ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
+}
 
 /*******************************************************************
 return the same value as TimeZone, but it should be more efficient.
