@@ -182,6 +182,9 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
 					       sync_context,
 					       &num_deltas, &hdr_deltas, &deltas);
+		if (NT_STATUS_IS_ERR(result))
+			break;
+
 		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), ret_creds);
                 for (i = 0; i < num_deltas; i++) {
 			display_sam_entry(&hdr_deltas[i], &deltas[i]);

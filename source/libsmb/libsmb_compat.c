@@ -5,6 +5,7 @@
    Copyright (C) Richard Sharpe 2000
    Copyright (C) John Terpstra 2000
    Copyright (C) Tom Jansen (Ninja ISD) 2002 
+   Copyright (C) Derrell Lipman 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,14 +35,14 @@ struct smbc_compat_fdlist {
 
 static SMBCCTX * statcont = NULL;
 static int smbc_compat_initialized = 0;
-static int smbc_currentfd = 10000;
-static struct smbc_compat_fdlist * smbc_compat_fdlist = NULL;
-
+static int smbc_compat_nextfd = 0;
+static struct smbc_compat_fdlist * smbc_compat_fd_in_use = NULL;
+static struct smbc_compat_fdlist * smbc_compat_fd_avail = NULL;
 
 /* Find an fd and return the SMBCFILE * or NULL on failure */
 static SMBCFILE * find_fd(int fd)
 {
-	struct smbc_compat_fdlist * f = smbc_compat_fdlist;
+	struct smbc_compat_fdlist * f = smbc_compat_fd_in_use;
 	while (f) {
 		if (f->fd == fd) 
 			return f->file;
@@ -53,16 +54,36 @@ static SMBCFILE * find_fd(int fd)
 /* Add an fd, returns 0 on success, -1 on error with errno set */
 static int add_fd(SMBCFILE * file)
 {
-	struct smbc_compat_fdlist * f = malloc(sizeof(struct smbc_compat_fdlist));
-	if (!f) {
-		errno = ENOMEM;
-		return -1;
-	}
+        struct smbc_compat_fdlist * f = smbc_compat_fd_avail;
+
+	if (f) {
+                /* We found one that's available */
+                DLIST_REMOVE(smbc_compat_fd_avail, f);
+
+	} else {
+                /*
+                 * None were available, so allocate one.  Keep the number of
+                 * file descriptors determinate.  This allows the application
+                 * to allocate bitmaps or mapping of file descriptors based on
+                 * a known maximum number of file descriptors that will ever
+                 * be returned.
+                 */
+                if (smbc_compat_nextfd >= FD_SETSIZE) {
+                        errno = EMFILE;
+                        return -1;
+                }
+
+                f = malloc(sizeof(struct smbc_compat_fdlist));
+                if (!f) {
+                        errno = ENOMEM;
+                        return -1;
+                }
 	
-	f->fd = smbc_currentfd++;
+                f->fd = SMBC_BASE_FD + smbc_compat_nextfd++;
+        }
+
 	f->file = file;
-	
-	DLIST_ADD(smbc_compat_fdlist, f);
+	DLIST_ADD(smbc_compat_fd_in_use, f);
 
 	return f->fd;
 }
@@ -72,16 +93,19 @@ static int add_fd(SMBCFILE * file)
 /* Delete an fd, returns 0 on success */
 static int del_fd(int fd)
 {
-	struct smbc_compat_fdlist * f = smbc_compat_fdlist;
+	struct smbc_compat_fdlist * f = smbc_compat_fd_in_use;
+
 	while (f) {
 		if (f->fd == fd) 
 			break;
 		f = f->next;
 	}
+
 	if (f) {
 		/* found */
-		DLIST_REMOVE(smbc_compat_fdlist, f);
-		SAFE_FREE(f);
+		DLIST_REMOVE(smbc_compat_fd_in_use, f);
+                f->file = NULL;
+                DLIST_ADD(smbc_compat_fd_avail, f);
 		return 0;
 	}
 	return 1;
@@ -109,6 +133,22 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 		return 0;
 	}
 	return 0;
+}
+
+
+SMBCCTX *smbc_set_context(SMBCCTX * context)
+{
+        SMBCCTX *old_context = statcont;
+
+        if (context) {
+                /* Save provided context.  It must have been initialized! */
+                statcont = context;
+
+                /* You'd better know what you're doing.  We won't help you. */
+		smbc_compat_initialized = 1;
+        }
+        
+        return old_context;
 }
 
 
@@ -252,8 +292,121 @@ int smbc_fstat(int fd, struct stat *st)
 
 int smbc_chmod(const char *url, mode_t mode)
 {
-	/* NOT IMPLEMENTED IN LIBSMBCLIENT YET */
-	return -1;
+	return statcont->chmod(statcont, url, mode);
+}
+
+int smbc_utimes(const char *fname, struct timeval *tbuf)
+{
+        return statcont->utimes(statcont, fname, tbuf);
+}
+
+#ifdef HAVE_UTIME_H
+int smbc_utime(const char *fname, struct utimbuf *utbuf)
+{
+        struct timeval tv;
+
+        if (utbuf == NULL)
+                return statcont->utimes(statcont, fname, NULL);
+
+        tv.tv_sec = utbuf->modtime;
+        tv.tv_usec = 0;
+        return statcont->utimes(statcont, fname, &tv);
+}
+#endif
+
+int smbc_setxattr(const char *fname,
+                  const char *name,
+                  const void *value,
+                  size_t size,
+                  int flags)
+{
+        return statcont->setxattr(statcont, fname, name, value, size, flags);
+}
+
+int smbc_lsetxattr(const char *fname,
+                   const char *name,
+                   const void *value,
+                   size_t size,
+                   int flags)
+{
+        return statcont->setxattr(statcont, fname, name, value, size, flags);
+}
+
+int smbc_fsetxattr(int fd,
+                   const char *name,
+                   const void *value,
+                   size_t size,
+                   int flags)
+{
+	SMBCFILE * file = find_fd(fd);
+        return statcont->setxattr(statcont, file->fname,
+                                  name, value, size, flags);
+}
+
+int smbc_getxattr(const char *fname,
+                  const char *name,
+                  const void *value,
+                  size_t size)
+{
+        return statcont->getxattr(statcont, fname, name, value, size);
+}
+
+int smbc_lgetxattr(const char *fname,
+                   const char *name,
+                   const void *value,
+                   size_t size)
+{
+        return statcont->getxattr(statcont, fname, name, value, size);
+}
+
+int smbc_fgetxattr(int fd,
+                   const char *name,
+                   const void *value,
+                   size_t size)
+{
+	SMBCFILE * file = find_fd(fd);
+        return statcont->getxattr(statcont, file->fname, name, value, size);
+}
+
+int smbc_removexattr(const char *fname,
+                     const char *name)
+{
+        return statcont->removexattr(statcont, fname, name);
+}
+
+int smbc_lremovexattr(const char *fname,
+                      const char *name)
+{
+        return statcont->removexattr(statcont, fname, name);
+}
+
+int smbc_fremovexattr(int fd,
+                      const char *name)
+{
+	SMBCFILE * file = find_fd(fd);
+        return statcont->removexattr(statcont, file->fname, name);
+}
+
+int smbc_listxattr(const char *fname,
+                   char *list,
+                   size_t size)
+{
+        return statcont->listxattr(statcont, fname, list, size);
+}
+
+int smbc_llistxattr(const char *fname,
+                    char *list,
+                    size_t size)
+{
+        return statcont->listxattr(statcont, fname, list, size);
+}
+
+int smbc_flistxattr(int fd,
+                    char *list,
+                    size_t size)
+{
+	SMBCFILE * file = find_fd(fd);
+        return statcont->listxattr(statcont, file->fname, list, size);
 }
 
 int smbc_print_file(const char *fname, const char *printq)

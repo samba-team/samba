@@ -75,7 +75,7 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, const char *mailslot,
   SSVAL(ptr,smb_vwv15,1);
   SSVAL(ptr,smb_vwv16,2);
   p2 = smb_buf(ptr);
-  pstrcpy(p2,mailslot);
+  fstrcpy(p2,mailslot);
   p2 = skip_string(p2,1);
 
   memcpy(p2,buf,len);
@@ -135,7 +135,7 @@ static char cli_backup_list[1024];
 
 int cli_get_backup_list(const char *myname, const char *send_to_name)
 {
-  char outbuf[15];
+  pstring outbuf;
   char *p;
   struct in_addr sendto_ip, my_ip;
   int dgram_sock;
@@ -262,6 +262,3 @@ int cli_get_backup_server(char *my_name, char *target, char *servername, int nam
   return True;
 
 }
-
-
-

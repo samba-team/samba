@@ -728,7 +728,7 @@ const char *get_short_archi(const char *long_archi)
 static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32 *minor)
 {
 	int     i;
-	char    *buf;
+	char    *buf = NULL;
 	ssize_t byte_count;
 
 	if ((buf=malloc(PE_HEADER_SIZE)) == NULL) {
@@ -739,8 +739,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 
 	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
 	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %d\n",
-				fname, byte_count));
+		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %lu\n",
+			 fname, (unsigned long)byte_count));
 		goto no_version_info;
 	}
 
@@ -760,16 +760,16 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	}
 
 	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %d\n",
-				fname, byte_count));
+		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %lu\n",
+			 fname, (unsigned long)byte_count));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
 		goto no_version_info;
 	}
 
 	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
 	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
-		int num_sections;
-		int section_table_bytes;
+		unsigned int num_sections;
+		unsigned int section_table_bytes;
 		
 		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) != PE_HEADER_MACHINE_I386) {
 			DEBUG(3,("get_file_version: PE file [%s] wrong machine = 0x%x\n",
@@ -783,6 +783,9 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 		/* get the section table */
 		num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
 		section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
+		if (section_table_bytes == 0)
+			goto error_exit;
+
 		SAFE_FREE(buf);
 		if ((buf=malloc(section_table_bytes)) == NULL) {
 			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
@@ -791,8 +794,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 		}
 
 		if ((byte_count = vfs_read_data(fsp, buf, section_table_bytes)) < section_table_bytes) {
-			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %d\n",
-					fname, byte_count));
+			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %lu\n",
+				 fname, (unsigned long)byte_count));
 			goto error_exit;
 		}
 
@@ -801,8 +804,11 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 			int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
 
 			if (strcmp(".rsrc", &buf[sec_offset+PE_HEADER_SECT_NAME_OFFSET]) == 0) {
-				int section_pos   = IVAL(buf,sec_offset+PE_HEADER_SECT_PTR_DATA_OFFSET);
-				int section_bytes = IVAL(buf,sec_offset+PE_HEADER_SECT_SIZE_DATA_OFFSET);
+				unsigned int section_pos   = IVAL(buf,sec_offset+PE_HEADER_SECT_PTR_DATA_OFFSET);
+				unsigned int section_bytes = IVAL(buf,sec_offset+PE_HEADER_SECT_SIZE_DATA_OFFSET);
+
+				if (section_bytes == 0)
+					goto error_exit;
 
 				SAFE_FREE(buf);
 				if ((buf=malloc(section_bytes)) == NULL) {
@@ -819,10 +825,13 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				}
 
 				if ((byte_count = vfs_read_data(fsp, buf, section_bytes)) < section_bytes) {
-					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %d\n",
-							fname, byte_count));
+					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %lu\n",
+						 fname, (unsigned long)byte_count));
 					goto error_exit;
 				}
+
+				if (section_bytes < VS_VERSION_INFO_UNICODE_SIZE)
+					goto error_exit;
 
 				for (i=0; i<section_bytes-VS_VERSION_INFO_UNICODE_SIZE; i++) {
 					/* Scan for 1st 3 unicoded bytes followed by word aligned magic value */
@@ -3306,10 +3315,11 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
 	}
-	
-	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
-	fstrcpy(info.devmode->devicename, adevice);	
 
+	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
+	if (info.devmode) {
+		fstrcpy(info.devmode->devicename, adevice);	
+	}
 
 	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
 

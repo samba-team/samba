@@ -169,8 +169,8 @@ NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 	NTSTATUS nt_status;
 
 	if (sig->length < 8) {
-		DEBUG(0, ("NTLMSSP packet check failed due to short signature (%u bytes)!\n", 
-			  sig->length));
+		DEBUG(0, ("NTLMSSP packet check failed due to short signature (%lu bytes)!\n", 
+			  (unsigned long)sig->length));
 	}
 
 	nt_status = ntlmssp_make_packet_signature(ntlmssp_state, data, 

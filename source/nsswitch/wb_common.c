@@ -81,7 +81,7 @@ static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */)
 		if ((new_fd = fcntl(fd, F_DUPFD, 3)) == -1) {
 			return -1;
 		}
-		/* Parinoia */
+		/* Paranoia */
 		if (new_fd < 3) {
 			close(new_fd);
 			return -1;
@@ -472,17 +472,23 @@ NSS_STATUS winbindd_request(int req_type,
 }
 
 /*************************************************************************
- A couple of simple jfunctions to disable winbindd lookups and re-
+ A couple of simple functions to disable winbindd lookups and re-
  enable them
  ************************************************************************/
  
+/* Use putenv() instead of setenv() in these functions as not all
+   environments have the latter. */
+
 BOOL winbind_off( void )
 {
-	return (setenv( WINBINDD_DONT_ENV, "1", 1 ) != -1); 
+	static char *s = WINBINDD_DONT_ENV "=1";
+
+	return putenv(s) != -1;
 }
 
 BOOL winbind_on( void )
 {
-	return (setenv( WINBINDD_DONT_ENV, "0", 1 ) != -1); 
-}
+	static char *s = WINBINDD_DONT_ENV "=0";
 
+	return putenv(s) != -1;
+}

@@ -1427,7 +1427,7 @@ BOOL torture_denytest1(int dummy)
 		cli_close(cli1, fnum1);
 	}
 
-	printf("testing %d entries\n", ARRAY_SIZE(denytable1));
+	printf("testing %ld entries\n", (unsigned long)ARRAY_SIZE(denytable1));
 
 	for (i=0; i<ARRAY_SIZE(denytable1); i++) {
 		enum deny_result res;

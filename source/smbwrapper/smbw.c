@@ -1480,8 +1480,12 @@ say no to acls
 	st64->st_atime = st->st_atime;
 	st64->st_mtime = st->st_mtime;
 	st64->st_ctime = st->st_ctime;
+#ifdef HAVE_STAT_ST_BLKSIZE
 	st64->st_blksize = st->st_blksize;
+#endif
+#ifdef HAVE_STAT_ST_BLOCKS
 	st64->st_blocks = st->st_blocks;
+#endif
 }
 #endif
 
@@ -1545,8 +1549,12 @@ struct kernel_stat {
 	st->st_gid = kbuf->st_gid;
 	st->st_rdev = kbuf->st_rdev;
 	st->st_size = kbuf->st_size;
+#ifdef HAVE_STAT_ST_BLKSIZE
 	st->st_blksize = kbuf->st_blksize;
+#endif
+#ifdef HAVE_STAT_ST_BLOCKS
 	st->st_blocks = kbuf->st_blocks;
+#endif
 	st->st_atime = kbuf->st_atime_;
 	st->st_mtime = kbuf->st_mtime_;
 	st->st_ctime = kbuf->st_ctime_;

@@ -186,7 +186,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	*p = 0;
-	if (strcasecmp(p+1, lp_realm()) != 0) {
+	if (!strequal(p+1, lp_realm())) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			data_blob_free(&ap_rep);
@@ -198,21 +198,13 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	/* this gives a fully qualified user name (ie. with full realm).
 	   that leads to very long usernames, but what else can we do? */
-	asprintf(&user, "%s%s%s", p+1, lp_winbind_separator(), client);
+	   
+	asprintf(&user, "%s%c%s", p+1, *lp_winbind_separator(), client);
 	
-	pw = Get_Pwnam(user);
-	if (!pw && !foreign) {
-		pw = Get_Pwnam(client);
-		SAFE_FREE(user);
-		user = smb_xstrdup(client);
-	}
-
+	pw = smb_getpwnam( user );
+	
+	SAFE_FREE(user);
 	SAFE_FREE(client);
-
-	/* setup the string used by %U */
-	sub_set_smb_name(user);
-
-	reload_services(True);
 
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
@@ -220,6 +212,11 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
+	/* setup the string used by %U */
+	
+	sub_set_smb_name(pw->pw_name);
+	reload_services(True);
+	
 	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {
 		DEBUG(1,("make_server_info_from_pw failed!\n"));
 		data_blob_free(&ap_rep);

@@ -114,7 +114,7 @@ void cgi_load_variables(void)
 	if (len > 0 && 
 	    (request_post ||
 	     ((s=getenv("REQUEST_METHOD")) && 
-	      strcasecmp(s,"POST")==0))) {
+	      strequal(s,"POST")))) {
 		while (len && (line=grab_line(f, &len))) {
 			p = strchr_m(line,'=');
 			if (!p) continue;
@@ -224,9 +224,9 @@ static void cgi_setup_error(const char *err, const char *header, const char *inf
 		/* damn browsers don't like getting cut off before they give a request */
 		char line[1024];
 		while (fgets(line, sizeof(line)-1, stdin)) {
-			if (strncasecmp(line,"GET ", 4)==0 || 
-			    strncasecmp(line,"POST ", 5)==0 ||
-			    strncasecmp(line,"PUT ", 4)==0) {
+			if (strnequal(line,"GET ", 4) || 
+			    strnequal(line,"POST ", 5) ||
+			    strnequal(line,"PUT ", 4)) {
 				break;
 			}
 		}
@@ -301,7 +301,7 @@ static BOOL cgi_handle_authorization(char *line)
 	fstring user, user_pass;
 	struct passwd *pass = NULL;
 
-	if (strncasecmp(line,"Basic ", 6)) {
+	if (!strnequal(line,"Basic ", 6)) {
 		goto err;
 	}
 	line += 6;
@@ -342,6 +342,9 @@ static BOOL cgi_handle_authorization(char *line)
 			 * Password was ok.
 			 */
 			
+			if ( initgroups(pass->pw_name, pass->pw_gid) != 0 )
+				goto err;
+
 			become_user_permanently(pass->pw_uid, pass->pw_gid);
 			
 			/* Save the users name */
@@ -486,22 +489,22 @@ void cgi_setup(const char *rootdir, int auth_required)
 	   and handle authentication etc */
 	while (fgets(line, sizeof(line)-1, stdin)) {
 		if (line[0] == '\r' || line[0] == '\n') break;
-		if (strncasecmp(line,"GET ", 4)==0) {
+		if (strnequal(line,"GET ", 4)) {
 			got_request = True;
 			url = strdup(&line[4]);
-		} else if (strncasecmp(line,"POST ", 5)==0) {
+		} else if (strnequal(line,"POST ", 5)) {
 			got_request = True;
 			request_post = 1;
 			url = strdup(&line[5]);
-		} else if (strncasecmp(line,"PUT ", 4)==0) {
+		} else if (strnequal(line,"PUT ", 4)) {
 			got_request = True;
 			cgi_setup_error("400 Bad Request", "",
 					"This server does not accept PUT requests");
-		} else if (strncasecmp(line,"Authorization: ", 15)==0) {
+		} else if (strnequal(line,"Authorization: ", 15)) {
 			authenticated = cgi_handle_authorization(&line[15]);
-		} else if (strncasecmp(line,"Content-Length: ", 16)==0) {
+		} else if (strnequal(line,"Content-Length: ", 16)) {
 			content_length = atoi(&line[16]);
-		} else if (strncasecmp(line,"Accept-Language: ", 17)==0) {
+		} else if (strnequal(line,"Accept-Language: ", 17)) {
 			web_set_lang(&line[17]);
 		}
 		/* ignore all other requests! */

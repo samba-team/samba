@@ -141,7 +141,7 @@ AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
-AC_SUBST(PICFLAG)
+AC_SUBST(PICFLAGS)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
@@ -266,19 +266,19 @@ if test x"$samba_cv_volatile" = x"yes"; then
    AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
 
-UNAME_S=`uname -s`
+UNAME_S=`(uname -s) 2>/dev/null` || UNAME_S="unknown"
 AC_MSG_CHECKING(uname -s)
 AC_MSG_RESULT(${UNAME_S})
 
-UNAME_R=`uname -r`
+UNAME_R=`(uname -r) 2>/dev/null` || UNAME_R="unknown"
 AC_MSG_CHECKING(uname -r)
 AC_MSG_RESULT(${UNAME_R})
 
-UNAME_M=`uname -m`
+UNAME_M=`(uname -m) 2>/dev/null` || UNAME_M="unknown"
 AC_MSG_CHECKING(uname -m)
 AC_MSG_RESULT(${UNAME_M})
 
-UNAME_P=`uname -p`
+UNAME_P=`(uname -p) 2>/dev/null` || UNAME_P="unknown"
 AC_MSG_CHECKING(uname -p)
 AC_MSG_RESULT(${UNAME_P})
 
@@ -564,7 +564,7 @@ AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
-AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
+AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
@@ -591,7 +591,7 @@ case "$host_os" in
 	;;
 esac
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
-AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
+AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/cdefs.h glob.h)
@@ -1031,7 +1031,7 @@ HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 SONAMEFLAG="#"
 SHLD="\${CC} \${CFLAGS}"
-PICFLAG=""
+PICFLAGS=""
 PICSUFFIX="po"
 POBAD_CC="#"
 SHLIBEXT="so"
@@ -1049,7 +1049,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-shared" 
 			DYNEXP="-Wl,--export-dynamic"
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
@@ -1058,12 +1058,12 @@ if test "$enable_shared" = "yes"; then
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
-				PICFLAG="-fPIC"
+				PICFLAGS="-fPIC"
 				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 					DYNEXP="-Wl,-E"
 				fi
 			else
-				PICFLAG="-KPIC"
+				PICFLAGS="-KPIC"
 				## ${CFLAGS} added for building 64-bit shared 
 				## libs using Sun's Compiler
 				LDSHFLAGS="-G \${CFLAGS}"
@@ -1077,7 +1077,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-Wl,-h,"
-			PICFLAG="-KPIC"   # Is this correct for SunOS
+			PICFLAGS="-KPIC"   # Is this correct for SunOS
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1085,7 +1085,7 @@ if test "$enable_shared" = "yes"; then
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,--export-dynamic"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC -DPIC"
+			PICFLAGS="-fPIC -DPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1093,7 +1093,7 @@ if test "$enable_shared" = "yes"; then
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1107,9 +1107,9 @@ if test "$enable_shared" = "yes"; then
 			SONAMEFLAG="-soname "
 			SHLD="\${LD}"
 			if test "${GCC}" = "yes"; then
-				PICFLAG="-fPIC"
+				PICFLAGS="-fPIC"
 			else 
-				PICFLAG="-KPIC"
+				PICFLAGS="-KPIC"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			;;
@@ -1117,7 +1117,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
 			DYNEXP="-Wl,-brtl,-bexpall"
-			PICFLAG="-O2"
+			PICFLAGS="-O2"
 			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
@@ -1133,9 +1133,9 @@ if test "$enable_shared" = "yes"; then
 				SHLD="/usr/bin/ld"
 				LDSHFLAGS="-B symbolic -b -z"
 				SONAMEFLAG="+h "
-				PICFLAG="+z"
+				PICFLAGS="+z"
 			elif test "${GCC}" = "yes"; then
-				PICFLAG="-fPIC"
+				PICFLAGS="-fPIC"
 			fi
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
@@ -1148,7 +1148,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1159,7 +1159,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-KPIC"
+			PICFLAGS="-KPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*next2*) AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
@@ -1219,17 +1219,12 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
                [ac_cv_shlib_works],[
    ac_cv_shlib_works=no
    # try building a trivial shared library
-   if test "$PICSUFFIX" = "po"; then
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
-       ac_cv_shlib_works=yes
-   else
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c &&
-       mv shlib.$PICSUFFIX shlib.po &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
-       ac_cv_shlib_works=yes
-   fi
-   rm -f "shlib.$SHLIBEXT" shlib.po
+   $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o \
+	shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c && \
+	$CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" \
+	shlib.$PICSUFFIX && \
+	ac_cv_shlib_works=yes
+   rm -f "shlib.$SHLIBEXT" shlib.$PICSUFFIX
 ])
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
@@ -1396,12 +1391,22 @@ if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
 fi
 
-AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE_VA_COPY,[
+AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
 AC_TRY_LINK([#include <stdarg.h>
-va_list ap1,ap2;], [__va_copy(ap1,ap2);],
-samba_cv_HAVE_VA_COPY=yes,samba_cv_HAVE_VA_COPY=no)])
+va_list ap1,ap2;], [va_copy(ap1,ap2);],
+samba_cv_HAVE_VA_COPY=yes,
+samba_cv_HAVE_VA_COPY=no)])
 if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
-    AC_DEFINE(HAVE_VA_COPY,1,[Whether __va_copy() is available])
+    AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
+else
+    AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE___VA_COPY,[
+    AC_TRY_LINK([#include <stdarg.h>
+    va_list ap1,ap2;], [__va_copy(ap1,ap2);],
+    samba_cv_HAVE___VA_COPY=yes,
+    samba_cv_HAVE___VA_COPY=no)])
+    if test x"$samba_cv_HAVE___VA_COPY" = x"yes"; then
+        AC_DEFINE(HAVE___VA_COPY,1,[Whether __va_copy() is available])
+    fi
 fi
 
 AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
@@ -1600,18 +1605,18 @@ for i in $LOOK_DIRS ; do
     save_CPPFLAGS=$CPPFLAGS
     CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
-    if test x"$ICONV_PATH_SPEC" = "xyes" ; then
-       LDFLAGS="-L$i/lib"
-    fi
+dnl Perhaps we should always add a -L
+    LDFLAGS="$LDFLAGS -L$i/lib"
     LIBS=
     export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
     jm_ICONV($i)
 
     if test "$ICONV_FOUND" = yes; then
+	LDFLAGS=$save_LDFLAG
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-        LIBS="$save_LIBS $LIBS"
+        LIBS="$save_LIBS"
         ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
 dnl Now, check for a working iconv ... we want to do it here because
@@ -1622,6 +1627,9 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         ic_save_LIBS="$LIBS"
         if test x"$ICONV_PATH_SPEC" = "xyes" ; then
            LIBS="$LIBS -L$ICONV_LOCATION/lib"
+        fi
+        if test x"$jm_cv_lib_iconv" != x; then
+           LIBS="$LIBS -l$jm_cv_lib_iconv"
         fi
 dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 	default_dos_charset=no
@@ -1675,9 +1683,14 @@ dnl ])
 
         LIBS="$ic_save_LIBS"
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
-		CPPFLAGS=$save_CPPFLAGS
-		CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-		export CPPFLAGS
+  	   CPPFLAGS=$save_CPPFLAGS
+	   LDFLAGS=$save_LDFLAGS
+	   LIBS=$save_LIBS
+           if test x"$jm_cv_lib_iconv" != x; then
+              LIBS="$LIBS -l$jm_cv_lib_iconv"
+           fi
+	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
@@ -2185,7 +2198,7 @@ AC_ARG_WITH(smbwrapper,
 
 # Conditions under which smbwrapper should not be built.
 
-	if test x$PICFLAG = x; then
+	if test x$PICFLAGS = x; then
 	   echo No support for PIC code - disabling smbwrapper and smbsh
 	   WRAPPROG=""
 	   WRAP=""
@@ -2659,6 +2672,29 @@ if test x"$with_ads_support" != x"no"; then
                [Whether in-memory keytabs are supported])
   fi
 
+  AC_CACHE_CHECK([for key in krb5_keytab_entry],
+                 samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytab_entry entry; entry.key = NULL;],
+      samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY=yes,
+      samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_KEYTAB_ENTRY_KEY,1,
+              [Whether krb5_keytab_entry has key member])
+  fi
+
+  AC_CACHE_CHECK([for keyblock in krb5_keytab_entry],
+                 samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytab_entry entry; entry.keyblock.keytype = 0;],
+      samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK=yes,
+      samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK,1,
+              [Whether krb5_keytab_entry has keyblock member])
+  fi
 
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
     AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
@@ -2798,7 +2834,7 @@ AC_ARG_WITH(pam_smbpass,
 
        # Conditions under which pam_smbpass should not be built.
 
-       if test x$PICFLAG = x; then
+       if test x$PICFLAGS = x; then
           AC_MSG_ERROR([No support for PIC code])
        elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
 	  AC_MSG_ERROR([No security/pam_appl.h found])

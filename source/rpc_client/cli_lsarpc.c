@@ -322,6 +322,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		} else {
 			(*names)[i] = NULL;
+			(*domains)[i] = NULL;
 			(*types)[i] = SID_NAME_UNKNOWN;
 		}
 	}

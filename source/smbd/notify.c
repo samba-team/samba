@@ -199,7 +199,7 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	DLIST_ADD(change_notify_list, cnbp);
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(inbuf,smb_mid), True);
+	srv_defer_sign_response(SVAL(inbuf,smb_mid));
 
 	return True;
 }

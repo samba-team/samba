@@ -333,10 +333,6 @@
 #define PASSWORD_LENGTH 16
 #endif  /* HAVE_SYS_SECURITY_H */
 
-#ifdef HAVE_COMPAT_H
-#include <compat.h>
-#endif
-
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
 #endif
@@ -1259,9 +1255,13 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 
 /* we need to use __va_copy() on some platforms */
 #ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) va_copy(dest, src)
+#else
+#ifdef HAVE___VA_COPY
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #else
 #define VA_COPY(dest, src) (dest) = (src)
+#endif
 #endif
 
 #ifndef HAVE_TIMEGM
@@ -1314,5 +1314,12 @@ BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_conte
 #undef FALSE
 #endif
 #define FALSE __ERROR__XX__DONT_USE_FALSE
+
+/* If we have blacklisted mmap() try to avoid using it accidentally by
+   undefining the HAVE_MMAP symbol. */
+
+#ifdef MMAP_BLACKLIST
+#undef HAVE_MMAP
+#endif
 
 #endif /* _INCLUDES_H */

@@ -184,8 +184,8 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 	lastip = sock.sin_addr;
 	lastport = ntohs(sock.sin_port);
 
-	DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
-			inet_ntoa(lastip), lastport, ret));
+	DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %lu\n",
+			inet_ntoa(lastip), lastport, (unsigned long)ret));
 
 	return(ret);
 }
@@ -460,7 +460,7 @@ static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int 
 			DEBUG(5,("Got keepalive packet\n"));
 	}
 
-	DEBUG(10,("got smb length of %d\n",len));
+	DEBUG(10,("got smb length of %lu\n",(unsigned long)len));
 
 	return(len);
 }
@@ -487,7 +487,8 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
 			break;
 	}
 
-	DEBUG(10,("read_smb_length: got smb length of %d\n",len));
+	DEBUG(10,("read_smb_length: got smb length of %lu\n",
+		  (unsigned long)len));
 
 	return len;
 }
@@ -497,9 +498,10 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
  BUFFER_SIZE+SAFETY_MARGIN.
  The timeout is in milliseconds. 
  This function will return on receipt of a session keepalive packet.
+ Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
+BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
 {
 	ssize_t len,ret;
 
@@ -509,7 +511,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
-		DEBUG(10,("receive_smb: length < 0!\n"));
+		DEBUG(10,("receive_smb_raw: length < 0!\n"));
 
 		/*
 		 * Correct fix. smb_read_error may have already been
@@ -528,7 +530,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	 */
 
 	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
-		DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
+		DEBUG(0,("Invalid packet length! (%lu bytes).\n",(unsigned long)len));
 		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
 
 			/*
@@ -550,6 +552,20 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 				smb_read_error = READ_ERROR;
 			return False;
 		}
+	}
+
+	return True;
+}
+
+/****************************************************************************
+ Wrapper for receive_smb_raw().
+ Checks the MAC on signed packets.
+****************************************************************************/
+
+BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
+{
+	if (!receive_smb_raw(fd, buffer, timeout)) {
+		return False;
 	}
 
 	/* Check the incoming SMB signature. */
@@ -822,8 +838,8 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	 * DNS is perverted). We always check the address list, though.
 	 */
 	
-	if (strcasecmp(remotehost, hp->h_name)
-	    && strcasecmp(remotehost, "localhost")) {
+	if (!strequal(remotehost, hp->h_name)
+	    && !strequal(remotehost, "localhost")) {
 		DEBUG(0,("host name/name mismatch: %s != %s\n",
 			 remotehost, hp->h_name));
 		return False;

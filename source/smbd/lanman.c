@@ -522,6 +522,8 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 
+	ZERO_STRUCT(driver);
+
 	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
 		DEBUG(3,("fill_printq_info_52: Failed to lookup printer [%s]\n", 
 			lp_servicename(snum)));
@@ -678,6 +680,8 @@ static int get_printerdrivernumber(int snum)
 	int 				result = 0;
 	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
+
+	ZERO_STRUCT(driver);
 
 	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
 		DEBUG(3,("get_printerdrivernumber: Failed to lookup printer [%s]\n", 
@@ -2342,15 +2346,15 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
       pstring comment;
       uint32 servertype= lp_default_server_announce();
 
-      pstrcpy(comment,string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+      push_ascii(comment,lp_serverstring(), MAX_SERVER_STRING_LENGTH,STR_TERMINATE);
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
-	for (i=0;i<count;i++)
-	  if (strequal(servers[i].name,local_machine))
-      {
+	for (i=0;i<count;i++) {
+	  if (strequal(servers[i].name,local_machine)) {
 	    servertype = servers[i].type;
-	    pstrcpy(comment,servers[i].comment);	    
+	    push_ascii(comment,servers[i].comment,sizeof(pstring),STR_TERMINATE);	    
 	  }
+	}
       }
       SAFE_FREE(servers);
 

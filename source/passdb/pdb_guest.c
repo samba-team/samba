@@ -60,7 +60,7 @@ static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *
 	if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT))
 		return NT_STATUS_UNSUCCESSFUL;
 	
-	if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_DEFAULT))
+	if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_SET))
 		return NT_STATUS_UNSUCCESSFUL;
 	
 	if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT))
@@ -110,7 +110,15 @@ static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT
 
 static NTSTATUS guestsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
+#if 0	/* JERRY */
 	return methods->parent->pdb_add_sam_account(methods->parent, newpwd);
+#else
+	/* I don't think we should allow any modification of 
+	   the guest account as SID will could messed up with 
+	   the smbpasswd backend   --jerry */
+
+	return NT_STATUS_NOT_IMPLEMENTED;
+#endif
 }
 
 NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)

@@ -77,6 +77,8 @@
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off))
+#define TDB_DATA_START(hash_size) (TDB_HASH_TOP(hash_size-1) + TDB_SPINLOCK_SIZE(hash_size))
+
 
 /* NB assumes there is a local variable called "tdb" that is the
  * current context, also takes doubly-parenthesized print-style
@@ -235,10 +237,15 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 				 tdb->fd, offset, rw_type, lck_type));
 		}
 		/* Was it an alarm timeout ? */
-		if (errno == EINTR && palarm_fired && *palarm_fired)
+		if (errno == EINTR && palarm_fired && *palarm_fired) {
+			TDB_LOG((tdb, 5, "tdb_brlock timed out (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
+				 tdb->fd, offset, rw_type, lck_type));
 			return TDB_ERRCODE(TDB_ERR_LOCK_TIMEOUT, -1);
+		}
 		/* Otherwise - generic lock error. */
 		/* errno set by fcntl */
+		TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d: %s\n", 
+			 tdb->fd, offset, rw_type, lck_type, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
 	return 0;
@@ -663,10 +670,10 @@ static int tdb_free(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 left:
 	/* Look left */
 	left = offset - sizeof(tdb_off);
-	if (left > TDB_HASH_TOP(tdb->header.hash_size-1)) {
+	if (left > TDB_DATA_START(tdb->header.hash_size)) {
 		struct list_struct l;
 		tdb_off leftsize;
-
+		
 		/* Read in tailer and jump back to header */
 		if (ofs_read(tdb, left, &leftsize) == -1) {
 			TDB_LOG((tdb, 0, "tdb_free: left offset read failed at %u\n", left));

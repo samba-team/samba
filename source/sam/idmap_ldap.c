@@ -421,86 +421,46 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
-	fstring id_str;
 	pstring sid_str;
 	pstring filter;
 	pstring suffix;
 	const char *type;
-	const char *obj_class;
 	int rc;
 	int count;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	char **attr_list;
 
-	/* first we try for a samba user or group mapping */
-	
+	pstrcpy( suffix, lp_ldap_idmap_suffix() );
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
+		LDAP_OBJ_IDMAP_ENTRY, type,  
+		((id_type & ID_USERID) ? (unsigned long)id.uid : (unsigned long)id.gid));
+		
 	if ( id_type & ID_USERID ) {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
-		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
-		fstr_sprintf(id_str, "%lu", (unsigned long)id.uid );	
-		pstrcpy( suffix, lp_ldap_suffix());
 	}
 	else {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
-		obj_class = LDAP_OBJ_GROUPMAP;
-		fstr_sprintf(id_str, "%lu", (unsigned long)id.gid );	
-		pstrcpy( suffix, lp_ldap_group_suffix() );
 	}
 
 	DEBUG(5,("ldap_get_sid_from_id: Searching \"%s\"\n", filter ));
 		 
 	attr_list = get_attr_list( sidmap_attr_list );
-	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
-		 LDAP_OBJ_IDMAP_ENTRY, obj_class, type, id_str);
-
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-			    filter, attr_list, 0, &result);
-	
+		filter, attr_list, 0, &result);
+
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(3,("ldap_get_isd_from_id: Failure looking up entry (%s)\n",
 			ldap_err2string(rc) ));
 		goto out;
 	}
-
-	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-	
-	if (count > 1) {
-		DEBUG(0,("ldap_get_sid_from_id: mapping returned [%d] entries!\n",
-			count));
-		goto out;
-	}
-
-	/* fall back to looking up an idmap entry if we didn't find and 
-	   actual user or group */
-	
-	if (count == 0) {
-		ldap_msgfree(result);
-		result = NULL;
-		
-		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
-			LDAP_OBJ_IDMAP_ENTRY, type,  
-			 ((id_type & ID_USERID) ? (unsigned long)id.uid : 
-			  (unsigned long)id.gid));
-
-		pstrcpy( suffix, lp_ldap_idmap_suffix() );
-
-		rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-			filter, attr_list, 0, &result);
-
-		if (rc != LDAP_SUCCESS) {
-			DEBUG(3,("ldap_get_isd_from_id: Failure looking up entry (%s)\n",
-				ldap_err2string(rc) ));
-			goto out;
-		}
 			   
-		count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
+	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 
-		if (count != 1) {
-			DEBUG(0,("ldap_get_sid_from_id: mapping not found for %s: %lu\n", 
-				type, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
-				       (unsigned long)id.gid)));
-			goto out;
-		}
+	if (count != 1) {
+		DEBUG(0,("ldap_get_sid_from_id: mapping not found for %s: %lu\n", 
+			type, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+			       (unsigned long)id.gid)));
+		goto out;
 	}
 	
 	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
@@ -545,28 +505,15 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	DEBUG(8,("ldap_get_id_from_sid: %s (%s)\n", sid_str,
 		(*id_type & ID_GROUPID ? "group" : "user") ));
 
-	/* ahhh....  ok.  We have to check users and groups in places other
-	   than idmap (hint: we're a domain member of a Samba domain) */
-
+	suffix = lp_ldap_idmap_suffix();
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
+		LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_SID, sid_str);
+			
 	if ( *id_type & ID_GROUPID ) {
-
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER );
-		suffix = lp_ldap_group_suffix();
-		pstr_sprintf(filter, "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
-			LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY, 
-			get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
-			sid_str);
-
 	}
 	else {
-
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER );
-		suffix = lp_ldap_suffix();
-		pstr_sprintf(filter, "(&(|(&(objectClass=%s)(objectClass=%s))(objectClass=%s))(%s=%s))", 
-			 LDAP_OBJ_SAMBASAMACCOUNT, LDAP_OBJ_POSIXACCOUNT, LDAP_OBJ_IDMAP_ENTRY, 
-			 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
-			 sid_str);
-
 	}
 
 	DEBUG(10,("ldap_get_id_from_sid: Searching for \"%s\"\n", filter));
@@ -575,84 +522,51 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 
 	attr_list = get_attr_list( sidmap_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-		filter, attr_list, 0, &result);	
-
-	if ( rc != LDAP_SUCCESS ) {
-		DEBUG(3,("ldap_get_id_from_sid: Failure looking up group mapping (%s)\n",
+		filter, attr_list, 0, &result);
+			
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(3,("ldap_get_id_from_sid: Failure looking up idmap entry (%s)\n",
 			ldap_err2string(rc) ));
 		goto out;
 	}
+			
+	/* check for the number of entries returned */
 
 	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-
+	   
 	if ( count > 1 ) {
-		DEBUG(3,("ldap_get_id_from_sid: search \"%s\" returned [%d] entries.  Bailing...\n",
+		DEBUG(0, ("ldap_get_id_from_sid: (2nd) search %s returned [%d] entries!\n",
 			filter, count));
 		goto out;
 	}
-
-	/* see if we need to do a search here */
-
-	if ( count == 0 ) {
-
-		if ( result ) {
-			ldap_msgfree(result);
-			result = NULL;
-		}
-
-		/* look in idmap suffix */
-
-		suffix = lp_ldap_idmap_suffix();
-		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
-			LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_SID, sid_str);
-
-		rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-			filter, attr_list, 0, &result);
-			
-		if (rc != LDAP_SUCCESS) {
-			DEBUG(3,("ldap_get_id_from_sid: Failure looking up idmap entry (%s)\n",
-				ldap_err2string(rc) ));
-			goto out;
-		}
-			
-		/* check for the number of entries returned */
-
-		count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-	   
-		if ( count > 1 ) {
-			DEBUG(0, ("ldap_get_id_from_sid: (2nd) search %s returned [%d] entries!\n",
-				filter, count));
-			goto out;
-		}
 	
 
-		/* try to allocate a new id if we still haven't found one */
+	/* try to allocate a new id if we still haven't found one */
 
-		if ( (count==0) && !(*id_type & ID_QUERY_ONLY) ) {
-			int i;
+	if ( (count==0) && !(*id_type & ID_QUERY_ONLY) ) {
+		int i;
 
-			DEBUG(8,("ldap_get_id_from_sid: Allocating new id\n"));
+		DEBUG(8,("ldap_get_id_from_sid: Allocating new id\n"));
 		
-			for (i = 0; i < LDAP_MAX_ALLOC_ID; i++) {
-				ret = ldap_allocate_id(id, *id_type);
-				if ( NT_STATUS_IS_OK(ret) )
-					break;
-			}
+		for (i = 0; i < LDAP_MAX_ALLOC_ID; i++) {
+			ret = ldap_allocate_id(id, *id_type);
+			if ( NT_STATUS_IS_OK(ret) )
+				break;
+		}
 		
-			if ( !NT_STATUS_IS_OK(ret) ) {
-				DEBUG(0,("ldap_allocate_id: cannot acquire id lock!\n"));
-				goto out;
-			}
-
-			DEBUG(10,("ldap_get_id_from_sid: Allocated new %cid [%ul]\n",
-				(*id_type & ID_GROUPID ? 'g' : 'u'), (uint32)id->uid ));
-	
-			ret = ldap_set_mapping(sid, *id, *id_type);
-
-			/* all done */
-
+		if ( !NT_STATUS_IS_OK(ret) ) {
+			DEBUG(0,("ldap_allocate_id: cannot acquire id lock!\n"));
 			goto out;
 		}
+
+		DEBUG(10,("ldap_get_id_from_sid: Allocated new %cid [%ul]\n",
+			(*id_type & ID_GROUPID ? 'g' : 'u'), (uint32)id->uid ));
+	
+		ret = ldap_set_mapping(sid, *id, *id_type);
+
+		/* all done */
+
+		goto out;
 	}
 
 	DEBUG(10,("ldap_get_id_from_sid: success\n"));

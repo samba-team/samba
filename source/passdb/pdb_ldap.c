@@ -356,7 +356,7 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	}
 
 	for (values=ldap_values;*values;values++) {
-		if (strcasecmp(*values, LDAP_OBJ_POSIXACCOUNT ) == 0) {
+		if (strequal(*values, LDAP_OBJ_POSIXACCOUNT )) {
 			break;
 		}
 	}
@@ -1983,21 +1983,22 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ldap_msgfree(result);
-
 	if (mods == NULL) {
 		DEBUG(4, ("ldapsam_update_group_mapping_entry: mods is empty: nothing to do\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		ldap_msgfree(result);
+		return NT_STATUS_OK;
 	}
 
 	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
+		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 	SAFE_FREE(dn);
 
 	ldap_mods_free(mods, True);
+	ldap_msgfree(result);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
@@ -2006,6 +2007,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 		DEBUG(0, ("ldapsam_update_group_mapping_entry: failed to modify group %lu error: %s (%s)\n", (unsigned long)map->gid, 
 			  ld_error ? ld_error : "(unknown)", ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(2, ("ldapsam_update_group_mapping_entry: successfully modified group %lu in LDAP\n", (unsigned long)map->gid));

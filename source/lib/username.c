@@ -293,13 +293,16 @@ struct passwd *Get_Pwnam(const char *user)
 }
 
 /****************************************************************************
- Check if a user is in a netgroup user list.
+ Check if a user is in a netgroup user list. If at first we don't succeed,
+ try lower case.
 ****************************************************************************/
 
 static BOOL user_in_netgroup_list(const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
 	static char *mydomain = NULL;
+	fstring lowercase_user, lowercase_ngname;
+
 	if (mydomain == NULL)
 		yp_get_default_domain(&mydomain);
 
@@ -315,6 +318,20 @@ static BOOL user_in_netgroup_list(const char *user, const char *ngname)
 
 	if (innetgr(ngname, NULL, user, mydomain))
 		return (True);
+
+	/*
+	 * Ok, innetgr is case sensitive. Try once more with lowercase
+	 * just in case. Attempt to fix #703. JRA.
+	 */
+
+	fstrcpy(lowercase_user, user);
+	strlower_m(lowercase_user);
+	fstrcpy(lowercase_ngname, ngname);
+	strlower_m(lowercase_ngname);
+	
+	if (innetgr(lowercase_ngname, NULL, lowercase_user, mydomain))
+		return (True);
+
 #endif /* HAVE_NETGROUP */
 	return False;
 }

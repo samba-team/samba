@@ -1984,8 +1984,8 @@ enum {
 			if ((challenge_len = strhex_to_str(challenge, 
 							   strlen(hex_challenge), 
 							   hex_challenge)) != 8) {
-				x_fprintf(x_stderr, "hex decode of %s failed (only got %u bytes)!\n", 
-					hex_challenge, challenge_len);
+				x_fprintf(x_stderr, "hex decode of %s failed (only got %lu bytes)!\n", 
+					hex_challenge, (unsigned long)challenge_len);
 				exit(1);
 			}
 			opt_challenge = data_blob(challenge, challenge_len);

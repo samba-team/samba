@@ -226,7 +226,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 				*ps = smb_xstrdup("");
 			} else {
 				/* make sure its in the right format - be strict */
-				if (len1 != len2 || ptr + len1 > blob->length) {
+				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					return False;
 				}
 				if (len1 & 1) {
@@ -255,7 +255,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			if (len1 == 0 && len2 == 0) {
 				*ps = smb_xstrdup("");
 			} else {
-				if (len1 != len2 || ptr + len1 > blob->length) {
+				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					return False;
 				}
 				
@@ -280,7 +280,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 				*b = data_blob(NULL, 0);
 			} else {
 				/* make sure its in the right format - be strict */
-				if (len1 != len2 || ptr + len1 > blob->length) {
+				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					return False;
 				}
 				*b = data_blob(blob->data + ptr, len1);
@@ -314,4 +314,3 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 
 	return True;
 }
-

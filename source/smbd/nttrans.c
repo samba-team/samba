@@ -1956,8 +1956,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		DEBUGADD(10,("for SID: %s\n",sid_string_static(&sid)));
 
 		if (!NT_STATUS_IS_OK(sid_to_uid(&sid, &uid))) {
-			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%u]\n",
-				sid_string_static(&sid),sid_len));
+			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
+				sid_string_static(&sid),(unsigned long)sid_len));
 			uid = (-1);
 		}
 		
@@ -2168,7 +2168,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			sid_len = IVAL(pdata,4);
 
 			if (data_count < 8+sid_len) {
-				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %d bytes data\n",data_count,8+sid_len));
+				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long)(8+sid_len)));
 				return ERROR_DOS(ERRDOS,ERRunknownlevel);				
 			}
 
@@ -2301,7 +2301,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 	sid_len = IVAL(pdata,4);
 
 	if (data_count < 40+sid_len) {
-		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40+sid_len));
+		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %lu bytes data\n",data_count,(unsigned long)40+sid_len));
 		return ERROR_DOS(ERRDOS,ERRunknownlevel);		
 	}
 
@@ -2463,7 +2463,8 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 		if ((parameter_offset + parameter_count < parameter_offset) ||
 				(parameter_offset + parameter_count < parameter_count))
 			goto bad_param;
-		if (smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length)
+		if ((smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length)||
+				(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
@@ -2473,7 +2474,8 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 		DEBUG(10,("reply_nttrans: data_count = %d\n",data_count));
 		if ((data_offset + data_count < data_offset) || (data_offset + data_count < data_count))
 			goto bad_param;
-		if (smb_base(inbuf) + data_offset + data_count > inbuf + length)
+		if ((smb_base(inbuf) + data_offset + data_count > inbuf + length) ||
+		   		(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy( data, smb_base(inbuf) + data_offset, data_count);
@@ -2534,7 +2536,10 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 				if ((parameter_displacement + parameter_count < parameter_displacement) ||
 						(parameter_displacement + parameter_count < parameter_count))
 					goto bad_param;
-				if (smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize)
+				if (parameter_displacement > total_parameter_count)
+					goto bad_param;
+				if ((smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize) ||
+						(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
 					goto bad_param;
 				if (parameter_displacement + params < params)
 					goto bad_param;
@@ -2548,7 +2553,10 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 				if ((data_displacement + data_count < data_displacement) ||
 						(data_displacement + data_count < data_count))
 					goto bad_param;
-				if (smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize)
+				if (data_displacement > total_data_count)
+					goto bad_param;
+				if ((smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize) ||
+						(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
 					goto bad_param;
 				if (data_displacement + data < data)
 					goto bad_param;

@@ -570,8 +570,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 
 	if ( isdaemon )
 		ClientNMB = open_socket_in(SOCK_DGRAM, port,
-					   interpret_addr(lp_socket_address()),
-					   0,True);
+					   0, interpret_addr(lp_socket_address()),
+					   True);
 	else
 		ClientNMB = 0;
   

@@ -125,11 +125,11 @@ AC_DEFUN(AC_LIBTESTFUNC,
 # may have different results.
 #
 # Note that using directly AS_VAR_PUSHDEF([ac_Lib], [ac_cv_lib_$1_$3])
-# is asking for troubles, since AC_CHECK_LIB($lib, fun) would give
+# is asking for trouble, since AC_CHECK_LIB($lib, fun) would give
 # ac_cv_lib_$lib_fun, which is definitely not what was meant.  Hence
 # the AS_LITERAL_IF indirection.
 #
-# FIXME: This macro is extremely suspicious.  It DEFINEs unconditionnally,
+# FIXME: This macro is extremely suspicious.  It DEFINEs unconditionally,
 # whatever the FUNCTION, in addition to not being a *S macro.  Note
 # that the cache does depend upon the function we are looking for.
 #
@@ -516,7 +516,7 @@ AC_DEFUN(jm_ICONV,
   dnl those with the standalone portable libiconv installed).
   AC_MSG_CHECKING(for iconv in $1)
     jm_cv_func_iconv="no"
-    jm_cv_lib_iconv=no
+    jm_cv_lib_iconv=""
     jm_cv_giconv=no
     jm_save_LIBS="$LIBS"
     LIBS="$LIBS -lbiconv"
@@ -528,9 +528,10 @@ AC_DEFUN(jm_ICONV,
       jm_cv_func_iconv=yes
       jm_cv_biconv=yes
       jm_cv_include="biconv.h"
-      jm_cv_lib_iconv="yes")
+      jm_cv_lib_iconv="biconv")
       LIBS="$jm_save_LIBS"
 
+    dnl Check for include in funny place but no lib needed
     if test "$jm_cv_func_iconv" != yes; then 
       AC_TRY_LINK([#include <stdlib.h>
 #include <giconv.h>],
@@ -539,8 +540,10 @@ AC_DEFUN(jm_ICONV,
          iconv_close(cd);],
          jm_cv_func_iconv=yes
          jm_cv_include="giconv.h"
-         jm_cv_giconv="yes")
+         jm_cv_giconv="yes"
+         jm_cv_lib_iconv="")
 
+      dnl Standard iconv.h include, lib in glibc or libc ...
       if test "$jm_cv_func_iconv" != yes; then
         AC_TRY_LINK([#include <stdlib.h>
 #include <iconv.h>],
@@ -548,7 +551,8 @@ AC_DEFUN(jm_ICONV,
            iconv(cd,NULL,NULL,NULL,NULL);
            iconv_close(cd);],
            jm_cv_include="iconv.h"
-           jm_cv_func_iconv=yes)
+           jm_cv_func_iconv=yes
+           jm_cv_lib_iconv="")
 
           if test "$jm_cv_lib_iconv" != yes; then
             jm_save_LIBS="$LIBS"
@@ -561,8 +565,10 @@ AC_DEFUN(jm_ICONV,
               jm_cv_lib_iconv=yes
               jm_cv_func_iconv=yes
               jm_cv_include="giconv.h"
-              jm_cv_giconv=yes)
-            LIBS="$jm_save_LIBS"
+              jm_cv_giconv=yes
+              jm_cv_lib_iconv="giconv")
+
+           LIBS="$jm_save_LIBS"
 
         if test "$jm_cv_func_iconv" != yes; then
           jm_save_LIBS="$LIBS"
@@ -572,9 +578,9 @@ AC_DEFUN(jm_ICONV,
             [iconv_t cd = iconv_open("","");
              iconv(cd,NULL,NULL,NULL,NULL);
              iconv_close(cd);],
-            jm_cv_lib_iconv=yes
             jm_cv_include="iconv.h"
-            jm_cv_func_iconv=yes)
+            jm_cv_func_iconv=yes
+            jm_cv_lib_iconv="iconv")
           LIBS="$jm_save_LIBS"
         fi
       fi
@@ -598,17 +604,6 @@ AC_DEFUN(jm_ICONV,
     fi
   else
     AC_MSG_RESULT(no)
-  fi
-  if test "$jm_cv_lib_iconv" = yes; then
-    if test "$jm_cv_giconv" = yes; then
-      LIBS="$LIBS -lgiconv"
-    else
-      if test "$jm_cv_biconv" = yes; then
-        LIBS="$LIBS -lbiconv"
-      else
-        LIBS="$LIBS -liconv"
-      fi
-    fi
   fi
 ])
 

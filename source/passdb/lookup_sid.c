@@ -299,7 +299,6 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 
 NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-	uid_t low, high;
 	fstring sid;
 
 	ZERO_STRUCTP(psid);
@@ -307,16 +306,14 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 	if (fetch_sid_from_uid_cache(psid, uid))
 		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 
-	if (lp_idmap_uid(&low, &high) && uid >= low && uid <= high) {
-		if (winbind_uid_to_sid(psid, uid)) {
+	if (winbind_uid_to_sid(psid, uid)) {
 
-			DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
-				(unsigned int)uid, sid_to_string(sid, psid)));
+		DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
+			(unsigned int)uid, sid_to_string(sid, psid)));
 
-			if (psid)
-				store_uid_sid_cache(psid, uid);
-			return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
-		}
+		if (psid)
+			store_uid_sid_cache(psid, uid);
+		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 	}
 
 	if (!local_uid_to_sid(psid, uid)) {
@@ -336,7 +333,6 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 
 NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-	gid_t low, high;
 	fstring sid;
 
 	ZERO_STRUCTP(psid);
@@ -344,16 +340,14 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 
-	if (lp_idmap_gid(&low, &high) && gid >= low && gid <= high) {
-		if (winbind_gid_to_sid(psid, gid)) {
+	if (winbind_gid_to_sid(psid, gid)) {
 
-			DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
-				(unsigned int)gid, sid_to_string(sid, psid)));
+		DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
+			(unsigned int)gid, sid_to_string(sid, psid)));
                         
-			if (psid)
-				store_gid_sid_cache(psid, gid);
-			return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
-		}
+		if (psid)
+			store_gid_sid_cache(psid, gid);
+		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 	}
 
 	if (!local_gid_to_sid(psid, gid)) {

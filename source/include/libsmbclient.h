@@ -5,6 +5,7 @@
   Copyright (C) Richard Sharpe 2000
   Copyright (C) John Terpsra 2000
   Copyright (C) Tom Jansen (Ninja ISD) 2002 
+  Copyright (C) Derrell Lipman 2003
 
    
   This program is free software; you can redistribute it and/or modify
@@ -65,6 +66,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <utime.h>
+
+#define SMBC_BASE_FD        10000 /* smallest file descriptor returned */
 
 #define SMBC_WORKGROUP      1
 #define SMBC_SERVER         2
@@ -112,6 +116,20 @@ struct smbc_dirent
 	 */
 	char name[1];
 };
+
+/*
+ * Flags for smbc_setxattr()
+ *   Specify a bitwise OR of these, or 0 to add or replace as necessary
+ */
+#define SMBC_XATTR_FLAG_CREATE       0x1 /* fail if attr already exists */
+#define SMBC_XATTR_FLAG_REPLACE      0x2 /* fail if attr does not exist */
+
+
+#ifndef ENOATTR
+# define ENOATTR ENOENT        /* No such attribute */
+#endif
+
+
 
 
 /**@ingroup structure
@@ -358,6 +376,27 @@ struct _SMBCCTX {
 	off_t      (*telldir) (SMBCCTX *c, SMBCFILE *dir);
 	int        (*lseekdir)(SMBCCTX *c, SMBCFILE *dir, off_t offset);
 	int        (*fstatdir)(SMBCCTX *c, SMBCFILE *dir, struct stat *st);
+        int        (*chmod)(SMBCCTX *c, const char *fname, mode_t mode);
+        int        (*utimes)(SMBCCTX *c,
+                             const char *fname, struct timeval *tbuf);
+        int        (*setxattr)(SMBCCTX *context,
+                               const char *fname,
+                               const char *name,
+                               const void *value,
+                               size_t size,
+                               int flags);
+        int        (*getxattr)(SMBCCTX *context,
+                               const char *fname,
+                               const char *name,
+                               const void *value,
+                               size_t size);
+        int        (*removexattr)(SMBCCTX *context,
+                                  const char *fname,
+                                  const char *name);
+        int        (*listxattr)(SMBCCTX *context,
+                                const char *fname,
+                                char *list,
+                                size_t size);
 
 	/** callable functions for printing
 	 */ 
@@ -498,6 +537,30 @@ SMBCCTX * smbc_init_context(SMBCCTX * context);
  */
 
 int smbc_init(smbc_get_auth_data_fn fn, int debug);
+
+/**@ingroup misc
+ * Set or retrieve the compatibility library's context pointer
+ *
+ * @param context   New context to use, or NULL.  If a new context is provided,
+ *                  it must have allocated with smbc_new_context() and
+ *                  initialized with smbc_init_context(), followed, optionally,
+ *                  by some manual changes to some of the non-internal fields.
+ *
+ * @return          The old context.
+ *
+ * @see             smbc_new_context(), smbc_init_context(), smbc_init()
+ *
+ * @note            This function may be called prior to smbc_init() to force
+ *                  use of the next context without any internal calls to
+ *                  smbc_new_context() or smbc_init_context().  It may also
+ *                  be called after smbc_init() has already called those two
+ *                  functions, to replace the existing context with a new one.
+ *                  Care should be taken, in this latter case, to ensure that
+ *                  the server cache and any data allocated by the
+ *                  authentication functions have been freed, if necessary.
+ */
+
+SMBCCTX * smbc_set_context(SMBCCTX * new_context);
 
 /**@ingroup file
  * Open a file on an SMB server.
@@ -1008,6 +1071,807 @@ int smbc_chown(const char *url, uid_t owner, gid_t group);
  */
 int smbc_chmod(const char *url, mode_t mode);
 
+/**@ingroup attribute
+ * Change the last modification time on a file
+ *
+ * @param url       The smb url of the file or directory to change
+ *                  the modification time of
+ * 
+ * @param tbuf      A timeval structure which contains the desired
+ *                  modification time.  NOTE: Only the tv_sec field is
+ *                  used.  The tv_usec (microseconds) portion is ignored.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - EPERM  Permission was denied.
+ *
+ */
+int smbc_utimes(const char *url, struct timeval *tbuf);
+
+#ifdef HAVE_UTIME_H
+/**@ingroup attribute
+ * Change the last modification time on a file
+ *
+ * @param url       The smb url of the file or directory to change
+ *                  the modification time of
+ * 
+ * @param utbuf     A utimebuf structure which contains the desired
+ *                  modification time.  NOTE: Although the structure contains
+ *                  an access time as well, the access time value is ignored.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EPERM  Permission was denied.
+ *
+ */
+int smbc_utime(const char *fname, struct utimbuf *utbuf);
+#endif
+
+/**@ingroup attribute
+ * Set extended attributes for a file.  This is used for modifying a file's
+ * security descriptor (i.e. owner, group, and access control list)
+ *
+ * @param url       The smb url of the file or directory to set extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be changed.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter should contain a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @param value     The value to be assigned to the specified attribute name.
+ *                  This buffer should contain only the attribute value if the
+ *                  name was of the "system.nt_sec_desc.<attribute_name>"
+ *                  form.  If the name was of the "system.nt_sec_desc.*" form
+ *                  then a complete security descriptor, with name:value pairs
+ *                  separated by tabs, commas, or newlines (not spaces!),
+ *                  should be provided in this value buffer.  A complete
+ *                  security descriptor will contain one or more entries
+ *                  selected from the following:
+ *
+ *                    REVISION:<revision number>
+ *                    OWNER:<sid or name>
+ *                    GROUP:<sid or name>
+ *                    ACL:<sid or name>:<type>/<flags>/<mask>
+ *
+ *                  The  revision of the ACL specifies the internal Windows NT
+ *                  ACL revision for the security descriptor. If not specified
+ *                  it defaults to  1.  Using values other than 1 may cause
+ *                  strange behaviour.
+ *
+ *                  The owner and group specify the owner and group sids for
+ *                  the object. If the attribute name (either '*+' with a
+ *                  complete security descriptor, or individual 'owner+' or
+ *                  'group+' attribute names) ended with a plus sign, the
+ *                  specified name is resolved to a SID value, using the
+ *                  server on which the file or directory resides.  Otherwise,
+ *                  the value should be provided in SID-printable format as
+ *                  S-1-x-y-z, and is used directly.  The <sid or name>
+ *                  associated with the ACL: attribute should be provided
+ *                  similarly.
+ *
+ * @param size      The number of the bytes of data in the value buffer
+ *
+ * @param flags     A bit-wise OR of zero or more of the following:
+ *                    SMBC_XATTR_FLAG_CREATE -
+ *                      fail if the named attribute already exists
+ *                    SMBC_XATTR_FLAG_REPLACE -
+ *                      fail if the attribute does not already exist
+ *
+ *                  If neither flag is specified, the specified attributes
+ *                  will be added or replace existing attributes of the same
+ *                  name, as necessary.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL  The client library is not properly initialized
+ *                            or one of the parameters is not of a correct
+ *                            form
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EEXIST  If the attribute already exists and the flag
+ *                            SMBC_XATTR_FLAG_CREAT was specified
+ *                  - ENOATTR If the attribute does not exist and the flag
+ *                            SMBC_XATTR_FLAG_REPLACE was specified
+ *                  - EPERM   Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ * @note            Attribute names are compared in a case-insensitive
+ *                  fashion.  All of the following are equivalent, although
+ *                  the all-lower-case name is the preferred format:
+ *                    system.nt_sec_desc.owner
+ *                    SYSTEM.NT_SEC_DESC.OWNER
+ *                    sYsTeM.nt_sEc_desc.owNER
+ *
+ */
+int smbc_setxattr(const char *url,
+                  const char *name,
+                  const void *value,
+                  size_t size,
+                  int flags);
+
+
+/**@ingroup attribute
+ * Set extended attributes for a file.  This is used for modifying a file's
+ * security descriptor (i.e. owner, group, and access control list).  The
+ * POSIX function which this maps to would act on a symbolic link rather than
+ * acting on what the symbolic link points to, but with no symbolic links in
+ * SMB file systems, this function is functionally identical to
+ * smbc_setxattr().
+ *
+ * @param url       The smb url of the file or directory to set extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be changed.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter should contain a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @param value     The value to be assigned to the specified attribute name.
+ *                  This buffer should contain only the attribute value if the
+ *                  name was of the "system.nt_sec_desc.<attribute_name>"
+ *                  form.  If the name was of the "system.nt_sec_desc.*" form
+ *                  then a complete security descriptor, with name:value pairs
+ *                  separated by tabs, commas, or newlines (not spaces!),
+ *                  should be provided in this value buffer.  A complete
+ *                  security descriptor will contain one or more entries
+ *                  selected from the following:
+ *
+ *                    REVISION:<revision number>
+ *                    OWNER:<sid or name>
+ *                    GROUP:<sid or name>
+ *                    ACL:<sid or name>:<type>/<flags>/<mask>
+ *
+ *                  The  revision of the ACL specifies the internal Windows NT
+ *                  ACL revision for the security descriptor. If not specified
+ *                  it defaults to  1.  Using values other than 1 may cause
+ *                  strange behaviour.
+ *
+ *                  The owner and group specify the owner and group sids for
+ *                  the object. If the attribute name (either '*+' with a
+ *                  complete security descriptor, or individual 'owner+' or
+ *                  'group+' attribute names) ended with a plus sign, the
+ *                  specified name is resolved to a SID value, using the
+ *                  server on which the file or directory resides.  Otherwise,
+ *                  the value should be provided in SID-printable format as
+ *                  S-1-x-y-z, and is used directly.  The <sid or name>
+ *                  associated with the ACL: attribute should be provided
+ *                  similarly.
+ *
+ * @param size      The number of the bytes of data in the value buffer
+ *
+ * @param flags     A bit-wise OR of zero or more of the following:
+ *                    SMBC_XATTR_FLAG_CREATE -
+ *                      fail if the named attribute already exists
+ *                    SMBC_XATTR_FLAG_REPLACE -
+ *                      fail if the attribute does not already exist
+ *
+ *                  If neither flag is specified, the specified attributes
+ *                  will be added or replace existing attributes of the same
+ *                  name, as necessary.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL  The client library is not properly initialized
+ *                            or one of the parameters is not of a correct
+ *                            form
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EEXIST  If the attribute already exists and the flag
+ *                            SMBC_XATTR_FLAG_CREAT was specified
+ *                  - ENOATTR If the attribute does not exist and the flag
+ *                            SMBC_XATTR_FLAG_REPLACE was specified
+ *                  - EPERM   Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ * @note            Attribute names are compared in a case-insensitive
+ *                  fashion.  All of the following are equivalent, although
+ *                  the all-lower-case name is the preferred format:
+ *                    system.nt_sec_desc.owner
+ *                    SYSTEM.NT_SEC_DESC.OWNER
+ *                    sYsTeM.nt_sEc_desc.owNER
+ *
+ */
+int smbc_lsetxattr(const char *url,
+                   const char *name,
+                   const void *value,
+                   size_t size,
+                   int flags);
+
+
+/**@ingroup attribute
+ * Set extended attributes for a file.  This is used for modifying a file's
+ * security descriptor (i.e. owner, group, and access control list)
+ *
+ * @param fd        A file descriptor associated with an open file (as
+ *                  previously returned by smbc_open(), to get extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be changed.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter should contain a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @param value     The value to be assigned to the specified attribute name.
+ *                  This buffer should contain only the attribute value if the
+ *                  name was of the "system.nt_sec_desc.<attribute_name>"
+ *                  form.  If the name was of the "system.nt_sec_desc.*" form
+ *                  then a complete security descriptor, with name:value pairs
+ *                  separated by tabs, commas, or newlines (not spaces!),
+ *                  should be provided in this value buffer.  A complete
+ *                  security descriptor will contain one or more entries
+ *                  selected from the following:
+ *
+ *                    REVISION:<revision number>
+ *                    OWNER:<sid or name>
+ *                    GROUP:<sid or name>
+ *                    ACL:<sid or name>:<type>/<flags>/<mask>
+ *
+ *                  The  revision of the ACL specifies the internal Windows NT
+ *                  ACL revision for the security descriptor. If not specified
+ *                  it defaults to  1.  Using values other than 1 may cause
+ *                  strange behaviour.
+ *
+ *                  The owner and group specify the owner and group sids for
+ *                  the object. If the attribute name (either '*+' with a
+ *                  complete security descriptor, or individual 'owner+' or
+ *                  'group+' attribute names) ended with a plus sign, the
+ *                  specified name is resolved to a SID value, using the
+ *                  server on which the file or directory resides.  Otherwise,
+ *                  the value should be provided in SID-printable format as
+ *                  S-1-x-y-z, and is used directly.  The <sid or name>
+ *                  associated with the ACL: attribute should be provided
+ *                  similarly.
+ *
+ * @param size      The number of the bytes of data in the value buffer
+ *
+ * @param flags     A bit-wise OR of zero or more of the following:
+ *                    SMBC_XATTR_FLAG_CREATE -
+ *                      fail if the named attribute already exists
+ *                    SMBC_XATTR_FLAG_REPLACE -
+ *                      fail if the attribute does not already exist
+ *
+ *                  If neither flag is specified, the specified attributes
+ *                  will be added or replace existing attributes of the same
+ *                  name, as necessary.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL  The client library is not properly initialized
+ *                            or one of the parameters is not of a correct
+ *                            form
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EEXIST  If the attribute already exists and the flag
+ *                            SMBC_XATTR_FLAG_CREAT was specified
+ *                  - ENOATTR If the attribute does not exist and the flag
+ *                            SMBC_XATTR_FLAG_REPLACE was specified
+ *                  - EPERM   Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ * @note            Attribute names are compared in a case-insensitive
+ *                  fashion.  All of the following are equivalent, although
+ *                  the all-lower-case name is the preferred format:
+ *                    system.nt_sec_desc.owner
+ *                    SYSTEM.NT_SEC_DESC.OWNER
+ *                    sYsTeM.nt_sEc_desc.owNER
+ *
+ */
+int smbc_fsetxattr(int fd,
+                   const char *name,
+                   const void *value,
+                   size_t size,
+                   int flags);
+
+
+/**@ingroup attribute
+ * Get extended attributes for a file.
+ *
+ * @param url       The smb url of the file or directory to get extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be retrieved.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter will return a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @param value     A pointer to a buffer in which the value of the specified
+ *                  attribute will be placed (unless size is zero).
+ *
+ * @param size      The size of the buffer pointed to by value.  This parameter
+ *                  may also be zero, in which case the size of the buffer
+ *                  required to hold the attribute value will be returned,
+ *                  but nothing will be placed into the value buffer.
+ * 
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL  The client library is not properly initialized
+ *                            or one of the parameters is not of a correct
+ *                            form
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EEXIST  If the attribute already exists and the flag
+ *                            SMBC_XATTR_FLAG_CREAT was specified
+ *                  - ENOATTR If the attribute does not exist and the flag
+ *                            SMBC_XATTR_FLAG_REPLACE was specified
+ *                  - EPERM   Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ */
+int smbc_getxattr(const char *url,
+                  const char *name,
+                  const void *value,
+                  size_t size);
+
+
+/**@ingroup attribute
+ * Get extended attributes for a file.  The POSIX function which this maps to
+ * would act on a symbolic link rather than acting on what the symbolic link
+ * points to, but with no symbolic links in SMB file systems, this function
+ * is functionally identical to smbc_getxattr().
+ *
+ * @param url       The smb url of the file or directory to get extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be retrieved.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter will return a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @param value     A pointer to a buffer in which the value of the specified
+ *                  attribute will be placed (unless size is zero).
+ *
+ * @param size      The size of the buffer pointed to by value.  This parameter
+ *                  may also be zero, in which case the size of the buffer
+ *                  required to hold the attribute value will be returned,
+ *                  but nothing will be placed into the value buffer.
+ * 
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL  The client library is not properly initialized
+ *                            or one of the parameters is not of a correct
+ *                            form
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EEXIST  If the attribute already exists and the flag
+ *                            SMBC_XATTR_FLAG_CREAT was specified
+ *                  - ENOATTR If the attribute does not exist and the flag
+ *                            SMBC_XATTR_FLAG_REPLACE was specified
+ *                  - EPERM   Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ */
+int smbc_lgetxattr(const char *url,
+                   const char *name,
+                   const void *value,
+                   size_t size);
+
+
+/**@ingroup attribute
+ * Get extended attributes for a file.
+ *
+ * @param fd        A file descriptor associated with an open file (as
+ *                  previously returned by smbc_open(), to get extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be retrieved.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter will return a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @param value     A pointer to a buffer in which the value of the specified
+ *                  attribute will be placed (unless size is zero).
+ *
+ * @param size      The size of the buffer pointed to by value.  This parameter
+ *                  may also be zero, in which case the size of the buffer
+ *                  required to hold the attribute value will be returned,
+ *                  but nothing will be placed into the value buffer.
+ * 
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL  The client library is not properly initialized
+ *                            or one of the parameters is not of a correct
+ *                            form
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EEXIST  If the attribute already exists and the flag
+ *                            SMBC_XATTR_FLAG_CREAT was specified
+ *                  - ENOATTR If the attribute does not exist and the flag
+ *                            SMBC_XATTR_FLAG_REPLACE was specified
+ *                  - EPERM   Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ */
+int smbc_fgetxattr(int fd,
+                   const char *name,
+                   const void *value,
+                   size_t size);
+
+
+/**@ingroup attribute
+ * Remove extended attributes for a file.  This is used for modifying a file's
+ * security descriptor (i.e. owner, group, and access control list)
+ *
+ * @param url       The smb url of the file or directory to remove the extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be removed.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter will return a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EPERM  Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ */
+int smbc_removexattr(const char *url,
+                     const char *name);
+
+
+/**@ingroup attribute
+ * Remove extended attributes for a file.  This is used for modifying a file's
+ * security descriptor (i.e. owner, group, and access control list) The POSIX
+ * function which this maps to would act on a symbolic link rather than acting
+ * on what the symbolic link points to, but with no symbolic links in SMB file
+ * systems, this function is functionally identical to smbc_removexattr().
+ *
+ * @param url       The smb url of the file or directory to remove the extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be removed.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter will return a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EPERM  Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ */
+int smbc_lremovexattr(const char *url,
+                      const char *name);
+
+
+/**@ingroup attribute
+ * Remove extended attributes for a file.  This is used for modifying a file's
+ * security descriptor (i.e. owner, group, and access control list)
+ *
+ * @param fd        A file descriptor associated with an open file (as
+ *                  previously returned by smbc_open(), to get extended
+ *                  attributes for.
+ * 
+ * @param name      The name of an attribute to be removed.  Names are of
+ *                  one of the following forms:
+ *
+ *                     system.nt_sec_desc.<attribute name>
+ *                     system.nt_sec_desc.*
+ *                     system.nt_sec_desc.*+
+ *
+ *                  where <attribute name> is one of:
+ *
+ *                     revision
+ *                     owner
+ *                     owner+
+ *                     group
+ *                     group+
+ *                     acl:<name or sid>
+ *                     acl+:<name or sid>
+ *
+ *                  In the forms "system.nt_sec_desc.*" and
+ *                  "system.nt_sec_desc.*+", the asterisk and plus signs are
+ *                  literal, i.e. the string is provided exactly as shown, and
+ *                  the value parameter will return a complete security
+ *                  descriptor with name:value pairs separated by tabs,
+ *                  commas, or newlines (not spaces!).
+ *
+ *                  The plus sign ('+') indicates that SIDs should be mapped
+ *                  to names.  Without the plus sign, SIDs are not mapped;
+ *                  rather they are simply converted to a string format.
+ *
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EPERM  Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ */
+int smbc_fremovexattr(int fd,
+                      const char *name);
+
+
+/**@ingroup attribute
+ * List the supported extended attribute names associated with a file
+ *
+ * @param url       The smb url of the file or directory to list the extended
+ *                  attributes for.
+ *
+ * @param list      A pointer to a buffer in which the list of attributes for
+ *                  the specified file or directory will be placed (unless
+ *                  size is zero).
+ *
+ * @param size      The size of the buffer pointed to by list.  This parameter
+ *                  may also be zero, in which case the size of the buffer
+ *                  required to hold all of the attribute names will be
+ *                  returned, but nothing will be placed into the list buffer.
+ * 
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EPERM  Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ * @note            This function always returns all attribute names supported
+ *                  by NT file systems, regardless of wether the referenced
+ *                  file system supports extended attributes (e.g. a Windows
+ *                  2000 machine supports extended attributes if NTFS is used,
+ *                  but not if FAT is used, and Windows 98 doesn't support
+ *                  extended attributes at all.  Whether this is a feature or
+ *                  a bug is yet to be decided.
+ */
+int smbc_listxattr(const char *url,
+                   char *list,
+                   size_t size);
+
+/**@ingroup attribute
+ * List the supported extended attribute names associated with a file The
+ * POSIX function which this maps to would act on a symbolic link rather than
+ * acting on what the symbolic link points to, but with no symbolic links in
+ * SMB file systems, this function is functionally identical to
+ * smbc_listxattr().
+ *
+ * @param url       The smb url of the file or directory to list the extended
+ *                  attributes for.
+ *
+ * @param list      A pointer to a buffer in which the list of attributes for
+ *                  the specified file or directory will be placed (unless
+ *                  size is zero).
+ *
+ * @param size      The size of the buffer pointed to by list.  This parameter
+ *                  may also be zero, in which case the size of the buffer
+ *                  required to hold all of the attribute names will be
+ *                  returned, but nothing will be placed into the list buffer.
+ * 
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EPERM  Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ * @note            This function always returns all attribute names supported
+ *                  by NT file systems, regardless of wether the referenced
+ *                  file system supports extended attributes (e.g. a Windows
+ *                  2000 machine supports extended attributes if NTFS is used,
+ *                  but not if FAT is used, and Windows 98 doesn't support
+ *                  extended attributes at all.  Whether this is a feature or
+ *                  a bug is yet to be decided.
+ */
+int smbc_llistxattr(const char *url,
+                    char *list,
+                    size_t size);
+
+/**@ingroup attribute
+ * List the supported extended attribute names associated with a file
+ *
+ * @param fd        A file descriptor associated with an open file (as
+ *                  previously returned by smbc_open(), to get extended
+ *                  attributes for.
+ * 
+ * @param list      A pointer to a buffer in which the list of attributes for
+ *                  the specified file or directory will be placed (unless
+ *                  size is zero).
+ *
+ * @param size      The size of the buffer pointed to by list.  This parameter
+ *                  may also be zero, in which case the size of the buffer
+ *                  required to hold all of the attribute names will be
+ *                  returned, but nothing will be placed into the list buffer.
+ * 
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EINVAL The client library is not properly initialized
+ *                  - ENOMEM No memory was available for internal needs
+ *                  - EPERM  Permission was denied.
+ *                  - ENOTSUP The referenced file system does not support
+ *                            extended attributes
+ *
+ * @note            This function always returns all attribute names supported
+ *                  by NT file systems, regardless of wether the referenced
+ *                  file system supports extended attributes (e.g. a Windows
+ *                  2000 machine supports extended attributes if NTFS is used,
+ *                  but not if FAT is used, and Windows 98 doesn't support
+ *                  extended attributes at all.  Whether this is a feature or
+ *                  a bug is yet to be decided.
+ */
+int smbc_flistxattr(int fd,
+                    char *list,
+                    size_t size);
 
 /**@ingroup print
  * Print a file given the name in fname. It would be a URL ...
@@ -1068,5 +1932,16 @@ int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn);
  */
 int smbc_unlink_print_job(const char *purl, int id);
 
+/**@ingroup callback
+ * Remove a server from the cached server list it's unused.
+ *
+ * @param context    pointer to smb context
+ *
+ * @param srv        pointer to server to remove
+ *
+ * @return On success, 0 is returned. 1 is returned if the server could not
+ *         be removed. Also useable outside libsmbclient.
+ */
+int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv);
 
 #endif /* SMBCLIENT_H_INCLUDED */

@@ -2598,7 +2598,8 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli,
 	}
 
 	the_cli->protocol = PROTOCOL_NT1;
-    
+	cli_setup_signing_state(the_cli, lp_client_signing());
+  
 	if (!cli_negprot(the_cli)) {
 		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the negotiate protocol. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
 		cli_shutdown(the_cli);

@@ -255,7 +255,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q = ALIGN4(q, buf);
 				}
 
-				DEBUG(3,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %d\n", len, PTR_DIFF(q, buf) ));
+				DEBUG(3,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %ld\n", len, (unsigned long)PTR_DIFF(q, buf) ));
 
 				if (len - PTR_DIFF(q, buf) > 8) {
 					/* with NT5 clients we can sometimes
@@ -491,6 +491,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 				/* Domain SID */
 
+#if 0
+				/* We must range check this. */
 				q += IVAL(q, 0) + 4;  /* 4 byte length plus data */
           
 				q += 2;               /* Alignment? */
@@ -500,6 +502,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				q += 4;               /* NT version (0x1) */
 				q += 2;               /* LMNT token (0xff) */
 				q += 2;               /* LM20 token (0xff) */
+#endif
 
 				SAFE_FREE(db_info);        /* Not sure whether we need to do anything useful with these */
 

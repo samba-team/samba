@@ -33,7 +33,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	SEC_DESC *psd = NULL;
 
 	SIVAL(param, 0, fnum);
-	SSVAL(param, 4, 0x7);
+	SIVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
 			       NT_TRANSACT_QUERY_SECURITY_DESC, 

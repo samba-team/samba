@@ -89,8 +89,8 @@ BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 
 	p->pipe_handles = hl;
 
-	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %u for pipe %s\n",
-			p->pipe_handles->pipe_ref_count, pipe_name ));
+	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %lu for pipe %s\n",
+		  (unsigned long)p->pipe_handles->pipe_ref_count, pipe_name ));
 
 	return True;
 }

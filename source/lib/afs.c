@@ -185,13 +185,9 @@ BOOL afs_login(connection_struct *conn)
 	strncpy(p, cell, sizeof(ticket)-PTR_DIFF(p,ticket)-1);
 	p += strlen(p)+1;
 
-	/* As long as we still only use the effective UID we need to set the
-	 * token for it here as well. This involves patching AFS in two
-	 * places. Once we start using the real uid where we have the
-	 * setresuid function, we can use getuid() here which would be more
-	 * correct. */
-
-	ct.ViceId = geteuid();
+	/* This assumes that we have setresuid and set the real uid as well as
+	   the effective uid in set_effective_uid(). */
+	ct.ViceId = getuid();
 	DEBUG(10, ("Creating Token for uid %d\n", ct.ViceId));
 
 	/* Alice's network layer address. At least Openafs-1.2.10

@@ -3297,8 +3297,8 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
 
 	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE);
 
-	if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
-		return ERROR_DOS(ERRDOS,ERRbadfile);
+	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata)) < 0)
+		return UNIXERROR(ERRDOS,ERRbadfile);
     
 	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
 	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
@@ -3319,7 +3319,12 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 {
 	char *pdata = *ppdata;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv15);
+
+	/* check for an invalid fid before proceeding */
 	
+	if (!fsp)                                
+		return(ERROR_DOS(ERRDOS,ERRbadfid));  
+
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
 		pdata = Realloc(*ppdata, 32);
@@ -3497,7 +3502,8 @@ int reply_trans2(connection_struct *conn,
 		unsigned int psoff = SVAL(inbuf, smb_psoff);
 		if ((psoff + num_params < psoff) || (psoff + num_params < num_params))
 			goto bad_param;
-		if (smb_base(inbuf) + psoff + num_params > inbuf + length)
+		if ((smb_base(inbuf) + psoff + num_params > inbuf + length) ||
+				(smb_base(inbuf) + psoff + num_params < smb_base(inbuf)))
 			goto bad_param;
 		memcpy( params, smb_base(inbuf) + psoff, num_params);
 	}
@@ -3505,7 +3511,8 @@ int reply_trans2(connection_struct *conn,
 		unsigned int dsoff = SVAL(inbuf, smb_dsoff);
 		if ((dsoff + num_data < dsoff) || (dsoff + num_data < num_data))
 			goto bad_param;
-		if (smb_base(inbuf) + dsoff + num_data > inbuf + length)
+		if ((smb_base(inbuf) + dsoff + num_data > inbuf + length) ||
+				(smb_base(inbuf) + dsoff + num_data < smb_base(inbuf)))
 			goto bad_param;
 		memcpy( data, smb_base(inbuf) + dsoff, num_data);
 	}
@@ -3566,7 +3573,10 @@ int reply_trans2(connection_struct *conn,
 				if ((param_disp + num_params < param_disp) ||
 						(param_disp + num_params < num_params))
 					goto bad_param;
-				if (smb_base(inbuf) + param_off + num_params >= inbuf + bufsize)
+				if (param_disp > total_params)
+					goto bad_param;
+				if ((smb_base(inbuf) + param_off + num_params >= inbuf + bufsize) ||
+						(smb_base(inbuf) + param_off + num_params < smb_base(inbuf)))
 					goto bad_param;
 				if (params + param_disp < params)
 					goto bad_param;
@@ -3579,7 +3589,10 @@ int reply_trans2(connection_struct *conn,
 				if ((data_disp + num_data < data_disp) ||
 						(data_disp + num_data < num_data))
 					goto bad_param;
-				if (smb_base(inbuf) + data_off + num_data >= inbuf + bufsize)
+				if (data_disp > total_data)
+					goto bad_param;
+				if ((smb_base(inbuf) + data_off + num_data >= inbuf + bufsize) ||
+						(smb_base(inbuf) + data_off + num_data < smb_base(inbuf)))
 					goto bad_param;
 				if (data + data_disp < data)
 					goto bad_param;

@@ -97,7 +97,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 	ubi_slAddTail( list_head, msg);
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(buf,smb_mid), True);
+	srv_defer_sign_response(SVAL(buf,smb_mid));
 
 	return True;
 }
@@ -637,7 +637,7 @@ static void smb_dump(const char *name, int type, char *data, ssize_t len)
 		if (ret != len)
 			DEBUG(0,("smb_dump: problem: write returned %d\n", (int)ret ));
 		close(fd);
-		DEBUG(0,("created %s len %d\n", fname, len));
+		DEBUG(0,("created %s len %lu\n", fname, (unsigned long)len));
 	}
 }
 

@@ -1458,7 +1458,7 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 
 	static const uchar netsec_seal_sig[8] = NETSEC_SEAL_SIGNATURE;
 	static const uchar netsec_sign_sig[8] = NETSEC_SIGN_SIGNATURE;
-	const uchar *netsec_sig;
+	const uchar *netsec_sig = NULL;
 
 	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	
@@ -1533,7 +1533,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 
 	static const uchar netsec_seal_sig[8] = NETSEC_SEAL_SIGNATURE;
 	static const uchar netsec_sign_sig[8] = NETSEC_SIGN_SIGNATURE;
-	const uchar *netsec_sig;
+	const uchar *netsec_sig = NULL;
 
 	uchar seq_num[8];
 

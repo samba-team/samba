@@ -242,7 +242,7 @@ void lang_msg_free(const char *msgstr)
 */
 const char *lang_msg_rotate(const char *msgid)
 {
-#define NUM_LANG_BUFS 4
+#define NUM_LANG_BUFS 16
 	char *msgstr;
 	static pstring bufs[NUM_LANG_BUFS];
 	static int next;

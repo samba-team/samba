@@ -96,7 +96,7 @@ void send_trans_reply(char *outbuf,
 	align = ((this_lparam)%4);
 
 	if (buffer_too_large) {
-		ERROR_NT(STATUS_BUFFER_OVERFLOW);
+		ERROR_BOTH(STATUS_BUFFER_OVERFLOW,ERRDOS,ERRmoredata);
 	}
 
 	set_message(outbuf,10,1+align+this_ldata+this_lparam,True);
@@ -281,6 +281,14 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	subcommand = ((int)setup[0]) & 0xFFFF;
 
 	if(!(p = get_rpc_pipe(pnum))) {
+		if (subcommand == TRANSACT_WAITNAMEDPIPEHANDLESTATE) {
+			/* Win9x does this call with a unicode pipe name, not a pnum. */
+			/* Just return success for now... */
+			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
+			send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
+			return -1;
+		}
+
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
 		return api_no_reply(outbuf, mdrcnt);
 	}
@@ -388,7 +396,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		} 
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
 			goto bad_param;
-		if (smb_base(inbuf)+dsoff+dscnt > inbuf + size)
+		if ((smb_base(inbuf)+dsoff+dscnt > inbuf + size) ||
+				(smb_base(inbuf)+dsoff+dscnt < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
@@ -402,8 +411,9 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
-			 goto bad_param;
-		if (smb_base(inbuf)+psoff+pscnt > inbuf + size)
+			goto bad_param;
+		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
+				(smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
@@ -487,8 +497,11 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			if (pdisp+pcnt >= tpscnt)
 				goto bad_param;
 			if ((pdisp+pcnt < pdisp) || (pdisp+pcnt < pcnt))
-				 goto bad_param;
-			if (smb_base(inbuf) + poff + pcnt >= inbuf + bufsize)
+				goto bad_param;
+			if (pdisp > tpscnt)
+				goto bad_param;
+			if ((smb_base(inbuf) + poff + pcnt >= inbuf + bufsize) ||
+					(smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
 				goto bad_param;
 			if (params + pdisp < params)
 				goto bad_param;
@@ -501,7 +514,10 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				goto bad_param;
 			if ((ddisp+dcnt < ddisp) || (ddisp+dcnt < dcnt))
 				goto bad_param;
-			if (smb_base(inbuf) + doff + dcnt >= inbuf + bufsize)
+			if (ddisp > tdscnt)
+				goto bad_param;
+			if ((smb_base(inbuf) + doff + dcnt >= inbuf + bufsize) ||
+					(smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
 				goto bad_param;
 			if (data + ddisp < data)
 				goto bad_param;

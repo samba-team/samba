@@ -71,7 +71,7 @@ static BOOL string_match(const char *tok,const char *s, char *invalid_char)
 
 	if (tok[0] == '.') {			/* domain: match last fields */
 		if ((str_len = strlen(s)) > (tok_len = strlen(tok))
-		    && strcasecmp(tok, s + str_len - tok_len) == 0)
+		    && strequal(tok, s + str_len - tok_len))
 			return (True);
 	} else if (tok[0] == '@') { /* netgroup: look it up */
 #ifdef	HAVE_NETGROUP
@@ -107,14 +107,14 @@ static BOOL string_match(const char *tok,const char *s, char *invalid_char)
 		DEBUG(0,("access: netgroup support is not configured\n"));
 		return (False);
 #endif
-	} else if (strcasecmp(tok, "ALL") == 0) {	/* all: match any */
+	} else if (strequal(tok, "ALL")) {	/* all: match any */
 		return (True);
-	} else if (strcasecmp(tok, "FAIL") == 0) {	/* fail: match any */
+	} else if (strequal(tok, "FAIL")) {	/* fail: match any */
 		return (FAIL);
-	} else if (strcasecmp(tok, "LOCAL") == 0) {	/* local: no dots */
-		if (strchr_m(s, '.') == 0 && strcasecmp(s, "unknown") != 0)
+	} else if (strequal(tok, "LOCAL")) {	/* local: no dots */
+		if (strchr_m(s, '.') == 0 && !strequal(s, "unknown"))
 			return (True);
-	} else if (!strcasecmp(tok, s)) {   /* match host name or address */
+	} else if (!strequal(tok, s)) {   /* match host name or address */
 		return (True);
 	} else if (tok[(tok_len = strlen(tok)) - 1] == '.') {	/* network */
 		if (strncmp(tok, s, tok_len) == 0)
@@ -175,7 +175,7 @@ static BOOL list_match(const char **list,const char *item,
 	 */
 
 	for (; *list ; list++) {
-		if (strcasecmp(*list, "EXCEPT") == 0)	/* EXCEPT: give up */
+		if (strequal(*list, "EXCEPT"))	/* EXCEPT: give up */
 			break;
 		if ((match = (*match_fn) (*list, item)))	/* True or FAIL */
 			break;
@@ -183,7 +183,7 @@ static BOOL list_match(const char **list,const char *item,
 	/* Process exceptions to True or FAIL matches. */
 
 	if (match != False) {
-		while (*list  && strcasecmp(*list, "EXCEPT"))
+		while (*list  && !strequal(*list, "EXCEPT"))
 			list++;
 
 		for (; *list; list++) {
@@ -275,8 +275,8 @@ static BOOL only_ipaddrs_in_list(const char** list)
 			
 	for (; *list ; list++) {
 		/* factor out the special strings */
-		if (!strcasecmp(*list, "ALL") || !strcasecmp(*list, "FAIL") || 
-		    !strcasecmp(*list, "EXCEPT")) {
+		if (strequal(*list, "ALL") || strequal(*list, "FAIL") || 
+		    strequal(*list, "EXCEPT")) {
 			continue;
 		}
 		

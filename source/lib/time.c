@@ -318,8 +318,11 @@ time_t nt_time_to_unix(NTTIME *nt)
   /* now adjust by 369 years to make the secs since 1970 */
   d -= TIME_FIXUP_CONSTANT;
 
-  if (!(l_time_min <= d && d <= l_time_max))
-    return(0);
+  if (d <= l_time_min)
+	  return (l_time_min);
+
+  if (d >= l_time_max)
+	  return (l_time_max);
 
   ret = (time_t)(d+0.5);
 
@@ -691,7 +694,7 @@ char *timestring(BOOL hires)
 				 ".%06ld", 
 				 (long)tp.tv_usec);
 		} else {
-			strftime(TimeBuf,100,"%Y/%m/%d %H:%M:%S",tm);
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
 		}
 #else
 		if (hires) {

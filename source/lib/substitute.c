@@ -45,10 +45,10 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 	 * arrggg!!! 
 	 */
 
-	if (strcasecmp(local_name, "*SMBSERVER")==0) 
+	if (strequal(local_name, "*SMBSERVER")) 
 		return;
 
-	if (strcasecmp(local_name, "*SMBSERV")==0) 
+	if (strequal(local_name, "*SMBSERV")) 
 		return;
 
 	if (already_perm)
@@ -528,6 +528,9 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 				t = realloc_string_sub(t, "%L", local_machine_name); 
 			else
 				t = realloc_string_sub(t, "%L", global_myname()); 
+			break;
+		case 'N':
+			t = realloc_string_sub(t, "%N", automount_server(smb_name));
 			break;
 		case 'M' :
 			t = realloc_string_sub(t, "%M", client_name());

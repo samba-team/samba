@@ -72,7 +72,7 @@ const char *opt_container = "cn=Users";
 int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
-static int opt_machine_pass = 0;
+int opt_machine_pass = 0;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -84,14 +84,14 @@ uint32 get_sec_channel_type(const char *param)
 	if (!(param && *param)) {
 		return get_default_sec_channel();
 	} else {
-		if (strcasecmp(param, "PDC")==0) {
+		if (strequal(param, "PDC")) {
 			return SEC_CHAN_BDC;
-		} else if (strcasecmp(param, "BDC")==0) {
+		} else if (strequal(param, "BDC")) {
 			return SEC_CHAN_BDC;
-		} else if (strcasecmp(param, "MEMBER")==0) {
+		} else if (strequal(param, "MEMBER")) {
 			return SEC_CHAN_WKSTA;
 #if 0			
-		} else if (strcasecmp(param, "DOMAIN")==0) {
+		} else if (strequal(param, "DOMAIN")) {
 			return SEC_CHAN_DOMAIN;
 #endif
 		} else {
@@ -130,7 +130,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 {
 	NTSTATUS nt_status;
 
-	if (!opt_password) {
+	if (!opt_password && !opt_machine_pass) {
 		char *pass = getpass("Password:");
 		if (pass) {
 			opt_password = strdup(pass);

@@ -188,7 +188,6 @@ NTSTATUS add_all_privilege(PRIVILEGE_SET *priv_set)
 	result = add_privilege(priv_set, set);
 	NTSTATUS_CHECK(result, done, "add_all_privilege", "add_privilege");
 
-done:
 	return result;
 }
 
