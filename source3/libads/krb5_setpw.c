@@ -139,13 +139,19 @@ static krb5_error_code build_setpw_request(krb5_context context,
 	}
 
 	packet->data = (char *)malloc(ap_req->length + cipherpw.length + 6);
+	if (!packet->data)
+		return -1;
 
 	/* see the RFC for details */
 	p = ((char *)packet->data) + 2;
-	RSSVAL(p, 0, 0xff80); p += 2;
-	RSSVAL(p, 0, ap_req->length); p += 2;
-	memcpy(p, ap_req->data, ap_req->length); p += ap_req->length;
-	memcpy(p, cipherpw.data, cipherpw.length); p += cipherpw.length;
+	RSSVAL(p, 0, 0xff80);
+	p += 2;
+	RSSVAL(p, 0, ap_req->length);
+	p += 2;
+	memcpy(p, ap_req->data, ap_req->length);
+	p += ap_req->length;
+	memcpy(p, cipherpw.data, cipherpw.length);
+	p += cipherpw.length;
 	packet->length = PTR_DIFF(p,packet->data);
 	RSSVAL(packet->data, 0, packet->length);
 	
@@ -397,6 +403,17 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 
 	chpw_rep.length = 1500;
 	chpw_rep.data = (char *) malloc(chpw_rep.length);
+	if (!chpw_rep.data) {
+	        close(sock);
+	        free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+		krb5_free_principal(context, creds.client);
+		krb5_free_principal(context, principal);
+		krb5_free_context(context);
+		DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
+		errno = ENOMEM;
+		return ADS_ERROR_SYSTEM(errno);
+	}
 
 	ret = read(sock, chpw_rep.data, chpw_rep.length);
 	if (ret < 0) {
