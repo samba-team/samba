@@ -53,10 +53,11 @@ NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid)
 	DEBUG(10,("idmap_gid_to_sid: gid = [%d]\n", gid));
 
 	flags = ID_GROUPID;
+#if 0	/* JERRY */
 	if (!idmap_check_ugid_is_in_free_range(gid)) {
 		flags |= ID_QUERY_ONLY;
 	}
-
+#endif
 	id.gid = gid;
 	return idmap_get_sid_from_id(sid, id, flags);
 }
