@@ -4884,7 +4884,8 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 ****************************************************************************/
 static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
                             int position, int snum, 
-			    NT_PRINTER_INFO_LEVEL *ntprinter)
+			    NT_PRINTER_INFO_LEVEL *ntprinter,
+			    DEVICEMODE *devmode)
 {
 	pstring temp_name;
 	pstring chaine;
@@ -4922,9 +4923,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	job_info->timeelapsed=0;
 	job_info->pagesprinted=0;
 
-	if((job_info->devmode = construct_dev_mode(snum)) == NULL) {
-		return False;
-	}
+	job_info->devmode = devmode;
 
 	return (True);
 }
@@ -4983,24 +4982,33 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 			      uint32 *needed, uint32 *returned)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-	JOB_INFO_2 *info;
+	JOB_INFO_2 *info = NULL;
 	int i;
 	WERROR result;
+	DEVICEMODE *devmode = NULL;
 	
 	info=(JOB_INFO_2 *)malloc(*returned*sizeof(JOB_INFO_2));
 	if (info==NULL) {
 		*returned=0;
-		return WERR_NOMEM;
+		result = WERR_NOMEM;
+		goto done;
 	}
 
 	result = get_a_printer(&ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(result)) {
 		*returned = 0;
-		return result;
+		goto done;
 	}
 		
+	if (!(devmode = construct_dev_mode(snum))) {
+		*returned = 0;
+		result = WERR_NOMEM;
+		goto done;
+	}
+
 	for (i=0; i<*returned; i++)
-		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter);
+		fill_job_info_2(
+			&info[i], &queue[i], i, snum, ntprinter, devmode);
 
 	free_a_printer(&ntprinter, 2);
 	SAFE_FREE(queue);
@@ -5009,27 +5017,32 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_job_info_2(&info[i]);
 
+	if (*needed > offered) {
+		*returned=0;
+		result = WERR_INSUFFICIENT_BUFFER;
+		goto done;
+	}
+
 	if (!alloc_buffer_size(buffer, *needed)) {
 		SAFE_FREE(info);
-		return WERR_INSUFFICIENT_BUFFER;
+		result = WERR_INSUFFICIENT_BUFFER;
+		goto done;
 	}
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		smb_io_job_info_2("", buffer, &info[i], 0);	
 
-	/* clear memory */
-	for (i = 0; i < *returned; i++)
-		free_job_info_2(&info[i]);
+	result = WERR_OK;
 
+ done:
+	free_a_printer(&ntprinter, 2);
+	free_devmode(devmode);
+	SAFE_FREE(queue);
 	SAFE_FREE(info);
 
-	if (*needed > offered) {
-		*returned=0;
-		return WERR_INSUFFICIENT_BUFFER;
-	}
+	return result;
 
-	return WERR_OK;
 }
 
 /****************************************************************************
@@ -6934,6 +6947,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	JOB_INFO_2 *info_2;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	WERROR ret;
+	DEVICEMODE *devmode = NULL;
 
 	info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
 
@@ -6962,7 +6976,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		return ret;
 	}
 
-	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter);
+	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
 	
 	free_a_printer(&ntprinter, 2);
 	SAFE_FREE(queue);
