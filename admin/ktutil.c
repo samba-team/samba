@@ -92,7 +92,7 @@ kt_remove(int argc, char **argv)
     struct getargs args[] = {
 	{ "principal", 'p', arg_string, NULL, "principal to remove" },
 	{ "kvno", 'V', arg_integer, NULL, "key version to remove" },
-	{ "enctype", 't', arg_string, NULL, "enctype to remove" },
+	{ "enctype", 'e', arg_string, NULL, "enctype to remove" },
 	{ "help", 'h', arg_flag, NULL }
     };
     int num_args = sizeof(args) / sizeof(args[0]);
