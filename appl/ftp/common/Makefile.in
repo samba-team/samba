@@ -17,14 +17,16 @@ prefix 	= @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-ATHENA = /usr/athena
+ATHENA = ../../..
+
+INCTOP = $(ATHENA)/include
 
 libcommon_OBJS = base64.o glob.o
 
 all: libcommon.a
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I. -I.. -I$(ATHENA)/include $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(INCTOP) $(DEFS) $<
 
 libcommon.a: $(libcommon_OBJS)
 	ar cr libcommon.a $(libcommon_OBJS)

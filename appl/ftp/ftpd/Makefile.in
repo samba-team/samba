@@ -7,9 +7,11 @@ VPATH		= @srcdir@
 SHELL		= /bin/sh
 
 CC 	= @CC@
+YACC	= @YACC@
 RANLIB 	= @RANLIB@
 DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
+LIBS	= @LIBS@
 
 INSTALL = @INSTALL@
 
@@ -17,22 +19,24 @@ prefix 	= @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-LIBTOP = ../../../lib
+ATHENA = ../../..
 
-LIBS = ../common/libcommon.a -L$(LIBTOP)/kafs -lkafs -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes $(LIBTOP)/roken/libroken.a
+INCTOP = $(ATHENA)/include
+
+LIBTOP = $(ATHENA)/lib
 
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o klogin.o
 
 all: ftpd
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I. -I$(srcdir) -I.. -I$(srcdir)/.. -I../common -I$(srcdir)/../common -I$(srcdir)/include  $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
 install:
 
 
 ftpd: $(ftpd_OBJS)
-	$(CC) -o ftpd $(ftpd_OBJS) $(LIBS)
+	$(CC) -o ftpd $(ftpd_OBJS) ../common/libcommon.a -L$(LIBTOP)/kafs -lkafs -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<

@@ -10,6 +10,7 @@ CC 	= @CC@
 RANLIB 	= @RANLIB@
 DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
+LIBS = @LIBS@
 
 INSTALL = @INSTALL@
 
@@ -17,23 +18,24 @@ prefix 	= @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-ATHENA = /usr/athena
-LIBTOP = ../../../lib
+ATHENA = ../../..
 
-LIBS = -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes $(LIBTOP)/roken/libroken.a
+INCTOP = $(ATHENA)/include
+
+LIBTOP = $(ATHENA)/lib
 
 ftp_OBJS = cmds.o cmdtab.o ftp.o krb4.o main.o ruserpass.o domacro.o globals.o kauth.o
 
 all: ftp
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I.. -I$(srcdir)/.. -I../common -I$(srcdir)/../common -I$(ATHENA)/include  $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
 install:
 
 
 ftp: $(ftp_OBJS) ../common/libcommon.a
-	$(CC) -o ftp $(ftp_OBJS) ../common/libcommon.a -L$(ATHENA)/lib -lkrb -ldes $(LIBS)
+	$(CC) -o ftp $(ftp_OBJS) ../common/libcommon.a -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
 
 clean cleandir:
 	rm -f *~ *.o core ftp \#*
