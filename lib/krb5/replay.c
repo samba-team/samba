@@ -156,13 +156,13 @@ checksum_authenticator(Authenticator *auth, void *data)
 		  strlen(auth->cname.name_string.val[i]));
     MD5Update (&md5, &auth->ctime, sizeof(auth->ctime));
     MD5Update (&md5, &auth->cusec, sizeof(auth->cusec));
-    MD5Final (&md5, data);
+    MD5Final (data, &md5);
 }
 
 krb5_error_code
 krb5_rc_store(krb5_context context,
 	      krb5_rcache id,
-	      krb5_donot_reply *rep)
+	      krb5_donot_replay *rep)
 {
     struct rc_entry ent, tmp;
     time_t t;
