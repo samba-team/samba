@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -652,12 +652,14 @@ handle_http_tcp (struct descr *d)
 	const char *msg = 
 	    " 404 Not found\r\n"
 	    "Server: Heimdal/" VERSION "\r\n"
+	    "Cache-Control: no-cache\r\n"
+	    "Pragma: no-cache\r\n"
 	    "Content-type: text/html\r\n"
 	    "Content-transfer-encoding: 8bit\r\n\r\n"
 	    "<TITLE>404 Not found</TITLE>\r\n"
 	    "<H1>404 Not found</H1>\r\n"
 	    "That page doesn't exist, maybe you are looking for "
-	    "<A HREF=\"http://www.pdc.kth.se/heimdal\">Heimdal</A>?\r\n";
+	    "<A HREF=\"http://www.pdc.kth.se/heimdal/\">Heimdal</A>?\r\n";
 	write(d->s, proto, strlen(proto));
 	write(d->s, msg, strlen(msg));
 	kdc_log(0, "HTTP request from %s is non KDC request", d->addr_string);
@@ -669,6 +671,8 @@ handle_http_tcp (struct descr *d)
 	const char *msg = 
 	    " 200 OK\r\n"
 	    "Server: Heimdal/" VERSION "\r\n"
+	    "Cache-Control: no-cache\r\n"
+	    "Pragma: no-cache\r\n"
 	    "Content-type: application/octet-stream\r\n"
 	    "Content-transfer-encoding: binary\r\n\r\n";
 	write(d->s, proto, strlen(proto));
