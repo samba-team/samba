@@ -83,7 +83,7 @@ get_kdc_address (krb5_context context,
     return addr;
 }
 
-static int
+static void
 send_request (krb5_context context,
 	      krb5_auth_context *auth_context,
 	      krb5_creds *creds,
@@ -100,8 +100,6 @@ send_request (krb5_context context,
     u_char *p;
     struct iovec iov[3];
     struct msghdr msghdr;
-    struct fd_set fdset;
-    struct timeval tv;
 
     krb5_data_zero (&ap_req_data);
 
@@ -139,7 +137,7 @@ send_request (krb5_context context,
     *p++ = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
-    msghdr.msg_name       = &addr;
+    msghdr.msg_name       = (void *)&addr;
     msghdr.msg_namelen    = sizeof(addr);
     msghdr.msg_iov        = iov;
     msghdr.msg_iovlen     = sizeof(iov)/sizeof(*iov);
@@ -160,14 +158,6 @@ send_request (krb5_context context,
 
     krb5_data_free (&ap_req_data);
     krb5_data_free (&krb_priv_data);
-
-    FD_ZERO(&fdset);
-    FD_SET(sock, &fdset);
-    tv.tv_usec = 0;
-    tv.tv_sec  = 3;
-
-    ret = select (sock + 1, &fdset, NULL, NULL, &tv);
-    return ret != 1;
 }
 
 static int
@@ -182,16 +172,22 @@ process_reply (krb5_context context,
     krb5_data ap_rep_data;
 
     ret = recvfrom (sock, reply, sizeof(reply), 0, NULL, NULL);
-    if (ret < 0)
-	err (1, "recvfrom");
+    if (ret < 0) {
+	warn ("recvfrom");
+	return 1;
+    }
     len = ret;
     pkt_len = (reply[0] << 8) | (reply[1]);
     pkt_ver = (reply[2] << 8) | (reply[3]);
 
-    if (pkt_len != len)
-	errx (1, "wrong len in reply");
-    if (pkt_ver != 0x0001)
-	errx (1, "wrong version number (%d)", pkt_ver);
+    if (pkt_len != len) {
+	warnx ("wrong len in reply");
+	return 1;
+    }
+    if (pkt_ver != 0x0001) {
+	warnx ("wrong version number (%d)", pkt_ver);
+	return 1;
+    }
 
     ap_rep_data.data = reply + 6;
     ap_rep_data.length  = (reply[4] << 8) | (reply[5]);
@@ -223,20 +219,27 @@ process_reply (krb5_context context,
 			    &priv_data,
 			    &result_data,
 			    NULL);
-	if (ret)
-	    errx (1, "krb5_rd_priv: %s",
-		  krb5_get_err_text(context, ret));
+	if (ret) {
+	    warnx ("krb5_rd_priv: %s",
+		   krb5_get_err_text(context, ret));
+	    return 1;
+	}
 
-	if (result_data.length < 2)
-	    errx (1, "bad length in result");
+	if (result_data.length < 2) {
+	    warnx ("bad length in result");
+	    return 1;
+	}
 	p = result_data.data;
       
-	result_code = (p[0] << 8) | (p[1]);
+	result_code = (p[0] << 8) | p[1];
 	if (result_code == 0) {
-	    printf ("succeeded\n");
+	    printf ("succeeded: %.*s\n",
+		    (int)result_data.length - 2,
+		    (char *)result_data.data + 2);
 	    return 0;
 	} else {
-	    printf ("failed: %.*s\n",
+	    printf ("failed(%d): %.*s\n",
+		    result_code,
 		    (int)result_data.length - 2,
 		    (char *)result_data.data + 2);
 	    return 1;
@@ -244,10 +247,28 @@ process_reply (krb5_context context,
     } else {
 	KRB_ERROR error;
 	size_t size;
+	u_char *p;
+	u_int16_t result_code;
       
 	ret = decode_KRB_ERROR(reply + 6, len - 6, &error, &size);
-	if (ret == 0) {
-	    printf ("failed: %s\n", *(error.e_text));
+	if (ret) {
+	    warnx ("even failed to decode the krb_error message");
+	    return 1;
+	}
+	if (error.e_data->length < 2) {
+	    warnx ("too short e_data to print anything usable");
+	    return 1;
+	}
+
+	p = error.e_data->data;
+	result_code = (p[0] << 8) | p[1];
+	if (result_code == 0) {
+	    warnx ("result code == 0 in a krb_error. What?");
+	} else {
+	    printf ("failed(%d) %.*s\n",
+		    result_code,
+		    (int)error.e_data->length - 2,
+		    p + 2);
 	}
 	return 1;
     }
@@ -262,10 +283,9 @@ change_password (krb5_context context,
     krb5_ccache ccache;
     char *residual;
     krb5_auth_context auth_context = NULL;
-    char *p;
     krb5_creds cred, cred_out;
     krb5_principal server;
-    char passwd[BUFSIZ];
+    char pwbuf[BUFSIZ];
     int sock;
     struct sockaddr_in addr;
     int i;
@@ -306,12 +326,15 @@ change_password (krb5_context context,
     cred.times.endtime = time(NULL) + 300;
 
     {
-	char *tmp;
+	char *p;
+	char *prompt;
+	
 	krb5_unparse_name(context, principal, &p);
-	asprintf(&tmp, "%s's password: ", p);
+	asprintf (&prompt, "%s's old Password: ", p);
 	free (p);
-	des_read_pw_string(passwd, sizeof(passwd), tmp, 0);
-	free(tmp);
+	if (des_read_pw_string (pwbuf, sizeof(pwbuf), prompt, 0) != 0)
+	    return 1;
+	free (prompt);
     }
 
     ret = krb5_get_in_tkt_with_password (context,
@@ -319,15 +342,17 @@ change_password (krb5_context context,
 					 NULL,
 					 NULL,
 					 pre_auth_types,
-					 passwd,
+					 pwbuf,
 					 ccache,
 					 &cred,
 					 NULL);
+    memset (pwbuf, 0, sizeof(pwbuf));
     if (ret)
 	errx (1, "krb5_get_in_tkt_with_password: %s",
 	      krb5_get_err_text(context, ret));
   
-    des_read_pw_string (passwd, sizeof(passwd), "New password: ", 1);
+    if(des_read_pw_string (pwbuf, sizeof(pwbuf), "New password: ", 1) != 0)
+	return 1;
 
     sock = socket (AF_INET, SOCK_DGRAM, 0);
     if (sock < 0)
@@ -350,15 +375,26 @@ change_password (krb5_context context,
 
 
     for (i = 0; i < 5; ++i) {
-	ret = send_request (context,
-			    &auth_context,
-			    &cred_out,
-			    sock,
-			    addr,
-			    passwd);
-	if (ret == 0)
+	struct fd_set fdset;
+	struct timeval tv;
+
+	send_request (context,
+		      &auth_context,
+		      &cred_out,
+		      sock,
+		      addr,
+		      pwbuf);
+
+	FD_ZERO(&fdset);
+	FD_SET(sock, &fdset);
+	tv.tv_usec = 0;
+	tv.tv_sec  = 1 << i;
+
+	ret = select (sock + 1, &fdset, NULL, NULL, &tv);
+	if (ret < 0 && errno != EINTR)
+	    err (1, "select");
+	if (ret == 1)
 	    break;
-	fprintf (stderr, "Retrying\n");
     }
     if (i == 5)
 	errx (1, "Did not manage to contact kdc");
@@ -370,7 +406,6 @@ change_password (krb5_context context,
 			 sock);
 
     krb5_cc_destroy (context, ccache);
-    krb5_free_ccache (context, ccache);
 
     return ret;
 }
