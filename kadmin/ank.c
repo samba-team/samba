@@ -101,10 +101,11 @@ add_one_principal (const char *name,
     default_ent = &defrec;
     ret = get_default (kadm_handle, princ_ent, default_ent);
     if (ret) {
-	default_ent      = NULL;
+	default_ent  = NULL;
 	default_mask = 0;
     } else {
-	default_mask = KADM5_ATTRIBUTES | KADM5_MAX_LIFE | KADM5_MAX_RLIFE;
+	default_mask = KADM5_ATTRIBUTES | KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
+	    KADM5_PRINC_EXPIRE_TIME | KADM5_PW_EXPIRATION;
     }
 
     edit_entry(&princ, &mask, default_ent, default_mask);
