@@ -35,7 +35,7 @@
 
   All other operations on a record are done by passing the odb_lock()
   handle back to this module. The handle contains internal
-  intformation about what file_key is being operated on.
+  information about what file_key is being operated on.
 */
 
 #include "includes.h"
