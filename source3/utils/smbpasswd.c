@@ -220,16 +220,32 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 			    BOOL disable_user, BOOL set_no_password,
 			    BOOL trust_account)
 {
+	BOOL ret;
+	pstring err_str;
+	pstring msg_str;
+
 	if (remote_machine != NULL) {
 		if (add_user || enable_user || disable_user || set_no_password || trust_account) {
 			/* these things can't be done remotely yet */
 			return False;
 		}
-		return remote_password_change(remote_machine, user_name, old_passwd, new_passwd);
+		ret = remote_password_change(remote_machine, user_name, 
+									 old_passwd, new_passwd, err_str, sizeof(err_str));
+		if(*err_str)
+			fprintf(stderr, err_str);
+		return ret;
 	}
 	
-	return local_password_change(user_name, trust_account, add_user, enable_user, 
-				     disable_user, set_no_password, new_passwd);
+	ret = local_password_change(user_name, trust_account, add_user, enable_user, 
+				     disable_user, set_no_password, new_passwd, 
+				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
+
+	if(*msg_str)
+		printf(msg_str);
+	if(*err_str)
+		fprintf(stderr, err_str);
+
+	return ret;
 }
 
 

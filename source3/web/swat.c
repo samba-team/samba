@@ -584,13 +584,21 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 			    char *old_passwd, char *new_passwd, 
 			    BOOL add_user, BOOL enable_user, BOOL disable_user)
 {
+	BOOL ret = False;
+	pstring err_str;
+	pstring msg_str;
+
 	if (demo_mode) {
 		printf("password change in demo mode rejected\n<p>");
 		return False;
 	}
 	
 	if (remote_machine != NULL) {
-		return remote_password_change(remote_machine, user_name, old_passwd, new_passwd);
+		ret = remote_password_change(remote_machine, user_name, old_passwd, 
+									 new_passwd, err_str, sizeof(err_str));
+		if(*err_str)
+			printf("%s\n<p>", err_str);
+		return ret;
 	}
 
 	if(!initialize_password_db()) {
@@ -598,8 +606,16 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return False;
 	}
 	
-	return local_password_change(user_name, False, add_user, enable_user, 
-				     disable_user, False, new_passwd);
+	ret = local_password_change(user_name, False, add_user, enable_user, 
+				     disable_user, False, new_passwd, err_str, sizeof(err_str),
+					 msg_str, sizeof(msg_str));
+
+	if(*msg_str)
+		printf("%\n<p>", msg_str);
+	if(*err_str)
+		printf("%s\n<p>", err_str);
+
+	return ret;
 }
 
 /****************************************************************************

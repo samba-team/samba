@@ -56,13 +56,18 @@ change a password entry in the local smbpasswd file
 *************************************************************/
 BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 			   BOOL enable_user, BOOL disable_user, BOOL set_no_password,
-			   char *new_passwd)
+			   char *new_passwd, 
+			   char *err_str, size_t err_str_len,
+			   char *msg_str, size_t msg_str_len)
 {
 	struct passwd  *pwd;
 	void *vp;
 	struct smb_passwd *smb_pwent;
 	uchar           new_p16[16];
 	uchar           new_nt_p16[16];
+
+	*err_str = '\0';
+	*msg_str = '\0';
 
 	pwd = getpwnam(user_name);
 	
@@ -71,8 +76,9 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	 */
 	
 	if(trust_account && !pwd) {
-		fprintf(stderr, "User %s does not exist in system password file (usually /etc/passwd). Cannot add machine account without a valid system user.\n",
-			user_name);
+		slprintf(err_str, err_str_len - 1, "User %s does not \
+exist in system password file (usually /etc/passwd). Cannot add machine \
+account without a valid system user.\n", user_name);
 		return False;
 	}
 
@@ -85,7 +91,8 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	vp = startsmbpwent(True);
 	if (!vp && errno == ENOENT) {
 		FILE *fp;
-		fprintf(stderr,"smbpasswd file did not exist - attempting to create it.\n");
+		slprintf(msg_str,msg_str_len-1,
+			"smbpasswd file did not exist - attempting to create it.\n");
 		fp = fopen(lp_smb_passwd_file(), "w");
 		if (fp) {
 			fprintf(fp, "# Samba SMB password file\n");
@@ -95,7 +102,8 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	}
 
 	if (!vp) {
-		perror(lp_smb_passwd_file());
+		slprintf(err_str, err_str_len-1, "Cannot open file %s. Error was %s\n",
+			lp_smb_passwd_file(), strerror(errno) );
 		return False;
 	}
   
@@ -103,19 +111,19 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	smb_pwent = getsmbpwnam(user_name);
 	if (smb_pwent == NULL) {
 		if(add_user == False) {
-			fprintf(stderr, "Failed to find entry for user %s.\n",
-				pwd->pw_name);
+			slprintf(err_str, err_str_len-1,
+				"Failed to find entry for user %s.\n", pwd->pw_name);
 			endsmbpwent(vp);
 			return False;
 		}
 
 		if (add_new_user(user_name, pwd->pw_uid, trust_account, disable_user,
 				 set_no_password, new_p16, new_nt_p16)) {
-			printf("Added user %s.\n", user_name);
+			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
 			endsmbpwent(vp);
 			return True;
 		} else {
-			fprintf(stderr, "Failed to add entry for user %s.\n", user_name);
+			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
 			endsmbpwent(vp);
 			return False;
 		}
@@ -149,7 +157,7 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	}
 	
 	if(mod_smbpwd_entry(smb_pwent,True) == False) {
-		fprintf(stderr, "Failed to modify entry for user %s.\n",
+		slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n",
 			pwd->pw_name);
 		endsmbpwent(vp);
 		return False;
@@ -159,4 +167,3 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 
 	return True;
 }
-

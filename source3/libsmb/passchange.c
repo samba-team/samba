@@ -29,14 +29,15 @@ extern pstring scope;
 change a password on a remote machine using IPC calls
 *************************************************************/
 BOOL remote_password_change(const char *remote_machine, const char *user_name, 
-			    const char *old_passwd, const char *new_passwd)
+			    const char *old_passwd, const char *new_passwd,
+			    char *err_str, size_t err_str_len)
 {
 	struct nmb_name calling, called;
 	struct cli_state cli;
 	struct in_addr ip;
 
 	if(!resolve_name( remote_machine, &ip, 0x20)) {
-		fprintf(stderr, "unable to find an IP address for machine %s.\n",
+		slprintf(err_str, err_str_len-1, "unable to find an IP address for machine %s.\n",
 			remote_machine );
 		return False;
 	}
@@ -44,7 +45,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	ZERO_STRUCT(cli);
  
 	if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
-		fprintf(stderr, "unable to connect to SMB server on machine %s. Error was : %s.\n",
+		slprintf(err_str, err_str_len-1, "unable to connect to SMB server on machine %s. Error was : %s.\n",
 			remote_machine, cli_errstr(&cli) );
 		return False;
 	}
@@ -53,7 +54,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	make_nmb_name(&called , remote_machine, 0x20, scope);
 	
 	if (!cli_session_request(&cli, &calling, &called)) {
-		fprintf(stderr, "machine %s rejected the session setup. Error was : %s.\n",
+		slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",
 			remote_machine, cli_errstr(&cli) );
 		cli_shutdown(&cli);
 		return False;
@@ -62,7 +63,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	cli.protocol = PROTOCOL_NT1;
 
 	if (!cli_negprot(&cli)) {
-		fprintf(stderr, "machine %s rejected the negotiate protocol. Error was : %s.\n",        
+		slprintf(err_str, err_str_len-1, "machine %s rejected the negotiate protocol. Error was : %s.\n",        
 			remote_machine, cli_errstr(&cli) );
 		cli_shutdown(&cli);
 		return False;
@@ -75,21 +76,21 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	 */
 
 	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-		fprintf(stderr, "machine %s rejected the session setup. Error was : %s.\n",        
+		slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",        
 			remote_machine, cli_errstr(&cli) );
 		cli_shutdown(&cli);
 		return False;
 	}               
 
 	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-		fprintf(stderr, "machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
+		slprintf(err_str, err_str_len-1, "machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
 			remote_machine, cli_errstr(&cli) );
 		cli_shutdown(&cli);
 		return False;
 	}
 
 	if(!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
-		fprintf(stderr, "machine %s rejected the password change: Error was : %s.\n",
+		slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
 			remote_machine, cli_errstr(&cli) );
 		cli_shutdown(&cli);
 		return False;
