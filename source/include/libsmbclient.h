@@ -1,25 +1,25 @@
 /*=====================================================================
-   Unix SMB/Netbios implementation.
-   Version 2.0
-   SMB client library API definitions
-   Copyright (C) Andrew Tridgell 1998
-   Copyright (C) Richard Sharpe 2000
-   Copyright (C) John Terpsra 2000
+  Unix SMB/Netbios implementation.
+  Version 2.0
+  SMB client library API definitions
+  Copyright (C) Andrew Tridgell 1998
+  Copyright (C) Richard Sharpe 2000
+  Copyright (C) John Terpsra 2000
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
    
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
    
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-=====================================================================*/
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  =====================================================================*/
 
 #ifndef SMBCLIENT_H_INCLUDED
 #define SMBCLIENT_H_INCLUDED
@@ -28,22 +28,30 @@
 /* The following are special comments to instruct DOXYGEN (automated 
  * documentation tool:
 */
+/** \defgroup libsmbclient
+*/
 /** \defgroup structure Data Structures Type and Constants
+*   \ingroup libsmbclient
 *   Data structures, types, and constants
 */
 /** \defgroup file File Functions
+*   \ingroup libsmbclient
 *   Functions used to access individual file contents
 */
 /** \defgroup directory Directory Functions
+*   \ingroup libsmbclient
 *   Functions used to access directory entries
 */
 /** \defgroup attribute Attributes Functions
+*   \ingroup libsmbclient
 *   Functions used to view or change file and directory attributes
 */
 /** \defgroup print Print Functions
+*   \ingroup libsmbclient
 *   Functions used to access printing functionality
 */
 /** \defgroup attribute Miscellaneous Functions
+*   \ingroup libsmbclient
 *   Functions that don't fit in to other categories
 */
 /*-------------------------------------------------------------------*/   
@@ -67,41 +75,44 @@
 #define SMBC_FILE_MODE (S_IFREG | 0444)
 #define SMBC_DIR_MODE  (S_IFDIR | 0555)
 
+#define SMBC_MAX_FD         10000
+
+
 /**@ingroup structure
  * Structure that represents a directory entry.
  *
-*/
+ */
 struct smbc_dirent 
 {
-    /** Type of entity.
-    SMBC_WORKGROUP=1,
-    SMBC_SERVER=2, 
-    SMBC_FILE_SHARE=3,
-    SMBC_PRINTER_SHARE=4,
-    SMBC_COMMS_SHARE=5,
-    SMBC_IPC_SHARE=6,
-    SMBC_DIR=7,
-    SMBC_FILE=8,
-    SMBC_LINK=9,*/ 
-    uint smbc_type; 
+	/** Type of entity.
+	    SMBC_WORKGROUP=1,
+	    SMBC_SERVER=2, 
+	    SMBC_FILE_SHARE=3,
+	    SMBC_PRINTER_SHARE=4,
+	    SMBC_COMMS_SHARE=5,
+	    SMBC_IPC_SHARE=6,
+	    SMBC_DIR=7,
+	    SMBC_FILE=8,
+	    SMBC_LINK=9,*/ 
+	uint smbc_type; 
 
-    /** Length of this smbc_dirent in bytes
-     */
-    uint dirlen;
-    /** The length of the comment string in bytes (includes null 
-     *  terminator)
-     */
-    uint commentlen;
-    /** Points to the null terminated comment string 
-     */
-    char *comment;
-    /** The length of the name string in bytes (includes null 
-     *  terminator)
-     */
-    uint namelen;
-    /** Points to the null terminated name string 
-     */
-    char name[1];
+	/** Length of this smbc_dirent in bytes
+	 */
+	uint dirlen;
+	/** The length of the comment string in bytes (includes null 
+	 *  terminator)
+	 */
+	uint commentlen;
+	/** Points to the null terminated comment string 
+	 */
+	char *comment;
+	/** The length of the name string in bytes (includes null 
+	 *  terminator)
+	 */
+	uint namelen;
+	/** Points to the null terminated name string 
+	 */
+	char name[1];
 };
 
 
@@ -114,30 +125,30 @@ typedef unsigned short uint16;
  */
 struct print_job_info 
 {
-    /** numeric ID of the print job
-     */
-    uint16 id;
+	/** numeric ID of the print job
+	 */
+	uint16 id;
     
-    /** represents print job priority (lower numbers mean higher priority)
-     */
-    uint16 priority;
+	/** represents print job priority (lower numbers mean higher priority)
+	 */
+	uint16 priority;
     
-    /** Size of the print job
-     */
-    size_t size;
+	/** Size of the print job
+	 */
+	size_t size;
     
-    /** Name of the user that owns the print job
-     */
-    char user[128];
+	/** Name of the user that owns the print job
+	 */
+	char user[128];
   
-    /** Name of the print job. This will have no name if an anonymous print
-     *  file was opened. Ie smb://server/printer
-     */
-    char name[128];
+	/** Name of the print job. This will have no name if an anonymous print
+	 *  file was opened. Ie smb://server/printer
+	 */
+	char name[128];
 
-    /** Time the print job was spooled
-    */
-    time_t t;
+	/** Time the print job was spooled
+	 */
+	time_t t;
 };
 #endif
 
@@ -257,7 +268,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  *                  auth_fn in the smbc_init call, fail, this call will
  *                  try again with an empty username and password. This 
  *                  often gets mapped to the guest account on some machines.
-*/
+ */
 int smbc_open(const char *furl, int flags, mode_t mode);
 
 
@@ -291,7 +302,7 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  *                  - ENODEV The requested share does not exist.
  * @see             smbc_open()
  *
-*/
+ */
 int smbc_creat(const char *furl, mode_t mode);
 
 
@@ -368,7 +379,7 @@ ssize_t smbc_write(int fd, void *buf, size_t bufsize);
  * @todo Are all the whence values really supported?
  * 
  * @todo Are errno values complete and correct?
-*/
+ */
 off_t smbc_lseek(int fd, off_t offset, int whence);
 
 
@@ -382,7 +393,7 @@ off_t smbc_lseek(int fd, off_t offset, int whence);
  *                  - EINVAL smbc_init() failed or has not been called
  *
  * @see             smbc_open(), smbc_creat()
-*/
+ */
 int smbc_close(int fd);
 
 
@@ -406,7 +417,7 @@ int smbc_close(int fd);
  * @see             smbc_rmdir()s
  *
  * @todo Are errno values complete and correct?
-*/
+ */
 int smbc_unlink(const char *furl);
 
 
@@ -449,7 +460,7 @@ int smbc_unlink(const char *furl);
  * @todo Are we going to support copying when urls are not on the same
  *       share?  I say no... NOTE. I agree for the moment.
  *
-*/
+ */
 int smbc_rename(const char *ourl, const char *nurl);
 
 
@@ -472,7 +483,7 @@ int smbc_rename(const char *ourl, const char *nurl);
  *
  * @see             smbc_getdents(), smbc_readdir(), smbc_closedir()
  *
-*/
+ */
 int smbc_opendir(const char *durl);
 
 
@@ -485,7 +496,7 @@ int smbc_opendir(const char *durl);
  *                  - EBADF dh is an invalid directory handle
  *
  * @see             smbc_opendir()
-*/
+ */
 int smbc_closedir(int dh);
 
 
@@ -529,7 +540,7 @@ int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count);
  *                  - EINVAL smbc_init() failed or has not been called
  *
  * @see             smbc_dirent, smbc_getdents(), smbc_open()
-*/
+ */
 struct smbc_dirent* smbc_readdir(unsigned int dh);
 
 
@@ -552,7 +563,7 @@ struct smbc_dirent* smbc_readdir(unsigned int dh);
  *
  * @see             smbc_readdir()
  *
-*/
+ */
 off_t smbc_telldir(int dh);
 
 
@@ -600,7 +611,7 @@ int smbc_lseekdir(int fd, off_t offset);
  *
  * @see             smbc_rmdir()
  *
-*/
+ */
 int smbc_mkdir(const char *durl, mode_t mode);
 
 
@@ -731,7 +742,7 @@ int smbc_chmod(const char *url, mode_t mode);
  * 		      not called.
  *                  and errors returned by smbc_open
  *
-*/                                     
+ */                                     
 int smbc_print_file(const char *fname, const char *printq);
 
 /**@ingroup print
