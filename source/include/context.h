@@ -42,6 +42,44 @@ struct user_context {
 	struct user_struct *vuser;
 };
 
+
+/* each backend has to be one one of the following 3 basic types. In
+ * earlier versions of Samba backends needed to handle all types, now
+ * we implement them separately. */
+enum ntvfs_type {NTVFS_DISK, NTVFS_PRINT, NTVFS_IPC};
+
+/* we need a forward declaration of the ntvfs_ops strucutre to prevent
+   include recursion */
+struct ntvfs_ops;
+
+struct tcon_context {
+	struct tcon_context *next, *prev;
+
+	/* the server context that this was created on */
+	struct server_context *smb;
+
+	/* a talloc context for all data in this structure */
+	TALLOC_CTX *mem_ctx;
+
+	/* a private structure used by the active NTVFS backend */
+	void *ntvfs_private;
+
+	uint16 cnum; /* an index passed over the wire (the TID) */
+	int service;
+	enum ntvfs_type type;
+	BOOL read_only;
+	BOOL admin_user;
+
+	/* the NTVFS operations - see source/ntvfs/ and include/ntvfs.h for details */
+	struct ntvfs_ops *ntvfs_ops;
+
+	/* the reported filesystem type */
+	char *fs_type;
+
+	/* the reported device type */
+	char *dev_type;
+};
+
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
 struct request_context {
@@ -342,4 +380,5 @@ struct server_context {
 	/* process model specific operations */
 	struct model_ops *model_ops;
 };
+
 

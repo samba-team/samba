@@ -23,18 +23,92 @@
 #include "includes.h"
 
 
+static NTSTATUS echo_AddOne(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)
+{
+	*r->out.v = *r->in.v + 1;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS echo_EchoData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_EchoData *r)
+{
+	r->out.out_data = talloc(mem_ctx, r->in.len);
+	if (!r->out.out_data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcpy(r->out.out_data, r->in.in_data, r->in.len);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS echo_SinkData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_SinkData *r)
+{
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS echo_SourceData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_SourceData *r)
+{
+	int i;
+	r->out.data = talloc(mem_ctx, r->in.len);
+	if (!r->out.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<r->in.len;i++) {
+		r->out.data[i] = i;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS echo_TestCall(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct TestCall *r)
+{
+	return NT_STATUS_BAD_NETWORK_NAME;
+}
+
+static NTSTATUS echo_TestCall2(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct TestCall2 *r)
+{
+	return NT_STATUS_BAD_NETWORK_NAME;
+}
+
+
+
 
 /**************************************************************************
   all the code below this point is boilerplate that will be auto-generated
 ***************************************************************************/
 
+static const dcesrv_dispatch_fn_t dispatch_table[] = {
+	(dcesrv_dispatch_fn_t)echo_AddOne,
+	(dcesrv_dispatch_fn_t)echo_EchoData,
+	(dcesrv_dispatch_fn_t)echo_SinkData,
+	(dcesrv_dispatch_fn_t)echo_SourceData,
+	(dcesrv_dispatch_fn_t)echo_TestCall,
+	(dcesrv_dispatch_fn_t)echo_TestCall2
+};
+
 
 /*
   return True if we want to handle the given endpoint
 */
-static BOOL op_query(const struct dcesrv_endpoint *ep)
+static BOOL op_query_endpoint(const struct dcesrv_endpoint *ep)
 {
 	return dcesrv_table_query(&dcerpc_table_rpcecho, ep);
+}
+
+/*
+  setup for a particular rpc interface
+*/
+static BOOL op_set_interface(struct dcesrv_state *dce, const char *uuid, uint32 if_version)
+{
+	if (strcasecmp(uuid, dcerpc_table_rpcecho.uuid) != 0 ||
+	    if_version != dcerpc_table_rpcecho.if_version) {
+		DEBUG(2,("Attempt to use unknown interface %s/%d\n", uuid, if_version));
+		return False;
+	}
+
+	dce->ndr = &dcerpc_table_rpcecho;
+	dce->dispatch = dispatch_table;
+
+	return True;
 }
 
 
@@ -51,7 +125,8 @@ static void op_disconnect(struct dcesrv_state *dce)
 
 
 static const struct dcesrv_endpoint_ops rpc_echo_ops = {
-	op_query,
+	op_query_endpoint,
+	op_set_interface,
 	op_connect,
 	op_disconnect
 };

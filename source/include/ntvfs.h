@@ -23,12 +23,6 @@
 
 
 
-/* each backend has to be one one of the following 3 basic types. In
- * earlier versions of Samba backends needed to handle all types, now
- * we implement them separately. */
-enum ntvfs_type {NTVFS_DISK, NTVFS_PRINT, NTVFS_IPC};
-
-
 /* the ntvfs operations structure - contains function pointers to 
    the backend implementations of each operation */
 struct ntvfs_ops {

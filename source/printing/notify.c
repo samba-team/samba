@@ -212,7 +212,7 @@ static BOOL copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
 
 static void send_spoolss_notify2_msg(SPOOLSS_NOTIFY_MSG *msg)
 {
-	struct notify_queue *pnqueue, *tmp_ptr;
+	struct notify_queue *pnqueue;
 
 	/*
 	 * Ensure we only have one message unique to each name/type/field/id/flags
@@ -262,7 +262,7 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	 * the messages are sent in the order they were received. JRA.
 	 */
 
-	DLIST_ADD_END(notify_queue_head, pnqueue, tmp_ptr);
+	DLIST_ADD_END(notify_queue_head, pnqueue, struct notify_queue *);
 }
 
 static void send_notify_field_values(const char *printer_name, uint32 type,

@@ -526,6 +526,11 @@ static NTSTATUS ipc_trans(struct request_context *req, struct smb_trans2 *trans)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	trans->out.data = data_blob_talloc(req->mem_ctx, NULL, trans->in.max_data);
+	if (!trans->out.data.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* pass the data to the dcerpc server. Note that we don't
 	   expect this to fail, and things like NDR faults are not
 	   reported at this stage. Those sorts of errors happen in the

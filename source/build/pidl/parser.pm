@@ -1256,6 +1256,11 @@ sub ParseFunctionPull($)
 		if (util::has_property($e, "in")) {
 			ParseFunctionElementPull($e, "in");
 		}
+		# we need to allocate any reference output variables, so that
+		# a dcerpc backend can be sure they are non-null
+		if (util::has_property($e, "out") && util::has_property($e, "ref")) {
+			pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";			
+		}
 	}
 
 	pidl "\nndr_out:\n";

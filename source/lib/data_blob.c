@@ -67,12 +67,12 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 	}
 
 	if (p == NULL) {
+		/* note that we do NOT zero memory in this case */
 		ret.data = talloc(mem_ctx, length);
 		if (ret.data == NULL) {
 			smb_panic("data_blob_talloc: talloc_memdup failed.\n");
 		}
 		ret.length = length;
-		memset(ret.data, 0, ret.length);
 		ret.free = NULL;
 		return ret;
 	}
