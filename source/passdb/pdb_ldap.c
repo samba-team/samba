@@ -701,23 +701,34 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		uint8 *pwhist = NULL;
 		int i;
 
-		if ((pwhist = malloc(NT_HASH_LEN * pwHistLen)) == NULL){
+		if ((pwhist = malloc(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
 			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
 			return False;
 		}
-		memset(pwhist, '\0', NT_HASH_LEN * pwHistLen);
+		memset(pwhist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
 
 		if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_HISTORY), temp)) {
 			/* leave as default - zeros */
 		} else {
+			BOOL hex_failed = False;
 			for (i = 0; i < pwHistLen; i++){
-				if (!pdb_gethexpwd(&temp[i*32], smbntpwd)) {
+				/* Get the 16 byte salt. */
+				if (!pdb_gethexpwd(&temp[i*64], &pwhist[i*PW_HISTORY_ENTRY_LEN])) {
+					hex_failed = True;
 					break;
 				}
-				memset(&temp[i*32], '\0', 32);
-				memcpy(&pwhist[i*NT_HASH_LEN], smbntpwd, NT_HASH_LEN);
-				ZERO_STRUCT(smbntpwd);
+				/* Get the 16 byte MD5 hash of salt+passwd. */
+				if (!pdb_gethexpwd(&temp[(i*64)+32],
+						&pwhist[(i*PW_HISTORY_ENTRY_LEN)+PW_HISTORY_SALT_LEN])) {
+					hex_failed = True;
+					break;
+				}
+			}
+			if (hex_failed) {
+				DEBUG(0,("init_sam_from_ldap: Failed to get password history for user %s\n",
+					username));
+				memset(pwhist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
 			}
 		}
 		if (!pdb_set_pw_history(sampass, pwhist, pwHistLen, PDB_SET)){
@@ -1023,15 +1034,20 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
 			if (pwHistLen == 0) {
 				/* Remove any password history from the LDAP store. */
-				pstrcpy(temp, "00000000000000000000000000000000");
+				memset(temp, '0', 64); /* NOTE !!!! '0' *NOT '\0' */
+				temp[64] = '\0';
 			} else {
 				int i, currHistLen = 0;
 				const uint8 *pwhist = pdb_get_pw_history(sampass, &currHistLen);
 				if (pwhist != NULL) {
-					/* We can only store (sizeof(pstring)-1)/32 password history entries. */
-					pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/32));
+					/* We can only store (sizeof(pstring)-1)/64 password history entries. */
+					pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/64));
 					for (i=0; i< pwHistLen && i < currHistLen; i++) {
-						pdb_sethexpwd (&temp[i*32], &pwhist[i*NT_HASH_LEN], 0);
+						/* Store the salt. */
+						pdb_sethexpwd(&temp[i*64], &pwhist[i*PW_HISTORY_ENTRY_LEN], 0);
+						/* Followed by the md5 hash of salt + md4 hash */
+						pdb_sethexpwd(&temp[(i*64)+32],
+							&pwhist[(i*PW_HISTORY_ENTRY_LEN)+PW_HISTORY_SALT_LEN], 0);
 						DEBUG(100, ("temp=%s\n", temp));
 					}
 				} 
