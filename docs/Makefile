@@ -7,12 +7,14 @@
 -include Makefile.settings
 
 # Docs to build
-MAIN_DOCS = $(patsubst %/index.xml,$(DOCBOOKDIR)/%.xml,$(wildcard */index.xml))
+MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
 MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
 
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES))
+
+DATETIME := $(shell date +%Y%m%d%H%M%S)
 
 ifndef OUTPUTDIR
 Makefile.settings: Makefile.settings.in configure
@@ -43,29 +45,29 @@ Samba-Developers-Guide/index.xml: $(subst Samba-Developers-Guide/index.xml,,$(wi
 
 # Pseudo targets 
 all: $(TARGETS)
-everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson validate
+everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson 
 release: manpages htmlman html pdf 
 
 # Output format targets
-pdf: $(patsubst $(DOCBOOKDIR)/%.xml,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
-dvi: $(patsubst $(DOCBOOKDIR)/%.xml,$(DVIDIR)/%.dvi,$(MAIN_DOCS))
-ps: $(patsubst $(DOCBOOKDIR)/%.xml,$(PSDIR)/%.ps,$(MAIN_DOCS))
-txt: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%.txt,$(MAIN_DOCS))
-txt-chunks: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%/,$(MAIN_DOCS))
-fo: $(patsubst $(DOCBOOKDIR)/%.xml,$(FODIR)/%.fo,$(MAIN_DOCS))
-fo-pdf: $(patsubst $(DOCBOOKDIR)/%.xml,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
-tex: $(patsubst $(DOCBOOKDIR)/%.xml,%.tex,$(MAIN_DOCS))
-texi: $(patsubst $(DOCBOOKDIR)/%.xml,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
-texiinfo: $(patsubst $(DOCBOOKDIR)/%.xml,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
+pdf: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
+dvi: $(patsubst %,$(DVIDIR)/%.dvi,$(MAIN_DOCS))
+ps: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
+txt: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
+txt-chunks: $(addsuffix -txt-chunks,$(MAIN_DOCS))
+fo: $(patsubst %,$(FODIR)/%.fo,$(MAIN_DOCS))
+fo-pdf: $(patsubst %,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
+tex: $(addsuffix .tex,$(MAIN_DOCS))
+texi: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
+texiinfo: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
 manpages: $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES)) 
 pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
 pearson-verify: $(PEARSONDIR)/Samba-HOWTO-Collection.report.html
-plucker: $(patsubst $(DOCBOOKDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
+plucker: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
 htmlman: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES)) $(HTMLDIR)/manpages.html
-html-single: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%.html,$(MAIN_DOCS))
-html: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
-htmlhelp: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLHELPDIR)/%,$(MAIN_DOCS))
-validate: $(patsubst $(DOCBOOKDIR)/%.xml,%-validate,$(MAIN_DOCS))
+html-single: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
+html: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
+htmlhelp: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))
+validate: $(addsuffix -validate,$(MAIN_DOCS))
 
 # Intermediate docbook docs
 
@@ -245,8 +247,8 @@ samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml xslt/extract-examples.xsl scri
 # Archiving
 archive: pdf
 	mkdir -p $(ARCHIVEDIR)
-	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-$(shell date +%Y%m%d%H%M%S).pdf
-	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-$(shell date +%Y%m%d%H%M%S).pdf
+	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-$(DATETIME).pdf
+	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-$(DATETIME).pdf
 
 # XSL scripts
 xslt/html.xsl: xslt/html-common.xsl settings.xsl
@@ -265,7 +267,7 @@ clean:
 	rm -f *.xml
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
-	rm -f $(patsubst $(DOCBOOKDIR)/%.xml,%.*,$(MAIN_DOCS))
+	rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Always keep intermediate files if we can
 .SECONDARY:
