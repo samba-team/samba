@@ -125,6 +125,11 @@ BOOL is_a_socket(int fd)
 
 static char *last_ptr=NULL;
 
+BOOL set_first_token(char *ptr)
+{
+	last_ptr = ptr;
+}
+
 /****************************************************************************
   Get the next token from a string, return False if none found
   handles double-quotes. 
