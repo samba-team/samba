@@ -243,8 +243,12 @@ uint32 samr_enum_domains(  POLICY_HND *pol,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SAMR_R_ENUM_DOMAINS: %s\n", get_nt_error_msg(r_e.status)));
 			p = (r_e.status == STATUS_MORE_ENTRIES);
+			if (!p) 
+			{
+				DEBUG(4,("SAMR_R_ENUM_DOMAINS: %s\n", 
+					 get_nt_error_msg(r_e.status)));
+			}
 		}
 
 		if (p)
@@ -344,8 +348,12 @@ uint32 samr_enum_dom_groups(  POLICY_HND *pol,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SAMR_R_ENUM_DOM_GROUPS: %s\n", get_nt_error_msg(r_e.status)));
 			p = (r_e.status == STATUS_MORE_ENTRIES);
+			if (!p) 
+			{
+				DEBUG(4,("SAMR_R_ENUM_DOM_GROUPS: %s\n", 
+					 get_nt_error_msg(r_e.status)));
+			}
 		}
 
 		if (p)
@@ -444,8 +452,12 @@ uint32 samr_enum_dom_aliases(  POLICY_HND *pol,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SAMR_R_ENUM_DOM_ALIASES: %s\n", get_nt_error_msg(r_e.status)));
 			p = (r_e.status == STATUS_MORE_ENTRIES);
+			if (!p)
+			{
+				DEBUG(4,("SAMR_R_ENUM_DOM_ALIASES: %s\n", 
+					 get_nt_error_msg(r_e.status)));
+			}
 		}
 
 		if (p)
@@ -547,8 +559,12 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SAMR_R_ENUM_DOM_USERS: %s\n", get_nt_error_msg(r_e.status)));
 			p = (r_e.status == STATUS_MORE_ENTRIES);
+			if (!p)
+			{
+				DEBUG(4,("SAMR_R_ENUM_DOM_USERS: %s\n", 
+					 get_nt_error_msg(r_e.status)));
+			}
 		}
 
 		if (p)
@@ -2521,20 +2537,20 @@ BOOL samr_close(  POLICY_HND *hnd)
 /****************************************************************************
 do a SAMR query display info
 ****************************************************************************/
-BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
-				uint32 *num_entries,
-				SAM_DISPINFO_CTR *ctr)
+uint32 samr_query_dispinfo(POLICY_HND *pol_domain, uint32 *start_idx,
+			   uint16 level, uint32 *num_entries, 
+			   SAM_DISPINFO_CTR *ctr)
 {
+	uint32 status = 0;
 	prs_struct data;
 	prs_struct rdata;
 
 	SAMR_Q_QUERY_DISPINFO q_o;
-	BOOL valid_query = False;
 
 	DEBUG(4,("SAMR Query Display Info.  level: %d\n", level));
 
 	if (pol_domain == NULL || num_entries == NULL || ctr == NULL ||
-	    level == 0)
+	    level == 0 || start_idx == 0)
 	{
 		return False;
 	}
@@ -2545,7 +2561,8 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 	prs_init(&rdata, 0, 4, True );
 
 	/* store the parameters */
-	make_samr_q_query_dispinfo(&q_o, pol_domain, level, 0, 0xffffffff);
+	make_samr_q_query_dispinfo(&q_o, pol_domain, level, *start_idx, 
+				   MAX_SAM_ENTRIES);
 
 	/* turn parameters into data stream */
 	if (samr_io_q_query_dispinfo("", &q_o,  &data, 0) &&
@@ -2561,12 +2578,17 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 
 		samr_io_r_query_dispinfo("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
-		
+		status = r_o.status;
+
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SAMR_R_QUERY_DISPINFO: %s\n", get_nt_error_msg(r_o.status)));
-			p = False;
+			p = (r_o.status == STATUS_MORE_ENTRIES);
+			if (!p)
+			{
+				DEBUG(4,("SAMR_R_QUERY_DISPINFO: %s\n", 
+					 get_nt_error_msg(r_o.status)));
+			}
 		}
 
 		if (p && r_o.switch_level != level)
@@ -2577,13 +2599,13 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 
 		if (p && r_o.ptr_entries != 0)
 		{
-			valid_query = True;
 			(*num_entries) = r_o.num_entries;
+			(*start_idx) += r_o.num_entries; /* No next_idx */
 		}
 	}
 
 	prs_free_data(&data   );
 	prs_free_data(&rdata  );
 
-	return valid_query;
+	return status;
 }

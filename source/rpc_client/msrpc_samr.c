@@ -1849,6 +1849,7 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 	uint32 ace_perms = 0x304; /* absolutely no idea. */
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
+	uint32 status, start_ndx = 0;
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -1859,18 +1860,16 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 	            &pol_dom) : False;
 
 	/* send a samr query_disp_info command */
-	res1 = res ? samr_query_dispinfo( &pol_dom, switch_value, 
-		    num_entries, ctr) : False;
+	do {
+		status = samr_query_dispinfo(&pol_dom, &start_ndx, switch_value,
+					      num_entries, ctr);
+		disp_fn(domain, sid1, switch_value, *num_entries, ctr);
+	} while (status == STATUS_MORE_ENTRIES);
 
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res1 && disp_fn != NULL)
-	{
-		disp_fn(domain, sid1, switch_value, *num_entries, ctr);
-	}
-
-	return res1;
+	return res;
 }
 
 /****************************************************************************
