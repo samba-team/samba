@@ -19,6 +19,15 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef IRIX
+/* amazingly, IRIX gets its own syscall numbers wrong! */
+#ifdef SYSVoffset
+#if (SYSVoffset == 1)
+#undef SYSVoffset
+#define SYSVoffset 1000
+#endif
+#endif
+#endif
 
 /* this file is partly derived from zlibc by Alain Knaff */
 

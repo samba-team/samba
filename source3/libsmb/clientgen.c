@@ -1343,7 +1343,7 @@ size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 do a SMBgetattrE call
 ****************************************************************************/
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
-		  int *attr, uint32 *size, 
+		  uint32 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time)
 {
 	bzero(cli->outbuf,smb_size);
