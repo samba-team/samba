@@ -1,0 +1,4 @@
+Fri May  1 07:16:36 1998  Assar Westerlund  <assar@sics.se>
+
+	* kx.c: unifdef -DHAVE_H_ERRNO
+

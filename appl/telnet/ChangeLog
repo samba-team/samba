@@ -1,3 +1,7 @@
+Fri May  1 07:16:59 1998  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c: unifdef -DHAVE_H_ERRNO
+
 Sat Apr  4 15:00:29 1998  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): moved the printing of `trying...' to the
