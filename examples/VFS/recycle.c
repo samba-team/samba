@@ -84,7 +84,8 @@ static BOOL check_bool_param(const char *value)
  *
  * @retval initialised vfs_op_tuple array
  **/
-vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
+vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
+			struct smb_vfs_handle_struct *vfs_handle)
 {
 	DEBUG(10, ("Initializing VFS module recycle\n"));
 	*vfs_version = SMB_VFS_INTERFACE_VERSION;
