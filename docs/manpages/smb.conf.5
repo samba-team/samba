@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "07 September 2002" "" ""
+.TH "SMB.CONF" "5" "01 October 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -679,10 +679,13 @@ each parameter for details.  Note that some are synonyms.
 \fIldap suffix\fR
 .TP 0.2i
 \(bu
-\fIldap suffix\fR
+\fIldap user suffix\fR
 .TP 0.2i
 \(bu
-\fIldap suffix\fR
+\fIldap machine suffix\fR
+.TP 0.2i
+\(bu
+\fIldap passwd sync\fR
 .TP 0.2i
 \(bu
 \fIlm announce\fR
@@ -1616,13 +1619,16 @@ Example: \fBadd user script = /usr/local/samba/bin/add_user
 %u\fR
 .TP
 \fBadd group script (G)\fR
-This is the full pathname to a script that will be run \fBAS ROOT\fR
-by smbd(8) when a new group is requested. It will expand any \fI%g\fR
-to the group name passed.  This script is only useful for
-installations using the Windows NT domain administration tools. The
-script is free to create a group with an arbitrary name to circumvent
-unix group name restrictions. In that case the script must print the
-numeric gid of the created group on stdout.
+This is the full pathname to a script that will 
+be run \fBAS ROOT\fR by smbd(8) when a new group is
+requested. It will expand any
+\fI%g\fR to the group name passed.
+This script is only useful for installations using the
+Windows NT domain administration tools. The script is
+free to create a group with an arbitrary name to
+circumvent unix group name restrictions. In that case
+the script must print the numeric gid of the created
+group on stdout.
 .TP
 \fBadmin users (S)\fR
 This is a list of users who will be granted 
@@ -2964,9 +2970,9 @@ this by trying to log in as your guest user (perhaps by using the
 \fBsu -\fR command) and trying to print using the 
 system print command such as \fBlpr(1)\fR or \fB  lp(1)\fR.
 
-This paramater does not accept % marcos, becouse
+This paramater does not accept % macros, because
 many parts of the system require this value to be
-constant for correct operation
+constant for correct operation.
 
 Default: \fBspecified at compile time, usually 
 "nobody"\fR
@@ -3412,11 +3418,19 @@ Samba's previous SSL support which was enabled by specifying the
 script.
 
 The \fIldap ssl\fR can be set to one of three values:
-(a) on - Always use SSL when contacting the 
-\fIldap server\fR, (b) off -
-Never use SSL when querying the directory, or (c) start_tls 
-- Use the LDAPv3 StartTLS extended operation 
+.RS
+.TP 0.2i
+\(bu
+\fIOn\fR  =  Always use SSL when contacting the 
+\fIldap server\fR.
+.TP 0.2i
+\(bu
+\fIOff\fR = Never use SSL when querying the directory.
+.TP 0.2i
+\(bu
+\fIStart_tls\fR = Use the LDAPv3 StartTLS extended operation 
 (RFC2830) for communicating with the directory server.
+.RE
 
 Default : \fBldap ssl = on\fR
 .TP
@@ -3433,6 +3447,28 @@ It specifies where machines should be
 added to the ldap tree.
 
 Default : \fBnone\fR
+.TP
+\fBldap passwd sync (G)\fR
+This option is used to define whether
+or not Samba should sync the LDAP password with the NT
+and LM hashes for normal accounts (NOT for
+workstation, server or domain trusts) on a password
+change via SAMBA.  
+
+The \fIldap passwd sync\fR can be set to one of three values:
+.RS
+.TP 0.2i
+\(bu
+\fIYes\fR  =  Try to update the LDAP, NT and LM passwords and update the pwdLastSet time.
+.TP 0.2i
+\(bu
+\fINo\fR = Update NT and LM passwords and update the pwdLastSet time.
+.TP 0.2i
+\(bu
+\fIOnly\fR = Only update the LDAP password and let the LDAP server do the rest.
+.RE
+
+Default : \fBldap passwd sync = no\fR
 .TP
 \fBlevel2 oplocks (S)\fR
 This parameter controls whether Samba supports
