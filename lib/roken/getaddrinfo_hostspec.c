@@ -49,6 +49,7 @@ roken_getaddrinfo_hostspec(const char *hostspec,
     char portstr[NI_MAXSERV];
     char host[MAXHOSTNAMELEN];
     struct addrinfo hints;
+    int hostspec_len;
 
     struct hst {
 	const char *prefix;
@@ -81,9 +82,12 @@ roken_getaddrinfo_hostspec(const char *hostspec,
 	char *end;
 
 	port = strtol (p + 1, &end, 0);
+	hostspec_len = p - hostspec;
+    } else {
+	hostspec_len = strlen(hostspec);
     }
     snprintf (portstr, sizeof(portstr), "%u", port);
     
-    snprintf (host, sizeof(host), "%.*s", p - hostspec, hostspec);
+    snprintf (host, sizeof(host), "%.*s", hostspec_len, hostspec);
     return getaddrinfo (host, portstr, &hints, ai);
 }
