@@ -214,10 +214,8 @@ static int reply_nt1(char *outbuf)
 		capabilities |= CAP_UNICODE;
 	}
 	
-#ifdef WITH_MSDFS
-	if(lp_host_msdfs())
+	if (lp_host_msdfs())
 		capabilities |= CAP_DFS;
-#endif
 	
 	if (lp_security() >= SEC_USER) secword |= 1;
 	if (doencrypt) secword |= 2;

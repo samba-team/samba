@@ -24,8 +24,6 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-#ifdef WITH_MSDFS
-
 /**********************************************************************
  Create a tcon relative path from a dfs_path structure
  **********************************************************************/
@@ -743,16 +741,3 @@ int enum_msdfs_links(struct junction_map* jn)
 }
 
 
-#else
-/* Stub functions if WITH_MSDFS not defined */
- int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
-{
-	return -1;
-}
-
- BOOL is_msdfs_link(connection_struct* conn, char* path)
-{
-	return False;
-}
-
-#endif

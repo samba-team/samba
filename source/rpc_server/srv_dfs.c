@@ -32,8 +32,6 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-#ifdef WITH_MSDFS
-
 /**********************************************************************
  api_dfs_exist
  **********************************************************************/
@@ -179,8 +177,3 @@ BOOL api_netdfs_rpc(pipes_struct *p)
 	return api_rpcTNP(p, "api_netdfs_rpc", api_netdfs_cmds);
 }
 
-#else
-
- void dfs_dummy(void) {;} /* So some compilers don't complain. */
-
-#endif

@@ -30,8 +30,6 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-#ifdef WITH_MSDFS
-
 #define MAX_MSDFS_JUNCTIONS 256
 
 /* This function does not return a WERROR or NTSTATUS code but rather 1 if
@@ -368,6 +366,3 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
   
   return r_u->status;
 }
-#else
-	void dfs_dummy1(void) {;} /* So some compilers don't complain. */
-#endif
