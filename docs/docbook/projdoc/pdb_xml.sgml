@@ -1,0 +1,42 @@
+<chapter id="pdb-xml">
+<chapterinfo>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<orgname>The Samba Team</orgname>
+			<address><email>jelmer@samba.org</email></address>
+		</affiliation>
+	</author>
+	<pubdate>November 2002</pubdate>
+</chapterinfo>
+
+<title>Passdb XML plugin</title>
+
+<sect1>
+<title>Building</title>
+
+<para>This module requires libxml2 to be installed.</para>
+
+<para>To build pdb_xml, run: <command>make bin/pdb_xml.so</command> in 
+the directory <filename>source/</filename>. </para>
+
+</sect1>
+
+<sect1>
+<title>Usage</title>
+
+<para>The usage of pdb_xml is pretty straightforward. To export data, use:
+
+<command>pdbedit -e plugin:/usr/lib/samba/pdb_xml.so:filename</command>
+
+(where filename is the name of the file to put the data in)
+</para>
+
+<para>
+To import data, use:
+<command>pdbedit -i plugin:/usr/lib/samba/pdb_xml.so:filename -e current-pdb</command>
+
+Where filename is the name to read the data from and current-pdb to put it in.
+</para>
+</sect1>
+</chapter>
