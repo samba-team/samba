@@ -629,7 +629,6 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 			break;
 		
 		/* See the comments on the DEVMODE in the msdn GDI documentation */
-		/* (WINVER >= 0x0400) */
 		case 0x0400:
 		case 0x0401:
 			if (!prs_uint32("icmmethod",        ps, depth, &devmode->icmmethod))
@@ -644,14 +643,10 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 				return False;
 			if (!prs_uint32("reserved2",        ps, depth, &devmode->reserved2))
 				return False;
-
-			/* (WINVER >= 0x0500) || (_WIN32_WINNT >= 0x0400) */
-			if (devmode->specversion == 0x401) {
-				if (!prs_uint32("panningwidth",     ps, depth, &devmode->panningwidth))
-					return False;
-				if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
-					return False;
-			}
+			if (!prs_uint32("panningwidth",     ps, depth, &devmode->panningwidth))
+				return False;
+			if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
+				return False;
 			break;
 
 		/* log an error if we see something else */
