@@ -665,8 +665,6 @@ void file_lines_slashcont(char **lines);
 
 /*The following definitions come from  lib/util_seaccess.c  */
 
-BOOL winbind_uid_to_sid(uid_t uid, DOM_SID *sid);
-BOOL winbind_gid_to_sid(gid_t gid, DOM_SID *sid);
 BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 		     gid_t *groups, uint32 acc_desired, 
 		     uint32 *acc_granted, uint32 *status);
@@ -1263,14 +1261,23 @@ void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_reco
 void dump_workgroups(BOOL force_write);
 void expire_workgroups_and_servers(time_t t);
 
-/*The following definitions come from  nsswitch/common.c  */
+/*The following definitions come from  nsswitch/wb_client.c  */
+
+BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type);
+BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
+			uint8 *name_type);
+BOOL winbind_uid_to_sid(uid_t uid, DOM_SID *sid);
+BOOL winbind_gid_to_sid(gid_t gid, DOM_SID *sid);
+
+/*The following definitions come from  nsswitch/wb_common.c  */
 
 void init_request(struct winbindd_request *req,int rq_type);
 void close_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
-enum nss_status winbindd_request(int req_type, struct winbindd_request *request,
+enum nss_status winbindd_request(int req_type, 
+				 struct winbindd_request *request,
 				 struct winbindd_response *response);
 
 /*The following definitions come from  param/loadparm.c  */
@@ -1670,7 +1677,6 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
 uint32 nt_printing_setsec(char *printername, struct current_user *user,
 			  SEC_DESC_BUF *secdesc_ctr);
-BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type);
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
 BOOL print_access_check(struct current_user *user, int snum,
 			uint32 required_access);
@@ -2916,8 +2922,6 @@ BOOL api_netdfs_rpc(pipes_struct *p);
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
 #if OLD_NTDOMAIN
-BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
-			uint8 *name_type);
 BOOL api_ntlsa_rpc(pipes_struct *p);
 #endif
 
