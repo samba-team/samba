@@ -12,6 +12,7 @@ NOPROTO = YES
 ADD_OBJ_FILES = libcli/security/security_token.o \
 		libcli/security/security_descriptor.o \
 		libcli/security/dom_sid.o \
+		libcli/security/access_check.o \
 		librpc/ndr/ndr_sec.o
 REQUIRED_SUBSYSTEMS = LIB_SECURITY_NDR
 # End SUBSYSTEM LIB_SECURITY
