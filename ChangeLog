@@ -1,3 +1,7 @@
+2001-07-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* admin: add a rename command
+
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.4c
@@ -182,6 +186,10 @@
 	* lib/krb5/krb5.h (krb5_context_data): remove srv_try_rfc2052
 
 	* update to libtool 1.4 and autoconf 2.50
+
+2001-06-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/hdb.c: use krb5_add_et_list
 
 2001-06-21  Johan Danielsson  <joda@pdc.kth.se>
 
