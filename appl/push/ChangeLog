@@ -1,3 +1,7 @@
+1999-11-13  Assar Westerlund  <assar@sics.se>
+
+	* push.c: make `-v' a arg_counter
+	
 1999-11-02  Assar Westerlund  <assar@sics.se>
 
 	* push.c (main): redo the v4/v5 selection for consistency.  -4 ->
