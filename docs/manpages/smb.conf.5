@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "10 April 2002" "" ""
+.TH "SMB.CONF" "5" "15 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -2896,7 +2896,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory\fR
+\fBforce directory  security mode (S)\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -5301,6 +5301,9 @@ This parameter may be used to override the
 compiled-in default printcap name used by the server (usually \fI /etc/printcap\fR). See the discussion of the [printers] section above for reasons 
 why you might want to do this.
 
+To use the CUPS printing interface set \fBprintcap name = cups
+\fR\&.
+
 On System V systems that use \fBlpstat\fR to 
 list available printers you can use \fBprintcap name = lpstat
 \fRto automatically obtain lists of available printers. This 
@@ -7183,7 +7186,7 @@ again.
 
 Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwinbind enum\fR
+\fBwinbind enum users\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of users through the
@@ -7202,7 +7205,7 @@ usernames.
 
 Default: \fBwinbind enum users = yes \fR
 .TP
-\fBwinbind enum\fR
+\fBwinbind enum groups\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of groups through the
@@ -7235,9 +7238,13 @@ used when listing a username of the form of \fIDOMAIN
 is only applicable when using the \fIpam_winbind.so\fR
 and \fInss_winbind.so\fR modules for UNIX services.
 
-Example: \fBwinbind separator = \\\fR
+Please note that setting this parameter to + causes problems
+with group membership at least on glibc systems, as the character +
+is used as a special character for NIS in /etc/group.
 
-Example: \fBwinbind separator = +\fR
+Example: \fBwinbind separator = \\\\\fR
+
+Example: \fBwinbind separator = /\fR
 .TP
 \fBwinbind uid\fR
 The winbind gid parameter specifies the range of group 

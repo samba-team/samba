@@ -14381,6 +14381,12 @@ HREF="#AEN79"
 > section above for reasons 
 		why you might want to do this.</P
 ><P
+>To use the CUPS printing interface set <B
+CLASS="COMMAND"
+>printcap name = cups
+		</B
+>.</P
+><P
 >On System V systems that use <B
 CLASS="COMMAND"
 >lpstat</B
@@ -18968,14 +18974,18 @@ CLASS="FILENAME"
 > modules for UNIX services.
 		</P
 ><P
+>Please note that setting this parameter to + causes problems
+		with group membership at least on glibc systems, as the character +
+		is used as a special character for NIS in /etc/group.</P
+><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = \</B
+>winbind separator = \\</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = +</B
+>winbind separator = /</B
 ></P
 ></DD
 ><DT
@@ -19374,7 +19384,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6117"
+NAME="AEN6120"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19404,7 +19414,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6123"
+NAME="AEN6126"
 ></A
 ><H2
 >VERSION</H2
@@ -19415,7 +19425,7 @@ NAME="AEN6123"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6126"
+NAME="AEN6129"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19494,7 +19504,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6146"
+NAME="AEN6149"
 ></A
 ><H2
 >AUTHOR</H2
