@@ -1,0 +1,24 @@
+#! /bin/sh
+
+if [ "$#" -ne 2 ]; then
+	echo "Usage: `basename $0` proto-file output"
+	exit 1
+fi
+
+if rm -f "$2" ; then :; else
+	echo "Failed to remove $2"
+	exit 1
+fi
+
+d=`dirname $0`
+
+for i in `cat "$1"`; do
+	if [ -f "$i" ]; then
+		cat "$i" >> "$2"
+	elif [ -f "$d/$i" ]; then
+		cat "$d/$i" >> "$2"
+	else
+		echo "$i: File not found"
+		exit 1
+	fi
+done
