@@ -20,16 +20,8 @@ krb5_build_ap_req (krb5_context context,
   ap.ap_options.mutual_required = (ap_options & AP_OPTS_MUTUAL_REQUIRED) > 0;
   
   ap.ticket.tkt_vno = 5;
-#ifdef USE_ASN1_PRINCIPAL
   copy_Realm(&cred->server->realm, &ap.ticket.realm);
   copy_PrincipalName(&cred->server->name, &ap.ticket.sname);
-#else
-  ap.ticket.realm = malloc(cred->server->realm.length + 1);
-  strncpy(ap.ticket.realm, cred->server->realm.data,
-	  cred->server->realm.length);
-  ap.ticket.realm[cred->server->realm.length] = '\0';
-  krb5_principal2principalname(&ap.ticket.sname, cred->server);
-#endif
 
   decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
   copy_EncryptedData(&t.enc_part, &ap.ticket.enc_part);

@@ -205,7 +205,6 @@ krb5_kt_ret_principal(krb5_storage *sp,
 
     ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
-#ifdef USE_ASN1_PRINCIPAL
     p->name.name_type = KRB5_NT_SRV_HST;
     p->name.name_string.len = tmp;
     ret = krb5_kt_ret_string(sp, &p->realm);
@@ -218,20 +217,6 @@ krb5_kt_ret_principal(krb5_storage *sp,
 	ret = krb5_kt_ret_string(sp, p->name.name_string.val + i);
 	if(ret) return ret;
     }
-#else
-    p->type = KRB5_NT_SRV_HST;
-    p->ncomp = tmp;
-    ret = krb5_kt_ret_data(sp, &p->realm);
-    if(ret) return ret;
-    p->comp = ALLOC(p->ncomp, krb5_data);
-    if(p->comp == NULL){
-	return ENOMEM;
-    }
-    for(i = 0; i < p->ncomp; i++){
-	ret = krb5_kt_ret_data(sp, &p->comp[i]);
-	if(ret) return ret;
-    }
-#endif
     *princ = p;
     return 0;
 }
@@ -305,7 +290,6 @@ krb5_kt_store_principal(krb5_storage *sp,
     int ret;
     int16_t tmp;
     
-#ifdef USE_ASN1_PRINCIPAL
     ret = krb5_store_int16(sp, p->name.name_string.len);
     if(ret) return ret;
     ret = krb5_kt_store_string(sp, p->realm);
@@ -314,16 +298,6 @@ krb5_kt_store_principal(krb5_storage *sp,
 	ret = krb5_kt_store_string(sp, p->name.name_string.val[i]);
 	if(ret) return ret;
     }
-#else
-    ret = krb5_store_int16(sp, p->ncomp);
-    if(ret) return ret;
-    ret = krb5_kt_store_data(sp, p->realm);
-    if(ret) return ret;
-    for(i = 0; i < p->ncomp; i++){
-	ret = krb5_kt_store_data(sp, p->comp[i]);
-	if(ret) return ret;
-    }
-#endif
     return 0;
 }
 
@@ -353,11 +327,7 @@ krb5_kt_add_entry(krb5_context context,
     if (ret) return ret;
     ret = krb5_kt_store_principal (sp, entry->principal);
     if (ret) return ret;
-#ifdef USE_ASN1_PRINCIPAL
     ret = krb5_store_int32 (sp, entry->principal->name.name_type);
-#else
-    ret = krb5_store_int32 (sp, entry->principal->type);
-#endif
     if (ret) return ret;
     ret = krb5_store_int32 (sp, time(NULL));
     if (ret) return ret;
@@ -389,12 +359,8 @@ krb5_kt_next_entry(krb5_context context,
   ret = krb5_kt_ret_principal (cursor->sp, &entry->principal);
   if (ret)
     return ret;
-#ifdef USE_ASN1_PRINCIPAL
   ret = krb5_ret_int32(cursor->sp, &tmp32);
   entry->principal->name.name_type = tmp32;
-#else
-  ret = krb5_ret_int32(cursor->sp, &entry->principal->type);
-#endif
   if (ret)
     return ret;
   ret = krb5_ret_int32(cursor->sp, &tmp32);

@@ -15,13 +15,7 @@ krb5_get_krbhst (krb5_context context,
     krb5_boolean done;
     char **tmp;
 
-#ifdef USE_ASN1_PRINCIPAL
      r = *realm;
-#else
-     r = malloc (realm->length + 1);
-     strncpy (r, realm->data, realm->length);
-     r[realm->length] = '\0';
-#endif
 
     count = 0;
     max = 10;
@@ -62,9 +56,6 @@ krb5_get_krbhst (krb5_context context,
 	}
 	++count;
     }
-#ifndef USE_ASN1_PRINCIPAL
-     free (r);
-#endif
 
     /* There should always be room for the NULL here */
     res[count++] = NULL;

@@ -27,11 +27,7 @@ krb5_mk_error(krb5_context context,
 	msg.e_text = (general_string*)&e_text;
     if (e_data)
 	msg.e_data = (octet_string*)e_data;
-#ifdef USE_ASN1_PRINCIPAL
     msg.realm = server->realm;
-#else
-    msg.realm = server->realm.data;
-#endif
     msg.sname = server->name;
     if(client){
 	msg.crealm = &client->realm;

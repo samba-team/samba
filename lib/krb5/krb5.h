@@ -137,25 +137,10 @@ typedef struct krb5_ccache_data *krb5_ccache;
 
 typedef struct krb5_context_data *krb5_context;
 
-#define USE_ASN1_PRINCIPAL
-#ifdef USE_ASN1_PRINCIPAL
 typedef Realm krb5_realm;
 typedef Principal krb5_principal_data;
 typedef struct Principal *krb5_principal;
 typedef const struct Principal *krb5_const_principal;
-#else
-typedef krb5_data krb5_realm;
-typedef struct krb5_principal_data{
-  int type;
-  krb5_realm realm;
-  krb5_data *comp;
-  int ncomp;
-}krb5_principal_data;
-
-typedef krb5_principal_data *krb5_principal;
-typedef const krb5_principal_data *krb5_const_principal;
-#endif
-
 
 typedef time_t krb5_time;
 

@@ -9,11 +9,7 @@ hdb_principal2key(krb5_context context, krb5_principal p, krb5_data *key)
     krb5_principal new;
 
     krb5_copy_principal(context, p, &new);
-#ifdef USE_ASN1_PRINCIPAL
     new->name.name_type = 0;
-#else
-    new->type = 0;
-#endif
     sp = krb5_storage_emem();
     krb5_store_principal(sp, new);
     krb5_storage_to_data(sp, key);

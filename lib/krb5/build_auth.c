@@ -18,15 +18,8 @@ krb5_build_authenticator (krb5_context context,
   unsigned seq_number;
 
   auth->authenticator_vno = 5;
-#ifdef USE_ASN1_PRINCIPAL
   copy_Realm(&cred->client->realm, &auth->crealm);
   copy_PrincipalName(&cred->client->name, &auth->cname);
-#else
-  auth->crealm = malloc(cred->client->realm.length + 1);
-  strncpy(auth->crealm, cred->client->realm.data, cred->client->realm.length);
-  auth->crealm[cred->client->realm.length] = '\0';
-  krb5_principal2principalname(&auth->cname, cred->client);
-#endif
 
   gettimeofday(&tv, NULL);
   auth->cusec = tv.tv_usec;

@@ -186,14 +186,7 @@ krb5_get_in_tkt(krb5_context context,
     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
     krb5_principal2principalname (a.req_body.cname, creds->client);
     krb5_principal2principalname (a.req_body.sname, creds->server);
-#ifdef USE_ASN1_PRINCIPAL
     copy_Realm(&creds->client->realm, &a.req_body.realm);
-#else
-    a.req_body.realm = malloc(creds->client->realm.length + 1);
-    strncpy (a.req_body.realm, creds->client->realm.data,
-	     creds->client->realm.length);
-    a.req_body.realm[creds->client->realm.length] = '\0';
-#endif
 
     a.req_body.till  = creds->times.endtime;
     krb5_generate_random_block (&a.req_body.nonce, sizeof(a.req_body.nonce));

@@ -222,7 +222,6 @@ krb5_store_principal(krb5_storage *sp,
 {
     int i;
     int ret;
-#ifdef USE_ASN1_PRINCIPAL
     ret = krb5_store_int32(sp, p->name.name_type);
     if(ret) return ret;
     ret = krb5_store_int32(sp, p->name.name_string.len);
@@ -233,18 +232,6 @@ krb5_store_principal(krb5_storage *sp,
 	ret = krb5_store_string(sp, p->name.name_string.val[i]);
 	if(ret) return ret;
     }
-#else
-    ret = krb5_store_int32(sp, p->type);
-    if(ret) return ret;
-    ret = krb5_store_int32(sp, p->ncomp);
-    if(ret) return ret;
-    ret = krb5_store_data(sp, p->realm);
-    if(ret) return ret;
-    for(i = 0; i < p->ncomp; i++){
-	ret = krb5_store_data(sp, p->comp[i]);
-	if(ret) return ret;
-    }
-#endif
     return 0;
 }
 
@@ -270,7 +257,6 @@ krb5_ret_principal(krb5_storage *sp,
 	free(p);
 	return ret;
     }
-#ifdef USE_ASN1_PRINCIPAL
     p->name.name_type = type;
     p->name.name_string.len = ncomp;
     ret = krb5_ret_string(sp, &p->realm);
@@ -284,20 +270,6 @@ krb5_ret_principal(krb5_storage *sp,
 	ret = krb5_ret_string(sp, &p->name.name_string.val[i]);
 	if(ret) return ret; /* XXX */
     }
-#else
-    p->type = type;
-    p->ncomp = ncomp;
-    ret = krb5_ret_data(sp, &p->realm);
-    if(ret) return ret;
-    p->comp = ALLOC(p->ncomp, krb5_data);
-    if(p->comp == NULL){
-	return ENOMEM;
-    }
-    for(i = 0; i < p->ncomp; i++){
-	ret = krb5_ret_data(sp, &p->comp[i]);
-	if(ret) return ret;
-    }
-#endif
     *princ = p;
     return 0;
 }
