@@ -624,7 +624,6 @@ static void construct_reply(struct smbsrv_request *req)
 	req->flags = CVAL(req->in.hdr, HDR_FLG);
 	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
 	req->smbpid = SVAL(req->in.hdr,HDR_PID);
-	req->mid = SVAL(req->in.hdr,HDR_MID);
 
 	if (!req_signing_check_incoming(req)) {
 		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
