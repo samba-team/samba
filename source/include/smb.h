@@ -24,6 +24,9 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+#include "md5.h"
+#include "hmacmd5.h"
+
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
 

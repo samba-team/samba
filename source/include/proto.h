@@ -226,6 +226,13 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
 
 char *getsmbpass(char *prompt)    ;
 
+/*The following definitions come from  lib/hmacmd5.c  */
+
+void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx);
+void hmac_md5_init_limK_to_64(uchar*  key, int key_len, HMACMD5Context *ctx);
+void hmac_md5_update(uchar* text, int text_len, HMACMD5Context *ctx);
+void hmac_md5_final(caddr_t digest, HMACMD5Context *ctx);
+
 /*The following definitions come from  lib/interface.c  */
 
 void load_interfaces(void);
@@ -249,6 +256,13 @@ void initialize_multibyte_vectors( int client_codepage);
 /*The following definitions come from  lib/md4.c  */
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
+
+/*The following definitions come from  lib/md5.c  */
+
+void MD5Init(struct MD5Context *ctx);
+void MD5Update(struct MD5Context *ctx, uchar const *buf, unsigned len);
+void MD5Final(uchar digest[16], struct MD5Context *ctx);
+void MD5Transform(uint32 buf[4], const uchar inext[64]);
 
 /*The following definitions come from  lib/membuffer.c  */
 
