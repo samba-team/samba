@@ -16,7 +16,8 @@ allow the LDAP server to catch up.  If you have a particularly
 high-latency network, you may wish to time the LDAP replication with a
 network sniffer, and increase this value accordingly.  Be aware that no
 checking is performed that the data has actually replicated.</para>
-        <para>The value is specified in milliseconds</para>
+        <para>The value is specified in milliseconds, the maximum
+value is 5000 (5 seconds).</para>
 </description>
 <value type="default">1000</value>
 </samba:parameter>
