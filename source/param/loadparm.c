@@ -132,6 +132,8 @@ typedef struct
   char *szCharacterSet;
   char *szLogonScript;
   char *szLogonPath;
+  char *szLogonDrive;
+  char *szLogonHome;
   char *szSmbrun;
   char *szWINSserver;
   char *szInterfaces;
@@ -445,6 +447,8 @@ struct parm_struct
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
   {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL},
+  {"logon drive",      P_STRING,  P_GLOBAL, &Globals.szLogonDrive,      NULL},
+  {"logon home",       P_STRING,  P_GLOBAL, &Globals.szLogonHome,       NULL},
   {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL},
   {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL},
   {"homedir map",      P_STRING,  P_GLOBAL, &Globals.szNISHomeMapName,  NULL},
@@ -620,6 +624,11 @@ static void init_globals(void)
   string_set(&Globals.szServerString,s);
   sprintf(s,"%d.%d", DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION);
   string_set(&Globals.szAnnounceVersion,s);
+
+  string_set(&Globals.szLogonDrive, "");
+  /* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
+  string_set(&Globals.szLogonHome, "\\\\%N\\%U");
+  string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
   Globals.bLoadPrinters = True;
   Globals.bUseRhosts = False;
   Globals.max_packet = 65535;
@@ -838,6 +847,8 @@ FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
+FN_GLOBAL_STRING(lp_logon_drive,&Globals.szLogonDrive) 
+FN_GLOBAL_STRING(lp_logon_home,&Globals.szLogonHome) 
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)

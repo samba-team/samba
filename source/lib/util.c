@@ -21,6 +21,10 @@
 
 #include "includes.h"
 
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+#include "rpcsvc/ypclnt.h"
+#endif
+
 pstring scope = "";
 
 int DEBUGLEVEL = 1;
@@ -3602,6 +3606,55 @@ char *client_addr(void)
   return addr_buf;
 }
 
+char *automount_server(char *user_name)
+{
+	static pstring server_name;
+
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+	int nis_error;        /* returned by yp all functions */
+	char *nis_result;     /* yp_match inits this */
+	int nis_result_len;  /* and set this */
+	char *nis_domain;     /* yp_get_default_domain inits this */
+	char *nis_map = (char *)lp_nis_home_map_name();
+	int home_server_len;
+
+	/* set to default of no string */
+	server_name[0] = 0;
+
+	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0)
+	{
+		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+	}
+
+	DEBUG(5, ("NIS Domain: %s\n", nis_domain));
+
+	if ((nis_error = yp_match(nis_domain, nis_map,
+			user_name, strlen(user_name),
+			&nis_result, &nis_result_len)) != 0)
+	{
+		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+	}
+
+	if (!nis_error && lp_nis_home_map())
+	{
+		home_server_len = strcspn(nis_result,":");
+		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
+		if (home_server_len > sizeof(pstring))
+		{
+			home_server_len = sizeof(pstring);
+		}
+		strncpy(server_name, nis_result, home_server_len);
+	}
+#else
+	/* use the local machine name instead of the auto-map server */
+	pstrcpy(server_name, local_machine);
+#endif
+
+	DEBUG(4,("Home server: %s\n", server_name));
+
+	return server_name;
+}
+
 /*******************************************************************
 sub strings with useful parameters
 Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
@@ -3630,6 +3683,7 @@ void standard_sub_basic(char *str)
 				}
 				break;
 			}
+			case 'N' : string_sub(p,"%N", automount_server(username)); break;
 			case 'I' : string_sub(p,"%I", client_addr()); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
 			case 'M' : string_sub(p,"%M", client_name()); break;
