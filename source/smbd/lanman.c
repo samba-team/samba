@@ -498,15 +498,17 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	pstring tok,driver,datafile,langmon,helpfile,datatype;
 	char *p;
 	char **lines, *line;
+	pstring gen_line;
 	
+	DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
+			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
 	lines = file_lines_load(lp_driverfile(snum),NULL);
 	if (!lines) {
 		DEBUG(3,("fill_printq_info: Can't open %s - %s\n",
 			 lp_driverfile(snum),strerror(errno)));
-		desc->errcode=NERR_notsupported;
-		return;
 	}
-	
+	else
+	{
 	/* lookup the long printer driver name in the file
 	   description */
 	for (i=0;lines[i] && !ok;i++) {
@@ -516,6 +518,22 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
 			ok=1;
 	}
+	}
+
+	if( !ok ) {
+		/* no printers.def, or driver not found, check the NT driver tdb */
+		if ( ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)) ) {
+	        p = gen_line;
+			DEBUG(10,("9x compatable driver line for [%s]: [%s]\n",
+					  lp_printerdriver(snum), gen_line));
+	    } else {
+			/* didn't find driver in tdb either... oh well */
+			DEBUG(10,("9x driver not found in tdb\n"));
+		desc->errcode=NERR_notsupported;
+		return;
+		}
+	}
+
 	line = strdup(p);
 	p = line;
 	file_lines_free(lines);
@@ -667,20 +685,39 @@ static int get_printerdrivernumber(int snum)
 	pstring tok;
 	char *p;
 	char **lines, *line;
+	pstring gen_line;
 
+	DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
+			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
 	lines = file_lines_load(lp_driverfile(snum), NULL);
 	if (!lines) {
 		DEBUG(3,("get_printerdrivernumber: Can't open %s - %s\n",
 			 lp_driverfile(snum),strerror(errno)));
-		return(0);
 	}
-	
-	/* lookup the long printer driver name in the file description */
-	for (i=0;lines[i] && !ok; i++) {
+	else
+	{
+		/* lookup the long printer driver name in the file
+		   description */
+		for (i=0;lines[i] && !ok;i++) {
 		p = lines[i];
 		if (next_token(&p,tok,":",sizeof(tok)) &&
+				(strlen(lp_printerdriver(snum)) == strlen(tok)) &&
 		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
 			ok=1;
+	}
+	}
+
+	if( !ok ) {
+		/* no printers.def, or driver not found, check the NT driver tdb */
+		if ( ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)) ) {
+	        p = gen_line;
+			DEBUG(10,("9x compatable driver line for [%s]: [%s]\n",
+					  lp_printerdriver(snum), gen_line));
+	    } else {
+			/* didn't find driver in tdb either... oh well */
+			DEBUG(10,("9x driver not found in tdb\n"));
+		    return (0);
+		}
 	}
 	line = strdup(p);
 	p = line;
