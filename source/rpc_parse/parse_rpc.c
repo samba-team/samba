@@ -232,7 +232,7 @@ static void smb_io_rpc_addr_str(char *desc,  RPC_ADDR_STR *str, prs_struct *ps, 
 	prs_align(ps);
 
 	prs_uint16 (      "len", ps, depth, &(str->len));
-	prs_uint8s (True, "str", ps, depth, (uchar*)str->str, str->len);
+	prs_uint8s (True, "str", ps, depth, (uchar*)str->str, MIN(str->len, sizeof(str->str)));
 }
 
 /*******************************************************************
