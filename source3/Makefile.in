@@ -104,7 +104,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/doscalls.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o \
-	  lib/util_array.o lib/util_unixsd.o lib/util_str.o lib/util_sid.o \
+	  lib/util_array.o lib/util_str.o lib/util_sid.o \
 	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
@@ -165,7 +165,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/reply.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
 	    smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
-            lib/msrpc-client.o lib/msrpc_use.o \
+            lib/util_unixsd.o lib/msrpc-client.o lib/msrpc_use.o \
             rpc_parse/parse_creds.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o \
 	    printing/printfsp.o

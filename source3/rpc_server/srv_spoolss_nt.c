@@ -587,8 +587,8 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 
 static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 {
-	unistr_to_ascii(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
-	unistr_to_ascii(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
+	unistr_to_dos(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
+	unistr_to_dos(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
 
 	nt_devmode->specversion=devmode.specversion;
 	nt_devmode->driverversion=devmode.driverversion;
