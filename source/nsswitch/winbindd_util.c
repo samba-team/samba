@@ -1023,7 +1023,7 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 			return False;
 		}
 
-			*channel = SEC_CHAN_DOMAIN;
+		*channel = SEC_CHAN_DOMAIN;
 		E_md4hash(pwd, ret_pwd);
 		SAFE_FREE(pwd);
 
