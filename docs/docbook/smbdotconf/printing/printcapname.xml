@@ -1,4 +1,4 @@
-<samba:parameter name="max print jobs"
+<samba:parameter name="printcap name"
                  context="S"
 		 print="1" developer="1"
                  xmlns:samba="http://samba.org/common">

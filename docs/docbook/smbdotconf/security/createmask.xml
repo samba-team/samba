@@ -1,4 +1,4 @@
-<samba:parameter name="create maske"
+<samba:parameter name="create mask"
                  context="S"
                  xmlns:samba="http://samba.org/common">
 <listitem>
