@@ -1,3 +1,7 @@
+2001-10-22  Assar Westerlund  <assar@sics.se>
+
+	* localtime_r.c: add
+
 2001-10-02  Johan Danielsson  <joda@pdc.kth.se>
 
 	* resolve.c (dns_srv_order): don't try to return a value
