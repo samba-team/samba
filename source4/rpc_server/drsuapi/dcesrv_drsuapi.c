@@ -42,8 +42,8 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 {
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *handle;
-	struct drsuapi_DsBindInfo *bind_info;
-	const uint8_t bind_info_data[] = DRSUAPI_DS_BIND_INFO_RESPONSE_W2K3;
+	struct drsuapi_DsBindInfoCtr *bind_info;
+	struct GUID site_guid;
 
 	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
@@ -66,12 +66,16 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	handle->data = b_state;
 	handle->destroy = drsuapi_handle_destroy;
 
-	bind_info = talloc_p(mem_ctx, struct drsuapi_DsBindInfo);
+	bind_info = talloc_p(mem_ctx, struct drsuapi_DsBindInfoCtr);
 	WERR_TALLOC_CHECK(bind_info);
-	
-	bind_info->length = sizeof(bind_info_data);
-	bind_info->data = talloc_memdup(mem_ctx, bind_info_data, sizeof(bind_info_data));
-	WERR_TALLOC_CHECK(bind_info->data);
+
+	ZERO_STRUCT(site_guid);
+
+	bind_info->length				= 28;
+	bind_info->info.info28.supported_extensions	= 0;
+	bind_info->info.info28.site_guid		= site_guid;
+	bind_info->info.info28.u1			= 0;
+	bind_info->info.info28.repl_epoch		= 0;
 
 	r->out.bind_info = bind_info;
 	*r->out.bind_handle = handle->wire_handle;
@@ -109,8 +113,9 @@ static WERROR drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static WERROR drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsReplicaSync *r)
 {
-	/* TODO: implment this call correct!
-	 *       for now we just say yes
+	/* TODO: implement this call correct!
+	 *       for now we just say yes,
+	 *       because we have no output parameter
 	 */
 	return WERR_OK;
 }
