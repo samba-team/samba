@@ -714,6 +714,12 @@ MAKEDIR = || exec false; \
 	  -o $@ 
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
+# this adds support for precompiled headers. To use it, install a snapshot
+# of gcc-3.4 and run 'make pch' before you do the main build. 
+pch:
+	rm -f $(srcdir)/include/includes.h.gch
+	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
+
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
 # would be nice if "make prefix=/opt/samba all" also rebuilt things,
