@@ -55,7 +55,6 @@ docs/docbook/devdoc/* - most of these docs are outdated and need updates...
 docs/docbook/projdoc/Diagnosis.sgml - Needs extension
 
 Documentation for following smb.conf.5 parameters does not exist:
--valid                   // misc
 acl compatibility        // protocol
 client signing           // protocol
 client use spnego        // protocol
@@ -63,7 +62,6 @@ profile acls             // protocol
 client lanman auth       // security
 client NTLMv2 auth       // security
 idmap backend            // security
-preload modules          // security
 sam backend              // security
 kernel change notify     // tuning
 lpq cache time           // tuning
