@@ -309,6 +309,8 @@ check_for_tgt (krb5_context context,
     krb5_realm *client_realm;
     int expired;
 
+    krb5_cc_clear_mcred(&pattern);
+
     client_realm = krb5_princ_realm (context, principal);
 
     ret = krb5_make_principal (context, &pattern.server,
