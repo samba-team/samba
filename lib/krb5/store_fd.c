@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,7 +48,7 @@ fd_fetch(krb5_storage *sp, void *data, size_t size)
 }
 
 static ssize_t
-fd_store(krb5_storage *sp, void *data, size_t size)
+fd_store(krb5_storage *sp, const void *data, size_t size)
 {
     return write(FD(sp), data, size);
 }
