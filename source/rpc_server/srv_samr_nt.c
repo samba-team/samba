@@ -3964,7 +3964,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 
 	/* check if group already exists */
 	if ( (grp=getgrnam(name)) != NULL)
-		return NT_STATUS_GROUP_EXISTS;
+		return NT_STATUS_ALIAS_EXISTS;
 
 	/* we can create the UNIX group */
 	if (smb_create_group(name, &gid) != 0)
