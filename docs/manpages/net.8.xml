@@ -231,6 +231,13 @@ account in server manager first.</para>
 </refsect3>
 
 <refsect3>
+<title>[RPC|ADS] USER RENAME <replaceable>oldname</replaceable> <replaceable>newname</replaceable></title>
+
+<para>Rename specified user.</para>
+
+</refsect3>
+
+<refsect3>
 <title>[RPC|ADS] USER ADD <replaceable>name</replaceable> [password] [-F user flags] [-C comment]</title>
 
 <para>Add specified user.</para>
