@@ -148,7 +148,7 @@ SamrTestPrivateFunctionsUser
 
 typedef struct logon_hours_info
 {
-	uint16 len; /* normally 21 bytes */
+	uint32 len; /* normally 21 bytes */
 	uint8 hours[32];
 
 } LOGON_HRS;

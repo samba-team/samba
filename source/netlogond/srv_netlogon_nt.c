@@ -155,7 +155,8 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 	}
 #endif /* 0 */
 
-	if (strequal(trust_name, global_myname))
+	if (strequal(trust_name, global_myname)
+	    || strequal(trust_name, "\\\\."))
 	{
 		BOOL ret;
 		DEBUG(10, ("get_md4pw: loop-back, use $MACHINE.ACC\n"));
@@ -1009,8 +1010,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* interactive login. */
 				status =
 					net_login_interactive(&
-							      (sam_id->ctr->
-							       auth.id1),
+							      (sam_id->
+							       ctr->auth.id1),
 							      &dc);
 				break;
 			}
@@ -1019,10 +1020,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* network login.  lm challenge and 24 byte responses */
 				status =
 					net_login_network(&
-							  (sam_id->ctr->auth.
-							   id2), acb_info,
-							  &dc, usr_sess_key,
-lm_pw8);
+							  (sam_id->ctr->
+							   auth.id2),
+							  acb_info, &dc,
+usr_sess_key, lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				break;

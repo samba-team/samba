@@ -85,10 +85,8 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 		smb_ntpasslen == 0;
 
 	DEBUG(100, ("domain_client_validate: %s %s\n", user, domain));
-#ifdef DEBUG_PASSWORD
 	dump_data_pw("lmpw:", smb_apasswd, smb_apasslen);
 	dump_data_pw("ntpw:", smb_ntpasswd, smb_ntpasslen);
-#endif
 
 	fstrcpy(trust_acct, acct_name);
 	fstrcat(trust_acct, "$");
