@@ -61,4 +61,4 @@ pstring dyn_LIBDIR;
  *
  * Not writable, but used to set a default in the parameter table.
  **/
-pstring dyn_LOCKDIR;
+const pstring dyn_LOCKDIR;
