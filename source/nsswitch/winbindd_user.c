@@ -30,6 +30,7 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
                                 SAM_USERINFO_CTR *user_info)
 {
     fstring temp;
+    char *s;
 
     if ((pw == NULL) || (username == NULL) || (user_info == NULL)) {
         return;
@@ -52,20 +53,29 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
     strncpy(pw->pw_gecos, temp, sizeof(pw->pw_gecos) - 1);
 
-    /* Home directory */
+    /* Home directory and shell - use template config parameters */
 
-    unistr2_to_ascii(temp, &user_info->info.id21->uni_dir_drive, 
-                     sizeof(temp));
+    s = lp_template_homedir();
 
-    strncpy(pw->pw_dir, temp, sizeof(pw->pw_dir) - 1);
+    if (strequal(s, "")) {
+        strncpy(pw->pw_dir, "/tmp", sizeof(pw->pw_dir) - 1);
+    } else {
+        strncpy(pw->pw_dir, lp_template_homedir(), sizeof(pw->pw_dir) - 1);
+    }
 
-    /* Password */
+    s = lp_template_shell();
+    
+    if (strequal(s, "")) {
+        strncpy(pw->pw_shell, "/bin/false", sizeof(pw->pw_shell) - 1);
+    } else {
+        strncpy(pw->pw_shell, lp_template_shell(), sizeof(pw->pw_shell) - 1);
+    }
+
+    /* Password - set to "x" as we can't generate anything useful here.
+       Authentication can be done using the pam_ntdom module. */
 
     strncpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
 
-    /* Shell */
-
-    strncpy(pw->pw_shell, "/dev/null", sizeof(pw->pw_shell) - 1);
 }
 
 /* Return a password structure from a username */
@@ -255,6 +265,13 @@ enum winbindd_result winbindd_setpwent(struct winbindd_state *state)
 
     for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
         struct getent_state *domain_state;
+
+        /* Skip domains other than WINBINDD_DOMAIN environment variable */
+
+        if ((strcmp(state->request.data.domain, "") != 0) &&
+            (strcmp(state->request.data.domain, tmp->name) != 0)) {
+                continue;
+        }
 
         /* No point looking up BUILTIN users as they don't exist */
 
