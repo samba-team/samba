@@ -661,6 +661,8 @@ static void usage(char *pname)
 
 	DEBUG(3,( "loaded services\n"));
 
+    check_kernel_oplocks();
+
 	if (!is_daemon && !is_a_socket(0)) {
 		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
 		is_daemon = True;
@@ -699,8 +701,6 @@ static void usage(char *pname)
 	/* Setup the oplock IPC socket. */
 	if( !open_oplock_ipc() )
 		exit(1);
-
-    check_kernel_oplocks();
 
 	smbd_process();
 	close_sockets();
