@@ -208,6 +208,7 @@ static void
 SIGSYS_handler()
 {
   errno = 0;
+  signal(SIGSYS, SIGSYS_handler); /* Need to reinstall handler on SYSV */
   longjmp(catch_SIGSYS, 1);
 }
 
