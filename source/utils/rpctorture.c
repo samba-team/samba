@@ -294,9 +294,9 @@ enum client_action
 	pstrcpy(cli_info.share, "");
 	pstrcpy(cli_info.service, "");
 
-	pstrcpy(cli_info.dom.level3_sid, "");
+	ZERO_STRUCT(cli_info.dom.level3_sid);
 	pstrcpy(cli_info.dom.level3_dom, "");
-	pstrcpy(cli_info.dom.level5_sid, "");
+	ZERO_STRUCT(cli_info.dom.level5_sid);
 	pstrcpy(cli_info.dom.level5_dom, "");
 
 	smb_cli->nt_pipe_fnum   = 0xffff;
