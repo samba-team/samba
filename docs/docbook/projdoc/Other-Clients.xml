@@ -310,7 +310,7 @@ likely occur if it is not.
 </para>
 
 <para> 
-In order to server profiles successfully to Windows 2000 SP2 
+In order to serve profiles successfully to Windows 2000 SP2 
 clients (when not operating as a PDC), Samba must have 
 <command>nt acl support = no</command>
 added to the file share which houses the roaming profiles.
