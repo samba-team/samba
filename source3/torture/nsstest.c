@@ -319,8 +319,18 @@ static void nss_test_users(void)
 		printf("Testing user %s\n", pwd->pw_name);
 		printf("getpwent:   "); print_passwd(pwd);
 		pwd = nss_getpwuid(pwd->pw_uid);
+		if (!pwd) {
+			total_errors++;
+			printf("ERROR: can't getpwuid\n");
+			continue;
+		}
 		printf("getpwuid:   "); print_passwd(pwd);
 		pwd = nss_getpwnam(pwd->pw_name);
+		if (!pwd) {
+			total_errors++;
+			printf("ERROR: can't getpwnam\n");
+			continue;
+		}
 		printf("getpwnam:   "); print_passwd(pwd);
 		printf("initgroups: "); nss_test_initgroups(pwd->pw_name, pwd->pw_gid);
 		printf("\n");
@@ -338,8 +348,18 @@ static void nss_test_groups(void)
 		printf("Testing group %s\n", grp->gr_name);
 		printf("getgrent: "); print_group(grp);
 		grp = nss_getgrnam(grp->gr_name);
+		if (!grp) {
+			total_errors++;
+			printf("ERROR: can't getgrnam\n");
+			continue;
+		}
 		printf("getgrnam: "); print_group(grp);
 		grp = nss_getgrgid(grp->gr_gid);
+		if (!grp) {
+			total_errors++;
+			printf("ERROR: can't getgrgid\n");
+			continue;
+		}
 		printf("getgrgid: "); print_group(grp);
 		printf("\n");
 	}
