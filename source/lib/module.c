@@ -35,7 +35,10 @@ NTSTATUS smb_load_module(const char *module_name)
 	DIR *dir;
 	struct dirent *dirent;
 
-	stat(module_name, &st);
+	if(stat(module_name, &st) < 0) {
+		DEBUG(0, ("Can't stat module '%s'\n", module_name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* If the argument is a directory, recursively load all files / 
 	 * directories in it */
