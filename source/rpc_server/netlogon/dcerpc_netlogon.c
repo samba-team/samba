@@ -563,21 +563,21 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	sam->group_count = 0;
 	sam->groupids = NULL;
 	sam->user_flags = 0; /* TODO: w2k3 uses 0x120 - what is this? */
-	sam->acct_flags = server_info->acct_flags;	
+	sam->acct_flags = server_info->acct_flags;
 	sam->logon_server.string = lp_netbios_name();
-
 	sam->domain.string = server_info->domain_name;
 
 	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->account_sid);
 	NT_STATUS_HAVE_NO_MEMORY(sam->domain_sid);
 	sam->domain_sid->num_auths--;
 
+	ZERO_ARRAY(sam->unknown);
+
+	ZERO_STRUCT(sam->key);
 	if (server_info->user_session_key.length == sizeof(sam->key.key)) {
 		memcpy(sam->key.key, server_info->user_session_key.data, sizeof(sam->key.key));
-	} else {
-		ZERO_STRUCT(sam->key.key);
 	}
-	
+
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	/* It appears that level 6 is not individually encrypted */
 	if ((r->in.validation_level != 6) 
@@ -591,12 +591,11 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 					    sizeof(sam->key.key));
 		}
 	}
-	
+
+	ZERO_STRUCT(sam->LMSessKey);
 	if (server_info->lm_session_key.length == sizeof(sam->LMSessKey.key)) {
 		memcpy(sam->LMSessKey.key, server_info->lm_session_key.data, 
 		       sizeof(sam->LMSessKey.key));
-	} else {
-		ZERO_STRUCT(sam->LMSessKey.key);
 	}
 	
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
