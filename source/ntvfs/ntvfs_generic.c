@@ -773,7 +773,8 @@ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr,
 
 		wr->writeunlock.out.nwritten = wr2->generic.out.nwritten;
 
-		if (NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_IS_OK(status) && 
+		    lck->unlock.in.count != 0) {
 			status = ntvfs->ops->lock(ntvfs, req, lck);
 		}
 		break;
@@ -798,7 +799,8 @@ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr,
 		status = ntvfs->ops->write(ntvfs, req, wr2);
 		wr->writeclose.out.nwritten    = wr2->generic.out.nwritten;
 
-		if (NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_IS_OK(status) &&
+		    wr2->generic.in.count != 0) {
 			status = ntvfs->ops->close(ntvfs, req, cl);
 		}
 		break;
