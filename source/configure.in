@@ -2736,6 +2736,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_free_ktypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_data_contents, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_get_comp_string, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_unparsed_name, $KRB5_LIBS)
 
   LIBS="$LIBS $KRB5_LIBS"
   

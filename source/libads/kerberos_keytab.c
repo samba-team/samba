@@ -154,7 +154,8 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 #else
 			compare_ok = ((strcmp(ktprinc, princ_s) == 0) && (kt_entry.vno != kvno - 1));
 #endif
-			SAFE_FREE(ktprinc);
+			krb5_free_unparsed_name(ktprinc);
+			ktprinc = NULL;
 
 			if (compare_ok) {
 				DEBUG(3,("ads_keytab_add_entry: Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
@@ -479,7 +480,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
 		while ((ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) == 0) {
 			if (kt_entry.vno != kvno) {
-				char *ktprinc;
+				char *ktprinc = NULL;
 				char *p;
 
 				/* This returns a malloc'ed string in ktprinc. */
@@ -512,7 +513,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		}
 		for (i = 0; oldEntries[i]; i++) {
 			ret |= ads_keytab_add_entry(oldEntries[i], ads);
-			SAFE_FREE(oldEntries[i]);
+			krb5_free_unparsed_name(oldEntries[i]);
 		}
 		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
