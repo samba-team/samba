@@ -130,15 +130,15 @@
 #endif
 
 #ifndef _PATH_LOGACCESS
-#define _PATH_LOGACCESS "/etc/login.access"
+#define _PATH_LOGACCESS SYSCONFDIR "/login.access"
 #endif /* _PATH_LOGACCESS */
 
 #ifndef _PATH_LOGIN_CONF
-#define _PATH_LOGIN_CONF "/etc/login.conf"
+#define _PATH_LOGIN_CONF SYSCONFDIR "/login.conf"
 #endif /* _PATH_LOGIN_CONF */
 
 #ifndef _PATH_ETC_ENVIRONMENT
-#define _PATH_ETC_ENVIRONMENT "/etc/environment"
+#define _PATH_ETC_ENVIRONMENT SYSCONFDIR "/environment"
 #endif
 
 #ifndef _PATH_DEFPATH

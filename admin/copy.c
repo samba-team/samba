@@ -170,7 +170,7 @@ kt_copy (int argc, char **argv)
 }
 
 #ifndef KEYFILE
-#define KEYFILE "/etc/srvtab"
+#define KEYFILE SYSCONFDIR "/srvtab"
 #endif
 
 /* copy to from v4 srvtab, just short for copy */

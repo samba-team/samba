@@ -160,7 +160,7 @@ rsaencpwd_init(ap, server)
 		gethostname(lhostname, sizeof(lhostname));
 		if ((cp = strchr(lhostname, '.')) != 0)  *cp = '\0';
 		snprintf(key_file, sizeof(key_file),
-			 "/etc/.%s_privkey", lhostname);
+			 SYSCONFDIR "/.%s_privkey", lhostname);
 		if ((fp=fopen(key_file, "r"))==NULL) return(0);
 		fclose(fp);
 	} else {

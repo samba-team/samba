@@ -768,9 +768,9 @@ show_issue(void)
 {
     FILE *f;
     char buf[128];
-    f = fopen("/etc/issue.net", "r");
+    f = fopen(SYSCONFDIR "/issue.net", "r");
     if(f == NULL)
-	f = fopen("/etc/issue", "r");
+	f = fopen(SYSCONFDIR "/issue", "r");
     if(f){
 	while(fgets(buf, sizeof(buf)-2, f)){
 	    strcpy(buf + strcspn(buf, "\r\n"), "\r\n");

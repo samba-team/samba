@@ -117,7 +117,7 @@
 #endif
 
 #ifndef _PATH_ETC_ENVIRONMENT
-#define _PATH_ETC_ENVIRONMENT "/etc/environment"
+#define _PATH_ETC_ENVIRONMENT SYSCONFDIR "/environment"
 #endif
 
 /*

@@ -35,5 +35,5 @@
 
 RCSID("$Id$");
 
-const char krb5_config_file[] = "/etc/krb5.conf";
+const char krb5_config_file[] = SYSCONFDIR "/krb5.conf";
 const char krb5_defkeyname[] = KEYTAB_DEFAULT;
