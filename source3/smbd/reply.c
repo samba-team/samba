@@ -3361,14 +3361,18 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 /*******************************************************************
  Resolve wildcards in a filename rename.
+ Note that name is in UNIX charset and thus potentially can be more
+ than fstring buffer (255 bytes) especially in default UTF-8 case.
+ Therefore, we use pstring inside and all calls should ensure that
+ name2 is at least pstring-long (they do already)
 ********************************************************************/
 
 static BOOL resolve_wildcards(const char *name1, char *name2)
 {
-	fstring root1,root2;
-	fstring ext1,ext2;
+	pstring root1,root2;
+	pstring ext1,ext2;
 	char *p,*p2, *pname1, *pname2;
-	int available_space;
+	int available_space, actual_space;
 	
 
 	pname1 = strrchr_m(name1,'/');
@@ -3377,21 +3381,21 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 	if (!pname1 || !pname2)
 		return(False);
   
-	fstrcpy(root1,pname1);
-	fstrcpy(root2,pname2);
+	pstrcpy(root1,pname1);
+	pstrcpy(root2,pname2);
 	p = strrchr_m(root1,'.');
 	if (p) {
 		*p = 0;
-		fstrcpy(ext1,p+1);
+		pstrcpy(ext1,p+1);
 	} else {
-		fstrcpy(ext1,"");    
+		pstrcpy(ext1,"");    
 	}
 	p = strrchr_m(root2,'.');
 	if (p) {
 		*p = 0;
-		fstrcpy(ext2,p+1);
+		pstrcpy(ext2,p+1);
 	} else {
-		fstrcpy(ext2,"");    
+		pstrcpy(ext2,"");    
 	}
 
 	p = root1;
@@ -3423,7 +3427,11 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 	available_space = sizeof(pstring) - PTR_DIFF(pname2, name2);
 	
 	if (ext2[0]) {
-		snprintf(pname2, available_space - 1, "%s.%s", root2, ext2);
+		actual_space = snprintf(pname2, available_space - 1, "%s.%s", root2, ext2);
+		if (actual_space >= available_space - 1) {
+			DEBUG(1,("resolve_wildcards: can't fit resolved name into specified buffer (overrun by %d bytes)\n",
+				actual_space - available_space));
+		}
 	} else {
 		pstrcpy_base(pname2, root2, name2);
 	}
