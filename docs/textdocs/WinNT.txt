@@ -1,3 +1,6 @@
+!==
+!== WinNT.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 Contributors:	Various
 		Password Section - Copyright (C) 1997 - John H Terpstra
 		Printing Section - Copyright (C) 1997 - Matthew Harrell

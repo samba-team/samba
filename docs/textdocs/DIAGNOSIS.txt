@@ -1,3 +1,6 @@
+!==
+!== DIAGNOSIS.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 Contributor:	Andrew Tridgell
 Updated:	October 14, 1997
 

@@ -1,3 +1,6 @@
+!==
+!== BROWSING.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
 Updated:	June 29, 1997
 Status:		Current - For VERY Advanced Users ONLY

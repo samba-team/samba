@@ -1,3 +1,6 @@
+!==
+!== BUGS.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 Contributor:	Samba Team
 Updated:	June 27, 1997
 
