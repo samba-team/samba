@@ -89,7 +89,6 @@ test_smbpasswd() {
 test_smbpasswd_remote() {
 	test_smbpasswd_password="$1"
 	test_smbpasswd_newpassword="$2"
-	rm -f $prefix/private/smbpasswd
 	echo "( echo $test_smbpasswd_password; echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -r localhost -s -U $whoami"
 	( echo $test_smbpasswd_password; echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -r localhost -s -U $whoami
 	status=$?
@@ -104,7 +103,6 @@ test_smbpasswd_remote() {
 
 test_smbpasswd_local() {
 	test_smbpasswd_newpassword="$2"
-	rm -f $prefix/private/smbpasswd
 	echo "( echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -L -s $whoami"
 	( echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -L -s $whoami
 	status=$?
