@@ -69,7 +69,7 @@ static KTEXT_ST cip;
 static unsigned int lifetime;
 static time_t local_time;
 
-static char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+static krb_principal pr;
 
 static int
 save_tkt(char *user, char *instance, char *realm, void *arg, 
@@ -85,9 +85,7 @@ store_ticket(KTEXT cip)
 {
     char *ptr;
     des_cblock session;
-    char sname[SNAME_SZ];
-    char sinst[INST_SZ];
-    char srealm[REALM_SZ];
+    krb_principal sp;
     unsigned char kvno;
     KTEXT_ST tkt;
     int left = cip->length;
@@ -107,25 +105,25 @@ store_ticket(KTEXT cip)
 	return(INTK_BADPW);
     
     /* extract server's name */
-    strcpy(sname,ptr);
-    ptr += strlen(sname) + 1;
-    left -= strlen(sname) + 1;
+    strcpy(sp.name, ptr);
+    ptr += strlen(sp.name) + 1;
+    left -= strlen(sp.name) + 1;
 
     if (strnlen(ptr, left) == left)
 	return(INTK_BADPW);
 
     /* extract server's instance */
-    strcpy(sinst, ptr);
-    ptr += strlen(sinst) + 1;
-    left -= strlen(sinst) + 1;
+    strcpy(sp.instance, ptr);
+    ptr += strlen(sp.instance) + 1;
+    left -= strlen(sp.instance) + 1;
 
     if (strnlen(ptr, left) == left)
 	return(INTK_BADPW);
 
     /* extract server's realm */
-    strcpy(srealm,ptr);
-    ptr += strlen(srealm) + 1;
-    left -= strlen(srealm) + 1;
+    strcpy(sp.realm,ptr);
+    ptr += strlen(sp.realm) + 1;
+    left -= strlen(sp.realm) + 1;
 
     if(left < 3)
 	return INTK_BADPW;
@@ -172,15 +170,15 @@ store_ticket(KTEXT cip)
     if (tf_create(TKT_FILE) != KSUCCESS)
 	return(INTK_ERR);
 
-    if (tf_put_pname(name) != KSUCCESS ||
-	tf_put_pinst(inst) != KSUCCESS) {
+    if (tf_put_pname(pr.name) != KSUCCESS ||
+	tf_put_pinst(pr.instance) != KSUCCESS) {
 	tf_close();
 	return(INTK_ERR);
     }
 
     
-    kerror = tf_save_cred(sname, sinst, srealm, session, lifetime, kvno,
-			  &tkt, local_time);
+    kerror = tf_save_cred(sp.name, sp.instance, sp.realm, session, 
+			  lifetime, kvno, &tkt, local_time);
     tf_close();
 
     return(kerror);
@@ -191,13 +189,13 @@ void kauth(char *principal, char *ticket)
     char *p;
     int ret;
   
-    ret = kname_parse(name, inst, realm, principal);
+    ret = krb_parse_name(&pr, principal);
     if(ret){
 	reply(500, "Bad principal: %s.", krb_get_err_text(ret));
 	return;
     }
-    if(realm[0] == 0)
-	krb_get_lrealm(realm, 1);
+    if(pr.realm[0] == 0)
+	krb_get_lrealm(pr.realm, 1);
 
     if(ticket){
 	cip.length = base64_decode(ticket, &cip.dat);
@@ -217,14 +215,14 @@ void kauth(char *principal, char *ticket)
 	return;
     }
     
-    ret = krb_get_in_tkt (name, inst, realm, "krbtgt", realm, 12,
+    ret = krb_get_in_tkt (pr.name, pr.instance, pr.realm, "krbtgt", realm, 12,
 			  NULL, save_tkt, NULL);
     if(ret != INTK_BADPW){
 	reply(500, "Kerberos error: %s.", krb_get_err_text(ret));
 	return;
     }
     base64_encode(cip.dat, cip.length, &p);
-    reply(300, "P=%s T=%s", krb_unparse_name(name, inst, realm), p);
+    reply(300, "P=%s T=%s", krb_unparse_name_long(&pr), p);
     free(p);
     memset(&cip, 0, sizeof(cip));
 }
@@ -248,10 +246,8 @@ void klist(void)
 
     char *file = tkt_string();
 
-    char name[ANAME_SZ];
-    char inst[INST_SZ];
-    char realm[REALM_SZ];
-
+    krb_principal pr;
+    
     char buf1[128], buf2[128];
     int header = 1;
     CREDENTIALS c;
@@ -271,7 +267,7 @@ void klist(void)
      * really stored in the principal section of the file, the
      * routine we use must itself call tf_init and tf_close.
      */
-    err = krb_get_tf_realm(file, realm);
+    err = krb_get_tf_realm(file, pr.realm);
     if(err != KSUCCESS){
 	reply(500, "%s", krb_get_err_text(err));
 	return;
@@ -283,12 +279,12 @@ void klist(void)
 	return;
     }
 
-    err = tf_get_pname(name);
+    err = tf_get_pname(pr.name);
     if(err != KSUCCESS){
 	reply(500, "%s", krb_get_err_text(err));
 	return;
     }
-    err = tf_get_pinst(inst);
+    err = tf_get_pinst(pr.instance);
     if(err != KSUCCESS){
 	reply(500, "%s", krb_get_err_text(err));
 	return;
@@ -301,10 +297,7 @@ void klist(void)
      * it was done before tf_init.
      */
        
-    if(inst[0])
-	lreply(200, "Principal: %s.%s@%s", name, inst, realm);
-    else
-	lreply(200, "Principal: %s@%s", name, realm);
+    lreply(200, "Principal: %s", krb_unparse_name(&pr));
     while ((err = tf_get_cred(&c)) == KSUCCESS) {
 	if (header) {
 	    lreply(200, "%-15s  %-15s  %s",

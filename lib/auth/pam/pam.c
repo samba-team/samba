@@ -137,23 +137,24 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     struct pam_message msg, *pmsg;
     struct pam_response *resp;
     char prompt[128];
-    char name[ANAME_SZ], inst[INST_SZ];
-
+    krb_principal pr;
+    
+    pr.realm[0] = 0;
     ret = pam_get_user(pamh, &user, "login: ");
     if(ret != PAM_SUCCESS)
 	return ret;
     
     pw = getpwuid(getuid());
     if(strcmp(user, "root") == 0){
-	strcpy(name, pw->pw_name);
-	strcpy(inst, "root");
+	strcpy(pr.name, pw->pw_name);
+	strcpy(pr.instance, "root");
     }else{
-	strcpy(name, user);
-	inst[0] = 0;
+	strcpy(pr.name, user);
+	pr.instance[0] = 0;
     }
     pmsg = &msg;
     msg.msg_style = PAM_PROMPT_ECHO_OFF;
-    sprintf(prompt, "%s's Password: ", krb_unparse_name(name, inst, NULL));
+    sprintf(prompt, "%s's Password: ", krb_unparse_name(&pr));
     msg.msg = prompt;
 
     ret = conv->conv(1, (const struct pam_message**)&pmsg, 
@@ -164,7 +165,7 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     {
 	char tkt[1024];
 	sprintf(tkt, "%s_%s_to_%s", TKT_ROOT, pw->pw_name, user);
-	ret = doit(pamh, name, inst, resp->resp, tkt);
+	ret = doit(pamh, pr.name, pr.inst, resp->resp, tkt);
 	if(ret == PAM_SUCCESS)
 	    chown(tkt, pw->pw_uid, pw->pw_uid);
 	memset(resp->resp, 0, strlen(resp->resp));
