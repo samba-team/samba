@@ -23,7 +23,6 @@
 */
 
 #include "includes.h"
-#include "rpc_parse.h"
 #include "nterr.h"
 
 extern pstring global_myname;
@@ -53,7 +52,7 @@ uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod )
 	                      t->tm_mon + 1,
 	                      1900+t->tm_year,
 	                      t->tm_wday);
-	return NT_STATUS_NOPROBLEMO;
+	return 0x0;
 }
 
 /*******************************************************************
@@ -154,7 +153,7 @@ uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
 			break;
 		}
 	}
-	return NT_STATUS_NOPROBLEMO;
+	return 0x0;
 }
 
 /*******************************************************************
@@ -323,7 +322,7 @@ static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
 					int switch_value, uint32 *resume_hnd,
 					uint32 *total_entries)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = 0x0;
 	DEBUG(5,("make_srv_share_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -375,7 +374,7 @@ static uint32 make_srv_r_net_share_enum( uint32 resume_hnd,
 
 	if (share_level == 0)
 	{
-		status = NT_STATUS_INVALID_INFO_CLASS;
+		status = (NT_STATUS_INVALID_INFO_CLASS);
 	}
 	else
 	{
@@ -383,7 +382,7 @@ static uint32 make_srv_r_net_share_enum( uint32 resume_hnd,
 				&resume_hnd, total_entries);
 	}
 
-	if (status != NT_STATUS_NOPROBLEMO)
+	if (status != 0x0)
 	{
 		resume_hnd = 0;
 	}
@@ -395,7 +394,7 @@ static uint32 make_srv_r_net_share_enum( uint32 resume_hnd,
 /*******************************************************************
 net share enum
 ********************************************************************/
-uint32 _srv_net_share_enum( const UNISTR2 *srv_name, 
+uint32 _srv_net_srv_share_enum( const UNISTR2 *srv_name, 
 				uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 				uint32 preferred_len, ENUM_HND *enum_hnd,
 				uint32 *total_entries, uint32 share_level )
@@ -589,7 +588,7 @@ static uint32 make_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
 			int switch_value, uint32 *resume_hnd, 
 			uint32 *total_entries)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = 0x0;
 	DEBUG(5,("make_srv_sess_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -638,14 +637,14 @@ static uint32 make_srv_r_net_sess_enum( uint32 resume_hnd,
 
 	if (sess_level == -1)
 	{
-		status = NT_STATUS_INVALID_INFO_CLASS;
+		status = (NT_STATUS_INVALID_INFO_CLASS);
 	}
 	else
 	{
 		status = make_srv_sess_info_ctr(ctr, switch_value,
 				&resume_hnd, total_entries);
 	}
-	if (status != NT_STATUS_NOPROBLEMO)
+	if (status != 0x0)
 	{
 		resume_hnd = 0;
 	}
@@ -675,399 +674,6 @@ uint32 _srv_net_sess_enum( const UNISTR2 *srv_name,
 						sess_level );
 
 	DEBUG(5,("_srv_net_sess_enum: %d\n", __LINE__));
-
-	return status;
-}
-
-/*******************************************************************
- fill in a conn info level 0 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *stot)
-{
-	uint32 num_entries = 0;	
-	struct connect_record *crec;
-	uint32 connection_count;
-
-        if (!get_connection_status(&crec, &connection_count))
-	{
-		(*snum) = 0;
-		(*stot) = 0;
-		return;
-	}
-
-	(*stot) = connection_count;
-
-	if (ss0 == NULL)
-	{
-		(*snum) = 0;
-		return;
-	}
-
-	DEBUG(0,("make_srv_conn_0_ss0\n"));
-
-	if (snum)
-	{
-		for (; (*snum) < (*stot) && num_entries < MAX_CONN_ENTRIES; (*snum)++)
-		{
-			make_srv_conn_info0(&(ss0->info_0    [num_entries]), (*snum));
-
-			/* move on to creating next connection */
-			/* move on to creating next conn */
-			num_entries++;
-		}
-
-		ss0->num_entries_read  = num_entries;
-		ss0->ptr_conn_info     = num_entries > 0 ? 1 : 0;
-		ss0->num_entries_read2 = num_entries;
-		
-		
-
-		if ((*snum) >= (*stot))
-		{
-			(*snum) = 0;
-		}
-	}
-	else
-	{
-		ss0->num_entries_read = 0;
-		ss0->ptr_conn_info = 0;
-		ss0->num_entries_read2 = 0;
-
-		(*stot) = 0;
-	}
-
-	free(crec);
-}
-
-/*******************************************************************
- fill in a conn info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_conn_1_info(CONN_INFO_1    *se1, CONN_INFO_1_STR *str1,
-				uint32 id, uint32 type,
-				uint32 num_opens, uint32 num_users, uint32 open_time,
-				char *usr_name, char *net_name)
-{
-	make_srv_conn_info1    (se1 , id, type, num_opens, num_users, open_time, usr_name, net_name);
-	make_srv_conn_info1_str(str1, usr_name, net_name);
-}
-
-/*******************************************************************
- fill in a conn info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *stot)
-{
-	uint32 num_entries = 0;	
-        time_t current_time;
-        time_t diff;
-
-	struct connect_record *crec;
-	uint32 connection_count;
-
-        if (!get_connection_status(&crec, &connection_count))
-	{
-		(*snum) = 0;
-		(*stot) = 0;
-		return;
-	}
-
-	(*stot) = connection_count;
-
-	if (ss1 == NULL)
-	{
-		(*snum) = 0;
-		return;
-	}
-
-        current_time=time(NULL);
-        
-	DEBUG(5,("make_srv_conn_1_ss1\n"));
-
-	if (snum)
-	{
-		for (; (*snum) < (*stot) && num_entries < MAX_CONN_ENTRIES; (*snum)++)
-		{
-			diff = current_time - crec[num_entries].start;
-			make_srv_conn_1_info(&(ss1->info_1    [num_entries]),
-								 &(ss1->info_1_str[num_entries]),
-			                     (*snum), 0, 0, 1, diff,uidtoname(crec[num_entries].uid), 
-			                     crec[num_entries].name);
-
-/* FIXME : type of connection + number of locked files */
-
-			/* move on to creating next connection */
-			/* move on to creating next conn */
-			num_entries++;
-		}
-
-		ss1->num_entries_read  = num_entries;
-		ss1->ptr_conn_info     = num_entries > 0 ? 1 : 0;
-		ss1->num_entries_read2 = num_entries;
-		
-
-		if ((*snum) >= (*stot))
-		{
-			(*snum) = 0;
-		}
-	}
-	else
-	{
-		ss1->num_entries_read = 0;
-		ss1->ptr_conn_info = 0;
-		ss1->num_entries_read2 = 0;
-		
-		(*stot) = 0;
-	}
-
-	free(crec);
-}
-
-/*******************************************************************
- makes a SRV_R_NET_CONN_ENUM structure.
-********************************************************************/
-static uint32 make_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
-{
-	uint32 status = NT_STATUS_NOPROBLEMO;
-	DEBUG(5,("make_srv_conn_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value)
-	{
-		case 0:
-		{
-			make_srv_conn_info_0(&(ctr->conn.info0), resume_hnd, total_entries);
-			ctr->ptr_conn_ctr = 1;
-			break;
-		}
-		case 1:
-		{
-			make_srv_conn_info_1(&(ctr->conn.info1), resume_hnd, total_entries);
-			ctr->ptr_conn_ctr = 1;
-			break;
-		}
-		default:
-		{
-			DEBUG(5,("make_srv_conn_info_ctr: unsupported switch value %d\n",
-			          switch_value));
-			(*resume_hnd = 0);
-			(*total_entries) = 0;
-			ctr->ptr_conn_ctr = 0;
-			status = NT_STATUS_INVALID_INFO_CLASS;
-			break;
-		}
-	}
-
-	return status;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_CONN_ENUM structure.
-********************************************************************/
-static uint32 make_srv_r_net_conn_enum( uint32 resume_hnd,
-                        int switch_value, SRV_CONN_INFO_CTR *ctr,
-                        uint32 *total_entries, ENUM_HND *enum_hnd,
-                        uint32 conn_level )
-{
-	uint32 status;
-
-	DEBUG(5,("make_srv_r_net_conn_enum: %d\n", __LINE__));
-
-	if (conn_level == -1)
-	{
-		status = NT_STATUS_INVALID_INFO_CLASS;
-	}
-	else
-	{
-		status = make_srv_conn_info_ctr(ctr, switch_value,
-				&resume_hnd, total_entries);
-	}
-	if (status != NT_STATUS_NOPROBLEMO)
-	{
-		resume_hnd = 0;
-	}
-	make_enum_hnd(enum_hnd, resume_hnd);
-
-	return status;
-}
-
-/*******************************************************************
-net conn enum
-********************************************************************/
-uint32 _srv_net_conn_enum( const UNISTR2 *srv_name, 
-			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
-			uint32 preferred_len, ENUM_HND *enum_hnd,
-			uint32 *total_entries, uint32 conn_level )
-{
-	uint32 status;
-
-	DEBUG(5,("_srv_net_conn_enum: %d\n", __LINE__));
-
-	/* set up the */
-	status = make_srv_r_net_conn_enum(get_enum_hnd(enum_hnd),
-						ctr->switch_value,
-						ctr,
-						total_entries,
-						enum_hnd,
-						conn_level );
-
-	DEBUG(5,("_srv_net_conn_enum: %d\n", __LINE__));
-
-	return status;
-}
-
-/*******************************************************************
- fill in a file info level 3 structure.
- ********************************************************************/
-static void make_srv_file_3_info(FILE_INFO_3     *fl3, FILE_INFO_3_STR *str3,
-				uint32 fnum, uint32 perms, uint32 num_locks,
-				char *path_name, char *user_name)
-{
-	make_srv_file_info3    (fl3 , fnum, perms, num_locks, path_name, user_name);
-	make_srv_file_info3_str(str3, path_name, user_name);
-}
-
-/*******************************************************************
- fill in a file info level 3 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_file_info_3(SRV_FILE_INFO_3 *fl3, uint32 *fnum, uint32 *ftot)
-{
-	uint32 num_entries = 0;
-	(*ftot) = 1;
-
-	if (fl3 == NULL)
-	{
-		(*fnum) = 0;
-		return;
-	}
-
-	DEBUG(5,("make_srv_file_3_fl3\n"));
-
-	for (; (*fnum) < (*ftot) && num_entries < MAX_FILE_ENTRIES; (*fnum)++)
-	{
-		make_srv_file_3_info(&(fl3->info_3    [num_entries]),
-			                 &(fl3->info_3_str[num_entries]),
-		                     (*fnum), 0x35, 0, "\\PIPE\\samr", "dummy user");
-
-		/* move on to creating next file */
-		num_entries++;
-	}
-
-	fl3->num_entries_read  = num_entries;
-	fl3->ptr_file_info     = num_entries > 0 ? 1 : 0;
-	fl3->num_entries_read2 = num_entries;
-	
-	if ((*fnum) >= (*ftot))
-	{
-		(*fnum) = 0;
-	}
-}
-
-/*******************************************************************
- makes a SRV_R_NET_FILE_ENUM structure.
-********************************************************************/
-static uint32 make_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
-{
-	uint32 status = NT_STATUS_NOPROBLEMO;
-	DEBUG(5,("make_srv_file_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value)
-	{
-		case 3:
-		{
-			make_srv_file_info_3(&(ctr->file.info3), resume_hnd, total_entries);
-			ctr->ptr_file_ctr = 1;
-			break;
-		}
-		default:
-		{
-			DEBUG(5,("make_srv_file_info_ctr: unsupported switch value %d\n",
-			          switch_value));
-			(*resume_hnd = 0);
-			(*total_entries) = 0;
-			ctr->ptr_file_ctr = 0;
-			status = NT_STATUS_INVALID_INFO_CLASS;
-			break;
-		}
-	}
-
-	return status;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_CONN_ENUM structure.
-********************************************************************/
-static uint32 make_srv_r_net_file_enum( uint32 resume_hnd,
-                        int switch_value, SRV_FILE_INFO_CTR *ctr,
-                        uint32 *total_entries, ENUM_HND *enum_hnd,
-                        uint32 file_level )
-{
-	uint32 status;
-
-	DEBUG(5,("make_srv_r_net_file_enum: %d\n", __LINE__));
-
-	if (file_level == 0)
-	{
-		status = NT_STATUS_INVALID_INFO_CLASS;
-	}
-	else
-	{
-		status = make_srv_file_info_ctr(ctr, switch_value,
-				&resume_hnd, total_entries);
-	}
-	if (status != NT_STATUS_NOPROBLEMO)
-	{
-		resume_hnd = 0;
-	}
-	make_enum_hnd(enum_hnd, resume_hnd);
-
-	return status;
-}
-
-/*******************************************************************
-net file enum
-********************************************************************/
-uint32 _srv_net_file_enum( const UNISTR2 *srv_name, 
-			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
-			uint32 preferred_len, ENUM_HND *enum_hnd,
-			uint32 *total_entries, uint32 file_level )
-{
-	uint32 status;
-
-	DEBUG(5,("_srv_net_file_enum: %d\n", __LINE__));
-
-	/* set up the */
-	status = make_srv_r_net_file_enum(get_enum_hnd(enum_hnd),
-						ctr->switch_value,
-						ctr,
-						total_entries,
-						enum_hnd,
-						file_level );
-
-	DEBUG(5,("_srv_net_file_enum: %d\n", __LINE__));
 
 	return status;
 }
