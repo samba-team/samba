@@ -357,6 +357,67 @@ static BOOL test_LookupPrivName(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p, 
+					     TALLOC_CTX *mem_ctx, 				  
+					     struct policy_handle *acct_handle,
+					     struct lsa_LUID *luid)
+{
+	NTSTATUS status;
+	struct lsa_RemovePrivilegesFromAccount r;
+	struct lsa_PrivilegeSet privs;
+	BOOL ret = True;
+
+	printf("Testing RemovePrivilegesFromAccount\n");
+
+	r.in.handle = acct_handle;
+	r.in.remove_all = 0;
+	r.in.privs = &privs;
+
+	privs.count = 1;
+	privs.unknown = 0;
+	privs.set = talloc_array_p(mem_ctx, struct lsa_LUIDAttribute, 1);
+	privs.set[0].luid = *luid;
+	privs.set[0].attribute = 0;
+
+	status = dcerpc_lsa_RemovePrivilegesFromAccount(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RemovePrivilegesFromAccount failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return ret;
+}
+
+static BOOL test_AddPrivilegesToAccount(struct dcerpc_pipe *p, 
+					TALLOC_CTX *mem_ctx, 				  
+					struct policy_handle *acct_handle,
+					struct lsa_LUID *luid)
+{
+	NTSTATUS status;
+	struct lsa_AddPrivilegesToAccount r;
+	struct lsa_PrivilegeSet privs;
+	BOOL ret = True;
+
+	printf("Testing AddPrivilegesToAccount\n");
+
+	r.in.handle = acct_handle;
+	r.in.privs = &privs;
+
+	privs.count = 1;
+	privs.unknown = 0;
+	privs.set = talloc_array_p(mem_ctx, struct lsa_LUIDAttribute, 1);
+	privs.set[0].luid = *luid;
+	privs.set[0].attribute = 0;
+
+	status = dcerpc_lsa_AddPrivilegesToAccount(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddPrivilegesToAccount failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return ret;
+}
+
 static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p, 
 				  TALLOC_CTX *mem_ctx, 				  
 				  struct policy_handle *handle,
@@ -364,6 +425,7 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_EnumPrivsAccount r;
+	BOOL ret = True;
 
 	printf("Testing EnumPrivsAccount\n");
 
@@ -375,15 +437,20 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (r.out.privs) {
+	if (r.out.privs && r.out.privs->count > 0) {
 		int i;
 		for (i=0;i<r.out.privs->count;i++) {
 			test_LookupPrivName(p, mem_ctx, handle, 
 					    &r.out.privs->set[i].luid);
 		}
+
+		ret &= test_RemovePrivilegesFromAccount(p, mem_ctx, acct_handle, 
+							&r.out.privs->set[0].luid);
+		ret &= test_AddPrivilegesToAccount(p, mem_ctx, acct_handle, 
+						   &r.out.privs->set[0].luid);
 	}
 
-	return True;
+	return ret;
 }
 
 static BOOL test_Delete(struct dcerpc_pipe *p, 
@@ -636,7 +703,7 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_QuerySecurity r;
 
-	printf("Testing QuerySecuriy\n");
+	printf("Testing QuerySecurity\n");
 
 	r.in.handle = acct_handle;
 	r.in.sec_info = 7;

@@ -368,7 +368,7 @@
 	} lsa_LUIDAttribute;
 	
 	typedef struct {
-		uint32 count;
+		[range(0,1000)] uint32 count;
 		uint32 unknown;
 		[size_is(count)] lsa_LUIDAttribute set[*];
 	} lsa_PrivilegeSet;
@@ -379,11 +379,21 @@
 		);
 
 
+	/****************************************/
 	/* Function:            0x13 */
-	NTSTATUS lsa_AddPrivilegesToAccount();
+	NTSTATUS lsa_AddPrivilegesToAccount(
+		[in,ref]     policy_handle *handle,
+		[in,ref]     lsa_PrivilegeSet *privs
+		);
 	
+
+	/****************************************/
 	/* Function:         0x14 */
-	NTSTATUS lsa_RemovePrivilegesFromAccount();
+	NTSTATUS lsa_RemovePrivilegesFromAccount(
+		[in,ref]     policy_handle *handle,
+		[in]         uint8 remove_all,
+		[in]         lsa_PrivilegeSet *privs
+		);
 
 	/* Function:           0x15 */
 	NTSTATUS lsa_GetQuotasForAccount();
