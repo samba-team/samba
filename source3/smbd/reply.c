@@ -836,15 +836,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 	     domain,native_os,native_lanman));
   }
   
-  /* don't allow for weird usernames */
+  /* don't allow for weird usernames or domains */
   alpha_strcpy(user, user, ". _-", sizeof(user));
-  if (strstr(user, "..")) {
-	  return bad_password_error(inbuf, outbuf);
-  }
-
-  /* don't allow for weird usernames */
-  alpha_strcpy(user, user, ". _-", sizeof(user));
-  if (strstr(user, "..")) {
+  alpha_strcpy(domain, domain, ". _-", sizeof(domain));
+  if (strstr(user, "..") || strstr(domain,"..")) {
 	  return bad_password_error(inbuf, outbuf);
   }
 
