@@ -4,12 +4,21 @@
 # You may specify a OS major version number (4, 5, or 6) to specify which
 # OS release to build. If no version number is given it will default to 6.
 
+doclean=""
+
 if [ "$1" = "clean" ]; then
-  cd ../../source
-  make clean
-  cd ../packaging/SGI
+  doclean=$1
   shift
-  rm -rf bins catman html codepages swat Makefile samba.idb samba.spec
+fi
+
+echo Create SGI specific Makefile
+./makefile.pl $1		# create the Makefile for the specified OS ver
+
+if [ "$doclean" = "clean" ]; then
+  cd ../../source
+  make -f ../packaging/SGI/Makefile clean
+  cd ../packaging/SGI
+  rm -rf bins catman html codepages swat samba.idb samba.spec
 fi
 
 # create the catman versions of the manual pages
@@ -25,7 +34,6 @@ fi
 # build the sources
 #
 echo Making binaries
-./makefile.pl $1		# create the Makefile for the specified OS ver
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat creating Makefile\n";
