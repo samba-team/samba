@@ -425,6 +425,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
 	fstring my_fqdn, my_Fqdn, my_name, my_NAME;
+	char *p_fqdn;
 	int i, found = 0;
 	char **oldEntries = NULL, *princ_s[18];;
 
@@ -441,13 +442,19 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	fstrcpy(my_name, global_myname());
 	strlower_m(my_name);
+
 	fstrcpy(my_NAME, global_myname());
 	strupper_m(my_NAME);
-	name_to_fqdn(my_Fqdn, global_myname());
-	strlower_m(my_Fqdn);
-	memcpy(my_Fqdn, my_NAME, strlen(my_NAME));
+
+	my_fqdn[0] = '\0';
 	name_to_fqdn(my_fqdn, global_myname());
 	strlower_m(my_fqdn);
+
+	p_fqdn = strchr_m(my_fqdn, '.');
+	fstrcpy(my_Fqdn, my_NAME);
+	if (p_fqdn) {
+		fstrcat(my_Fqdn, p_fqdn);
+	}
 
 	asprintf(&princ_s[0], "%s$@%s", my_name, lp_realm());
 	asprintf(&princ_s[1], "%s$@%s", my_NAME, lp_realm());
