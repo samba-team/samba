@@ -121,7 +121,7 @@ sub _prepare_IDL($)
 
 	$output = "
 idl_full: build/pidl/idl.pm
-	CPP=\"\@CPP\@\" script/build_idl.sh FULL
+	CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" script/build_idl.sh FULL
 
 idl: build/pidl/idl.pm
 	\@CPP=\"\@CPP\@\" script/build_idl.sh
@@ -583,7 +583,7 @@ delheaders: pch_clean
 	-rm -f \$(builddir)/include/proto.h \$(builddir)/include/build_env.h:
 
 include/proto.h:
-	\@cd \$(srcdir) && \$(SHELL) script/mkproto.sh \$(PERL) \\
+	\@cd \$(srcdir) && \$(SHELL) script/mkproto.sh \"\$(PERL)\" \\
 	  -h _PROTO_H_ \$(builddir)/include/proto.h \\
 	  \$(PROTO_OBJS)
 
