@@ -107,6 +107,14 @@ struct pvfs_file {
 	int fd;
 	uint16_t fnum;
 	struct pvfs_filename *name;
+
+	/* we need to remember the session it was opened on,
+	   as it is illegal to operate on someone elses fnum */
+	struct smbsrv_session *session;
+
+	/* we need to remember the client pid that 
+	   opened the file so SMBexit works */
+	uint16_t smbpid;
 };
 
 

@@ -74,6 +74,9 @@ struct ntvfs_ops {
 
 	/* trans interface - used by IPC backend for pipes and RAP calls */
 	NTSTATUS (*trans)(struct smbsrv_request *req, struct smb_trans2 *trans);
+
+	/* logoff - called when a vuid is closed */
+	NTSTATUS (*logoff)(struct smbsrv_request *req);
 };
 
 

@@ -43,6 +43,13 @@ struct ipc_private {
 		uint16_t fnum;
 		struct dcesrv_connection *dce_conn;
 		uint16_t ipc_state;
+		/* we need to remember the session it was opened on,
+		   as it is illegal to operate on someone elses fnum */
+		struct smbsrv_session *session;
+
+		/* we need to remember the client pid that 
+		   opened the file so SMBexit works */
+		uint16_t smbpid;
 	} *pipe_list;
 
 };
@@ -261,6 +268,9 @@ static NTSTATUS ipc_open_generic(struct smbsrv_request *req, const char *fname,
 	private->num_open++;
 
 	DLIST_ADD(private->pipe_list, p);
+
+	p->smbpid = req->smbpid;
+	p->session = req->session;
 
 	*ps = p;
 
@@ -514,11 +524,39 @@ static NTSTATUS ipc_close(struct smbsrv_request *req, union smb_close *io)
 }
 
 /*
-  exit - closing files?
+  exit - closing files
 */
 static NTSTATUS ipc_exit(struct smbsrv_request *req)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	NTVFS_GET_PRIVATE(ipc_private, private, req);
+	struct pipe_state *p, *next;
+	
+	for (p=private->pipe_list; p; p=next) {
+		next = p->next;
+		if (p->smbpid == req->smbpid) {
+			pipe_shutdown(private, p);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  logoff - closing files open by the user
+*/
+static NTSTATUS ipc_logoff(struct smbsrv_request *req)
+{
+	NTVFS_GET_PRIVATE(ipc_private, private, req);
+	struct pipe_state *p, *next;
+	
+	for (p=private->pipe_list; p; p=next) {
+		next = p->next;
+		if (p->session == req->session) {
+			pipe_shutdown(private, p);
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -733,6 +771,7 @@ NTSTATUS ntvfs_ipc_init(void)
 	ops.search_next = ipc_search_next;
 	ops.search_close = ipc_search_close;
 	ops.trans = ipc_trans;
+	ops.logoff = ipc_logoff;
 
 	/* register ourselves with the NTVFS subsystem. */
 	ret = register_backend("ntvfs", &ops);

@@ -26,6 +26,15 @@
 	if (!req) return NULL; \
 } while (0)
 
+/*
+  destroy a smbcli_tree
+*/
+static int tree_destructor(void *ptr)
+{
+	struct smbcli_tree *tree = ptr;
+	talloc_free(tree->session);
+	return 0;
+}
 
 /****************************************************************************
  Initialize the tree context
@@ -41,23 +50,10 @@ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
 
 	ZERO_STRUCTP(tree);
 	tree->session = session;
-	tree->session->reference_count++;
+	talloc_set_destructor(tree, tree_destructor);
 
 	return tree;
 }
-
-/****************************************************************************
-reduce reference count on a tree and destroy if <= 0
-****************************************************************************/
-void smbcli_tree_close(struct smbcli_tree *tree)
-{
-	if (!tree) return;
-	tree->reference_count--;
-	if (tree->reference_count <= 0) {
-		smbcli_session_close(tree->session);
-	}
-}
-
 
 /****************************************************************************
  Send a tconX (async send)
@@ -202,7 +198,7 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 
 	transport = smbcli_transport_init(sock);
 	if (!transport) {
-		smbcli_sock_close(sock);
+		talloc_free(sock);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -211,7 +207,7 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 	choose_called_name(&called,  dest_host, 0x20);
 
 	if (!smbcli_transport_connect(transport, &calling, &called)) {
-		smbcli_transport_close(transport);
+		talloc_free(transport);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -219,13 +215,13 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 	/* negotiate protocol options with the server */
 	status = smb_raw_negotiate(transport);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbcli_transport_close(transport);
+		talloc_free(transport);
 		return status;
 	}
 
 	session = smbcli_session_init(transport);
 	if (!session) {
-		smbcli_transport_close(transport);
+		talloc_free(transport);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -251,7 +247,7 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 
 	status = smb_raw_session_setup(session, mem_ctx, &setup);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbcli_session_close(session);
+		talloc_free(session);
 		talloc_free(mem_ctx);
 		return status;
 	}
@@ -260,7 +256,7 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 
 	tree = smbcli_tree_init(session);
 	if (!tree) {
-		smbcli_session_close(session);
+		talloc_free(session);
 		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -284,7 +280,7 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 	SAFE_FREE(in_path);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		smbcli_tree_close(tree);
+		talloc_free(tree);
 		talloc_free(mem_ctx);
 		return status;
 	}

@@ -589,9 +589,17 @@ static NTSTATUS svfs_close(struct smbsrv_request *req, union smb_close *io)
 }
 
 /*
-  exit - closing files?
+  exit - closing files
 */
 static NTSTATUS svfs_exit(struct smbsrv_request *req)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+/*
+  logoff - closing files
+*/
+static NTSTATUS svfs_logoff(struct smbsrv_request *req)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -962,6 +970,7 @@ NTSTATUS ntvfs_simple_init(void)
 	ops.search_next = svfs_search_next;
 	ops.search_close = svfs_search_close;
 	ops.trans = svfs_trans;
+	ops.logoff = svfs_logoff;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under names 'simple'

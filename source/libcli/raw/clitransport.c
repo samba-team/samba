@@ -42,6 +42,21 @@ static void smbcli_transport_event_handler(struct event_context *ev, struct fd_e
 }
 
 /*
+  destroy a transport
+ */
+static int transport_destructor(void *ptr)
+{
+	struct smbcli_transport *transport = ptr;
+
+	smbcli_transport_dead(transport);
+	event_remove_fd(transport->event.ctx, transport->event.fde);
+	event_remove_timed(transport->event.ctx, transport->event.te);
+	event_context_destroy(transport->event.ctx);
+	talloc_free(transport->socket);
+	return 0;
+}
+
+/*
   create a transport structure based on an established socket
 */
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
@@ -67,8 +82,6 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 	
 	smbcli_init_signing(transport);
 
-	transport->socket->reference_count++;
-
 	ZERO_STRUCT(transport->called);
 
 	fde.fd = sock->fd;
@@ -79,22 +92,9 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 
 	transport->event.fde = event_add_fd(transport->event.ctx, &fde);
 
-	return transport;
-}
+	talloc_set_destructor(transport, transport_destructor);
 
-/*
-  decrease reference count on a transport, and destroy if it becomes
-  zero
-*/
-void smbcli_transport_close(struct smbcli_transport *transport)
-{
-	transport->reference_count--;
-	if (transport->reference_count <= 0) {
-		event_remove_fd(transport->event.ctx, transport->event.fde);
-		event_remove_timed(transport->event.ctx, transport->event.te);
-		event_context_destroy(transport->event.ctx);
-		smbcli_sock_close(transport->socket);
-	}
+	return transport;
 }
 
 /*

@@ -33,7 +33,7 @@ NTSTATUS pvfs_setfileinfo(struct smbsrv_request *req,
 	struct utimbuf unix_times;
 	struct pvfs_file *f;
 
-	f = pvfs_find_fd(pvfs, info->generic.file.fnum);
+	f = pvfs_find_fd(req, info->generic.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

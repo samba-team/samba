@@ -26,6 +26,17 @@
 	if (!req) return NULL; \
 } while (0)
 
+
+/*
+  destroy a smbcli_session
+*/
+static int session_destroy(void *ptr)
+{
+	struct smbcli_session *session = ptr;
+	talloc_free(session->transport);
+	return 0;
+}
+
 /****************************************************************************
  Initialize the session context
 ****************************************************************************/
@@ -42,20 +53,10 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 	session->transport = transport;
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
-	session->transport->reference_count++;
+
+	talloc_set_destructor(session, session_destroy);
 
 	return session;
-}
-
-/****************************************************************************
-reduce reference_count and destroy is <= 0
-****************************************************************************/
-void smbcli_session_close(struct smbcli_session *session)
-{
-	session->reference_count--;
-	if (session->reference_count <= 0) {
-		smbcli_transport_close(session->transport);
-	}
 }
 
 /****************************************************************************
@@ -590,16 +591,27 @@ NTSTATUS smb_raw_ulogoff(struct smbcli_session *session)
 
 
 /****************************************************************************
- Send a SMBexit
-****************************************************************************/
-NTSTATUS smb_raw_exit(struct smbcli_session *session)
+ Send a exit (async send)
+*****************************************************************************/
+struct smbcli_request *smb_raw_exit_send(struct smbcli_session *session)
 {
 	struct smbcli_request *req;
 
-	req = smbcli_request_setup_session(session, SMBexit, 0, 0);
+	SETUP_REQUEST_SESSION(SMBexit, 0, 0);
 
-	if (smbcli_request_send(req)) {
-		smbcli_request_receive(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
+		return NULL;
 	}
-	return smbcli_request_destroy(req);
+
+	return req;
+}
+
+/****************************************************************************
+ Send a exit (sync interface)
+*****************************************************************************/
+NTSTATUS smb_raw_exit(struct smbcli_session *session)
+{
+	struct smbcli_request *req = smb_raw_exit_send(session);
+	return smbcli_request_simple_recv(req);
 }

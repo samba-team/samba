@@ -161,15 +161,6 @@ static NTSTATUS pvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
 }
 
 /*
-  exit - closing files?
-*/
-static NTSTATUS pvfs_exit(struct smbsrv_request *req)
-{
-	DEBUG(0,("pvfs_exit not implemented\n"));
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
   lock a byte range
 */
 static NTSTATUS pvfs_lock(struct smbsrv_request *req, union smb_lock *lck)
@@ -241,6 +232,7 @@ NTSTATUS ntvfs_posix_init(void)
 	ops.search_next = pvfs_search_next;
 	ops.search_close = pvfs_search_close;
 	ops.trans = pvfs_trans;
+	ops.logoff = pvfs_logoff;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under the name 'default' as we wish to be the default

@@ -350,10 +350,6 @@ void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
 		gensec_end(&p->auth_state.gensec_security);
 	}
 
-	if (p->auth_state.session_info) {
-		free_session_info(&p->auth_state.session_info);
-	}
-
 	talloc_free(p);
 }
 

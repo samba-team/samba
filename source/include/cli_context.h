@@ -63,9 +63,6 @@ struct smbcli_negotiate {
 	
 /* this is the context for a SMB socket associated with the socket itself */
 struct smbcli_socket {
-	/* when the reference count reaches zero then the socket is destroyed */
-	int reference_count;
-
 	struct in_addr dest_ip;
 	/* dest hostname (which may or may not be a DNS name) */
 	char *hostname;
@@ -99,9 +96,6 @@ struct smbcli_options {
 
 /* this is the context for the client transport layer */
 struct smbcli_transport {
-	/* when the reference count reaches zero then the transport is destroyed */
-	int reference_count;
-
 	/* socket level info */
 	struct smbcli_socket *socket;
 
@@ -184,9 +178,6 @@ struct smbcli_transport {
 
 /* this is the context for the session layer */
 struct smbcli_session {	
-	/* when the reference count reaches zero then the session is destroyed */
-	int reference_count;	
-	
 	/* transport layer info */
 	struct smbcli_transport *transport;
 	
@@ -207,9 +198,6 @@ struct smbcli_session {
    smbcli_tree context: internal state for a tree connection. 
  */
 struct smbcli_tree {
-	/* when the reference count reaches zero then the tree is destroyed */
-	int reference_count;	
-
 	/* session layer info */
 	struct smbcli_session *session;
 
