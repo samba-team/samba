@@ -594,7 +594,7 @@ struct poptOption popt_common_auth_info[] = {
 	  "[DOMAIN\\]username[%password]" },
 	{ "domain", 'W', POPT_ARG_STRING, NULL, 'W', "Set domain name", 
 	  "DOMAIN"},
-	POPT_TABLEEND 
+	{ 0 }
 };
 
 static BOOL popt_interactive;
@@ -607,7 +607,7 @@ BOOL popt_common_is_interactive(void)
 struct poptOption popt_common_interactive[] = {
 	{ "interactive", 'i', POPT_ARG_NONE, &popt_interactive, 'i',
 	  "Log to stdout" },
-	POPT_TABLEEND
+	{ 0 }
 };
 
  int main(int argc, char **argv)
@@ -634,7 +634,7 @@ struct poptOption popt_common_interactive[] = {
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_auth_info },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_interactive },
 		POPT_AUTOHELP
-		POPT_TABLEEND
+		{ 0 }
 	};
 
 	/* Read command line options */
