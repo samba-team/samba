@@ -492,13 +492,13 @@ int set_blocking(int fd, BOOL set)
 #endif
 #endif
 
-  if((val = fcntl(fd, F_GETFL, 0)) == -1)
+  if((val = sys_fcntl_long(fd, F_GETFL, 0)) == -1)
 	return -1;
   if(set) /* Turn blocking on - ie. clear nonblock flag */
 	val &= ~FLAG_TO_SET;
   else
     val |= FLAG_TO_SET;
-  return fcntl( fd, F_SETFL, val);
+  return sys_fcntl_long( fd, F_SETFL, val);
 #undef FLAG_TO_SET
 }
 
@@ -561,7 +561,7 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
     }
 
     if (s > ret)
-      ret += read(infd,buf1+ret,s-ret);
+      ret += sys_read(infd,buf1+ret,s-ret);
 
     if (ret > 0)
     {
@@ -1306,7 +1306,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 
   errno = 0;
 
-  ret = fcntl(fd,op,&lock);
+  ret = sys_fcntl_ptr(fd,op,&lock);
 
   if (errno != 0)
     DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));

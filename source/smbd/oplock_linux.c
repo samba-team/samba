@@ -106,15 +106,15 @@ static int linux_setlease(int fd, int leasetype)
 {
 	int ret;
 
-	if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
+	if (sys_fcntl_long(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
 		DEBUG(3,("Failed to set signal handler for kernel lease\n"));
 		return -1;
 	}
 
-	ret = fcntl(fd, F_SETLEASE, leasetype);
+	ret = sys_fcntl_long(fd, F_SETLEASE, leasetype);
 	if (ret == -1 && errno == EACCES) {
 		set_capability(CAP_LEASE);
-		ret = fcntl(fd, F_SETLEASE, leasetype);
+		ret = sys_fcntl_long(fd, F_SETLEASE, leasetype);
 	}
 
 	return ret;
@@ -198,7 +198,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		 * Check and print out the current kernel
 		 * oplock state of this file.
 		 */
-		int state = fcntl(fsp->fd, F_GETLEASE, 0);
+		int state = sys_fcntl_long(fsp->fd, F_GETLEASE, 0);
 		dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %lu has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, fsp->file_id, state );
@@ -260,7 +260,7 @@ static BOOL linux_oplocks_available(void)
 	fd = open("/dev/null", O_RDONLY);
 	if (fd == -1)
 		return False; /* uggh! */
-	ret = fcntl(fd, F_GETLEASE, 0);
+	ret = sys_fcntl_long(fd, F_GETLEASE, 0);
 	close(fd);
 	return ret == F_UNLCK;
 }

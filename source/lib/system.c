@@ -75,6 +75,104 @@ int sys_usleep(long usecs)
 }
 
 /*******************************************************************
+A read wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_read(int fd, void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = read(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A write wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_write(int fd, const void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = write(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A send wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_send(int s, const void *msg, size_t len, int flags)
+{
+	ssize_t ret;
+
+	do {
+		ret = send(s, msg, len, flags);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A sendto wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+{
+	ssize_t ret;
+
+	do {
+		ret = sendto(s, msg, len, flags, to, tolen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A recvfrom wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+{
+	ssize_t ret;
+
+	do {
+		ret = recvfrom(s, buf, len, flags, from, fromlen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A fcntl wrapper that will deal with EINTR.
+********************************************************************/
+
+int sys_fcntl_ptr(int fd, int cmd, void *arg)
+{
+	int ret;
+
+	do {
+		ret = fcntl(fd, cmd, arg);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A fcntl wrapper that will deal with EINTR.
+********************************************************************/
+
+int sys_fcntl_long(int fd, int cmd, long arg)
+{
+	int ret;
+
+	do {
+		ret = fcntl(fd, cmd, arg);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 

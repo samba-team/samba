@@ -810,10 +810,13 @@ static BOOL smbd_process_limit(void)
 		tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds);
 		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
 		
-		return total_smbds > lp_max_smbd_processes();
+		if (total_smbds > lp_max_smbd_processes()) {
+			DEBUG(1,("smbd_process_limit: total processes %d greater than max %d\n",
+				total_smbds, lp_max_smbd_processes() ));
+			return True;
+		}
 	}
-	else
-		return False;
+	return False;
 }
 
 /****************************************************************************

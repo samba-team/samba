@@ -549,6 +549,13 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 /*The following definitions come from  lib/system.c  */
 
 int sys_usleep(long usecs);
+ssize_t sys_read(int fd, void *buf, size_t count);
+ssize_t sys_write(int fd, const void *buf, size_t count);
+ssize_t sys_send(int s, const void *msg, size_t len, int flags);
+ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
+int sys_fcntl_ptr(int fd, int cmd, void *arg);
+int sys_fcntl_long(int fd, int cmd, long arg);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf);
@@ -4240,7 +4247,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 /*The following definitions come from  tdb/tdb.c  */
 
 void tdb_dump_all(TDB_CONTEXT *tdb);
-void tdb_printfreelist(TDB_CONTEXT *tdb);
+int tdb_printfreelist(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
@@ -4260,7 +4267,7 @@ void tdb_unlockall(TDB_CONTEXT *tdb);
 int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
 void tdb_unlockkeys(TDB_CONTEXT *tdb);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
-void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...));
 int tdb_reopen(TDB_CONTEXT *tdb);
 int tdb_reopen_all(void);

@@ -178,7 +178,7 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 
 	memset((char *)&sock,'\0',socklen);
 	memset((char *)&lastip,'\0',sizeof(lastip));
-	ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
+	ret = (ssize_t)sys_recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
 	if (ret <= 0) {
 		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
 		return(0);
@@ -223,10 +223,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
       if(fd == sslFd){
         readret = SSL_read(ssl, buf + nread, maxcnt - nread);
       }else{
-        readret = read(fd, buf + nread, maxcnt - nread);
+        readret = sys_read(fd, buf + nread, maxcnt - nread);
       }
 #else /* WITH_SSL */
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
 #endif /* WITH_SSL */
 
       if (readret == 0) {
@@ -280,10 +280,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
     }
 #else /* WITH_SSL */
-    readret = read(fd, buf+nread, maxcnt-nread);
+    readret = sys_read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
     if (readret == 0) {
@@ -335,10 +335,10 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
       if(fd == sslFd){
         readret = SSL_read(ssl, buf + nread, maxcnt - nread);
       }else{
-        readret = read(fd, buf + nread, maxcnt - nread);
+        readret = sys_read(fd, buf + nread, maxcnt - nread);
       }
 #else /* WITH_SSL */
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
 #endif /* WITH_SSL */
 
       if (readret <= 0)
@@ -372,10 +372,10 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
     }
 #else /* WITH_SSL */
-    readret = read(fd, buf+nread, maxcnt-nread);
+    readret = sys_read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
     if (readret <= 0)
@@ -419,10 +419,10 @@ ssize_t read_data(int fd,char *buffer,size_t N)
     if(fd == sslFd){
       ret = SSL_read(ssl, buffer + total, N - total);
     }else{
-      ret = read(fd,buffer + total,N - total);
+      ret = sys_read(fd,buffer + total,N - total);
     }
 #else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
+    ret = sys_read(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
     if (ret == 0)
@@ -459,10 +459,10 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
     if(fd == sslFd){
       ret = SSL_read(ssl, buffer + total, N - total);
     }else{
-      ret = read(fd,buffer + total,N - total);
+      ret = sys_read(fd,buffer + total,N - total);
     }
 #else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
+    ret = sys_read(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
     if (ret == 0)
@@ -496,10 +496,10 @@ ssize_t write_data(int fd,char *buffer,size_t N)
 		if(fd == sslFd){
 			ret = SSL_write(ssl,buffer + total,N - total);
 		} else {
-			ret = write(fd,buffer + total,N - total);
+			ret = sys_write(fd,buffer + total,N - total);
 		}
 #else /* WITH_SSL */
-		ret = write(fd,buffer + total,N - total);
+		ret = sys_write(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
 		if (ret == -1) {
@@ -530,10 +530,10 @@ ssize_t write_socket_data(int fd,char *buffer,size_t N)
     if(fd == sslFd){
       ret = SSL_write(ssl,buffer + total,N - total);
     }else{
-      ret = send(fd,buffer + total,N - total, 0);
+      ret = sys_send(fd,buffer + total,N - total, 0);
     }
 #else /* WITH_SSL */
-    ret = send(fd,buffer + total,N - total,0);
+    ret = sys_send(fd,buffer + total,N - total,0);
 #endif /* WITH_SSL */
 
     if (ret == -1) {
@@ -781,7 +781,7 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
 	     len,inet_ntoa(ip),port,type==SOCK_DGRAM?"DGRAM":"STREAM"));
 	
   /* send it */
-  ret = (sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
+  ret = (sys_sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
 
   if (!ret)
     DEBUG(0,("Packet send to %s(%d) failed ERRNO=%s\n",
