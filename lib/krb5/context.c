@@ -65,8 +65,12 @@ set_etypes (krb5_context context,
 	    return ENOMEM;
 	}
 	for(j = 0, k = 0; j < i; j++) {
-	    if(krb5_string_to_enctype(context, etypes_str[j], &etypes[k]) == 0)
-		k++;
+	    krb5_enctype e;
+	    if(krb5_string_to_enctype(context, etypes_str[j], &e) != 0)
+		continue;
+	    if (krb5_enctype_is_disabled(context, e))
+		continue;
+	    etypes[k++] = e;
 	}
 	etypes[k] = ETYPE_NULL;
 	krb5_config_free_strings(etypes_str);
@@ -416,25 +420,33 @@ static krb5_error_code
 default_etypes(krb5_context context, krb5_enctype **etype)
 {
     krb5_enctype p[] = {
-#ifdef ENABLE_AES
 	ETYPE_AES256_CTS_HMAC_SHA1_96,
 	ETYPE_AES128_CTS_HMAC_SHA1_96,
-#endif
 	ETYPE_DES3_CBC_SHA1,
 	ETYPE_DES3_CBC_MD5,
 	ETYPE_ARCFOUR_HMAC_MD5,
 	ETYPE_DES_CBC_MD5,
 	ETYPE_DES_CBC_MD4,
-	ETYPE_DES_CBC_CRC,
-	ETYPE_NULL
+	ETYPE_DES_CBC_CRC
     };
+    krb5_enctype *e = NULL, *ep;
+    int i, n = 0;
 
-    *etype = malloc(sizeof(p));
-    if(*etype == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
-	return ENOMEM;
+    for (i = 0; i < sizeof(p)/sizeof(p[0]); i++) {
+	if (krb5_enctype_is_disabled(context, p[i]))
+	    continue;
+	ep = realloc(e, (n + 2) * sizeof(*e));
+	if (ep == NULL) {
+	    free(e);
+	    krb5_set_error_string (context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	e = ep;
+	e[n] = p[i];
+	e[n + 1] = ETYPE_NULL;
+	n++;
     }
-    memcpy(*etype, p, sizeof(p));
+    *etype = e;
     return 0;
 }
 
