@@ -44,7 +44,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (lp_strict_locking(snum)) pvfs->flags |= PVFS_FLAG_STRICT_LOCKING;
 	if (lp_ci_filesystem(snum))  pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
 
-	if (lp_parm_bool(snum, "posix", "fakeoplocks", True)) {
+	if (lp_parm_bool(snum, "posix", "fakeoplocks", False)) {
 		pvfs->flags |= PVFS_FLAG_FAKE_OPLOCKS;
 	}
 
