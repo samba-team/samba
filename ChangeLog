@@ -25,6 +25,9 @@
 
 2002-08-22  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/krb5.h: we seem to call KRB5KDC_ERR_KEY_EXP
+	KRB5KDC_ERR_KEY_EXPIRED, so define the former to the latter
+	
 	* kdc/kdc.8: add blurb about adding and removing addresses; update
 	kdc.conf section to match reality
 
