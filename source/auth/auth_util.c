@@ -492,12 +492,34 @@ NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx, struct auth_serversupplied_
  Make a server_info struct from the info3 returned by a domain logon 
 ***************************************************************************/
 
-NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
-				const char *internal_username,
-				struct auth_serversupplied_info **server_info, 
-				struct netr_SamInfo3 *info3) 
+NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx, 
+					      const char *internal_username,
+					      struct auth_serversupplied_info **server_info, 
+					      uint16 validation_level, 
+					      union netr_Validation *validation) 
 {
 	NTSTATUS nt_status;
+	struct netr_SamBaseInfo *base;
+	switch (validation_level) {
+		case 2:
+			if (!validation || !validation->sam2) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			base = &validation->sam2->base;
+		break;
+		case 3:
+			if (!validation || !validation->sam3) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			base = &validation->sam3->base;
+		break;
+		case 6:
+			if (!validation || !validation->sam6) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			base = &validation->sam6->base;
+		break;
+	}
 
 	nt_status = make_server_info(mem_ctx, server_info, internal_username);
 
@@ -513,98 +535,93 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   matches.
 	*/
 
-	(*server_info)->user_sid = dom_sid_add_rid(*server_info, dom_sid_dup(*server_info, info3->base.domain_sid), info3->base.rid);
-	(*server_info)->primary_group_sid = dom_sid_add_rid(*server_info, dom_sid_dup(*server_info, info3->base.domain_sid), info3->base.primary_gid);
+	(*server_info)->user_sid = dom_sid_add_rid(*server_info, dom_sid_dup(*server_info, base->domain_sid), base->rid);
+	(*server_info)->primary_group_sid = dom_sid_add_rid(*server_info, dom_sid_dup(*server_info, base->domain_sid), base->primary_gid);
 
-	/* TODO: pull in other groups: */
-
-	
-	(*server_info)->domain_groups = talloc_array_p((*server_info), struct dom_sid*, info3->base.group_count);
+	(*server_info)->domain_groups = talloc_array_p((*server_info), struct dom_sid*, base->group_count);
 	if (!(*server_info)->domain_groups) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
 	for ((*server_info)->n_domain_groups = 0;
-	     (*server_info)->n_domain_groups < info3->base.group_count; 
+	     (*server_info)->n_domain_groups < base->group_count; 
 	     (*server_info)->n_domain_groups++) {
 		struct dom_sid *sid;
-		sid = dom_sid_dup(*server_info, info3->base.domain_sid);
+		sid = dom_sid_dup((*server_info)->domain_groups, base->domain_sid);
 		if (!sid) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		(*server_info)->domain_groups[(*server_info)->n_domain_groups]
 			= dom_sid_add_rid(*server_info, sid, 
-					  info3->base.groupids[(*server_info)->n_domain_groups].rid);
+					  base->groupids[(*server_info)->n_domain_groups].rid);
 		if (!(*server_info)->domain_groups[(*server_info)->n_domain_groups]) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	if (info3->base.account_name.string) {
-		(*server_info)->account_name = talloc_reference(*server_info, info3->base.account_name.string);
+	/* Copy 'other' sids.  We need to do sid filtering here to
+ 	   prevent possible elevation of privileges.  See:
+
+           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
+         */
+
+	if (validation_level == 3) {
+		int i;
+		(*server_info)->domain_groups
+			= talloc_realloc_p((*server_info), 
+					   (*server_info)->domain_groups, 
+					   struct dom_sid*, 
+					   base->group_count + validation->sam3->sidcount);
+		
+		if (!(*server_info)->domain_groups) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	
+		for (i = 0; i < validation->sam3->sidcount; i++) {
+			(*server_info)->domain_groups[(*server_info)->n_domain_groups + i] = 
+				dom_sid_dup((*server_info)->domain_groups, 
+					    validation->sam3->sids[i].sid);
+		}
+
+		/* Where are the 'global' sids?... */
+	}
+
+	if (base->account_name.string) {
+		(*server_info)->account_name = talloc_reference(*server_info, base->account_name.string);
 	} else {
 		(*server_info)->account_name = talloc_strdup(*server_info, internal_username);
 	}
-
-	if (info3->base.domain.string) {
-		(*server_info)->domain = talloc_reference(*server_info, info3->base.domain.string);
-	} else {
-		(*server_info)->domain = NULL;
-	}
-
-	if (info3->base.full_name.string) {
-	(*server_info)->full_name = talloc_reference(*server_info, info3->base.full_name.string);
-	} else {
-		(*server_info)->full_name = NULL;
-	}
-
-	if (info3->base.logon_script.string) {
-		(*server_info)->logon_script = talloc_reference(*server_info, info3->base.logon_script.string);
-	} else {
-		(*server_info)->logon_script = NULL;
-	}
-
-	if (info3->base.profile_path.string) {
-		(*server_info)->profile_path = talloc_reference(*server_info, info3->base.profile_path.string);
-	} else {
-		(*server_info)->profile_path = NULL;
-	}
 	
-	if (info3->base.home_directory.string) {
-		(*server_info)->home_directory = talloc_reference(*server_info, info3->base.home_directory.string);
-	} else {
-		(*server_info)->home_directory = NULL;
-	}
+	(*server_info)->domain = talloc_reference(*server_info, base->domain.string);
+	(*server_info)->full_name = talloc_reference(*server_info, base->full_name.string);
+	(*server_info)->logon_script = talloc_reference(*server_info, base->logon_script.string);
+	(*server_info)->profile_path = talloc_reference(*server_info, base->profile_path.string);
+	(*server_info)->home_directory = talloc_reference(*server_info, base->home_directory.string);
+	(*server_info)->home_drive = talloc_reference(*server_info, base->home_drive.string);
+	(*server_info)->last_logon = base->last_logon;
+	(*server_info)->last_logoff = base->last_logoff;
+	(*server_info)->acct_expiry = base->acct_expiry;
+	(*server_info)->last_password_change = base->last_password_change;
+	(*server_info)->allow_password_change = base->allow_password_change;
+	(*server_info)->force_password_change = base->force_password_change;
 
-	if (info3->base.home_drive.string) {
-		(*server_info)->home_drive = talloc_reference(*server_info, info3->base.home_drive.string);
-	} else {
-		(*server_info)->home_drive = NULL;
-	}
-	(*server_info)->last_logon = info3->base.last_logon;
-	(*server_info)->last_logoff = info3->base.last_logoff;
-	(*server_info)->acct_expiry = info3->base.acct_expiry;
-	(*server_info)->last_password_change = info3->base.last_password_change;
-	(*server_info)->allow_password_change = info3->base.allow_password_change;
-	(*server_info)->force_password_change = info3->base.force_password_change;
+	(*server_info)->logon_count = base->logon_count;
+	(*server_info)->bad_password_count = base->bad_password_count;
 
-	(*server_info)->logon_count = info3->base.logon_count;
-	(*server_info)->bad_password_count = info3->base.bad_password_count;
-
-	(*server_info)->acct_flags = info3->base.acct_flags;
+	(*server_info)->acct_flags = base->acct_flags;
 
 	/* ensure we are never given NULL session keys */
 	
-	if (all_zero(info3->base.key.key, sizeof(info3->base.key.key))) {
+	if (all_zero(base->key.key, sizeof(base->key.key))) {
 		(*server_info)->user_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->user_session_key = data_blob_talloc((*server_info), info3->base.key.key, sizeof(info3->base.key.key));
+		(*server_info)->user_session_key = data_blob_talloc((*server_info), base->key.key, sizeof(base->key.key));
 	}
 
-	if (all_zero(info3->base.LMSessKey.key, sizeof(info3->base.LMSessKey.key))) {
+	if (all_zero(base->LMSessKey.key, sizeof(base->LMSessKey.key))) {
 		(*server_info)->lm_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->lm_session_key = data_blob_talloc((*server_info), info3->base.LMSessKey.key, sizeof(info3->base.LMSessKey.key));
+		(*server_info)->lm_session_key = data_blob_talloc((*server_info), base->LMSessKey.key, sizeof(base->LMSessKey.key));
 	}
 	return NT_STATUS_OK;
 }
@@ -676,6 +693,8 @@ NTSTATUS make_session_info(TALLOC_CTX *mem_ctx,
 	 * key from the auth subsystem */
  
 	(*session_info)->session_key = server_info->user_session_key;
+
+	/* we should search for local groups here */
 	
 	nt_status = create_nt_user_token((*session_info), 
 					 server_info->user_sid, 
