@@ -53,7 +53,7 @@ static BOOL afs_decode_token(const char *string, char **cell,
 	DATA_BLOB blob;
 	struct ClearToken result_ct;
 
-	char *s = strdup(string);
+	char *s = SMB_STRDUP(string);
 
 	char *t;
 
@@ -62,7 +62,7 @@ static BOOL afs_decode_token(const char *string, char **cell,
 		return False;
 	}
 
-	*cell = strdup(t);
+	*cell = SMB_STRDUP(t);
 
 	if ((t = strtok(NULL, "\n")) == NULL) {
 		DEBUG(10, ("strtok failed\n"));
