@@ -106,17 +106,7 @@ static void register_name_response(struct subnet_record *subrec,
 		success = False;
 	} else {
 		/* Unicast - check to see if the response allows us to have the name. */
-		if(nmb->header.rcode != 0) {
-			/* Error code - we didn't get the name. */
-			success = False;
-
-			DEBUG(0,("register_name_response: %sserver at IP %s rejected our name registration of %s IP %s with error code %d.\n", 
-				 subrec==unicast_subnet?"WINS ":"",
-				 inet_ntoa(p->ip), 
-				 nmb_namestr(answer_name), 
-				 reg_name,
-				 nmb->header.rcode));
-		} else if (nmb->header.opcode == NMB_WACK_OPCODE) {
+		if (nmb->header.opcode == NMB_WACK_OPCODE) {
 			/* WINS server is telling us to wait. Pretend we didn't get
 			   the response but don't send out any more register requests. */
 
@@ -128,6 +118,16 @@ static void register_name_response(struct subnet_record *subrec,
 			rrec->repeat_time = p->timestamp + nmb->answers->ttl;
 			rrec->num_msgs--;
 			return;
+		} else if (nmb->header.rcode != 0) {
+			/* Error code - we didn't get the name. */
+			success = False;
+
+			DEBUG(0,("register_name_response: %sserver at IP %s rejected our name registration of %s IP %s with error code %d.\n", 
+				 subrec==unicast_subnet?"WINS ":"",
+				 inet_ntoa(p->ip), 
+				 nmb_namestr(answer_name), 
+				 reg_name,
+				 nmb->header.rcode));
 		} else {
 			success = True;
 			/* Get the data we need to pass to the success function. */

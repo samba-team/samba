@@ -1670,7 +1670,7 @@ void retransmit_or_expire_response_records(time_t t)
 to IP %s on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), 
                           subrec->subnet_name));
           }
-          rrec->repeat_time += rrec->repeat_interval;
+          rrec->repeat_time = t + rrec->repeat_interval;
           rrec->repeat_count--;
         }
         else

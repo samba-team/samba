@@ -225,7 +225,7 @@ void refresh_my_names(time_t t)
 				wins_refresh_name(namerec);
 			}
 			namerec->data.death_time = t + lp_max_ttl();
-			namerec->data.refresh_time = t + MIN(lp_max_ttl(), MAX_REFRESH_TIME);
+			namerec->data.refresh_time = t + MIN(lp_max_ttl()/2, MAX_REFRESH_TIME);
 		}
 	}
 }
