@@ -23,8 +23,7 @@ lib_LTLIBRARIES = libhdb.la
 
 libhdb_la_SOURCES = hdb.c common.c db.c ndbm.c $(BUILT_SOURCES)
 
-include_HEADERS = hdb.h
-include__DATA = hdb_err.h hdb_asn1.h
+include_HEADERS = hdb.h hdb_err.h hdb_asn1.h
 
 libhdb_la_LIBADD = 
 

@@ -109,10 +109,8 @@ libroken_la_LIBADD = @LTLIBOBJS@
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
 
-include_HEADERS = base64.h getarg.h parse_time.h parse_units.h \
-	resolve.h roken-common.h
-
-include__DATA = roken.h
+include_HEADERS = $(err_h) base64.h getarg.h parse_time.h parse_units.h \
+	resolve.h roken.h roken-common.h
 
 build_HEADERZ = $(err_h) $(fnmatch_h) $(glob_h) xdbm.h
 

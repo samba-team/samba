@@ -13,10 +13,8 @@ COMPILE_ET = $(top_builddir)/lib/com_err/compile_et
 ## ugly hack for brokenness in automake, you can't install built
 ## headers via _HEADERS, and you can't install _DATA in includedir.
 
-## set include__DATA to built headers that should be installed
 ## set build_HEADERZ to headers that should just be installed in build tree
 
-include_dir = $(includedir)
 buildinclude = $(top_builddir)/include
 
 ## these aren't detected by automake
@@ -45,7 +43,7 @@ install-suid-programs:
 install-exec-hook: install-suid-programs
 
 install-build-headers: 
-	@foo='$(include__DATA) $(include_HEADERS) $(build_HEADERZ)'; \
+	@foo='$(include_HEADERS) $(build_HEADERZ)'; \
 	for f in $$foo; do \
 		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
 		else file="$$f"; fi; \

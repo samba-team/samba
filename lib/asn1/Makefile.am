@@ -124,9 +124,7 @@ TESTS = check-der
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
-include__DATA = asn1.h asn1_err.h
-
-include_HEADERS = der.h
+include_HEADERS = asn1.h asn1_err.h der.h
 
 lex.lo: parse.h
 

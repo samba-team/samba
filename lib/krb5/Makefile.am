@@ -104,8 +104,7 @@ man_MANS = krb5.conf.5 krb5_warn.3 krb5_openlog.3 \
 	krb5_425_conv_principal.3 krb5_build_principal.3 krb5_free_principal.3 \
 	krb5_parse_name.3 krb5_sname_to_principal.3 krb5_unparse_name.3
 
-include_HEADERS = krb5.h krb5-protos.h
-include__DATA = krb5_err.h heim_err.h
+include_HEADERS = krb5.h krb5-protos.h krb5_err.h heim_err.h
 
 CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h
 

@@ -8,7 +8,7 @@ noinst_PROGRAMS = bits
 
 INCLUDES = -DHOST=\"$(CANONICAL_HOST)\"
 
-include__DATA = krb5-types.h
+include_HEADERS = krb5-types.h
 
 krb5-types.h: bits
 	./bits krb5-types.h
