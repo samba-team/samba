@@ -1,3 +1,9 @@
+2003-07-03  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* iprop.h, ipropd_master.c, ipropd_slave.c:
+	Add probing from the server that the client is still there, also
+	make the client check that the server is probing.
+
 2003-07-02  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* truncate_log.c (main): add missing ``if (ret)''
