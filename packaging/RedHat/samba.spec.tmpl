@@ -148,7 +148,6 @@ install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 
 # Install the miscellany
-install -m755 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat/README
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
@@ -357,7 +356,6 @@ fi
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
 %doc docs
-%doc swat/README
 %doc examples
 %{prefix}/sbin/smbd
 %{prefix}/sbin/nmbd
@@ -404,7 +402,6 @@ fi
 %{prefix}/share/swat/lang/*/images/*
 %{prefix}/share/swat/lang/*/include/*.html
 %{prefix}/share/swat/using_samba/*
-%{prefix}/share/swat/README
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers
