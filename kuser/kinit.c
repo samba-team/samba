@@ -80,7 +80,8 @@ main (int argc, char **argv)
     krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
     int c;
     char *realm;
-
+    char pwbuf[128];
+    
     union {
 	krb5_flags i;
 	KDCOptions f;
@@ -125,13 +126,9 @@ main (int argc, char **argv)
 	      krb5_get_err_text(context, ret));
 
     if(argv[0]){
-	char *p;
 	ret = krb5_parse_name (context, argv[0], &principal);
 	if (ret)
 	    errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, ret));
-	krb5_unparse_name(context, principal, &p);
-	fprintf (stderr, "%s's ", p);
-	free(p);
     }else{
 	struct passwd *pw;
 
@@ -142,7 +139,6 @@ main (int argc, char **argv)
 	if (ret)
 	    errx (1, "krb5_build_principal: %s",
 		  krb5_get_err_text(context, ret));
-	fprintf (stderr, "%s@%s's ", pw->pw_name, realm);
     }
     free(realm);
 
@@ -173,15 +169,28 @@ main (int argc, char **argv)
     cred.server = server;
     cred.times.endtime = 0;
 
+    
+    {
+	char *p;
+	char *prompt;
+	krb5_unparse_name(context, principal, &p);
+	asprintf(&prompt, "%s's Password: ", p);
+	free(p);
+	des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 0);
+	free(prompt);
+    }
+
+
     ret = krb5_get_in_tkt_with_password (context,
 					 options.i,
 					 NULL,
 					 NULL,
 					 preauth ? pre_auth_types : NULL,
-					 NULL,
+					 pwbuf,
 					 ccache,
 					 &cred,
 					 NULL);
+    memset(pwbuf, 0, sizeof(pwbuf));
     if (ret)
 	errx (1, "krb5_get_in_tkt_with_password: %s",
 	      krb5_get_err_text(context, ret));
