@@ -202,14 +202,14 @@ it also defines lots of intermediate macros, just ignore those :-)
 	RW_PCVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s %04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%d ", (inbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%d ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_PSVAL(string,depth,base,read,inbuf,outbuf,len) \
 	RW_PSVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s %04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%d ", (inbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%d ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \

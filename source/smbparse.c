@@ -53,7 +53,7 @@ char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align, int d
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("low", depth, base, io, q, nttime->low ); q += 4; /* low part */
+	DBG_RW_IVAL("low ", depth, base, io, q, nttime->low ); q += 4; /* low part */
 	DBG_RW_IVAL("high", depth, base, io, q, nttime->high); q += 4; /* high part */
 
 	return q;
@@ -73,8 +73,8 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_CVAL("sid_no", depth, base, io, q, sid->sid_no); q++; 
-	DBG_RW_CVAL("num_auths", depth, base, io, q, sid->num_auths); q++;
+	DBG_RW_CVAL("sid_no    ", depth, base, io, q, sid->sid_no); q++; 
+	DBG_RW_CVAL("num_auths ", depth, base, io, q, sid->num_auths); q++;
 
 	for (i = 0; i < 6; i++)
 	{
@@ -86,7 +86,7 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 	/* oops! XXXX should really issue a warning here... */
 	if (sid->num_auths > MAXSUBAUTHS) sid->num_auths = MAXSUBAUTHS;
 
-	DBG_RW_PSVAL("num_auths", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 2;
+	DBG_RW_PSVAL("num_auths ", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 2;
 
 	return q;
 }
@@ -108,7 +108,7 @@ char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int de
 	
 	DBG_RW_IVAL("uni_max_len", depth, base, io, q, hdr->uni_max_len); q += 4;
 	DBG_RW_IVAL("uni_str_len", depth, base, io, q, hdr->uni_str_len); q += 4;
-	DBG_RW_IVAL("undoc", depth, base, io, q, hdr->undoc      ); q += 4;
+	DBG_RW_IVAL("undoc      ", depth, base, io, q, hdr->undoc      ); q += 4;
 
 	return q;
 }
@@ -176,7 +176,7 @@ char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int
 	uni2->undoc = 0;
 
 	DBG_RW_IVAL("uni_max_len", depth, base, io, q, uni2->uni_max_len); q += 4;
-	DBG_RW_IVAL("undoc", depth, base, io, q, uni2->undoc      ); q += 4;
+	DBG_RW_IVAL("undoc      ", depth, base, io, q, uni2->undoc      ); q += 4;
 	DBG_RW_IVAL("uni_str_len", depth, base, io, q, uni2->uni_str_len); q += 4;
 
 	/* oops! XXXX maybe issue a warning that this is happening... */
@@ -185,7 +185,7 @@ char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int
 
 	/* buffer advanced by indicated length of string
        NOT by searching for null-termination */
-	DBG_RW_PSVAL("", depth, base, io, q, uni2->buffer, uni2->uni_max_len); q += uni2->uni_max_len * 2;
+	DBG_RW_PSVAL("buffer    ", depth, base, io, q, uni2->buffer, uni2->uni_max_len); q += uni2->uni_max_len * 2;
 
 	return q;
 }
@@ -208,7 +208,7 @@ char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, i
 	/* should be value 0, so enforce it */
 	sid2->undoc = 0;
 
-	DBG_RW_IVAL("type", depth, base, io, q, sid2->type ); q += 4;
+	DBG_RW_IVAL("type ", depth, base, io, q, sid2->type ); q += 4;
 	DBG_RW_IVAL("undoc", depth, base, io, q, sid2->undoc); q += 4;
 
 	q = smb_io_unihdr2(io, &(sid2->hdr), q, base, align, depth);
@@ -235,9 +235,9 @@ char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, i
 	/* should be value 5, so enforce it */
 	rid2->undoc = 5;
 
-	DBG_RW_IVAL("type", depth, base, io, q, rid2->type); q += 4;
-	DBG_RW_IVAL("undoc", depth, base, io, q, rid2->undoc   ); q += 4;
-	DBG_RW_IVAL("rid", depth, base, io, q, rid2->rid     ); q += 4;
+	DBG_RW_IVAL("type   ", depth, base, io, q, rid2->type); q += 4;
+	DBG_RW_IVAL("undoc  ", depth, base, io, q, rid2->undoc   ); q += 4;
+	DBG_RW_IVAL("rid    ", depth, base, io, q, rid2->rid     ); q += 4;
 	DBG_RW_IVAL("rid_idx", depth, base, io, q, rid2->rid_idx ); q += 4;
 
 	return q;
@@ -262,8 +262,7 @@ char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align
 
 	DBG_RW_SVAL("sec_chan", depth, base, io, q, log->sec_chan); q += 2;
 
-	/* XXXX no alignment required between sec_chan and uni_comp_name */
-	q = smb_io_unistr2(io, &(log->uni_comp_name), q, base, 0, depth);
+	q = smb_io_unistr2(io, &(log->uni_comp_name), q, base, align, depth);
 
 	return q;
 }
@@ -333,7 +332,7 @@ char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("low", depth, base, io, q, log->low ); q += 4;
+	DBG_RW_IVAL("low ", depth, base, io, q, log->low ); q += 4;
 	DBG_RW_IVAL("high", depth, base, io, q, log->high); q += 4;
 
 	return q;
@@ -402,7 +401,7 @@ char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align
 	q = smb_io_cred     (io, &(sam->rtn_cred), q, base, align, depth);
 
 	DBG_RW_IVAL("logon_level", depth, base, io, q, sam->logon_level); q += 4;
-	DBG_RW_SVAL("auth_level", depth, base, io, q, sam->auth_level ); q += 4;
+	DBG_RW_SVAL("auth_level ", depth, base, io, q, sam->auth_level ); q += 4;
 
 	switch (sam->auth_level)
 	{
@@ -432,7 +431,7 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int dept
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("gid", depth, base, io, q, gid->gid ); q += 4;
+	DBG_RW_IVAL("gid ", depth, base, io, q, gid->gid ); q += 4;
 	DBG_RW_IVAL("attr", depth, base, io, q, gid->attr); q += 4;
 
 	return q;
@@ -451,17 +450,17 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int 
 	/* reserved should be zero: enforce it */
 	rpc->reserved = 0;
 
-	DBG_RW_CVAL("major", depth, base, io, q, rpc->major); q++;
-	DBG_RW_CVAL("minor", depth, base, io, q, rpc->minor); q++;
-	DBG_RW_CVAL("pkt_type", depth, base, io, q, rpc->pkt_type); q++;
-	DBG_RW_CVAL("frag", depth, base, io, q, rpc->frag); q++;
-	DBG_RW_IVAL("pack_type", depth, base, io, q, rpc->pack_type); q += 4;
-	DBG_RW_SVAL("frag_len", depth, base, io, q, rpc->frag_len); q += 2;
-	DBG_RW_SVAL("auth_len", depth, base, io, q, rpc->auth_len); q += 2;
-	DBG_RW_IVAL("call_id", depth, base, io, q, rpc->call_id); q += 4;
+	DBG_RW_CVAL("major     ", depth, base, io, q, rpc->major); q++;
+	DBG_RW_CVAL("minor     ", depth, base, io, q, rpc->minor); q++;
+	DBG_RW_CVAL("pkt_type  ", depth, base, io, q, rpc->pkt_type); q++;
+	DBG_RW_CVAL("frag      ", depth, base, io, q, rpc->frag); q++;
+	DBG_RW_IVAL("pack_type ", depth, base, io, q, rpc->pack_type); q += 4;
+	DBG_RW_SVAL("frag_len  ", depth, base, io, q, rpc->frag_len); q += 2;
+	DBG_RW_SVAL("auth_len  ", depth, base, io, q, rpc->auth_len); q += 2;
+	DBG_RW_IVAL("call_id   ", depth, base, io, q, rpc->call_id); q += 4;
 	DBG_RW_IVAL("alloc_hint", depth, base, io, q, rpc->alloc_hint); q += 4;
 	DBG_RW_CVAL("context_id", depth, base, io, q, rpc->context_id); q++;
-	DBG_RW_CVAL("reserved", depth, base, io, q, rpc->reserved); q++;
+	DBG_RW_CVAL("reserved  ", depth, base, io, q, rpc->reserved); q++;
 
 	return q;
 }
@@ -513,11 +512,11 @@ char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align, 
 	
 
 	DBG_RW_SVAL("uni_dom_max_len", depth, base, io, q, d_q->uni_dom_max_len); q += 2; /* domain name string length * 2 */
-	DBG_RW_SVAL("padding", depth, base, io, q, d_q->padding        ); q += 2; /* 2 padding bytes */
+	DBG_RW_SVAL("padding        ", depth, base, io, q, d_q->padding        ); q += 2; /* 2 padding bytes */
 	DBG_RW_SVAL("uni_dom_str_len", depth, base, io, q, d_q->uni_dom_str_len); q += 2; /* domain name string length * 2 */
 
 	DBG_RW_IVAL("buffer_dom_name", depth, base, io, q, d_q->buffer_dom_name); q += 4; /* undocumented domain name string buffer pointer */
-	DBG_RW_IVAL("buffer_dom_sid", depth, base, io, q, d_q->buffer_dom_sid ); q += 4; /* undocumented domain SID string buffer pointer */
+	DBG_RW_IVAL("buffer_dom_sid ", depth, base, io, q, d_q->buffer_dom_sid ); q += 4; /* undocumented domain SID string buffer pointer */
 
 	if (d_q->buffer_dom_name != 0)
 	{
@@ -545,11 +544,11 @@ char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align, 
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("undoc_buffer", depth, base, io, q, r_r->undoc_buffer); q += 4; /* undocumented buffer pointer. */
-	DBG_RW_IVAL("num_ref_doms_1", depth, base, io, q, r_r->num_ref_doms_1); q += 4; /* num referenced domains? */
+	DBG_RW_IVAL("undoc_buffer   ", depth, base, io, q, r_r->undoc_buffer); q += 4; /* undocumented buffer pointer. */
+	DBG_RW_IVAL("num_ref_doms_1 ", depth, base, io, q, r_r->num_ref_doms_1); q += 4; /* num referenced domains? */
 	DBG_RW_IVAL("buffer_dom_name", depth, base, io, q, r_r->buffer_dom_name); q += 4; /* undocumented domain name buffer pointer. */
-	DBG_RW_IVAL("max_entries", depth, base, io, q, r_r->max_entries); q += 4; /* 32 - max number of entries */
-	DBG_RW_IVAL("num_ref_doms_2", depth, base, io, q, r_r->num_ref_doms_2); q += 4; /* 4 - num referenced domains? */
+	DBG_RW_IVAL("max_entries    ", depth, base, io, q, r_r->max_entries); q += 4; /* 32 - max number of entries */
+	DBG_RW_IVAL("num_ref_doms_2 ", depth, base, io, q, r_r->num_ref_doms_2); q += 4; /* 4 - num referenced domains? */
 
 	q = smb_io_unihdr2(io, &(r_r->hdr_dom_name), q, base, align, depth); /* domain name unicode string header */
 
