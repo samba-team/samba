@@ -273,10 +273,10 @@ WERROR reg_key_num_subkeys(struct registry_key *key, int *count)
 	if(key->hive->functions->get_subkey_by_index) {
 		int i;
 		WERROR error;
-		struct registry_key *dest;
+		struct registry_key *dest = NULL;
 		TALLOC_CTX *mem_ctx = talloc_init("num_subkeys");
 		
-		for(i = 0; W_ERROR_IS_OK(error = key->hive->functions->get_subkey_by_index(mem_ctx, key, i, &dest)); i++);
+		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, key, i, &dest)); i++);
 		talloc_destroy(mem_ctx);
 
 		*count = i;
