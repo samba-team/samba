@@ -178,9 +178,6 @@ while(@bins) {
     if ($filename eq "smbpasswd") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
     }
-    elsif ($filename eq "findsmb") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base\n";
-    }
     elsif ($filename eq "swat") {
       print IDB "f 4755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base preop(\"chroot \$rbase /etc/init.d/samba stop; exit 0\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh; exit 0\") removeop(\"chroot \$rbase /sbin/cp /etc/inetd.conf /etc/inetd.conf.O ; chroot \$rbase /sbin/sed -e '/^swat/D' -e '/^#SWAT/D' /etc/inetd.conf.O >/etc/inetd.conf; /etc/killall -HUP inetd || true; exit 0\")\n";
     }
