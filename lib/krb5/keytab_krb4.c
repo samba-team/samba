@@ -168,6 +168,7 @@ read_v4_entry (krb5_context context,
 			  key, 8);
     if (ret)
 	return ret;
+    ed->entry.timestamp = time(NULL);
     ed->num = 0;
     return 0;
 }
