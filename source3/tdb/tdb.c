@@ -77,6 +77,8 @@
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off))
+#define TDB_DATA_START(hash_size) (TDB_HASH_TOP(hash_size-1) + TDB_SPINLOCK_SIZE(hash_size))
+
 
 /* NB assumes there is a local variable called "tdb" that is the
  * current context, also takes doubly-parenthesized print-style
@@ -663,10 +665,10 @@ static int tdb_free(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 left:
 	/* Look left */
 	left = offset - sizeof(tdb_off);
-	if (left > TDB_HASH_TOP(tdb->header.hash_size-1)) {
+	if (left > TDB_DATA_START(tdb->header.hash_size)) {
 		struct list_struct l;
 		tdb_off leftsize;
-
+		
 		/* Read in tailer and jump back to header */
 		if (ofs_read(tdb, left, &leftsize) == -1) {
 			TDB_LOG((tdb, 0, "tdb_free: left offset read failed at %u\n", left));
