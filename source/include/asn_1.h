@@ -35,10 +35,11 @@ typedef struct {
 	BOOL has_error;
 } ASN1_DATA;
 
-
 #define ASN1_APPLICATION(x) ((x)+0x60)
+#define ASN1_APPLICATION_SIMPLE(x) ((x)+0x40)
 #define ASN1_SEQUENCE(x) ((x)+0x30)
 #define ASN1_CONTEXT(x) ((x)+0xa0)
+#define ASN1_CONTEXT_SIMPLE(x) ((x)+0x80)
 #define ASN1_GENERAL_STRING 0x1b
 #define ASN1_OCTET_STRING 0x4
 #define ASN1_OID 0x6

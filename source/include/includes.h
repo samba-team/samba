@@ -641,6 +641,7 @@ extern int errno;
 #include "rewrite.h"
 #include "smb.h"
 #include "ads.h"
+#include "libcli/ldap/ldap.h"
 #include "nameserv.h"
 #include "secrets.h"
 
