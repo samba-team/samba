@@ -50,8 +50,12 @@ static int (*Setpag)(void);
 
 #include "dlfcn.h"
 
+/*
+ *
+ */
+
 static int
-aix_setup(void)
+try_aix(void)
 {
 #ifdef STATIC_AFS_SYSCALLS
     Pioctl = aix_pioctl;
@@ -75,12 +79,14 @@ aix_setup(void)
 	    else if (errno != ENOENT)
 		warn("%s", path);
 	}
-	return;
+	return 1;
     }
     Setpag = (int (*)(void))dlsym(ptr, "aix_setpag");
     Pioctl = (int (*)(char*, int, 
 		      struct ViceIoctl*, int))dlsym(ptr, "aix_pioctl");
 #endif
+    afs_entry_point = AIX_ENTRY_POINTS;
+    return 0;
 }
 #endif /* _AIX */
 
@@ -191,16 +197,62 @@ SIGSYS_handler(int sig)
 
 #endif
 
+/*
+ * Try to see if `syscall' is a pioctl.  Return 0 iff succesful.
+ */
+
+static int
+try_one (int syscall_num)
+{
+    struct ViceIoctl parms;
+    memset(&parms, 0, sizeof(parms));
+
+    if (setjmp(catch_SIGSYS) == 0) {
+	syscall(syscall_num, AFSCALL_PIOCTL,
+		0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	if (errno == EINVAL) {
+	    afs_entry_point = SINGLE_ENTRY_POINT;
+	    afs_syscalls[0] = syscall_num;
+	    return 0;
+	}
+    }
+    return 1;
+}
+
+/*
+ * Try to see if `syscall_pioctl' is a pioctl syscall.  Return 0 iff
+ * succesful.
+ *
+ */
+
+static int
+try_two (int syscall_pioctl, int syscall_setpag)
+{
+    struct ViceIoctl parms;
+    memset(&parms, 0, sizeof(parms));
+
+    if (setjmp(catch_SIGSYS) == 0) {
+	syscall(syscall_pioctl,
+		0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	if (errno == EINVAL) {
+	    afs_entry_point = MULTIPLE_ENTRY_POINT;
+	    afs_syscalls[0] = syscall_pioctl;
+	    afs_syscalls[1] = syscall_setpag;
+	    return 0;
+	}
+    }
+    return 1;
+}
+
 int
 k_hasafs(void)
 {
     int saved_errno;
     RETSIGTYPE (*saved_func)();
-    struct ViceIoctl parms;
+    char *env = getenv ("AFS_SYSCALL");
   
     /*
-     * Already checked presence of AFS syscalls?
-     */
+     * Already checked presence of AFS syscalls?  */
     if (afs_entry_point != UNKNOWN_ENTRY_POINT)
 	return afs_entry_point != NO_ENTRY_POINT;
 
@@ -210,7 +262,6 @@ k_hasafs(void)
      * If the syscall is absent we recive a SIGSYS.
      */
     afs_entry_point = NO_ENTRY_POINT;
-    memset(&parms, 0, sizeof(parms));
   
     saved_errno = errno;
 #ifndef NO_AFS
@@ -218,69 +269,65 @@ k_hasafs(void)
     saved_func = signal(SIGSYS, SIGSYS_handler);
 #endif
 
+#if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
+    {
+	int tmp;
+
+	if (env != NULL && sscanf (env, "%d", &tmp) == 1)
+	    if (try_one (tmp) == 0)
+		goto done;
+    }
+#endif /* AFS_SYSCALL || AFS_SYSCALL2 || AFS_SYSCALL3 */
+
 #ifdef AFS_SYSCALL
-    if (setjmp(catch_SIGSYS) == 0)
-	{
-	    syscall(AFS_SYSCALL, AFSCALL_PIOCTL,
-		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	    if (errno == EINVAL)
-		{
-		    afs_entry_point = SINGLE_ENTRY_POINT;
-		    afs_syscalls[0] = AFS_SYSCALL;
-		    goto done;
-		}
-	}
+    if (try_one (AFS_SYSCALL) == 0)
+	goto done;
 #endif /* AFS_SYSCALL */
 
 #ifdef AFS_PIOCTL
-    if (setjmp(catch_SIGSYS) == 0)
-	{
-	    syscall(AFS_PIOCTL,
-		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	    if (errno == EINVAL)
-		{
-		    afs_entry_point = MULTIPLE_ENTRY_POINT;
-		    afs_syscalls[0] = AFS_PIOCTL;
-		    afs_syscalls[1] = AFS_SETPAG;
-		    goto done;
-		}
-	}
+    {
+	int tmp[2];
+
+	if (env != NULL && sscanf (env, "%d%d", &tmp[0], &tmp[1]) == 2)
+	    if (try_two (tmp[0], tmp[1]) == 2)
+		goto done;
+    }
+#endif /* AFS_PIOCTL */
+
+#ifdef AFS_PIOCTL
+    if (try_two (AFS_PIOCTL, AFS_SETPAG) == 0)
+	goto done;
 #endif /* AFS_PIOCTL */
 
 #ifdef AFS_SYSCALL2
-    if (setjmp(catch_SIGSYS) == 0)
-	{
-	    syscall(AFS_SYSCALL2, AFSCALL_PIOCTL,
-		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	    if (errno == EINVAL)
-		{
-		    afs_entry_point = SINGLE_ENTRY_POINT2;
-		    afs_syscalls[0] = AFS_SYSCALL2;
-		    goto done;
-		}
-	}
-#endif /* AFS_SYSCALL */
+    if (try_one (AFS_SYSCALL2) == 0)
+	goto done;
+#endif /* AFS_SYSCALL2 */
 
 #ifdef AFS_SYSCALL3
-    if (setjmp(catch_SIGSYS) == 0)
-	{
-	    syscall(AFS_SYSCALL3, AFSCALL_PIOCTL,
-		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	    if (errno == EINVAL)
-		{
-		    afs_entry_point = SINGLE_ENTRY_POINT3;
-		    afs_syscalls[0] = AFS_SYSCALL3;
-		    goto done;
-		}
-	}
-#endif /* AFS_SYSCALL */
+    if (try_one (AFS_SYSCALL3) == 0)
+	goto done;
+#endif /* AFS_SYSCALL3 */
 
 #ifdef _AIX
-    aix_setup();
-    if(Pioctl != NULL && Setpag != NULL){
-	afs_entry_point = AIX_ENTRY_POINTS;
-	goto done;
+#if 0
+    if (env != NULL) {
+	char *pos = NULL;
+	char *pioctl_name;
+	char *setpag_name;
+
+	pioctl_name = strtok_r (env, ", \t", &pos);
+	if (pioctl_name != NULL) {
+	    setpag_name = strtok_r (NULL, ", \t", &pos);
+	    if (setpag_name != NULL)
+		if (try_aix (pioctl_name, setpag_name) == 0)
+		    goto done;
+	}
     }
+#endif
+
+    if(try_aix() == 0)
+	goto done;
 #endif
 
 done:
