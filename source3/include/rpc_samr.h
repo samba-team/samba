@@ -146,6 +146,16 @@ SamrTestPrivateFunctionsUser
 #define SAMR_SET_USERINFO      0x3A
 
 
+typedef struct _DISP_USER_INFO {
+	SAM_ACCOUNT *sam;
+	uint32 size;
+} DISP_USER_INFO;
+
+typedef struct _DISP_GROUP_INFO {
+	DOMAIN_GRP *grp;
+	uint32 size;
+} DISP_GROUP_INFO;
+
 
 typedef struct logon_hours_info
 {
@@ -788,7 +798,6 @@ typedef struct samr_entry_info1
 
 	uint32 rid_user;
 	uint16 acb_info;
-	uint16 pad;
 
 	UNIHDR hdr_acct_name;
 	UNIHDR hdr_user_name;
@@ -820,7 +829,6 @@ typedef struct samr_entry_info2
 
 	uint32 rid_user;
 	uint16 acb_info;
-	uint16 pad;
 
 	UNIHDR hdr_srv_name;
 	UNIHDR hdr_srv_desc;
