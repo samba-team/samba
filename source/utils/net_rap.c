@@ -708,6 +708,7 @@ static int rap_user_info(int argc, const char **argv)
 
 int net_rap_user(int argc, const char **argv)
 {
+	int ret = -1;
 	struct functable func[] = {
 		{"ADD", rap_user_add},
 		{"INFO", rap_user_info},
@@ -717,22 +718,26 @@ int net_rap_user(int argc, const char **argv)
 
 	if (argc == 0) {
 		struct cli_state *cli;
-		int ret;
 		if (!(cli = net_make_ipc_connection(0)))
-                        return -1;
+                        goto done;
 		if (opt_long_list_entries) {
 			d_printf("\nUser name             Comment"\
 				 "\n-----------------------------\n");
 			ret = cli_RNetUserEnum(cli, long_user_fn, NULL);
 			cli_shutdown(cli);
-			return ret;
+			goto done;
 		}
 		ret = cli_RNetUserEnum(cli, user_fn, NULL); 
 		cli_shutdown(cli);
-		return ret;
+		goto done;
 	}
 
-	return net_run_function(argc, argv, func, net_rap_user_usage);
+	ret = net_run_function(argc, argv, func, net_rap_user_usage);
+ done:
+	if (ret != 0) {
+		DEBUG(1, ("Net user returned: %d\n", ret));
+	}
+	return ret;
 }
 
 
