@@ -115,13 +115,14 @@ generate_units (Symbol *s)
 	     "struct units %s_units[] = {\n",
 	     s->gen_name);
 
-    for (m = t->members->prev; m && m->val != tag; m = m->prev) {
-	fprintf (codefile,
-		 "\t{\"%s\",\t1 << %d},\n", m->gen_name, m->val);
-
-	if (tag == -1)
-	    tag = m->val;
-    }
+    if(t->members)
+	for (m = t->members->prev; m && m->val != tag; m = m->prev) {
+	    fprintf (codefile,
+		     "\t{\"%s\",\t1 << %d},\n", m->gen_name, m->val);
+	    
+	    if (tag == -1)
+		tag = m->val;
+	}
 
     fprintf (codefile,
 	     "\t{NULL,\t0}\n"
