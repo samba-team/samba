@@ -104,15 +104,6 @@ void build_options(BOOL screen)
 #ifdef WITH_PAM
        output(screen,"   WITH_PAM\n");
 #endif
-#ifdef WITH_TDB_SAM
-       output(screen,"   WITH_TDB_SAM\n");
-#endif
-#ifdef WITH_SMBPASSWD_SAM
-       output(screen,"   WITH_SMBPASSWD_SAM\n");
-#endif
-#ifdef WITH_NISPLUS_SAM
-       output(screen,"   WITH_NISPLUS_SAM\n");
-#endif
 #ifdef WITH_NISPLUS_HOME
        output(screen,"   WITH_NISPLUS_HOME\n");
 #endif
