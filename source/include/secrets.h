@@ -49,6 +49,13 @@
 #define SECRETS_AUTH_DOMAIN      "SECRETS/AUTH_DOMAIN"
 #define SECRETS_AUTH_PASSWORD  "SECRETS/AUTH_PASSWORD"
 
+/* Trust password type flags */
+#define PASS_MACHINE_TRUST_NT       0x0001
+#define PASS_SERVER_TRUST_NT        0x0002
+#define PASS_DOMAIN_TRUST_NT        0x0004
+#define PASS_MACHINE_TRUST_ADS      0x0008
+#define PASS_DOMAIN_TRUST_ADS       0x0010
+
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
 struct machine_acct_pass {
