@@ -3196,3 +3196,23 @@ int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype)
 }
 
 #endif /* No ACLs. */
+
+/************************************************************************
+ Deliberately outside the ACL defines. Return 1 if this is a "no acls"
+ errno, 0 if not.
+************************************************************************/
+
+int no_acl_syscall_error(int err)
+{
+#if defined(ENOSYS)
+	if (err == ENOSYS) {
+		return 1;
+	}
+#endif
+#if defined(ENOTSUP)
+	if (err == ENOTSUP) {
+		return 1;
+	}
+#endif
+	return 0;
+}
