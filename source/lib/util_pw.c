@@ -52,9 +52,39 @@ void passwd_free (struct passwd **buf)
 	SAFE_FREE(*buf);
 }
 
+#define PWNAMCACHE_SIZE 4
+static struct passwd *pwnam_cache[PWNAMCACHE_SIZE];
+static BOOL pwnam_cache_initialized = False;
+
+static void init_pwnam_cache(void)
+{
+	int i;
+
+	if (pwnam_cache_initialized)
+		return;
+
+	for (i=0; i<PWNAMCACHE_SIZE; i++)
+		pwnam_cache[i] = NULL;
+
+	pwnam_cache_initialized = True;
+	return;
+}
+
 struct passwd *getpwnam_alloc(const char *name) 
 {
+	int i;
+
 	struct passwd *temp;
+
+	init_pwnam_cache();
+
+	for (i=0; i<PWNAMCACHE_SIZE; i++) {
+		if ((pwnam_cache[i] != NULL) && 
+		    (strcmp(name, pwnam_cache[i]->pw_name) == 0)) {
+			DEBUG(10, ("Got %s from pwnam_cache\n", name));
+			return alloc_copy_passwd(pwnam_cache[i]);
+		}
+	}
 
 	temp = sys_getpwnam(name);
 	
@@ -66,6 +96,19 @@ struct passwd *getpwnam_alloc(const char *name)
 #endif
 		return NULL;
 	}
+
+	for (i=0; i<PWNAMCACHE_SIZE; i++) {
+		if (pwnam_cache[i] == NULL)
+			break;
+	}
+
+	if (i == PWNAMCACHE_SIZE)
+		i = rand() % PWNAMCACHE_SIZE;
+
+	if (pwnam_cache[i] != NULL)
+		passwd_free(&pwnam_cache[i]);
+
+	pwnam_cache[i] = alloc_copy_passwd(temp);
 
 	return alloc_copy_passwd(temp);
 }
