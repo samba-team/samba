@@ -810,10 +810,10 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 # now the rules...
 ######################################################################
 
-basics: idl proto_exists
-
 all: SHOWFLAGS basics $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
 	$(MODULES) @EXTRA_ALL_TARGETS@
+
+basics: idl proto_exists
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
