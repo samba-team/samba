@@ -34,7 +34,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - MEXICO/CENTRAL & SOUTH              5
-    AMERICA - USA                                39
+    NORTH AMERICA - USA                          40
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      20
     CANADA                                       10
@@ -78,8 +78,8 @@ keywords: Samba on Linux, support and consulting
 
 
 
-AMERICA - CENTRAL & SOUTH
-=========================
+AMERICA - MEXICO/CENTRAL & SOUTH
+================================
 
 
 ------------------------------------------------------------------------------
@@ -189,8 +189,8 @@ Client: WinNT, Win95, WfWg, Win 3.1 & LAN WorkPlace.
 
 
 
-AMERICA - USA
-=============
+NORTH AMERICA - USA
+===================
 
 ------------------------------------------------------------------------------
 ARIZONA - USA
@@ -653,6 +653,34 @@ SCO above 3.0 and for Linux. We currently have installed and are
 supporting several versions of samba on over 25 client sites across
 the US, in addition to our 6 in-house samba servers. Our largest client
 site has approx. 100 users. 
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+MICHIGAN -  USA - Michigan & Great Lakes
+
+Company: Cybernet Systems Corporation
+Street Addr: 727 Airport Blvd., Ann Arbor, MI 48108 USA
+Postal Addr: 727 Airport Blvd., Ann Arbor, MI 48108 USA
+Contact no's: (734)668-2567, Fax: (734)668-8780
+              for support in the US call 1-800-Cybernet
+              Help:        netmax-helpo@cybernet.com
+              Info:        netmax-info@cybernet.com
+              Bug reports: netmax-bugs@cybernet.com
+
+We support SAMBA as one of the file sharing an printer sharing subsystems
+we include in NetMAX integrated multiprotocol file and web server sytems.
+We use SAMBA in our in-house networks for sharing and install it as part
+of NetMAX products and other commercial file sharing systems integration
+efforts.  We are experienced with Low level programming and support for all
+SAMBA security and compatability issues. We use SAMBA for an affordable
+solution for LAN and WAN networking to Windows clients.
+
+If you like the new SAMBA logo, our graphics designer, Bob Gelardi,
+bgelardi@cybernet.com, put it together with a lot of collaboration with the
+SAMBA Team.  Thanks for the chance to contribute!
+
+For futher information, please consult our website www.cybernet.com and
+www.netmax.com.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
