@@ -104,6 +104,9 @@ struct dcerpc_pipe {
 /* check incoming pad bytes */
 #define DCERPC_DEBUG_PAD_CHECK         (1<<12)
 
+/* set LIBNDR_FLAG_REF_ALLOC flag when decoding NDR */
+#define DCERPC_NDR_REF_ALLOC           (1<<13)
+
 /*
   this is used to find pointers to calls
 */

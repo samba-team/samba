@@ -116,6 +116,10 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_pipe *p, DATA_BLOB *bl
 		ndr->flags |= LIBNDR_FLAG_PAD_CHECK;
 	}
 
+	if (p->flags & DCERPC_NDR_REF_ALLOC) {
+		ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+	}
+
 	return ndr;
 }
 
