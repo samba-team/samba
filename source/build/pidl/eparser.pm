@@ -8,7 +8,7 @@ package IdlEParser;
 
 use strict;
 use client;
-use Data::Dumper;
+#use Data::Dumper;
 
 # the list of needed functions
 my %needed;
@@ -307,10 +307,6 @@ sub ParseElementScalar($$$)
 
 	start_flags($e);
 
-	if (my $value = util::has_property($e, "value")) {
-		pidl "\t$cprefix$var_prefix$e->{NAME} = $value;\n";
-	}
-
 	if (util::has_property($e, "relative")) {
 		pidl "\tndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE});\n";
 	} elsif (util::is_inline_array($e)) {
@@ -328,7 +324,7 @@ sub ParseElementScalar($$$)
 			pidl "\tndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE});\n";
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\toffset = dissect_ndr_$e->{TYPE}(tvb, offset, pinfo, tree, drep, hf_$e->{NAME}_$e->{TYPE}, NULL);\n";
+		pidl "\toffset = dissect_ndr_$e->{TYPE}(tvb, offset, pinfo, tree, drep, hf_$e->{NAME}_$e->{TYPE}, NULL);\n\n";
 	} else {
 	    if (defined($param_handlers{$e->{TYPE}})) {
 		pidl &{$param_handlers{$e->{TYPE}}}($e);
@@ -447,7 +443,7 @@ sub ParseStruct($)
 	my($struct) = shift;
 	my $conform_e;
 	
-	pidl "\t// ParseStruct $struct->{NAME}\n\n";
+	pidl "\t// ParseStruct $struct->{PARENT}->{NAME}\n\n";
 
 	if (! defined $struct->{ELEMENTS}) {
 		return;
@@ -468,19 +464,19 @@ sub ParseStruct($)
 		pidl "\tndr_push_uint32(ndr, $size);\n";
 	}
 
-	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n\n";
 
 	pidl "\tndr_push_struct_start(ndr);\n";
 
 	my $align = struct_alignment($struct);
-	pidl "\tndr_push_align(ndr, $align);\n";
+	pidl "\tndr_push_align(ndr, $align);\n\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementScalar($e, "r->", "NDR_SCALARS");
 	}	
 
 	pidl "buffers:\n";
-	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
+	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementBuffer($e, "r->", "NDR_BUFFERS");
 	}
@@ -499,7 +495,7 @@ sub ParseUnion($)
 	my $e = shift;
 	my $have_default = 0;
 
-	pidl "\t// ParseUnion $e->{NAME}\n\n";
+	pidl "\t// ParseUnion $e->{PARENT}->{NAME}\n\n";
 
 	start_flags($e);
 
@@ -574,17 +570,17 @@ sub ParseTypedefEthereal($)
 	my $static = fn_prefix($e);
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-	    pidl $static . "int dissect_$e->{NAME}(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int flags)\n";
+	    pidl $static . "int dissect_$e->{NAME}(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int ndr_flags)\n";
 	    pidl "\n{\n";
-#		ParseType($e->{DATA});
+		ParseType($e->{DATA});
 	    pidl "\treturn offset;\n";
 	    pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-	    pidl $static . "int dissect_$e->{NAME}(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int flags)\n";
+	    pidl $static . "int dissect_$e->{NAME}(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int ndr_flags)\n";
 		pidl "\n{\n";
-#		ParseType($e->{DATA});
+		ParseType($e->{DATA});
 	    pidl "\treturn offset;\n";
 		pidl "}\n\n";
 	}
