@@ -939,6 +939,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	for (i=0; lines[i]; i++) {
 		char *line = lines[i];
 
+		if (!*line) continue;
+
 		v=strncpyn(p, line, sizeof(p), ':');
 		if (v==NULL)
 		{
