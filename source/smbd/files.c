@@ -128,9 +128,15 @@ file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf)
 		    (sbuf->st_dev == fd_ptr->dev) &&
 		    (sbuf->st_ino == fd_ptr->inode)) {
 			fd_ptr->ref_count++;
-			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %x, ref_count = %d\n",
-				 fd_ptr->dev, fd_ptr->inode, 
+#ifdef LARGE_SMB_INO_T
+			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %.0f, ref_count = %d\n",
+				 (unsigned int)fd_ptr->dev, (double)fd_ptr->inode, 
 				 fd_ptr->ref_count));
+#else /* LARGE_SMB_INO_T */
+			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %x, ref_count = %d\n",
+				 (unsigned int)fd_ptr->dev, fd_ptr->inode, 
+				 fd_ptr->ref_count));
+#endif /* LARGE_SMB_INO_T */
 			return fd_ptr;
 		}
 	}

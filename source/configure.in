@@ -184,6 +184,20 @@ main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) exit
 echo yes;AC_DEFINE(HAVE_OFF64_T), 
 echo no)
 
+echo $ac_n "checking for 64 bit ino_t ... $ac_c"
+AC_TRY_RUN([#include <stdio.h>
+#include <sys/stat.h>
+main() { exit((sizeof(ino_t) == 8) ? 0 : 1); }],
+echo yes;AC_DEFINE(SIZEOF_INO_T,8),
+echo no)
+
+echo $ac_n "checking for ino64_t ... $ac_c"
+AC_TRY_RUN([#include <stdio.h>
+#include <sys/stat.h>
+main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
+echo yes;AC_DEFINE(HAVE_INO64_T), 
+echo no)
+
 echo $ac_n "checking for union semun ... $ac_c"
 AC_TRY_RUN([
 #include <sys/types.h>
