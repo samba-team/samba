@@ -1,0 +1,32 @@
+#!/bin/sh
+# $Id$
+#
+usage="Usage: $0 [-l username] host [port]"
+while true
+do
+  case $1 in
+  -l) kx_args="${kx_args} -l $2"; shift 2;;
+  -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
+  *) break;;
+  esac
+done
+if test $# -lt 1; then
+  echo $usage
+  exit 1
+fi
+host=$1
+port=$2
+bindir=%bindir%
+pdc_trams=`dirname $0`
+PATH=$pdc_trams:$bindir:$PATH
+export PATH
+set -- `kx $kx_args $host`
+if test $# -ne 3; then
+  exit 1
+fi
+screen=`echo $DISPLAY | sed -ne 's/[^:]*:[0-9]*\(\.[0-9]*\)/\1/p'`
+pid=$1
+disp=${2}${screen}
+auth=$3
+env DISPLAY=$disp XAUTHORITY=$auth $SHELL
+kill -USR2 $pid
