@@ -59,7 +59,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/ldb/tools/ldbadd.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC LIBSMB CONFIG LIBCMDLINE LIBLDB
+		LIBBASIC CONFIG LIBCMDLINE LIBLDB
 # End BINARY ldbadd
 ################################################
 
@@ -69,7 +69,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/ldb/tools/ldbdel.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC LIBSMB CONFIG LIBCMDLINE LIBLDB
+		LIBBASIC CONFIG LIBCMDLINE LIBLDB
 # End BINARY ldbdel
 ################################################
 
@@ -79,7 +79,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/ldb/tools/ldbmodify.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC LIBSMB CONFIG LIBCMDLINE LIBLDB
+		LIBBASIC CONFIG LIBCMDLINE LIBLDB
 # End BINARY ldbmodify
 ################################################
 
@@ -89,7 +89,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/ldb/tools/ldbsearch.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC LIBSMB CONFIG LIBCMDLINE LIBLDB
+		LIBBASIC CONFIG LIBCMDLINE LIBLDB
 # End BINARY ldbsearch
 ################################################
 
@@ -99,6 +99,6 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/ldb/tools/ldbedit.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC LIBSMB CONFIG LIBCMDLINE LIBLDB
+		LIBBASIC CONFIG LIBCMDLINE LIBLDB
 # End BINARY ldbedit
 ################################################
