@@ -1,4 +1,5 @@
 @node Setting up a realm, Things in search for a better place, Building and Installing, Top
+
 @chapter Setting up a realm
 
 A
@@ -186,7 +187,7 @@ Access to the admin server is controlled by an acl-file, (default
 @file{/var/heimdal/kadmind.acl}.) The lines in the access file, has the
 following syntax:
 @smallexample
-principal       [priv1,priv2,...]
+principal       [priv1,priv2,...]       [glob-pattern]
 @end smallexample
 
 The privileges you can assign to a principal are: @samp{add},
@@ -194,6 +195,11 @@ The privileges you can assign to a principal are: @samp{add},
 @samp{get}, @samp{list}, and @samp{modify}, or the special privilege
 @samp{all}. All of these roughly corresponds to the different commands
 in @samp{kadmin}.
+
+If a @var{glob-pattern} is given on a line, it restricts the right for
+the principal to only apply for the subjects that match the pattern.
+The patters are of the same type as those used in shell globbing, see
+@url{none,,fnmatch(3)}.
 
 @section Password changing
 
@@ -245,3 +251,42 @@ verified that it is at least six characters of length.
 
 Now you should be able to run all the clients and servers.  Refer to the
 appropriate man pages for information on how to use them.
+
+@section Slave servers
+
+It is desirable to have at least one backup (slave) server in case the
+master server fails. It is possible to have any number of such slave
+servers but more than three usually doesn't buy much more redundancy.
+
+All Kerberos servers for a realm shall have the same database so that
+they present the same service to all the users.  The
+@pindex hprop
+@code{hprop} program, running on the master, will propagate the database
+to the slaves, running
+@pindex hpropd
+@code{hpropd} processes.
+
+Every slave needs a keytab with a principal,
+@samp{hprop/@var{hostname}}.  Add that with the
+@pindex ktutil
+@code{ktutil} command and start
+@pindex hpropd
+@code{propd}, as follows:
+
+@example
+slave# ktutil get -p foo/admin host/slave
+slave# hpropd
+@end example
+
+The master will use the principal @samp{kadmin/hprop} to authenticate to
+the slaves.  This principal should be added when running @kbd{kadmin -l
+init} but if you do not have it in your database for whatever reason,
+please add it with @kbd{kadmin -l add}.
+
+Then run
+@pindex hprop
+@code{hprop} on the master:
+
+@example
+master# hprop slave
+@end example
