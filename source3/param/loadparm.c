@@ -2242,10 +2242,12 @@ static void add_to_file_list(const char *fname, const char *subfname)
 			return;
 		}
 		file_lists = f;
+		f->modtime = file_modtime(subfname);
+	} else {
+		time_t t = file_modtime(subfname);
+		if (t)
+			f->modtime = t;
 	}
-
-	f->modtime = file_modtime(subfname);
-
 }
 
 /*******************************************************************
@@ -2256,8 +2258,7 @@ BOOL lp_file_list_changed(void)
 	struct file_lists *f = file_lists;
 	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	while (f)
-	{
+	while (f) {
 		pstring n2;
 		time_t mod_time;
 
@@ -2269,8 +2270,7 @@ BOOL lp_file_list_changed(void)
 
 		mod_time = file_modtime(n2);
 
-		if ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0))
-		{
+		if (mod_time && ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0))) {
 			DEBUGADD(6,
 				 ("file %s modified: %s\n", n2,
 				  ctime(&mod_time)));
