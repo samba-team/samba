@@ -244,7 +244,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_fake_perms vfs_netatalk"
@@ -2391,7 +2391,7 @@ AC_ARG_WITH(pam_smbpass,
        elif test x$ac_cv_lib_pam_pam_get_data = xno; then
           AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
        else
-          SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.so"
+          SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.$SHLIBEXT"
        fi
     ;;
   *)
@@ -3467,6 +3467,9 @@ SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), bin/extd_audit.so, VFS)
 SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), bin/fake_perms.so, VFS)
 SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), bin/netatalk.so, VFS)
 SMB_SUBSYSTEM(VFS)
+
+SMB_MODULE(idmap_winbind, sam/idmap_winbind.o, bin/winbind.so, IDMAP)
+SMB_SUBSYSTEM(IDMAP)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
