@@ -53,7 +53,7 @@ typedef unsigned char OtpKey[OTPKEYSIZE];
 #define OTP_HEXPREFIX "hex:"
 #define OTP_WORDPREFIX "word:"
 
-typedef enum { ALG_MD4, ALG_MD5, ALG_SHA } OtpAlgID;
+typedef enum { OTP_ALG_MD4, OTP_ALG_MD5, OTP_ALG_SHA } OtpAlgID;
 
 typedef struct {
   OtpAlgID id;
@@ -70,6 +70,8 @@ typedef struct {
   unsigned n;
   char seed[17];
   OtpKey key;
+  int challengep;
+  char *err;
 } OtpContext;
 
 OtpAlgorithm *otp_find_alg (char *name);
@@ -83,6 +85,7 @@ int otp_parse (OtpKey key, char *, OtpAlgorithm *);
 int otp_challenge (OtpContext *ctx, char *user, char *str, size_t len);
 int otp_verify_user (OtpContext *ctx, char *passwd);
 int otp_verify_user_1 (OtpContext *ctx, char *passwd);
+char *otp_error (OtpContext *ctx);
 
 void *otp_db_open (void);
 void otp_db_close (void *);
