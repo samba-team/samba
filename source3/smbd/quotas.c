@@ -278,15 +278,15 @@ static int xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 static int xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
 	gqr_status status;
-	union { 
+	union {
 		rquota gqr_rquota;
 	} getquota_rslt_u;
-   
+  
 	if (!xdr_int(xdrsp, &quotastat)) {
 		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
 		return 0;
 	}
-	if (!xdr_int32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsize)) {
+	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsize)) {
 		DEBUG(6,("nfs_quotas: Block size bad or zero\n"));
 		return 0;
 	}
@@ -294,15 +294,15 @@ static int xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 		DEBUG(6,("nfs_quotas: Active bad or zero\n"));
 		return 0;
 	}
-	if (!xdr_uint32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bhardlimit)) {
+	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bhardlimit)) {
 		DEBUG(6,("nfs_quotas: Hardlimit bad or zero\n"));
 		return 0;
 	}
-	if (!xdr_uint32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsoftlimit)) {
+	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsoftlimit)) {
 		DEBUG(6,("nfs_quotas: Softlimit bad or zero\n"));
 		return 0;
 	}
-	if (!xdr_uint32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_curblocks)) {
+	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_curblocks)) {
 		DEBUG(6,("nfs_quotas: Currentblocks bad or zero\n"));
 		return 0;
 	}
