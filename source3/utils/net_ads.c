@@ -209,7 +209,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	TALLOC_CTX *ctx;
-	char *workgroup;
+	const char *workgroup;
 
 	if (!(ads = ads_startup())) return -1;
 
@@ -656,7 +656,7 @@ int net_ads_join(int argc, const char **argv)
 	char *ou_str;
 	uint32 sec_channel_type = SEC_CHAN_WKSTA;
 	uint32 account_type = UF_WORKSTATION_TRUST_ACCOUNT;
-	char *short_domain_name = NULL;
+	const char *short_domain_name = NULL;
 	TALLOC_CTX *ctx = NULL;
 
 	if (argc > 0) org_unit = argv[0];
