@@ -5,11 +5,13 @@ Subject:	Network Logons and Roving Profiles
 ===========================================================================
 
 A domain and a workgroup are exactly the same thing in terms of network
-browsing.  The difference is that a distributable authentication
-database is associated with a domain, for secure login access to a
-network.  Also, different access rights can be granted to users if they
-successfully authenticate against a domain logon server (samba does not
-support this, but NT server and other systems based on NT server do).
+traffic, except for the client logon sequence. Some kind of distributed
+authentication database is associated with a domain (there are quite a few
+choices) and this adds so much flexibility that many people think of a
+domain as a completely different entity to a workgroup. From Samba's 
+point of view a client connecting to a service presents an authentication
+token, and it if it is valid they have access. Samba does not care what
+mechanism was used to generate that token in the first place.
 
 The SMB client logging on to a domain has an expectation that every other
 server in the domain should accept the same authentication information.
@@ -23,8 +25,10 @@ profiles.  The support is still experimental, but it seems to work.
 The support is also not complete.  Samba does not yet support the sharing
 of the Windows NT-style SAM database with other systems.  However this is
 only one way of having a shared user database: exactly the same effect can
-be achieved by having all servers in a domain share a distributed NIS or
-Kerberos authentication database.
+be achieved by having all servers in a domain share a distributed NIS,
+Kerberos or other authentication database. These other options may or may
+not involve changes to the client software, that depends on the combination
+of client OS, server OS and authentication protocol.
 
 When an SMB client in a domain wishes to logon it broadcast requests for a
 logon server.  The first one to reply gets the job, and validates its
