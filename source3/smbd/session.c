@@ -66,7 +66,6 @@ BOOL session_claim(user_struct *vuser)
 	data.dptr = NULL;
 	data.dsize = 0;
 
-#if WITH_UTMP
 	if (lp_utmp()) {
 		for (i=1;i<MAX_SESSION_ID;i++) {
 			slprintf(keystr, sizeof(keystr)-1, "ID/%d", i);
@@ -84,7 +83,6 @@ BOOL session_claim(user_struct *vuser)
 		slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_UTMP_TEMPLATE, i);
 		tdb_store_flag = TDB_MODIFY;
 	} else
-#endif
 	{
 		slprintf(keystr, sizeof(keystr)-1, "ID/%lu/%u", 
 			 (long unsigned int)sys_getpid(), 
@@ -137,13 +135,11 @@ BOOL session_claim(user_struct *vuser)
 		return False;
 	}
 
-#if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_claim(sessionid.username, sessionid.hostname, 
 			       client_ip,
 			       sessionid.id_str, sessionid.id_num);
 	}
-#endif
 
 	vuser->session_keystr = strdup(keystr);
 	if (!vuser->session_keystr) {
@@ -181,13 +177,11 @@ void session_yield(user_struct *vuser)
 
 	SAFE_FREE(dbuf.dptr);
 
-#if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
 			       client_ip,
 			       sessionid.id_str, sessionid.id_num);
 	}
-#endif
 
 	smb_pam_close_session(sessionid.username, sessionid.id_str, sessionid.hostname);
 
