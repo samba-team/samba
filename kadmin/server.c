@@ -367,9 +367,9 @@ v5_loop (krb5_context context,
 	_krb5_put_int(tmp, reply.length, 4);
 
 	iov[0].iov_base = tmp;
-	iov[0].iov_len = 4;
+	iov[0].iov_len  = 4;
 	iov[1].iov_base = reply.data;
-	iov[1].iov_len = reply.length;
+	iov[1].iov_len  = reply.length;
 	n = writev(fd, iov, 2);
 	krb5_data_free(&reply);
 	if(n < 0)
@@ -387,18 +387,22 @@ handle_v5(krb5_context context,
 	  int fd)
 {
     krb5_error_code ret;
-    u_char tmp[4];
+    u_char version[sizeof(KRB5_SENDAUTH_VERSION)];
     krb5_ticket *ticket;
     krb5_principal server;
     char *client;
     void *kadm_handle;
 
-    krb5_net_read(context, &fd, tmp, len);
-    if(len != sizeof(KRB5_SENDAUTH_VERSION) || 
-       memcmp(tmp, KRB5_SENDAUTH_VERSION, len) != 0)
-	krb5_errx(context, 1, "bad sendauth version %.8s", tmp);
+    if (len != sizeof(KRB5_SENDAUTH_VERSION))
+	krb5_errx(context, 1, "bad sendauth len %d", len);
+    if(krb5_net_read(context, &fd, version, len) != len)
+	krb5_err (context, 1, errno, "reading sendauth version");
+    if(memcmp(version, KRB5_SENDAUTH_VERSION, len) != 0)
+	krb5_errx(context, 1, "bad sendauth version %.8s", version);
 	
-    krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+    ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_parse_name %s", KADM5_ADMIN_SERVICE);
     ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
 			server, KRB5_RECVAUTH_IGNORE_VERSION, 
 			keytab, &ticket);
@@ -406,7 +410,9 @@ handle_v5(krb5_context context,
 	    
     if(ret)
 	krb5_err(context, 1, ret, "krb5_recvauth");
-    krb5_unparse_name(context, ticket->client, &client);
+    ret = krb5_unparse_name(context, ticket->client, &client);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_unparse_name");
     ret = kadm5_init_with_password_ctx(context, 
 				       client, 
 				       NULL,
