@@ -659,7 +659,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		{ "panningheight",	NULL }
 	};
 
-	/* assign at run time to keep non-gcc vompilers happy */
+	/* assign at run time to keep non-gcc compilers happy */
 
 	opt_fields[0].field = &devmode->icmmethod;
 	opt_fields[1].field = &devmode->icmintent;
@@ -1212,6 +1212,26 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 }
 
 /*******************************************************************
+ * make a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_getprinterdataex(SPOOL_Q_GETPRINTERDATAEX *q_u,
+				     const POLICY_HND *handle,
+				     char *keyname, char *valuename, uint32 size)
+{
+        if (q_u == NULL) return False;
+
+        DEBUG(5,("make_spoolss_q_getprinterdataex\n"));
+
+        q_u->handle = *handle;
+	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
+	init_unistr2(&q_u->keyname, keyname, strlen(keyname) + 1);
+        q_u->size = size;
+
+        return True;
+}
+
+/*******************************************************************
  * read a structure.
  * called from spoolss_q_getprinterdata (srv_spoolss.c)
  ********************************************************************/
@@ -1344,7 +1364,7 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	
 	if (UNMARSHALLING(ps) && r_u->size) {
 		r_u->data = prs_alloc_mem(ps, r_u->size);
-		if(r_u->data)
+		if(!r_u->data)
 			return False;
 	}
 
@@ -3346,7 +3366,9 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	 * it is easier to maintain the calculation here and
 	 * not place the burden on the caller to remember.   --jerry
 	 */
-	size += size % 4;
+	if ((size % 4) != 0) {
+		size += 4 - (size % 4);
+	}
 	
 	return size;
 }
@@ -3678,7 +3700,7 @@ uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 	
 	/* uint32(offset) + uint32(length) + length) */
 	size += (size_of_uint32(&p->value_len)*2) + p->value_len;
-	size += (size_of_uint32(&p->data_len)*2) + p->data_len;
+	size += (size_of_uint32(&p->data_len)*2) + p->data_len + (p->data_len%2) ;
 	
 	size += size_of_uint32(&p->type);
 		       
@@ -6067,11 +6089,25 @@ BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND *hnd,
-				   char* value, char* data, uint32 data_size)
+
+BOOL make_spoolss_q_enumprinterdataex(SPOOL_Q_ENUMPRINTERDATAEX *q_u,
+				      const POLICY_HND *hnd, char *key,
+				      uint32 size)
 {
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	q_u->type = REG_SZ;
+	init_unistr2(&q_u->key, key, strlen(key)+1);
+	q_u->size = size;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND *hnd,
+				   char* value, uint32 data_type, char* data, uint32 data_size)
+{
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+	q_u->type = data_type;
 	init_unistr2(&q_u->value, value, strlen(value)+1);
 
 	q_u->max_len = q_u->real_len = data_size;
@@ -6079,6 +6115,24 @@ BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND
 	
 	return True;
 }
+
+/*******************************************************************
+********************************************************************/  
+BOOL make_spoolss_q_setprinterdataex(SPOOL_Q_SETPRINTERDATAEX *q_u, const POLICY_HND *hnd,
+				     char *key, char* value, uint32 data_type, char* data, 
+				     uint32 data_size)
+{
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+	q_u->type = data_type;
+	init_unistr2(&q_u->value, value, strlen(value)+1);
+	init_unistr2(&q_u->key, key, strlen(key)+1);
+
+	q_u->max_len = q_u->real_len = data_size;
+	q_u->data = data;
+	
+	return True;
+}
+
 /*******************************************************************
 ********************************************************************/  
 
@@ -6863,6 +6917,12 @@ BOOL spoolss_io_r_getprinterdataex(char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, pr
 	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
+	if (UNMARSHALLING(ps) && r_u->size) {
+		r_u->data = prs_alloc_mem(ps, r_u->size);
+		if(!r_u->data)
+			return False;
+	}
+
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
 		return False;
 		
@@ -7083,16 +7143,22 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	prs_debug(ps, depth, desc, "spoolss_io_printer_enum_values_ctr");
 	depth++;	
 	
-	if (!prs_uint32("size", ps, depth, &ctr->size))
-		return False;
-	
-	/* offset data begins at 20 bytes per structure * size_of_array.
-	   Don't forget the uint32 at the beginning */
+	/* 
+	 * offset data begins at 20 bytes per structure * size_of_array.
+	 * Don't forget the uint32 at the beginning 
+	 * */
 	
 	current_offset = basic_unit * ctr->size_of_array;
 	
 	/* first loop to write basic enum_value information */
 	
+	if (UNMARSHALLING(ps)) {
+		ctr->values = (PRINTER_ENUM_VALUES *)prs_alloc_mem(
+			ps, ctr->size_of_array * sizeof(PRINTER_ENUM_VALUES));
+		if (!ctr->values)
+			return False;
+	}
+
 	for (i=0; i<ctr->size_of_array; i++) 
 	{
 		valuename_offset = current_offset;
@@ -7106,18 +7172,22 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 			return False;
 	
 		data_offset = ctr->values[i].value_len + valuename_offset;
+		
 		if (!prs_uint32("data_offset", ps, depth, &data_offset))
 			return False;
 
 		if (!prs_uint32("data_len", ps, depth, &ctr->values[i].data_len))
 			return False;
 			
-		current_offset = data_offset + ctr->values[i].data_len - basic_unit;
+		current_offset  = data_offset + ctr->values[i].data_len - basic_unit;
+		/* account for 2 byte alignment */
+		current_offset += (current_offset % 2);
 	}
 
-	/* loop #2 for writing the dynamically size objects
-	   while viewing conversations between Win2k -> Win2k,
-	   4-byte alignment does not seem to matter here   --jerry */
+	/* 
+	 * loop #2 for writing the dynamically size objects; pay 
+	 * attention to 2-byte alignment here....
+	 */
 	
 	for (i=0; i<ctr->size_of_array; i++) 
 	{
@@ -7125,11 +7195,19 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
 			return False;
 		
+		if (UNMARSHALLING(ps)) {
+			ctr->values[i].data = (uint8 *)prs_alloc_mem(
+				ps, ctr->values[i].data_len);
+			if (!ctr->values[i].data)
+				return False;
+		}
+
 		if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
 			return False;
+			
+		if ( !prs_align_uint16(ps) )
+			return False;
 	}
-
-		
 
 	return True;	
 }
@@ -7141,15 +7219,21 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 
 BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth)
 {
+	int data_offset, end_offset;
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdataex");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 		
-	if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
+	if (!prs_uint32("size", ps, depth, &r_u->ctr.size))
 		return False;
 	
+	data_offset = prs_offset(ps);
+
+	if (!prs_set_offset(ps, data_offset + r_u->ctr.size))
+		return False;
+
 	if(!prs_align(ps))
 		return False;
 
@@ -7162,6 +7246,20 @@ BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, 
 	if(!prs_werror("status",     ps, depth, &r_u->status))
 		return False;
 
+	r_u->ctr.size_of_array = r_u->returned;
+
+	end_offset = prs_offset(ps);
+
+	if (!prs_set_offset(ps, data_offset))
+		return False;
+
+	if (r_u->ctr.size)
+		if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
+			return False;
+
+	if (!prs_set_offset(ps, end_offset))
+		return False;
+	
 	return True;
 }
 
@@ -7506,6 +7604,21 @@ BOOL make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u,
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_deleteprinterdataex(SPOOL_Q_DELETEPRINTERDATAEX *q_u, 
+					POLICY_HND *handle, char *key,
+					char *value)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	init_unistr2(&q_u->valuename, value, strlen(value) + 1);
+	init_unistr2(&q_u->keyname, key, strlen(key) + 1);
 
 	return True;
 }

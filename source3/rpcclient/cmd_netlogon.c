@@ -125,11 +125,10 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
                                           group->rids[j], group->attribs[j]);
                         break;
                 }
-                case SAM_DELTA_SAM_STAMP: {
-                        SAM_DELTA_STAMP *stamp = &deltas[i].stamp;
+                case SAM_DELTA_MODIFIED_COUNT: {
+                        SAM_DELTA_MOD_COUNT *mc = &deltas[i].mod_count;
 
-                        printf("sam sequence update: 0x%04x\n",
-                                  stamp->seqnum);
+                        printf("sam sequence update: 0x%04x\n", mc->seqnum);
                         break;
                 }                                  
                 default:
@@ -152,6 +151,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
 	DOM_CRED ret_creds;
+	uint32 neg_flags = 0x000001ff;
 
         if (argc > 2) {
                 fprintf(stderr, "Usage: %s [database_id]\n", argv[0]);
@@ -174,8 +174,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
+        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
@@ -188,7 +187,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
         /* Synchronise sam database */
 
 	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, database_id,
-				       &num_deltas, &hdr_deltas, &deltas);
+				       0, &num_deltas, &hdr_deltas, &deltas);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -213,6 +212,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
         UINT64_S seqnum;
+	uint32 neg_flags = 0x000001ff;
 
         if (argc != 3) {
                 fprintf(stderr, "Usage: %s database_id seqnum\n", argv[0]);
@@ -238,8 +238,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
+        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
@@ -273,12 +272,15 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         int logon_type = NET_LOGON_TYPE;
         char *username, *password;
+	uint32 neg_flags = 0x000001ff;
+	int auth_level = 2;
 
         /* Check arguments */
 
-        if (argc < 3 || argc > 4) {
+        if (argc < 3 || argc > 6) {
                 fprintf(stderr, "Usage: samlogon <username> <password> "
-                        "[logon_type]\n");
+                        "[logon_type] [neg flags] [auth level (2 or 3)]\n"
+			"neg flags being 0x000001ff or 0x6007ffff\n");
                 return NT_STATUS_OK;
         }
 
@@ -288,6 +290,12 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         if (argc == 4)
                 sscanf(argv[3], "%i", &logon_type);
 
+	if (argc == 5)
+                sscanf(argv[4], "%i", &neg_flags);
+
+	if (argc == 6)
+                sscanf(argv[5], "%i", &auth_level);
+
         /* Authenticate ourselves with the domain controller */
 
         if (!secrets_init()) {
@@ -295,14 +303,12 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
                 return result;
         }
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
-                                                  NULL)) {
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
 		fprintf(stderr, "could not fetch trust account password\n");
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
+        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, auth_level);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
@@ -311,8 +317,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 
         /* Perform the sam logon */
 
-        result = cli_netlogon_sam_logon(cli, mem_ctx, username, password,
-                                        logon_type);
+        result = cli_netlogon_sam_logon(cli, mem_ctx, username, password, logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

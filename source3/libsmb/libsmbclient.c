@@ -180,14 +180,13 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 
 static int smbc_errno(SMBCCTX *context, struct cli_state *c)
 {
-	int ret;
-
+	int ret = cli_errno(c);
+	
         if (cli_is_dos_error(c)) {
                 uint8 eclass;
                 uint32 ecode;
 
                 cli_dos_error(c, &eclass, &ecode);
-                ret = cli_errno_from_dos(eclass, ecode);
                 
                 DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n", 
                          (int)eclass, (int)ecode, (int)ecode, ret));
@@ -195,10 +194,9 @@ static int smbc_errno(SMBCCTX *context, struct cli_state *c)
                 NTSTATUS status;
 
                 status = cli_nt_error(c);
-                ret = cli_errno_from_nt(status);
 
                 DEBUG(3,("smbc errno %s -> %d\n",
-                         get_nt_error_msg(status), ret));
+                         nt_errstr(status), ret));
         }
 
 	return ret;
@@ -213,7 +211,7 @@ static int smbc_errno(SMBCCTX *context, struct cli_state *c)
  */
 int smbc_check_server(SMBCCTX * context, SMBCSRV * server) 
 {
-	if ( cli_send_keepalive(&server->cli) == False )
+	if ( send_keepalive(server->cli.fd) == False )
 		return 1;
 
 	/* connection is ok */
@@ -380,7 +378,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		    fstring remote_name;
 		    struct in_addr rem_ip;
 
-		    if (!inet_aton(server, &rem_ip)) {
+		    if ((rem_ip.s_addr=inet_addr(server)) == INADDR_NONE) {
 		      DEBUG(4, ("Could not convert IP address %s to struct in_addr\n", server));
 		      errno = ENOENT;
 		      return NULL;

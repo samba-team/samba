@@ -315,6 +315,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 	got_user_pol = False;
 
+	user_info->user_rid = user_rid;
 	user_info->group_rid = ctr->info.id21->group_rid;
 	user_info->acct_name = unistr2_tdup(mem_ctx, 
 					    &ctr->info.id21->uni_user_name);
@@ -419,7 +420,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
         BOOL got_dom_pol = False, got_group_pol = False;
 
-	DEBUG(3,("rpc: lookup_groupmem rid=%u\n", group_rid));
+	DEBUG(10,("rpc: lookup_groupmem %s rid=%u\n", domain->name, group_rid));
 
 	*num_names = 0;
 
@@ -523,7 +524,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
-	DEBUG(3,("rpc: sequence_number\n"));
+	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));
 
 	*seq = DOM_SEQUENCE_NONE;
 

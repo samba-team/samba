@@ -216,7 +216,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#else
+#ifdef HAVE_SYS_SYSLOG_H
+#include <sys/syslog.h>
+#endif
+#endif
+
 #include <sys/file.h>
 
 #ifdef HAVE_NETINET_TCP_H
@@ -406,18 +414,14 @@
 
 #if HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
-#else
-#undef HAVE_KRB5
 #endif
 
 #if HAVE_GSSAPI_GSSAPI_GENERIC_H
 #include <gssapi/gssapi_generic.h>
-#else
-#undef HAVE_KRB5
 #endif
 
-/* we support ADS if we have krb5 and ldap libs */
-#if defined(HAVE_KRB5) && defined(HAVE_LDAP) && defined(HAVE_GSSAPI)
+/* we support ADS if we want it and have krb5 and ldap libs */
+#if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
 #endif
 
@@ -702,6 +706,7 @@ extern int errno;
 #include "../tdb/spinlock.h"
 #include "../tdb/tdbutil.h"
 #include "talloc.h"
+#include "nt_status.h"
 #include "ads.h"
 #include "interfaces.h"
 #include "hash.h"
@@ -747,6 +752,8 @@ extern int errno;
 
 #include "passdb.h"
 
+#include "sam.h"
+
 #include "session.h"
 
 #include "asn_1.h"
@@ -754,6 +761,8 @@ extern int errno;
 #include "popt.h"
 
 #include "mangle.h"
+
+#include "nsswitch/winbind_client.h"
 
 /*
  * Type for wide character dirent structure.
@@ -793,6 +802,11 @@ struct functable {
 #define UNI_SPACE    0x10
 
 #include "nsswitch/nss.h"
+
+/* forward declaration from printing.h to get around 
+   header file dependencies */
+
+struct printjob;
 
 /***** automatically generated prototypes *****/
 #include "proto.h"
@@ -893,24 +907,6 @@ struct functable {
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
-#endif
-
-#ifdef HAVE_LIBREADLINE
-#  ifdef HAVE_READLINE_READLINE_H
-#    include <readline/readline.h>
-#    ifdef HAVE_READLINE_HISTORY_H
-#      include <readline/history.h>
-#    endif
-#  else
-#    ifdef HAVE_READLINE_H
-#      include <readline.h>
-#      ifdef HAVE_HISTORY_H
-#        include <history.h>
-#      endif
-#    else
-#      undef HAVE_LIBREADLINE
-#    endif
-#  endif
 #endif
 
 #ifndef HAVE_STRDUP

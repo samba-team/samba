@@ -80,17 +80,20 @@
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
 #define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-                               return(ERROR_DOS(ERRDOS,ERRbadfid)); \
-                            else if((fsp)->fd == -1) \
-                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
+			else if((fsp)->fd == -1) \
+				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
-                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
-                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
-								return(CACHED_ERROR(fsp))
+				return(CACHED_ERROR(fsp))
+
+#define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
+				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
 
 /* translates a connection number into a service number */
 #define SNUM(conn)         ((conn)?(conn)->service:-1)
@@ -165,8 +168,7 @@
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
 
-#define SMB_ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
-#define SMB_ROUNDUP_ALLOCATION(s) ((s) ? (SMB_ROUNDUP((SMB_OFF_T)((s)+1), ((SMB_OFF_T)SMB_ROUNDUP_ALLOCATION_SIZE))) : 0 )
+#define SMB_ROUNDUP(x,r) ( ((x)%(r)) ? ( (((x)+(r))/(r))*(r) ) : (x))
 
 /* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
 #define smb_buf(buf) (((char *)(buf)) + smb_size + CVAL(buf,smb_wct)*2)

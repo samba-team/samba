@@ -57,6 +57,8 @@ struct samr_info {
 	DOM_SID sid;
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
+	uint16 acb_mask;
+	BOOL all_machines;
 	DISP_INFO disp_info;
 
 	TALLOC_CTX *mem_ctx;
@@ -68,8 +70,7 @@ struct generic_mapping usr_generic_mapping = {USER_READ, USER_WRITE, USER_EXECUT
 struct generic_mapping grp_generic_mapping = {GROUP_READ, GROUP_WRITE, GROUP_EXECUTE, GROUP_ALL_ACCESS};
 struct generic_mapping ali_generic_mapping = {ALIAS_READ, ALIAS_WRITE, ALIAS_EXECUTE, ALIAS_ALL_ACCESS};
 
-static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *d_size);
-
+static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size);
 
 /*******************************************************************
  Checks if access to an object should be granted, and returns that
@@ -151,14 +152,13 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	return info;
 }
 
+
 /*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
-static void free_samr_db(struct samr_info *info)
+static void free_samr_users(struct samr_info *info) 
 {
 	int i;
-
-	/* Groups are talloced */
 
 	if (info->disp_info.user_dbloaded){
 		for (i=0; i<info->disp_info.num_user_account; i++) {
@@ -166,11 +166,22 @@ static void free_samr_db(struct samr_info *info)
 			pdb_free_sam(&info->disp_info.disp_user_info[i].sam);
 		}
 	}
-
 	info->disp_info.user_dbloaded=False;
+	info->disp_info.num_user_account=0;
+}
+
+
+/*******************************************************************
+ Function to free the per handle data.
+ ********************************************************************/
+static void free_samr_db(struct samr_info *info)
+{
+	/* Groups are talloced */
+
+	free_samr_users(info);
+
 	info->disp_info.group_dbloaded=False;
 	info->disp_info.num_group_account=0;
-	info->disp_info.num_user_account=0;
 }
 
 
@@ -199,7 +210,7 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 }
 
 
-static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
+static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOOL all_machines)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	DISP_USER_INFO *pwd_array = NULL;
@@ -209,10 +220,14 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 	DEBUG(10,("load_sampwd_entries\n"));
 
 	/* if the snapshoot is already loaded, return */
-	if (info->disp_info.user_dbloaded==True) {
+	if ((info->disp_info.user_dbloaded==True) 
+	    && (info->acb_mask == acb_mask) 
+	    && (info->all_machines == all_machines)) {
 		DEBUG(10,("load_sampwd_entries: already in memory\n"));
 		return NT_STATUS_OK;
 	}
+
+	free_samr_users(info);
 
 	if (!pdb_setsampwent(False)) {
 		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
@@ -222,10 +237,19 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 	for (; (NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, &pwd))) 
 		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
 		
-		if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask)) {
-			pdb_free_sam(&pwd);
-			DEBUG(5,(" acb_mask %x reject\n", acb_mask));
-			continue;
+		if (all_machines) {
+			if (!((pdb_get_acct_ctrl(pwd) & ACB_WSTRUST) 
+			      || (pdb_get_acct_ctrl(pwd) & ACB_SVRTRUST))) {
+				DEBUG(5,("load_sampwd_entries: '%s' is not a machine account - ACB: %x - skipping\n", pdb_get_username(pwd), acb_mask));
+				pdb_free_sam(&pwd);
+				continue;
+			}
+		} else {
+			if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask)) {
+				pdb_free_sam(&pwd);
+				DEBUG(5,(" acb_mask %x reject\n", acb_mask));
+				continue;
+			}
 		}
 
 		/* Realloc some memory for the array of ptr to the SAM_ACCOUNT structs */
@@ -253,6 +277,8 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 
 	/* the snapshoot is in memory, we're ready to enumerate fast */
 
+	info->acb_mask = acb_mask;
+	info->all_machines = all_machines;
 	info->disp_info.user_dbloaded=True;
 
 	DEBUG(12,("load_sampwd_entries: done\n"));
@@ -404,46 +430,6 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 	 */
 
 	return r_u->status;
-}
-
-
-/*******************************************************************
- samr_make_sam_obj_sd
- ********************************************************************/
-
-static NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
-{
-	extern DOM_SID global_sid_World;
-	DOM_SID adm_sid;
-	DOM_SID act_sid;
-
-	SEC_ACE ace[3];
-	SEC_ACCESS mask;
-
-	SEC_ACL *psa = NULL;
-
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-
-	/*basic access for every one*/
-	init_sec_access(&mask, SAMR_EXECUTE | SAMR_READ);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/*full access for builtin aliases Administrators and Account Operators*/
-	init_sec_access(&mask, SAMR_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -787,7 +773,7 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	r_u->status=load_sampwd_entries(info, q_u->acb_mask);
+	r_u->status=load_sampwd_entries(info, q_u->acb_mask, False);
 	unbecome_root();
 	
 	if (!NT_STATUS_IS_OK(r_u->status))
@@ -1058,8 +1044,6 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 /*******************************************************************
  samr_reply_enum_dom_groups
- Only reply with one group - domain admins. This must be fixed for
- a real PDC. JRA.
  ********************************************************************/
 
 NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
@@ -1143,7 +1127,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 {
 	struct samr_info *info = NULL;
 	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
-	uint16 acb_mask;
 	
 	uint32 max_entries=q_u->max_entries;
 	uint32 enum_context=q_u->start_idx;
@@ -1195,19 +1178,13 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	 */
 
 	/* Get what we need from the password database */
-
-	if (q_u->switch_level==2)
-		acb_mask = ACB_WSTRUST;
-	else
-		acb_mask = ACB_NORMAL;
-
-	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
 		case 0x1:
 		case 0x2:
 		case 0x4:
 			become_root();		
-			r_u->status=load_sampwd_entries(info, acb_mask);
+			/* Level 2 is for all machines, otherwise only 'normal' users */
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL, q_u->switch_level==2);
 			unbecome_root();
 			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
@@ -2126,7 +2103,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			break;
 		case 0x02:
 			become_root();		
-			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL, False);
 			unbecome_root();
 			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
@@ -3880,6 +3857,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	struct samr_info *info;
 	PRIVILEGE_SET priv_set;
 	uint32 acc_granted;
+	gid_t gid;
 
 	init_privilege(&priv_set);
 
@@ -3903,10 +3881,11 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 		return NT_STATUS_GROUP_EXISTS;
 
 	/* we can create the UNIX group */
-	smb_create_group(name);
+	if (smb_create_group(name, &gid) != 0)
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
-	if ((grp=getgrnam(name)) == NULL)
+	if ((grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
@@ -3943,6 +3922,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	struct samr_info *info;
 	PRIVILEGE_SET priv_set;
 	uint32 acc_granted;
+	gid_t gid;
 
 	init_privilege(&priv_set);
 
@@ -3966,10 +3946,11 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		return NT_STATUS_GROUP_EXISTS;
 
 	/* we can create the UNIX group */
-	smb_create_group(name);
+	if (smb_create_group(name, &gid) != 0)
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
-	if ((grp=getgrnam(name)) == NULL)
+	if ((grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
@@ -4095,9 +4076,9 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 }
 
 /*********************************************************************
- _samr_set_groupinfo
+ _samr_set_aliasinfo
  
- update a domain group's comment.
+ update an alias's comment.
 *********************************************************************/
 
 NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_SET_ALIASINFO *r_u)
@@ -4290,10 +4271,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			break;
 		case 0x02:
 			become_root();		
-			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL, False);
 			unbecome_root();
 			if (!NT_STATUS_IS_OK(r_u->status)) {
-				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
+				DEBUG(5, ("_samr_unknown_2e: load_sampwd_entries failed\n"));
 				return r_u->status;
 			}
 			num_users=info->disp_info.num_user_account;
@@ -4301,7 +4282,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			
 			r_u->status=load_group_domain_entries(info, get_global_sam_sid());
 			if (NT_STATUS_IS_ERR(r_u->status)) {
-				DEBUG(5, ("_samr_query_dispinfo: load_group_domain_entries failed\n"));
+				DEBUG(5, ("_samr_unknown_2e: load_group_domain_entries failed\n"));
 				return r_u->status;
 			}
 			num_groups=info->disp_info.num_group_account;

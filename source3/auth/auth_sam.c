@@ -106,7 +106,10 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 	client_key_data = data_blob(ntv2_response.data+16, ntv2_response.length-16);
 	memcpy(client_response, ntv2_response.data, sizeof(client_response));
 
-	ntv2_owf_gen(part_passwd, user, domain, kr);
+	if (!ntv2_owf_gen(part_passwd, user, domain, kr)) {
+		return False;
+	}
+
 	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, value_from_encryption);
 	if (user_sess_key != NULL)
 	{
@@ -233,17 +236,17 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			return NT_STATUS_OK;
 		} else {
 			if (lp_ntlm_auth()) {				
-				/* Apparently NT accepts NT responses in the LM feild
-				   - I think this is related to Win9X pass-though authenticaion
+				/* Apparently NT accepts NT responses in the LM field
+				   - I think this is related to Win9X pass-though authentication
 				*/
-				DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM feild\n"));
+				DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
 				if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
 							 nt_pw, auth_context->challenge,
 							 user_sess_key)) 
 				{
 					return NT_STATUS_OK;
 				} else {
-					DEBUG(3,("sam_password_ok: NT MD4 password in LM feild failed for user %s\n",pdb_get_username(sampass)));
+					DEBUG(3,("sam_password_ok: NT MD4 password in LM field failed for user %s\n",pdb_get_username(sampass)));
 					return NT_STATUS_WRONG_PASSWORD;
 				}
 			}
@@ -403,9 +406,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	if (!make_server_info_sam(server_info, sampass)) {		
-		DEBUG(0,("failed to malloc memory for server_info\n"));
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(nt_status = make_server_info_sam(server_info, sampass))) {		
+		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
+		return nt_status;
 	}
 
 	lm_hash = pdb_get_lanman_passwd((*server_info)->sam_account);

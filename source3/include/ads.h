@@ -24,7 +24,8 @@ typedef struct {
 		char *password;
 		char *user_name;
 		char *kdc_server;
-		int no_bind;
+		unsigned flags;
+		int time_offset;
 	} auth;
 
 	/* info derived from the servers config */
@@ -32,6 +33,7 @@ typedef struct {
 		char *realm;
 		char *bind_path;
 		char *ldap_server_name;
+		time_t current_time;
 	} config;
 } ADS_STRUCT;
 
@@ -92,11 +94,14 @@ typedef struct {
 
 /* there are 4 possible types of errors the ads subsystem can produce */
 enum ads_error_type {ADS_ERROR_KRB5, ADS_ERROR_GSS, 
-		     ADS_ERROR_LDAP, ADS_ERROR_SYSTEM};
+		     ADS_ERROR_LDAP, ADS_ERROR_SYSTEM, ADS_ERROR_NT};
 
 typedef struct {
 	enum ads_error_type error_type;
-	int rc;
+	union err_state{		
+		int rc;
+		NTSTATUS nt_status;
+	} err;
 	/* For error_type = ADS_ERROR_GSS minor_status describe GSS API error */
 	/* Where rc represents major_status of GSS API error */
 	int minor_status;
@@ -109,12 +114,14 @@ typedef void **ADS_MODLIST;
 #endif
 
 /* macros to simplify error returning */
-#define ADS_ERROR(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0)
+#define ADS_ERROR(rc) ADS_ERROR_LDAP(rc)
+#define ADS_ERROR_LDAP(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0)
 #define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc?rc:EINVAL, 0)
 #define ADS_ERROR_KRB5(rc) ads_build_error(ADS_ERROR_KRB5, rc, 0)
 #define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor)
+#define ADS_ERROR_NT(rc) ads_build_nt_error(ADS_ERROR_NT,rc)
 
-#define ADS_ERR_OK(status) ((status).rc == 0)
+#define ADS_ERR_OK(status) ((status.error_type == ADS_ERROR_NT) ? NT_STATUS_IS_OK(status.err.nt_status):(status.err.rc == 0))
 #define ADS_SUCCESS ADS_ERROR(0)
 
 /* time between reconnect attempts */
@@ -127,24 +134,102 @@ typedef void **ADS_MODLIST;
 #define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
 #define ADS_NO_REFERRALS_OID "1.2.840.113556.1.4.1339"
 #define ADS_SERVER_SORT_OID "1.2.840.113556.1.4.473"
+#define ADS_PERMIT_MODIFY_OID "1.2.840.113556.1.4.1413"
 
-#define UF_DONT_EXPIRE_PASSWD           0x10000
-#define UF_MNS_LOGON_ACCOUNT            0x20000
-#define UF_SMARTCARD_REQUIRED           0x40000
-#define UF_TRUSTED_FOR_DELEGATION       0x80000
-#define UF_NOT_DELEGATED               0x100000
-#define UF_USE_DES_KEY_ONLY            0x200000
-#define UF_DONT_REQUIRE_PREAUTH        0x400000
+/* UserFlags for userAccountControl */
+#define UF_SCRIPT	 			0x00000001
+#define UF_ACCOUNTDISABLE			0x00000002
+#define UF_UNUSED_1	 			0x00000004
+#define UF_HOMEDIR_REQUIRED			0x00000008
 
-#define UF_TEMP_DUPLICATE_ACCOUNT       0x0100
-#define UF_NORMAL_ACCOUNT               0x0200
-#define UF_INTERDOMAIN_TRUST_ACCOUNT    0x0800
-#define UF_WORKSTATION_TRUST_ACCOUNT    0x1000
-#define UF_SERVER_TRUST_ACCOUNT         0x2000
+#define UF_LOCKOUT	 			0x00000010
+#define UF_PASSWD_NOTREQD 			0x00000020
+#define UF_PASSWD_CANT_CHANGE 			0x00000040
+#define UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED	0x00000080
 
-/* account types */
-#define ATYPE_GROUP               0x10000000
-#define ATYPE_USER                0x30000000
+#define UF_TEMP_DUPLICATE_ACCOUNT       	0x00000100
+#define UF_NORMAL_ACCOUNT               	0x00000200
+#define UF_UNUSED_2	 			0x00000400
+#define UF_INTERDOMAIN_TRUST_ACCOUNT    	0x00000800
+
+#define UF_WORKSTATION_TRUST_ACCOUNT    	0x00001000
+#define UF_SERVER_TRUST_ACCOUNT         	0x00002000
+#define UF_UNUSED_3	 			0x00004000
+#define UF_UNUSED_4	 			0x00008000
+
+#define UF_DONT_EXPIRE_PASSWD			0x00010000
+#define UF_MNS_LOGON_ACCOUNT			0x00020000
+#define UF_SMARTCARD_REQUIRED			0x00040000
+#define UF_TRUSTED_FOR_DELEGATION		0x00080000
+
+#define UF_NOT_DELEGATED			0x00100000
+#define UF_USE_DES_KEY_ONLY			0x00200000
+#define UF_DONT_REQUIRE_PREAUTH			0x00400000
+#define UF_UNUSED_5				0x00800000
+
+#define UF_UNUSED_6				0x01000000
+#define UF_UNUSED_7				0x02000000
+#define UF_UNUSED_8				0x04000000
+#define UF_UNUSED_9				0x08000000
+
+#define UF_UNUSED_10				0x10000000
+#define UF_UNUSED_11				0x20000000
+#define UF_UNUSED_12				0x40000000
+#define UF_UNUSED_13				0x80000000
+
+#define UF_MACHINE_ACCOUNT_MASK (\
+		UF_INTERDOMAIN_TRUST_ACCOUNT |\
+		UF_WORKSTATION_TRUST_ACCOUNT |\
+		UF_SERVER_TRUST_ACCOUNT \
+		)
+
+#define UF_ACCOUNT_TYPE_MASK (\
+		UF_TEMP_DUPLICATE_ACCOUNT |\
+		UF_NORMAL_ACCOUNT |\
+		UF_INTERDOMAIN_TRUST_ACCOUNT |\
+		UF_WORKSTATION_TRUST_ACCOUNT |\
+		UF_SERVER_TRUST_ACCOUNT \
+                )
+
+#define UF_SETTABLE_BITS (\
+		UF_SCRIPT |\
+		UF_ACCOUNTDISABLE |\
+		UF_HOMEDIR_REQUIRED  |\
+		UF_LOCKOUT |\
+		UF_PASSWD_NOTREQD |\
+		UF_PASSWD_CANT_CHANGE |\
+		UF_ACCOUNT_TYPE_MASK | \
+		UF_DONT_EXPIRE_PASSWD | \
+		UF_MNS_LOGON_ACCOUNT |\
+		UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED |\
+		UF_SMARTCARD_REQUIRED |\
+		UF_TRUSTED_FOR_DELEGATION |\
+		UF_NOT_DELEGATED |\
+		UF_USE_DES_KEY_ONLY  |\
+		UF_DONT_REQUIRE_PREAUTH \
+		)
+
+/* sAMAccountType */
+#define ATYPE_NORMAL_ACCOUNT			0x30000000 /* 805306368 */
+#define ATYPE_WORKSTATION_TRUST			0x30000001 /* 805306369 */
+#define ATYPE_INTERDOMAIN_TRUST			0x30000002 /* 805306370 */ 
+#define ATYPE_SECURITY_GLOBAL_GROUP		0x10000000 /* 268435456 */
+#define ATYPE_DISTRIBUTION_GLOBAL_GROUP		0x10000001 /* 268435457 */
+#define ATYPE_DISTRIBUTION_UNIVERSAL_GROUP 	ATYPE_DISTRIBUTION_GLOBAL_GROUP
+#define ATYPE_SECURITY_LOCAL_GROUP		0x20000000 /* 536870912 */
+#define ATYPE_DISTRIBUTION_LOCAL_GROUP		0x20000001 /* 536870913 */
+
+#define ATYPE_ACCOUNT		ATYPE_NORMAL_ACCOUNT 		/* 0x30000000 805306368 */
+#define ATYPE_GLOBAL_GROUP	ATYPE_SECURITY_GLOBAL_GROUP 	/* 0x10000000 268435456 */
+#define ATYPE_LOCAL_GROUP	ATYPE_SECURITY_LOCAL_GROUP 	/* 0x20000000 536870912 */
+
+/* groupType */
+#define GTYPE_SECURITY_BUILTIN_LOCAL_GROUP	0x80000005	/* -2147483643 */
+#define GTYPE_SECURITY_DOMAIN_LOCAL_GROUP	0x80000004	/* -2147483644 */
+#define GTYPE_SECURITY_GLOBAL_GROUP		0x80000002	/* -2147483646 */
+#define GTYPE_DISTRIBUTION_GLOBAL_GROUP		0x00000002	/* 2 */
+#define GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP	0x00000004	/* 4 */
+#define GTYPE_DISTRIBUTION_UNIVERSAL_GROUP	0x00000008	/* 8 */
 
 /* Mailslot or cldap getdcname response flags */
 #define ADS_PDC            0x00000001  /* DC is PDC */
@@ -167,3 +252,8 @@ typedef void **ADS_MODLIST;
 /* DomainCntrollerAddressType */
 #define ADS_INET_ADDRESS      0x00000001
 #define ADS_NETBIOS_ADDRESS   0x00000002
+
+
+/* ads auth control flags */
+#define ADS_AUTH_DISABLE_KERBEROS 1
+#define ADS_AUTH_NO_BIND 2

@@ -218,6 +218,16 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	pull_ucs2(NULL, dest, str->buffer, maxlen, str->uni_str_len*2, STR_NOALIGN);
 }
 
+/*******************************************************************
+give a static string for displaying a UNISTR2
+********************************************************************/
+const char *unistr2_static(const UNISTR2 *str)
+{
+	static pstring ret;
+	unistr2_to_ascii(ret, str, sizeof(ret));
+	return ret;
+}
+
 
 /*******************************************************************
  duplicate a UNISTR2 string into a null terminated char*

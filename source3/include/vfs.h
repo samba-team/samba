@@ -44,17 +44,18 @@
 /* Changed to version 2 for CIFS UNIX extensions (mknod and link added). JRA. */
 /* Changed to version 3 for POSIX acl extensions. JRA. */
 /* Changed to version 4 for cascaded VFS interface. Alexander Bokovoy. */
+/* Changed to version 5 for sendfile addition. JRA. */
 #define SMB_VFS_INTERFACE_VERSION 5
 
 
 /* Version of supported cascaded interface backward copmatibility.
-   (version 4 corresponds to SMB_VFS_INTERFACE_VERSION 4)
+   (version 5 corresponds to SMB_VFS_INTERFACE_VERSION 5)
    It is used in vfs_init_custom() to detect VFS modules which conform to cascaded 
    VFS interface but implement elder version than current version of Samba uses.
    This allows to use old modules with new VFS interface as far as combined VFS operation
    set is coherent (will be in most cases). 
 */
-#define SMB_VFS_INTERFACE_CASCADED 4
+#define SMB_VFS_INTERFACE_CASCADED 5
 
 /*
     Each VFS module must provide following global functions:
@@ -116,6 +117,7 @@ struct vfs_ops {
 	ssize_t (*read)(struct files_struct *fsp, int fd, void *data, size_t n);
 	ssize_t (*write)(struct files_struct *fsp, int fd, const void *data, size_t n);
 	SMB_OFF_T (*lseek)(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
+	ssize_t (*sendfile)(int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 	int (*rename)(struct connection_struct *conn, const char *old, const char *new);
 	int (*fsync)(struct files_struct *fsp, int fd);
 	int (*stat)(struct connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf);
@@ -210,6 +212,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_READ,
 	SMB_VFS_OP_WRITE,
 	SMB_VFS_OP_LSEEK,
+	SMB_VFS_OP_SENDFILE,
 	SMB_VFS_OP_RENAME,
 	SMB_VFS_OP_FSYNC,
 	SMB_VFS_OP_STAT,

@@ -160,12 +160,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	ads_destroy(&ads);
 
 	/* the password is good - let them in */
-	pw = smb_getpwnam(user,False);
+	pw = Get_Pwnam(user);
 	if (!pw && !strstr(user, lp_winbind_separator())) {
 		char *user2;
 		/* try it with a winbind domain prefix */
 		asprintf(&user2, "%s%s%s", lp_workgroup(), lp_winbind_separator(), user);
-		pw = smb_getpwnam(user2,False);
+		pw = Get_Pwnam(user2);
 		if (pw) {
 			free(user);
 			user = user2;
@@ -177,9 +177,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
 	}
 
-	if (!make_server_info_pw(&server_info,pw)) {
+	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {
 		DEBUG(1,("make_server_info_from_pw failed!\n"));
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ERROR_NT(ret);
 	}
 	
 	sess_vuid = register_vuid(server_info, user);
@@ -294,8 +294,6 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	DEBUG(3,("Got neg_flags=0x%08x\n", neg_flags));
-
 	debug_ntlmssp_flags(neg_flags);
 
 	if (ntlmssp_auth_context) {
@@ -324,12 +322,12 @@ static int reply_spnego_negotiate(connection_struct *conn,
 			  "U",
 			  lp_workgroup());
 
-		fstrcpy(dnsdomname, lp_realm());
+		fstrcpy(dnsdomname, (SEC_ADS == lp_security())?lp_realm():"");
 		strlower(dnsdomname);
 
 		fstrcpy(dnsname, global_myname);
 		fstrcat(dnsname, ".");
-		fstrcat(dnsname, lp_realm());
+		fstrcat(dnsname, dnsdomname);
 		strlower(dnsname);
 
 		msrpc_gen(&struct_blob, "aaaaa",
@@ -441,14 +439,14 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		auth_flags |= AUTH_FLAG_NTLM_RESP;
 	} else if (nthash.length > 24) {
 		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
-	}
+	};
 
-	if (!make_user_info_map(&user_info, 
-				user, workgroup, 
-				machine, 
-				lmhash, nthash,
-				plaintext_password, 
-				auth_flags, True)) {
+	nt_status = make_user_info_map(&user_info, user, workgroup, machine, 
+	                               lmhash, nthash, plaintext_password, 
+	                               auth_flags, True);
+
+	/* it looks a bit weird, but this function returns int type... */
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
@@ -623,7 +621,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	NTSTATUS nt_status;
 
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
-
+	
 	START_PROFILE(SMBsesssetupX);
 
 	ZERO_STRUCT(lm_resp);
@@ -736,7 +734,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	
 	/* don't allow for weird usernames or domains */
 	alpha_strcpy(user, user, ". _-$", sizeof(user));
-	alpha_strcpy(domain, domain, ". _-", sizeof(domain));
+	alpha_strcpy(domain, domain, ". _-@", sizeof(domain));
 	if (strstr(user, "..") || strstr(domain,"..")) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
@@ -778,11 +776,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		nt_status = check_guest_password(&server_info);
 
 	} else if (doencrypt) {
-		if (!make_user_info_for_reply_enc(&user_info, 
-						  user, domain, 
-						  lm_resp, nt_resp)) {
-			nt_status = NT_STATUS_NO_MEMORY;
-		} else {
+		nt_status = make_user_info_for_reply_enc(&user_info, user, domain,
+		                                         lm_resp, nt_resp);
+		if (NT_STATUS_IS_OK(nt_status)) {
 			nt_status = negprot_global_auth_context->check_ntlm_password(negprot_global_auth_context, 
 										     user_info, 
 										     &server_info);

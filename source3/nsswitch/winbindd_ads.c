@@ -143,7 +143,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		/* if we get ECONNREFUSED then it might be a NT4
                    server, fall back to MSRPC */
 		if (status.error_type == ADS_ERROR_SYSTEM &&
-		    status.rc == ECONNREFUSED) {
+		    status.err.rc == ECONNREFUSED) {
 			DEBUG(1,("Trying MSRPC methods\n"));
 			domain->methods = &msrpc_methods;
 		}
@@ -170,9 +170,9 @@ static void sid_from_rid(struct winbindd_domain *domain, uint32 rid, DOM_SID *si
 static enum SID_NAME_USE ads_atype_map(uint32 atype)
 {
 	switch (atype & 0xF0000000) {
-	case ATYPE_GROUP:
+	case ATYPE_GLOBAL_GROUP:
 		return SID_NAME_DOM_GRP;
-	case ATYPE_USER:
+	case ATYPE_ACCOUNT:
 		return SID_NAME_USER;
 	default:
 		DEBUG(1,("hmm, need to map account type 0x%x\n", atype));
@@ -339,7 +339,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", 
 				     &account_type) ||
-		    !(account_type & ATYPE_GROUP)) continue;
+		    !(account_type & ATYPE_GLOBAL_GROUP)) continue;
 
 		name = pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");

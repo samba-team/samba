@@ -276,9 +276,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 
-	uid_t uid;
-	uid_t gid;
-
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
 	memset(p->user_name, '\0', sizeof(p->user_name));
@@ -427,27 +424,30 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 	
 	memcpy(p->session_key, server_info->session_key, sizeof(p->session_key));
 
-	uid = pdb_get_uid(server_info->sam_account);
-	gid = pdb_get_gid(server_info->sam_account);
-
-	p->pipe_user.uid = uid;
-	p->pipe_user.gid = gid;
-
-	/* Set up pipe user group membership. */
-	initialise_groups(p->pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
-	get_current_groups(p->pipe_user.gid, &p->pipe_user.ngroups, &p->pipe_user.groups);
+	p->pipe_user.uid = pdb_get_uid(server_info->sam_account);
+	p->pipe_user.gid = pdb_get_gid(server_info->sam_account);
+	
+	p->pipe_user.ngroups = server_info->n_groups;
+	if (p->pipe_user.ngroups) {
+		if (!(p->pipe_user.groups = memdup(server_info->groups, sizeof(gid_t) * p->pipe_user.ngroups))) {
+			DEBUG(0,("failed to memdup group list to p->pipe_user.groups\n"));
+			free_server_info(&server_info);
+			return False;
+		}
+	}
 
 	if (server_info->ptok)
-		add_supplementary_nt_login_groups(&p->pipe_user.ngroups, &p->pipe_user.groups, &server_info->ptok);
-
-	/* Create an NT_USER_TOKEN struct for this user. */
-	p->pipe_user.nt_user_token = create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
-						     p->pipe_user.ngroups, p->pipe_user.groups,
-						     server_info->guest, server_info->ptok);
+		p->pipe_user.nt_user_token = dup_nt_token(server_info->ptok);
+	else {
+		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
+		p->pipe_user.nt_user_token = NULL;
+		free_server_info(&server_info);
+		return False;
+	}
 
 	p->ntlmssp_auth_validated = True;
 
-	pdb_free_sam(&server_info->sam_account);
+	free_server_info(&server_info);
 	return True;
 }
 

@@ -59,4 +59,12 @@
 #define MSG_SMB_SAM_SYNC     3003
 #define MSG_SMB_SAM_REPL     3004
 
+/* Flags to classify messages - used in message_send_all() */
+/* Sender will filter by flag. */
+
+#define FLAG_MSG_GENERAL 	0x0001
+#define FLAG_MSG_SMBD		0x0002
+#define FLAG_MSG_NMBD		0x0004
+#define FLAG_MSG_PRINTING	0x0008
+
 #endif

@@ -20,9 +20,6 @@
 
 #ifndef _SMB_ACLS_H
 #define _SMB_ACLS_H
-
-#include "includes.h"
-
 #if defined(HAVE_POSIX_ACLS)
 
 /* This is an identity mapping (just remove the SMB_). */

@@ -139,18 +139,31 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	 * as we always opened files read-write in that release. JRA.
 	 */
 
-	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC))
+	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC)) {
+		DEBUG(10,("open_file: truncate requested on read-only open for file %s\n",fname ));
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
-
-	/*
-	 * We can't actually truncate here as the file may be locked.
-	 * open_file_shared will take care of the truncate later. JRA.
-	 */
-
-	local_flags &= ~O_TRUNC;
+	}
 
 	if ((desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
-			(local_flags & O_CREAT)) {
+			(local_flags & O_CREAT) || ((local_flags & O_TRUNC) == O_TRUNC) ) {
+
+		/*
+		 * We can't actually truncate here as the file may be locked.
+		 * open_file_shared will take care of the truncate later. JRA.
+		 */
+
+		local_flags &= ~O_TRUNC;
+
+#if defined(O_NONBLOCK) && defined(S_ISFIFO)
+		/*
+		 * We would block on opening a FIFO with no one else on the
+		 * other end. Do what we used to do and add O_NONBLOCK to the
+		 * open flags. JRA.
+		 */
+
+		if (VALID_STAT(*psbuf) && S_ISFIFO(psbuf->st_mode))
+			local_flags |= O_NONBLOCK;
+#endif
 
 		/* actually do the open */
 		fsp->fd = fd_open(conn, fname, local_flags, mode);
@@ -679,6 +692,31 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 }
 
 
+static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t existing_mode, mode_t new_mode)
+{
+	uint32 old_dos_mode, new_dos_mode;
+	SMB_STRUCT_STAT sbuf;
+
+	ZERO_STRUCT(sbuf);
+
+	sbuf.st_mode = existing_mode;
+	old_dos_mode = dos_mode(conn, path, &sbuf);
+
+	sbuf.st_mode = new_mode;
+	new_dos_mode = dos_mode(conn, path, &sbuf);
+
+	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
+	if (lp_map_system(SNUM(conn))) {
+		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) != (new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
+			return False;
+	}
+	if (lp_map_hidden(SNUM(conn))) {
+		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) != (new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
+			return False;
+	}
+	return True;
+}
+
 /****************************************************************************
  Open a file with a share mode. On output from this open we are guarenteeing
  that 
@@ -772,6 +810,17 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	if (CAN_WRITE(conn) && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE))
 		flags2 |= O_TRUNC;
+
+	/* We only care about matching attributes on file exists and truncate. */
+	if (file_existed && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)) {
+		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode)) {
+			DEBUG(5,("open_file_shared: attributes missmatch for file %s (0%o, 0%o)\n",
+						fname, psbuf->st_mode, mode ));
+			file_free(fsp);
+			errno = EACCES;
+			return NULL;
+		}
+	}
 
 	if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL)
 		flags2 |= O_EXCL;

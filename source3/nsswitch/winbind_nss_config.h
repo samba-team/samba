@@ -38,6 +38,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -56,6 +60,14 @@
 
 #ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#else
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
 #endif
 
 #include <sys/types.h>

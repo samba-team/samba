@@ -4,7 +4,8 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  
+ *  Copyright (C) Jean François Micouleau           2002.
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -552,8 +553,6 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 
 BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth)
 {
-	int old_align;
-
 	if (q_c == NULL)
 		return False;
 
@@ -571,15 +570,8 @@ BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int dep
 	if(!smb_io_unistr2("", &q_c->uni_logon_clnt, True, ps, depth)) /* logon client unicode string */
 		return False;
 
-	old_align = ps->align;
-	ps->align = 0;
-	/* client challenge is _not_ aligned after the unicode strings */
-	if(!smb_io_chal("", &q_c->clnt_chal, ps, depth)) {
-		/* client challenge */
-		ps->align = old_align;
+	if(!smb_io_chal("", &q_c->clnt_chal, ps, depth))
 		return False;
-	}
-	ps->align = old_align;
 
 	return True;
 }
@@ -615,7 +607,6 @@ BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int dept
 
 BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
 {
-	int old_align;
 	if (q_a == NULL)
 		return False;
 
@@ -627,15 +618,8 @@ BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
     
 	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
 		return False;
-	/* client challenge is _not_ aligned */
-	old_align = ps->align;
-	ps->align = 0;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
-		/* client-calculated credentials */
-		ps->align = old_align;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
 		return False;
-	}
-	ps->align = old_align;
 
 	return True;
 }
@@ -687,7 +671,6 @@ void init_q_auth_2(NET_Q_AUTH_2 *q_a,
 
 BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
 {
-	int old_align;
 	if (q_a == NULL)
 		return False;
 
@@ -699,15 +682,8 @@ BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
     
 	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
 		return False;
-	/* client challenge is _not_ aligned */
-	old_align = ps->align;
-	ps->align = 0;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
-		/* client-calculated credentials */
-		ps->align = old_align;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
 		return False;
-	}
-	ps->align = old_align;
 	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
 		return False;
 
@@ -732,6 +708,76 @@ BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 	if(!smb_io_chal("", &r_a->srv_chal, ps, depth)) /* server challenge */
 		return False;
 	if(!net_io_neg_flags("", &r_a->srv_flgs, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_a->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits a NET_Q_AUTH_3 struct.
+********************************************************************/
+
+void init_q_auth_3(NET_Q_AUTH_3 *q_a,
+		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
+		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
+{
+	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
+
+	init_log_info(&q_a->clnt_id, logon_srv, acct_name, sec_chan, comp_name);
+	memcpy(q_a->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
+	q_a->clnt_flgs.neg_flags = clnt_flgs;
+
+	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_q_auth_3(char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
+{
+	if (q_a == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_auth_3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+    
+	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
+		return False;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
+		return False;
+	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_r_auth_3(char *desc, NET_R_AUTH_3 *r_a, prs_struct *ps, int depth)
+{
+	if (r_a == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_auth_3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+    
+	if(!smb_io_chal("srv_chal", &r_a->srv_chal, ps, depth)) /* server challenge */
+		return False;
+	if(!net_io_neg_flags("srv_flgs", &r_a->srv_flgs, ps, depth))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &r_a->unknown))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_a->status))
@@ -1611,7 +1657,8 @@ makes a NET_Q_SAM_SYNC structure.
 ********************************************************************/
 BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
                          const char *cli_name, DOM_CRED *cli_creds, 
-                         DOM_CRED *ret_creds, uint32 database_id)
+                         DOM_CRED *ret_creds, uint32 database_id, 
+			 uint32 next_rid)
 {
 	DEBUG(5, ("init_q_sam_sync\n"));
 
@@ -1628,7 +1675,7 @@ BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
 
 	q_s->database_id = database_id;
 	q_s->restart_state = 0;
-	q_s->sync_context = 0;
+	q_s->sync_context = next_rid;
 	q_s->max_size = 0xffff;
 
 	return True;
@@ -1699,7 +1746,7 @@ static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR * delta,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_stamp(char *desc, SAM_DELTA_STAMP *info,
+static BOOL net_io_sam_delta_mod_count(char *desc, SAM_DELTA_MOD_COUNT *info,
                                    prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_delta_stamp");
@@ -2306,88 +2353,84 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_dom_info(char *desc, SAM_DELTA_DOM *info,
+static BOOL net_io_sam_policy_info(char *desc, SAM_DELTA_POLICY *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
-
-	prs_debug(ps, depth, desc, "net_io_sam_dom_info");
+	prs_debug(ps, depth, desc, "net_io_sam_policy_info");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 
-	if (!prs_uint32("unknown1", ps, depth, &info->unknown1))
+	if (!prs_uint32("max_log_size", ps, depth, &info->max_log_size))
                 return False;
-	if (!prs_uint32("unknown2", ps, depth, &info->unknown2))
+	if (!prs_uint64("audit_retention_period", ps, depth,
+			&info->audit_retention_period))
                 return False;
-	if (!prs_uint32("unknown3", ps, depth, &info->unknown3))
+	if (!prs_uint32("auditing_mode", ps, depth, &info->auditing_mode))
                 return False;
-	if (!prs_uint32("unknown4", ps, depth, &info->unknown4))
+	if (!prs_uint32("num_events", ps, depth, &info->num_events))
                 return False;
-	if (!prs_uint32("count1", ps, depth, &info->count1))
-                return False;
-	if (!prs_uint32("ptr1", ps, depth, &info->ptr1))
-                return False;
-
-	if (!prs_uint16("count2", ps, depth, &info->count2))
-                return False;
-	if (!prs_uint16("count3", ps, depth, &info->count3))
+	if (!prs_uint32("ptr_events", ps, depth, &info->ptr_events))
                 return False;
 
-	if (!prs_uint32("ptr2", ps, depth, &info->ptr2))
-                return False;
-	if (!prs_uint32("ptr3", ps, depth, &info->ptr3))
+	if (!smb_io_unihdr("hdr_dom_name", &info->hdr_dom_name, ps, depth))
+		return False;
+
+	if (!prs_uint32("sid_ptr", ps, depth, &info->sid_ptr))
                 return False;
 
-	if (!prs_uint32("unknown4b", ps, depth, &info->unknown4b))
+	if (!prs_uint32("paged_pool_limit", ps, depth, &info->paged_pool_limit))
                 return False;
-	if (!prs_uint32("unknown5", ps, depth, &info->unknown5))
+	if (!prs_uint32("non_paged_pool_limit", ps, depth,
+			&info->non_paged_pool_limit))
                 return False;
-	if (!prs_uint32("unknown6", ps, depth, &info->unknown6))
+	if (!prs_uint32("min_workset_size", ps, depth, &info->min_workset_size))
                 return False;
-	if (!prs_uint32("unknown7", ps, depth, &info->unknown7))
+	if (!prs_uint32("max_workset_size", ps, depth, &info->max_workset_size))
                 return False;
-	if (!prs_uint32("unknown8", ps, depth, &info->unknown8))
+	if (!prs_uint32("page_file_limit", ps, depth, &info->page_file_limit))
                 return False;
-	if (!prs_uint32("unknown9", ps, depth, &info->unknown9))
+	if (!prs_uint64("time_limit", ps, depth, &info->time_limit))
                 return False;
-	if (!prs_uint32("unknown10", ps, depth, &info->unknown10))
+	if (!smb_io_time("modify_time", &info->modify_time, ps, depth))
                 return False;
-	if (!prs_uint32("unknown11", ps, depth, &info->unknown11))
+	if (!smb_io_time("create_time", &info->create_time, ps, depth))
                 return False;
-	if (!prs_uint32("unknown12", ps, depth, &info->unknown12))
-                return False;
-
-	if (!prs_uint32("unknown13", ps, depth, &info->unknown13))
-                return False;
-	if (!prs_uint32("unknown14", ps, depth, &info->unknown14))
-                return False;
-	if (!prs_uint32("unknown15", ps, depth, &info->unknown15))
-                return False;
-	if (!prs_uint32("unknown16", ps, depth, &info->unknown16))
-                return False;
-	if (!prs_uint32("unknown17", ps, depth, &info->unknown17))
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
                 return False;
 
-	for (i=0; i<info->count2; i++)
-		if (!prs_uint32("unknown18", ps, depth, &info->unknown18))
-	                return False;
+	for (i=0; i<4; i++) {
+		UNIHDR dummy;
+		if (!smb_io_unihdr("dummy", &dummy, ps, depth))
+			return False;
+	}
 
-	if (!prs_uint32("unknown19", ps, depth, &info->unknown19))
+	for (i=0; i<4; i++) {
+		uint32 reserved;
+		if (!prs_uint32("reserved", ps, depth, &reserved))
+			return False;
+	}
+
+	if (!prs_uint32("num_event_audit_options", ps, depth,
+			&info->num_event_audit_options))
                 return False;
 
-	for (i=0; i<info->count1; i++)
-		if (!prs_uint32("unknown20", ps, depth, &info->unknown20))
-        	        return False;
-
-	if (!prs_uint32("ptr4", ps, depth, &info->ptr4))
-                return False;
+	for (i=0; i<info->num_event_audit_options; i++)
+		if (!prs_uint32("event_audit_option", ps, depth,
+				&info->event_audit_option))
+			return False;
 
 	if (!smb_io_unistr2("domain_name", &info->domain_name, True, ps, depth))
                 return False;
 
 	if(!smb_io_dom_sid2("domain_sid", &info->domain_sid, ps, depth))
+		return False;
+
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+
 		return False;
 
 	return True;
@@ -2396,12 +2439,12 @@ static BOOL net_io_sam_dom_info(char *desc, SAM_DELTA_DOM *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_unk0e_info(char *desc, SAM_DELTA_UNK0E *info,
+static BOOL net_io_sam_trustdoms_info(char *desc, SAM_DELTA_TRUSTDOMS *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
 
-	prs_debug(ps, depth, desc, "net_io_sam_unk0e_info");
+	prs_debug(ps, depth, desc, "net_io_sam_trustdoms_info");
 	depth++;
 
 	if(!prs_align(ps))
@@ -2444,12 +2487,12 @@ static BOOL net_io_sam_unk0e_info(char *desc, SAM_DELTA_UNK0E *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_unk12_info(char *desc, SAM_DELTA_UNK12 *info,
-				      prs_struct *ps, int depth)
+static BOOL net_io_sam_secret_info(char *desc, SAM_DELTA_SECRET *info,
+				   prs_struct *ps, int depth)
 {
 	int i;
 
-	prs_debug(ps, depth, desc, "net_io_sam_unk12_info");
+	prs_debug(ps, depth, desc, "net_io_sam_secret_info");
 	depth++;
 
 	if(!prs_align(ps))
@@ -2542,52 +2585,48 @@ static BOOL net_io_sam_privs_info(char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("buf_size", ps, depth, &info->buf_size))
-                return False;
-
-	if(!sec_io_desc("sec_desc", &info->sec_desc, ps, depth))
-		return False;
-
 	if(!smb_io_dom_sid2("sid", &info->sid, ps, depth))
 		return False;
 
 	if(!prs_uint32("priv_count", ps, depth, &info->priv_count))
                 return False;
-	if(!prs_uint32("reserved1", ps, depth, &info->reserved1))
+	if(!prs_uint32("priv_control", ps, depth, &info->priv_control))
                 return False;
 
-	if(!prs_uint32("ptr1", ps, depth, &info->ptr1))
+	if(!prs_uint32("priv_attr_ptr", ps, depth, &info->priv_attr_ptr))
                 return False;
-	if(!prs_uint32("ptr2", ps, depth, &info->ptr2))
-                return False;
-
-	if(!prs_uint32("unknown1", ps, depth, &info->unknown1))
-                return False;
-	if(!prs_uint32("unknown2", ps, depth, &info->unknown2))
-                return False;
-	if(!prs_uint32("unknown3", ps, depth, &info->unknown3))
-                return False;
-	if(!prs_uint32("unknown4", ps, depth, &info->unknown4))
-                return False;
-	if(!prs_uint32("unknown5", ps, depth, &info->unknown5))
-                return False;
-	if(!prs_uint32("unknown6", ps, depth, &info->unknown6))
-                return False;
-	if(!prs_uint32("unknown7", ps, depth, &info->unknown7))
-                return False;
-	if(!prs_uint32("unknown8", ps, depth, &info->unknown8))
-                return False;
-	if(!prs_uint32("unknown9", ps, depth, &info->unknown9))
+	if(!prs_uint32("priv_name_ptr", ps, depth, &info->priv_name_ptr))
                 return False;
 
-	if(!prs_uint32("buf_size2", ps, depth, &info->buf_size2))
+	if (!prs_uint32("paged_pool_limit", ps, depth, &info->paged_pool_limit))
                 return False;
-	if(!prs_uint32("ptr3", ps, depth, &info->ptr3))
+	if (!prs_uint32("non_paged_pool_limit", ps, depth,
+			&info->non_paged_pool_limit))
+                return False;
+	if (!prs_uint32("min_workset_size", ps, depth, &info->min_workset_size))
+                return False;
+	if (!prs_uint32("max_workset_size", ps, depth, &info->max_workset_size))
+                return False;
+	if (!prs_uint32("page_file_limit", ps, depth, &info->page_file_limit))
+                return False;
+	if (!prs_uint64("time_limit", ps, depth, &info->time_limit))
+                return False;
+	if (!prs_uint32("system_flags", ps, depth, &info->system_flags))
+                return False;
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
                 return False;
 
-	for (i=0; i<12; i++)
-		if(!prs_uint32("unknown10", ps, depth, &info->unknown10))
-	                return False;
+	for (i=0; i<4; i++) {
+		UNIHDR dummy;
+		if (!smb_io_unihdr("dummy", &dummy, ps, depth))
+			return False;
+	}
+
+	for (i=0; i<4; i++) {
+		uint32 reserved;
+		if (!prs_uint32("reserved", ps, depth, &reserved))
+			return False;
+	}
 
 	if(!prs_uint32("attribute_count", ps, depth, &info->attribute_count))
                 return False;
@@ -2612,6 +2651,10 @@ static BOOL net_io_sam_privs_info(char *desc, SAM_DELTA_PRIVS *info,
 		if (!smb_io_unistr2("uni_privslist", &info->uni_privslist[i], True, ps, depth))
 			return False;
 
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+                return False;
+
 	return True;
 }
 
@@ -2627,8 +2670,8 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 
 	switch (type) {
                 /* Seen in sam deltas */
-                case SAM_DELTA_SAM_STAMP:
-                        if (!net_io_sam_delta_stamp("", &delta->stamp, ps, depth))
+                case SAM_DELTA_MODIFIED_COUNT:
+                        if (!net_io_sam_delta_mod_count("", &delta->mod_count, ps, depth))
                                 return False;
                         break;
 
@@ -2657,8 +2700,8 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
                                 return False;
 			break;
 
-		case SAM_DELTA_DOM_INFO:
-                        if (!net_io_sam_dom_info("", &delta->dom_info, ps, depth))
+		case SAM_DELTA_POLICY_INFO:
+                        if (!net_io_sam_policy_info("", &delta->policy_info, ps, depth))
                                 return False;
 			break;
 
@@ -2672,16 +2715,23 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
                                 return False;
 			break;
 
-		case SAM_DELTA_UNK0E_INFO:
-			if (!net_io_sam_unk0e_info("", &delta->unk0e_info, ps, depth))
+ 	        case SAM_DELTA_TRUST_DOMS:
+			if (!net_io_sam_trustdoms_info("", &delta->trustdoms_info, ps, depth))
                                 return False;
 			break;
 
-		case SAM_DELTA_UNK12_INFO:
-			if (!net_io_sam_unk12_info("", &delta->unk12_info, ps, depth))
+		case SAM_DELTA_SECRET_INFO:
+			if (!net_io_sam_secret_info("", &delta->secret_info, ps, depth))
                                 return False;
 			break;
 
+			/* These guys are not implemented yet */
+
+  	        case SAM_DELTA_RENAME_GROUP:
+	        case SAM_DELTA_RENAME_USER:
+	        case SAM_DELTA_RENAME_ALIAS:
+	        case SAM_DELTA_DELETE_GROUP:
+	        case SAM_DELTA_DELETE_USER:
 		default:
 			DEBUG(0, ("Replication error: Unknown delta type 0x%x\n", type));
 			break;

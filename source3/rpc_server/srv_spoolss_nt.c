@@ -4,7 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
- *  Copyright (C) Jeremy Allison		    2001,
+ *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Gerald Carter		       2000-2002,
  *  Copyright (C) Tim Potter                   2001-2002.
  *
@@ -87,6 +87,10 @@ typedef struct _Printer{
 		fstring machine;
 		fstring user;
 	} client;
+	
+	/* devmode sent in the OpenPrinter() call */
+	NT_DEVICEMODE	*nt_devmode;
+	
 } Printer_entry;
 
 static Printer_entry *printers_list;
@@ -196,6 +200,11 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 		cli_ulogoff(&notify_cli);
 		cli_shutdown(&notify_cli);
 		message_deregister(MSG_PRINTER_NOTIFY2);
+
+        	/* Tell the connections db we're no longer interested in
+		 * printer notify messages. */
+
+		register_message_flags( False, FLAG_MSG_PRINTING );
 	}
 
 	smb_connections--;
@@ -219,6 +228,8 @@ static void free_printer_entry(void *ptr)
 	free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
+	
+	free_nt_devicemode( &Printer->nt_devmode );
 
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
@@ -566,7 +577,14 @@ static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
 {
 	SPOOL_NOTIFY_OPTION *option = p->notify.option;
 	uint32 i, j;
-	
+
+	/* 
+	 * Flags should always be zero when the change notify
+	 * is registered by the cliebnt's spooler.  A user Win32 app
+	 * might use the flags though instead of the NOTIFY_OPTION_INFO 
+	 * --jerry
+	 */
+	 
 	if (p->notify.flags)
 		return is_monitoring_event_flags(
 			p->notify.flags, notify_type, notify_field);
@@ -716,26 +734,177 @@ static struct notify2_message_table job_notify_table[] = {
 	/* 0x17 */ { "JOB_NOTIFY_BYTES_PRINTED", NULL },
 };
 
+
+/***********************************************************************
+ Allocate talloc context for container object
+ **********************************************************************/
+ 
+static void notify_msg_ctr_init( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return;
+
+	ctr->ctx = talloc_init();
+		
+	return;
+}
+
+/***********************************************************************
+ release all allocated memory and zero out structure
+ **********************************************************************/
+ 
+static void notify_msg_ctr_destroy( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return;
+
+	if ( ctr->ctx )
+		talloc_destroy(ctr->ctx);
+		
+	ZERO_STRUCTP(ctr);
+		
+	return;
+}
+
+/***********************************************************************
+ **********************************************************************/
+ 
+static TALLOC_CTX* notify_ctr_getctx( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return NULL;
+		
+	return ctr->ctx;
+}
+
+/***********************************************************************
+ **********************************************************************/
+ 
+static SPOOLSS_NOTIFY_MSG_GROUP* notify_ctr_getgroup( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
+{
+	if ( !ctr || !ctr->msg_groups )
+		return NULL;
+	
+	if ( idx >= ctr->num_groups )
+		return NULL;
+		
+	return &ctr->msg_groups[idx];
+
+}
+
+/***********************************************************************
+ How many groups of change messages do we have ?
+ **********************************************************************/
+ 
+static int notify_msg_ctr_numgroups( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return 0;
+		
+	return ctr->num_groups;
+}
+
+/***********************************************************************
+ Add a SPOOLSS_NOTIFY_MSG_CTR to the correct group
+ **********************************************************************/
+ 
+static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MSG *msg )
+{
+	SPOOLSS_NOTIFY_MSG_GROUP	*groups = NULL;
+	SPOOLSS_NOTIFY_MSG_GROUP	*msg_grp = NULL;
+	SPOOLSS_NOTIFY_MSG		*msg_list = NULL;
+	int				i, new_slot;
+	
+	if ( !ctr || !msg )
+		return 0;
+	
+	/* loop over all groups looking for a matching printer name */
+	
+	for ( i=0; i<ctr->num_groups; i++ ) {
+		if ( strcmp(ctr->msg_groups[i].printername, msg->printer) == 0 )
+			break;
+	}
+	
+	/* add a new group? */
+	
+	if ( i == ctr->num_groups )
+	{
+		ctr->num_groups++;
+
+		if ( !(groups = talloc_realloc( ctr->ctx, ctr->msg_groups, sizeof(SPOOLSS_NOTIFY_MSG_GROUP)*ctr->num_groups)) ) {
+			DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed!\n"));
+			return 0;
+		}
+		ctr->msg_groups = groups;
+
+		/* clear the new entry and set the printer name */
+		
+		ZERO_STRUCT( ctr->msg_groups[ctr->num_groups-1] );
+		fstrcpy( ctr->msg_groups[ctr->num_groups-1].printername, msg->printer );
+	}
+	
+	/* add the change messages; 'i' is the correct index now regardless */
+	
+	msg_grp = &ctr->msg_groups[i];
+	
+	msg_grp->num_msgs++;
+	
+	if ( !(msg_list =  talloc_realloc( ctr->ctx, msg_grp->msgs, sizeof(SPOOLSS_NOTIFY_MSG)*msg_grp->num_msgs )) ) {
+		DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed for new message [%d]!\n", msg_grp->num_msgs));
+		return 0;
+	}
+	msg_grp->msgs = msg_list;
+	
+	new_slot = msg_grp->num_msgs-1;
+	memcpy( &msg_grp->msgs[new_slot], msg, sizeof(SPOOLSS_NOTIFY_MSG) );
+	
+	/* need to allocate own copy of data */
+	
+	if ( msg->len != 0 ) 
+		msg_grp->msgs[new_slot].notify.data = talloc_memdup( ctr->ctx, msg->notify.data, msg->len );
+	
+	return ctr->num_groups;
+}
+
 /***********************************************************************
  Send a change notication message on all handles which have a call 
  back registered
  **********************************************************************/
 
-static void process_notify2_message(struct spoolss_notify_msg *msg, 
-				    TALLOC_CTX *mem_ctx)
+static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 {
-	Printer_entry *p;
-
-	DEBUG(8,("process_notify2_message: Enter...[%s]\n", msg->printer));
+	Printer_entry 		 *p;
+	TALLOC_CTX		 *mem_ctx = notify_ctr_getctx( ctr );
+	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, idx );
+	SPOOLSS_NOTIFY_MSG       *messages;
 	
-	for (p = printers_list; p; p = p->next) {
+	
+	if ( !msg_group ) {
+		DEBUG(5,("send_notify2_changes() called with no msg group!\n"));
+		return;
+	}
+	
+	messages = msg_group->msgs;
+	
+	if ( !messages ) {
+		DEBUG(5,("send_notify2_changes() called with no messages!\n"));
+		return;
+	}
+	
+	DEBUG(8,("send_notify2_changes: Enter...[%s]\n", msg_group->printername));
+	
+	/* loop over all printers */
+	
+	for (p = printers_list; p; p = p->next) 
+	{
 		SPOOL_NOTIFY_INFO_DATA *data;
-		uint32 data_len = 1;
-		uint32 id;
+		uint32	data_len = 0;
+		uint32 	id;
+		int 	i;
 
 		/* Is there notification on this handle? */
 
-		if (!p->notify.client_connected)
+		if ( !p->notify.client_connected )
 			continue;
 
 		DEBUG(10,("Client connected! [%s]\n", p->dev.handlename));
@@ -744,24 +913,30 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
                    notifications. */
 
 		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER )  &&
-		    ( !strequal(msg->printer, p->dev.handlename) ) )
+		    ( !strequal(msg_group->printername, p->dev.handlename) ) )
 			continue;
 
 		DEBUG(10,("Our printer\n"));
 		
+		/* allocate the max entries possible */
+		
+		data = talloc( mem_ctx, msg_group->num_msgs*sizeof(SPOOL_NOTIFY_INFO_DATA) );
+		ZERO_STRUCTP(data);
+		
+		/* build the array of change notifications */
+		
+		for ( i=0; i<msg_group->num_msgs; i++ )
+		{
+			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
+			
 		/* Are we monitoring this event? */
 
 		if (!is_monitoring_event(p, msg->type, msg->field))
 			continue;
 
+			
 		DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
 			msg->type, msg->field, p->dev.handlename));
-
-		/* OK - send the event to the client */
-
-		data = talloc(mem_ctx, sizeof(SPOOL_NOTIFY_INFO_DATA));
-
-		ZERO_STRUCTP(data);
 
 		/* 
 		 * if the is a printer notification handle and not a job notification 
@@ -784,8 +959,8 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 
 		/* Convert unix jobid to smb jobid */
 
-		if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
-
+			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) 
+			{
 			id = sysjob_to_jobid(msg->id);
 
 			if (id == -1) {
@@ -794,22 +969,20 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 			}
 		}
 
-		construct_info_data(data, msg->type, msg->field, id);
+			construct_info_data( &data[data_len], msg->type, msg->field, id );
 
 		switch(msg->type) {
 		case PRINTER_NOTIFY_TYPE:
 				if ( !printer_notify_table[msg->field].fn )
 				goto done;
-					
-				printer_notify_table[msg->field].fn(msg, data, mem_ctx);
+					printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 				
 			break;
 			
 		case JOB_NOTIFY_TYPE:
 				if ( !job_notify_table[msg->field].fn )
 				goto done;
-
-				job_notify_table[msg->field].fn(msg, data, mem_ctx);
+					job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 
 				break;
 
@@ -818,59 +991,139 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 				goto done;
 			}
 
+			data_len++;
+		}
+
 		cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
 				data_len, data, p->notify.change, 0 );
 	}
+	
 done:
-	DEBUG(8,("process_notify2_message: Exit...\n"));
+	DEBUG(8,("send_notify2_changes: Exit...\n"));
 	return;
 }
 
-/* Receive a notify2 message */
+/***********************************************************************
+ **********************************************************************/
 
-static void receive_notify2_message(int msg_type, pid_t src, void *buf, 
-				    size_t len)
+static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, void *buf, size_t len )
 {
-	struct spoolss_notify_msg msg;
+
 	int offset = 0;
-	TALLOC_CTX *mem_ctx = talloc_init();
 
 	/* Unpack message */
 
-	ZERO_STRUCT(msg);
-
 	offset += tdb_unpack((char *)buf + offset, len - offset, "f",
-			     msg.printer);
+			     msg->printer);
 	
 	offset += tdb_unpack((char *)buf + offset, len - offset, "ddddd",
-			     &msg.type, &msg.field, &msg.id, &msg.len, &msg.flags);
+			     &msg->type, &msg->field, &msg->id, &msg->len, &msg->flags);
 
-	if (msg.len == 0)
+	if (msg->len == 0)
 		tdb_unpack((char *)buf + offset, len - offset, "dd",
-			   &msg.notify.value[0], &msg.notify.value[1]);
+			   &msg->notify.value[0], &msg->notify.value[1]);
 	else
 		tdb_unpack((char *)buf + offset, len - offset, "B", 
-			   &msg.len, &msg.notify.data);
+			   &msg->len, &msg->notify.data);
 
-	DEBUG(3, ("got NOTIFY2 message, type %d, field 0x%02x, flags 0x%04x\n",
-		  msg.type, msg.field, msg.flags));
+	DEBUG(3, ("notify2_unpack_msg: got NOTIFY2 message, type %d, field 0x%02x, flags 0x%04x\n",
+		  msg->type, msg->field, msg->flags));
 
-	if (msg.len == 0)
-		DEBUG(3, ("value1 = %d, value2 = %d\n", msg.notify.value[0],
-			  msg.notify.value[1]));
+	if (msg->len == 0)
+		DEBUG(3, ("notify2_unpack_msg: value1 = %d, value2 = %d\n", msg->notify.value[0],
+			  msg->notify.value[1]));
 	else
-		dump_data(3, msg.notify.data, msg.len);
+		dump_data(3, msg->notify.data, msg->len);
 
-	/* Process message */
+	return True;
+}
 
-	process_notify2_message(&msg, mem_ctx);
+/********************************************************************
+ Receive a notify2 message list
+ ********************************************************************/
 
-	/* Free message */
+static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, size_t len)
+{
+	size_t 			msg_count, i;
+	char 			*buf = (char *)msg;
+	char 			*msg_ptr;
+	size_t 			msg_len;
+	SPOOLSS_NOTIFY_MSG	notify;
+	SPOOLSS_NOTIFY_MSG_CTR	messages;
+	int			num_groups;
 
-	if (msg.len > 0)
-		free(msg.notify.data);
+	if (len < 4) {
+		DEBUG(0,("receive_notify2_message_list: bad message format (len < 4)!\n"));
+		return;
+	}
+	
+	msg_count = IVAL(buf, 0);
+	msg_ptr = buf + 4;
 
-	talloc_destroy(mem_ctx);
+	DEBUG(5, ("receive_notify2_message_list: got %d messages in list\n", msg_count));
+
+	if (msg_count == 0) {
+		DEBUG(0,("receive_notify2_message_list: bad message format (msg_count == 0) !\n"));
+		return;
+	}
+
+	/* initialize the container */
+	
+	ZERO_STRUCT( messages );
+	notify_msg_ctr_init( &messages );
+	
+	/* 
+	 * build message groups for each printer identified
+	 * in a change_notify msg.  Remember that a PCN message
+	 * includes the handle returned for the srv_spoolss_replyopenprinter()
+	 * call.  Therefore messages are grouped according to printer handle.
+	 */
+	 
+	for ( i=0; i<msg_count; i++ ) 
+	{
+		if (msg_ptr + 4 - buf > len) {
+			DEBUG(0,("receive_notify2_message_list: bad message format (len > buf_size) !\n"));
+			return;
+		}
+
+		msg_len = IVAL(msg_ptr,0);
+		msg_ptr += 4;
+
+		if (msg_ptr + msg_len - buf > len) {
+			DEBUG(0,("receive_notify2_message_list: bad message format (bad len) !\n"));
+			return;
+		}
+		
+		/* unpack messages */
+		
+		ZERO_STRUCT( notify );
+		notify2_unpack_msg( &notify, msg_ptr, msg_len );
+		msg_ptr += msg_len;
+		
+		/* add to correct list in container */
+		
+		notify_msg_ctr_addmsg( &messages, &notify );
+		
+		/* free memory that might have been allocated by notify2_unpack_msg() */
+		
+		if ( notify.len != 0 )
+			SAFE_FREE( notify.notify.data );
+	}
+	
+	/* process each group of messages */
+	
+	num_groups = notify_msg_ctr_numgroups( &messages );
+	for ( i=0; i<num_groups; i++ )
+		send_notify2_changes( &messages, i );
+	
+	
+	/* cleanup */
+		
+	DEBUG(10,("receive_notify2_message_list: processed %u messages\n", (uint32)msg_count ));
+		
+	notify_msg_ctr_destroy( &messages );
+	
+	return;
 }
 
 /********************************************************************
@@ -1143,14 +1396,65 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 /********************************************************************
  * spoolss_open_printer
  *
- * called from the spoolss dispatcher
+ * If the openprinterex rpc call contains a devmode,
+ * it's a per-user one. This per-user devmode is derivated
+ * from the global devmode. Openprinterex() contains a per-user 
+ * devmode for when you do EMF printing and spooling.
+ * In the EMF case, the NT workstation is only doing half the job
+ * of rendering the page. The other half is done by running the printer
+ * driver on the server.
+ * The EMF file doesn't contain the page description (paper size, orientation, ...).
+ * The EMF file only contains what is to be printed on the page.
+ * So in order for the server to know how to print, the NT client sends
+ * a devicemode attached to the openprinterex call.
+ * But this devicemode is short lived, it's only valid for the current print job.
+ *
+ * If Samba would have supported EMF spooling, this devicemode would
+ * have been attached to the handle, to sent it to the driver to correctly
+ * rasterize the EMF file.
+ *
+ * As Samba only supports RAW spooling, we only receive a ready-to-print file,
+ * we just act as a pass-thru between windows and the printer.
+ *
+ * In order to know that Samba supports only RAW spooling, NT has to call
+ * getprinter() at level 2 (attribute field) or NT has to call startdoc()
+ * and until NT sends a RAW job, we refuse it.
+ *
+ * But to call getprinter() or startdoc(), you first need a valid handle,
+ * and to get an handle you have to call openprintex(). Hence why you have
+ * a devicemode in the openprinterex() call.
+ *
+ *
+ * Differences between NT4 and NT 2000.
+ * NT4:
+ * ---
+ * On NT4, you only have a global devicemode. This global devicemode can be changed
+ * by the administrator (or by a user with enough privs). Everytime a user
+ * wants to print, the devicemode is resetted to the default. In Word, everytime
+ * you print, the printer's characteristics are always reset to the global devicemode.
+ *
+ * NT 2000:
+ * -------
+ * In W2K, there is the notion of per-user devicemode. The first time you use
+ * a printer, a per-user devicemode is build from the global devicemode.
+ * If you change your per-user devicemode, it is saved in the registry, under the
+ * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
+ * printer preferences available.
+ *
+ * To change the per-user devicemode: it's the "Printing Preferences ..." button
+ * on the General Tab of the printer properties windows.
+ *
+ * To change the global devicemode: it's the "Printing Defaults..." button
+ * on the Advanced Tab of the printer properties window.
+ *
+ * JFM.
  ********************************************************************/
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
-	UNISTR2 *printername = NULL;
-	PRINTER_DEFAULT *printer_default = &q_u->printer_default;
-	POLICY_HND *handle = &r_u->handle;
+	UNISTR2 		*printername = NULL;
+	PRINTER_DEFAULT 	*printer_default = &q_u->printer_default;
+	POLICY_HND 		*handle = &r_u->handle;
 
 	fstring name;
 	int snum;
@@ -1180,39 +1484,36 @@ Can't find printer handle we created for printer %s\n", name ));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	/*
-	   First case: the user is opening the print server:
-
-	   Disallow MS AddPrinterWizard if parameter disables it. A Win2k
-	   client 1st tries an OpenPrinterEx with access==0, MUST be allowed.
-
-	   Then both Win2k and WinNT clients try an OpenPrinterEx with
-	   SERVER_ALL_ACCESS, which we allow only if the user is root (uid=0)
-	   or if the user is listed in the smb.conf printer admin parameter.
-
-	   Then they try OpenPrinterEx with SERVER_READ which we allow. This lets the
-	   client view printer folder, but does not show the MSAPW.
-
-	   Note: this test needs code to check access rights here too. Jeremy
-	   could you look at this?
-	   
-	   
-	   Second case: the user is opening a printer:
-	   NT doesn't let us connect to a printer if the connecting user
-	   doesn't have print permission.
-
-	*/
-
 	get_current_user(&user, p);
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
+	/*
+	 * First case: the user is opening the print server:
+	 *
+	 * Disallow MS AddPrinterWizard if parameter disables it. A Win2k
+	 * client 1st tries an OpenPrinterEx with access==0, MUST be allowed.
+	 *
+	 * Then both Win2k and WinNT clients try an OpenPrinterEx with
+	 * SERVER_ALL_ACCESS, which we allow only if the user is root (uid=0)
+	 * or if the user is listed in the smb.conf printer admin parameter.
+	 *
+	 * Then they try OpenPrinterEx with SERVER_READ which we allow. This lets the
+	 * client view printer folder, but does not show the MSAPW.
+	 *
+	 * Note: this test needs code to check access rights here too. Jeremy
+	 * could you look at this?
+	 * 
+	 * Second case: the user is opening a printer:
+	 * NT doesn't let us connect to a printer if the connecting user
+	 * doesn't have print permission.
+	 */
 
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) 
+	{
 		/* Printserver handles use global struct... */
 
 		snum = -1;
 
-		/* Map standard access rights to object specific access
-		   rights */
+		/* Map standard access rights to object specific access rights */
 		
 		se_map_standard(&printer_default->access_required, 
 				&printserver_std_mapping);
@@ -1231,23 +1532,32 @@ Can't find printer handle we created for printer %s\n", name ));
 
 		/* Allow admin access */
 
-		if (printer_default->access_required & 
-		    SERVER_ACCESS_ADMINISTER) {
-
+		if ( printer_default->access_required & SERVER_ACCESS_ADMINISTER ) 
+		{
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
 			}
 
-			if (user.uid == 0 || 
-			    user_in_list(uidtoname(user.uid),
-					 lp_printer_admin(snum)))
-				return WERR_OK;
+			/* if the user is not root and not a printer admin, then fail */
 			
-			close_printer_handle(p, handle);
-			return WERR_ACCESS_DENIED;
+			if ( user.uid != 0
+			     && !user_in_list(uidtoname(user.uid), lp_printer_admin(snum)) )
+			{
+				close_printer_handle(p, handle);
+				return WERR_ACCESS_DENIED;
+			}
+			
+			printer_default->access_required = SERVER_ACCESS_ADMINISTER;
+		}
+		else
+		{
+			printer_default->access_required = SERVER_ACCESS_ENUMERATE;
 		}
 
+		DEBUG(4,("Setting print server access = %s\n", (printer_default->access_required == SERVER_ACCESS_ADMINISTER) 
+			? "SERVER_ACCESS_ADMINISTER" : "SERVER_ACCESS_ENUMERATE" ));
+			
 		/* We fall through to return WERR_OK */
 		
 	}
@@ -1296,84 +1606,24 @@ Can't find printer handle we created for printer %s\n", name ));
 		else
 			printer_default->access_required = PRINTER_ACCESS_USE;
 
-		DEBUG(4,("Setting printer access=%x\n", printer_default->access_required));
-		Printer->access_granted = printer_default->access_required;
+		DEBUG(4,("Setting printer access = %s\n", (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
+			? "PRINTER_ACCESS_ADMINISTER" : "PRINTER_ACCESS_USE" ));
 
-		/*
-		 * If we have a default device pointer in the
-		 * printer_default struct, then we need to get
-		 * the printer info from the tdb and if there is
-	 	 * no default devicemode there then we do a *SET*
-		 * here ! This is insanity.... JRA.
-		 */
-
-		/*
-		 * If the openprinterex rpc call contains a devmode,
-		 * it's a per-user one. This per-user devmode is derivated
-		 * from the global devmode. Openprinterex() contains a per-user 
-		 * devmode for when you do EMF printing and spooling.
-		 * In the EMF case, the NT workstation is only doing half the job
-		 * of rendering the page. The other half is done by running the printer
-		 * driver on the server.
-		 * The EMF file doesn't contain the page description (paper size, orientation, ...).
-		 * The EMF file only contains what is to be printed on the page.
-		 * So in order for the server to know how to print, the NT client sends
-		 * a devicemode attached to the openprinterex call.
-		 * But this devicemode is short lived, it's only valid for the current print job.
-		 *
-		 * If Samba would have supported EMF spooling, this devicemode would
-		 * have been attached to the handle, to sent it to the driver to correctly
-		 * rasterize the EMF file.
-		 *
-		 * As Samba only supports RAW spooling, we only receive a ready-to-print file,
-		 * we just act as a pass-thru between windows and the printer.
-		 *
-		 * In order to know that Samba supports only RAW spooling, NT has to call
-		 * getprinter() at level 2 (attribute field) or NT has to call startdoc()
-		 * and until NT sends a RAW job, we refuse it.
-		 *
-		 * But to call getprinter() or startdoc(), you first need a valid handle,
-		 * and to get an handle you have to call openprintex(). Hence why you have
-		 * a devicemode in the openprinterex() call.
-		 *
-		 *
-		 * Differences between NT4 and NT 2000.
-		 * NT4:
-		 * ---
-		 * On NT4, you only have a global devicemode. This global devicemode can be changed
-		 * by the administrator (or by a user with enough privs). Everytime a user
-		 * wants to print, the devicemode is resetted to the default. In Word, everytime
-		 * you print, the printer's characteristics are always reset to the global devicemode.
-		 *
-		 * NT 2000:
-		 * -------
-		 * In W2K, there is the notion of per-user devicemode. The first time you use
-		 * a printer, a per-user devicemode is build from the global devicemode.
-		 * If you change your per-user devicemode, it is saved in the registry, under the
-		 * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
-		 * printer preferences available.
-		 *
-		 * To change the per-user devicemode: it's the "Printing Preferences ..." button
-		 * on the General Tab of the printer properties windows.
-		 *
-		 * To change the global devicemode: it's the "Printing Defaults..." button
-		 * on the Advanced Tab of the printer properties window.
-		 *
-		 * JFM.
-		 */
-
-
-
-#if 0
-		if (printer_default->devmode_cont.devmode != NULL) {
-			result = printer_write_default_dev( snum, printer_default);
-			if (result != 0) {
-				close_printer_handle(p, handle);
-				return result;
-			}
-		}
-#endif
 	}
+	
+	Printer->access_granted = printer_default->access_required;
+	
+	/* 
+	 * If the client sent a devmode in the OpenPrinter() call, then
+	 * save it here in case we get a job submission on this handle
+	 */
+	
+	 if ( (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
+	 	&& q_u->printer_default.devmode_cont.devmode_ptr )
+	 { 
+	 	convert_devicemode( Printer->dev.handlename, q_u->printer_default.devmode_cont.devmode,
+			&Printer->nt_devmode );
+	 }
 
 	return WERR_OK;
 }
@@ -1599,8 +1849,11 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	fstring				driver;
 	fstring				arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
+	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
 	struct current_user		user;
+	WERROR				status;
+	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	
 	get_current_user(&user, p);
 	 
@@ -1608,25 +1861,58 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
 	
 	/* check that we have a valid driver name first */
-	if ((version=get_version_id(arch)) == -1) {
-		/* this is what NT returns */
+	
+	if ((version=get_version_id(arch)) == -1) 
 		return WERR_INVALID_ENVIRONMENT;
+				
+	ZERO_STRUCT(info);
+	ZERO_STRUCT(info_win2k);
+	
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) 
+	{
+		/* try for Win2k driver if "Windows NT x86" */
+		
+		if ( version == 2 ) {
+			version = 3;
+			if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+				status = WERR_UNKNOWN_PRINTER_DRIVER;
+				goto done;
+			}
+		}
 	}
 	
-	/* if they said "Windows NT x86", then try for version 2 & 3 */
+	if (printer_driver_in_use(info.info_3)) {
+		status = WERR_PRINTER_DRIVER_IN_USE;
+		goto done;
+	}
 	
 	if ( version == 2 )
-		version = DRIVER_ANY_VERSION;
+	{		
+		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3, driver, arch, 3)))
+		{
+			/* if we get to here, we now have 2 driver info structures to remove */
+			/* remove the Win2k driver first*/
 		
-	ZERO_STRUCT(info);
+			status_win2k = delete_printer_driver(info_win2k.info_3, &user, 3, False );
+			free_a_printer_driver( info_win2k, 3 );
+		
+			/* this should not have failed---if it did, report to client */
+			if ( !W_ERROR_IS_OK(status_win2k) )
+				goto done;
+		}
+	}
 	
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
-		return WERR_UNKNOWN_PRINTER_DRIVER;
+	status = delete_printer_driver(info.info_3, &user, version, False);
 	
-	if (printer_driver_in_use(info.info_3))
-		return WERR_PRINTER_DRIVER_IN_USE;
+	/* if at least one of the deletes succeeded return OK */
+	
+	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
+		status = WERR_OK;
+	
+done:
+	free_a_printer_driver( info, 3 );
 
-	return delete_printer_driver(info.info_3, &user, DRIVER_ANY_VERSION, False);
+	return status;
 }
 
 /********************************************************************
@@ -1638,10 +1924,13 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	fstring				driver;
 	fstring				arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
+	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
 	uint32				flags = q_u->delete_flags;
 	BOOL				delete_files;
 	struct current_user		user;
+	WERROR				status;
+	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	
 	get_current_user(&user, p);
 	
@@ -1656,17 +1945,36 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	
 	if ( flags & DPD_DELETE_SPECIFIC_VERSION )
 		version = q_u->version;
-	else if ( version == 2 )
-		/* if they said "Windows NT x86", then try for version 2 & 3 */
-		version = DRIVER_ANY_VERSION;
 		
 	ZERO_STRUCT(info);
-	
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) 
-		return WERR_UNKNOWN_PRINTER_DRIVER;
+	ZERO_STRUCT(info_win2k);
 		
-	if ( printer_driver_in_use(info.info_3) )
-		return WERR_PRINTER_DRIVER_IN_USE;
+	status = get_a_printer_driver(&info, 3, driver, arch, version);
+	
+	if ( !W_ERROR_IS_OK(status) ) 
+	{
+		/* 
+		 * if the client asked for a specific version, 
+		 * or this is something other than Windows NT x86,
+		 * then we've failed 
+		 */
+		
+		if ( (flags&DPD_DELETE_SPECIFIC_VERSION) || (version !=2) )
+			goto done;
+			
+		/* try for Win2k driver if "Windows NT x86" */
+		
+		version = 3;
+		if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+			status = WERR_UNKNOWN_PRINTER_DRIVER;
+			goto done;
+		}
+	}
+		
+	if ( printer_driver_in_use(info.info_3) ) {
+		status = WERR_PRINTER_DRIVER_IN_USE;
+		goto done;
+	}
 	
 	/* 
 	 * we have a couple of cases to consider. 
@@ -1682,24 +1990,119 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	
 	delete_files = flags & (DPD_DELETE_ALL_FILES|DPD_DELETE_UNUSED_FILES);
 	
-	if ( delete_files ) 
-	{
-		/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
+	/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
 		
-		if ( printer_driver_files_in_use(info.info_3) & (flags&DPD_DELETE_ALL_FILES) )
-			/* no idea of the correct error here */
-			return WERR_ACCESS_DENIED;	
+	if ( delete_files && printer_driver_files_in_use(info.info_3) & (flags&DPD_DELETE_ALL_FILES) ) {
+		/* no idea of the correct error here */
+		status = WERR_ACCESS_DENIED;	
+		goto done;
 	}
 
-	return delete_printer_driver(info.info_3, &user, version, delete_files);
+			
+	/* also check for W32X86/3 if necessary; maybe we already have? */
+		
+	if ( (version == 2) && ((flags&DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
+		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3, driver, arch, 3))) 
+		{
+			
+			if ( delete_files && printer_driver_files_in_use(info_win2k.info_3) & (flags&DPD_DELETE_ALL_FILES) ) {
+				/* no idea of the correct error here */
+				free_a_printer_driver( info_win2k, 3 );
+				status = WERR_ACCESS_DENIED;	
+				goto done;
+			}
+		
+			/* if we get to here, we now have 2 driver info structures to remove */
+			/* remove the Win2k driver first*/
+		
+			status_win2k = delete_printer_driver(info_win2k.info_3, &user, 3, delete_files);
+			free_a_printer_driver( info_win2k, 3 );
+				
+			/* this should not have failed---if it did, report to client */
+				
+			if ( !W_ERROR_IS_OK(status_win2k) )
+				goto done;
+		}
+	}
+
+	status = delete_printer_driver(info.info_3, &user, version, delete_files);
+
+	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
+		status = WERR_OK;
+done:
+	free_a_printer_driver( info, 3 );
+	
+	return status;
 }
 
+
+/****************************************************************************
+ Internal routine for retreiving printerdata
+ ***************************************************************************/
+
+static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, 
+                                  char *key, char *value, uint32 *type, uint8 **data, 
+				  uint32 *needed, uint32 in_size  )
+{
+	REGISTRY_VALUE 		*val;
+	int			size, data_len;
+	
+	if ( !(val = get_printer_data( printer->info_2, key, value)) )
+		return WERR_BADFILE;
+	
+	*type = regval_type( val );
+
+	DEBUG(5,("get_printer_dataex: allocating %d\n", in_size));
+
+	size = regval_size( val );
+	
+	/* copy the min(in_size, len) */
+	
+	if ( in_size ) {
+		data_len = (size > in_size) ? in_size : size*sizeof(uint8);
+		if ( (*data  = (uint8 *)talloc_memdup(ctx, regval_data_p(val), data_len)) == NULL )
+			return WERR_NOMEM;
+	}
+	else
+		*data = NULL;
+
+	*needed = size;
+	
+	DEBUG(5,("get_printer_dataex: copy done\n"));
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+ Internal routine for removing printerdata
+ ***************************************************************************/
+
+static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, char *key, char *value )
+{
+	delete_printer_data( printer->info_2, key, value );
+	
+	return mod_a_printer(*printer, 2);
+}
+
+/****************************************************************************
+ Internal routine for storing printerdata
+ ***************************************************************************/
+
+static WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, char *key, char *value, 
+                                  uint32 type, uint8 *data, int real_len  )
+{
+	delete_printer_data( printer->info_2, key, value );
+	
+	add_printer_data( printer->info_2, key, value, type, data, real_len );
+	
+	return mod_a_printer(*printer, 2);
+}
 
 /********************************************************************
  GetPrinterData on a printer server Handle.
 ********************************************************************/
 
-static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
+static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
 {		
 	int i;
 	
@@ -1708,50 +2111,50 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 	if (!strcmp(value, "W3SvcInstalled")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc_zero(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
-		*needed = 0x4;			
-		return True;
+			return WERR_NOMEM;
+		*needed = 0x4;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "BeepEnabled")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;			
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "EventLog")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 		/* formally was 0x1b */
 		SIVAL(*data, 0, 0x0);
 		*needed = 0x4;			
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "NetPopup")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "MajorVersion")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 #ifndef EMULATE_WIN2K_HACK /* JERRY */
 		SIVAL(*data, 0, 2);
 #else
 		SIVAL(*data, 0, 3);
 #endif
 		*needed = 0x4;
-		return True;
+		return WERR_OK;
 	}
 
    	if (!strcmp(value, "DefaultSpoolDirectory")) {
@@ -1761,7 +2164,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
-			return False;
+			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		
 		/* it's done by hand ready to go on the wire */
@@ -1769,7 +2172,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 			(*data)[2*i]=string[i];
 			(*data)[2*i+1]='\0';
 		}			
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "Architecture")) {			
@@ -1777,79 +2180,17 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
-			return False;
+			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		for (i=0; i<strlen(string); i++) {
 			(*data)[2*i]=string[i];
 			(*data)[2*i+1]='\0';
 		}			
-		return True;
+		return WERR_OK;
 	}
 	
-	return False;
+	return WERR_INVALID_PARAM;
 }
-
-/********************************************************************
- GetPrinterData on a printer Handle.
-********************************************************************/
-
-static BOOL getprinterdata_printer(pipes_struct *p, TALLOC_CTX *ctx, POLICY_HND *handle,
-				fstring value, uint32 *type,
-                        	uint8 **data, uint32 *needed, uint32 in_size )
-{
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	int 		snum=0;	
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
-	REGISTRY_VALUE	*val;
-	int		size = 0;
-	
-	DEBUG(5,("getprinterdata_printer\n"));
-
-	if ( !Printer ) {
-		DEBUG(2,("getprinterdata_printer: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return False;
-	}
-
-	if ( !get_printer_snum(p, handle, &snum) )
-		return False;
-
-	if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) )
-		return False;
-
-	if ( !(val = get_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, value)) )
-	{
-		free_a_printer(&printer, 2);
-		return False;
-	}
-	
-	*type = regval_type( val );
-
-
-	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
-
-	if (in_size) 
-	{
-		if ( (*data  = (uint8 *)talloc(ctx, in_size * sizeof(uint8))) == NULL )
-			return False;
-
-		memset( *data, 0, in_size *sizeof(uint8) );
-		
-		/* copy the min(in_size, len) */
-		
-		size = regval_size( val );
-		memcpy( *data, regval_data_p(val), (size > in_size) ? in_size : size*sizeof(uint8) );
-	}
-	else
-		*data = NULL;
-
-	*needed = size;
-	
-	DEBUG(5,("getprinterdata_printer:copy done\n"));
-			
-	
-	free_a_printer(&printer, 2);
-	return True;
-}	
 
 /********************************************************************
  * spoolss_getprinterdata
@@ -1857,17 +2198,18 @@ static BOOL getprinterdata_printer(pipes_struct *p, TALLOC_CTX *ctx, POLICY_HND 
 
 WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-	UNISTR2 *valuename = &q_u->valuename;
-	uint32 in_size = q_u->size;
-	uint32 *type = &r_u->type;
-	uint32 *out_size = &r_u->size;
-	uint8 **data = &r_u->data;
-	uint32 *needed = &r_u->needed;
-
-	fstring value;
-	BOOL found=False;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	POLICY_HND 	*handle = &q_u->handle;
+	UNISTR2 	*valuename = &q_u->valuename;
+	uint32 		in_size = q_u->size;
+	uint32 		*type = &r_u->type;
+	uint32 		*out_size = &r_u->size;
+	uint8 		**data = &r_u->data;
+	uint32 		*needed = &r_u->needed;
+	WERROR 		status;
+	fstring 	value;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int		snum = 0;
 	
 	/*
 	 * Reminder: when it's a string, the length is in BYTES
@@ -1885,45 +2227,58 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
-	if (!Printer) {
-		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
+	if ( !Printer ) {
 		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return WERR_BADFID;
+		status = WERR_BADFID;
+		goto done;
 	}
 	
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-		found = getprinterdata_printer_server(p->mem_ctx, value, type, data, needed, *out_size);
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
+		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
 	else
-		found = getprinterdata_printer(p, p->mem_ctx, handle, value, type, data, needed, *out_size);
-
-	if ( !found ) 
 	{
-		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		if ( !get_printer_snum(p,handle, &snum) ) {
+			status = WERR_BADFID;
+			goto done;
+		}
+
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+		if ( !W_ERROR_IS_OK(status) )
+			goto done;
+			
+		status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, *out_size );
+	}
+
+	if (*needed > *out_size)
+		status = WERR_MORE_DATA;
+	
+done:
+	if ( !W_ERROR_IS_OK(status) ) 
+	{
+		DEBUG(5, ("error: allocating %d\n", *out_size));
 		
 		/* reply this param doesn't exist */
 		
-		if (*out_size) {
-			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
+		if ( *out_size ) {
+			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL) {
+				if ( printer ) 
+					free_a_printer( &printer, 2 );
 				return WERR_NOMEM;
-		} else {
+		} 
+		} 
+		else {
 			*data = NULL;
 		}
-
-		/* error depends on handle type */
-
-		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-			return WERR_INVALID_PARAM;
-		else 
-			return WERR_BADFILE;
 	}
 	
-	if (*needed > *out_size)
-		return WERR_MORE_DATA;
-	else 
-		return WERR_OK;
+	/* cleanup & exit */
+
+	if ( printer )
+		free_a_printer( &printer, 2 );
+	
+	return status;
 }
 
 /*********************************************************
@@ -1961,6 +2316,7 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_ma
 	if (!attempt_netbios_session_request(the_cli, global_myname, remote_machine, &the_cli->dest_ip)) {
 		DEBUG(0,("connect_to_client: machine %s rejected the NetBIOS session request.\n", 
 			remote_machine));
+		cli_shutdown(the_cli);
 		return False;
 	}
 
@@ -2036,7 +2392,10 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 		if(!spoolss_connect_to_client(&notify_cli, unix_printer))
 			return False;
 			
-		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message);
+		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
+		/* Tell the connections db we're now interested in printer
+		 * notify messages. */
+		register_message_flags( True, FLAG_MSG_PRINTING );
 	}
 
 	smb_connections++;
@@ -2436,8 +2795,8 @@ static void spoolss_notify_security_desc(int snum,
 					 NT_PRINTER_INFO_LEVEL *printer,
 					 TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.data.length=0;
-	data->notify_data.data.string = NULL;
+	data->notify_data.sd.size = printer->info_2->secdesc_buf->len;
+	data->notify_data.sd.desc = dup_sec_desc( mem_ctx, printer->info_2->secdesc_buf->sec ) ;
 }
 
 /*******************************************************************
@@ -3443,47 +3802,20 @@ static void free_dev_mode(DEVICEMODE *dev)
 	SAFE_FREE(dev);	
 }
 
+
 /****************************************************************************
- Create a DEVMODE struct. Returns malloced memory.
+ Convert an NT_DEVICEMODE to a DEVICEMODE structure.  Both pointers 
+ should be valid upon entry
 ****************************************************************************/
 
-DEVICEMODE *construct_dev_mode(int snum)
+static BOOL convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode )
 {
-	char adevice[32];
-	char aform[32];
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_DEVICEMODE *ntdevmode = NULL;
-	DEVICEMODE *devmode = NULL;
+	if ( !devmode || !ntdevmode )
+		return False;
+		
+	init_unistr(&devmode->devicename, ntdevmode->devicename);
 
-	DEBUG(7,("construct_dev_mode\n"));
-	
-	DEBUGADD(8,("getting printer characteristics\n"));
-
-	if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL) {
-		DEBUG(2,("construct_dev_mode: malloc fail.\n"));
-		return NULL;
-	}
-
-	ZERO_STRUCTP(devmode);	
-
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))))
-		goto fail;
-
-	if (printer->info_2->devmode)
-		ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
-
-	if (ntdevmode == NULL) {
-		DEBUG(5, ("BONG! There was no device mode!\n"));
-		goto fail;
-	}
-
-	DEBUGADD(8,("loading DEVICEMODE\n"));
-
-	slprintf(adevice, sizeof(adevice)-1, printer->info_2->printername);
-	init_unistr(&devmode->devicename, adevice);
-
-	slprintf(aform, sizeof(aform)-1, ntdevmode->formname);
-	init_unistr(&devmode->formname, aform);
+	init_unistr(&devmode->formname, ntdevmode->formname);
 
 	devmode->specversion      = ntdevmode->specversion;
 	devmode->driverversion    = ntdevmode->driverversion;
@@ -3511,23 +3843,51 @@ DEVICEMODE *construct_dev_mode(int snum)
 
 	if (ntdevmode->private != NULL) {
 		if ((devmode->private=(uint8 *)memdup(ntdevmode->private, ntdevmode->driverextra)) == NULL)
-			goto fail;
+			return False;
+	}
+	
+	return True;
+}
+
+/****************************************************************************
+ Create a DEVMODE struct. Returns malloced memory.
+****************************************************************************/
+
+DEVICEMODE *construct_dev_mode(int snum)
+{
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	DEVICEMODE 		*devmode = NULL;
+	
+	DEBUG(7,("construct_dev_mode\n"));
+	
+	DEBUGADD(8,("getting printer characteristics\n"));
+
+	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum)))) 
+		return NULL;
+
+	if ( !printer->info_2->devmode ) {
+		DEBUG(5, ("BONG! There was no device mode!\n"));
+		goto done;
 	}
 
-	free_nt_devicemode(&ntdevmode);
+	if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL) {
+		DEBUG(2,("construct_dev_mode: malloc fail.\n"));
+		goto done;
+	}
+
+	ZERO_STRUCTP(devmode);	
+	
+	DEBUGADD(8,("loading DEVICEMODE\n"));
+
+	if ( !convert_nt_devicemode( devmode, printer->info_2->devmode ) ) {
+		free_dev_mode( devmode );
+		devmode = NULL;
+	}
+
+done:
 	free_a_printer(&printer,2);
 
 	return devmode;
-
-  fail:
-
-	if (ntdevmode)
-		free_nt_devicemode(&ntdevmode);
-	if (printer)
-		free_a_printer(&printer,2);
-	free_dev_mode(devmode);
-
-	return NULL;
 }
 
 /********************************************************************
@@ -4384,7 +4744,7 @@ static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
  * convert an array of ascii string to a UNICODE string
  ********************************************************************/
 
-static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *servername)
+static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *servername)
 {
 	int i=0;
 	int j=0;
@@ -4397,26 +4757,34 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 
 	while (True) 
 	{
-		if (char_array == NULL)
+		if ( !char_array )
 			v = "";
-		else {
+		else 
+		{
 			v = char_array[i];
-			if (!v) v = ""; /* hack to handle null lists */
+			if (!v) 
+				v = ""; /* hack to handle null lists */
 		}
 		
-		if ( !strlen(v) ) 
-			break;
+		/* hack to allow this to be used in places other than when generating 
+		   the list of dependent files */
+		   
+		if ( servername )
+			slprintf( line, sizeof(line)-1, "\\\\%s%s", servername, v );
+		else
+			pstrcpy( line, v );
 			
-		slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
-		
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		
-		if((tuary=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
+		if ( (tuary=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL ) {
 			DEBUG(2,("init_unistr_array: Realloc error\n" ));
-			return;
+			return 0;
 		} else
 			*uni_array = tuary;
 			
+		if ( !strlen(v) ) 
+			break;
+		
 		j += (rpcstr_push((*uni_array+j), line, sizeof(uint16)*strlen(line)+2, STR_TERMINATE) / sizeof(uint16));
 		i++;
 	}
@@ -4426,6 +4794,10 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 	}
 	
 	DEBUGADD(6,("last one:done\n"));
+
+	/* return size of array in uint16's */
+		
+	return j+1;
 }
 
 /********************************************************************
@@ -4444,29 +4816,29 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->name, driver.info_3->name );	
 	init_unistr( &info->architecture, driver.info_3->environment );
 
-    if (strlen(driver.info_3->driverpath)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
-        init_unistr( &info->driverpath, temp );
-    } else
-        init_unistr( &info->driverpath, "" );
+	if (strlen(driver.info_3->driverpath)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+		init_unistr( &info->driverpath, temp );
+	} else
+		init_unistr( &info->driverpath, "" );
     
-    if (strlen(driver.info_3->datafile)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
-        init_unistr( &info->datafile, temp );
-    } else
-        init_unistr( &info->datafile, "" );
+	if (strlen(driver.info_3->datafile)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		init_unistr( &info->datafile, temp );
+	} else
+		init_unistr( &info->datafile, "" );
 
-    if (strlen(driver.info_3->configfile)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
-        init_unistr( &info->configfile, temp );	
-    } else
-        init_unistr( &info->configfile, "" );
+	if (strlen(driver.info_3->configfile)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		init_unistr( &info->configfile, temp );	
+	} else
+		init_unistr( &info->configfile, "" );
 
-    if (strlen(driver.info_3->helpfile)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
-        init_unistr( &info->helpfile, temp );
-    } else
-        init_unistr( &info->helpfile, "" );
+	if (strlen(driver.info_3->helpfile)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		init_unistr( &info->helpfile, temp );
+	} else
+		init_unistr( &info->helpfile, "" );
 
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
@@ -4933,10 +5305,6 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	 * in EMF format.
 	 *
 	 * So I add checks like in NT Server ...
-	 *
-	 * lkclXXXX jean-francois, i love this kind of thing.  oh, well,
-	 * there's a bug in NT client-side code, so we'll fix it in the
-	 * server-side code. *nnnnnggggh!*
 	 */
 	
 	if (info_1->p_datatype != 0) {
@@ -4954,7 +5322,7 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 
 	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
 	
-	Printer->jobid = print_job_start(&user, snum, jobname);
+	Printer->jobid = print_job_start(&user, snum, jobname, Printer->nt_devmode);
 
 	/* An error occured in print_job_start() so return an appropriate
 	   NT error code. */
@@ -5004,6 +5372,13 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 		return WERR_BADFID;
 
 	(*buffer_written) = print_job_write(snum, Printer->jobid, (char *)buffer, buffer_size);
+	if (*buffer_written == -1) {
+		r_u->buffer_written = 0;
+		if (errno == ENOSPC)
+			return WERR_NO_SPOOL_SPACE;
+		else
+			return WERR_ACCESS_DENIED;
+	}
 
 	r_u->buffer_written = q_u->buffer_size2;
 
@@ -5046,11 +5421,13 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 			errcode = WERR_OK;
 		}
 		break;
+#if 0	/* JERRY - Never called */
 	case PRINTER_CONTROL_PURGE:
 		if (print_queue_purge(&user, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
+#endif
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -5060,13 +5437,31 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 
 /********************************************************************
  * api_spoolss_abortprinter
+ * From MSDN: "Deletes printer's spool file if printer is configured
+ * for spooling"
  ********************************************************************/
 
 WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R_ABORTPRINTER *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-
-	return control_printer(handle, PRINTER_CONTROL_PURGE, p);
+	POLICY_HND	*handle = &q_u->handle;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	int		snum;
+	struct 		current_user user;
+	WERROR 		errcode = WERR_OK;
+	
+	if (!Printer) {
+		DEBUG(2,("_spoolss_abortprinter: Invalid handle (%s:%u:%u)\n",OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
+	
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+	
+	get_current_user( &user, p );	
+	
+	print_job_delete( &user, snum, Printer->jobid, &errcode );	
+	
+	return errcode;
 }
 
 /********************************************************************
@@ -5315,22 +5710,6 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-#if 0	/* JERRY */
-	
-	/*
-	 * Another one of those historical misunderstandings...
-	 * This is reminisent of a similar call we had in _spoolss_setprinterdata()
-	 * I'm leaving it here as a reminder.  --jerry
-	 */
-
-	if (nt_printer_info_level_equal(printer, old_printer)) {
-		DEBUG(3, ("update_printer: printer info has not changed\n"));
-		result = WERR_OK;
-		goto done;
-	}
-
-#endif
-
 	/* Check calling user has permission to update printer description */
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -5349,49 +5728,22 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	}
 	
 	/*
-	 * Set the DRIVER_INIT info in the tdb; trigger on magic value for the
-	 * DEVMODE.displayfrequency, which is not used for printer drivers. This
-	 * requires Win32 client code (see other notes elsewhere in the code).
+	 * When a *new* driver is bound to a printer, the drivername is used to
+	 * lookup previously saved driver initialization info, which is then
+	 * bound to the printer, simulating what happens in the Windows arch.
 	 */
-	if (printer->info_2->devmode &&
-		printer->info_2->devmode->displayfrequency == MAGIC_DISPLAY_FREQUENCY) 
+	if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
 	{
- 
-		DEBUG(10,("update_printer: Save printer driver init data\n"));
-		printer->info_2->devmode->displayfrequency = 0;
- 
-		if (update_driver_init(*printer, 2)!=0) {
-			DEBUG(10,("update_printer: error updating printer driver init DEVMODE\n"));
-			result = WERR_ACCESS_DENIED;
-			goto done;
-		}
-		
-		/* we need to reset all driver init data for all printers 
-		   bound to this driver */
-		
-		srv_spoolss_reset_printerdata( printer->info_2->drivername );
-		
-	} 
-	else 
-	{
-		/*
-		 * When a *new* driver is bound to a printer, the drivername is used to
-		 * lookup previously saved driver initialization info, which is then
-		 * bound to the printer, simulating what happens in the Windows arch.
-		 */
-		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+		if (!set_driver_init(printer, 2)) 
 		{
-			if (!set_driver_init(printer, 2)) 
-			{
-				DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
-					printer->info_2->drivername));
-			}
-			
-			DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
+			DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
 				printer->info_2->drivername));
-				
-			notify_printer_driver(snum, printer->info_2->drivername);
 		}
+		
+		DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
+			printer->info_2->drivername));
+			
+		notify_printer_driver(snum, printer->info_2->drivername);
 	}
 
 	/* Update printer info */
@@ -6594,8 +6946,11 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	 */
 
 	if (!devmode)
+	{
 		set_driver_init(printer, 2);
-	else {
+	}
+	else 
+	{
 		/* A valid devmode was included, convert and link it
 		*/
 		DEBUGADD(10, ("spoolss_addprinterex_level_2: devmode included, converting\n"));
@@ -6605,8 +6960,6 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 			return  WERR_NOMEM;
 	}
 
-	set_driver_init(printer, 2);
-	
 	/* write the ASCII on disk */
 	err = mod_a_printer(*printer, 2);
 	if (!W_ERROR_IS_OK(err)) {
@@ -6905,7 +7258,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	uint32 idx 		 = q_u->index;
 	uint32 in_value_len 	 = q_u->valuesize;
 	uint32 in_data_len 	 = q_u->datasize;
-	uint32 *out_max_value_len= &r_u->valuesize;
+	uint32 *out_max_value_len = &r_u->valuesize;
 	uint16 **out_value 	 = &r_u->value;
 	uint32 *out_value_len 	 = &r_u->realvaluesize;
 	uint32 *out_type 	 = &r_u->type;
@@ -7112,7 +7465,8 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	 * when connecting to a printer  --jerry
 	 */
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) 
+	{
 		DEBUG(3, ("_spoolss_setprinterdata: change denied by handle access permissions\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
@@ -7122,15 +7476,27 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	/* save the registry data */
-	
 	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
-	delete_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename );
-	add_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename, type, data, real_len );
-
-	/* write the **entire** printer out to disk.... :-( */	
 	
-	status = mod_a_printer(*printer, 2);
+	/*
+	 * When client side code sets a magic printer data key, detect it and save
+	 * the current printer data and the magic key's data (its the DEVMODE) for
+	 * future printer/driver initializations.
+	 */
+	if ( (type == REG_BINARY) && strequal( valuename, PHANTOM_DEVMODE_KEY)) 
+	{
+		/* Set devmode and printer initialization info */
+		status = save_driver_init( printer, 2, data, real_len );
+	
+		srv_spoolss_reset_printerdata( printer->info_2->drivername );
+	}
+	else 
+	{
+	status = set_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename, 
+					type, data, real_len );
+		if ( W_ERROR_IS_OK(status) )
+			status = mod_a_printer(*printer, 2);
+	}
 
 done:
 	free_a_printer(&printer, 2);
@@ -7204,9 +7570,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 
 	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
 
-	status = delete_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename );
-	if ( NT_STATUS_IS_OK(status) )
-		status = mod_a_printer(*printer, 2);
+	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
 
 	free_a_printer(&printer, 2);
 
@@ -7235,40 +7599,52 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		DEBUG(2,("_spoolss_addform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+	
+	
+	/* forms can be added on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (!get_printer_snum(p,handle, &snum))
-                return WERR_BADFID;
-
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
 		DEBUG(2,("_spoolss_addform: denied by handle permissions.\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
-		
+	
 	/* can't add if builtin */
+	
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_ALREADY_EXISTS;
+		status = WERR_ALREADY_EXISTS;
+		goto done;
 	}
 
-	count=get_ntforms(&list);
-	if(!add_a_form(&list, form, &count))
-		return WERR_NOMEM;
+	count = get_ntforms(&list);
+	
+	if(!add_a_form(&list, form, &count)) {
+		status =  WERR_NOMEM;
+		goto done;
+	}
+	
 	write_ntforms(&list, count);
 	
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
-	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
 	return status;
@@ -7283,7 +7659,6 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	UNISTR2 *form_name = &q_u->name;
 	nt_forms_struct tmpForm;
 	int count=0;
-	WERROR ret = WERR_OK;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	int snum;
@@ -7297,40 +7672,49 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 		return WERR_BADFID;
 	}
 
- 	if (!get_printer_snum(p, handle, &snum))
-		return WERR_BADFID;
+	/* forms can be deleted on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(2,("_spoolss_deleteform: denied by handle permissions\n"));
-		return WERR_ACCESS_DENIED;
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
+		DEBUG(2,("_spoolss_deleteform: denied by handle permissions.\n"));
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't delete if builtin */
+	
 	if (get_a_builtin_ntform(form_name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	count = get_ntforms(&list);
-	if(!delete_a_form(&list, form_name, &count, &ret))
-		return WERR_INVALID_PARAM;
+	
+	if ( !delete_a_form(&list, form_name, &count, &status ))
+		goto done;
 
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
-	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
-	return ret;
+	return status;
 }
 
 /****************************************************************************
@@ -7356,40 +7740,48 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
-		return WERR_BADFID;
+	/* forms can be modified on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
 		DEBUG(2,("_spoolss_setform: denied by handle permissions\n"));
-		return WERR_ACCESS_DENIED;
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't set if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 
-	count=get_ntforms(&list);
+	count = get_ntforms(&list);
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
 
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
-	return WERR_OK;
+	return status;
 }
 
 /****************************************************************************
@@ -7638,7 +8030,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 		return WERR_NOMEM;
 	}
 		
-	for (i=0; i<count && found==False; i++) {
+	for (i=0; i<count && found==False; i++) { 
 		if (queue[i].job==(int)jobid)
 			found=True;
 	}
@@ -7651,8 +8043,6 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	}
 	
 	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
-	
-	SAFE_FREE(queue);
 	
 	*needed += spoolss_size_job_info_1(info_1);
 
@@ -7676,12 +8066,13 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 
 static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
-	int i=0;
-	BOOL found=False;
-	JOB_INFO_2 *info_2;
+	int 		i = 0;
+	BOOL 		found = False;
+	JOB_INFO_2 	*info_2;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-	WERROR ret;
-	DEVICEMODE *devmode = NULL;
+	WERROR 		ret;
+	DEVICEMODE 	*devmode = NULL;
+	NT_DEVICEMODE	*nt_devmode = NULL;
 
 	info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
 
@@ -7692,12 +8083,14 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		goto done;
 	}
 
-	for (i=0; i<count && found==False; i++) {
-		if (queue[i].job==(int)jobid)
-			found=True;
+	for ( i=0; i<count && found==False; i++ ) 
+	{
+		if (queue[i].job == (int)jobid)
+			found = True;
 	}
 	
-	if (found==False) {
+	if ( !found ) 
+	{
 		/* NT treats not found as bad param... yet another bad
 		   choice */
 		ret = WERR_INVALID_PARAM;
@@ -7707,7 +8100,22 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(ret))
 		goto done;
-	if (construct_dev_mode(snum) == NULL) {
+	
+	/* 
+	 * if the print job does not have a DEVMODE associated with it, 
+	 * just use the one for the printer 
+	 */
+	 
+	if ( !(nt_devmode=print_job_devmode( snum, jobid )) )
+		devmode = construct_dev_mode(snum);
+	else {
+		if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) != NULL) {
+			ZERO_STRUCTP( devmode );
+			convert_nt_devicemode( devmode, nt_devmode );
+		}
+	}
+	
+	if ( !devmode ) {
 		ret = WERR_NOMEM;
 		goto done;
 	}
@@ -7733,7 +8141,6 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
  done:
 	/* Cleanup allocated memory */
 
-	SAFE_FREE(queue);
 	free_job_info_2(info_2);	/* Also frees devmode */
 	SAFE_FREE(info_2);
 	free_a_printer(&ntprinter, 2);
@@ -7752,10 +8159,11 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
+	WERROR		wstatus = WERR_OK;
 
 	int snum;
 	int count;
-	print_queue_struct *queue=NULL;
+	print_queue_struct 	*queue = NULL;
 	print_status_struct prt_status;
 
 	/* that's an [in out] buffer */
@@ -7764,7 +8172,7 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 
 	DEBUG(5,("spoolss_getjob\n"));
 	
-	*needed=0;
+	*needed = 0;
 	
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
@@ -7774,19 +8182,29 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
 	             count, prt_status.status, prt_status.message));
 		
-	switch (level) {
+	switch ( level ) {
 	case 1:
-		return getjob_level_1(queue, count, snum, jobid, buffer, offered, needed);
+			wstatus = getjob_level_1(queue, count, snum, jobid, 
+				buffer, offered, needed);
+			break;
 	case 2:
-		return getjob_level_2(queue, count, snum, jobid, buffer, offered, needed);
+			wstatus = getjob_level_2(queue, count, snum, jobid, 
+				buffer, offered, needed);
+			break;
 	default:
-		SAFE_FREE(queue);
-		return WERR_UNKNOWN_LEVEL;
+			wstatus = WERR_UNKNOWN_LEVEL;
+			break;
 	}
+	
+	SAFE_FREE(queue);
+	return wstatus;
 }
 
 /********************************************************************
- * spoolss_getprinterdataex
+ spoolss_getprinterdataex
+ 
+ From MSDN documentation of GetPrinterDataEx: pass request
+ to GetPrinterData if key is "PrinterDriverData".
  ********************************************************************/
 
 WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u, SPOOL_R_GETPRINTERDATAEX *r_u)
@@ -7797,112 +8215,181 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	uint32 		*out_size = &r_u->size;
 	uint8 		**data = &r_u->data;
 	uint32 		*needed = &r_u->needed;
-
-	fstring 	key, value;
+	fstring 	keyname, valuename;
+	
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
-	BOOL 		found = False;
+	
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 			snum = 0;
+	WERROR 			status = WERR_OK;
 
 	DEBUG(4,("_spoolss_getprinterdataex\n"));
 
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
-        unistr2_to_ascii(value, &q_u->valuename, sizeof(value) - 1);
+        unistr2_to_ascii(keyname, &q_u->keyname, sizeof(keyname) - 1);
+        unistr2_to_ascii(valuename, &q_u->valuename, sizeof(valuename) - 1);
+	
+	DEBUG(10, ("_spoolss_getprinterdataex: key => [%s], value => [%s]\n", 
+		keyname, valuename));
 
 	/* in case of problem, return some default values */
-	*needed=0;
-	*type=0;
-	*out_size=0;
+	
+	*needed   = 0;
+	*type     = 0;
+	*out_size = in_size;
 
-		
 	if (!Printer) {
-		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
-		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return WERR_BADFID;
+		DEBUG(2,("_spoolss_getprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		status = WERR_BADFID;
+		goto done;
 	}
 
-		
 	/* Is the handle to a printer or to the server? */
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-	{
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
 		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
-		return WERR_INVALID_PARAM;
-	}
-	else
-	{
-	        /* 
-		 * From MSDN documentation of GetPrinterDataEx: pass request
-		 * to GetPrinterData if key is "PrinterDriverData". This is 
-		 * the only key we really support. Other keys to implement:
-		 * (a) DsDriver
-		 * (b) DsSpooler
-		 * (c) PnPData
-		 * (d) DsUser
-		 */
-	   
-		if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-			return WERR_BADFILE;
-
-		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
-		found = getprinterdata_printer(p, p->mem_ctx, handle, value, 
-			type, data, needed, in_size);
-		
-	}
-	 
-	if (!found) {
-		DEBUG(5, ("value not found, allocating %d\n", *out_size));
-		
-		/* reply this param doesn't exist */
-		if (*out_size) {
-			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
-				return WERR_NOMEM;
-		} else {
-			*data = NULL;
-		}
-
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 	
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if ( !W_ERROR_IS_OK(status) )
+		goto done;
+
+	/* check to see if the keyname is valid */
+	if ( !strlen(keyname) ) {
+		status = WERR_INVALID_PARAM;
+		goto done;
+	}
+	
+	if ( lookup_printerkey( &printer->info_2->data, keyname ) == -1 ) {
+		DEBUG(4,("_spoolss_getprinterdataex: Invalid keyname [%s]\n", keyname ));
+		free_a_printer( &printer, 2 );
+		status = WERR_BADFILE;
+		goto done;
+	}
+	
+	/* When given a new keyname, we should just create it */
+
+	status = get_printer_dataex( p->mem_ctx, printer, keyname, valuename, type, data, needed, in_size );
+	
 	if (*needed > *out_size)
-		return WERR_MORE_DATA;
-	else
-		return WERR_OK;
+		status = WERR_MORE_DATA;
+
+done:
+	if ( !W_ERROR_IS_OK(status) ) 
+	{
+		DEBUG(5, ("error: allocating %d\n", *out_size));
+		
+		/* reply this param doesn't exist */
+		
+		if ( *out_size ) 
+		{
+			if( (*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL ) {
+				status = WERR_NOMEM;
+				goto done;
+			}
+		} 
+		else {
+			*data = NULL;
+	}
+	}
+	
+	if ( printer )
+	free_a_printer( &printer, 2 );
+	
+	return status;
 }
 
 /********************************************************************
- * spoolss_setprinterdata
+ * spoolss_setprinterdataex
  ********************************************************************/
 
 WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
 {
-	SPOOL_Q_SETPRINTERDATA q_u_local;
-	SPOOL_R_SETPRINTERDATA r_u_local;
-        fstring key;
+	POLICY_HND 		*handle = &q_u->handle; 
+	uint32 			type = q_u->type;
+	uint8 			*data = q_u->data;
+	uint32 			real_len = q_u->real_len;
 
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 			snum = 0;
+	WERROR 			status = WERR_OK;
+	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
+	fstring			valuename;
+	fstring			keyname;
+	char			*oid_string;
+	
 	DEBUG(4,("_spoolss_setprinterdataex\n"));
 
         /* From MSDN documentation of SetPrinterDataEx: pass request to
            SetPrinterData if key is "PrinterDriverData" */
 
-        unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	if (!Printer) {
+		DEBUG(2,("_spoolss_setprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
 
-        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-	        return WERR_INVALID_PARAM;
-		
-	ZERO_STRUCT(q_u_local);	
-	ZERO_STRUCT(r_u_local);	
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
+
+	/* 
+	 * Access check : NT returns "access denied" if you make a 
+	 * SetPrinterData call without the necessary privildge.
+	 * we were originally returning OK if nothing changed
+	 * which made Win2k issue **a lot** of SetPrinterData
+	 * when connecting to a printer  --jerry
+	 */
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) 
+	{
+		DEBUG(3, ("_spoolss_setprinterdataex: change denied by handle access permissions\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+
+        unistr2_to_ascii( valuename, &q_u->value, sizeof(valuename) - 1);
+        unistr2_to_ascii( keyname, &q_u->key, sizeof(keyname) - 1);
 	
-	/* make a copy to call _spoolss_setprinterdata() */
+	/* check for OID in valuename */
+	
+	if ( (oid_string = strchr( valuename, ',' )) != NULL )
+	{
+		*oid_string = '\0';
+		oid_string++;
+	}
 
-	memcpy(&q_u_local.handle, &q_u->handle, sizeof(POLICY_HND));
-	copy_unistr2(&q_u_local.value, &q_u->value);
-	q_u_local.type = q_u->type;
-	q_u_local.max_len = q_u->max_len;
-	q_u_local.data = q_u->data;
-	q_u_local.real_len = q_u->real_len;
-	q_u_local.numeric_data = q_u->numeric_data;
+	/* save the registry data */
+	
+	status = set_printer_dataex( printer, keyname, valuename, type, data, real_len ); 
+	
+	/* save the OID if one was specified and the previous set call succeeded */
+	
+	if ( W_ERROR_IS_OK(status) && oid_string )
+	{
+
+		fstrcat( keyname, "\\" );
+		fstrcat( keyname, SPOOL_OID_KEY );
 		
-	return _spoolss_setprinterdata(p, &q_u_local, &r_u_local);
+		/* 
+		 * I'm not checking the status here on purpose.  Don't know 
+		 * if this is right, but I'm returning the status from the 
+		 * previous set_printer_dataex() call.  I have no idea if 
+		 * this is right.    --jerry
+		 */
+		 
+		set_printer_dataex( printer, keyname, valuename, 
+		                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
+	}
+	
+	free_a_printer(&printer, 2);
+
+	return status;
 }
 
 
@@ -7912,26 +8399,44 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
 WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX *q_u, SPOOL_R_DELETEPRINTERDATAEX *r_u)
 {
-	SPOOL_Q_DELETEPRINTERDATA q_u_local;
-	SPOOL_R_DELETEPRINTERDATA r_u_local;
-	fstring key;
-	
-        /* From MSDN documentation of SetPrinterDataEx: pass request to
-           SetPrinterData if key is "PrinterDriverData" */
+	POLICY_HND 	*handle = &q_u->handle;
+	UNISTR2 	*value = &q_u->valuename;
+	UNISTR2 	*key = &q_u->keyname;
 
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 		snum=0;
+	WERROR 		status = WERR_OK;
+	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
+	pstring		valuename, keyname;
+	
+	DEBUG(5,("spoolss_deleteprinterdataex\n"));
+	
+	if (!Printer) {
+		DEBUG(2,("_spoolss_deleteprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
 
-        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-	        return WERR_INVALID_PARAM;
-	
-	memcpy(&q_u_local.handle, &q_u->handle, sizeof(POLICY_HND));
-	copy_unistr2(&q_u_local.valuename, &q_u->valuename);
-	
-	return _spoolss_deleteprinterdata( p, &q_u_local, &r_u_local );
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_deleteprinterdataex: printer properties change denied by handle\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+
+	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
+	unistr2_to_ascii( keyname, key, sizeof(keyname)-1 );
+
+	status = delete_printer_dataex( printer, keyname, valuename );
+
+	free_a_printer(&printer, 2);
+
+	return status;
 }
-
-
-
 
 /********************************************************************
  * spoolss_enumprinterkey
@@ -7940,73 +8445,69 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 
 WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u)
 {
-	fstring key;
-	uint16  *enumkeys = NULL;
-	char*   ptr = NULL;
-	int     i;
-	int	printerkey_len = strlen(SPOOL_PRINTERDATA_KEY)+1;	
-
+	fstring 	key;
+	fstring		*keynames = NULL;
+	uint16  	*enumkeys = NULL;
+	int		num_keys;
+	int		printerkey_len;
+	POLICY_HND	*handle = &q_u->handle;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	NT_PRINTER_DATA	*data;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 		snum = 0;
+	WERROR		status = WERR_BADFILE;
+	
+	
 	DEBUG(4,("_spoolss_enumprinterkey\n"));
 
+	if (!Printer) {
+		DEBUG(2,("_spoolss_enumprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
+
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+		
+	/* get the list of subkey names */
+	
 	unistr2_to_ascii( key, &q_u->key, sizeof(key)-1 );
+	data = &printer->info_2->data;
 
-	/* 
-	 * we only support enumating all keys (key == "")
-	 * Of course, the only key we support is the "PrinterDriverData" 
-	 * key
-	 */
+	num_keys = get_printer_subkeys( data, key, &keynames );
 
-	if ( !strlen( key ) )
-	{
-		r_u->needed = printerkey_len*2;
-		
-		if ( q_u->size < r_u->needed )
-			return WERR_MORE_DATA;
-	
-		if ( !(enumkeys = talloc( p->mem_ctx, printerkey_len*2 )) ) {
-			DEBUG(0,("_spoolss_enumprinterkey: talloc() failed for [%d] bytes!\n",
-				printerkey_len));
-			return WERR_NOMEM;
-		}
-		
-		ptr = SPOOL_PRINTERDATA_KEY;
-		for ( i=0; i<(printerkey_len-1); i++ )
-		{
-			enumkeys[i] = (uint16)(*ptr);
-			ptr++;
-		}
-
-		/* tag of '\0's */
-		
-		enumkeys[i] = 0x0;
-	
-		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, printerkey_len, enumkeys))
-			return WERR_BADFILE;
-			
-		return WERR_OK;
+	if ( num_keys == -1 ) {
+		status = WERR_BADFILE;
+		goto done;
 	}
-	
-	/* The "PrinterDriverData" key should have no subkeys */
-	if ( strcmp(key, SPOOL_PRINTERDATA_KEY) == 0 )
-	{
-		uint16	dummy_key = 0;
-		
-		r_u->needed = 2;
-		
-		if (q_u->size < r_u->needed)
-			return WERR_MORE_DATA;
-			
-		if ( !make_spoolss_buffer5(p->mem_ctx, &r_u->keys, 1, &dummy_key ) )
-			return WERR_BADFILE;
-			
-		return WERR_OK;
-	}
-	
 
-	/* The return value for an unknown key is documented in MSDN
-	   EnumPrinterKey description */
-	   
-        return WERR_BADFILE;
+	printerkey_len = init_unistr_array( &enumkeys,  keynames, NULL );
+
+	r_u->needed = printerkey_len*2;
+
+	if ( q_u->size < r_u->needed ) {
+		status = WERR_MORE_DATA;
+		goto done;
+	}
+
+	if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, printerkey_len, enumkeys)) {
+		status = WERR_NOMEM;
+		goto done;
+	}
+			
+	status = WERR_OK;
+
+	if ( q_u->size < r_u->needed ) 
+		status = WERR_MORE_DATA;
+
+done:
+	free_a_printer( &printer, 2 );
+	SAFE_FREE( keynames );
+	
+        return status;
 }
 
 /********************************************************************
@@ -8015,25 +8516,49 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 
 WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u, SPOOL_R_DELETEPRINTERKEY *r_u)
 {
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, &q_u->handle);
-	fstring key;
+	POLICY_HND		*handle = &q_u->handle;
+	Printer_entry 		*Printer = find_printer_index_by_hnd(p, &q_u->handle);
+	fstring 		key;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 			snum=0;
+	WERROR			status;
+	
+	DEBUG(5,("spoolss_deleteprinterkey\n"));
 	
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(&q_u->handle)));
+		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+
+	/* if keyname == NULL, return error */
+	
+	if ( !q_u->keyname.buffer )
+		return WERR_INVALID_PARAM;
+		
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_deleteprinterkey: printer properties change denied by handle\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+	
+	/* delete the key and all subneys */
 	
         unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+ 
+	status = delete_all_printer_data( printer->info_2, key );	
 
-        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-	        return WERR_INVALID_PARAM;
-		
-	/* 
-	 * this is what 2k returns when you try to delete the "PrinterDriverData"
-	 * key
-	 */
-	 
-	return WERR_ACCESS_DENIED;	
+	if ( W_ERROR_IS_OK(status) )
+		status = mod_a_printer(*printer, 2);
+	
+	free_a_printer( &printer, 2 );
+	
+	return status;
 }
 
 
@@ -8068,7 +8593,6 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		return WERR_BADFID;
 	}
 
-		
 	/* first get the printer off of disk */
 	
 	if (!get_printer_snum(p,handle, &snum))

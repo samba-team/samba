@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB client
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Simo Sorce 2001
+   Copyright (C) Simo Sorce 2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -307,7 +307,7 @@ static BOOL do_this_one(file_info *finfo)
 
 	if (*fileselection && 
 	    !mask_match(finfo->name,fileselection,False)) {
-		DEBUG(3,("match_match %s failed\n", finfo->name));
+		DEBUG(3,("mask_match %s failed\n", finfo->name));
 		return False;
 	}
 
@@ -649,15 +649,16 @@ static int cmd_du(void)
 /****************************************************************************
   get a file from rname to lname
   ****************************************************************************/
-static int do_get(char *rname,char *lname)
+static int do_get(char *rname, char *lname, BOOL reget)
 {  
-	int handle=0,fnum;
+	int handle = 0, fnum;
 	BOOL newhandle = False;
 	char *data;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
 	uint16 attr;
 	size_t size;
+	off_t start = 0;
 	off_t nread = 0;
 	int rc = 0;
 
@@ -677,7 +678,18 @@ static int do_get(char *rname,char *lname)
 	if(!strcmp(lname,"-")) {
 		handle = fileno(stdout);
 	} else {
-		handle = sys_open(lname,O_WRONLY|O_CREAT|O_TRUNC,0644);
+		if (reget) {
+			handle = sys_open(lname, O_WRONLY|O_CREAT, 0644);
+			if (handle >= 0) {
+				start = sys_lseek(handle, 0, SEEK_END);
+				if (start == -1) {
+					d_printf("Error seeking local file\n");
+					return 1;
+				}
+			}
+		} else {
+			handle = sys_open(lname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+		}
 		newhandle = True;
 	}
 	if (handle < 0) {
@@ -695,7 +707,7 @@ static int do_get(char *rname,char *lname)
 	}
 
 	DEBUG(2,("getting file %s of size %.0f as %s ", 
-		 lname, (double)size, lname));
+		 rname, (double)size, lname));
 
 	if(!(data = (char *)malloc(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
@@ -704,7 +716,7 @@ static int do_get(char *rname,char *lname)
 	}
 
 	while (1) {
-		int n = cli_read(cli, fnum, data, nread, read_size);
+		int n = cli_read(cli, fnum, data, nread + start, read_size);
 
 		if (n <= 0) break;
  
@@ -717,7 +729,7 @@ static int do_get(char *rname,char *lname)
 		nread += n;
 	}
 
-	if (nread < size) {
+	if (nread + start < size) {
 		DEBUG (0, ("Short read when getting file %s. Only got %ld bytes.\n",
 			    rname, (long)nread));
 
@@ -782,7 +794,7 @@ static int cmd_get(void)
 	
 	next_token_nr(NULL,lname,NULL,sizeof(lname));
 	
-	return do_get(rname, lname);
+	return do_get(rname, lname, False);
 }
 
 
@@ -816,7 +828,7 @@ static void do_mget(file_info *finfo)
 	if (!(finfo->mode & aDIR)) {
 		pstrcpy(rname,cur_dir);
 		pstrcat(rname,finfo->name);
-		do_get(rname,finfo->name);
+		do_get(rname, finfo->name, False);
 		return;
 	}
 
@@ -880,7 +892,7 @@ static int cmd_more(void)
 	}
 	dos_clean_name(rname);
 
-	rc = do_get(rname,lname);
+	rc = do_get(rname, lname, False);
 
 	pager=getenv("PAGER");
 
@@ -1046,19 +1058,31 @@ static int cmd_altname(void)
 /****************************************************************************
   put a single file
   ****************************************************************************/
-static int do_put(char *rname,char *lname)
+static int do_put(char *rname, char *lname, BOOL reput)
 {
 	int fnum;
 	XFILE *f;
-	int nread=0;
-	char *buf=NULL;
-	int maxwrite=io_bufsize;
+	int start = 0;
+	int nread = 0;
+	char *buf = NULL;
+	int maxwrite = io_bufsize;
 	int rc = 0;
 	
 	struct timeval tp_start;
 	GetTimeOfDay(&tp_start);
 
-	fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+	if (reput) {
+		fnum = cli_open(cli, rname, O_RDWR|O_CREAT, DENY_NONE);
+		if (fnum >= 0) {
+			if (!cli_qfileinfo(cli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
+			    !cli_getattrE(cli, fnum, NULL, &start, NULL, NULL, NULL)) {
+				d_printf("getattrib: %s\n",cli_errstr(cli));
+				return 1;
+			}
+		}
+	} else {
+		fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+	}
   
 	if (fnum == -1) {
 		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
@@ -1075,6 +1099,12 @@ static int do_put(char *rname,char *lname)
 		/* size of file is not known */
 	} else {
 		f = x_fopen(lname,O_RDONLY, 0);
+		if (f && reput) {
+			if (x_tseek(f, start, SEEK_SET) == -1) {
+				d_printf("Error seeking local file\n");
+				return 1;
+			}
+		}
 	}
 
 	if (!f) {
@@ -1104,7 +1134,7 @@ static int do_put(char *rname,char *lname)
 			break;
 		}
 
-		ret = cli_write(cli, fnum, 0, buf, nread, n);
+		ret = cli_write(cli, fnum, 0, buf, nread + start, n);
 
 		if (n != ret) {
 			d_printf("Error writing file: %s\n", cli_errstr(cli));
@@ -1192,7 +1222,7 @@ static int cmd_put(void)
 		}
 	}
 
-	return do_put(rname,lname);
+	return do_put(rname, lname, False);
 }
 
 /*************************************
@@ -1384,7 +1414,7 @@ static int cmd_mput(void)
 
 			dos_format(rname);
 
-			do_put(rname, lname);
+			do_put(rname, lname, False);
 		}
 		free_file_list(file_list);
 		SAFE_FREE(quest);
@@ -1456,7 +1486,7 @@ static int cmd_print(void)
 		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)sys_getpid());
 	}
 
-	return do_put(rname, lname);
+	return do_put(rname, lname, False);
 }
 
 
@@ -1866,8 +1896,8 @@ static int cmd_printmode(void)
 }
 
 /****************************************************************************
-do the lcd command
-****************************************************************************/
+ do the lcd command
+ ****************************************************************************/
 static int cmd_lcd(void)
 {
 	fstring buf;
@@ -1881,8 +1911,70 @@ static int cmd_lcd(void)
 }
 
 /****************************************************************************
-list a share name
-****************************************************************************/
+ get a file restarting at end of local file
+ ****************************************************************************/
+static int cmd_reget(void)
+{
+	pstring local_name;
+	pstring remote_name;
+	char *p;
+
+	pstrcpy(remote_name, cur_dir);
+	pstrcat(remote_name, "\\");
+	
+	p = remote_name + strlen(remote_name);
+	
+	if (!next_token_nr(NULL, p, NULL, sizeof(remote_name) - strlen(remote_name))) {
+		d_printf("reget <filename>\n");
+		return 1;
+	}
+	pstrcpy(local_name, p);
+	dos_clean_name(remote_name);
+	
+	next_token_nr(NULL, local_name, NULL, sizeof(local_name));
+	
+	return do_get(remote_name, local_name, True);
+}
+
+/****************************************************************************
+ put a file restarting at end of local file
+ ****************************************************************************/
+static int cmd_reput(void)
+{
+	pstring local_name;
+	pstring remote_name;
+	fstring buf;
+	char *p = buf;
+	SMB_STRUCT_STAT st;
+	
+	pstrcpy(remote_name, cur_dir);
+	pstrcat(remote_name, "\\");
+  
+	if (!next_token_nr(NULL, p, NULL, sizeof(buf))) {
+		d_printf("reput <filename>\n");
+		return 1;
+	}
+	pstrcpy(local_name, p);
+  
+	if (!file_exist(local_name, &st)) {
+		d_printf("%s does not exist\n", local_name);
+		return 1;
+	}
+
+	if (next_token_nr(NULL, p, NULL, sizeof(buf)))
+		pstrcat(remote_name, p);
+	else
+		pstrcat(remote_name, local_name);
+	
+	dos_clean_name(remote_name);
+
+	return do_put(remote_name, local_name, True);
+}
+
+
+/****************************************************************************
+ list a share name
+ ****************************************************************************/
 static void browse_fn(const char *name, uint32 m, 
                       const char *comment, void *state)
 {
@@ -2009,7 +2101,9 @@ static struct
   {"quit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
+  {"reget",cmd_reget,"<remote name> [local name] get a file restarting at end of local file",{COMPL_REMOTE,COMPL_LOCAL}},
   {"rename",cmd_rename,"<src> <dest> rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"reput",cmd_reput,"<local name> [remote name] put a file restarting at end of remote file",{COMPL_LOCAL,COMPL_REMOTE}},
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
@@ -2524,16 +2618,21 @@ static int do_message_op(void)
 {
 	struct in_addr ip;
 	struct nmb_name called, calling;
-
-        zero_ip(&ip);
+	fstring server_name;
+	char name_type_hex[10];
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
+	safe_strcpy(server_name, desthost, sizeof(server_name));
+	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
+	safe_strcat(server_name, name_type_hex, sizeof(server_name));
+
         zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) || !cli_connect(cli, desthost, &ip)) {
+	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) ||
+	    !cli_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;
 	}
@@ -2659,7 +2758,6 @@ static void remember_query_host(const char *arg,
 			got_pass = True;
 			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper(username);
 	}
 
 	/* modification to support PASSWD environmental var
@@ -2676,7 +2774,6 @@ static void remember_query_host(const char *arg,
 
 	if (*username == 0 && getenv("LOGNAME")) {
 		pstrcpy(username,getenv("LOGNAME"));
-		strupper(username);
 	}
 
 	if (*username == 0) {

@@ -553,9 +553,24 @@ void *dptr_fetch_lanman2(int dptr_num)
 
 BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int dirtype)
 {
-  if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
-    return False;
-  return True;
+	int mask;
+
+	/* Check the "may have" search bits. */
+	if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
+		return False;
+
+	/* Check the "must have" bits, which are the may have bits shifted eight */
+	/* If must have bit is set, the file/dir can not be returned in search unless the matching
+		file attribute is set */
+	mask = ((dirtype >> 8) & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM)); /* & 0x37 */
+	if(mask) {
+		if((mask & (mode & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM))) == mask)   /* check if matching attribute present */
+			return True;
+		else
+			return False;
+	}
+
+	return True;
 }
 
 static BOOL mangle_mask_match(connection_struct *conn, char *filename, char *mask)
@@ -663,18 +678,15 @@ typedef struct
   char *current;
 } Dir;
 
-
-
 /*******************************************************************
-check to see if a user can read a file. This is only approximate,
-it is used as part of the "hide unreadable" option. Don't
-use it for anything security sensitive
+ Check to see if a user can read a file. This is only approximate,
+ it is used as part of the "hide unreadable" option. Don't
+ use it for anything security sensitive.
 ********************************************************************/
 
-static BOOL user_can_read_file(connection_struct *conn, char *name)
+static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
 	extern struct current_user current_user;
-	SMB_STRUCT_STAT ste;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;
@@ -682,8 +694,6 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	int access_mode;
 	NTSTATUS status;
 	uint32 access_granted;
-
-	ZERO_STRUCT(ste);
 
 	/*
 	 * If user is a member of the Admin group
@@ -694,16 +704,16 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 		return True;
 
 	/* If we can't stat it does not show it */
-	if (vfs_stat(conn, name, &ste) != 0)
+	if (!VALID_STAT(*pst) && (vfs_stat(conn, name, pst) != 0))
 		return False;
 
 	/* Pseudo-open the file (note - no fd's created). */
 
-	if(S_ISDIR(ste.st_mode))	
-		 fsp = open_directory(conn, name, &ste, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+	if(S_ISDIR(pst->st_mode))	
+		 fsp = open_directory(conn, name, pst, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
 	else
-		fsp = open_file_shared1(conn, name, &ste, FILE_READ_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
+		fsp = open_file_shared1(conn, name, pst, FILE_READ_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
 			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
 
 	if (!fsp)
@@ -722,16 +732,15 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 }
 
 /*******************************************************************
-check to see if a user can write a file (and only files, we do not
-check dirs on this one). This is only approximate,
-it is used as part of the "hide unwriteable" option. Don't
-use it for anything security sensitive
+ Check to see if a user can write a file (and only files, we do not
+ check dirs on this one). This is only approximate,
+ it is used as part of the "hide unwriteable" option. Don't
+ use it for anything security sensitive.
 ********************************************************************/
 
-static BOOL user_can_write_file(connection_struct *conn, char *name)
+static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
 	extern struct current_user current_user;
-	SMB_STRUCT_STAT ste;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;
@@ -739,8 +748,6 @@ static BOOL user_can_write_file(connection_struct *conn, char *name)
 	int access_mode;
 	NTSTATUS status;
 	uint32 access_granted;
-
-	ZERO_STRUCT(ste);
 
 	/*
 	 * If user is a member of the Admin group
@@ -751,15 +758,15 @@ static BOOL user_can_write_file(connection_struct *conn, char *name)
 		return True;
 
 	/* If we can't stat it does not show it */
-	if (vfs_stat(conn, name, &ste) != 0)
+	if (!VALID_STAT(*pst) && (vfs_stat(conn, name, pst) != 0))
 		return False;
 
 	/* Pseudo-open the file (note - no fd's created). */
 
-	if(S_ISDIR(ste.st_mode))	
+	if(S_ISDIR(pst->st_mode))	
 		return True;
 	else
-		fsp = open_file_shared1(conn, name, &ste, FILE_WRITE_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
+		fsp = open_file_shared1(conn, name, pst, FILE_WRITE_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
 			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
 
 	if (!fsp)
@@ -775,6 +782,30 @@ static BOOL user_can_write_file(connection_struct *conn, char *name)
 
 	return se_access_check(psd, current_user.nt_user_token, FILE_WRITE_DATA,
                                  &access_granted, &status);
+}
+
+/*******************************************************************
+  Is a file a "special" type ?
+********************************************************************/
+
+static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
+{
+	/*
+	 * If user is a member of the Admin group
+	 * we never hide files from them.
+	 */
+
+	if (conn->admin_user)
+		return True;
+
+	/* If we can't stat it does not show it */
+	if (!VALID_STAT(*pst) && (vfs_stat(conn, name, pst) != 0))
+		return True;
+
+	if (S_ISREG(pst->st_mode) || S_ISDIR(pst->st_mode) || S_ISLNK(pst->st_mode))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -802,6 +833,8 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 	while (True) {
 		int l;
 		BOOL normal_entry = True;
+		SMB_STRUCT_STAT st;
+		char *entry = NULL;
 
 		if (used == 0) {
 			n = ".";
@@ -818,6 +851,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 			normal_entry = True;
 	    	}
 
+		ZERO_STRUCT(st);
 		l = strlen(n)+1;
 
 		/* If it's a vetoed file, pretend it doesn't even exist */
@@ -826,29 +860,44 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 
 		/* Honour _hide unreadable_ option */
 		if (normal_entry && conn && lp_hideunreadable(SNUM(conn))) {
-			char *entry;
 			int ret=0;
       
-			if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
-				ret = user_can_read_file(conn, entry);
-				SAFE_FREE(entry);
+			if (entry || asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+				ret = user_can_read_file(conn, entry, &st);
 			}
-			if (!ret)
+			if (!ret) {
+				SAFE_FREE(entry);
 				continue;
+			}
 		}
 
 		/* Honour _hide unwriteable_ option */
 		if (normal_entry && conn && lp_hideunwriteable_files(SNUM(conn))) {
-			char *entry;
 			int ret=0;
       
-			if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
-				ret = user_can_write_file(conn, entry);
-				SAFE_FREE(entry);
+			if (entry || asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+				ret = user_can_write_file(conn, entry, &st);
 			}
-			if (!ret)
+			if (!ret) {
+				SAFE_FREE(entry);
 				continue;
+			}
 		}
+
+		/* Honour _hide_special_ option */
+		if (normal_entry && conn && lp_hide_special_files(SNUM(conn))) {
+			int ret=0;
+      
+			if (entry || asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+				ret = file_is_special(conn, entry, &st);
+			}
+			if (ret) {
+				SAFE_FREE(entry);
+				continue;
+			}
+		}
+
+		SAFE_FREE(entry);
 
 		if (used + l > dirp->mallocsize) {
 			int s = MAX(used+l,used+2000);

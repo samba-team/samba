@@ -152,11 +152,106 @@ password ?).\n", cli->desthost ));
         return result;
 }
 
+/****************************************************************************
+LSA Authenticate 3
+
+Send the client credential, receive back a server credential.
+Ensure that the server credential returned matches the session key 
+encrypt of the server challenge originally received. JRA.
+****************************************************************************/
+
+NTSTATUS cli_net_auth3(struct cli_state *cli, 
+		       uint16 sec_chan, 
+		       uint32 *neg_flags, DOM_CHAL *srv_chal)
+{
+        prs_struct qbuf, rbuf;
+        NET_Q_AUTH_3 q;
+        NET_R_AUTH_3 r;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	extern pstring global_myname;
+
+        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+        /* create and send a MSRPC command with api NET_AUTH2 */
+
+        DEBUG(4,("cli_net_auth3: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
+                 cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+                 credstr(cli->clnt_cred.challenge.data), *neg_flags));
+
+        /* store the parameters */
+        init_q_auth_3(&q, cli->srv_name_slash, cli->mach_acct, 
+                      sec_chan, global_myname, &cli->clnt_cred.challenge, 
+                      *neg_flags);
+
+        /* turn parameters into data stream */
+
+        if (!net_io_q_auth_3("", &q,  &qbuf, 0) ||
+            !rpc_api_pipe_req(cli, NET_AUTH3, &qbuf, &rbuf)) {
+                goto done;
+        }
+        
+        /* Unmarshall response */
+        
+        if (!net_io_r_auth_3("", &r, &rbuf, 0)) {
+                goto done;
+        }
+
+        result = r.status;
+	*neg_flags = r.srv_flgs.neg_flags;
+
+        if (NT_STATUS_IS_OK(result)) {
+                UTIME zerotime;
+                
+                /*
+                 * Check the returned value using the initial
+                 * server received challenge.
+                 */
+
+                zerotime.time = 0;
+                if (cred_assert( &r.srv_chal, cli->sess_key, srv_chal, 
+                                 zerotime) == 0) {
+
+                        /*
+                         * Server replied with bad credential. Fail.
+                         */
+                        DEBUG(0,("cli_net_auth3: server %s replied with bad credential (bad machine \
+password ?).\n", cli->desthost ));
+                        result = NT_STATUS_ACCESS_DENIED;
+                        goto done;
+                }
+        }
+
+ done:
+        prs_mem_free(&qbuf);
+        prs_mem_free(&rbuf);
+        
+        return result;
+}
+
+/* Return the secure channel type depending on the server role. */
+
+uint16 get_sec_chan(void)
+{
+	uint16 sec_chan = SEC_CHAN_WKSTA;
+
+	switch (lp_server_role()) {
+	case ROLE_DOMAIN_PDC:
+		sec_chan = SEC_CHAN_DOMAIN;
+		break;
+	case ROLE_DOMAIN_BDC:
+		sec_chan = SEC_CHAN_BDC;
+		break;
+	}
+
+	return sec_chan;
+}
+
 /* Initialize domain session credentials */
 
 NTSTATUS cli_nt_setup_creds(struct cli_state *cli, 
 			    uint16 sec_chan,
-			    const unsigned char mach_pwd[16])
+			    const unsigned char mach_pwd[16], uint32 *neg_flags, int level)
 {
         DOM_CHAL clnt_chal;
         DOM_CHAL srv_chal;
@@ -182,24 +277,30 @@ NTSTATUS cli_nt_setup_creds(struct cli_state *cli,
                          cli->sess_key);
         memset((char *)cli->sess_key+8, '\0', 8);
 
-        /******************* Authenticate 2 ********************/
+        /******************* Authenticate 2/3 ********************/
 
-        /* calculate auth-2 credentials */
+        /* calculate auth-2/3 credentials */
         zerotime.time = 0;
-        cred_create(cli->sess_key, &clnt_chal, zerotime, 
-                    &cli->clnt_cred.challenge);
+        cred_create(cli->sess_key, &clnt_chal, zerotime, &cli->clnt_cred.challenge);
 
         /*  
-         * Send client auth-2 challenge.
-         * Receive an auth-2 challenge response and check it.
+         * Send client auth-2/3 challenge.
+         * Receive an auth-2/3 challenge response and check it.
          */
-        
-	result = cli_net_auth2(cli, sec_chan, 0x000001ff, &srv_chal);
+        switch (level) {
+		case 2:
+			result = cli_net_auth2(cli, sec_chan, *neg_flags, &srv_chal);
+			break;
+		case 3:
+			result = cli_net_auth3(cli, sec_chan, neg_flags, &srv_chal);
+			break;
+		default:
+			DEBUG(1,("cli_nt_setup_creds: unsupported auth level: %d\n", level));
+			break;
+	}
 
-	if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(1,("cli_nt_setup_creds: auth2 challenge failed %s\n",
-			 nt_errstr(result)));
-        }
+	if (!NT_STATUS_IS_OK(result))
+                DEBUG(1,("cli_nt_setup_creds: auth%d challenge failed %s\n", level, nt_errstr(result)));
 
         return result;
 }
@@ -257,24 +358,23 @@ file.  They should be combined at some stage.  )-:
 
 static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 {
-  /*
-   * Create the new client credentials.
-   */
+	/*
+	 * Create the new client credentials.
+	 */
+	
+	cli->clnt_cred.timestamp.time = time(NULL);
+	
+	memcpy(new_clnt_cred, &cli->clnt_cred, sizeof(*new_clnt_cred));
 
-  cli->clnt_cred.timestamp.time = time(NULL);
-
-  memcpy(new_clnt_cred, &cli->clnt_cred, sizeof(*new_clnt_cred));
-
-  /* Calculate the new credentials. */
-  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
-              new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
-
+	/* Calculate the new credentials. */
+	cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
+		    new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
 }
 
 /* Sam synchronisation */
 
 NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_CRED *ret_creds,
-                               uint32 database_id, uint32 *num_deltas,
+                               uint32 database_id, uint32 next_rid, uint32 *num_deltas,
                                SAM_DELTA_HDR **hdr_deltas, 
                                SAM_DELTA_CTR **deltas)
 {
@@ -297,7 +397,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_C
         gen_next_creds(cli, &clnt_creds);
 
 	init_net_q_sam_sync(&q, cli->srv_name_slash, cli->clnt_name_slash + 2,
-                            &clnt_creds, ret_creds, database_id);
+                            &clnt_creds, ret_creds, database_id, next_rid);
 
 	/* Marshall data and send request */
 

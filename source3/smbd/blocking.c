@@ -531,13 +531,33 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 }
 
 /****************************************************************************
- Return True if the blocking lock queue has entries.
+ Return the number of seconds to the next blocking locks timeout, or default_timeout
 *****************************************************************************/
-
-BOOL blocking_locks_pending(void)
+unsigned blocking_locks_timeout(unsigned default_timeout)
 {
-  blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
-  return (blr == NULL ? False : True);
+	unsigned timeout = default_timeout;
+	time_t t;
+	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst(&blocking_lock_queue);
+
+	/* note that we avoid the time() syscall if there are no blocking locks */
+	if (!blr) {
+		return timeout;
+	}
+
+	t = time(NULL);
+
+	while (blr) {
+		if (timeout > (blr->expire_time - t)) {
+			timeout = blr->expire_time - t;
+		}
+		blr = (blocking_lock_record *)ubi_slNext(blr);
+	}
+
+	if (timeout < 1) {
+		timeout = 1;
+	}
+
+	return timeout;
 }
 
 /****************************************************************************
@@ -576,7 +596,7 @@ void process_blocking_lock_queue(time_t t)
     DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
           fsp->fnum, fsp->fsp_name ));
 
-    if((blr->expire_time != -1) && (blr->expire_time > t)) {
+    if((blr->expire_time != -1) && (blr->expire_time <= t)) {
       /*
        * Lock expired - throw away all previously
        * obtained locks and return lock error.
@@ -584,7 +604,7 @@ void process_blocking_lock_queue(time_t t)
       DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
           fsp->fnum, fsp->fsp_name ));
 
-      blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
+      blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;

@@ -11,11 +11,6 @@
 
 #include "pam_winbind.h"
 
-/* prototypes from common.c */
-void init_request(struct winbindd_request *req,int rq_type);
-int write_sock(void *buffer, int count);
-int read_reply(struct winbindd_response *response);
-
 /* data tokens */
 
 #define MAX_PASSWD_TRIES	3
@@ -99,23 +94,29 @@ static int _make_remark(pam_handle_t * pamh, int type, const char *text)
 	return retval;
 }
 
-static int winbind_request(enum winbindd_cmd req_type,
-                           struct winbindd_request *request,
-                           struct winbindd_response *response)
+static int pam_winbind_request(enum winbindd_cmd req_type,
+			       struct winbindd_request *request,
+			       struct winbindd_response *response)
 {
+
 	/* Fill in request and send down pipe */
 	init_request(request, req_type);
 	
 	if (write_sock(request, sizeof(*request)) == -1) {
 		_pam_log(LOG_ERR, "write to socket failed!");
+		close_sock();
 		return PAM_SERVICE_ERR;
 	}
 	
 	/* Wait for reply */
 	if (read_reply(response) == -1) {
 		_pam_log(LOG_ERR, "read from socket failed!");
+		close_sock();
 		return PAM_SERVICE_ERR;
 	}
+
+	/* We are done with the socket - close it and avoid mischeif */
+	close_sock();
 
 	/* Copy reply data from socket */
 	if (response->result != WINBINDD_OK) {
@@ -148,7 +149,7 @@ static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 	strncpy(request.data.auth.pass, pass, 
                 sizeof(request.data.auth.pass)-1);
 	
-        retval = winbind_request(WINBINDD_PAM_AUTH, &request, &response);
+        retval = pam_winbind_request(WINBINDD_PAM_AUTH, &request, &response);
 
 	switch (retval) {
 	case PAM_AUTH_ERR:
@@ -217,7 +218,7 @@ static int winbind_chauthtok_request(const char *user, const char *oldpass,
             request.data.chauthtok.newpass[0] = '\0';
         }
 	
-        return winbind_request(WINBINDD_PAM_CHAUTHTOK, &request, &response);
+        return pam_winbind_request(WINBINDD_PAM_CHAUTHTOK, &request, &response);
 }
 
 /*

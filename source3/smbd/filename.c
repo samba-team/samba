@@ -168,7 +168,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 
 	pstrcpy(orig_path, name);
 
-	if(stat_cache_lookup(conn, name, dirpath, &start, &st)) {
+	if(!case_sensitive && stat_cache_lookup(conn, name, dirpath, &start, &st)) {
 		*pst = st;
 		return True;
 	}

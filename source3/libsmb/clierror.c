@@ -156,7 +156,7 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 
 /* Return a UNIX errno from a dos error class, error number tuple */
 
-int cli_errno_from_dos(uint8 eclass, uint32 num)
+static int cli_errno_from_dos(uint8 eclass, uint32 num)
 {
 	if (eclass == ERRDOS) {
 		switch (num) {
@@ -205,7 +205,7 @@ static struct {
 	{NT_STATUS(0), 0}
 };
 
-int cli_errno_from_nt(NTSTATUS status)
+static int cli_errno_from_nt(NTSTATUS status)
 {
 	int i;
         DEBUG(10,("cli_errno_from_nt: 32 bit codes: code=%08x\n", NT_STATUS_V(status)));

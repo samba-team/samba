@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern DOM_SID global_sid_Builtin;
+
 /**********************************************************************************
  Check if this ACE has a SID in common with the token.
 **********************************************************************************/
@@ -42,7 +44,7 @@ static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
  bits not yet granted. Zero means permission allowed (no more needed bits).
 **********************************************************************************/
 
-static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
+static uint32 check_ace(SEC_ACE *ace, const NT_USER_TOKEN *token, uint32 acc_desired, 
 			NTSTATUS *status)
 {
 	uint32 mask = ace->info.mask;
@@ -102,7 +104,7 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired,
  include other bits requested.
 **********************************************************************************/ 
 
-static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, 
+static BOOL get_max_access( SEC_ACL *the_acl, const NT_USER_TOKEN *token, uint32 *granted, 
 			    uint32 desired, 
 			    NTSTATUS *status)
 {
@@ -224,7 +226,7 @@ void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
  "Access-Checking" document in MSDN.
 *****************************************************************************/ 
 
-BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
+BOOL se_access_check(SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
 		     NTSTATUS *status)
 {
@@ -262,12 +264,13 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 	}
 
 	/* The user sid is the first in the token */
-
-	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
-
-	for (i = 1; i < token->num_sids; i++) {
-		DEBUG(3, ("se_access_check: also %s\n",
-			  sid_to_string(sid_str, &token->user_sids[i])));
+	if (DEBUGLVL(3)) {
+		DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
+		
+		for (i = 1; i < token->num_sids; i++) {
+			DEBUGADD(3, ("se_access_check: also %s\n",
+				  sid_to_string(sid_str, &token->user_sids[i])));
+		}
 	}
 
 	/* Is the token the owner of the SID ? */
@@ -297,7 +300,7 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
 		SEC_ACE *ace = &the_acl->ace[i];
 
-		DEBUG(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
+		DEBUGADD(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
 			  (unsigned int)i, ace->type, ace->flags,
 			  sid_to_string(sid_str, &ace->trustee),
 			  (unsigned int) ace->info.mask, 
@@ -441,4 +444,43 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	sdb = make_sec_desc_buf(ctx, size, sd);
 
 	return sdb;
+}
+
+/*******************************************************************
+ samr_make_sam_obj_sd
+ ********************************************************************/
+
+NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
+{
+	extern DOM_SID global_sid_World;
+	DOM_SID adm_sid;
+	DOM_SID act_sid;
+
+	SEC_ACE ace[3];
+	SEC_ACCESS mask;
+
+	SEC_ACL *psa = NULL;
+
+	sid_copy(&adm_sid, &global_sid_Builtin);
+	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+
+	sid_copy(&act_sid, &global_sid_Builtin);
+	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
+
+	/*basic access for every one*/
+	init_sec_access(&mask, SAMR_EXECUTE | SAMR_READ);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	/*full access for builtin aliases Administrators and Account Operators*/
+	init_sec_access(&mask, SAMR_ALL_ACCESS);
+	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	return NT_STATUS_OK;
 }

@@ -178,7 +178,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const char *pipe_name, int
 /** 
  * Force a change of the trust acccount password.
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
@@ -224,7 +224,7 @@ static int rpc_changetrustpw(int argc, const char **argv)
  *
  * The password should be created with 'server manager' or eqiv first.
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
@@ -243,6 +243,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 	extern pstring global_myname;
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
+	NTSTATUS result;
 
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
@@ -256,7 +257,12 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
-	return trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
+	result = trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
+
+	if (NT_STATUS_IS_OK(result))
+		printf("Joined domain %s.\n",lp_workgroup());
+
+	return result;
 }
 
 /** 
@@ -319,7 +325,7 @@ int net_rpc_join(int argc, const char **argv)
 /** 
  * display info about a rpc domain
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -339,6 +345,9 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	SAM_UNK_CTR ctr;
+	fstring sid_str;
+
+	sid_to_string(sid_str, domain_sid);
 
 	/* Get sam policy handle */	
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -361,6 +370,7 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	if (NT_STATUS_IS_OK(result)) {
 		TALLOC_CTX *ctx = talloc_init();
 		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
+		d_printf("Domain SID: %s\n", sid_str);
 		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num);
 		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
 		d_printf("Num domain groups: %u\n", ctr.info.inf2.num_domain_grps);
@@ -387,6 +397,53 @@ int net_rpc_info(int argc, const char **argv)
 }
 
 
+/** 
+ * Fetch domain SID into the local secrets.tdb
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS 
+rpc_getsid_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+		   TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	fstring sid_str;
+
+	sid_to_string(sid_str, domain_sid);
+	d_printf("Storing SID %s for Domain %s in secrets.tdb\n",
+		 sid_str, lp_workgroup());
+
+	if (!secrets_store_domain_sid(global_myname, domain_sid)) {
+		DEBUG(0,("Can't store domain SID\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+/** 
+ * 'net rpc getsid' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+int net_rpc_getsid(int argc, const char **argv) 
+{
+	return run_rpc_command(NULL, PIPE_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+			       rpc_getsid_internals,
+			       argc, argv);
+}
 
 
 /****************************************************************************/
@@ -406,7 +463,7 @@ static int rpc_user_usage(int argc, const char **argv)
 /** 
  * Add a new user to a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -494,7 +551,7 @@ static int rpc_user_add(int argc, const char **argv)
 /** 
  * Delete a user from a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -595,7 +652,7 @@ static int rpc_user_delete(int argc, const char **argv)
 /** 
  * List user's groups on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -697,7 +754,7 @@ static int rpc_user_info(int argc, const char **argv)
 /** 
  * List users on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -811,7 +868,7 @@ static int rpc_group_usage(int argc, const char **argv)
 /** 
  * List groups on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -954,7 +1011,7 @@ static int rpc_share_usage(int argc, const char **argv)
 /** 
  * Add a share on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1002,7 +1059,7 @@ static int rpc_share_add(int argc, const char **argv)
 /** 
  * Delete a share on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1070,7 +1127,7 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 /** 
  * List shares on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1147,7 +1204,7 @@ static int rpc_file_usage(int argc, const char **argv)
 /** 
  * Close a file on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1210,7 +1267,7 @@ static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
 /** 
  * List open files on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1314,7 +1371,7 @@ int net_rpc_file(int argc, const char **argv)
 /** 
  * ABORT the shutdown of a remote RPC Server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
@@ -1362,7 +1419,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
 /** 
  * Shut down a remote RPC Server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
@@ -1914,6 +1971,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			
 			d_printf("%s%s%s\n", trusted_dom_names[i], padding, ascii_sid);
 		};
+		
+		/*
+		 * in case of no trusted domains say something rather
+		 * than just display blank line
+		 */
+		if (!num_domains) d_printf("none\n");
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
@@ -2018,6 +2081,8 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			};
 		};
 		
+		if (!num_domains) d_printf("none\n");
+		
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close opened samr and domain policy handles */
@@ -2083,7 +2148,7 @@ BOOL net_rpc_check(unsigned flags)
 
 	/* flags (i.e. server type) may depend on command */
 	if (!net_find_server(flags, &server_ip, &server_name))
-		goto done;
+		return False;
 
 	ZERO_STRUCT(cli);
 	if (cli_initialise(&cli) == False)
@@ -2120,12 +2185,13 @@ int net_rpc_usage(int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
-	d_printf("  net rpc testjoin \t\t\ttests that a join is valid\n");
+	d_printf("  net rpc testjoin \t\ttests that a join is valid\n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc group \t\tto list groups\n");
 	d_printf("  net rpc share \t\tto add, delete, and list shares\n");
 	d_printf("  net rpc file \t\t\tto list open files\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
+	d_printf("  net rpc getsid \t\tfetch the domain sid into the local secrets.tdb\n");
 	d_printf("  net rpc trustdom \t\tto create trusting domain's account\n"
 		 "\t\t\t\t\tor establish trust\n");
 	d_printf("  net rpc abortshutdown \tto abort the shutdown of a remote server\n");
@@ -2192,6 +2258,9 @@ int net_rpc(int argc, const char **argv)
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
 		{"shutdown", rpc_shutdown},
+		{"samdump", rpc_samdump},
+		{"vampire", rpc_vampire},
+		{"getsid", net_rpc_getsid},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};

@@ -67,10 +67,6 @@
 #define MAX_OPEN_FILES 10000
 #endif
  
-/* the max number of simultanous connections to the server by all clients */
-/* zero means no limit. */
-#define MAXSTATUS 0
-
 #define WORDMAX 0xFFFF
 
 /* the maximum password length before we declare a likely attack */
@@ -117,7 +113,7 @@
 #endif
 
 /* the size of the uid cache used to reduce valid user checks */
-#define UID_CACHE_SIZE 4
+#define VUID_CACHE_SIZE 32
 
 /* the following control timings of various actions. Don't change 
    them unless you know what you are doing. These are all in seconds */
@@ -126,7 +122,6 @@
 #define IDLE_CLOSED_TIMEOUT (60)
 #define DPTR_IDLE_TIMEOUT (120)
 #define SMBD_SELECT_TIMEOUT (60)
-#define SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS (10)
 #define NMBD_SELECT_LOOP (10)
 #define BROWSE_INTERVAL (60)
 #define REGISTRATION_INTERVAL (10*60)
