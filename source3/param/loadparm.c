@@ -2303,9 +2303,13 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f)
+void lp_dump(FILE *f, BOOL show_defaults)
 {
    int iService;
+
+   if (!show_defaults) {
+	   defaults_saved = False;
+   }
 
    dump_globals(f);
    

@@ -1031,7 +1031,7 @@ BOOL lp_loaded(void);
 void lp_killunused(BOOL (*snumused)(int ));
 BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc);
 int lp_numservices(void);
-void lp_dump(FILE *f);
+void lp_dump(FILE *f, BOOL show_defaults);
 int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
 void lp_rename_service(int snum, char *new_name);

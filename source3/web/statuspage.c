@@ -75,6 +75,9 @@ void status_page(void)
 	struct connect_record crec;
 	pstring fname;
 	FILE *f;
+	char *v;
+	int autorefresh=0;
+	int refresh_interval=30;
 
 	if (cgi_variable("smbd_start")) {
 		start_smbd();
@@ -90,6 +93,23 @@ void status_page(void)
 
 	if (cgi_variable("nmbd_stop")) {
 		stop_nmbd();
+	}
+
+	if (cgi_variable("autorefresh")) {
+		autorefresh = 1;
+	} else if (cgi_variable("norefresh")) {
+		autorefresh = 0;
+	} else if (cgi_variable("refresh")) {
+		autorefresh = 1;
+	}
+
+	if ((v=cgi_variable("refresh_interval"))) {
+		refresh_interval = atoi(v);
+	}
+
+	if (autorefresh) {
+		printf("<META HTTP-EQUIV=refresh CONTENT=\"%d;URL=%s/status?refresh=1&refresh_interval=%d\">\n", 
+		       refresh_interval, cgi_baseurl(), refresh_interval);
 	}
 
 	pstrcpy(fname,lp_lockdir());
@@ -117,6 +137,19 @@ void status_page(void)
 	printf("<H2>Server Status</H2>\n");
 
 	printf("<FORM method=post>\n");
+
+	if (!autorefresh) {
+		printf("<input type=submit value=\"Auto Refresh\" name=autorefresh>\n");
+		printf("<br>Refresh Interval: ");
+		printf("<input type=text size=2 name=\"refresh_interval\" value=%d>\n", 
+		       refresh_interval);
+	} else {
+		printf("<input type=submit value=\"Stop Refreshing\" name=norefresh>\n");
+		printf("<br>Refresh Interval: %d\n", refresh_interval);
+		printf("<input type=hidden name=refresh value=1>\n");
+	}
+
+	printf("<p>\n");
 
 	f = fopen(fname,"r");
 	if (!f) {

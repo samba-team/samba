@@ -168,6 +168,16 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 }
 
 
+/* write a config file */
+static void write_config(FILE *f, BOOL show_defaults)
+{
+	fprintf(f, "# Samba config file created using SWAT\n");
+	fprintf(f, "# Date: %s\n\n", timestring());
+	
+	lp_dump(f, show_defaults);	
+}
+
+
 /* save and reoad the smb.conf config file */
 static int save_reload(void)
 {
@@ -179,11 +189,7 @@ static int save_reload(void)
 		return 0;
 	}
 
-	fprintf(f, "# Samba config file created using SWAT\n");
-	fprintf(f, "# Date: %s\n\n", timestring());
-
-	lp_dump(f);
-
+	write_config(f, False);
 	fclose(f);
 
 	lp_killunused(NULL);
@@ -282,10 +288,25 @@ static void welcome_page(void)
 /* display the current smb.conf  */
 static void viewconfig_page(void)
 {
+	int full_view=0;
+
+	if (cgi_variable("full_view")) {
+		full_view = 1;
+	}
+
 	printf("<H2>Current Config</H2>\n");
-	printf("<pre>");
-	include_html(servicesf);
+	printf("<form method=post>\n");
+
+	if (full_view) {
+		printf("<input type=submit name=\"normal_view\" value=\"Normal View\">\n");
+	} else {
+		printf("<input type=submit name=\"full_view\" value=\"Full View\">\n");
+	}
+
+	printf("<p><pre>");
+	write_config(stdout, !full_view);
 	printf("</pre>");
+	printf("</form>\n");
 }
 
 
