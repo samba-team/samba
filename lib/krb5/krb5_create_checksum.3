@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd April  7, 1999
+.Dd August 23, 2003
 .Dt NAME 3
 .Os HEIMDAL
 .Sh NAME
@@ -39,7 +39,8 @@
 .Nm krb5_checksum_is_keyed ,
 .Nm krb5_checksumsize ,
 .Nm krb5_create_checksum ,
-.Nm krb5_verify_checksum
+.Nm krb5_verify_checksum ,
+.Nm krb5_crypto_get_checksum_type
 .Nd creates and verifies checksums
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -53,6 +54,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_checksum_is_collision_proof "krb5_context context" "krb5_cksumtype type"
 .Ft krb5_boolean
 .Fn krb5_checksum_is_keyed "krb5_context context" "krb5_cksumtype type"
+.Ft krb5_error_code
+.Fo krb5_crypto_get_checksum_type
+.Fa "krb5_context context"
+.Fa "krb5_crypto crypto"
+.Fa "krb5_cksumtype *type"
+.Fc
 .Sh DESCRIPTION
 These functions are used to create and verify checksums.
 .Fn krb5_create_checksum
@@ -88,6 +95,11 @@ value is a function of both the data, and a separate key). Examples of
 keyed hash algorithms are HMAC-SHA1-DES3, and RSA-MD5-DES. The
 .Dq plain
 hash functions MD5, and SHA1 are not keyed.
+.Pp
+.Fn krb5_crypto_get_checksum_type
+returns the checksum type that will be used when creating a checksum for the given
+.Fa crypto
+context.
 .\" .Sh EXAMPLE
 .\" .Sh BUGS
 .Sh SEE ALSO
