@@ -11,8 +11,9 @@ int foo() { return $2; }],
 ])
 define([foo], [HAVE_]translit($2, [a-z], [A-Z]))
 
-AC_MSG_RESULT(`eval echo \\$ac_cv_var_$2`)
-if test `eval echo \\$ac_cv_var_$2` = yes; then
+ac_foo=`eval echo \\$ac_cv_var_$2`
+AC_MSG_RESULT($ac_foo)
+if test "$ac_foo" = yes; then
 	AC_DEFINE_UNQUOTED(foo, 1, [define if you have $2])
 	AC_CHECK_DECLARATION([$1],[$2])
 fi
