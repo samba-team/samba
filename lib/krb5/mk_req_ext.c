@@ -54,22 +54,26 @@ krb5_mk_req_extended(krb5_context context,
   Checksum c;
   Checksum *c_opt;
 
-  if (*auth_context == NULL) {
-      r = krb5_auth_con_init(context, auth_context);
-      if (r)
-	  return r;
-  }
-
+  krb5_auth_context ac;
+  if(auth_context){
+      if(*auth_context == NULL)
+	  r = krb5_auth_con_init(context, auth_context);
+      ac = *auth_context;
+  }else
+      r = krb5_auth_con_init(context, &ac);
+  if(r)
+      return r;
+      
   copy_EncryptionKey(&in_creds->session,
-		     &(*auth_context)->key);
+		     &ac->key);
 
   if (in_data) {
 
       r = krb5_create_checksum (context,
-				(*auth_context)->cksumtype,
+				ac->cksumtype,
 				in_data->data,
 				in_data->length,
-				&(*auth_context)->key,
+				&ac->key,
 				&c);
       c_opt = &c;
   } else {
@@ -77,7 +81,7 @@ krb5_mk_req_extended(krb5_context context,
   }
   
   r = krb5_build_authenticator (context,
-				*auth_context,
+				ac,
 				in_creds,
 				c_opt,
 				&auth,
@@ -87,5 +91,7 @@ krb5_mk_req_extended(krb5_context context,
 
   r = krb5_build_ap_req (context, in_creds, ap_req_options,
 			 authenticator, outbuf);
+  if(auth_context == NULL)
+      krb5_auth_con_free(context, ac);
   return r;
 }
