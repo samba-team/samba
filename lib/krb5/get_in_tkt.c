@@ -234,10 +234,10 @@ krb5_get_in_tkt(krb5_context context,
     krb5_data req, resp;
     char buf[BUFSIZ];
 
+    memset(&a, 0, sizeof(a));
+
     a.pvno = 5;
     a.msg_type = krb_as_req;
-    memset (&a.req_body.kdc_options, 0, sizeof(a.req_body.kdc_options));
-    /* a.kdc_options */
     a.req_body.cname = malloc(sizeof(*a.req_body.cname));
     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
     krb5_principal2principalname (a.req_body.cname, creds->client);
