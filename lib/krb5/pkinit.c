@@ -416,7 +416,7 @@ build_auth_pack(krb5_context context,
                 unsigned nonce,
 		DH *dh,
 		const KDC_REQ_BODY *body,
-		AuthPack *a)
+		AuthPack_19 *a)
 {
     size_t buf_size, len;
     krb5_cksumtype cksum;
@@ -590,7 +590,7 @@ pk_mk_padata(krb5_context context,
 {
     krb5_error_code ret;
     const heim_oid *oid;
-    PA_PK_AS_REQ req;
+    PA_PK_AS_REQ_19 req;
     size_t size;
     krb5_data buf, sd_buf;
     int pa_type;
@@ -622,20 +622,20 @@ pk_mk_padata(krb5_context context,
 
 	oid = &pkcs7_data_oid;
     } else {
-	AuthPack ap;
+	AuthPack_19 ap;
 	
 	memset(&ap, 0, sizeof(ap));
 
 	ret = build_auth_pack(context, nonce, ctx->dh, req_body, &ap);
 	if (ret) {
-	    free_AuthPack(&ap);
+	    free_AuthPack_19(&ap);
 	    goto out;
 	}
 
-	ASN1_MALLOC_ENCODE(AuthPack, buf.data, buf.length, &ap, &size, ret);
-	free_AuthPack(&ap);
+	ASN1_MALLOC_ENCODE(AuthPack_19, buf.data, buf.length, &ap, &size, ret);
+	free_AuthPack_19(&ap);
 	if (ret) {
-	    krb5_set_error_string(context, "AuthPack: %d", ret);
+	    krb5_set_error_string(context, "AuthPack_19: %d", ret);
 	    goto out;
 	}
 	if (buf.length != size)
@@ -686,7 +686,7 @@ pk_mk_padata(krb5_context context,
 	free_PA_PK_AS_REQ_Win2k(&winreq);
     } else {
 	pa_type = KRB5_PADATA_PK_AS_REQ;
-	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
+	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_19, buf.data, buf.length,
 			   &req, &size, ret);
     }
     if (ret) {
@@ -1174,36 +1174,36 @@ get_reply_key(krb5_context context,
 	      unsigned nonce,
 	      krb5_keyblock **key)
 {
-    ReplyKeyPack key_pack;
+    ReplyKeyPack_19 key_pack;
     krb5_error_code ret;
     size_t size;
 
-    ret = decode_ReplyKeyPack(content->data,
-			      content->length,
-			      &key_pack,
-			      &size);
+    ret = decode_ReplyKeyPack_19(content->data,
+				 content->length,
+				 &key_pack,
+				 &size);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT decoding reply key failed");
-	free_ReplyKeyPack(&key_pack);
+	free_ReplyKeyPack_19(&key_pack);
 	return ret;
     }
      
     if (key_pack.nonce != nonce) {
 	krb5_set_error_string(context, "PKINIT enckey nonce is wrong");
-	free_ReplyKeyPack(&key_pack);
+	free_ReplyKeyPack_19(&key_pack);
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
 	krb5_set_error_string(context, "PKINIT failed allocating reply key");
-	free_ReplyKeyPack(&key_pack);
+	free_ReplyKeyPack_19(&key_pack);
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
 
     ret = copy_EncryptionKey(&key_pack.replyKey, *key);
-    free_ReplyKeyPack(&key_pack);
+    free_ReplyKeyPack_19(&key_pack);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT failed copying reply key");
 	free(*key);
@@ -1579,7 +1579,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 static krb5_error_code
 _krb5_pk_convert_rep(krb5_context context,
 		     PA_PK_AS_REP_Win2k *r_win2k,
-		     PA_PK_AS_REP *r)
+		     PA_PK_AS_REP_19 *r)
 {
     krb5_error_code ret;
     ContentInfo ci;
@@ -1587,7 +1587,7 @@ _krb5_pk_convert_rep(krb5_context context,
 
     switch (r_win2k->element) {
     case choice_PA_PK_AS_REP_Win2k_dhSignedData:
-	r->element = choice_PA_PK_AS_REP_dhSignedData;
+	r->element = choice_PA_PK_AS_REP_19_dhSignedData;
 
 	ret = decode_ContentInfo(r_win2k->u.dhSignedData.data,
 				 r_win2k->u.dhSignedData.length,
@@ -1603,7 +1603,7 @@ _krb5_pk_convert_rep(krb5_context context,
 
 	break;
     case choice_PA_PK_AS_REP_Win2k_encKeyPack:
-	r->element = choice_PA_PK_AS_REP_encKeyPack;
+	r->element = choice_PA_PK_AS_REP_19_encKeyPack;
 
 	ret = decode_ContentInfo(r_win2k->u.encKeyPack.data,
 				 r_win2k->u.encKeyPack.length,
@@ -1635,20 +1635,20 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 {
     krb5_pk_init_ctx ctx = c;
     krb5_error_code ret;
-    PA_PK_AS_REP rep;
+    PA_PK_AS_REP_19 rep;
     size_t size;
     int win2k_compat = 0;
 
     memset(&rep, 0, sizeof(rep));
 
-    ret = decode_PA_PK_AS_REP(pa->padata_value.data,
-			      pa->padata_value.length,
-			      &rep,
-			      &size);
+    ret = decode_PA_PK_AS_REP_19(pa->padata_value.data,
+				 pa->padata_value.length,
+				 &rep,
+				 &size);
     if (ret != 0) {
 	PA_PK_AS_REP_Win2k w2krep;
 
-	free_PA_PK_AS_REP(&rep);
+	free_PA_PK_AS_REP_19(&rep);
 	memset(&rep, 0, sizeof(rep));
 
 	ret = decode_PA_PK_AS_REP_Win2k(pa->padata_value.data,
@@ -1669,11 +1669,11 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     }
 
     switch(rep.element) {
-    case choice_PA_PK_AS_REP_dhSignedData:
+    case choice_PA_PK_AS_REP_19_dhSignedData:
 	ret = pk_rd_pa_reply_dh(context, &rep.u.dhSignedData, ctx,
 				etype, nonce, pa, key);
 	break;
-    case choice_PA_PK_AS_REP_encKeyPack:
+    case choice_PA_PK_AS_REP_19_encKeyPack:
 	ret = pk_rd_pa_reply_enckey(context, win2k_compat,
 				    &rep.u.encKeyPack, ctx,
 				    etype, nonce, pa, key);
@@ -1684,7 +1684,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	break;
     }
   
-    free_PA_PK_AS_REP(&rep);
+    free_PA_PK_AS_REP_19(&rep);
     return ret;
 }
 

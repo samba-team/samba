@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -123,9 +123,9 @@ static struct pk_principal_mapping principal_mappings;
  */
 
 static krb5_error_code
-pk_check_pkauthenticator(krb5_context context,
-      			 PKAuthenticator *a,
-			 KDC_REQ *req)
+pk_check_pkauthenticator_19(krb5_context context,
+			    PKAuthenticator_19 *a,
+			    KDC_REQ *req)
 {
     u_char *buf = NULL;
     size_t buf_size;
@@ -386,8 +386,8 @@ pk_rd_padata(krb5_context context,
 {
     pk_client_params *client_params;
     krb5_error_code ret;
-    PA_PK_AS_REQ r;
-    AuthPack ap;
+    PA_PK_AS_REQ_19 r;
+    AuthPack_19 ap;
     heim_oid eContentType = { 0, NULL };
     krb5_data eContent;
     int i;
@@ -417,10 +417,10 @@ pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = decode_PA_PK_AS_REQ(pa->padata_value.data,
-			      pa->padata_value.length,
-			      &r,
-			      NULL);
+    ret = decode_PA_PK_AS_REQ_19(pa->padata_value.data,
+				 pa->padata_value.length,
+				 &r,
+				 NULL);
     if (ret) {
 	krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
 	return ret;
@@ -455,18 +455,18 @@ pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = decode_AuthPack(eContent.data,
-			  eContent.length,
-			  &ap,
-			  NULL);
+    ret = decode_AuthPack_19(eContent.data,
+			     eContent.length,
+			     &ap,
+			     NULL);
     if (ret) {
 	krb5_set_error_string(context, "can't decode AuthPack: %d", ret);
 	goto out;
     }
   
-    ret = pk_check_pkauthenticator(context, 
-				   &ap.pkAuthenticator,
-				   req);
+    ret = pk_check_pkauthenticator_19(context, 
+				      &ap.pkAuthenticator,
+				      req);
     if (ret)
 	goto out;
 
@@ -495,10 +495,10 @@ pk_rd_padata(krb5_context context,
 
 	ret = KRB5_KDC_ERR_KDC_NOT_TRUSTED;
 	for (i = 0; i < r.trustedCertifiers->len; i++) {
-	    TrustedCAs *ca = &r.trustedCertifiers->val[i];
+	    TrustedCA_19 *ca = &r.trustedCertifiers->val[i];
 
 	    switch (ca->element) {
-	    case choice_TrustedCAs_caName: {
+	    case choice_TrustedCA_19_caName: {
 		X509_NAME *name;
 		unsigned char *p;
 
@@ -511,7 +511,7 @@ pk_rd_padata(krb5_context context,
 		X509_NAME_free(name);
 		break;
 	    }
-	    case choice_TrustedCAs_issuerAndSerial:
+	    case choice_TrustedCA_19_issuerAndSerial:
 		/* IssuerAndSerialNumber issuerAndSerial */
 		break;
 	    default:
@@ -536,8 +536,8 @@ pk_rd_padata(krb5_context context,
 	pk_free_client_param(context, client_params);
     else
 	*ret_params = client_params;
-    free_PA_PK_AS_REQ(&r);
-    free_AuthPack(&ap);
+    free_PA_PK_AS_REQ_19(&r);
+    free_AuthPack_19(&ap);
     return ret;
 }
 
@@ -640,7 +640,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     enc_alg->parameters->length = params.length;
 
     {
-	ReplyKeyPack kp;
+	ReplyKeyPack_19 kp;
 	memset(&kp, 0, sizeof(kp));
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
@@ -650,8 +650,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
 	kp.nonce = client_params->nonce;
 	
-	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
-	free_ReplyKeyPack(&kp);
+	ASN1_MALLOC_ENCODE(ReplyKeyPack_19, buf.data, buf.length, &kp, &size,ret);
+	free_ReplyKeyPack_19(&kp);
     }
     if (ret) {
 	krb5_set_error_string(context, "ASN.1 encoding of ReplyKeyPack "
@@ -889,7 +889,7 @@ pk_mk_pa_reply(krb5_context context,
 	       METHOD_DATA *md)
 {
     krb5_error_code ret;
-    PA_PK_AS_REP rep;
+    PA_PK_AS_REP_19 rep;
     void *buf;
     size_t len, size;
     krb5_enctype enctype;
@@ -918,7 +918,7 @@ pk_mk_pa_reply(krb5_context context,
     enctype = req->req_body.etype.val[i];
 
     if (client_params->dh == NULL) {
-	rep.element = choice_PA_PK_AS_REP_encKeyPack;
+	rep.element = choice_PA_PK_AS_REP_19_encKeyPack;
 
 	krb5_generate_random_keyblock(context, enctype, 
 				      &client_params->reply_key);
@@ -929,7 +929,7 @@ pk_mk_pa_reply(krb5_context context,
 				    &client_params->reply_key,
 				    &rep.u.encKeyPack);
     } else {
-	rep.element = choice_PA_PK_AS_REP_dhSignedData;
+	rep.element = choice_PA_PK_AS_REP_19_dhSignedData;
 
 	ret = check_dh_params(client_params->dh);
 	if (ret)
@@ -948,7 +948,7 @@ pk_mk_pa_reply(krb5_context context,
     if (ret)
 	goto out;
 
-    ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
+    ASN1_MALLOC_ENCODE(PA_PK_AS_REP_19, buf, len, &rep, &size, ret);
     if (ret) {
 	krb5_set_error_string(context, "encode PA-PK-AS-REP failed %d", ret);
 	goto out;
@@ -958,13 +958,14 @@ pk_mk_pa_reply(krb5_context context,
 
     ret = krb5_padata_add(context, md, KRB5_PADATA_PK_AS_REP, buf, len);
     if (ret) {
-	krb5_set_error_string(context, "failed adding PA-PK-AS-REP %d", ret);
+	krb5_set_error_string(context, "failed adding "
+			      "PA-PK-AS-REP-19 %d", ret);
 	free(buf);
     }
  out:
     if (ret == 0)
 	*reply_key = &client_params->reply_key;
-    free_PA_PK_AS_REP(&rep);
+    free_PA_PK_AS_REP_19(&rep);
     return ret;
 }
 
@@ -989,7 +990,7 @@ pk_principal_from_X509(krb5_context context,
 	return 1;
 
     for (i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
-	KerberosName kn;
+	KRB5PrincipalName kn;
 	size_t len, size;
 	void *p;
 
@@ -1003,7 +1004,7 @@ pk_principal_from_X509(krb5_context context,
 	p = ASN1_STRING_data(gen->d.otherName->value->value.sequence);
 	len = ASN1_STRING_length(gen->d.otherName->value->value.sequence);
 
-	ret = decode_KerberosName(p, len, &kn, &size);
+	ret = decode_KRB5PrincipalName(p, len, &kn, &size);
 	if (ret) {
 	    kdc_log(0, "Decoding kerberos name in certificate failed: %s",
 		    krb5_get_err_text(context, ret));
