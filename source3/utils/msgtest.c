@@ -36,12 +36,12 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 	pong_count++;
 }
 
-
  int main(int argc, char *argv[])
 {
 	pid_t pid;
 	int i, n;
 	static pstring servicesf = CONFIGFILE;
+	char buf[12];
 
 	TimeInit();
 	setup_logging(argv[0],True);
@@ -52,18 +52,43 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	message_init();
 
+	if (argc != 3) {
+		fprintf(stderr, "%s: Usage - %s pid count\n", argv[0], argv[0]);
+		exit(1);
+	}
+
 	pid = atoi(argv[1]);
 	n = atoi(argv[2]);
 
 	message_register(MSG_PONG, pong_message);
 
 	for (i=0;i<n;i++) {
-		message_send_pid(pid, MSG_PING, NULL, 0);
+		message_send_pid(pid, MSG_PING, NULL, 0, True);
 	}
 
 	while (pong_count < i) {
 		message_dispatch();
 		msleep(1);
+	}
+
+	/* Now test that the duplicate filtering code works. */
+	pong_count = 0;
+
+	safe_strcpy(buf, "1234567890", sizeof(buf)-1);
+
+	for (i=0;i<n;i++) {
+		message_send_pid(getpid(), MSG_PING, NULL, 0, False);
+		message_send_pid(getpid(), MSG_PING, buf, 11, False);
+	}
+
+	for (i=0;i<n;i++) {
+		message_dispatch();
+		msleep(1);
+	}
+
+	if (pong_count != 2) {
+		fprintf(stderr, "Duplicate filter failed (%d).\n", pong_count);
+		exit(1);
 	}
 
 	return (0);
