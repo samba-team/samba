@@ -23,7 +23,7 @@ msgstr ""
 "Last-Translator: Jelmer Vernooij <jelmer@samba.org>\n"
 "Language-Team: (Samba Team) <samba-technical@samba.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=US-ASCII\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 
 #: ../web/swat.c:117
