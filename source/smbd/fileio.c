@@ -29,7 +29,7 @@ static BOOL setup_write_cache(files_struct *, SMB_OFF_T);
 seek a file. Try to avoid the seek if possible
 ****************************************************************************/
 
-static SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
+SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 {
   SMB_OFF_T offset = 0;
   SMB_OFF_T seek_ret;
@@ -71,7 +71,7 @@ static SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 
 static unsigned int cache_read_hits;
 
-static BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
+BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
   write_cache *wcp = fsp->wcp;
 
@@ -140,7 +140,7 @@ static unsigned int allocated_write_caches;
 static unsigned int num_write_caches;
 
 /****************************************************************************
- *Really* write to a file
+ *Really* write to a file.
 ****************************************************************************/
 
 static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_t n)
@@ -148,7 +148,7 @@ static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_
   if ((pos != -1) && (seek_file(fsp,pos) == -1))
     return -1;
 
-  return write_data(fsp->fd,data,n);
+  return vfs_write_data(fsp,data,n);
 }
 
 /****************************************************************************
@@ -550,7 +550,7 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
  Delete the write cache structure.
 ****************************************************************************/
 
-static void delete_write_cache(files_struct *fsp)
+void delete_write_cache(files_struct *fsp)
 {
   write_cache *wcp;
 
