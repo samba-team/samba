@@ -35,7 +35,6 @@ BOOL torture_dcom_simple(void)
 	struct GUID IID[2];
 	struct GUID clsid;
 	WERROR error;
-	char pv[DEFAULT_TRANS];
 	struct dcom_interface *interfaces;
 	struct IStream_Read r_read;
 	struct IStream_Write r_write;
