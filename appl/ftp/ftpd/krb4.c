@@ -368,7 +368,7 @@ krb4_vprintf(const char *fmt, va_list ap)
 	code = 631;
     }
     if(base64_encode(enc, len, &p) < 0) {
-	;			/* XXX */
+	fprintf(stdout, "451 base64-encode failed\r\n");
     } else {
 	fprintf(stdout, "%d %s\r\n", code, p);
 	free(p);
