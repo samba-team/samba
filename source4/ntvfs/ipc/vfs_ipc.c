@@ -572,6 +572,16 @@ static NTSTATUS ipc_logoff(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  setup for an async call
+*/
+static NTSTATUS ipc_async_setup(struct ntvfs_module_context *ntvfs,
+				struct smbsrv_request *req,
+				void *private)
+{
+	return NT_STATUS_OK;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS ipc_lock(struct ntvfs_module_context *ntvfs,
@@ -795,6 +805,7 @@ NTSTATUS ntvfs_ipc_init(void)
 	ops.search_close = ipc_search_close;
 	ops.trans = ipc_trans;
 	ops.logoff = ipc_logoff;
+	ops.async_setup = ipc_async_setup;
 
 	/* register ourselves with the NTVFS subsystem. */
 	ret = register_backend("ntvfs", &ops);
