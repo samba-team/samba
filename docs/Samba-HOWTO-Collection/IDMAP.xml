@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+  <!-- entities files to use -->
+  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
+  %global_entities;
+
+]>
+
+<chapter id="groupmapping">
+<chapterinfo>
+	&author.jht;
+</chapterinfo>
+<title>Identity Mapping &smbmdash; IDMAP</title>
+
+<para>
+The Microsoft Windows operating system has a number of features that impose specific challenges
+for interoperability with operaing system on which Samba is implemented. This chapter deals
+explicitly with the mechanisms Samba-3 (version 3.0.8 and later) has to overcome one of the
+key challenges in the integration of Samba servers into an MS Windows networking
+environment. This chapter deals with IDentity MAPping (IDMAP) of Windows Security IDentifiers (SIDs)
+to UNIX UIDs and GIDs.
+</para>
+
+<para>
+So that this area is covered sufficiently, eash possible Samba deployment type will be discussed.
+This is followed by an overview of how the IDMAP facility may be implemented.
+</para>
+
+<para>
+The IDMAP facility is usually of concern only where more than one Samba server or Samba network client
+is installed in the one Domain. Where there is a single Samba server do not be too concerned regarding
+the IDMAP infrastructure - the default behavior of Samba is nearly always sufficient.
+</para>
+
+<sect1>
+<title>Samba Server Deployment Types</title>
+
+<para>
+There are four (4) basic server deployment types, as documented in <link linkend="ServerType">the chapter
+on Server Types and Security Modes</link>.
+</para>
+
+	<sect2>
+	<title>Stand-Alone Samba Server</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Domain Member Server or Domain Member Client</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Primary Domain Controller</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Backup Domain Controller</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+</sect1>
+
+<sect1>
+<title>IDMAP Backend Usage</title>
+
+<para>
+</para>
+
+	<sect2>
+	<title>Default Winbind TDB</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>IDMAP Storage in LDAP using Winbind</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>IDMAP and NSS IDMAP Resolution</title>
+
+	<para>
+	</para>
+
+		<sect3>
+		<title>IDMAP, Active Directory and MS Services for UNIX 3.5</title>
+
+		<para>
+		</para>
+
+		</sect3>
+
+		<sect3>
+		<title>IDMAP, Active Directory and AD4UNIX</title>
+
+		<para>
+		</para>
+
+		</sect3>
+
+	</sect2>
+
+	<sect2>
+	<title>IDMAP_RID with Winbind</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+</sect1>
+
+
+</chapter>
