@@ -50,78 +50,6 @@ int xauthfile_size = sizeof(xauthfile);
 u_char cookie[16];
 size_t cookie_len = sizeof(cookie);
 
-/*
- * Copy data from `fd1' to `fd2', {en,de}crypting with cfb64
- * with `mode' and state stored in `iv', `schedule', and `num'.
- * Return -1 if error, 0 if eof, else 1
- */
-
-static int
-do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
-	    des_key_schedule schedule, int *num)
-{
-     int ret;
-     u_char buf[BUFSIZ];
-
-     ret = read (fd1, buf, sizeof(buf));
-     if (ret == 0)
-	  return 0;
-     if (ret < 0) {
-	 warn ("read");
-	 return ret;
-     }
-#ifndef NOENCRYPTION
-     des_cfb64_encrypt (buf, buf, ret, schedule, iv,
-			num, mode);
-#endif
-     ret = krb_net_write (fd2, buf, ret);
-     if (ret < 0) {
-	 warn ("write");
-	 return ret;
-     }
-     return 1;
-}
-
-/*
- * Copy data from `fd1' to `fd2', encrypting it.  Data in the other
- * direction is of course, decrypted.
- */
-
-int
-copy_encrypted (int fd1, int fd2,
-		des_cblock *iv, des_key_schedule schedule)
-{
-     des_cblock iv1, iv2;
-     int num1 = 0, num2 = 0;
-
-     memcpy (iv1, *iv, sizeof(iv1));
-     memcpy (iv2, *iv, sizeof(iv2));
-     for (;;) {
-	  fd_set fdset;
-	  int ret;
-
-	  FD_ZERO(&fdset);
-	  FD_SET(fd1, &fdset);
-	  FD_SET(fd2, &fdset);
-
-	  ret = select (max(fd1, fd2)+1, &fdset, NULL, NULL, NULL);
-	  if (ret < 0 && errno != EINTR) {
-	      warn ("select");
-	      return 1;
-	  }
-	  if (FD_ISSET(fd1, &fdset)) {
-	       ret = do_enccopy (fd1, fd2, DES_ENCRYPT, &iv1, schedule, &num1);
-	       if (ret <= 0)
-		    return ret;
-	  }
-	  if (FD_ISSET(fd2, &fdset)) {
-	       ret = do_enccopy (fd2, fd1, DES_DECRYPT, &iv2, schedule, &num2);
-	       if (ret <= 0)
-		    return ret;
-	  }
-     }
-}
-
 #ifndef X_UNIX_PATH
 #define X_UNIX_PATH "/tmp/.X11-unix/X"
 #endif
@@ -576,9 +504,9 @@ verify_and_remove_cookies (int fd, int sock, int cookiesp)
 			   'b', 'a', 'd', ' ', 'c', 'o', 'o', 'k', 'i', 'e',
 			   0, 0};
 
-     if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
+     if (net_read (fd, beg, sizeof(beg)) != sizeof(beg))
 	  return 1;
-     if (krb_net_write (sock, beg, 6) != 6)
+     if (net_write (sock, beg, 6) != 6)
 	  return 1;
      bigendianp = beg[0] == 'B';
      if (bigendianp) {
@@ -598,9 +526,9 @@ verify_and_remove_cookies (int fd, int sock, int cookiesp)
 	 free (protocol_name);
 	 return 1;
      }
-     if (krb_net_read (fd, protocol_name, n + npad) != n + npad)
+     if (net_read (fd, protocol_name, n + npad) != n + npad)
 	 goto fail;
-     if (krb_net_read (fd, protocol_data, d + dpad) != d + dpad)
+     if (net_read (fd, protocol_data, d + dpad) != d + dpad)
 	 goto fail;
      if (cookiesp) {
 	 if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
@@ -611,7 +539,7 @@ verify_and_remove_cookies (int fd, int sock, int cookiesp)
      }
      free (protocol_name);
      free (protocol_data);
-     if (krb_net_write (sock, zeros, 6) != 6)
+     if (net_write (sock, zeros, 6) != 6)
 	  return 1;
      return 0;
 refused:
@@ -624,7 +552,7 @@ refused:
      else
 	 refused[6] = 3;
 
-     krb_net_write (fd, refused, sizeof(refused));
+     net_write (fd, refused, sizeof(refused));
 fail:
      free (protocol_name);
      free (protocol_data);
@@ -733,9 +661,9 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
      FILE *f;
      u_char zeros[6] = {0, 0, 0, 0, 0, 0};
 
-     if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
+     if (net_read (fd, beg, sizeof(beg)) != sizeof(beg))
 	  return 1;
-     if (krb_net_write (xserver, beg, 6) != 6)
+     if (net_write (xserver, beg, 6) != 6)
 	  return 1;
      bigendianp = beg[0] == 'B';
      if (bigendianp) {
@@ -772,29 +700,29 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
 	     len[2] = d & 0xFF;
 	     len[3] = d >> 8;
 	 }
-	 if (krb_net_write (xserver, len, 6) != 6) {
+	 if (net_write (xserver, len, 6) != 6) {
 	     XauDisposeAuth(auth);
 	     return 1;
 	 }
-	 if(n != 0 && krb_net_write (xserver, auth->name, n) != n) {
+	 if(n != 0 && net_write (xserver, auth->name, n) != n) {
 	     XauDisposeAuth(auth);
 	     return 1;
 	 }
 	 npad = (4 - (n % 4)) % 4;
-	 if (npad && krb_net_write (xserver, zeros, npad) != npad) {
+	 if (npad && net_write (xserver, zeros, npad) != npad) {
 	     XauDisposeAuth(auth);
 	     return 1;
 	 }
-	 if (d != 0 && krb_net_write (xserver, auth->data, d) != d) {
+	 if (d != 0 && net_write (xserver, auth->data, d) != d) {
 	     XauDisposeAuth(auth);
 	     return 1;
 	 }
 	 XauDisposeAuth(auth);
 	 dpad = (4 - (d % 4)) % 4;
-	 if (dpad && krb_net_write (xserver, zeros, dpad) != dpad)
+	 if (dpad && net_write (xserver, zeros, dpad) != dpad)
 	     return 1;
      } else {
-	 if(krb_net_write(xserver, zeros, 6) != 6)
+	 if(net_write(xserver, zeros, 6) != 6)
 	     return 1;
      }
      return 0;
@@ -817,3 +745,47 @@ suspicious_address (int sock, struct sockaddr_in addr)
 #endif
     ;
 }
+
+/*
+ * This really sucks, but these functions are used and if we're not
+ * linking against libkrb they don't exist.  Using the heimdal storage
+ * functions will not work either cause we do not always link with
+ * libkrb5 either.
+ */
+
+#ifndef KRB4
+
+int
+krb_get_int(void *f, u_int32_t *to, int size, int lsb)
+{
+    int i;
+    unsigned char *from = (unsigned char *)f;
+
+    *to = 0;
+    if(lsb){
+	for(i = size-1; i >= 0; i--)
+	    *to = (*to << 8) | from[i];
+    }else{
+	for(i = 0; i < size; i++)
+	    *to = (*to << 8) | from[i];
+    }
+    return size;
+}
+
+int
+krb_put_int(u_int32_t from, void *to, size_t rem, int size)
+{
+    int i;
+    unsigned char *p = (unsigned char *)to;
+
+    if (rem < size)
+	return -1;
+
+    for(i = size - 1; i >= 0; i--){
+	p[i] = from & 0xff;
+	from >>= 8;
+    }
+    return size;
+}
+
+#endif /* !KRB4 */
