@@ -109,7 +109,7 @@ typedef struct _RegistryValue {
 typedef struct _reg_ops {
 	/* functions for enumerating subkeys and values */	
 	int 	(*subkey_fn)( char *key, char **subkeys );
-	int 	(*subkey_specific_fn)( char *key, char** subkey, uint32 index );
+	int 	(*subkey_specific_fn)( char *key, char** subkey, uint32 indx );
 	int 	(*value_fn) ( char *key, REGISTRY_VALUE **val );
 	BOOL 	(*store_subkeys_fn)( char *key, char **subkeys, uint32 num_subkeys );
 	BOOL 	(*store_values_fn)( char *key, REGISTRY_VALUE **val, uint32 num_values );
