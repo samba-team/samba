@@ -31,8 +31,6 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	DOM_SID sid;
 	fstring name;
 
-	DEBUG(1, ("lookupsid %s\n", state->request.data.sid));
-
 	/* Lookup sid from PDC using lsa_lookup_sids() */
 
 	string_to_sid(&sid, state->request.data.sid);
@@ -56,8 +54,6 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	fstring sid_str, name_domain, name_user, name;
 	DOM_SID sid;
 	
-	DEBUG(1, ("lookupname %s\n", state->request.data.name));
-
 	parse_domain_user(state->request.data.name, name_domain, name_user);
 
 	slprintf(name, sizeof(name), "%s\\%s", name_domain, name_user);
