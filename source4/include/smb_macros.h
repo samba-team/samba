@@ -73,8 +73,11 @@
 
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
+/* the service number for the [globals] defaults */ 
+#define GLOBAL_SECTION_SNUM	(-1)
 /* translates a connection number into a service number */
-#define SNUM(conn)         ((conn)?(conn)->service:-1)
+#define SNUM(conn)         	((conn)?(conn)->service:GLOBAL_SECTION_SNUM)
+
 
 /* access various service details */
 #define SERVICE(snum)      (lp_servicename(snum))
