@@ -42,20 +42,19 @@ int smb_read_error = 0;
 
 BOOL is_a_socket(int fd)
 {
-  int v,l;
-  l = sizeof(int);
-  return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
+	int v,l;
+	l = sizeof(int);
+	return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
 }
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
-typedef struct smb_socket_option
-{
-  char *name;
-  int level;
-  int option;
-  int value;
-  int opttype;
+typedef struct smb_socket_option {
+	char *name;
+	int level;
+	int option;
+	int value;
+	int opttype;
 } smb_socket_option;
 
 smb_socket_option socket_options[] = {
@@ -97,6 +96,7 @@ smb_socket_option socket_options[] = {
 /****************************************************************************
  Print socket options.
 ****************************************************************************/
+
 static void print_socket_options(int s)
 {
 	int value, vlen = 4;
@@ -178,7 +178,7 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 
 	memset((char *)&sock,'\0',socklen);
 	memset((char *)&lastip,'\0',sizeof(lastip));
-	ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
+	ret = (ssize_t)sys_recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
 	if (ret <= 0) {
 		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
 		return(0);
