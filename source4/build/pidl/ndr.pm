@@ -600,12 +600,12 @@ sub ParseArrayPull($$$$)
 	}
 }
 
-sub ParseSubcontextPushStart($)
+sub ParseSubcontextPushStart($$)
 {
 	my $e = shift;
-	my $sub_size = util::has_property($e, "subcontext");
+	my $ndr_flags = shift;
 
-	pidl "{";
+	pidl "if (($ndr_flags) & NDR_SCALARS) {";
 	indent;
 	pidl "struct ndr_push *_ndr_$e->{NAME};";
 	pidl "";
@@ -620,34 +620,48 @@ sub ParseSubcontextPushStart($)
 sub ParseSubcontextPushEnd($)
 {
 	my $e = shift;
-	my $sub_size = util::has_property($e, "subcontext");
-	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $sub_size, _ndr_$e->{NAME}));";
+	my $header_size = util::has_property($e, "subcontext");
+	my $size_is = util::has_property($e, "subcontext_size");
+
+	if (not defined($size_is)) {
+		$size_is = "-1";
+	}
+
+	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $header_size, $size_is, _ndr_$e->{NAME}));";
 	pidl "NDR_CHECK(ndr_push_bytes(ndr, _ndr_$e->{NAME}->data, _ndr_$e->{NAME}->offset));";
 	deindent;
 	pidl "}";
 }
 
-sub ParseSubcontextPullStart($)
+sub ParseSubcontextPullStart($$)
 {
 	my $e = shift;
-	my $sub_size = util::has_property($e, "subcontext");
+	my $ndr_flags = shift;	
+	my $header_size = util::has_property($e, "subcontext");
+	my $size_is = util::has_property($e, "subcontext_size");
 
-	pidl "{";
+	if (not defined($size_is)) {
+		$size_is = "-1";
+	}
+
+	pidl "if (($ndr_flags) & NDR_SCALARS) {";
 	indent;
 	pidl "struct ndr_pull *_ndr_$e->{NAME};";
 	pidl "NDR_ALLOC(ndr, _ndr_$e->{NAME});";
-	pidl "NDR_CHECK(ndr_pull_subcontext_header(ndr, $sub_size, _ndr_$e->{NAME}));"; 
-
+	pidl "NDR_CHECK(ndr_pull_subcontext_header(ndr, $header_size, $size_is, _ndr_$e->{NAME}));"; 
 	return "_ndr_$e->{NAME}";
 }
 
 sub ParseSubcontextPullEnd($)
 {
 	my $e = shift;
-	my $sub_size = util::has_property($e, "subcontext");
+	my $header_size = util::has_property($e, "subcontext");
+	my $size_is = util::has_property($e, "subcontext_size");
 
 	my $advance;
-	if ($sub_size) {
+	if (defined ($size_is)) {
+		$advance = "$size_is";	
+	} elsif ($header_size) {
 		$advance = "_ndr_$e->{NAME}->data_size";
 	} else {
 		$advance = "_ndr_$e->{NAME}->offset";
@@ -676,7 +690,7 @@ sub ParseElementPushScalar($$$)
 	}
 
 	if (defined $sub_size and $e->{POINTERS} == 0) {
-		$ndr = ParseSubcontextPushStart($e);
+		$ndr = ParseSubcontextPushStart($e, "NDR_SCALARS");
 	}
 
 	if (need_wire_pointer($e)) {
@@ -819,7 +833,7 @@ sub ParseElementPullScalar($$$)
 	start_flags($e);
 
 	if (defined $sub_size && $e->{POINTERS} == 0) {
-		$ndr = ParseSubcontextPullStart($e);
+		$ndr = ParseSubcontextPullStart($e, $ndr_flags);
 		$ndr_flags = "NDR_SCALARS|NDR_BUFFERS";
 	}
 
@@ -909,10 +923,10 @@ sub ParseElementPushBuffer($$)
 	}
 
 	if (defined $sub_size) {
-		$ndr = ParseSubcontextPushStart($e);
+		$ndr = ParseSubcontextPushStart($e, $ndr_flags);
 		$ndr_flags = "NDR_SCALARS|NDR_BUFFERS";
 	}
-	    
+
 	if (util::array_size($e)) {
 		ParseArrayPush($e, $ndr, "r->", $ndr_flags);
 	} else {
@@ -972,7 +986,7 @@ sub ParseElementPullBuffer($$)
 	}
 
 	if (defined $sub_size) {
-		$ndr = ParseSubcontextPullStart($e);
+		$ndr = ParseSubcontextPullStart($e, $ndr_flags);
 		$ndr_flags = "NDR_SCALARS|NDR_BUFFERS";
 	}
 
