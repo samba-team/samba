@@ -2753,6 +2753,13 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	info->previousdrivernames=NULL;
 	init_unistr_array(&info->previousdrivernames, &nullstr, servername);
 
+	info->driver_date.low=0;
+	info->driver_date.high=0;
+
+	info->padding=0;
+	info->driver_version_low=0;
+	info->driver_version_high=0;
+
 	init_unistr( &info->mfgname, "");
 	init_unistr( &info->oem_url, "");
 	init_unistr( &info->hardware_id, "");

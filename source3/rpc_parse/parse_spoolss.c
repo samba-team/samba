@@ -2283,7 +2283,13 @@ BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INF
 	if (!prs_uint32("date.high", ps, depth, &info->driver_date.high))
 		return False;
 
-	if (!prs_uint32("driver_version", ps, depth, &info->driver_version))
+	if (!prs_uint32("padding", ps, depth, &info->padding))
+		return False;
+
+	if (!prs_uint32("driver_version_low", ps, depth, &info->driver_version_low))
+		return False;
+
+	if (!prs_uint32("driver_version_high", ps, depth, &info->driver_version_high))
 		return False;
 
 	if (!new_smb_io_relstr("mfgname", buffer, depth, &info->mfgname))
@@ -2908,7 +2914,9 @@ uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info)
 	size+=spoolss_size_string_array(info->previousdrivernames);
 
 	size+=size_of_nttime(&info->driver_date);
-	size+=size_of_uint32( &info->driver_version );	
+	size+=size_of_uint32( &info->padding );	
+	size+=size_of_uint32( &info->driver_version_low );	
+	size+=size_of_uint32( &info->driver_version_high );	
 	size+=size_of_relative_string( &info->mfgname );
 	size+=size_of_relative_string( &info->oem_url );
 	size+=size_of_relative_string( &info->hardware_id );
