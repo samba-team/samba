@@ -53,24 +53,19 @@ int
 main(int argc, char **argv)
 {
     krb5_error_code ret;
-    EncryptionKey key;
     set_progname(argv[0]);
     
     krb5_init_context(&context);
 
     configure(argc, argv);
 
-    ret = hdb_read_master_key(context, keyfile, &key);
-    if(ret && ret != ENOENT)
-	krb5_err(context, 1, ret, "Failed to open master key file");
-    if(ret == 0){
-	set_master_key(key);
-	memset(key.keyvalue.data, 0, key.keyvalue.length);
-	free_EncryptionKey(&key);
-	kdc_log(5, "Database is encrypted");
-    }else
-	kdc_log(5, "Database is not encrypted");
-    
+    ret = hdb_create(context, &db, database);
+    if(ret)
+	krb5_err(context, 1, ret, "hdb_create %s", database);
+    ret = hdb_set_master_key(context, db, keyfile);
+    if (ret)
+	krb5_err(context, 1, ret, "hdb_set_master_key");
+
 #ifdef HAVE_SIGACTION
     {
 	struct sigaction sa;

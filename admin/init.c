@@ -43,8 +43,7 @@ RCSID("$Id$");
 int
 init(int argc, char **argv)
 {
-    HDB *db;
-    int err;
+    krb5_error_code ret;
     int i;
 
     int default_life = 86400;
@@ -54,9 +53,9 @@ init(int argc, char **argv)
     
     hdb_entry ent;
 
-    err = hdb_open(context, &db, database, O_RDWR | O_CREAT, 0600);
-    if(err){
-	krb5_warn(context, err, "hdb_open");
+    ret = db->open(context, db, O_RDWR | O_CREAT, 0600);
+    if(ret){
+	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
     memset(&ent, 0, sizeof(ent));
@@ -66,8 +65,8 @@ init(int argc, char **argv)
 			     "krbtgt",
 			     argv[i],
 			     NULL);
-	err = db->fetch(context, db, &ent);
-	switch(err){
+	ret = db->fetch(context, db, &ent);
+	switch(ret){
 	case 0:
 	    krb5_warnx(context, "Entry already exists");
 	    krb5_free_principal(context, ent.principal);
@@ -75,7 +74,7 @@ init(int argc, char **argv)
 	case HDB_ERR_NOENTRY:
 	    break;
 	default:
-	    krb5_warn(context, err, "hdb_fetch");
+	    krb5_warn(context, ret, "hdb_fetch");
 	    db->close(context, db);
 	    return 0;
 	}

@@ -184,14 +184,12 @@ parse_hdbflags2int(char *str)
 static void
 doit(char *filename, int merge)
 {
+    krb5_error_code ret;
     FILE *f;
-    HDB *db;
     char s[1024];
     char *p;
     int line;
-    int err;
     int flags = O_RDWR;
-
     struct entry e;
     hdb_entry ent;
 
@@ -202,9 +200,9 @@ doit(char *filename, int merge)
     }
     if(!merge)
 	flags |= O_CREAT | O_TRUNC;
-    err = hdb_open(context, &db, database, flags, 0600);
-    if(err){
-	krb5_warn(context, err, "hdb_open");
+    ret = db->open(context, db, flags, 0600);
+    if(ret){
+	krb5_warn(context, ret, "hdb_open");
 	fclose(f);
 	return;
     }
@@ -250,12 +248,12 @@ doit(char *filename, int merge)
 	p = skip_next(p);
 
 	memset(&ent, 0, sizeof(ent));
-	err = krb5_parse_name(context, e.principal, &ent.principal);
-	if(err){
+	ret = krb5_parse_name(context, e.principal, &ent.principal);
+	if(ret){
 	    fprintf(stderr, "%s:%s:%s (%s)\n", 
 		    filename, 
 		    line,
-		    krb5_get_err_text(context, err),
+		    krb5_get_err_text(context, ret),
 		    e.principal);
 	    continue;
 	}

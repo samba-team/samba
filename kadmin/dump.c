@@ -169,8 +169,7 @@ print_entry(krb5_context context, HDB *db, hdb_entry *entry, void *data)
 int
 dump(int argc, char **argv)
 {
-    HDB *db;
-    int ret;
+    krb5_error_code ret;
     FILE *f;
 
     if(argc < 2)
@@ -178,8 +177,7 @@ dump(int argc, char **argv)
     else
 	f = fopen(argv[1], "w");
     
-
-    ret = hdb_open(context, &db, database, O_RDONLY, 0600);
+    ret = db->open(context, db, O_RDONLY, 0600);
     if(ret){
 	krb5_warn(context, ret, "hdb_open");
 	if(f != stdout)

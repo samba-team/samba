@@ -53,6 +53,7 @@ extern char *keyfile;
 extern size_t max_request;
 extern time_t kdc_warn_pwexpire;
 extern char *database;
+extern HDB *db;
 extern char *port_str;
 extern int enable_http;
 

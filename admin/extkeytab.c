@@ -43,7 +43,6 @@ RCSID("$Id$");
 int 
 ext_keytab(int argc, char **argv)
 {
-    HDB *db;
     hdb_entry ent;
     krb5_keytab kid;
     krb5_principal principal;
@@ -55,7 +54,7 @@ ext_keytab(int argc, char **argv)
 	return 0;
     }
     
-    ret = hdb_open(context, &db, database, O_RDONLY, 0600);
+    ret = db->open(context, db, O_RDONLY, 0600);
     if(ret){
 	krb5_warn(context, ret, "hdb_open");
 	return 0;
@@ -95,14 +94,13 @@ ext_keytab(int argc, char **argv)
 
 	krb5_copy_principal (context, principal, &key_entry.principal);
 	key_entry.vno = ent.kvno;
-	k = unseal_key(&ent.keys.val[i]);
+	k = &ent.keys.val[i];
 
 	key_entry.keyblock.keytype = k->key.keytype;
 	key_entry.keyblock.keyvalue.length = 0;
 	krb5_data_copy(&key_entry.keyblock.keyvalue,
 		       k->key.keyvalue.data,
 		       k->key.keyvalue.length);
-	hdb_free_key (k);
 
 	ret = krb5_kt_add_entry(context,
 				kid,

@@ -83,6 +83,7 @@ static SL_cmd commands[] = {
 
 krb5_context context;
 char database[256] = HDB_DEFAULT_DB;
+HDB *db = NULL;
 
 int
 help(int argc, char **argv)
@@ -100,6 +101,11 @@ exit_kdb_edit (int argc, char **argv)
 int
 set_db(int argc, char **argv)
 {
+    krb5_error_code ret;
+
+    if (db)
+	db->destroy(context, db);
+
     switch(argc){
     case 1:
 	strcpy(database, HDB_DEFAULT_DB);
@@ -110,6 +116,12 @@ set_db(int argc, char **argv)
     default:
 	fprintf(stderr, "Usage: database [database]\n");
     }
+    ret = hdb_create(context, &db, database);
+    if (ret)
+	krb5_err(context, 1, ret, "opening database %s", database);
+    ret = hdb_set_master_key(context, db, keyfile);
+    if (ret)
+	krb5_err(context, 1, ret, "setting master key");
     return 0;
 }
 
@@ -127,7 +139,6 @@ main(int argc, char **argv)
     krb5_config_section *cf;
     int optind = 0;
     int e;
-    EncryptionKey key;
 
     set_progname(argv[0]);
 
@@ -157,16 +168,7 @@ main(int argc, char **argv)
 	    keyfile = strdup(p);
     }
 
-    ret = hdb_read_master_key(context, keyfile, &key);
-    if (ret && ret != ENOENT)
-	krb5_err(context, 1, ret, "Failed to open master key file");
-    if(ret == 0){
-	set_master_key(key);
-	memset(key.keyvalue.data, 0, key.keyvalue.length);
-	free_EncryptionKey(&key);
-	krb5_warnx (context, "Database is encrypted");
-    }else
-	krb5_warnx (context, "Database is not encrypted");
+    set_db(1, NULL);
 
     return sl_loop(commands, "kdb_edit> ") != 0;
 }

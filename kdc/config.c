@@ -49,6 +49,7 @@ static char *max_request_str;
 size_t max_request;
 time_t kdc_warn_pwexpire;
 char *database;
+HDB *db;
 char *port_str;
 int enable_http = -1;
 

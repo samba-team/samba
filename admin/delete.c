@@ -43,7 +43,6 @@ RCSID("$Id$");
 int
 del_entry(int argc, char **argv)
 {
-    HDB *db;
     krb5_error_code ret;
     hdb_entry ent;
     
@@ -54,7 +53,8 @@ del_entry(int argc, char **argv)
 	
     krb5_parse_name(context, argv[1], &ent.principal);
     
-    if((ret = hdb_open(context, &db, database, O_RDWR, 0600))){
+    ret = db->open(context, db, O_RDWR, 0600);
+    if(ret) {
 	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }

@@ -84,13 +84,12 @@ doit2(HDB *db, hdb_entry *ent)
 static void
 doit(const char *principal)
 {
-    HDB *db;
     hdb_entry ent;
     krb5_error_code ret;
 
-
     memset(&ent, 0, sizeof(ent));
-    if((ret = hdb_open(context, &db, database, O_RDWR, 0600))){
+    ret = db->open(context, db, O_RDWR, 0600);
+    if(ret) {
 	krb5_warn(context, ret, "hdb_open");
 	return;
     }

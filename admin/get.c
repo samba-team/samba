@@ -43,8 +43,7 @@ RCSID("$Id$");
 int
 get_entry(int argc, char **argv)
 {
-    HDB *db;
-    int ret;
+    krb5_error_code ret;
     hdb_entry ent;
     int i;
     krb5_principal principal;
@@ -54,7 +53,8 @@ get_entry(int argc, char **argv)
 	return 0;
     }
 	
-    if((ret = hdb_open(context, &db, database, O_RDONLY, 0600))) {
+    ret = db->open(context, db, O_RDONLY, 0600);
+    if(ret) {
 	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
