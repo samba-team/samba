@@ -121,6 +121,9 @@ krb5_build_authenticator (krb5_context context,
 			  Authenticator **auth,
 			  krb5_data *result);
 
+void
+krb5_generate_random_block(void *buf, size_t len);
+
 #define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
 #define FREE(X) do{if(X)free(X);}while(0)
 
