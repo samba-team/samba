@@ -415,7 +415,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 		return ofs;
 	
 	case RAW_SEARCH_UNIX_INFO:
-		if (blob->length < 105) return -1;
+		if (blob->length < 109) return -1;
 		ofs                                  = IVAL(blob->data,             0);
 		data->unix_info.file_index           = IVAL(blob->data,             4);
 		data->unix_info.size                 = BVAL(blob->data,             8);
@@ -432,10 +432,9 @@ static int parse_trans2_search(struct cli_tree *tree,
 		data->unix_info.permissions          = IVAL(blob->data,            92);
 		data->unix_info.nlink                = IVAL(blob->data,           100);
 		/* There is no length field for this name but we know it's null terminated. */
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->unix_info.name,
-					   0, 104, 0);
-		if (ofs != 0 && ofs < 104+len) {
+		len = cli_blob_pull_unix_string(tree->session, mem_ctx, blob,
+					   &data->unix_info.name, 108, 0);
+		if (ofs != 0 && ofs < 108+len) {
 			return -1;
 		}
 		return ofs;
