@@ -112,6 +112,11 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table 
 					      insert_ofs, insert_ofs+n, depth+1);
 			}
 			return;
+		} else {
+#if 0
+			print_depth(depth);
+			printf("expand by %d gives fault 0x%x\n", n, p->last_fault_code);
+#endif
 		}
 		if (p->last_fault_code == 5) {
 			reopen(&p, iface);
@@ -222,7 +227,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 
 static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface)
 {
-	test_scan_call(mem_ctx, iface, 0x41);
+	test_scan_call(mem_ctx, iface, 0x26);
 }
 
 BOOL torture_rpc_autoidl(int dummy)

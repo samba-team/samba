@@ -60,6 +60,14 @@ void cli_transport_close(struct cli_transport *transport)
 	}
 }
 
+/*
+  mark the transport as dead
+*/
+void cli_transport_dead(struct cli_transport *transport)
+{
+	cli_sock_dead(transport->socket);
+}
+
 
 
 /****************************************************************************
