@@ -381,7 +381,7 @@ typedef struct spool_q_open_printer_ex
 	SPOOL_USER_CTR user_ctr;
 } SPOOL_Q_OPEN_PRINTER_EX;
 
-/* SPOOL_Q_OPEN_PRINTER_EX reply to an open printer */ 
+/* SPOOL_R_OPEN_PRINTER_EX reply to an open printer */ 
 typedef struct spool_r_open_printer_ex
 {	
 	POLICY_HND handle; /* handle used along all transactions (20*uint8) */
@@ -410,7 +410,7 @@ typedef struct s_header_type
 	} data;
 } HEADER_TYPE;
 
-typedef struct s_buffer
+/*typedef struct s_buffer
 {
 	uint32 ptr;
 	uint32 size;
@@ -418,7 +418,7 @@ typedef struct s_buffer
 	uint8 *data;
 	HEADER_TYPE *header;
 } BUFFER;
-
+*/
 typedef struct new_buffer
 {
 	uint32 ptr;
@@ -716,9 +716,8 @@ typedef struct spool_q_getprinter
 {
 	POLICY_HND handle;
 	uint32 level;
-	uint8* buffer;
+	NEW_BUFFER *buffer;
 	uint32 offered;
-
 } SPOOL_Q_GETPRINTER;
 
 typedef struct printer_info_info
@@ -729,17 +728,11 @@ typedef struct printer_info_info
 		PRINTER_INFO_2 *info2;
 		void *info;
 	} printer;
-
 } PRINTER_INFO;
 
 typedef struct spool_r_getprinter
 {
-	POLICY_HND handle;
-	uint32 level;
-
-	PRINTER_INFO ctr;
-
-	uint32 offered;
+	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 status;
 
@@ -753,17 +746,6 @@ struct s_notify_info_data_table
 	uint32 size;
 	void   (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
 };
-
-typedef struct spool_q_getprinterdriver2
-{
-	POLICY_HND handle;
-	UNISTR2 architecture;
-	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
-	uint32 unknown;
-
-} SPOOL_Q_GETPRINTERDRIVER2;
 
 typedef struct driver_info_1
 {
@@ -804,16 +786,26 @@ typedef struct driver_info_info
 
 } DRIVER_INFO;
 
+typedef struct spool_q_getprinterdriver2
+{
+	POLICY_HND handle;
+	uint32 architecture_ptr;
+	UNISTR2 architecture;
+	uint32 level;
+	NEW_BUFFER *buffer;
+	uint32 offered;
+	uint32 unknown;
+} SPOOL_Q_GETPRINTERDRIVER2;
+
 typedef struct spool_r_getprinterdriver2
 {
-	uint32 level;
-	DRIVER_INFO ctr;
+	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 offered;
-	uint32 returned;
+	uint32 unknown0;
+	uint32 unknown1;
 	uint32 status;
-
 } SPOOL_R_GETPRINTERDRIVER2;
+
 
 typedef struct add_jobinfo_1
 {
@@ -826,8 +818,8 @@ typedef struct spool_q_addjob
 {
 	POLICY_HND handle;
 	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
+	NEW_BUFFER *buffer;
+	uint32 offered;
 } SPOOL_Q_ADDJOB;
 
 typedef struct spool_r_addjob
@@ -1125,6 +1117,8 @@ typedef struct spool_printer_driver_info_level_3
 
 typedef struct spool_printer_driver_info_level
 {
+	uint32 level;
+	uint32 ptr;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *info_3;
 } SPOOL_PRINTER_DRIVER_INFO_LEVEL;
 
@@ -1191,8 +1185,10 @@ typedef struct spool_r_addprinter
 	uint32 status;
 } SPOOL_R_ADDPRINTER;
 
+
 typedef struct spool_q_addprinterex
 {
+	uint32 server_name_ptr;
 	UNISTR2 server_name;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
@@ -1200,10 +1196,9 @@ typedef struct spool_q_addprinterex
 	uint32 unk1;
 	uint32 unk2;
 	uint32 unk3;
-	uint32 user_level;
-	SPOOL_USER_LEVEL user;
+	uint32 user_switch;
+	SPOOL_USER_CTR user_ctr;
 } SPOOL_Q_ADDPRINTEREX;
-
 
 typedef struct spool_r_addprinterex
 {
@@ -1211,8 +1206,10 @@ typedef struct spool_r_addprinterex
 	uint32 status;
 } SPOOL_R_ADDPRINTEREX;
 
+
 typedef struct spool_q_addprinterdriver
 {
+	uint32 server_name_ptr;
 	UNISTR2 server_name;
 	uint32 level;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL info;
@@ -1223,19 +1220,10 @@ typedef struct spool_r_addprinterdriver
 	uint32 status;
 } SPOOL_R_ADDPRINTERDRIVER;
 
-typedef struct spool_q_getprinterdriverdirectory
-{
-	UNISTR2 name;
-	UNISTR2 environment;
-	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
-} SPOOL_Q_GETPRINTERDRIVERDIR;
 
 typedef struct driver_directory_1
 {
 	UNISTR name;
-
 } DRIVER_DIRECTORY_1 ;
 
 typedef struct driver_info_ctr_info
@@ -1243,16 +1231,24 @@ typedef struct driver_info_ctr_info
 	union {
 		DRIVER_DIRECTORY_1 info_1;
 	} driver;
-
 } DRIVER_DIRECTORY_CTR;
+
+typedef struct spool_q_getprinterdriverdirectory
+{
+	uint32 name_ptr;
+	UNISTR2 name;
+	uint32 environment_ptr;
+	UNISTR2 environment;
+	uint32 level;
+	NEW_BUFFER *buffer;
+	uint32 offered;
+} SPOOL_Q_GETPRINTERDRIVERDIR;
 
 typedef struct spool_r_getprinterdriverdirectory
 {
-	uint32 level;
-	DRIVER_DIRECTORY_CTR ctr;
-	uint32 offered;
+	NEW_BUFFER *buffer;
+	uint32 needed;
 	uint32 status;
-
 } SPOOL_R_GETPRINTERDRIVERDIR;
 
 typedef struct spool_q_enumprintprocessors
@@ -1284,7 +1280,7 @@ typedef struct spool_q_enumprintprocessordatatypes
 	UNISTR2 name;
 	UNISTR2 printprocessor;
 	uint32 level;
-	BUFFER buffer;
+	NEW_BUFFER *buffer;
 	uint32 buf_size;
 } SPOOL_Q_ENUMPRINTPROCESSORDATATYPES;
 
@@ -1413,9 +1409,8 @@ typedef struct spool_q_getjob
 	POLICY_HND handle;
 	uint32 jobid;
 	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
-
+	NEW_BUFFER *buffer;
+	uint32 offered;
 } SPOOL_Q_GETJOB;
 
 typedef struct pjob_info_info
@@ -1430,9 +1425,8 @@ typedef struct pjob_info_info
 
 typedef struct spool_r_getjob
 {
-	uint32 level;
-	PJOB_INFO ctr;
-	uint32 offered;
+	NEW_BUFFER *buffer;
+	uint32 needed;
 	uint32 status;
 } SPOOL_R_GETJOB;
 

@@ -42,17 +42,15 @@ static BOOL api_spoolss_open_printer_ex(uint16 vuid, prs_struct *data, prs_struc
 		DEBUG(0,("spoolss_io_q_open_printer_ex: unable to unmarshall SPOOL_Q_OPEN_PRINTER_EX.\n"));
 		return False;
 	}
-	
+
 	if (q_u.printername_ptr != 0)
-	{
 		printername = &q_u.printername;
-	}
-	
+
 	r_u.status = _spoolss_open_printer_ex( printername,
 					       &q_u.printer_default,
 	                                       q_u.user_switch, q_u.user_ctr,
 	                                       &r_u.handle);
-					       
+
 	if (!spoolss_io_r_open_printer_ex("",&r_u,rdata,0)){
 		DEBUG(0,("spoolss_io_r_open_printer_ex: unable to marshall SPOOL_R_OPEN_PRINTER_EX.\n"));
 		return False;
@@ -88,9 +86,9 @@ static BOOL api_spoolss_getprinterdata(uint16 vuid, prs_struct *data, prs_struct
 		DEBUG(0,("spoolss_io_r_getprinterdata: unable to marshall SPOOL_R_GETPRINTERDATA.\n"));
 		return False;
 	}
-	
+
 	safe_free(r_u.data);
-	
+
 	return True;
 }
 
@@ -111,7 +109,7 @@ static BOOL api_spoolss_closeprinter(uint16 vuid, prs_struct *data, prs_struct *
 		DEBUG(0,("spoolss_io_q_closeprinter: unable to unmarshall SPOOL_Q_CLOSEPRINTER.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_closeprinter(&q_u.handle);
 	memcpy(&r_u.handle, &q_u.handle, sizeof(r_u.handle));
 
@@ -119,6 +117,8 @@ static BOOL api_spoolss_closeprinter(uint16 vuid, prs_struct *data, prs_struct *
 		DEBUG(0,("spoolss_io_r_closeprinter: unable to marshall SPOOL_R_CLOSEPRINTER.\n"));
 		return False;
 	}
+
+	return True;
 }
 
 /********************************************************************
@@ -141,11 +141,13 @@ static BOOL api_spoolss_rffpcnex(uint16 vuid, prs_struct *data, prs_struct *rdat
 	r_u.status = _spoolss_rffpcnex(&q_u.handle, q_u.flags,
 	                               q_u.options, &q_u.localmachine,
 	                               q_u.printerlocal, &q_u.option);
-				       
+
 	if (!spoolss_io_r_rffpcnex("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_rffpcnex: unable to marshall SPOOL_R_RFFPCNEX.\n"));
 		return False;
 	}
+
+	return True;
 }
 
 
@@ -170,11 +172,13 @@ static BOOL api_spoolss_rfnpcnex(uint16 vuid, prs_struct *data, prs_struct *rdat
 
 	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
 	                               &q_u.option, &r_u.count, &r_u.info);
-				       
+
 	if (!spoolss_io_r_rfnpcnex("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
 		return False;
 	}
+
+	return True;
 }
 
 
@@ -191,8 +195,6 @@ static BOOL api_spoolss_enumprinters(uint16 vuid, prs_struct *data, prs_struct *
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	DEBUG(5,("api_spoolss_enumprinters\n"));
-
 	new_spoolss_allocate_buffer(&q_u.buffer);
 
 	if (!spoolss_io_q_enumprinters("", &q_u, data, 0)) {
@@ -206,7 +208,7 @@ static BOOL api_spoolss_enumprinters(uint16 vuid, prs_struct *data, prs_struct *
 	r_u.status = _spoolss_enumprinters( q_u.flags, &q_u.servername, q_u.level,
 					    r_u.buffer, q_u.offered,
 					    &r_u.needed, &r_u.returned);
-	
+
 	if (!new_spoolss_io_r_enumprinters("", &r_u, rdata, 0)) {
 		DEBUG(0,("new_spoolss_io_r_enumprinters: unable to marshall SPOOL_R_ENUMPRINTERS.\n"));
 		new_spoolss_free_buffer(q_u.buffer);
@@ -214,7 +216,7 @@ static BOOL api_spoolss_enumprinters(uint16 vuid, prs_struct *data, prs_struct *
 	}
 
 	new_spoolss_free_buffer(q_u.buffer);
-	
+
 	return True;
 }
 
@@ -231,24 +233,27 @@ static BOOL api_spoolss_getprinter(uint16 vuid, prs_struct *data, prs_struct *rd
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
+	new_spoolss_allocate_buffer(&q_u.buffer);
+
 	if(!spoolss_io_q_getprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinter: unable to unmarshall SPOOL_Q_GETPRINTER.\n"));
 		return False;
 	}
 
-	r_u.status = _spoolss_getprinter(&q_u.handle, q_u.level,
-	                                &r_u.ctr, &q_u.offered, &r_u.needed);
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
 
-	memcpy(&r_u.handle, &q_u.handle, sizeof(&r_u.handle));
-	r_u.offered = q_u.offered;
-	r_u.level = q_u.level;
-	safe_free(q_u.buffer);
+	r_u.status = _spoolss_getprinter(&q_u.handle, q_u.level,
+					 r_u.buffer, q_u.offered, 
+					 &r_u.needed);
 
 	if(!spoolss_io_r_getprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getprinter: unable to marshall SPOOL_R_GETPRINTER.\n"));
+		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
+
+	new_spoolss_free_buffer(q_u.buffer);
 	return True;
 }
 
@@ -265,26 +270,28 @@ static BOOL api_spoolss_getprinterdriver2(uint16 vuid, prs_struct *data, prs_str
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
+	new_spoolss_allocate_buffer(&q_u.buffer);
+
 	if(!spoolss_io_q_getprinterdriver2("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinterdriver2: unable to unmarshall SPOOL_Q_GETPRINTERDRIVER2.\n"));
 		return False;
 	}
-	
-	r_u.status = _spoolss_getprinterdriver2(&q_u.handle,
-				&q_u.architecture, q_u.level,
-				&r_u.ctr, &q_u.buf_size,
-				&r_u.needed);
-	
-	r_u.offered = q_u.buf_size;
-	r_u.level = q_u.level;
-	spoolss_io_free_buffer(&(q_u.buffer));
 
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
+
+	r_u.status = _spoolss_getprinterdriver2(&q_u.handle, &q_u.architecture, q_u.level, q_u.unknown,
+						r_u.buffer, q_u.offered,
+						&r_u.needed, &r_u.unknown0, &r_u.unknown1);
+	
 	if(!spoolss_io_r_getprinterdriver2("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdriver2: unable to marshall SPOOL_R_GETPRINTERDRIVER2.\n"));
+		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
 	
+	new_spoolss_free_buffer(q_u.buffer);
 	return True;
 }
 
@@ -300,20 +307,20 @@ static BOOL api_spoolss_startpageprinter(uint16 vuid, prs_struct *data, prs_stru
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
 	if(!spoolss_io_q_startpageprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_startpageprinter: unable to unmarshall SPOOL_Q_STARTPAGEPRINTER.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_startpageprinter(&q_u.handle);
-	
+
 	if(!spoolss_io_r_startpageprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_startpageprinter: unable to marshall SPOOL_R_STARTPAGEPRINTER.\n"));
 		return False;
 	}
-	
-	return True;	
+
+	return True;
 }
 
 
@@ -329,58 +336,53 @@ static BOOL api_spoolss_endpageprinter(uint16 vuid, prs_struct *data, prs_struct
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
 	if(!spoolss_io_q_endpageprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_endpageprinter: unable to unmarshall SPOOL_Q_ENDPAGEPRINTER.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_endpageprinter(&q_u.handle);
-	
+
 	if(!spoolss_io_r_endpageprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_endpageprinter: unable to marshall SPOOL_R_ENDPAGEPRINTER.\n"));
 		return False;
 	}
-	
+
 	return True;
 }
 
 /********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
+********************************************************************/
 static BOOL api_spoolss_startdocprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_STARTDOCPRINTER q_u;
 	SPOOL_R_STARTDOCPRINTER r_u;
-	
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
 	if(!spoolss_io_q_startdocprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_startdocprinter: unable to unmarshall SPOOL_Q_STARTDOCPRINTER.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_startdocprinter(&q_u.handle,
 	                          q_u.doc_info_container.level,
 	                          &q_u.doc_info_container.docinfo,
 	                          &r_u.jobid);
-	
+
 	if(!spoolss_io_r_startdocprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_startdocprinter: unable to marshall SPOOL_R_STARTDOCPRINTER.\n"));
 		return False;
 	}
-	
+
 	return True;
 }
 
+
 /********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
+********************************************************************/
 static BOOL api_spoolss_enddocprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENDDOCPRINTER q_u;
@@ -388,28 +390,25 @@ static BOOL api_spoolss_enddocprinter(uint16 vuid, prs_struct *data, prs_struct 
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
 	if(!spoolss_io_q_enddocprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enddocprinter: unable to unmarshall SPOOL_Q_ENDDOCPRINTER.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_enddocprinter(&q_u.handle);
-	
+
 	if(!spoolss_io_r_enddocprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_enddocprinter: unable to marshall SPOOL_R_ENDDOCPRINTER.\n"));
 		return False;
 	}
-	
+
 	return True;		
 }
 
 
 /********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
+********************************************************************/
 static BOOL api_spoolss_writeprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_WRITEPRINTER q_u;
@@ -417,19 +416,19 @@ static BOOL api_spoolss_writeprinter(uint16 vuid, prs_struct *data, prs_struct *
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
 	if(!spoolss_io_q_writeprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_writeprinter: unable to unmarshall SPOOL_Q_WRITEPRINTER.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_writeprinter(&q_u.handle,
 	                                   q_u.buffer_size,
 	                                   q_u.buffer,
 	                                   &q_u.buffer_size2);
 	r_u.buffer_written = q_u.buffer_size2;
 	safe_free(q_u.buffer);
-	
+
 	if(!spoolss_io_r_writeprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_writeprinter: unable to marshall SPOOL_R_WRITEPRINTER.\n"));
 		return False;
@@ -439,6 +438,9 @@ static BOOL api_spoolss_writeprinter(uint16 vuid, prs_struct *data, prs_struct *
 }
 
 /****************************************************************************
+
+FIX ME: JFM: freeing memory ????
+
 ****************************************************************************/
 static BOOL api_spoolss_setprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
@@ -483,9 +485,9 @@ static BOOL api_spoolss_fcpn(uint16 vuid, prs_struct *data, prs_struct *rdata)
 		DEBUG(0,("spoolss_io_q_fcpn: unable to unmarshall SPOOL_Q_FCPN.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_fcpn(&q_u.handle);
-	
+
 	if(!spoolss_io_r_fcpn("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_fcpn: unable to marshall SPOOL_R_FCPN.\n"));
 		return False;
@@ -501,24 +503,29 @@ static BOOL api_spoolss_addjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ADDJOB q_u;
 	SPOOL_R_ADDJOB r_u;
-	
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
+	new_spoolss_allocate_buffer(&q_u.buffer);
+
 	if(!spoolss_io_q_addjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_addjob: unable to unmarshall SPOOL_Q_ADDJOB.\n"));
 		return False;
 	}
 
+	/* that's only an [in] buffer ! */
+
 	r_u.status = _spoolss_addjob(&q_u.handle, q_u.level,
-	                             &q_u.buffer, q_u.buf_size);
-	
-	spoolss_io_free_buffer(&(q_u.buffer));
-	
+	                             q_u.buffer, q_u.offered);
+		
 	if(!spoolss_io_r_addjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_addjob: unable to marshall SPOOL_R_ADDJOB.\n"));
+		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
+
+	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;		
 }
@@ -555,7 +562,7 @@ static BOOL api_spoolss_enumjobs(uint16 vuid, prs_struct *data, prs_struct *rdat
 	}
 
 	new_spoolss_free_buffer(q_u.buffer);
-	
+
 	return True;
 }
 
@@ -566,22 +573,22 @@ static BOOL api_spoolss_schedulejob(uint16 vuid, prs_struct *data, prs_struct *r
 {
 	SPOOL_Q_SCHEDULEJOB q_u;
 	SPOOL_R_SCHEDULEJOB r_u;
-	
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
 	if(!spoolss_io_q_schedulejob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_schedulejob: unable to unmarshall SPOOL_Q_SCHEDULEJOB.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_schedulejob(&q_u.handle, q_u.jobid);
-	
+
 	if(!spoolss_io_r_schedulejob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_schedulejob: unable to marshall SPOOL_R_SCHEDULEJOB.\n"));
 		return False;
 	}
-	
+
 	return True;
 }
 
@@ -591,23 +598,23 @@ static BOOL api_spoolss_setjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_SETJOB q_u;
 	SPOOL_R_SETJOB r_u;
-	
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	
+
 	if(!spoolss_io_q_setjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_setjob: unable to unmarshall SPOOL_Q_SETJOB.\n"));
 		return False;
 	}
-	
+
 	r_u.status = _spoolss_setjob(&q_u.handle, q_u.jobid,
 				q_u.level, &q_u.ctr, q_u.command);
-				
+
 	if(!spoolss_io_r_setjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setjob: unable to marshall SPOOL_R_SETJOB.\n"));
 		return False;
 	}
-	
+
 	return True;
 }
 
@@ -618,7 +625,7 @@ static BOOL api_spoolss_enumprinterdrivers(uint16 vuid, prs_struct *data, prs_st
 {
 	SPOOL_Q_ENUMPRINTERDRIVERS q_u;
 	SPOOL_R_ENUMPRINTERDRIVERS r_u;
-	
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
@@ -643,7 +650,7 @@ static BOOL api_spoolss_enumprinterdrivers(uint16 vuid, prs_struct *data, prs_st
 	}
 
 	new_spoolss_free_buffer(q_u.buffer);
-	
+
 	return True;
 }
 
@@ -654,7 +661,7 @@ static BOOL api_spoolss_enumforms(uint16 vuid, prs_struct *data, prs_struct *rda
 {
 	SPOOL_Q_ENUMFORMS q_u;
 	SPOOL_R_ENUMFORMS r_u;
-		
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
@@ -667,7 +674,7 @@ static BOOL api_spoolss_enumforms(uint16 vuid, prs_struct *data, prs_struct *rda
 
 	/* that's an [in out] buffer */
 	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-	
+
 	r_u.status = _new_spoolss_enumforms(&q_u.handle, q_u.level, 
 				r_u.buffer, q_u.offered,
 				&r_u.needed, &r_u.numofforms);
@@ -677,9 +684,9 @@ static BOOL api_spoolss_enumforms(uint16 vuid, prs_struct *data, prs_struct *rda
 		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
+
 	new_spoolss_free_buffer(q_u.buffer);
-	
+
 	return True;
 }
 
@@ -690,7 +697,7 @@ static BOOL api_spoolss_enumports(uint16 vuid, prs_struct *data, prs_struct *rda
 {
 	SPOOL_Q_ENUMPORTS q_u;
 	SPOOL_R_ENUMPORTS r_u;
-	
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
@@ -703,19 +710,19 @@ static BOOL api_spoolss_enumports(uint16 vuid, prs_struct *data, prs_struct *rda
 
 	/* that's an [in out] buffer */
 	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-	
+
 	r_u.status = _spoolss_enumports(&q_u.name, q_u.level,
 					r_u.buffer, q_u.offered,
 					&r_u.needed, &r_u.returned);
-	
+
 	if (!new_spoolss_io_r_enumports("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_enumports: unable to marshall SPOOL_R_ENUMPORTS.\n"));
 		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
+
 	new_spoolss_free_buffer(q_u.buffer);
-	
+
 	return True;
 }
 
@@ -738,7 +745,7 @@ static BOOL api_spoolss_addprinterex(uint16 vuid, prs_struct *data, prs_struct *
 	r_u.status = _spoolss_addprinterex(&q_u.server_name,
 	                        q_u.level, &q_u.info,
 				q_u.unk0, q_u.unk1, q_u.unk2, q_u.unk3,
-				q_u.user_level, &q_u.user,
+				q_u.user_switch, &q_u.user_ctr,
 				&r_u.handle);
 				
 	if(!spoolss_io_r_addprinterex("", &r_u, rdata, 0)) {
@@ -764,8 +771,7 @@ static BOOL api_spoolss_addprinterdriver(uint16 vuid, prs_struct *data, prs_stru
 		return False;
 	}
 	
-	r_u.status = _spoolss_addprinterdriver(&q_u.server_name,
-				q_u.level, &q_u.info);
+	r_u.status = _spoolss_addprinterdriver(&q_u.server_name, q_u.level, &q_u.info);
 				
 	if(!spoolss_io_r_addprinterdriver("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprinterdriver: unable to marshall SPOOL_R_ADDPRINTERDRIVER.\n"));
@@ -781,26 +787,32 @@ static BOOL api_spoolss_getprinterdriverdirectory(uint16 vuid, prs_struct *data,
 {
 	SPOOL_Q_GETPRINTERDRIVERDIR q_u;
 	SPOOL_R_GETPRINTERDRIVERDIR r_u;
-	
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	new_spoolss_allocate_buffer(&q_u.buffer);
+
 	if(!spoolss_io_q_getprinterdriverdir("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinterdriverdir: unable to unmarshall SPOOL_Q_GETPRINTERDRIVERDIR.\n"));
 		return False;
 	}
-	
-	r_u.offered = q_u.buf_size;
-	r_u.level = q_u.level;
-	r_u.status = _spoolss_getprinterdriverdirectory(&q_u.name,
-	                        &q_u.environment,
-				q_u.level,
-				&r_u.ctr,
-				&r_u.offered);
-	spoolss_io_free_buffer(&q_u.buffer);
-	
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
+
+	r_u.status = _spoolss_getprinterdriverdirectory(&q_u.name, &q_u.environment, q_u.level,
+							r_u.buffer, q_u.offered,
+							&r_u.needed);
+
 	if(!spoolss_io_r_getprinterdriverdir("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdriverdir: unable to marshall SPOOL_R_GETPRINTERDRIVERDIR.\n"));
+		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
+
+	new_spoolss_free_buffer(q_u.buffer);
+
 	return True;
 }
 
@@ -909,8 +921,7 @@ static BOOL api_spoolss_setform(uint16 vuid, prs_struct *data, prs_struct *rdata
 		return False;
 	}
 	
-	r_u.status = _spoolss_setform(&q_u.handle,
-	                              &q_u.name, q_u.level, &q_u.form);
+	r_u.status = _spoolss_setform(&q_u.handle, &q_u.name, q_u.level, &q_u.form);
 				      
 	if(!spoolss_io_r_setform("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setform: unable to marshall SPOOL_R_SETFORM.\n"));
@@ -997,27 +1008,27 @@ static BOOL api_spoolss_getjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
 	SPOOL_Q_GETJOB q_u;
 	SPOOL_R_GETJOB r_u;
 	
+	new_spoolss_allocate_buffer(&q_u.buffer);
+
 	if(!spoolss_io_q_getjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getjob: unable to unmarshall SPOOL_Q_GETJOB.\n"));
 		return False;
 	}
 
-	r_u.offered = q_u.buf_size;
-	r_u.level = q_u.level;
-	r_u.status = _spoolss_getjob(&q_u.handle,
-				q_u.jobid,
-				q_u.level,
-				&r_u.ctr,
-				&r_u.offered);
-	spoolss_io_free_buffer(&(q_u.buffer));
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
+
+	r_u.status = _spoolss_getjob(&q_u.handle, q_u.jobid, q_u.level,
+					r_u.buffer, q_u.offered,
+					&r_u.needed);
 	
 	if(!spoolss_io_r_getjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getjob: unable to marshall SPOOL_R_GETJOB.\n"));
+		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
-	free_spoolss_r_getjob(&r_u);
-	
+		
+	new_spoolss_free_buffer(q_u.buffer);
 	return True;
 }
 
