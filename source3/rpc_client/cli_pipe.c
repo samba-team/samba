@@ -925,6 +925,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	uint32 auth_len, max_data, data_left, data_sent;
 	BOOL ret = False;
 	BOOL auth_verify, auth_seal, auth_schannel;
+	uint32 callid = 0;
 	fstring dump_name;
 
 	auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
@@ -950,7 +951,6 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		uint32 data_len, send_size;
 		uint8 flags = 0;
 		uint32 crc32 = 0;
-		uint32 callid = 0;
 		uint32 auth_padding = 0;
 		RPC_AUTH_NETSEC_CHK verf;
 
@@ -986,7 +986,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		if (data_left == prs_offset(data))
 			flags |= RPC_FLG_FIRST;
 
-		if (data_left < max_data)
+		if (data_left <= max_data)
 			flags |= RPC_FLG_LAST;
 		/*
 		 * Write out the RPC header and the request header.
