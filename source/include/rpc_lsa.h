@@ -218,7 +218,7 @@ typedef struct dom_ref_info
 {
 	uint32 undoc_buffer; /* undocumented buffer pointer. */
 	uint32 num_ref_doms_1; /* num referenced domains */
-	uint32 undoc_buffer2; /* undocumented domain name buffer pointer. */
+	uint32 ptr_ref_dom; /* pointer to referenced domains */
 	uint32 max_entries; /* 32 - max number of entries */
 	uint32 num_ref_doms_2; /* num referenced domains */
 
