@@ -3555,6 +3555,16 @@ uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECR
 
 BOOL api_netlog_rpc(pipes_struct *p);
 
+/*The following definitions come from  rpc_server/srv_netlog_nt.c  */
+
+uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u);
+uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u);
+uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u);
+uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u);
+uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u);
+uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u);
+uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u);
+
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
 BOOL create_next_pdu(pipes_struct *p);
@@ -3763,6 +3773,16 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 
 BOOL api_srvsvc_rpc(pipes_struct *p);
 
+/*The following definitions come from  rpc_server/srv_srvsvc_nt.c  */
+
+uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u);
+uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u);
+uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u);
+uint32 _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_SESS_ENUM *r_u);
+uint32 _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u);
+uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, SRV_R_NET_SHARE_GET_INFO *r_u);
+uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET_REMOTE_TOD *r_u);
+
 /*The following definitions come from  rpc_server/srv_util.c  */
 
 int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids);
@@ -3777,6 +3797,10 @@ uint32 local_lookup_user_rid(char *user_name, uint32 *rid);
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
 BOOL api_wkssvc_rpc(pipes_struct *p);
+
+/*The following definitions come from  rpc_server/srv_wkssvc_nt.c  */
+
+uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO *r_u);
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 

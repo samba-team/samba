@@ -936,13 +936,22 @@ void init_sam_info(DOM_SAM_INFO *sam,
  Reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
 
-static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR *ctr, prs_struct *ps, int depth)
+static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
-	if (ctr == NULL)
-		return False;
+	NET_ID_INFO_CTR *ctr = *pp_ctr;
 
 	prs_debug(ps, depth, desc, "smb_io_sam_info");
 	depth++;
+
+	if (UNMARSHALLING(ps)) {
+		ctr = *pp_ctr = (NET_ID_INFO_CTR *)prs_alloc_mem(ps, sizeof(NET_ID_INFO_CTR));
+		if (ctr == NULL)
+			return False;
+		ZERO_STRUCTP(ctr);
+	}
+	
+	if (ctr == NULL)
+		return False;
 
 	/* don't 4-byte align here! */
 
@@ -993,8 +1002,8 @@ static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int d
 	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
 		return False;
 
-	if (sam->logon_level != 0 && sam->ctr != NULL) {
-		if(!net_io_id_info_ctr("logon_info", sam->ctr, ps, depth))
+	if (sam->logon_level != 0) {
+		if(!net_io_id_info_ctr("logon_info", &sam->ctr, ps, depth))
 			return False;
 	}
 
