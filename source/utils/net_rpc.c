@@ -96,7 +96,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
+		fprintf(stderr, "error: %s\n", nt_errstr(result));
 	}
 
 	exit(1);
@@ -144,7 +144,7 @@ static int run_rpc_command(const char *pipe_name, int conn_flags,
 	nt_status = fn(domain_sid, cli, mem_ctx, argc, argv);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("rpc command function failed! (%s)\n", get_nt_error_msg(nt_status)));
+		DEBUG(0, ("rpc command function failed! (%s)\n", nt_errstr(nt_status)));
 	} else {
 		DEBUG(5, ("rpc command function succedded\n"));
 	}
@@ -361,7 +361,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
  done:
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to add user %s - %s\n", acct_name, 
-			 get_nt_error_msg(result));
+			 nt_errstr(result));
 	} else {
 		d_printf("Added user %s\n", acct_name);
 	}
@@ -724,7 +724,7 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 
 		/* Is it trusting domain account for sure ? */
 		DEBUG(0, ("Couldn't verify trusting domain account. Error was %s\n",
-			get_nt_error_msg(nt_status)));
+			nt_errstr(nt_status)));
 		return -1;
 	}
 	
@@ -736,7 +736,7 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 	
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
-			domain_name, get_nt_error_msg(nt_status)));
+			domain_name, nt_errstr(nt_status)));
 	}
 
 	/*
@@ -803,7 +803,7 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
-			get_nt_error_msg(nt_status)));
+			nt_errstr(nt_status)));
 		return -1;
 	}
 
@@ -813,7 +813,7 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 					5 /* info level */, domain_name, &domain_sid);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
-			get_nt_error_msg(nt_status)));
+			nt_errstr(nt_status)));
 		return -1;
 	}
 
@@ -828,7 +828,7 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 	nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
-			get_nt_error_msg(nt_status)));
+			nt_errstr(nt_status)));
 		return -1;
 	}
 

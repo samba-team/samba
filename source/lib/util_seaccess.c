@@ -308,7 +308,7 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
 		if (NT_STATUS_V(*status)) {
 			*acc_granted = 0;
-			DEBUG(5,("se_access_check: ACE %u denied with status %s.\n", (unsigned int)i, get_nt_error_msg(*status)));
+			DEBUG(5,("se_access_check: ACE %u denied with status %s.\n", (unsigned int)i, nt_errstr(*status)));
 			return False;
 		}
 	}

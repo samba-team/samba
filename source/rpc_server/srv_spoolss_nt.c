@@ -698,7 +698,7 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 			
 			if (!NT_STATUS_IS_OK(result)) {
 				DEBUG(10,("send_spoolss_event_notification: Event notification failed [%s]\n",
-					get_nt_error_msg(result)));
+					nt_errstr(result)));
 		}
 	}
 }

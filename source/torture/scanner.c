@@ -40,7 +40,7 @@ static void trans2_check_hit(char *format, int op, int level, NTSTATUS status)
 	}
 #if VERBOSE
 	printf("possible %s hit op=%3d level=%5d status=%s\n",
-	       format, op, level, get_nt_error_msg(status));
+	       format, op, level, nt_errstr(status));
 #endif
 }
 
@@ -89,7 +89,7 @@ static NTSTATUS try_trans2_len(struct cli_state *cli,
 	ret = try_trans2(cli, op, param, data, param_len,
 			 sizeof(pstring), rparam_len, rdata_len);
 #if VERBOSE 
-	printf("op=%d level=%d ret=%s\n", op, level, get_nt_error_msg(ret));
+	printf("op=%d level=%d ret=%s\n", op, level, nt_errstr(ret));
 #endif
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
@@ -244,7 +244,7 @@ static void nttrans_check_hit(char *format, int op, int level, NTSTATUS status)
 	}
 #if VERBOSE
 		printf("possible %s hit op=%3d level=%5d status=%s\n",
-		       format, op, level, get_nt_error_msg(status));
+		       format, op, level, nt_errstr(status));
 #endif
 }
 
@@ -291,7 +291,7 @@ static NTSTATUS try_nttrans_len(struct cli_state *cli,
 	ret = try_nttrans(cli, op, param, data, param_len,
 			 sizeof(pstring), rparam_len, rdata_len);
 #if VERBOSE 
-	printf("op=%d level=%d ret=%s\n", op, level, get_nt_error_msg(ret));
+	printf("op=%d level=%d ret=%s\n", op, level, nt_errstr(ret));
 #endif
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 

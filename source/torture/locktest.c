@@ -299,7 +299,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			       conn, f, 
 			       (double)start, (double)len,
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
-			       get_nt_error_msg(status[0]), get_nt_error_msg(status[1]));
+			       nt_errstr(status[0]), nt_errstr(status[1]));
 		}
 		if (showall || !NT_STATUS_EQUAL(status[0],status[1])) show_locks();
 		if (!NT_STATUS_EQUAL(status[0],status[1])) return False;
@@ -318,7 +318,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			printf("unlock conn=%u f=%u range=%.0f(%.0f)       -> %s:%s\n",
 			       conn, f, 
 			       (double)start, (double)len,
-			       get_nt_error_msg(status[0]), get_nt_error_msg(status[1]));
+			       nt_errstr(status[0]), nt_errstr(status[1]));
 		}
 		if (showall || !NT_STATUS_EQUAL(status[0],status[1])) show_locks();
 		if (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1])) 

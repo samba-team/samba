@@ -1131,14 +1131,14 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 	result = cli_lsa_open_policy(&cli, cli.mem_ctx, True, SEC_RIGHTS_QUERY_VALUE, &lsa_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error opening lsa policy handle. %s\n",
-			get_nt_error_msg(result) ));
+			nt_errstr(result) ));
 		goto done;
 	}
  
 	result = cli_lsa_query_info_policy(&cli, cli.mem_ctx, &lsa_pol, 5, domain, psid);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error querying lsa policy handle. %s\n",
-			get_nt_error_msg(result) ));
+			nt_errstr(result) ));
 		goto done;
 	}
  

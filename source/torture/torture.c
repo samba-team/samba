@@ -187,7 +187,7 @@ static BOOL check_error(int line, struct cli_state *c,
                         printf("unexpected error code class=%d code=%d\n", 
                                (int)class, (int)num);
                         printf(" expected %d/%d %s (line=%d)\n", 
-                               (int)eclass, (int)ecode, get_nt_error_msg(nterr), line);
+                               (int)eclass, (int)ecode, nt_errstr(nterr), line);
                         return False;
                 }
 
@@ -199,8 +199,8 @@ static BOOL check_error(int line, struct cli_state *c,
                 status = cli_nt_error(c);
 
                 if (NT_STATUS_V(nterr) != NT_STATUS_V(status)) {
-                        printf("unexpected error code %s\n", get_nt_error_msg(status));
-                        printf(" expected %s (line=%d)\n", get_nt_error_msg(nterr), line);
+                        printf("unexpected error code %s\n", nt_errstr(status));
+                        printf(" expected %s (line=%d)\n", nt_errstr(nterr), line);
                         return False;
                 }
         }
@@ -1520,12 +1520,12 @@ static BOOL run_locktest6(int dummy)
 		fnum = cli_open(&cli, fname[i], O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 		status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CHANGE_LOCKTYPE);
 		cli_close(&cli, fnum);
-		printf("CHANGE_LOCKTYPE gave %s\n", get_nt_error_msg(status));
+		printf("CHANGE_LOCKTYPE gave %s\n", nt_errstr(status));
 
 		fnum = cli_open(&cli, fname[i], O_RDWR, DENY_NONE);
 		status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CANCEL_LOCK);
 		cli_close(&cli, fnum);
-		printf("CANCEL_LOCK gave %s\n", get_nt_error_msg(status));
+		printf("CANCEL_LOCK gave %s\n", nt_errstr(status));
 
 		cli_unlink(&cli, fname[i]);
 	}

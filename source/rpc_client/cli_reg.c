@@ -112,7 +112,7 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_OPEN_HKLM: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_OPEN_HKLM: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -173,7 +173,7 @@ BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_OPEN_HKU: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_OPEN_HKU: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -235,7 +235,7 @@ BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd)
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_FLUSH_KEY: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_FLUSH_KEY: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -297,7 +297,7 @@ BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_QUERY_KEY: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_QUERY_KEY: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -365,7 +365,7 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk)
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_UNK_1A: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_UNK_1A: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -425,7 +425,7 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 
 	if ( r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_INFO: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_INFO: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -548,7 +548,7 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd, uint32 *sec_buf_
 		DEBUG(5,("sec_buf_size too small.  use %d\n", *sec_buf_size));
 	} else if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_GET_KEY_SEC: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_GET_KEY_SEC: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	} else {
@@ -608,7 +608,7 @@ BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name)
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_DELETE_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_DELETE_VALUE: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -665,7 +665,7 @@ BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name)
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_DELETE_KEY: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_DELETE_KEY: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -743,7 +743,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_CREATE_KEY: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_CREATE_KEY: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -805,7 +805,7 @@ BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_ENUM_KEY: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_ENUM_KEY: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -868,7 +868,7 @@ BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_CREATE_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_CREATE_VALUE: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -929,7 +929,7 @@ BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_ENUM_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_ENUM_VALUE: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -991,7 +991,7 @@ BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_OPEN_ENTRY: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("REG_OPEN_ENTRY: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}
@@ -1051,7 +1051,7 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	if (r_c.status != 0) {
 		/* report error code */
-		DEBUG(0,("REG_CLOSE: %s\n", get_nt_error_msg(r_c.status)));
+		DEBUG(0,("REG_CLOSE: %s\n", nt_errstr(r_c.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}

@@ -1632,7 +1632,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   *rdata = REALLOC(*rdata,*rdata_len);
   memset(*rdata,0,*rdata_len);
   
-  p2 = (*rdata) + fixed_len;	/* auxillery data (strings) will go here */
+  p2 = (*rdata) + fixed_len;	/* auxiliary data (strings) will go here */
   p = *rdata;
   f_len = fixed_len;
   s_len = string_len;

@@ -107,7 +107,7 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 			 file, line,
 			 (int)CVAL(outbuf,smb_com),
 			 smb_fn_name(CVAL(outbuf,smb_com)),
-			 get_nt_error_msg(ntstatus)));
+			 nt_errstr(ntstatus)));
 		return outsize;
 	} 
 

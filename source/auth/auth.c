@@ -218,7 +218,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 				  auth_method->name, user_info->smb_name.str));
 		} else {
 			DEBUG(5, ("check_password: %s authentication for user [%s] FAILED with error %s\n", 
-				  auth_method->name, user_info->smb_name.str, get_nt_error_msg(nt_status)));
+				  auth_method->name, user_info->smb_name.str, nt_errstr(nt_status)));
 		}
 
 		talloc_destroy(mem_ctx);
@@ -248,7 +248,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 					  pdb_username));
 			} else {
 				DEBUG(3, ("check_password:  PAM Account for user [%s] FAILED with error %s\n", 
-					  pdb_username, get_nt_error_msg(nt_status)));
+					  pdb_username, nt_errstr(nt_status)));
 			} 
 		}
 		
@@ -265,7 +265,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2, ("check_password:  Authenticaion for user [%s] -> [%s] FAILED with error %s\n", 
 			  user_info->smb_name.str, user_info->internal_username.str, 
-			  get_nt_error_msg(nt_status)));
+			  nt_errstr(nt_status)));
 		ZERO_STRUCTP(server_info);
 	}
 	return nt_status;
