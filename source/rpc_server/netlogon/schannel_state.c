@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "auth/auth.h"
 
 /* a reasonable amount of time to keep credentials live */
 #define SCHANNEL_CREDENTIALS_EXPIRY 600

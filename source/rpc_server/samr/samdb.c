@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 /*
   connect to the SAM database
@@ -789,12 +790,12 @@ int samdb_msg_add_acct_flags(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message 
   add a logon_hours element to a message
 */
 int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			      const char *attr_name, struct samr_LogonHours hours)
+			      const char *attr_name, struct samr_LogonHours *hours)
 {
 	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
-	val.length = hours.units_per_week / 8;
-	val.data = hours.bitmap;
+	val.length = hours->units_per_week / 8;
+	val.data = hours->bitmap;
 	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
 }

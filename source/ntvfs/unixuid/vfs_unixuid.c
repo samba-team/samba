@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
 
 struct unixuid_private {
 	void *samctx;

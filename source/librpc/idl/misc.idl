@@ -123,23 +123,9 @@ interface misc
 		GUID   uuid;
 	} policy_handle;
 
-	/* this is also used in samr and netlogon */
-	typedef [public, flag(NDR_PAHEX)] struct {
-		uint16 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *bitmap;
-	} samr_LogonHours;
-
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint8 hash[16];
 	} samr_Password;
-
-	typedef [public,flag(NDR_PAHEX)] struct {
-		uint8 key[16];
-	} netr_UserSessionKey;
-
-	typedef [public,flag(NDR_PAHEX)] struct {
-		uint8 key[8];
-	} netr_LMSessionKey;
 
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint8 data[8];

@@ -44,6 +44,7 @@ struct samr_ChangePasswordUser3;
 struct samr_ChangePasswordUser2;
 struct samr_CryptPassword;
 struct samr_CryptPasswordEx;
+struct samr_LogonHours;
 
 struct netr_SamInfo3;
 struct netr_Authenticator;
@@ -52,3 +53,14 @@ struct iface_struct;
 
 struct tm;
 struct utimbuf;
+
+
+struct auth_usersupplied_info;
+struct auth_serversupplied_info;
+struct creds_CredentialState;
+struct ntlmssp_state;
+struct auth_methods;
+struct schannel_state;
+struct spnego_data;
+typedef NTSTATUS (*gensec_password_callback)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx, 
+					     char **password);

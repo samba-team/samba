@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
 
 /* initialise the auth_context for this server and return the cryptkey */
 static void get_challenge(struct smbsrv_connection *smb_conn, char buff[8]) 

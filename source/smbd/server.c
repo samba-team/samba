@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 
 static void exit_server(const char *reason)
 {
