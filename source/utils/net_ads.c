@@ -56,7 +56,7 @@ static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 
-	ads = ads_init(NULL, opt_host, NULL, NULL);
+	ads = ads_init(NULL, NULL, opt_host, NULL, NULL);
 	ads_connect(ads);
 
 	if (!ads) {
@@ -81,7 +81,7 @@ static ADS_STRUCT *ads_startup(void)
 	BOOL need_password = False;
 	BOOL second_time = False;
 	
-	ads = ads_init(NULL, opt_host, NULL, NULL);
+	ads = ads_init(NULL, NULL, opt_host, NULL, NULL);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
@@ -650,7 +650,7 @@ static int net_ads_password(int argc, const char **argv)
 
     /* use the realm so we can eventually change passwords for users 
     in realms other than default */
-    if (!(ads = ads_init(realm, NULL, NULL, NULL))) return -1;
+    if (!(ads = ads_init(realm, NULL, NULL, NULL, NULL))) return -1;
 
     asprintf(&prompt, "Enter new password for %s:", argv[0]);
 
@@ -681,8 +681,7 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     char *hostname;
     ADS_STATUS ret;
 
-
-    if (!(ads = ads_init(NULL, NULL, NULL, NULL))) return -1;
+    if (!(ads = ads_init_simple())) return -1;
 
     hostname = strdup(global_myname);
     strlower(hostname);

@@ -46,9 +46,33 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ads->last_attempt = time(NULL);
 
 	ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
+
+	/* if that failed then try each of the BDC's in turn */
+	if (!ads->ld) {
+		struct in_addr *ip_list;
+		int count;
+
+		if (get_dc_list(False, ads->workgroup, &ip_list, &count)) {
+			int i;
+			for (i=0;i<count;i++) {
+				ads->ld = ldap_open(inet_ntoa(ip_list[i]),
+						    ads->ldap_port);
+				if (ads->ld) break;
+			}
+			if (ads->ld) {
+				free(ads->ldap_server);
+				ads->ldap_server = strdup(inet_ntoa(ip_list[i]));
+			}
+			free(ip_list);
+		}
+	}
+
 	if (!ads->ld) {
 		return ADS_ERROR_SYSTEM(errno);
 	}
+
+	DEBUG(3,("Connected to LDAP server %s\n", ads->ldap_server));
+
 	status = ads_server_info(ads);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("Failed to get ldap server info\n"));
