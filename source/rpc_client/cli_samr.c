@@ -405,6 +405,7 @@ BOOL samr_chgpasswd_user(struct cli_state *cli, uint16 fnum,
 	return valid_pwc;
 }
 
+
 /****************************************************************************
 do a SAMR unknown 0x38 command
 ****************************************************************************/
@@ -536,7 +537,7 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_enum_dom_groups(&q_e, pol, 3, 0, size);
+	make_samr_q_enum_dom_groups(&q_e, pol, size);
 
 	/* turn parameters into data stream */
 	samr_io_q_enum_dom_groups("", &q_e, &data, 0);
@@ -561,13 +562,12 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 		{
 			int i;
 			int name_idx = 0;
-			int desc_idx = 0;
 
 			*num_sam_groups = r_e.num_entries2;
 			if (*num_sam_groups > MAX_SAM_ENTRIES)
 			{
 				*num_sam_groups = MAX_SAM_ENTRIES;
-				DEBUG(2,("samr_enum_dom_groups: sam user entries limited to %d\n",
+				DEBUG(2,("samr_enum_dom_groups: sam group entries limited to %d\n",
 				          *num_sam_groups));
 			}
 
@@ -580,21 +580,16 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 
 			for (i = 0; i < *num_sam_groups; i++)
 			{
-				(*sam)[i].rid = r_e.sam[i].rid_grp;
+				(*sam)[i].rid = r_e.sam[i].rid;
 				(*sam)[i].acct_name[0] = 0;
 				(*sam)[i].acct_desc[0] = 0;
-				if (r_e.sam[i].hdr_grp_name.buffer)
+				if (r_e.sam[i].hdr_name.buffer)
 				{
-					unistr2_to_ascii((*sam)[i].acct_name, &r_e.str[name_idx].uni_grp_name, sizeof((*sam)[i].acct_name)-1);
+					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_grp_name[name_idx], sizeof((*sam)[i].acct_name)-1);
 					name_idx++;
 				}
-				if (r_e.sam[i].hdr_grp_desc.buffer)
-				{
-					unistr2_to_ascii((*sam)[i].acct_desc, &r_e.str[name_idx].uni_grp_desc, sizeof((*sam)[i].acct_desc)-1);
-					desc_idx++;
-				}
-				DEBUG(5,("samr_enum_dom_groups: idx: %4d rid: %8x acct: %s desc: %s\n",
-				          i, (*sam)[i].rid, (*sam)[i].acct_name, (*sam)[i].acct_desc));
+				DEBUG(5,("samr_enum_dom_groups: idx: %4d rid: %8x acct: %s\n",
+				          i, (*sam)[i].rid, (*sam)[i].acct_name));
 			}
 			valid_pol = True;
 		}
@@ -1627,6 +1622,63 @@ BOOL samr_open_domain(struct cli_state *cli, uint16 fnum,
 	prs_mem_free(&rdata  );
 
 	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Query Lookup Domain
+****************************************************************************/
+BOOL samr_query_lookup_domain(struct cli_state *cli, uint16 fnum, 
+			      POLICY_HND *pol, const char *dom_name,
+			      DOM_SID *dom_sid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_LOOKUP_DOMAIN q_o;
+	BOOL valid_query = False;
+
+	if (pol == NULL || dom_name == NULL || dom_sid == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_LOOKUP_DOMAIN */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Query Lookup Domain.\n"));
+
+	/* store the parameters */
+	make_samr_q_lookup_domain(&q_o, pol, dom_name);
+
+	/* turn parameters into data stream */
+	samr_io_q_lookup_domain("", &q_o, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SAMR_LOOKUP_DOMAIN, &data, &rdata))
+	{
+		SAMR_R_LOOKUP_DOMAIN r_o;
+		BOOL p;
+
+		samr_io_r_lookup_domain("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_LOOKUP_DOMAIN: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p && r_o.ptr_sid != 0)
+		{
+			sid_copy(dom_sid, &r_o.dom_sid.sid);
+			valid_query = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
 }
 
 /****************************************************************************
