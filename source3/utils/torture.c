@@ -92,8 +92,8 @@ static BOOL open_connection(struct cli_state *c)
 
 	ZERO_STRUCTP(c);
 
-	make_nmb_name(&calling, myname, 0x0, "");
-	make_nmb_name(&called , host, 0x20, "");
+	make_nmb_name(&calling, myname, 0x0);
+	make_nmb_name(&called , host, 0x20);
 
 	ip = ipzero;
 
@@ -711,6 +711,89 @@ static void run_locktest3(int dummy)
 
 
 /*
+  this produces a matrix of deny mode behaviour
+ */
+static void run_denytest(int dummy)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\lockt1.lck";
+	int fnum1, fnum2;
+	int d1, d2, o1, o2, x=0;
+	struct {
+		int v;
+		char *name; 
+	} deny_modes[] = {
+		{DENY_DOS, "DENY_DOS"},
+		{DENY_ALL, "DENY_ALL"},
+		{DENY_WRITE, "DENY_WRITE"},
+		{DENY_READ, "DENY_READ"},
+		{DENY_NONE, "DENY_NONE"},
+		{DENY_FCB, "DENY_FCB"},
+		{-1, NULL}};
+	struct {
+		int v;
+		char *name; 
+	} open_modes[] = {
+		{O_RDWR, "O_RDWR"},
+		{O_RDONLY, "O_RDONLY"},
+		{O_WRONLY, "O_WRONLY"},
+		{-1, NULL}};
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting denytest\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_WRONLY|O_CREAT, DENY_NONE);
+	cli_write(&cli1, fnum1, 0, fname, 0, strlen(fname));
+	cli_close(&cli1, fnum1);
+
+	for (d1=0;deny_modes[d1].name;d1++) for (o1=0;open_modes[o1].name;o1++) 
+	for (d2=0;deny_modes[d2].name;d2++) for (o2=0;open_modes[o2].name;o2++) {
+
+		fnum1 = cli_open(&cli1, fname, open_modes[o1].v, deny_modes[d1].v);
+		fnum2 = cli_open(&cli2, fname, 
+				 open_modes[o2].v | O_CREAT, 
+				 deny_modes[d2].v);
+
+		printf("%8s %10s    %8s %10s     ",
+		       open_modes[o1].name,
+		       deny_modes[d1].name,
+		       open_modes[o2].name,
+		       deny_modes[d2].name);
+
+		if (fnum1 == -1) {
+			printf("X");
+		} else if (fnum2 == -1) {
+			printf("-");
+		} else {
+			if (cli_read(&cli2, fnum2, (void *)&x, 0, 1) == 1) {
+				printf("R");
+			}
+			if (cli_write(&cli2, fnum2, 0, (void *)&x, 0, 1) == 1) {
+				printf("W");
+			}
+		}
+
+		printf("\n");
+		cli_close(&cli1, fnum1);
+		cli_close(&cli2, fnum2);
+	}
+
+	cli_unlink(&cli1, fname);
+
+	close_connection(&cli1);
+	close_connection(&cli2);
+
+	printf("finshed denytest\n");
+}
+
+/*
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
 */
@@ -1302,6 +1385,7 @@ static struct {
 	{"NBWNT",  run_nbwnt, 0},
 	{"OPLOCK",  run_oplock, 0},
 	{"DIR",  run_dirtest, 0},
+	{"DENY",  run_denytest, 0},
 	{NULL, NULL, 0}};
 
 
