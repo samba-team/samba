@@ -436,6 +436,8 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   extern int serverzone;
   int crypt_len=0;
   char *pass = NULL;  
+  uchar enc_ntpass[24];
+  int ntpasslen = 0;
   pstring dev;
   char *p;
   int numprots;
@@ -593,109 +595,118 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
     *username = 0;
 
   if (Protocol >= PROTOCOL_LANMAN1 && use_setup)
+  {
+    fstring pword;
+    int passlen = strlen(pass)+1;
+    fstrcpy(pword,pass);      
+
+    if (doencrypt && *pass)
     {
-      fstring pword;
-      int passlen = strlen(pass)+1;
-      fstrcpy(pword,pass);      
-
-      if (doencrypt && *pass) {
-	DEBUG(3,("Using encrypted passwords\n"));
-	passlen = 24;
-	SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
-      }
-
-      /* if in share level security then don't send a password now */
-      if (!(opt.sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
-
-      /* send a session setup command */
-      bzero(outbuf,smb_size);
-
-      if (Protocol < PROTOCOL_NT1) {
-	set_message(outbuf,10,1 + strlen(username) + passlen,True);
-	CVAL(outbuf,smb_com) = SMBsesssetupX;
-	cli_setup_pkt(outbuf);
-
-	CVAL(outbuf,smb_vwv0) = 0xFF;
-	SSVAL(outbuf,smb_vwv2,max_xmit);
-	SSVAL(outbuf,smb_vwv3,2);
-	SSVAL(outbuf,smb_vwv4,opt.max_vcs-1);
-	SIVAL(outbuf,smb_vwv5,opt.sesskey);
-	SSVAL(outbuf,smb_vwv7,passlen);
-	p = smb_buf(outbuf);
-	memcpy(p,pword,passlen);
-	p += passlen;
-	pstrcpy(p,username);
-      } else {
-	if (!doencrypt) passlen--;
-	/* for Win95 */
-	set_message(outbuf,13,0,True);
-	CVAL(outbuf,smb_com) = SMBsesssetupX;
-	cli_setup_pkt(outbuf);
-
-	CVAL(outbuf,smb_vwv0) = 0xFF;
-	SSVAL(outbuf,smb_vwv2,BUFFER_SIZE);
-	SSVAL(outbuf,smb_vwv3,2);
-	SSVAL(outbuf,smb_vwv4,getpid());
-	SIVAL(outbuf,smb_vwv5,opt.sesskey);
-	SSVAL(outbuf,smb_vwv7,passlen);
-	SSVAL(outbuf,smb_vwv8,0);
-	p = smb_buf(outbuf);
-	memcpy(p,pword,passlen); p += SVAL(outbuf,smb_vwv7);
-	pstrcpy(p,username);p = skip_string(p,1);
-	pstrcpy(p,workgroup);p = skip_string(p,1);
-	pstrcpy(p,"Unix");p = skip_string(p,1);
-	pstrcpy(p,"Samba");p = skip_string(p,1);
-	set_message(outbuf,13,PTR_DIFF(p,smb_buf(outbuf)),False);
-      }
-
-      send_smb(Client,outbuf);
-      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-
-      show_msg(inbuf);
-
-      if (CVAL(inbuf,smb_rcls) != 0)
-	{
-	  if (! *pass &&
-	      ((CVAL(inbuf,smb_rcls) == ERRDOS && 
-		SVAL(inbuf,smb_err) == ERRnoaccess) ||
-	       (CVAL(inbuf,smb_rcls) == ERRSRV && 
-		SVAL(inbuf,smb_err) == ERRbadpw)))
-	    {
-	      got_pass = False;
-	      DEBUG(3,("resending login\n"));
-	      if (! no_pass)
-	          goto get_pass;
-	    }
-	      
-	  DEBUG(0,("Session setup failed for username=%s myname=%s destname=%s   %s\n",
-		username,global_myname,desthost,smb_errstr(inbuf)));
-	  DEBUG(0,("You might find the -U, -W or -n options useful\n"));
-	  DEBUG(0,("Sometimes you have to use `-n USERNAME' (particularly with OS/2)\n"));
-	  DEBUG(0,("Some servers also insist on uppercase-only passwords\n"));
-	  if (was_null)
-	    {
-	      free(inbuf);
-	      free(outbuf);
-	    }
-	  return(False);
-	}
-
-      if (Protocol >= PROTOCOL_NT1) {
-	char *domain,*os,*lanman;
-	p = smb_buf(inbuf);
-	os = p;
-	lanman = skip_string(os,1);
-	domain = skip_string(lanman,1);
-	if (*domain || *os || *lanman)
-	  DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",domain,os,lanman));
-      }
-
-      /* use the returned uid from now on */
-      if (SVAL(inbuf,smb_uid) != uid)
-	DEBUG(3,("Server gave us a UID of %d. We gave %d\n",
-	      SVAL(inbuf,smb_uid),uid));
-      opt.server_uid = uid = SVAL(inbuf,smb_uid);
+      DEBUG(3,("Using encrypted passwords\n"));
+      passlen = 24;
+      SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
+      ntpasslen = 24;
+      SMBNTencrypt((uchar *)pass,(uchar *)cryptkey,enc_ntpass);
     }
+
+    /* if in share level security then don't send a password now */
+    if (!(opt.sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
+
+    /* send a session setup command */
+    bzero(outbuf,smb_size);
+
+    if (Protocol < PROTOCOL_NT1)
+    {
+      set_message(outbuf,10,1 + strlen(username) + passlen,True);
+      CVAL(outbuf,smb_com) = SMBsesssetupX;
+      cli_setup_pkt(outbuf);
+
+      CVAL(outbuf,smb_vwv0) = 0xFF;
+      SSVAL(outbuf,smb_vwv2,max_xmit);
+      SSVAL(outbuf,smb_vwv3,2);
+      SSVAL(outbuf,smb_vwv4,opt.max_vcs-1);
+      SIVAL(outbuf,smb_vwv5,opt.sesskey);
+      SSVAL(outbuf,smb_vwv7,passlen);
+      p = smb_buf(outbuf);
+      memcpy(p,pword,passlen);
+      p += passlen;
+      pstrcpy(p,username);
+    }
+    else
+    {
+      if (!doencrypt) passlen--;
+      /* for Win95 */
+      set_message(outbuf,13,0,True);
+      CVAL(outbuf,smb_com) = SMBsesssetupX;
+      cli_setup_pkt(outbuf);
+
+      CVAL(outbuf,smb_vwv0) = 0xFF;
+      SSVAL(outbuf,smb_vwv2,BUFFER_SIZE);
+      SSVAL(outbuf,smb_vwv3,2);
+      SSVAL(outbuf,smb_vwv4,getpid());
+      SIVAL(outbuf,smb_vwv5,opt.sesskey);
+      SSVAL(outbuf,smb_vwv7,passlen);
+      SSVAL(outbuf,smb_vwv8,doencrypt ? ntpasslen : 0);
+      p = smb_buf(outbuf);
+      memcpy(p,pword,passlen); p += SVAL(outbuf,smb_vwv7);
+      if(doencrypt)
+        memcpy(p,enc_ntpass,ntpasslen); p += SVAL(outbuf,smb_vwv8);
+      pstrcpy(p,username);p = skip_string(p,1);
+      pstrcpy(p,workgroup);p = skip_string(p,1);
+      pstrcpy(p,"Unix");p = skip_string(p,1);
+      pstrcpy(p,"Samba");p = skip_string(p,1);
+      set_message(outbuf,13,PTR_DIFF(p,smb_buf(outbuf)),False);
+    }
+
+    send_smb(Client,outbuf);
+    client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+
+    show_msg(inbuf);
+
+    if (CVAL(inbuf,smb_rcls) != 0)
+    {
+      if (! *pass &&
+          ((CVAL(inbuf,smb_rcls) == ERRDOS && 
+          SVAL(inbuf,smb_err) == ERRnoaccess) ||
+          (CVAL(inbuf,smb_rcls) == ERRSRV && 
+          SVAL(inbuf,smb_err) == ERRbadpw)))
+      {
+        got_pass = False;
+        DEBUG(3,("resending login\n"));
+        if (! no_pass)
+          goto get_pass;
+      }
+      
+      DEBUG(0,("Session setup failed for username=%s myname=%s destname=%s   %s\n",
+            username,global_myname,desthost,smb_errstr(inbuf)));
+      DEBUG(0,("You might find the -U, -W or -n options useful\n"));
+      DEBUG(0,("Sometimes you have to use `-n USERNAME' (particularly with OS/2)\n"));
+      DEBUG(0,("Some servers also insist on uppercase-only passwords\n"));
+      if (was_null)
+      {
+        free(inbuf);
+        free(outbuf);
+      }
+      return(False);
+    }
+
+    if (Protocol >= PROTOCOL_NT1)
+    {
+      char *domain,*os,*lanman;
+      p = smb_buf(inbuf);
+      os = p;
+      lanman = skip_string(os,1);
+      domain = skip_string(lanman,1);
+      if (*domain || *os || *lanman)
+      DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",domain,os,lanman));
+    }
+
+    /* use the returned uid from now on */
+    if (SVAL(inbuf,smb_uid) != uid)
+      DEBUG(3,("Server gave us a UID of %d. We gave %d\n",
+    SVAL(inbuf,smb_uid),uid));
+    opt.server_uid = uid = SVAL(inbuf,smb_uid);
+  }
 
   if (opt.sec_mode & 1) {
 	  if (SVAL(inbuf, smb_vwv2) & 1)

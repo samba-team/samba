@@ -203,6 +203,7 @@ char *getsmbpass(char *prompt)    ;
 /*The following definitions come from  groupname.c  */
 
 void load_groupname_map(void);
+void map_gid_to_sid( gid_t gid, DOM_SID *psid);
 
 /*The following definitions come from  interface.c  */
 
