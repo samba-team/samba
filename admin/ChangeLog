@@ -1,4 +1,8 @@
-2004-09-23  Johan Danielsson  <joda@pdc.kth.se>
+2004-09-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* list.c: un c99'ify, from Anders.Magnusson@ltu.se
+
+2004-09-23 Johan Danielsson <joda@pdc.kth.se>
 
 	* purge.c: convert to slc; don't purge keys older that a certain
 	time, instead purge keys that have newer versions that are at
