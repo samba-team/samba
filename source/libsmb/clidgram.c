@@ -162,7 +162,6 @@ int cli_get_response(BOOL unique, char *mailslot, char *buf, int bufsiz)
 
     bcopy(&dgram->data[92], buf, MIN(bufsiz, (dgram->datasize - 92)));
 
-	return 0;
   }
   else 
     return -1;
@@ -187,8 +186,8 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   }
 
-  inet_aton("0.0.0.0", &my_ip);
-
+  bzero(&my_ip, 4);  /* Cheap way to get 0.0.0.0 in there */
+ 
   if (!resolve_name(myname, &my_ip, 0x00)) { /* FIXME: Call others here */
 
     fprintf(stderr, "Could not resolve name: %s<00>\n", myname);
@@ -219,7 +218,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
   cli_get_response(True, "\\MAILSLOT\\BROWSE", cli_backup_list, sizeof(cli_backup_list));
 
   /* Should check the response here ... FIXME */
-  return 0;
+
 }
 
 /*
@@ -235,5 +234,4 @@ int cli_get_backup_server(char *my_name, char *target, char *servername, int nam
 
   strncpy(servername, cli_backup_list, MIN(16, namesize));
 
-  return 0;
 }
