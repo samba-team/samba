@@ -121,6 +121,7 @@ SAMBALIB = bin/libsamba.la
 SMBLIB = bin/libsmb.la
 NMBLIB = bin/libnmb.la
 MSRPCLIB = bin/libmsrpc.la
+SMBPWLIB = bin/libsmbpw.la
 
 SAMBA_LIBS = $(SAMBALIB) $(SMBLIB) $(NMBLIB) $(MSRPCLIB)
 
@@ -346,14 +347,14 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) \
-           $(SIDDB_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+           $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) \
-           $(SIDDB_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+           $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -375,7 +376,7 @@ NMBD_OBJ = $(NMBD_OBJ1) $(UBIQX_OBJ) \
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
            \
-           $(SIDDB_OBJ) $(PASSDB_OBJ) \
+           $(SIDDB_OBJ) \
            $(UBIQX_OBJ)  $(STUB_UID_OBJ)
 
 SMBRUN_OBJ = utils/smbrun.o
@@ -400,8 +401,6 @@ TESTPRNS_OBJ = utils/testprns.o $(PRINTING_OBJ) $(UBIQX_OBJ) \
 
 SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
 		rpc_client/cli_netlogon_sync.o \
-		\
-		$(PASSDB_OBJ) \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)\
                 $(UBIQX_OBJ) 
 
@@ -427,7 +426,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/cmd_spoolss.o \
 		rpcclient/cmd_eventlog.o \
 		$(UBIQX_OBJ)  \
-           $(SIDDB_OBJ) $(PASSDB_OBJ) \
+           $(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
@@ -480,8 +479,7 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(UBIQX_OBJ)  \
-           $(SIDDB_OBJ) \
-		$(PASSDB_OBJ) 
+           $(SIDDB_OBJ)
 
 PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
@@ -490,14 +488,16 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(SPOOLSSD_OBJ1) $(NETLOGOND_OBJ1) \
 		$(LSARPCD_OBJ1) $(SMBD_OBJ) $(NMBD_OBJ) \
 		$(SWAT_OBJ) $(CLIENT_OBJ) \
-		$(SAMPASSDB_OBJ) $(GROUPDB_OBJ) $(PASSDB_OBJ)\
 		$(RPCCLIENT_OBJ) $(LIBSMB_OBJ) $(SMBWRAPPER_OBJ) \
-		$(SMBPASSWD_OBJ) \
+		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
 		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
+
+LIBSMBPW_LTOBJS = $(GROUPDB_OBJ:.o=.lo) $(SAMPASSDB_OBJ:.o=.lo) \
+		$(PASSDB_OBJ:.o=.lo)
 
 LIBSAMBA_LTOBJS = $(LIBSAMBA_OBJ:.o=.lo)
 
@@ -516,6 +516,8 @@ all : CHECK $(SPROGS) $(PROGS)
 libnmb : CHECK $(NMBLIB)
 
 libsmb : CHECK $(SMBLIB)
+
+libsmbpw : CHECK $(SMBPWLIB)
 
 libmsrpc : CHECK $(MSRPCLIB)
 
@@ -620,6 +622,11 @@ bin/libnmb.la: $(LIBNMB_LTOBJS)
 	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBNMB_LTOBJS)
 
+bin/libsmbpw.la: $(LIBSMBPW_LTOBJS)
+	@echo Linking shared library $@
+	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBSMBPW_LTOBJS)
+
 bin/libsmb.la: $(LIBSMB_LTOBJS)
 	@echo Linking shared library $@
 	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
@@ -638,9 +645,9 @@ bin/svcctld: $(SAMBA_LIBS) $(SVCCTLD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SVCCTLD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
-bin/lsarpcd: $(SAMBA_LIBS) $(LSARPCD_OBJ) bin/.dummy
+bin/lsarpcd: $(SAMBA_LIBS) $(SMBPWLIB) $(LSARPCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(LSARPCD_OBJ) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(LSARPCD_OBJ) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
 
 bin/spoolssd: $(SAMBA_LIBS) $(SPOOLSSD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -662,29 +669,29 @@ bin/winregd: $(SAMBA_LIBS) $(WINREGD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINREGD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
-bin/netlogond: $(SAMBA_LIBS) $(NETLOGOND_OBJ) bin/.dummy
+bin/netlogond: $(SAMBA_LIBS) $(SMBPWLIB) $(NETLOGOND_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
 
-bin/samrd: $(SAMBA_LIBS) $(SAMRD_OBJ) bin/.dummy
+bin/samrd: $(SAMBA_LIBS) $(SMBPWLIB) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMRD_OBJ) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(SAMRD_OBJ) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
 
 bin/nmbd: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(NMBD_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
 
-bin/swat: $(SAMBA_LIBS) $(SWAT_OBJ) bin/.dummy
+bin/swat: $(SAMBA_LIBS) $(SMBPWLIB) $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SWAT_OBJ) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(SWAT_OBJ) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
 
 bin/smbrun: $(SMBRUN_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBRUN_OBJ) $(LIBS)
 
-bin/rpcclient: $(SAMBA_LIBS) $(RPCCLIENT_OBJ) bin/.dummy
+bin/rpcclient: $(SAMBA_LIBS) $(SMBPWLIB) $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(RPCCLIENT_OBJ) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(RPCCLIENT_OBJ) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
 
 bin/smbclient: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -714,9 +721,9 @@ bin/smbstatus: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) $(LIBS)
 
-bin/smbpasswd: $(SAMBA_LIBS) $(SMBPASSWD_OBJ) bin/.dummy
+bin/smbpasswd: $(SAMBA_LIBS) $(SMBPWLIB) $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBPASSWD_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(SMBPASSWD_OBJ) $(SAMBA_LIBS) $(SMBPWLIB) $(LIBS)
 
 bin/make_smbcodepage: $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
@@ -847,7 +854,7 @@ distclean: realclean
 	-rm -rf .deps
 
 #
-# This target is for documenation updators. It regenerates
+# This target is for documentation updaters. It regenerates
 # the man pages and HTML docs from the YODL source files.
 # In order for this target to work YODL must be installed
 # and working on your system. JRA.

@@ -14,7 +14,9 @@ AC_SUBST(LIBMSRPC32)
 AC_SUBST(LIBNMB)
 AC_SUBST(LIBNMB32)
 AC_SUBST(LIBSMB)
+AC_SUBST(LIBSMBPW)
 AC_SUBST(LIBSMB32)
+AC_SUBST(LIBSMBPW32)
 AC_SUBST(LIBSAMBA)
 AC_SUBST(LIBSAMBA32)
 AC_SUBST(WRAP)
@@ -279,6 +281,7 @@ case "$host_os" in
 		*irix*) AC_DEFINE(IRIX)
 			ATTEMPT_WRAP32_BUILD=yes
 			ATTEMPT_LIBSMB32_BUILD=yes
+			ATTEMPT_LIBSMBPW32_BUILD=yes
 			ATTEMPT_LIBNMB32_BUILD=yes
 			ATTEMPT_LIBSAMBA32_BUILD=yes
 			ATTEMPT_LIBMSRPC32_BUILD=yes
@@ -762,6 +765,40 @@ AC_ARG_WITH(libnmb,
   esac ],
   AC_MSG_RESULT(yes)
 )
+
+#################################################
+# check for libsmbpw support
+AC_MSG_CHECKING(whether to use libsmbpw)
+AC_ARG_WITH(libsmbpw,
+[  --with-libsmbpw     Include SMB libsmbpw support (default)
+  --without-libsmbpw  Don't include SMB libsmbpw support ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LIBSMBPW)
+	LIBSMBPW="bin/libsmbpw.so"
+
+	if test x$ATTEMPT_LIBSMBPW32_BUILD = x; then
+		LIBSMBPW32=""
+	else
+			LIBSMBPW32=bin/libsmbpw.32.so
+	fi
+
+# Conditions under which libsmbpw should not be built.
+
+	if test x$PICFLAG = x; then
+	   echo No support for PIC code - disabling libsmbpw
+	   LIBSMBPW=""
+	   LIBSMBPW32=""
+	fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
 
 #################################################
 # check for libsmb support
