@@ -69,12 +69,6 @@ static int export_database (struct pdb_context *in, struct pdb_context *out) {
 	}
 
 	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
-		int i;
-
-		for (i=0; i<PDB_COUNT; i++) {
-			pdb_set_init_flags(user, i, PDB_CHANGED);
-		}
-
 		out->pdb_add_sam_account(out, user);
 		if (!NT_STATUS_IS_OK(pdb_reset_sam(user))){
 			fprintf(stderr, "Can't reset SAM_ACCOUNT!\n");
