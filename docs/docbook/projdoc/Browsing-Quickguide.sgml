@@ -35,9 +35,11 @@ TCP/IP this uses UDP based messaging. UDP messages can be broadcast or unicast.
 
 <para>
 Normally, only unicast UDP messaging can be forwarded by routers. The
-"remote announce" parameter to smb.conf helps to project browse announcements
-to remote network segments via unicast UDP. Similarly, the "remote browse sync"
-parameter of smb.conf implements browse list collation using unicast UDP.
+<command>remote announce</command>
+parameter to smb.conf helps to project browse announcements
+to remote network segments via unicast UDP. Similarly, the 
+<command>remote browse sync</command> parameter of <filename>smb.conf</filename>
+implements browse list collation using unicast UDP.
 </para>
 
 <para>
@@ -45,18 +47,19 @@ Secondly, in those networks where Samba is the only SMB server technology
 wherever possible nmbd should be configured on one (1) machine as the WINS
 server. This makes it easy to manage the browsing environment. If each network
 segment is configured with it's own Samba WINS server, then the only way to
-get cross segment browsing to work is by using the "remote announce" and
-the "remote browse sync" parameters to your smb.conf file.
+get cross segment browsing to work is by using the 
+<command>remote announce</command> and the <command>remote browse sync</command>
+parameters to your <filename>smb.conf</filename> file.
 </para>
 
 <para>
 If only one WINS server is used for an entire multi-segment network then
-the use of the "remote announce" and the "remote browse sync" parameters
-should NOT be necessary.
+the use of the <command>remote announce</command> and the 
+<command>remote browse sync</command> parameters should NOT be necessary.
 </para>
 
 <para>
-As of Samba-3 WINS replication is being worked on. The bulk of the code has
+As of Samba 3 WINS replication is being worked on. The bulk of the code has
 been committed, but it still needs maturation.
 </para>
 
@@ -64,8 +67,9 @@ been committed, but it still needs maturation.
 Right now samba WINS does not support MS-WINS replication. This means that
 when setting up Samba as a WINS server there must only be one nmbd configured
 as a WINS server on the network. Some sites have used multiple Samba WINS
-servers for redundancy (one server per subnet) and then used "remote browse
-sync" and "remote announce" to affect browse list collation across all
+servers for redundancy (one server per subnet) and then used 
+<command>remote browse sync</command> and <command>remote announce</command>
+to affect browse list collation across all
 segments. Note that this means clients will only resolve local names,
 and must be configured to use DNS to resolve names on other subnets in
 order to resolve the IP addresses of the servers they can see on other
@@ -102,7 +106,8 @@ well as name lookups are done by UDP broadcast. This isolates name
 resolution to the local subnet, unless LMHOSTS is used to list all 
 names and IP addresses. In such situations Samba provides a means by 
 which the samba server name may be forcibly injected into the browse 
-list of a remote MS Windows network (using the "remote announce" parameter).
+list of a remote MS Windows network (using the 
+<command>remote announce</command> parameter).
 </para>
 
 <para>
@@ -140,14 +145,14 @@ inability to use the network services.
 
 <para>
 Samba supports a feature that allows forced synchonisation 
-of browse lists across routed networks using the "remote 
-browse sync" parameter in the smb.conf file. This causes Samba 
-to contact the local master browser on a remote network and 
+of browse lists across routed networks using the <command>remote 
+browse sync</command> parameter in the <filename>smb.conf</filename> file. 
+This causes Samba to contact the local master browser on a remote network and 
 to request browse list synchronisation. This effectively bridges 
 two networks that are separated by routers. The two remote 
 networks may use either broadcast based name resolution or WINS 
-based name resolution, but it should be noted that the "remote 
-browse sync" parameter provides browse list synchronisation - and 
+based name resolution, but it should be noted that the <command>remote 
+browse sync</command> parameter provides browse list synchronisation - and 
 that is distinct from name to address resolution, in other 
 words, for cross subnet browsing to function correctly it is 
 essential that a name to address resolution mechanism be provided. 
@@ -158,22 +163,24 @@ and so on.
 </sect1>
 
 <sect1>
-<title>Use of the "Remote Announce" parameter</title>
+<title>Use of the <command>Remote Announce</command> parameter</title>
 <para>
-The "remote announce" parameter of smb.conf can be used to forcibly ensure
+The <command>remote announce</command> parameter of 
+<filename>smb.conf</filename> can be used to forcibly ensure
 that all the NetBIOS names on a network get announced to a remote network.
-The syntax of the "remote announce" parameter is:
+The syntax of the <command>remote announce</command> parameter is:
 <programlisting>
-	remote announce = a.b.c.d [e.f.g.h] ...
+	remote announce = <replaceable>a.b.c.d [e.f.g.h]</replaceable> ...
 </programlisting>
 _or_
 <programlisting>
-	remote announce = a.b.c.d/WORKGROUP [e.f.g.h/WORKGROUP] ...
+	remote announce = <replaceable>a.b.c.d/WORKGROUP [e.f.g.h/WORKGROUP]</replaceable> ...
 </programlisting>
 
 where:
 <variablelist>
-<varlistentry><term>a.b.c.d and e.f.g.h</term>
+<varlistentry><term><replaceable>a.b.c.d</replaceable> and 
+<replaceable>e.f.g.h</replaceable></term>
 <listitem><para>is either the LMB (Local Master Browser) IP address
 or the broadcst address of the remote network.
 ie: the LMB is at 192.168.1.10, or the address
@@ -187,7 +194,7 @@ the IP address of the remote LMB.</para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>WORKGROUP</term>
+<term><replaceable>WORKGROUP</replaceable></term>
 <listitem><para>is optional and can be either our own workgroup
 or that of the remote network. If you use the
 workgroup name of the remote network then our
@@ -202,23 +209,24 @@ name resolution problems and should be avoided.
 </sect1>
 
 <sect1>
-<title>Use of the "Remote Browse Sync" parameter</title>
+<title>Use of the <command>Remote Browse Sync</command> parameter</title>
 
 <para>
-The "remote browse sync" parameter of smb.conf is used to announce to
+The <command>remote browse sync</command> parameter of 
+<filename>smb.conf</filename> is used to announce to
 another LMB that it must synchronise it's NetBIOS name list with our
 Samba LMB. It works ONLY if the Samba server that has this option is
 simultaneously the LMB on it's network segment.
 </para>
 
 <para>
-The syntax of the "remote browse  sync" parameter is:
+The syntax of the <command>remote browse sync</command> parameter is:
 
 <programlisting>
-remote browse sync = a.b.c.d
+remote browse sync = <replaceable>a.b.c.d</replaceable>
 </programlisting>
 
-where a.b.c.d is either the IP address of the remote LMB or else is the network broadcast address of the remote segment.
+where <replaceable>a.b.c.d</replaceable> is either the IP address of the remote LMB or else is the network broadcast address of the remote segment.
 </para>
 
 </sect1>
@@ -251,7 +259,8 @@ of all names that have registered the NetLogon service name_type. This saves
 broadcast traffic and greatly expedites logon processing. Since broadcast
 name resolution can not be used across network segments this type of
 information can only be provided via WINS _or_ via statically configured
-"lmhosts" files that must reside on all clients in the absence of WINS.
+<filename>lmhosts</filename> files that must reside on all clients in the
+absence of WINS.
 </para>
 
 <para>
@@ -275,8 +284,9 @@ errors.
 </para>
 
 <para>
-To configure Samba as a WINS server just add "wins support = yes" to the
-smb.conf file [globals] section.
+To configure Samba as a WINS server just add 
+<command>wins support = yes</command> to the <filename>smb.conf</filename>
+file [globals] section.
 </para>
 
 <para>

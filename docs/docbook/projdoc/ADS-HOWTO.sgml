@@ -2,7 +2,8 @@
 
 <chapterinfo>
 	&author.tridge;
-	<pubdate>2002</pubdate>
+	&author.jelmer;
+	<pubdate>2002/2003</pubdate>
 </chapterinfo>
 
 <title>Samba as a ADS domain member</title>
@@ -43,7 +44,7 @@ In case samba can't figure out your ads server using your realm name, use the
 <sect1>
 <title>Setup your <filename>/etc/krb5.conf</filename></title>
 
-<para>The minimal configuration for krb5.conf is:</para>
+<para>The minimal configuration for <filename>krb5.conf</filename> is:</para>
 
 <para><programlisting>
 [realms]
@@ -52,7 +53,7 @@ In case samba can't figure out your ads server using your realm name, use the
     }
 </programlisting></para>
 
-<para>Test your config by doing a "kinit USERNAME@REALM" and making sure that
+<para>Test your config by doing a <userinput>kinit <replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput> and making sure that
   your password is accepted by the Win2000 KDC. </para>
 
 <note><para>The realm must be uppercase. </para></note>
@@ -66,21 +67,24 @@ followed by the realm.
 </para>
 
 <para>
-The easiest way to ensure you get this right is to add a /etc/hosts
-entry mapping the IP address of your KDC to its netbios name. If you
-don't get this right then you will get a "local error" when you try
-to join the realm.
+The easiest way to ensure you get this right is to add a 
+<filename>/etc/hosts</filename> entry mapping the IP address of your KDC to 
+its netbios name. If you don't get this right then you will get a 
+"local error" when you try to join the realm.
 </para>
 
 <para>
 If all you want is kerberos support in smbclient then you can skip
-straight to step 5 now. Step 3 is only needed if you want kerberos
+straight to <link linkend="ads-test-smbclient">Test with smbclient</link> now. 
+<link linkend="ads-create-machine-account">Creating a computer account</link> 
+and <link linkend="ads-test-server">testing your servers</link>
+is only needed if you want kerberos
 support for smbd and winbindd.
 </para>
 
 </sect1>
 
-<sect1>
+<sect1 id="ads-create-machine-account">
 <title>Create the computer account</title>
 
 <para>
@@ -103,19 +107,19 @@ As a user that has write permission on the Samba private directory
 
 </sect1>
 
-<sect1>
+<sect1 id="ads-test-server">
 <title>Test your server setup</title>
 
 <para>
-On a Windows 2000 client try <command>net use * \\server\share</command>. You should
+On a Windows 2000 client try <userinput>net use * \\server\share</userinput>. You should
 be logged in with kerberos without needing to know a password. If
-this fails then run <command>klist tickets</command>. Did you get a ticket for the
+this fails then run <userinput>klist tickets</userinput>. Did you get a ticket for the
 server? Does it have an encoding type of DES-CBC-MD5 ? 
 </para>
 
 </sect1>
 
-<sect1>
+<sect1 id="ads-test-smbclient">
 <title>Testing with smbclient</title>
 
 <para>

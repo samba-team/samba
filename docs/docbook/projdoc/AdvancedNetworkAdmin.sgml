@@ -35,7 +35,7 @@ Samba stores the per share access control settings in a file called <filename>sh
 The location of this file on your system will depend on how samba was compiled. The default location
 for samba's tdb files is under <filename>/usr/local/samba/var</filename>. If the <filename>tdbdump</filename>
 utility has been compiled and installed on your system then you can examine the contents of this file
-by: <filename>tdbdump share_info.tdb</filename>.
+by: <userinput>tdbdump share_info.tdb</userinput>.
 </para>
 
 <sect2>
