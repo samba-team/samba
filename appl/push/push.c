@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,12 @@ RCSID("$Id$");
 #ifdef KRB4
 static int use_v4 = 0;
 #endif
+
+#ifdef KRB5
 static int use_v5 = 1;
+static krb5_context context;
+#endif
+
 static char *port_str;
 static int do_verbose;
 static int do_fork;
@@ -50,13 +55,35 @@ static int do_leave;
 static int do_version;
 static int do_help;
 
+static ssize_t
+net_read (int fd, void *v, size_t len)
+{
+#if defined(KRB5)
+    return krb5_net_read (context, &fd, v, len);
+#elif defined(KRB4)
+    return krb_net_read (fd, v, len);
+#endif
+}
+
+static ssize_t
+net_write (int fd, const void *v, size_t len)
+{
+#if defined(KRB5)
+    return krb5_net_write (context, &fd, v, len);
+#elif defined(KRB4)
+    return krb_net_write (fd, v, len);
+#endif
+}
+
 struct getargs args[] = {
 #ifdef KRB4
     { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
       NULL },
 #endif    
+#ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
+#endif
     { "verbose",'v', arg_flag,		&do_verbose,	"Verbose",
       NULL },
     { "fork",	'f', arg_flag,		&do_fork,	"Fork deleting proc",
@@ -124,20 +151,6 @@ typedef enum { INIT = 0, GREAT, USER, PASS, STAT, RETR, DELE, QUIT } pop_state;
 
 #define PUSH_BUFSIZ 65536
 
-/*
- * Count on there being a sentinel and ignore `len'.
- */
-
-static inline void *
-my_memchr (const void *b, int c, size_t len)
-{
-    unsigned char *p = (unsigned char *)b;
-
-    while(*p++ != c)
-	;
-    return (void *)(p - 1);
-}
-
 #define STEP 16
 
 struct write_state {
@@ -200,8 +213,7 @@ write_state_destroy (struct write_state *w)
 }
 
 static int
-doit(krb5_context context,
-     int s,
+doit(int s,
      char *host,
      char *user,
      char *outfilename,
@@ -239,7 +251,7 @@ doit(krb5_context context,
     out_len = snprintf (out_buf, sizeof(out_buf),
 			"USER %s\r\nPASS hej\r\nSTAT\r\n",
 			user);
-    if (krb5_net_write (context, &s, out_buf, out_len) != out_len)
+    if (net_write (s, out_buf, out_len) != out_len)
 	err (1, "write");
     if (verbose > 1)
 	write (STDERR_FILENO, out_buf, out_len);
@@ -295,13 +307,9 @@ doit(krb5_context context,
 				close(out_fd);
 				if (leavep) {
 				    state = QUIT;
-				    krb5_net_write (context, &s,
-						    "QUIT\r\n", 6);
-				    if (verbose > 1) {
-				      int foo = STDERR_FILENO;
-				      krb5_net_write (context, &foo,
-						      "QUIT\r\n", 6);
-				    }
+				    net_write (s, "QUIT\r\n", 6);
+				    if (verbose > 1)
+				      net_write (STDERR_FILENO, "QUIT\r\n", 6);
 				} else {
 				    if (forkp) {
 					pid_t pid;
@@ -338,12 +346,9 @@ doit(krb5_context context,
 		    } else if (state == DELE) {
 			if (++deleted == count) {
 			    state = QUIT;
-			    krb5_net_write (context, &s, "QUIT\r\n", 6);
-			    if (verbose > 1) {
-				int foo = STDERR_FILENO;
-				krb5_net_write (context, &foo,
-					       "QUIT\r\n", 6);
-			    }
+			    net_write (s, "QUIT\r\n", 6);
+			    if (verbose > 1)
+				net_write (STDERR_FILENO, "QUIT\r\n", 6);
 			    break;
 			}
 		    } else if (++state == STAT) {
@@ -355,12 +360,9 @@ doit(krb5_context context,
 				     count, bytes);
 			if (count == 0) {
 			    state = QUIT;
-			    krb5_net_write (context, &s, "QUIT\r\n", 6);
-			    if (verbose > 1) {
-				int foo = STDERR_FILENO;
-				krb5_net_write (context, &foo,
-						"QUIT\r\n", 6);
-			    }
+			    net_write (s, "QUIT\r\n", 6);
+			    if (verbose > 1)
+				net_write (STDERR_FILENO, "QUIT\r\n", 6);
 			    break;
 			}
 		    }
@@ -383,7 +385,7 @@ doit(krb5_context context,
 	    else if(state == DELE)
 		out_len = snprintf (out_buf, sizeof(out_buf),
 				    "DELE %u\r\n", ++asked_deleted);
-	    if (krb5_net_write (context, &s, out_buf, out_len) != out_len)
+	    if (net_write (s, out_buf, out_len) != out_len)
 		err (1, "write");
 	    if (verbose > 1)
 		write (STDERR_FILENO, out_buf, out_len);
@@ -395,9 +397,9 @@ doit(krb5_context context,
     return 0;
 }
 
+#ifdef KRB5
 static int
-do_v5 (krb5_context context,
-       char *host,
+do_v5 (char *host,
        int port,
        char *user,
        char *filename,
@@ -451,13 +453,13 @@ do_v5 (krb5_context context,
 	       krb5_get_err_text (context, ret));
 	return 1;
     }
-    return doit (context, s, host, user, filename, leavep, verbose, forkp);
+    return doit (s, host, user, filename, leavep, verbose, forkp);
 }
+#endif
 
 #ifdef KRB4
 static int
-do_v4 (krb5_context context,
-       char *host,
+do_v4 (char *host,
        int port,
        char *user,
        char *filename,
@@ -492,7 +494,7 @@ do_v4 (krb5_context context,
 	warnx("krb_sendauth: %s", krb_get_err_text(ret));
 	return 1;
     }
-    return doit (context, s, host, user, filename, leavep, verbose, forkp);
+    return doit (s, host, user, filename, leavep, verbose, forkp);
 }
 #endif /* KRB4 */
 
@@ -532,11 +534,12 @@ main(int argc, char **argv)
     int optind = 0;
     int ret = 1;
     char *host, *user, *filename;
+#ifdef KRB5
     krb5_context context;
+    krb5_init_context (&context);
+#endif
 
     set_progname (argv[0]);
-
-    krb5_init_context (&context);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
@@ -571,19 +574,25 @@ main(int argc, char **argv)
 	}
     }
     if (port == 0)
+#ifdef KRB5
 	port = krb5_getportbyname (context, "kpop", "tcp", 1109);
+#elif defined(KRB5)
+	port = k_getportbyname ("kpop", "tcp", 1109);
+#endif
 
     parse_pobox (argv[0], argv[1],
 		 &host, &user, &filename);
 
+#ifdef KRB5
     if (ret && use_v5) {
-	ret = do_v5 (context, host, port, user, filename,
+	ret = do_v5 (host, port, user, filename,
 		     do_leave, do_verbose, do_fork);
     }
+#endif
 
 #ifdef KRB4
     if (ret && use_v4) {
-	ret = do_v4 (context, host, port, user, filename,
+	ret = do_v4 (host, port, user, filename,
 		     do_leave, do_verbose, do_fork);
     }
 #endif /* KRB4 */
