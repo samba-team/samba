@@ -27,6 +27,7 @@ int net_common_methods_usage(int argc, const char**argv)
 	d_printf("\trpc\t\t\t\tDCE-RPC\n");
 	d_printf("\trap\t\t\t\tRAP (older systems)\n");
 	d_printf("\n");
+	return 0;
 }
 
 int net_common_flags_usage(int argc, const char **argv)
