@@ -65,7 +65,7 @@ BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int por
 		int i;
 		const char **ports = lp_smb_ports();
 		for (i=0;ports[i];i++) {
-			int port = atoi(ports[i]);
+			port = atoi(ports[i]);
 			if (port != 0 && smbcli_sock_connect(sock, ip, port)) {
 				return True;
 			}
