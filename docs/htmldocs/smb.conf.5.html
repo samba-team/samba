@@ -6365,9 +6365,11 @@ NAME="FAKEDIRECTORYCREATETIMES"
 ><P
 >However, Unix time semantics mean that the create time 
 		reported by Samba will be updated whenever a file is created or 
-		deleted in the directory. NMAKE therefore finds all object files 
-		in the object directory bar the last one built are out of date 
-		compared to the directory and rebuilds them. Enabling this option 
+		or deleted in the directory.  NMAKE finds all object files in 
+		the object directory.  The timestamp of the last one built is then 
+		compared to the timestamp of the object dircetory.  If the 
+		directory's timestamp if newer, then all object files
+		will be rebuilt.  Enabling this option 
 		ensures directories always predate their contents and an NMAKE build 
 		will proceed as expected.</P
 ><P
@@ -6482,7 +6484,7 @@ NAME="FORCECREATEMODE"
 CLASS="EMPHASIS"
 >always</I
 > be set on a 
-		file by Samba. This is done by bitwise 'OR'ing these bits onto 
+		file created by Samba. This is done by bitwise 'OR'ing these bits onto 
 		the mode bits of a file that is being created or having its 
 		permissions changed. The default for this parameter is (in octal) 
 		000. The modes in this parameter are bitwise 'OR'ed onto the file 
@@ -6619,7 +6621,7 @@ CLASS="PARAMETER"
 ></A
 > parameter. To allow
 		a user to modify all the user/group/world permissions on a 
-		directory, with restrictions set this parameter to 000.</P
+		directory without restrictions, set this parameter to 000.</P
 ><P
 ><I
 CLASS="EMPHASIS"
