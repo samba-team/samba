@@ -2099,19 +2099,16 @@ uint32 _spoolss_endpageprinter(const POLICY_HND *handle)
 	return NT_STATUS_INVALID_HANDLE;
 }
 
-#if 0
 
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
-                                          prs_struct *rdata)
+uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
+				DOC_INFO *docinfo, uint32 *jobid)
 {
-	SPOOL_Q_STARTDOCPRINTER q_u;
-	SPOOL_R_STARTDOCPRINTER r_u;
-	DOC_INFO_1 *info_1;
+	DOC_INFO_1 *info_1 = &docinfo->doc_info_1;
 	
 	pstring fname;
 	pstring tempname;
@@ -2120,12 +2117,12 @@ static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
 	int snum;
 	int pnum;
 
-	/* decode the stream and fill the struct */
-	spoolss_io_q_startdocprinter("", &q_u, data, 0);
-	
-	info_1=&(doc_info_container.docinfo.doc_info_1);
-	status=0x0;
 	pnum = find_printer_index_by_hnd(handle);
+
+	if (!VALID_HANDLE(pnum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	/*
 	 * a nice thing with NT is it doesn't listen to what you tell it.
@@ -2133,6 +2130,10 @@ static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
 	 * in EMF format.
 	 *
 	 * So I add checks like in NT Server ...
+	 *
+	 * lkclXXXX jean-francois, i love this kind of thing.  oh, well,
+	 * there's a bug in NT client-side code, so we'll fix it in the
+	 * server-side code. *nnnnnggggh!*
 	 */
 	
 	if (info_1->p_datatype != 0)
@@ -2140,42 +2141,42 @@ static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
 		unistr2_to_ascii(datatype, &(info_1->docname), sizeof(datatype));
 		if (strcmp(datatype, "RAW") != 0)
 		{
-			jobid=0;
-			status=1804;
+			(*jobid)=0;
+			return STATUS_1804;
 		}		
 	}		 
 	
-	if (status==0 && OPEN_HANDLE(pnum))
+	/* get the share number of the printer */
+	if (!get_printer_snum(handle, &snum))
 	{
-		/* get the share number of the printer */
-		get_printer_snum(handle,&snum);
-
-		/* Create a temporary file in the printer spool directory
-		 * and open it
-		 */
-
-		slprintf(tempname,sizeof(tempname)-1, "%s/smb_print.XXXXXX",lp_pathname(snum));  
-		pstrcpy(fname, (char *)mktemp(tempname));
-
-		fd=open(fname, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR );
-		DEBUG(4,("Temp spool file created: [%s]\n", fname));
-
-		Printer[pnum].current_jobid=fd;
-		pstrcpy(Printer[pnum].document_name,fname);
-		
-		unistr2_to_ascii(Printer[pnum].job_name, 
-		                 &(doc_info_container.docinfo.doc_info_1.docname), 
-		                 sizeof(Printer[pnum].job_name));
-		
- 		Printer[pnum].document_fd=fd;
-		Printer[pnum].document_started=True;
-		jobid=Printer[pnum].current_jobid;
-		status=0x0;
-
+		return NT_STATUS_INVALID_HANDLE;
 	}
-		
-	spoolss_io_r_startdocprinter("",&r_u,rdata,0);		
+
+	/* Create a temporary file in the printer spool directory
+	 * and open it
+	 */
+
+	slprintf(tempname,sizeof(tempname)-1, "%s/smb_print.XXXXXX",lp_pathname(snum));  
+	pstrcpy(fname, (char *)mktemp(tempname));
+
+	fd=open(fname, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR );
+	DEBUG(4,("Temp spool file created: [%s]\n", fname));
+
+	Printer[pnum].current_jobid=fd;
+	pstrcpy(Printer[pnum].document_name,fname);
+	
+	unistr2_to_ascii(Printer[pnum].job_name, 
+			 &info_1->docname, 
+			 sizeof(Printer[pnum].job_name));
+	
+	Printer[pnum].document_fd=fd;
+	Printer[pnum].document_started=True;
+	(*jobid) = Printer[pnum].current_jobid;
+
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

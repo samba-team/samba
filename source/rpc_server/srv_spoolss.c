@@ -756,69 +756,15 @@ static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
 {
 	SPOOL_Q_STARTDOCPRINTER q_u;
 	SPOOL_R_STARTDOCPRINTER r_u;
-	DOC_INFO_1 *info_1;
 	
-	pstring fname;
-	pstring tempname;
-	pstring datatype;
-	int fd = -1;
-	int snum;
-	int pnum;
-
-	/* decode the stream and fill the struct */
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	spoolss_io_q_startdocprinter("", &q_u, data, 0);
-	
-	info_1=&(q_u.doc_info_container.docinfo.doc_info_1);
-	r_u.status=0x0;
-	pnum = find_printer_index_by_hnd(&(q_u.handle));
-
-	/*
-	 * a nice thing with NT is it doesn't listen to what you tell it.
-	 * when asked to send _only_ RAW datas, it tries to send datas
-	 * in EMF format.
-	 *
-	 * So I add checks like in NT Server ...
-	 */
-	
-	if (info_1->p_datatype != 0)
-	{
-		unistr2_to_ascii(datatype, &(info_1->docname), sizeof(datatype));
-		if (strcmp(datatype, "RAW") != 0)
-		{
-			r_u.jobid=0;
-			r_u.status=1804;
-		}		
-	}		 
-	
-	if (r_u.status==0 && OPEN_HANDLE(pnum))
-	{
-		/* get the share number of the printer */
-		get_printer_snum(&(q_u.handle),&snum);
-
-		/* Create a temporary file in the printer spool directory
-		 * and open it
-		 */
-
-		slprintf(tempname,sizeof(tempname)-1, "%s/smb_print.XXXXXX",lp_pathname(snum));  
-		pstrcpy(fname, (char *)mktemp(tempname));
-
-		fd=open(fname, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR );
-		DEBUG(4,("Temp spool file created: [%s]\n", fname));
-
-		Printer[pnum].current_jobid=fd;
-		pstrcpy(Printer[pnum].document_name,fname);
-		
-		unistr2_to_ascii(Printer[pnum].job_name, 
-		                 &(q_u.doc_info_container.docinfo.doc_info_1.docname), 
-		                 sizeof(Printer[pnum].job_name));
-		
- 		Printer[pnum].document_fd=fd;
-		Printer[pnum].document_started=True;
-		r_u.jobid=Printer[pnum].current_jobid;
-		r_u.status=0x0;
-
-	}
-		
+	r_u.status = _spoolss_startdocprinter(&q_u.handle,
+	                          q_u.doc_info_container.level,
+	                          &q_u.doc_info_container.docinfo,
+	                          &r_u.jobid);
 	spoolss_io_r_startdocprinter("",&r_u,rdata,0);		
 }
 
