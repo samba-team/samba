@@ -31,6 +31,8 @@
 
 extern int DEBUGLEVEL;
 extern struct pipe_id_info pipe_names[];
+extern fstring global_myworkgroup;
+extern pstring global_myname;
 
 /********************************************************************
  rpc pipe call id 
@@ -55,6 +57,7 @@ static BOOL rpc_read(struct cli_state *cli,
   int num_read;
   char *data = rdata->data->data;
   uint32 err;
+  uint32 errclass;
   uint32 new_data_size = rdata->data->data_used + data_to_read;
 
   data += rdata_offset;
@@ -92,7 +95,8 @@ static BOOL rpc_read(struct cli_state *cli,
     file_offset  += num_read;
     data         += num_read;
 
-    if (cli_error(cli, NULL, &err))
+    cli_error(cli, &errclass, &err);
+    if (errclass != 0)
       return False;
 
   } while (num_read > 0 && data_to_read > 0);
@@ -161,6 +165,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 
   uint16 setup[2]; /* only need 2 uint16 setup parameters */
   uint32 err;
+  uint32 errclass;
   uint8 pkt_type = 0xff;
   BOOL first = True;
   BOOL last  = True;
@@ -168,10 +173,10 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
   /*
    * Setup the pointers from the incoming.
    */
-  char *pparams = param ? param->data->data;
-  int params_len = param ? param->data->data_used;
-  char *pdata = data ? data->data->data;
-  int data_len = data ? data->data->data_used;
+  char *pparams = param ? param->data->data : NULL;
+  int params_len = param ? param->data->data_used : 0;
+  char *pdata = data ? data->data->data : NULL;
+  int data_len = data ? data->data->data_used : 0;
 
   /*
    * Setup the pointers to the outgoing.
@@ -197,9 +202,6 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
     DEBUG(5, ("cli_pipe: return critical error\n"));
     return False;
   }
-
-  if (cli_error(cli, NULL, &err))
-    return False;
 
   if (rdata->data->data == NULL)
     return False;
@@ -262,7 +264,8 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 
     prs_mem_free(&hps);
 
-    if (cli_error(cli, NULL, &err))
+    cli_error(cli, &errclass, &err);
+    if (errclass != 0)
       return False;
 
     first = IS_BITS_SET_ALL(rhdr.flags, RPC_FLG_FIRST);
@@ -461,8 +464,8 @@ BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 devic
                    setup, 2, 0,                /* setup, length, max */
                    param, 2, 0,                /* param, length, max */
                    NULL, 0, 1024,              /* data, length, max */
-                   &rparam, rparam_len,        /* return param, length */
-                   &rdata, rdata_len))         /* return data, length */
+                   &rparam, &rparam_len,        /* return param, length */
+                   &rdata, &rdata_len))         /* return data, length */
   {
     DEBUG(5, ("Set Handle state: return OK\n"));
     state_set = True;
@@ -602,7 +605,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
   prs_init(&rparam, 0   , 4, SAFETY_MARGIN, True );
 
   create_rpc_bind_req(&hdr, &hdr_rb, ntlmssp_auth ? &auth_req : NULL,
-                      abstract, transfer, myname, myworkgroup);
+                      abstract, transfer, global_myname, global_myworkgroup);
 
   /* this is a hack due to limitations in rpc_api_pipe */
   prs_init(&data, mem_buf_len(hdr.data), 4, 0x0, False);
@@ -645,7 +648,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
   if ((fnum = cli_open(cli, pipe_name, O_CREAT|O_RDWR, DENY_NONE)) == -1)
   {
     DEBUG(1,("do_session_open: cli_open failed on pipe %s to machine %s. \
-Error was %s.\n", pipe_name, cli->desthost, cli_errstr(&cli)));
+Error was %s.\n", pipe_name, cli->desthost, cli_errstr(cli)));
     return False;
   }
 
@@ -669,10 +672,11 @@ Error was %s.\n", pipe_name, cli->desthost, cli_errstr(&cli)));
    * Setup the remote server name prefixed by \ and the machine account name.
    */
 
-  sprintf(cli->srv_name, "\\\\%s", cli->desthost);
-  strupper(cli->srv_name);
+  sprintf(cli->srv_name_slash, "\\\\%s", cli->desthost);
+  strupper(cli->srv_name_slash);
 
-  sprintf(cli->mach_acct, "%s$", myname);
+  sprintf(cli->mach_acct, "%s$", global_myname);
+  strupper(cli->mach_acct);
 
   return True;
 }

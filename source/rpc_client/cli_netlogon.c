@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -6,7 +5,8 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  
+ *  Copyright (C) Jeremy Allison                    1998.
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -30,36 +30,30 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+extern pstring global_myname;
+extern fstring global_myworkgroup;
 
 /****************************************************************************
 do a LSA Logon Control2
 ****************************************************************************/
 
-BOOL do_net_logon_ctrl2(struct cli_state *cli, uint16 fnum,
-                        char *host_name, uint32 status_level)
+BOOL do_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
 {
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_LOGON_CTRL2 q_l;
-  BOOL valid_ctrl2 = False;
-  fstring acct_name;
-
-  if (host_name == NULL)
-    return False;
+  BOOL ok = False;
 
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
 
-  strcpy(acct_name, "\\\\");
-  strcat(acct_name, host_name);
-
   /* create and send a MSRPC command with api NET_LOGON_CTRL2 */
 
-  DEBUG(4,("LSA Logon Control2 from %s status level:%x\n",
-           host_name, status_level));
+  DEBUG(4,("do_net_logon_ctrl2 from %s status level:%x\n",
+           global_myname, status_level));
 
   /* store the parameters */
-  make_q_logon_ctrl2(&q_l, acct_name, status_level);
+  make_q_logon_ctrl2(&q_l, cli->srv_name_slash, status_level);
 
   /* turn parameters into data stream */
   net_io_q_logon_ctrl2("", &q_l,  &buf, 0);
@@ -68,7 +62,6 @@ BOOL do_net_logon_ctrl2(struct cli_state *cli, uint16 fnum,
   if (rpc_api_pipe_req(cli, NET_LOGON_CTRL2, &buf, &rbuf))
   {
     NET_R_LOGON_CTRL2 r_l;
-    BOOL ok;
 
     net_io_r_logon_ctrl2("", &r_l, &rbuf, 0);
     ok = (rbuf.offset != 0);
@@ -76,47 +69,46 @@ BOOL do_net_logon_ctrl2(struct cli_state *cli, uint16 fnum,
     if (ok && r_l.status != 0)
     {
       /* report error code */
-      DEBUG(0,("NET_R_LOGON_CTRL: %s\n", get_nt_error_msg(r_l.status)));
+      DEBUG(0,("do_net_logon_ctrl2: Error %s\n", get_nt_error_msg(r_l.status)));
       cli->nt_error = r_l.status;
       ok = False;
-    }
-
-    if (ok)
-    {
-      valid_ctrl2 = True;
     }
   }
 
   prs_mem_free(&rbuf);
   prs_mem_free(&buf );
 
-  return valid_ctrl2;
+  return ok;
 }
 
 /****************************************************************************
-do a LSA Authenticate 2
+LSA Authenticate 2
+
+Send the client credential, receive back a server credential.
+Ensure that the server credential returned matches the session key 
+encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
 BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
-                   uint32 neg_flags, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
+                   uint32 neg_flags, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_AUTH_2 q_a;
-  BOOL valid_chal = False;
+  BOOL ok = False;
 
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
 
   /* create and send a MSRPC command with api NET_AUTH2 */
 
-  DEBUG(4,("LSA Authenticate 2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %lx\n",
-         cli->srv_name, cli->mach_acct, sec_chan, global_myname,
-         credstr(clnt_chal->data), neg_flags));
+  DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %lx\n",
+         cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+         credstr(cli->clnt_cred.challenge.data), neg_flags));
 
   /* store the parameters */
-  make_q_auth_2(&q_a, cli->srv_name, cli->mach_acct, sec_chan, global_myname,
-                clnt_chal, neg_flags);
+  make_q_auth_2(&q_a, cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+                &cli->clnt_cred.challenge, neg_flags);
 
   /* turn parameters into data stream */
   net_io_q_auth_2("", &q_a,  &buf, 0);
@@ -125,7 +117,6 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
   if (rpc_api_pipe_req(cli, NET_AUTH2, &buf, &rbuf))
   {
     NET_R_AUTH_2 r_a;
-    BOOL ok;
 
     net_io_r_auth_2("", &r_a, &rbuf, 0);
     ok = (rbuf.offset != 0);
@@ -133,35 +124,49 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
     if (ok && r_a.status != 0)
     {
       /* report error code */
-      DEBUG(0,("NET_AUTH2: %s\n", get_nt_error_msg(r_a.status)));
+      DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(r_a.status)));
       cli->nt_error = r_a.status;
-      ok = False;
-    }
-
-    if (ok && r_a.srv_flgs.neg_flags != q_a.clnt_flgs.neg_flags)
-    {
-      /* report different neg_flags */
-      DEBUG(0,("NET_AUTH2: error neg_flags (q,r) differ - (%lx,%lx)\n",
-          q_a.clnt_flgs.neg_flags, r_a.srv_flgs.neg_flags));
       ok = False;
     }
 
     if (ok)
     {
-      /* ok, at last: we're happy. return the challenge */
-      memcpy(srv_chal, r_a.srv_chal.data, sizeof(srv_chal->data));
-      valid_chal = True;
+      /* 
+       * Check the returned value using the initial
+       * server received challenge.
+       */
+      UTIME zerotime;
+
+      zerotime.time = 0;
+      if(cred_assert( &r_a.srv_chal, cli->sess_key, srv_chal, zerotime) == 0) {
+        /*
+         * Server replied with bad credential. Fail.
+         */
+        DEBUG(0,("cli_net_auth2: server %s replied with bad credential (bad machine \
+password ?).\n", cli->desthost ));
+        ok = False;
+      }
     }
+
+    if (ok && r_a.srv_flgs.neg_flags != q_a.clnt_flgs.neg_flags)
+    {
+      /* report different neg_flags */
+      DEBUG(0,("cli_net_auth2: error neg_flags (q,r) differ - (%lx,%lx)\n",
+          q_a.clnt_flgs.neg_flags, r_a.srv_flgs.neg_flags));
+      ok = False;
+    }
+
   }
 
   prs_mem_free(&rbuf);
   prs_mem_free(&buf );
 
-  return valid_chal;
+  return ok;
 }
 
 /****************************************************************************
-do a LSA Request Challenge
+LSA Request Challenge. Sends our challenge to server, then gets
+server response. These are used to generate the credentials.
 ****************************************************************************/
 
 BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
@@ -183,7 +188,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
          cli->desthost, global_myname, credstr(clnt_chal->data)));
 
   /* store the parameters */
-  make_q_req_chal(&q_c, desthost, global_myname, clnt_chal);
+  make_q_req_chal(&q_c, cli->srv_name_slash, global_myname, clnt_chal);
 
   /* turn parameters into data stream */
   net_io_q_req_chal("", &q_c,  &buf, 0);
@@ -200,8 +205,8 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
     if (ok && r_c.status != 0)
     {
       /* report error code */
-      DEBUG(0,("NET_REQ_CHAL: %s\n", get_nt_error_msg(r_c.status)));
-      cli->nt_error = r_a.status;
+      DEBUG(0,("cli_net_req_chal: Error %s\n", get_nt_error_msg(r_c.status)));
+      cli->nt_error = r_c.status;
       ok = False;
     }
 
@@ -219,6 +224,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
   return valid_chal;
 }
 
+#if 0
 /***************************************************************************
 do a LSA Server Password Set
 ****************************************************************************/
@@ -244,7 +250,7 @@ BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
   DEBUG(4,("LSA Server Password Set: srv:%s acct:%s sc: %d mc: %s clnt %s %lx\n",
-           logon_srv, mach_acct, sec_chan_type, comp_name,
+           cli->srv_name_slash, mach_acct, sec_chan_type, comp_name,
            credstr(clnt_cred->challenge.data), clnt_cred->timestamp.time));
 
   /* store the parameters */
@@ -292,40 +298,47 @@ BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
 
   return valid_cred;
 }
+#endif
 
 /***************************************************************************
-do a LSA SAM Logon
+LSA SAM Logon.
 ****************************************************************************/
 
-BOOL cli_net_sam_logon(struct cli_state *cli, DOM_CRED *sto_clnt_cred,
-                      char *logon_srv, char *comp_name,
-                      DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-                      uint16 logon_level, NET_ID_INFO_CTR *ctr,
-                      uint16 validation_level, NET_USER_INFO_3 *user_info3,
-                      DOM_CRED *srv_cred)
+BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+                       NET_USER_INFO_3 *user_info3)
 {
+  DOM_CRED new_clnt_cred;
   prs_struct rbuf;
   prs_struct buf; 
+  uint16 validation_level = 3;
   NET_Q_SAM_LOGON q_s;
-  BOOL valid_cred = False;
+  BOOL ok = False;
 
-  if (srv_cred == NULL || clnt_cred == NULL || rtn_cred == NULL || user_info3 == NULL)
-    return False;
+  /*
+   * Create the new client credentials.
+   */
+
+  cli->clnt_cred.timestamp.time = time(NULL);
+
+  memcpy(&new_clnt_cred, &cli->clnt_cred, sizeof(new_clnt_cred));
+
+  /* Calculate the new credentials. */
+  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
+              new_clnt_cred.timestamp, &(new_clnt_cred.challenge));
 
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
 
   /* create and send a MSRPC command with api NET_SAMLOGON */
 
-  DEBUG(4,("LSA SAM Logon: srv:%s mc:%s clnt %s %lx rtn: %s %lx ll: %d\n",
-             cli->srv_name, global_myname, 
-             credstr(cli->clnt_cred->challenge.data), cli->clnt_cred->timestamp.time,
-             credstr(rtn_cred->challenge.data), rtn_cred ->timestamp.time,
-             logon_level));
+  DEBUG(4,("cli_net_sam_logon: srv:%s mc:%s clnt %s %lx ll: %d\n",
+             cli->srv_name_slash, global_myname, 
+             credstr(new_clnt_cred.challenge.data), cli->clnt_cred.timestamp.time,
+             ctr->switch_value));
 
   /* store the parameters */
-  make_sam_info(&(q_s.sam_id), cli->srv_name, global_myname,
-         cli->clnt_cred, rtn_cred, logon_level, ctr, validation_level);
+  make_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
+         &new_clnt_cred, NULL, ctr->switch_value, ctr, validation_level);
 
   /* turn parameters into data stream */
   net_io_q_sam_logon("", &q_s,  &buf, 0);
@@ -334,7 +347,6 @@ BOOL cli_net_sam_logon(struct cli_state *cli, DOM_CRED *sto_clnt_cred,
   if (rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf))
   {
     NET_R_SAM_LOGON r_s;
-    BOOL ok;
 
     r_s.user = user_info3;
 
@@ -344,74 +356,75 @@ BOOL cli_net_sam_logon(struct cli_state *cli, DOM_CRED *sto_clnt_cred,
     if (ok && r_s.status != 0)
     {
       /* report error code */
-      DEBUG(0,("NET_SAMLOGON: %s\n", get_nt_error_msg(r_s.status)));
+      DEBUG(0,("cli_net_sam_logon: %s\n", get_nt_error_msg(r_s.status)));
       cli->nt_error = r_s.status;
       ok = False;
+    }
+
+    /* Update the credentials. */
+    if (clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)) == 0)
+    {
+      /*
+       * Server replied with bad credential. Fail.
+       */
+      DEBUG(0,("cli_net_sam_logon: server %s replied with bad credential (bad machine \
+password ?).\n", cli->desthost ));
+        ok = False;
     }
 
     if (ok && r_s.switch_value != 3)
     {
       /* report different switch_value */
-      DEBUG(0,("NET_SAMLOGON: switch_value of 3 expected %x\n",
+      DEBUG(0,("cli_net_sam_logon: switch_value of 3 expected %x\n",
                    r_s.switch_value));
       ok = False;
-    }
-
-    if (ok)
-    {
-      if (clnt_deal_with_creds(cli->sess_key, sto_clnt_cred, &(r_s.srv_creds)))
-      {
-        DEBUG(5, ("do_net_sam_logon: server credential check OK\n"));
-        /* ok, at last: we're happy. return the challenge */
-        memcpy(srv_cred, &(r_s.srv_creds), sizeof(r_s.srv_creds));
-        valid_cred = True;
-      }
-      else
-      {
-        DEBUG(5, ("do_net_sam_logon: server credential check failed\n"));
-      }
     }
   }
 
   prs_mem_free(&rbuf);
   prs_mem_free(&buf );
 
-  return valid_cred;
+  return ok;
 }
 
 /***************************************************************************
-do a LSA SAM Logoff
+LSA SAM Logoff.
 ****************************************************************************/
 
-BOOL do_net_sam_logoff(struct cli_state *cli, uint16 fnum,
-                       uchar sess_key[8], DOM_CRED *sto_clnt_cred,
-                       char *logon_srv, char *comp_name,
-                       DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-                       uint16 logon_level, NET_ID_INFO_CTR *ctr, 
-                       uint16 validation_level, DOM_CRED *srv_cred)
+BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 {
+  DOM_CRED new_clnt_cred;
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_SAM_LOGOFF q_s;
-  BOOL valid_cred = False;
+  uint16 validation_level = 3;
+  BOOL ok = False;
 
-  if (srv_cred == NULL || clnt_cred == NULL || rtn_cred == NULL)
-    return False;
+  /*
+   * Create the new client credentials.
+   */
+
+  cli->clnt_cred.timestamp.time = time(NULL);
+
+  memcpy(&new_clnt_cred, &cli->clnt_cred, sizeof(new_clnt_cred));
+
+  /* Calculate the new credentials. */
+  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
+              new_clnt_cred.timestamp, &(new_clnt_cred.challenge));
 
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
 
-  /* create and send a MSRPC command with api NET_SAMLOGON */
+  /* create and send a MSRPC command with api NET_SAMLOGOFF */
 
-  DEBUG(4,("LSA SAM Logoff: srv:%s mc:%s clnt %s %lx rtn: %s %lx ll: %d\n",
-            logon_srv, comp_name,
-            credstr(clnt_cred->challenge.data), clnt_cred->timestamp.time,
-            credstr(rtn_cred->challenge.data), rtn_cred ->timestamp.time,
-            logon_level));
+  DEBUG(4,("cli_net_sam_logoff: srv:%s mc:%s clnt %s %lx ll: %d\n",
+            cli->srv_name_slash, global_myname,
+            credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time,
+            ctr->switch_value));
 
   /* store the parameters */
-  make_sam_info(&(q_s.sam_id), logon_srv, comp_name,
-                clnt_cred, rtn_cred, logon_level, ctr, validation_level);
+  make_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
+                &new_clnt_cred, NULL, ctr->switch_value, ctr, validation_level);
 
   /* turn parameters into data stream */
   net_io_q_sam_logoff("", &q_s,  &buf, 0);
@@ -420,7 +433,6 @@ BOOL do_net_sam_logoff(struct cli_state *cli, uint16 fnum,
   if (rpc_api_pipe_req(cli, NET_SAMLOGOFF, &buf, &rbuf))
   {
     NET_R_SAM_LOGOFF r_s;
-    BOOL ok;
 
     net_io_r_sam_logoff("", &r_s, &rbuf, 0);
     ok = (rbuf.offset != 0);
@@ -428,29 +440,25 @@ BOOL do_net_sam_logoff(struct cli_state *cli, uint16 fnum,
     if (ok && r_s.status != 0)
     {
       /* report error code */
-      DEBUG(0,("NET_SAMLOGOFF: %s\n", get_nt_error_msg(r_s.status)));
+      DEBUG(0,("cli_net_sam_logoff: %s\n", get_nt_error_msg(r_s.status)));
       cli->nt_error = r_s.status;
       ok = False;
     }
 
-    if (ok)
+    /* Update the credentials. */
+    if (clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)) == 0)
     {
-      if (clnt_deal_with_creds(sess_key, sto_clnt_cred, &(r_s.srv_creds)))
-      {
-        DEBUG(5, ("do_net_sam_logoff: server credential check OK\n"));
-        /* ok, at last: we're happy. return the challenge */
-        memcpy(srv_cred, &(r_s.srv_creds), sizeof(r_s.srv_creds));
-        valid_cred = True;
-      }
-      else
-      {
-        DEBUG(5, ("do_net_sam_logoff: server credential check failed\n"));
-      }
+      /*
+       * Server replied with bad credential. Fail.
+       */
+      DEBUG(0,("cli_net_sam_logoff: server %s replied with bad credential (bad machine \
+password ?).\n", cli->desthost ));
+        ok = False;
     }
   }
 
   prs_mem_free(&rbuf);
   prs_mem_free(&buf );
 
-  return valid_cred;
+  return ok;
 }
