@@ -74,7 +74,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 	token = SVAL(tmp,3);
 	
 	reply_code = 0x6;
-	strcpy(reply_name,myname); 
+	fstrcpy(reply_name,myname); 
 	strupper(reply_name);
 	add_slashes = True;
 	DEBUG(3,("Domain login request from %s(%s) user=%s token=%x\n",
@@ -87,11 +87,11 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 	logname = skip_string(machine,1);
 	token = SVAL(skip_string(logname,1),0);
 	
-	strcpy(reply_name,lp_domain_controller()); 
+	fstrcpy(reply_name,lp_domain_controller()); 
 	if (!*reply_name)
 	  {
 	    /* oo! no domain controller. must be us, then */
-	    strcpy(reply_name,myname); 
+	    fstrcpy(reply_name,myname); 
 	    reply_code = 0xC;
 	  }
 	else

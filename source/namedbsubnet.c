@@ -308,11 +308,11 @@ void write_browse_list(time_t t)
   dump_names();
   dump_workgroups();
   
-  strcpy(fname,lp_lockdir());
+  pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   strcat(fname,"/");
   strcat(fname,SERVER_LIST);
-  strcpy(fnamenew,fname);
+  pstrcpy(fnamenew,fname);
   strcat(fnamenew,".");
   
   f = fopen(fnamenew,"w");

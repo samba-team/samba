@@ -212,8 +212,8 @@ static int expect(int master,char *expected,char *buf)
 
     {
       pstring s1,s2;
-      strcpy(s1,buf);
-      strcpy(s2,expected);
+      pstrcpy(s1,buf);
+      pstrcpy(s2,expected);
       if (do_match(s1, s2, False))
 	return(True);
     }
@@ -364,11 +364,11 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass)
     }
 
 #if (defined(PASSWD_PROGRAM) && defined(PASSWD_CHAT))
-  strcpy(passwordprogram,PASSWD_PROGRAM);
-  strcpy(chatsequence,PASSWD_CHAT);
+  pstrcpy(passwordprogram,PASSWD_PROGRAM);
+  pstrcpy(chatsequence,PASSWD_CHAT);
 #else
-  strcpy(passwordprogram,lp_passwd_program());
-  strcpy(chatsequence,lp_passwd_chat());
+  pstrcpy(passwordprogram,lp_passwd_program());
+  pstrcpy(chatsequence,lp_passwd_chat());
 #endif
 
   if (!*chatsequence) {

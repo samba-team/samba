@@ -81,7 +81,7 @@ int VT_Start_utmp(void)
 
 	setutent();
 
-	strcpy(u.ut_line, VT_Line);
+	fstrcpy(u.ut_line, VT_Line);
 
 	if((v = getutline(&u)) == NULL) {
 		if(strncmp(VT_Line, "tty", 3) == 0)
@@ -91,12 +91,12 @@ int VT_Start_utmp(void)
 		else
 			tt = VT_Line;
 
-		strcpy(u.ut_id, tt);
+		fstrcpy(u.ut_id, tt);
 		u.ut_time = time((time_t*)0);
 	}
 
-	strcpy(u.ut_user, "LOGIN");
-	strcpy(u.ut_line, VT_Line);
+	fstrcpy(u.ut_user, "LOGIN");
+	fstrcpy(u.ut_line, VT_Line);
 	u.ut_pid = getpid();
 	u.ut_type = LOGIN_PROCESS;
 	pututline(&u);
@@ -118,10 +118,10 @@ int VT_Stop_utmp(void)
 	if(VT_Line != NULL) {
 		setutent();
 
-		strcpy(u.ut_line, VT_Line);
+		fstrcpy(u.ut_line, VT_Line);
 
 		if((v = getutline(&u)) != NULL) {
-			strcpy(v->ut_user, "");
+			fstrcpy(v->ut_user, "");
 			v->ut_type = DEAD_PROCESS;
 			v->ut_time = time((time_t*)0);
 			pututline(v);

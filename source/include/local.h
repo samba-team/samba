@@ -42,6 +42,8 @@
 
 #define WORDMAX 0xFFFF
 
+/* the maximum password length before we declare a likely attack */
+#define MAX_PASSWORD_LENGTH 200
 
 /* separators for lists */
 #define LIST_SEP " \t,;:\n\r"

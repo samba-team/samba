@@ -358,8 +358,8 @@ void pcap_printer_fn(void (*fn)())
 
 	  if (strlen(p) <= 8 && strlen(p)>strlen(name) && !has_punctuation)
 	    {
-	      if (!*comment) strcpy(comment,name);
-	      strcpy(name,p);
+	      if (!*comment) pstrcpy(comment,name);
+	      pstrcpy(name,p);
 	      continue;
 	    }
 

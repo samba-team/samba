@@ -174,11 +174,11 @@ void do_announce_host(int command,
 	SSVAL(p,27,BROWSER_ELECTION_VERSION);
 	SSVAL(p,29,BROWSER_CONSTANT); /* browse signature */
 
-	strcpy(p+31,server_comment);
+	pstrcpy(p+31,server_comment);
 	p += 31;
 	p = skip_string(p,1);
 
-    debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
+	debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
 
 	/* send the announcement */
 	send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,outbuf,

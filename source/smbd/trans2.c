@@ -306,10 +306,10 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       if(p[1] == '\0')
 	strcpy(mask,"*.*");
       else
-	strcpy(mask, p+1);
+	pstrcpy(mask, p+1);
     }
   else
-    strcpy(mask, path_mask);
+    pstrcpy(mask, path_mask);
 
   while (!found)
     {
@@ -327,7 +327,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
       matched = False;
 
-      strcpy(fname,dname);      
+      pstrcpy(fname,dname);      
 
       if(mask_match(fname, mask, case_sensitive, True))
 	{
@@ -338,7 +338,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	  if (isrootdir && isdots)
 	    continue;
 
-	  strcpy(pathreal,Connections[cnum].dirpath);
+	  pstrcpy(pathreal,Connections[cnum].dirpath);
           if(needslash)
   	    strcat(pathreal,"/");
 	  strcat(pathreal,dname);
@@ -595,7 +595,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
       return(ERROR(ERRDOS,ERRunknownlevel));
     }
 
-  strcpy(directory, params + 12); /* Complete directory path with 
+  pstrcpy(directory, params + 12); /* Complete directory path with 
 				     wildcard mask appended */
 
   DEBUG(5,("path=%s\n",directory));
@@ -1057,7 +1057,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     /* qpathinfo */
     info_level = SVAL(params,0);
     fname = &fname1[0];
-    strcpy(fname,&params[6]);
+    pstrcpy(fname,&params[6]);
     unix_convert(fname,cnum,0,&bad_path);
     if (!check_name(fname,cnum) || sys_stat(fname,&sbuf)) {
       DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
@@ -1163,7 +1163,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     case SMB_QUERY_FILE_ALT_NAME_INFO:
       data_size = 4 + l;
       SIVAL(pdata,0,l);
-      strcpy(pdata+4,fname);
+      pstrcpy(pdata+4,fname);
       break;
     case SMB_QUERY_FILE_ALLOCATION_INFO:
     case SMB_QUERY_FILE_END_OF_FILEINFO:
@@ -1197,7 +1197,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       pdata += 4;
       pdata += 4; /* alignment */
       SIVAL(pdata,0,l);
-      strcpy(pdata+4,fname);
+      pstrcpy(pdata+4,fname);
       pdata += 4 + l;
       data_size = PTR_DIFF(pdata,(*ppdata));
       break;
@@ -1208,7 +1208,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       SIVAL(pdata,4,size);
       SIVAL(pdata,12,size);
       SIVAL(pdata,20,l);	
-      strcpy(pdata+24,fname);
+      pstrcpy(pdata+24,fname);
       break;
     default:
       return(ERROR(ERRDOS,ERRunknownlevel));
@@ -1260,7 +1260,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     /* set path info */
     info_level = SVAL(params,0);    
     fname = fname1;
-    strcpy(fname,&params[6]);
+    pstrcpy(fname,&params[6]);
     unix_convert(fname,cnum,0,&bad_path);
     if(!check_name(fname, cnum))
     {
@@ -1443,7 +1443,7 @@ static int call_trans2mkdir(char *inbuf, char *outbuf, int length, int bufsize,
   if (!CAN_WRITE(cnum))
     return(ERROR(ERRSRV,ERRaccess));
 
-  strcpy(directory, &params[4]);
+  pstrcpy(directory, &params[4]);
 
   DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
@@ -1645,6 +1645,9 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
   num_params = num_params_sofar = SVAL(inbuf,smb_pscnt);
   num_data = num_data_sofar = SVAL(inbuf, smb_dscnt);
 
+  if (num_params > total_params || num_data > total_data)
+	  exit_server("invalid params in reply_trans2");
+
   memcpy( params, smb_base(inbuf) + SVAL(inbuf, smb_psoff), num_params);
   memcpy( data, smb_base(inbuf) + SVAL(inbuf, smb_dsoff), num_data);
 
@@ -1672,6 +1675,9 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
 	  total_data = SVAL(inbuf, smb_tdscnt);
 	  num_params_sofar += (num_params = SVAL(inbuf,smb_spscnt));
 	  num_data_sofar += ( num_data = SVAL(inbuf, smb_sdscnt));
+	  if (num_params_sofar > total_params || num_data_sofar > total_data)
+		  exit_server("data overflow in trans2");
+
 	  memcpy( &params[ SVAL(inbuf, smb_spsdisp)], 
 		 smb_base(inbuf) + SVAL(inbuf, smb_spsoff), num_params);
 	  memcpy( &data[SVAL(inbuf, smb_sdsdisp)],

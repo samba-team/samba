@@ -469,12 +469,12 @@ BOOL set_filetime(char *fname,time_t mtime)
 ****************************************************************************/
 char *timestring(void )
 {
-  static char TimeBuf[100];
+  static fstring TimeBuf;
   time_t t = time(NULL);
   struct tm *tm = LocalTime(&t);
 
 #ifdef NO_STRFTIME
-  strcpy(TimeBuf, asctime(tm));
+  fstrcpy(TimeBuf, asctime(tm));
 #elif defined(CLIX) || defined(CONVEX)
   strftime(TimeBuf,100,"%m/%d/%y %I:%M:%S %p",tm);
 #elif defined(AMPM)

@@ -54,7 +54,7 @@ static void msg_deliver(void)
 
   /* put it in a temporary file */
   sprintf(s,"%s/msg.XXXXXX",tmpdir());
-  strcpy(name,(char *)mktemp(s));
+  fstrcpy(name,(char *)mktemp(s));
 
   fd = open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
   if (fd == -1) {
@@ -74,7 +74,7 @@ static void msg_deliver(void)
   /* run the command */
   if (*lp_msg_command())
     {
-      strcpy(s,lp_msg_command());
+      pstrcpy(s,lp_msg_command());
       string_sub(s,"%s",name);
       string_sub(s,"%f",msgfrom);
       string_sub(s,"%t",msgto);
@@ -108,8 +108,8 @@ int reply_sends(char *inbuf,char *outbuf)
   dest = skip_string(orig,1)+1;
   msg = skip_string(dest,1)+1;
 
-  strcpy(msgfrom,orig);
-  strcpy(msgto,dest);
+  fstrcpy(msgfrom,orig);
+  fstrcpy(msgto,dest);
 
   len = SVAL(msg,0);
   len = MIN(len,1600-msgpos);
@@ -143,10 +143,10 @@ int reply_sendstrt(char *inbuf,char *outbuf)
   orig = smb_buf(inbuf)+1;
   dest = skip_string(orig,1)+1;
 
-  strcpy(msgfrom,orig);
-  strcpy(msgto,dest);
+  fstrcpy(msgfrom,orig);
+  fstrcpy(msgto,dest);
 
-  DEBUG(3,("%s SMBsendstrt (from %s to %s)\n",timestring(),orig,dest));
+  DEBUG(3,("%s SMBsendstrt (from %s to %s)\n",timestring(),msgfrom,msgto));
 
   return(outsize);
 }

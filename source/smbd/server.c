@@ -399,7 +399,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
 	  (strequal(dname,".") || strequal(dname,"..")))
 	continue;
 
-      strcpy(name2,dname);
+      pstrcpy(name2,dname);
       if (!name_map_mangle(name2,False,SNUM(cnum))) continue;
 
       if ((mangled && mangled_equal(name,name2))
@@ -545,7 +545,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 
 	  /* remember the rest of the pathname so it can be restored
 	     later */
-	  if (end) strcpy(rest,end+1);
+	  if (end) pstrcpy(rest,end+1);
 
 	  /* try to find this part of the path in the directory */
 	  if (strchr(start,'?') || strchr(start,'*') ||
@@ -1057,7 +1057,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   Files[fnum].fd_ptr = 0;
   errno = EPERM;
 
-  strcpy(fname,fname1);
+  pstrcpy(fname,fname1);
 
   /* check permissions */
   if ((flags != O_RDONLY) && !CAN_WRITE(cnum) && !Connections[cnum].printer)
@@ -1186,7 +1186,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     pstring dname;
     int dum1,dum2,dum3;
     char *p;
-    strcpy(dname,fname);
+    pstrcpy(dname,fname);
     p = strrchr(dname,'/');
     if (p) *p = 0;
     if (sys_disk_free(dname,&dum1,&dum2,&dum3) < 
@@ -1321,10 +1321,10 @@ static void check_magic(int fnum,int cnum)
     int ret;
     pstring magic_output;
     pstring fname;
-    strcpy(fname,Files[fnum].name);
+    pstrcpy(fname,Files[fnum].name);
 
     if (*lp_magicoutput(SNUM(cnum)))
-      strcpy(magic_output,lp_magicoutput(SNUM(cnum)));
+      pstrcpy(magic_output,lp_magicoutput(SNUM(cnum)));
     else
       sprintf(magic_output,"%s.out",fname);
 
@@ -2355,10 +2355,10 @@ BOOL reload_services(BOOL test)
   if (lp_loaded())
     {
       pstring fname;
-      strcpy(fname,lp_configfile());
+      pstrcpy(fname,lp_configfile());
       if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
 	{
-	  strcpy(servicesf,fname);
+	  pstrcpy(servicesf,fname);
 	  test = False;
 	}
     }
@@ -2651,13 +2651,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       struct passwd *pass2;
       fstring fuser;
-      strcpy(fuser,lp_force_user(snum));
+      fstrcpy(fuser,lp_force_user(snum));
       pass2 = (struct passwd *)Get_Pwnam(fuser,True);
       if (pass2)
 	{
 	  pcon->uid = pass2->pw_uid;
 	  string_set(&pcon->user,fuser);
-	  strcpy(user,fuser);
+	  fstrcpy(user,fuser);
 	  pcon->force_user = True;
 	  DEBUG(3,("Forced user %s\n",fuser));	  
 	}
@@ -2667,7 +2667,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 
   {
     pstring s;
-    strcpy(s,lp_pathname(snum));
+    pstrcpy(s,lp_pathname(snum));
     standard_sub(cnum,s);
     string_set(&pcon->connectpath,s);
     DEBUG(3,("Connect path is %s\n",s));
@@ -2703,7 +2703,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   if (*lp_rootpreexec(SNUM(cnum)))
     {
       pstring cmd;
-      strcpy(cmd,lp_rootpreexec(SNUM(cnum)));
+      pstrcpy(cmd,lp_rootpreexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
       DEBUG(5,("cmd=%s\n",cmd));
       smbrun(cmd,NULL,False);
@@ -2743,7 +2743,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   /* resolve any soft links early */
   {
     pstring s;
-    strcpy(s,pcon->connectpath);
+    pstrcpy(s,pcon->connectpath);
     GetWd(s);
     string_set(&pcon->connectpath,s);
     ChDir(pcon->connectpath);
@@ -2757,7 +2757,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   if (*lp_preexec(SNUM(cnum)))
     {
       pstring cmd;
-      strcpy(cmd,lp_preexec(SNUM(cnum)));
+      pstrcpy(cmd,lp_preexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
       smbrun(cmd,NULL,False);
     }
@@ -3216,7 +3216,7 @@ static int reply_negprot(char *inbuf,char *outbuf)
   SSVAL(outbuf,smb_vwv0,choice);
   if(choice != -1) {
     extern fstring remote_proto;
-    strcpy(remote_proto,supported_protocols[protocol].short_name);
+    fstrcpy(remote_proto,supported_protocols[protocol].short_name);
     reload_services(True);          
     outsize = supported_protocols[protocol].proto_reply_fn(outbuf);
     DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
@@ -3335,7 +3335,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
 
   bzero(&crec,sizeof(crec));
 
-  strcpy(fname,lp_lockdir());
+  pstrcpy(fname,lp_lockdir());
   standard_sub(cnum,fname);
   trim_string(fname,"","/");
 
@@ -3407,7 +3407,7 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
 
   DEBUG(5,("trying claim %s %s %d\n",lp_lockdir(),name,max_connections));
 
-  strcpy(fname,lp_lockdir());
+  pstrcpy(fname,lp_lockdir());
   standard_sub(cnum,fname);
   trim_string(fname,"","/");
 
@@ -3503,7 +3503,7 @@ static BOOL dump_core(void)
 {
   char *p;
   pstring dname;
-  strcpy(dname,debugf);
+  pstrcpy(dname,debugf);
   if ((p=strrchr(dname,'/'))) *p=0;
   strcat(dname,"/corefiles");
   mkdir(dname,0700);

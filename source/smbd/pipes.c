@@ -87,7 +87,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL bad_path = False;
 
   /* XXXX we need to handle passed times, sattr and flags */
-  strcpy(fname,smb_buf(inbuf));
+  pstrcpy(fname,smb_buf(inbuf));
 
   /* If the name doesn't start \PIPE\ then this is directed */
   /* at a mailslot or something we really, really don't understand, */
@@ -98,7 +98,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   DEBUG(4,("Opening pipe %s.\n", fname));
 
   /* Strip \PIPE\ off the name. */
-  strcpy(fname,smb_buf(inbuf) + PIPELEN);
+  pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
 
   /* See if it is one we want to handle. */
   for( i = 0; known_pipes[i] ; i++ )

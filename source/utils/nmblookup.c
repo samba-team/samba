@@ -122,7 +122,7 @@ int main(int argc,char *argv[])
 	got_bcast = True;
 	break;
       case 'i':
-	strcpy(scope,optarg);
+	fstrcpy(scope,optarg);
 	strupper(scope);
 	break;
       case 'M':
@@ -135,7 +135,7 @@ int main(int argc,char *argv[])
 	DEBUGLEVEL = atoi(optarg);
 	break;
       case 's':
-	strcpy(servicesf, optarg);
+	pstrcpy(servicesf, optarg);
 	break;
       case 'h':
 	usage();
@@ -172,7 +172,7 @@ int main(int argc,char *argv[])
       char *p;
       struct in_addr ip;
 
-      strcpy(lookup,argv[i]);
+      fstrcpy(lookup,argv[i]);
 
       if (find_master) {
 	if (*lookup == '-') {
