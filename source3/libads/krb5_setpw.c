@@ -180,7 +180,7 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 
 static krb5_error_code krb5_setpw_result_code_string(krb5_context context,
 						     int result_code,
-						     char **code_string)
+						     const char **code_string)
 {
    switch (result_code) {
    case KRB5_KPASSWD_MALFORMED:
@@ -318,7 +318,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	if(res_code == KRB5_KPASSWD_SUCCESS)
 			return 0;
 	else {
-		char *errstr;
+		const char *errstr;
 		krb5_setpw_result_code_string(context, res_code, &errstr);
 		DEBUG(1, ("Error changing password: %s\n", errstr));
 

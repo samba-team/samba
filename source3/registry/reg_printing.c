@@ -33,7 +33,7 @@
 #define KEY_INDEX_FORMS		1
 #define KEY_INDEX_PRINTER	2
 
-static char *top_level_keys[MAX_TOP_LEVEL_KEYS] = { 
+static const char *top_level_keys[MAX_TOP_LEVEL_KEYS] = { 
 	"Environments", 
 	"Forms",
 	"Printers" 
