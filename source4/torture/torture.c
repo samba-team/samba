@@ -1790,11 +1790,11 @@ static BOOL run_deferopen(struct cli_state *cli, int dummy)
 			GetTimeOfDay(&tv_end);
 			if (NT_STATUS_EQUAL(cli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
 				/* Sharing violation errors need to be 1 second apart. */
-				long long tdif = usec_time_diff(&tv_end, &tv_start);
+				int64_t tdif = usec_time_diff(&tv_end, &tv_start);
 				if (tdif < 500000 || tdif > 1500000) {
 					fprintf(stderr,"Timing incorrect %lld.%lld for share violation\n",
-						tdif / (long long)1000000, 
-						tdif % (long long)1000000);
+						tdif / (int64_t)1000000, 
+						tdif % (int64_t)1000000);
 				}
 			}
 		} while (NT_STATUS_EQUAL(cli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION));
