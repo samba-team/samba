@@ -513,10 +513,10 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 #if defined(DCE)
 	esetenv("KRB5CCNAME", ccname, 1);
 #endif
-	ret = krb5_rd_cred (context,
-			    auth_context,
-			    ccache,
-			    &inbuf);
+	ret = krb5_rd_cred2 (context,
+			     auth_context,
+			     ccache,
+			     &inbuf);
 	if(ret) {
 	    char *errbuf;
 
