@@ -1,4 +1,4 @@
-2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
+2003-02-25  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftpd/ls.c: use readlink with bufsize - 1, From NetBSD
 

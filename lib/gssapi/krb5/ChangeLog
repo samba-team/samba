@@ -1,15 +1,15 @@
-2003-02-27  Love Hörquist Åstrand <lha@it.su.se>
+2003-02-27  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* init_sec_context.c (do_delegation): remove unused variable
 	subkey
 
 	* gssapi.3: all 0.5.x version had broken token delegation
 	
-2003-02-21  Love Hörquist Åstrand <lha@it.su.se>
+2003-02-21  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* (init_auth): only generate one subkey
 
-2003-01-27  Love Hörquist Åstrand <lha@it.su.se>
+2003-01-27  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* verify_mic.c (verify_mic_des3): fix 3des verify_mic to conform
 	to rfc (and mit kerberos), provide backward compat hook
