@@ -43,21 +43,23 @@
 
 extern int DEBUGLEVEL;
 
-/* array lookup of well-known RID aliases.  the purpose of these escapes me.. */
-/* XXXX this structure should not have the well-known RID groups added to it,
-   i.e the DOMAIN_GROUP_RID_ADMIN/USER/GUEST.  */
-rid_name domain_alias_rids[] = 
-{
-	{ BUILTIN_ALIAS_RID_ADMINS       , "admins" },
-	{ BUILTIN_ALIAS_RID_USERS        , "users" },
-	{ BUILTIN_ALIAS_RID_GUESTS       , "guests" },
-	{ BUILTIN_ALIAS_RID_POWER_USERS  , "power_users" },
+/*
+ * A list of the rids of well known BUILTIN and Domain users
+ * and groups.
+ */
 
-	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS  , "account_ops" },
-	{ BUILTIN_ALIAS_RID_SYSTEM_OPS   , "system_ops" },
-	{ BUILTIN_ALIAS_RID_PRINT_OPS    , "print_ops" },
-	{ BUILTIN_ALIAS_RID_BACKUP_OPS   , "backup_ops" },
-	{ BUILTIN_ALIAS_RID_REPLICATOR   , "replicator" },
+rid_name builtin_alias_rids[] = 
+{
+	{ BUILTIN_ALIAS_RID_ADMINS       , "Administrators" },
+	{ BUILTIN_ALIAS_RID_USERS        , "Users" },
+	{ BUILTIN_ALIAS_RID_GUESTS       , "Guests" },
+	{ BUILTIN_ALIAS_RID_POWER_USERS  , "Power Users" },
+
+	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS  , "Account Operators" },
+	{ BUILTIN_ALIAS_RID_SYSTEM_OPS   , "System Operators" },
+	{ BUILTIN_ALIAS_RID_PRINT_OPS    , "Print Operators" },
+	{ BUILTIN_ALIAS_RID_BACKUP_OPS   , "Backup Operators" },
+	{ BUILTIN_ALIAS_RID_REPLICATOR   , "Replicator" },
 	{ 0                             , NULL }
 };
 
@@ -72,9 +74,9 @@ rid_name domain_user_rids[] =
 /* array lookup of well-known Domain RID groups. */
 rid_name domain_group_rids[] = 
 {
-	{ DOMAIN_GROUP_RID_ADMINS       , "domain admins" },
-	{ DOMAIN_GROUP_RID_USERS        , "domain users" },
-	{ DOMAIN_GROUP_RID_GUESTS       , "domain guests" },
+	{ DOMAIN_GROUP_RID_ADMINS       , "Domain Admins" },
+	{ DOMAIN_GROUP_RID_USERS        , "Domain Users" },
+	{ DOMAIN_GROUP_RID_GUESTS       , "Domain Guests" },
 	{ 0                             , NULL }
 };
 
@@ -119,11 +121,11 @@ int make_dom_gids(char *gids_str, DOM_GID **ppgids)
       attr = "7"; /* default value for attribute is 7 */
 
     /* look up the RID string and see if we can turn it into a rid number */
-    for (i = 0; domain_alias_rids[i].name != NULL; i++)
+    for (i = 0; builtin_alias_rids[i].name != NULL; i++)
     {
-      if (strequal(domain_alias_rids[i].name, s2))
+      if (strequal(builtin_alias_rids[i].name, s2))
       {
-        rid = domain_alias_rids[i].rid;
+        rid = builtin_alias_rids[i].rid;
         break;
       }
     }
@@ -373,14 +375,14 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 
 	DEBUG(5,("lookup_alias_name: rid: %d", rid));
 
-	while (domain_alias_rids[i].rid != rid && domain_alias_rids[i].rid != 0)
+	while (builtin_alias_rids[i].rid != rid && builtin_alias_rids[i].rid != 0)
 	{
 		i++;
 	}
 
-	if (domain_alias_rids[i].rid != 0)
+	if (builtin_alias_rids[i].rid != 0)
 	{
-		fstrcpy(alias_name, domain_alias_rids[i].name);
+		fstrcpy(alias_name, builtin_alias_rids[i].name);
 		DEBUG(5,(" = %s\n", alias_name));
 		return 0x0;
 	}
@@ -459,8 +461,8 @@ uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
 	do /* find, if it exists, a alias rid for the alias name*/
 	{
 		i++;
-		(*rid) = domain_alias_rids[i].rid;
-		als_name = domain_alias_rids[i].name;
+		(*rid) = builtin_alias_rids[i].rid;
+		als_name = builtin_alias_rids[i].name;
 
 	} while (als_name != NULL && !strequal(als_name, alias_name));
 

@@ -237,7 +237,7 @@ int reply_tcon(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
    * function.
    */
    
-  map_username(user);
+  (void)map_username(user);
 
   /*
    * Do any UNIX username case mangling.
@@ -317,7 +317,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    * function.
    */
    
-  map_username(user);
+  (void)map_username(user);
 
   /*
    * Do any UNIX username case mangling.
@@ -628,7 +628,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    * function.
    */
    
-  map_username(user);
+  (void)map_username(user);
 
   /*
    * Do any UNIX username case mangling.

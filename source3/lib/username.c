@@ -21,6 +21,7 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
+extern DOM_SID global_machine_sid;
 
 /* internal functions */
 static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (char *), int N);
@@ -48,20 +49,22 @@ any incoming or new username - in order to canonicalize the name.
 This is being done to de-couple the case conversions from the user mapping
 function. Previously, the map_username was being called
 every time Get_Pwnam was called.
+Returns True if username was changed, false otherwise.
 ********************************************************************/
-void map_username(char *user)
+BOOL map_username(char *user)
 {
   static BOOL initialised=False;
   static fstring last_from,last_to;
   FILE *f;
-  char *s;
   char *mapfile = lp_username_map();
+  char *s;
+  pstring buf;
 
-  if (!*user) return;
+  if (!*user)
+    return False;
 
-  if (!*mapfile) {
-    return;
-  }
+  if (!*mapfile)
+    return False;
 
   if (!initialised) {
     *last_from = *last_to = 0;
@@ -69,38 +72,43 @@ void map_username(char *user)
   }
 
   if (strequal(user,last_to))
-    return;
+    return False;
 
   if (strequal(user,last_from)) {
     DEBUG(3,("Mapped user %s to %s\n",user,last_to));
     fstrcpy(user,last_to);
-    return;
+    return True;
   }
   
   f = fopen(mapfile,"r");
   if (!f) {
     DEBUG(0,("can't open username map %s\n",mapfile));
-    return;
+    return False;
   }
 
   DEBUG(4,("Scanning username map %s\n",mapfile));
 
-  for (; (s=fgets_slash(NULL,80,f)); free(s)) {
+  while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
     char *unixname = s;
     char *dosname = strchr(unixname,'=');
     BOOL return_if_mapped = False;
 
-    if (!dosname) continue;
+    if (!dosname)
+      continue;
+
     *dosname++ = 0;
 
-    while (isspace(*unixname)) unixname++;
+    while (isspace(*unixname))
+      unixname++;
     if ('!' == *unixname) {
       return_if_mapped = True;
       unixname++;
-      while (*unixname && isspace(*unixname)) unixname++;
+      while (*unixname && isspace(*unixname))
+        unixname++;
     }
     
-    if (!*unixname || strchr("#;",*unixname)) continue;
+    if (!*unixname || strchr("#;",*unixname))
+      continue;
 
     {
       int l = strlen(unixname);
@@ -116,14 +124,23 @@ void map_username(char *user)
       sscanf(unixname,"%s",user);
       fstrcpy(last_to,user);
       if(return_if_mapped) { 
-        free(s);
         fclose(f);
-        return;
+        return True;
       }
     }
   }
 
   fclose(f);
+
+  /*
+   * Username wasn't mapped. Setup the last_from and last_to
+   * as an optimization so that we don't scan the file again
+   * for the same user.
+   */
+  fstrcpy(last_from,user);
+  fstrcpy(last_to,user);
+
+  return False;
 }
 
 /****************************************************************************
@@ -335,3 +352,157 @@ static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(c
   }
   return(NULL);
 }
+
+#if 0 
+/* JRATEST - under construction. */
+/**************************************************************************
+ Groupname map functionality. The code loads a groupname map file and
+ (currently) loads it into a linked list. This is slow and memory
+ hungry, but can be changed into a more efficient storage format
+ if the demands on it become excessive.
+***************************************************************************/
+
+typedef struct groupname_map {
+   ubi_slNode next;
+
+   char *windows_name;
+   DOM_SID windows_sid;
+   char *unix_name;
+   gid_t unix_gid;
+} groupname_map_entry;
+
+static ubi_slList groupname_map_list;
+
+/**************************************************************************
+ Delete all the entries in the groupname map list.
+***************************************************************************/
+
+static void delete_groupname_map_list(void)
+{
+  groupname_map_entry *gmep;
+
+  while((gmep = (groupname_map_entry *)ubi_slRemHead( groupname_map_list )) != NULL) {
+    if(gmep->windows_name)
+      free(gmep->windows_name);
+    if(gmep->unix_name)
+      free(gmep->unix_name);
+    free((char *)gmep);
+  }
+}
+
+/**************************************************************************
+ Load a groupname map file. Sets last accessed timestamp.
+***************************************************************************/
+
+void load_groupname_map(void)
+{
+  static time_t groupmap_file_last_modified = (time_t)0;
+  static BOOL initialized = False;
+  char *groupname_map_file = lp_groupname_map();
+  struct stat st;
+  FILE *fp;
+  char *s;
+  pstring buf;
+
+  if(!initialized) {
+    ubi_slInsert( &groupname_map_list );
+    initialized = True;
+  }
+
+  if (!*groupname_map_file)
+    return;
+
+  if(stat(groupname_map_file, &st) != 0) {
+    DEBUG(0, ("load_groupname_map: Unable to stat file %s. Error was %s\n",
+               groupname_map_file, strerror(errno) ));
+    return;
+  }
+
+  /*
+   * Check if file has changed.
+   */
+  if( st.st_mtime <= groupmap_file_last_modified)
+    return;
+
+  groupmap_file_last_modified = st.st_mtime;
+
+  /*
+   * Load the file.
+   */
+
+  fp = fopen(groupname_map_file,"r");
+  if (!fp) {
+    DEBUG(0,("load_groupname_map: can't open groupname map %s. Error was %s\n",
+          mapfile, strerror(errno)));
+    return;
+  }
+
+  /*
+   * Throw away any previous list.
+   */
+  delete_groupname_map_list();
+
+  DEBUG(4,("load_groupname_map: Scanning groupname map %s\n",groupname_map_file));
+
+  while((s=fgets_slash(buf,sizeof(buf),fp))!=NULL) {
+    pstring unixname;
+    pstring windows_name;
+    struct group *gptr;
+    DOM_SID tmp_sid;
+
+    DEBUG(10,("load_groupname_map: Read line |%s|\n", s);
+
+    if (!*s || strchr("#;",*s))
+      continue;
+
+    if(!next_token(&s,unixname, "\t\n\r="))
+      continue;
+
+    if(!next_token(&s,windows_name, "\t\n\r="))
+      continue;
+
+    trim_string(unixname, " ", " ");
+    trim_string(windows_name, " ", " ");
+
+    if (!*dosname)
+      continue;
+
+    if(!*unixname)
+      continue;
+
+    /*
+     * Attempt to get the unix gid_t for this name.
+     */
+
+    DEBUG(5,("load_groupname_map: Attempting to find unix group %s.\n",
+          unixname ));
+
+    if((gptr = (struct group *)getgrnam(unixname)) == NULL) {
+      DEBUG(0,("load_groupname_map: getgrnam for group %s failed.\
+Error was %s.\n", unixname, strerror(errno) ));
+      continue;
+    }
+
+    /*
+     * Now map to an NT SID.
+     */
+
+    if(!lookup_wellknown_sid_from_name(windows_name, &tmp_sid)) {
+      /*
+       * It's not a well known name, convert the UNIX gid_t
+       * to a rid within this domain SID.
+       */
+      tmp_sid = global_machine_sid;
+      tmp_sid.sub_auths[tmp_sid.num_auths++] = 
+                    pdb_gid_to_group_rid((gid_t)gptr->gr_gid);
+    }
+
+    /*
+     * Create the list entry and add it onto the list.
+     */
+
+  }
+
+  fclose(fp);
+}
+#endif /* JRATEST */

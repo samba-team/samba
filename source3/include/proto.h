@@ -1939,9 +1939,10 @@ void unbecome_root(BOOL restore_dir);
 /*The following definitions come from  username.c  */
 
 char *get_home_dir(char *user);
-void map_username(char *user);
+BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);
+void load_groupname_map(void);
 
 /*The following definitions come from  util.c  */
 

@@ -2340,16 +2340,28 @@ int find_service(char *service)
    if (iService < 0)
    {
       char *phome_dir = get_home_dir(service);
+
+      if(!phome_dir)
+      {
+        /*
+         * Try mapping the servicename, it may
+         * be a Windows to unix mapped user name.
+         */
+        if(map_username(service))
+          phome_dir = get_home_dir(service);
+      }
+
       DEBUG(3,("checking for home directory %s gave %s\n",service,
-	    phome_dir?phome_dir:"(NULL)"));
+            phome_dir?phome_dir:"(NULL)"));
+
       if (phome_dir)
       {   
-	 int iHomeService;
-	 if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
-	 {
-	    lp_add_home(service,iHomeService,phome_dir);
-	    iService = lp_servicenumber(service);
-	 }
+        int iHomeService;
+        if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
+        {
+          lp_add_home(service,iHomeService,phome_dir);
+          iService = lp_servicenumber(service);
+        }
       }
    }
 
@@ -2380,34 +2392,36 @@ int find_service(char *service)
 
    /* just possibly it's a default service? */
    if (iService < 0) 
+   {
+     char *pdefservice = lp_defaultservice();
+     if (pdefservice && *pdefservice && !strequal(pdefservice,service))
      {
-       char *pdefservice = lp_defaultservice();
-       if (pdefservice && *pdefservice && !strequal(pdefservice,service)) {
-         /*
-          * We need to do a local copy here as lp_defaultservice() 
-          * returns one of the rotating lp_string buffers that
-          * could get overwritten by the recursive find_service() call
-          * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
-          */
-         pstring defservice;
-         pstrcpy(defservice, pdefservice);
-	 iService = find_service(defservice);
-	 if (iService >= 0) {
-	   string_sub(service,"_","/");
-	   iService = lp_add_service(service,iService);
-	 }
+       /*
+        * We need to do a local copy here as lp_defaultservice() 
+        * returns one of the rotating lp_string buffers that
+        * could get overwritten by the recursive find_service() call
+        * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
+        */
+       pstring defservice;
+       pstrcpy(defservice, pdefservice);
+       iService = find_service(defservice);
+       if (iService >= 0)
+       {
+         string_sub(service,"_","/");
+         iService = lp_add_service(service,iService);
        }
      }
+   }
 
    if (iService >= 0)
-      if (!VALID_SNUM(iService))
-      {
-         DEBUG(0,("Invalid snum %d for %s\n",iService,service));
-	 iService = -1;
-      }
+     if (!VALID_SNUM(iService))
+     {
+       DEBUG(0,("Invalid snum %d for %s\n",iService,service));
+       iService = -1;
+     }
 
    if (iService < 0)
-      DEBUG(3,("find_service() failed to find service %s\n", service));
+     DEBUG(3,("find_service() failed to find service %s\n", service));
 
    return (iService);
 }

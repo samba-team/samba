@@ -1637,7 +1637,7 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
    * function.
    */
 
-  map_username(user);
+  (void)map_username(user);
 
   /*
    * Do any UNIX username case mangling.
@@ -1725,7 +1725,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
    * function.
    */
 
-  map_username(user);
+  (void)map_username(user);
 
   /*
    * Do any UNIX username case mangling.
