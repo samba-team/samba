@@ -3470,6 +3470,8 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  
 	pstrcpy(directory,smb_buf(inbuf) + 1);
 
+	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
+
 	status = mkdir_internal(conn, directory);
 	if (!NT_STATUS_IS_OK(status))
 		return ERROR_NT(status);
