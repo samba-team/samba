@@ -1,3 +1,8 @@
+2003-08-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/principal.c (unparse_name): len can't be zero, so,
+	don't check for that
+
 2003-08-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/principal.c (unparse_name): make sure there are space
