@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 
+#ifdef KRB4
 #include "hprop.h"
 
 RCSID("$Id$");
@@ -131,3 +132,4 @@ v4_prop_dump(void *arg, const char *file)
     }
     return 0;
 }
+#endif
