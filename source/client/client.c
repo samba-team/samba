@@ -37,6 +37,7 @@ static pstring service;
 static pstring desthost;
 static pstring username;
 static pstring password;
+static pstring calling_name;
 static BOOL use_kerberos;
 static BOOL got_pass;
 static BOOL grepable=False;
@@ -137,7 +138,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	
 	zero_ip(&ip);
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, calling_name, 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
@@ -3454,7 +3455,7 @@ static int do_message_op(void)
 	fstring server_name;
 	char name_type_hex[10];
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, calling_name, 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
 	fstrcpy(server_name, desthost);
@@ -3538,6 +3539,7 @@ static int do_message_op(void)
 	   not it was set by a command line option */
 	   
 	set_global_myworkgroup( "" );
+	set_global_myname( "" );
 
         /* set default debug level to 0 regardless of what smb.conf sets */
 	setup_logging( "smbclient", True );
@@ -3632,6 +3634,7 @@ static int do_message_op(void)
 	   everything)?  */
 	
 	fstrcpy( new_workgroup, lp_workgroup() );
+	pstrcpy( calling_name, global_myname() );
 	
 	if ( override_logfile )
 		setup_logging( lp_logfile(), False );
@@ -3645,6 +3648,9 @@ static int do_message_op(void)
 	
 	if ( strlen(new_workgroup) != 0 )
 		set_global_myworkgroup( new_workgroup );
+
+	if ( strlen(calling_name) != 0 )
+		set_global_myname( calling_name );
 
 	if(poptPeekArg(pc)) {
 		pstrcpy(service,poptGetArg(pc));  
