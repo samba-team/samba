@@ -1,5 +1,59 @@
 2002-04-18  Johan Danielsson  <joda@pdc.kth.se>
 
+	* acconfig.h: remove some stuff that is defined elsewhere
+
+	* lib/krb5/krb5_locl.h: include <sys/file.h>
+
+	* lib/krb5/acl.c: rename acl_string parameter
+
+	* lib/krb5/Makefile.am: remove __P from protos, and put parameter
+	names in comments
+
+	* kuser/klist.c: better align some headers
+
+	* kdc/kerberos4.c: storage tweaks
+
+	* kdc/kaserver.c: storage tweaks
+
+	* kdc/524.c: storage tweaks
+
+	* lib/krb5/keytab_krb4.c: storage tweaks
+
+	* lib/krb5/keytab_keyfile.c: storage tweaks
+
+	* lib/krb5/keytab_file.c: storage tweaks; also try to handle zero
+	sized keytab files
+
+	* lib/krb5/keytab_any.c: use KRB5_KT_END instead of KRB5_CC_END
+
+	* lib/krb5/fcache.c: storage tweaks
+
+	* lib/krb5/store_mem.c: make the krb5_storage opaque, and add
+	function wrappers for store/fetch/seek, and also make the eof-code
+	configurable
+
+	* lib/krb5/store_fd.c: make the krb5_storage opaque, and add
+	function wrappers for store/fetch/seek, and also make the eof-code
+	configurable
+
+	* lib/krb5/store_emem.c: make the krb5_storage opaque, and add
+	function wrappers for store/fetch/seek, and also make the eof-code
+	configurable
+
+	* lib/krb5/store.c: make the krb5_storage opaque, and add function
+	wrappers for store/fetch/seek, and also make the eof-code
+	configurable
+
+	* lib/krb5/store-int.h: make the krb5_storage opaque, and add
+	function wrappers for store/fetch/seek, and also make the eof-code
+	configurable
+
+	* lib/krb5/krb5.h: make the krb5_storage opaque, and add function
+	wrappers for store/fetch/seek, and also make the eof-code
+	configurable
+
+	* include/bits.c: include <sys/socket.h> to get socklen_t
+
 	* kdc/kerberos5.c (get_pa_etype_info): sort ETYPE-INFOs by
 	requested KDC-REQ etypes
 

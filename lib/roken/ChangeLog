@@ -1,3 +1,13 @@
+2002-04-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken.h.in: move mini_inetd protos to after addrinfo definition
+
+	* snprintf.c (append_number): make rep const
+
+	* getarg.h: rename optind and optarg to avoid some gcc warnings
+
+	* getarg.c: rename optind and optarg to avoid some gcc warnings
+
 2002-02-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* mini_inetd.c: mini_inetd_addrinfo that takes an addrinfo instead
