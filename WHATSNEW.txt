@@ -1,5 +1,21 @@
-              WHATS NEW IN Samba 2.0.9
-              ========================
+              WHATS NEW IN Samba 2.0.10
+              =========================
+
+Samba 2.0.10 is a security bugfix release. The security hole that is
+fixed would allow an attacker to exploit certain values of the "log
+file" option in Samba that contains the %m macro in order to overwrite
+system files and compromise security.
+
+Note that the Samba Team recommends that the much more advanced 2.2.x
+release of Samba be used by all sites. This release is only being made
+for sites that do not wish to upgrade to 2.2.x at this time.
+
+Samba Team
+June 2001
+
+----------------------
+
+Previous release notes for 2.0.9:
 
 Samba 2.0.9 is a security bugfix release. Previous versions of Samba
 had a bug with the handling of temporary files that allows local users
