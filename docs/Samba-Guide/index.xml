@@ -42,6 +42,9 @@
 	<xi:include href="Chap06-MakingHappyUsers.xml"/>
 	<xi:include href="Chap07-2000UserNetwork.xml"/>
 	<xi:include href="Chap08-MigrateNT4Samba3.xml"/>
+<!---
+	<xi:include href="Chap08b-MigrateNW4Samba3.xml"/>
+-->
 	<xi:include href="Chap09-AddingUNIXClients.xml"/>
 	<xi:include href="Chap10-KerberosFastStart.xml"/>
 	<xi:include href="Chap10b-DomainAppsSupport.xml"/>
