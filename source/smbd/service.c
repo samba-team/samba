@@ -329,7 +329,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		*ecode = ERRnoresource;
-		conn_free(conn);
 		return NULL;
 	}
 
