@@ -579,6 +579,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_user.o  \
 		nsswitch/winbindd_group.o \
 		nsswitch/winbindd_idmap.o \
+		nsswitch/winbindd_idmap_tdb.o \
 		nsswitch/winbindd_util.o  \
 		nsswitch/winbindd_cache.o \
 		nsswitch/winbindd_pam.o   \
