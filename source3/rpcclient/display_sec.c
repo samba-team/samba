@@ -56,7 +56,7 @@ char *get_sec_mask_str(uint32 type)
 	if (type & DELETE_ACCESS)
 		fstrcat(typestr, "DELETE_ACCESS ");
 
-	printf("Specific bits: 0x%x\n", type&SPECIFIC_RIGHTS_MASK);
+	printf("\t\tSpecific bits: 0x%x\n", type&SPECIFIC_RIGHTS_MASK);
 
 	return typestr;
 }
