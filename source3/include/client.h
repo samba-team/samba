@@ -57,6 +57,13 @@ struct print_job_info
 	time_t t;
 };
 
+typedef struct smb_sign_info {
+	BOOL use_smb_signing;
+	size_t mac_key_len;
+	uint8 mac_key[44];
+	uint32 seq_num;
+} smb_sign_info;
+
 struct cli_state {
 	int port;
 	int fd;
@@ -108,6 +115,8 @@ struct cli_state {
 	uint32 capabilities;
 
 	TALLOC_CTX *mem_ctx;
+
+	smb_sign_info sign_info;
 
 	/*
 	 * Only used in NT domain calls.

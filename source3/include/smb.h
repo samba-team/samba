@@ -1281,6 +1281,12 @@ char *strdup(char *s);
 #define BROWSER_ELECTION_VERSION	0x010f
 #define BROWSER_CONSTANT	0xaa55
 
+/* Sercurity mode bits. */
+#define NEGOTIATE_SECURITY_USER_LEVEL		0x01
+#define NEGOTIATE_SECURITY_CHALLENGE_RESPONSE	0x02
+#define NEGOTIATE_SECURITY_SIGNATURES_ENABLED	0x04
+#define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
+
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
    
 #define FLAGS2_LONG_PATH_COMPONENTS   0x0001
@@ -1310,7 +1316,7 @@ char *strdup(char *s);
 #define CAP_W2K_SMBS         0x2000
 #define CAP_LARGE_READX      0x4000
 #define CAP_LARGE_WRITEX     0x8000
-#define CAP_UNIX                0x800000 /* Capabilities for UNIX extensions. Created by HP. */
+#define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
 #define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols

@@ -236,8 +236,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DATA_BLOB secblob;
 	int i;
 	uint32 ntlmssp_command, neg_flags, chal_flags;
-	DATA_BLOB sess_key, chal, spnego_chal, extra_data;
-	char *workstation, *domain;
+	DATA_BLOB chal, spnego_chal, extra_data;
 	const uint8 *cryptkey;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
@@ -313,7 +312,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		NTLMSSP_CHAL_TARGET_INFO;
 	
 	{
-		DATA_BLOB domain_blob, netbios_blob, realm_blob, ident_info_blob;
+		DATA_BLOB domain_blob, netbios_blob, realm_blob;
 		
 		msrpc_gen(&domain_blob, 
 			  "U",
