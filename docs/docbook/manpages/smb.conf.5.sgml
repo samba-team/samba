@@ -5816,6 +5816,8 @@
 		linkend="PRINTERSSECT">[printers]</link> section above for reasons 
 		why you might want to do this.</para>
 
+		<para>To use the CUPS printing interface set <command>printcap name = cups
+		</command>.</para>
 		<para>On System V systems that use <command>lpstat</command> to 
 		list available printers you can use <command>printcap name = lpstat
 		</command> to automatically obtain lists of available printers. This 
