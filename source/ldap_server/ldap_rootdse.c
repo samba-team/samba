@@ -25,20 +25,13 @@
 #include "lib/ldb/include/ldb.h"
 
 #define ATTR_BLOB_CONST(val) data_blob_talloc(mem_ctx, val, sizeof(val)-1)
+
 #define ATTR_SINGLE_NOVAL(ctx, attr, blob, num, nam) do { \
 	attr->name = talloc_strdup(ctx, nam);\
-	if (!attr->name) {\
-		return NT_STATUS_NO_MEMORY;\
-	}\
+	NT_STATUS_HAVE_NO_MEMORY(attr->name);\
 	attr->num_values = num; \
 	attr->values = blob;\
 } while(0)
-#define ALLOC_CHECK(ptr) do {\
-	if (!(ptr)) {\
-		return NT_STATUS_NO_MEMORY;\
-	}\
-} while(0)
-
 
 struct rootdse_db_context {
 	struct ldb_context *ldb;
@@ -133,7 +126,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
 		int num_currentTime = 1;
 		DATA_BLOB *currentTime = talloc_array_p(mem_ctx, DATA_BLOB, num_currentTime);
 		char *str = ldap_timestring(mem_ctx, time(NULL));
-		ALLOC_CHECK(str);
+		NT_STATUS_HAVE_NO_MEMORY(str);
 		currentTime[0].data = (uint8_t *)str;
 		currentTime[0].length = strlen(str);
 		ATTR_SINGLE_NOVAL(mem_ctx, attrs, currentTime, num_currentTime, "currentTime");
@@ -322,14 +315,14 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	}
 
 	local_ctx = talloc_named(call, 0, "rootdse_Search local memory context");
-	ALLOC_CHECK(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	rootdsedb = rootdse_db_connect(local_ctx);
-	ALLOC_CHECK(rootdsedb);
+	NT_STATUS_HAVE_NO_MEMORY(rootdsedb);
 
 	if (r->num_attributes >= 1) {
 		attrs = talloc_array_p(rootdsedb, const char *, r->num_attributes+1);
-		ALLOC_CHECK(attrs);
+		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (j=0; j < r->num_attributes; j++) {
 			DEBUG(10,("rootDSE_Search: attrs: [%s]\n",r->attributes[j]));
@@ -343,7 +336,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 
 	if (count == 1) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
-		ALLOC_CHECK(ent_r);
+		NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
 		ent = &ent_r->msg.r.SearchResultEntry;
 		ent->dn = "";
@@ -354,7 +347,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		}
 		ent->num_attributes = res[0]->num_elements;
 		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
-		ALLOC_CHECK(ent->attributes);
+		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[0]->elements[j].name);
 			ent->attributes[j].num_values = 0;
@@ -369,7 +362,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 			} else {
 				ent->attributes[j].values = talloc_array_p(ent->attributes,
 								DATA_BLOB, ent->attributes[j].num_values);
-				ALLOC_CHECK(ent->attributes[j].values);
+				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
 				for (y=0; y < ent->attributes[j].num_values; y++) {
 					ent->attributes[j].values[y].length = res[0]->elements[j].values[y].length;
 					ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
@@ -385,7 +378,7 @@ queue_reply:
 	}
 
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
-	ALLOC_CHECK(done_r);
+	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
 	if (count == 1) {
 		DEBUG(10,("rootdse_Search: results: [%d]\n",count));
