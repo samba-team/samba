@@ -23,19 +23,14 @@ int
 pop_pass (POP *p)
 {
     struct passwd  *   pw;
-#ifdef KERBEROS
     char lrealm[REALM_SZ];
     int status; 
-#else
-    char *crypt();
-#endif /* KERBEROS */
 
     /*  Look for the user in the password file */
     if ((pw = k_getpwnam(p->user)) == NULL)
         return (pop_msg(p,POP_FAILURE,
             "Password supplied for \"%s\" is incorrect.",p->user));
 
-#ifdef KERBEROS
     if ((status = krb_get_lrealm(lrealm,1)) == KFAILURE) {
         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, kdata.pname, 
                 kdata.pinst, kdata.prealm, krb_get_err_text(status));
@@ -43,45 +38,29 @@ pop_pass (POP *p)
             "Kerberos error:  \"%s\".", krb_get_err_text(status)));
     }
 
-    if (kuserok (&kdata, p->user)) {
-	 pop_log(p, POP_FAILURE,
-		 "%s: (%s.%s@%s) tried to retrieve mail for %s.",
-		 p->client, kdata.pname, kdata.pinst, kdata.prealm,
-		 p->user);
-	 return(pop_msg(p,POP_FAILURE,
-			"Popping not authorized"));
+    if (!p->kerberosp) {
+	 /*  We don't accept connections from users with null passwords */
+	 if (pw->pw_passwd == NULL)
+	      return (pop_msg(p,
+			      POP_FAILURE,
+			      "Password supplied for \"%s\" is incorrect.",
+			      p->user));
+
+	if (krb_verify_user(p->user, "", lrealm, p->pop_parm[1], 1) &&
+	    verify_unix_user(p->user, p->pop_parm[1]))
+	     return (pop_msg(p,POP_FAILURE,
+			     "Password supplied for \"%s\" is incorrect.",
+			     p->user));
+    } else {
+	 if (kuserok (&kdata, p->user)) {
+	      pop_log(p, POP_FAILURE,
+		      "%s: (%s.%s@%s) tried to retrieve mail for %s.",
+		      p->client, kdata.pname, kdata.pinst, kdata.prealm,
+		      p->user);
+	      return(pop_msg(p,POP_FAILURE,
+			     "Popping not authorized"));
+	 }
     }
-
-#if 0
-    if (strcmp(kdata.prealm,lrealm))  {
-         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) realm not accepted.", 
-                 p->client, kdata.pname, kdata.pinst, kdata.prealm);
-         return(pop_msg(p,POP_FAILURE,
-                     "Kerberos realm \"%s\" not accepted.", kdata.prealm));
-    }
-
-    if (strcmp(kdata.pinst,"")) {
-        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) instance not accepted.", 
-                 p->client, kdata.pname, kdata.pinst, kdata.prealm);
-        return(pop_msg(p,POP_FAILURE,
-              "Must use null Kerberos(tm) instance -  \"%s.%s\" not accepted.",
-              kdata.pname, kdata.pinst));
-    }
-#endif
-
-#else /* !KERBEROS */
-
-    /*  We don't accept connections from users with null passwords */
-    if (pw->pw_passwd == NULL)
-        return (pop_msg(p,POP_FAILURE,
-            "Password supplied for \"%s\" is incorrect.",p->user));
-
-    /*  Compare the supplied password with the password file entry */
-    if (strcmp (crypt (p->pop_parm[1], pw->pw_passwd), pw->pw_passwd) != 0)
-        return (pop_msg(p,POP_FAILURE,
-            "Password supplied for \"%s\" is incorrect.",p->user));
-
-#endif /* !KERBEROS */
 
     /*  Build the name of the user's maildrop */
     (void)sprintf(p->drop_name,"%s/%s",POP_MAILDIR,p->user);

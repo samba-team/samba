@@ -23,7 +23,7 @@ extern int      errno;
 
 static
 int
-authenticate(POP *p, struct sockaddr_in *addr)
+krb_authenticate(POP *p, struct sockaddr_in *addr)
 {
 
 #ifdef KERBEROS
@@ -53,6 +53,13 @@ authenticate(POP *p, struct sockaddr_in *addr)
 
 #endif /* KERBEROS */
 
+    return(POP_SUCCESS);
+}
+
+static
+int
+plain_authenticate (POP *p, struct sockaddr_in *addr)
+{
     return(POP_SUCCESS);
 }
 
@@ -91,7 +98,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 #endif
 
     /*  Process command line arguments */
-    while ((c = getopt(argcount,argmessage,"dt:")) != EOF)
+    while ((c = getopt(argcount,argmessage,"kdt:")) != EOF)
         switch (c) {
 
             /*  Debugging requested */
@@ -111,6 +118,11 @@ pop_init(POP *p,int argcount,char **argmessage)
                 }
                 trace_file_name = optarg;
                 break;
+
+	    /* Use kerberos version of POP3 protocol */
+	    case 'k':
+		p->kerberosp = 1;
+		break;
 
             /*  Timeout value passed.  Default changed */
             case 'T':
@@ -225,5 +237,5 @@ pop_init(POP *p,int argcount,char **argmessage)
         pop_log(p,POP_PRIORITY,"Debugging turned on");
 #endif /* DEBUG */
 
-    return(authenticate(p, &cs));
+    return((p->kerberosp ? krb_authenticate : plain_authenticate)(p, &cs));
 }

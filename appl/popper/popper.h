@@ -220,6 +220,7 @@ typedef struct  {                               /*  POP parameter block */
     char            *   pop_parm[MAXPARMCOUNT]; /*  Parse POP parameter list */
     int                 parm_count;             /*  Number of parameters in 
                                                     parsed list */
+    int			kerberosp;		/*  Using KPOP? */
 } POP;
 
 int pop_dele(POP *p);
