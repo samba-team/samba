@@ -826,7 +826,7 @@ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
  Check if a string is part of a list.
 **/
 
-BOOL in_list(char *s,char *list,BOOL casesensitive)
+BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 {
 	pstring tok;
 	const char *p=list;
