@@ -615,7 +615,7 @@ static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
 
 	/* 
 	 * Flags should always be zero when the change notify
-	 * is registered by the cliebnt's spooler.  A user Win32 app
+	 * is registered by the client's spooler.  A user Win32 app
 	 * might use the flags though instead of the NOTIFY_OPTION_INFO 
 	 * --jerry
 	 */
@@ -5936,6 +5936,13 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
+
+		/* 
+		 * make sure we actually reload the services after 
+		 * this as smb.conf could have a new section in it 
+		 * .... shouldn't .... but could
+		 */
+		reload_services(False);	
 	}
 	
 	/*
@@ -8871,11 +8878,24 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	DEBUG(4,("_spoolss_enumprinterdataex\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_enumprinterdata: Invalid handle (%s:%u:%u1<).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_enumprinterdataex: Invalid handle (%s:%u:%u1<).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
-	/* first get the printer off of disk */
+	/* 
+	 * first check for a keyname of NULL or "".  Win2k seems to send 
+	 * this a lot and we should send back WERR_INVALID_PARAM
+	 * no need to spend time looking up the printer in this case.
+	 * --jerry
+	 */
+	 
+	unistr2_to_dos(key, &q_u->key, sizeof(key) - 1);
+	if ( !strlen(key) ) {
+		result = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	/* get the printer off of disk */
 	
 	if (!get_printer_snum(p,handle, &snum))
 		return WERR_BADFID;
@@ -8971,7 +8991,8 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	
 		
 done:	
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 
 	return result;
 }
