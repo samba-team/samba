@@ -240,6 +240,12 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	if (from->fields_present & ACCT_FLAGS) {
 		DEBUG(10,("INFO_21 ACCT_CTRL: %08X -> %08X\n",pdb_get_acct_ctrl(to),from->acb_info));
 		if (from->acb_info != pdb_get_acct_ctrl(to)) {
+			if (!(from->acb_info & ACB_AUTOLOCK) && (pdb_get_acct_ctrl(to) & ACB_AUTOLOCK)) {
+				/* We're unlocking a previously locked user. Reset bad password counts.
+				   Patch from Jianliang Lu. <Jianliang.Lu@getronics.com> */
+				pdb_set_bad_password_count(to, 0, PDB_CHANGED);
+				pdb_set_bad_password_time(to, 0, PDB_CHANGED);
+			}
 			pdb_set_acct_ctrl(to, from->acb_info, PDB_CHANGED);
 		}
 	}
