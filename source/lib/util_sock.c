@@ -52,6 +52,23 @@ static char *get_socket_addr(int fd)
 	return addr_buf;
 }
 
+static int get_socket_port(int fd)
+{
+	struct sockaddr sa;
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	socklen_t length = sizeof(sa);
+
+	if (fd == -1)
+		return -1;
+	
+	if (getsockname(fd, &sa, &length) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
+		return -1;
+	}
+	
+	return ntohs(sockin->sin_port);
+}
+
 /****************************************************************************
  Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
@@ -835,6 +852,11 @@ char *client_addr(void)
 char *client_socket_addr(void)
 {
 	return get_socket_addr(client_fd);
+}
+
+int client_socket_port(void)
+{
+	return get_socket_port(client_fd);
 }
 
 struct in_addr *client_inaddr(struct sockaddr *sa)
