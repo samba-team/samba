@@ -543,7 +543,8 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
         fstring 	srv_name, 
 			printer_name, 
 			driver_name,
-			port_name;
+			port_name,
+			share_name;
 	POLICY_HND hnd;
 	PRINTER_INFO_2 	print_info_2;
 	PORT_INFO_1	*port_info_1 = NULL;
@@ -561,15 +562,16 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
         strupper(srv_name);
 
 	/* check (and copy) the command line arguments */
-        if (argc < 3) {
-                report(out_hnd, "spooladdprinterex <name> <driver> <port>\n");
+        if (argc < 4) {
+                report(out_hnd, "spooladdprinterex <name> <shared name> <driver> <port>\n");
                 return NT_STATUS_INVALID_PARAMETER;
         }
 	else
 	{
 		fstrcpy(printer_name, argv[1]);
-        	fstrcpy(driver_name, argv[2]);
-		fstrcpy(port_name, argv[3]);
+		fstrcpy(share_name, argv[2]);
+        	fstrcpy(driver_name, argv[3]);
+		fstrcpy(port_name, argv[4]);
 	}
 	
 	/* Verify that the specified port is ok; spoolss_enum_ports() should 
@@ -637,7 +639,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	ZERO_STRUCTP(&print_info_2);
 	/* init_unistr( &print_info_2.servername, 	srv_name); */
 	init_unistr( &print_info_2.printername,	printer_name);
-	/* init_unistr( &print_info_2.sharename, 	share_name); */
+	init_unistr( &print_info_2.sharename, 	share_name);
 	init_unistr( &print_info_2.portname,	port_name);
 	init_unistr( &print_info_2.drivername,	driver_name);
 	init_unistr( &print_info_2.comment,	"Created by rpcclient");
@@ -648,7 +650,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	/* init_unistr( &print_info_2.parameters,	""); */
 	print_info_2.devmode = NULL;
 	print_info_2.secdesc = NULL;
-	print_info_2.attributes 	= 0;
+	print_info_2.attributes 	= PRINTER_ATTRIBUTE_SHARED;
 	print_info_2.priority 		= 0;
 	print_info_2.defaultpriority	= 0;
 	print_info_2.starttime		= 0;
