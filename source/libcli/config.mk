@@ -38,7 +38,8 @@ REQUIRED_SUBSYSTEMS = LIBNDR_RAW NDR_NBT SOCKET LIBCLI_COMPOSITE_BASE LIBEVENTS
 [SUBSYSTEM::LIBCLI_DGRAM]
 ADD_OBJ_FILES = \
 	libcli/dgram/dgramsocket.o \
-	libcli/dgram/mailslot.o
+	libcli/dgram/mailslot.o \
+	libcli/dgram/netlogon.o
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
