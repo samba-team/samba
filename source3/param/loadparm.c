@@ -300,9 +300,6 @@ typedef struct
 	char *szQueuepausecommand;
 	char *szQueueresumecommand;
 	char *szPrintername;
-	char *szPrinterDriver;
-	char *szPrinterDriverLocation;
-	char *szDriverFile;
 	char *szDontdescend;
 	char **szHostsallow;
 	char **szHostsdeny;
@@ -357,7 +354,6 @@ typedef struct
 	BOOL bGuest_only;
 	BOOL bGuest_ok;
 	BOOL bPrint_ok;
-	BOOL bPostscript;
 	BOOL bMap_system;
 	BOOL bMap_hidden;
 	BOOL bMap_archive;
@@ -422,9 +418,6 @@ static service sDefault = {
 	NULL,			/* szQueuepausecommand */
 	NULL,			/* szQueueresumecommand */
 	NULL,			/* szPrintername */
-	NULL,			/* szPrinterDriver - this is set in init_globals() */
-	NULL,			/* szPrinterDriverLocation */
-	NULL,			/* szDriverFile */
 	NULL,			/* szDontdescend */
 	NULL,			/* szHostsallow */
 	NULL,			/* szHostsdeny */
@@ -479,7 +472,6 @@ static service sDefault = {
 	False,			/* bGuest_only */
 	False,			/* bGuest_ok */
 	False,			/* bPrint_ok */
-	False,			/* bPostscript */
 	False,			/* bMap_system */
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
@@ -884,7 +876,6 @@ static struct parm_struct parm_table[] = {
 	{"printcap", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_HIDE},
 	{"printable", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_PRINT},
 	{"print ok", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_HIDE},
-	{"postscript", P_BOOL, P_LOCAL, &sDefault.bPostscript, NULL, NULL, FLAG_PRINT | FLAG_DEPRECATED},
 	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, NULL, enum_printing, FLAG_PRINT | FLAG_GLOBAL},
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
 	{"disable spoolss", P_BOOL, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
@@ -905,9 +896,6 @@ static struct parm_struct parm_table[] = {
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_HIDE},
 	{"use client driver", P_BOOL, P_LOCAL, &sDefault.bUseClientDriver, NULL, NULL, FLAG_PRINT},
 	{"default devmode", P_BOOL, P_LOCAL, &sDefault.bDefaultDevmode, NULL, NULL, FLAG_PRINT},
-	{"printer driver", P_STRING, P_LOCAL, &sDefault.szPrinterDriver, NULL, NULL, FLAG_PRINT | FLAG_DEPRECATED},
-	{"printer driver file", P_STRING, P_LOCAL, &sDefault.szDriverFile, NULL, NULL, FLAG_PRINT | FLAG_DEPRECATED},
-	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL | FLAG_DEPRECATED},
 
 	{"Filename Handling", P_SEP, P_SEPARATOR},
 	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1104,9 +1092,6 @@ Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
 static void init_printer_values(void)
 {
-	string_set(&sDefault.szPrinterDriver, "");
-	string_set(&sDefault.szDriverFile, dyn_DRIVERFILE);
-
 	/* choose defaults depending on the type of printing */
 	switch (sDefault.iPrinting)
 	{
@@ -1713,8 +1698,6 @@ FN_LOCAL_STRING(lp_lpresumecommand, szLpresumecommand)
 FN_LOCAL_STRING(lp_queuepausecommand, szQueuepausecommand)
 FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
 static FN_LOCAL_STRING(_lp_printername, szPrintername)
-FN_LOCAL_STRING(lp_driverfile, szDriverFile)
-FN_LOCAL_STRING(lp_printerdriver, szPrinterDriver)
 FN_LOCAL_LIST(lp_hostsallow, szHostsallow)
 FN_LOCAL_LIST(lp_hostsdeny, szHostsdeny)
 FN_LOCAL_STRING(lp_magicscript, szMagicScript)
@@ -1734,7 +1717,6 @@ FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
 FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
-FN_LOCAL_STRING(lp_driverlocation, szPrinterDriverLocation)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
@@ -1753,7 +1735,6 @@ FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
 FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
 FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
-FN_LOCAL_BOOL(lp_postscript, bPostscript)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_locking, bLocking)

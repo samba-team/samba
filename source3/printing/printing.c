@@ -1572,17 +1572,6 @@ to open spool file %s.\n", pjob.filename));
 
 	release_print_db(pdb);
 
-	/*
-	 * If the printer is marked as postscript output a leading
-	 * file identifier to ensure the file is treated as a raw
-	 * postscript file.
-	 * This has a similar effect as CtrlD=0 in WIN.INI file.
-	 * tim@fsg.com 09/06/94
-	 */
-	if (lp_postscript(snum)) {
-		print_job_write(snum, jobid, "%!\n",3);
-	}
-
 	return jobid;
 
  fail:
