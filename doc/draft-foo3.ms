@@ -24,9 +24,10 @@ Expire in six months
 .ce
 Kerberos vs firewalls
 
-.ti 0
+.SH
 Status of this Memo
 
+.LP
 .in 3
 This document is an Internet-Draft.  Internet-Drafts are working
 documents of the Internet Engineering Task Force (IETF), its
@@ -61,8 +62,8 @@ insecure networks.
 
 Firewalling is a technique for achieving an illusion of security by
 putting restrictions on what kinds of packets and how these are sent
-between the internal (so called ``secure'') network and the global
-Internet.
+between the internal (so called ``secure'') network and the global (or
+``insecure'') Internet.
 
 .ti 0
 Definitions
@@ -80,34 +81,45 @@ client, for example telnetd.
 .ti 0
 Firewalls
 
-There are different kinds of firewalls. The main difference is in the
-way it forwards your packets. The easiest types of firewall are the
-ones that just imposes restrictions on incoming packets. Such a
-firewall could be described as a router that just throws away packets
-that match some criteria. They may also ``hide'' some or all addresses
-on the inside of the firewall, replacing the addresses in the outgoing
-packets with the address of the firewall (aka network address
-translation, or NAT). NAT can also be used without any packet
-filtering, for instance when you have more than one host sharing a
-single dialed-in PPP connection.
+A firewall is usually placed between the ``inside'' and the
+``outside'' and is supposed to protect the inside from the evils on
+the outside.  There are different kinds of firewalls.  The main
+differences are in the way they forward packets.
 
+.IP 1
+The most straight forward type is the one that just imposes
+restrictions on incoming packets. Such a firewall could be described
+as a router that just throws away packets that match some
+criteria.
+
+.IP 2
+They may also ``hide'' some or all addresses on the inside of the
+firewall, replacing the addresses in the outgoing packets with the
+address of the firewall (aka network address translation, or NAT). NAT
+can also be used without any packet filtering, for instance when you
+have more than one host sharing a single address (for example, with a
+dialed-in PPP connection).
+
+.LP
 There are also firewalls that does NAT both on the inside and the
 outside (a server on the inside will see this as a connection from the
 firewall).
 
+.IP 3
 A third type is the proxy type firewall, that parses the contents of
 the packets, basically acting as a server to the client, and as a
-client to the server. If Kerberos is to be used with this kind of
-firewall, a protocol module that handles KDC requests has to be
-written.
+client to the server (man-in-the-middle). If Kerberos is to be used
+with this kind of firewall, a protocol module that handles KDC
+requests has to be written.
 
-This type of firewall also might add extra trouble when used with
+.LP
+This type of firewall might also add extra trouble when used with
 kerberised versions of protocols that the proxy understands, in
 addition to the ones mentioned below.
 
 This is the case with the FTP Security Extensions [RFC2228], that adds
 a new set of commands to the FTP protocol [RFC959], for integrity,
-confidentiality and privacy protecting commands. When transferring
+confidentiality, and privacy protecting commands. When transferring
 data, the FTP protocol uses a separate data channel, and an FTP proxy
 will have to look out for commands that start a data transfer. If all
 commands are encrypted, this is impossible.
@@ -178,6 +190,9 @@ References
 .in 3
 [RFC1510] Kohl, J. and Neuman, C., "The Kerberos Network
 Authentication Service (V5)", RFC 1510, September 1993.
+
+[RFC2228] Horowitz, M. and Lunt, S., "FTP Security Extensions",
+RFC2228, October 1997.
 
 .ti 0
 Authors' Addresses
