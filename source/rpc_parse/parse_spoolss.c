@@ -2907,6 +2907,8 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
 ********************************************************************/  
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth)
 {
+	uint32 ptr_sec_desc = 0;
+
 	prs_debug(ps, depth, desc, "spoolss_io_q_setprinter");
 	depth++;
 
@@ -2924,8 +2926,24 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
 		return False;
 	
-	if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
-		return False;
+	switch (q_u->level)
+	{
+		case 2:
+		{
+			ptr_sec_desc = q_u->info.info_2->secdesc_ptr;
+			break;
+		}
+		case 3:
+		{
+			ptr_sec_desc = q_u->info.info_3->secdesc_ptr;
+			break;
+		}
+	}
+	if (ptr_sec_desc)
+	{
+		if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
+			return False;
+	}
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
 		return False;
