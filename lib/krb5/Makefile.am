@@ -99,7 +99,7 @@ $(srcdir)/krb5-protos.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -o krb5-protos.h $(libkrb5_la_SOURCES) || rm -f krb5-protos.h
 
 $(srcdir)/krb5-private.h:
-	cd $(srcdir); perl ../../cf/make-proto.pl -p krb5-private.h $(libkrb5_la_SOURCES) || rm -f krb5-protos.h
+	cd $(srcdir); perl ../../cf/make-proto.pl -p krb5-private.h $(libkrb5_la_SOURCES) || rm -f krb5-private.h
 
 libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
