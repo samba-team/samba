@@ -173,9 +173,12 @@ static BOOL wcache_server_down(struct winbindd_domain *domain)
 static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 {
 	NTSTATUS status;
+	unsigned time_diff;
+
+	time_diff = time(NULL) - domain->last_seq_check;
 
 	/* see if we have to refetch the domain sequence number */
-	if (!force && (time(NULL) - domain->last_seq_check < lp_winbind_cache_time())) {
+	if (!force && (time_diff < lp_winbind_cache_time())) {
 		return;
 	}
 
