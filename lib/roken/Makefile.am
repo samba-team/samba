@@ -2,12 +2,12 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-CLEANFILES = roken.h make-roken.c print_version.h
+CLEANFILES = roken.h make-roken.c
 
 lib_LTLIBRARIES = libroken.la
 libroken_la_LDFLAGS = -version-info 8:1:3
 
-noinst_PROGRAMS = make-roken make-print-version
+noinst_PROGRAMS = make-roken
 
 check_PROGRAMS = parse_bytes-test \
 		strpftime-test \
@@ -21,14 +21,6 @@ parse_bytes_test_LDADD = libroken.la
 strpftime_test_SOURCES = strpftime-test.c strftime.c strptime.c snprintf.c
 snprintf_test_SOURCES  = snprintf-test.c snprintf.c
 snprintf_test_LDADD    = -lm
-
-if KRB4
-if KRB5
-## need to link with des here; otherwise, if krb4 is shared the link
-## will fail with unresolved references
-make_print_version_LDADD += $(LIB_krb4) -ldes
-endif
-endif
 
 libroken_la_SOURCES =		\
 	base64.c		\
@@ -53,7 +45,6 @@ libroken_la_SOURCES =		\
 	parse_bytes.c		\
 	parse_time.c		\
 	parse_units.c		\
-	print_version.c		\
 	resolve.c		\
 	roken_gethostby.c	\
 	signal.c		\
@@ -180,10 +171,3 @@ roken.h: make-roken$(EXEEXT)
 
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
-
-print_version.lo: print_version.h
-
-print_version.h: make-print-version$(EXEEXT)
-	./make-print-version$(EXEEXT) print_version.h
-
-make-print-version.o: $(top_builddir)/include/version.h
