@@ -2,7 +2,7 @@ Summary: SMB client and server
 Name: samba
 %define	version 1.9.17
 Version: %{version}
-Release: 4
+Release: 5
 Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-%{version}.tar.gz
@@ -88,6 +88,7 @@ install -m644 examples/simple/smb.conf $RPM_BUILD_ROOT/etc/smb.conf.sampl
 install -m644 examples/redhat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
 install -m755 examples/redhat/smbprint $RPM_BUILD_ROOT/usr/bin
 install -m755 examples/redhat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
+install -m755 examples/redhat/smb.init $RPM_BUILD_ROOT/usr/sbin/samba
 install -m644 examples/redhat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 examples/redhat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 
@@ -118,6 +119,9 @@ if [ "$1" = 0 ] ; then
   if [ -e /var/log/samba ]; then
     rm -rf /var/log/samba
   fi
+  if [ -e /var/lock/samba ]; then
+    rm -rf /var/lock/samba
+  fi
 fi
 
 %files
@@ -142,6 +146,7 @@ fi
 %attr(-,root,root) %config /etc/smb.conf
 %attr(-,root,root) %config /etc/smb.conf.sampl
 %attr(-,root,root) %config /etc/rc.d/init.d/smb
+%attr(755,root,root) %config /usr/sbin/samba
 %attr(-,root,root) %config /etc/rc.d/rc3.d/S91smb
 %attr(-,root,root) %config /etc/rc.d/rc5.d/S91smb
 %attr(-,root,root) %config /etc/rc.d/rc0.d/K35smb
