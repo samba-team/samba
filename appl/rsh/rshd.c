@@ -196,6 +196,7 @@ recv_krb5_auth (int s, u_char *buf,
     krb5_error_code status;
     krb5_authenticator authenticator;
     krb5_data cksum_data;
+    krb5_principal server;
 
     if (memcmp (buf, "\x00\x00\x00\x13", 4) != 0)
 	return -1;
@@ -209,14 +210,24 @@ recv_krb5_auth (int s, u_char *buf,
     
     krb5_init_context (&context);
 
+    status = krb5_sock_to_principal (context,
+				     s,
+				     "host",
+				     KRB5_NT_SRV_HST,
+				     &server);
+    if (status)
+	syslog_and_die ("krb5_sock_to_principal: %s",
+			krb5_get_err_text(context, status));
+
     status = krb5_recvauth(context,
 			   &auth_context,
 			   &s,
 			   KCMD_VERSION,
-			   NULL /*server */,
+			   server,
 			   KRB5_RECVAUTH_IGNORE_VERSION,
 			   NULL,
 			   &ticket);
+    krb5_free_principal (context, server);
     if (status)
 	syslog_and_die ("krb5_recvauth: %s",
 			krb5_get_err_text(context, status));
