@@ -2456,19 +2456,6 @@ void free_unix_grps(int ngroups, struct group *p_groups)
 }
 
 /*******************************************************************
-turn a uid into a user name
-********************************************************************/
-char *uidtoname(uid_t uid)
-{
-  static char name[40];
-  struct passwd *pass = getpwuid(uid);
-  if (pass) return(pass->pw_name);
-  slprintf(name, sizeof(name) - 1, "%d",(int)uid);
-  return(name);
-}
-
-
-/*******************************************************************
 turn a gid into a group name
 ********************************************************************/
 
