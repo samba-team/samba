@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -342,3 +344,5 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid)
 
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 }
+
+#undef OLD_NTDOMAIN

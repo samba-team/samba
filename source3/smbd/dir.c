@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -891,3 +893,5 @@ void DirCacheFlush(int snum)
 		entry = (dir_cache_entry *)next;
 	}
 }
+
+#undef OLD_NTDOMAIN

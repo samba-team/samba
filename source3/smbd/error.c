@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -144,3 +146,5 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
   
   return(outsize);
 }
+
+#undef OLD_NTDOMAIN

@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -657,3 +658,4 @@ void sync_file(connection_struct *conn, files_struct *fsp)
       conn->vfs_ops.fsync(fsp->fd);
     }
 }
+#undef OLD_NTDOMAIN

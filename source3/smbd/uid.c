@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -421,3 +423,5 @@ void unbecome_root(BOOL restore_dir)
 
 	become_root_depth = 0;
 }
+
+#undef OLD_NTDOMAIN

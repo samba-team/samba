@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1523,3 +1525,5 @@ BOOL domain_client_validate( char *user, char *domain,
   cli_shutdown(&cli);
   return True;
 }
+
+#undef OLD_NTDOMAIN
