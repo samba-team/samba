@@ -140,7 +140,7 @@ char *validated_username(uint16 vuid)
   user_struct *vuser = get_valid_user_struct(vuid);
   if (vuser == NULL)
     return 0;
-  return(vuser->name);
+  return(vuser->user.unix_name);
 }
 
 
@@ -246,8 +246,8 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   vuser->uid = uid;
   vuser->gid = gid;
   vuser->guest = guest;
-  fstrcpy(vuser->name,unix_name);
-  fstrcpy(vuser->requested_name,requested_name);
+  fstrcpy(vuser->user.unix_name,unix_name);
+  fstrcpy(vuser->user.smb_name,requested_name);
 
   vuser->n_groups = 0;
   vuser->groups  = NULL;
@@ -261,12 +261,12 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
   DEBUG(3, ("Clearing default real name\n"));
-  fstrcpy(vuser->real_name, "<Full Name>\0");
+  fstrcpy(vuser->user.real_name, "<Full Name>");
   if (lp_unix_realname()) {
-    if ((pwfile=sys_getpwnam(vuser->name))!= NULL)
+    if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL)
       {
-      DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
-      fstrcpy(vuser->real_name, pwfile->pw_gecos);
+      DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
+      fstrcpy(vuser->user.real_name, pwfile->pw_gecos);
       }
   }
 
@@ -707,9 +707,9 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check for a previously registered guest username */
       if (!ok && (vuser != 0) && vuser->guest) {	  
-	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, password, pwlen, NULL)) {
-	  fstrcpy(user, vuser->name);
+	if (user_ok(vuser->user.unix_name,snum) &&
+	    password_ok(vuser->user.unix_name, password, pwlen, NULL)) {
+	  fstrcpy(user, vuser->user.unix_name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
 	  ok = True;
@@ -744,8 +744,8 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
     /* check for a previously validated username/password pair */
     if (!ok && (!lp_revalidate(snum) || lp_security() > SEC_SHARE) &&
         (vuser != 0) && !vuser->guest &&
-        user_ok(vuser->name,snum)) {
-      fstrcpy(user,vuser->name);
+        user_ok(vuser->user.unix_name,snum)) {
+      fstrcpy(user,vuser->user.unix_name);
       *guest = False;
       DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
       ok = True;

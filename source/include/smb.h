@@ -603,14 +603,19 @@ struct dcinfo
 };
 
 
+typedef struct {
+	fstring smb_name; /* user name from the client */
+	fstring unix_name; /* unix user name of a validated user */
+	fstring real_name; /* to store real name from password file - simeon */
+	fstring domain; /* domain that the client specified */
+} userdom_struct;
+
 typedef struct
 {
 	uid_t uid; /* uid of a validated user */
 	gid_t gid; /* gid of a validated user */
 
-	fstring requested_name; /* user name from the client */
-	fstring name; /* unix user name of a validated user */
-	fstring real_name;   /* to store real name from password file - simeon */
+	userdom_struct user;
 	BOOL guest;
 
 	/* following groups stuff added by ih */

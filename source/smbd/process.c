@@ -495,7 +495,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         if(session_tag != UID_FIELD_INVALID)
           vuser = get_valid_user_struct(session_tag);           
         if(vuser != NULL)
-          pstrcpy( sesssetup_user, vuser->requested_name);
+          pstrcpy( sesssetup_user, vuser->user.smb_name);
       }
 
       /* does this protocol need to be run as root? */

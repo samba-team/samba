@@ -120,8 +120,8 @@ static void attempt_remote_rpc_connect(pipes_struct *p)
 	ZERO_STRUCT(usr);
 
 	/* set up unix credentials from the smb side, to feed over the pipe */
-	make_creds_unix(&usr.uxc, vuser->name, vuser->requested_name,
-					vuser->real_name, vuser->guest);
+	make_creds_unix(&usr.uxc, vuser->user.unix_name, vuser->user.smb_name,
+					vuser->user.real_name, vuser->guest);
 	usr.ptr_uxc = 1;
 	make_creds_unix_sec(&usr.uxs, vuser->uid, vuser->gid,
 					vuser->n_groups, vuser->groups);
