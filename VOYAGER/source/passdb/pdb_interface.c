@@ -324,134 +324,6 @@ static NTSTATUS context_delete_sam_account(struct pdb_context *context, SAM_ACCO
 	return sam_acct->methods->delete_sam_account(sam_acct->methods, sam_acct);
 }
 
-static NTSTATUS context_getgrsid(struct pdb_context *context,
-				 GROUP_MAP *map, DOM_SID sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	curmethods = context->pdb_methods;
-	while (curmethods){
-		ret = curmethods->getgrsid(curmethods, map, sid);
-		if (NT_STATUS_IS_OK(ret)) {
-			map->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_getgrgid(struct pdb_context *context,
-				 GROUP_MAP *map, gid_t gid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	curmethods = context->pdb_methods;
-	while (curmethods){
-		ret = curmethods->getgrgid(curmethods, map, gid);
-		if (NT_STATUS_IS_OK(ret)) {
-			map->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_getgrnam(struct pdb_context *context,
-				 GROUP_MAP *map, const char *name)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	curmethods = context->pdb_methods;
-	while (curmethods){
-		ret = curmethods->getgrnam(curmethods, map, name);
-		if (NT_STATUS_IS_OK(ret)) {
-			map->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_add_group_mapping_entry(struct pdb_context *context,
-						GROUP_MAP *map)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->add_group_mapping_entry(context->pdb_methods,
-							     map);
-}
-
-static NTSTATUS context_update_group_mapping_entry(struct pdb_context *context,
-						   GROUP_MAP *map)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->
-		pdb_methods->update_group_mapping_entry(context->pdb_methods, map);
-}
-
-static NTSTATUS context_delete_group_mapping_entry(struct pdb_context *context,
-						   DOM_SID sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->
-		pdb_methods->delete_group_mapping_entry(context->pdb_methods, sid);
-}
-
-static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
-					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
-					   BOOL unix_only)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->enum_group_mapping(context->pdb_methods,
-							sid_name_use, rmap,
-							num_entries, unix_only);
-}
-
 static NTSTATUS context_find_alias(struct pdb_context *context,
 				   const char *name, DOM_SID *sid)
 {
@@ -695,13 +567,6 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_add_sam_account = context_add_sam_account;
 	(*context)->pdb_update_sam_account = context_update_sam_account;
 	(*context)->pdb_delete_sam_account = context_delete_sam_account;
-	(*context)->pdb_getgrsid = context_getgrsid;
-	(*context)->pdb_getgrgid = context_getgrgid;
-	(*context)->pdb_getgrnam = context_getgrnam;
-	(*context)->pdb_add_group_mapping_entry = context_add_group_mapping_entry;
-	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
-	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
-	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
 
 	(*context)->pdb_find_alias = context_find_alias;
 	(*context)->pdb_create_alias = context_create_alias;
@@ -909,92 +774,6 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
 }
 
-BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrsid(pdb_context, map, sid));
-}
-
-BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrgid(pdb_context, map, gid));
-}
-
-BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrnam(pdb_context, map, name));
-}
-
-BOOL pdb_add_group_mapping_entry(GROUP_MAP *map)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_add_group_mapping_entry(pdb_context, map));
-}
-
-BOOL pdb_update_group_mapping_entry(GROUP_MAP *map)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_update_group_mapping_entry(pdb_context, map));
-}
-
-BOOL pdb_delete_group_mapping_entry(DOM_SID sid)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_delete_group_mapping_entry(pdb_context, sid));
-}
-
-BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
-			    int *num_entries, BOOL unix_only)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_enum_group_mapping(pdb_context, sid_name_use,
-						      rmap, num_entries, unix_only));
-}
-
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -1188,13 +967,6 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_sam_account = pdb_default_update_sam_account;
 	(*methods)->delete_sam_account = pdb_default_delete_sam_account;
 
-	(*methods)->getgrsid = pdb_default_getgrsid;
-	(*methods)->getgrgid = pdb_default_getgrgid;
-	(*methods)->getgrnam = pdb_default_getgrnam;
-	(*methods)->add_group_mapping_entry = pdb_default_add_group_mapping_entry;
-	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
-	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
-	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
 	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
 	(*methods)->delete_alias = pdb_default_delete_alias;
