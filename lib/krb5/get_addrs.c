@@ -43,6 +43,11 @@ RCSID("$Id$");
 #if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
 #include <sys/ioctl.h>
 #endif
+#ifdef __osf__
+/* hate */
+struct rtentry;
+struct mbuf;
+#endif
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif
