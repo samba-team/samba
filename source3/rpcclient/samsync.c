@@ -67,7 +67,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
                 int i;
 
                 for (i = 0; i < num_deltas; i++) {
-                        SAM_ACCOUNT_INFO *acct;
+                        SAM_ACCOUNT_INFO *a;
                         fstring acct_name, hex_nt_passwd, hex_lm_passwd;
                         uchar lm_passwd[16], nt_passwd[16];
 
@@ -76,29 +76,29 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
                         if (hdr_deltas[i].type != SAM_DELTA_ACCOUNT_INFO)
                                 continue;
 
-                        acct = &deltas[i].account_info;
+                        a = &deltas[i].account_info;
 
-                        unistr2_to_ascii(acct_name, &acct->uni_acct_name,
+                        unistr2_to_ascii(acct_name, &a->uni_acct_name,
                                          sizeof(acct_name) - 1);
 
                         /* Decode hashes from password hash */
 
-                        sam_pwd_hash(acct->user_rid, acct->pass.buf_lm_pwd, 
+                        sam_pwd_hash(a->user_rid, a->pass.buf_lm_pwd, 
                                      lm_passwd, 0);
-                        sam_pwd_hash(acct->user_rid, acct->pass.buf_nt_pwd, 
+                        sam_pwd_hash(a->user_rid, a->pass.buf_nt_pwd, 
                                      nt_passwd, 0);
 
                         /* Encode as strings */
 
                         smbpasswd_sethexpwd(hex_lm_passwd, lm_passwd,
-                                            acct->acb_info);
+                                            a->acb_info);
                         smbpasswd_sethexpwd(hex_nt_passwd, nt_passwd,
-                                            acct->acb_info);
+                                            a->acb_info);
 
                         /* Display user info */
 
                         printf("%s:%d:%s:%s:%s:LCT-0\n", acct_name,
-                               acct->user_rid, hex_lm_passwd, hex_nt_passwd,
+                               a->user_rid, hex_lm_passwd, hex_nt_passwd,
                                smbpasswd_encode_acb_info(
                                        deltas[i].account_info.acb_info));
                 }
