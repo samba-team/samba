@@ -50,9 +50,15 @@
     <para>Default: <command moreinfo="none">name resolve order = lmhosts host wins bcast</command></para>
 
     <para>Example: <command moreinfo="none">name resolve order = lmhosts bcast host</command></para>
-
+    
     <para>This will cause the local lmhosts file to be examined 
     first, followed by a broadcast attempt, followed by a normal 
     system hostname lookup.</para>
+
+    <para>When Samba is functioning in ADS security mode (<command moreinfo="none">security = ads</command>)
+    it is advised to use following settings for <parameter moreinfo="none">name resolve order</parameter>:</para>
+
+    <para><command moreinfo="none">name resolve order = wins bcast</command></para>
+    
 </listitem>
 </samba:parameter>
