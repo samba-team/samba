@@ -488,7 +488,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 			    struct samr_Password *lmNewHash, 
 			    struct samr_Password *ntNewHash,
 			    BOOL user_change,
-			    BOOL restrict,
+			    BOOL restrictions,
 			    uint32_t *reject_reason)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
@@ -544,7 +544,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 
 	if (new_pass) {
 		/* check the various password restrictions */
-		if (restrict && minPwdLength > strlen_m(new_pass)) {
+		if (restrictions && minPwdLength > strlen_m(new_pass)) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_TOO_SHORT;
 			}
@@ -552,7 +552,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		}
 		
 		/* possibly check password complexity */
-		if (restrict && pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
+		if (restrictions && pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
 		    !samdb_password_complexity_ok(new_pass)) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_COMPLEXITY;
@@ -568,7 +568,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		ntNewHash = &local_ntNewHash;
 	}
 
-	if (restrict && user_change) {
+	if (restrictions && user_change) {
 		/* are all password changes disallowed? */
 		if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
 			if (reject_reason) {
