@@ -108,6 +108,117 @@ BOOL file_unlock(int fd, int *plock_depth)
   return ret;
 }
 
+/****************************************************************************
+routine to do file locking
+****************************************************************************/
+BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+{
+#if HAVE_FCNTL_LOCK
+  SMB_STRUCT_FLOCK lock;
+  int ret;
+
+  if(lp_ole_locking_compat()) {
+    SMB_OFF_T mask2= ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask = (mask2<<2);
+
+    /* make sure the count is reasonable, we might kill the lockd otherwise */
+    count &= ~mask;
+
+    /* the offset is often strange - remove 2 of its bits if either of
+       the top two bits are set. Shift the top ones by two bits. This
+       still allows OLE2 apps to operate, but should stop lockd from
+       dieing */
+    if ((offset & mask) != 0)
+      offset = (offset & ~mask) | (((offset & mask) >> 2) & mask2);
+  } else {
+    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask = (mask2<<1);
+    SMB_OFF_T neg_mask = ~mask;
+
+    /* interpret negative counts as large numbers */
+    if (count < 0)
+      count &= ~mask;
+
+    /* no negative offsets */
+    if(offset < 0)
+      offset &= ~mask;
+
+    /* count + offset must be in range */
+    while ((offset < 0 || (offset + count < 0)) && mask)
+    {
+      offset &= ~mask;
+      mask = ((mask >> 1) & neg_mask);
+    }
+  }
+
+  DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
+
+  lock.l_type = type;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = offset;
+  lock.l_len = count;
+  lock.l_pid = 0;
+
+  errno = 0;
+
+  ret = fcntl(fd,op,&lock);
+  if (errno == EFBIG)
+  {
+    if( DEBUGLVL( 0 ))
+    {
+      dbgtext("fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n", (double)offset,(double)count);
+      dbgtext("a 'file too large' error. This can happen when using 64 bit lock offsets\n");
+      dbgtext("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
+    }
+    /* 32 bit NFS file system, retry with smaller offset */
+    errno = 0;
+    lock.l_len = count & 0xffffffff;
+    ret = fcntl(fd,op,&lock);
+  }
+
+  if (errno != 0)
+    DEBUG(3,("fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
+
+  /* a lock query */
+  if (op == SMB_F_GETLK)
+  {
+    if ((ret != -1) &&
+        (lock.l_type != F_UNLCK) && 
+        (lock.l_pid != 0) && 
+        (lock.l_pid != getpid()))
+    {
+      DEBUG(3,("fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
+      return(True);
+    }
+
+    /* it must be not locked or locked by me */
+    return(False);
+  }
+
+  /* a lock set or unset */
+  if (ret == -1)
+  {
+    DEBUG(3,("lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
+          (double)offset,(double)count,op,type,strerror(errno)));
+
+    /* perhaps it doesn't support this sort of locking?? */
+    if (errno == EINVAL)
+    {
+      DEBUG(3,("locking not supported? returning True\n"));
+      return(True);
+    }
+
+    return(False);
+  }
+
+  /* everything went OK */
+  DEBUG(8,("Lock call successful\n"));
+
+  return(True);
+#else
+  return(False);
+#endif
+}
 /***************************************************************
  locks a file for enumeration / modification.
  update to be set = True if modification is required.
@@ -365,3 +476,4 @@ void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodifi
 
 	return (void *)f;
 }
+

@@ -1132,3 +1132,197 @@ int get_nmb_sock(void)
 
 	return open_pipe_sock(path);
 }
+
+#define TRUNCATE_NETBIOS_NAME 1
+
+/*******************************************************************
+ convert, possibly using a stupid microsoft-ism which has destroyed
+ the transport independence of netbios (for CIFS vendors that usually
+ use the Win95-type methods, not for NT to NT communication, which uses
+ DCE/RPC and therefore full-length unicode strings...) a dns name into
+ a netbios name.
+
+ the netbios name (NOT necessarily null-terminated) is truncated to 15
+ characters.
+
+ ******************************************************************/
+char *dns_to_netbios_name(char *dns_name)
+{
+	static char netbios_name[16];
+	int i;
+	StrnCpy(netbios_name, dns_name, 15);
+	netbios_name[15] = 0;
+	
+#ifdef TRUNCATE_NETBIOS_NAME
+	/* ok.  this is because of a stupid microsoft-ism.  if the called host
+	   name contains a '.', microsoft clients expect you to truncate the
+	   netbios name up to and including the '.'  this even applies, by
+	   mistake, to workgroup (domain) names, which is _really_ daft.
+	 */
+	for (i = 15; i >= 0; i--)
+	{
+		if (netbios_name[i] == '.')
+		{
+			netbios_name[i] = 0;
+			break;
+		}
+	}
+#endif /* TRUNCATE_NETBIOS_NAME */
+
+	return netbios_name;
+}
+
+
+/****************************************************************************
+interpret the weird netbios "name". Return the name type
+****************************************************************************/
+static int name_interpret(char *in,char *out)
+{
+  int ret;
+  int len = (*in++) / 2;
+
+  *out=0;
+
+  if (len > 30 || len<1) return(0);
+
+  while (len--)
+    {
+      if (in[0] < 'A' || in[0] > 'P' || in[1] < 'A' || in[1] > 'P') {
+	*out = 0;
+	return(0);
+      }
+      *out = ((in[0]-'A')<<4) + (in[1]-'A');
+      in += 2;
+      out++;
+    }
+  *out = 0;
+  ret = out[-1];
+
+#ifdef NETBIOS_SCOPE
+  /* Handle any scope names */
+  while(*in) 
+    {
+      *out++ = '.'; /* Scope names are separated by periods */
+      len = *(uchar *)in++;
+      StrnCpy(out, in, len);
+      out += len;
+      *out=0;
+      in += len;
+    }
+#endif
+  return(ret);
+}
+
+/****************************************************************************
+mangle a name into netbios format
+
+  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
+****************************************************************************/
+int name_mangle( char *In, char *Out, char name_type )
+  {
+  extern pstring scope;
+  int   i;
+  int   c;
+  int   len;
+  char  buf[20];
+  char *p = Out;
+
+  /* Safely copy the input string, In, into buf[]. */
+  (void)memset( buf, 0, 20 );
+  if (strcmp(In,"*") == 0)
+    buf[0] = '*';
+  else
+    (void)slprintf( buf, sizeof(buf) - 1, "%-15.15s%c", In, name_type );
+
+  /* Place the length of the first field into the output buffer. */
+  p[0] = 32;
+  p++;
+
+  /* Now convert the name to the rfc1001/1002 format. */
+  for( i = 0; i < 16; i++ )
+    {
+    c = toupper( buf[i] );
+    p[i*2]     = ( (c >> 4) & 0x000F ) + 'A';
+    p[(i*2)+1] = (c & 0x000F) + 'A';
+    }
+  p += 32;
+  p[0] = '\0';
+
+  /* Add the scope string. */
+  for( i = 0, len = 0; NULL != scope; i++, len++ )
+    {
+    switch( scope[i] )
+      {
+      case '\0':
+        p[0]     = len;
+        if( len > 0 )
+          p[len+1] = 0;
+        return( name_len(Out) );
+      case '.':
+        p[0] = len;
+        p   += (len + 1);
+        len  = 0;
+        break;
+      default:
+        p[len+1] = scope[i];
+        break;
+      }
+    }
+
+  return( name_len(Out) );
+  } /* name_mangle */
+
+/****************************************************************************
+find a pointer to a netbios name
+****************************************************************************/
+static char *name_ptr(char *buf,int ofs)
+{
+  uchar c = *(uchar *)(buf+ofs);
+
+  if ((c & 0xC0) == 0xC0)
+    {
+      uint16 l;
+      char p[2];
+      memcpy(p,buf+ofs,2);
+      p[0] &= ~0xC0;
+      l = RSVAL(p,0);
+      DEBUG(5,("name ptr to pos %d from %d is %s\n",l,ofs,buf+l));
+      return(buf + l);
+    }
+  else
+    return(buf+ofs);
+}  
+
+/****************************************************************************
+extract a netbios name from a buf
+****************************************************************************/
+int name_extract(char *buf,int ofs,char *name)
+{
+  char *p = name_ptr(buf,ofs);
+  int d = PTR_DIFF(p,buf+ofs);
+  pstrcpy(name,"");
+  if (d < -50 || d > 50) return(0);
+  return(name_interpret(p,name));
+}
+  
+/****************************************************************************
+return the total storage length of a mangled name
+****************************************************************************/
+int name_len(char *s1)
+{
+	/* NOTE: this argument _must_ be unsigned */
+	uchar *s = (uchar *)s1;
+	int len;
+
+	/* If the two high bits of the byte are set, return 2. */
+	if (0xC0 == (*s & 0xC0))
+		return(2);
+
+	/* Add up the length bytes. */
+	for (len = 1; (*s); s += (*s) + 1) {
+		len += *s + 1;
+		SMB_ASSERT(len < 80);
+	}
+
+	return(len);
+} /* name_len */
