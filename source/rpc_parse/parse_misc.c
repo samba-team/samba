@@ -1457,6 +1457,37 @@ BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Create a UNISTR3.
+********************************************************************/
+
+void init_unistr3(UNISTR3 *str, const char *buf)
+{
+	size_t len;
+
+	if (buf == NULL) {
+		str->uni_str_len=0;
+		str->str.buffer = NULL;
+		return;
+	}
+
+	len = strlen(buf) + 1;
+
+	str->uni_str_len=len;
+
+	if (len < MAX_UNISTRLEN)
+		len = MAX_UNISTRLEN;
+
+	len *= sizeof(uint16);
+
+	str->str.buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len);
+	if (str->str.buffer == NULL)
+		smb_panic("init_unistr3: malloc fail\n");
+
+	/* store the string (null-terminated copy) */
+	dos_struni2((char *)str->str.buffer, buf, len);
+}
+
+/*******************************************************************
  Reads or writes a UNISTR3 structure.
 ********************************************************************/
 

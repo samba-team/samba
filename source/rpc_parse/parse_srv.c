@@ -280,18 +280,27 @@ static BOOL srv_io_share_info502(char *desc, SH_INFO_502 *sh502, prs_struct *ps,
  Inits a SH_INFO_502_STR structure
 ********************************************************************/
 
-void init_srv_share_info502_str(SH_INFO_502_STR *sh502,
+void init_srv_share_info502_str(SH_INFO_502_STR *sh502str,
+				SH_INFO_502 *ptrs,
 				char *net_name, char *remark,
 				char *path, char *passwd, SEC_DESC *psd, size_t sd_size)
 {
 	DEBUG(5,("init_srv_share_info502_str\n"));
 
-	init_unistr2(&sh502->uni_netname, net_name, strlen(net_name)+1);
-	init_unistr2(&sh502->uni_remark, remark, strlen(remark)+1);
-	init_unistr2(&sh502->uni_path, path, strlen(path)+1);
-	init_unistr2(&sh502->uni_passwd, passwd, strlen(passwd)+1);
-	sh502->sd = psd;
-	sh502->sd_size = sd_size;
+	sh502str->ptrs = ptrs;
+
+	if(sh502str->ptrs->ptr_netname)
+		init_unistr2(&sh502str->uni_netname, net_name, strlen(net_name)+1);
+	if(sh502str->ptrs->ptr_remark)
+		init_unistr2(&sh502str->uni_remark, remark, strlen(remark)+1);
+	if(sh502str->ptrs->ptr_path)
+		init_unistr2(&sh502str->uni_path, path, strlen(path)+1);
+	if(sh502str->ptrs->ptr_passwd)
+		init_unistr2(&sh502str->uni_passwd, passwd, strlen(passwd)+1);
+	if(sh502str->ptrs->ptr_sd) {
+		sh502str->sd = psd;
+		sh502str->sd_size = sd_size;
+	}
 }
 
 /*******************************************************************
@@ -308,31 +317,45 @@ static BOOL srv_io_share_info502_str(char *desc, SH_INFO_502_STR *sh502, prs_str
 
 	if(!prs_align(ps))
 		return False;
-	if(!smb_io_unistr2("", &sh502->uni_netname, True, ps, depth))
-		return False;
 
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("", &sh502->uni_remark, True, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("", &sh502->uni_path, True, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("", &sh502->uni_passwd, True, ps, depth))
-		return False;
+	if(sh502->ptrs->ptr_netname) {
+		if(!smb_io_unistr2("", &sh502->uni_netname, True, ps, depth))
+			return False;
+	}
 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("sd_size   ", ps, depth, &sh502->sd_size))
+	if(sh502->ptrs->ptr_remark) {
+		if(!smb_io_unistr2("", &sh502->uni_remark, True, ps, depth))
+			return False;
+	}
+
+	if(!prs_align(ps))
 		return False;
-	if (!sec_io_desc(desc, &sh502->sd, ps, depth))
+
+	if(sh502->ptrs->ptr_path) {
+		if(!smb_io_unistr2("", &sh502->uni_path, True, ps, depth))
+			return False;
+	}
+
+	if(!prs_align(ps))
 		return False;
+
+	if(sh502->ptrs->ptr_passwd) {
+		if(!smb_io_unistr2("", &sh502->uni_passwd, True, ps, depth))
+			return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+
+	if(sh502->ptrs->ptr_sd) {
+		if(!prs_uint32("sd_size   ", ps, depth, &sh502->sd_size))
+			return False;
+		if (!sec_io_desc(desc, &sh502->sd, ps, depth))
+			return False;
+	}
 
 	return True;
 }
@@ -501,6 +524,7 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 		}
 
 		for (i = 0; i < num_entries; i++) {
+			info502[i].info_502_str.ptrs = &info502[i].info_502;
 			if(!srv_io_share_info502_str("", &info502[i].info_502_str, ps, depth))
 				return False;
 		}
@@ -674,6 +698,9 @@ static BOOL srv_io_srv_share_info(char *desc, prs_struct *ps, int depth, SRV_SHA
 		case 502:
 			if(!srv_io_share_info502("", &r_n->share.info502.info_502, ps, depth))
 				return False;
+
+			/*allow access to pointers in the str part. */
+			r_n->share.info502.info_502_str.ptrs = &r_n->share.info502.info_502;
 
 			if(!srv_io_share_info502_str("", &r_n->share.info502.info_502_str, ps, depth))
 				return False;
@@ -2370,6 +2397,165 @@ BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *
 		return False;
 
 	if(!prs_uint32("status      ", ps, depth, &r_n->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+ ********************************************************************/
+
+BOOL srv_io_q_net_disk_enum(char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_disk_enum");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_n->ptr_srv_name))
+		return False;
+
+	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("level", ps, depth, &q_n->disk_enum_ctr.level))
+		return False;
+
+	if(!prs_uint32("entries_read", ps, depth, &q_n->disk_enum_ctr.entries_read))
+		return False;
+
+	if(!prs_uint32("buffer", ps, depth, &q_n->disk_enum_ctr.disk_info_ptr))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("preferred_len", ps, depth, &q_n->preferred_len))
+		return False;
+	if(!smb_io_enum_hnd("enum_hnd", &q_n->enum_hnd, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+ ********************************************************************/
+
+BOOL srv_io_r_net_disk_enum(char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (r_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_disk_enum");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("entries_read", ps, depth, &r_n->disk_enum_ctr.entries_read))
+		return False;
+	if(!prs_uint32("ptr_disk_info", ps, depth, &r_n->disk_enum_ctr.disk_info_ptr))
+		return False;
+
+	/*this may be max, unknown, actual?*/
+
+	if(!prs_uint32("max_elements", ps, depth, &r_n->disk_enum_ctr.entries_read))
+		return False;
+	if(!prs_uint32("unknown", ps, depth, &r_n->disk_enum_ctr.unknown))
+		return False;
+	if(!prs_uint32("actual_elements", ps, depth, &r_n->disk_enum_ctr.entries_read))
+		return False;
+
+	for(i=0; i < r_n->disk_enum_ctr.entries_read; i++) {
+
+		if(!prs_uint32("unknown", ps, depth, &r_n->disk_enum_ctr.disk_info[i].unknown))
+			return False;
+   
+		if(!smb_io_unistr3("disk_name", &r_n->disk_enum_ctr.disk_info[i].disk_name, ps, depth))
+			return False;
+
+		if(!prs_align(ps))
+			return False;
+	}
+
+	if(!prs_uint32("total_entries", ps, depth, &r_n->total_entries))
+		return False;
+
+	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
+		return False;
+
+	if(!prs_uint32("status", ps, depth, &r_n->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+ ********************************************************************/
+
+BOOL srv_io_q_net_name_validate(char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_name_validate");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_n->ptr_srv_name))
+		return False;
+
+	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unistr2("", &q_n->uni_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("type", ps, depth, &q_n->type))
+		return False;
+
+	if(!prs_uint32("flags", ps, depth, &q_n->flags))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+ ********************************************************************/
+
+BOOL srv_io_r_net_name_validate(char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_struct *ps, int depth)
+{
+	if (r_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_name_validate");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
