@@ -1,0 +1,31 @@
+; generate by provision.pl
+; for domain:
+; ${DNSDOMAIN}
+$TTL 1W
+@               IN SOA  @   Administrator (
+                                42              ; serial (d. adams)
+                                2D              ; refresh
+                                4H              ; retry
+                                6W              ; expiry
+                                1W )            ; minimum
+
+			IN NS	${HOSTIP}
+
+${HOSTNAME}		IN A	${HOSTIP}
+${HOSTGUID}._msdcs	IN CNAME ${HOSTNAME}
+
+_gc._tcp		IN SRV 0 100 3268	${HOSTNAME}
+_ldap._tcp		IN SRV 0 100 389	${HOSTNAME}
+_kerberos._tcp		IN SRV 0 100 88		${HOSTNAME}
+_kerberos._udp		IN SRV 0 100 88		${HOSTNAME}
+
+_ldap._tcp.dc._msdcs	IN SRV 0 100 389	${HOSTNAME}
+_ldap._tcp.gc._msdcs	IN SRV 0 100 389	${HOSTNAME}
+_ldap._tcp.pdc._msdcs	IN SRV 0 100 389	${HOSTNAME}
+
+_ldap._tcp.${DOMAINGUID}.domains._msdcs		IN SRV 0 100 389 ${HOSTNAME}
+_ldap._tcp.${DEFAULTSITE}._sites.dc._msdcs	IN SRV 0 100 389 ${HOSTNAME}
+_ldap._tcp.${DEFAULTSITE}._sites.cc._msdcs	IN SRV 0 100 389 ${HOSTNAME}
+
+_kerberos._tcp.dc._msdcs	IN SRV 0 100 389	${HOSTNAME}
+_kerberos._tcp.${DEFAULTSITE}._sites.dc._msdcs	IN SRV 0 100 88 ${HOSTNAME}
