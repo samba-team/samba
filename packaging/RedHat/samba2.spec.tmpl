@@ -276,8 +276,8 @@ install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 (cd examples/VFS; make clean)
 
 # libsmbclient
-install -m 644 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
-install -m 644 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 
 # Install SWAT helper files
