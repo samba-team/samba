@@ -1,5 +1,9 @@
 2003-03-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c (usage2arcfour): map KRB5_KU_TICKET to 2,
+	from Harald Joerg <harald.joerg@fujitsu-siemens.com>
+	(enctype_arcfour_hmac_md5): disable checksum_hmac_md5_enc
+
 	* lib/hdb/mkey.c (hdb_unseal_keys_mkey): truncate key to the key
 	length when key is longer then expected length, its probably
 	longer since the encrypted data was padded, reported by Aidan
