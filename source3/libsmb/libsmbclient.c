@@ -2249,7 +2249,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
 	/* Try to open the file for reading ... */
 
-	if ((fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
+	if ((int)(fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
 		
 		DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
 		return -1;  /* smbc_open sets errno */
@@ -2258,7 +2258,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
 	/* Now, try to open the printer file for writing */
 
-	if ((fid2 = c_print->open_print_job(c_print, printq)) < 0) {
+	if ((int)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
 
 		saverr = errno;  /* Save errno */
 		c_file->close(c_file, fid1);
