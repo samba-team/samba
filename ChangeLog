@@ -1,3 +1,32 @@
+2004-12-29  Love  <lha@stacken.kth.se>
+
+	* lib/hdb/Makefile.am: add CHECK_SYMBOLS
+
+	* lib/hdb/keys.c: make all_etypes static
+
+	* lib/krb5/Makefile.am: add CHECK_SYMBOLS, approve of: -com_err
+	-version krb5_ _krb5_ __heimdal krb524_ krb4_fkt_ops
+
+	* kdc/kerberos5.c: use private version of principalname
+
+	* kdc/kerberos4.c: use private version of principalname
+
+	* kdc/hpropd.c: use private version of principalname
+
+	* kdc/524.c: use private version of principalname
+
+	* lib/krb5/rd_req.c: use private version of principalname
+
+	* lib/krb5/rd_cred.c: use private version of principalname
+
+	* lib/krb5/init_creds_pw.c: use private version of principalname
+
+	* lib/krb5/get_in_tkt.c: use private version of principalname
+
+	* lib/krb5/asn1_glue.c: make principalname functions private
+
+	* lib/krb5/krb5.h: add key usage for server referrals
+	
 2004-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/principal.c: make default_v4_name_convert static
