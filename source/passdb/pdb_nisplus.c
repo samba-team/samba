@@ -209,6 +209,9 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
    * time values. note: this code assumes 32bit time_t!
    */
 
+  /* Don't change these timestamp settings without a good reason.  They are
+     important for NT member server compatibility. */
+
   pdb_set_logon_time(pw_buf, (time_t)0);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_LOGON_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LNT-", 4)==0)) {

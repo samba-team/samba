@@ -76,6 +76,10 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	}
 	
 	ZERO_STRUCTP(user);
+
+        /* Don't change these timestamp settings without a good reason.
+           They are important for NT member server compatibility. */
+
 	user->logon_time            = (time_t)0;
 	user->pass_last_set_time    = (time_t)0;
 	user->pass_can_change_time  = (time_t)0;
