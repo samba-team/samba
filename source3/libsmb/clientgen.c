@@ -772,6 +772,20 @@ BOOL cli_session_setup(struct cli_state *cli,
       /* use the returned vuid from now on */
       cli->vuid = SVAL(cli->inbuf,smb_uid);
 
+      if (cli->protocol >= PROTOCOL_NT1) {
+        /*
+         * Save off some of the connected server
+         * info.
+         */
+        char *server_domain,*server_os,*server_type;
+        server_os = smb_buf(cli->inbuf);
+        server_type = skip_string(server_os,1);
+        server_domain = skip_string(server_type,1);
+        fstrcpy(cli->server_os, server_os);
+        fstrcpy(cli->server_type, server_type);
+        fstrcpy(cli->server_domain, server_domain);
+      }
+
       fstrcpy(cli->user_name, user);
 
       return True;
@@ -2349,7 +2363,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 {
 	if (!cli) {
 		cli = (struct cli_state *)malloc(sizeof(*cli));
-		if (!cli) return NULL;
+		if (!cli)
+			return NULL;
+		ZERO_STRUCTP(cli);
 	}
 
 	if (cli->initialised) {
