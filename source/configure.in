@@ -17,6 +17,8 @@ AC_SUBST(LIBSMB)
 AC_SUBST(LIBSMBPW)
 AC_SUBST(LIBSMB32)
 AC_SUBST(LIBSMBPW32)
+AC_SUBST(LIBUBIQX)
+AC_SUBST(LIBUBIQX32)
 AC_SUBST(LIBSAMBA)
 AC_SUBST(LIBSAMBA32)
 AC_SUBST(WRAP)
@@ -284,6 +286,7 @@ case "$host_os" in
 			ATTEMPT_LIBSMBPW32_BUILD=yes
 			ATTEMPT_LIBNMB32_BUILD=yes
 			ATTEMPT_LIBSAMBA32_BUILD=yes
+			ATTEMPT_LIBUBIQX32_BUILD=yes
 			ATTEMPT_LIBMSRPC32_BUILD=yes
 		;;
 		*aix*) AC_DEFINE(AIX);;
@@ -691,6 +694,39 @@ AC_ARG_WITH(libmsrpc,
 	   echo No support for PIC code - disabling libmsrpc
 	   LIBMSRPC=""
 	   LIBMSRPC32=""
+	fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
+#################################################
+# check for libubiqx support
+AC_MSG_CHECKING(whether to use libubiqx)
+AC_ARG_WITH(libubiqx,
+[  --with-libubiqx     Include SMB libubiqx support (default)
+  --without-libubiqx  Don't include SMB libubiqx support ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LIBUBIQX)
+	LIBUBIQX="bin/libubiqx.so"
+
+	if test x$ATTEMPT_LIBUBIQX32_BUILD = x; then
+		LIBUBIQX32=""
+	else
+			LIBUBIQX32=bin/libubiqx.32.so
+	fi
+
+# Conditions under which libubiqx should not be built.
+
+	if test x$PICFLAG = x; then
+	   echo No support for PIC code - disabling libubiqx
+	   LIBUBIQX=""
+	   LIBUBIQX32=""
 	fi
     ;;
   *)

@@ -124,18 +124,21 @@ static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 lsa_reply_query_info
  ***************************************************************************/
 static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
-				char *dom_name, DOM_SID *dom_sid)
+				char *dom_name, DOM_SID *dom_sid,
+				uint32 status)
 {
 	LSA_R_QUERY_INFO r_q;
 
 	ZERO_STRUCT(r_q);
+
+	r_q.status = status;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (r_q.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &q_q->pol))
 	{
 		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	else
+	if (r_q.status == 0x0)
 	{
 		/* set up the LSA QUERY INFO response */
 
@@ -544,6 +547,7 @@ static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 {
 	LSA_Q_QUERY_INFO q_i;
 	fstring name;
+	uint32 status = 0x0;
 	DOM_SID *sid = NULL;
 	memset(name, 0, sizeof(name));
 
@@ -570,12 +574,12 @@ static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 		{
 			DEBUG(5,("unknown info level in Lsa Query: %d\n",
 			          q_i.info_class));
-			return;
+			status = 0xC000000 | NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_query_info(&q_i, rdata, name, sid);
+	lsa_reply_query_info(&q_i, rdata, name, sid, status);
 }
 
 /***************************************************************************
