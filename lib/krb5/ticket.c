@@ -49,3 +49,31 @@ krb5_free_ticket(krb5_context context,
     krb5_free_principal(context, ticket->server);
     return 0;
 }
+
+krb5_error_code
+krb5_copy_ticket(krb5_context context,
+		 const krb5_ticket *from,
+		 krb5_ticket **to)
+{
+    krb5_error_code ret;
+    krb5_ticket *tmp = malloc(sizeof(*tmp));
+    if(tmp == NULL)
+	return ENOMEM;
+    if((ret = copy_EncTicketPart(&from->ticket, &tmp->ticket))){
+	free(tmp);
+	return ret;
+    }
+    ret = krb5_copy_principal(context, from->client, &tmp->client);
+    if(ret){
+	free_EncTicketPart(&tmp->ticket);
+	return ret;
+    }
+    ret = krb5_copy_principal(context, from->server, &(*to)->server);
+    if(ret){
+	krb5_free_principal(context, tmp->client);
+	free_EncTicketPart(&tmp->ticket);
+	return ret;
+    }
+    *to = tmp;
+    return 0;
+}
