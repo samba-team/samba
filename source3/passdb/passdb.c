@@ -794,6 +794,12 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 		return True;
 	}
 
+	if (rid == DOMAIN_USER_RID_ADMIN) {
+		*psid_name_use = SID_NAME_USER;
+		fstrcpy(name, "Administrator");
+		return True;
+	}
+
 	if (algorithmic_pdb_rid_is_user(rid)) {
 		uid_t uid;
 		struct passwd *pw = NULL;
