@@ -921,13 +921,20 @@ static void printers_page(void)
 	
 	cgi_load_variables(NULL);
 
-	/* check if the authenticated user has write access - if not then
-	   don't show write options */
-	have_write_access = (access(servicesf,W_OK) == 0);
+	if (!file_exist(servicesf, NULL)) {
+		have_read_access = True;
+		have_write_access = True;
+	} else {
+		/* check if the authenticated user has write access - if not then
+		   don't show write options */
+		have_write_access = (access(servicesf,W_OK) == 0);
 
-	/* if the user doesn't have read access to smb.conf then
-	   don't let them view it */
-	have_read_access = (access(servicesf,R_OK) == 0);
+		/* if the user doesn't have read access to smb.conf then
+		   don't let them view it */
+		have_read_access = (access(servicesf,R_OK) == 0);
+	}
+
+
 
 	show_main_buttons();
 
