@@ -133,6 +133,9 @@ char *classname_table[] = {
 	"tdb",               /* DBGC_TDB	*/
 	"printdrivers",      /* DBGC_PRINTDRIVERS */
 	"lanman",            /* DBGC_LANMAN */
+	"smb",               /* DBGC_SMB */
+	"rpc",               /* DBGC_RPC */
+	"rpc_hdr",           /* DBGC_RPC_HDR */
 };
 
 
@@ -227,6 +230,11 @@ BOOL debug_parse_levels(char *params_str)
 
 	if (debug_parse_params(params, debuglevel_class)) {
 		debug_message(0, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
+
+#if 0
+		memcpy(DEBUGLEVEL_CLASS, debuglevel_class, 
+		       sizeof(debuglevel_class));
+#endif
 		return True;
 	} else
 		return False;
@@ -309,6 +317,9 @@ BOOL reopen_logs( void )
 	mode_t oldumask;
 	FILE *new_dbf = NULL;
 	BOOL ret = True;
+
+	if (stdout_logging)
+		return True;
 
 	if (DEBUGLEVEL_CLASS[ DBGC_ALL ] <= 0) {
 		if (dbf) {
