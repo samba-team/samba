@@ -179,8 +179,25 @@ static FILE *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int
     DEBUG(10, ("startsmbfilepwent_internal: opening file %s\n", pfile));
 
     if((fp = sys_fopen(pfile, open_mode)) == NULL) {
-      DEBUG(0, ("startsmbfilepwent_internal: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
-      return NULL;
+    
+      /*
+       * If smbpasswd file doesn't exist, then create new one. This helps to avoid
+       * confusing error msg when adding user account first time.
+       */
+      if (errno == ENOENT) {
+        if ((fp = sys_fopen(pfile, "a+")) != NULL) {
+          DEBUG(0, ("startsmbfilepwent_internal: file %s did not exist. File successfully created.\n", pfile));
+
+        } else {
+          DEBUG(0, ("startsmbfilepwent_internal: file %s did not exist. Couldn't create new one. Error was: %s",
+                    pfile, strerror(errno)));
+          return NULL;
+        }
+
+      } else {
+        DEBUG(0, ("startsmbfilepwent_internal: unable to open file %s. Error was: %s\n", pfile, strerror(errno)));
+        return NULL;
+	  }
     }
 
     if (!pw_file_lock(fileno(fp), lock_type, 5, lock_depth)) {

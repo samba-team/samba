@@ -180,6 +180,24 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT 
 
 	/* open the accounts TDB */
 	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDONLY, 0600))) {
+	
+		if (errno == ENOENT) {
+			/*
+			 * TDB file doesn't exist, so try to create new one. This is useful to avoid
+			 * confusing error msg when adding user account first time
+			 */
+			if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_CREAT, 0600))) {
+				DEBUG(0, ("pdb_getsampwnam: TDB passwd (%s) did not exist. File successfully created.\n",
+				          tdb_state->tdbsam_location));
+			} else {
+				DEBUG(0, ("pdb_getsampwnam: TDB passwd (%s) does not exist. Couldn't create new one. Error was: %s\n",
+				          tdb_state->tdbsam_location, strerror(errno)));
+			}
+			
+			/* requested user isn't there anyway */
+			nt_status = NT_STATUS_NO_SUCH_USER;
+			return nt_status;
+		}
 		DEBUG(0, ("pdb_getsampwnam: Unable to open TDB passwd (%s)!\n", tdb_state->tdbsam_location));
 		return nt_status;
 	}
@@ -423,7 +441,7 @@ done:
 /***************************************************************************
  Allocates a new RID and returns it to the caller as a domain sid
 
- NOTE: Use carefullt, do not waste RIDs they are a limited resource!
+ NOTE: Use carefully, do not waste RIDs they are a limited resource!
  							- SSS
  ***************************************************************************/
 
