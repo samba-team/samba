@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -64,7 +64,7 @@ doit (int af,
 		}
 	    } else if (flags & NI_NAMEREQD) {
 		return EAI_NONAME;
-	    } else if (inet_ntop (AF_INET, addr, host, hostlen) == NULL)
+	    } else if (inet_ntop (af, addr, host, hostlen) == NULL)
 		return EAI_SYSTEM;
 	}
     }
