@@ -67,9 +67,11 @@ struct query_record {
 	struct in_addr result;
 };
 
-/* a queue of pending requests waiting for DNS responses */
+/* a queue of pending requests waiting to be sent to the DNS child */
 static struct packet_struct *dns_queue;
 
+/* the packet currently being processed by the dns child */
+static struct packet_struct *dns_current;
 
 
 /***************************************************************************
@@ -140,19 +142,25 @@ void start_async_dns(void)
 /***************************************************************************
 check if a particular name is already being queried
   ****************************************************************************/
-static BOOL query_in_queue(struct query_record *r)
+static BOOL query_current(struct query_record *r)
 {
-	struct packet_struct *p;
-	for (p = dns_queue; p; p = p->next) {
-		struct nmb_packet *nmb = &p->packet.nmb;
-		struct nmb_name *question = &nmb->question.question_name;
-
-		if (name_equal(question, &r->name)) 
-			return True;
-	}
-	return False;
+	return dns_current &&
+		name_equal(&r->name, 
+			   &dns_current->packet.nmb.question.question_name);
 }
 
+
+/***************************************************************************
+  write a query to the child process
+  ****************************************************************************/
+static BOOL write_child(struct packet_struct *p)
+{
+	struct query_record r;
+
+	r.name = p->packet.nmb.question.question_name;
+
+	return write_data(fd_out, (char *)&r, sizeof(r)) == sizeof(r);
+}
 
 /***************************************************************************
   check the DNS queue
@@ -172,6 +180,19 @@ void run_dns_queue(void)
 	}
 
 	add_dns_result(&r.name, r.result);
+
+	if (dns_current) {
+		if (query_current(&r)) {
+			DEBUG(3,("DNS calling reply_name_query\n"));
+			in_dns = 1;
+			reply_name_query(dns_current);
+			in_dns = 0;
+		}
+
+		dns_current->locked = False;
+		free_packet(dns_current);
+		dns_current = NULL;
+	}
 
 	/* loop over the whole dns queue looking for entries that
 	   match the result we just got */
@@ -200,6 +221,18 @@ void run_dns_queue(void)
 		}
 	}
 
+	if (dns_queue) {
+		dns_current = dns_queue;
+		dns_queue = dns_queue->next;
+		if (dns_queue) dns_queue->prev = NULL;
+		dns_current->next = NULL;
+
+		if (!write_child(dns_current)) {
+			DEBUG(3,("failed to send DNS query to child!\n"));
+			return;
+		}
+	}
+
 }
 
 /***************************************************************************
@@ -208,26 +241,24 @@ queue a DNS query
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n)
 {
-	struct query_record r;
-	
 	if (in_dns || fd_in == -1)
 		return False;
 
-	r.name = *question;
-
-	if (!query_in_queue(&r) && 
-	    !write_data(fd_out, (char *)&r, sizeof(r))) {
-		DEBUG(3,("failed to send DNS query to child!\n"));
-		return False;
+	if (!dns_current) {
+		if (!write_child(p)) {
+			DEBUG(3,("failed to send DNS query to child!\n"));
+			return False;
+		}
+		dns_current = p;
+		p->locked = True;
+	} else {
+		p->locked = True;
+		p->next = dns_queue;
+		p->prev = NULL;
+		if (p->next)
+			p->next->prev = p;
+		dns_queue = p;
 	}
-
-	p->locked = True;
-	p->next = dns_queue;
-	p->prev = NULL;
-	if (p->next)
-		p->next->prev = p;
-	dns_queue = p;
-
 
 	DEBUG(3,("added DNS query for %s\n", namestr(question)));
 	return True;
