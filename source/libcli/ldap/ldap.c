@@ -1557,8 +1557,6 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 	}
 
 done:
-	if (conn->gensec)
-		gensec_end(&conn->gensec);
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 
@@ -1696,6 +1694,9 @@ struct ldap_message *ldap_getsearchent(struct ldap_connection *conn,
 	}
 
 	result = ldap_receive(conn, conn->searchid, endtime);
+	if (!result) {
+		return NULL;
+	}
 
 	if (result->type == LDAP_TAG_SearchResultEntry)
 		return result;
