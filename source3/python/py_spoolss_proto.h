@@ -76,6 +76,7 @@ BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info);
 BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict,
 			  TALLOC_CTX *mem_ctx);
 BOOL py_from_PRINTER_INFO_3(PyObject **dict, PRINTER_INFO_3 *info);
-BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject *dict);
+BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject *dict,
+			  TALLOC_CTX *mem_ctx);
 
 #endif /*  _PY_SPOOLSS_PROTO_H  */
