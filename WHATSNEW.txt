@@ -1,6 +1,9 @@
-
               WHATS NEW IN Samba 3.0 alphaX
               =============================
+
+Changes in alpha3
+
+- fixed a silly tdb bug in alpha2 that affected internal databases
 
 Changes in alpha2
 
