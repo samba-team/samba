@@ -18,42 +18,42 @@ static BOOL parse_dfs_text_entry(char *line, dfs_internal_table *buf)
 	tok[count] = strtok(line,":");
 	
 	/* strip the comment lines */
-	if (tok[0][0]=='#') return (False);	
+	if (tok[0][0] == '#') return (False);	
 	count++;
 	
-	while ( ((tok[count] = strtok(NULL,":")) != NULL ) && count<MAXTOK)
+	while ( ((tok[count] = strtok(NULL,":")) != NULL ) && count < MAXTOK)
 	{
 		count++;
 	}
 
 	DEBUG(7,("Found [%d] tokens\n", count));
 
-	if (count>1) {
+	if (count > 1) {
 		StrnCpy(buf->localpath, tok[0], sizeof(buf->localpath)-1);
 		StrnCpy(buf->sharename, tok[1], sizeof(buf->sharename)-1);
 /*
 		strupper(buf->localpath);
 		strupper(buf->sharename);		
 */
-		buf->localpath_length=strlen(buf->localpath);
-		buf->sharename_length=strlen(buf->sharename);
+		buf->localpath_length = strlen(buf->localpath);
+		buf->sharename_length = strlen(buf->sharename);
 	}
 	else
 		return (False);
 	
-	if (count>2)
+	if (count > 2)
 		buf->proximity = atoi(tok[2]);
 	else
 		buf->proximity = 0;
 			
-	if (count>3)	
+	if (count > 3)	
 		buf->type = atoi(tok[3]);
 	else
 		buf->type = 2;
 
-	DEBUGADD(7,("[%s]\n", buf->localpath));
-	DEBUGADD(7,("[%s]\n", buf->sharename));
-	return(True);
+	DEBUGADD(7,("localpath: [%s]\n", buf->localpath));
+	DEBUGADD(7,("sharename: [%s]\n", buf->sharename));
+	return True;
 }  
 
 /****************************************************************************
@@ -69,7 +69,7 @@ static void mangle_dfs_path(dfs_internal_table *buf)
 	fstring temp;
 	
 	p = buf->localpath;
-	mp =buf->mangledpath;
+	mp = buf->mangledpath;
 	mlen = sizeof(buf->mangledpath);
 	
 	ZERO_STRUCTP(mp);
@@ -112,19 +112,19 @@ initialisation de la table dfs en memoire au demarrage de samba
 ****************************************************************************/
 BOOL init_dfs_table(void)
 {
-	char *file=lp_dfs_map();
-	int num_lines=0;
-	int total=0;
+	char *file = lp_dfs_map();
+	int num_lines = 0;
+	int total = 0;
 	FILE *f;
 	pstring line;
 	int i;
 	
 	dfs_internal_table *entry;
 	
-	entry=NULL;
-	dfs_struct.ready=False;	
+	entry = NULL;
+	dfs_struct.ready = False;	
 	
-	if (*file=='\0') {
+	if (*file == '\0') {
 		DEBUG(0,("No DFS map, Samba is running in NON DFS mode\n"));
 		return False;
 	}
@@ -150,75 +150,106 @@ BOOL init_dfs_table(void)
 		}
 		num_lines++;
 	}
-	dfs_struct.size=total;
-	dfs_struct.table=entry;
+	dfs_struct.size = total;
+	dfs_struct.table = entry;
 	fclose(f);
 	
 	/* we have the file in memory */
 	/* now initialise the mangled names */	
-	for (i=0; i<total; i++)
+	for (i = 0; i < total; i++)
 	{
 		mangle_dfs_path(&(entry[i]));
 	}
 
-	dfs_struct.ready=True;	
+	dfs_struct.ready = True;	
 	DEBUG(0,("Samba is DFS aware now!\n"));
+	return True;
+}
+
+static BOOL check_dfs_path(int search_len, const char *search_path,
+		int path_len, const char* fullpath,
+		const char* sharename,
+		const char* share_path, size_t share_len,
+		char *localpath, size_t local_plen)
+{
+	if (StrnCaseCmp(search_path, fullpath, search_len) != 0)
+	{
+		return False;
+	}
+
+	DEBUG(2,("found one linked to [%s]. share_path: %s\n",
+		sharename, share_path));
+	
+	if (StrnCaseCmp(fullpath, share_path, share_len) == 0)
+	{
+		safe_strcpy(localpath, fullpath + share_len, local_plen);
+	}
+	else
+	{
+		localpath[0] = 0;
+	}
+
 	return True;
 }
 
 /****************************************************************************
  check if a path name is a DFS branch
 ****************************************************************************/
-int under_dfs(connection_struct *conn, const char *path)
+int under_dfs(connection_struct *conn, const char *path,
+				char *local_path, size_t local_plen)
 {
 	fstring fullpath; 
+	pstring share_path;
 	int i; 
 	int snum;
 		
-	int mangled_len;
-	int file_len;
 	int path_len;
+	int share_len;
 
-	BOOL ok=False; 
-
-	dfs_internal_table *list=dfs_struct.table;
+	dfs_internal_table *list = dfs_struct.table;
 	
-	snum=SNUM(conn);
+	snum = SNUM(conn);
+	snprintf(share_path, sizeof(share_path), "\\%s\\%s",
+		           global_myname, lp_servicename(snum));
+	share_len = strlen(share_path);
+
 	if (path[0] != '\\')
 	{
-		snprintf(fullpath, sizeof(fullpath), "\\%s\\%s\\%s",
-		           global_myname, lp_servicename(snum), path);
+		snprintf(fullpath, sizeof(fullpath), "%s\\%s",
+		           share_path, path);
 	}
 	else
 	{
 		safe_strcpy(fullpath, path, sizeof(fullpath));
 	}
 	
-	strupper(fullpath);
-	
-	path_len=strlen(fullpath); 
+	path_len = strlen(fullpath); 
 
 	DEBUG(2,("DFS looking for: [%s]\n", fullpath));
-	for(i=0; i<dfs_struct.size; i++)
+
+	for (i = 0; i < dfs_struct.size; i++)
 	{ 
-		file_len=list[i].localpath_length;
-		mangled_len=list[i].mangledpath_length;
- 
 		DEBUG(6,("checking against [%s][%d]\n", list[i].localpath,i));
 		
-		if(file_len==path_len && !StrnCaseCmp(list[i].localpath, fullpath, file_len))
+		if (check_dfs_path(list[i].localpath_length,
+		                   list[i].localpath,
+		                   path_len, fullpath,
+		                   list[i].sharename,
+		                   share_path, share_len,
+		                   local_path, local_plen))
 		{
-			DEBUG(2,("found one linked to [%s]\n", list[i].sharename));
-			ok=True;
-			break;
+			return True;
 		}
- 
-		if(mangled_len==path_len && !StrnCaseCmp(list[i].mangledpath, fullpath, mangled_len))
+
+		if (check_dfs_path(list[i].mangledpath_length,
+		                   list[i].mangledpath,
+		                   path_len, fullpath,
+		                   list[i].sharename,
+		                   share_path, share_len,
+		                   local_path, local_plen))
 		{
-			DEBUG(2,("found one mangled linked to [%s]\n", list[i].sharename));
-			ok=True;
-			break;
+			return True;
 		}
 	}
-	return ok;
+	return False;
 }

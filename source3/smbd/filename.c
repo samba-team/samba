@@ -26,6 +26,7 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern fstring remote_machine;
+extern pstring global_myname;
 extern BOOL use_mangled_map;
 
 static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
@@ -309,6 +310,35 @@ static BOOL stat_cache_lookup(struct connection_struct *conn, char *name,
 }
 
 /****************************************************************************
+ this routine converts from the dos and dfs namespace to the unix namespace.
+****************************************************************************/
+BOOL unix_dfs_convert(char *name,connection_struct *conn,
+				char *saved_last_component, 
+				BOOL *bad_path, SMB_STRUCT_STAT *pst)
+{
+	pstring local_path;
+
+	DEBUG(10,("unix_dfs_convert: %s\n", name));
+
+	if (name != NULL &&
+	    under_dfs(conn, name, local_path, sizeof(local_path)))
+	{
+		DEBUG(10,("%s is in dfs map.\n", name));
+
+		/* check for our own name */
+		if (StrCaseCmp(global_myname, name+1) > 0)
+		{
+			return False;
+		}
+
+		pstrcpy(name, local_path);
+
+		DEBUG(10,("removed name: %s\n", name));
+	}
+	return unix_convert(name, conn, saved_last_component, bad_path, pst);
+}
+
+/****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format
 changes etc.
@@ -329,9 +359,9 @@ used to pick the correct error code to return between ENOENT and ENOTDIR
 as Windows applications depend on ERRbadpath being returned if a component
 of a pathname does not exist.
 ****************************************************************************/
-
-BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
-                  BOOL *bad_path, SMB_STRUCT_STAT *pst)
+BOOL unix_convert(char *name,connection_struct *conn,
+				char *saved_last_component, 
+				BOOL *bad_path, SMB_STRUCT_STAT *pst)
 {
   SMB_STRUCT_STAT st;
   char *start, *end;

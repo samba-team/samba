@@ -832,15 +832,14 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SMB_STRUCT_STAT st;
  
   pstrcpy(name,smb_buf(inbuf) + 1);
-  unix_convert(name,conn,0,&bad_path,&st);
-
-  mode = SVAL(inbuf,smb_vwv0);
- 
-  if(under_dfs(conn, name)) {
+  if (!unix_dfs_convert(name,conn,0,&bad_path,&st))
+  {
     SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
     return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
   }
 
+  mode = SVAL(inbuf,smb_vwv0);
+ 
   if (check_name(name,conn)) {
     if(VALID_STAT(st))
       ok = S_ISDIR(st.st_mode);
@@ -898,11 +897,6 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
   
-  if (under_dfs(conn, fname)) {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
-
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
   if (! (*fname))
@@ -915,7 +909,11 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   }
   else
   {
-    unix_convert(fname,conn,0,&bad_path,&sbuf);
+    if (!unix_dfs_convert(fname,conn,0,&bad_path,&sbuf))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
     if (check_name(fname,conn))
     {
       if (VALID_STAT(sbuf) || conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf) == 0)
@@ -980,7 +978,11 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,conn,0,&bad_path,&st);
+  if (!unix_dfs_convert(fname,conn,0,&bad_path,&st))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
 
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
@@ -1087,7 +1089,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
       pstrcpy(directory,smb_buf(inbuf)+1);
       pstrcpy(dir2,smb_buf(inbuf)+1);
-      unix_convert(directory,conn,0,&bad_path,NULL);
+      if (!unix_dfs_convert(directory,conn,0,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
       unix_format(dir2);
 
       if (!check_name(directory,conn))
@@ -1348,7 +1354,11 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   share_mode = SVAL(inbuf,smb_vwv0);
 
   pstrcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
     
   fsp = file_new();
   if (!fsp)
@@ -1453,7 +1463,11 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   /* XXXX we need to handle passed times, sattr and flags */
 
   pstrcpy(fname,smb_buf(inbuf));
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
     
   fsp = file_new();
   if (!fsp)
@@ -1587,7 +1601,11 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
 
   if (createmode & aVOLID)
     {
@@ -1673,7 +1691,11 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
   pstrcat(fname,"/TMXXXXXX");
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
   
   unixmode = unix_mode(conn,createmode);
   
@@ -1779,7 +1801,11 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  unix_convert(name,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(name,conn,0,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
 
   p = strrchr(name,'/');
   if (!p) {
@@ -2940,7 +2966,11 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
  
   pstrcpy(directory,smb_buf(inbuf) + 1);
-  unix_convert(directory,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(directory,conn,0,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
   
   if (check_name(directory, conn))
     ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
@@ -3035,7 +3065,11 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
 
   pstrcpy(directory,smb_buf(inbuf) + 1);
-  unix_convert(directory,conn, NULL,&bad_path,NULL);
+  if (!unix_dfs_convert(directory,conn, NULL,&bad_path,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
   
   if (check_name(directory,conn))
     {
@@ -3236,12 +3270,20 @@ int rename_internals(connection_struct *conn,
 
 	*directory = *mask = 0;
 
-	unix_convert(name,conn,0,&bad_path1,NULL);
-	unix_convert(newname,conn,newname_last_component,&bad_path2,NULL);
+	if (!unix_dfs_convert(name,conn,0,&bad_path1,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
+	if (!unix_dfs_convert(newname,conn,newname_last_component,&bad_path2,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
 
 	/*
 	 * Split the old name into directory and last component
-	 * strings. Note that unix_convert may have stripped off a 
+	 * strings. Note that if (!unix_dfs_convert may have stripped off a 
 	 * leading ./ from both name and newname if the rename is 
 	 * at the root of the share. We need to make sure either both
 	 * name and newname contain a / character or neither of them do
@@ -3552,8 +3594,16 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
-  unix_convert(name,conn,0,&bad_path1,NULL);
-  unix_convert(newname,conn,0,&bad_path2,NULL);
+  if (!unix_dfs_convert(name,conn,0,&bad_path1,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
+  if (!unix_dfs_convert(newname,conn,0,&bad_path2,NULL))
+  {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
 
   target_is_directory = dos_directory_exist(newname,NULL);
 

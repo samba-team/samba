@@ -216,7 +216,11 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   /* XXXX we need to handle passed times, sattr and flags */
 
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
     
   fsp = file_new();
   if (!fsp)
@@ -665,7 +669,11 @@ static int call_trans2findfirst(connection_struct *conn,
 
   DEBUG(5,("path=%s\n",directory));
 
-  unix_convert(directory,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(directory,conn,0,&bad_path,NULL))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
   if(!check_name(directory,conn)) {
     if((errno == ENOENT) && bad_path)
     {
@@ -1255,7 +1263,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
        * to do this call. JRA.
        */
       fname = fsp->fsp_name;
-      unix_convert(fname,conn,0,&bad_path,&sbuf);
+      if (!unix_dfs_convert(fname,conn,0,&bad_path,&sbuf))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
       if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && 
 	  conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf))) {
         DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
@@ -1288,7 +1300,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     info_level = SVAL(params,0);
     fname = &fname1[0];
     pstrcpy(fname,&params[6]);
-    unix_convert(fname,conn,0,&bad_path,&sbuf);
+    if (!unix_dfs_convert(fname,conn,0,&bad_path,&sbuf))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
     if (!check_name(fname,conn) || 
 	(!VALID_STAT(sbuf) && conn->vfs_ops.stat(dos_to_unix(fname,False),
 						 &sbuf))) {
@@ -1518,7 +1534,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
        * to do this call. JRA.
        */
       fname = fsp->fsp_name;
-      unix_convert(fname,conn,0,&bad_path,&st);
+      if (!unix_dfs_convert(fname,conn,0,&bad_path,&st))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
       if (!check_name(fname,conn) || (!VALID_STAT(st) && 
 				      conn->vfs_ops.stat(dos_to_unix(fname,False),&st))) {
         DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
@@ -1549,7 +1569,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     info_level = SVAL(params,0);    
     fname = fname1;
     pstrcpy(fname,&params[6]);
-    unix_convert(fname,conn,0,&bad_path,&st);
+    if (!unix_dfs_convert(fname,conn,0,&bad_path,&st))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
     if(!check_name(fname, conn))
     {
       if((errno == ENOENT) && bad_path)
@@ -1880,7 +1904,11 @@ static int call_trans2mkdir(connection_struct *conn,
 
   DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-  unix_convert(directory,conn,0,&bad_path,NULL);
+  if (!unix_dfs_convert(directory,conn,0,&bad_path,NULL))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
   if (check_name(directory,conn))
     ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
 			      unix_mode(conn,aDIR));
