@@ -730,61 +730,6 @@ static void process_loop(void)
 }
 
 
-/*
-  these are split out from the main winbindd for use by the background daemon
- */
-BOOL winbind_setup_common(void)
-{
-  	load_interfaces();
-
-	if (!secrets_init()) {
-
-		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
-		return False;
-	}
-
-	namecache_enable();	/* Enable netbios namecache */
-
-	/* Check winbindd parameters are valid */
-
-	ZERO_STRUCT(server_state);
-
-	if (!winbindd_param_init())
-		return False;
-
-	/* Winbind daemon initialisation */
-
-	if (!idmap_init())
-		return False;
-
-	if (!idmap_init_wellknown_sids())
-		return False;
-
-	/* Unblock all signals we are interested in as they may have been
-	   blocked by the parent process. */
-
-	BlockSignals(False, SIGINT);
-	BlockSignals(False, SIGQUIT);
-	BlockSignals(False, SIGTERM);
-	BlockSignals(False, SIGUSR1);
-	BlockSignals(False, SIGUSR2);
-	BlockSignals(False, SIGHUP);
-
-	/* Setup signal handlers */
-	
-	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
-	CatchSignal(SIGQUIT, termination_handler);
-	CatchSignal(SIGTERM, termination_handler);
-
-	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
-
-	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
-	CatchSignal(SIGHUP, sighup_handler);
-
-	return True;
-}
-
-
 /* Main function */
 
 struct winbindd_state server_state;   /* Server state information */
@@ -868,6 +813,54 @@ int main(int argc, char **argv)
 	if (!init_names())
 		exit(1);
 
+  	load_interfaces();
+
+	if (!secrets_init()) {
+
+		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
+		return False;
+	}
+
+	/* Enable netbios namecache */
+
+	namecache_enable();
+
+	/* Check winbindd parameters are valid */
+
+	ZERO_STRUCT(server_state);
+
+	if (!winbindd_param_init())
+		return 1;
+
+	/* Winbind daemon initialisation */
+
+	if (!idmap_init())
+		return 1;
+
+	if (!idmap_init_wellknown_sids())
+		exit(1);
+
+	/* Unblock all signals we are interested in as they may have been
+	   blocked by the parent process. */
+
+	BlockSignals(False, SIGINT);
+	BlockSignals(False, SIGQUIT);
+	BlockSignals(False, SIGTERM);
+	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGUSR2);
+	BlockSignals(False, SIGHUP);
+
+	/* Setup signal handlers */
+	
+	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
+	CatchSignal(SIGQUIT, termination_handler);
+	CatchSignal(SIGTERM, termination_handler);
+
+	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
+
+	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
+	CatchSignal(SIGHUP, sighup_handler);
+
 	if (!interactive)
 		become_daemon(Fork);
 
@@ -881,10 +874,6 @@ int main(int argc, char **argv)
 	if (interactive)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
-
-	if (!winbind_setup_common()) {
-		return 1;
-	}
 
 	if (opt_dual_daemon) {
 		do_dual_daemon();
