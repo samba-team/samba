@@ -10,6 +10,7 @@ ADD_OBJ_FILES = \
 		torture/basic/mangle_test.o \
 		torture/basic/denytest.o \
 		torture/basic/aliases.o \
+		torture/basic/locking.o \
 		torture/basic/secleak.o 
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
