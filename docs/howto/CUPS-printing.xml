@@ -135,7 +135,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 		</para>
 
 		<tip><para> Should it be necessary, for any reason, to set your own print commands, you can do this by setting
-		<smbconfoption><name>printing</name><value>sysv</value></smbconfoption>. However, you will loose all the benefits
+		<smbconfoption><name>printing</name><value>sysv</value></smbconfoption>. However, you will lose all the benefits
 		of tight CUPS/Samba integration. When you do this you must manually configure the printing system commands
 		(most important: 
 		<smbconfoption><name>print command</name></smbconfoption>; other commands are
