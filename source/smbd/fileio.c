@@ -667,8 +667,8 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
   DEBUG(9,("flushing write cache: fd = %d, off=%.0f, size=%u\n",
 	   fsp->fd, (double)wcp->offset, (unsigned int)data_size));
 
-  if(data_size == wcp->alloc_size)
 #ifdef WITH_PROFILE
+  if(data_size == wcp->alloc_size)
     INC_PROFILE_COUNT(writecache_num_perfect_writes);
 #endif
 
