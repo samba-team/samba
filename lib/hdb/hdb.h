@@ -59,8 +59,10 @@ typedef struct HDB{
     krb5_error_code (*nextkey)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*lock)(krb5_context, struct HDB*, int operation);
     krb5_error_code (*unlock)(krb5_context, struct HDB*);
-    krb5_error_code (*_get)(krb5_context, struct HDB*, krb5_data, krb5_data*);
     krb5_error_code (*rename)(krb5_context, struct HDB*, const char*);
+    krb5_error_code (*_get)(krb5_context, struct HDB*, krb5_data, krb5_data*);
+    krb5_error_code (*_put)(krb5_context, struct HDB*, int, 
+			    krb5_data, krb5_data);
 }HDB;
 
 void hdb_free_entry(krb5_context, hdb_entry*);
@@ -80,11 +82,15 @@ krb5_error_code hdb_next_keytype2key(krb5_context, hdb_entry*,
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*, hdb_entry*, void*);
 krb5_error_code hdb_foreach(krb5_context context, HDB *db, hdb_foreach_func_t func, void *data);
 
+krb5_error_code hdb_check_db_format(krb5_context, HDB*);
+krb5_error_code hdb_init_db(krb5_context, HDB*);
+
 Key *hdb_unseal_key(Key*, des_key_schedule);
 void hdb_seal_key(Key*, des_key_schedule);
 void hdb_free_key(Key*);
 
 #define HDB_DB_DIR "/var/heimdal"
 #define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
+#define HDB_DB_FORMAT_ENTRY "hdb/db-format"
 
 #endif /* __HDB_H__ */
