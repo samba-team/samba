@@ -24,7 +24,7 @@ kadmin_SOURCES =				\
 	util.c					\
 	random_password.c			\
 	kadmin_locl.h
-	
+
 if KRB4
 KRB4LIB = $(LIB_krb4)
 version4_c = version4.c
@@ -39,8 +39,6 @@ COMMON_LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/sl/libsl.la \
-	$(LIB_readline) \
 	$(LIB_roken) \
 	$(DBLIB)
 
@@ -51,5 +49,7 @@ kadmind_LDADD = $(KRB4LIB) $(top_builddir)/lib/kadm5/libkadm5srv.la \
 kadmin_LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
 	$(top_builddir)/lib/kadm5/libkadm5srv.la \
+	$(top_builddir)/lib/sl/libsl.la \
+	$(LIB_readline) \
 	$(COMMON_LDADD) \
 	$(LIB_dlopen)
