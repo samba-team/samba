@@ -490,12 +490,19 @@ void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
 UNISTR2* add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
 void free_sid_array(uint32 num_entries, DOM_SID **entries);
 DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
+void free_printer_info_2(PRINTER_INFO_2 *printer);
 void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
 PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
 				const PRINTER_INFO_2 *prt);
 void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
 PRINTER_INFO_1 *add_print1_to_array(uint32 *len, PRINTER_INFO_1 ***array,
 				const PRINTER_INFO_1 *prt);
+void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
+JOB_INFO_1 *add_job1_to_array(uint32 *len, JOB_INFO_1 ***array,
+				const JOB_INFO_1 *job);
+void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
+JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
+				const JOB_INFO_2 *job);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -2991,6 +2998,7 @@ BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u,
 				uint32 size);
 BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u,
                                prs_struct *ps, int depth);
+void free_r_enumprinters(SPOOL_R_ENUMPRINTERS *r_u);
 BOOL spoolss_io_r_enumprinters(char *desc,
                                SPOOL_R_ENUMPRINTERS *r_u, 
                                prs_struct *ps, int depth);
@@ -3009,7 +3017,13 @@ BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth)
 BOOL spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth);
+void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u);
 BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, PRINTER_HND *hnd,
+				uint32 firstjob,
+				uint32 numofjobs,
+				uint32 level,
+				uint32 buf_size);
 BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth);

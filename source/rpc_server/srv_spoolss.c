@@ -1748,77 +1748,6 @@ static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number,
 	}
 }
 
-/****************************************************************************
-****************************************************************************/
-static void free_devmode(DEVICEMODE *devmode)
-{
-	if (devmode->private!=NULL)
-		free(devmode->private);
-	if (devmode!=NULL)
-		free(devmode);
-}
-
-/****************************************************************************
-****************************************************************************/
-static void free_printer_info_2(PRINTER_INFO_2 *printer)
-{
-	free_devmode(printer->devmode);
-	if (printer!=NULL)
-		free(printer);
-}
-
-/****************************************************************************
-****************************************************************************/
-static void free_enum_printers_info_1(PRINTER_INFO_1 **printers, uint32 total)
-{
-	int number=0;	
-	if (printers != NULL)
-	{			
-		for (number=0; number<total; number++)
-		{
-			if (printers[number] != NULL)
-			{
-				free(printers[number]);
-			}
-		}
-		free(printers);
-	}
-}
-
-/****************************************************************************
-****************************************************************************/
-static void free_enum_printers_info_2(PRINTER_INFO_2 **printers, uint32 total)
-{
-	int number=0;		
-	if (printers != NULL)
-	{	
-		for (number=0; number<total; number++)
-		{		
-			if (printers[number] != NULL)
-			{
-				free_printer_info_2(printers[number]);
-			}
-		}
-		free(printers);
-	}
-}
-
-/****************************************************************************
-****************************************************************************/
-static void free_enum_printers_info(SPOOL_R_ENUMPRINTERS *r_u)
-{	
-	DEBUG(4,("free_enum_printers_info: [%d] structs to free at level [%d]\n", r_u->returned, r_u->level));
-	switch (r_u->level)
-	{
-		case 1:			
-			free_enum_printers_info_1(r_u->printer.printers_1, r_u->returned);
-			break;
-		case 2:
-			free_enum_printers_info_2(r_u->printer.printers_2, r_u->returned);
-			break;
-	}
-}
-
 /********************************************************************
  * api_spoolss_reply_enumprinters
  *
@@ -1864,7 +1793,6 @@ static void spoolss_reply_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rd
 	r_u.status=0x0000;
 
 	spoolss_io_r_enumprinters("",&r_u,rdata,0);
-	free_enum_printers_info(&r_u);
 }
 
 /********************************************************************
@@ -2827,7 +2755,7 @@ static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata, con
 	if (get_printer_snum(&(q_u->handle), &snum))
 	{
 		count=get_printqueue(snum, conn, &queue, &status);
-		r_u.numofjobs=count;
+		r_u.numofjobs=0;
 		
 		r_u.level=q_u->level;
 		
@@ -2837,48 +2765,38 @@ static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata, con
 		{
 			case 1:
 			{
-				job_info_1=(JOB_INFO_1 *)malloc(count*sizeof(JOB_INFO_1));
-
 				for (i=0; i<count; i++)
 				{
-					fill_job_info_1(&(job_info_1[i]), &(queue[i]), i, snum);
+					job_info_1=(JOB_INFO_1 *)malloc(count*sizeof(JOB_INFO_1));
+					add_job1_to_array(&r_u.numofjobs,
+							  &r_u.job.job_info_1,
+							  job_info_1);
+
+					fill_job_info_1(r_u.job.job_info_1[i], &(queue[i]), i, snum);
 				}
-				r_u.job.job_info_1=job_info_1;
 				break;
 			}
 			case 2:
 			{
-				job_info_2=(JOB_INFO_2 *)malloc(count*sizeof(JOB_INFO_2));
-
 				for (i=0; i<count; i++)
 				{
-					fill_job_info_2(&(job_info_2[i]), &(queue[i]), i, snum);
+					job_info_2=(JOB_INFO_2 *)malloc(count*sizeof(JOB_INFO_2));
+					add_job2_to_array(&r_u.numofjobs,
+							  &r_u.job.job_info_2,
+							  job_info_2);
+
+					fill_job_info_2(r_u.job.job_info_2[i], &(queue[i]), i, snum);
 				}
-				r_u.job.job_info_2=job_info_2;
 				break;
 			}
 		}
 	}
 
-	r_u.status=0x0;
+	r_u.status = 0x0;
 
 	spoolss_io_r_enumjobs("",&r_u,rdata,0);
-	switch (r_u.level)
-	{
-		case 1:
-		{
-			free(job_info_1);
-			break;
-		}
-		case 2:
-		{
-			free_devmode(job_info_2->devmode);
-			free(job_info_2);
-			break;
-		}
-	}
-	if (queue) free(queue);
 
+	if (queue) free(queue);
 }
 
 /****************************************************************************

@@ -1013,8 +1013,8 @@ typedef struct spool_r_enumjobs
 {
 	uint32 level;
 	union {
-		JOB_INFO_1 *job_info_1;
-		JOB_INFO_2 *job_info_2;
+		JOB_INFO_1 **job_info_1;
+		JOB_INFO_2 **job_info_2;
 	} job;
 	uint32 offered;
 	uint32 numofjobs;
