@@ -37,6 +37,7 @@ static char *charset_name(charset_t ch)
 	else if (ch == CH_UNIX) ret = lp_unix_charset();
 	else if (ch == CH_DOS) ret = lp_dos_charset();
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
+	else if (ch == CH_UTF8) ret = "UTF-8";
 
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
@@ -151,7 +152,7 @@ size_t convert_string(charset_t from, charset_t to,
 				
 						
 		               break;
-		  case EILSEQ: reason="Illegal myltibyte sequence"; break;
+		  case EILSEQ: reason="Illegal multibyte sequence"; break;
 		}
 		/* smb_panic(reason); */
 	}
@@ -390,6 +391,37 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
 	return len;
 }
 
+/****************************************************************************
+copy a string from a char* src to a UTF-8 destination
+return the number of bytes occupied by the string in the destination
+flags can have:
+  STR_TERMINATE means include the null termination
+  STR_UPPER     means uppercase in the destination
+dest_len is the maximum length allowed in the destination. If dest_len
+is -1 then no maxiumum is used
+****************************************************************************/
+int push_utf8(const void *base_ptr, void *dest, const char *src, int dest_len, int flags)
+{
+	int src_len = strlen(src);
+	pstring tmpbuf;
+
+	/* treat a pstring as "unlimited" length */
+	if (dest_len == -1) {
+		dest_len = sizeof(pstring);
+	}
+
+	if (flags & STR_UPPER) {
+		pstrcpy(tmpbuf, src);
+		strupper(tmpbuf);
+		src = tmpbuf;
+	}
+
+	if (flags & STR_TERMINATE) {
+		src_len++;
+	}
+
+	return convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len);
+}
 
 /****************************************************************************
 copy a string from a ucs2 source to a unix char* destination
@@ -435,6 +467,40 @@ int pull_ucs2_fstring(char *dest, const void *src)
 	return pull_ucs2(NULL, dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
+/****************************************************************************
+copy a string from a utf-8 source to a unix char* destination
+flags can have:
+  STR_TERMINATE means the string in src is null terminated
+if STR_TERMINATE is set then src_len is ignored
+src_len is the length of the source area in bytes
+return the number of bytes occupied by the string in src
+the resulting string in "dest" is always null terminated
+****************************************************************************/
+int pull_utf8(const void *base_ptr, char *dest, const void *src, int dest_len, int src_len, int flags)
+{
+	int ret;
+
+	if (dest_len == -1) {
+		dest_len = sizeof(pstring);
+	}
+
+	if (flags & STR_TERMINATE) src_len = strlen(src)+1;
+
+	ret = convert_string(CH_UTF8, CH_UNIX, src, src_len, dest, dest_len);
+	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
+
+	return src_len;
+}
+
+int pull_utf8_pstring(char *dest, const void *src)
+{
+	return pull_utf8(NULL, dest, src, sizeof(pstring), -1, STR_TERMINATE);
+}
+
+int pull_utf8_fstring(char *dest, const void *src)
+{
+	return pull_utf8(NULL, dest, src, sizeof(fstring), -1, STR_TERMINATE);
+}
 
 /****************************************************************************
 copy a string from a char* src to a unicode or ascii

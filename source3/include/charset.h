@@ -19,6 +19,6 @@
 */
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3} charset_t;
+typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t;
 
-#define NUM_CHARSETS 4
+#define NUM_CHARSETS 5
