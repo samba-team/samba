@@ -375,7 +375,7 @@ static uint32 unix_dev_minor(SMB_DEV_T dev)
 
 static uint32  unix_perms_to_wire(mode_t perms)
 {
-	uint ret = 0;
+	unsigned int ret = 0;
 
 	ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
 	ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);

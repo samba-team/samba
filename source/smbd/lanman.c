@@ -1670,7 +1670,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
   fstring comment;
   pstring pathname;
   char *command, *cmdname;
-  uint offset;
+  unsigned int offset;
   int snum;
   int res = ERRunsup;
   
