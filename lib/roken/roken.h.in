@@ -513,6 +513,17 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
 		     char *serv, size_t servlen,
 		     int flags);
 
+#ifndef HAVE_STRFTIME
+size_t
+strftime (char *buf, size_t maxsize, const char *format,
+	  const struct tm *tm);
+#endif
+
+#ifndef HAVE_STRPTIME
+char *
+strptime (const char *buf, const char *format, struct tm *timeptr);
+#endif
+
 /*
  * kludges and such
  */
