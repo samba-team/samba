@@ -829,7 +829,7 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 	    kdc_log(0, "Bad request to validate ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
-	if(*tgt->starttime < kdc_time){
+	if(*tgt->starttime > kdc_time){
 	    kdc_log(0, "Early request to validate ticket");
 	    return KRB5KRB_AP_ERR_TKT_NYV;
 	}
@@ -1251,6 +1251,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     krb5_auth_context ac = NULL;
     krb5_ticket *ticket = NULL;
     krb5_flags ap_req_options;
+    krb5_flags verify_ap_req_flags;
     const char *e_text = NULL;
     krb5_crypto crypto;
 
@@ -1316,11 +1317,17 @@ tgs_rep2(KDC_REQ_BODY *b,
 	goto out2;
     }
     
+    if (b->kdc_options.validate)
+	verify_ap_req_flags = KRB5_VERIFY_AP_REQ_IGNORE_INVALID;
+    else
+	verify_ap_req_flags = 0;
+
     ret = krb5_verify_ap_req(context,
 			     &ac,
 			     &ap_req,
 			     princ,
 			     &tkey->key,
+			     verify_ap_req_flags,
 			     &ap_req_options,
 			     &ticket);
 			     
@@ -1434,7 +1441,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
 		goto out;
 	    }
-	    ret = krb5_decrypt_ticket(context, t, &tkey->key, &adtkt);
+	    ret = krb5_decrypt_ticket(context, t, &tkey->key, 0, &adtkt);
 
 	    if(ret)
 		goto out;
