@@ -26,7 +26,7 @@
 struct {
 	int unix_error;
 	int dos_error;
-	uint32 nt_error;
+	NTSTATUS nt_error;
 } unix_dos_nt_errmap[] = {
 	{ EPERM, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
 	{ EACCES, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
@@ -50,7 +50,7 @@ struct {
 #endif
 	{ EROFS, ERRnowrite, NT_STATUS_ACCESS_DENIED },
 
-	{ 0, 0, 0 }
+	{ 0, 0, NT_STATUS_OK }
 };
 
 /* Map an NT error code from a Unix error code */

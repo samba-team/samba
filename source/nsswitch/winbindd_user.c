@@ -356,7 +356,8 @@ enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 
 static BOOL get_sam_user_entries(struct getent_state *ent)
 {
-	NTSTATUS status, num_entries;
+	NTSTATUS status;
+	uint32 num_entries;
 	SAM_DISPINFO_1 info1;
 	SAM_DISPINFO_CTR ctr;
 	struct getpwent_user *name_list = NULL;
@@ -455,7 +456,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		
 		ent->num_sam_entries += num_entries;
 
-		if (status != STATUS_MORE_ENTRIES) {
+		if (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 			break;
 		}
 
@@ -472,7 +473,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	ent->got_all_sam_entries = (status != STATUS_MORE_ENTRIES);
+	ent->got_all_sam_entries = (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES));
 
 	return ent->num_sam_entries > 0;
 }
@@ -614,7 +615,8 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	ctr.sam.info1 = &info1;
 
 	for (domain = domain_list; domain; domain = domain->next) {
-		NTSTATUS status, start_ndx = 0;
+		NTSTATUS status;
+		uint32 start_ndx = 0;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
@@ -680,7 +682,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 				
 				extra_data[extra_data_len++] = ',';
 			}   
-		} while (status == STATUS_MORE_ENTRIES);
+		} while (NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES));
         }
 
 	/* Assign extra_data fields in response structure */

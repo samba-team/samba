@@ -591,10 +591,9 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 		return False;
 	}
 
-	if (cli_samr_query_usergroups(domain->sam_dom_handle.cli,
-				      domain->sam_dom_handle.mem_ctx,
-				      &user_pol, num_groups, user_groups)
-	    != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(cli_samr_query_usergroups(domain->sam_dom_handle.cli,
+						       domain->sam_dom_handle.mem_ctx,
+						       &user_pol, num_groups, user_groups))) {
 		result = False;
 		goto done;
 	}
@@ -867,16 +866,12 @@ uint32 domain_sequence_number(char *domain_name)
    bit extra to give an overview of domain users for the User Manager
    application. */
 
-uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
-			     uint32 *start_ndx, uint16 info_level, 
-			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
+NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
+				 uint32 *start_ndx, uint16 info_level, 
+				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
-	NTSTATUS status;
-
-	status = wb_samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
-					info_level, num_entries, ctr);
-
-	return status;
+	return wb_samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
+				      info_level, num_entries, ctr);
 }
 
 /* Check if a domain is present in a comma-separated list of domains */

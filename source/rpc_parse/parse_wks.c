@@ -173,7 +173,7 @@ BOOL wks_io_r_query_info(char *desc, WKS_R_QUERY_INFO *r_u, prs_struct *ps, int 
 	if(!wks_io_wks_info_100("inf", r_u->wks100, ps, depth))
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_u->status))
 		return False;
 
 	return True;

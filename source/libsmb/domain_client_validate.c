@@ -323,16 +323,14 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 
 	ZERO_STRUCT(info3);
 
-	if ((status = cli_nt_login_network(&cli, user_info, smb_uid_low, 
-                                           &ctr, &info3))
-            != NT_STATUS_OK) {
+	status = cli_nt_login_network(&cli, user_info, smb_uid_low, 
+				      &ctr, &info3);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_username.str,
                          user_info->domain.str, remote_machine, 
                          get_nt_error_msg(status)));
-	} else {
-		status = NT_STATUS_OK;
 	}
 
 	/*

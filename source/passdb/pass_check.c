@@ -599,7 +599,7 @@ static BOOL password_check(char *password)
 {
 
 #ifdef WITH_PAM
-	return (smb_pam_passcheck(this_user, password) == NT_STATUS_OK);
+	return NT_STATUS_IS_OK(smb_pam_passcheck(this_user, password));
 #endif /* WITH_PAM */
 
 #ifdef WITH_AFS

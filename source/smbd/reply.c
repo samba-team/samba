@@ -499,7 +499,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
      return(ERROR_NT(NT_STATUS_LOGON_FAILURE));
     }
 
-    if (!smb_password_ok(sam_trust_acct, &user_info, &server_info)) {
+    if (!NT_STATUS_IS_OK(smb_password_ok(sam_trust_acct, &user_info, &server_info))) {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       pdb_free_sam(sam_trust_acct);
       return(ERROR_NT(NT_STATUS_LOGON_FAILURE));
@@ -1751,14 +1751,13 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
  code.
 ****************************************************************************/
 
-int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
-		     int dirtype, char *name)
+NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 {
 	pstring directory;
 	pstring mask;
 	char *p;
 	int count=0;
-	int error = ERRnoaccess;
+	NTSTATUS error = NT_STATUS_OK;
 	BOOL has_wild;
 	BOOL exists=False;
 	BOOL bad_path = False;
@@ -1797,7 +1796,7 @@ int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
 		if (!can_delete(directory,conn,dirtype)) {
-			return ERROR_NT(NT_STATUS_SHARING_VIOLATION);
+			return NT_STATUS_SHARING_VIOLATION;
 		}
 		if (vfs_unlink(conn,directory) == 0) {
 			count++;
@@ -1817,7 +1816,7 @@ int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
 		*/
 		
 		if (dirptr) {
-			error = ERRbadfile;
+			error = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
@@ -1828,7 +1827,7 @@ int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
 				
 				if(!mask_match(fname, mask, case_sensitive)) continue;
 				
-				error = ERRnoaccess;
+				error = NT_STATUS_ACCESS_DENIED;
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				if (!can_delete(fname,conn,dirtype)) continue;
 				if (vfs_unlink(conn,fname) == 0) count++;
@@ -1838,19 +1837,11 @@ int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
 		}
 	}
 	
-	if (count == 0) {
-		if (exists)
-			return ERROR_DOS(ERRDOS,error);
-		else {
-			if((errno == ENOENT) && bad_path) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
-			return(UNIXERROR(ERRDOS,error));
-		}
+	if (count == 0 && NT_STATUS_IS_OK(error)) {
+		error = map_nt_error_from_unix(errno);
 	}
-	
-	return 0;
+
+	return error;
 }
 
 /****************************************************************************
@@ -1863,6 +1854,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	int outsize = 0;
 	pstring name;
 	int dirtype;
+	NTSTATUS status;
 	START_PROFILE(SMBunlink);
 	
 	dirtype = SVAL(inbuf,smb_vwv0);
@@ -1873,16 +1865,16 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
-	outsize = unlink_internals(conn, inbuf, outbuf, dirtype, name);
-	if(outsize == 0) {
-		/*
-		 * Win2k needs a changenotify request response before it will
-		 * update after a rename..
-		 */
-		process_pending_change_notify_queue((time_t)0);
-		
-		outsize = set_message(outbuf,0,0,True);
-	}
+	status = unlink_internals(conn, dirtype, name);
+	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+
+	/*
+	 * Win2k needs a changenotify request response before it will
+	 * update after a rename..
+	 */
+	process_pending_change_notify_queue((time_t)0);
+	
+	outsize = set_message(outbuf,0,0,True);
   
 	END_PROFILE(SMBunlink);
 	return outsize;
@@ -3171,28 +3163,22 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
  The guts of the mkdir command, split out so it may be called by the NT SMB
  code. 
 ****************************************************************************/
-int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring directory)
+NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 {
-  BOOL bad_path = False;
-  SMB_STRUCT_STAT sbuf;
-  int ret= -1;
-  
-  unix_convert(directory,conn,0,&bad_path,&sbuf);
-  
-  if (check_name(directory, conn))
-    ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
-  
-  if (ret < 0)
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  return ret;
+	BOOL bad_path = False;
+	SMB_STRUCT_STAT sbuf;
+	int ret= -1;
+	
+	unix_convert(directory,conn,0,&bad_path,&sbuf);
+	
+	if (check_name(directory, conn))
+		ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
+	
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3203,13 +3189,15 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 {
 	pstring directory;
 	int outsize;
+	NTSTATUS status;
 	START_PROFILE(SMBmkdir);
  
 	srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
 
-	outsize=mkdir_internal(conn, inbuf, outbuf, directory);
-	if(outsize == 0)
-		outsize = set_message(outbuf,0,0,True);
+	status = mkdir_internal(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+
+	outsize = set_message(outbuf,0,0,True);
 
 	DEBUG( 3, ( "mkdir %s ret=%d\n", directory, outsize ) );
 
@@ -3478,9 +3466,9 @@ static BOOL can_rename(char *fname,connection_struct *conn)
  The guts of the rename command, split out so it may be called by the NT SMB
  code. 
 ****************************************************************************/
-int rename_internals(connection_struct *conn, 
-		     char *inbuf, char *outbuf, char *name, 
-		     char *newname, BOOL replace_if_exists)
+NTSTATUS rename_internals(connection_struct *conn, 
+			  char *name, 
+			  char *newname, BOOL replace_if_exists)
 {
 	pstring directory;
 	pstring mask;
@@ -3490,7 +3478,7 @@ int rename_internals(connection_struct *conn,
 	BOOL bad_path1 = False;
 	BOOL bad_path2 = False;
 	int count=0;
-	int error = ERRnoaccess;
+	NTSTATUS error = NT_STATUS_OK;
 	BOOL exists=False;
 	BOOL rc = True;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
@@ -3600,13 +3588,13 @@ int rename_internals(connection_struct *conn,
 
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
-			   !conn->vfs_ops.rename(conn,directory,newname))
+			   conn->vfs_ops.rename(conn,directory,newname) == 0)
 				count++;
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
 			    !vfs_file_exist(conn,newname,NULL) &&
-			    !conn->vfs_ops.rename(conn,directory,newname))
+			    conn->vfs_ops.rename(conn,directory,newname) == 0)
 				count++;
 		}
 
@@ -3616,7 +3604,7 @@ int rename_internals(connection_struct *conn,
 		if (!count) exists = vfs_file_exist(conn,directory,NULL);
 		if (!count && exists && vfs_file_exist(conn,newname,NULL)) {
 			exists = True;
-			error = ERRrename;
+			error = NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 	} else {
 		/*
@@ -3630,7 +3618,7 @@ int rename_internals(connection_struct *conn,
 			dirptr = OpenDir(conn, directory, True);
 		
 		if (dirptr) {
-			error = ERRbadfile;
+			error = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
@@ -3643,7 +3631,7 @@ int rename_internals(connection_struct *conn,
 				if(!mask_match(fname, mask, case_sensitive))
 					continue;
 				
-				error = ERRnoaccess;
+				error = NT_STATUS_ACCESS_DENIED;
 				slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
 				if (!can_rename(fname,conn)) {
 					DEBUG(6,("rename %s refused\n", fname));
@@ -3660,7 +3648,7 @@ int rename_internals(connection_struct *conn,
 				if (!replace_if_exists && 
                                     vfs_file_exist(conn,destname, NULL)) {
 					DEBUG(6,("file_exist %s\n", destname));
-					error = 183;
+					error = NT_STATUS_OBJECT_NAME_COLLISION;
 					continue;
 				}
 				
@@ -3672,59 +3660,52 @@ int rename_internals(connection_struct *conn,
 		}
 	}
 	
-	if (count == 0) {
-		if (exists)
-			return ERROR_DOS(ERRDOS,error);
-		else {
-			if((errno == ENOENT) && (bad_path1 || bad_path2)) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
-			return(UNIXERROR(ERRDOS,error));
-		}
+	if (count == 0 && NT_STATUS_IS_OK(error)) {
+		error = map_nt_error_from_unix(errno);
 	}
 	
-	return 0;
+	return error;
 }
 
 /****************************************************************************
  Reply to a mv.
 ****************************************************************************/
 
-int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
+	     int dum_buffsize)
 {
-  int outsize = 0;
-  pstring name;
-  pstring newname;
-  char *p;
+	int outsize = 0;
+	pstring name;
+	pstring newname;
+	char *p;
+	NTSTATUS status;
 
-  START_PROFILE(SMBmv);
+	START_PROFILE(SMBmv);
 
-  p = smb_buf(inbuf) + 1;
-  p += srvstr_pull(inbuf, name, p, sizeof(name), -1, STR_TERMINATE);
-  p++;
-  p += srvstr_pull(inbuf, newname, p, sizeof(newname), -1, STR_TERMINATE);
-
-  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
-  RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
-
-  DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
-
-  outsize = rename_internals(conn, inbuf, outbuf, name, newname, False);
-  if(outsize == 0) {
+	p = smb_buf(inbuf) + 1;
+	p += srvstr_pull(inbuf, name, p, sizeof(name), -1, STR_TERMINATE);
+	p++;
+	p += srvstr_pull(inbuf, newname, p, sizeof(newname), -1, STR_TERMINATE);
+	
+	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+	
+	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
+	
+	status = rename_internals(conn, name, newname, False);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
 
 	/*
-     * Win2k needs a changenotify request response before it will
-     * update after a rename..
-     */
-
-    process_pending_change_notify_queue((time_t)0);
-
-    outsize = set_message(outbuf,0,0,True);
-  }
+	 * Win2k needs a changenotify request response before it will
+	 * update after a rename..
+	 */	
+	process_pending_change_notify_queue((time_t)0);
+	outsize = set_message(outbuf,0,0,True);
   
-  END_PROFILE(SMBmv);
-  return(outsize);
+	END_PROFILE(SMBmv);
+	return(outsize);
 }
 
 /*******************************************************************

@@ -1435,37 +1435,35 @@ static int call_nt_transact_rename(connection_struct *conn,
                                    int bufsize,
                                    char **ppsetup, char **ppparams, char **ppdata)
 {
-  char *params = *ppparams;
-  pstring new_name;
-  files_struct *fsp = file_fsp(params, 0);
-  BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
-  int outsize = 0;
+	char *params = *ppparams;
+	pstring new_name;
+	files_struct *fsp = file_fsp(params, 0);
+	BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
+	NTSTATUS status;
 
-  CHECK_FSP(fsp, conn);
-  srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE);
+	CHECK_FSP(fsp, conn);
+	srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE);
 
-  outsize = rename_internals(conn, inbuf, outbuf, fsp->fsp_name,
-                             new_name, replace_if_exists);
-  if(outsize == 0) {
-    /*
-     * Rename was successful.
-     */
-    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+	status = rename_internals(conn, fsp->fsp_name,
+				  new_name, replace_if_exists);
+	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
 
-    DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
-          fsp->fsp_name, new_name));
-
-    outsize = -1;
-
+	/*
+	 * Rename was successful.
+	 */
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+	
+	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
+		 fsp->fsp_name, new_name));
+	
 	/*
 	 * Win2k needs a changenotify request response before it will
 	 * update after a rename..
 	 */
-
+	
 	process_pending_change_notify_queue((time_t)0);
-  }
 
-  return(outsize);
+	return -1;
 }
 
 

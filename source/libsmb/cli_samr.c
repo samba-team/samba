@@ -68,7 +68,7 @@ NTSTATUS cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*connect_pol = r.connect_pol;
 	}
 
@@ -114,7 +114,7 @@ NTSTATUS cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*connect_pol = r.pol;
 	}
 
@@ -161,7 +161,7 @@ NTSTATUS cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*domain_pol = r.domain_pol;
 	}
 
@@ -208,7 +208,7 @@ NTSTATUS cli_samr_open_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*user_pol = r.user_pol;
 	}
 
@@ -255,7 +255,7 @@ NTSTATUS cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*group_pol = r.pol;
 	}
 
@@ -395,7 +395,7 @@ NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*num_groups = r.num_entries;
 		*gid = r.gid;
 	}
@@ -443,7 +443,7 @@ NTSTATUS cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*num_mem = r.num_entries;
 		*rid = r.rid;
 		*attr = r.attr;
@@ -466,7 +466,8 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SAMR_Q_ENUM_DOM_GROUPS q;
 	SAMR_R_ENUM_DOM_GROUPS r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL, name_idx, i;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 name_idx, i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -495,8 +496,8 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_OK &&
-	    result != STATUS_MORE_ENTRIES) {
+	if (!NT_STATUS_IS_OK(result) &&
+	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 		goto done;
 	}
 
@@ -542,7 +543,8 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_ALIASMEM q;
 	SAMR_R_QUERY_ALIASMEM r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL, i;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -569,7 +571,7 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -629,7 +631,7 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*alias_pol = r.pol;
 	}
 
@@ -678,7 +680,7 @@ NTSTATUS cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -731,8 +733,8 @@ NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         result = r.status;
 
-	if (result != NT_STATUS_OK &&
-	    result != STATUS_MORE_ENTRIES) {
+	if (!NT_STATUS_IS_OK(result) &&
+	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 		goto done;
 	}
 
@@ -758,7 +760,8 @@ NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SAMR_Q_LOOKUP_RIDS q;
 	SAMR_R_LOOKUP_RIDS r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL, i;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 i;
 
         if (num_rids > 1000) {
                 DEBUG(2, ("cli_samr_lookup_rids: warning: NT4 can crash if "
@@ -791,7 +794,7 @@ NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -831,7 +834,8 @@ NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SAMR_Q_LOOKUP_NAMES q;
 	SAMR_R_LOOKUP_NAMES r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL, i;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -859,7 +863,7 @@ NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -921,7 +925,7 @@ NTSTATUS cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -977,7 +981,7 @@ NTSTATUS cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -1024,7 +1028,7 @@ NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 

@@ -192,7 +192,8 @@ static void get_username (char *username)
 void fetch_domain_sid(struct cli_state *cli)
 {
 	POLICY_HND pol;
-	uint32 result = 0, info_class = 5;
+	NTSTATUS result = NT_STATUS_OK;
+	uint32 info_class = 5;
 	fstring domain_name;
 	static BOOL got_domain_sid;
 	TALLOC_CTX *mem_ctx;
@@ -211,15 +212,16 @@ void fetch_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	
-	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
-					  SEC_RIGHTS_MAXIMUM_ALLOWED,
-					  &pol) != NT_STATUS_OK)) {
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
-	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
-						domain_name, &domain_sid))
-	    != NT_STATUS_OK) {
+	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
+					   domain_name, &domain_sid);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
@@ -234,7 +236,7 @@ void fetch_domain_sid(struct cli_state *cli)
  error:
 	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
 
-	if (result != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result)) {
 		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
 	}
 
@@ -323,7 +325,7 @@ static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 
 /* Change the debug level */
 
-static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -339,7 +341,7 @@ static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 	return NT_STATUS_OK;
 }
 
-static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_quit(struct cli_state *cli, int argc, char **argv)
 {
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */
@@ -403,10 +405,10 @@ void add_command_set(struct cmd_set *cmd_set)
 	DLIST_ADD(cmd_list, entry);
 }
 
-static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd)
+static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd)
 {
 	char *p = cmd, **argv = NULL;
-	uint32 result;
+	NTSTATUS result;
 	pstring buf;
 	int argc = 0, i;
 
@@ -430,7 +432,7 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 
 		if (!argv) {
 			fprintf(stderr, "out of memory\n");
-			return 0;
+			return NT_STATUS_OK;
 		}
 					
 		p = cmd;
@@ -461,20 +463,20 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 
 /* Process a command entered at the prompt or as part of -c */
 
-static uint32 process_cmd(struct cli_state *cli, char *cmd)
+static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 {
 	struct cmd_list *temp_list;
 	BOOL found = False;
 	pstring buf;
 	char *p = cmd;
-	uint32 result=0;
+	NTSTATUS result = NT_STATUS_OK;
 	int len = 0;
 
 	if (cmd[strlen(cmd) - 1] == '\n')
 		cmd[strlen(cmd) - 1] = '\0';
 
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
-		return 0;
+		return NT_STATUS_OK;
 	}
 
         /* strip the trainly \n if it exsists */
@@ -500,10 +502,10 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
  done:
 	if (!found && buf[0]) {
 		printf("command not found: %s\n", buf);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
-	if (result != 0) {
+	if (!NT_STATUS_IS_OK(result)) {
 		printf("result was %s\n", get_nt_error_msg(result));
 	}
 

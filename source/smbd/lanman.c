@@ -2016,6 +2016,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(str2,1);
 	int jobid, errcode;
 	extern struct current_user current_user;
+	WERROR werr = WERR_OK;
 
 	jobid = SVAL(p,0);
 
@@ -2036,18 +2037,21 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(&current_user, jobid, &errcode)) 
+		if (print_job_delete(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(&current_user, jobid, &errcode)) 
+		if (print_job_pause(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(&current_user, jobid, &errcode)) 
+		if (print_job_resume(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	}
+
+	if (!W_ERROR_IS_OK(werr))
+		errcode = W_ERROR_V(werr);
 	
  out:
 	SSVAL(*rparam,0,errcode);	
@@ -2070,6 +2074,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	char *QueueName = skip_string(str2,1);
 	int errcode = NERR_notsupported;
 	int snum;
+	WERROR werr = WERR_OK;
 	extern struct current_user current_user;
 
 	/* check it's a supported varient */
@@ -2089,15 +2094,17 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 
 	switch (function) {
 	case 74: /* Pause queue */
-		if (print_queue_pause(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_pause(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	case 75: /* Resume queue */
-		if (print_queue_resume(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_resume(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	case 103: /* Purge */
-		if (print_queue_purge(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_purge(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	}
+
+	if (!W_ERROR_IS_OK(werr)) errcode = W_ERROR_V(werr);
 
  out:
 	SSVAL(*rparam,0,errcode);

@@ -363,11 +363,9 @@ typedef struct net_q_auth2_info
 /* NET_R_AUTH_2 */
 typedef struct net_r_auth2_info
 {
-    DOM_CHAL srv_chal;     /* server-calculated credentials */
-    NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
-
-  NTSTATUS status; /* return code */
-
+	DOM_CHAL srv_chal;     /* server-calculated credentials */
+	NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
+	NTSTATUS status; /* return code */
 } NET_R_AUTH_2;
 
 
@@ -725,7 +723,7 @@ typedef struct net_r_sam_sync_info
 	SAM_DELTA_HDR *hdr_deltas;
 	SAM_DELTA_CTR *deltas;
 
-	uint32 status;
+	NTSTATUS status;
 } NET_R_SAM_SYNC;
 
 /* NET_Q_SAM_DELTAS */
@@ -757,8 +755,7 @@ typedef struct net_r_sam_deltas_info
 	SAM_DELTA_HDR *hdr_deltas;
 	SAM_DELTA_CTR *deltas;
 
-	uint32 status;
-
+	NTSTATUS status;
 } NET_R_SAM_DELTAS;
 
 #endif /* _RPC_NETLOGON_H */

@@ -103,13 +103,13 @@ NT login - interactive.
 password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
-BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
+NTSTATUS cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
                               uint32 smb_userid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
   uchar lm_owf_user_pwd[16];
   uchar nt_owf_user_pwd[16];
-  BOOL ret;
+  NTSTATUS ret;
 
   DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
@@ -156,7 +156,7 @@ NT login - network.
 password equivalents over the network. JRA.
 ****************************************************************************/
 
-uint32 cli_nt_login_network(struct cli_state *cli, 
+NTSTATUS cli_nt_login_network(struct cli_state *cli, 
                             const auth_usersupplied_info *user_info, 
                             uint32 smb_userid_low, NET_ID_INFO_CTR *ctr, 
                             NET_USER_INFO_3 *user_info3)

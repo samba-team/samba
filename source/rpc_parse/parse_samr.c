@@ -78,7 +78,7 @@ BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u,
 	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -139,7 +139,7 @@ void init_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN * r_u,
 
 	r_u->status = status;
 	r_u->ptr_sid = 0;
-	if (status == 0x0) {
+	if (NT_STATUS_IS_OK(status)) {
 		r_u->ptr_sid = 1;
 		init_dom_sid2(&r_u->dom_sid, dom_sid);
 	}
@@ -171,7 +171,7 @@ BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
 			return False;
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -233,7 +233,7 @@ BOOL samr_io_r_unknown_2d(char *desc, SAMR_R_UNKNOWN_2D * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -301,7 +301,7 @@ BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN * r_u,
 	if(!smb_io_pol_hnd("domain_pol", &r_u->domain_pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -375,7 +375,7 @@ BOOL samr_io_r_get_usrdom_pwinfo(char *desc, SAMR_R_GET_USRDOM_PWINFO * r_u,
 		return False;
 	if(!prs_uint32("unknown_2", ps, depth, &r_u->unknown_2))
 		return False;
-	if(!prs_uint32("status   ", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status   ", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -770,7 +770,7 @@ void init_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
 	r_u->switch_value = 0;
 	r_u->status = status;	/* return status */
 
-	if (status == 0) {
+	if (NT_STATUS_IS_OK(status)) {
 		r_u->switch_value = switch_value;
 		r_u->ptr_0 = 1;
 		r_u->ctr = ctr;
@@ -842,7 +842,7 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 	
 	return True;
@@ -871,7 +871,7 @@ BOOL samr_io_r_query_sec_obj(char *desc, SAMR_R_QUERY_SEC_OBJ * r_u,
 			return False;
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -1361,7 +1361,7 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 		
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2006,7 +2006,7 @@ BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 	if (r_u->ptr_entries==0) {
 		if(!prs_align(ps))
 			return False;
-		if(!prs_uint32("status", ps, depth, &r_u->status))
+		if(!prs_ntstatus("status", ps, depth, &r_u->status))
 			return False;
 
 		return True;
@@ -2050,7 +2050,7 @@ BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 	
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2117,7 +2117,7 @@ BOOL samr_io_r_open_group(char *desc, SAMR_R_OPEN_GROUP * r_u,
 	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2338,7 +2338,7 @@ BOOL samr_io_r_create_dom_group(char *desc, SAMR_R_CREATE_DOM_GROUP * r_u,
 
 	if(!prs_uint32("rid   ", ps, depth, &r_u->rid))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2394,7 +2394,7 @@ BOOL samr_io_r_delete_dom_group(char *desc, SAMR_R_DELETE_DOM_GROUP * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2466,7 +2466,7 @@ BOOL samr_io_r_del_groupmem(char *desc, SAMR_R_DEL_GROUPMEM * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2541,7 +2541,7 @@ BOOL samr_io_r_add_groupmem(char *desc, SAMR_R_ADD_GROUPMEM * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2612,7 +2612,7 @@ BOOL samr_io_r_set_groupinfo(char *desc, SAMR_R_SET_GROUPINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2666,7 +2666,7 @@ void init_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO * r_u,
 {
 	DEBUG(5, ("init_samr_r_query_groupinfo\n"));
 
-	r_u->ptr = (status == 0x0 && ctr != NULL) ? 1 : 0;
+	r_u->ptr = (NT_STATUS_IS_OK(status) && ctr != NULL) ? 1 : 0;
 	r_u->ctr = ctr;
 	r_u->status = status;
 }
@@ -2697,7 +2697,7 @@ BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2746,7 +2746,7 @@ void init_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
 {
 	DEBUG(5, ("init_samr_r_query_groupmem\n"));
 
-	if (status == 0x0) {
+	if (NT_STATUS_IS_OK(status)) {
 		r_u->ptr = 1;
 		r_u->num_entries = num_entries;
 
@@ -2830,7 +2830,7 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 		}
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2880,7 +2880,7 @@ void init_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS * r_u,
 {
 	DEBUG(5, ("init_samr_r_query_usergroups\n"));
 
-	if (status == 0) {
+	if (NT_STATUS_IS_OK(status)) {
 		r_u->ptr_0 = 1;
 		r_u->num_entries = num_gids;
 		r_u->ptr_1 = (num_gids != 0) ? 1 : 0;
@@ -2968,7 +2968,7 @@ BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 	  return False;
 
 	return True;
@@ -3107,7 +3107,7 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 		return False;
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3241,7 +3241,7 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 		return False;
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3376,7 +3376,7 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 		return False;
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3499,7 +3499,7 @@ void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO * r_u,
 {
 	DEBUG(5, ("init_samr_r_query_aliasinfo\n"));
 
-	r_u->ptr = (status == 0x0 && ctr != NULL) ? 1 : 0;
+	r_u->ptr = (NT_STATUS_IS_OK(status) && ctr != NULL) ? 1 : 0;
 	r_u->ctr = *ctr;
 	r_u->status = status;
 }
@@ -3530,7 +3530,7 @@ BOOL samr_io_r_query_aliasinfo(char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3588,7 +3588,7 @@ BOOL samr_io_r_set_aliasinfo(char *desc, SAMR_R_SET_ALIASINFO * r_u,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3685,7 +3685,7 @@ void init_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES * r_u,
 {
 	DEBUG(5, ("init_samr_r_query_useraliases\n"));
 
-	if (status == 0x0) {
+	if (NT_STATUS_IS_OK(status)) {
 		r_u->num_entries = num_rids;
 		r_u->ptr = 1;
 		r_u->num_entries2 = num_rids;
@@ -3767,7 +3767,7 @@ BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3833,7 +3833,7 @@ BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
 	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4027,7 +4027,7 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 		}
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4084,7 +4084,7 @@ BOOL samr_io_r_delete_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
 
 	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4164,7 +4164,7 @@ BOOL samr_io_r_create_dom_alias(char *desc, SAMR_R_CREATE_DOM_ALIAS * r_u,
 	if(!prs_uint32("rid", ps, depth, &r_u->rid))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4223,7 +4223,7 @@ BOOL samr_io_r_add_aliasmem(char *desc, SAMR_R_ADD_ALIASMEM * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4282,7 +4282,7 @@ BOOL samr_io_r_del_aliasmem(char *desc, SAMR_R_DEL_ALIASMEM * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4350,7 +4350,7 @@ BOOL samr_io_r_delete_dom_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4400,7 +4400,7 @@ void init_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
 {
 	DEBUG(5, ("init_samr_r_query_aliasmem\n"));
 
-	if (status == 0) {
+	if (NT_STATUS_IS_OK(status)) {
 		r_u->num_sids = num_sids;
 		r_u->ptr = (num_sids != 0) ? 1 : 0;
 		r_u->num_sids1 = num_sids;
@@ -4462,7 +4462,7 @@ BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4568,7 +4568,7 @@ NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 {
 	DEBUG(5, ("init_samr_r_lookup_names\n"));
 
-	if ((status == 0) && (num_rids != 0))	{
+	if (NT_STATUS_IS_OK(status) && (num_rids != 0))	{
 		uint32 i;
 
 		r_u->num_types1 = num_rids;
@@ -4691,7 +4691,7 @@ BOOL samr_io_r_lookup_names(char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 		}
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4747,7 +4747,7 @@ BOOL samr_io_r_delete_dom_user(char *desc, SAMR_R_DELETE_DOM_USER * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4814,7 +4814,7 @@ BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u,
 	if(!smb_io_pol_hnd("user_pol", &r_u->user_pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4901,7 +4901,7 @@ BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER * r_u,
 		return False;
 	if(!prs_uint32("user_rid ", ps, depth, &r_u->user_rid))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -6237,7 +6237,7 @@ void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO * r_u,
 	r_u->ptr = 0;
 	r_u->ctr = NULL;
 
-	if (status == 0) {
+	if (NT_STATUS_IS_OK(status)) {
 		r_u->ptr = 1;
 		r_u->ctr = ctr;
 	}
@@ -6271,7 +6271,7 @@ BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO * r_u,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -6345,7 +6345,7 @@ BOOL samr_io_r_set_userinfo(char *desc, SAMR_R_SET_USERINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -6433,7 +6433,7 @@ BOOL samr_io_r_set_userinfo2(char *desc, SAMR_R_SET_USERINFO2 * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -6506,7 +6506,7 @@ BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u,
 	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -6573,7 +6573,7 @@ BOOL samr_io_r_connect_anon(char *desc, SAMR_R_CONNECT_ANON * r_u,
 	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -6652,7 +6652,7 @@ BOOL samr_io_r_get_dom_pwinfo(char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -6848,7 +6848,7 @@ BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;

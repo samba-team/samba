@@ -61,10 +61,9 @@ BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 
 /* Check the machine account password is valid */
 
-enum winbindd_result winbindd_check_machine_acct(
-	struct winbindd_cli_state *state)
+enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
-	int result = WINBINDD_ERROR;
+	NTSTATUS status;
 	uchar trust_passwd[16];
 	struct in_addr *ip_list = NULL;
 	int count;
@@ -79,7 +78,7 @@ enum winbindd_result winbindd_check_machine_acct(
  again:
 	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, 
                                          NULL)) {
-		result = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
 
@@ -90,7 +89,7 @@ enum winbindd_result winbindd_check_machine_acct(
 			     controller)) {
 		DEBUG(0, ("could not find domain controller for "
 			  "domain %s\n", lp_workgroup()));		  
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		goto done;
 	}
 
@@ -102,7 +101,7 @@ enum winbindd_result winbindd_check_machine_acct(
                  global_myname);
 
 #if 0 /* XXX */
-        result = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
+        status = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
                                     trust_account, trust_passwd, 
                                     SEC_CHAN_WKSTA, &validation_level);	
 #endif
@@ -115,7 +114,7 @@ enum winbindd_result winbindd_check_machine_acct(
 #define MAX_RETRIES 8
 
         if ((num_retries < MAX_RETRIES) && 
-            result == NT_STATUS_ACCESS_DENIED) {
+            NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED)) {
                 num_retries++;
                 goto again;
         }
@@ -123,11 +122,10 @@ enum winbindd_result winbindd_check_machine_acct(
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
 
-	DEBUG(3, ("secret is %s\n", (result == NT_STATUS_OK) ?
-		  "good" : "bad"));
+	DEBUG(3, ("secret is %s\n", NT_STATUS_IS_OK(status) ?  "good" : "bad"));
 
  done:
-	state->response.data.num_entries = result;
+	state->response.data.num_entries = NT_STATUS_V(status);
 	return WINBINDD_OK;
 }
 

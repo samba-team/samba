@@ -47,7 +47,7 @@ NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 	REG_R_SHUTDOWN r_s;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (msg == NULL) return False;
+	if (msg == NULL) return NT_STATUS_INVALID_PARAMETER;
 
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);

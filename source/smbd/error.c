@@ -84,7 +84,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line)
 		}
 	}
 
-	return error_packet(outbuf,NT_STATUS(0),eclass,ecode,line);
+	return error_packet(outbuf,NT_STATUS_OK,eclass,ecode,line);
 }
 
 
