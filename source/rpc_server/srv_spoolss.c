@@ -1293,8 +1293,6 @@ static BOOL api_spoolss_enumprinterkey(pipes_struct *p)
 
 static BOOL api_spoolss_enumprinterdataex(pipes_struct *p)
 {
-#if 0	/* UNDER DEVELOPMENT */
-
 	SPOOL_Q_ENUMPRINTERDATAEX q_u;
 	SPOOL_R_ENUMPRINTERDATAEX r_u;
 	prs_struct *data = &p->in_data.data;
@@ -1316,9 +1314,6 @@ static BOOL api_spoolss_enumprinterdataex(pipes_struct *p)
 	}
 
 	return True;
-#else	
-	return False;
-#endif
 }
 
 

@@ -5,7 +5,8 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Jeremy Allison					2001.
+ *  Copyright (C) Jeremy Allison		    2001.
+ *  Copyright (C) Gerald Carter		       2000-2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -6039,12 +6040,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	if ( (in_value_len==0) && (in_data_len==0) ) {
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
-	/* 
-	 * I have reenabled this section since the MSDN documentation specifically
-	 * that if the value and data lengths are 0, we shoudl return the maximum required 
-	 * size for any parameter of the parameter.   --jerry
-	 */
-#if 1
+#if 0
 		/*
 		 * NT can ask for a specific parameter size - we need to return NO_MORE_ITEMS
 		 * if this parameter size doesn't exist.
@@ -6957,17 +6953,23 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 
 WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_u, SPOOL_R_ENUMPRINTERDATAEX *r_u)
 {
-#if 0	/* UNDER DEVELOPMENT */
-	POLICY_HND	*handle = &q_u->handle;
+	POLICY_HND	*handle = &q_u->handle; 
 	uint32 		in_size = q_u->size;
-	uint32 		*type = &r_u->type;
-	uint32 		*out_size = &r_u->size;
-	uint8 		**data = &r_u->data;
+	uint32 		*num_entries = &r_u->returned;
 	uint32 		*needed = &r_u->needed;
-
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	PRINTER_ENUM_VALUES	*enum_values = NULL;
+	PRINTER_ENUM_VALUES_CTR	ctr;
 	fstring 	key, value;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
-	BOOL 		found = False;
+	int 		snum;
+	uint32 		param_index, 
+			data_len,
+			type;
+	WERROR 		result;
+	uint8 		*data=NULL;
+	uint32 		i;
+	
 
 	DEBUG(4,("_spoolss_enumprinterdataex\n"));
 
@@ -6976,28 +6978,95 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		return WERR_BADFID;
 	}
 
-
 		
         /* 
-	 * From MSDN documentation of EnumPrinterDataEx: pass request
-	 * to EnumPrinterData if key is "PrinterDriverData". This is 
-	 * the only key we really support. 
-	 *		 *
-	 * See _spoolss_getprinterdataex() for details
+	 * The only key we support is "PrinterDriverData". This should return 
+	 > an array of all the key/value pairs returned by EnumPrinterDataSee 
+	 * _spoolss_getprinterdataex() for details    --jerry
 	 */
    
+	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
 	if (strcmp(key, "PrinterDriverData") != 0)
+	{
+		DEBUG(10,("_spoolss_enumprinterdataex: Unknown keyname [%s]\n", key));
 		return WERR_INVALID_PARAM;
-		
-	DEBUG(10, ("_spoolss_enumprinterdataex: pass me to enumprinterdata\n"));
-		
+	}
+
+
+	if (!get_printer_snum(p,handle, &snum))
+		return WERR_BADFID;
 	
-	if (*needed > *out_size)
-		return WERR_MORE_DATA;
-	else
-		return WERR_OK;
-#else
-	return WERR_OK;
-#endif
+	ZERO_STRUCT(printer);
+	result = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(result))
+		return result;
+
+	
+	/* 
+	 * loop through all params and build the array to pass 
+	 * back to the  client 
+	 */
+	result = WERR_OK;
+	param_index		= 0;
+	*needed 		= 0;
+	
+	while (get_specific_param_by_index(*printer, 2, param_index, value, &data, &type, &data_len)) 
+	{
+		PRINTER_ENUM_VALUES	*ptr;
+
+		*num_entries++;
+
+		if ((ptr=talloc_realloc(p->mem_ctx, enum_values, *num_entries * sizeof(PRINTER_ENUM_VALUES))) == NULL)
+		{
+			DEBUG(0,("talloc_realloc failed to allocate more memory!\n"));
+			result = WERR_NOMEM;
+			goto done;
+		}
+		enum_values = ptr;
+
+		/* copy the data */
+		init_unistr(&enum_values[*num_entries].valuename, value);
+		enum_values[*num_entries].value_len = (strlen(value)+1) * 2;
+		enum_values[*num_entries].type      = type;
+		enum_values[*num_entries].data_len  = data_len;
+		enum_values[*num_entries].data      = talloc_memdup(p->mem_ctx, data, data_len);
+		if (!enum_values[*num_entries].data) {
+			DEBUG(0,("talloc_realloc failed to allocate more memory for data!\n"));
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		/* keep track of the size of the array in bytes */
+		
+		*needed += spoolss_size_printer_enum_values(&enum_values[*num_entries]);
+			  
+		param_index++;
+	}
+	
+	if (*needed > in_size) {
+		result = WERR_MORE_DATA;
+		goto done;
+	}
+		
+	/* marshall the data into buffer */
+	
+	if (!alloc_buffer_size(&r_u->buffer, *needed)) {
+		DEBUG(0, ("_spoolss_enumprinterdataex: allocate_buffer_size() failed to allocate [%d] bytes!\n",
+			*needed));
+		result = WERR_INSUFFICIENT_BUFFER;
+	}
+	
+	ctr.size        	= *needed;
+	ctr.size_of_array 	= *num_entries;
+	ctr.values 		= enum_values;
+	
+	smb_io_printer_enum_values_ctr("", &r_u->buffer, &ctr, 0);
+			
+		
+done:	
+	free_a_printer(&printer, 2);
+
+	return result;
 }
+
 
