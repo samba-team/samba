@@ -486,7 +486,6 @@ void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
 char *get_trusted_serverlist(const char* domain);
-BOOL get_any_dc_name(const char *domain, char *srv_name);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -787,6 +786,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+BOOL get_any_dc_name(const char *domain, char *srv_name);
 
 /*The following definitions come from  libsmb/clienttrust.c  */
 
@@ -1808,8 +1808,6 @@ void init_connections(void);
 void free_connections(void);
 void cli_connection_free(struct cli_connection *con);
 void cli_connection_unlink(struct cli_connection *con);
-BOOL cli_connection_init_list(char* servers, const char* pipe_name,
-				struct cli_connection **con);
 BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
@@ -1846,11 +1844,10 @@ BOOL event_readeventlog(POLICY_HND *hnd,
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
-uint32 cli_nt_setup_creds( char* servers, const char* myhostname,
+uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
 				const char* trust_acct,
 				unsigned char trust_pwd[16],
-				uint16 sec_chan,
-				char *srv_name);
+				uint16 sec_chan);
 BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
 				const char* trust_acct,
 				unsigned char *new_hashof_trust_pwd,
@@ -1869,7 +1866,7 @@ BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 				NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
 				NET_ID_INFO_CTR *ctr);
-BOOL net_sam_sync(char* servers, const char* myhostname,
+BOOL net_sam_sync(const char* srv_name, const char* myhostname,
 				const char* trust_acct,
 				uchar trust_passwd[16],
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
@@ -1879,7 +1876,7 @@ BOOL net_sam_sync(char* servers, const char* myhostname,
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
 BOOL get_domain_sids(const char *myname,
-				DOM_SID *sid3, DOM_SID *sid5, char *servers);
+				DOM_SID *sid3, DOM_SID *sid5, char *domain);
 BOOL get_trust_sid_and_domain(const char* myname, char *server,
 				DOM_SID *sid,
 				char *domain, size_t len);
@@ -2186,8 +2183,6 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 
 void init_cli_use(void);
 void free_cli_use(void);
-struct cli_state *cli_net_use_addlist(char* servers,
-				const struct user_credentials *usr_creds);
 struct cli_state *cli_net_use_add(const char* srv_name,
 				const struct user_credentials *usr_creds);
 BOOL cli_net_use_del(const char* srv_name,

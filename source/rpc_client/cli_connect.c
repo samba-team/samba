@@ -73,40 +73,6 @@ void free_connections(void)
 	init_connections();
 }
 
-static struct cli_connection *cli_con_getlist(char* servers,
-				const char* pipe_name)
-{
-	struct cli_connection *con = NULL;
-
-	con = (struct cli_connection*)malloc(sizeof(*con));
-
-	if (con == NULL)
-	{
-		return NULL;
-	}
-
-	memset(con, 0, sizeof(*con));
-
-	if (servers != NULL)
-	{
-		con->srv_name = strdup(servers);
-	}
-	if (pipe_name != NULL)
-	{
-		con->pipe_name = strdup(pipe_name);
-	}
-
-	con->cli = cli_net_use_addlist(servers, usr_creds);
-
-	if (con->cli == NULL)
-	{
-		cli_connection_free(con);
-		return NULL;
-	}
-	add_con_to_array(&num_cons, &con_list, con);
-	return con;
-}
-
 static struct cli_connection *cli_con_get(const char* srv_name,
 				const char* pipe_name)
 {
@@ -206,31 +172,6 @@ void cli_connection_unlink(struct cli_connection *con)
 		cli_connection_free(con);
 	}
 	return;
-}
-
-/****************************************************************************
-init client state
-****************************************************************************/
-BOOL cli_connection_init_list(char* servers, const char* pipe_name,
-				struct cli_connection **con)
-{
-	BOOL res = True;
-
-	/*
-	 * allocate
-	 */
-
-	*con = cli_con_getlist(servers, pipe_name);
-
-	if ((*con) == NULL)
-	{
-		return False;
-	}
-
-	res = res ? cli_nt_session_open((*con)->cli, pipe_name,
-	                               &(*con)->fnum) : False;
-
-	return res;
 }
 
 /****************************************************************************

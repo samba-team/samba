@@ -140,8 +140,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	res = res ? cli_nt_setup_creds(srv_name, info->myhostname,
 	                               trust_acct, 
-	                               trust_passwd, SEC_CHAN_WKSTA,
-	                               srv_name) == 0x0 : False;
+	                               trust_passwd, SEC_CHAN_WKSTA) == 0x0 : False;
 
 #if 0
 	/* change the machine password? */
@@ -215,8 +214,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 	res = res ? cli_nt_setup_creds(srv_name,
 	                               info->myhostname, inter_dom_acct,
 	                               trust_passwd, 
-	                               SEC_CHAN_DOMAIN,
-	                               srv_name) == 0x0 : False;
+	                               SEC_CHAN_DOMAIN) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
 

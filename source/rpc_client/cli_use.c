@@ -198,46 +198,6 @@ static struct cli_use *cli_use_get(const char* srv_name,
 /****************************************************************************
 init client state
 ****************************************************************************/
-struct cli_state *cli_net_use_addlist(char* servers,
-				const struct user_credentials *usr_creds)
-{
-	struct cli_use *cli = cli_find(servers, usr_creds); 
-
-	if (cli != NULL)
-	{
-		cli->num_users++;
-		return cli->cli;
-	}
-
-	/*
-	 * allocate
-	 */
-
-	cli = cli_use_get(servers, usr_creds);
-
-	if (cli == NULL)
-	{
-		return NULL;
-	}
-
-	if (!cli_connect_serverlist(cli->cli, servers))
-	{
-		DEBUG(0,("cli_net_use_addlist: connection failed\n"));
-		cli_use_free(cli);
-		return NULL;
-	}
-
-	cli->cli->ntlmssp_cli_flgs = 0x0;
-
-	add_cli_to_array(&num_clis, &clis, cli);
-	cli->num_users++;
-
-	return cli->cli;
-}
-
-/****************************************************************************
-init client state
-****************************************************************************/
 struct cli_state *cli_net_use_add(const char* srv_name,
 				const struct user_credentials *usr_creds)
 {

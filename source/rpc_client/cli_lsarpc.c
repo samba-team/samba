@@ -35,12 +35,13 @@ extern int DEBUGLEVEL;
  obtain the sid from the PDC.  do some verification along the way...
 ****************************************************************************/
 BOOL get_domain_sids(const char *myname,
-				DOM_SID *sid3, DOM_SID *sid5, char *servers)
+				DOM_SID *sid3, DOM_SID *sid5, char *domain)
 {
 	POLICY_HND pol;
 	fstring srv_name;
 	struct cli_connection *con = NULL;
 	BOOL res = True;
+	BOOL res1 = True;
 	fstring dom3;
 	fstring dom5;
 	extern struct user_credentials *usr_creds;
@@ -56,9 +57,8 @@ BOOL get_domain_sids(const char *myname,
 		return False;
 	}
 
-	if (!cli_connection_init_list(servers, PIPE_LSARPC, &con))
+	if (!get_any_dc_name(domain, srv_name))
 	{
-		DEBUG(0,("get_domain_sids: unable to initialise client connection.\n"));
 		return False;
 	}
 
@@ -78,23 +78,19 @@ BOOL get_domain_sids(const char *myname,
 		ZERO_STRUCTP(sid5);
 	}
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, myname);
-	strupper(srv_name);
-
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy(srv_name, &pol, False) : False;
 
 	if (sid3 != NULL)
 	{
 		/* send client info query, level 3.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&pol, 3, dom3, sid3) : False;
+		res1 = res ? lsa_query_info_pol(&pol, 3, dom3, sid3) : False;
 	}
 
 	if (sid5 != NULL)
 	{
 		/* send client info query, level 5.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&pol, 5, dom5, sid5) : False;
+		res1 = res1 ? lsa_query_info_pol(&pol, 5, dom5, sid5) : False;
 	}
 
 	/* close policy handle */
@@ -103,7 +99,7 @@ BOOL get_domain_sids(const char *myname,
 	/* close the session */
 	cli_connection_unlink(con);
 
-	if (res)
+	if (res1)
 	{
 		pstring sid;
 		DEBUG(2,("LSA Query Info Policy\n"));
@@ -126,6 +122,7 @@ BOOL get_domain_sids(const char *myname,
 	return res;
 }
 
+#if 0
 /****************************************************************************
  obtain a sid and domain name from a Domain Controller.  
 ****************************************************************************/
@@ -210,6 +207,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 
 	return res1;
 }
+#endif
 
 /****************************************************************************
 do a LSA Open Policy
