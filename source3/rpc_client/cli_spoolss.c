@@ -1933,6 +1933,68 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    uint32 offered, uint32 *needed,
+				    POLICY_HND *hnd, char *keyname, 
+				    char *valuename, uint32 *data_type, 
+				    char **data, uint32 *data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDATAEX q;
+	SPOOL_R_GETPRINTERDATAEX r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getprinterdataex(&q, hnd, keyname, valuename, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprinterdataex("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTERDATAEX, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getprinterdataex("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	/* Return output parameters */
+
+	if (data_type)
+		*data_type = r.type;
+
+	if (data) {
+		*data = (char *)talloc(mem_ctx, r.needed);
+		memcpy(*data, r.data, r.needed);
+	}
+
+	if (data_size) 
+		*data_size = r.needed;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Set printer data */
 
 WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -1955,7 +2017,7 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_setprinterdata(&q, hnd, value, data, data_size);
+        make_spoolss_q_setprinterdata(&q, hnd, value, data_type, data, data_size);
 
 	/* Marshall data and send request */
 
@@ -1966,6 +2028,51 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Unmarshall response */
 
 	if (!spoolss_io_r_setprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *hnd, char * key, char *value, 
+				    uint32 data_type, char *data, 
+				    uint32 data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETPRINTERDATAEX q;
+	SPOOL_R_SETPRINTERDATAEX r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setprinterdataex(&q, hnd, key, value, data_type, data, data_size);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setprinterdataex("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTERDATAEX, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setprinterdataex("", &r, &rbuf, 0))
 		goto done;
 	
 	result = r.status;
@@ -2047,6 +2154,60 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (data_size)
 		*data_size = r.realdatasize;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     uint32 offered, uint32 *needed,
+				     POLICY_HND *hnd, char *key,
+				     uint32 *returned, PRINTER_ENUM_VALUES **values)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERDATAEX q;
+	SPOOL_R_ENUMPRINTERDATAEX r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumprinterdataex(&q, hnd, key, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumprinterdataex("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERDATAEX, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumprinterdataex("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+	
+	if (needed)
+		*needed = r.needed;
+	
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	/* Return data */
+
+	*returned = r.returned;
+
+	/* TODO: figure out a nice way to return data */
 
  done:
 	prs_mem_free(&qbuf);
