@@ -4,6 +4,7 @@
    Copyright (C) Andrew Bartlett			2002
    Copyright (C) Jelmer Vernooij			2002
    Copyright (C) Stefan (metze) Metzmacher	2002
+   Copyright (C) Kai Krüger					2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -55,7 +55,7 @@ NTSTATUS sam_get_user_domain_name (const SAM_USER_HANDLE *sampass, char **domain
 
 NTSTATUS sam_get_user_acct_ctrl (const SAM_USER_HANDLE *sampass, uint16 *acct_ctrl)
 {
-	if(!sampass || !acct_ctrl)return NT_STATUS_UNSUCCESSFUL;
+	if(!sampass || !acct_ctrl) return NT_STATUS_UNSUCCESSFUL;
 
 	*acct_ctrl = sampass->private.acct_ctrl;
 
@@ -64,7 +64,7 @@ NTSTATUS sam_get_user_acct_ctrl (const SAM_USER_HANDLE *sampass, uint16 *acct_ct
 
 NTSTATUS sam_get_user_logon_time (const SAM_USER_HANDLE *sampass, NTTIME *logon_time)
 {
-	if(!sampass || !logon_time)return NT_STATUS_UNSUCCESSFUL;
+	if(!sampass || !logon_time) return NT_STATUS_UNSUCCESSFUL;
 
 	*logon_time = sampass->private.logon_time;
 
@@ -73,7 +73,7 @@ NTSTATUS sam_get_user_logon_time (const SAM_USER_HANDLE *sampass, NTTIME *logon_
 
 NTSTATUS sam_get_user_logoff_time (const SAM_USER_HANDLE *sampass, NTTIME *logoff_time)
 {
-	if(!sampass || !logoff_time)return NT_STATUS_UNSUCCESSFUL;
+	if(!sampass || !logoff_time) return NT_STATUS_UNSUCCESSFUL;
 
 	*logoff_time = sampass->private.logoff_time;
 
@@ -82,7 +82,7 @@ NTSTATUS sam_get_user_logoff_time (const SAM_USER_HANDLE *sampass, NTTIME *logof
 
 NTSTATUS sam_get_user_kickoff_time (const SAM_USER_HANDLE *sampass, NTTIME *kickoff_time)
 {
-	if (!sampass || !kickoff_time)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !kickoff_time) return NT_STATUS_UNSUCCESSFUL;
 
 	*kickoff_time = sampass->private.kickoff_time;
 
@@ -91,7 +91,7 @@ NTSTATUS sam_get_user_kickoff_time (const SAM_USER_HANDLE *sampass, NTTIME *kick
 
 NTSTATUS sam_get_user_pass_last_set_time (const SAM_USER_HANDLE *sampass, NTTIME *pass_last_set_time)
 {
-	if (!sampass || !pass_last_set_time)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !pass_last_set_time) return NT_STATUS_UNSUCCESSFUL;
 
 	*pass_last_set_time = sampass->private.pass_last_set_time;
 
@@ -100,7 +100,7 @@ NTSTATUS sam_get_user_pass_last_set_time (const SAM_USER_HANDLE *sampass, NTTIME
 
 NTSTATUS sam_get_user_pass_can_change_time (const SAM_USER_HANDLE *sampass, NTTIME *pass_can_change_time)
 {
-	if (!sampass || !pass_can_change_time)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !pass_can_change_time) return NT_STATUS_UNSUCCESSFUL;
 
 	*pass_can_change_time = sampass->private.pass_can_change_time;
 
@@ -109,7 +109,7 @@ NTSTATUS sam_get_user_pass_can_change_time (const SAM_USER_HANDLE *sampass, NTTI
 
 NTSTATUS sam_get_user_pass_must_change_time (const SAM_USER_HANDLE *sampass, NTTIME *pass_must_change_time)
 {
-	if (!sampass || !pass_must_change_time)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !pass_must_change_time) return NT_STATUS_UNSUCCESSFUL;
 
 	*pass_must_change_time = sampass->private.pass_must_change_time;
 
@@ -118,7 +118,7 @@ NTSTATUS sam_get_user_pass_must_change_time (const SAM_USER_HANDLE *sampass, NTT
 
 NTSTATUS sam_get_user_logon_divs (const SAM_USER_HANDLE *sampass, uint16 *logon_divs)
 {
-	if (!sampass || !logon_divs)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !logon_divs) return NT_STATUS_UNSUCCESSFUL;
 
 	*logon_divs = sampass->private.logon_divs;
 
@@ -127,7 +127,7 @@ NTSTATUS sam_get_user_logon_divs (const SAM_USER_HANDLE *sampass, uint16 *logon_
 
 NTSTATUS sam_get_user_hours_len (const SAM_USER_HANDLE *sampass, uint32 *hours_len)
 {
-	if (!sampass || !hours_len)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !hours_len) return NT_STATUS_UNSUCCESSFUL;
 
 	*hours_len = sampass->private.hours_len;
 
@@ -136,7 +136,7 @@ NTSTATUS sam_get_user_hours_len (const SAM_USER_HANDLE *sampass, uint32 *hours_l
 
 NTSTATUS sam_get_user_hours (const SAM_USER_HANDLE *sampass, uint8 **hours)
 {
-	if (!sampass || !hours)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !hours) return NT_STATUS_UNSUCCESSFUL;
 
 	*hours = sampass->private.hours;
 
@@ -145,7 +145,7 @@ NTSTATUS sam_get_user_hours (const SAM_USER_HANDLE *sampass, uint8 **hours)
 
 NTSTATUS sam_get_user_nt_pwd (const SAM_USER_HANDLE *sampass, DATA_BLOB *nt_pwd)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	SMB_ASSERT((!sampass->private.nt_pw.data) 
 		   || sampass->private.nt_pw.length == NT_HASH_LEN);
@@ -157,7 +157,7 @@ NTSTATUS sam_get_user_nt_pwd (const SAM_USER_HANDLE *sampass, DATA_BLOB *nt_pwd)
 
 NTSTATUS sam_get_user_lm_pwd (const SAM_USER_HANDLE *sampass, DATA_BLOB *lm_pwd)
 { 
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	SMB_ASSERT((!sampass->private.lm_pw.data) 
 		   || sampass->private.lm_pw.length == LM_HASH_LEN);
@@ -176,7 +176,7 @@ NTSTATUS sam_get_user_lm_pwd (const SAM_USER_HANDLE *sampass, DATA_BLOB *lm_pwd)
 
 NTSTATUS sam_get_user_plaintext_pwd (const SAM_USER_HANDLE *sampass, DATA_BLOB **plain_pwd)
 {
-	if (!sampass || !plain_pwd)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !plain_pwd) return NT_STATUS_UNSUCCESSFUL;
 
 	*plain_pwd = &(sampass->private.plaintext_pw);
 
@@ -185,7 +185,7 @@ NTSTATUS sam_get_user_plaintext_pwd (const SAM_USER_HANDLE *sampass, DATA_BLOB *
 
 NTSTATUS sam_get_user_sid(const SAM_USER_HANDLE *sampass, DOM_SID **sid)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*sid = &(sampass->private.user_sid);
 
@@ -194,7 +194,7 @@ NTSTATUS sam_get_user_sid(const SAM_USER_HANDLE *sampass, DOM_SID **sid)
 
 NTSTATUS sam_get_user_pgroup(const SAM_USER_HANDLE *sampass, DOM_SID **sid)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*sid = &(sampass->private.group_sid);
 
@@ -209,7 +209,7 @@ NTSTATUS sam_get_user_pgroup(const SAM_USER_HANDLE *sampass, DOM_SID **sid)
  
 NTSTATUS sam_get_user_init_flag (const SAM_USER_HANDLE *sampass, uint32 *initflag)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*initflag = sampass->private.init_flag;
 
@@ -218,7 +218,7 @@ NTSTATUS sam_get_user_init_flag (const SAM_USER_HANDLE *sampass, uint32 *initfla
 
 NTSTATUS sam_get_user_name (const SAM_USER_HANDLE *sampass, char **username)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*username = sampass->private.username;
 
@@ -227,7 +227,7 @@ NTSTATUS sam_get_user_name (const SAM_USER_HANDLE *sampass, char **username)
 
 NTSTATUS sam_get_user_domain (const SAM_USER_HANDLE *sampass, SAM_DOMAIN_HANDLE **domain)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*domain = sampass->private.domain;
 
@@ -236,7 +236,7 @@ NTSTATUS sam_get_user_domain (const SAM_USER_HANDLE *sampass, SAM_DOMAIN_HANDLE 
 
 NTSTATUS sam_get_user_fullname (const SAM_USER_HANDLE *sampass, char **fullname)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*fullname = sampass->private.full_name;
 
@@ -245,7 +245,7 @@ NTSTATUS sam_get_user_fullname (const SAM_USER_HANDLE *sampass, char **fullname)
 
 NTSTATUS sam_get_user_homedir (const SAM_USER_HANDLE *sampass, char **homedir)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*homedir = sampass->private.home_dir;
 
@@ -254,7 +254,7 @@ NTSTATUS sam_get_user_homedir (const SAM_USER_HANDLE *sampass, char **homedir)
 
 NTSTATUS sam_get_user_unix_home_dir (const SAM_USER_HANDLE *sampass, char **uhomedir)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*uhomedir = sampass->private.unix_home_dir;
 
@@ -263,7 +263,7 @@ NTSTATUS sam_get_user_unix_home_dir (const SAM_USER_HANDLE *sampass, char **uhom
 
 NTSTATUS sam_get_user_dir_drive (const SAM_USER_HANDLE *sampass, char **dirdrive)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*dirdrive = sampass->private.dir_drive;
 
@@ -272,7 +272,7 @@ NTSTATUS sam_get_user_dir_drive (const SAM_USER_HANDLE *sampass, char **dirdrive
 
 NTSTATUS sam_get_user_logon_script (const SAM_USER_HANDLE *sampass, char **logon_script)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*logon_script = sampass->private.logon_script;
 
@@ -281,7 +281,7 @@ NTSTATUS sam_get_user_logon_script (const SAM_USER_HANDLE *sampass, char **logon
 
 NTSTATUS sam_get_user_profile_path (const SAM_USER_HANDLE *sampass, char **profile_path)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*profile_path = sampass->private.profile_path;
 
@@ -290,7 +290,7 @@ NTSTATUS sam_get_user_profile_path (const SAM_USER_HANDLE *sampass, char **profi
 
 NTSTATUS sam_get_user_description (const SAM_USER_HANDLE *sampass, char **description)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*description = sampass->private.acct_desc;
 
@@ -299,7 +299,7 @@ NTSTATUS sam_get_user_description (const SAM_USER_HANDLE *sampass, char **descri
 
 NTSTATUS sam_get_user_workstations (const SAM_USER_HANDLE *sampass, char **workstations)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*workstations = sampass->private.workstations;
 
@@ -308,7 +308,7 @@ NTSTATUS sam_get_user_workstations (const SAM_USER_HANDLE *sampass, char **works
 
 NTSTATUS sam_get_user_unknown_str (const SAM_USER_HANDLE *sampass, char **unknown_str)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*unknown_str = sampass->private.unknown_str;
 
@@ -317,7 +317,7 @@ NTSTATUS sam_get_user_unknown_str (const SAM_USER_HANDLE *sampass, char **unknow
 
 NTSTATUS sam_get_user_munged_dial (const SAM_USER_HANDLE *sampass, char **munged_dial)
 {
-	if (!sampass)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
 
 	*munged_dial = sampass->private.munged_dial;
 
@@ -326,7 +326,7 @@ NTSTATUS sam_get_user_munged_dial (const SAM_USER_HANDLE *sampass, char **munged
 
 NTSTATUS sam_get_user_unknown_1 (const SAM_USER_HANDLE *sampass, uint32 *unknown1)
 {
-	if (!sampass || !unknown1)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !unknown1) return NT_STATUS_UNSUCCESSFUL;
 
 	*unknown1 = sampass->private.unknown_1;
 
@@ -335,7 +335,7 @@ NTSTATUS sam_get_user_unknown_1 (const SAM_USER_HANDLE *sampass, uint32 *unknown
 
 NTSTATUS sam_get_user_unknown_2 (const SAM_USER_HANDLE *sampass, uint32 *unknown2)
 {
-	if (!sampass || !unknown2)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !unknown2) return NT_STATUS_UNSUCCESSFUL;
 
 	*unknown2 = sampass->private.unknown_2;
 
@@ -344,7 +344,7 @@ NTSTATUS sam_get_user_unknown_2 (const SAM_USER_HANDLE *sampass, uint32 *unknown
 
 NTSTATUS sam_get_user_unknown_3 (const SAM_USER_HANDLE *sampass, uint32 *unknown3)
 {
-	if (!sampass || !unknown3)return NT_STATUS_UNSUCCESSFUL;
+	if (!sampass || !unknown3) return NT_STATUS_UNSUCCESSFUL;
 
 	*unknown3 = sampass->private.unknown_3;
 
