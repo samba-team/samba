@@ -702,8 +702,10 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 	if ((*type != SID_NAME_UNKNOWN) && *name) {
 	        store_sid_by_name_in_cache(names[0], sid, types[0]);
         	store_name_by_sid_in_cache(sid, names[0], types[0]);
-		goto done;
 	}
+
+	/* This was successful... */
+	goto done;
     }
 
     /* OK, so we tried to look up a name in this sid, and

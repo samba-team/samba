@@ -38,7 +38,10 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	/* Lookup sid from PDC using lsa_lookup_sids() */
 
-	string_to_sid(&sid, state->request.data.sid);
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("winbindd_lookupsid: %s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
 
 	/* Don't look up BUILTIN sids */
 
@@ -70,7 +73,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	fstring sid_str, name_domain, name_user, name;
 	DOM_SID sid;
 	
-	DEBUG(3, ("[%5d]: lookupname %s\n", state->pid,
+	DEBUG(3, ("winbindd_lookupname: [%5d]: lookupname %s\n", state->pid,
 		  state->request.data.name));
 
 	if (!parse_domain_user(state->request.data.name, name_domain, name_user))
@@ -85,6 +88,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	}
 
 	sid_to_string(sid_str, &sid);
+
 	fstrcpy(state->response.data.sid.sid, sid_str);
 	state->response.data.sid.type = type;
 
@@ -100,12 +104,16 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	uint32 user_rid;
 	struct winbindd_domain *domain;
 
-	DEBUG(3, ("[%5d]: sid to uid %s\n", state->pid,
+	DEBUG(3, ("winbindd_sid_to_uid: [%5d]: sid to uid %s\n", state->pid,
 		  state->request.data.sid));
 
 	/* Split sid into domain sid and user rid */
 
-	string_to_sid(&sid, state->request.data.sid);
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("winbindd_sid_to_uid: %s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
 	sid_split_rid(&sid, &user_rid);
 
 	/* Find domain this sid belongs to */
@@ -114,7 +122,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sid);
-		DEBUG(1, ("Could not find domain for sid %s\n", sid_str));
+		DEBUG(1, ("winbindd_sid_to_uid: Could not find domain for sid %s\n", sid_str));
 		return WINBINDD_ERROR;
 	}
 
@@ -122,7 +130,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	if (!winbindd_idmap_get_uid_from_rid(domain->name, user_rid,
 					     &state->response.data.uid)) {
-		DEBUG(1, ("Could not get uid for sid %s\n",
+		DEBUG(1, ("winbindd_sid_to_uid: Could not get uid for sid %s\n",
 			  state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
@@ -144,7 +152,10 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 
 	/* Split sid into domain sid and user rid */
 
-	string_to_sid(&sid, state->request.data.sid);
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("winbindd_sid_to_gid: %s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
 	sid_split_rid(&sid, &group_rid);
 
 	/* Find domain this sid belongs to */
@@ -153,7 +164,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sid);
-		DEBUG(1, ("Could not find domain for sid %s\n", sid_str));
+		DEBUG(1, ("winbindd_sid_to_gid: Could not find domain for sid %s\n", sid_str));
 		return WINBINDD_ERROR;
 	}
 
