@@ -315,8 +315,6 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
 	    ++p;
 	if (*p == '#' || *p == ';')
 	    continue;
-	while(isspace(*p))
-	    ++p;
 	if (*p == '[') {
 	    ret = parse_section(p, &s, res);
 	    if (ret)
