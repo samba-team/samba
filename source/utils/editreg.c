@@ -981,10 +981,10 @@ void *str_to_val(int type, char *val, int *len)
     if (!dwordp) return NULL;
     /* Allow for ddddd and 0xhhhhh and 0ooooo */
     if (strncmp(val, "0x", 2) == 0 || strncmp(val, "0X", 2) == 0) {
-      sscanf(val, "0[xX]%X", dwordp);
+      sscanf(&val[2], "%X", dwordp);
     }
     else if (*val == '0') {
-      sscanf(val, "0%o", dwordp);
+      sscanf(&val[1], "%o", dwordp);
     }
     else { 
       sscanf(val, "%d", dwordp);
@@ -1018,7 +1018,9 @@ VAL_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
   assert(type != REG_TYPE_DELETE); /* We never process deletes here */
 
   for (i = 0; i < key->values->val_count; i++) {
-    if (strcmp(name, key->values->vals[i]->name) == 0){ /* Change the value */
+    if ((!key->values->vals[i]->has_name && !*name) || 
+	(key->values->vals[i]->has_name &&
+	 strcmp(name, key->values->vals[i]->name) == 0)){ /* Change the value */
       free(key->values->vals[i]->data_blk);
       key->values->vals[i]->data_blk = str_to_val(type, value, &
 						  key->values->vals[i]->data_len);
@@ -3272,7 +3274,7 @@ int main(int argc, char *argv[])
 	    if (reg_val) nt_delete_val_key(reg_val);
 	  }
 	  else {
-	    reg_val = nt_add_reg_value(tmp, reg_val->name, val->type, 
+	    reg_val = nt_add_reg_value(tmp, val->name, val->type, 
 				       val->val);
 	  }
 
