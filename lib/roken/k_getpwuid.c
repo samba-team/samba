@@ -52,12 +52,12 @@ k_getpwuid (uid_t uid)
      struct passwd *p;
 
      p = getpwuid (uid);
-#if defined(HAVE_GETSPUID) && defined(HAVE_STRUCT_SPWD)
+#if defined(HAVE_GETSPNAM) && defined(HAVE_STRUCT_SPWD)
      if (p)
      {
 	  struct spwd *spwd;
 
-	  spwd = getspuid (uid);
+	  spwd = getspnam (p->pw_name);
 	  if (spwd)
 	       p->pw_passwd = spwd->sp_pwdp;
 	  endspent ();
