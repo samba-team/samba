@@ -243,7 +243,7 @@ int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 
 	p = smb_buf(cli->outbuf);
 	/* this alignment and termination is critical for netapp filers. Don't change */
-	p += clistr_align(cli, p, STR_CONVERT);
+	p += clistr_align_out(cli, p, STR_CONVERT);
 	len = clistr_push(cli, p, fname, -1, STR_CONVERT);
 	p += len;
 	SSVAL(cli->outbuf,smb_ntcreate_NameLength, len);
