@@ -999,7 +999,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 			ret = False;
 	}
 
-    talloc_destroy(ul_ctx);
+	talloc_destroy(ul_ctx);
 
 	return ret;
 }
@@ -1020,7 +1020,7 @@ static void delete_posix_lock_entries(files_struct *fsp)
  Debug function.
 ****************************************************************************/
 
-void dump_entry(struct posix_lock *pl)
+static void dump_entry(struct posix_lock *pl)
 {
 	DEBUG(10,("entry: start=%.0f, size=%.0f, type=%d, fd=%i\n",
 		(double)pl->start, (double)pl->size, (int)pl->lock_type, pl->fd ));

@@ -84,52 +84,45 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
 }
 
 /*******************************************************************
- Put an ASCII string into a UNICODE array (uint16's).
+ Put an ASCII string into a UNICODE string.
 
  Warning: doesn't do any codepage !!! BAD !!!
  
  Help ! Fix Me ! Fix Me !
 ********************************************************************/
 
-void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
+void ascii_to_unistr(char *dest, const char *src, int maxlen)
 {
-	uint16 *destend = dest + maxlen;
-	register char c;
+	char *destend = dest + maxlen;
+	char c;
 
-	while (dest < destend)
-	{
+	while (dest < destend) {
 		c = *(src++);
-		if (c == 0)
-		{
-			break;
-		}
+		if (c == 0) break;
 
-		*(dest++) = (uint16)c;
+		SSVAL(dest, 0, (uint16)c);
+		dest += 2;
 	}
-
-	*dest = 0;
+	SSVAL(dest, 0, 0);
 }
 
 /*******************************************************************
- Pull an ASCII string out of a UNICODE array (uint16's).
+ Pull an ASCII string out of a UNICODE array .
 
  Warning: doesn't do any codepage !!! BAD !!!
  
  Help ! Fix Me ! Fix Me !
 ********************************************************************/
 
-void unistr_to_ascii(char *dest, const uint16 *src, int len)
+void unistr_to_ascii(char *dest, char *src, int len)
 {
 	char *destend = dest + len;
-	register uint16 c;
+	uint16 c;
 
-	while (dest < destend)
-	{
-		c = *(src++);
-		if (c == 0)
-		{
-			break;
-		}
+	while (dest < destend) {
+		c = SVAL(src, 0);
+		src += 2;
+		if (c == 0) break;
 
 		*(dest++) = (char)c;
 	}

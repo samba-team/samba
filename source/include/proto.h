@@ -140,6 +140,10 @@ void initialize_multibyte_vectors( int client_codepage);
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
 
+/*The following definitions come from  lib/ms_fnmatch.c  */
+
+int ms_fnmatch(char *pattern, char *string);
+
 /*The following definitions come from  lib/msrpc-client.c  */
 
 BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
@@ -305,14 +309,11 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
 BOOL reduce_name(char *s,char *dir,BOOL widelinks);
-void expand_mask(char *Mask,BOOL doext);
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
 void close_low_fds(void);
 int set_blocking(int fd, BOOL set);
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
 void msleep(int t);
-BOOL unix_do_match(char *str, char *regexp, BOOL case_sig);
-BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
@@ -355,6 +356,8 @@ void *memdup(void *p, size_t size);
 char *myhostname(void);
 char *lock_path(char *name);
 char *parent_dirname(const char *path);
+BOOL ms_has_wild(char *s);
+BOOL mask_match(char *string, char *pattern, BOOL case_sensitive);
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  lib/util_array.c  */
@@ -492,8 +495,8 @@ char *string_truncate(char *s, int length);
 /*The following definitions come from  lib/util_unistr.c  */
 
 int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
-void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
-void unistr_to_ascii(char *dest, const uint16 *src, int len);
+void ascii_to_unistr(char *dest, const char *src, int maxlen);
+void unistr_to_ascii(char *dest, char *src, int len);
 char *skip_unibuf(char *src, size_t len);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
@@ -3059,11 +3062,9 @@ void sys_fsync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */
 
-void print_stat_cache_statistics(void);
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
                   BOOL *bad_path, SMB_STRUCT_STAT *pst);
 BOOL check_name(char *name,connection_struct *conn);
-BOOL reset_stat_cache( void );
 
 /*The following definitions come from  smbd/files.c  */
 
@@ -3316,9 +3317,16 @@ int sslutil_connect(int fd);
 int sslutil_disconnect(int fd);
 int sslutil_negotiate_ssl(int fd, int msg_type);
 
+/*The following definitions come from  smbd/statcache.c  */
+
+void print_stat_cache_statistics(void);
+void stat_cache_add( char *full_orig_name, char *orig_translated_path);
+BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
+		       char **start, SMB_STRUCT_STAT *pst);
+BOOL reset_stat_cache( void );
+
 /*The following definitions come from  smbd/trans2.c  */
 
-void mask_convert( char *mask);
 int reply_findclose(connection_struct *conn,
 		    char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, 
@@ -3475,6 +3483,9 @@ int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+
+/*The following definitions come from  tdb/tdbutil.c  */
+
 int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
