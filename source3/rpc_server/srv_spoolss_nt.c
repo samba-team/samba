@@ -4175,13 +4175,17 @@ static BOOL construct_printer_info_5(PRINTER_INFO_5 *printer, int snum)
 	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
 		return False;
 		
-	init_unistr(&printer->printername, ntprinter->info_2->printername);				/* printername*/
-	init_unistr(&printer->portname, ntprinter->info_2->portname); /* portname */
+	init_unistr(&printer->printername, ntprinter->info_2->printername);
+	init_unistr(&printer->portname, ntprinter->info_2->portname); 
 	printer->attributes = ntprinter->info_2->attributes;
-	printer->device_not_selected_timeout = 0x3a98;
-	printer->transmission_retry_timeout = 0xafc8;
+
+	/* these two are not used by NT+ according to MSDN */
+
+	printer->device_not_selected_timeout = 0x0;  /* have seen 0x3a98 */
+	printer->transmission_retry_timeout  = 0x0;  /* have seen 0xafc8 */
 
 	free_a_printer(&ntprinter, 2);
+
 	return True;
 }
 
@@ -5772,6 +5776,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 		 get_called_name(), info->sharename);
 	info->attributes = PRINTER_ATTRIBUTE_SAMBA;
 	
+	
 	return True;
 }
 
@@ -5841,6 +5846,8 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	WERROR result;
+	UNISTR2 buffer;
+	fstring asc_buffer;
 
 	DEBUG(8,("update_printer\n"));
 
@@ -5953,20 +5960,60 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	/* Update printer info */
 	result = mod_a_printer(*printer, 2);
 
-	/* flag which changes actually occured.  This is a small subset of
-	   all the possible changes                                         */
+	/* 
+	 * flag which changes actually occured.  This is a small subset of 
+	 * all the possible changes.  We also have to update things in the 
+	 * DsSpooler key.
+	 */
 
-	if (!strequal(printer->info_2->comment, old_printer->info_2->comment))
+	if (!strequal(printer->info_2->comment, old_printer->info_2->comment)) {
+		init_unistr2( &buffer, printer->info_2->comment, strlen(printer->info_2->comment)+1 );
+		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "description",
+			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+
 		notify_printer_comment(snum, printer->info_2->comment);
+	}
 
-	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename))
+	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename)) {
+		init_unistr2( &buffer, printer->info_2->sharename, strlen(printer->info_2->sharename)+1 );
+		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "printerName",
+			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shareName",
+			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+
 		notify_printer_sharename(snum, printer->info_2->sharename);
+	}
 
-	if (!strequal(printer->info_2->portname, old_printer->info_2->portname))
+	if (!strequal(printer->info_2->portname, old_printer->info_2->portname)) {
+		init_unistr2( &buffer, printer->info_2->portname, strlen(printer->info_2->portname)+1 );
+		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "portName",
+			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+
 		notify_printer_port(snum, printer->info_2->portname);
+	}
 
-	if (!strequal(printer->info_2->location, old_printer->info_2->location))
+	if (!strequal(printer->info_2->location, old_printer->info_2->location)) {
+		init_unistr2( &buffer, printer->info_2->location, strlen(printer->info_2->location)+1 );
+		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "location",
+			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+
 		notify_printer_location(snum, printer->info_2->location);
+	}
+	
+	/* here we need to update some more DsSpooler keys */
+	/* uNCName, serverName, shortServerName */
+	
+	init_unistr2( &buffer, global_myname(), strlen(global_myname())+1 );
+	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "serverName",
+		REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shortServerName",
+		REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+
+	slprintf( asc_buffer, sizeof(asc_buffer)-1, "\\\\%s\\%s",
+                 global_myname(), printer->info_2->sharename );
+	init_unistr2( &buffer, asc_buffer, strlen(asc_buffer)+1 );
+	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "uNCName",
+		REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 
 done:
 	free_a_printer(&printer, 2);
