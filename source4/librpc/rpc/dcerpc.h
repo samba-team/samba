@@ -35,7 +35,7 @@ struct dcerpc_security {
 				 uchar *data, size_t length, DATA_BLOB *sig);
 	NTSTATUS (*sign_packet)(struct dcerpc_security *, 
 				const uchar *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*session_key)(struct dcerpc_security *, uint8 session_key[16]);
+	NTSTATUS (*session_key)(struct dcerpc_security *, DATA_BLOB *session_key);
 	void (*security_end)(struct dcerpc_security *);
 };
 

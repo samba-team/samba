@@ -255,8 +255,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 #endif
 }
 
-void SMBsesskeygen_ntv1(const uchar kr[16],
-			const uchar * nt_resp, uint8 sess_key[16])
+void SMBsesskeygen_ntv1(const uchar kr[16], uint8 sess_key[16])
 {
 	/* yes, this session key does not change - yes, this 
 	   is a problem - but it is 128 bits */

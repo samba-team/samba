@@ -57,13 +57,13 @@ static NTSTATUS ntlm_sign_packet(struct dcerpc_security *dcerpc_security,
 }
 
 static NTSTATUS ntlm_session_key(struct dcerpc_security *dcerpc_security, 
-				 uint8 session_key[16])
+				 DATA_BLOB *session_key)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
-	if (!ntlmssp_state || ntlmssp_state->session_key.length < 16) {
-		return NT_STATUS_UNSUCCESSFUL;
+	if (!ntlmssp_state->session_key.data) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
-	memcpy(session_key, ntlmssp_state->session_key.data, 16);
+	*session_key = ntlmssp_state->session_key;
 	return NT_STATUS_OK;
 }
 
