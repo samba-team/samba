@@ -57,7 +57,7 @@ RCSID("$Id$");
 enum {
     COMPAT_WIN2K = 1,
     COMPAT_19 = 2,
-    COMPAT_25 = 4
+    COMPAT_25 = 3
 };
 
 
@@ -601,7 +601,7 @@ pk_mk_padata(krb5_context context,
     memset(&req, 0, sizeof(req));
     memset(&content_info, 0, sizeof(content_info));
 
-    if (compat & COMPAT_WIN2K) {
+    if (compat == COMPAT_WIN2K) {
 	AuthPack_Win2k ap;
 
 	memset(&ap, 0, sizeof(ap));
@@ -623,7 +623,7 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkcs7_data();
-    } else if (compat & COMPAT_19) {
+    } else if (compat == COMPAT_19) {
 	AuthPack_19 ap;
 	
 	memset(&ap, 0, sizeof(ap));
@@ -644,7 +644,7 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkauthdata();
-    } else if (compat & COMPAT_25) {
+    } else if (compat == COMPAT_25) {
 	AuthPack ap;
 	
 	memset(&ap, 0, sizeof(ap));
@@ -687,7 +687,7 @@ pk_mk_padata(krb5_context context,
     req.trustedCertifiers = NULL;
     req.kdcPkId = NULL;
 
-    if (compat & COMPAT_WIN2K) {
+    if (compat == COMPAT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ_WIN;
@@ -709,7 +709,7 @@ pk_mk_padata(krb5_context context,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
 
-    } else if (compat & COMPAT_19) {
+    } else if (compat == COMPAT_19) {
 	PA_PK_AS_REQ_19 req_19;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ_19;
@@ -728,7 +728,7 @@ pk_mk_padata(krb5_context context,
 
 	free_PA_PK_AS_REQ_19(&req_19);
 
-    } else if (compat & COMPAT_25) {
+    } else if (compat == COMPAT_25) {
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
