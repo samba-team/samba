@@ -106,10 +106,20 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     struct prop_data *pd = appdata;
     krb5_data data;
 
-    if(encrypt_flag)
-	hdb_seal_keys_mkey(context, entry, mkey5);
-    if(decrypt_flag)
-	hdb_unseal_keys_mkey(context, entry, mkey5);
+    if(encrypt_flag) {
+	ret = hdb_seal_keys_mkey(context, entry, mkey5);
+	if (ret) {
+	    krb5_warn(context, ret, "hdb_seal_keys_mkey");
+	    return ret;
+	}
+    }
+    if(decrypt_flag) {
+	ret = hdb_unseal_keys_mkey(context, entry, mkey5);
+	if (ret) {
+	    krb5_warn(context, ret, "hdb_unseal_keys_mkey");
+	    return ret;
+	}
+    }	
 
     ret = hdb_entry2value(context, entry, &data);
     if(ret) {
