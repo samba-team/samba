@@ -1,3 +1,7 @@
+2001-02-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* error.c (initialize_error_table_r): put table at end of the list
+
 2001-02-15  Assar Westerlund  <assar@sics.se>
 
 	* com_err.c (default_proc): add printf attributes
