@@ -342,6 +342,14 @@ typedef struct pdb_context
 					       DOM_SID **aliases,
 					       int *num_aliases);
 
+	NTSTATUS (*pdb_lookup_rids)(struct pdb_context *context,
+				    TALLOC_CTX *mem_ctx,
+				    const DOM_SID *domain_sid,
+				    int num_rids,
+				    uint32 *rids,
+				    const char ***names,
+				    uint32 **attrs);
+
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -440,6 +448,13 @@ typedef struct pdb_methods
 					   const DOM_SID *members,
 					   int num_members,
 					   DOM_SID **aliases, int *num);
+	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
+				TALLOC_CTX *mem_ctx,
+				const DOM_SID *domain_sid,
+				int num_rids,
+				uint32 *rids,
+				const char ***names,
+				uint32 **attrs);
 
 	void *private_data;  /* Private data of some kind */
 	
