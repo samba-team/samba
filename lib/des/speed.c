@@ -53,21 +53,21 @@
 #endif
 
 #include <stdio.h>
-#ifndef MSDOS
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#else
-#include <io.h>
 #endif
 #include <signal.h>
-#ifndef VMS
-#ifndef _IRIX
+#ifdef HAVE_TIME_H
 #include <time.h>
 #endif
-#ifdef TIMES
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
-#else /* VMS */
+
+#ifdef VMS
 #include <types.h>
 struct tms {
 	time_t tms_utime;
@@ -76,12 +76,13 @@ struct tms {
 	time_t tms_uchildsys;	/* so these names are a guess :-) */
 	}
 #endif
-#ifndef TIMES
+
+#ifdef HAVE_SYS_TIMEB_H
 #include <sys/timeb.h>
 #endif
 
-#ifdef sun
 #include <limits.h>
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 
