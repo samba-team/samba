@@ -23,6 +23,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*
+ * This is the implementation of the SAMR code.
+ */
+
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -357,13 +361,15 @@ done:
 
 uint32 _samr_close_hnd(pipes_struct *p, SAMR_Q_CLOSE_HND *q_u, SAMR_R_CLOSE_HND *r_u)
 {
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
 	/* close the policy handle */
 	if (!close_lsa_policy_hnd(&q_u->pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
 	DEBUG(5,("samr_reply_close_hnd: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -372,6 +378,8 @@ uint32 _samr_close_hnd(pipes_struct *p, SAMR_Q_CLOSE_HND *q_u, SAMR_R_CLOSE_HND 
 
 uint32 _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_DOMAIN *r_u)
 {
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
 	/* find the connection policy handle. */
 	if (find_lsa_policy_by_hnd(q_u->pol) == -1))
 		return NT_STATUS_INVALID_HANDLE;
@@ -388,7 +396,7 @@ uint32 _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_D
 
 	DEBUG(5,("samr_open_domain: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -397,6 +405,8 @@ uint32 _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_D
 
 uint32 _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u, SAMR_R_GET_USRDOM_PWINFO *r_u)
 {
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
 	/* find the policy handle.  open a policy on it. */
 	if (find_lsa_policy_by_hnd(&q_u->user_pol) == -1)) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -411,7 +421,7 @@ uint32 _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u, S
 
 	DEBUG(5,("_samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -422,6 +432,8 @@ uint32 _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_QU
 {
 	prs_struct *rdata = &p->out_data.rdata;
 	DOM_SID pol_sid;
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* find the policy handle.  open a policy on it. */
 	if ((find_lsa_policy_by_hnd(&q_u->user_pol)) == -1))
@@ -480,6 +492,8 @@ static uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, 
 	int num_entries;
 	int total_entries;
 	
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
 	r_u->total_num_entries = 0;
 
 	/* find the policy handle.  open a policy on it. */
@@ -494,11 +508,11 @@ static uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, 
 
 	init_samr_r_enum_dom_users(r_u, total_entries,
 	                           q_u->unknown_0, num_entries,
-	                           pass, r_u->status);
+	                           pass, NT_STATUS_NOPROBLEMO);
 
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -512,6 +526,8 @@ static uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u
 	BOOL got_grps;
 	char *dummy_group = "Domain Admins";
 	
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
 	r_u->num_entries = 0;
 
 	/* find the policy handle.  open a policy on it. */
@@ -531,7 +547,7 @@ static uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u
 
 	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -547,6 +563,8 @@ static uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q
 	fstring sam_sid_str;
 	struct group *grp;
 	
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(&q_u->pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
@@ -607,6 +625,375 @@ static uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q
 
 	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return r_u->status;
+}
+
+/*******************************************************************
+ samr_reply_query_dispinfo
+ ********************************************************************/
+
+static uint32 _samr_query_dispinfo(pipes_struct p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_QUERY_DISPINFO *r_u)
+{
+    SAM_INFO_CTR ctr;
+    SAM_INFO_1 info1;
+    SAM_INFO_2 info2;
+    SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
+    int num_entries = 0;
+    int total_entries = 0;
+    BOOL got_pwds;
+    uint16 switch_level = 0;
+    uint32 retsize;
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+    DEBUG(5,("_samr_query_dispinfo: %d\n", __LINE__));
+
+    /* find the policy handle.  open a policy on it. */
+    if (find_lsa_policy_by_hnd(&q_u->pol) == -1))
+        return NT_STATUS_INVALID_HANDLE;
+
+    /* decide how many entries to get depending on the max_entries
+        and max_size passed by client */
+
+    if(q_u->max_entries > MAX_SAM_ENTRIES)
+        q_u->max_entries = MAX_SAM_ENTRIES;
+
+    retsize = (q_u->max_entries * (sizeof(SAM_ENTRY1)+sizeof(SAM_STR1))) + 3*sizeof(uint32);
+
+    if(retsize > q_u->max_size) {
+        /* determine max_entries based on max_size */
+        q_u->max_entries = (q_u->max_size - 3*sizeof(uint32)) / (sizeof(SAM_ENTRY1)+sizeof(SAM_STR1));
+        q_u->max_entries = (q_u->max_entries>0?q_u->max_entries:1);
+    }
+
+    DEBUG(10,("_samr_query_dispinfo: Setting q_u->max_entries to %u\n",q_u->max_entries));
+
+    become_root();
+    got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, q_u->max_entries, 0);
+    unbecome_root();
+
+    /* more left - set resume handle */
+    if(total_entries > num_entries)
+        r_u->status = 0x105;
+
+    switch (q_u->switch_level) {
+        case 0x1:
+
+            /* query disp info is for users */
+            ZERO_STRUCT (info1);
+            switch_level = 0x1;
+            init_sam_info_1(&info1, ACB_NORMAL, q_u->start_idx, num_entries, pass);  
+
+            ctr.sam.info1 = &info1;
+
+            break;
+
+        case 0x2:
+
+            /* query disp info is for servers */
+            ZERO_STRUCT (info2);
+            switch_level = 0x2;
+            init_sam_info_2(&info2, ACB_WSTRUST, q_u->start_idx, num_entries, pass);
+
+            ctr.sam.info2 = &info2;
+
+            break;
+
+    }
+
+    /* more left - set resume handle */
+    if(total_entries > num_entries)
+        r_u->status = 0x105;
+
+    if (r_u->status == 0 || r_u->status == 0x105)
+        init_samr_r_query_dispinfo(r_u, switch_level, &ctr, r_u->status);
+
+    DEBUG(5,("samr_query_dispinfo: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ samr_reply_query_aliasinfo
+ ********************************************************************/
+
+uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_R_QUERY_ALIASINFO *r_u)
+{
+    fstring alias_desc = "Local Unix group";
+    fstring alias="";
+    enum SID_NAME_USE type;
+    uint32 alias_rid;
+
+    r_u->status = 0;
+
+    DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
+
+    /* find the policy handle.  open a policy on it. */
+    if (find_lsa_policy_by_hnd(&q_u->pol) == -1))
+        return NT_STATUS_INVALID_HANDLE;
+
+    alias_rid = get_lsa_policy_samr_rid(&q_u->pol);
+    if(alias_rid == 0xffffffff)
+        r_u->status = NT_STATUS_NO_SUCH_ALIAS;
+
+    if(!local_lookup_rid(alias_rid, alias, &type))
+        r_u->status = NT_STATUS_NO_SUCH_ALIAS;
+
+    init_samr_r_query_aliasinfo(&r_u, q_u->switch_level, alias, alias_desc);
+
+    DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
+
+    return True;
+}
+
+/*******************************************************************
+ samr_reply_lookup_ids
+ ********************************************************************/
+
+uint32 _samr_lookup_ids(pipes_struct *p, SAMR_Q_LOOKUP_IDS *q_u, SAMR_R_LOOKUP_IDS *r_u)
+{
+    uint32 rid[MAX_SAM_ENTRIES];
+    int num_rids = q_u->num_sids1;
+
+    r_u->status = NT_STATUS_NOPROBLEMO;
+
+    DEBUG(5,("_samr_lookup_ids: %d\n", __LINE__));
+
+    if (num_rids > MAX_SAM_ENTRIES) {
+        num_rids = MAX_SAM_ENTRIES;
+        DEBUG(5,("_samr_lookup_ids: truncating entries to %d\n", num_rids));
+    }
+
+#if 0
+    int i;
+    SMB_ASSERT_ARRAY(q_u->uni_user_name, num_rids);
+
+    for (i = 0; i < num_rids && status == 0; i++)
+    {
+        struct sam_passwd *sam_pass;
+        fstring user_name;
+
+
+        fstrcpy(user_name, unistrn2(q_u->uni_user_name[i].buffer,
+                                    q_u->uni_user_name[i].uni_str_len));
+
+        /* find the user account */
+        become_root();
+        sam_pass = get_smb21pwd_entry(user_name, 0);
+        unbecome_root();
+
+        if (sam_pass == NULL)
+        {
+            status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+            rid[i] = 0;
+        }
+        else
+        {
+            rid[i] = sam_pass->user_rid;
+        }
+    }
+#endif
+
+    num_rids = 1;
+    rid[0] = BUILTIN_ALIAS_RID_USERS;
+
+    init_samr_r_lookup_ids(&r_u, num_rids, rid, NT_STATUS_NOPROBLEMO);
+
+    DEBUG(5,("_samr_lookup_ids: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ _samr_lookup_names
+ ********************************************************************/
+
+uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
+{
+    uint32 rid[MAX_SAM_ENTRIES];
+    enum SID_NAME_USE type[MAX_SAM_ENTRIES];
+    int i;
+    int num_rids = q_u->num_names1;
+    DOM_SID pol_sid;
+
+    r_u->status = NT_STATUS_NOPROBLEMO;
+
+    DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+
+    ZERO_ARRAY(rid);
+    ZERO_ARRAY(type);
+
+    if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid)) {
+        r_u->status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+        init_samr_r_lookup_names(r_u, 0, rid, type, r_u->status);
+        return r_u->status;
+    }
+
+    if (num_rids > MAX_SAM_ENTRIES) {
+        num_rids = MAX_SAM_ENTRIES;
+        DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
+    }
+
+    SMB_ASSERT_ARRAY(q_u->uni_name, num_rids);
+
+    for (i = 0; i < num_rids; i++) {
+        fstring name;
+
+        r_u->status = NT_STATUS_NONE_MAPPED;
+
+        rid [i] = 0xffffffff;
+        type[i] = SID_NAME_UNKNOWN;
+
+        fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len));
+
+        if(sid_equal(&pol_sid, &global_sam_sid)) {
+            DOM_SID sid;
+            if(local_lookup_name(global_myname, name, &sid, &type[i])) {
+                sid_split_rid( &sid, &rid[i]);
+                r_u->status = NT_STATUS_NOPROBLEMO;
+            }
+        }
+    }
+
+    init_samr_r_lookup_names(r_u, num_rids, rid, type, r_u->status);
+
+    DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ _samr_chgpasswd_user
+ ********************************************************************/
+
+uint32 _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_CHGPASSWD_USER *r_u)
+{
+    fstring user_name;
+    fstring wks;
+
+    DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+
+    r_u->status = NT_STATUS_NOPROBLEMO;
+
+    fstrcpy(user_name, dos_unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len));
+    fstrcpy(wks      , dos_unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len));
+
+    DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
+
+    if (!pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
+                         q_u->nt_newpass.pass, q_u->nt_oldhash.hash))
+        r_u->status = NT_STATUS_WRONG_PASSWORD;
+
+    init_samr_r_chgpasswd_user(r_u, status);
+
+    DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ samr_reply_unknown_38
+ ********************************************************************/
+
+uint32 _samr_unknown_38(pipes_struct *p, SAMR_Q_UNKNOWN_38 *q_u, SAMR_R_UNKNOWN_38 *r_u)
+{
+    DEBUG(5,("_samr_unknown_38: %d\n", __LINE__));
+
+    r_u->status = NT_STATUS_NOPROBLEMO;
+
+    init_samr_r_unknown_38(&r_u);
+
+    DEBUG(5,("_samr_unknown_38: %d\n", __LINE__));
+    return r_u->status;
+}
+
+/*******************************************************************
+ _samr_lookup_rids
+ ********************************************************************/
+
+uint32 _samr_lookup_rids(pipe_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
+{
+    fstring group_names[MAX_SAM_ENTRIES];
+    uint32  group_attrs[MAX_SAM_ENTRIES];
+    int num_gids = q_u->num_gids1;
+    int i;
+
+    r_u->status = NT_STATUS_NOPROBLEMO;
+
+    DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
+
+    /* find the policy handle.  open a policy on it. */
+    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+        return NT_STATUS_INVALID_HANDLE;
+
+    if (num_gids > MAX_SAM_ENTRIES) {
+        num_gids = MAX_SAM_ENTRIES;
+        DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_gids));
+    }
+
+    for (i = 0; i < num_gids && status == 0; i++) {
+        fstrcpy(group_names[i], "dummy group");
+        group_attrs[i] = 0x2;
+    }
+
+    init_samr_r_lookup_rids(r_u, num_gids, group_names, group_attrs, r_u->status);
+
+    DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ _api_samr_open_user
+ ********************************************************************/
+
+uint32 _api_samr_open_user(pipe_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
+{
+    struct sam_passwd *sam_pass;
+    DOM_SID sid;
+    POLICY_HND domain_pol = q_u->domain_pol;
+    uint32 user_rid = q_u->user_rid;
+    POLICY_HND *user_pol = &r_u->user_pol;
+
+    r_u->status = NT_STATUS_NO_PROBLEMO;
+
+    /* find the domain policy handle. */
+    if (find_lsa_policy_by_hnd(&domain_pol) == -1)
+        return NT_STATUS_INVALID_HANDLE;
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!open_lsa_policy_hnd(user_pol))
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+    become_root();
+    sam_pass = getsam21pwrid(user_rid);
+    unbecome_root();
+
+    /* check that the RID exists in our domain. */
+    if (sam_pass == NULL) {
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_NO_SUCH_USER;
+    }
+
+    /* Get the domain SID stored in the domain policy */
+    if(!get_lsa_policy_samr_sid(&domain_pol, &sid)) {
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_INVALID_HANDLE;
+    }
+
+    /* append the user's RID to it */
+    if(!sid_append_rid(&sid, user_rid)) {
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_NO_SUCH_USER;
+    }
+
+    /* associate the user's SID with the handle. */
+    if (!set_lsa_policy_samr_sid(user_pol, &sid)) {
+        /* oh, whoops.  don't know what error message to return, here */
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+    }
+
+    return r_u->status;
 }
 
