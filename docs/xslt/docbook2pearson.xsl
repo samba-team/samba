@@ -102,12 +102,8 @@
 	<xsl:apply-templates/>
 </xsl:template>
 
-<xsl:template match="index">
-	<xsl:comment> XXX insert index here </xsl:comment>
-	<!-- chapter>
-	<xsl:call-template name="transform.id.attribute"/>
-	<xsl:apply-templates/>
-</chapter -->
+   <xsl:template match="index">
+       <xsl:comment> XXX insert index here </xsl:comment>
    </xsl:template>
 
    <xsl:template match="preface">
