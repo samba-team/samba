@@ -215,7 +215,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
 		data_blob_free(&ap_rep);
-		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {
