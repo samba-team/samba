@@ -2019,9 +2019,8 @@ typedef struct
 
 #include "rpcclient.h"
 #include "rpc_creds.h"
-
 #include "client.h"
-
+#include "winbindd.h"
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.
@@ -2055,5 +2054,3 @@ typedef struct
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
 #endif /* _SMB_H */
-
-/* _SMB_H */
