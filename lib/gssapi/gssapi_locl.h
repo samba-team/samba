@@ -38,6 +38,7 @@
 
 #include <krb5_locl.h>
 #include <gssapi.h>
+#include <assert.h>
 
 extern krb5_context gssapi_krb5_context;
 
@@ -59,7 +60,7 @@ gssapi_krb5_verify_8003_checksum (
 
 OM_uint32
 gssapi_krb5_encapsulate(
-			krb5_data *in_data,
+			const krb5_data *in_data,
 			gss_buffer_t output_token,
 			u_char *type);
 
@@ -86,7 +87,7 @@ gssapi_krb5_verify_header(u_char **str,
 
 OM_uint32
 gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
-		    des_cblock *key);
+		    krb5_keyblock **key);
 
 krb5_error_code
 gss_address_to_krb5addr(OM_uint32 gss_addr_type,
