@@ -125,13 +125,13 @@ struct sockaddr_dl;
 #endif
 #endif
 
+#include <roken-common.h>
+
 ROKEN_CPP_START
 
 #ifndef HAVE___ATTRIBUTE__
 #define __attribute__(x)
 #endif
-
-#include <roken-common.h>
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
