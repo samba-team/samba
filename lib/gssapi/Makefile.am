@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I$(srcdir)/../krb5
+INCLUDES += -I$(srcdir)/../krb5 $(INCLUDE_krb4)
 
 lib_LTLIBRARIES = libgssapi.la
 libgssapi_la_LDFLAGS = -version-info 2:2:1
