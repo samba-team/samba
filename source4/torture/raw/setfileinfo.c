@@ -31,7 +31,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 	struct cli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
-	int fnum = -1;
+	int fnum_saved, fnum2, fnum = -1;
 	char *fnum_fname;
 	char *fnum_fname_new;
 	char *path_fname;
@@ -406,7 +406,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 
 	CHECK_CALL_PATH(MODE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 0);
-
+#if 1
 	printf("finally the rename_information level\n");
 	cli_close(cli, create_complex_file(cli, mem_ctx, fnum_fname_new));
 	cli_close(cli, create_complex_file(cli, mem_ctx, path_fname_new));
@@ -424,7 +424,46 @@ BOOL torture_raw_sfileinfo(int dummy)
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname_new);
 
+	printf("Trying rename with dest file open\n");
+	fnum2 = create_complex_file(cli, mem_ctx, fnum_fname);
+	sfinfo.rename_information.in.new_name  = fnum_fname+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 1;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_ACCESS_DENIED);
+	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname_new);
+
+	fnum_saved = fnum;
+	fnum = fnum2;
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	CHECK_CALL_FNUM(DISPOSITION_INFO, NT_STATUS_OK);
+	fnum = fnum_saved;
+
+	printf("Trying rename with dest file open and delete_on_close\n");
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_ACCESS_DENIED);
+
+	cli_close(cli, fnum2);
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
+
+	printf("Trying rename with source file open twice\n");
+	sfinfo.rename_information.in.new_name  = fnum_fname+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 1;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
+
+	fnum2 = create_complex_file(cli, mem_ctx, fnum_fname);
+	sfinfo.rename_information.in.new_name  = fnum_fname_new+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 0;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname_new);
+	cli_close(cli, fnum2);
+
+	sfinfo.rename_information.in.new_name  = fnum_fname+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 0;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
+
 	sfinfo.rename_information.in.new_name  = path_fname_new+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 1;
 	CHECK_CALL_PATH(RENAME_INFORMATION, NT_STATUS_OK);
 	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname_new);
 
@@ -435,6 +474,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 	sfinfo.rename_information.in.new_name  = path_fname+strlen(BASEDIR)+1;
 	CHECK_CALL_PATH(RENAME_INFORMATION, NT_STATUS_OK);
 	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname);
+#endif
 
 #if 0
 	printf("test unix_basic level\n");

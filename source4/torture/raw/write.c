@@ -198,6 +198,7 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 done:
+	cli_close(cli, fnum);
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
 	return ret;
@@ -212,7 +213,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_write io;
 	NTSTATUS status;
 	BOOL ret = True;
-	int fnum;
+	int fnum, i;
 	char *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
@@ -346,29 +347,32 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
-	printf("Trying 2^43 offset\n");
-	setup_buffer(buf, seed+1, maxsize);
-	io.writex.in.fnum = fnum;
-	io.writex.in.count = 4000;
-	io.writex.in.offset = ((SMB_BIG_UINT)1) << 43;
-	io.writex.in.data = buf;
-	status = smb_raw_write(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.writex.out.nwritten, 4000);
-	CHECK_ALL_INFO(io.writex.in.count + (SMB_BIG_UINT)io.writex.in.offset, size);
+	for (i=33;i<64;i++) {
+		printf("Trying 2^%d offset\n", i);
+		setup_buffer(buf, seed+1, maxsize);
+		io.writex.in.fnum = fnum;
+		io.writex.in.count = 4000;
+		io.writex.in.offset = ((SMB_BIG_UINT)1) << i;
+		io.writex.in.data = buf;
+		status = smb_raw_write(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.writex.out.nwritten, 4000);
+		CHECK_ALL_INFO(io.writex.in.count + (SMB_BIG_UINT)io.writex.in.offset, size);
 
-	memset(buf, 0, maxsize);
-	if (cli_read(cli, fnum, buf, io.writex.in.offset, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
-		ret = False;
-		goto done;
+		memset(buf, 0, maxsize);
+		if (cli_read(cli, fnum, buf, io.writex.in.offset, 4000) != 4000) {
+			printf("read failed at %d\n", __LINE__);
+			ret = False;
+			goto done;
+		}
+		CHECK_BUFFER(buf, seed+1, 4000);
 	}
-	CHECK_BUFFER(buf, seed+1, 4000);
 
 
 	setup_buffer(buf, seed, maxsize);
 
 done:
+	cli_close(cli, fnum);
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
 	return ret;
@@ -507,6 +511,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 done:
+	cli_close(cli, fnum);
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
 	return ret;
@@ -659,6 +664,7 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 done:
+	cli_close(cli, fnum);
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
 	return ret;

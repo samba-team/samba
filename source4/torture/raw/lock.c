@@ -133,6 +133,7 @@ static BOOL test_lock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
+	cli_close(cli, fnum);
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
 	return ret;
@@ -181,6 +182,90 @@ static BOOL test_lockx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
+	cli_close(cli, fnum);
+	smb_raw_exit(cli->session);
+	cli_deltree(cli, BASEDIR);
+	return ret;
+}
+
+
+/*
+  test high pid
+*/
+static BOOL test_pidhigh(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_lock io;
+	struct smb_lock_entry lock[1];
+	NTSTATUS status;
+	BOOL ret = True;
+	int fnum;
+	const char *fname = BASEDIR "\\test.txt";
+	char c = 1;
+
+	if (cli_deltree(cli, BASEDIR) == -1 ||
+	    !cli_mkdir(cli, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+		return False;
+	}
+
+	printf("Testing high pid\n");
+	io.generic.level = RAW_LOCK_LOCKX;
+
+	cli->session->pid = 1;
+	
+	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		ret = False;
+		goto done;
+	}
+
+	if (cli_write(cli, fnum, 0, &c, 0, 1) != 1) {
+		printf("Failed to write 1 byte - %s\n", cli_errstr(cli));
+		ret = False;
+		goto done;
+	}
+
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.fnum = fnum;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].pid = cli->session->pid;
+	lock[0].offset = 0;
+	lock[0].count = 0xFFFFFFFF;
+	io.lockx.in.locks = &lock[0];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (cli_read(cli, fnum, &c, 0, 1) != 1) {
+		printf("Failed to read 1 byte - %s\n", cli_errstr(cli));
+		ret = False;
+		goto done;
+	}
+
+	cli->session->pid |= 0x10000;
+
+	cli->session->pid = 2;
+
+	if (cli_read(cli, fnum, &c, 0, 1) == 1) {
+		printf("pid is incorrect handled for read with lock!\n");
+		ret = False;
+		goto done;
+	}
+
+	cli->session->pid = 0x10001;
+
+	if (cli_read(cli, fnum, &c, 0, 1) != 1) {
+		printf("High pid is used on this server!\n");
+		ret = False;
+	} else {
+		printf("High pid is not used on this server (correct)\n");
+	}
+
+done:
+	cli_close(cli, fnum);
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
 	return ret;
@@ -207,6 +292,10 @@ BOOL torture_raw_lock(int dummy)
 	}
 
 	if (!test_lock(cli, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_pidhigh(cli, mem_ctx)) {
 		ret = False;
 	}
 

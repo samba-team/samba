@@ -90,6 +90,16 @@ static BOOL test_unlink(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 
+	io.in.pattern = "\\..";
+	io.in.attrib = 0;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+
+	io.in.pattern = BASEDIR "\\..";
+	io.in.attrib = 0;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
+
 	printf("Trying wildcards\n");
 	cli_close(cli, cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE));
 	io.in.pattern = BASEDIR "\\t*.t";
