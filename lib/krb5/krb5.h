@@ -314,6 +314,29 @@ struct krb5_rcache_data;
 typedef struct krb5_rcache_data *krb5_rcache;
 typedef Authenticator krb5_donot_reply;
 
+typedef struct krb5_storage {
+    void *data;
+    size_t (*fetch)(struct krb5_storage*, void*, size_t);
+    size_t (*store)(struct krb5_storage*, void*, size_t);
+    off_t (*seek)(struct krb5_storage*, off_t, int);
+    void (*free)(struct krb5_storage*);
+} krb5_storage;
+
+typedef struct krb5_keytab_entry {
+    krb5_principal principal;
+    krb5_kvno vno;
+    krb5_keyblock keyblock;
+} krb5_keytab_entry;
+
+typedef struct krb5_kt_cursor {
+    int fd;
+    krb5_storage *sp;
+} krb5_kt_cursor;
+
+struct krb5_keytab_data;
+
+typedef struct krb5_keytab_data *krb5_keytab;
+
 struct krb5_keytab_data {
     char *prefix;
     krb5_error_code (*resolve)(krb5_context, const char*, krb5_keytab);
@@ -330,7 +353,7 @@ struct krb5_keytab_data {
     void *data;
 };
 
-typedef struct krb5_keytab_data *krb5_keytab, krb5_kt_ops;
+typedef struct krb5_keytab_data krb5_kt_ops;
 
 struct krb5_keytab_key_proc_args {
     krb5_keytab keytab;
@@ -338,25 +361,6 @@ struct krb5_keytab_key_proc_args {
 };
 
 typedef struct krb5_keytab_key_proc_args krb5_keytab_key_proc_args;
-
-typedef struct krb5_keytab_entry {
-    krb5_principal principal;
-    krb5_kvno vno;
-    krb5_keyblock keyblock;
-} krb5_keytab_entry;
-
-typedef struct krb5_storage {
-    void *data;
-    size_t (*fetch)(struct krb5_storage*, void*, size_t);
-    size_t (*store)(struct krb5_storage*, void*, size_t);
-    off_t (*seek)(struct krb5_storage*, off_t, int);
-    void (*free)(struct krb5_storage*);
-} krb5_storage;
-
-typedef struct krb5_kt_cursor {
-    int fd;
-    krb5_storage *sp;
-} krb5_kt_cursor;
 
 enum {
     KRB5_AUTH_CONTEXT_DO_TIME      = 1,
