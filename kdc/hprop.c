@@ -339,8 +339,9 @@ int main(int argc, char **argv)
 	    if(e)
 		krb5_errx(context, 1, "kerb_db_iterate: %s", 
 			  krb_get_err_text(e));
-	} else {
+	} else
 #endif
+	{
 	    ret = hdb_foreach(context, db, v5_prop, &pd);
 	    if(ret)
 		krb5_err(context, 1, ret, "hdb_foreach");
