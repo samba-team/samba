@@ -1,0 +1,25 @@
+#
+# Compilation utility functions
+#
+
+# Compile a program consisting of one .c file.  For example 
+# simple_compile "foo" will compile foo.c to the executable foo.exe
+
+proc simple_compile { args } {
+    global srcdir
+    global subdir
+
+    # Compile up program
+
+    set program [lindex $args 0]
+    set output [target_compile "$srcdir/$subdir/$program.c" \
+	    "$srcdir/$subdir/$program" executable {additional_flags="-g"}]
+
+    # Check for errors
+
+    if {$output != ""} {
+	perror "compile $program"
+	puts $output
+	return -1
+    }
+}
