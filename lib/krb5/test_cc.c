@@ -267,6 +267,48 @@ test_mcc_default(void)
     }
 }
 
+struct {
+    char *str;
+    int fail;
+    char *res;
+} cc_names[] = {
+    { "foo", 0, "foo" },
+    { "${uid}", 0 },
+    { "foo${null}", 0, "foo" },
+    { "foo${null}bar", 0, "foobar" },
+    { "${", 1 },
+    { "${foo ${", 1 },
+    { "${{", 1 },
+};
+
+static void
+test_def_cc_name(krb5_context context)
+{
+    krb5_error_code ret;
+    char *str;
+    int i;
+
+    for (i = 0; i < sizeof(cc_names)/sizeof(cc_names[0]); i++) {
+	ret = _krb5_expand_default_cc_name(context, cc_names[i].str, &str);
+	if (ret) {
+	    if (cc_names[i].fail == 0)
+		krb5_errx(context, 1, "test %d \"%s\" failed", 
+			  i, cc_names[i].str);
+	} else {
+	    if (cc_names[i].fail)
+		krb5_errx(context, 1, "test %d \"%s\" was successful", 
+			  i, cc_names[i].str);
+	    if (cc_names[i].res && strcmp(cc_names[i].res, str) != 0)
+		krb5_errx(context, 1, "test %d %s != %s", 
+			  i, cc_names[i].res, str);
+#if 0
+	    printf("%s => %s\n", cc_names[i].str, str);
+#endif
+	    free(str);
+	}
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -285,6 +327,7 @@ main(int argc, char **argv)
     test_init_vs_destroy(context, &krb5_mcc_ops);
     test_init_vs_destroy(context, &krb5_fcc_ops);
     test_mcc_default();
+    test_def_cc_name(context);
 
     krb5_free_context(context);
 
