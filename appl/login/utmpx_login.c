@@ -2,15 +2,14 @@
 
 #include "bsd_locl.h"
 
-#ifdef SYSV_UTMP
-
 /* utmpx_login - update utmp and wtmp after login */
 
-utmpx_login(line, user, host)
-char   *line;
-char   *user;
-char   *host;
+int
+utmpx_login(char *line, char *user, char *host)
 {
+#ifndef SYSV_UTMP
+    return 0;
+#else
     struct utmpx *ut;
     pid_t   mypid = getpid();
     int     ret = (-1);
@@ -42,6 +41,5 @@ char   *host;
     }
     endutxent();
     return (ret);
-}
-
 #endif /* SYSV_UTMP */
+}
