@@ -592,8 +592,8 @@ static void on_find_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
     GtkDialog *findwin = GTK_DIALOG(create_FindDialog());
-    gint result = gtk_dialog_run(findwin);
-	/* FIXME */
+    /*gint result = gtk_dialog_run(findwin);
+      FIXME */
     gtk_widget_destroy(GTK_WIDGET(findwin));
 }
 
