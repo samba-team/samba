@@ -352,7 +352,7 @@ fkt_next_entry_int(krb5_context context,
     int ret;
     int8_t tmp8;
     int32_t tmp32;
-    off_t pos;
+    off_t pos, curpos;
 
     pos = krb5_storage_seek(cursor->sp, 0, SEEK_CUR);
 loop:
@@ -380,14 +380,17 @@ loop:
     /* there might be a 32 bit kvno here
      * if it's zero, assume that the 8bit one was right,
      * otherwise trust the new value */
-    ret = krb5_ret_int32(cursor->sp, &tmp32);
-    if (ret == 0 && tmp32 != 0) {
-	entry->vno = tmp32;
+    curpos = krb5_storage_seek(cursor->sp, 0, SEEK_CUR);
+    if(len + 4 + pos - curpos == 4) {
+	ret = krb5_ret_int32(cursor->sp, &tmp32);
+	if (ret == 0 && tmp32 != 0) {
+	    entry->vno = tmp32;
+	}
     }
     if(start) *start = pos;
     if(end) *end = *start + 4 + len;
  out:
-    krb5_storage_seek(cursor->sp, pos + 4 + len, SEEK_CUR);
+    krb5_storage_seek(cursor->sp, pos + 4 + len, SEEK_SET);
     return ret;
 }
 
