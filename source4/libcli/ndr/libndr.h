@@ -83,3 +83,7 @@ struct ndr_push {
 					if (!(s)) return NT_STATUS_NO_MEMORY; \
 				} \
                            } while (0)
+
+/* now pull in the individual parsers */
+#include "libcli/ndr/ndr_sec.h"
+#include "libcli/ndr/ndr_echo.h"

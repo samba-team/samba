@@ -4026,6 +4026,7 @@ static struct {
 	{"SCAN-ALIASES", torture_trans2_aliases, 0},
 	{"SCAN-SMB", torture_smb_scan, 0},
         {"RPC-LSA", torture_rpc_lsa, 0},
+        {"RPC-ECHO", torture_rpc_echo, 0},
 	{NULL, NULL, 0}};
 
 
