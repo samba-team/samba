@@ -1,3 +1,14 @@
+Mon Mar  1 10:49:14 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/krb5/get_addrs.c: SOCKADDR_HAS_SA_LEN ->
+ 	HAVE_STRUCT_SOCKADDR_SA_LEN
+
+	* appl/login/utmpx_login.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
+
+	* appl/login/utmp_login.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
+
+	* configure.in, acconfig.h, cf/*: update to automake 1.4/autoconf 2.13
+
 Sun Feb 28 18:19:20 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/asn1/gen.c: make `BIT STRING's unsigned

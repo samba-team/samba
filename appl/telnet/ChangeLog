@@ -1,3 +1,7 @@
+Mon Mar  1 10:50:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* telnetd/sys_term.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
+
 Mon Feb  1 04:08:36 1999  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): only call gethostbyname2 with AF_INET6
