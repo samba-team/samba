@@ -1468,7 +1468,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
 	int uLevel = SVAL(p, 0);
 	int buf_len = SVAL(p, 2);
 	char *p2;
-	int count = lp_numservices();
+	int count;
 	int total = 0, counted = 0;
 	BOOL missed = False;
 	int i;
@@ -1494,6 +1494,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
 		return False;
 	}
 
+	count = ctr.share.info2.num_entries_read;
 	data_len = fixed_len = string_len = 0;
 	for (i = 0; i < count; i++)
 	{
