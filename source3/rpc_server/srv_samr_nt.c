@@ -56,7 +56,7 @@ struct samr_info {
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
 	uint16 acb_mask;
-	BOOL all_machines;
+	BOOL only_machines;
 	DISP_INFO disp_info;
 
 	TALLOC_CTX *mem_ctx;
@@ -209,34 +209,40 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 }
 
 
-static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOOL all_machines)
+static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOOL only_machines)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	SAM_ACCOUNT *pwd_array = NULL;
 	NTSTATUS nt_status = NT_STATUS_OK;
 	TALLOC_CTX *mem_ctx = info->mem_ctx;
+	uint16 query_acb_mask = acb_mask;
 
 	DEBUG(10,("load_sampwd_entries\n"));
 
 	/* if the snapshoot is already loaded, return */
 	if ((info->disp_info.user_dbloaded==True) 
 	    && (info->acb_mask == acb_mask) 
-	    && (info->all_machines == all_machines)) {
+	    && (info->only_machines == only_machines)) {
 		DEBUG(10,("load_sampwd_entries: already in memory\n"));
 		return NT_STATUS_OK;
 	}
 
 	free_samr_users(info);
+	
+	if (only_machines) {
+		query_acb_mask |= ACB_WSTRUST;
+		query_acb_mask |= ACB_SVRTRUST;
+	}
 
-	if (!pdb_setsampwent(False)) {
+	if (!pdb_setsampwent(False, query_acb_mask)) {
 		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	for (; (NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, &pwd))) 
 		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
-		
-		if (all_machines) {
+	
+		if (only_machines) {
 			if (!((pdb_get_acct_ctrl(pwd) & ACB_WSTRUST) 
 			      || (pdb_get_acct_ctrl(pwd) & ACB_SVRTRUST))) {
 				DEBUG(5,("load_sampwd_entries: '%s' is not a machine account - ACB: %x - skipping\n", pdb_get_username(pwd), acb_mask));
@@ -277,7 +283,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 	/* the snapshoot is in memory, we're ready to enumerate fast */
 
 	info->acb_mask = acb_mask;
-	info->all_machines = all_machines;
+	info->only_machines = only_machines;
 	info->disp_info.user_dbloaded=True;
 
 	DEBUG(10,("load_sampwd_entries: done\n"));

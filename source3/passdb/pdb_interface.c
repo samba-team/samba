@@ -119,7 +119,7 @@ static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 	return NULL;
 }
 
-static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update)
+static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update, uint16 acb_mask)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -135,7 +135,7 @@ static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update)
 		return ret;
 	}
 
-	while (NT_STATUS_IS_ERR(ret = context->pwent_methods->setsampwent(context->pwent_methods, update))) {
+	while (NT_STATUS_IS_ERR(ret = context->pwent_methods->setsampwent(context->pwent_methods, update, acb_mask))) {
 		context->pwent_methods = context->pwent_methods->next;
 		if (context->pwent_methods == NULL) 
 			return NT_STATUS_UNSUCCESSFUL;
@@ -176,7 +176,7 @@ static NTSTATUS context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *us
 		if (context->pwent_methods == NULL)
 			return ret;
 	
-		context->pwent_methods->setsampwent(context->pwent_methods, False);
+		context->pwent_methods->setsampwent(context->pwent_methods, False, 0);
 	}
 	user->methods = context->pwent_methods;
 	pdb_force_pw_initialization(user);
@@ -857,7 +857,7 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
  Backward compatibility functions for the original passdb interface
 *******************************************************************/
 
-BOOL pdb_setsampwent(BOOL update) 
+BOOL pdb_setsampwent(BOOL update, uint16 acb_mask) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -865,7 +865,7 @@ BOOL pdb_setsampwent(BOOL update)
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_setsampwent(pdb_context, update));
+	return NT_STATUS_IS_OK(pdb_context->pdb_setsampwent(pdb_context, update, acb_mask));
 }
 
 void pdb_endsampwent(void) 
@@ -1243,7 +1243,7 @@ static NTSTATUS pdb_default_delete_sam_account (struct pdb_methods *methods, SAM
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

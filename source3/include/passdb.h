@@ -241,7 +241,7 @@ struct acct_info
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 5
+#define PASSDB_INTERFACE_VERSION 6
 
 typedef struct pdb_context 
 {
@@ -251,7 +251,7 @@ typedef struct pdb_context
 	/* These functions are wrappers for the functions listed above.
 	   They may do extra things like re-reading a SAM_ACCOUNT on update */
 
-	NTSTATUS (*pdb_setsampwent)(struct pdb_context *, BOOL update);
+	NTSTATUS (*pdb_setsampwent)(struct pdb_context *, BOOL update, uint16 acb_mask);
 	
 	void (*pdb_endsampwent)(struct pdb_context *);
 	
@@ -349,7 +349,7 @@ typedef struct pdb_methods
 	struct pdb_methods *next;
 	struct pdb_methods *prev;
 
-	NTSTATUS (*setsampwent)(struct pdb_methods *, BOOL update);
+	NTSTATUS (*setsampwent)(struct pdb_methods *, BOOL update, uint16 acb_mask);
 	
 	void (*endsampwent)(struct pdb_methods *);
 	

@@ -118,7 +118,7 @@ static NTSTATUS row_to_sam_account ( PGresult *r, long row, SAM_ACCOUNT *u )
   return NT_STATUS_OK ;
 }
 
-static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
 {
   struct pdb_pgsql_data *data ;
   char *query ;
