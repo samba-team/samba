@@ -69,7 +69,7 @@ get_cred(kafs_data *data, const char *name, const char *inst,
     krb5_free_principal(d->context, in_creds.client);
     if(ret)
 	return ret;
-    ret = krb524_convert_creds_kdc(d->context, out_creds, c);
+    ret = krb524_convert_creds_kdc(d->context, d->id, out_creds, c);
     krb5_free_creds(d->context, out_creds);
     return ret;
 }
