@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 INCLUDES += -I$(srcdir)/../krb5 $(INCLUDE_des) $(INCLUDE_krb4)
 
 lib_LTLIBRARIES = libgssapi.la
-libgssapi_la_LDFLAGS = -version-info 3:5:2
+libgssapi_la_LDFLAGS = -version-info 3:6:2
 libgssapi_la_LIBADD  = ../krb5/libkrb5.la $(LIB_des) ../asn1/libasn1.la ../roken/libroken.la
 
 man_MANS = gssapi.3 gss_acquire_cred.3
@@ -16,6 +16,7 @@ libgssapi_la_SOURCES =		\
 	8003.c			\
 	accept_sec_context.c	\
 	acquire_cred.c		\
+	add_cred.c		\
 	add_oid_set_member.c	\
 	canonicalize_name.c	\
 	compare_name.c		\
@@ -42,10 +43,14 @@ libgssapi_la_SOURCES =		\
 	init_sec_context.c	\
 	inquire_context.c	\
 	inquire_cred.c		\
+	inquire_cred_by_mech.c	\
+	inquire_mechs_for_name.c \
+	inquire_names_for_mech.c \
 	release_buffer.c	\
 	release_cred.c		\
 	release_name.c		\
 	release_oid_set.c	\
+	process_context_token.c \
 	test_oid_set_member.c	\
 	unwrap.c		\
 	v1.c			\
