@@ -20,6 +20,182 @@
 
 #include "includes.h"
 
+
+/*******************************************************************
+ Create a SEC_ACL structure.  
+********************************************************************/
+
+static SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *ace_list)
+{
+	SEC_ACL *dst;
+	int i;
+
+	if((dst = (SEC_ACL *)talloc_zero(ctx,sizeof(SEC_ACL))) == NULL)
+		return NULL;
+
+	dst->revision = revision;
+	dst->num_aces = num_aces;
+	dst->size = SEC_ACL_HEADER_SIZE;
+
+	/* Now we need to return a non-NULL address for the ace list even
+	   if the number of aces required is zero.  This is because there
+	   is a distinct difference between a NULL ace and an ace with zero
+	   entries in it.  This is achieved by checking that num_aces is a
+	   positive number. */
+
+	if ((num_aces) && 
+            ((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces)) 
+             == NULL)) {
+		return NULL;
+	}
+        
+	for (i = 0; i < num_aces; i++) {
+		dst->ace[i] = ace_list[i]; /* Structure copy. */
+		dst->size += ace_list[i].size;
+	}
+
+	return dst;
+}
+
+
+
+/*******************************************************************
+ Duplicate a SEC_ACL structure.  
+********************************************************************/
+
+static SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
+{
+	if(src == NULL)
+		return NULL;
+
+	return make_sec_acl(ctx, src->revision, src->num_aces, src->ace);
+}
+
+
+
+/*******************************************************************
+ Creates a SEC_DESC structure
+********************************************************************/
+
+static SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, 
+			DOM_SID *owner_sid, DOM_SID *grp_sid,
+			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
+{
+	SEC_DESC *dst;
+	uint32 offset     = 0;
+	uint32 offset_sid = SEC_DESC_HEADER_SIZE;
+	uint32 offset_acl = 0;
+
+	*sd_size = 0;
+
+	if(( dst = (SEC_DESC *)talloc_zero(ctx, sizeof(SEC_DESC))) == NULL)
+		return NULL;
+
+	dst->revision = revision;
+	dst->type     = SEC_DESC_SELF_RELATIVE;
+
+	if (sacl) dst->type |= SEC_DESC_SACL_PRESENT;
+	if (dacl) dst->type |= SEC_DESC_DACL_PRESENT;
+
+	dst->off_owner_sid = 0;
+	dst->off_grp_sid   = 0;
+	dst->off_sacl      = 0;
+	dst->off_dacl      = 0;
+
+	if(owner_sid && ((dst->owner_sid = sid_dup_talloc(ctx,owner_sid)) == NULL))
+		goto error_exit;
+
+	if(grp_sid && ((dst->grp_sid = sid_dup_talloc(ctx,grp_sid)) == NULL))
+		goto error_exit;
+
+	if(sacl && ((dst->sacl = dup_sec_acl(ctx, sacl)) == NULL))
+		goto error_exit;
+
+	if(dacl && ((dst->dacl = dup_sec_acl(ctx, dacl)) == NULL))
+		goto error_exit;
+
+	offset = 0;
+
+	/*
+	 * Work out the linearization sizes.
+	 */
+	if (dst->owner_sid != NULL) {
+
+		if (offset == 0)
+			offset = SEC_DESC_HEADER_SIZE;
+
+		offset += sid_size(dst->owner_sid);
+	}
+
+	if (dst->grp_sid != NULL) {
+
+		if (offset == 0)
+			offset = SEC_DESC_HEADER_SIZE;
+
+		offset += sid_size(dst->grp_sid);
+	}
+
+	if (dst->sacl != NULL) {
+
+		offset_acl = SEC_DESC_HEADER_SIZE;
+
+		dst->off_sacl  = offset_acl;
+		offset_acl    += dst->sacl->size;
+		offset        += dst->sacl->size;
+		offset_sid    += dst->sacl->size;
+	}
+
+	if (dst->dacl != NULL) {
+
+		if (offset_acl == 0)
+			offset_acl = SEC_DESC_HEADER_SIZE;
+
+		dst->off_dacl  = offset_acl;
+		offset_acl    += dst->dacl->size;
+		offset        += dst->dacl->size;
+		offset_sid    += dst->dacl->size;
+	}
+
+	*sd_size = (size_t)((offset == 0) ? SEC_DESC_HEADER_SIZE : offset);
+
+	if (dst->owner_sid != NULL)
+		dst->off_owner_sid = offset_sid;
+		
+	/* sid_size() returns 0 if the sid is NULL so this is ok */
+		
+	if (dst->grp_sid != NULL)
+		dst->off_grp_sid = offset_sid + sid_size(dst->owner_sid);
+
+	return dst;
+
+error_exit:
+
+	*sd_size = 0;
+	return NULL;
+}
+
+/*******************************************************************
+ Duplicate a SEC_DESC structure.  
+********************************************************************/
+
+static SEC_DESC *dup_sec_desc( TALLOC_CTX *ctx, SEC_DESC *src)
+{
+	size_t dummy;
+
+	if(src == NULL)
+		return NULL;
+
+	return make_sec_desc( ctx, src->revision, 
+				src->owner_sid, src->grp_sid, src->sacl,
+				src->dacl, &dummy);
+}
+
+
+
+
+
+
+
 extern GUMS_FUNCTIONS *gums_storage;
 
 /* Functions to get/set info from a GUMS object */
@@ -37,7 +213,7 @@ NTSTATUS gums_create_object(GUMS_OBJECT **obj, uint32 type)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("gums_create_object");
 	GUMS_OBJECT *go;
-	NT_STATUS ret;
+	NTSTATUS ret;
 	
 	go = talloc_zero(mem_ctx, sizeof(GUMS_OBJECT));
 	go->mem_ctx = mem_ctx;
@@ -54,12 +230,12 @@ NTSTATUS gums_create_object(GUMS_OBJECT **obj, uint32 type)
 		case GUMS_OBJ_DOMAIN_TRUST:
 */
 		case GUMS_OBJ_NORMAL_USER:
-			go->data = (GUMS_USER *)talloc_zero(mem_ctx, sizeof(GUMS_USER));
+			go->data.user = (GUMS_USER *)talloc_zero(mem_ctx, sizeof(GUMS_USER));
 			break;
 
 		case GUMS_OBJ_GROUP:
 		case GUMS_OBJ_ALIAS:
-			go->data = (GUMS_GROUP *)talloc_zero(mem_ctx, sizeof(GUMS_GROUP));
+			go->data.group = (GUMS_GROUP *)talloc_zero(mem_ctx, sizeof(GUMS_GROUP));
 			break;
 
 		default:
@@ -68,7 +244,7 @@ NTSTATUS gums_create_object(GUMS_OBJECT **obj, uint32 type)
 			goto error;
 	}
 
-	if (!(go->data)) {
+	if (!(go->data.user)) {
 		ret = NT_STATUS_NO_MEMORY;
 		DEBUG(0, ("gums_create_object: Out of memory!\n"));
 		goto error;
@@ -190,6 +366,30 @@ NTSTATUS gums_get_object_privileges(PRIVILEGE_SET **priv_set, const GUMS_OBJECT 
 }
 */
 
+NTSTATUS gums_get_domain_next_rid(uint32 *rid, const GUMS_OBJECT *obj)
+{
+	if (!obj)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	if (obj->type != GUMS_OBJ_DOMAIN)
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+	*rid = obj->data.domain->next_rid;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gums_set_domain_next_rid(GUMS_OBJECT *obj, uint32 rid)
+{
+	if (!obj)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	if (obj->type != GUMS_OBJ_DOMAIN)
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+	obj->data.domain->next_rid = rid;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS gums_get_user_pri_group(DOM_SID **sid, const GUMS_OBJECT *obj)
 {
 	if (!sid || !obj)
@@ -223,19 +423,19 @@ NTSTATUS gums_get_user_nt_pwd(DATA_BLOB **nt_pwd, const GUMS_OBJECT *obj)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	*nt_pwd = obj->data.user->nt_pw;
+	*nt_pwd = &(obj->data.user->nt_pw);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS gums_set_user_nt_pwd(GUMS_OBJECT *obj, const DATA_BLOB nt_pwd)
 {
-	if (!obj || !nt_pwd || nt_pwd != NT_HASH_LEN)
+	if (!obj || nt_pwd.length != NT_HASH_LEN)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->nt_pwd = data_blob_talloc(obj->mem_ctx, nt_pwd.data, nt_pwd.lenght);
+	obj->data.user->nt_pw = data_blob_talloc(obj->mem_ctx, nt_pwd.data, nt_pwd.length);
 	return NT_STATUS_OK;
 }
 
@@ -247,19 +447,19 @@ NTSTATUS gums_get_user_lm_pwd(DATA_BLOB **lm_pwd, const GUMS_OBJECT *obj)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	*lm_pwd = obj->data.user->lm_pw;
+	*lm_pwd = &(obj->data.user->lm_pw);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS gums_set_user_lm_pwd(GUMS_OBJECT *obj, const DATA_BLOB lm_pwd)
 {
-	if (!obj || !lm_pwd || lm_pwd != LM_HASH_LEN)
+	if (!obj || lm_pwd.length != LM_HASH_LEN)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->lm_pwd = data_blob_talloc(obj->mem_ctx, lm_pwd.data, lm_pwd.lenght);
+	obj->data.user->lm_pw = data_blob_talloc(obj->mem_ctx, lm_pwd.data, lm_pwd.length);
 	return NT_STATUS_OK;
 }
 
@@ -591,7 +791,7 @@ NTSTATUS gums_get_user_pass_must_change_time(NTTIME *pass_must_change_time, cons
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	*pass_must_change_time = obj->data-user->pass_must_change_time;
+	*pass_must_change_time = obj->data.user->pass_must_change_time;
 	return NT_STATUS_OK;
 }
 
@@ -768,7 +968,7 @@ NTSTATUS gums_get_group_members(uint32 *count, DOM_SID **members, const GUMS_OBJ
 			return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	*count = obj->data.group->count;
-	*members = obj->data.group->members;
+	*members = *(obj->data.group->members);
 	return NT_STATUS_OK;
 }
 
@@ -786,7 +986,7 @@ NTSTATUS gums_set_group_members(GUMS_OBJECT *obj, uint32 count, DOM_SID **member
 	obj->data.group->count = count;
 	n = 0;
 	do {
-		obj->data.group->members[n] = dup_sec_desc(obj->mem_ctx, members[n]);
+		obj->data.group->members[n] = sid_dup_talloc(obj->mem_ctx, members[n]);
 		if (!(obj->data.group->members[n])) return NT_STATUS_NO_MEMORY;
 		n++;
 	} while (n < count);
@@ -836,8 +1036,8 @@ NTSTATUS gums_cs_set_sec_desc(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, SEC
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = GUMS_SET_SEC_DESC;
 	new_sec_desc = dup_sec_desc(mem_ctx, sec_desc);
@@ -849,6 +1049,7 @@ NTSTATUS gums_cs_set_sec_desc(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, SEC
 	return NT_STATUS_OK;
 }
 
+/*
 NTSTATUS gums_cs_add_privilege(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, LUID_ATTR priv)
 {
 	GUMS_DATA_SET *data_set;
@@ -858,7 +1059,7 @@ NTSTATUS gums_cs_add_privilege(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, LU
 		return NT_STATUS_INVALID_PARAMETER;
 
 	com_set->count = com_set->count + 1;
-	if (com_set->count == 1) { /* first data set */
+	if (com_set->count == 1) {
 		data_set = (GUMS_DATA_SET *)talloc(mem_ctx, sizeof(GUMS_DATA_SET));
 	} else {
 		data_set = (GUMS_DATA_SET *)talloc_realloc(mem_ctx, com_set->data, sizeof(GUMS_DATA_SET) * com_set->count);
@@ -866,8 +1067,8 @@ NTSTATUS gums_cs_add_privilege(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, LU
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = GUMS_ADD_PRIVILEGE;
 	if (NT_STATUS_IS_ERR(dupalloc_luid_attr(mem_ctx, &new_priv, priv)))
@@ -887,7 +1088,7 @@ NTSTATUS gums_cs_del_privilege(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, LU
 		return NT_STATUS_INVALID_PARAMETER;
 
 	com_set->count = com_set->count + 1;
-	if (com_set->count == 1) { /* first data set */
+	if (com_set->count == 1) {
 		data_set = (GUMS_DATA_SET *)talloc(mem_ctx, sizeof(GUMS_DATA_SET));
 	} else {
 		data_set = (GUMS_DATA_SET *)talloc_realloc(mem_ctx, com_set->data, sizeof(GUMS_DATA_SET) * com_set->count);
@@ -895,8 +1096,8 @@ NTSTATUS gums_cs_del_privilege(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, LU
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = GUMS_DEL_PRIVILEGE;
 	if (NT_STATUS_IS_ERR(dupalloc_luid_attr(mem_ctx, &new_priv, priv)))
@@ -916,7 +1117,7 @@ NTSTATUS gums_cs_set_privilege_set(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set
 		return NT_STATUS_INVALID_PARAMETER;
 
 	com_set->count = com_set->count + 1;
-	if (com_set->count == 1) { /* first data set */
+	if (com_set->count == 1) {
 		data_set = (GUMS_DATA_SET *)talloc(mem_ctx, sizeof(GUMS_DATA_SET));
 	} else {
 		data_set = (GUMS_DATA_SET *)talloc_realloc(mem_ctx, com_set->data, sizeof(GUMS_DATA_SET) * com_set->count);
@@ -924,10 +1125,10 @@ NTSTATUS gums_cs_set_privilege_set(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
-	data_set->type = GUMS_SET_SEC_DESC;
+	data_set->type = GUMS_SET_PRIVILEGE;
 	if (NT_STATUS_IS_ERR(dup_priv_set(&new_priv_set, mem_ctx, priv_set)))
 		return NT_STATUS_NO_MEMORY;
 
@@ -935,6 +1136,7 @@ NTSTATUS gums_cs_set_privilege_set(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set
 
 	return NT_STATUS_OK;
 }
+*/
 
 NTSTATUS gums_cs_set_string(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint32 type, char *str)
 {
@@ -953,8 +1155,8 @@ NTSTATUS gums_cs_set_string(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint3
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = type;
 	new_str = talloc_strdup(mem_ctx, str);
@@ -968,12 +1170,12 @@ NTSTATUS gums_cs_set_string(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint3
 
 NTSTATUS gums_cs_set_name(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *name)
 {
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, name);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, name);
 }
 
 NTSTATUS gums_cs_set_description(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *desc)
 {
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_DESCRIPTION, desc);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_DESCRIPTION, desc);
 }
 
 NTSTATUS gums_cs_set_full_name(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *full_name)
@@ -981,7 +1183,7 @@ NTSTATUS gums_cs_set_full_name(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, ch
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, full_name);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, full_name);
 }
 
 NTSTATUS gums_cs_set_home_directory(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *home_dir)
@@ -989,7 +1191,7 @@ NTSTATUS gums_cs_set_home_directory(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_se
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, home_dir);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, home_dir);
 }
 
 NTSTATUS gums_cs_set_drive(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *drive)
@@ -997,7 +1199,7 @@ NTSTATUS gums_cs_set_drive(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, drive);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, drive);
 }
 
 NTSTATUS gums_cs_set_logon_script(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *logon_script)
@@ -1005,7 +1207,7 @@ NTSTATUS gums_cs_set_logon_script(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set,
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, logon_script);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, logon_script);
 }
 
 NTSTATUS gums_cs_set_profile_path(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *prof_path)
@@ -1013,7 +1215,7 @@ NTSTATUS gums_cs_set_profile_path(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set,
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, prof_path);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, prof_path);
 }
 
 NTSTATUS gums_cs_set_workstations(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *wks)
@@ -1021,7 +1223,7 @@ NTSTATUS gums_cs_set_workstations(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set,
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, wks);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, wks);
 }
 
 NTSTATUS gums_cs_set_unknown_string(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *unkn_str)
@@ -1029,7 +1231,7 @@ NTSTATUS gums_cs_set_unknown_string(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_se
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, unkn_str);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, unkn_str);
 }
 
 NTSTATUS gums_cs_set_munged_dial(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, char *munged_dial)
@@ -1037,7 +1239,7 @@ NTSTATUS gums_cs_set_munged_dial(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, 
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, munged_dial);
+	return gums_cs_set_string(mem_ctx, com_set, GUMS_SET_NAME, munged_dial);
 }
 
 NTSTATUS gums_cs_set_nttime(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint32 type, NTTIME *nttime)
@@ -1057,8 +1259,8 @@ NTSTATUS gums_cs_set_nttime(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint3
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = type;
 	new_time = talloc(mem_ctx, sizeof(NTTIME));
@@ -1077,7 +1279,7 @@ NTSTATUS gums_cs_set_logon_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, N
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, logon_time);
+	return gums_cs_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, logon_time);
 }
 
 NTSTATUS gums_cs_set_logoff_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, NTTIME *logoff_time)
@@ -1085,7 +1287,7 @@ NTSTATUS gums_cs_set_logoff_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, 
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_nttime(mem_ctx, com_set, GUMS_SET_LOGOFF_TIME, logoff_time);
+	return gums_cs_set_nttime(mem_ctx, com_set, GUMS_SET_LOGOFF_TIME, logoff_time);
 }
 
 NTSTATUS gums_cs_set_kickoff_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, NTTIME *kickoff_time)
@@ -1093,7 +1295,7 @@ NTSTATUS gums_cs_set_kickoff_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set,
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_nttime(mem_ctx, com_set, GUMS_SET_KICKOFF_TIME, kickoff_time);
+	return gums_cs_set_nttime(mem_ctx, com_set, GUMS_SET_KICKOFF_TIME, kickoff_time);
 }
 
 NTSTATUS gums_cs_set_pass_last_set_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, NTTIME *pls_time)
@@ -1101,7 +1303,7 @@ NTSTATUS gums_cs_set_pass_last_set_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *co
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, pls_time);
+	return gums_cs_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, pls_time);
 }
 
 NTSTATUS gums_cs_set_pass_can_change_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, NTTIME *pcc_time)
@@ -1109,7 +1311,7 @@ NTSTATUS gums_cs_set_pass_can_change_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, pcc_time);
+	return gums_cs_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, pcc_time);
 }
 
 NTSTATUS gums_cs_set_pass_must_change_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, NTTIME *pmc_time)
@@ -1117,7 +1319,7 @@ NTSTATUS gums_cs_set_pass_must_change_time(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET 
 	if (com_set->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, pmc_time);
+	return gums_cs_set_nttime(mem_ctx, com_set, GUMS_SET_LOGON_TIME, pmc_time);
 }
 
 NTSTATUS gums_cs_add_sids_to_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, const DOM_SID **sids, const uint32 count)
@@ -1138,8 +1340,8 @@ NTSTATUS gums_cs_add_sids_to_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = GUMS_ADD_SID_LIST;
 	new_sids = (DOM_SID **)talloc(mem_ctx, (sizeof(void *) * count));
@@ -1163,7 +1365,7 @@ NTSTATUS gums_cs_add_users_to_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_se
 	if (com_set->type != GUMS_OBJ_GROUP || com_set->type != GUMS_OBJ_ALIAS)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_add_sids_to_group(mem_ctx, com_set, sids, count);	
+	return gums_cs_add_sids_to_group(mem_ctx, com_set, sids, count);	
 }
 
 NTSTATUS gums_cs_add_groups_to_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, const DOM_SID **sids, const uint32 count)
@@ -1173,7 +1375,7 @@ NTSTATUS gums_cs_add_groups_to_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_s
 	if (com_set->type != GUMS_OBJ_ALIAS)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return gums_add_sids_to_group(mem_ctx, com_set, sids, count);	
+	return gums_cs_add_sids_to_group(mem_ctx, com_set, sids, count);	
 }
 
 NTSTATUS gums_cs_del_sids_from_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, const DOM_SID **sids, const uint32 count)
@@ -1196,8 +1398,8 @@ NTSTATUS gums_cs_del_sids_from_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_s
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = GUMS_DEL_SID_LIST;
 	new_sids = (DOM_SID **)talloc(mem_ctx, (sizeof(void *) * count));
@@ -1234,8 +1436,8 @@ NTSTATUS gums_ds_set_sids_in_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set
 	if (data_set == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	com_set->data = data_set;
-	data_set = &((com_set->data)[com_set->count - 1]);
+	com_set->data[0] = data_set;
+	data_set = ((com_set->data)[com_set->count - 1]);
 	
 	data_set->type = GUMS_SET_SID_LIST;
 	new_sids = (DOM_SID **)talloc(mem_ctx, (sizeof(void *) * count));
@@ -1255,7 +1457,7 @@ NTSTATUS gums_ds_set_sids_in_group(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set
 
 NTSTATUS gums_commit_data(GUMS_COMMIT_SET *set)
 {
-	return gums_storage->set_object_values(set->sid, set->count, set->data);
+	return gums_storage->set_object_values(&(set->sid), set->count, set->data);
 }
 
 NTSTATUS gums_destroy_commit_set(GUMS_COMMIT_SET **com_set)

@@ -18,16 +18,17 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 /* ALL strings assumes UTF8 as encoding */
 
 GENSTRUCT struct tdbsam2_domain_data {
 	uint32 xcounter;		/* counter to be updated at any change */
 
 	SEC_DESC *sec_desc;		/* Security Descriptor */
-	DOM_SID *user_sid;		/* The User SID */
-	char *name; _NULLTERM		/* NT User Name */
+	DOM_SID *dom_sid;		/* The Domain SID */
+	char *name; _NULLTERM		/* NT Domain Name */
 	char *description; _NULLTERM	/* Descritpion (Gecos) */
+
+	uint32 next_rid;		/* The Next free RID */
 };
 
 GENSTRUCT struct tdbsam2_user_data {
@@ -67,14 +68,14 @@ GENSTRUCT struct tdbsam2_user_data {
 	uint32 unknown_3;		/* 0x00ff ffff */
 	uint32 unknown_5;		/* 0x0002 0000 */
 	uint32 unknown_6;		/* 0x0000 04ec */
-};	
+};
 
 GENSTRUCT struct tdbsam2_group_data {
 	uint32 xcounter;		/* counter to be updated at any change */
 
 	SEC_DESC *sec_desc;		/* Security Descriptor */
 	DOM_SID *group_sid;		/* The Group SID */
-	char *name; _NULLTERM		/* NT User Name */
+	char *name; _NULLTERM		/* NT Group Name */
 	char *description; _NULLTERM	/* Descritpion (Gecos) */
 
 	uint32 count;			/* number of sids */

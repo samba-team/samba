@@ -57,13 +57,13 @@ extern DOM_SID global_sid_Builtin_Guests;
    loops with winbind may happen. 
  ****************************************************************************/
 
-/*
+#if 0
 NTSTATUS is_mapped_group(BOOL *mapped, const DOM_SID *sid)
 {
 	NTSTATUS result;
 	gid_t id;
 
-	/* look if mapping exist, do not make idmap alloc an uid if SID is not found * /
+	/* look if mapping exist, do not make idmap alloc an uid if SID is not found */
 	result = idmap_get_gid_from_sid(&id, sid, False);
 	if (NT_STATUS_IS_OK(result)) {
 		*mapped = gid_is_in_winbind_range(id);
@@ -73,7 +73,7 @@ NTSTATUS is_mapped_group(BOOL *mapped, const DOM_SID *sid)
 
 	return result;
 }
-*/
+#endif
 
 /****************************************************************************
  duplicate alloc luid_attr
@@ -96,7 +96,7 @@ NTSTATUS dupalloc_luid_attr(TALLOC_CTX *ctx, LUID_ATTR **new_la, LUID_ATTR old_l
 /****************************************************************************
  initialise a privilege list
  ****************************************************************************/
-void init_privilege(PRIVILEGE_SET *priv_set)
+void gums_init_privilege(PRIVILEGE_SET *priv_set)
 {
 	priv_set->count=0;
 	priv_set->control=0;
@@ -106,12 +106,12 @@ void init_privilege(PRIVILEGE_SET *priv_set)
 /****************************************************************************
  add a privilege to a privilege array
  ****************************************************************************/
-NTSTATUS add_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR set)
+NTSTATUS gums_add_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR set)
 {
 	LUID_ATTR *new_set;
 
 	/* check if the privilege is not already in the list */
-	if (check_priv_in_privilege(priv_set, set))
+	if (gums_check_priv_in_privilege(priv_set, set))
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* we can allocate memory to add the new privilege */
@@ -135,7 +135,7 @@ NTSTATUS add_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR set)
 /****************************************************************************
  add all the privileges to a privilege array
  ****************************************************************************/
-NTSTATUS add_all_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx)
+NTSTATUS gums_add_all_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx)
 {
 	NTSTATUS result = NT_STATUS_OK;
 	LUID_ATTR set;
@@ -144,15 +144,15 @@ NTSTATUS add_all_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx)
 	set.luid.high=0;
 	
 	set.luid.low=SE_PRIV_ADD_USERS;
-	result = add_privilege(priv_set, ctx, set);
+	result = gums_add_privilege(priv_set, ctx, set);
 	NTSTATUS_CHECK("add_all_privilege", "add_privilege", result, done);
 	
 	set.luid.low=SE_PRIV_ADD_MACHINES;
-	result = add_privilege(priv_set, ctx, set);
+	result = gums_add_privilege(priv_set, ctx, set);
 	NTSTATUS_CHECK("add_all_privilege", "add_privilege", result, done);
 
 	set.luid.low=SE_PRIV_PRINT_OPERATOR;
-	result = add_privilege(priv_set, ctx, set);
+	result = gums_add_privilege(priv_set, ctx, set);
 	NTSTATUS_CHECK("add_all_privilege", "add_privilege", result, done);
 	
 done:
@@ -162,7 +162,7 @@ done:
 /****************************************************************************
  check if the privilege list is empty
  ****************************************************************************/
-BOOL check_empty_privilege(PRIVILEGE_SET *priv_set)
+BOOL gums_check_empty_privilege(PRIVILEGE_SET *priv_set)
 {
 	return (priv_set->count == 0);
 }
@@ -170,12 +170,12 @@ BOOL check_empty_privilege(PRIVILEGE_SET *priv_set)
 /****************************************************************************
  check if the privilege is in the privilege list
  ****************************************************************************/
-BOOL check_priv_in_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
+BOOL gums_check_priv_in_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 {
 	int i;
 
 	/* if the list is empty, obviously we can't have it */
-	if (check_empty_privilege(priv_set))
+	if (gums_check_empty_privilege(priv_set))
 		return False;
 
 	for (i=0; i<priv_set->count; i++) {
@@ -193,19 +193,19 @@ BOOL check_priv_in_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 /****************************************************************************
  remove a privilege from a privilege array
  ****************************************************************************/
-NTSTATUS remove_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR set)
+NTSTATUS gums_remove_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR set)
 {
 	LUID_ATTR *new_set;
 	LUID_ATTR *old_set;
 	int i,j;
 
 	/* check if the privilege is in the list */
-	if (!check_priv_in_privilege(priv_set, set))
+	if (!gums_check_priv_in_privilege(priv_set, set))
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* special case if it's the only privilege in the list */
 	if (priv_set->count==1) {
-		init_privilege(priv_set);	
+		gums_init_privilege(priv_set);	
 		return NT_STATUS_OK;
 	}
 
@@ -252,14 +252,14 @@ NTSTATUS remove_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR se
 /****************************************************************************
  duplicates a privilege array
  ****************************************************************************/
-NTSTATUS dup_priv_set(PRIVILEGE_SET **new_priv_set, TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set)
+NTSTATUS gums_dup_priv_set(PRIVILEGE_SET **new_priv_set, TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set)
 {
 	LUID_ATTR *new_set;
 	LUID_ATTR *old_set;
 	int i;
 
 	*new_priv_set = (PRIVILEGE_SET *)talloc(mem_ctx, sizeof(PRIVILEGE_SET));
-	init_privilege(*new_priv_set);	
+	gums_init_privilege(*new_priv_set);	
 
 	/* special case if there are no privileges in the list */
 	if (priv_set->count == 0) {
@@ -301,6 +301,8 @@ NTSTATUS dup_priv_set(PRIVILEGE_SET **new_priv_set, TALLOC_CTX *mem_ctx, PRIVILE
 
 #define ALIAS_DEFAULT_SACL_SEC_ACE_FLAG (SEC_ACE_FLAG_FAILED_ACCESS | SEC_ACE_FLAG_SUCCESSFUL_ACCESS) /* 0xc0 */
 
+
+#if 0
 NTSTATUS create_builtin_alias_default_sec_desc(SEC_DESC **sec_desc, TALLOC_CTX *ctx)
 {
 	DOM_SID *world = &global_sid_World;
@@ -378,14 +380,14 @@ NTSTATUS gums_init_builtin_groups(void)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Administrators */
+	/* Administrators * /
 
 	/* alloc group structure */
-	g_obj.data = (void *)talloc(g_obj.mem_ctx, sizeof(GUMS_OBJ_GROUP));
-	ALLOC_CHECK("gums_init_backend", g_obj.data, result, done);
+	g_obj.data.group = (GUMS_GROUP *)talloc(g_obj.mem_ctx, sizeof(GUMS_GROUP));
+	ALLOC_CHECK("gums_init_backend", g_obj.data.group, result, done);
 
 	/* make admins sid */
-	g_grp = (GUMS_GROUP *)g_obj.data;
+	g_grp = (GUMS_GROUP *)g_obj.data.group;
 	sid_copy(g_obj.sid, &global_sid_Builtin_Administrators);
 
 	/* make security descriptor */
@@ -604,4 +606,5 @@ done:
 	talloc_destroy(g_priv.mem_ctx);
 	return result;
 }
+#endif
 
