@@ -179,18 +179,11 @@ char	hostname[MaxHostNameLen];
 char	remotehost[MaxHostNameLen];
 static char ttyline[20];
 
-/* Default level for security:
- * 0 allow any kind of connection
- * 1 only OTP, authorized and anonymous connections
- * 2 only authorized and anonymous connections,
- * 3 only authorized
- */
-#define AUTH_NONE 0
-#define AUTH_OTP  1
-#define AUTH_SAFE 2
-#define AUTH_USER 3
+#define AUTH_PLAIN	(1 << 0) /* allow sending passwords */
+#define AUTH_OTP	(1 << 1) /* passwords are one-time */
+#define AUTH_FTP	(1 << 2) /* allow anonymous login */
 
-static int auth_level = AUTH_SAFE;
+static int auth_level = AUTH_FTP;
 
 /*
  * Timeout intervals for retrying connections
@@ -256,6 +249,32 @@ curdir(void)
 #define LINE_MAX 1024
 #endif
 
+static int
+parse_auth_level(char *str)
+{
+    char *p;
+    int ret = 0;
+    p = strtok(str, ",");
+    while(p){
+	if(strcmp(p, "krb4") == 0 ||
+	   strcmp(p, "user") == 0)
+	    ;
+	else if(strcmp(p, "otp") == 0)
+	    ret |= AUTH_PLAIN|AUTH_OTP;
+	else if(strcmp(p, "ftp") == 0 ||
+		strcmp(p, "safe") == 0)
+	    ret |= AUTH_FTP;
+	else if(strcmp(p, "plain") == 0)
+	    ret |= AUTH_PLAIN;
+	else if(strcmp(p, "none") == 0)
+	    ret |= AUTH_PLAIN|AUTH_FTP;
+	else
+	    warnx("bad value for -a");
+	p = strtok(NULL, ",");
+    }
+    return ret;	    
+}
+
 int
 main(int argc, char **argv)
 {
@@ -285,19 +304,8 @@ main(int argc, char **argv)
 	while ((ch = getopt(argc, argv, "a:dilp:t:T:u:v")) != EOF) {
 		switch (ch) {
 		case 'a':
-		{
-		    if(strcmp(optarg, "none") == 0)
-			auth_level = AUTH_NONE;
-		    else if(strcmp(optarg, "otp") == 0)
-			auth_level = AUTH_OTP;
-		    else if(strcmp(optarg, "safe") == 0)
-			auth_level = AUTH_SAFE;
-		    else if(strcmp(optarg, "user") == 0)
-			auth_level = AUTH_USER;
-		    else
-			warnx("bad value for -a");
+		    auth_level = parse_auth_level(optarg);
 		    break;
-		}
 		case 'd':
 			debug = 1;
 			break;
@@ -438,10 +446,11 @@ main(int argc, char **argv)
 		/* reply(220,) must follow */
 	}
 	k_gethostname(hostname, sizeof(hostname));
-	reply(220, "%s FTP server (%s) ready.", hostname, version);
-	(void) setjmp(errcatch);
+	reply(220, "%s FTP server (%s+%s) ready.", hostname, 
+	      version, krb4_version);
+	setjmp(errcatch);
 	for (;;)
-		(void) yyparse();
+	    yyparse();
 	/* NOTREACHED */
 }
 
@@ -521,7 +530,7 @@ user(char *name)
 {
 	char *cp, *shell;
 
-	if(auth_level == AUTH_USER && !auth_complete){
+	if(auth_level == 0 && !auth_complete){
 	    reply(530, "No login allowed without authorization.");
 	    return;
 	}
@@ -539,7 +548,8 @@ user(char *name)
 
 	guest = 0;
 	if (strcmp(name, "ftp") == 0 || strcmp(name, "anonymous") == 0) {
-	    if (checkuser(_PATH_FTPUSERS, "ftp") ||
+	    if ((auth_level & AUTH_FTP) == 0 || 
+		checkuser(_PATH_FTPUSERS, "ftp") ||
 		checkuser(_PATH_FTPUSERS, "anonymous"))
 		reply(530, "User %s access denied.", name);
 	    else if ((pw = sgetpwnam("ftp")) != NULL) {
@@ -554,7 +564,7 @@ user(char *name)
 		       "ANONYMOUS FTP LOGIN REFUSED FROM %s", remotehost);
 	    return;
 	}
-	if(auth_level == AUTH_SAFE && !auth_complete){
+	if((auth_level & AUTH_PLAIN) == 0 && !auth_complete){
 	    reply(530, "Only authorized and anonymous login allowed.");
 	    return;
 	}
@@ -587,17 +597,17 @@ user(char *name)
 			reply(331, "Password %s for %s required.",
 			      ss, name);
 			askpasswd = 1;
-		} else if (auth_level == AUTH_NONE) {
-			reply(331, "Password required for %s.", name);
-			askpasswd = 1;
+		} else if ((auth_level & AUTH_OTP) == 0) {
+		    reply(331, "Password required for %s.", name);
+		    askpasswd = 1;
 		} else {
-			char *s;
-
-			if (s = otp_error (&otp_ctx))
-				lreply(530, "OTP: %s", s);
-			reply(530,
-			      "Only authorized, anonymous and OTP "
-			      "login allowed.");
+		    char *s;
+		    
+		    if (s = otp_error (&otp_ctx))
+			lreply(530, "OTP: %s", s);
+		    reply(530,
+			  "Only authorized, anonymous and OTP "
+			  "login allowed.");
 		}
 
 	}
@@ -754,19 +764,19 @@ pass(char *passwd)
 		if (pw == NULL)
 			rval = 1;	/* failure below */
 		else if (otp_verify_user (&otp_ctx, passwd) == 0) {
-			rval = 0;
-		} else if(auth_level == AUTH_NONE) {
+		    rval = 0;
+		} else if((auth_level & AUTH_OTP) == 0) {
 		    char realm[REALM_SZ];
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name, "", realm, 
 					       passwd, 1, NULL);
 		    if (rval != 0 )
-			    rval = unix_verify_user(pw->pw_name, passwd);
+			rval = unix_verify_user(pw->pw_name, passwd);
 		} else {
-			char *s;
-
-			if (s = otp_error(&otp_ctx))
-				lreply(530, "OTP: %s", s);
+		    char *s;
+		    
+		    if (s = otp_error(&otp_ctx))
+			lreply(530, "OTP: %s", s);
 		}
 		memset (passwd, 0, strlen(passwd));
 
