@@ -307,12 +307,7 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
   if (fchk != chk)
     {
       DEBUG(0, ("checksums don't match %ld %ld\n", fchk, chk));
-/*      for (i = 0; i < sizeof(hb -> dummy); i++) {
-	fprintf(stdout, "%2X ", hb -> dummy[i]);
-      }
-      fprintf(stdout, "\n");
-      fprintf(stdout, "%s\n", hb -> dummy);
-      fprintf(stdout, "Tarbuf = %X, hb = %X\n", (int)tarbuf, (int)hb);*/
+      dump_data(5, (char *)hb - TBLOCK, TBLOCK *3);
       return -1;
     }
 
@@ -1683,7 +1678,7 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
     /* First, skip any initial part of the part written that is left over */
     /* from the end of the first TBLOCK                                   */
 
-    if ((bpos + dsize) >= TBLOCK) {
+    if ((bpos) && ((bpos + dsize) >= TBLOCK)) {
 
       dsize -= (TBLOCK - bpos);  /* Get rid of the end of the first block */
       bpos = 0;
@@ -1708,15 +1703,6 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
       dsize -= TBLOCK;
 
     }
-
-    /*    if (dsize > 0) {
-      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
-
-	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
-	return False;
-
-      }      
-      }*/
 
     bpos = dsize;
 
