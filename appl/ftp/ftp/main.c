@@ -53,6 +53,8 @@ struct getargs getargs[] = {
       "Turn off interactive prompting", NULL},
     { NULL,	'l', arg_negative_flag, &lineedit,
       "Turn off line editing", NULL},
+    { NULL,   'n', arg_negative_flag, &autologin,
+      "Turn off auto-login", NULL},
     { NULL,	'p', arg_flag, &passivemode,
       "passive mode", NULL},
     { NULL,	't', arg_counter, &trace,
