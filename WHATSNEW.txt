@@ -201,6 +201,10 @@ Paul Eggert.
 52). Fix for parsing HP specific printer definitions in make_printerdef.
 53). Fix for smbclient doing an 'ls' on large directories from OS/2 servers
 from Christoph Pfisterer.
+54). Fix for WINS server code where "do you still want name?" request was
+being sent to the wrong IP address.
+55). Fixed "recursion desired" bits set in nmbd so we are identical to
+Windows NT.
 
 Older release notes for Samba 2.0.x follow.
 
