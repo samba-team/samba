@@ -77,13 +77,16 @@ netlogonnt5ldapd.  None of these are build as part of the standard
 make, they have to be explicitly built because they are in
 development.
 
+
 =====================================================================
 
 NOTE - Some important information
 ---------------------------------------
 
-If you wish to use Samba as a PDC, you *must* join Samba to its own
-Domain.  It is important that you read the source/README file for
+Samba TNG up to alpha-0.3 required that the samba server be joined
+to its own Domain.  This requirement has been removed.
+
+It is important that you read the source/README file for
 instructions, and it is recommended that you join samba-ntdom@samba.org
 for update information and status reports.  For details, please see:
 
@@ -117,6 +120,9 @@ are available at:
 
 http://samba.org/cvs.html
 
+For this version, use a tag of SAMBA_TNG
+
+
 =====================================================================
 
 NOTE - Known Bugs
@@ -144,6 +150,10 @@ is underway to attempt to minimise the number of outstanding
 connections, because a *single* NT user logon can result in up to
 5 or 6 msrpc daemons waiting around, doing nothing but take up
 process table space.
+
+Connection reuse has now been added and debugged: the number of
+incoming connections is reduced but still fairly large.
+
 
 3) The Samba TNG code base was cut from the 2.0 development tree
 approximately eighteen months ago.  That means that it does not have
