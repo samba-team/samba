@@ -1392,18 +1392,18 @@ void
 quote1(char *initial, int argc, char **argv)
 {
     int i;
-	char buf[BUFSIZ];		/* must be >= sizeof(line) */
+    char buf[BUFSIZ];		/* must be >= sizeof(line) */
 
     strcpy_truncate(buf, initial, sizeof(buf));
     for(i = 1; i < argc; i++) {
 	if(i > 1)
 	    strcat_truncate(buf, " ", sizeof(buf));
 	strcat_truncate(buf, argv[i], sizeof(buf));
-	}
-	if (command(buf) == PRELIM) {
-		while (getreply(0) == PRELIM)
-			continue;
-	}
+    }
+    if (command("%s", buf) == PRELIM) {
+	while (getreply(0) == PRELIM)
+	    continue;
+    }
 }
 
 void
