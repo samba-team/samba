@@ -21,8 +21,8 @@
 		<arg choice="opt">-u username</arg>	
 		<arg choice="opt">-f fullname</arg>	
 		<arg choice="opt">-h homedir</arg>	
-		<arg choice="opt">-d drive</arg>	
-		<arg choice="opt">-s script</arg>
+		<arg choice="opt">-D drive</arg>	
+		<arg choice="opt">-S script</arg>
 		<arg choice="opt">-p profile</arg>	
 		<arg choice="opt">-a</arg>	
 		<arg choice="opt">-m</arg>	
@@ -30,7 +30,8 @@
 		<arg choice="opt">-i passdb-backend</arg>	
 		<arg choice="opt">-e passdb-backend</arg>   
 		<arg choice="opt">-b passdb-backend</arg>
-		<arg choice="opt">-D debuglevel</arg>
+		<arg choice="opt">-d debuglevel</arg>
+		<arg choice="opt">-s configfile</arg>
 		<arg choice="opt">-P account-policy</arg>
 		<arg choice="opt">-V value</arg>
 	</cmdsynopsis>
