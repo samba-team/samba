@@ -147,13 +147,7 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 struct ndr_push *ndr_push_init(void)
 {
 	struct ndr_push *ndr;
-	TALLOC_CTX *mem_ctx = talloc_init("ndr_push_init");
-	if (!mem_ctx) return NULL;
-	ndr = ndr_push_init_ctx(mem_ctx);
-	if (!ndr) {
-		talloc_destroy(mem_ctx);
-	}
-	return ndr;
+	return ndr_push_init_ctx(NULL);
 }
 
 /* free a ndr_push structure */

@@ -76,7 +76,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 
 	/* we can use the pipes memory context here as we will have a short
 	   lived connection */
-	status = dcerpc_bind_byuuid(p, p->mem_ctx, 
+	status = dcerpc_bind_byuuid(p, p, 
 				    DCERPC_EPMAPPER_UUID,
 				    DCERPC_EPMAPPER_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -88,7 +88,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	ZERO_STRUCT(guid);
 
 	twr.towers.num_floors = 5;
-	twr.towers.floors = talloc(p->mem_ctx, sizeof(twr.towers.floors[0]) * 5);
+	twr.towers.floors = talloc(p, sizeof(twr.towers.floors[0]) * 5);
 
 	/* what I'd like for christmas ... */
 
@@ -96,28 +96,28 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	twr.towers.floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
 	GUID_from_string(uuid, &twr.towers.floors[0].lhs.info.uuid.uuid);
 	twr.towers.floors[0].lhs.info.uuid.version = version;
-	twr.towers.floors[0].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
+	twr.towers.floors[0].rhs.rhs_data = data_blob_talloc_zero(p, 2);
 
 	/* encoded with NDR ... */
 	twr.towers.floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 	GUID_from_string(NDR_GUID, &twr.towers.floors[1].lhs.info.uuid.uuid);
 	twr.towers.floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	twr.towers.floors[1].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
+	twr.towers.floors[1].rhs.rhs_data = data_blob_talloc_zero(p, 2);
 
 	/* on an RPC connection ... */
 	twr.towers.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN_RPC_C;
 	twr.towers.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[2].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
+	twr.towers.floors[2].rhs.rhs_data = data_blob_talloc_zero(p, 2);
 
 	/* on a TCP port ... */
 	twr.towers.floors[3].lhs.protocol = EPM_PROTOCOL_NCACN_TCP;
 	twr.towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
+	twr.towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p, 2);
 
 	/* on an IP link ... */
 	twr.towers.floors[4].lhs.protocol = EPM_PROTOCOL_NCACN_IP;
 	twr.towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 4);
+	twr.towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p, 4);
 
 	/* with some nice pretty paper around it of course */
 	r.in.object = &guid;
@@ -126,7 +126,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	r.in.max_towers = 1;
 	r.out.entry_handle = &handle;
 
-	status = dcerpc_epm_Map(p, p->mem_ctx, &r);
+	status = dcerpc_epm_Map(p, p, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_pipe_close(p);
 		return status;
@@ -490,7 +490,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	(*p)->flags = binding->flags;
 
 	/* remember the binding string for possible secondary connections */
-	(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
+	(*p)->binding_string = dcerpc_binding_string((*p), binding);
 
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
@@ -556,7 +556,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 	(*p)->flags = binding->flags;
 
 	/* remember the binding string for possible secondary connections */
-	(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
+	(*p)->binding_string = dcerpc_binding_string((*p), binding);
 
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
@@ -665,7 +665,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 		break;
 
 	case NCACN_IP_TCP:
-		status = dcerpc_parse_binding(p->mem_ctx, p->binding_string, &b);
+		status = dcerpc_parse_binding(p, p->binding_string, &b);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

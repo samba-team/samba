@@ -19,18 +19,29 @@ sub ParseFunction($)
 
 	$res .= 
 "
-NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
+struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
 {
-	NTSTATUS status;
-
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_$uname, mem_ctx,
+	return dcerpc_ndr_request_send(p, DCERPC_$uname, mem_ctx,
 				    (ndr_push_flags_fn_t) ndr_push_$name,
 				    (ndr_pull_flags_fn_t) ndr_pull_$name,
 				    r, sizeof(*r));
+}
+
+";
+
+	$res .= 
+"
+NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
+{
+	struct rpc_request *req = dcerpc_$name\_send(p, mem_ctx, r);
+	NTSTATUS status;
+	if (req == NULL) return NT_STATUS_NO_MEMORY;
+
+	status = dcerpc_ndr_request_recv(req);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);		

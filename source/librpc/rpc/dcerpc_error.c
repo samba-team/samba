@@ -40,10 +40,8 @@ static const struct dcerpc_fault_table dcerpc_faults[] =
 	{ NULL,					0}	
 };
 
-const char *dcerpc_errstr(uint32_t fault_code)
+const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code)
 {
-	/* TODO: remove static pstring! */
-	static pstring msg;
 	int idx = 0;
 
 	while (dcerpc_faults[idx].errstr != NULL) {
@@ -53,7 +51,5 @@ const char *dcerpc_errstr(uint32_t fault_code)
 		idx++;
 	}
 
-	slprintf(msg, sizeof(msg), "DCERPC fault 0x%08x", fault_code);
-
-	return msg;
+	return talloc_asprintf(mem_ctx, "DCERPC fault 0x%08x", fault_code);
 }

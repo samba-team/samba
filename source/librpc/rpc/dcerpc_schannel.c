@@ -369,14 +369,14 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	/*
 	  step 2 - request a netlogon challenge
 	*/
-	r.in.server_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(p, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = workstation;
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
-	status = dcerpc_netr_ServerReqChallenge(p2, p->mem_ctx, &r);
+	status = dcerpc_netr_ServerReqChallenge(p2, p, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -389,7 +389,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;
-	a.in.account_name = talloc_asprintf(p->mem_ctx, "%s$", workstation);
+	a.in.account_name = talloc_asprintf(p, "%s$", workstation);
 	a.in.secure_channel_type = chan_type;
 	a.in.computer_name = workstation;
 	a.in.negotiate_flags = &negotiate_flags;
@@ -397,7 +397,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	status = dcerpc_netr_ServerAuthenticate2(p2, p->mem_ctx, &a);
+	status = dcerpc_netr_ServerAuthenticate2(p2, p, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
