@@ -570,9 +570,15 @@ static void process_loop(void)
 
 		message_dispatch();
 
-		/* rescan the trusted domains list. This must be done
+#if 0
+		/* not needed any more since we use a single RPC to
+		   get transitive trusts   --jerry                 
+		   
+		   rescan the trusted domains list. This must be done
 		   regularly to cope with transitive trusts */
+		   
 		rescan_trusted_domains(False);
+#endif
 
 		/* Free up temporary memory */
 

@@ -161,18 +161,28 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
 	struct in_addr dc_ip;
 	BOOL ret;
+	BOOL our_domain = False;
 
 	zero_ip(&dc_ip);
 
 	ret = False;
-	if (lp_security() == SEC_ADS)
+	
+	if ( strequal(lp_workgroup(), domain) || strequal(lp_realm(), domain) )
+		our_domain = True;
+	
+	/* always try to obey what the admin specified in smb.conf.
+	   If it is not our domain, assume that domain names with periods 
+	   in them are realm names */
+	
+	if ( (our_domain && lp_security()==SEC_ADS) || strchr_m(domain, '.') ) {
 		ret = ads_dc_name(domain, &dc_ip, srv_name);
-
+	}
+	
 	if (!ret) {
 		/* fall back on rpc methods if the ADS methods fail */
 		ret = rpc_dc_name(domain, srv_name, &dc_ip);
 	}
-
+		
 	*ip_out = dc_ip;
 
 	return ret;
