@@ -303,7 +303,7 @@ static BOOL process_srv_sock(struct sock_redir **socks, uint32 num_socks,
 	return False;
 }
 
-static int get_agent_sock(void *id)
+static int get_agent_sock(char *id)
 {
 	int s;
 	struct sockaddr_un sa;
@@ -311,50 +311,9 @@ static int get_agent_sock(void *id)
 	fstring dir;
 
 	slprintf(dir, sizeof(dir)-1, "/tmp/.smb.%d", getuid());
-	mkdir(dir, S_IRUSR|S_IWUSR|S_IXUSR);
-
 	slprintf(path, sizeof(path)-1, "%s/agent", dir);
-	if (chmod(dir, S_IRUSR|S_IWUSR|S_IXUSR) < 0)
-	{
-		fprintf(stderr, "chmod on %s failed\n", sa.sun_path);
-		exit(1);
-	}
 
-
-	/* start listening on unix socket */
-	s = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (s < 0)
-	{
-		fprintf(stderr, "socket open failed\n");
-		exit(1);
-	}
-
-	ZERO_STRUCT(sa);
-	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
-
-	if (bind(s, (struct sockaddr*) &sa, sizeof(sa)) < 0)
-	{
-		fprintf(stderr, "socket bind to %s failed\n", sa.sun_path);
-		close(s);
-		remove(path);
-		exit(1);
-	}
-
-	if (s == -1)
-	{
-		DEBUG(0,("bind failed\n"));
-		remove(path);
-		exit(1);
-	}
-
-	if (listen(s, 5) == -1)
-	{
-		DEBUG(0,("listen failed\n"));
-		remove(path);
-	}
-	return s;
+	return create_pipe_socket(dir, S_IRUSR|S_IWUSR|S_IXUSR, path, 0);
 }
 
 static void start_smb_agent(void)
