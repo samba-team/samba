@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -95,9 +95,11 @@ gss_userok(void *app_data, char *username)
            
            chown (ticketfile+5, pw->pw_uid, pw->pw_gid);
            
+#ifdef KRB4
            if (k_hasafs()) {
               krb5_afslog(gssapi_krb5_context, ccache, 0, 0);
            }
+#endif
            setenv ("KRB5CCNAME", ticketfile, 1);
            
 fail:
