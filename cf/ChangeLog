@@ -1,3 +1,7 @@
+2001-08-28  Assar Westerlund  <assar@sics.se>
+
+	* roken-frag.m4: test for issetugid
+
 2001-08-24  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am.common: change one += to = to AM_CFLAGS to avoid an
