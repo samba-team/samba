@@ -30,11 +30,12 @@ file, single printer names and sets of aliases separated by vertical bars
 syntax is done beyond that required to extract the printer name. It may
 be that the print spooling system is more forgiving or less forgiving
 than 
+.BR testprns .
+However, if
 .B testprns
-however if
-.B testprns
-finds the printer then smbd should do as well.
-
+finds the printer then
+.B smbd
+should do so as well.
 .RE
 
 .I printcapname
@@ -52,18 +53,17 @@ will attempt to scan the printcap file specified at compile time
 .B /etc/printcap
 .RS 3
 This is usually the default printcap file to scan. See
-.B printcap(5)).
+.BR printcap (5)).
 .RE
 .SH ENVIRONMENT VARIABLES
 Not applicable.
-
 .SH INSTALLATION
 The location of the server and its support files is a matter for individual
 system administrators. The following are thus suggestions only.
 
 It is recommended that the
 .B testprns
-program be installed under the /usr/local hierarchy, in a directory readable
+program be installed under the /usr/local/samba hierarchy, in a directory readable
 by all, writeable only by root. The program should be executable by all.
 The program should NOT be setuid or setgid!
 .SH VERSION
@@ -74,9 +74,9 @@ the program has extensions or parameter semantics that differ from or are not
 covered by this man page. Please notify these to the address below for 
 rectification.
 .SH SEE ALSO
-.B printcap(5),
-.B smbd(8), 
-.B smbclient(1)
+.BR printcap (5),
+.BR smbd (8), 
+.BR smbclient (1)
 .SH DIAGNOSTICS
 If a printer is found to be valid, the message "Printer name <printername> is 
 valid" will be displayed.
@@ -84,7 +84,9 @@ valid" will be displayed.
 If a printer is found to be invalid, the message "Printer name <printername> 
 is not valid" will be displayed.
 
-All messages that would normally be logged during operation of smbd are
+All messages that would normally be logged during operation of
+.B smbd
+are
 logged by this program to the file
 .I test.log
 in the current directory. The program runs at debuglevel 3, so quite extensive
@@ -99,9 +101,12 @@ The original Samba software and related utilities were created by
 Andrew Tridgell (samba-bugs@anu.edu.au). Andrew is also the Keeper
 of the Source for this project.
 
-The testprns program and this man page were written by Karl Auer
-(Karl.Auer@anu.edu.au)
+The
+.B testprns
+program and this man page were written by Karl Auer
+(Karl.Auer@anu.edu.au).
 
 See
-.B samba(7) for a full list of contributors and details of how to 
+.BR samba (7)
+for a full list of contributors and details of how to 
 submit bug reports, comments etc.

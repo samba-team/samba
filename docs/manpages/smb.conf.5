@@ -15,7 +15,6 @@ program. The
 .B smbd
 program provides LanManager-like services to clients
 using the SMB protocol.
-
 .SH FILE FORMAT
 The file consists of sections and parameters. A section begins with the 
 name of the section in square brackets and continues until the next
@@ -36,7 +35,7 @@ Any line beginning with a semicolon is ignored, as are lines containing
 only whitespace.
 
 Any line ending in a \e is "continued" on the next line in the
-customary unix fashion.
+customary UNIX fashion.
 
 The values following the equals sign in parameters are all either a string
 (no quotes needed) or a boolean, which may be given as yes/no, 0/1 or
@@ -91,7 +90,6 @@ means access will be permitted as the default guest user (specified elsewhere):
  		read only = true
  		printable = true
  		public = true
-
 .SH SPECIAL SECTIONS
 
 .SS The [global] section
@@ -124,7 +122,7 @@ If no path was given, the path is set to the user's home directory.
 If you decide to use a path= line in your [homes] section then you may
 find it useful to use the %S macro. For example path=/data/pchome/%S
 would be useful if you have different home directories for your PCs
-than for unix access.
+than for UNIX access.
 
 This is a fast and simple way to give a large number of clients access to
 their home directories with a minimum of fuss.
@@ -284,7 +282,7 @@ substitutions and other smb.conf options.
 
 .SS NAME MANGLING
 
-Samba supports "name mangling" so that Dos and Windows clients can use
+Samba supports "name mangling" so that DOS and Windows clients can use
 files that don't conform to the 8.3 format. It can also be set to adjust
 the case of 8.3 format filenames.
 
@@ -318,7 +316,7 @@ upper case, or if they are forced to be the "default" case. This option can
 be use with "preserve case = yes" to permit long filenames to retain their
 case, while short names are lowered. Default no.
 
-.SS COMPLETE LIST OF GLOBAL PARAMETER
+.SS COMPLETE LIST OF GLOBAL PARAMETERS
 
 Here is a list of all global parameters. See the section of each
 parameter for details.  Note that some are synonyms.
@@ -415,6 +413,8 @@ server string
 
 smbrun
 
+socket address
+
 socket options
 
 status
@@ -433,7 +433,7 @@ workgroup
 
 write raw
 
-.SS COMPLETE LIST OF SERVICE PARAMETER
+.SS COMPLETE LIST OF SERVICE PARAMETERS
 
 Here is a list of all service parameters. See the section of each
 parameter for details. Note that some are synonyms.
@@ -619,7 +619,6 @@ then the "load printers" option is easier.
 .B Example:
 	auto services = fred lp colorlp
 
-
 .SS allow hosts (S)
 A synonym for this parameter is 'hosts allow'.
 
@@ -633,7 +632,7 @@ You can specify the hosts by name or IP number. For example, you could
 restrict access to only the hosts on a Class C subnet with something like
 "allow hosts = 150.203.5.". The full syntax of the list is described in
 the man page
-.B hosts_access(5).
+.BR hosts_access (5).
 
 You can also specify hosts by network/netmask pairs and by netgroup
 names if your system supports netgroups. The EXCEPT keyword can also
@@ -660,7 +659,9 @@ deny access from one particular host
 
 Note that access still requires suitable user-level passwords.
 
-See testparm(1) for a way of testing your host access to see if it
+See
+.BR testparm (1)
+for a way of testing your host access to see if it
 does what you expect.
 
 .B Default:
@@ -672,12 +673,12 @@ does what you expect.
 .SS alternate permissions (S)
 
 This option affects the way the "read only" DOS attribute is produced
-for unix files. If this is false then the read only bit is set for
+for UNIX files. If this is false then the read only bit is set for
 files on writeable shares which the user cannot write to.
 
 If this is true then it is set for files whos user write bit is not set.
 
-The latter behaviour of useful for when users copy files from each
+The latter behaviour is useful for when users copy files from each
 others directories, and use a file manager that preserves
 permissions. Without this option they may get annoyed as all copied
 files will have the "read only" bit set.
@@ -733,11 +734,11 @@ file.
 
 This option takes the usual substitutions, which can be very useful.
 
-If thew config file doesn't exist then it won't be loaded (allowing
+If the config file doesn't exist then it won't be loaded (allowing
 you to special case the config files of just a few clients).
 
 .B Example:
-	config file = /usr/local/samba/smb.conf.%m
+	config file = /usr/local/samba/lib/smb.conf.%m
 
 .SS copy (S)
 This parameter allows you to 'clone' service entries. The specified
@@ -758,7 +759,7 @@ in the configuration file than the service doing the copying.
 A synonym for this parameter is 'create mode'.
 
 This parameter is the octal modes which are used when converting DOS modes 
-to Unix modes.
+to UNIX modes.
 
 Note that Samba will or this value with 0700 as you must have at least
 user read, write and execute for Samba to work properly.
@@ -795,7 +796,9 @@ A deadtime of zero indicates that no auto-disconnection should be performed.
  	dead time = 15
 .SS debug level (G)
 The value of the parameter (an integer) allows the debug level
-(logging level) to be specified in the smb.conf file. This is to give
+(logging level) to be specified in the
+.B smb.conf
+file. This is to give
 greater flexibility in the configuration of the system.
 
 The default will be the debug level specified on the command line.
@@ -822,7 +825,7 @@ attempting to connect to a nonexistent service results in an error.
 
 Typically the default service would be a public, read-only service.
 
-Also not that s of 1.9.14 the apparent service name will be changed to
+Also note that as of 1.9.14 the apparent service name will be changed to
 equal that of the requested service, this is very useful as it allows
 you to use macros like %S to make a wildcard service.
 
@@ -840,10 +843,10 @@ things.
 
 .SS delete readonly (S)
 This parameter allows readonly files to be deleted.  This is not normal DOS
-semantics, but is allowed by Unix.
+semantics, but is allowed by UNIX.
 
-This option may be useful for running applications such as rcs, where unix
-file ownership prevents changing file permissions, and dos semantics prevent
+This option may be useful for running applications such as rcs, where UNIX
+file ownership prevents changing file permissions, and DOS semantics prevent
 deletion of a read only file.
 
 .B Default:
@@ -890,18 +893,21 @@ Note: Your script should NOT be setuid or setgid and should be owned by
 and remaining space will be used.
 
 .B Example:
- 	dfree command = /usr/local/smb/dfree
+ 	dfree command = /usr/local/samba/bin/dfree
 
 	Where the script dfree (which must be made executable) could be
 
- 	#!/bin/sh
- 	df $1 | tail -1 | awk '{print $2" "$4}'
+.nf
+	#!/bin/sh
+	df $1 | tail -1 | awk '{print $2" "$4}'
+.fi
 
 	or perhaps (on Sys V)
 
+.nf
 	#!/bin/sh
 	/usr/bin/df -k $1 | tail -1 | awk '{print $3" "$5}'
-
+.fi
 
 	Note that you may have to replace the command names with full
 path names on some systems.
@@ -973,8 +979,9 @@ the specified username overrides this one.
 
 One some systems the account "nobody" may not be able to print. Use
 another account in this case. You should test this by trying to log in
-as your guest user (perhaps by using the "su -" command) and trying to
-print using lpr.
+as your guest user (perhaps by using the "su \-" command) and trying to
+print using
+.BR lpr .
 
 Note that as of version 1.9 of Samba this option may be set
 differently for each service.
@@ -1083,7 +1090,7 @@ This is a list of users that should not be allowed to login to this
 service. This is really a "paranoid" check to absolutely ensure an
 improper setting does not breach your security.
 
-A name starting with @ is interpreted as a unix group.
+A name starting with @ is interpreted as a UNIX group.
 
 The current servicename is substituted for %S. This is useful in the
 [homes] section.
@@ -1098,7 +1105,7 @@ See also "valid users"
 
 .SS include (G)
 
-This allows you to inlcude one config file inside another. the file is
+This allows you to include one config file inside another. the file is
 included literally, as though typed in place.
 
 It takes the standard substitutions, except %u, %P and %S
@@ -1137,7 +1144,7 @@ The lock files are used to implement the "max connections" option.
 	lock directory = /tmp/samba
 
 .B Example: 
-	lock directory = /usr/local/samba/locks
+	lock directory = /usr/local/samba/var/locks
 .SS locking (S)
 This controls whether or not locking will be performed by the server in 
 response to lock requests from the client.
@@ -1168,7 +1175,7 @@ This option takes the standard substitutions, allowing you to have
 separate log files for each user or machine.
 
 .B Example:
-	log file = /usr/local/samba/log.%m
+	log file = /usr/local/samba/var/log.%m
 
 .SS log level (G)
 see "debug level"
@@ -1182,9 +1189,11 @@ job number to pause the print job. Currently I don't know of any print
 spooler system that can do this with a simple option, except for the PPR
 system from Trinity College (ppr\-dist.trincoll.edu/pub/ppr). One way
 of implementing this is by using job priorities, where jobs having a too
-low priority wont be sent to the printer. See also the lppause command.
+low priority won't be sent to the printer. See also the
+.B lppause
+command.
 
-If a %p is given then the printername is put in it's place. A %j is
+If a %p is given then the printername is put in its place. A %j is
 replaced with the job number (an integer).
 On HPUX (see printing=hpux), if the -p%p option is added to the lpq
 command, the job will show up with the correct status, i.e. if the job
@@ -1233,7 +1242,7 @@ This command should be a program or script which takes a printer name
 as its only parameter and outputs printer status information. 
 
 Currently six styles of printer status information are supported; BSD,
-SYSV, AIX, HPUX, QNX and PLP. This covers most unix systems. You
+SYSV, AIX, HPUX, QNX, LPRNG and PLP. This covers most UNIX systems. You
 control which type is expected using the "printing =" option.
 
 Some clients (notably Windows for Workgroups) may not correctly send the
@@ -1242,7 +1251,7 @@ about. To get around this, the server reports on the first printer service
 connected to by the client. This only happens if the connection number sent
 is invalid.
 
-If a %p is given then the printername is put in it's place. Otherwise
+If a %p is given then the printername is put in its place. Otherwise
 it is placed at the end of the command.
 
 Note that it is good practice to include the absolute path in the lpq
@@ -1261,7 +1270,7 @@ order to restart or continue printing or spooling a specific print job.
 This command should be a program or script which takes a printer name and
 job number to resume the print job. See also the lppause command.
 
-If a %p is given then the printername is put in it's place. A %j is
+If a %p is given then the printername is put in its place. A %j is
 replaced with the job number (an integer).
 
 Note that it is good practice to include the absolute path in the lpresume
@@ -1280,11 +1289,11 @@ order to delete a print job.
 This command should be a program or script which takes a printer name
 and job number, and deletes the print job.
 
-Currently six styles of printer control are supported; BSD, SYSV, AIX
-HPUX, QNX and PLP. This covers most unix systems. You control which type is
-expected using the "printing =" option.
+Currently seven styles of printer control are supported; BSD, SYSV, AIX
+HPUX, QNX, LPRNG and PLP. This covers most UNIX systems. You control
+which type is expected using the "printing =" option.
 
-If a %p is given then the printername is put in it's place. A %j is
+If a %p is given then the printername is put in its place. A %j is
 replaced with the job number (an integer).
 
 Note that it is good practice to include the absolute path in the lprm
@@ -1314,7 +1323,7 @@ output file content is undefined.
  	magic output = myfile.txt
 .SS magic script (S)
 This parameter specifies the name of a file which, if opened, will be
-executed by the server when the file is closed. This allows a Unix script
+executed by the server when the file is closed. This allows a UNIX script
 to be sent to the Samba host and executed on behalf of the connected user.
 
 Scripts executed in this way will be deleted upon completion, permissions
@@ -1331,6 +1340,7 @@ marker. Magic scripts must be executable "as is" on the host, which
 for some hosts and some shells will require filtering at the DOS end.
 
 Magic scripts are EXPERIMENTAL and should NOT be relied upon.
+
 .B Default:
  	None. Magic scripts disabled.
 
@@ -1340,8 +1350,8 @@ Magic scripts are EXPERIMENTAL and should NOT be relied upon.
 This is for those who want to directly map UNIX file names which are
 not representable on DOS.  The mangling of names is not always what is
 needed.  In particular you may have documents with file extensiosn
-that differ between dos and unix. For example, under unix it is common
-to use .html for HTML files, whereas under dos .htm is more commonly
+that differ between DOS and UNIX. For example, under UNIX it is common
+to use .html for HTML files, whereas under DOS .htm is more commonly
 used.
 
 So to map 'html' to 'htm' you put:
@@ -1349,7 +1359,7 @@ So to map 'html' to 'htm' you put:
   mangled map = (*.html *.htm)
 
 One very useful case is to remove the annoying ;1 off the ends of
-filenames on some CDROMS (only visible under some unixes). To do this
+filenames on some CDROMS (only visible under some UNIXes). To do this
 use a map of (*;1 *)
 
 .B default:
@@ -1363,7 +1373,7 @@ use a map of (*;1 *)
 See the section on "NAME MANGLING"
 
 .SS mangled names (S)
-This controls whether non-DOS names under Unix should be mapped to
+This controls whether non-DOS names under UNIX should be mapped to
 DOS-compatible names ("mangled") and made visible, or whether non-DOS names
 should simply be ignored.
 
@@ -1391,7 +1401,7 @@ final extension is defined as that part of the original filename after the
 rightmost dot. If there are no dots in the filename, the mangled name will
 have no extension (except in the case of hidden files - see below).
 
-- files whose Unix name begins with a dot will be presented as DOS hidden
+- files whose UNIX name begins with a dot will be presented as DOS hidden
 files. The mangled name will be created as for other filenames, but with the
 leading dot removed and "___" as its extension regardless of actual original
 extension (that's three underscores).
@@ -1403,8 +1413,8 @@ This algorithm can cause name collisions only if files in a directory share
 the same first five alphanumeric characters. The probability of such a clash 
 is 1/1300.
 
-The name mangling (if enabled) allows a file to be copied between Unix
-directories from DOS while retaining the long Unix filename. Unix files can
+The name mangling (if enabled) allows a file to be copied between UNIX
+directories from DOS while retaining the long UNIX filename. UNIX files can
 be renamed to a new extension from DOS and will retain the same basename. 
 Mangled names do not change between sessions.
 
@@ -1482,7 +1492,7 @@ maintained if they are longer than 3 characters or contains upper case
 characters).
 
 The larger this value, the more likely it is that mangled names can be
-successfully converted to correct long Unix names. However, large stack
+successfully converted to correct long UNIX names. However, large stack
 sizes will slow most directory access. Smaller stacks save memory in the
 server (each stack element costs 256 bytes).
 
@@ -1496,7 +1506,7 @@ be prepared for some surprises!
  	mangled stack = 100
 
 .SS map archive (S)
-This controls whether the DOS archive attribute should be mapped to Unix
+This controls whether the DOS archive attribute should be mapped to UNIX
 execute bits.  The DOS archive bit is set when a file has been modified
 since its last backup.  One motivation for this option it to keep Samba/your
 PC from making any file it touches from becoming executable under UNIX.
@@ -1509,7 +1519,7 @@ This can be quite annoying for shared source code, documents,  etc...
       map archive = no
 
 .SS map hidden (S)
-This controls whether DOS style hidden files should be mapped to Unix
+This controls whether DOS style hidden files should be mapped to UNIX
 execute bits.
 
 .B Default:
@@ -1518,7 +1528,7 @@ execute bits.
 .B Example:
  	map hidden = yes
 .SS map system (S)
-This controls whether DOS style system files should be mapped to Unix
+This controls whether DOS style system files should be mapped to UNIX
 execute bits.
 
 .B Default:
@@ -1607,7 +1617,7 @@ If you want to silently delete it then try "message command = rm %s".
 
 For the really adventurous, try something like this:
 
-message command = csh -c 'csh < %s |& /usr/local/samba/smbclient \\
+message command = csh -c 'csh < %s |& /usr/local/samba/bin/smbclient \e
                   -M %m; rm %s' &
 
 this would execute the command as a script on the server, then give
@@ -1652,14 +1662,14 @@ longer implemented as of version 1.7.00, and is kept only so old
 configuration files do not become invalid.
 
 .SS passwd chat (G)
-This string coontrols the "chat" conversation that takes places
+This string controls the "chat" conversation that takes places
 between smbd and the local password changing program to change the
 users password. The string describes a sequence of response-receive
 pairs that smbd uses to determine what to send to the passwd program
 and what to expect back. If the expected output is not received then
 the password is not changed.
 
-This chat sequence is often quite site specific, deppending on what
+This chat sequence is often quite site specific, depending on what
 local methods are used for password control (such as NIS+ etc).
 
 The string can contain the macros %o and %n which are substituted for
@@ -1732,7 +1742,7 @@ you probably have a slow crypt() routine. Samba now comes with a fast
 sure the PASSWORD_LENGTH option is correct for your system in local.h
 and includes.h. On most systems only the first 8 chars of a password
 are significant so PASSWORD_LENGTH should be 8, but on some longer
-passwords are significant. The inlcudes.h file tries to select the
+passwords are significant. The includes.h file tries to select the
 right length for your system.
 
 .B Default:
@@ -1745,18 +1755,18 @@ right length for your system.
 
 By specifying the name of another SMB server (such as a WinNT box)
 with this option, and using "security = server" you can get Samba to
-do all it's username/password validation via a remote server.
+do all its username/password validation via a remote server.
 
 This options sets the name of the password server to use. It must be a
-netbios name, so if the machines netbios name is different from it's
-internet name then you may have to add it's netbios name to
+netbios name, so if the machine's netbios name is different from its
+internet name then you may have to add its netbios name to
 /etc/hosts.
 
 The password server much be a machine capable of using the "LM1.2X002"
 or the "LM NT 0.12" protocol, and it must be in user level security
 mode. 
 
-NOTE: Using a password server means your unix box (running Samba) is
+NOTE: Using a password server means your UNIX box (running Samba) is
 only as secure as your password server. DO NOT CHOOSE A PASSWORD
 SERVER THAT YOU DON'T COMPLETELY TRUST.
 
@@ -1839,7 +1849,7 @@ An interesting example is to send the users a welcome message every
 time they log in. Maybe a message of the day? Here is an example:
 
 preexec = csh -c 'echo \"Welcome to %S!\" | \
-       /usr/local/samba/smbclient -M %m -I %I' &
+       /usr/local/samba/bin/smbclient -M %m -I %I' &
 
 Of course, this could get annoying after a while :-)
 
@@ -1905,7 +1915,7 @@ If there is neither a specified print command for a printable service nor a
 global print command, spool files will be created but not processed and (most
 importantly) not removed.
 
-Note that printing may fail on some unixes from the "nobody"
+Note that printing may fail on some UNIXes from the "nobody"
 account. If this happens then create an alternative guest account that
 can print and set the "guest account" in the [global] section.
 
@@ -1920,10 +1930,10 @@ You may have to vary this command considerably depending on how you
 normally print files on your system.
 
 .B Default:
-        print command = lpr -r -P %p %s
+	print command = lpr -r -P %p %s
 
 .B Example:
- 	print command = /usr/local/samba/myprintscript %p %s
+ 	print command = /usr/local/samba/bin/myprintscript %p %s
 .SS print ok (S)
 See
 .B printable.
@@ -2016,6 +2026,7 @@ If you don't know the exact string to use then you should first try
 with no "printer driver" option set and the client will give you a
 list of printer drivers. The appropriate strings are shown in a
 scrollbox after you have chosen the printer manufacturer.
+
 .B Example:
 	printer driver = HP LaserJet 4L
 
@@ -2202,7 +2213,7 @@ The set of files that must be mirrored is operating system dependent.
 .B Example:
  	root directory = /homes/smb
 .SS security (G)
-This option does affects how clients respond to Samba.
+This option affects how clients respond to Samba.
 
 The option sets the "security mode bit" in replies to protocol negotiations
 to turn share level security on or off. Clients decide based on this bit 
@@ -2214,8 +2225,8 @@ option at one stage.
 The alternatives are "security = user" or "security = server". 
 
 If your PCs use usernames that are the same as their usernames on the
-unix machine then you will want to use "security = user". If you
-mostly use usernames that don't exist on the unix box then use
+UNIX machine then you will want to use "security = user". If you
+mostly use usernames that don't exist on the UNIX box then use
 "security = share".
 
 There is a bug in WfWg that may affect your decision. When in user
@@ -2259,7 +2270,8 @@ value in the Makefile.
 
 You must get this path right for many services to work correctly.
 
-.B Default: taken from Makefile
+.B Default:
+taken from Makefile
 
 .B Example:
 	smbrun = /usr/local/samba/bin/smbrun
@@ -2292,6 +2304,7 @@ command to change directory.
 
 The setdir comand is only implemented in the Digital Pathworks client. See the
 Pathworks documentation for details.
+
 .B Default:
  	set directory = no
 
@@ -2304,7 +2317,7 @@ This enables or disables the honouring of the "share modes" during a
 file open. These modes are used by clients to gain exclusive read or
 write access to a file. 
 
-These open modes are not directly supported by unix, so they are
+These open modes are not directly supported by UNIX, so they are
 simulated using lock files in the "lock directory". The "lock
 directory" specified in smb.conf must be readable by all users.
 
@@ -2312,13 +2325,24 @@ The share modes that are enabled by this option are DENY_DOS,
 DENY_ALL, DENY_READ, DENY_WRITE, DENY_NONE and DENY_FCB.
 
 Enabling this option gives full share compatability but may cost a bit
-of processing time on the unix server. They are enabled by default.
+of processing time on the UNIX server. They are enabled by default.
 
 .B Default:
 	share modes = yes
 
 .B Example:
 	share modes = no
+
+.SS socket address (G)
+
+This option allows you to control what address Samba will listen for
+connections on. This is used to support multiple virtual interfaces on
+the one server, each with a different configuration.
+
+By default samba will accept connections on any address.
+
+.B Example:
+	socket address = 192.168.2.20
 
 .SS socket options (G)
 This option (which can also be invoked with the -O command line
@@ -2401,9 +2425,12 @@ completely. Use these options with caution!
 
 .SS status (G)
 This enables or disables logging of connections to a status file that
-smbstatus can read.
+.B smbstatus
+can read.
 
-With this disabled smbstatus won't be able to tell you what
+With this disabled
+.B smbstatus
+won't be able to tell you what
 connections are active.
 
 .B Default:
@@ -2413,7 +2440,7 @@ connections are active.
 	status = no
 
 .SS strip dot (G)
-This is a boolean that controls whether to strup trailing dots off
+This is a boolean that controls whether to strip trailing dots off
 filenames. This helps with some CDROMs that have filenames ending in a
 single dot.
 
@@ -2443,7 +2470,7 @@ so in the vast majority of cases "strict locking = no" is preferable.
 
 This is a boolean parameter that controls whether writes will always
 be written to stable storage before the write call returns. If this is
-false then the server will be guided by the clients request in each
+false then the server will be guided by the client's request in each
 write call (clients can set a bit indicating that a particular write
 should be synchronous). If this is true then every write will be
 followed by a fsync() call to ensure the data is written to disk.
@@ -2474,9 +2501,9 @@ A synonym for this parameter is 'user'.
 Multiple users may be specified in a comma-delimited list, in which case the
 supplied password will be tested against each username in turn (left to right).
 
-The username= line is needed only when the PC is unable to supply it's own
+The username= line is needed only when the PC is unable to supply its own
 username. This is the case for the coreplus protocol or where your
-users have different WfWg usernames to unix usernames. In both these
+users have different WfWg usernames to UNIX usernames. In both these
 cases you may also be better using the \\\\server\\share%user syntax
 instead. 
 
@@ -2486,7 +2513,7 @@ usernames in the username= line in turn. This is slow and a bad idea for
 lots of users in case of duplicate passwords. You may get timeouts or
 security breaches using this parameter unwisely.
 
-Samba relies on the underlying unix security. This parameter does not
+Samba relies on the underlying UNIX security. This parameter does not
 restrict who can login, it just offers hints to the Samba server as to
 what usernames might correspond to the supplied password. Users can
 login as whoever they please and they will be able to do no more
@@ -2516,32 +2543,32 @@ on how this parameter determines access to the services.
 
 This option allows you to to specify a file containing a mapping of
 usernames from the clients to the server. This can be used for several
-purposes. The most common is to map usernames that users use on dos or
-windows machines to those that the unix box uses. The other is to map
+purposes. The most common is to map usernames that users use on DOS or
+Windows machines to those that the UNIX box uses. The other is to map
 multiple users to a single username so that they can more easily share
 files.
 
 The map file is parsed line by line. Each line should contain a single
-unix username on the left then a '=' followed by a list of usernames
+UNIX username on the left then a '=' followed by a list of usernames
 on the right. The list of usernames on the right may contain names of
-the form @group in which case they will match any unix username in
+the form @group in which case they will match any UNIX username in
 that group. The special client name '*' is a wildcard and matches any
 name.
 
 The file is processed on each line by taking the supplied username and
 comparing it with each username on the right hand side of the '='
-signs. If the supplied name matrches any of the names on the right
+signs. If the supplied name matches any of the names on the right
 hand side then it is replaced with the name on the left. Processing
 then continues with the next line.
 
 If any line begins with a '#' or a ';' then it is ignored
 
-For example to map from he name "admin" or "administrator" to the unix
+For example to map from the name "admin" or "administrator" to the UNIX
 name "root" you would use
 
 	root = admin administrator
 
-Or to map anyone in the unix group "system" to the unix name "sys" you
+Or to map anyone in the UNIX group "system" to the UNIX name "sys" you
 would use
 
 	sys = @system
@@ -2552,7 +2579,7 @@ Note that the remapping is applied to all occurances of
 usernames. Thus if you connect to "\\\\server\\fred" and "fred" is
 remapped to "mary" then you will actually be connecting to
 "\\\\server\\mary" and will need to supply a password suitable for
-"mary" not "fred". The only exception to this is the username passwed
+"mary" not "fred". The only exception to this is the username passed
 to the "password server" (if you have one). The password server will
 receive whatever username the client supplies without modification.
 
@@ -2590,11 +2617,13 @@ valid chars = Z
 valid chars = z:Z
 valid chars = 0132:0172
 
-The last two examples above actually add two characters, and alters
+The last two examples above actually add two characters, and alter
 the uppercase and lowercase mappings appropriately.
 
 .B Default
+.br
 	Samba defaults to using a reasonable set of valid characters
+.br
 	for english systems
 
 .B Example
@@ -2609,10 +2638,9 @@ tino@augsburg.net has written a package called "validchars" which will
 automatically produce a complete "valid chars" line for a given client
 system. Look in the examples subdirectory for this package.
 
-
 .SS valid users (S)
 This is a list of users that should be allowed to login to this
-service. A name starting with @ is interpreted as a unix group.
+service. A name starting with @ is interpreted as a UNIX group.
 
 If this is empty (the default) then any user can login. If a username
 is in both this list and the "invalid users" list then access is
@@ -2631,13 +2659,13 @@ See also "invalid users"
 
 .SS volume (S)
 This allows you to override the volume label returned for a
-share. Useful for CDROMs whos installation programs insist on a
+share. Useful for CDROMs with installation programs that insist on a
 particular volume label.
 
 The default is the name of the share
 
 .SS wide links (S)
-This parameter controls whether or not links in the Unix file system may be
+This parameter controls whether or not links in the UNIX file system may be
 followed by the server. Links that point to areas within the directory tree
 exported by the server are always allowed; this parameter controls access 
 only to areas that are outside the directory tree being exported.
@@ -2680,7 +2708,7 @@ itself.
 This controls what workgroup your server will appear to be in when
 queried by clients. This can be different to the workgroup specified
 in the nmbd configuration, but it is probably best if you set them to
-the same value.
+			   the same value.
 
 .B Default:
  	set in the Makefile
@@ -2746,7 +2774,7 @@ the following steps are not checked.
 If the service is marked "guest only = yes" then steps 1 to 5 are skipped
 
 Step 1: If the client has passed a username/password pair and that
-username/password pair is validated by the unix systems password
+username/password pair is validated by the UNIX system's password
 programs then the connection is made as that username. Note that this
 includes the \\\\server\\service%username method of passing a username.
 
@@ -2754,7 +2782,7 @@ Step 2: If the client has previously registered a username with the
 system and now supplies a correct password for that username then the
 connection is allowed.
 
-Step 3: The clients netbios name and any previously used user names
+Step 3: The client's netbios name and any previously used user names
 are checked against the supplied password, if they match then the
 connection is allowed as the corresponding user.
 
@@ -2765,7 +2793,7 @@ for this service.
 
 Step 5: If a "user = " field is given in the smb.conf file for the
 service and the client has supplied a password, and that password
-matches (according to the unix systems password checking) with one of
+matches (according to the UNIX system's password checking) with one of
 the usernames from the user= field then the connection is made as the
 username in the "user=" line. If one of the username in the user= list
 begins with a @ then that name expands to a list of names in the group
@@ -2774,8 +2802,6 @@ of the same name.
 Step 6: If the service is a guest service then a connection is made as
 the username given in the "guest account =" for the service,
 irrespective of the supplied password.
-
-
 .SH WARNINGS
 Although the configuration file permits service names to contain spaces, 
 your client software may not. Spaces will be ignored in comparisons anyway,
@@ -2804,27 +2830,25 @@ radically different (more primitive). If you are using a version earlier than
 1.8.05, it is STRONGLY recommended that you upgrade.
 .SH OPTIONS
 Not applicable.
-
 .SH FILES
 Not applicable.
-
 .SH ENVIRONMENT VARIABLES
 Not applicable.
-
 .SH SEE ALSO
-.B smbd(8),
-.B smbclient(1),
-.B nmbd(8),
-.B testparm(1), 
-.B testprns(1),
-.B lpq(1),
-.B hosts_access(5)
+.BR smbd (8),
+.BR smbclient (1),
+.BR nmbd (8),
+.BR testparm (1), 
+.BR testprns (1),
+.BR lpq (1),
+.BR hosts_access (5)
 .SH DIAGNOSTICS
 [This section under construction]
 
 Most diagnostics issued by the server are logged in a specified log file. The
 log file name is specified at compile time, but may be overridden on the
-smbd (see smbd(8)) command line.
+smbd command line (see
+.BR smbd (8)).
 
 The number and nature of diagnostics available depends on the debug level used
 by the server. If you have problems, set the debug level to 3 and peruse the
@@ -2835,7 +2859,6 @@ creation of this man page the source code is still too fluid to warrant
 describing each and every diagnostic. At this stage your best bet is still
 to grep the source code and inspect the conditions that gave rise to the 
 diagnostics you are seeing.
-
 .SH BUGS
 None known.
 
@@ -2845,16 +2868,16 @@ Please send bug reports, comments and so on to:
 .B samba-bugs@anu.edu.au (Andrew Tridgell)
 
 .RS 3
-or to the mailing list
+or to the mailing list:
 .RE
 
 .B samba@listproc.anu.edu.au
 
 .RE
-You may also like to subscribe to the announcement channel
+You may also like to subscribe to the announcement channel:
 
 .RS 3
-samba-announce@listproc.anu.edu.au
+.B samba-announce@listproc.anu.edu.au
 .RE
 
 To subscribe to these lists send a message to
