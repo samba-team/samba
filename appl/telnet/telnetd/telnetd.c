@@ -33,7 +33,7 @@
 
 #include <config.h>
 
-RCSID("$Id");
+RCSID("$Id$");
 
 #include "telnetd.h"
 #include "pathnames.h"
