@@ -181,6 +181,13 @@
 	/******************/
 	/* Function: 0x0e */
 	WERROR winreg_NotifyChangeKeyValue(
+		[in,ref] policy_handle *handle,
+		[in] uint8 watch_subtree,
+		[in] uint32 notify_filter,
+		[in] uint32 unknown,
+		[in] winreg_String string1,
+		[in] winreg_String string2, 
+		[in] uint32 unknown2
 	);
 
 	/******************/
