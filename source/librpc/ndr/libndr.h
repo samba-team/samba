@@ -23,14 +23,14 @@
 */
 
 
-/* offset lists are used to allow a push/pull function to find the
-   start of an encapsulating structure */
-struct ndr_ofs_list {
-	uint32_t offset;
-	uint32_t base;
-	struct ndr_ofs_list *next;
+/*
+  this is used by the token store/retrieve code
+*/
+struct ndr_token_list {
+	struct ndr_token_list *next, *prev;
+	const void *key;
+	uint32_t value;
 };
-
 
 /* this is the base structure passed to routines that 
    parse MSRPC formatted data 
@@ -47,9 +47,11 @@ struct ndr_pull {
 	uint32_t offset;
 	TALLOC_CTX *mem_ctx;
 
-	/* this points at a list of offsets to the structures being processed.
-	   The first element in the list is the current structure */
-	struct ndr_ofs_list *ofs_list;
+	struct ndr_token_list *relative_list;
+
+	/* this is used to ensure we generate unique reference IDs
+	   between request and reply */
+	uint32_t ptr_count;
 };
 
 struct ndr_pull_save {
@@ -66,15 +68,10 @@ struct ndr_push {
 	uint32_t offset;
 	TALLOC_CTX *mem_ctx;
 
+	struct ndr_token_list *relative_list;
+
 	/* this is used to ensure we generate unique reference IDs */
 	uint32_t ptr_count;
-
-	/* this points at a list of offsets to the structures being processed.
-	   The first element in the list is the current structure */
-	struct ndr_ofs_list *ofs_list;
-
-	/* this list is used by the [relative] code to find the offsets */
-	struct ndr_ofs_list *relative_list, *relative_list_end;
 };
 
 struct ndr_push_save {
