@@ -111,49 +111,9 @@ Specifies that
 .Va entity
 should use the specified
 .Li destination
-for logging. The currently defined destinations are:
-.Bl -tag -width "xxx" -offset indent
-.It Li STDERR
-This logs to the programs stderr.
-.It Li FILE: Ns Pa /file
-.It Li FILE= Ns Pa /file
-Log to the specified file. The form using a colon appends to the file,
-the form with an equal truncates the file. The truncating form keeps
-the file open, while the appending form closes it after each log
-message (which makes it possible to rotate logs).
-.It Li DEVICE= Ns Pa /device
-This logs to the specified device, at present this is the same as
-.Li FILE:/device .
-.It Li CONSOLE
-Log to the console, this is the same as
-.Li DEVICE=/dev/console .
-.It Li SYSLOG Ns Op :priority Ns Op :facility
-Send messages to the syslog system, using priority, and facility. To
-get the name for one of these, you take the name of the macro passed
-to
-.Xr syslog 3 ,
-and remove the leading
-.Li LOG_ 
-.No ( Li LOG_NOTICE
-becomes 
-.Li NOTICE ) .
-The default values (as well as the values used for unrecognised
-values), are
-.Li ERR ,
-and
-.Li AUTH ,
-respectively.  See
-.Xr syslog 3
-for a list of priorities and facilities.
-.Pp
-The entity specifies which program should use the specified logging
-destination. If no entity is found for a program, the 
-.Li default
-entity will be used. If that is not present either no logging will
-happen.
-.El
-.El
-.El
+for logging. See the
+.Xr krb5_openlog 3
+manual page for a list of defined destinations.
 .Sh EXAMPLE
 .Bd -literal -offset indent
 [lib_defaults]
