@@ -2362,7 +2362,7 @@ static void construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum,
  ********************************************************************/
 static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, 
                                        NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
+				       fstring servername, fstring architecture)
 {
 	pstring where;
 	pstring temp_driverpath;
