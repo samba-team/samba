@@ -616,10 +616,7 @@
 		<listitem><para><link linkend="DFREECOMMAND"><parameter>dfree command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
-		<listitem><para><link linkend="DOMAINADMINUSERS"><parameter>domain admin users</parameter></link></para></listitem>
-		<listitem><para><link linkend="DOMAINGROUPS"><parameter>domain groups</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINGUESTGROUP"><parameter>domain guest group</parameter></link></para></listitem>
-		<listitem><para><link linkend="DOMAINGUESTUSERS"><parameter>domain guest users</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINLOGONS"><parameter>domain logons</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINMASTER"><parameter>domain master</parameter></link></para></listitem>
 		<listitem><para><link linkend="ENCRYPTPASSWORDS"><parameter>encrypt passwords</parameter></link></para></listitem>
@@ -2230,67 +2227,47 @@
 
 		<varlistentry>
 		<term><anchor id="DOMAINADMINGROUP">domain admin group (G)</term>
-		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <ulink
-		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
-		visiting the web page at <ulink url="http://lists.samba.org/">
-		http://lists.samba.org/</ulink>.</para></listitem>
+		<listitem><para>This parameter is intended as a temporary solution
+		to enable users to be a member of the "Domain Admins" group when 
+		a Samba host is acting as a PDC.  A complete solution will be provided
+		by a system for mapping Windows NT/2000 groups onto UNIX groups.
+		Please note that this parameter has a somewhat confusing name.  It 
+		accepts a list of usernames and of group names in standard 
+		<filename>smb.conf</filename>	notation.
+		</para>
+		
+		<para>See also <link linkend="DOMAINGUESTGROUP"><parameter>domain
+		guest group</parameter></link>, <link linkend="DOMAINLOGONS"><parameter>domain
+		logons</parameter></link>
+		</para>
+		
+		<para>Default: <emphasis>no domain administrators</emphasis></para>
+		<para>Example: <command>domain admin group = root @wheel</command></para>
+		</listitem>
 		</varlistentry>
 
-
-		<varlistentry>
-		<term><anchor id="DOMAINADMINUSERS">domain admin users (G)</term>
-		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <ulink
-		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
-		visiting the web page at <ulink url="http://lists.samba.org/">
-		http://lists.samba.org/</ulink>.</para></listitem>
-		</varlistentry>
-
-
-		<varlistentry>
-		<term><anchor id="DOMAINGROUPS">domain groups (G)</term>
-		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <ulink
-		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
-		visiting the web page at <ulink url="http://lists.samba.org/">
-		http://lists.samba.org/</ulink>.</para></listitem>
-		</varlistentry>
 
 
 
 		<varlistentry>
 		<term><anchor id="DOMAINGUESTGROUP">domain guest group (G)</term>
-		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <ulink
-		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
-		visiting the web page at <ulink url="http://lists.samba.org/">
-		http://lists.samba.org/</ulink>.</para></listitem>
-		</varlistentry>
-
-
-		<varlistentry>
-		<term><anchor id="DOMAINGUESTUSERS">domain guest users (G)</term>
-		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <ulink
-		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
-		visiting the web page at <ulink url="http://lists.samba.org/">
-		http://lists.samba.org/</ulink>.</para></listitem>
+		<listitem><para>This parameter is intended as a temporary solution
+		to enable users to be a member of the "Domain Guests" group when 
+		a Samba host is acting as a PDC.  A complete solution will be provided
+		by a system for mapping Windows NT/2000 groups onto UNIX groups.
+		Please note that this parameter has a somewhat confusing name.  It 
+		accepts a list of usernames and of group names in standard 
+		<filename>smb.conf</filename>	notation.
+		</para>
+		
+		<para>See also <link linkend="DOMAINADMINGROUP"><parameter>domain
+		admin group</parameter></link>, <link linkend="DOMAINLOGONS"><parameter>domain
+		logons</parameter></link>
+		</para>		
+		
+		<para>Default: <emphasis>no domain guests</emphasis></para>
+		<para>Example: <command>domain guest group = nobody @guest</command></para>
+		</listitem>
 		</varlistentry>
 
 

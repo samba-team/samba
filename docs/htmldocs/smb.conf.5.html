@@ -1219,47 +1219,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#DOMAINADMINUSERS"
-><TT
-CLASS="PARAMETER"
-><I
->domain admin users</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#DOMAINGROUPS"
-><TT
-CLASS="PARAMETER"
-><I
->domain groups</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#DOMAINGUESTGROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
 >domain guest group</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#DOMAINGUESTUSERS"
-><TT
-CLASS="PARAMETER"
-><I
->domain guest users</I
 ></TT
 ></A
 ></P
@@ -2817,7 +2781,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN909"
+NAME="AEN897"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4248,7 +4212,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1385"
+NAME="AEN1373"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -7235,70 +7199,47 @@ NAME="DOMAINADMINGROUP"
 >domain admin group (G)</DT
 ><DD
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
-></DD
-><DT
-><A
-NAME="DOMAINADMINUSERS"
-></A
->domain admin users (G)</DT
-><DD
+>This parameter is intended as a temporary solution
+		to enable users to be a member of the "Domain Admins" group when 
+		a Samba host is acting as a PDC.  A complete solution will be provided
+		by a system for mapping Windows NT/2000 groups onto UNIX groups.
+		Please note that this parameter has a somewhat confusing name.  It 
+		accepts a list of usernames and of group names in standard 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+>	notation.
+		</P
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
-></DD
-><DT
-><A
-NAME="DOMAINGROUPS"
+>See also <A
+HREF="#DOMAINGUESTGROUP"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		guest group</I
+></TT
 ></A
->domain groups (G)</DT
-><DD
+>, <A
+HREF="#DOMAINLOGONS"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		logons</I
+></TT
+></A
+>
+		</P
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
+>Default: <EM
+>no domain administrators</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>domain admin group = root @wheel</B
+></P
 ></DD
 ><DT
 ><A
@@ -7307,46 +7248,47 @@ NAME="DOMAINGUESTGROUP"
 >domain guest group (G)</DT
 ><DD
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
-></DD
-><DT
-><A
-NAME="DOMAINGUESTUSERS"
-></A
->domain guest users (G)</DT
-><DD
+>This parameter is intended as a temporary solution
+		to enable users to be a member of the "Domain Guests" group when 
+		a Samba host is acting as a PDC.  A complete solution will be provided
+		by a system for mapping Windows NT/2000 groups onto UNIX groups.
+		Please note that this parameter has a somewhat confusing name.  It 
+		accepts a list of usernames and of group names in standard 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+>	notation.
+		</P
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
+>See also <A
+HREF="#DOMAINADMINGROUP"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		admin group</I
+></TT
+></A
+>, <A
+HREF="#DOMAINLOGONS"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		logons</I
+></TT
+></A
+>
+		</P
+><P
+>Default: <EM
+>no domain guests</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>domain guest group = nobody @guest</B
+></P
 ></DD
 ><DT
 ><A
@@ -18421,7 +18363,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5820"
+NAME="AEN5798"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18451,7 +18393,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5826"
+NAME="AEN5804"
 ></A
 ><H2
 >VERSION</H2
@@ -18462,7 +18404,7 @@ NAME="AEN5826"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5829"
+NAME="AEN5807"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18541,7 +18483,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5849"
+NAME="AEN5827"
 ></A
 ><H2
 >AUTHOR</H2
