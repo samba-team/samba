@@ -1,3 +1,8 @@
+2001-07-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rsh.c: iff -d, set the SO_DEBUG flags of the stdout and stderr
+	socket; implement parsing user@host
+
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
 	* rshd.c (fatal): use vsnprintf correctly
