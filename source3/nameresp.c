@@ -117,7 +117,7 @@ static void dead_netbios_entry(struct subnet_record *d,
       
       add_name_respond(d,n->fd,d->myip, n->response_id ,&n->name,
 		       n->nb_flags, GET_TTL(0),
-		       n->reply_to_ip, False, n->reply_to_ip);
+		       n->reply_to_ip, True, n->reply_to_ip);
       
       if (!n->bcast && n->num_msgs == 0)
 	{
@@ -250,7 +250,6 @@ struct response_record *queue_netbios_pkt_wins(
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
-			    BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip)
 {
   /* XXXX note: please see rfc1001.txt section 10 for details on this
@@ -260,30 +259,29 @@ struct response_record *queue_netbios_pkt_wins(
    */
 
   if ((!lp_wins_support()) && (*lp_wins_server()))
-    {
+  {
       /* samba is not a WINS server, and we are using a WINS server */
       struct in_addr real_wins_ip;
       real_wins_ip = *interpret_addr2(lp_wins_server());
 
-      if (!zero_ip(real_wins_ip))
+    if (!zero_ip(real_wins_ip))
 	{
-	  bcast = False;
 	  send_ip = real_wins_ip;
 	}
-      else
+    else
 	{
 	  /* oops. smb.conf's wins server parameter MUST be a host_name 
 	     or an ip_address. */
 	  DEBUG(0,("invalid smb.conf parameter 'wins server'\n"));
 	}
-    }
+  }
 
   if (zero_ip(send_ip)) return NULL;
 
   return queue_netbios_packet(wins_subnet,fd, quest_type, state, 
 		       name, name_type, nb_flags, ttl,
                server_type,my_name,my_comment,
-		       bcast, recurse, send_ip, reply_to_ip);
+		       False, True, send_ip, reply_to_ip);
 }
 
 

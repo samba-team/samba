@@ -103,7 +103,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
       /* not a WINS server: we have to release them on the network */
       queue_netbios_pkt_wins(ClientNMB,NMB_REL,NAME_RELEASE,
 			     name, type, 0, 0,0,NULL,NULL,
-			     False, True, ipzero, ipzero);
+			     ipzero, ipzero);
     }
   }
   else
@@ -163,7 +163,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
   	  queue_netbios_pkt_wins(ClientNMB,
 				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
 			     name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
-			     False, True, ipzero, ipzero);
+			     ipzero, ipzero);
     }
   }
   else
@@ -308,7 +308,7 @@ for domain master on workgroup %s\n", myworkgroup));
 									   NAME_QUERY_DOMAIN,
 									   myworkgroup, 0x1b,
 									   0, 0,0,NULL,NULL,
-									   False, True, ipzero, ipzero);
+									   ipzero, ipzero);
 			}
 		}
 	}

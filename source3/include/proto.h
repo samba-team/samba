@@ -502,7 +502,6 @@ struct response_record *queue_netbios_pkt_wins(
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
-			    BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip);
 struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int fd,int quest_type,enum state_type state,char *name,

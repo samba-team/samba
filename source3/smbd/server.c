@@ -1985,9 +1985,10 @@ struct
   int new_smb_error;
   int old_smb_error;
   int protocol_level;
+  char *valid_remote_arch;
 } old_client_errmap[] =
 {
-  {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1},
+  {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1, "WinNT"},
   {0,0,0}
 };
 
@@ -1996,6 +1997,7 @@ struct
 ****************************************************************************/
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line)
 {
+  extern fstring remote_arch;
   int eclass=def_class;
   int ecode=def_code;
   int i=0;
@@ -2024,9 +2026,19 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
   /* Make sure we don't return error codes that old
      clients don't understand. */
 
+  /* JRA - unfortunately, WinNT needs some error codes
+     for apps to work correctly, Win95 will break if
+     these error codes are returned. But they both
+     negotiate the *same* protocol. So we need to use
+     the revolting 'remote_arch' string to tie break.
+
+     There must be a better way of doing this...
+  */
+
   for(i = 0; old_client_errmap[i].new_smb_error != 0; i++)
   {
-    if((Protocol < old_client_errmap[i].protocol_level) && 
+    if(((Protocol < old_client_errmap[i].protocol_level) ||
+       !strcsequal( old_client_errmap[i].valid_remote_arch, remote_arch)) &&
        (old_client_errmap[i].new_smb_error == ecode))
     {
       ecode = old_client_errmap[i].old_smb_error;
