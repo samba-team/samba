@@ -38,8 +38,10 @@ char *pvfs_short_name_component(struct pvfs_state *pvfs, const char *name)
   return the short name for a given entry in a directory
   TODO: this is obviously not very useful in its current form !
 */
-char *pvfs_short_name(struct pvfs_state *pvfs, struct pvfs_filename *name)
+char *pvfs_short_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, struct pvfs_filename *name)
 {
 	char *p = strrchr(name->full_name, '/');
-	return pvfs_short_name_component(pvfs, p+1);
+	char *ret = pvfs_short_name_component(pvfs, p+1);
+	talloc_steal(mem_ctx, ret);
+	return ret;
 }
