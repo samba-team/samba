@@ -1,3 +1,15 @@
+1999-08-21  Assar Westerlund  <assar@sics.se>
+
+	* random_password.c: new file, stolen from krb4
+
+	* kadmin_locl.h: add prototype for random_password
+
+	* cpw.c: add support for --random-password
+
+	* ank.c: add support for --random-password
+
+	* Makefile.am (kadmin_SOURCES): add random_password.c
+
 1999-08-19  Assar Westerlund  <assar@sics.se>
 
 	* util.c (edit_timet): break when we manage to parse the time not
