@@ -663,6 +663,8 @@ static void usage(char *pname)
 
 	sec_init();
 
+	load_case_tables();
+
 	append_log = True;
 
 	TimeInit();
