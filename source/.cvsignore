@@ -1,0 +1,10 @@
+Makefile.ajt
+nmbd
+nmblookup
+smbclient
+smbd
+smbpasswd
+smbrun
+smbstatus
+testparm
+testprns
