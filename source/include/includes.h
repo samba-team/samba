@@ -379,16 +379,6 @@
 #undef HAVE_KRB5
 #endif
 
-#if HAVE_LBER_H
-#include <lber.h>
-#endif
-
-#if HAVE_LDAP_H
-#include <ldap.h>
-#else
-#undef HAVE_LDAP
-#endif
-
 #if HAVE_GSSAPI_H
 #include <gssapi.h>
 #endif
