@@ -4,6 +4,8 @@
 # released under the GNU GPL
 package util;
 
+my %is_enum;
+
 #####################################################################
 # load a data structure from a file (as saved with SaveStructure)
 sub LoadStructure($)
@@ -200,6 +202,20 @@ sub property_matches($$$)
 	return undef;
 }
 
+my %enum_list;
+
+sub register_enum($)
+{
+	my $name = shift;
+	$enum_list{$name} = 1;
+}
+
+sub is_enum($)
+{
+	my $name = shift;
+	return defined $enum_list{$name}
+}
+
 sub is_scalar_type($)
 {
     my($type) = shift;
@@ -213,6 +229,10 @@ sub is_scalar_type($)
 	    return 1;
     }
 
+    if (is_enum($type)) {
+	    return 1;
+    }
+    
     return 0;
 }
 
