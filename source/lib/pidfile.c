@@ -69,7 +69,10 @@ pid_t pidfile_pid(char *name)
 	return 0;
 }
 
-/* create a pid file in the lock directory. open it and leave it locked */
+/* Create a pid file in the lock directory. open it and leave it locked.
+   This must be done after a call to lp_load() as it uses the lp_lockdir()
+   function to generate the path to the pidfile. */
+
 void pidfile_create(char *name)
 {
 	int     fd;
