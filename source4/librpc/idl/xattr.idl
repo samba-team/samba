@@ -47,4 +47,23 @@ interface xattr
 		uint16 num_eas;
 		[size_is(num_eas)] xattr_EA *eas;
 	} xattr_DosEAs;
+
+	/* we store stream information in this xattr structure. Then
+	   the streams themselves are stored in
+	   user.DosStream.STREAMNAME or in external files, according
+	   to the flags */
+	const string XATTR_DOSSTREAMS_NAME = "user.DosStreams";
+
+	const int XATTR_STREAM_FLAG_INTERNAL = 0x00000001;
+
+	typedef struct {
+		utf8string name;
+		uint64     size;
+		uint32     flags;
+	} xattr_DosStream;
+
+	typedef [public] struct {
+		uint32 num_streams;
+		[size_is(num_streams)] xattr_DosStream *streams;
+	} xattr_DosStreams;
 }

@@ -103,6 +103,10 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	uint32_t create_action;
 
+	if (name->stream_name) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
 	/* if the client says it must be a directory, and it isn't,
 	   then fail */
 	if (name->exists && !(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
@@ -180,8 +184,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		if (mkdir(name->full_name, mode) == -1) {
 			return pvfs_map_errno(pvfs,errno);
 		}
-		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname,
-					   PVFS_RESOLVE_NO_WILDCARD, &name);
+		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 0, &name);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -684,8 +687,7 @@ static NTSTATUS pvfs_open_t2open(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename *name;
 	NTSTATUS status;
 
-	status = pvfs_resolve_name(pvfs, req, io->t2open.in.fname,
-				   PVFS_RESOLVE_NO_WILDCARD, &name);
+	status = pvfs_resolve_name(pvfs, req, io->t2open.in.fname, 0, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -735,8 +737,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname,
-				   PVFS_RESOLVE_NO_WILDCARD, &name);
+	status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 
+				   PVFS_RESOLVE_STREAMS, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -826,8 +828,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		}
 
 		/* try re-resolving the name */
-		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname,
-					   PVFS_RESOLVE_NO_WILDCARD, &name);
+		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 0, &name);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

@@ -169,7 +169,7 @@ struct pvfs_mangle_context {
 
 
 /* flags to pvfs_resolve_name() */
-#define PVFS_RESOLVE_NO_WILDCARD (1<<0)
+#define PVFS_RESOLVE_WILDCARD    (1<<0)
 #define PVFS_RESOLVE_STREAMS     (1<<1)
 
 /* flags in pvfs->flags */

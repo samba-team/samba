@@ -39,8 +39,7 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, md->mkdir.in.path, 
-				   PVFS_RESOLVE_NO_WILDCARD, &name);
+	status = pvfs_resolve_name(pvfs, req, md->mkdir.in.path, 0, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -69,8 +68,7 @@ NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename *name;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, rd->in.path, 
-				   PVFS_RESOLVE_NO_WILDCARD, &name);
+	status = pvfs_resolve_name(pvfs, req, rd->in.path, 0, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
