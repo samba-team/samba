@@ -46,9 +46,9 @@ CLEANFILES = security.c security.h krb4.c gssapi.c ftpcmd.c
 man_MANS = ftpd.8 ftpusers.5
 
 LDADD = ../common/libcommon.a \
+	$(LIB_otp) \
 	$(LIB_kafs) \
 	$(LIB_gssapi) \
-	$(LIB_otp) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
 	$(LIB_des) \
