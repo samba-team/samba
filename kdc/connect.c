@@ -156,7 +156,7 @@ init_socket(struct descr *d, int family, int type, int port)
 #if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
     struct sockaddr_in6 sin6;
 #endif
-    int sa_len;
+    int sa_size;
 
     memset(d, 0, sizeof(*d));
     d->s = socket(family, type, 0);
@@ -179,7 +179,7 @@ init_socket(struct descr *d, int family, int type, int port)
 	sin.sin_port        = port;
 	sin.sin_addr.s_addr = INADDR_ANY;
 	sa = (struct sockaddr *)&sin;
-	sa_len = sizeof(sin);
+	sa_size = sizeof(sin);
 	break;
 #if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
     case AF_INET6 :
@@ -188,7 +188,7 @@ init_socket(struct descr *d, int family, int type, int port)
 	sin6.sin6_port   = port;
 	sin6.sin6_addr   = in6addr_any;
 	sa = (struct sockaddr *)&sin6;
-	sa_len = sizeof(sin6);
+	sa_size = sizeof(sin6);
 	break;
 #endif
     default :
@@ -198,7 +198,7 @@ init_socket(struct descr *d, int family, int type, int port)
 	return;
     }
 	
-    if(bind(d->s, sa, sa_len) < 0){
+    if(bind(d->s, sa, sa_size) < 0){
 	krb5_warn(context, errno, "bind(%d)", ntohs(port));
 	close(d->s);
 	d->s = -1;

@@ -181,7 +181,7 @@ krb5_sendto_kdc (krb5_context context,
 		 int ret;
 		 int family;
 		 struct sockaddr *sa;
-		 int sa_len;
+		 int sa_size;
 		 struct sockaddr_in sin;
 #if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
 		 struct sockaddr_in6 sin6;
@@ -199,7 +199,7 @@ krb5_sendto_kdc (krb5_context context,
 		 switch (family) {
 		 case AF_INET :
 		     memset(&sin, 0, sizeof(sin));
-		     sa_len = sizeof(sin);
+		     sa_size = sizeof(sin);
 		     sa = (struct sockaddr *)&sin;
 		     sin.sin_family = family;
 		     sin.sin_port   = init_port(colon, port);
@@ -208,7 +208,7 @@ krb5_sendto_kdc (krb5_context context,
 #if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
 		 case AF_INET6:
 		     memset(&sin6, 0, sizeof(sin6));
-		     sa_len = sizeof(sin6);
+		     sa_size = sizeof(sin6);
 		     sa = (struct sockaddr *)&sin6;
 		     sin6.sin6_family = family;
 		     sin6.sin6_port   = init_port(colon, port);
@@ -219,7 +219,7 @@ krb5_sendto_kdc (krb5_context context,
 		     continue;
 		 }
 
-		 if(connect(fd, sa, sa_len) < 0) {
+		 if(connect(fd, sa, sa_size) < 0) {
 		     close (fd);
 		     continue;
 		 }
