@@ -43,7 +43,7 @@ BOOL winbindd_fetch_gid_cache_entry(struct winbindd_domain *domain, gid_t gid,
 				    struct winbindd_gr *gr,
 				    void **extra_data, int *extra_data_len);
 void winbindd_flush_cache(void);
-void winbindd_cache_dump_status(void);
+void winbindd_cache_status(void);
 
 /* The following definitions come from nsswitch/winbindd_cm.c  */
 
@@ -56,6 +56,7 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
 CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
                                         uint32 group_rid);
 struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd);
+void winbindd_cm_status(void);
 
 /* The following definitions come from nsswitch/winbindd_group.c  */
 
@@ -82,7 +83,7 @@ BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
 BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid, 
                                      struct winbindd_domain **domain);
 BOOL winbindd_idmap_init(void);
-void winbindd_idmap_dump_status(void);
+void winbindd_idmap_status(void);
 
 /* The following definitions come from nsswitch/winbindd_misc.c  */
 

@@ -572,6 +572,6 @@ void winbindd_flush_cache(void)
 
 /* Print cache status information */
 
-void winbindd_cache_dump_status(void)
+void winbindd_cache_status(void)
 {
 }
