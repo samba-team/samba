@@ -45,6 +45,7 @@ static char *config_file;
 int loglevel = -2;
 int require_preauth = 1;
 char *keyfile;
+time_t kdc_warn_pwexpire;
 
 #ifdef KRB4
 char *v4_realm;
@@ -145,6 +146,15 @@ configure(int argc, char **argv)
 	    v4_realm = strdup(p);
     }
 #endif
+
+    p = krb5_config_get_string (cf,
+				"kdc",
+				"kdc_warn_pwexpire",
+				NULL);
+    if (p)
+	kdc_warn_pwexpire = parse_time (p);
+    else
+	kdc_warn_pwexpire = 0;
     
     krb5_config_file_free (cf);
 end:
