@@ -466,7 +466,7 @@ static BOOL smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 
 	if (rhost == NULL) {
 		our_rhost = client_name();
-		if (strequal(rhost,"UNKNOWN"))
+		if (strequal(our_rhost,"UNKNOWN"))
 			our_rhost = client_addr();
 	} else {
 		our_rhost = rhost;
