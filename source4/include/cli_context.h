@@ -189,6 +189,10 @@ struct smbcli_session {
 	/* default pid for this session */
 	uint32_t pid;
 
+	/* the flags2 for each packet - this allows
+	   the user to control these for torture testing */
+	uint16_t flags2;
+
 	DATA_BLOB user_session_key;
 
 	/* the spnego context if we use extented security */

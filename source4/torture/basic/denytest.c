@@ -1689,7 +1689,7 @@ static const char *bit_string(TALLOC_CTX *mem_ctx, const struct bit_value *bv, i
   determine if two opens conflict
 */
 static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2, uint32_t am2,
-				       enum deny_result *res)
+				       uint16_t flags2, enum deny_result *res)
 {
 #define CHECK_MASK(am, sa, right, share) do { \
 	if (((am) & (right)) && !((sa) & (share))) { \
@@ -1702,6 +1702,9 @@ static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2,
 		*res += A_W;
 	}
 	if (am2 & SA_RIGHT_FILE_READ_DATA) {
+		*res += A_R;
+	} else if ((am2 & SA_RIGHT_FILE_EXECUTE) && 
+		   (flags2 & FLAGS2_READ_PERMIT_EXECUTE)) {
 		*res += A_R;
 	}
 
@@ -1820,6 +1823,12 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 
 		status1 = smb_raw_open(cli1->tree, mem_ctx, &io1);
 		status2 = smb_raw_open(cli2->tree, mem_ctx, &io2);
+
+		if (random() % 2 == 0) {
+			cli2->tree->session->flags2 |= FLAGS2_READ_PERMIT_EXECUTE;
+		} else {
+			cli2->tree->session->flags2 &= ~FLAGS2_READ_PERMIT_EXECUTE;
+		}
 		
 		if (!NT_STATUS_IS_OK(status1)) {
 			res = A_X;
@@ -1847,7 +1856,9 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		status2_p = predict_share_conflict(io1.ntcreatex.in.share_access,
 						   io1.ntcreatex.in.access_mask,
 						   io2.ntcreatex.in.share_access,
-						   io2.ntcreatex.in.access_mask, &res2);
+						   io2.ntcreatex.in.access_mask, 
+						   cli2->tree->session->flags2,
+						   &res2);
 		
 		GetTimeOfDay(&tv);
 		tdif = usec_time_diff(&tv, &tv_start);
