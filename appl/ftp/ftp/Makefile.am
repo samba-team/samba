@@ -9,7 +9,7 @@ bin_PROGRAMS = ftp
 CHECK_LOCAL = 
 
 if KRB4
-krb4_sources = krb4.c kauth.c
+krb4_sources = krb4.c
 endif
 if KRB5
 krb5_sources = gssapi.c
@@ -29,10 +29,11 @@ ftp_SOURCES = \
 	globals.c \
 	security.c \
 	security.h \
+	kauth.c \
 	$(krb4_sources) \
 	$(krb5_sources)
 
-EXTRA_ftp_SOURCES = krb4.c kauth.c gssapi.c
+EXTRA_ftp_SOURCES = krb4.c gssapi.c
 
 man_MANS = ftp.1
 
