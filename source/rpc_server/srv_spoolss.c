@@ -968,6 +968,41 @@ static BOOL api_spoolss_enumprintprocessors(uint16 vuid, prs_struct *data, prs_s
 
 /****************************************************************************
 ****************************************************************************/
+static BOOL api_spoolss_enumprintprocdatatypes(uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	SPOOL_Q_ENUMPRINTPROCDATATYPES q_u;
+	SPOOL_R_ENUMPRINTPROCDATATYPES r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	new_spoolss_allocate_buffer(&q_u.buffer);
+
+	if(!spoolss_io_q_enumprintprocdatatypes("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_enumprintprocdatatypes: unable to unmarshall SPOOL_Q_ENUMPRINTPROCDATATYPES.\n"));
+		return False;
+	}
+	
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
+	
+	r_u.status = _spoolss_enumprintprocdatatypes(&q_u.name, &q_u.processor, q_u.level,
+						     r_u.buffer, q_u.offered,
+						     &r_u.needed, &r_u.returned);
+
+	if(!spoolss_io_r_enumprintprocdatatypes("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_enumprintprocdatatypes: unable to marshall SPOOL_R_ENUMPRINTPROCDATATYPES.\n"));
+		new_spoolss_free_buffer(q_u.buffer);
+		return False;
+	}
+	
+	new_spoolss_free_buffer(q_u.buffer);
+	
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
 static BOOL api_spoolss_enumprintmonitors(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTMONITORS q_u;
@@ -1069,6 +1104,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMPRINTPROCESSORS",       SPOOLSS_ENUMPRINTPROCESSORS,       api_spoolss_enumprintprocessors       },
  {"SPOOLSS_ENUMMONITORS",              SPOOLSS_ENUMMONITORS,              api_spoolss_enumprintmonitors         },
  {"SPOOLSS_GETJOB",                    SPOOLSS_GETJOB,                    api_spoolss_getjob                    },
+ {"SPOOLSS_ENUMPRINTPROCDATATYPES",    SPOOLSS_ENUMPRINTPROCDATATYPES,    api_spoolss_enumprintprocdatatypes    },
  { NULL,                               0,                                 NULL                                  }
 };
 

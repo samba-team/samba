@@ -2126,6 +2126,23 @@ BOOL smb_io_printprocessor_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR
 
 /*******************************************************************
 ********************************************************************/  
+BOOL smb_io_printprocdatatype_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCDATATYPE_1 *info, int depth)
+{
+	prs_struct *ps=&(buffer->prs);
+
+	prs_debug(ps, depth, desc, "smb_io_printprocdatatype_info_1");
+	depth++;	
+
+	buffer->struct_start=prs_offset(ps);
+	
+	if (new_smb_io_relstr("name", buffer, depth, &info->name))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
 BOOL smb_io_printmonitor_info_1(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_1 *info, int depth)
 {
 	prs_struct *ps=&(buffer->prs);
@@ -2410,6 +2427,17 @@ uint32 spoolss_size_port_info_2(PORT_INFO_2 *info)
 return the size required by a struct in the stream
 ********************************************************************/  
 uint32 spoolss_size_printprocessor_info_1(PRINTPROCESSOR_1 *info)
+{
+	int size=0;
+	size+=size_of_relative_string( &info->name );
+
+	return size;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/  
+uint32 spoolss_size_printprocdatatype_info_1(PRINTPROCDATATYPE_1 *info)
 {
 	int size=0;
 	size+=size_of_relative_string( &info->name );
@@ -3704,6 +3732,76 @@ BOOL spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q
 		return False;
 		
 	if(!new_spoolss_io_buffer("", ps, depth, q_u->buffer))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("offered", ps, depth, &q_u->offered))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+BOOL spoolss_io_r_enumprintprocdatatypes(char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth)
+{		
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintprocdatatypes");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+		
+	if (!new_spoolss_io_buffer("", ps, depth, r_u->buffer))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+		
+	if (!prs_uint32("returned", ps, depth, &r_u->returned))
+		return False;
+		
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;		
+}
+
+/*******************************************************************
+********************************************************************/  
+BOOL spoolss_io_q_enumprintprocdatatypes(char *desc, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, prs_struct *ps, int depth)
+{
+	uint32 useless;
+	prs_debug(ps, depth, desc, "spoolss_io_q_enumprintprocdatatypes");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("name_ptr", ps, depth, &q_u->name_ptr))
+		return False;
+	if (!smb_io_unistr2("name", &q_u->name, True, ps, depth))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("processor_ptr", ps, depth, &q_u->processor_ptr))
+		return False;
+	if (!smb_io_unistr2("processor", &q_u->processor, q_u->processor_ptr, ps, depth))
+		return False;
+	
+	if (!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("level", ps, depth, &q_u->level))
+		return False;
+		
+	if(!new_spoolss_io_buffer("buffer", ps, depth, q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))

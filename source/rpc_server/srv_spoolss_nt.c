@@ -3849,7 +3849,56 @@ uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 
 		return NT_STATUS_INVALID_INFO_CLASS;
 		break;
 	}
+}
 
+/****************************************************************************
+ enumprintprocdatatypes level 1.
+****************************************************************************/
+static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+{
+	PRINTPROCDATATYPE_1 *info_1=NULL;
+	
+	info_1 = (PRINTPROCDATATYPE_1 *)malloc(sizeof(PRINTPROCDATATYPE_1));
+	(*returned) = 0x1;
+	
+	init_unistr(&(info_1->name), "RAW");
+
+	*needed += spoolss_size_printprocdatatype_info_1(info_1);
+
+	if (!alloc_buffer_size(buffer, *needed))
+		return ERROR_INSUFFICIENT_BUFFER;
+
+	smb_io_printprocdatatype_info_1("", buffer, info_1, 0);
+
+	safe_free(info_1);
+
+	if (*needed > offered) {
+		*returned=0;
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+	else
+		return NT_STATUS_NO_PROBLEMO;
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32 level,
+					NEW_BUFFER *buffer, uint32 offered, 
+					uint32 *needed, uint32 *returned)
+{
+ 	DEBUG(5,("_spoolss_enumprintprocdatatypes\n"));
+	
+	*returned=0;
+	*needed=0;
+	
+	switch (level) {
+	case 1:
+		return enumprintprocdatatypes_level_1(buffer, offered, needed, returned);
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+		break;
+	}
 }
 
 /****************************************************************************
