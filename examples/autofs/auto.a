@@ -9,10 +9,7 @@ valepp		-fstype=nfs,rsize=8192,wsize=8192		valepp:/
 galaun		-fstype=nfs,rsize=8192,wsize=8192		galaun:/
 
 # smb-servers
-supra_andreas	-fstype=smb,uuname=andreas			supra:/aheinrich
-supra_cspiel	-fstype=smb,uuname=cspiel			supra:/cspiel
-phonon_andreas	-fstype=smb,uuname=andreas,fmod=3700		phonon:/andreas
-helium_cspiel	-fstype=smb,uuname=cspiel,fmod=3700		helium:/cspiel
-
-#supra_jaz       -fstype=smb,user,fmod=644,dmod=755		supra:/f
-
+supra_andreas	-fstype=smb,username=andreas,password=foo	://supra/aheinrich
+supra_cspiel	-fstype=smb,username=cspiel			://supra/cspiel
+phonon_andreas	-fstype=smb,username=andreas			://phonon/andreas
+helium_cspiel	-fstype=smb,username=cspiel			://helium/cspiel

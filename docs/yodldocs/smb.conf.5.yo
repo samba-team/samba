@@ -230,7 +230,6 @@ would look like this:
 verb(
  	[printers]
  		path = /usr/spool/public
- 		writeable = no
  		guest ok = yes
  		printable = yes 
 )
@@ -4760,7 +4759,7 @@ find the printer driver files for the automatic installation of
 drivers for Windows 95 machines. If Samba is set up to serve printer
 drivers to Windows 95 machines, this should be set to
 
-tt(\\MACHINE\aPRINTER$)
+tt(\\MACHINE\PRINTER$)
 
 Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$
 is a share you set up for serving printer driver files. For more
