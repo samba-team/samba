@@ -2018,9 +2018,7 @@ BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
-	uint32 sec_offset;
 	prs_struct *ps=&buffer->prs;
-	uint32 dummy = 0;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
 	depth++;	
@@ -2055,13 +2053,8 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-#if 0 /* JFMTEST */
-	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, &dummy, &sec_offset))
-		return False;
-#else
 	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
 		return False;
-#endif
 
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
 		return False;
@@ -2845,38 +2838,8 @@ uint32 spoolss_size_printer_driver_info_2(DRIVER_INFO_2 *info)
 }
 
 /*******************************************************************
-return the size required by a struct in the stream
+return the size required by a string array.
 ********************************************************************/
-uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
-{
-	int size=0;
-	uint16 *string;
-	int i=0;
-
-	size+=size_of_uint32( &info->version );	
-	size+=size_of_relative_string( &info->name );
-	size+=size_of_relative_string( &info->architecture );
-	size+=size_of_relative_string( &info->driverpath );
-	size+=size_of_relative_string( &info->datafile );
-	size+=size_of_relative_string( &info->configfile );
-	size+=size_of_relative_string( &info->helpfile );
-	size+=size_of_relative_string( &info->monitorname );
-	size+=size_of_relative_string( &info->defaultdatatype );
-	
-	string=info->dependentfiles;
-	if (string) {
-		for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
-	}
-
-	i=i+2; /* to count all chars including the leading zero */
-	i=2*i; /* because we need the value in bytes */
-	i=i+4; /* the offset pointer size */
-
-	size+=i;
-
-	return size;
-}
-
 uint32 spoolss_size_string_array(uint16 *string)
 {
 	uint32 i = 0;
@@ -2889,6 +2852,28 @@ uint32 spoolss_size_string_array(uint16 *string)
 	i=i+4; /* the offset pointer size */
 
 	return i;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
+{
+	int size=0;
+
+	size+=size_of_uint32( &info->version );	
+	size+=size_of_relative_string( &info->name );
+	size+=size_of_relative_string( &info->architecture );
+	size+=size_of_relative_string( &info->driverpath );
+	size+=size_of_relative_string( &info->datafile );
+	size+=size_of_relative_string( &info->configfile );
+	size+=size_of_relative_string( &info->helpfile );
+	size+=size_of_relative_string( &info->monitorname );
+	size+=size_of_relative_string( &info->defaultdatatype );
+	
+	size+=spoolss_size_string_array(info->dependentfiles);
+
+	return size;
 }
 
 /*******************************************************************
@@ -3140,7 +3125,7 @@ BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
 	
 	if(!prs_align(ps))
 		return False;
-		if(!prs_uint32("level", ps, depth, &q_u->level))
+	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
 	if(!new_spoolss_io_buffer("", ps, depth, q_u->buffer))

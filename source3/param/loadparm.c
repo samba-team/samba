@@ -988,6 +988,92 @@ static struct parm_struct parm_table[] = {
 };
 
 
+/***************************************************************************
+Initialise the sDefault parameter structure for the printer values.
+***************************************************************************/
+static void init_printer_values(void)
+{
+	string_set(&sDefault.szPrinterDriver, "");
+	string_set(&sDefault.szDriverFile, DRIVERFILE);
+
+	/* choose defaults depending on the type of printing */
+	switch (sDefault.iPrinting)
+	{
+		case PRINT_BSD:
+		case PRINT_AIX:
+			string_set(&sDefault.szLpqcommand, "lpq -P%p");
+			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
+			string_set(&sDefault.szPrintcommand,
+				   "lpr -r -P%p %s");
+			break;
+
+		case PRINT_LPRNG:
+		case PRINT_PLP:
+			string_set(&sDefault.szLpqcommand, "lpq -P%p");
+			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
+			string_set(&sDefault.szPrintcommand,
+				   "lpr -r -P%p %s");
+			string_set(&sDefault.szQueuepausecommand,
+				   "lpc stop %p");
+			string_set(&sDefault.szQueueresumecommand,
+				   "lpc start %p");
+			string_set(&sDefault.szLppausecommand,
+				   "lpc hold %p %j");
+			string_set(&sDefault.szLpresumecommand,
+				   "lpc release %p %j");
+			break;
+
+		case PRINT_CUPS:
+			string_set(&sDefault.szLpqcommand,
+				   "/usr/bin/lpstat -o%p");
+			string_set(&sDefault.szLprmcommand,
+				   "/usr/bin/cancel %p-%j");
+			string_set(&sDefault.szPrintcommand,
+				   "/usr/bin/lp -d%p -oraw %s; rm %s");
+			string_set(&sDefault.szQueuepausecommand,
+				   "/usr/bin/disable %p");
+			string_set(&sDefault.szQueueresumecommand,
+				   "/usr/bin/enable %p");
+			break;
+
+		case PRINT_SYSV:
+		case PRINT_HPUX:
+			string_set(&sDefault.szLpqcommand, "lpstat -o%p");
+			string_set(&sDefault.szLprmcommand, "cancel %p-%j");
+			string_set(&sDefault.szPrintcommand,
+				   "lp -c -d%p %s; rm %s");
+			string_set(&sDefault.szQueuepausecommand,
+				   "disable %p");
+			string_set(&sDefault.szQueueresumecommand,
+				   "enable %p");
+#ifndef HPUX
+			string_set(&sDefault.szLppausecommand,
+				   "lp -i %p-%j -H hold");
+			string_set(&sDefault.szLpresumecommand,
+				   "lp -i %p-%j -H resume");
+#endif /* SYSV */
+			break;
+
+		case PRINT_QNX:
+			string_set(&sDefault.szLpqcommand, "lpq -P%p");
+			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
+			string_set(&sDefault.szPrintcommand, "lp -r -P%p %s");
+			break;
+
+		case PRINT_SOFTQ:
+			string_set(&sDefault.szLpqcommand, "qstat -l -d%p");
+			string_set(&sDefault.szLprmcommand,
+				   "qstat -s -j%j -c");
+			string_set(&sDefault.szPrintcommand,
+				   "lp -d%p -s %s; rm %s");
+			string_set(&sDefault.szLppausecommand,
+				   "qstat -s -j%j -h");
+			string_set(&sDefault.szLpresumecommand,
+				   "qstat -s -j%j -r");
+			break;
+
+	}
+}
 
 /***************************************************************************
 Initialise the global parameter structure.
@@ -1009,8 +1095,9 @@ static void init_globals(void)
 				string_set(parm_table[i].ptr, "");
 
 		string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
-		string_set(&sDefault.szPrinterDriver, "");
 		string_set(&sDefault.fstype, FSTYPE_STRING);
+
+		init_printer_values();
 
 		done_init = True;
 	}
@@ -1171,92 +1258,6 @@ static void init_globals(void)
 	 */
 
 	interpret_coding_system(KANJI);
-}
-
-/***************************************************************************
-Initialise the sDefault parameter structure.
-***************************************************************************/
-static void init_locals(void)
-{
-	string_set(&sDefault.szDriverFile, DRIVERFILE);
-
-	/* choose defaults depending on the type of printing */
-	switch (sDefault.iPrinting)
-	{
-		case PRINT_BSD:
-		case PRINT_AIX:
-			string_set(&sDefault.szLpqcommand, "lpq -P%p");
-			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
-			string_set(&sDefault.szPrintcommand,
-				   "lpr -r -P%p %s");
-			break;
-
-		case PRINT_LPRNG:
-		case PRINT_PLP:
-			string_set(&sDefault.szLpqcommand, "lpq -P%p");
-			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
-			string_set(&sDefault.szPrintcommand,
-				   "lpr -r -P%p %s");
-			string_set(&sDefault.szQueuepausecommand,
-				   "lpc stop %p");
-			string_set(&sDefault.szQueueresumecommand,
-				   "lpc start %p");
-			string_set(&sDefault.szLppausecommand,
-				   "lpc hold %p %j");
-			string_set(&sDefault.szLpresumecommand,
-				   "lpc release %p %j");
-			break;
-
-		case PRINT_CUPS:
-			string_set(&sDefault.szLpqcommand,
-				   "/usr/bin/lpstat -o%p");
-			string_set(&sDefault.szLprmcommand,
-				   "/usr/bin/cancel %p-%j");
-			string_set(&sDefault.szPrintcommand,
-				   "/usr/bin/lp -d%p -oraw %s; rm %s");
-			string_set(&sDefault.szQueuepausecommand,
-				   "/usr/bin/disable %p");
-			string_set(&sDefault.szQueueresumecommand,
-				   "/usr/bin/enable %p");
-			break;
-
-		case PRINT_SYSV:
-		case PRINT_HPUX:
-			string_set(&sDefault.szLpqcommand, "lpstat -o%p");
-			string_set(&sDefault.szLprmcommand, "cancel %p-%j");
-			string_set(&sDefault.szPrintcommand,
-				   "lp -c -d%p %s; rm %s");
-			string_set(&sDefault.szQueuepausecommand,
-				   "disable %p");
-			string_set(&sDefault.szQueueresumecommand,
-				   "enable %p");
-#ifndef HPUX
-			string_set(&sDefault.szLppausecommand,
-				   "lp -i %p-%j -H hold");
-			string_set(&sDefault.szLpresumecommand,
-				   "lp -i %p-%j -H resume");
-#endif /* SYSV */
-			break;
-
-		case PRINT_QNX:
-			string_set(&sDefault.szLpqcommand, "lpq -P%p");
-			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
-			string_set(&sDefault.szPrintcommand, "lp -r -P%p %s");
-			break;
-
-		case PRINT_SOFTQ:
-			string_set(&sDefault.szLpqcommand, "qstat -l -d%p");
-			string_set(&sDefault.szLprmcommand,
-				   "qstat -s -j%j -c");
-			string_set(&sDefault.szPrintcommand,
-				   "lp -d%p -s %s; rm %s");
-			string_set(&sDefault.szLppausecommand,
-				   "qstat -s -j%j -h");
-			string_set(&sDefault.szLpresumecommand,
-				   "qstat -s -j%j -r");
-			break;
-
-	}
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -2652,6 +2653,15 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			break;
 	}
 	return (False);
+}
+
+/***************************************************************************
+ Initialize any local varients in the sDefault table.
+***************************************************************************/
+
+void init_locals(void)
+{
+	/* None as yet. */
 }
 
 /***************************************************************************
