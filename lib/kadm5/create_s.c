@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -99,7 +99,11 @@ kadm5_s_create_principal(void *server_handle,
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = hdb_pw_salt;
     ent.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
+    ent.keys.val[1].salt = calloc(1, sizeof(*ent.keys.val[1].salt));
+    ent.keys.val[1].salt->type = hdb_pw_salt;
     ent.keys.val[2].key.keytype = ETYPE_DES_CBC_MD5;
+    ent.keys.val[2].salt = calloc(1, sizeof(*ent.keys.val[2].salt));
+    ent.keys.val[2].salt->type = hdb_pw_salt;
     ent.keys.val[3].key.keytype = ETYPE_DES3_CBC_SHA1;
     ret = _kadm5_set_keys(context, &ent, password);
 
