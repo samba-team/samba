@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd July 22, 2003
+.Dd November  9, 2003
 .Dt KRB5_TICKET 3
 .Os HEIMDAL
 .Sh NAME
@@ -78,21 +78,23 @@ The internals of the structure should never be accessed directly,
 functions exist for extracting information.
 .Pp
 .Fn krb5_free_ticket
-frees the contents of the
-.Fa ticket .
+frees the
+.Fa ticket
+and its content .
+Used to free the result of
+.Fn krb5_copy_ticket
+and
+.Fn krb5_recvauth .
 .Pp
 .Fn krb5_copy_ticket
 copies the content of the ticket
 .Fa from
 to the ticket
 .Fa to .
-The content of
+The result
 .Fa to
 should be freed with
 .Fn krb5_free_ticket .
-.Fa to
-itself should be freed with
-.Xr free 3 .
 .Pp
 .Fn krb5_ticket_get_client
 and
@@ -100,6 +102,5 @@ and
 returns a copy of the client/server principal from the ticket.
 The principal returned should be free using
 .Xr krb5_free_principal 3 .
-.\" .Sh EXAMPLES
 .Sh SEE ALSO
 .Xr krb5 3
