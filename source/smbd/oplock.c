@@ -34,6 +34,8 @@ BOOL global_oplock_break = False;
 
 extern int smb_read_error;
 
+static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
+
 
 /****************************************************************************
   open the oplock IPC socket communication
@@ -230,7 +232,7 @@ pid %d, port %d, dev = %x, inode = %lx\n", remotepid, from_port, (unsigned int)d
 /****************************************************************************
  Process an oplock break directly.
 ****************************************************************************/
-BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
+static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 {
   extern struct current_user current_user;
   extern int Client;

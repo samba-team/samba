@@ -45,21 +45,6 @@ void set_samba_nb_type(void)
   } /* set_samba_nb_type */
 
 /* ************************************************************************** **
- * Returns True if the netbios name is ^1^2__MSBROWSE__^2^1.
- *
- * Note: This name is registered if as a master browser or backup browser
- * you are responsible for a workgroup (when you announce a domain by
- * broadcasting on your local subnet, you announce it as coming from this
- * name: see announce_host()).
- *
- * ************************************************************************** **
- */
-BOOL ms_browser_name( char *name, int type )
-  {
-  return( strequal( name, MSBROWSE ) && (type == 0x01) );
-  } /* ms_browser_name */
-
-/* ************************************************************************** **
  * Convert a NetBIOS name to upper case.
  * ************************************************************************** **
  */

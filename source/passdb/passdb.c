@@ -209,38 +209,6 @@ struct smb_passwd *getsmbpwent(void *vp)
 	return pdb_ops->getsmbpwent(vp);
 }
 
-/*************************************************************************
- Return the current position in the smb passwd list as an unsigned long.
- This must be treated as an opaque token.
-
- Note that currently it is being assumed that a pointer returned
- from this function may be used to enumerate struct sam_passwd  
- entries as well as struct smb_passwd entries. This may need  
- to change. JRA. 
-
- *************************************************************************/
-
-unsigned long getsmbpwpos(void *vp)
-{
-  return pdb_ops->getsmbpwpos(vp);
-}
-
-/*************************************************************************
- Set the current position in the smb passwd list from unsigned long.
- This must be treated as an opaque token.
-
- Note that currently it is being assumed that a pointer returned
- from this function may be used to enumerate struct sam_passwd  
- entries as well as struct smb_passwd entries. This may need  
- to change. JRA. 
-
- *************************************************************************/
-
-BOOL setsmbpwpos(void *vp, unsigned long tok)
-{
-  return pdb_ops->setsmbpwpos(vp, tok);
-}
-
 /************************************************************************
  Routine to add an entry to the smb passwd file.
 *************************************************************************/
@@ -394,14 +362,6 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 }
 
 /*************************************************************************
- Routine to return a display info structure, by name
- *************************************************************************/
-struct sam_disp_info *getsamdispnam(char *name)
-{
-	return pdb_ops->getsamdispnam(name);
-}
-
-/*************************************************************************
  Routine to return a display info structure, by rid
  *************************************************************************/
 struct sam_disp_info *getsamdisprid(uint32 rid)
@@ -412,41 +372,10 @@ struct sam_disp_info *getsamdisprid(uint32 rid)
 /*************************************************************************
  Routine to return the next entry in the sam passwd list.
  *************************************************************************/
-struct sam_disp_info *getsamdispent(void *vp)
-{
-	return pdb_ops->getsamdispent(vp);
-}
-
-/*************************************************************************
- Routine to return the next entry in the sam passwd list.
- *************************************************************************/
 
 struct sam_passwd *getsam21pwent(void *vp)
 {
 	return pdb_ops->getsam21pwent(vp);
-}
-
-/************************************************************************
- Routine to add an entry to the sam passwd file.
-*************************************************************************/
-
-BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
-{
-	return pdb_ops->add_sam21pwd_entry(newpwd);
-}
-
-/************************************************************************
- Routine to search the sam passwd database for an entry matching the username.
- and then modify its password entry. We can't use the startsampwent()/
- getsampwent()/endsampwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out password or NO PASS
-************************************************************************/
-
-BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
-{
-	return pdb_ops->mod_sam21pwd_entry(pwd, override);
 }
 
 
@@ -468,17 +397,6 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
 	return pdb_ops->getsam21pwrid(rid);
 }
 
-/************************************************************************
- Routine to search sam passwd by uid.  
-*************************************************************************/
-
-struct sam_passwd *getsam21pwuid(uid_t uid)
-{
-	return pdb_ops->getsam21pwuid(uid);
-}
-
-
-
 
 /**********************************************************
  **********************************************************
@@ -493,7 +411,7 @@ struct sam_passwd *getsam21pwuid(uid_t uid)
  initialises a struct sam_disp_info.
  **************************************************************/
 
-void pdb_init_dispinfo(struct sam_disp_info *user)
+static void pdb_init_dispinfo(struct sam_disp_info *user)
 {
 	if (user == NULL) return;
 	bzero(user, sizeof(*user));
@@ -566,128 +484,10 @@ struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
 	return &pw_buf;
 }
 
-/*************************************************************
- converts a smb_passwd structure to a sam_passwd structure.
- **************************************************************/
-
-struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
-{
-	static struct sam_passwd pw_buf;
-
-	if (user == NULL) return NULL;
-
-	pdb_init_sam(&pw_buf);
-
-	pw_buf.smb_userid         = user->smb_userid;
-	pw_buf.smb_name           = user->smb_name;
-	pw_buf.smb_passwd         = user->smb_passwd;
-	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
-	pw_buf.acct_ctrl          = user->acct_ctrl;
-	pw_buf.pass_last_set_time = user->pass_last_set_time;
-
-	return &pw_buf;
-}
-
-
-/*******************************************************************
- gets password-database-format time from a string.
- ********************************************************************/
-
-static time_t get_time_from_string(char *p)
-{
-	int i;
-
-	for (i = 0; i < 8; i++)
-	{
-		if (p[i] == '\0' || !isxdigit((int)p[i]))
-		break;
-	}
-	if (i == 8)
-	{
-		/*
-		 * p points at 8 characters of hex digits - 
-		 * read into a time_t as the seconds since
-		 * 1970 that the password was last changed.
-		 */
-		return (time_t)strtol((char *)p, NULL, 16);
-	}
-	return (time_t)-1;
-}
-
-/*******************************************************************
- gets password last set time
- ********************************************************************/
-
-time_t pdb_get_last_set_time(char *p)
-{
-	if (*p && StrnCaseCmp((char *)p, "LCT-", 4))
-	{
-		return get_time_from_string(p + 4);
-	}
-	return (time_t)-1;
-}
-
-
-/*******************************************************************
- sets password-database-format time in a string.
- ********************************************************************/
-static void set_time_in_string(char *p, int max_len, char *type, time_t t)
-{
-	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
-}
-
-/*******************************************************************
- sets logon time
- ********************************************************************/
-void pdb_set_logon_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LNT", t);
-}
-
-/*******************************************************************
- sets logoff time
- ********************************************************************/
-void pdb_set_logoff_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LOT", t);
-}
-
-/*******************************************************************
- sets kickoff time
- ********************************************************************/
-void pdb_set_kickoff_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "KOT", t);
-}
-
-/*******************************************************************
- sets password can change time
- ********************************************************************/
-void pdb_set_can_change_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "CCT", t);
-}
-
-/*******************************************************************
- sets password last set time
- ********************************************************************/
-void pdb_set_must_change_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "MCT", t);
-}
-
-/*******************************************************************
- sets password last set time
- ********************************************************************/
-void pdb_set_last_set_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LCT", t);
-}
 
 /**********************************************************
  Encode the account control bits into a string.
  **********************************************************/
-
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl)
 {
   static fstring acct_str;
@@ -794,32 +594,6 @@ BOOL pdb_gethexpwd(char *p, char *pwd)
 		pwd[i / 2] = (hinybble << 4) | lonybble;
 	}
 	return (True);
-}
-
-/*************************************************************
- Routine to set 32 hex password characters from a 16 byte array.
-**************************************************************/
-void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
-{
-	if (pwd != NULL)
-	{
-		int i;
-		for (i = 0; i < 16; i++)
-		{
-			slprintf(&p[i*2], 33, "%02X", pwd[i]);
-		}
-	}
-	else
-	{
-		if (IS_BITS_SET_ALL(acct_ctrl, ACB_PWNOTREQ))
-		{
-			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
-		}
-		else
-		{
-			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
-		}
-	}
 }
 
 /*******************************************************************
@@ -1059,24 +833,6 @@ Error was %s\n", sid_file, strerror(errno) ));
 }   
 
 /*******************************************************************
- converts NT User RID to a UNIX uid.
- ********************************************************************/
-
-uid_t pdb_user_rid_to_uid(uint32 u_rid)
-{
-  return (uid_t)((u_rid / RID_MULTIPLIER) - 1000);
-}
-
-/*******************************************************************
- converts NT Group RID to a UNIX uid.
- ********************************************************************/
-
-gid_t pdb_group_rid_to_gid(uint32 g_rid)
-{
-  return (gid_t)((g_rid / RID_MULTIPLIER) - 1000);
-}
-
-/*******************************************************************
  converts UNIX uid to an NT User RID.
  ********************************************************************/
 
@@ -1098,7 +854,7 @@ uint32 pdb_gid_to_group_rid(gid_t gid)
  Decides if a RID is a well known RID.
  ********************************************************************/
 
-BOOL pdb_rid_is_well_known(uint32 rid)
+static BOOL pdb_rid_is_well_known(uint32 rid)
 {
   return (rid < 1000);
 }

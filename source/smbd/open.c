@@ -589,6 +589,102 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 }
 
 
+enum {AFAIL,AREAD,AWRITE,AALL};
+
+/*******************************************************************
+reproduce the share mode access table
+********************************************************************/
+static int access_table(int new_deny,int old_deny,int old_mode,
+			int share_pid,char *fname)
+{
+  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
+
+  if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
+    int pid = getpid();
+    if (old_deny == new_deny && share_pid == pid) 
+	return(AALL);    
+
+    if (old_mode == 0) return(AREAD);
+
+    /* the new smbpub.zip spec says that if the file extension is
+       .com, .dll, .exe or .sym then allow the open. I will force
+       it to read-only as this seems sensible although the spec is
+       a little unclear on this. */
+    if ((fname = strrchr(fname,'.'))) {
+      if (strequal(fname,".com") ||
+	  strequal(fname,".dll") ||
+	  strequal(fname,".exe") ||
+	  strequal(fname,".sym"))
+	return(AREAD);
+    }
+
+    return(AFAIL);
+  }
+
+  switch (new_deny) 
+    {
+    case DENY_WRITE:
+      if (old_deny==DENY_WRITE && old_mode==0) return(AREAD);
+      if (old_deny==DENY_READ && old_mode==0) return(AWRITE);
+      if (old_deny==DENY_NONE && old_mode==0) return(AALL);
+      return(AFAIL);
+    case DENY_READ:
+      if (old_deny==DENY_WRITE && old_mode==1) return(AREAD);
+      if (old_deny==DENY_READ && old_mode==1) return(AWRITE);
+      if (old_deny==DENY_NONE && old_mode==1) return(AALL);
+      return(AFAIL);
+    case DENY_NONE:
+      if (old_deny==DENY_WRITE) return(AREAD);
+      if (old_deny==DENY_READ) return(AWRITE);
+      if (old_deny==DENY_NONE) return(AALL);
+      return(AFAIL);      
+    }
+  return(AFAIL);      
+}
+
+
+/****************************************************************************
+check if we can open a file with a share mode
+****************************************************************************/
+static int check_share_mode( share_mode_entry *share, int deny_mode, 
+			     char *fname,
+			     BOOL fcbopen, int *flags)
+{
+  int old_open_mode = share->share_mode &0xF;
+  int old_deny_mode = (share->share_mode >>4)&7;
+
+  if (old_deny_mode > 4 || old_open_mode > 2)
+  {
+    DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
+               deny_mode,old_deny_mode,old_open_mode,fname));
+    return False;
+  }
+
+  {
+    int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
+                                share->pid,fname);
+
+    if ((access_allowed == AFAIL) ||
+        (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
+        (access_allowed == AREAD && *flags == O_WRONLY) ||
+        (access_allowed == AWRITE && *flags == O_RDONLY))
+    {
+      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
+                deny_mode,old_deny_mode,old_open_mode,
+                share->pid,fname, fcbopen, *flags, access_allowed));
+      return False;
+    }
+
+    if (access_allowed == AREAD)
+      *flags = O_RDONLY;
+
+    if (access_allowed == AWRITE)
+      *flags = O_WRONLY;
+
+  }
+  return True;
+}
+
 
 /****************************************************************************
 open a file with a share mode
@@ -852,7 +948,7 @@ dev = %x, inode = %lx\n", old_shares[i].op_type, fname, (unsigned int)dev, (unsi
 dev = %x, inode = %.0f\n", oplock_request, fname, (unsigned int)dev, (double)inode));
 #else /* LARGE_SMB_INO_T */
         DEBUG(5,("open_file_shared: granted oplock (%x) on file %s, \
-dev = %x, inode = %lx\n", oplock_request, fname, (unsigned int)dev, (double)inode));
+dev = %x, inode = %lx\n", oplock_request, fname, (unsigned int)dev, (unsigned long)inode));
 #endif /* LARGE_SMB_INO_T */
 
       }
@@ -953,58 +1049,6 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	return 0;
 }
 
-enum {AFAIL,AREAD,AWRITE,AALL};
-
-/*******************************************************************
-reproduce the share mode access table
-********************************************************************/
-static int access_table(int new_deny,int old_deny,int old_mode,
-			int share_pid,char *fname)
-{
-  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
-
-  if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
-    int pid = getpid();
-    if (old_deny == new_deny && share_pid == pid) 
-	return(AALL);    
-
-    if (old_mode == 0) return(AREAD);
-
-    /* the new smbpub.zip spec says that if the file extension is
-       .com, .dll, .exe or .sym then allow the open. I will force
-       it to read-only as this seems sensible although the spec is
-       a little unclear on this. */
-    if ((fname = strrchr(fname,'.'))) {
-      if (strequal(fname,".com") ||
-	  strequal(fname,".dll") ||
-	  strequal(fname,".exe") ||
-	  strequal(fname,".sym"))
-	return(AREAD);
-    }
-
-    return(AFAIL);
-  }
-
-  switch (new_deny) 
-    {
-    case DENY_WRITE:
-      if (old_deny==DENY_WRITE && old_mode==0) return(AREAD);
-      if (old_deny==DENY_READ && old_mode==0) return(AWRITE);
-      if (old_deny==DENY_NONE && old_mode==0) return(AALL);
-      return(AFAIL);
-    case DENY_READ:
-      if (old_deny==DENY_WRITE && old_mode==1) return(AREAD);
-      if (old_deny==DENY_READ && old_mode==1) return(AWRITE);
-      if (old_deny==DENY_NONE && old_mode==1) return(AALL);
-      return(AFAIL);
-    case DENY_NONE:
-      if (old_deny==DENY_WRITE) return(AREAD);
-      if (old_deny==DENY_READ) return(AWRITE);
-      if (old_deny==DENY_NONE) return(AALL);
-      return(AFAIL);      
-    }
-  return(AFAIL);      
-}
 
 /*******************************************************************
 check if the share mode on a file allows it to be deleted or unlinked
@@ -1153,44 +1197,4 @@ free_and_exit:
   return(ret);
 }
 
-/****************************************************************************
-check if we can open a file with a share mode
-****************************************************************************/
-int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
-                      BOOL fcbopen, int *flags)
-{
-  int old_open_mode = share->share_mode &0xF;
-  int old_deny_mode = (share->share_mode >>4)&7;
-
-  if (old_deny_mode > 4 || old_open_mode > 2)
-  {
-    DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
-               deny_mode,old_deny_mode,old_open_mode,fname));
-    return False;
-  }
-
-  {
-    int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-                                share->pid,fname);
-
-    if ((access_allowed == AFAIL) ||
-        (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
-        (access_allowed == AREAD && *flags == O_WRONLY) ||
-        (access_allowed == AWRITE && *flags == O_RDONLY))
-    {
-      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
-                deny_mode,old_deny_mode,old_open_mode,
-                share->pid,fname, fcbopen, *flags, access_allowed));
-      return False;
-    }
-
-    if (access_allowed == AREAD)
-      *flags = O_RDONLY;
-
-    if (access_allowed == AWRITE)
-      *flags = O_WRONLY;
-
-  }
-  return True;
-}
 

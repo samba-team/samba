@@ -89,86 +89,6 @@ BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int tim
 }
 
 
-
-/****************************************************************************
-  process an smb from the client - split out from the process() code so
-  it can be used by the oplock break code.
-****************************************************************************/
-void process_smb(char *inbuf, char *outbuf)
-{
-  extern int Client;
-#ifdef WITH_SSL
-  extern BOOL sslEnabled;     /* don't use function for performance reasons */
-  static int sslConnected = 0;
-#endif /* WITH_SSL */
-  static int trans_num;
-  int msg_type = CVAL(inbuf,0);
-  int32 len = smb_len(inbuf);
-  int nread = len + 4;
-
-  if (trans_num == 0) {
-	  /* on the first packet, check the global hosts allow/ hosts
-	     deny parameters before doing any parsing of the packet
-	     passed to us by the client.  This prevents attacks on our
-	     parsing code from hosts not in the hosts allow list */
-	  if (!check_access(Client, lp_hostsallow(-1), lp_hostsdeny(-1))) {
-		  /* send a negative session response "not listining on calling
-		   name" */
-		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-		  DEBUG( 1, ( "Connection denied from %s\n",
-			      client_addr(Client) ) );
-		  send_smb(Client,(char *)buf);
-		  exit_server("connection denied");
-	  }
-  }
-
-  DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type, len ) );
-  DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
-
-#ifdef WITH_SSL
-    if(sslEnabled && !sslConnected){
-        sslConnected = sslutil_negotiate_ssl(Client, msg_type);
-        if(sslConnected < 0){   /* an error occured */
-            exit_server("SSL negotiation failed");
-        }else if(sslConnected){
-            trans_num++;
-            return;
-        }
-    }
-#endif  /* WITH_SSL */
-
-#ifdef WITH_VTP
-  if(trans_num == 1 && VT_Check(inbuf)) 
-  {
-    VT_Process();
-    return;
-  }
-#endif
-
-  if (msg_type == 0)
-    show_msg(inbuf);
-  else if(msg_type == 0x85)
-    return; /* Keepalive packet. */
-
-  nread = construct_reply(inbuf,outbuf,nread,max_send);
-      
-  if(nread > 0) 
-  {
-    if (CVAL(outbuf,0) == 0)
-      show_msg(outbuf);
-	
-    if (nread != smb_len(outbuf) + 4) 
-    {
-      DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
-                 nread, smb_len(outbuf)));
-    }
-    else
-      send_smb(Client,outbuf);
-  }
-  trans_num++;
-}
-
-
 /*
 These flags determine some of the permissions required to do an operation 
 
@@ -194,9 +114,6 @@ struct smb_message_struct
   char *name;
   int (*fn)(connection_struct *conn, char *, char *, int, int);
   int flags;
-#if PROFILING
-  unsigned long time;
-#endif
 }
  smb_messages[] = {
 
@@ -302,26 +219,6 @@ struct smb_message_struct
    {SMBgetmac,"SMBgetmac",NULL,AS_GUEST}
  };
 
-/****************************************************************************
-return a string containing the function name of a SMB command
-****************************************************************************/
-char *smb_fn_name(int type)
-{
-	static char *unknown_name = "SMBunknown";
-	static int num_smb_messages = 
-		sizeof(smb_messages) / sizeof(struct smb_message_struct);
-	int match;
-
-	for (match=0;match<num_smb_messages;match++)
-		if (smb_messages[match].code == type)
-			break;
-
-	if (match == num_smb_messages)
-		return(unknown_name);
-
-	return(smb_messages[match].name);
-}
-
 
 /****************************************************************************
 do a switch on the message type, and return the response size
@@ -334,14 +231,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
   extern int Client;
-
-#if PROFILING
-  struct timeval msg_start_time;
-  struct timeval msg_end_time;
-  static unsigned long total_time = 0;
-
-  GetTimeOfDay(&msg_start_time);
-#endif
 
   if (pid == -1)
     pid = getpid();
@@ -462,27 +351,141 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     }
   }
 
-#if PROFILING
-  GetTimeOfDay(&msg_end_time);
-  if (!(smb_messages[match].flags & TIME_INIT))
-  {
-    smb_messages[match].time = 0;
-    smb_messages[match].flags |= TIME_INIT;
-  }
-  {
-    unsigned long this_time =     
-      (msg_end_time.tv_sec - msg_start_time.tv_sec)*1e6 +
-      (msg_end_time.tv_usec - msg_start_time.tv_usec);
-    smb_messages[match].time += this_time;
-    total_time += this_time;
-  }
-  DEBUG(2,("TIME %s  %d usecs   %g pct\n",
-        smb_fn_name(type),smb_messages[match].time,
-        (100.0*smb_messages[match].time) / total_time));
-#endif
-
   return(outsize);
 }
+
+
+/****************************************************************************
+  construct a reply to the incoming packet
+****************************************************************************/
+static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
+{
+  int type = CVAL(inbuf,smb_com);
+  int outsize = 0;
+  int msg_type = CVAL(inbuf,0);
+  extern int chain_size;
+
+  smb_last_time = time(NULL);
+
+  chain_size = 0;
+  file_chain_reset();
+  reset_chain_p();
+
+  if (msg_type != 0)
+    return(reply_special(inbuf,outbuf));  
+
+  construct_reply_common(inbuf, outbuf);
+
+  outsize = switch_message(type,inbuf,outbuf,size,bufsize);
+
+  outsize += chain_size;
+
+  if(outsize > 4)
+    smb_setlen(outbuf,outsize - 4);
+  return(outsize);
+}
+
+
+/****************************************************************************
+  process an smb from the client - split out from the process() code so
+  it can be used by the oplock break code.
+****************************************************************************/
+void process_smb(char *inbuf, char *outbuf)
+{
+  extern int Client;
+#ifdef WITH_SSL
+  extern BOOL sslEnabled;     /* don't use function for performance reasons */
+  static int sslConnected = 0;
+#endif /* WITH_SSL */
+  static int trans_num;
+  int msg_type = CVAL(inbuf,0);
+  int32 len = smb_len(inbuf);
+  int nread = len + 4;
+
+  if (trans_num == 0) {
+	  /* on the first packet, check the global hosts allow/ hosts
+	     deny parameters before doing any parsing of the packet
+	     passed to us by the client.  This prevents attacks on our
+	     parsing code from hosts not in the hosts allow list */
+	  if (!check_access(Client, lp_hostsallow(-1), lp_hostsdeny(-1))) {
+		  /* send a negative session response "not listining on calling
+		   name" */
+		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+		  DEBUG( 1, ( "Connection denied from %s\n",
+			      client_addr(Client) ) );
+		  send_smb(Client,(char *)buf);
+		  exit_server("connection denied");
+	  }
+  }
+
+  DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type, len ) );
+  DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
+
+#ifdef WITH_SSL
+    if(sslEnabled && !sslConnected){
+        sslConnected = sslutil_negotiate_ssl(Client, msg_type);
+        if(sslConnected < 0){   /* an error occured */
+            exit_server("SSL negotiation failed");
+        }else if(sslConnected){
+            trans_num++;
+            return;
+        }
+    }
+#endif  /* WITH_SSL */
+
+#ifdef WITH_VTP
+  if(trans_num == 1 && VT_Check(inbuf)) 
+  {
+    VT_Process();
+    return;
+  }
+#endif
+
+  if (msg_type == 0)
+    show_msg(inbuf);
+  else if(msg_type == 0x85)
+    return; /* Keepalive packet. */
+
+  nread = construct_reply(inbuf,outbuf,nread,max_send);
+      
+  if(nread > 0) 
+  {
+    if (CVAL(outbuf,0) == 0)
+      show_msg(outbuf);
+	
+    if (nread != smb_len(outbuf) + 4) 
+    {
+      DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
+                 nread, smb_len(outbuf)));
+    }
+    else
+      send_smb(Client,outbuf);
+  }
+  trans_num++;
+}
+
+
+
+/****************************************************************************
+return a string containing the function name of a SMB command
+****************************************************************************/
+char *smb_fn_name(int type)
+{
+	static char *unknown_name = "SMBunknown";
+	static int num_smb_messages = 
+		sizeof(smb_messages) / sizeof(struct smb_message_struct);
+	int match;
+
+	for (match=0;match<num_smb_messages;match++)
+		if (smb_messages[match].code == type)
+			break;
+
+	if (match == num_smb_messages)
+		return(unknown_name);
+
+	return(smb_messages[match].name);
+}
+
 
 /****************************************************************************
  Helper function for contruct_reply.
@@ -588,37 +591,6 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   }
 
   return outsize2;
-}
-
-/****************************************************************************
-  construct a reply to the incoming packet
-****************************************************************************/
-
-int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
-{
-  int type = CVAL(inbuf,smb_com);
-  int outsize = 0;
-  int msg_type = CVAL(inbuf,0);
-  extern int chain_size;
-
-  smb_last_time = time(NULL);
-
-  chain_size = 0;
-  file_chain_reset();
-  reset_chain_p();
-
-  if (msg_type != 0)
-    return(reply_special(inbuf,outbuf));  
-
-  construct_reply_common(inbuf, outbuf);
-
-  outsize = switch_message(type,inbuf,outbuf,size,bufsize);
-
-  outsize += chain_size;
-
-  if(outsize > 4)
-    smb_setlen(outbuf,outsize - 4);
-  return(outsize);
 }
 
 /****************************************************************************

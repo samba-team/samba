@@ -35,6 +35,8 @@ extern int num_response_packets;
 extern pstring scope;
 extern struct in_addr loopback_ip;
 
+static void queue_packet(struct packet_struct *packet);
+
 /*******************************************************************
   The global packet linked-list. Incoming entries are 
   added to the end of this list. It is supposed to remain fairly 
@@ -963,8 +965,7 @@ for id %hu\n",
 /*******************************************************************
   Queue a packet into a packet queue
 ******************************************************************/
-
-void queue_packet(struct packet_struct *packet)
+static void queue_packet(struct packet_struct *packet)
 {
   struct packet_struct *p;
 
@@ -1013,8 +1014,7 @@ static struct subnet_record *find_subnet_for_dgram_browse_packet(struct packet_s
 /****************************************************************************
 Dispatch a browse frame from port 138 to the correct processing function.
 ****************************************************************************/
-
-void process_browse_packet(struct packet_struct *p, char *buf,int len)
+static void process_browse_packet(struct packet_struct *p, char *buf,int len)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   int command = CVAL(buf,0);
@@ -1135,8 +1135,7 @@ command code %d from %s IP %s to %s\n",
 /****************************************************************************
  Dispatch a LanMan browse frame from port 138 to the correct processing function.
 ****************************************************************************/
-
-void process_lanman_packet(struct packet_struct *p, char *buf,int len)
+static void process_lanman_packet(struct packet_struct *p, char *buf,int len)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   int command = SVAL(buf,0);
@@ -1284,7 +1283,7 @@ static void process_dgram(struct packet_struct *p)
   Validate a response nmb packet.
 ****************************************************************************/
 
-BOOL validate_nmb_response_packet( struct nmb_packet *nmb )
+static BOOL validate_nmb_response_packet( struct nmb_packet *nmb )
 {
   BOOL ignore = False;
 
@@ -1338,7 +1337,7 @@ BOOL validate_nmb_response_packet( struct nmb_packet *nmb )
   Validate a request nmb packet.
 ****************************************************************************/
 
-BOOL validate_nmb_packet( struct nmb_packet *nmb )
+static BOOL validate_nmb_packet( struct nmb_packet *nmb )
 {
   BOOL ignore = False;
 

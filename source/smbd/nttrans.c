@@ -33,6 +33,8 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 
+static void remove_pending_change_notify_requests_by_mid(int mid);
+
 static char *known_nt_pipes[] = {
   "\\LANMAN",
   "\\srvsvc",
@@ -1045,7 +1047,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
  Delete entries by mid from the change notify pending queue. Always send reply.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_mid(int mid)
+static void remove_pending_change_notify_requests_by_mid(int mid)
 {
   change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
   change_notify_buf *prev = NULL;

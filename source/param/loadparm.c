@@ -652,7 +652,6 @@ static struct parm_struct parm_table[] =
   {"domain guest group",P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL,   NULL,  0},
   {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
   {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL,  0},
-  {"groupname map",     P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
@@ -971,7 +970,7 @@ convenience routine to grab string parameters into a rotating buffer,
 and run standard_sub_basic on them. The buffers can be written to by
 callers without affecting the source string.
 ********************************************************************/
-char *lp_string(char *s)
+static char *lp_string(char *s)
 {
   static char *bufs[10];
   static int buflen[10];
@@ -1050,7 +1049,6 @@ FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
 FN_GLOBAL_STRING(lp_rootdir,&Globals.szRootdir)
 FN_GLOBAL_STRING(lp_defaultservice,&Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command,&Globals.szMsgCommand)
-FN_GLOBAL_STRING(lp_dfree_command,&Globals.szDfree)
 FN_GLOBAL_STRING(lp_hosts_equiv,&Globals.szHostsEquiv)
 FN_GLOBAL_STRING(lp_auto_services,&Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program,&Globals.szPasswdProgram)
@@ -1059,8 +1057,6 @@ FN_GLOBAL_STRING(lp_passwordserver,&Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order,&Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
-FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)
-FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
 FN_GLOBAL_STRING(lp_logon_drive,&Globals.szLogonDrive) 
@@ -1071,20 +1067,17 @@ FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
-FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
+static FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
 
 FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
-FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_group,&Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group,&Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
 FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
-FN_GLOBAL_STRING(lp_domain_hostsallow,&Globals.szDomainHostsallow)
-FN_GLOBAL_STRING(lp_domain_hostsdeny,&Globals.szDomainHostsdeny)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
@@ -1122,7 +1115,6 @@ FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)
 FN_GLOBAL_BOOL(lp_load_printers,&Globals.bLoadPrinters)
 FN_GLOBAL_BOOL(lp_use_rhosts,&Globals.bUseRhosts)
-FN_GLOBAL_BOOL(lp_getwdcache,&use_getwd_cache)
 FN_GLOBAL_BOOL(lp_readprediction,&Globals.bReadPrediction)
 FN_GLOBAL_BOOL(lp_readbmpx,&Globals.bReadbmpx)
 FN_GLOBAL_BOOL(lp_readraw,&Globals.bReadRaw)
@@ -1136,7 +1128,7 @@ FN_GLOBAL_BOOL(lp_timestamp_logs,&Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
-FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
+static FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_net_wksta_user_logon,&Globals.bNetWkstaUserLogon)
 FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
@@ -1149,11 +1141,8 @@ FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl,&Globals.max_wins_ttl)
 FN_GLOBAL_INTEGER(lp_min_wins_ttl,&Globals.max_wins_ttl)
 FN_GLOBAL_INTEGER(lp_max_log_size,&Globals.max_log_size)
-FN_GLOBAL_INTEGER(lp_mangledstack,&Globals.mangled_stack)
 FN_GLOBAL_INTEGER(lp_maxxmit,&Globals.max_xmit)
 FN_GLOBAL_INTEGER(lp_maxmux,&Globals.max_mux)
-FN_GLOBAL_INTEGER(lp_maxpacket,&Globals.max_packet)
-FN_GLOBAL_INTEGER(lp_keepalive,&keepalive)
 FN_GLOBAL_INTEGER(lp_passwordlevel,&Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel,&Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_readsize,&Globals.ReadSize)
@@ -1165,7 +1154,7 @@ FN_GLOBAL_INTEGER(lp_maxdisksize,&Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime,&Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_syslog,&Globals.syslog)
 FN_GLOBAL_INTEGER(lp_client_code_page,&Globals.client_code_page)
-FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
+static FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
@@ -1206,7 +1195,7 @@ FN_LOCAL_STRING(lp_force_user,force_user)
 FN_LOCAL_STRING(lp_force_group,force_group)
 FN_LOCAL_STRING(lp_readlist,readlist)
 FN_LOCAL_STRING(lp_writelist,writelist)
-FN_LOCAL_STRING(lp_volume,volume)
+static FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
 FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files,szHideFiles)
@@ -2550,14 +2539,6 @@ static void set_default_server_announce_type()
   default_server_announce |= (lp_time_server() ? SV_TYPE_TIME_SOURCE : 0);
 }
 
-
-/*******************************************************************
-rename a service
-********************************************************************/
-void lp_rename_service(int snum, char *new_name)
-{
-	string_set(&pSERVICE(snum)->szService, new_name);
-}
 
 /*******************************************************************
 remove a service

@@ -260,17 +260,6 @@ BOOL ismyip(struct in_addr ip)
 }
 
 /****************************************************************************
-  check if a bcast is one of mine
-  **************************************************************************/
-BOOL ismybcast(struct in_addr bcast)
-{
-  struct interface *i;
-  for (i=local_interfaces;i;i=i->next)
-    if (ip_equal(i->bcast,bcast)) return True;
-  return False;
-}
-
-/****************************************************************************
   check if a packet is from a local (known) net
   **************************************************************************/
 BOOL is_local_net(struct in_addr from)
@@ -381,12 +370,6 @@ struct in_addr *iface_bcast(struct in_addr ip)
 {
   struct interface *i = iface_find(ip);
   return(i ? &i->bcast : &local_interfaces->bcast);
-}
-
-struct in_addr *iface_nmask(struct in_addr ip)
-{
-  struct interface *i = iface_find(ip);
-  return(i ? &i->nmask : &local_interfaces->nmask);
 }
 
 struct in_addr *iface_ip(struct in_addr ip)

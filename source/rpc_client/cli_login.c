@@ -96,13 +96,13 @@ BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
   return cli_net_srv_pwset(cli, processed_new_pwd);
 }
 
+#if UNUSED_CODE
 /****************************************************************************
 NT login - interactive.
 *NEVER* use this code. This method of doing a logon (sending the cleartext
 password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
-
 BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
                               uint32 smb_userid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
@@ -149,6 +149,7 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
 
   return ret;
 }
+#endif
 
 /****************************************************************************
 NT login - network.
@@ -176,10 +177,10 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
   return cli_net_sam_logon(cli, ctr, user_info3);
 }
 
+#if UNUSED_CODE
 /****************************************************************************
 NT Logoff.
 ****************************************************************************/
-
 BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 {
   DEBUG(5,("cli_nt_logoff: %d\n", __LINE__));
@@ -187,3 +188,4 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
   /* Send client sam-logoff request - update credentials on success. */
   return cli_net_sam_logoff(cli, ctr);
 }
+#endif

@@ -32,12 +32,12 @@ char buffer[50][sizeof(pstring)];
 char sbuffer[50][sizeof(pstring)];
 char sub_dir[50][2][sizeof(pstring)];
 
-void usage(char *name)
+static void usage(char *name)
 {
  fprintf(stderr,"%s: printer.def \"Printer Name\"\n", name);
 }
 
-char *myfgets(char *s, int n, FILE *stream)
+static char *myfgets(char *s, int n, FILE *stream)
 {
   char *LString1;
   char *LString2;
@@ -76,7 +76,7 @@ char *myfgets(char *s, int n, FILE *stream)
    on both side of the equal sign
    "entry=value"
 */
-char *scan(char *chaine,char **entry)
+static char *scan(char *chaine,char **entry)
 {
   char *value;
   char *temp;
@@ -94,7 +94,7 @@ char *scan(char *chaine,char **entry)
   return (value);
 }
 
-void build_subdir(void)
+static void build_subdir(void)
 {
   int i=0;
   char *entry;
@@ -126,7 +126,7 @@ void build_subdir(void)
    Return all the lines between the entry and the next one or the end of file
    An entry is something between braces.
 */
-void lookup_strings(FILE *fichier)
+static void lookup_strings(FILE *fichier)
 {
   int found=0,pointeur=0,i=0;
   char *temp,*temp2;
@@ -176,7 +176,7 @@ void lookup_strings(FILE *fichier)
    Return all the lines between the entry and the next one or the end of file
    An entry is something between braces.
 */
-void lookup_entry(FILE *fichier,char *chaine)
+static void lookup_entry(FILE *fichier,char *chaine)
 {
   int found=0,pointeur=0,i=0;
   char *temp,*temp2;
@@ -222,7 +222,7 @@ void lookup_entry(FILE *fichier,char *chaine)
 #endif
 }
 
-char *find_desc(FILE *fichier,char *text)
+static char *find_desc(FILE *fichier,char *text)
 {
   char *chaine;
   char *long_desc;
@@ -271,7 +271,7 @@ char *find_desc(FILE *fichier,char *text)
   return(short_desc);
 }
 
-void scan_copyfiles(FILE *fichier, char *chaine)
+static void scan_copyfiles(FILE *fichier, char *chaine)
 {
   char *part;
   char *mpart;
@@ -354,7 +354,7 @@ void scan_copyfiles(FILE *fichier, char *chaine)
 }
 
 
-void scan_short_desc(FILE *fichier, char *short_desc)
+static void scan_short_desc(FILE *fichier, char *short_desc)
 {
   int i=0;
   char *chaine;

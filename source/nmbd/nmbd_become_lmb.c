@@ -138,7 +138,7 @@ in workgroup %s on subnet %s\n",
   Unbecome the local master browser name release success function.
 ******************************************************************/
 
-void unbecome_local_master_success(struct subnet_record *subrec,
+static void unbecome_local_master_success(struct subnet_record *subrec,
                              struct userdata_struct *userdata,
                              struct nmb_name *released_name,
                              struct in_addr released_ip)
@@ -168,7 +168,7 @@ void unbecome_local_master_success(struct subnet_record *subrec,
   Unbecome the local master browser name release fail function.
 ******************************************************************/
 
-void unbecome_local_master_fail(struct subnet_record *subrec, struct response_record *rrec,
+static void unbecome_local_master_fail(struct subnet_record *subrec, struct response_record *rrec,
                        struct nmb_name *fail_name)
 {
   struct name_record *namerec;

@@ -64,7 +64,7 @@ static struct bitmap *bmap;
 /****************************************************************************
   create a unique policy handle
 ****************************************************************************/
-void create_pol_hnd(POLICY_HND *hnd)
+static void create_pol_hnd(POLICY_HND *hnd)
 {
 	static uint32 pol_hnd_low  = 0;
 	static uint32 pol_hnd_high = 0;
@@ -259,26 +259,6 @@ BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
 	}
 
 	DEBUG(3,("Error setting policy name=%s\n", name));
-	return False;
-}
-
-/****************************************************************************
-  get reg name 
-****************************************************************************/
-BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, char *name)
-{
-	struct policy *p = find_lsa_policy(hnd);
-
-	if (p && p->open) {
-		fstrcpy(name, p->dev.reg.name);
-
-		DEBUG(3,("Getting policy pnum=%x name=%s\n",
-			 p->pnum, name));
-
-		return True;
-	}
-
-	DEBUG(3,("Error getting policy\n"));
 	return False;
 }
 

@@ -28,7 +28,7 @@ static char *prog_name = NULL;
  * Print program usage and die.
  */
 
-void codepage_usage(char *progname)
+static void codepage_usage(char *progname)
 {
   fprintf(stderr, "Usage is : %s [c|d] <codepage> <inputfile> <outputfile>\n",
          progname);
@@ -40,7 +40,7 @@ void codepage_usage(char *progname)
  * terminated.
  */
 
-void read_line( char **buf, char *line_buf, int size)
+static void read_line( char **buf, char *line_buf, int size)
 {
   char *p = *buf;
   int num = 0;
@@ -62,7 +62,7 @@ void read_line( char **buf, char *line_buf, int size)
  * Returns the number of lines copied.
  */
 
-int clean_data( char **buf, uint32 *size)
+static int clean_data( char **buf, uint32 *size)
 {
   pstring linebuf;
   char *p = *buf;
@@ -108,7 +108,7 @@ int clean_data( char **buf, uint32 *size)
  * Parse a byte from a codepage file.
  */
 
-BOOL parse_byte(char *buf, unsigned char *bp)
+static BOOL parse_byte(char *buf, unsigned char *bp)
 {
   unsigned int b;
   char *endptr = NULL;
@@ -125,7 +125,7 @@ BOOL parse_byte(char *buf, unsigned char *bp)
  * Parse a bool from a codepage file.
  */
 
-BOOL parse_bool(char *buf, unsigned char *bp)
+static BOOL parse_bool(char *buf, unsigned char *bp)
 {
   if(isdigit((int)*buf))
   {
@@ -151,7 +151,7 @@ BOOL parse_bool(char *buf, unsigned char *bp)
  * Print a parse error and exit.
  */
 
-void parse_error(char *buf, char *msg)
+static void parse_error(char *buf, char *msg)
 {
   fprintf(stderr, "%s: %s whilst parsing line \n%s\n", prog_name,
           msg, buf);
@@ -162,7 +162,7 @@ void parse_error(char *buf, char *msg)
  * Create a compiled codepage file from a codepage definition file.
  */
 
-int do_compile(int codepage, char *input_file, char *output_file)
+static int do_compile(int codepage, char *input_file, char *output_file)
 {
   FILE *fp = NULL;
   uint32 size = 0;
@@ -307,7 +307,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
  * Placeholder for now.
  */
 
-int do_decompile( int codepage, char *input_file, char *output_file)
+static int do_decompile( int codepage, char *input_file, char *output_file)
 {
   uint32 size = 0;
   SMB_STRUCT_STAT st;

@@ -206,25 +206,10 @@ char **toktocliplist(int *ctok, char *sep)
   return ret;
 }
 
-
-/* ************************************************************************* **
- * Duplicate a block of memory.
- * ************************************************************************* **
- */
-void *mem_dup( void *from, int size )
-  {
-  void *tmp;
-
-  tmp = malloc( size );
-  if( NULL != tmp )
-    (void)memcpy( tmp, from, size );
-  return( tmp );
-  } /* mem_dup */
-
 /****************************************************************************
 prompte a dptr (to make it recently used)
 ****************************************************************************/
-void array_promote(char *array,int elsize,int element)
+static void array_promote(char *array,int elsize,int element)
 {
   char *p;
   if (element == 0)
@@ -1050,7 +1035,7 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 /*******************************************************************
 return the number of smb words
 ********************************************************************/
-int smb_numwords(char *buf)
+static int smb_numwords(char *buf)
 {
   return (CVAL(buf,smb_wct));
 }
@@ -1066,7 +1051,7 @@ int smb_buflen(char *buf)
 /*******************************************************************
   return a pointer to the smb_buf data area
 ********************************************************************/
-int smb_buf_ofs(char *buf)
+static int smb_buf_ofs(char *buf)
 {
   return (smb_size + CVAL(buf,smb_wct)*2);
 }
@@ -1476,6 +1461,26 @@ static void expand_one(char *Mask,int len)
 }
 
 /****************************************************************************
+parse out a directory name from a path name. Assumes dos style filenames.
+****************************************************************************/
+static char *dirname_dos(char *path,char *buf)
+{
+  char *p = strrchr(path,'\\');
+
+  if (!p)
+    pstrcpy(buf,path);
+  else
+    {
+      *p = 0;
+      pstrcpy(buf,path);
+      *p = '\\';
+    }
+
+  return(buf);
+}
+
+
+/****************************************************************************
 expand a wildcard expression, replacing *s with ?s
 ****************************************************************************/
 void expand_mask(char *Mask,BOOL doext)
@@ -1755,7 +1760,7 @@ else
 if SYSV use O_NDELAY
 if BSD use FNDELAY
 ****************************************************************************/
-int set_blocking(int fd, BOOL set)
+static int set_blocking(int fd, BOOL set)
 {
   int val;
 #ifdef O_NONBLOCK
@@ -1932,33 +1937,6 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
   return(nread);
 }
 
-/****************************************************************************
-read data from the client. Maxtime is in milliseconds
-****************************************************************************/
-int read_max_udp(int fd,char *buffer,int bufsize,int maxtime)
-{
-  fd_set fds;
-  int selrtn;
-  int nread;
-  struct timeval timeout;
- 
-  FD_ZERO(&fds);
-  FD_SET(fd,&fds);
-
-  timeout.tv_sec = maxtime / 1000;
-  timeout.tv_usec = (maxtime % 1000) * 1000;
-
-  selrtn = sys_select(fd+1,&fds,maxtime>0?&timeout:NULL);
-
-  if (!FD_ISSET(fd,&fds))
-    return 0;
-
-  nread = read_udp_socket(fd, buffer, bufsize);
-
-  /* return the number got */
-  return(nread);
-}
-
 /*******************************************************************
 find the difference in milliseconds between two struct timeval
 values
@@ -2064,7 +2042,7 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 #ifdef LARGE_SMB_OFF_T
   DEBUG(4,("transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
 #else /* LARGE_SMB_OFF_T */
-  DEBUG(4,("transfer_file n=%d  (head=%d) called\n",n,headlen));
+  DEBUG(4,("transfer_file n=%d  (head=%d) called\n",(int)n,headlen));
 #endif /* LARGE_SMB_OFF_T */
 
   if (size == 0) {
@@ -2501,7 +2479,7 @@ BOOL send_smb(int fd,char *buffer)
 /****************************************************************************
 find a pointer to a netbios name
 ****************************************************************************/
-char *name_ptr(char *buf,int ofs)
+static char *name_ptr(char *buf,int ofs)
 {
   unsigned char c = *(unsigned char *)(buf+ofs);
 
@@ -2595,7 +2573,7 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
 /*******************************************************************
 sleep for a specified number of milliseconds
 ********************************************************************/
-void msleep(int t)
+static void msleep(int t)
 {
   int tdiff=0;
   struct timeval tval,t1,t2;  
@@ -3307,20 +3285,6 @@ int set_filelen(int fd, SMB_OFF_T len)
 }
 
 
-/****************************************************************************
-return the byte checksum of some data
-****************************************************************************/
-int byte_checksum(char *buf,int len)
-{
-  unsigned char *p = (unsigned char *)buf;
-  int ret = 0;
-  while (len--)
-    ret += *p++;
-  return(ret);
-}
-
-
-
 #ifdef HPUX
 /****************************************************************************
 this is a version of setbuffer() for those machines that only have setvbuf
@@ -3330,26 +3294,6 @@ this is a version of setbuffer() for those machines that only have setvbuf
   setvbuf(f,buf,_IOFBF,bufsize);
 }
 #endif
-
-
-/****************************************************************************
-parse out a directory name from a path name. Assumes dos style filenames.
-****************************************************************************/
-char *dirname_dos(char *path,char *buf)
-{
-  char *p = strrchr(path,'\\');
-
-  if (!p)
-    pstrcpy(buf,path);
-  else
-    {
-      *p = 0;
-      pstrcpy(buf,path);
-      *p = '\\';
-    }
-
-  return(buf);
-}
 
 
 /****************************************************************************
@@ -3953,8 +3897,7 @@ static char *automount_lookup(char *user_name)
  This is Luke's original function with the NIS lookup code
  moved out to a separate function.
 *******************************************************************/
-
-char *automount_server(char *user_name)
+static char *automount_server(char *user_name)
 {
 	static pstring server_name;
 
@@ -3988,8 +3931,7 @@ char *automount_server(char *user_name)
  Patch from jkf@soton.ac.uk
  Added this to implement %p (NIS auto-map version of %H)
 *******************************************************************/
-
-char *automount_path(char *user_name)
+static char *automount_path(char *user_name)
 {
 	static pstring server_path;
 
@@ -4609,7 +4551,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
           (double)offset,(double)count,op,type,strerror(errno)));
 #else
     DEBUG(3,("lock failed at offset %d count %d op %d type %d (%s)\n",
-          offset,count,op,type,strerror(errno)));
+	     (int)offset,(int)count,op,type,strerror(errno)));
 #endif
 
     /* perhaps it doesn't support this sort of locking?? */
@@ -4629,40 +4571,6 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 #else
   return(False);
 #endif
-}
-
-/*******************************************************************
-lock a file - returning a open file descriptor or -1 on failure
-The timeout is in seconds. 0 means no timeout
-********************************************************************/
-int file_lock(char *name,int timeout)
-{  
-  int fd = open(name,O_RDWR|O_CREAT,0666);
-  time_t t=0;
-  if (fd < 0) return(-1);
-
-#if HAVE_FCNTL_LOCK
-  if (timeout) t = time(NULL);
-  while (!timeout || (time(NULL)-t < timeout)) {
-    if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)) return(fd);    
-    msleep(LOCK_RETRY_TIMEOUT);
-  }
-  return(-1);
-#else
-  return(fd);
-#endif
-}
-
-/*******************************************************************
-unlock a file locked by file_lock
-********************************************************************/
-void file_unlock(int fd)
-{
-  if (fd<0) return;
-#if HAVE_FCNTL_LOCK
-  fcntl_lock(fd,SMB_F_SETLK,0,1,F_UNLCK);
-#endif
-  close(fd);
 }
 
 /*******************************************************************
@@ -4844,26 +4752,6 @@ char *unistr(char *buf)
 	return lbuf;
 }
 
-/*******************************************************************
-strncpy for unicode strings
-********************************************************************/
-int unistrncpy(char *dst, char *src, int len)
-{
-	int num_wchars = 0;
-
-	while (*src && len > 0)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		len--;
-		num_wchars++;
-	}
-	*dst++ = 0;
-	*dst++ = 0;
-
-	return num_wchars;
-}
-
 
 /*******************************************************************
 strcpy for unicode strings.  returns length (in num of wide chars)
@@ -4947,18 +4835,6 @@ char *safe_strcat(char *dest, char *src, int maxlength)
 }
 
 /*******************************************************************
-align a pointer to a multiple of 4 bytes
-********************************************************************/
-char *align4(char *q, char *base)
-{
-	if ((q - base) & 3)
-	{
-		q += 4 - ((q - base) & 3);
-	}
-	return q;
-}
-
-/*******************************************************************
 align a pointer to a multiple of 2 bytes
 ********************************************************************/
 char *align2(char *q, char *base)
@@ -4966,20 +4842,6 @@ char *align2(char *q, char *base)
 	if ((q - base) & 1)
 	{
 		q++;
-	}
-	return q;
-}
-
-/*******************************************************************
-align a pointer to a multiple of align_offset bytes.  looks like it
-will work for offsets of 0, 2 and 4...
-********************************************************************/
-char *align_offset(char *q, char *base, int align_offset_len)
-{
-	int mod = ((q - base) & (align_offset_len-1));
-	if (align_offset_len != 0 && mod != 0)
-	{
-		q += align_offset_len - mod;
 	}
 	return q;
 }

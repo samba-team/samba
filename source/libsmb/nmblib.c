@@ -44,8 +44,7 @@ static struct opcode_names {
 /****************************************************************************
  * Lookup a nmb opcode name.
  ****************************************************************************/
-
-char *lookup_opcode_name( int opcode )
+static char *lookup_opcode_name( int opcode )
 {
   struct opcode_names *op_namep;
   int i;

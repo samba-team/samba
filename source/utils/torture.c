@@ -608,7 +608,7 @@ static void run_unlinktest(void)
 }
 
 /* generate a random buffer */
-void rand_buf(char *buf, int len)
+static void rand_buf(char *buf, int len)
 {
 	while (len--) {
 		*buf = random();

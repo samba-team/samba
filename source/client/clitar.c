@@ -39,6 +39,8 @@
 #include "includes.h"
 #include "clitar.h"
 
+static int clipfind(char **aret, int ret, char *tok);
+
 typedef struct file_info_struct file_info2;
 
 struct file_info_struct
@@ -973,7 +975,7 @@ static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
     return True;
 }
 
-int padit(char *buf, int bufsize, int padsize)
+static int padit(char *buf, int bufsize, int padsize)
 {
   int berr= 0;
   int bytestowrite;
@@ -2294,7 +2296,7 @@ int process_tar(char *inbuf, char *outbuf)
 /****************************************************************************
 Find a token (filename) in a clip list
 ***************************************************************************/
-int clipfind(char **aret, int ret, char *tok)
+static int clipfind(char **aret, int ret, char *tok)
 {
   if (aret==NULL) return 0;
 

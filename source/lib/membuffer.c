@@ -95,17 +95,6 @@ void mem_create(struct mem_buf *buf, char *data, int size, int margin, BOOL dyna
 }
 
 /*******************************************************************
- takes a memory buffer out of one structure: puts it in the other.
- NULLs the one that the buffer is being stolen from.
- ********************************************************************/
-void mem_take(struct mem_buf *mem_to, struct mem_buf *mem_from)
-{
-	memcpy(mem_to, mem_from, sizeof(*mem_to));
-
-	mem_init(mem_from, mem_from->margin);
-}
-
-/*******************************************************************
  allocate a memory buffer.  assume it's empty
  ********************************************************************/
 BOOL mem_alloc_data(struct mem_buf *buf, int size)
@@ -218,7 +207,7 @@ void mem_buf_free(struct mem_buf **buf)
 /*******************************************************************
  frees a memory buffer chain.  assumes that all items are malloced.
  ********************************************************************/
-void mem_free_chain(struct mem_buf **buf)
+static void mem_free_chain(struct mem_buf **buf)
 {
 	if (buf == NULL) return;
 	if ((*buf) == NULL) return;
@@ -312,7 +301,7 @@ BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow)
 /*******************************************************************
  search for a memory buffer that falls within the specified offset
  ********************************************************************/
-BOOL mem_find(struct mem_buf **buf, uint32 offset)
+static BOOL mem_find(struct mem_buf **buf, uint32 offset)
 {
 	struct mem_buf *f;
 	if (buf == NULL) return False;

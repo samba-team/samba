@@ -292,7 +292,7 @@ static int talktochild(int master, char *chatsequence)
 }
 
 
-BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root)
+static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root)
 {
   char *slavedev;
   int master;

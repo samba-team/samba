@@ -183,37 +183,3 @@ void expire_lmb_browsers( time_t t )
       }
     }
   } /* expire_lmb_browsers */
-
-/* ************************************************************************** **
- *  Remove browsers from a named workgroup in the browserlist.
- *
- *  Input:  work_group  - The name of the work group which is to be removed
- *                        from the browse list.
- *  Output: none.
- *
- * ************************************************************************** **
- */
-void remove_workgroup_lmb_browsers( char *work_group )
-{
-  struct browse_cache_record *browc;
-  struct browse_cache_record *nextbrowc;
-
-  for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
-       browc;
-       browc = nextbrowc )
-    {
-    nextbrowc = (struct browse_cache_record *)ubi_dlNext( browc );
-
-    if( strequal( work_group, browc->work_group ) )
-      {
-      if( DEBUGLVL( 3 ) )
-        {
-        Debug1( "nmbd_browserdb:remove_workgroup_browsers()\n" );
-        Debug1( "Removing lmb entry %s\n", browc->lmb_name );
-        }
-      remove_lmb_browser_entry(browc);
-      }
-    }
-  } /* remove_workgroup_lmb_browsers */
-
-/* ========================================================================== */
