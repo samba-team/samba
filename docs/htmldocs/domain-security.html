@@ -5,7 +5,7 @@
 >Samba as a NT4 or Win2k domain member</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -80,30 +80,30 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1423"
-></A
->8.1. Joining an NT Domain with Samba 3.0</H1
+NAME="AEN1326"
+>8.1. Joining an NT Domain with Samba 3.0</A
+></H1
 ><P
 >Assume you have a Samba 3.0 server with a NetBIOS name of 
-	<TT
+	<CODE
 CLASS="CONSTANT"
->SERV1</TT
+>SERV1</CODE
 > and are joining an or Win2k NT domain called
-	<TT
+	<CODE
 CLASS="CONSTANT"
->DOM</TT
+>DOM</CODE
 >, which has a PDC with a NetBIOS name
-	of <TT
+	of <CODE
 CLASS="CONSTANT"
->DOMPDC</TT
+>DOMPDC</CODE
 > and two backup domain controllers 
-	with NetBIOS names <TT
+	with NetBIOS names <CODE
 CLASS="CONSTANT"
->DOMBDC1</TT
-> and <TT
+>DOMBDC1</CODE
+> and <CODE
 CLASS="CONSTANT"
 >DOMBDC2
-	</TT
+	</CODE
 >.</P
 ><P
 >Firstly, you must edit your <A
@@ -119,11 +119,9 @@ CLASS="FILENAME"
 >Change (or add) your <A
 HREF="smb.conf.5.html#SECURITY"
 TARGET="_top"
->	<TT
+>	<VAR
 CLASS="PARAMETER"
-><I
->security =</I
-></TT
+>security =</VAR
 ></A
 > line in the [global] section 
 	of your smb.conf to read:</P
@@ -141,11 +139,9 @@ CLASS="COMMAND"
 >Next change the <A
 HREF="smb.conf.5.html#WORKGROUP"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->	workgroup =</I
-></TT
+>	workgroup =</VAR
 ></A
 > line in the [global] section to read: </P
 ><P
@@ -159,26 +155,22 @@ CLASS="COMMAND"
 >You must also have the parameter <A
 HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
 TARGET="_top"
->	<TT
+>	<VAR
 CLASS="PARAMETER"
-><I
->encrypt passwords</I
-></TT
+>encrypt passwords</VAR
 ></A
-> set to <TT
+> set to <CODE
 CLASS="CONSTANT"
 >yes
-	</TT
+	</CODE
 > in order for your users to authenticate to the NT PDC.</P
 ><P
 >Finally, add (or modify) a <A
 HREF="smb.conf.5.html#PASSWORDSERVER"
 TARGET="_top"
->	<TT
+>	<VAR
 CLASS="PARAMETER"
-><I
->password server =</I
-></TT
+>password server =</VAR
 ></A
 > line in the [global]
 	section to read: </P
@@ -211,41 +203,35 @@ CLASS="COMMAND"
 >In order to actually join the domain, you must run this
         command:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
-><TT
+>root# </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
 >net join -S DOMPDC
-	-U<TT
+	-U<VAR
 CLASS="REPLACEABLE"
-><I
->Administrator%password</I
-></TT
-></B
-></TT
+>Administrator%password</VAR
+></KBD
 ></P
 ><P
 >as we are joining the domain DOM and the PDC for that domain 
 	(the only machine that has write access to the domain SAM database) 
-	is DOMPDC. The <TT
+	is DOMPDC. The <VAR
 CLASS="REPLACEABLE"
-><I
->Administrator%password</I
-></TT
+>Administrator%password</VAR
 > is 
 	the login name and password for an account which has the necessary 
 	privilege to add machines to the domain.  If this is successful 
 	you will see the message:</P
 ><P
-><TT
+><SAMP
 CLASS="COMPUTEROUTPUT"
->Joined domain DOM.</TT
+>Joined domain DOM.</SAMP
 >
-	or <TT
+	or <SAMP
 CLASS="COMPUTEROUTPUT"
->Joined 'SERV1' to realm 'MYREALM'</TT
+>Joined 'SERV1' to realm 'MYREALM'</SAMP
 >
 	</P
 ><P
@@ -282,9 +268,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1478"
-></A
->8.2. Samba and Windows 2000 Domains</H1
+NAME="AEN1381"
+>8.2. Samba and Windows 2000 Domains</A
+></H1
 ><P
 >Many people have asked regarding the state of Samba's ability to participate in
 a Windows 2000 Domain.  Samba 3.0 is able to act as a member server of a Windows
@@ -296,16 +282,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1481"
-></A
->8.3. Why is this better than security = server?</H1
+NAME="AEN1384"
+>8.3. Why is this better than security = server?</A
+></H1
 ><P
 >Currently, domain security in Samba doesn't free you from 
 	having to create local Unix users to represent the users attaching 
-	to your server. This means that if domain user <TT
+	to your server. This means that if domain user <CODE
 CLASS="CONSTANT"
 >DOM\fred
-	</TT
+	</CODE
 > attaches to your domain security Samba server, there needs 
 	to be a local Unix user fred to represent that user in the Unix 
 	filesystem. This is very similar to the older Samba security mode 

@@ -5,7 +5,7 @@
 >winbindd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -38,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >winbindd</B
->  [-F] [-S] [-i] [-B] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</P
+>  [-F] [-S] [-i] [-B] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-n]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -84,16 +84,12 @@ CLASS="COMMAND"
 CLASS="FILENAME"
 >pam_winbind</TT
 > module in the 2.2.2 release only 
-	supports the <TT
+	supports the <VAR
 CLASS="PARAMETER"
-><I
->auth</I
-></TT
-> and <TT
+>auth</VAR
+> and <VAR
 CLASS="PARAMETER"
-><I
->account</I
-></TT
+>account</VAR
 > 
 	module-types.  The latter simply
 	performs a getpwnam() to verify that the system can obtain a uid for the
@@ -374,11 +370,9 @@ CLASS="REFENTRYTITLE"
 ><A
 HREF="smb.conf.5.html#WINBINDSEPARATOR"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->winbind separator</I
-></TT
+>winbind separator</VAR
 ></A
 ></P
 ></LI
@@ -387,11 +381,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#WINBINDUID"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->winbind uid</I
-></TT
+>winbind uid</VAR
 ></A
 ></P
 ></LI
@@ -400,11 +392,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#WINBINDGID"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->winbind gid</I
-></TT
+>winbind gid</VAR
 ></A
 ></P
 ></LI
@@ -413,11 +403,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#WINBINDCACHETIME"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->winbind cache time</I
-></TT
+>winbind cache time</VAR
 ></A
 ></P
 ></LI
@@ -426,11 +414,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#WINBINDENUMUSERS"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->winbind enum users</I
-></TT
+>winbind enum users</VAR
 ></A
 ></P
 ></LI
@@ -439,11 +425,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#WINBINDENUMGROUPS"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->winbind enum groups</I
-></TT
+>winbind enum groups</VAR
 ></A
 ></P
 ></LI
@@ -452,11 +436,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#TEMPLATEHOMEDIR"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->template homedir</I
-></TT
+>template homedir</VAR
 ></A
 ></P
 ></LI
@@ -465,11 +447,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#TEMPLATESHELL"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->template shell</I
-></TT
+>template shell</VAR
 ></A
 ></P
 ></LI
@@ -478,11 +458,9 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->winbind use default domain</I
-></TT
+>winbind use default domain</VAR
 ></A
 ></P
 ></LI
@@ -514,11 +492,9 @@ group:      files winbind</PRE
 >In <TT
 CLASS="FILENAME"
 >/etc/pam.d/*</TT
-> replace the <TT
+> replace the <VAR
 CLASS="PARAMETER"
-><I
->	auth</I
-></TT
+>	auth</VAR
 > lines with something like this:
 <PRE
 CLASS="PROGRAMLISTING"
@@ -528,17 +504,13 @@ auth       sufficient	/lib/security/pam_winbind.so
 auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok</PRE
 ></P
 ><P
->Note in particular the use of the <TT
+>Note in particular the use of the <VAR
 CLASS="PARAMETER"
-><I
 >sufficient
-	</I
-></TT
-> keyword and the <TT
+	</VAR
+> keyword and the <VAR
 CLASS="PARAMETER"
-><I
->use_first_pass</I
-></TT
+>use_first_pass</VAR
 > keyword. </P
 ><P
 >Now replace the account lines with this: </P
@@ -560,11 +532,9 @@ CLASS="COMMAND"
 >net join -S PDC -U Administrator</B
 ></P
 ><P
->The username after the <TT
+>The username after the <VAR
 CLASS="PARAMETER"
-><I
->-U</I
-></TT
+>-U</VAR
 > can be any
 	Domain user that has administrator privileges on the machine.
 	Substitute the name or IP of your PDC for "PDC".</P
@@ -672,9 +642,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >winbindd</B
 >
-	nsswitch module read an environment variable named <TT
+	nsswitch module read an environment variable named <VAR
 CLASS="ENVAR"
->	$WINBINDD_DOMAIN</TT
+>	$WINBINDD_DOMAIN</VAR
 >.  If this variable contains a comma separated
 	list of Windows NT domain names, then winbindd will only resolve users
 	and groups within those Windows NT domains. </P
@@ -802,11 +772,9 @@ CLASS="FILENAME"
 ><P
 >Storage for the Windows NT rid to UNIX user/group 
 		id mapping.  The lock directory is specified when Samba is initially 
-		compiled using the <TT
+		compiled using the <VAR
 CLASS="PARAMETER"
-><I
->--with-lockdir</I
-></TT
+>--with-lockdir</VAR
 > option.
 		This directory is by default <TT
 CLASS="FILENAME"

@@ -5,7 +5,7 @@
 >smbclient</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -38,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbclient</B
->  {servicename} [password] [-b &lt;buffer size&gt;] [-d debuglevel] [-D Directory] [-U username] [-W workgroup] [-M &lt;netbios name&gt;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &lt;netbios name&gt;] [-I destinationIP] [-E] [-c &lt;command string&gt;] [-i scope] [-O &lt;socket options&gt;] [-p port] [-R &lt;name resolve order&gt;] [-s &lt;smb config file&gt;] [-T&lt;c|x&gt;IXFqgbNan] [-k]</P
+>  {servicename} [password] [-b &#60;buffer size&#62;] [-d debuglevel] [-D Directory] [-U username] [-W workgroup] [-M &#60;netbios name&#62;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &#60;netbios name&#62;] [-I destinationIP] [-E] [-c &#60;command string&#62;] [-i scope] [-O &#60;socket options&#62;] [-p port] [-R &#60;name resolve order&#62;] [-s &#60;smb config file&#62;] [-T&#60;c|x&#62;IXFqgbNan] [-k]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -94,18 +94,14 @@ CLASS="VARIABLELIST"
 		<TT
 CLASS="FILENAME"
 >//server/service</TT
-> where <TT
+> where <VAR
 CLASS="PARAMETER"
-><I
 >server
-		</I
-></TT
+		</VAR
 > is the NetBIOS name of the SMB/CIFS server 
-		offering the desired service and <TT
+		offering the desired service and <VAR
 CLASS="PARAMETER"
-><I
->service</I
-></TT
+>service</VAR
 > 
 		is the name of the service offered.  Thus to connect to 
 		the service "printer" on the SMB/CIFS server "smbserver",
@@ -122,11 +118,9 @@ CLASS="FILENAME"
 		</P
 ><P
 >The server name is looked up according to either 
-		the <TT
+		the <VAR
 CLASS="PARAMETER"
-><I
->-R</I
-></TT
+>-R</VAR
 > parameter to <B
 CLASS="COMMAND"
 >smbclient</B
@@ -148,27 +142,21 @@ CLASS="REFENTRYTITLE"
 ><P
 >The password required to access the specified 
 		service on the specified server. If this parameter is 
-		supplied, the <TT
+		supplied, the <VAR
 CLASS="PARAMETER"
-><I
->-N</I
-></TT
+>-N</VAR
 > option (suppress 
 		password prompt) is assumed. </P
 ><P
 >There is no default password. If no password is supplied 
 		on the command line (either by using this parameter or adding 
-		a password to the <TT
+		a password to the <VAR
 CLASS="PARAMETER"
-><I
->-U</I
-></TT
+>-U</VAR
 > option (see 
-		below)) and the <TT
+		below)) and the <VAR
 CLASS="PARAMETER"
-><I
->-N</I
-></TT
+>-N</VAR
 > option is not 
 		specified, the client will prompt for a password, even if 
 		the desired service does not require one. (If no password is 
@@ -212,7 +200,7 @@ CLASS="REFENTRYTITLE"
 		options. </P
 ></DD
 ><DT
->-R &lt;name resolve order&gt;</DT
+>-R &#60;name resolve order&#62;</DT
 ><DD
 ><P
 >This option is used by the programs in the Samba 
@@ -227,9 +215,9 @@ CLASS="REFENTRYTITLE"
 ><UL
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->lmhosts</TT
+>lmhosts</CODE
 >: Lookup an IP 
 			address in the Samba lmhosts file. If the line in lmhosts has 
 			no name type attached to the NetBIOS name (see 
@@ -244,9 +232,9 @@ CLASS="REFENTRYTITLE"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->host</TT
+>host</CODE
 >: Do a standard host 
 			name to IP address resolution, using the system <TT
 CLASS="FILENAME"
@@ -264,31 +252,27 @@ CLASS="FILENAME"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->wins</TT
+>wins</CODE
 >: Query a name with 
-			the IP address listed in the <TT
+			the IP address listed in the <VAR
 CLASS="PARAMETER"
-><I
->wins server</I
-></TT
+>wins server</VAR
 >
 			parameter.  If no WINS server has
 			been specified this method will be ignored.</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->bcast</TT
+>bcast</CODE
 >: Do a broadcast on 
 			each of the known local interfaces listed in the 
-			<TT
+			<VAR
 CLASS="PARAMETER"
-><I
->interfaces</I
-></TT
+>interfaces</VAR
 >
 			parameter. This is the least reliable of the name resolution 
 			methods as it depends on the target host being on a locally 
@@ -307,12 +291,10 @@ CLASS="REFENTRYTITLE"
 		(name resolve order) will be used. </P
 ><P
 >The default order is lmhosts, host, wins, bcast and without 
-		this parameter or any entry in the <TT
+		this parameter or any entry in the <VAR
 CLASS="PARAMETER"
-><I
 >name resolve order
-		</I
-></TT
+		</VAR
 > parameter of the <SPAN
 CLASS="CITEREFENTRY"
 ><SPAN
@@ -354,25 +336,19 @@ CLASS="FILENAME"
 > 
 		to the machine FRED. </P
 ><P
->You may also find the <TT
+>You may also find the <VAR
 CLASS="PARAMETER"
-><I
->-U</I
-></TT
+>-U</VAR
 > and 
-		<TT
+		<VAR
 CLASS="PARAMETER"
-><I
->-I</I
-></TT
+>-I</VAR
 > options useful, as they allow you to 
 		control the FROM and TO parts of the message. </P
 ><P
->See the <TT
+>See the <VAR
 CLASS="PARAMETER"
-><I
->message command</I
-></TT
+>message command</VAR
 > parameter in the <SPAN
 CLASS="CITEREFENTRY"
 ><SPAN
@@ -441,11 +417,9 @@ CLASS="EMPHASIS"
 >-d debuglevel</DT
 ><DD
 ><P
-><TT
+><VAR
 CLASS="REPLACEABLE"
-><I
->debuglevel</I
-></TT
+>debuglevel</VAR
 > is an integer from 0 to 10, or 
 		the letter 'A'. </P
 ><P
@@ -463,11 +437,9 @@ CLASS="REPLACEABLE"
 		data, and should only be used when investigating a problem.
 		Levels above 3 are designed for use only by developers and 
 		generate HUGE amounts of log data, most of which is extremely 
-		cryptic. If <TT
+		cryptic. If <VAR
 CLASS="REPLACEABLE"
-><I
->debuglevel</I
-></TT
+>debuglevel</VAR
 > is set to the letter 'A', then <SPAN
 CLASS="emphasis"
 ><I
@@ -505,11 +477,9 @@ CLASS="FILENAME"
 >-l logfilename</DT
 ><DD
 ><P
->If specified, <TT
+>If specified, <VAR
 CLASS="REPLACEABLE"
-><I
->logfilename</I
-></TT
+>logfilename</VAR
 > specifies a base filename 
 		into which operational data from the running client will be 
 		logged. </P
@@ -536,21 +506,17 @@ CLASS="FILENAME"
 >-I IP-address</DT
 ><DD
 ><P
-><TT
+><VAR
 CLASS="REPLACEABLE"
-><I
->IP address</I
-></TT
+>IP address</VAR
 > is the address of the server to connect to. 
 		It should be specified in standard "a.b.c.d" notation. </P
 ><P
 >Normally the client would attempt to locate a named 
 		SMB/CIFS server by looking it up via the NetBIOS name resolution 
-		mechanism described above in the <TT
+		mechanism described above in the <VAR
 CLASS="PARAMETER"
-><I
->name resolve order</I
-></TT
+>name resolve order</VAR
 > 
 		parameter above. Using this parameter will force the client
 		to assume that the server is on the machine with the specified IP 
@@ -578,19 +544,19 @@ CLASS="PARAMETER"
 ><P
 >Sets the SMB username or username and password. 
 		If %pass is not specified, The user will be prompted. The client 
-		will first check the <TT
+		will first check the <VAR
 CLASS="ENVAR"
->USER</TT
+>USER</VAR
 > environment variable, then the 
-		<TT
+		<VAR
 CLASS="ENVAR"
->LOGNAME</TT
+>LOGNAME</VAR
 > variable and if either exists, the 
 		string is uppercased. Anything in these variables following a '%' 
 		sign will be treated as the password. If these environment 
-		variables are not found, the username <TT
+		variables are not found, the username <CODE
 CLASS="CONSTANT"
->GUEST</TT
+>GUEST</CODE
 > 
 		is used. </P
 ><P
@@ -599,9 +565,9 @@ CLASS="CONSTANT"
 CLASS="COMMAND"
 >smbclient</B
 > will look for 
-		a <TT
+		a <VAR
 CLASS="ENVAR"
->PASSWD</TT
+>PASSWD</VAR
 > environment variable from which 
 		to read the password. </P
 ><P
@@ -611,17 +577,15 @@ CLASS="ENVAR"
 		wish to pass the credentials on the command line or via environment 
 		variables. If this method is used, make certain that the permissions 
 		on the file restrict access from unwanted users.  See the 
-		<TT
+		<VAR
 CLASS="PARAMETER"
-><I
->-A</I
-></TT
+>-A</VAR
 > for more details. </P
 ><P
 >Be cautious about including passwords in scripts or in 
-		the <TT
+		the <VAR
 CLASS="ENVAR"
->PASSWD</TT
+>PASSWD</VAR
 > environment variable. Also, on 
 		many systems the command line of a running process may be seen 
 		via the <B
@@ -645,9 +609,9 @@ CLASS="COMMAND"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->username = &lt;value&gt; 
-password = &lt;value&gt;
-domain = &lt;value&gt;</PRE
+>username = &#60;value&#62; 
+password = &#60;value&#62;
+domain = &#60;value&#62;</PRE
 ></P
 ><P
 >If the domain parameter is missing the current workgroup name
@@ -663,12 +627,10 @@ domain = &lt;value&gt;</PRE
 CLASS="COMMAND"
 >smbclient -L 
 		host</B
-> and a list should appear.  The <TT
+> and a list should appear.  The <VAR
 CLASS="PARAMETER"
-><I
 >-I
-		</I
-></TT
+		</VAR
 > option may be useful if your NetBIOS names don't 
 		match your TCP/IP DNS host names or if you are trying to reach a 
 		host on another network. </P
@@ -747,39 +709,31 @@ CLASS="COMMAND"
 ><UL
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->c</I
-></TT
+>c</VAR
 > - Create a tar file on UNIX. 
 			Must be followed by the name of a tar file, tape device
 			or "-" for standard output. If using standard output you must 
 			turn the log level to its lowest value -d0 to avoid corrupting 
 			your tar file. This flag is mutually exclusive with the 
-			<TT
+			<VAR
 CLASS="PARAMETER"
-><I
->x</I
-></TT
+>x</VAR
 > flag. </P
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->x</I
-></TT
+>x</VAR
 > - Extract (restore) a local 
 			tar file back to a share. Unless the -D option is given, the tar 
 			files will be restored from the top level of the share. Must be 
 			followed by the name of the tar file, device or "-" for standard 
-			input. Mutually exclusive with the <TT
+			input. Mutually exclusive with the <VAR
 CLASS="PARAMETER"
-><I
->c</I
-></TT
+>c</VAR
 > flag. 
 			Restored files have their creation times (mtime) set to the
 			date saved in the tar file. Directories currently do not get 
@@ -787,11 +741,9 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->I</I
-></TT
+>I</VAR
 > - Include files and directories. 
 			Is the default behavior when filenames are specified above. Causes 
 			tar files to be included in an extract or create (and therefore 
@@ -800,28 +752,22 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->X</I
-></TT
+>X</VAR
 > - Exclude files and directories. 
 			Causes tar files to be excluded from an extract or create. See 
 			example below.  Filename globbing works in one of two ways now. 
-			See <TT
+			See <VAR
 CLASS="PARAMETER"
-><I
->r</I
-></TT
+>r</VAR
 > below. </P
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->b</I
-></TT
+>b</VAR
 > - Blocksize. Must be followed 
 			by a valid (greater than zero) blocksize.  Causes tar file to be 
 			written out in blocksize*TBLOCK (usually 512 byte) blocks. 
@@ -829,38 +775,30 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->g</I
-></TT
+>g</VAR
 > - Incremental. Only back up 
 			files that have the archive bit set. Useful only with the 
-			<TT
+			<VAR
 CLASS="PARAMETER"
-><I
->c</I
-></TT
+>c</VAR
 > flag. </P
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->q</I
-></TT
+>q</VAR
 > - Quiet. Keeps tar from printing 
 			diagnostics as it works.  This is the same as tarmode quiet. 
 			</P
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->r</I
-></TT
+>r</VAR
 > - Regular expression include
 			or exclude.  Uses regular  expression matching for 
 			excluding or excluding files if  compiled with HAVE_REGEX_H. 
@@ -870,41 +808,31 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->N</I
-></TT
+>N</VAR
 > - Newer than. Must be followed 
 			by the name of a file whose date is compared against files found 
 			on the share during a create. Only files newer than the file 
 			specified are backed up to the tar file. Useful only with the 
-			<TT
+			<VAR
 CLASS="PARAMETER"
-><I
->c</I
-></TT
+>c</VAR
 > flag. </P
 ></LI
 ><LI
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->a</I
-></TT
+>a</VAR
 > - Set archive bit. Causes the 
 			archive bit to be reset when a file is backed up. Useful with the 
-			<TT
+			<VAR
 CLASS="PARAMETER"
-><I
->g</I
-></TT
-> and <TT
+>g</VAR
+> and <VAR
 CLASS="PARAMETER"
-><I
->c</I
-></TT
+>c</VAR
 > flags. 
 			</P
 ></LI
@@ -1016,16 +944,12 @@ CLASS="COMMAND"
 ><DD
 ><P
 >command string is a semicolon-separated list of 
-		commands to be executed instead of prompting from stdin. <TT
+		commands to be executed instead of prompting from stdin. <VAR
 CLASS="PARAMETER"
-><I
->		-N</I
-></TT
-> is implied by <TT
+>		-N</VAR
+> is implied by <VAR
 CLASS="PARAMETER"
-><I
->-c</I
-></TT
+>-c</VAR
 >.</P
 ><P
 >This is particularly useful in scripts and for printing stdin 
@@ -1056,9 +980,9 @@ NAME="AEN336"
 >Once the client is running, the user is presented with 
 	a prompt : </P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->smb:\&gt; </TT
+>smb:\&#62; </SAMP
 ></P
 ><P
 >The backslash ("\\") indicates the current working directory 
@@ -1078,7 +1002,7 @@ CLASS="PROMPT"
 ><P
 >Parameters shown in square brackets (e.g., "[parameter]") are 
 	optional.  If not given, the command will use suitable defaults. Parameters 
-	shown in angle brackets (e.g., "&lt;parameter&gt;") are required.
+	shown in angle brackets (e.g., "&#60;parameter&#62;") are required.
 	</P
 ><P
 >Note that all commands operating on the server are actually 
@@ -1096,11 +1020,9 @@ CLASS="VARIABLELIST"
 >? [command]</DT
 ><DD
 ><P
->If <TT
+>If <VAR
 CLASS="REPLACEABLE"
-><I
->command</I
-></TT
+>command</VAR
 > is specified, the ? command will display 
 		a brief informative message about the specified command.  If no 
 		command is specified, a list of available commands will
@@ -1110,11 +1032,9 @@ CLASS="REPLACEABLE"
 >! [shell command]</DT
 ><DD
 ><P
->If <TT
+>If <VAR
 CLASS="REPLACEABLE"
-><I
->shell command</I
-></TT
+>shell command</VAR
 > is specified, the !  
 		command will execute a shell locally and run the specified shell 
 		command. If no command is specified, a local shell will be run. 
@@ -1169,27 +1089,23 @@ CLASS="REPLACEABLE"
 		directory on the server will be reported. </P
 ></DD
 ><DT
->del &lt;mask&gt;</DT
+>del &#60;mask&#62;</DT
 ><DD
 ><P
 >The client will request that the server attempt 
-		to delete all files matching <TT
+		to delete all files matching <VAR
 CLASS="REPLACEABLE"
-><I
->mask</I
-></TT
+>mask</VAR
 > from the current working 
 		directory on the server. </P
 ></DD
 ><DT
->dir &lt;mask&gt;</DT
+>dir &#60;mask&#62;</DT
 ><DD
 ><P
->A list of the files matching <TT
+>A list of the files matching <VAR
 CLASS="REPLACEABLE"
-><I
->mask</I
-></TT
+>mask</VAR
 > in the current 
 		working directory on the server will be retrieved from the server 
 		and displayed. </P
@@ -1202,7 +1118,7 @@ CLASS="REPLACEABLE"
 		from the program. </P
 ></DD
 ><DT
->get &lt;remote file name&gt; [local file name]</DT
+>get &#60;remote file name&#62; [local file name]</DT
 ><DD
 ><P
 >Copy the file called <TT
@@ -1230,11 +1146,9 @@ CLASS="COMMAND"
 >lcd [directory name]</DT
 ><DD
 ><P
->If <TT
+>If <VAR
 CLASS="REPLACEABLE"
-><I
->directory name</I
-></TT
+>directory name</VAR
 > is specified, the current 
 		working directory on the local machine will be changed to 
 		the directory specified. This operation will fail if for any 
@@ -1267,13 +1181,13 @@ CLASS="REPLACEABLE"
 		lowercase filenames are the norm on UNIX systems. </P
 ></DD
 ><DT
->ls &lt;mask&gt;</DT
+>ls &#60;mask&#62;</DT
 ><DD
 ><P
 >See the dir command above. </P
 ></DD
 ><DT
->mask &lt;mask&gt;</DT
+>mask &#60;mask&#62;</DT
 ><DD
 ><P
 >This command allows the user to set up a mask 
@@ -1299,28 +1213,24 @@ CLASS="REPLACEABLE"
 		mask back to "*" after using the mget or mput commands. </P
 ></DD
 ><DT
->md &lt;directory name&gt;</DT
+>md &#60;directory name&#62;</DT
 ><DD
 ><P
 >See the mkdir command. </P
 ></DD
 ><DT
->mget &lt;mask&gt;</DT
+>mget &#60;mask&#62;</DT
 ><DD
 ><P
->Copy all files matching <TT
+>Copy all files matching <VAR
 CLASS="REPLACEABLE"
-><I
->mask</I
-></TT
+>mask</VAR
 > from the server to 
 		the machine running the client. </P
 ><P
->Note that <TT
+>Note that <VAR
 CLASS="REPLACEABLE"
-><I
->mask</I
-></TT
+>mask</VAR
 > is interpreted differently during recursive 
 		operation and non-recursive operation - refer to the recurse and 
 		mask commands for more information. Note that all transfers in 
@@ -1330,30 +1240,26 @@ CLASS="COMMAND"
 > are binary. See also the lowercase command. </P
 ></DD
 ><DT
->mkdir &lt;directory name&gt;</DT
+>mkdir &#60;directory name&#62;</DT
 ><DD
 ><P
 >Create a new directory on the server (user access 
 		privileges permitting) with the specified name. </P
 ></DD
 ><DT
->mput &lt;mask&gt;</DT
+>mput &#60;mask&#62;</DT
 ><DD
 ><P
->Copy all files matching <TT
+>Copy all files matching <VAR
 CLASS="REPLACEABLE"
-><I
->mask</I
-></TT
+>mask</VAR
 > in the current working 
 		directory on the local machine to the current working directory on 
 		the server. </P
 ><P
->Note that <TT
+>Note that <VAR
 CLASS="REPLACEABLE"
-><I
->mask</I
-></TT
+>mask</VAR
 > is interpreted differently during recursive 
 		operation and non-recursive operation - refer to the recurse and mask 
 		commands for more information. Note that all transfers in <B
@@ -1363,7 +1269,7 @@ CLASS="COMMAND"
 		are binary. </P
 ></DD
 ><DT
->print &lt;file name&gt;</DT
+>print &#60;file name&#62;</DT
 ><DD
 ><P
 >Print the specified file from the local machine 
@@ -1372,7 +1278,7 @@ CLASS="COMMAND"
 >See also the printmode command.</P
 ></DD
 ><DT
->printmode &lt;graphics or text&gt;</DT
+>printmode &#60;graphics or text&#62;</DT
 ><DD
 ><P
 >Set the print mode to suit either binary data 
@@ -1392,7 +1298,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->put &lt;local file name&gt; [remote file name]</DT
+>put &#60;local file name&#62; [remote file name]</DT
 ><DD
 ><P
 >Copy the file called <TT
@@ -1424,7 +1330,7 @@ CLASS="COMMAND"
 >See the exit command. </P
 ></DD
 ><DT
->rd &lt;directory name&gt;</DT
+>rd &#60;directory name&#62;</DT
 ><DD
 ><P
 >See the rmdir command. </P
@@ -1449,26 +1355,24 @@ CLASS="COMMAND"
 		using the mask command will be ignored. </P
 ></DD
 ><DT
->rm &lt;mask&gt;</DT
+>rm &#60;mask&#62;</DT
 ><DD
 ><P
->Remove all files matching <TT
+>Remove all files matching <VAR
 CLASS="REPLACEABLE"
-><I
->mask</I
-></TT
+>mask</VAR
 > from the current 
 		working directory on the server. </P
 ></DD
 ><DT
->rmdir &lt;directory name&gt;</DT
+>rmdir &#60;directory name&#62;</DT
 ><DD
 ><P
 >Remove the specified directory (user access 
 		privileges permitting) from the server. </P
 ></DD
 ><DT
->setmode &lt;filename&gt; &lt;perm=[+|\-]rsha&gt;</DT
+>setmode &#60;filename&#62; &#60;perm=[+|\-]rsha&#62;</DT
 ><DD
 ><P
 >A version of the DOS attrib command to set 
@@ -1493,15 +1397,13 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->tar &lt;c|x&gt;[IXbgNa]</DT
+>tar &#60;c|x&#62;[IXbgNa]</DT
 ><DD
 ><P
->Performs a tar operation - see the <TT
+>Performs a tar operation - see the <VAR
 CLASS="PARAMETER"
-><I
 >-T
-		</I
-></TT
+		</VAR
 > command line option above. Behavior may be affected 
 		by the tarmode command (see below). Using g (incremental) and N 
 		(newer) will affect tarmode settings. Note that using the "-" option 
@@ -1509,20 +1411,18 @@ CLASS="PARAMETER"
 		</P
 ></DD
 ><DT
->blocksize &lt;blocksize&gt;</DT
+>blocksize &#60;blocksize&#62;</DT
 ><DD
 ><P
 >Blocksize. Must be followed by a valid (greater 
 		than zero) blocksize. Causes tar file to be written out in 
-		<TT
+		<VAR
 CLASS="REPLACEABLE"
-><I
->blocksize</I
-></TT
+>blocksize</VAR
 >*TBLOCK (usually 512 byte) blocks. </P
 ></DD
 ><DT
->tarmode &lt;full|inc|reset|noreset&gt;</DT
+>tarmode &#60;full|inc|reset|noreset&#62;</DT
 ><DD
 ><P
 >Changes tar's behavior with regard to archive 
@@ -1564,25 +1464,25 @@ NAME="AEN532"
 ><H2
 >ENVIRONMENT VARIABLES</H2
 ><P
->The variable <TT
+>The variable <VAR
 CLASS="ENVAR"
->USER</TT
+>USER</VAR
 > may contain the 
 	username of the person  using the client. This information is 
 	used only if the protocol  level is high enough to support 
 	session-level passwords.</P
 ><P
->The variable <TT
+>The variable <VAR
 CLASS="ENVAR"
->PASSWD</TT
+>PASSWD</VAR
 > may contain 
 	the password of the person using the client.  This information is 
 	used only if the protocol level is high enough to support 
 	session-level passwords. </P
 ><P
->The variable <TT
+>The variable <VAR
 CLASS="ENVAR"
->LIBSMB_PROG</TT
+>LIBSMB_PROG</VAR
 > may contain 
 	the path, executed with system(), which the client should connect 
         to instead of connecting to a server.  This functionality is primarily

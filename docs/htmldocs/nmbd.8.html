@@ -5,7 +5,7 @@
 >nmbd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -38,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >nmbd</B
->  [-D] [-F] [-S] [-a] [-i] [-o] [-h] [-V] [-d &lt;debug level&gt;] [-H &lt;lmhosts file&gt;] [-l &lt;log directory&gt;] [-n &lt;primary netbios name&gt;] [-p &lt;port number&gt;] [-s &lt;configuration file&gt;]</P
+>  [-D] [-F] [-S] [-a] [-i] [-o] [-h] [-V] [-d &#60;debug level&#62;] [-H &#60;lmhosts file&#62;] [-l &#60;log directory&#62;] [-n &#60;primary netbios name&#62;] [-p &#60;port number&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -215,9 +215,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > also logs to standard
-		output, as if the <TT
+		output, as if the <CODE
 CLASS="CONSTANT"
->-S</TT
+>-S</CODE
 > parameter had been
 		given. </P
 ></DD
@@ -244,7 +244,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-H &lt;filename&gt;</DT
+>-H &#60;filename&#62;</DT
 ><DD
 ><P
 >NetBIOS lmhosts file.  The lmhosts 
@@ -253,12 +253,10 @@ CLASS="COMMAND"
 		resolution mechanism <A
 HREF="smb.conf.5.html#nameresolveorder"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >name resolve
-		order</I
-></TT
+		order</VAR
 ></A
 > described in <SPAN
 CLASS="CITEREFENTRY"
@@ -320,7 +318,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-d &lt;debug level&gt;</DT
+>-d &#60;debug level&#62;</DT
 ><DD
 ><P
 >debuglevel is an integer 
@@ -344,11 +342,9 @@ CLASS="COMMAND"
 		the <A
 HREF="smb.conf.5.html#loglevel"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->log level</I
-></TT
+>log level</VAR
 ></A
 > 
 		parameter in the <SPAN
@@ -360,7 +356,7 @@ CLASS="REFENTRYTITLE"
 > file.</P
 ></DD
 ><DT
->-l &lt;log directory&gt;</DT
+>-l &#60;log directory&#62;</DT
 ><DD
 ><P
 >The -l parameter specifies a directory 
@@ -395,7 +391,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->-n &lt;primary NetBIOS name&gt;</DT
+>-n &#60;primary NetBIOS name&#62;</DT
 ><DD
 ><P
 >This option allows you to override
@@ -403,12 +399,10 @@ CLASS="COMMAND"
 		to setting the <A
 HREF="smb.conf.5.html#netbiosname"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >NetBIOS
-		name</I
-></TT
+		name</VAR
 ></A
 > parameter in the <SPAN
 CLASS="CITEREFENTRY"
@@ -427,7 +421,7 @@ CLASS="REFENTRYTITLE"
 >.</P
 ></DD
 ><DT
->-p &lt;UDP port number&gt;</DT
+>-p &#60;UDP port number&#62;</DT
 ><DD
 ><P
 >UDP port number is a positive integer value.
@@ -440,7 +434,7 @@ CLASS="COMMAND"
 		won't need help!</P
 ></DD
 ><DT
->-s &lt;configuration file&gt;</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
 >The default configuration file name
@@ -565,9 +559,9 @@ CLASS="FILENAME"
 		<A
 HREF="smb.conf.5.html#WINSSUPPORT"
 TARGET="_top"
-><TT
+><CODE
 CLASS="CONSTANT"
->wins support</TT
+>wins support</CODE
 ></A
 >
 		parameter in the <SPAN
@@ -603,9 +597,9 @@ CLASS="EMPHASIS"
 > (see the <A
 HREF="smb.conf.5.html#LOCALMASTER"
 TARGET="_top"
-><TT
+><CODE
 CLASS="CONSTANT"
->local master</TT
+>local master</CODE
 ></A
 >
 		parameter in the <SPAN

@@ -2,10 +2,10 @@
 <HTML
 ><HEAD
 ><TITLE
->Diagnosing your samba server</TITLE
+>The samba checklist</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -67,15 +67,15 @@ CLASS="CHAPTER"
 ><A
 NAME="DIAGNOSIS"
 ></A
->Chapter 24. Diagnosing your samba server</H1
+>Chapter 25. The samba checklist</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3490"
-></A
->24.1. Introduction</H1
+NAME="AEN3545"
+>25.1. Introduction</A
+></H1
 ><P
 >This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
@@ -95,9 +95,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3495"
-></A
->24.2. Assumptions</H1
+NAME="AEN3550"
+>25.2. Assumptions</A
+></H1
 ><P
 >In all of the tests it is assumed you have a Samba server called 
 BIGSERVER and a PC called ACLIENT both in workgroup TESTGROUP.</P
@@ -133,17 +133,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3505"
-></A
->24.3. Tests</H1
+NAME="AEN3560"
+>25.3. Tests</A
+></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3507"
-></A
->24.3.1. Test 1</H2
+NAME="AEN3562"
+>25.3.1. Test 1</A
+></H2
 ><P
 >In the directory in which you store your smb.conf file, run the command
 "testparm smb.conf". If it reports any errors then your smb.conf
@@ -163,9 +163,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3513"
-></A
->24.3.2. Test 2</H2
+NAME="AEN3568"
+>25.3.2. Test 2</A
+></H2
 ><P
 >Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
 the unix box. If you don't get a valid response then your TCP/IP
@@ -189,9 +189,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3519"
-></A
->24.3.3. Test 3</H2
+NAME="AEN3574"
+>25.3.3. Test 3</A
+></H2
 ><P
 >Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. </P
@@ -260,9 +260,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3534"
-></A
->24.3.4. Test 4</H2
+NAME="AEN3589"
+>25.3.4. Test 4</A
+></H2
 ><P
 >Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.</P
@@ -281,9 +281,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3539"
-></A
->24.3.5. Test 5</H2
+NAME="AEN3594"
+>25.3.5. Test 5</A
+></H2
 ><P
 >run the command <B
 CLASS="COMMAND"
@@ -302,9 +302,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3545"
-></A
->24.3.6. Test 6</H2
+NAME="AEN3600"
+>25.3.6. Test 6</A
+></H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -336,9 +336,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3553"
-></A
->24.3.7. Test 7</H2
+NAME="AEN3608"
+>25.3.7. Test 7</A
+></H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -346,7 +346,7 @@ CLASS="COMMAND"
 >. You should 
 then be prompted for a password. You should use the password of the account
 you are logged into the unix box with. If you want to test with
-another account then add the -U &gt;accountname&lt; option to the end of
+another account then add the -U &#62;accountname&#60; option to the end of
 the command line.  eg: 
 <B
 CLASS="COMMAND"
@@ -412,7 +412,7 @@ CLASS="COMMAND"
 > etc. 
 Type <B
 CLASS="COMMAND"
->help &gt;command&lt;</B
+>help &#62;command&#60;</B
 > for instructions. You should
 especially check that the amount of free disk space shown is correct
 when you type <B
@@ -425,9 +425,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3579"
-></A
->24.3.8. Test 8</H2
+NAME="AEN3634"
+>25.3.8. Test 8</A
+></H2
 ><P
 >On the PC type the command <B
 CLASS="COMMAND"
@@ -485,9 +485,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3596"
-></A
->24.3.9. Test 9</H2
+NAME="AEN3651"
+>25.3.9. Test 9</A
+></H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -519,9 +519,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3604"
-></A
->24.3.10. Test 10</H2
+NAME="AEN3659"
+>25.3.10. Test 10</A
+></H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -545,9 +545,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3610"
-></A
->24.3.11. Test 11</H2
+NAME="AEN3665"
+>25.3.11. Test 11</A
+></H2
 ><P
 >From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
@@ -573,9 +573,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3615"
-></A
->24.4. Still having troubles?</H1
+NAME="AEN3670"
+>25.4. Still having troubles?</A
+></H1
 ><P
 >Try the mailing list or newsgroup, or use the ethereal utility to
 sniff the problem. The official samba mailing list can be reached at

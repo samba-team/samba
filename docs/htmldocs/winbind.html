@@ -5,7 +5,7 @@
 >Unified Logons between Windows NT and UNIX using Winbind</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -80,9 +80,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2360"
-></A
->14.1. Abstract</H1
+NAME="AEN2263"
+>14.1. Abstract</A
+></H1
 ><P
 >Integration of UNIX and Microsoft Windows NT through 
 	a unified logon has been considered a "holy grail" in heterogeneous 
@@ -107,9 +107,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2364"
-></A
->14.2. Introduction</H1
+NAME="AEN2267"
+>14.2. Introduction</A
+></H1
 ><P
 >It is well known that UNIX and Microsoft Windows NT have 
 	different models for representing user and group information and 
@@ -161,9 +161,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2377"
-></A
->14.3. What Winbind Provides</H1
+NAME="AEN2280"
+>14.3. What Winbind Provides</A
+></H1
 ><P
 >Winbind unifies UNIX and Windows NT account management by 
 	allowing a UNIX box to become a full member of a NT domain. Once 
@@ -203,9 +203,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2384"
-></A
->14.3.1. Target Uses</H2
+NAME="AEN2287"
+>14.3.1. Target Uses</A
+></H2
 ><P
 >Winbind is targeted at organizations that have an 
 		existing NT based domain infrastructure into which they wish 
@@ -227,9 +227,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2388"
-></A
->14.4. How Winbind Works</H1
+NAME="AEN2291"
+>14.4. How Winbind Works</A
+></H1
 ><P
 >The winbind system is designed around a client/server 
 	architecture. A long running <B
@@ -247,9 +247,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2393"
-></A
->14.4.1. Microsoft Remote Procedure Calls</H2
+NAME="AEN2296"
+>14.4.1. Microsoft Remote Procedure Calls</A
+></H2
 ><P
 >Over the last few years, efforts have been underway 
 		by various Samba Team members to decode various aspects of 
@@ -273,9 +273,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2397"
-></A
->14.4.2. Microsoft Active Directory Services</H2
+NAME="AEN2300"
+>14.4.2. Microsoft Active Directory Services</A
+></H2
 ><P
 >                Since late 2001, Samba has gained the ability to
                 interact with Microsoft Windows 2000 using its 'Native
@@ -292,9 +292,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2400"
-></A
->14.4.3. Name Service Switch</H2
+NAME="AEN2303"
+>14.4.3. Name Service Switch</A
+></H2
 ><P
 >The Name Service Switch, or NSS, is a feature that is 
 		present in many UNIX operating systems. It allows system 
@@ -372,9 +372,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2416"
-></A
->14.4.4. Pluggable Authentication Modules</H2
+NAME="AEN2319"
+>14.4.4. Pluggable Authentication Modules</A
+></H2
 ><P
 >Pluggable Authentication Modules, also known as PAM, 
 		is a system for abstracting authentication and authorization 
@@ -421,9 +421,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2424"
-></A
->14.4.5. User and Group ID Allocation</H2
+NAME="AEN2327"
+>14.4.5. User and Group ID Allocation</A
+></H2
 ><P
 >When a user or group is created under Windows NT 
 		is it allocated a numerical relative identifier (RID). This is 
@@ -447,9 +447,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2428"
-></A
->14.4.6. Result Caching</H2
+NAME="AEN2331"
+>14.4.6. Result Caching</A
+></H2
 ><P
 >An active system can generate a lot of user and group 
 		name lookups. To reduce the network cost of these lookups winbind 
@@ -470,9 +470,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2431"
-></A
->14.5. Installation and Configuration</H1
+NAME="AEN2334"
+>14.5. Installation and Configuration</A
+></H1
 ><P
 >Many thanks to John Trostel <A
 HREF="mailto:jtrostel@snapserver.com"
@@ -497,9 +497,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2438"
-></A
->14.5.1. Introduction</H2
+NAME="AEN2341"
+>14.5.1. Introduction</A
+></H2
 ><P
 >This HOWTO describes the procedures used to get winbind up and 
 running on my RedHat 7.1 system.  Winbind is capable of providing access 
@@ -556,9 +556,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2451"
-></A
->14.5.2. Requirements</H2
+NAME="AEN2354"
+>14.5.2. Requirements</A
+></H2
 ><P
 >If you have a samba configuration file that you are currently 
 using... <SPAN
@@ -626,9 +626,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2465"
-></A
->14.5.3. Testing Things Out</H2
+NAME="AEN2368"
+>14.5.3. Testing Things Out</A
+></H2
 ><P
 >Before starting, it is probably best to kill off all the SAMBA 
 related daemons running on your server.  Kill off all <B
@@ -671,9 +671,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2476"
-></A
->14.5.3.1. Configure and compile SAMBA</H3
+NAME="AEN2379"
+>14.5.3.1. Configure and compile SAMBA</A
+></H3
 ><P
 >The configuration and compilation of SAMBA is pretty straightforward.
 The first three steps may not be necessary depending upon
@@ -681,44 +681,44 @@ whether or not you have previously built the Samba binaries.</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >autoconf</B
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >make clean</B
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >rm config.cache</B
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >./configure</B
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >make</B
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >make install</B
@@ -737,13 +737,13 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2495"
-></A
+NAME="AEN2398"
 >14.5.3.2. Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
 > and the 
-winbind libraries</H3
+winbind libraries</A
+></H3
 ><P
 >The libraries needed to run the <B
 CLASS="COMMAND"
@@ -751,9 +751,9 @@ CLASS="COMMAND"
 > daemon 
 through nsswitch need to be copied to their proper locations, so</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >cp ../samba/source/nsswitch/libnss_winbind.so /lib</B
@@ -761,9 +761,9 @@ CLASS="COMMAND"
 ><P
 >I also found it necessary to make the following symbolic link:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2</B
@@ -771,23 +771,23 @@ CLASS="COMMAND"
 ><P
 >And, in the case of Sun solaris:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >ln -s /usr/lib/libnss_winbind.so /usr/lib/libnss_winbind.so.1</B
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.1</B
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.2</B
@@ -823,9 +823,9 @@ CLASS="COMMAND"
 your system reboots, but it 
 is faster (and you don't need to reboot) if you do it manually:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >/sbin/ldconfig -v | grep winbind</B
@@ -842,9 +842,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2528"
-></A
->14.5.3.3. Configure smb.conf</H3
+NAME="AEN2431"
+>14.5.3.3. Configure smb.conf</A
+></H3
 ><P
 >Several parameters are needed in the smb.conf file to control 
 the behavior of <B
@@ -869,7 +869,7 @@ include the following entries in the [global] section:</P
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
-     &lt;...&gt;
+     &#60;...&#62;
      # separate domain and username with '+', like DOMAIN+username
      <A
 HREF="winbindd.8.html#WINBINDSEPARATOR"
@@ -917,44 +917,36 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2544"
-></A
->14.5.3.4. Join the SAMBA server to the PDC domain</H3
+NAME="AEN2447"
+>14.5.3.4. Join the SAMBA server to the PDC domain</A
+></H3
 ><P
 >Enter the following command to make the SAMBA server join the 
-PDC domain, where <TT
+PDC domain, where <VAR
 CLASS="REPLACEABLE"
-><I
->DOMAIN</I
-></TT
+>DOMAIN</VAR
 > is the name of 
-your Windows domain and <TT
+your Windows domain and <VAR
 CLASS="REPLACEABLE"
-><I
->Administrator</I
-></TT
+>Administrator</VAR
 > is 
 a domain user who has administrative privileges in the domain.</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >/usr/local/samba/bin/net join -S PDC -U Administrator</B
 ></P
 ><P
 >The proper response to the command should be: "Joined the domain 
-<TT
+<VAR
 CLASS="REPLACEABLE"
-><I
->DOMAIN</I
-></TT
->" where <TT
+>DOMAIN</VAR
+>" where <VAR
 CLASS="REPLACEABLE"
-><I
->DOMAIN</I
-></TT
+>DOMAIN</VAR
 > 
 is your DOMAIN name.</P
 ></DIV
@@ -963,9 +955,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2555"
-></A
->14.5.3.5. Start up the winbindd daemon and test it!</H3
+NAME="AEN2458"
+>14.5.3.5. Start up the winbindd daemon and test it!</A
+></H3
 ><P
 >Eventually, you will want to modify your smb startup script to 
 automatically invoke the winbindd daemon when the other parts of 
@@ -973,9 +965,9 @@ SAMBA start, but it is possible to test out just the winbind
 portion first.  To start up winbind services, enter the following 
 command as root:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >/usr/local/samba/bin/winbindd</B
@@ -984,9 +976,9 @@ CLASS="COMMAND"
 >I'm always paranoid and like to make sure the daemon 
 is really running...</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >ps -ae | grep winbindd</B
@@ -999,9 +991,9 @@ CLASS="COMMAND"
 >Now... for the real test, try to get some information about the 
 users on your PDC</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >/usr/local/samba/bin/wbinfo -u</B
@@ -1021,12 +1013,10 @@ CEO+krbtgt
 CEO+TsInternetUser</PRE
 ></P
 ><P
->Obviously, I have named my domain 'CEO' and my <TT
+>Obviously, I have named my domain 'CEO' and my <VAR
 CLASS="PARAMETER"
-><I
 >winbind
-separator</I
-></TT
+separator</VAR
 > is '+'.</P
 ><P
 >You can do the same sort of thing to get group information from 
@@ -1034,9 +1024,9 @@ the PDC:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >/usr/local/samba/bin/wbinfo -g</B
@@ -1056,9 +1046,9 @@ CEO+Group Policy Creator Owners</PRE
 lists of both local and PDC users and groups.
 Try the following command:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >getent passwd</B
@@ -1073,9 +1063,9 @@ directories and default shells.</P
 ><P
 >The same thing can be done for groups with the command</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >getent group</B
@@ -1086,17 +1076,17 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2591"
-></A
->14.5.3.6. Fix the init.d startup scripts</H3
+NAME="AEN2494"
+>14.5.3.6. Fix the init.d startup scripts</A
+></H3
 ><DIV
 CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2593"
-></A
->14.5.3.6.1. Linux</H4
+NAME="AEN2496"
+>14.5.3.6.1. Linux</A
+></H4
 ><P
 >The <B
 CLASS="COMMAND"
@@ -1153,7 +1143,7 @@ CLASS="PROGRAMLISTING"
         daemon /usr/local/samba/bin/winbindd
         RETVAL3=$?
         echo
-        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; touch /var/lock/subsys/smb || \
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &#38;&#38; touch /var/lock/subsys/smb || \
            RETVAL=1
         return $RETVAL
 }</PRE
@@ -1179,7 +1169,7 @@ CLASS="PROGRAMLISTING"
         echo -n $"Shutting down $KIND services: "
         killproc winbindd
         RETVAL3=$?
-        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; rm -f /var/lock/subsys/smb
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &#38;&#38; rm -f /var/lock/subsys/smb
         echo ""
         return $RETVAL
 }</PRE
@@ -1190,9 +1180,9 @@ CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2610"
-></A
->14.5.3.6.2. Solaris</H4
+NAME="AEN2513"
+>14.5.3.6.2. Solaris</A
+></H4
 ><P
 >On solaris, you need to modify the 
 <TT
@@ -1221,7 +1211,7 @@ killproc() {            # kill the named process(es)
         pid=`/usr/bin/ps -e |
              /usr/bin/grep -w $1 |
              /usr/bin/sed -e 's/^  *//' -e 's/ .*//'`
-        [ "$pid" != "" ] &amp;&amp; kill $pid
+        [ "$pid" != "" ] &#38;&#38; kill $pid
 }
  
 # Start/stop processes required for samba server
@@ -1261,9 +1251,9 @@ CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2617"
-></A
->14.5.3.6.3. Restarting</H4
+NAME="AEN2520"
+>14.5.3.6.3. Restarting</A
+></H4
 ><P
 >If you restart the <B
 CLASS="COMMAND"
@@ -1285,9 +1275,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2623"
-></A
->14.5.3.7. Configure Winbind and PAM</H3
+NAME="AEN2526"
+>14.5.3.7. Configure Winbind and PAM</A
+></H3
 ><P
 >If you have made it this far, you know that winbindd and samba are working
 together.  If you want to use winbind to provide authentication for other 
@@ -1305,9 +1295,9 @@ CLASS="FILENAME"
 > directory
 by invoking the command</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >make nsswitch/pam_winbind.so</B
@@ -1331,9 +1321,9 @@ CLASS="FILENAME"
 >/usr/lib/security</TT
 >.</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root#</TT
+>root#</SAMP
 > <B
 CLASS="COMMAND"
 >cp ../samba/source/nsswitch/pam_winbind.so /lib/security</B
@@ -1343,9 +1333,9 @@ CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2640"
-></A
->14.5.3.7.1. Linux/FreeBSD-specific PAM configuration</H4
+NAME="AEN2543"
+>14.5.3.7.1. Linux/FreeBSD-specific PAM configuration</A
+></H4
 ><P
 >The <TT
 CLASS="FILENAME"
@@ -1472,9 +1462,9 @@ CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2673"
-></A
->14.5.3.7.2. Solaris-specific configuration</H4
+NAME="AEN2576"
+>14.5.3.7.2. Solaris-specific configuration</A
+></H4
 ><P
 >The /etc/pam.conf needs to be changed. I changed this file so that my Domain
 users can logon both locally as well as telnet.The following are the changes
@@ -1559,9 +1549,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2680"
-></A
->14.6. Limitations</H1
+NAME="AEN2583"
+>14.6. Limitations</A
+></H1
 ><P
 >Winbind has a number of limitations in its current 
 	released version that we hope to overcome in future 
@@ -1601,9 +1591,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2690"
-></A
->14.7. Conclusion</H1
+NAME="AEN2593"
+>14.7. Conclusion</A
+></H1
 ><P
 >The winbind system, through the use of the Name Service 
 	Switch, Pluggable Authentication Modules, and appropriate 

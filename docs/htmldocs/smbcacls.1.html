@@ -5,7 +5,7 @@
 >smbcacls</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -134,11 +134,9 @@ CLASS="REFENTRYTITLE"
 ><DD
 ><P
 >The owner of a file or directory can be changed 
-		to the name given using the <TT
+		to the name given using the <VAR
 CLASS="PARAMETER"
-><I
->-C</I
-></TT
+>-C</VAR
 > option.  
 		The name can be a sid in the form S-1-x-y-z or a name resolved 
 		against the server specified in the first argument. </P
@@ -151,11 +149,9 @@ CLASS="PARAMETER"
 ><DD
 ><P
 >The group owner of a file or directory can 
-		be changed to the name given using the <TT
+		be changed to the name given using the <VAR
 CLASS="PARAMETER"
-><I
->-G</I
-></TT
+>-G</VAR
 > 
 		option.  The name can be a sid in the form S-1-x-y-z or a name 
 		resolved against the server specified n the first argument.
@@ -198,10 +194,10 @@ NAME="AEN79"
 ><PRE
 CLASS="PROGRAMLISTING"
 > 
-REVISION:&lt;revision number&gt;
-OWNER:&lt;sid or name&gt;
-GROUP:&lt;sid or name&gt;
-ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;</PRE
+REVISION:&#60;revision number&#62;
+OWNER:&#60;sid or name&#62;
+GROUP:&#60;sid or name&#62;
+ACL:&#60;sid or name&#62;:&#60;type&#62;/&#60;flags&#62;/&#60;mask&#62;</PRE
 ></P
 ><P
 >The revision of the ACL specifies the internal Windows 
@@ -229,30 +225,30 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;</PRE
 ><UL
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</TT
+>#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</CODE
 ></P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2</TT
+>#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2</CODE
 ></P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT     0x4</TT
+>#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT     0x4</CODE
 ></P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</TT
+>#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</CODE
 ></P
 ></LI
 ></UL

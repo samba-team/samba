@@ -5,7 +5,7 @@
 >smbd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -37,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbd</B
->  [-D] [-F] [-S] [-i] [-h] [-V] [-b] [-d &lt;debug level&gt;] [-l &lt;log directory&gt;] [-p &lt;port number&gt;] [-O &lt;socket option&gt;] [-s &lt;configuration file&gt;]</P
+>  [-D] [-F] [-S] [-i] [-h] [-V] [-b] [-d &#60;debug level&#62;] [-l &#60;log directory&#62;] [-p &#60;port number&#62;] [-O &#60;socket option&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -227,14 +227,12 @@ CLASS="COMMAND"
 		Samba was built.</P
 ></DD
 ><DT
->-d &lt;debug level&gt;</DT
+>-d &#60;debug level&#62;</DT
 ><DD
 ><P
-><TT
+><VAR
 CLASS="REPLACEABLE"
-><I
->debuglevel</I
-></TT
+>debuglevel</VAR
 > is an integer 
 		from 0 to 10.  The default value if this parameter is 
 		not specified is zero.</P
@@ -256,12 +254,10 @@ CLASS="REPLACEABLE"
 		override the <A
 HREF="smb.conf.5.html#loglevel"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >log
-		level</I
-></TT
+		level</VAR
 ></A
 > parameter in the <SPAN
 CLASS="CITEREFENTRY"
@@ -272,15 +268,13 @@ CLASS="REFENTRYTITLE"
 > file.</P
 ></DD
 ><DT
->-l &lt;log directory&gt;</DT
+>-l &#60;log directory&#62;</DT
 ><DD
 ><P
 >If specified,
-		<TT
+		<VAR
 CLASS="REPLACEABLE"
-><I
->log directory</I
-></TT
+>log directory</VAR
 > 
 		specifies a log directory into which the "log.smbd" log
 		file will be created for informational and debug 
@@ -289,11 +283,9 @@ CLASS="REPLACEABLE"
 		its size may be controlled by the <A
 HREF="smb.conf.5.html#maxlogsize"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->max log size</I
-></TT
+>max log size</VAR
 ></A
 >
 		option in the <SPAN
@@ -320,17 +312,15 @@ CLASS="COMMAND"
 		compile time.</P
 ></DD
 ><DT
->-O &lt;socket options&gt;</DT
+>-O &#60;socket options&#62;</DT
 ><DD
 ><P
 >See the <A
 HREF="smb.conf.5.html#socketoptions"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->socket options</I
-></TT
+>socket options</VAR
 ></A
 > 
 		parameter in the <SPAN
@@ -342,14 +332,12 @@ CLASS="REFENTRYTITLE"
 > file for details.</P
 ></DD
 ><DT
->-p &lt;port number&gt;</DT
+>-p &#60;port number&#62;</DT
 ><DD
 ><P
-><TT
+><VAR
 CLASS="REPLACEABLE"
-><I
->port number</I
-></TT
+>port number</VAR
 > is a positive integer 
 		value.  The default value if this parameter is not 
 		specified is 139.</P
@@ -373,7 +361,7 @@ CLASS="REPLACEABLE"
 		in the above situation.</P
 ></DD
 ><DT
->-s &lt;configuration file&gt;</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
 >The file specified contains the 
@@ -534,17 +522,17 @@ NAME="AEN177"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
-><TT
+><VAR
 CLASS="ENVAR"
->PRINTER</TT
+>PRINTER</VAR
 ></DT
 ><DD
 ><P
 >If no printer name is specified to 
 		printable services, most systems will use the value of 
-		this variable (or <TT
+		this variable (or <CODE
 CLASS="CONSTANT"
->lp</TT
+>lp</CODE
 > if this variable is 
 		not defined) as the name of the printer to use. This 
 		is not specific to the server, however.</P
@@ -566,12 +554,10 @@ NAME="AEN186"
 	by the limitations of the SMB protocol and the <A
 HREF="smb.conf.5.html#OBEYPAMRESRICTIONS"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >obey 
-	pam restricions</I
-></TT
+	pam restricions</VAR
 ></A
 > <SPAN
 CLASS="CITEREFENTRY"

@@ -5,7 +5,7 @@
 >smbsh</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -38,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbsh</B
->  [-W workgroup] [-U username] [-P prefix] [-R &lt;name resolve order&gt;] [-d &lt;debug level&gt;] [-l logfile] [-L libdir]</P
+>  [-W workgroup] [-U username] [-P prefix] [-R &#60;name resolve order&#62;] [-d &#60;debug level&#62;] [-l logfile] [-L libdir]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -130,7 +130,7 @@ CLASS="EMPHASIS"
 		</P
 ></DD
 ><DT
->-R &lt;name resolve order&gt;</DT
+>-R &#60;name resolve order&#62;</DT
 ><DD
 ><P
 >This option is used to determine what naming 
@@ -145,9 +145,9 @@ CLASS="EMPHASIS"
 ><UL
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->lmhosts</TT
+>lmhosts</CODE
 >: 
 			Lookup an IP address in the Samba lmhosts file. If the 
 			line in lmhosts has no name type attached to the 
@@ -164,9 +164,9 @@ CLASS="REFENTRYTITLE"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->host</TT
+>host</CODE
 >: 
 			Do a standard host name to IP address resolution, using
 			the system <TT
@@ -186,16 +186,14 @@ CLASS="FILENAME"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->wins</TT
+>wins</CODE
 >: 
 			Query a name with the IP address listed in the 
-			<TT
+			<VAR
 CLASS="PARAMETER"
-><I
->wins server</I
-></TT
+>wins server</VAR
 > parameter.  If no 
 			WINS server has been specified this method will be 
 			ignored.
@@ -203,16 +201,14 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->bcast</TT
+>bcast</CODE
 >: 
 			Do a broadcast on each of the known local interfaces 
-			listed in the <TT
+			listed in the <VAR
 CLASS="PARAMETER"
-><I
->interfaces</I
-></TT
+>interfaces</VAR
 >
 			parameter. This is the least reliable of the name 
 			resolution methods as it depends on the target host 
@@ -229,20 +225,16 @@ CLASS="REFENTRYTITLE"
 >smb.conf</SPAN
 >(5)</SPAN
 > file parameter  
-		(<TT
+		(<VAR
 CLASS="PARAMETER"
-><I
->name resolve order</I
-></TT
+>name resolve order</VAR
 >) will be used. </P
 ><P
 >The default order is lmhosts, host, wins, bcast. Without 
-		this parameter or any entry in the <TT
+		this parameter or any entry in the <VAR
 CLASS="PARAMETER"
-><I
 >name resolve order
-		</I
-></TT
+		</VAR
 > parameter of the <SPAN
 CLASS="CITEREFENTRY"
 ><SPAN
@@ -253,7 +245,7 @@ CLASS="REFENTRYTITLE"
 		will be attempted in this order. </P
 ></DD
 ><DT
->-d &lt;debug level&gt;</DT
+>-d &#60;debug level&#62;</DT
 ><DD
 ><P
 >debug level is an integer from 0 to 10.</P
@@ -277,18 +269,14 @@ CLASS="REFENTRYTITLE"
 ><DD
 ><P
 >If specified causes all debug messages to be
-		written to the file specified by <TT
+		written to the file specified by <VAR
 CLASS="REPLACEABLE"
-><I
 >logfilename
-		</I
-></TT
+		</VAR
 >. If not specified then all messages will be 
-		written to<TT
+		written to<VAR
 CLASS="REPLACEABLE"
-><I
->stderr</I
-></TT
+>stderr</VAR
 >.
 		</P
 ></DD
@@ -326,32 +314,26 @@ CLASS="COMMAND"
 	operating system.
 <PRE
 CLASS="PROGRAMLISTING"
-><TT
+><SAMP
 CLASS="PROMPT"
->system% </TT
-><TT
+>system% </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->smbsh</B
-></TT
+>smbsh</KBD
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->Username: </TT
-><TT
+>Username: </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->user</B
-></TT
+>user</KBD
 >
-<TT
+<SAMP
 CLASS="PROMPT"
->Password: </TT
-><TT
+>Password: </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->XXXXXXX</B
-></TT
+>XXXXXXX</KBD
 ></PRE
 ></P
 ><P
@@ -372,7 +354,7 @@ CLASS="COMMAND"
 	the  workgroup MYGROUP. The command 
 	<B
 CLASS="COMMAND"
->ls /smb/MYGROUP/&lt;machine-name&gt;</B
+>ls /smb/MYGROUP/&#60;machine-name&#62;</B
 > will show the share 
 	names for that machine. You could then, for example, use the <B
 CLASS="COMMAND"

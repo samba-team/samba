@@ -1,0 +1,631 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>How to compile SAMBA</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Appendixes"
+HREF="appendixes.html"><LINK
+REL="PREVIOUS"
+TITLE="Samba and other CIFS clients"
+HREF="other-clients.html"><LINK
+REL="NEXT"
+TITLE="Reporting Bugs"
+HREF="bugreport.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="other-clients.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="bugreport.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="COMPILING"
+></A
+>Chapter 23. How to compile SAMBA</H1
+><P
+>You can obtain the samba source from the <A
+HREF="http://samba.org/"
+TARGET="_top"
+>samba website</A
+>. To obtain a development version, 
+you can download samba from CVS or using rsync. </P
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3337"
+>23.1. Access Samba source code via CVS</A
+></H1
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN3339"
+>23.1.1. Introduction</A
+></H2
+><P
+>Samba is developed in an open environment.  Developers use CVS
+(Concurrent Versioning System) to "checkin" (also known as 
+"commit") new source code.  Samba's various CVS branches can
+be accessed via anonymous CVS using the instructions
+detailed in this chapter.</P
+><P
+>This chapter is a modified version of the instructions found at
+<A
+HREF="http://samba.org/samba/cvs.html"
+TARGET="_top"
+>http://samba.org/samba/cvs.html</A
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN3344"
+>23.1.2. CVS Access to samba.org</A
+></H2
+><P
+>The machine samba.org runs a publicly accessible CVS 
+repository for access to the source code of several packages, 
+including samba, rsync and jitterbug. There are two main ways of 
+accessing the CVS server on this host.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN3347"
+>23.1.2.1. Access via CVSweb</A
+></H3
+><P
+>You can access the source code via your 
+favourite WWW browser. This allows you to access the contents of 
+individual files in the repository and also to look at the revision 
+history and commit logs of individual files. You can also ask for a diff 
+listing between any two versions on the repository.</P
+><P
+>Use the URL : <A
+HREF="http://samba.org/cgi-bin/cvsweb"
+TARGET="_top"
+>http://samba.org/cgi-bin/cvsweb</A
+></P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN3352"
+>23.1.2.2. Access via cvs</A
+></H3
+><P
+>You can also access the source code via a 
+normal cvs client.  This gives you much more control over you can 
+do with the repository and allows you to checkout whole source trees 
+and keep them up to date via normal cvs commands. This is the 
+preferred method of access if you are a developer and not
+just a casual browser.</P
+><P
+>To download the latest cvs source code, point your
+browser at the URL : <A
+HREF="http://www.cyclic.com/"
+TARGET="_top"
+>http://www.cyclic.com/</A
+>.
+and click on the 'How to get cvs' link. CVS is free software under 
+the GNU GPL (as is Samba).  Note that there are several graphical CVS clients
+which provide a graphical interface to the sometimes mundane CVS commands.
+Links to theses clients are also available from http://www.cyclic.com.</P
+><P
+>To gain access via anonymous cvs use the following steps. 
+For this example it is assumed that you want a copy of the 
+samba source code. For the other source code repositories 
+on this system just substitute the correct package name</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>	Install a recent copy of cvs. All you really need is a 
+	copy of the cvs client binary. 
+	</P
+></LI
+><LI
+><P
+>	Run the command 
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs -d :pserver:cvs@samba.org:/cvsroot login</B
+>
+	</P
+><P
+>	When it asks you for a password type <KBD
+CLASS="USERINPUT"
+>cvs</KBD
+>.
+	</P
+></LI
+><LI
+><P
+>	Run the command 
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs -d :pserver:cvs@samba.org:/cvsroot co samba</B
+>
+	</P
+><P
+>	This will create a directory called samba containing the 
+	latest samba source code (i.e. the HEAD tagged cvs branch). This 
+	currently corresponds to the 3.0 development tree. 
+	</P
+><P
+>	CVS branches other HEAD can be obtained by using the <VAR
+CLASS="PARAMETER"
+>-r</VAR
+>
+	and defining a tag name.  A list of branch tag names can be found on the
+	"Development" page of the samba web site.  A common request is to obtain the
+	latest 2.2 release code.  This could be done by using the following command.
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_2_2 samba</B
+>
+	</P
+></LI
+><LI
+><P
+>	Whenever you want to merge in the latest code changes use 
+	the following command from within the samba directory: 
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs update -d -P</B
+>
+	</P
+></LI
+></OL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3380"
+>23.2. Accessing the samba sources via rsync and ftp</A
+></H1
+><P
+>	pserver.samba.org also exports unpacked copies of most parts of the CVS tree at <A
+HREF="ftp://pserver.samba.org/pub/unpacked"
+TARGET="_top"
+>ftp://pserver.samba.org/pub/unpacked</A
+> and also via anonymous rsync at rsync://pserver.samba.org/ftp/unpacked/. I recommend using rsync rather than ftp.
+	See <A
+HREF="http://rsync.samba.org/"
+TARGET="_top"
+>the rsync homepage</A
+> for more info on rsync.                       
+	</P
+><P
+>	The disadvantage of the unpacked trees
+	is that they do not support automatic
+	merging of local changes like CVS does.
+	rsync access is most convenient for an 
+	initial install.                       
+	</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3386"
+>23.3. Building the Binaries</A
+></H1
+><P
+>To do this, first run the program <B
+CLASS="COMMAND"
+>./configure
+	</B
+> in the source directory. This should automatically 
+	configure Samba for your operating system. If you have unusual 
+	needs then you may wish to run</P
+><P
+><SAMP
+CLASS="PROMPT"
+>root# </SAMP
+><KBD
+CLASS="USERINPUT"
+>./configure --help
+	</KBD
+></P
+><P
+>first to see what special options you can enable.
+	Then executing</P
+><P
+><SAMP
+CLASS="PROMPT"
+>root# </SAMP
+><KBD
+CLASS="USERINPUT"
+>make</KBD
+></P
+><P
+>will create the binaries. Once it's successfully 
+	compiled you can use </P
+><P
+><SAMP
+CLASS="PROMPT"
+>root# </SAMP
+><KBD
+CLASS="USERINPUT"
+>make install</KBD
+></P
+><P
+>to install the binaries and manual pages. You can 
+	separately install the binaries and/or man pages using</P
+><P
+><SAMP
+CLASS="PROMPT"
+>root# </SAMP
+><KBD
+CLASS="USERINPUT"
+>make installbin
+	</KBD
+></P
+><P
+>and</P
+><P
+><SAMP
+CLASS="PROMPT"
+>root# </SAMP
+><KBD
+CLASS="USERINPUT"
+>make installman
+	</KBD
+></P
+><P
+>Note that if you are upgrading for a previous version 
+	of Samba you might like to know that the old versions of 
+	the binaries will be renamed with a ".old" extension. You 
+	can go back to the previous version with</P
+><P
+><SAMP
+CLASS="PROMPT"
+>root# </SAMP
+><KBD
+CLASS="USERINPUT"
+>make revert
+	</KBD
+></P
+><P
+>if you find this version a disaster!</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3414"
+>23.4. Starting the smbd and nmbd</A
+></H1
+><P
+>You must choose to start smbd and nmbd either
+	as daemons or from <B
+CLASS="COMMAND"
+>inetd</B
+>. Don't try
+	to do both!  Either you can put them in <TT
+CLASS="FILENAME"
+>	inetd.conf</TT
+> and have them started on demand
+	by <B
+CLASS="COMMAND"
+>inetd</B
+>, or you can start them as
+	daemons either from the command line or in <TT
+CLASS="FILENAME"
+>	/etc/rc.local</TT
+>. See the man pages for details
+	on the command line options. Take particular care to read
+	the bit about what user you need to be in order to start
+	Samba.  In many cases you must be root.</P
+><P
+>The main advantage of starting <B
+CLASS="COMMAND"
+>smbd</B
+>
+	and <B
+CLASS="COMMAND"
+>nmbd</B
+> using the recommended daemon method
+	is that they will respond slightly more quickly to an initial connection
+	request.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN3424"
+>23.4.1. Starting from inetd.conf</A
+></H2
+><P
+>NOTE; The following will be different if 
+		you use NIS, NIS+ or LDAP to distribute services maps.</P
+><P
+>Look at your <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>. 
+		What is defined at port 139/tcp. If nothing is defined 
+		then add a line like this:</P
+><P
+><KBD
+CLASS="USERINPUT"
+>netbios-ssn     139/tcp</KBD
+></P
+><P
+>similarly for 137/udp you should have an entry like:</P
+><P
+><KBD
+CLASS="USERINPUT"
+>netbios-ns	137/udp</KBD
+></P
+><P
+>Next edit your <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> 
+		and add two lines something like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>		netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
+		netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
+		</PRE
+></P
+><P
+>The exact syntax of <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> 
+		varies between unixes. Look at the other entries in inetd.conf 
+		for a guide.</P
+><P
+>NOTE: Some unixes already have entries like netbios_ns 
+		(note the underscore) in <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>. 
+		You must either edit <TT
+CLASS="FILENAME"
+>/etc/services</TT
+> or
+		<TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> to make them consistent.</P
+><P
+>NOTE: On many systems you may need to use the 
+		"interfaces" option in smb.conf to specify the IP address 
+		and netmask of your interfaces. Run <B
+CLASS="COMMAND"
+>ifconfig</B
+> 
+		as root if you don't know what the broadcast is for your
+		net. <B
+CLASS="COMMAND"
+>nmbd</B
+> tries to determine it at run 
+		time, but fails on some unixes. See the section on "testing nmbd" 
+		for a method of finding if you need to do this.</P
+><P
+>!!!WARNING!!! Many unixes only accept around 5 
+		parameters on the command line in <TT
+CLASS="FILENAME"
+>inetd.conf</TT
+>. 
+		This means you shouldn't use spaces between the options and 
+		arguments, or you should use a script, and start the script 
+		from <B
+CLASS="COMMAND"
+>inetd</B
+>.</P
+><P
+>Restart <B
+CLASS="COMMAND"
+>inetd</B
+>, perhaps just send 
+		it a HUP. If you have installed an earlier version of <B
+CLASS="COMMAND"
+>		nmbd</B
+> then you may need to kill nmbd as well.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN3453"
+>23.4.2. Alternative: starting it as a daemon</A
+></H2
+><P
+>To start the server as a daemon you should create 
+		a script something like this one, perhaps calling 
+		it <TT
+CLASS="FILENAME"
+>startsmb</TT
+>.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>		#!/bin/sh
+		/usr/local/samba/bin/smbd -D 
+		/usr/local/samba/bin/nmbd -D 
+		</PRE
+></P
+><P
+>then make it executable with <B
+CLASS="COMMAND"
+>chmod 
+		+x startsmb</B
+></P
+><P
+>You can then run <B
+CLASS="COMMAND"
+>startsmb</B
+> by 
+		hand or execute it from <TT
+CLASS="FILENAME"
+>/etc/rc.local</TT
+>
+		</P
+><P
+>To kill it send a kill signal to the processes 
+		<B
+CLASS="COMMAND"
+>nmbd</B
+> and <B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+><P
+>NOTE: If you use the SVR4 style init system then 
+		you may like to look at the <TT
+CLASS="FILENAME"
+>examples/svr4-startup</TT
+>
+		script to make Samba fit into that system.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="other-clients.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="bugreport.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Samba and other CIFS clients</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="appendixes.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Reporting Bugs</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -5,7 +5,7 @@
 >testparm</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -38,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >testparm</B
->  [-s] [-h] [-v] [-L &lt;servername&gt;] [-t &lt;encoding&gt;] {config filename} [hostname hostIP]</P
+>  [-s] [-h] [-v] [-L &#60;servername&#62;] [-t &#60;encoding&#62;] {config filename} [hostname hostIP]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -135,11 +135,9 @@ CLASS="COMMAND"
 >-L servername</DT
 ><DD
 ><P
->Sets the value of the %L macro to <TT
+>Sets the value of the %L macro to <VAR
 CLASS="REPLACEABLE"
-><I
->servername</I
-></TT
+>servername</VAR
 >.
 		This is useful for testing include files specified with the 
 		%L macro. </P
@@ -187,17 +185,13 @@ CLASS="REFENTRYTITLE"
 		specified, then <B
 CLASS="COMMAND"
 >testparm</B
-> will examine the <TT
+> will examine the <VAR
 CLASS="PARAMETER"
-><I
 >hosts
-		allow</I
-></TT
-> and <TT
+		allow</VAR
+> and <VAR
 CLASS="PARAMETER"
-><I
->hosts deny</I
-></TT
+>hosts deny</VAR
 > 
 		parameters in the <SPAN
 CLASS="CITEREFENTRY"

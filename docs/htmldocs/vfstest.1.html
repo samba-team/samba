@@ -5,7 +5,7 @@
 >vfstest</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -88,11 +88,9 @@ CLASS="VARIABLELIST"
 >-d|--debug=debuglevel</DT
 ><DD
 ><P
-><TT
+><VAR
 CLASS="REPLACEABLE"
-><I
->debuglevel</I
-></TT
+>debuglevel</VAR
 > is an integer 
 from 0 to 10.  The default value if this parameter is 
 not specified is zero.</P
@@ -136,9 +134,9 @@ CLASS="FILENAME"
 ><DD
 ><P
 >File name for log/debug files. The extension
-		<TT
+		<CODE
 CLASS="CONSTANT"
->'.client'</TT
+>'.client'</CODE
 > will be appended. The log file is never removed
 		by the client.
 		</P
@@ -168,14 +166,14 @@ CLASS="EMPHASIS"
 ><P
 ><B
 CLASS="COMMAND"
->load &lt;module.so&gt;</B
+>load &#60;module.so&#62;</B
 > - Load specified VFS module </P
 ></LI
 ><LI
 ><P
 ><B
 CLASS="COMMAND"
->populate &lt;char&gt; &lt;size&gt;</B
+>populate &#60;char&#62; &#60;size&#62;</B
 > - Populate a data buffer with the specified data
 		</P
 ></LI
@@ -183,7 +181,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->showdata [&lt;offset&gt; &lt;len&gt;]</B
+>showdata [&#60;offset&#62; &#60;len&#62;]</B
 > - Show data currently in data buffer
 		</P
 ></LI
@@ -434,21 +432,21 @@ CLASS="EMPHASIS"
 ><P
 ><B
 CLASS="COMMAND"
->conf &lt;smb.conf&gt;</B
+>conf &#60;smb.conf&#62;</B
 > - Load a different configuration file</P
 ></LI
 ><LI
 ><P
 ><B
 CLASS="COMMAND"
->help [&lt;command&gt;]</B
+>help [&#60;command&#62;]</B
 > - Get list of commands or info about specified command</P
 ></LI
 ><LI
 ><P
 ><B
 CLASS="COMMAND"
->debuglevel &lt;level&gt;</B
+>debuglevel &#60;level&#62;</B
 > - Set debug level</P
 ></LI
 ><LI

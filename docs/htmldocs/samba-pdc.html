@@ -5,7 +5,7 @@
 >Samba as a NT4 or Win2k Primary Domain Controller</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -80,9 +80,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN722"
-></A
->5.1. Prerequisite Reading</H1
+NAME="AEN625"
+>5.1. Prerequisite Reading</A
+></H1
 ><P
 >Before you continue reading in this chapter, please make sure 
 that you are comfortable with configuring basic files services
@@ -108,9 +108,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN728"
-></A
->5.2. Background</H1
+NAME="AEN631"
+>5.2. Background</A
+></H1
 ><DIV
 CLASS="NOTE"
 ><P
@@ -260,9 +260,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN767"
-></A
->5.3. Configuring the Samba Domain Controller</H1
+NAME="AEN670"
+>5.3. Configuring the Samba Domain Controller</A
+></H1
 ><P
 >The first step in creating a working Samba PDC is to 
 understand the parameters necessary in smb.conf.  I will not
@@ -288,21 +288,17 @@ CLASS="PROGRAMLISTING"
 HREF="smb.conf.5.html#NETBIOSNAME"
 TARGET="_top"
 >netbios name</A
-> = <TT
+> = <VAR
 CLASS="REPLACEABLE"
-><I
->POGO</I
-></TT
+>POGO</VAR
 >
     <A
 HREF="smb.conf.5.html#WORKGROUP"
 TARGET="_top"
 >workgroup</A
-> = <TT
+> = <VAR
 CLASS="REPLACEABLE"
-><I
->NARNIA</I
-></TT
+>NARNIA</VAR
 >
 
     ; we should act as the domain and local master browser
@@ -392,11 +388,9 @@ TARGET="_top"
 HREF="smb.conf.5.html#WRITELIST"
 TARGET="_top"
 >write list</A
-> = <TT
+> = <VAR
 CLASS="REPLACEABLE"
-><I
->ntadmin</I
-></TT
+>ntadmin</VAR
 >
     
 ; share for storing user profiles
@@ -472,10 +466,10 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN810"
-></A
+NAME="AEN713"
 >5.4. Creating Machine Trust Accounts and Joining Clients to the
-Domain</H1
+Domain</A
+></H1
 ><P
 >A machine trust account is a Samba account that is used to
 authenticate a client machine (rather than a user) to the Samba
@@ -546,9 +540,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN829"
-></A
->5.4.1. Manual Creation of Machine Trust Accounts</H2
+NAME="AEN732"
+>5.4.1. Manual Creation of Machine Trust Accounts</A
+></H2
 ><P
 >The first step in manually creating a machine trust account is to
 manually create the corresponding Unix account in
@@ -563,55 +557,45 @@ CLASS="COMMAND"
 used to create new Unix accounts.  The following is an example for a
 Linux based Samba server:</P
 ><P
->  <TT
+>  <SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
->/usr/sbin/useradd -g 100 -d /dev/null -c <TT
+>/usr/sbin/useradd -g 100 -d /dev/null -c <VAR
 CLASS="REPLACEABLE"
-><I
 >"machine 
-nickname"</I
-></TT
-> -s /bin/false <TT
+nickname"</VAR
+> -s /bin/false <VAR
 CLASS="REPLACEABLE"
-><I
->machine_name</I
-></TT
+>machine_name</VAR
 >$ </B
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
->passwd -l <TT
+>passwd -l <VAR
 CLASS="REPLACEABLE"
-><I
->machine_name</I
-></TT
+>machine_name</VAR
 >$</B
 ></P
 ><P
 >On *BSD systems, this can be done using the 'chpass' utility:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
->chpass -a "<TT
+>chpass -a "<VAR
 CLASS="REPLACEABLE"
-><I
->machine_name</I
-></TT
->$:*:101:100::0:0:Workstation <TT
+>machine_name</VAR
+>$:*:101:100::0:0:Workstation <VAR
 CLASS="REPLACEABLE"
-><I
->machine_name</I
-></TT
+>machine_name</VAR
 >:/dev/null:/sbin/nologin"</B
 ></P
 ><P
@@ -628,26 +612,20 @@ CLASS="FILENAME"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->doppy$:x:505:501:<TT
+>doppy$:x:505:501:<VAR
 CLASS="REPLACEABLE"
-><I
->machine_nickname</I
-></TT
+>machine_nickname</VAR
 >:/dev/null:/bin/false</PRE
 ></P
 ><P
->Above, <TT
+>Above, <VAR
 CLASS="REPLACEABLE"
-><I
->machine_nickname</I
-></TT
+>machine_nickname</VAR
 > can be any
 descriptive name for the client, i.e., BasementComputer.
-<TT
+<VAR
 CLASS="REPLACEABLE"
-><I
->machine_name</I
-></TT
+>machine_name</VAR
 > absolutely must be the NetBIOS
 name of the client to be joined to the domain.  The "$" must be
 appended to the NetBIOS name of the client or Samba will not recognize
@@ -665,24 +643,20 @@ CLASS="COMMAND"
 > command 
 as shown here:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
->smbpasswd -a -m <TT
+>smbpasswd -a -m <VAR
 CLASS="REPLACEABLE"
-><I
->machine_name</I
-></TT
+>machine_name</VAR
 ></B
 ></P
 ><P
->where <TT
+>where <VAR
 CLASS="REPLACEABLE"
-><I
->machine_name</I
-></TT
+>machine_name</VAR
 > is the machine's NetBIOS
 name.  The RID of the new machine account is generated from the UID of 
 the corresponding Unix account.</P
@@ -736,9 +710,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN870"
-></A
->5.4.2. "On-the-Fly" Creation of Machine Trust Accounts</H2
+NAME="AEN773"
+>5.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
+></H2
 ><P
 >The second (and recommended) way of creating machine trust accounts is
 simply to allow the Samba server to create them as needed when the client
@@ -764,7 +738,7 @@ be created manually.</P
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
-   # &lt;...remainder of parameters...&gt;
+   # &#60;...remainder of parameters...&#62;
    add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u </PRE
 ></P
 ></DIV
@@ -773,9 +747,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN879"
-></A
->5.4.3. Joining the Client to the Domain</H2
+NAME="AEN782"
+>5.4.3. Joining the Client to the Domain</A
+></H2
 ><P
 >The procedure for joining a client to the domain varies with the
 version of Windows.</P
@@ -841,9 +815,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN894"
-></A
->5.5. Common Problems and Errors</H1
+NAME="AEN797"
+>5.5. Common Problems and Errors</A
+></H1
 ><P
 ></P
 ><P
@@ -897,9 +871,9 @@ CLASS="EMPHASIS"
 	will remove all network drive connections:
 	</P
 ><P
->	<TT
+>	<SAMP
 CLASS="PROMPT"
->C:\WINNT\&#62;</TT
+>C:\WINNT\&#62;</SAMP
 > <B
 CLASS="COMMAND"
 >net use * /d</B
@@ -962,11 +936,9 @@ CLASS="EMPHASIS"
 	</P
 ><P
 >	This problem is caused by the PDC not having a suitable machine trust account. 
-	If you are using the <TT
+	If you are using the <VAR
 CLASS="PARAMETER"
-><I
->add user script</I
-></TT
+>add user script</VAR
 > method to create 
 	accounts then this would indicate that it has not worked. Ensure the domain 
 	admin user system is working.
@@ -1010,11 +982,9 @@ CLASS="COMMAND"
 	</P
 ><P
 >	In order to work around this problem in 2.2.0, configure the 
-	<TT
+	<VAR
 CLASS="PARAMETER"
-><I
->account</I
-></TT
+>account</VAR
 > control flag in 
 	<TT
 CLASS="FILENAME"
@@ -1051,9 +1021,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN942"
-></A
->5.6. System Policies and Profiles</H1
+NAME="AEN845"
+>5.6. System Policies and Profiles</A
+></H1
 ><P
 >Much of the information necessary to implement System Policies and
 Roving User Profiles in a Samba domain is the same as that for 
@@ -1228,9 +1198,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN986"
-></A
->5.7. What other help can I get?</H1
+NAME="AEN889"
+>5.7. What other help can I get?</A
+></H1
 ><P
 >There are many sources of information available in the form 
 of mailing lists, RFC's and documentation.  The docs that come 
@@ -1648,9 +1618,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1100"
-></A
->5.8. Domain Control for Windows 9x/ME</H1
+NAME="AEN1003"
+>5.8. Domain Control for Windows 9x/ME</A
+></H1
 ><DIV
 CLASS="NOTE"
 ><P
@@ -1727,7 +1697,7 @@ TYPE="1"
 ><LI
 ><P
 >	The client broadcasts (to the IP broadcast address of the subnet it is in)
-	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;1c&gt; at the
+	a NetLogon request. This is sent to the NetBIOS name DOMAIN&#60;1c&#62; at the
 	NetBIOS layer.  The client chooses the first response it receives, which
 	contains the NetBIOS name of the logon server to use in the format of 
 	\\SERVER.
@@ -1782,9 +1752,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1126"
-></A
->5.8.1. Configuration Instructions:	Network Logons</H2
+NAME="AEN1029"
+>5.8.1. Configuration Instructions:	Network Logons</A
+></H2
 ><P
 >The main difference between a PDC and a Windows 9x logon 
 server configuration is that</P
@@ -1837,20 +1807,20 @@ VALIGN="TOP"
 >There are a few comments to make in order to tie up some 
 loose ends.  There has been much debate over the issue of whether
 or not it is ok to configure Samba as a Domain Controller in security
-modes other than <TT
+modes other than <CODE
 CLASS="CONSTANT"
->USER</TT
+>USER</CODE
 >.  The only security mode 
-which  will not work due to technical reasons is <TT
+which  will not work due to technical reasons is <CODE
 CLASS="CONSTANT"
->SHARE</TT
+>SHARE</CODE
 >
-mode security.  <TT
+mode security.  <CODE
 CLASS="CONSTANT"
->DOMAIN</TT
-> and <TT
+>DOMAIN</CODE
+> and <CODE
 CLASS="CONSTANT"
->SERVER</TT
+>SERVER</CODE
 >
 mode security is really just a variation on SMB user level security.</P
 ><P
@@ -1888,9 +1858,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1145"
-></A
->5.8.2. Configuration Instructions:	Setting up Roaming User Profiles</H2
+NAME="AEN1048"
+>5.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
+></H2
 ><DIV
 CLASS="WARNING"
 ><P
@@ -1941,9 +1911,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1153"
-></A
->5.8.2.1. Windows NT Configuration</H3
+NAME="AEN1056"
+>5.8.2.1. Windows NT Configuration</A
+></H3
 ><P
 >To support WinNT clients, in the [global] section of smb.conf set the
 following (for example):</P
@@ -1992,9 +1962,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1161"
-></A
->5.8.2.2. Windows 9X Configuration</H3
+NAME="AEN1064"
+>5.8.2.2. Windows 9X Configuration</A
+></H3
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
 now been fixed so that "net use/home" now works as well, and it, too, relies
@@ -2023,9 +1993,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1169"
-></A
->5.8.2.3. Win9X and WinNT Configuration</H3
+NAME="AEN1072"
+>5.8.2.3. Win9X and WinNT Configuration</A
+></H3
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
 "logon home" and "logon path" parameters. For example:</P
@@ -2068,9 +2038,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1176"
-></A
->5.8.2.4. Windows 9X Profile Setup</H3
+NAME="AEN1079"
+>5.8.2.4. Windows 9X Profile Setup</A
+></H3
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
 as are folders "Start Menu", "Desktop", "Programs" and "Nethood".  
@@ -2228,9 +2198,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1212"
-></A
->5.8.2.5. Windows NT Workstation 4.0</H3
+NAME="AEN1115"
+>5.8.2.5. Windows NT Workstation 4.0</A
+></H3
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
 NTuser.DAT is created.  The profile location can be now specified
@@ -2342,9 +2312,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1225"
-></A
->5.8.2.6. Windows NT Server</H3
+NAME="AEN1128"
+>5.8.2.6. Windows NT Server</A
+></H3
 ><P
 >There is nothing to stop you specifying any path that you like for the
 location of users' profiles.  Therefore, you could specify that the
@@ -2356,9 +2326,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1228"
-></A
->5.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</H3
+NAME="AEN1131"
+>5.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
+></H3
 ><DIV
 CLASS="WARNING"
 ><P
@@ -2449,9 +2419,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1238"
-></A
->5.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &amp; Samba</H1
+NAME="AEN1141"
+>5.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
+></H1
 ><DIV
 CLASS="WARNING"
 ><P
@@ -2526,16 +2496,16 @@ may need to know to interact with the rest of the system.</P
 >The registry files can be located on any Windows NT machine by opening a
 command prompt and typing:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->C:\WINNT\&#62;</TT
+>C:\WINNT\&#62;</SAMP
 > dir %SystemRoot%\System32\config</P
 ><P
 >The environment variable %SystemRoot% value can be obtained by typing:</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->C:\WINNT&#62;</TT
+>C:\WINNT&#62;</SAMP
 >echo %SystemRoot%</P
 ><P
 >The active parts of the registry that you may want to be familiar with are

@@ -5,7 +5,7 @@
 >UNIX Permission Bits and Windows NT Access Control Lists</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -81,10 +81,10 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1744"
-></A
+NAME="AEN1647"
 >10.1. Viewing and changing UNIX permissions using the NT 
-	security dialogs</H1
+	security dialogs</A
+></H1
 ><P
 >New in the Samba 2.0.4 release is the ability for Windows 
 	NT clients to use their native security settings dialog box to 
@@ -100,9 +100,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1748"
-></A
->10.2. How to view file security on a Samba share</H1
+NAME="AEN1651"
+>10.2. How to view file security on a Samba share</A
+></H1
 ><P
 >From an NT 4.0 client, single-click with the right 
 	mouse button on any file or directory in a Samba mounted 
@@ -170,9 +170,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1759"
-></A
->10.3. Viewing file ownership</H1
+NAME="AEN1662"
+>10.3. Viewing file ownership</A
+></H1
 ><P
 >Clicking on the <B
 CLASS="COMMAND"
@@ -186,23 +186,17 @@ CLASS="COMMAND"
 >"SERVER\user (Long name)"</B
 ></P
 ><P
->Where <TT
+>Where <VAR
 CLASS="REPLACEABLE"
-><I
->SERVER</I
-></TT
+>SERVER</VAR
 > is the NetBIOS name of 
-	the Samba server, <TT
+	the Samba server, <VAR
 CLASS="REPLACEABLE"
-><I
->user</I
-></TT
+>user</VAR
 > is the user name of 
-	the UNIX user who owns the file, and <TT
+	the UNIX user who owns the file, and <VAR
 CLASS="REPLACEABLE"
-><I
->(Long name)</I
-></TT
+>(Long name)</VAR
 >
 	is the descriptive string identifying the user (normally found in the
 	GECOS field of the UNIX password database). Click on the <B
@@ -211,15 +205,13 @@ CLASS="COMMAND"
 	</B
 > button to remove this dialog.</P
 ><P
->If the parameter <TT
+>If the parameter <VAR
 CLASS="PARAMETER"
-><I
->nt acl support</I
-></TT
+>nt acl support</VAR
 >
-	is set to <TT
+	is set to <CODE
 CLASS="CONSTANT"
->false</TT
+>false</CODE
 > then the file owner will 
 	be shown as the NT user <B
 CLASS="COMMAND"
@@ -264,9 +256,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1779"
-></A
->10.4. Viewing file or directory permissions</H1
+NAME="AEN1682"
+>10.4. Viewing file or directory permissions</A
+></H1
 ><P
 >The third button is the <B
 CLASS="COMMAND"
@@ -281,36 +273,28 @@ CLASS="COMMAND"
 >"SERVER\user (Long name)"</B
 ></P
 ><P
->Where <TT
+>Where <VAR
 CLASS="REPLACEABLE"
-><I
->SERVER</I
-></TT
+>SERVER</VAR
 > is the NetBIOS name of 
-	the Samba server, <TT
+	the Samba server, <VAR
 CLASS="REPLACEABLE"
-><I
->user</I
-></TT
+>user</VAR
 > is the user name of 
-	the UNIX user who owns the file, and <TT
+	the UNIX user who owns the file, and <VAR
 CLASS="REPLACEABLE"
-><I
->(Long name)</I
-></TT
+>(Long name)</VAR
 >
 	is the descriptive string identifying the user (normally found in the
 	GECOS field of the UNIX password database).</P
 ><P
->If the parameter <TT
+>If the parameter <VAR
 CLASS="PARAMETER"
-><I
->nt acl support</I
-></TT
+>nt acl support</VAR
 >
-	is set to <TT
+	is set to <CODE
 CLASS="CONSTANT"
->false</TT
+>false</CODE
 > then the file owner will 
 	be shown as the NT user <B
 CLASS="COMMAND"
@@ -326,9 +310,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1794"
-></A
->10.4.1. File Permissions</H2
+NAME="AEN1697"
+>10.4.1. File Permissions</A
+></H2
 ><P
 >The standard UNIX user/group/world triple and 
 		the corresponding "read", "write", "execute" permissions 
@@ -388,9 +372,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1808"
-></A
->10.4.2. Directory Permissions</H2
+NAME="AEN1711"
+>10.4.2. Directory Permissions</A
+></H2
 ><P
 >Directories on an NT NTFS file system have two 
 		different sets of permissions. The first set of permissions 
@@ -420,9 +404,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1815"
-></A
->10.5. Modifying file or directory permissions</H1
+NAME="AEN1718"
+>10.5. Modifying file or directory permissions</A
+></H1
 ><P
 >Modifying file and directory permissions is as simple 
 	as changing the displayed permissions in the dialog box, and 
@@ -434,15 +418,13 @@ CLASS="COMMAND"
 	with the standard Samba permission masks and mapping of DOS 
 	attributes that need to also be taken into account.</P
 ><P
->If the parameter <TT
+>If the parameter <VAR
 CLASS="PARAMETER"
-><I
->nt acl support</I
-></TT
+>nt acl support</VAR
 >
-	is set to <TT
+	is set to <CODE
 CLASS="CONSTANT"
->false</TT
+>false</CODE
 > then any attempt to set 
 	security permissions will fail with an <B
 CLASS="COMMAND"
@@ -518,40 +500,32 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1837"
-></A
+NAME="AEN1740"
 >10.6. Interaction with the standard Samba create mask 
-	parameters</H1
+	parameters</A
+></H1
 ><P
 >Note that with Samba 2.0.5 there are four new parameters 
 	to control this interaction.  These are :</P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->security mask</I
-></TT
+>security mask</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->force security mode</I
-></TT
+>force security mode</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->directory security mask</I
-></TT
+>directory security mask</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->force directory security mode</I
-></TT
+>force directory security mode</VAR
 ></P
 ><P
 >Once a user clicks <B
@@ -564,21 +538,17 @@ CLASS="COMMAND"
 HREF="smb.conf.5.html#SECURITYMASK"
 TARGET="_top"
 > 
-	<TT
+	<VAR
 CLASS="PARAMETER"
-><I
->security mask</I
-></TT
+>security mask</VAR
 ></A
 > parameter. Any bits that 
 	were changed that are not set to '1' in this parameter are left alone 
 	in the file permissions.</P
 ><P
->Essentially, zero bits in the <TT
+>Essentially, zero bits in the <VAR
 CLASS="PARAMETER"
-><I
->security mask</I
-></TT
+>security mask</VAR
 >
 	mask may be treated as a set of bits the user is <SPAN
 CLASS="emphasis"
@@ -594,12 +564,10 @@ CLASS="EMPHASIS"
 	the <A
 HREF="smb.conf.5.html#CREATEMASK"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >create mask
-	</I
-></TT
+	</VAR
 ></A
 > parameter to provide compatibility with Samba 2.0.4 
 	where this permission change facility was introduced. To allow a user to 
@@ -610,22 +578,18 @@ CLASS="PARAMETER"
 	the bits set in the <A
 HREF="smb.conf.5.html#FORCESECURITYMODE"
 TARGET="_top"
->	<TT
+>	<VAR
 CLASS="PARAMETER"
-><I
->force security mode</I
-></TT
+>force security mode</VAR
 ></A
 > parameter. Any bits 
 	that were changed that correspond to bits set to '1' in this parameter 
 	are forced to be set.</P
 ><P
->Essentially, bits set in the <TT
+>Essentially, bits set in the <VAR
 CLASS="PARAMETER"
-><I
 >force security mode
-	</I
-></TT
+	</VAR
 > parameter may be treated as a set of bits that, when 
 	modifying security on a file, the user has always set to be 'on'.</P
 ><P
@@ -633,82 +597,60 @@ CLASS="PARAMETER"
 	as the <A
 HREF="smb.conf.5.html#FORCECREATEMODE"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >force 
-	create mode</I
-></TT
+	create mode</VAR
 ></A
 > parameter to provide compatibility
 	with Samba 2.0.4 where the permission change facility was introduced.
 	To allow a user to modify all the user/group/world permissions on a file
 	with no restrictions set this parameter to 000.</P
 ><P
->The <TT
+>The <VAR
 CLASS="PARAMETER"
-><I
->security mask</I
-></TT
-> and <TT
+>security mask</VAR
+> and <VAR
 CLASS="PARAMETER"
-><I
 >force 
-	security mode</I
-></TT
+	security mode</VAR
 > parameters are applied to the change 
 	request in that order.</P
 ><P
 >For a directory Samba will perform the same operations as 
-	described above for a file except using the parameter <TT
+	described above for a file except using the parameter <VAR
 CLASS="PARAMETER"
-><I
->	directory security mask</I
-></TT
-> instead of <TT
+>	directory security mask</VAR
+> instead of <VAR
 CLASS="PARAMETER"
-><I
 >security 
-	mask</I
-></TT
->, and <TT
+	mask</VAR
+>, and <VAR
 CLASS="PARAMETER"
-><I
 >force directory security mode
-	</I
-></TT
-> parameter instead of <TT
+	</VAR
+> parameter instead of <VAR
 CLASS="PARAMETER"
-><I
 >force security mode
-	</I
-></TT
+	</VAR
 >.</P
 ><P
->The <TT
+>The <VAR
 CLASS="PARAMETER"
-><I
->directory security mask</I
-></TT
+>directory security mask</VAR
 > parameter 
-	by default is set to the same value as the <TT
+	by default is set to the same value as the <VAR
 CLASS="PARAMETER"
-><I
 >directory mask
-	</I
-></TT
-> parameter and the <TT
+	</VAR
+> parameter and the <VAR
 CLASS="PARAMETER"
-><I
 >force directory security 
-	mode</I
-></TT
+	mode</VAR
 > parameter by default is set to the same value as 
- 	the <TT
+ 	the <VAR
 CLASS="PARAMETER"
-><I
->force directory mode</I
-></TT
+>force directory mode</VAR
 > parameter to provide 
 	compatibility with Samba 2.0.4 where the permission change facility 
 	was introduced.</P
@@ -730,62 +672,46 @@ CLASS="FILENAME"
 ></A
 > file in that share specific section :</P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->security mask = 0777</I
-></TT
+>security mask = 0777</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->force security mode = 0</I
-></TT
+>force security mode = 0</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->directory security mask = 0777</I
-></TT
+>directory security mask = 0777</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->force directory security mode = 0</I
-></TT
+>force directory security mode = 0</VAR
 ></P
 ><P
 >As described, in Samba 2.0.4 the parameters :</P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->create mask</I
-></TT
+>create mask</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->force create mode</I
-></TT
+>force create mode</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->directory mask</I
-></TT
+>directory mask</VAR
 ></P
 ><P
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->force directory mode</I
-></TT
+>force directory mode</VAR
 ></P
 ><P
 >were used instead of the parameters discussed here.</P
@@ -795,10 +721,10 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1901"
-></A
+NAME="AEN1804"
 >10.7. Interaction with the standard Samba file attribute 
-	mapping</H1
+	mapping</A
+></H1
 ><P
 >Samba maps some of the DOS attribute bits (such as "read 
 	only") into the UNIX permissions of a file. This means there can 

@@ -5,7 +5,7 @@
 >smbpasswd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -115,9 +115,9 @@ CLASS="VARIABLELIST"
 		null password this field will contain the characters "NO PASSWORD" 
 		as the start of the hex string. If the hex string is equal to 
 		32 'X' characters then the user's account is marked as 
-		<TT
+		<CODE
 CLASS="CONSTANT"
->disabled</TT
+>disabled</CODE
 > and the user will not be able to 
 		log onto the Samba server. </P
 ><P
@@ -235,11 +235,9 @@ CLASS="EMPHASIS"
 > - This means the
 			account has no password (the passwords in the fields LANMAN 
 			Password Hash and NT Password Hash are ignored). Note that this 
-			will only allow users to log on with no password if the <TT
+			will only allow users to log on with no password if the <VAR
 CLASS="PARAMETER"
-><I
->			null passwords</I
-></TT
+>			null passwords</VAR
 > parameter is set in the <A
 HREF="smb.conf.5.html#NULLPASSWORDS"
 TARGET="_top"
