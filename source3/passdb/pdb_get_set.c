@@ -1120,13 +1120,24 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 	if (!sampass || !plaintext)
 		return False;
 	
-	nt_lm_owf_gen (plaintext, new_nt_p16, new_lanman_p16);
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	E_md4hash(plaintext, new_nt_p16);
 
 	if (!pdb_set_nt_passwd (sampass, new_nt_p16, PDB_CHANGED)) 
 		return False;
 
-	if (!pdb_set_lanman_passwd (sampass, new_lanman_p16, PDB_CHANGED)) 
-		return False;
+	if (!E_deshash(plaintext, new_lanman_p16)) {
+		/* E_deshash returns false for 'long' passwords (> 14
+		   DOS chars).  This allows us to match Win2k, which
+		   does not store a LM hash for these passwords (which
+		   would reduce the effective password length to 14 */
+
+		if (!pdb_set_lanman_passwd (sampass, NULL, PDB_CHANGED)) 
+			return False;
+	} else {
+		if (!pdb_set_lanman_passwd (sampass, new_lanman_p16, PDB_CHANGED)) 
+			return False;
+	}
 
 	if (!pdb_set_plaintext_pw_only (sampass, plaintext, PDB_CHANGED)) 
 		return False;

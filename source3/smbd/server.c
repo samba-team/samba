@@ -145,7 +145,7 @@ static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
  Have we reached the process limit ?
 ****************************************************************************/
 
-BOOL allowable_number_of_smbd_processes(void)
+static BOOL allowable_number_of_smbd_processes(void)
 {
 	int max_processes = lp_max_smbd_processes();
 
