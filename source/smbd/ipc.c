@@ -3236,7 +3236,8 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 				  subcommand, p->name, pnum));
 
 		/* record maximum data length that can be transmitted in an SMBtrans */
-		p->file_offset = mdrcnt;
+		p->file_offset          = mdrcnt;
+		p->prev_pdu_file_offset = 0;
 
                 DEBUG(10,("api_fd_reply: p:%p file_offset: %d\n",
                            p, p->file_offset));
