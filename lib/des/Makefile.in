@@ -24,6 +24,8 @@ libdir = $(exec_prefix)/lib
 
 PICFLAGS = @PICFLAGS@
  
+PROGS = destest des rpw speed
+PROGS2INSTALL = des
 LIBNAME = libdes
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
@@ -36,7 +38,7 @@ LIBSRC = cbc3_enc.c cbc_enc.c cfb64ede.c cfb64enc.c cfb_enc.c ecb3_enc.c ede_enc
 
 LIBOBJ = cbc3_enc.o cbc_enc.o cfb64ede.o cfb64enc.o cfb_enc.o ecb3_enc.o ede_enc.o fcrypt.o key_par.o ncbc_enc.o ofb64ede.o ofb64enc.o ofb_enc.o pcbc_enc.o qud_cksm.o read_pwd.o rnd_keys.o str2key.o cbc_cksm.o ecb_enc.o set_key.o
 
-all: $(LIB) destest
+all: $(LIB) $(PROGS)
 
 Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
@@ -47,9 +49,20 @@ Wall:
 destest.o: destest.c
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
+des.o: des.c
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
+rpw.o: rpw.c
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
+speed.o: speed.c
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
 install: all
 	$(MKDIRHIER) $(libdir)
 	$(INSTALL) -m 0555 $(LIB) $(libdir)
+	$(MKDIRHIER) $(prefix)/bin
+	for x in $(PROGS2INSTALL); do $(INSTALL) $$x $(prefix)/bin; done
 
 uninstall:
 
@@ -88,5 +101,14 @@ $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 
 destest: destest.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ destest.o -L. -ldes
+
+des: des.o
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ des.o -L. -ldes
+
+rpw: rpw.o
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ rpw.o -L. -ldes
+
+speed: speed.o
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ speed.o -L. -ldes
 
 $(LIBOBJ): ../../config.h
