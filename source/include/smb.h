@@ -433,6 +433,9 @@ struct interface
 	struct in_addr ip;
 	struct in_addr bcast;
 	struct in_addr nmask;
+	char *name;
+	size_t mtu;		/* may be useful in future... */
+	short flags;
 };
 
 /* share mode record pointed to in shared memory hash bucket */
