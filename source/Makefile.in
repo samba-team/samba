@@ -682,7 +682,7 @@ nsswitch/winbindd_group.o nsswitch/winbindd_surs.o \
 rpc_client/cli_lsarpc.o rpc_parse/parse_lsa.o \
 rpc_client/cli_connect.o rpc_client/cli_use.o rpc_client/cli_samr.o \
 rpc_parse/parse_samr.o rpc_client/cli_pipe.o rpc_parse/parse_rpc.o \
-lib/msrpc-client.o rpc_client/cli_pipe_noauth.o lib/set_uid.o \
+lib/msrpc-client.o rpc_client/cli_pipe_noauth.o $(STUB_UID_OBJ) \
 rpc_client/cli_netlogon.o rpc_client/msrpc_samr.o \
 rpc_client/cli_pipe_ntlmssp.o lib/msrpc_use.o \
 rpc_parse/parse_sec.o lib/set_vuid.o \
