@@ -71,7 +71,10 @@
 		<term>-a username%password</term>
 		<listitem><para>Attempt to authenticate a user via winbindd. 
                 This checks both authenticaion methods and reports its results.
-		</para></listitem>
+		</para><note><para>Do not be tempted to use this
+		functionality for authentication in third-party
+		applications.  Instead use <citerefentry><refentrytitle>ntlm_auth</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>.</para></note></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -303,7 +306,8 @@
 <refsect1>
 	<title>SEE ALSO</title>
 	<para><citerefentry><refentrytitle>winbindd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry></para>
+	<manvolnum>8</manvolnum></citerefentry> and <citerefentry><refentrytitle>ntlm_auth</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry></para>
 </refsect1>
 
 <refsect1>
