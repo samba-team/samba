@@ -30,52 +30,28 @@ extern pstring global_myname;
 
 
 /*******************************************************************
- create_brs_info_100
- ********************************************************************/
-static void create_brs_info_100(BRS_INFO_100 *inf)
-{
-	DEBUG(5,("create_brs_info_100: %d\n", __LINE__));
-
-	make_brs_info_100(inf);
-}
-
-/*******************************************************************
- brs_reply_query_info
- 
- only supports info level 100 at the moment.
-
- ********************************************************************/
-static void brs_reply_query_info(BRS_Q_QUERY_INFO *q_u,
-				prs_struct *rdata,
-				int status)
-{
-	BRS_R_QUERY_INFO r_u;
-	BRS_INFO_100 brs100;
-
-	DEBUG(5,("brs_query_info: %d\n", __LINE__));
-
-	create_brs_info_100(&brs100);
-	make_brs_r_query_info(&r_u, q_u->switch_value1, &brs100, status);
-
-	/* store the response in the SMB stream */
-	brs_io_r_query_info("", &r_u, rdata, 0);
-
-	DEBUG(5,("brs_query_info: %d\n", __LINE__));
-}
-
-/*******************************************************************
  api_brs_query_info
  ********************************************************************/
 static void api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	BRS_Q_QUERY_INFO q_u;
+	BRS_R_QUERY_INFO r_u;
+	uint32 status;
+	BRS_INFO_100 brs100;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	/* grab the net share enum */
 	brs_io_q_query_info("", &q_u, data, 0);
 
-	/* construct reply.  always indicate success */
-	brs_reply_query_info(&q_u, rdata, 0x0);
+	status = _brs_query_info(&q_u.uni_srv_name, q_u.switch_value1,
+				 &brs100);
+	make_brs_r_query_info(&r_u, q_u.switch_value1, &brs100, status);
+
+	/* store the response in the SMB stream */
+	brs_io_r_query_info("", &r_u, rdata, 0);
 }
 
 

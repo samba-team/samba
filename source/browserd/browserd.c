@@ -115,3 +115,25 @@ msrpc_service_fns *get_service_fns(void)
 {
 	return &fn_table;
 }
+
+/*******************************************************************
+ create_brs_info_100
+ ********************************************************************/
+static void create_brs_info_100(BRS_INFO_100 *inf)
+{
+	make_brs_info_100(inf);
+}
+
+/*******************************************************************
+ _brs_query_info
+ 
+ only supports info level 100 at the moment.
+
+ ********************************************************************/
+uint32 _brs_query_info( const UNISTR2 *srv_name, uint16 switch_value,
+			void *id)
+{
+	create_brs_info_100(id);
+
+	return 0x0;
+}
