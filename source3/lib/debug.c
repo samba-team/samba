@@ -171,7 +171,7 @@ utility lists registered debug class names's
 
 #define MAX_CLASS_NAME_SIZE 1024
 
-char *debug_list_class_names_and_levels()
+char *debug_list_class_names_and_levels(void)
 {
 	int i, dim;
 	char **list;
