@@ -698,7 +698,8 @@ NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_QUERY_USERALIASES q;
 	SAMR_R_QUERY_USERALIASES r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	unsigned int ptr=1;
+	int i;
+	uint32 *sid_ptrs;
 	
 	DEBUG(10,("cli_samr_query_useraliases\n"));
 
@@ -710,9 +711,16 @@ NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
+	sid_ptrs = TALLOC_ARRAY(mem_ctx, uint32, num_sids);
+	if (sid_ptrs == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<num_sids; i++)
+		sid_ptrs[i] = 1;
+
 	/* Marshall data and send request */
 
-	init_samr_q_query_useraliases(&q, user_pol, num_sids, &ptr, sid);
+	init_samr_q_query_useraliases(&q, user_pol, num_sids, sid_ptrs, sid);
 
 	if (!samr_io_q_query_useraliases("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_USERALIASES, &qbuf, &rbuf))
