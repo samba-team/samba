@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       37
+    EUROPE                                       38
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1741,7 +1741,7 @@ under Linux. We are also an internet provider.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-TREVISO, ITALY
+TREVISO - ITALY
 
 Company: SMC Computers S.r.l.
 Via Roma 4/D         
@@ -1880,6 +1880,23 @@ Tel: +48(71)206450
 Fax: +48(71)212448
 E-mail: ser@pwr.wroc.pl
 WWW: http://www.arch.pwr.wroc.pl/
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+CLUJ - ROMANIA
+
+CompAs Software, Ltd.
+Calea Dorobantilor 38, PO Box 285/1
+3400 Cluj, Romania
+tel: +40-64-431317, +40-64-431327
+fax: +40-64-195239
+
+Contact: Gabriel Juncu (gjuncu@compas.dntcj.ro)
+
+Samba Experience:
+Servers: Linux & Samba 1.9.16 and above
+Clients: MS Client for DOS 3.0, LanMan Client 2.xx,
+         WfW, Windows'95, Windows NT
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
