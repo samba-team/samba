@@ -354,7 +354,7 @@ union smb_fileinfo {
 		} in;
 		
 		struct {
-			uint16_t attrib;
+			uint32_t attrib;
 			uint32_t ea_size;
 			uint_t num_eas;
 			struct ea_struct {
@@ -366,7 +366,6 @@ union smb_fileinfo {
 			NTTIME access_time;
 			NTTIME write_time;
 			NTTIME change_time;
-			uint32_t ex_attrib;	
 			uint64_t alloc_size;
 			uint64_t size;
 			uint32_t nlink;

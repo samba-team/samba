@@ -203,7 +203,6 @@ static NTSTATUS svfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo
 	info->generic.out.num_eas = 0;
 	info->generic.out.fname.s = talloc_strdup(req, short_name);
 	info->generic.out.alt_fname.s = talloc_strdup(req, short_name);
-	info->generic.out.ex_attrib = 0;
 	info->generic.out.compressed_size = 0;
 	info->generic.out.format = 0;
 	info->generic.out.unit_shift = 0;
