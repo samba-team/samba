@@ -47,13 +47,11 @@ struct server_service_ops {
 	/* function to accept new connection */
 	void (*accept_connection)(struct server_connection *);
 
-	/* function to accept new connection */
 	void (*recv_handler)(struct server_connection *, struct timeval, uint16_t);
 
-	/* function to accept new connection */
 	void (*send_handler)(struct server_connection *, struct timeval, uint16_t);
 
-	/* function to accept new connection */
+	/* function to be called when the server is idle */
 	void (*idle_handler)(struct server_connection *, struct timeval);
 
 	/* function to close a connection */

@@ -294,7 +294,10 @@ void server_idle_handler(struct event_context *ev, struct timed_event *idle,
 
 	conn->event.idle->next_event = timeval_sum(&t, &conn->event.idle_time);
 
-	conn->service->ops->idle_handler(conn, t);
+	/* Not all services provide an idle handler */
+	if (conn->service->ops->idle_handler) {
+		conn->service->ops->idle_handler(conn, t);
+	}
 }
 /*
   return the operations structure for a named backend of the specified type
