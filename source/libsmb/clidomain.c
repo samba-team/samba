@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "nterr.h"
 #include "trans2.h"
+#include "rpc_client_proto.h"
 
 extern int DEBUGLEVEL;
 
@@ -256,52 +257,276 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	return connected_ok;
 }
 
-/****************************************************************************
- for a domain name, find any domain controller (PDC, BDC, don't care) name.
-****************************************************************************/
-BOOL get_any_dc_name(const char *domain, char *srv_name)
+#if 0
+
+/* Helper function for get_any_dc_name() */
+
+extern struct in_addr ipzero;
+extern pstring global_myname;
+
+static BOOL attempt_connect_dc(struct in_addr *ip, char *domain_name)
 {
-	extern pstring global_myname;
-	struct cli_state cli;
-	char *servers;
+	fstring dc_name;
+	POLICY_HND hnd;
+	BOOL result;
 
-	DEBUG(10,("get_any_dc_name: domain %s\n", domain));
+	if (ip_equal(ipzero, *ip)) return False;
 
-	if (strequal(domain, global_myname) ||
-			strequal(domain, "Builtin") ||
-			strequal(domain, ""))
-	{
-		DEBUG(10,("get_any_dc_name: our own server\n"));
-		fstrcpy(srv_name, "\\\\.");
-		return True;
-	}
-
-	servers = get_trusted_serverlist(domain);
-
-	if (servers == NULL)
-	{
-		/* no domain found, not even our own domain. */
+	if (!lookup_pdc_name(global_myname, domain_name, ip, dc_name)) {
+		DEBUG(3, ("could not lookup dc name for ip %s",
+			  inet_ntoa(*ip)));
 		return False;
 	}
 
-	if (servers[0] == 0)
-	{
-		/* empty list: return our own name */
-		fstrcpy(srv_name, "\\\\.");
-		return True;
+	result = lsa_open_policy(dc_name, &hnd, False, 
+				 SEC_RIGHTS_MAXIMUM_ALLOWED);
+
+	DEBUG(3, ("connect to DC %s %s\n", dc_name, result ? "OK" : "failed"));
+
+	if (result) {
+		lsa_close(&hnd);
 	}
 
-	if (!cli_connect_servers_auth(&cli, servers, NULL))
-	{
-		return False;
-	}
+	return result;
+}
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, cli.desthost);
-	strupper(srv_name);
+#endif
 
-	cli_shutdown(&cli);
+/* Some routines to fetch the trust account password from a HEAD
+   version of Samba.  Yuck.  )-: */
 
+/************************************************************************
+form a key for fetching a domain trust password from
+************************************************************************/
+static char *trust_keystr(char *domain)
+{
+	static fstring keystr;
+
+	snprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, 
+		 domain);
+
+	return keystr;
+}
+
+/************************************************************************
+ Routine to get the trust account password for a domain
+************************************************************************/
+BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+				 time_t *pass_last_set_time)
+{
+	struct machine_acct_pass *pass;
+	size_t size;
+
+	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
+	    size != sizeof(*pass)) return False;
+
+	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
+	memcpy(ret_pwd, pass->hash, 16);
+	free(pass);
 	return True;
 }
 
+/***********************************************************************
+ Connect to a remote machine for domain security authentication
+ given a name or IP address.
+************************************************************************/
+
+extern pstring global_myname;
+
+static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip,
+			       unsigned char *trust_passwd)
+{
+	fstring remote_machine;
+	struct cli_state cli;
+	uint16 fnum;
+	
+	ZERO_STRUCT(cli);
+
+	/* Look up remote name */
+
+	if (!lookup_pdc_name(global_myname, domain, &dest_ip, 
+			     remote_machine)) {
+		DEBUG(0,("unable to lookup pdc name for %s in domain %s\n",
+			 inet_ntoa(dest_ip), domain));
+		return False;
+	}
+
+	if(cli_initialise(&cli) == False) {
+		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
+		return False;
+	}
+
+	standard_sub_basic(remote_machine);
+	strupper(remote_machine);
+	
+	if (ismyip(dest_ip)) {
+		DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
+			 remote_machine));
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	if (!cli_connect(&cli, remote_machine, &dest_ip)) {
+		DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	if (!attempt_netbios_session_request(&cli, global_myname, 
+					     remote_machine, &dest_ip)) {
+		DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
+session request. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+		return False;
+	}
+	
+	cli.protocol = PROTOCOL_NT1;
+	
+	if (!cli_negprot(&cli)) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the negotiate protocol. \
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	if (cli.protocol != PROTOCOL_NT1) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s didn't negotiate NT protocol.\n",
+			 remote_machine));
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	/*
+	 * Do an anonymous session setup.
+	 */
+	
+	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the session setup. \
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	if (!(cli.sec_mode & 1)) {
+		DEBUG(1,("connect_to_domain_password_server: machine %s isn't in user level security mode\n",
+			 remote_machine));
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the tconX on the IPC$ share. \
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	/*
+	 * We now have an anonymous connection to IPC$ on the domain password
+	 * server.
+	 */
+	
+	/*
+	 * Even if the connect succeeds we need to setup the netlogon pipe
+	 * here. We do this as we may just have changed the domain account
+	 * password on the PDC and yet we may be talking to a BDC that 
+	 * doesn't have this replicated yet. In this case a successful 
+	 * connect to a DC needs to take the netlogon connect into account 
+	 * also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.  
+	 */
+
+	if(cli_nt_session_open(&cli, PIPE_NETLOGON, &fnum) == False) {
+		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+		cli_nt_session_close(&cli, fnum);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
+		return False;
+	}
+	
+	/* cli_nt_setup_creds() not called */
+	
+	return True;
+}
+
+/****************************************************************************
+ for a domain name, find any domain controller (PDC, BDC, don't care) name.
+****************************************************************************/
+BOOL get_any_dc_name(char *domain, fstring srv_name)
+{
+	extern struct in_addr ipzero;
+	struct in_addr *ip_list = NULL, *dc_ip = NULL;
+	uchar trust_passwd[16];
+	BOOL connected_ok = False;
+	int i, count = 0;
+
+	/* Get list of possible domain controllers */
+
+	if (!get_dc_list(domain, &ip_list, &count)) {
+		DEBUG(3, ("could not get dc list for workgroup %s\n",
+			  domain));
+                return False;
+	}
+
+	/* Fetch trust account password */
+
+	if (!_get_trust_account_password(domain, trust_passwd, NULL)) {
+		DEBUG(3,("connect_to_domain_password_server: unable to get trust account password for domain %s\n", domain));
+		return False;
+	}	
+
+	/* Find a DC on the local network */
+
+	for (i = 0; i < count; i++) {
+		if (!is_local_net(ip_list[i])) continue;
+
+		/* Try to contact DC */
+
+		if ((connected_ok = 
+		     attempt_connect_dc(domain, ip_list[i], trust_passwd))) {
+			dc_ip = &ip_list[i];
+			break;
+		}
+		    
+		ip_list[i] = ipzero;   /* Tried and failed */
+	}
+
+	/* Try a random DC elsewhere on the network */
+
+	if (!connected_ok) {
+
+		i = sys_random() % count;
+
+		if (!(connected_ok = 
+		      attempt_connect_dc(domain, ip_list[i], trust_passwd))) {
+			ip_list[i] = ipzero;
+		} else {
+			dc_ip = &ip_list[i];
+		}
+	}
+
+	/* Last resort - go through the IP list and try addresses we
+	   haven't looked at yet.  Note that from a WINS server the
+	   first IP address is the PDC. */
+
+	if (!connected_ok) {
+		for(i = 0; i < count; i++) {
+			if ((connected_ok = 
+			     attempt_connect_dc(domain, ip_list[i], 
+						trust_passwd))) {
+				dc_ip = &ip_list[i];
+				break;
+			}
+		}
+	}
+
+	/* Return DC name to caller */
+
+	if (connected_ok) {
+		lookup_pdc_name(global_myname, domain, dc_ip, srv_name);
+	}
+
+	safe_free((char *)ip_list);
+
+	return connected_ok;
+}
