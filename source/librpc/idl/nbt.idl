@@ -50,7 +50,7 @@ interface nbt
 
 	/* we support any 8bit name type, but by defining the common
 	   ones here we get better debug displays */
-	typedef [enum8bit] enum {
+	typedef [enum8bit,public] enum {
 		NBT_NAME_CLIENT   = 0x00,
 		NBT_NAME_MS       = 0x01,
 		NBT_NAME_USER     = 0x03,
