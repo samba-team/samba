@@ -4385,16 +4385,16 @@ static void usage(poptContext pc)
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL, 		0,	"SMB ports", 	NULL},
-		{"seed",	 0, POPT_ARG_STRING, NULL, 		0,	"seed", 	NULL},
-		{"num-progs",	 0, POPT_ARG_INT, &torture_nprocs, 	0,	"num progs",	NULL},
-		{"num-ops",	 0, POPT_ARG_INT, &torture_numops, 	0, 	"num ops",	NULL},
-		{"entries",	 0, POPT_ARG_INT, &torture_entries, 	0,	"entries",	NULL},
+		{"seed",	  0, POPT_ARG_STRING, NULL, 		0,	"seed", 	NULL},
+		{"num-progs",	  0, POPT_ARG_INT,  &torture_nprocs, 	0,	"num progs",	NULL},
+		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
+		{"entries",	  0, POPT_ARG_INT,  &torture_entries, 	0,	"entries",	NULL},
 		{"use-oplocks",	'L', POPT_ARG_NONE, &use_oplocks, 	0,	"use oplocks", 	NULL},
-		{"show-all",	'A', POPT_ARG_NONE, &torture_showall, 	0,	"show all", 	NULL},
+		{"show-all",	  0, POPT_ARG_NONE, &torture_showall, 	0,	"show all", 	NULL},
 		{"loadfile",	  0, POPT_ARG_STRING,	NULL, 	OPT_LOADFILE,	"loadfile", 	NULL},
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
 		{"timelimit",	't', POPT_ARG_STRING,	NULL, 	OPT_TIMELIMIT,	"timelimit", 	NULL},
-		{"failures",	'f', POPT_ARG_INT, &torture_failures, 	0,	"failures", 	NULL},
+		{"failures",	'f', POPT_ARG_INT,  &torture_failures, 	0,	"failures", 	NULL},
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,	"dangerous", 	NULL},
 		POPT_COMMON_SAMBA
