@@ -769,7 +769,7 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 {
 	int ret = -1;
 	struct timeval to;
-	char *attrs[] = {"highestCommittedUSN", NULL};
+	const char *attrs[] = {"highestCommittedUSN", NULL};
 	LDAPMessage *res = NULL;
 	char **values = NULL;
 	LDAP *ldp = NULL;
