@@ -1521,7 +1521,7 @@ int reply_ntrename(connection_struct *conn,
 
 	START_PROFILE(SMBntrename);
 
-	if (rename_type != RENAME_FLAG_RENAME) {
+	if ((rename_type != RENAME_FLAG_RENAME) && (rename_type != RENAME_FLAG_HARD_LINK)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
@@ -1551,7 +1551,12 @@ int reply_ntrename(connection_struct *conn,
 	
 	DEBUG(3,("reply_ntrename : %s -> %s\n",name,newname));
 	
-	status = rename_internals(conn, name, newname, attrs, False);
+	if (rename_type == RENAME_FLAG_RENAME) {
+		status = rename_internals(conn, name, newname, attrs, False);
+	} else {
+		status = hardlink_internals(conn, name, newname);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
