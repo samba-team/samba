@@ -2199,6 +2199,7 @@ static BOOL run_deletetest(int dummy)
 	int fnum1 = -1;
 	int fnum2 = -1;
 	BOOL correct = True;
+	NTSTATUS status;
 	
 	printf("starting delete test\n");
 	
@@ -2608,6 +2609,63 @@ static BOOL run_deletetest(int dummy)
 		correct = False;
 	} else
 		printf("tenth delete on close test succeeded.\n");
+
+	/* test 11 - does having read only attribute still allow delete on close. */
+
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+                                                                                                                                        
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
+				   FILE_ATTRIBUTE_READONLY, NTCREATEX_SHARE_ACCESS_NONE, 
+				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	
+        if (fnum1 == -1) {
+                printf("[11] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+                correct = False;
+                goto fail;
+        }
+
+	status = smbcli_nt_delete_on_close(cli1->tree, fnum1, True);
+
+	if (NT_STATUS_V(status) != NT_STATUS_V(NT_STATUS_CANNOT_DELETE)) {
+		printf("[11] setting delete_on_close should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		printf("[11] close failed (%s)\n", smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+                                                                                                                                        
+        printf("eleventh delete on close test succeeded.\n");
+
+	/* test 12 - does having read only attribute still allow delete on close at time of open. */
+
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, FILE_ATTRIBUTE_READONLY,
+				   NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
+				   NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	
+	if (fnum1 != -1) {
+		printf("[12] open of %s succeeded. Should fail with NT_STATUS_CANNOT_DELETE.\n", fname);
+		smbcli_close(cli1->tree, fnum1);
+		correct = False;
+		goto fail;
+	} else {
+		status = smbcli_nt_error(cli1->tree);
+		if (NT_STATUS_V(status) != NT_STATUS_V(NT_STATUS_CANNOT_DELETE)) {
+			printf("[12] setting delete_on_close on open should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", smbcli_errstr(cli1->tree));
+			correct = False;
+			goto fail;
+		}
+	}
+	
+        printf("twelvth delete on close test succeeded.\n");
+
 	printf("finished delete test\n");
 
   fail:
