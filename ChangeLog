@@ -1,3 +1,24 @@
+2004-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c (generate_dh_keyblock): use the new function
+	krb5_random_to_key
+
+	* lib/krb5/crypto.c: add des and DES3 random_to_key hooks, they
+	need special processing
+
+	* lib/krb5/crypto.c (krb5_random_to_key): new function
+	
+	* lib/krb5/krb5_keyblock.3: document krb5_random_to_key
+	
+2004-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: use the first proposed enable enctype
+	
+	* lib/krb5/context.c (krb5_set_default_in_tkt_etypes): use the
+	return from krb5_enctype_valid
+
+	* kdc/pkinit.c: at least try to handle diffrent enveloped enctypes
+	
 2004-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/der_get.c: 1.28.2.16: (der_get_oid): handle all oid
@@ -8,6 +29,11 @@
 
 	* lib/asn1/k5.asn1: ETYPE_DIGEST_MD5_NONE, ETYPE_CRAM_MD5_NONE:
 	private use, lukeh@padl.com
+
+2004-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c (build_auth_pack): use heim_integer to encode
+	DH public key
 
 2004-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
