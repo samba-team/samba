@@ -99,7 +99,7 @@ static void cleanOSE(struct optionStackEntry *os)
     }
 }
 
-void poptResetContext(poptContext con)
+ void poptResetContext(poptContext con)
 {
     int i;
 
@@ -400,7 +400,7 @@ static void poptStripArg(poptContext con, int which)
 }
 
 /* returns 'val' element, -1 on last item, POPT_ERROR_* on error */
-int poptGetNextOpt(poptContext con)
+ int poptGetNextOpt(poptContext con)
 {
     const struct poptOption * opt = NULL;
     int done = 0;
