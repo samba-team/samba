@@ -3,7 +3,7 @@
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Jeremy Allison 1997-2002
-   Copyright (C) Jelmer Vernooij 2002 (Conversion to popt)
+   Copyright (C) Jelmer Vernooij 2002,2003 (Conversion to popt)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -600,15 +600,14 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, dyn_LMHOSTSFILE, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
+	POPT_COMMON_SAMBA
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options },
-	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_netbios_name },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
 	{ NULL }
 	};
-	int opt;
 	pstring logfile;
 
   global_nmb_port = NMB_PORT;
@@ -624,7 +623,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   fault_setup((void (*)(void *))fault_continue );
 
   /* POSIX demands that signals are inherited. If the invoking process has
-   * these signals masked, we will have problems, as we won't recieve them. */
+   * these signals masked, we will have problems, as we won't receive them. */
   BlockSignals(False, SIGHUP);
   BlockSignals(False, SIGUSR1);
   BlockSignals(False, SIGTERM);
@@ -643,9 +642,6 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 #endif
   pc = poptGetContext("nmbd", argc, argv, long_options, 0);
   
-  while((opt = poptGetNextOpt(pc)) != -1)
-    { }
-
   poptFreeContext(pc);
 
   if ( opt_interactive ) {
