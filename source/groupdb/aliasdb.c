@@ -143,16 +143,15 @@ BOOL add_domain_alias(LOCAL_GRP **alss, int *num_alss, LOCAL_GRP *als)
 	LOCAL_GRP *talss;
 
 	if (alss == NULL || num_alss == NULL || als == NULL)
-	{
 		return False;
-	}
 
 	talss = Realloc((*alss), ((*num_alss)+1) * sizeof(LOCAL_GRP));
-	if (talss == NULL)
-	{
+	if (talss == NULL) {
+		if (*alss)
+			free(*alss);
 		return False;
-	}
-	else (*alss) = talss;
+	} else
+		(*alss) = talss;
 
 	DEBUG(10,("adding alias %s(%s)\n", als->name, als->comment));
 
