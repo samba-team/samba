@@ -167,6 +167,15 @@ krb5_get_krb_admin_hst (krb5_context context,
 }
 
 krb5_error_code
+krb5_get_krb_changepw_hst (krb5_context context,
+			   const krb5_realm *realm,
+			   char ***hostlist)
+{
+    return get_krbhst (context, realm, "admin_server", "kpasswd",
+		       hostlist);
+}
+
+krb5_error_code
 krb5_get_krbhst (krb5_context context,
 		 const krb5_realm *realm,
 		 char ***hostlist)
