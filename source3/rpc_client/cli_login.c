@@ -156,9 +156,10 @@ NT login - network.
 password equivalents over the network. JRA.
 ****************************************************************************/
 
-BOOL cli_nt_login_network(struct cli_state *cli, const auth_usersupplied_info *user_info, 
-                          uint32 smb_userid_low, NET_ID_INFO_CTR *ctr, 
-			  NET_USER_INFO_3 *user_info3)
+uint32 cli_nt_login_network(struct cli_state *cli, 
+                            const auth_usersupplied_info *user_info, 
+                            uint32 smb_userid_low, NET_ID_INFO_CTR *ctr, 
+                            NET_USER_INFO_3 *user_info3)
 {
   DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
   /* indicate a "network" login */

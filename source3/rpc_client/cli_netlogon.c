@@ -437,18 +437,18 @@ password ?).\n", cli->desthost ));
 LSA SAM Logon - interactive or network.
 ****************************************************************************/
 
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
+uint32 cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+                         NET_USER_INFO_3 *user_info3)
 {
-	BOOL ok = True;
 	uint16 validation_level=3;
-	uint32 ret_err_code;
+	uint32 result;
 
-	ret_err_code = cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level);
+	result = cli_net_sam_logon_internal(cli, ctr, user_info3, 
+                                            validation_level);
 
-	if(ret_err_code == NT_STATUS_NOPROBLEMO) {
+	if(result == NT_STATUS_NOPROBLEMO) {
 		DEBUG(10,("cli_net_sam_logon: Success \n"));
-		ok = True;
-	} else if (ret_err_code == NT_STATUS_INVALID_INFO_CLASS) {
+	} else if (result == NT_STATUS_INVALID_INFO_CLASS) {
 		DEBUG(10,("cli_net_sam_logon: STATUS INVALID INFO CLASS \n"));
 
 		validation_level=2;
@@ -458,15 +458,13 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INF
 		 * for the error. If its error, return False. 
 		 */
 
-		if(cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level) != 0)
-			ok = False;
-
+		result = cli_net_sam_logon_internal(cli, ctr, user_info3,
+                                                    validation_level);
 	} else {
 		DEBUG(10,("cli_net_sam_logon: Error\n"));
-		ok = False;
 	}
 
-	return ok;
+	return result;
 }
 
 /***************************************************************************
