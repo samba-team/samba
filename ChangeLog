@@ -1,5 +1,6 @@
 2001-05-17  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/keytab_krb4.c: add SRVTAB as an alias for krb4
 	* lib/krb5/codec.c: remove dead code
 
 2001-05-15  Assar Westerlund  <assar@sics.se>
