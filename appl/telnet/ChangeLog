@@ -1,3 +1,13 @@
+Sat Apr  4 15:00:29 1998  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c (tn): moved the printing of `trying...' to the
+ 	loop
+
+Thu Mar 12 02:33:48 1998  Assar Westerlund  <assar@sics.se>
+
+	* telnet/telnet_locl.h: include <term.h>. From Gregory S. Stark
+ 	<gsstark@mit.edu>
+
 Fri Dec 26 16:17:10 1997  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): repair support for numeric addresses
