@@ -1,7 +1,10 @@
-<samba:parameter xmlns:samba="http://samba.org/common">
-		<term><anchor id="NETBIOSSCOPE"/>netbios scope (G)</term>
-		<listitem><para>This sets the NetBIOS scope that Samba will 
-		operate under. This should not be set unless every machine 
-		on your LAN also sets this value.</para>
-		</listitem>
-		</samba:parameter>
+<samba:parameter name="netbios scope"
+                 context="G"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://samba.org/common">
+<listitem>
+        <para>This sets the NetBIOS scope that Samba will 
+	operate under. This should not be set unless every machine 
+	on your LAN also sets this value.</para>
+</listitem>
+</samba:parameter>
