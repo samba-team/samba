@@ -1,5 +1,5 @@
 /*
- * 'Guest' password backend for samba
+ * GUMS password backend for samba
  * Copyright (C) Jelmer Vernooij 2002
  * Copyright (C) Andrew Bartlett 2003
  * 
