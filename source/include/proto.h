@@ -1299,6 +1299,7 @@ BOOL do_reg_open_policy(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
 BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
+BOOL do_reg_unk_b(struct cli_state *cli, POLICY_HND *hnd);
 BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 				char *class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
@@ -1611,6 +1612,9 @@ void make_reg_q_open_pol(REG_Q_OPEN_POLICY *q_o,
 				uint16 unknown_0, uint32 level);
 void reg_io_q_open_policy(char *desc,  REG_Q_OPEN_POLICY *r_q, prs_struct *ps, int depth);
 void reg_io_r_open_policy(char *desc,  REG_R_OPEN_POLICY *r_r, prs_struct *ps, int depth);
+void make_reg_q_unk_b(REG_Q_UNK_B *q_u, POLICY_HND *pol);
+void reg_io_q_unk_b(char *desc,  REG_Q_UNK_B *r_q, prs_struct *ps, int depth);
+void reg_io_r_unk_b(char *desc,  REG_R_UNK_B *r_r, prs_struct *ps, int depth);
 void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class,
 				SEC_INFO *sam_access);
