@@ -29,6 +29,9 @@
  * -------------------------------------------------------------------------- **
  *
  * $Log: debug2html.c,v $
+ * Revision 1.4  1998/11/13 03:37:01  tridge
+ * fixes for OSF1 compilation
+ *
  * Revision 1.3  1998/10/28 20:33:35  crh
  * I've moved the debugparse module files into the ubiqx directory because I
  * know that 'make proto' will ignore them there.  The debugparse.h header
@@ -61,7 +64,7 @@
  * The size of the read buffer.
  */
 
-#define BSIZE 1024
+#define DBG_BSIZE 1024
 
 /* -------------------------------------------------------------------------- **
  * Functions...
@@ -219,7 +222,7 @@ int main( int argc, char *argv[] )
   {
   int       i;
   int       len;
-  char      bufr[BSIZE];
+  char      bufr[DBG_BSIZE];
   dbg_Token old   = dbg_null,
             new   = dbg_null,
             state = dbg_null,
@@ -230,7 +233,7 @@ int main( int argc, char *argv[] )
   (void)printf( "  <TITLE>Samba Debug Output</TITLE>\n</HEAD>\n\n<BODY>\n" );
 
   while( (!feof( stdin ))
-      && ((len = fread( bufr, 1, BSIZE, stdin )) > 0) )
+      && ((len = fread( bufr, 1, DBG_BSIZE, stdin )) > 0) )
     {
     for( i = 0; i < len; i++ )
       {

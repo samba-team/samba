@@ -153,7 +153,7 @@ static char *stdin_new_passwd(void)
 	static fstring new_passwd;
 	size_t len;
 
-	ZERO_STRUCT(new_passwd);
+	ZERO_ARRAY(new_passwd);
 
 	/*
 	 * if no error is reported from fgets() and string at least contains
@@ -194,7 +194,7 @@ static char *prompt_for_new_password(BOOL stdin_get)
 	char *p;
 	fstring new_passwd;
 
-	ZERO_STRUCT(new_passwd);
+	ZERO_ARRAY(new_passwd);
  
 	p = get_pass("New SMB password:", stdin_get);
 
