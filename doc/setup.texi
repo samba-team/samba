@@ -717,6 +717,12 @@ A current release of Heimdal, configured with
 @code{--with-openldap=/usr/local} (adjust according to where you have
 installed OpenLDAP).
 
+You can verify that you manage to configure ldap support by running
+@file{kdc --builtin-hdb}, ``ldap:'' as one entry in the list.
+
+Its also possible to configure the ldap backend as a shared module,
+see option --hdb-openldap-module to configure.
+
 @item
 OpenLDAP 2.0.x. Configure OpenLDAP with --enable-local to enable the
 local transport. (A patch to support SASL EXTERNAL authentication is
@@ -724,22 +730,42 @@ necessary in order to use OpenLDAP 2.1.x.)
 
 @item
 The KDC LDAP schema, which is distributed with OpenLDAP
-@end itemize
 
 Configure the LDAP server ACLs to accept writes from clients over the
 local transport. For example:
 
 @example
 access to *
-        by sockurl="^ldapi:///$" write
+        by dn="uid=heimdal,dc=services,dc=padl,dc=com" write
+
+sasl-regexp "uidNumber=0\\\+gidNumber=.*,cn=peercred,cn=external,cn=auth"
+	"uid=heimdal,dc=services,dc=padl,dc=com"
+
 @end example
+
+The sasl-regexp is for mapping between the SASL/EXTERNAL and a user in
+a tree.  The user that the key is mapped to should be have a
+krb5Principal aux object with krb5PrincipalName set so that the
+``creator'' and ``modifier'' gets right in @file{kadmin}.
+
+Another option is to make an admins group and add the dn to that group.
+
+You also needs to make sure its possible for the KDC to connect
+without encryption, the connection is already secure, its done over a
+local unix socket. Comment out ``sasl-secprops minssf'' in the
+configuration file.
+
+@example
+#sasl-secprops minssf=128
+@end example
+
+@item
 
 Make sure you include the schema:
 
 @example
 include /usr/local/etc/openldap/schema/krb5-kdc.schema
 @end example
-
 
 Start the slapd with the local listener (as well as the default TCP/IP
 listener on port 389) as follows:
@@ -759,16 +785,19 @@ principals will be stored in @file{krb5.conf}:
 @example
 [kdc]
         database = @{
-                dbname = ldap:ou=KerberosPrincpals,dc=padl,dc=com
+                dbname = ldap:ou=KerberosPrincipals,dc=padl,dc=com
                 mkey_file = /path/to/mkey
         @}
 @end example
 
+mkey_file can be excluded if you feel that you trust your ldap
+directory to have the raw keys inside it.
+
+
 @item
 Once you have built Heimdal and started the LDAP server, run kadmin
 (as usual) to initialize the database. Note that the instructions for
-stashing a master key are as per any Heimdal installation; you are
-encouraged to read the Heimdal documentation for further information.
+stashing a master key are as per any Heimdal installation.
 
 @example
 kdc# kadmin -l
@@ -797,6 +826,13 @@ kdc# ldapsearch -L -h localhost -D cn=manager \
 
 @item
 Now consider adding indexes to the database to speed up the access.
+
+@end itemize
+
+@subsection Troubleshooting guide
+
+https://sec.miljovern.no/bin/view/Info/TroubleshootingGuide
+
 
 @node Using Samba LDAP password database, , Using LDAP to store the database, Setting up a realm
 @section Using Samba LDAP password database
