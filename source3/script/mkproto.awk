@@ -94,6 +94,10 @@ END {
     gotstart = 1;
   }
 
+  if( $0 ~ /^JOB_INFO_1|^JOB_INFO_2/ ) {
+    gotstart = 1;
+  }
+
   if( $0 ~ /^PRINTER_INFO_1|^PRINTER_INFO_2/ ) {
     gotstart = 1;
   }
