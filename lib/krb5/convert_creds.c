@@ -150,6 +150,7 @@ krb524_convert_creds_kdc(krb5_context context,
 	if(ret) goto out;
 	v4creds->ticket_st.length = ticket.length;
 	memcpy(v4creds->ticket_st.dat, ticket.data, ticket.length);
+	krb5_data_free(&ticket);
 	ret = krb5_524_conv_principal(context, 
 				      v5creds->server, 
 				      v4creds->service, 
