@@ -124,7 +124,9 @@ static u32 mangle_hash(const char *key, unsigned length)
 		value = (value + (((unsigned char)str[i]) << (i*5 % 24)));
 	}
 
-	return (1103515243 * value + 12345);  
+	/* note that we force it to a 31 bit hash, to keep within the limits
+	   of the 36^6 mangle space */
+	return (1103515243 * value + 12345) & ~0x80000000;  
 }
 
 /* 
@@ -431,7 +433,7 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	}
 
 	/* find the '.' if any */
-	dot_p = strchr(name, '.');
+	dot_p = strrchr(name, '.');
 
 	/* the leading character in the mangled name is taken from
 	   the first character of the name, if it is ascii 
