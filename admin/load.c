@@ -94,7 +94,13 @@ doit(char *filename, int merge)
 	ent.kvno = atoi(e.kvno);
 	ent.max_life = atoi(e.max_life);
 	ent.max_renew = atoi(e.max_renew);
+	krb5_build_principal(context, &ent.changed_by,
+			     0,
+			     ""
+			     "kadmin",
+			     NULL);
 	db->store(context, db, &ent);
+	hdb_free_entry (context, &ent);
     }
     db->close(context, db);
     fclose(f);
