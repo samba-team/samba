@@ -56,7 +56,7 @@ doit (int af,
 						addrlen,
 						af);
 	    if (he != NULL) {
-		strlcpy (host, he->h_name, hostlen);
+		strlcpy (host, hostent_find_fqdn(he), hostlen);
 		if (flags & NI_NOFQDN) {
 		    char *dot = strchr (host, '.');
 		    if (dot != NULL)
