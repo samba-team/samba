@@ -56,7 +56,7 @@ static BOOL api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
 	make_wks_r_query_info(&r_u, q_u.switch_value, &wks100, status);
 
 	/* store the response in the SMB stream */
-	wks_io_r_query_info("", &r_u, rdata, 0);
+	return wks_io_r_query_info("", &r_u, rdata, 0);
 }
 
 

@@ -173,6 +173,28 @@ void charset_initialise(void);
 void codepage_initialise(int client_codepage);
 void add_char_string(char *s);
 
+/*The following definitions come from  lib/cmd_interp.c  */
+
+void free_cmd_set_array(uint32 num_entries, struct command_set **entries);
+struct command_set* add_cmd_set_to_array(uint32 *len,
+				struct command_set ***array,
+				const struct command_set *cmd);
+void add_command_set(struct command_set *cmds);
+char *complete_regenum(char *text, int state);
+char *complete_samenum_usr(char *text, int state);
+char *complete_samenum_als(char *text, int state);
+char *complete_samenum_grp(char *text, int state);
+char *complete_svcenum(char *text, int state);
+char *complete_printersenum(char *text, int state);
+char *complete_printersenum(char *text, int state);
+char *complete_samenum_usr(char *text, int state);
+char *complete_samenum_als(char *text, int state);
+char *complete_samenum_grp(char *text, int state);
+char *complete_svcenum(char *text, int state);
+char *complete_regenum(char *text, int state);
+void readline_init(void);
+int command_main(int argc,char *argv[]);
+
 /*The following definitions come from  lib/crc32.c  */
 
 uint32 crc32_calc_buffer( uint32 count, char *buffer);
@@ -581,6 +603,7 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
 void *memdup(const void *p, size_t size);
 char *passdb_path(char *name);
 char *lock_path(char *name);
+char *get_sid_name_use_str(uint32 sid_name_use);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -2686,6 +2709,9 @@ BOOL req_groupmem_info( const POLICY_HND *pol_dom,
 				uint32 group_rid,
 				const char *group_name,
 				GROUP_MEM_FN(grp_mem));
+uint32 msrpc_sam_get_first_domain( const char* srv_name,
+				char *dom_name,
+				DOM_SID *sid);
 uint32 msrpc_sam_enum_domains( const char* srv_name,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
@@ -3528,7 +3554,6 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 
 /*The following definitions come from  rpcclient/display_srv.c  */
 
-char *get_sid_name_use_str(uint32 sid_name_use);
 char *get_file_mode_str(uint32 share_mode);
 char *get_file_oplock_str(uint32 op_type);
 char *get_server_type_str(uint32 type);
@@ -3599,9 +3624,20 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 				SAM_DELTA_CTR *const ctr, 
 				uint32 num);
 
+/*The following definitions come from  rpcclient/regedit.c  */
+
+
+/*The following definitions come from  rpcclient/regedit_cmds.c  */
+
+
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
-void readline_init(void);
+
+/*The following definitions come from  rpcclient/samedit.c  */
+
+
+/*The following definitions come from  rpcclient/samedit_cmds.c  */
+
 
 /*The following definitions come from  samrd/samrd.c  */
 

@@ -51,12 +51,9 @@ static BOOL api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
 	}
 
 
-	status = _brs_query_info(&q_u.uni_srv_name, q_u.switch_value1,
-				 &brs100);
+	status = _brs_query_info(&q_u.uni_srv_name, q_u.switch_value1, &brs100);
 	make_brs_r_query_info(&r_u, q_u.switch_value1, &brs100, status);
-
-	/* store the response in the SMB stream */
-	brs_io_r_query_info("", &r_u, rdata, 0);
+	return brs_io_r_query_info("", &r_u, rdata, 0);
 }
 
 

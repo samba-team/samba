@@ -25,22 +25,43 @@
 
 extern int DEBUGLEVEL;
 
- int main(int argc, char *argv[])
+/****************************************************************************
+ This defines the commands supported by this client
+ ****************************************************************************/
+struct command_set spl_commands[] = 
 {
-	extern struct command_set reg_commands[];
-	extern struct command_set sam_commands[];
-	extern struct command_set svc_commands[];
-	extern struct command_set ntl_commands[];
-	extern struct command_set lsa_commands[];
-	extern struct command_set net_commands[];
-	extern struct command_set evt_commands[];
+	/*
+	 * printer testing
+	 */
 
-	add_command_set(lsa_commands);
-	add_command_set(net_commands);
-	add_command_set(evt_commands);
-	add_command_set(sam_commands);
-	add_command_set(svc_commands);
-	add_command_set(reg_commands);
-	add_command_set(ntl_commands);
-	return command_main(argc, argv);
-}
+	{
+		"spoolenum",
+		cmd_spoolss_enum_printers,
+		"Enumerate Printers",
+		{NULL, NULL}
+	},
+	{
+		"spooljobs",
+		cmd_spoolss_enum_jobs,
+		"<printer name> Enumerate Printer Jobs",
+		{complete_printersenum, NULL}
+	},
+	{
+		"spoolopen",
+		cmd_spoolss_open_printer_ex,
+		"<printer name> Spool Printer Open Test",
+		{complete_printersenum, NULL}
+	},
+
+	/*
+	 * oop!
+	 */
+
+	{
+		"",
+		NULL,
+		NULL,
+		{NULL, NULL}
+	}
+};
+

@@ -202,13 +202,6 @@ void cmd_sam_test(struct client_info *info, int argc, char *argv[])
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
-/*
-	if (sid1.num_auths == 0)
-	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
-	}
-*/
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
@@ -366,8 +359,11 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	if (sid_dom.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid_dom) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	report(out_hnd, "SAM Lookup Names\n");
@@ -468,8 +464,11 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 
 	if (sid_dom.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid_dom) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	report(out_hnd, "SAM Lookup Rids\n");
@@ -554,19 +553,22 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -646,19 +648,22 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -746,19 +751,22 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	POLICY_HND pol_dom;
 	POLICY_HND lsa_pol;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -869,14 +877,21 @@ void cmd_sam_create_dom_trusting(struct client_info *info, int argc, char *argv[
 	DOM_SID sid1;
 	uint32 user_rid; 
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 3)
@@ -965,8 +980,11 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -1183,20 +1201,23 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -1265,19 +1286,22 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -1359,19 +1383,22 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -1467,19 +1494,22 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 
 	string_to_sid(&sid_1_5_20, "S-1-5-32");
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 3)
 	{
@@ -1633,20 +1663,23 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -1712,19 +1745,23 @@ void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 	fstring domain;
 	fstring sid;
 	DOM_SID sid1;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	while ((opt = getopt(argc, argv, "uga")) != EOF)
 	{
@@ -1784,13 +1821,20 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -1800,10 +1844,6 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	}
 
 	group_name = argv[1];
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -1877,13 +1917,20 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -1893,10 +1940,6 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	}
 
 	group_name = argv[1];
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -1968,13 +2011,20 @@ void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -1987,10 +2037,6 @@ void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 
 	argc--;
 	argv++;
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -2085,13 +2131,20 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	BOOL request_group_info = False;
 	BOOL request_alias_info = False;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -2131,10 +2184,6 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 			}
 		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -2222,13 +2271,20 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	uint16 acb_set = 0x0;
 	uint16 acb_clr = 0x0;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -2260,10 +2316,6 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 			}
 		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -2370,13 +2422,20 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 	ZERO_STRUCT(ctr);
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	argc--;
@@ -2421,10 +2480,6 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 			}
 		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -2568,6 +2623,10 @@ void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 	SAM_DISPINFO_1 inf1;
 	uint32 num_entries;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
@@ -2575,13 +2634,12 @@ void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	if (argc > 1)
 	{
@@ -2625,8 +2683,11 @@ void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc > 1)
@@ -2665,13 +2726,20 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -2681,10 +2749,6 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	}
 
 	alias_name = argv[1];
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -2759,13 +2823,20 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
 
 	if (argc < 2)
@@ -2775,10 +2846,6 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	}
 
 	alias_name = argv[1];
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	sid_to_string(sid_str, &sid);
 
@@ -2846,19 +2913,23 @@ void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 	fstring sid;
 	DOM_SID sid1;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	while ((opt = getopt(argc, argv, "ma")) != EOF)
 	{
@@ -2906,19 +2977,23 @@ void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 	fstring domain;
 	fstring sid;
 	DOM_SID sid1;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (sid1.num_auths == 0)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
 	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
 
 	while ((opt = getopt(argc, argv, "mg")) != EOF)
 	{

@@ -21,26 +21,16 @@
 */
 
 #include "includes.h"
-#include "ntdomain.h"
 
 extern int DEBUGLEVEL;
 
+/****************************************************************************
+ This defines the commands supported by this client
+ ****************************************************************************/
+
  int main(int argc, char *argv[])
 {
-	extern struct command_set reg_commands[];
-	extern struct command_set sam_commands[];
-	extern struct command_set svc_commands[];
-	extern struct command_set ntl_commands[];
-	extern struct command_set lsa_commands[];
-	extern struct command_set net_commands[];
-	extern struct command_set evt_commands[];
-
-	add_command_set(lsa_commands);
-	add_command_set(net_commands);
-	add_command_set(evt_commands);
-	add_command_set(sam_commands);
-	add_command_set(svc_commands);
-	add_command_set(reg_commands);
-	add_command_set(ntl_commands);
+	extern struct command_set spl_commands[];
+	add_command_set(spl_commands);
 	return command_main(argc, argv);
 }

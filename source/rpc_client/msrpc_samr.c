@@ -948,6 +948,70 @@ SAM Domains query.
 				DOMAIN_INFO_FN(dom_inf_fn),
 				DOMAIN_MEM_FN(dom_mem_fn))
 ****************************************************************************/
+uint32 msrpc_sam_get_first_domain( const char* srv_name,
+				char *dom_name,
+				DOM_SID *dom_sid)
+{
+	BOOL res = True;
+	uint32 ace_perms = 0x02000000; /* access control permissions. */
+	POLICY_HND sam_pol;
+	uint32 status;
+	struct acct_info *sam = NULL;
+	uint32 num_sam_entries = 0;
+	uint32 domain_idx;
+	uint32 start_idx = 0;
+
+	/* establish a connection. */
+	res = res ? samr_connect( srv_name, ace_perms, &sam_pol) : False;
+
+	if (!res)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* read some domains */
+	do
+	{
+		status = samr_enum_domains( &sam_pol,
+		     &start_idx, 0x10000,
+		     &sam, &num_sam_entries);
+
+	} while (status == STATUS_MORE_ENTRIES);
+
+	for (domain_idx = 0; status == 0x0 &&
+	                     domain_idx < num_sam_entries; domain_idx++)
+	{
+		fstrcpy(dom_name, sam[domain_idx].acct_name);
+
+		if (strequal("BUILTIN", dom_name))
+		{
+			dom_name[0] = 0;
+			continue;
+		}
+		/* connect to the domain */
+		if (samr_query_lookup_domain( &sam_pol, dom_name, dom_sid))
+		{
+			status = 0x0;
+			break;
+		}
+		else
+		{
+			status = NT_STATUS_NO_SUCH_DOMAIN;
+		}
+	}
+
+	res = res ? samr_close(&sam_pol) : False;
+
+	safe_free(sam);
+
+	return status;
+}
+
+/****************************************************************************
+SAM Domains query.
+				DOMAIN_INFO_FN(dom_inf_fn),
+				DOMAIN_MEM_FN(dom_mem_fn))
+****************************************************************************/
 uint32 msrpc_sam_enum_domains( const char* srv_name,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,

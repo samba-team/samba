@@ -94,7 +94,7 @@ struct command_set
 	char *name;
 	void (*fn)(struct client_info*, int, char*[]);
 	char *description;
-	char compl_args[2];
+	char* (*compl_args[2])(char*, int);
 
 };
 

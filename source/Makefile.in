@@ -110,9 +110,10 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
-PROGS3 = @WRAP@ @WRAP32@
+PROGS3 = bin/regedit bin/samedit bin/svccontrol bin/cmdat
+PROGS4 = @WRAP@ @WRAP32@
 #MPROGS = @MPROGS@
-PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(MPROGS) bin/nmblookup bin/make_printerdef 
+PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
 SCRIPTS = script/smbtar script/addtosmbpass script/convert_smbpasswd
 
@@ -453,7 +454,83 @@ SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)
 SMBPASSWD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
-RPCCLIENT_OBJ = rpcclient/rpcclient.o \
+REGEDIT_OBJ = lib/cmd_interp.o \
+		rpcclient/regedit.o \
+		rpcclient/regedit_cmds.o \
+		rpcclient/display_reg.o \
+		rpcclient/display_sec.o \
+		rpcclient/cmd_reg.o \
+		$(STUB_UID_OBJ)
+REGEDIT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
+SVCCLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/svcctrl.o \
+		rpcclient/svcctrl_cmds.o \
+		rpcclient/display_svc.o \
+		rpcclient/cmd_svcctl.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+SVCCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
+SAMCLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/samedit.o \
+		rpcclient/samedit_cmds.o \
+		rpcclient/netlogon_cmds.o \
+		rpcclient/display_sam.o \
+		rpcclient/display_sec.o \
+		rpcclient/display_sync.o \
+		rpcclient/cmd_samr.o \
+		rpcclient/cmd_netlogon.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+SAMCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
+CMDCLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/cmdat.o \
+		rpcclient/cmdat_cmds.o \
+		rpcclient/display_at.o \
+		rpcclient/cmd_atsvc.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+CMDCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
+NETCLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/net.o \
+		rpcclient/net_cmds.o \
+		rpcclient/display_srv.o \
+		rpcclient/cmd_wkssvc.o \
+		rpcclient/cmd_brs.o \
+		rpcclient/cmd_srvsvc.o \
+           $(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+NETCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
+EVTCLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/eventlog.o \
+		rpcclient/eventlog_cmds.o \
+		rpcclient/display_event.o \
+		rpcclient/cmd_eventlog.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+EVTCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
+LSACLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/lsa.o \
+		rpcclient/lsa_cmds.o \
+		rpcclient/cmd_lsarpc.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+LSACLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
+RPCCLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/rpcclient.o \
+		rpcclient/svcctrl_cmds.o \
+		rpcclient/samedit_cmds.o \
+		rpcclient/regedit_cmds.o \
+		rpcclient/lsa_cmds.o \
+		rpcclient/net_cmds.o \
+		rpcclient/eventlog_cmds.o \
+		rpcclient/netlogon_cmds.o \
 		rpcclient/display_at.o \
 		rpcclient/display_event.o \
 		rpcclient/display_reg.o \
@@ -474,7 +551,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/cmd_atsvc.o \
 		rpcclient/cmd_spoolss.o \
 		rpcclient/cmd_eventlog.o \
-           $(SIDDB_OBJ) \
+		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
 RPCCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
@@ -536,7 +613,11 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(SPOOLSSD_OBJ1) $(NETLOGOND_OBJ1) \
 		$(LSARPCD_OBJ1) $(SMBD_OBJ) $(NMBD_OBJ) \
 		$(SWAT_OBJ) $(CLIENT_OBJ) \
-		$(RPCCLIENT_OBJ) $(LIBSMB_OBJ) $(SMBWRAPPER_OBJ) \
+		$(REGEDIT_OBJ) $(SVCCLIENT_OBJ) \
+		$(SAMCLIENT_OBJ) $(RPCCLIENT_OBJ) \
+		$(CMDCLIENT_OBJ) $(LSACLIENT_OBJ) \
+		$(EVTCLIENT_OBJ) $(NETCLIENT_OBJ) \
+		$(LIBSMB_OBJ) $(SMBWRAPPER_OBJ) \
 		$(GROUPDB_OBJ) $(PASSDB_OBJ) $(SAMPASSDB_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
@@ -819,6 +900,34 @@ bin/swat: $(SWAT_LIBS) $(SWAT_OBJ) bin/.dummy
 bin/smbrun: $(SMBRUN_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBRUN_OBJ) $(LIBS)
+
+bin/regedit: $(REGEDIT_LIBS) $(REGEDIT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(REGEDIT_OBJ) $(REGEDIT_LIBS) $(LIBS)
+
+bin/svccontrol: $(SVCCLIENT_LIBS) $(SVCCLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(SVCCLIENT_OBJ) $(SVCCLIENT_LIBS) $(LIBS)
+
+bin/samedit: $(SAMCLIENT_LIBS) $(SAMCLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(SAMCLIENT_OBJ) $(SAMCLIENT_LIBS) $(LIBS)
+
+bin/cmdat: $(CMDCLIENT_LIBS) $(CMDCLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(CMDCLIENT_OBJ) $(CMDCLIENT_LIBS) $(LIBS)
+
+bin/eventlog: $(EVTCLIENT_LIBS) $(EVTCLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(EVTCLIENT_OBJ) $(EVTCLIENT_LIBS) $(LIBS)
+
+bin/net: $(NETCLIENT_LIBS) $(NETCLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(NETCLIENT_OBJ) $(NETCLIENT_LIBS) $(LIBS)
+
+bin/lsa: $(LSACLIENT_LIBS) $(LSACLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(LSACLIENT_OBJ) $(LSACLIENT_LIBS) $(LIBS)
 
 bin/rpcclient: $(RPCCLIENT_LIBS) $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@

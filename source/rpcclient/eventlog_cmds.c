@@ -25,22 +25,31 @@
 
 extern int DEBUGLEVEL;
 
- int main(int argc, char *argv[])
+/****************************************************************************
+ This defines the commands supported by this client
+ ****************************************************************************/
+struct command_set evt_commands[] = 
 {
-	extern struct command_set reg_commands[];
-	extern struct command_set sam_commands[];
-	extern struct command_set svc_commands[];
-	extern struct command_set ntl_commands[];
-	extern struct command_set lsa_commands[];
-	extern struct command_set net_commands[];
-	extern struct command_set evt_commands[];
+	/*
+	 * eventlog
+	 */
 
-	add_command_set(lsa_commands);
-	add_command_set(net_commands);
-	add_command_set(evt_commands);
-	add_command_set(sam_commands);
-	add_command_set(svc_commands);
-	add_command_set(reg_commands);
-	add_command_set(ntl_commands);
-	return command_main(argc, argv);
-}
+	{
+		"eventlog",
+		cmd_eventlog,
+		"list the events",
+		{NULL, NULL}
+	},
+
+	/*
+	 * oop!
+	 */
+
+	{
+		"",
+		NULL,
+		NULL,
+		{NULL, NULL}
+	}
+};
+

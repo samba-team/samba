@@ -3082,3 +3082,24 @@ char *lock_path(char *name)
 	return fname;
 }
 
+struct field_info sid_name_info[] =
+{
+	{ SID_NAME_UNKNOWN, "UNKNOWN"         }, /* default */
+	{ SID_NAME_USER   , "User"            }, 
+	{ SID_NAME_DOM_GRP, "Domain Group"    }, 
+	{ SID_NAME_DOMAIN , "Domain"          }, 
+	{ SID_NAME_ALIAS  , "Local Group"     }, 
+	{ SID_NAME_WKN_GRP, "Well-known Group"}, 
+	{ SID_NAME_DELETED, "Deleted"         }, 
+	{ SID_NAME_INVALID, "Invalid"         }, 
+	{ 0               , NULL }
+};
+
+/****************************************************************************
+convert a SID_NAME_USE to a string 
+****************************************************************************/
+char *get_sid_name_use_str(uint32 sid_name_use)
+{
+	return enum_field_to_str(sid_name_use, sid_name_info, True);
+}
+
