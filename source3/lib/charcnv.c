@@ -32,7 +32,6 @@ static smb_iconv_t
       	dos_to_unix=(smb_iconv_t)-1, /*unix format <-> dos codepage*/
       	unix_to_dos=(smb_iconv_t)-1;  /*for those clients who does not support unicode*/
 
-	
 /****************************************************************************
  Initialize iconv conversion descriptors 
 ****************************************************************************/
@@ -47,8 +46,8 @@ void init_iconv(char *unix_charset, char *dos_charset)
 	if (!unix_charset || !*unix_charset) unix_charset = "ASCII";
 	if (!dos_charset || !*dos_charset) dos_charset = "ASCII";
 	
-	ICONV(ucs2_to_unix, "UCS2", unix_charset)
-	ICONV(unix_to_ucs2, unix_charset, "UCS2")
+	ICONV(ucs2_to_unix, "UCS-2LE", unix_charset)
+	ICONV(unix_to_ucs2, unix_charset, "UCS-2LE")
 	ICONV(dos_to_unix, dos_charset, unix_charset)
 	ICONV(unix_to_dos, unix_charset, dos_charset)
 
