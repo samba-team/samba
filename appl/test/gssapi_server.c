@@ -150,7 +150,42 @@ proto (int sock, const char *service)
 	}
     } while(maj_stat & GSS_S_CONTINUE_NEEDED);
 
-    return process_it (sock, context_hdl, client_name);
+    if (fork_flag) {
+	pid_t pid;
+	int pipefd[2];
+
+	if (pipe (pipefd) < 0)
+	    err (1, "pipe");
+
+	pid = fork ();
+	if (pid < 0)
+	    err (1, "fork");
+	if (pid != 0) {
+	    gss_buffer_desc buf;
+
+	    maj_stat = gss_export_sec_context (&min_stat,
+					       &context_hdl,
+					       &buf);
+	    if (GSS_ERROR(maj_stat))
+		gss_err (1, min_stat, "gss_export_sec_context");
+	    write_token (pipefd[1], &buf);
+	    exit (0);
+	} else {
+	    gss_ctx_id_t context_hdl;
+	    gss_buffer_desc buf;
+
+	    close (pipefd[1]);
+	    read_token (pipefd[0], &buf);
+	    close (pipefd[0]);
+	    maj_stat = gss_import_sec_context (&min_stat, &buf, &context_hdl);
+	    if (GSS_ERROR(maj_stat))
+		gss_err (1, min_stat, "gss_import_sec_context");
+	    gss_release_buffer (&min_stat, &buf);
+	    return process_it (sock, context_hdl, client_name);
+	}
+    } else {
+	return process_it (sock, context_hdl, client_name);
+    }
 }
 
 static int
