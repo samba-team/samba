@@ -1,5 +1,11 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY NetBIOS SYSTEM "NetBIOS.sgml">
+<!ENTITY Architecture SYSTEM "architecture.sgml">
+<!ENTITY debug SYSTEM "debug.sgml">
+<!ENTITY internals SYSTEM "internals.sgml">
+<!ENTITY parsing SYSTEM "parsing.sgml">
+<!ENTITY unix-smb SYSTEM "unix-smb.sgml">
+<!ENTITY CodingSuggestions SYSTEM "CodingSuggestions.sgml">
 ]>
 
 <book id="Samba-Developer-Documentation">
@@ -40,5 +46,11 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 
 <!-- Chapters -->
 &NetBIOS;
+&Architecture;
+&debug;
+&CodingSuggestions;
+&internals;
+&parsing;
+&unix-smb;
 
 </book>
