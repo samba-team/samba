@@ -1,4 +1,22 @@
+2003-01-23  Love  <lha@stacken.kth.se>
+
+	* lib/asn1/Makefile.am: add check-gen
+	
+	* lib/asn1/check-gen.c: add Principal check
+	
+	* lib/asn1/check-common.h: move generic asn1/der functions from
+	check-der.c to here
+
+	* lib/asn1/check-common.c: move generic asn1/der functions from
+	check-der.c to here
+
+	* lib/asn1/check-der.c: move out the generic asn1/der functions to
+	a common file
+
 2003-01-22  Love  <lha@it.su.se>
+
+	* doc/misc.texi: more text about afs, how to get get your KeyFile,
+	and how to start use 2b tokens
 
 	* lib/krb5/krb5.conf.5: spelling, from Jason McIntyre
 	<jmc@cvs.openbsd.org>
