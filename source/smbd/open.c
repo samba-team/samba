@@ -37,6 +37,12 @@ static int fd_open(struct connection_struct *conn, char *fname,
 #ifdef O_NONBLOCK
 	flags |= O_NONBLOCK;
 #endif
+
+#ifdef O_NOFOLLOW
+	if (!lp_symlinks(SNUM(conn)))
+		flags |= O_NOFOLLOW;
+#endif
+
 	fd = conn->vfs_ops.open(conn,fname,flags,mode);
 
 	/* Fix for files ending in '.' */
