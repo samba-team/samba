@@ -1,3 +1,8 @@
+Sun Aug 17 01:40:20 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c: krb5_sname_to_principal fix from Luke
+ 	Howard <lukeh@xedoc.com.au>
+
 Sat Aug 16 00:44:47 1997  Assar Westerlund  <assar@koi.pdc.kth.se>
 
 	* Release 0.0e
