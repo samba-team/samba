@@ -92,6 +92,9 @@ _kadm5_setup_entry(hdb_entry *ent, kadm5_principal_ent_t princ,
 	else if(def && def->max_renewable_life)
 	    set_value(ent->max_renew, def->max_renewable_life);
     }
+    if(mask & KADM5_KEY_DATA) {
+	_kadm5_set_keys2(ent, princ->n_key_data, princ->key_data);
+    }
     if(mask & KADM5_TL_DATA){
 	/* XXX */
     }
