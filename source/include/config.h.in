@@ -360,6 +360,9 @@
 /* Define if you have the connect function.  */
 #undef HAVE_CONNECT
 
+/* Define if you have the creat64 function.  */
+#undef HAVE_CREAT64
+
 /* Define if you have the crypt function.  */
 #undef HAVE_CRYPT
 

@@ -4666,7 +4666,7 @@ else
 fi
 done
 
-for ac_func in open64 _open64 __open64
+for ac_func in open64 _open64 __open64 creat64
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:4673: checking for $ac_func" >&5
