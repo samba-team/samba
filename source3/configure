@@ -16462,9 +16462,16 @@ else
 
    ac_cv_shlib_works=no
    # try building a trivial shared library
-   $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-     $CC $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
-     ac_cv_shlib_works=yes
+   if test "$PICSUFFIX" = "po"; then
+     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
+       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
+       ac_cv_shlib_works=yes
+   else
+     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c &&
+       mv shlib.$PICSUFFIX shlib.po &&
+       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
+       ac_cv_shlib_works=yes
+   fi
    rm -f shlib.so shlib.po
 
 fi
