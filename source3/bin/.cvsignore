@@ -1,5 +1,7 @@
+*.so
 .dummy
 .libs
+debug2html
 locktest
 locktest2
 make_printerdef
@@ -11,10 +13,12 @@ net
 nmbd
 nmblookup
 nsstest
+ntlm_auth
 pdbedit
 profiles
 rpcclient
 samsync
+samtest
 smbcacls
 smbcacls
 smbclient
@@ -36,8 +40,8 @@ talloctort
 tdbbackup
 testparm
 testprns
+vfstest
 wbinfo
 winbindd
 wrepld
-vfstest
-samtest
+editreg
