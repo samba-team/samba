@@ -113,13 +113,9 @@ tdbtool:
   store     key  data  : store a record (replace)
   show      key        : show a record by key
   delete    key        : delete a record by key
-"
-#ifdef TDB_DEBUG
-"  list                 : print the database hash table and freelist
+  list                 : print the database hash table and freelist
   free                 : print the database freelist
-"
-#endif
-"  1 | first            : print the first record
+  1 | first            : print the first record
   n | next             : print the next record
   q | quit             : terminate
   \\n                   : repeat 'next' command
@@ -436,12 +432,10 @@ int main(int argc, char *argv[])
         } else if (strcmp(tok,"dump") == 0) {
             bIterate = 0;
             tdb_traverse(tdb, print_rec, NULL);
-#ifdef TDB_DEBUG
         } else if (strcmp(tok,"list") == 0) {
             tdb_dump_all(tdb);
         } else if (strcmp(tok, "free") == 0) {
             tdb_printfreelist(tdb);
-#endif
         } else if (strcmp(tok,"info") == 0) {
             info_tdb();
         } else if ( (strcmp(tok, "1") == 0) ||
