@@ -39,6 +39,11 @@
 #include <stdarg.h>
 #include <string.h>
 #include <signal.h>
+
+#ifdef _AIX
+struct ether_addr;
+struct sockaddr_dl;
+#endif
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
