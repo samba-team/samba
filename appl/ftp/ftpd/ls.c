@@ -143,8 +143,14 @@ make_fileinfo(const char *filename, struct fileinfo *file, int flags)
     }
     
     if(S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode)) {
+#if defined(major) && defined(minor)
 	asprintf(&file->major, "%u", (unsigned)major(st->st_rdev));
 	asprintf(&file->minor, "%u", (unsigned)minor(st->st_rdev));
+#else
+	/* Don't want to use the DDI/DKI crap. */
+	asprintf(&file->major, "%u", (unsigned)st->st_rdev);
+	asprintf(&file->minor, "%u", 0);
+#endif
     } else
 	asprintf(&file->size, "%lu", (unsigned long)st->st_size);
 
