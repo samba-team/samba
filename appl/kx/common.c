@@ -572,11 +572,12 @@ match_local_auth (Xauth* auth, struct addrinfo *ai, int disp_nr)
     free (tmp_disp);
     if (auth_disp != disp_nr)
 	return 1;
-    if (auth->family == FamilyLocal
-	|| auth->family == FamilyWild) {
-	if (strncmp (auth->address,
-		     ai->ai_canonname,
-		     auth->address_length) == 0)
+    if ((auth->family == FamilyLocal
+	|| auth->family == FamilyWild)
+	&& ai->ai_canonname != NULL
+	&& strncmp (auth->address,
+		    ai->ai_canonname,
+		    auth->address_length) == 0)
 	    return 0;
     }
     return 1;
