@@ -144,34 +144,34 @@ BOOL py_parse_creds(PyObject *creds, char **username, char **domain,
 		password_obj = PyDict_GetItemString(creds, "password");
 
 		if (!username_obj) {
-			*errstr = strdup("no username field in credential");
+			*errstr = SMB_STRDUP("no username field in credential");
 			return False;
 		}
 
 		if (!domain_obj) {
-			*errstr = strdup("no domain field in credential");
+			*errstr = SMB_STRDUP("no domain field in credential");
 			return False;
 		}
 
 		if (!password_obj) {
-			*errstr = strdup("no password field in credential");
+			*errstr = SMB_STRDUP("no password field in credential");
 			return False;
 		}
 
 		/* Check type of required fields */
 
 		if (!PyString_Check(username_obj)) {
-			*errstr = strdup("username field is not string type");
+			*errstr = SMB_STRDUP("username field is not string type");
 			return False;
 		}
 
 		if (!PyString_Check(domain_obj)) {
-			*errstr = strdup("domain field is not string type");
+			*errstr = SMB_STRDUP("domain field is not string type");
 			return False;
 		}
 
 		if (!PyString_Check(password_obj)) {
-			*errstr = strdup("password field is not string type");
+			*errstr = SMB_STRDUP("password field is not string type");
 			return False;
 		}
 
@@ -226,7 +226,7 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 		username, domain, password, 0, Undefined, NULL);
 	
 	if (!NT_STATUS_IS_OK(result)) {
-		*errstr = strdup("error connecting to IPC$ pipe");
+		*errstr = SMB_STRDUP("error connecting to IPC$ pipe");
 		return NULL;
 	}
 
