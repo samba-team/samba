@@ -90,7 +90,7 @@ krb5_verify_user(krb5_context context,
     else
 	id = ccache;
     if(ret == 0){
-	ret = krb5_cc_initialize(context, id, client);
+	ret = krb5_cc_initialize(context, id, principal);
 	if(ret == 0){
 	    ret = krb5_cc_store_cred(context, id, &cred);
 	}
