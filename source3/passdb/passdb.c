@@ -87,16 +87,11 @@ struct smb_passwd *getsampwent(void *vp)
  *************************************************************************/
 struct sam_passwd *getsam21pwent(void *vp)
 {
-#if 0
 #ifdef USE_LDAP
   return getldap21pwent(vp);
 #else
   return getsmb21pwent(vp);
 #endif /* USE_LDAP */
-#else
-	DEBUG(0,("getsam21pwent: under development\n"));
-	return NULL;
-#endif
 }
 
 /*************************************************************************
@@ -144,9 +139,9 @@ BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 {
 #if 0
 #ifdef USE_LDAP
-  return add_ldappwd_entry(newpwd);
+  return add_ldap21pwd_entry(newpwd);
 #else
-  return add_smbpwd_entry(newpwd);
+  return add_smb21pwd_entry(newpwd);
 #endif /* USE_LDAP */
 #else
 	DEBUG(0,("add_sam21pwd_entry() - under development\n"));
@@ -183,9 +178,9 @@ BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
 #if 0
 #ifdef USE_LDAP
-  return mod_ldappwd_entry(pwd, override);
+  return mod_ldap21pwd_entry(pwd, override);
 #else
-  return mod_smbpwd_entry(pwd, override);
+  return mod_smb21pwd_entry(pwd, override);
 #endif /* USE_LDAP */
 #else
 	DEBUG(0,("mod_sam21pwd_entry() - under development\n"));

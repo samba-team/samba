@@ -463,13 +463,9 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
-#ifndef USE_LDAP
 	become_root(True);
-
 	got_pwds = get_sampwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
-
 	unbecome_root(True);
-#endif /* USE_LDAP */
 
 	switch (q_u->switch_level)
 	{
@@ -478,14 +474,6 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 		
 			/* query disp info is for users */
 			switch_level = 0x1;
-#ifdef USE_LDAP			
-			got_pwds = get_ldap_entries(pass, 
-			                            &total_entries, 
-			                            &num_entries,
-			                            MAX_SAM_ENTRIES, 
-			                            0, 
-			                            switch_level);
-#endif /* USE_DLAP */
 			make_sam_info_1(&info1, ACB_NORMAL,
 		                q_u->start_idx, num_entries, pass);
 
@@ -497,14 +485,6 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 		{
 			/* query disp info is for servers */
 			switch_level = 0x2;
-#ifdef USE_LDAP			
-			got_pwds = get_ldap_entries(pass, 
-			                            &total_entries, 
-			                            &num_entries,
-			                            MAX_SAM_ENTRIES, 
-					            0, 
-					            switch_level);
-#endif /* USE_LDAP */
 			make_sam_info_2(&info2, ACB_WSTRUST,
 		                q_u->start_idx, num_entries, pass);
 
@@ -876,87 +856,34 @@ static void api_samr_open_user( int uid, prs_struct *data, prs_struct *rdata)
 static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 {
 	NTTIME dummy_time;
-
-	pstring logon_script;
-	pstring profile_path;
-	pstring home_drive;
-	pstring home_dir;
-	pstring description;
-	pstring workstations;
-	pstring full_name;
-	pstring munged_dialin;
-	pstring unknown_str;
-
-	uint32 r_uid;
-	uint32 r_gid;
+	struct sam_passwd *sam_pass;
 
 	LOGON_HRS hrs;
 	int i;
 
-	struct smb_passwd *smb_pass;
-
 	become_root(True);
-	smb_pass = getsampwuid(rid);
+	sam_pass = getsam21pwrid(rid);
 	unbecome_root(True);
 
-	if (smb_pass == NULL)
+	if (sam_pass == NULL)
 	{
 		return False;
 	}
 
-	DEBUG(3,("User:[%s]\n", smb_pass->smb_name));
+	DEBUG(3,("User:[%s]\n", sam_pass->smb_name));
 
 	dummy_time.low  = 0xffffffff;
 	dummy_time.high = 0x7fffffff;
 
-	pstrcpy(samlogon_user, smb_pass->smb_name);
+	DEBUG(0,("get_user_info_21 - TODO: convert unix times to NTTIMEs\n"));
 
-	if (samlogon_user[strlen(samlogon_user)-1] != '$')
-	{
-		if (!name_to_rid(samlogon_user, &r_uid, &r_gid))
-		{
-			return False;
-		}
-
-		/* XXXX hack to get standard_sub_basic() to use sam logon username */
-		/* possibly a better way would be to do a become_user() call */
-		sam_logon_in_ssb = True;
-
-		pstrcpy(full_name    , "<Full Name>");
-		pstrcpy(logon_script , lp_logon_script     ());
-		pstrcpy(profile_path , lp_logon_path       ());
-		pstrcpy(home_drive   , lp_logon_drive      ());
-		pstrcpy(home_dir     , lp_logon_home       ());
-		pstrcpy(description  , "<Description>");
-		pstrcpy(workstations , "");
-		pstrcpy(unknown_str  , "");
-		pstrcpy(munged_dialin, "");
-
-		sam_logon_in_ssb = False;
-	}
-	else
-	{
-		r_uid = smb_pass->smb_userid;
-		r_gid = DOMAIN_GROUP_RID_USERS;
-
-		pstrcpy(samlogon_user, smb_pass->smb_name);
-
-		pstrcpy(full_name    , "");
-		pstrcpy(logon_script , "");
-		pstrcpy(profile_path , "");
-		pstrcpy(home_drive   , "");
-		pstrcpy(home_dir     , "");
-		pstrcpy(description  , "");
-		pstrcpy(workstations , "");
-		pstrcpy(unknown_str  , "");
-		pstrcpy(munged_dialin, "");
-	}
-
-	hrs.len = 21;
+	/* create a LOGON_HRS structure */
+	hrs.len = sam_pass->hours_len;
 	for (i = 0; i < hrs.len; i++)
 	{
-		hrs.hours[i] = 0xff;
+		hrs.hours[i] = sam_pass->hours[i];
 	}
+
 	make_sam_user_info21(id21,
 
 			   &dummy_time, /* logon_time */
@@ -966,26 +893,26 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 			   &dummy_time, /* pass_can_change_time */
 			   &dummy_time, /* pass_must_change_time */
 
-			   samlogon_user, /* user_name */
-			   full_name, /* full_name */
-			   home_dir, /* home_dir */
-			   home_drive, /* dir_drive */
-			   logon_script, /* logon_script */
-			   profile_path, /* profile_path */
-			   description, /* description */
-			   workstations, /* workstations user can log in from */
-			   unknown_str, /* don't know, yet */
-			   munged_dialin, /* dialin info.  contains dialin path and tel no */
+			   sam_pass->smb_name, /* user_name */
+			   sam_pass->full_name, /* full_name */
+			   sam_pass->home_dir, /* home_dir */
+			   sam_pass->dir_drive, /* dir_drive */
+			   sam_pass->logon_script, /* logon_script */
+			   sam_pass->profile_path, /* profile_path */
+			   sam_pass->acct_desc, /* description */
+			   sam_pass->workstations, /* workstations user can log in from */
+			   sam_pass->unknown_str, /* don't know, yet */
+			   sam_pass->munged_dial, /* dialin info.  contains dialin path and tel no */
 
-			   r_uid, /* RID user_id */
-			   r_gid, /* RID group_id */
-		       smb_pass->acct_ctrl,
+			   sam_pass->user_rid, /* RID user_id */
+			   sam_pass->group_rid, /* RID group_id */
+		       sam_pass->acct_ctrl,
 
-	           0x00ffffff, /* unknown_3 */
-		       168, /* divisions per week */
+	           sam_pass->unknown_3, /* unknown_3 */
+		       sam_pass->logon_divs, /* divisions per week */
 			   &hrs, /* logon hours */
-		       0x00020000,
-		       0x000004ec);
+		       sam_pass->unknown_5,
+		       sam_pass->unknown_6);
 
 	return True;
 }
@@ -1044,11 +971,7 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 			case 21:
 			{
 				info = (void*)&id21;
-#ifdef USE_LDAP
-				status = ldap_get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
-#else /* USE_LDAP */
 				status = get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
-#endif /* USE_LDAP */
 				break;
 			}
 

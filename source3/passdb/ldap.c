@@ -496,12 +496,37 @@ void *startldappwent(BOOL update)
  *************************************************************************/
 struct smb_passwd *getldappwent(void *vp)
 {
-
+	static struct smb_passwd user;
 	struct ldap_enum_info *ldap_vp = (struct ldap_enum_info *)vp;
+
 	ldap_vp->entry = ldap_next_entry(ldap_vp->ldap_struct, ldap_vp->entry);
-/*
-	make_ldap_sam_user_info_21(ldap_struct, entry, &(pw_buf[(*num_entries)]) );
-*/
+
+	if (ldap_vp->entry != NULL)
+	{
+		ldap_get_smb_passwd(ldap_vp->ldap_struct, ldap_vp->entry, &user);
+		return &user;
+	}
+	return NULL;
+}
+
+/*************************************************************************
+ Routine to return the next entry in the ldap passwd list.
+
+ do not call this function directly.  use passdb.c instead.
+
+ *************************************************************************/
+struct sam_passwd *getldap21pwent(void *vp)
+{
+	static struct sam_passwd user;
+	struct ldap_enum_info *ldap_vp = (struct ldap_enum_info *)vp;
+
+	ldap_vp->entry = ldap_next_entry(ldap_vp->ldap_struct, ldap_vp->entry);
+
+	if (ldap_vp->entry != NULL)
+	{
+		ldap_get_sam_passwd(ldap_vp->ldap_struct, ldap_vp->entry, &user);
+		return &user;
+	}
 	return NULL;
 }
 
