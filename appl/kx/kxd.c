@@ -465,6 +465,7 @@ doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
 
 			if (fd < 0 && errno != EINTR)
 			    syslog (LOG_ERR, "accept: %m");
+#ifdef MAY_HAVE_X11_PIPES
 		    } else if(sockets[i].flags == STREAM_PIPE) {
 			/*
 			 * this code tries to handle the
@@ -491,6 +492,7 @@ doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
 				cookiesp = FALSE;
 			    }
 			}
+#endif /* MAY_HAVE_X11_PIPES */
 		    } else
 			abort ();
 		    break;
