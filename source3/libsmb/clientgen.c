@@ -593,12 +593,17 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-	if ((cli->sec_mode & 2) && passlen != 24) {
-		passlen = 24;
-		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
-	} else {
-		memcpy(pword, pass, passlen);
-	}
+        if(((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
+          /* Null session connect. */
+          pword[0] = '\0';
+        } else {
+          if ((cli->sec_mode & 2) && passlen != 24) {
+            passlen = 24;
+            SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+          } else {
+            memcpy(pword, pass, passlen);
+          }
+        }
 
 	/* if in share level security then don't send a password now */
 	if (!(cli->sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 

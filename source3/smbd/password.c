@@ -2069,7 +2069,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
   if(cli_nt_session_open(&cli, PIPE_NETLOGON, False) == False) {
     DEBUG(0,("domain_client_validate: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False; 
@@ -2078,7 +2078,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
   if(cli_nt_setup_creds(&cli, machine_passwd) == False) {
     DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
@@ -2091,7 +2091,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
                           smb_apasswd, smb_ntpasswd, &ctr, &info3) == False) {
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
-    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
@@ -2101,16 +2101,24 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
    * Here, if we really want it, we have lots of info about the user in info3.
    */
 
+#if 0
+  /* 
+   * We don't actually need to do this - plus it fails currently with
+   * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
+   * send here. JRA.
+   */
+
   if(cli_nt_logoff(&cli, &ctr) == False) {
     DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
-    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
   }
+#endif /* 0 */
 
-  cli_close(&cli, cli.nt_pipe_fnum);
+  cli_nt_session_close(&cli);
   cli_ulogoff(&cli);
   cli_shutdown(&cli);
   return True;

@@ -127,13 +127,13 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
 
   DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
 
-  /* indicate a "network" login */
+  /* indicate an "interactive" login */
   ctr->switch_value = INTERACTIVE_LOGON_TYPE;
 
   /* Create the structure needed for SAM logon. */
   make_id_info1(&ctr->auth.id1, domain, 0, 
                 smb_userid_low, 0,
-                username, global_myname,
+                username, cli->clnt_name_slash,
                 cli->sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
 
   /* Ensure we overwrite all the plaintext password
@@ -169,7 +169,7 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
   /* Create the structure needed for SAM logon. */
   make_id_info2(&ctr->auth.id2, domain, 0, 
                 smb_userid_low, 0,
-                username, global_myname,
+                username, cli->clnt_name_slash,
                 lm_chal, lm_chal_resp, nt_chal_resp);
 
   /* Send client sam-logon request - update credentials on success. */

@@ -259,7 +259,7 @@ BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 devic
 BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
                    RPC_IFACE *abstract, RPC_IFACE *transfer, BOOL ntlmssp_auth);
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted);
-void nt_session_close(struct cli_state *cli);
+void cli_nt_session_close(struct cli_state *cli);
 
 /*The following definitions come from  lib/rpc/parse/parse_lsa.c  */
 

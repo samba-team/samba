@@ -50,6 +50,7 @@ static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
   /* Calculate the new credentials. */
   cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
               new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
+
 }
 
 /****************************************************************************
@@ -285,13 +286,13 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
     if (ok && r_s.status != 0)
     {
       /* report error code */
-      DEBUG(0,("NET_R_SRV_PWSET: %s\n", get_nt_error_msg(r_s.status)));
+      DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(r_s.status)));
       cli->nt_error = r_s.status;
       ok = False;
     }
 
     /* Update the credentials. */
-    if (clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_cred)) == 0)
+    if (ok && !clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_cred)))
     {
       /*
        * Server replied with bad credential. Fail.
@@ -316,6 +317,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
                        NET_USER_INFO_3 *user_info3)
 {
   DOM_CRED new_clnt_cred;
+  DOM_CRED dummy_rtn_creds;
   prs_struct rbuf;
   prs_struct buf; 
   uint16 validation_level = 3;
@@ -334,9 +336,11 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
              credstr(new_clnt_cred.challenge.data), cli->clnt_cred.timestamp.time,
              ctr->switch_value));
 
+  memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
+
   /* store the parameters */
   make_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
-         &new_clnt_cred, NULL, ctr->switch_value, ctr, validation_level);
+         &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr, validation_level);
 
   /* turn parameters into data stream */
   net_io_q_sam_logon("", &q_s,  &buf, 0);
@@ -360,7 +364,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
     }
 
     /* Update the credentials. */
-    if (clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)) == 0)
+    if (ok && !clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)))
     {
       /*
        * Server replied with bad credential. Fail.
@@ -387,11 +391,18 @@ password ?).\n", cli->desthost ));
 
 /***************************************************************************
 LSA SAM Logoff.
+
+This currently doesnt work correctly as the domain controller 
+returns NT_STATUS_INVALID_INFO_CLASS - we obviously need to
+send a different info level. Right now though, I'm not sure
+what that needs to be (I need to see one on the wire before
+I can be sure). JRA.
 ****************************************************************************/
 
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 {
   DOM_CRED new_clnt_cred;
+  DOM_CRED dummy_rtn_creds;
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_SAM_LOGOFF q_s;
@@ -410,9 +421,11 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
             credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time,
             ctr->switch_value));
 
+  memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
+
   /* store the parameters */
   make_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
-                &new_clnt_cred, NULL, ctr->switch_value, ctr, validation_level);
+                &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr, validation_level);
 
   /* turn parameters into data stream */
   net_io_q_sam_logoff("", &q_s,  &buf, 0);
@@ -434,7 +447,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
     }
 
     /* Update the credentials. */
-    if (clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)) == 0)
+    if (ok && !clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)))
     {
       /*
        * Server replied with bad credential. Fail.

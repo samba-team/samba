@@ -124,7 +124,7 @@ static BOOL rpc_check_hdr(prs_struct *rdata, uint8 *pkt_type,
 
   if (!rdata->offset || rdata->offset != 0x10)
   {
-    DEBUG(5,("cli_pipe: error in rpc header\n"));
+    DEBUG(0,("cli_pipe: error in rpc header\n"));
     return False;
   }
 
@@ -199,7 +199,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
                     pp_ret_params, p_ret_params_len, /* return params, len */
                     pp_ret_data, p_ret_data_len))    /* return data, len */
   {
-    DEBUG(5, ("cli_pipe: return critical error\n"));
+    DEBUG(0, ("cli_pipe: return critical error. Error was %s\n", cli_errstr(cli)));
     return False;
   }
 
@@ -273,7 +273,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 
     if (first)
     {
-      DEBUG(4,("rpc_api_pipe: wierd rpc header received\n"));
+      DEBUG(0,("rpc_api_pipe: wierd rpc header received\n"));
       return False;
     }
 
@@ -558,7 +558,7 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
        (memcmp(hdr_ba->transfer.data, transfer->data,
                sizeof(transfer->version)) ==0)))
   {
-    DEBUG(2,("bind_rpc_pipe: transfer syntax differs\n"));
+    DEBUG(0,("bind_rpc_pipe: transfer syntax differs\n"));
     return False;
   }
 	
@@ -647,8 +647,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
   /******************* open the pipe *****************/
   if ((fnum = cli_open(cli, pipe_name, O_CREAT|O_RDWR, DENY_NONE)) == -1)
   {
-    DEBUG(1,("do_session_open: cli_open failed on pipe %s to machine %s. \
-Error was %s.\n", pipe_name, cli->desthost, cli_errstr(cli)));
+    DEBUG(0,("cli_nt_session_open: cli_open failed on pipe %s to machine %s. \
+Error was %s\n", pipe_name, cli->desthost, cli_errstr(cli)));
     return False;
   }
 
@@ -657,14 +657,17 @@ Error was %s.\n", pipe_name, cli->desthost, cli_errstr(cli)));
   /**************** Set Named Pipe State ***************/
   if (!rpc_pipe_set_hnd_state(cli, pipe_name, 0x4300))
   {
-    DEBUG(1,("do_session_open: pipe hnd state failed.\n"));
+    DEBUG(0,("cli_nt_session_open: pipe hnd state failed. Error was %s\n",
+             cli_errstr(cli)));
+    cli_close(cli, cli->nt_pipe_fnum);
     return False;
   }
 
   /******************* bind request on pipe *****************/
   if (!rpc_pipe_bind(cli, pipe_name, &abstract, &transfer, encrypted))
   {
-    DEBUG(1,("do_session_open: rpc bind failed.\n"));
+    DEBUG(0,("cli_nt_session_open: rpc bind failed. Error was %s\n", cli_errstr(cli)));
+    cli_close(cli, cli->nt_pipe_fnum);
     return False;
   }
 
@@ -674,6 +677,9 @@ Error was %s.\n", pipe_name, cli->desthost, cli_errstr(cli)));
 
   sprintf(cli->srv_name_slash, "\\\\%s", cli->desthost);
   strupper(cli->srv_name_slash);
+
+  sprintf(cli->clnt_name_slash, "\\\\%s", global_myname);
+  strupper(cli->clnt_name_slash);
 
   sprintf(cli->mach_acct, "%s$", global_myname);
   strupper(cli->mach_acct);
@@ -685,7 +691,7 @@ Error was %s.\n", pipe_name, cli->desthost, cli_errstr(cli)));
 close the session
 ****************************************************************************/
 
-void nt_session_close(struct cli_state *cli)
+void cli_nt_session_close(struct cli_state *cli)
 {
   cli_close(cli, cli->nt_pipe_fnum);
 }
