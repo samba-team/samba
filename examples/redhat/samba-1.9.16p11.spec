@@ -1,10 +1,10 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.16p10
-Release: 1
+Version: 1.9.16p11
+Release: 2
 Copyright: GPL
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.16p10.tar.gz
+Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.16p11.tar.gz
 Patch: samba-make.patch
 Patch2: samba-axp.patch
 Packager: John H Terpstra [Samba-Team] <jht@aquasoft.com.au>
@@ -44,16 +44,22 @@ ln -sf ../init.d/smb /etc/rc.d/rc0.d/K35smb
 ln -sf ../init.d/smb /etc/rc.d/rc6.d/K35smb
 ln -sf ../init.d/smb /etc/rc.d/rc1.d/K35smb
 mkdir -p /home/samba
-mkdir -p /var/log/samba
+mkdir -p /var/lock/samba
 chown root.nobody /home/samba
 chmod 775 /home/samba
 
 strip /usr/sbin/smbd /usr/bin/smbclient /usr/sbin/nmbd /usr/bin/testparm \
 	/usr/bin/testprns /usr/bin/smbrun /usr/bin/smbstatus \
 	/usr/bin/nmblookup /usr/bin/smbpasswd
+install -m 644 -o 0 -g 0 examples/redhat/samba.log /etc/logrotate.d/samba
 
 %post
 /sbin/pamconfig --add --service=samba --password=none --sesslist=none
+
+if [ ! -f /var/log/samba ]; then
+	touch /var/log/samba
+	chmod 600 /var/log/samba
+fi
 
 %postun
 if [ "$1" = 0 ] ; then
@@ -77,15 +83,17 @@ fi
 /usr/bin/smbpasswd
 /usr/bin/smbtar
 %config /etc/smb.conf
-/etc/smb.conf.sampl
-/etc/rc.d/init.d/smb
-/etc/rc.d/rc3.d/S91smb
-/etc/rc.d/rc0.d/K35smb
-/etc/rc.d/rc1.d/K35smb
-/etc/rc.d/rc6.d/K35smb
+%config /etc/smb.conf.sampl
+%config /etc/rc.d/init.d/smb
+%config /etc/rc.d/rc3.d/S91smb
+%config /etc/rc.d/rc0.d/K35smb
+%config /etc/rc.d/rc1.d/K35smb
+%config /etc/rc.d/rc6.d/K35smb
+%config /etc/logrotate.d/samba
 /usr/man/man1/smbstatus.1
 /usr/man/man1/smbclient.1
 /usr/man/man1/smbrun.1
+/usr/man/man1/smbtar.1
 /usr/man/man1/testparm.1
 /usr/man/man1/testprns.1
 /usr/man/man5/smb.conf.5
