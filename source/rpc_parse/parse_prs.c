@@ -128,18 +128,34 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 	}
 
 	/*
-	 * Ensure we have at least a PDU's length.
+	 * Decide how much extra space we really need.
 	 */
 
+	extra_space -= (ps->buffer_size - ps->data_offset);
+
 	if(ps->buffer_size == 0) {
-		new_size = MAX_PDU_FRAG_LEN;
+
+		/*
+		 * Ensure we have at least a PDU's length, or extra_space, whichever
+		 * is greater.
+		 */
+
+		new_size = MAX(MAX_PDU_FRAG_LEN,extra_space);
+
 		if((new_data = malloc(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
 		memset(new_data, '\0', new_size );
 	} else {
-		new_size = ps->buffer_size*2;
+
+		/*
+		 * If the current buffer size is bigger than the space needed, just 
+		 * double it, else add extra_space.
+		 */
+
+		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);
+
 		if((new_data = Realloc(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
@@ -151,6 +167,37 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 	ps->data_p = new_data;
 
 	return True;
+}
+
+/*******************************************************************
+ Attempt to force a data buffer to grow by len bytes.
+ We do this by setting the current offset to the end of the
+ current buffer and then calling prs_grow().
+ Also depends on the data stream mode (io).
+ ********************************************************************/
+
+BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
+{
+  uint32 save_current_offset = ps->data_offset;
+  BOOL saved_io = ps->io;
+  BOOL ret;
+
+  ps->data_offset = ps->buffer_size;
+  /* 
+   * Note we have to pretend we're marshalling in order
+   *  for prs_grow to work.
+   */
+  ps->io = MARSHALL;
+
+  ret = prs_grow(ps, extra_space);
+
+  /*
+   * Restore the current offset and also the io method.
+   */
+  ps->data_offset = save_current_offset;
+  ps->io = saved_io;
+
+  return ret;
 }
 
 /*******************************************************************

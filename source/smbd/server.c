@@ -538,6 +538,11 @@ static void usage(char *pname)
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
 
+#if defined(SIGFPE)
+	/* we are never interested in SIGFPE */
+	BlockSignals(True,SIGFPE);
+#endif
+
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
 	umask(0);

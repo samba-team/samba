@@ -66,7 +66,7 @@ static BOOL rpc_read(struct cli_state *cli, prs_struct *rdata, uint32 data_to_re
 	 */
 
 	if (extra_data_size > 0) {
-		if(!prs_grow(rdata, (uint32)extra_data_size)) {
+		if(!prs_force_grow(rdata, (uint32)extra_data_size)) {
 			DEBUG(0,("rpc_read: Failed to grow parse struct by %d bytes.\n", extra_data_size ));
 			return False;
 		}
@@ -774,7 +774,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	 */
 
 	if((prs_offset(data) % 8) != 0) {
-		DEBUG(0,("rpc_api_pipe_req: Outgoing data not a multiple of 8 bytes....\n"));
+		DEBUG(5,("rpc_api_pipe_req: Outgoing data not a multiple of 8 bytes....\n"));
 	}
 
 	data_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + prs_offset(data) +

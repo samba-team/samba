@@ -334,7 +334,9 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int total_data=0;
 	int total_param=0;
 	int this_data,this_param;
-	
+	uint8 eclass;
+    uint32 ecode;
+
 	*data_len = *param_len = 0;
 
 	if (!cli_receive_smb(cli))
@@ -350,9 +352,16 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		return(False);
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL))
+	/*
+	 * An NT RPC pipe call can return ERRDOS, ERRmoredata
+	 * to a trans call. This is not an error and should not
+	 * be treated as such.
+	 */
+
+	if (cli_error(cli, &eclass, &ecode, NULL))
 	{
-		return(False);
+        if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
+			return(False);
 	}
 
 	/* parse out the lengths */
@@ -403,9 +412,10 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (cli_error(cli, NULL, NULL, NULL))
+		if (cli_error(cli, &eclass, &ecode, NULL))
 		{
-			return(False);
+        	if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
+				return(False);
 		}
 	}
 	

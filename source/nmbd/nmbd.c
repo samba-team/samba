@@ -594,6 +594,11 @@ static void usage(char *pname)
   CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
   CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
 
+#if defined(SIGFPE)
+  /* we are never interested in SIGFPE */
+  BlockSignals(True,SIGFPE);
+#endif
+
   /* Setup the signals that allow the debug log level
      to by dynamically changed. */
 
