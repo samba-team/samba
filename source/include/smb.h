@@ -2028,7 +2028,6 @@ typedef struct
 #include "rpcclient.h"
 #include "rpc_creds.h"
 #include "client.h"
-#include "winbindd.h"
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.
