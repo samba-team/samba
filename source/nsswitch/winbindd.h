@@ -49,12 +49,22 @@ struct winbindd_cli_state {
     struct getent_state *getgrent_state;      /* State for getgrent() */
 };
 
+/* State between get{pw,gr}ent() calls */
+
 struct getent_state {
     struct getent_state *prev, *next;
     void *sam_entries;
     uint32 sam_entry_index, num_sam_entries;  
     struct winbindd_domain *domain;
     BOOL got_sam_entries;
+};
+
+/* Storage for cached getpwent() user entries */
+
+struct getpwent_user {
+	fstring name;                        /* Account name */
+	fstring gecos;                       /* User information */
+	uint32 user_rid, group_rid;          /* NT user and group rids */
 };
 
 /* Server state structure */
