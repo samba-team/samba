@@ -149,7 +149,7 @@ static volatile unsigned char *gdata; /* Global data */
 static volatile int igdata;	/* Index into global data */
 static int gsize;
 
-#if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__)
+#if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__) && !defined(__CYGWIN32__)
 /* Visual C++ 4.0 (Windows95/NT) */
 
 static
@@ -184,7 +184,7 @@ des_not_rand_data(unsigned char *data, int size)
     data[i] ^= random() % 0x100;
 }
 
-#if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__)
+#if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__) && !defined(__CYGWIN32__)
 
 #ifndef HAVE_SETITIMER
 static void
