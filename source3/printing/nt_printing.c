@@ -416,7 +416,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	free(dbuf.dptr);
 
 	if (len != dbuf.dsize) {
-		return 1;
+		return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
 	}
 
 	*info_ptr = (NT_PRINTER_DRIVER_INFO_LEVEL_3 *)memdup(&driver, sizeof(driver));
