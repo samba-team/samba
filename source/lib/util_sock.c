@@ -929,92 +929,66 @@ BOOL send_one_packet(char *buf, int len, struct in_addr ip, int port,
 /****************************************************************************
 open a socket of the specified type, port and address for incoming data
 ****************************************************************************/
-int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
-		   BOOL rebind)
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind)
 {
-	struct hostent *hp;
 	struct sockaddr_in sock;
-	pstring host_name;
 	int res;
 
-	/* get my host name */
-	if (gethostname(host_name, MAXHOSTNAMELEN) == -1)
-	{
-		DEBUG(0, ("gethostname failed\n"));
-		return -1;
-	}
-
-	/* get host info */
-	if ((hp = Get_Hostbyname(host_name)) == 0)
-	{
-		DEBUG(0, ("Get_Hostbyname: Unknown host %s\n", host_name));
-		return -1;
-	}
-
-	memset((char *)&sock, '\0', sizeof(sock));
-	memcpy((char *)&sock.sin_addr, (char *)hp->h_addr, hp->h_length);
+	memset( (char *)&sock, '\0', sizeof(sock) );
 
 #ifdef HAVE_SOCK_SIN_LEN
-	sock.sin_len = sizeof(sock);
+	sock.sin_len         = sizeof(sock);
 #endif
-	sock.sin_port = htons(port);
-	sock.sin_family = hp->h_addrtype;
+	sock.sin_port        = htons( port );
+	sock.sin_family      = AF_INET;
 	sock.sin_addr.s_addr = socket_addr;
-	res = socket(hp->h_addrtype, type, 0);
-	if (res == -1)
-	{
-		DEBUG(0, ("socket failed\n"));
+
+	res = socket( AF_INET, type, 0 );
+	if( res == -1 ) {
+		if( DEBUGLVL(0) ) {
+			dbgtext( "open_socket_in(): socket() call failed: " );
+			dbgtext( "%s\n", strerror( errno ) );
+		}
 		return -1;
 	}
 
+	/* This block sets/clears the SO_REUSEADDR and possibly SO_REUSEPORT. */
 	{
-		int val = 1;
-		if (rebind)
-			val = 1;
-		else
-			val = 0;
-		if (setsockopt
-		    (res, SOL_SOCKET, SO_REUSEADDR, (char *)&val,
-		     sizeof(val)) == -1)
-			DEBUG(dlevel,
-			      ("setsockopt: SO_REUSEADDR=%d on port %d failed with error = %s\n",
-			       val, port, strerror(errno)));
+		int val = rebind ? 1 : 0;
+		if( setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1 ) {
+			if( DEBUGLVL( dlevel ) ) {
+				dbgtext( "open_socket_in(): setsockopt: " );
+				dbgtext( "SO_REUSEADDR = %s ", val?"True":"False" );
+				dbgtext( "on port %d failed ", port );
+				dbgtext( "with error = %s\n", strerror(errno) );
+			}
+		}
 #ifdef SO_REUSEPORT
-		if (setsockopt
-		    (res, SOL_SOCKET, SO_REUSEPORT, (char *)&val,
-		     sizeof(val)) == -1)
-			DEBUG(dlevel,
-			      ("setsockopt: SO_REUSEPORT=%d on port %d failed with error = %s\n",
-			       val, port, strerror(errno)));
+		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
+			if( DEBUGLVL( dlevel ) ) {
+				dbgtext( "open_socket_in(): setsockopt: ");
+				dbgtext( "SO_REUSEPORT = %d ", val?"True":"False" );
+				dbgtext( "on port %d failed ", port );
+				dbgtext( "with error = %s\n", strerror(errno) );
+			}
+		}
 #endif /* SO_REUSEPORT */
 	}
 
 	/* now we've got a socket - we need to bind it */
-	if (bind(res, (struct sockaddr *)&sock, sizeof(sock)) < 0)
-	{
-		if (port)
-		{
-			if (port == SMB_PORT || port == NMB_PORT)
-				DEBUG(dlevel,
-				      ("bind failed on port %d socket_addr=%s (%s)\n",
-				       port, inet_ntoa(sock.sin_addr),
-				       strerror(errno)));
-			close(res);
-
-			if (dlevel > 0 && port < 1000)
-				port = 7999;
-
-			if (port >= 1000 && port < 9000)
-				return (open_socket_in
-					(type, port + 1, dlevel, socket_addr,
-					 rebind));
+	if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) == -1 ) {
+		if( DEBUGLVL(dlevel) && (port == SMB_PORT || port == NMB_PORT) ) {
+			dbgtext( "bind failed on port %d ", port );
+			dbgtext( "socket_addr = %s.\n", inet_ntoa( sock.sin_addr ) );
+			dbgtext( "Error = %s\n", strerror(errno) );
 		}
-
-		return (-1);
+		close( res ); 
+		return( -1 ); 
 	}
-	DEBUG(3, ("bind succeeded on port %d\n", port));
 
-	return res;
+	DEBUG( 3, ( "bind succeeded on port %d\n", port ) );
+
+	return( res );
 }
 
 
