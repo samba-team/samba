@@ -15,7 +15,9 @@
 #include <netdb.h>
 #include <errno.h>
 #include <syslog.h>
+#ifdef HAVE_PATHS_H
 #include <paths.h>
+#endif
 #include <krb.h>
 #include <prot.h>
 #include <krb5.h>
