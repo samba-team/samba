@@ -420,6 +420,33 @@ static BOOL print_domain_groups(void)
 	return True;
 }
 
+/* Set the authorised user for winbindd access in secrets.tdb */
+
+static BOOL wbinfo_set_auth_user(char *username)
+{
+	char *password;
+
+	/* Separate into user and password */
+
+	password = strchr(username, '%');
+
+	if (password) {
+		*password = 0;
+		password++;
+	} else
+		password = "";
+
+	/* Store in secrets.tdb */
+
+	if (!secrets_store(SECRETS_AUTH_USER, username, strlen(username) + 1) ||
+	    !secrets_store(SECRETS_AUTH_PASSWORD, password, strlen(password) + 1)) {
+		fprintf(stderr, "error storing authenticated user info\n");
+		return False;
+	}
+
+	return True;
+}
+
 /* Print program usage */
 
 static void usage(void)
@@ -442,10 +469,38 @@ static void usage(void)
 
 /* Main program */
 
+enum {
+	OPT_SET_AUTH_USER = 1000
+};
+
 int main(int argc, char **argv)
 {
 	extern pstring global_myname;
 	int opt;
+
+	poptContext pc;
+	char *string_arg;
+	int int_arg;
+	BOOL got_command = False;
+
+	struct poptOption long_options[] = {
+
+		/* longName, shortName, argInfo, argPtr, value, descrip, argDesc */
+
+		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u' },
+		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g' },
+		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n' },
+		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's' },
+		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U' },
+		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G' },
+		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S' },
+		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y' },
+		{ "check-secret", 't', POPT_ARG_NONE, 0, 't' },
+		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm' },
+		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
+		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
+		{ 0, 0, 0, 0 }
+	};
 
 	/* Samba client initialisation */
 
@@ -474,7 +529,23 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:")) != EOF) {
+	/* Parse options */
+
+	pc = poptGetContext("wbinfo", argc, (const char **)argv, long_options, 0);
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		if (got_command) {
+			fprintf(stderr, "No more than one command may be specified "
+				"at once.\n");
+			exit(1);
+		}
+		got_command = True;
+	}
+
+	pc = poptGetContext(NULL, argc, (const char **)argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -489,42 +560,41 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 's':
-			if (!wbinfo_lookupsid(optarg)) {
-				printf("Could not lookup sid %s\n", optarg);
+			if (!wbinfo_lookupsid(string_arg)) {
+				printf("Could not lookup sid %s\n", string_arg);
 				return 1;
 			}
 			break;
 		case 'n':
-			if (!wbinfo_lookupname(optarg)) {
-				printf("Could not lookup name %s\n", optarg);
+			if (!wbinfo_lookupname(string_arg)) {
+				printf("Could not lookup name %s\n", string_arg);
 				return 1;
 			}
 			break;
 		case 'U':
-			if (!wbinfo_uid_to_sid(atoi(optarg))) {
-				printf("Could not convert uid %s to sid\n",
-				       optarg);
+			if (!wbinfo_uid_to_sid(int_arg)) {
+				printf("Could not convert uid %d to sid\n", int_arg);
 				return 1;
 			}
 			break;
 		case 'G':
-			if (!wbinfo_gid_to_sid(atoi(optarg))) {
-				printf("Could not convert gid %s to sid\n",
-				       optarg);
+			if (!wbinfo_gid_to_sid(int_arg)) {
+				printf("Could not convert gid %d to sid\n",
+				       int_arg);
 				return 1;
 			}
 			break;
 		case 'S':
-			if (!wbinfo_sid_to_uid(optarg)) {
+			if (!wbinfo_sid_to_uid(string_arg)) {
 				printf("Could not convert sid %s to uid\n",
-				       optarg);
+				       string_arg);
 				return 1;
 			}
 			break;
 		case 'Y':
-			if (!wbinfo_sid_to_gid(optarg)) {
+			if (!wbinfo_sid_to_gid(string_arg)) {
 				printf("Could not convert sid %s to gid\n",
-				       optarg);
+				       string_arg);
 				return 1;
 			}
 			break;
@@ -541,40 +611,42 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'r':
-			if (!wbinfo_get_usergroups(optarg)) {
+			if (!wbinfo_get_usergroups(string_arg)) {
 				printf("Could not get groups for user %s\n", 
-				       optarg);
+				       string_arg);
 				return 1;
 			}
 			break;
                 case 'a': {
                         BOOL got_error = False;
 
-                        if (!wbinfo_auth(optarg)) {
+                        if (!wbinfo_auth(string_arg)) {
                                 printf("Could not authenticate user %s with "
-                                       "plaintext password\n", optarg);
+                                       "plaintext password\n", string_arg);
                                 got_error = True;
                         }
 
-                        if (!wbinfo_auth_crap(optarg)) {
+                        if (!wbinfo_auth_crap(string_arg)) {
                                 printf("Could not authenticate user %s with "
-                                       "challenge/response\n", optarg);
+                                       "challenge/response\n", string_arg);
                                 got_error = True;
                         }
-
+			
                         if (got_error)
                                 return 1;
                         break;
-				
-                }
-                      /* Invalid option */
-
+		}
+		case OPT_SET_AUTH_USER:
+			if (!(wbinfo_set_auth_user(string_arg))) {
+				return 1;
+			}
+			break;
 		default:
-			usage();
+			fprintf(stderr, "Invalid option\n");
 			return 1;
 		}
 	}
-	
+
 	/* Clean exit */
 
 	return 0;
