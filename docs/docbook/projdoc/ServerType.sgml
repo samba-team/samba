@@ -45,6 +45,13 @@ that control security mode are: "security = user" and "security = share".
 </para>
 
 <para>
+No special action is needed other than to create user accounts. Stand-alone
+servers do NOT provide network logon services, meaning that machines that
+use this server do NOT perform a domain logon but instead make use only of
+the MS Windows logon which is local to the MS Windows workstation/server.
+</para>
+
+<para>
 Samba tends to blur the distinction a little in respect of what is
 a stand alone server. This is because the authentication database may be
 local or on a remote server, even if from the samba protocol perspective
@@ -73,7 +80,7 @@ of a domain security context. This means by definition that all user authenticat
 will be done from a centrally defined authentication regime. The authentication
 regime may come from an NT3/4 style (old domain technology) server, or it may be
 provided from an Active Directory server (ADS) running on MS Windows 2000 or later.
->/para>
+</para>
 
 <para><emphasis>
 Of course it should be clear that the authentication back end itself could be from any

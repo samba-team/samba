@@ -45,9 +45,7 @@
 	<parameter>security =</parameter></ulink> line in the [global] section 
 	of your smb.conf to read:</para>
 
-	<para><command>security = domain</command> or
-	<command>security = ads</command> depending on if the PDC is
-	NT4 or running Active Directory respectivly.</para>
+	<para><command>security = domain</command></para>
 
 	<para>Next change the <ulink url="smb.conf.5.html#WORKGROUP"><parameter>
 	workgroup =</parameter></ulink> line in the [global] section to read: </para>
@@ -86,7 +84,7 @@
 	<para>In order to actually join the domain, you must run this
         command:</para>
 
-	<para><prompt>root# </prompt><userinput>net join -S DOMPDC
+	<para><prompt>root# </prompt><userinput>net rpc join -S DOMPDC
 	-U<replaceable>Administrator%password</replaceable></userinput></para>
 
 	<para>as we are joining the domain DOM and the PDC for that domain 
@@ -121,19 +119,6 @@
 
 	<para>Finally, restart your Samba daemons and get ready for 
 	clients to begin using domain security!</para>
-</sect1>
-
-<sect1>
-<title>Samba and Windows 2000 Domains</title>
-<!-- FIXME: this section is partly obsoleted - jelmer@samba.org -->
-
-<para>
-Many people have asked regarding the state of Samba's ability to participate in
-a Windows 2000 Domain.  Samba 3.0 is able to act as a member server of a Windows
-2000 domain operating in mixed or native mode.  The steps above apply
-to both NT4 and Windows 2000.
-</para>
-
 </sect1>
 
 <sect1>
@@ -178,11 +163,11 @@ to both NT4 and Windows 2000.
 	reply, the Samba server gets the user identification information such 
 	as the user SID, the list of NT groups the user belongs to, etc. </para>
 
-	<para><emphasis>NOTE:</emphasis> Much of the text of this document 
+	<note><para> Much of the text of this document 
 	was first published in the Web magazine <ulink url="http://www.linuxworld.com"> 	
 	LinuxWorld</ulink> as the article <ulink
 	url="http://www.linuxworld.com/linuxworld/lw-1998-10/lw-10-samba.html">Doing 
-	the NIS/NT Samba</ulink>.</para>
+	the NIS/NT Samba</ulink>.</para></note>
 
 </sect1>
 
