@@ -734,6 +734,10 @@ cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, pjob->user);
 
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+	             "job-originating-host-name", NULL,
+		     get_remote_machine_name());
+
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     pjob->jobname);
 
