@@ -500,13 +500,17 @@ static NTSTATUS check_sam_security_internals(const struct auth_context *auth_con
 					     const struct auth_usersupplied_info *user_info, 
 					     struct auth_serversupplied_info **server_info)
 {
-	NTSTATUS nt_status;
-
+	/* mark this as 'not for me' */
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	const char *username = user_info->internal_username.str;
 	struct ldb_message **msgs;
 	struct ldb_message **domain_msgs;
 	void *sam_ctx;
 	DATA_BLOB user_sess_key, lm_sess_key;
+
+	if (!username || !*username) {
+		return nt_status;
+	}
 
 	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {

@@ -21,19 +21,72 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+/***************************************************************************
+ Make (and fill) a user_info struct for a anonymous login.
+***************************************************************************/
+static NTSTATUS make_server_info_anonymous(TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **server_info)
+{
+	*server_info = talloc_p(mem_ctx, struct auth_serversupplied_info);
+	if (!*server_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*server_info)->guest = True;
+
+	(*server_info)->user_sid = dom_sid_parse_talloc((*server_info), SID_NT_ANONYMOUS);
+
+	/* is this correct? */
+	(*server_info)->primary_group_sid = dom_sid_parse_talloc((*server_info), SID_BUILTIN_GUESTS);
+
+	(*server_info)->n_domain_groups = 0;
+	(*server_info)->domain_groups = NULL;
+
+	/* annoying, but the Guest really does have a session key, 
+	   and it is all zeros! */
+	(*server_info)->user_session_key = data_blob_talloc(*server_info, NULL, 16);
+	(*server_info)->lm_session_key = data_blob_talloc(*server_info, NULL, 16);
+
+	data_blob_clear(&(*server_info)->user_session_key);
+	data_blob_clear(&(*server_info)->lm_session_key);
+
+	(*server_info)->account_name = talloc_strdup((*server_info), "ANONYMOUS LOGON");
+	(*server_info)->domain = talloc_strdup((*server_info), "NT AUTHORITY");
+	(*server_info)->full_name = talloc_strdup((*server_info), "Anonymous Logon");
+	(*server_info)->logon_script = talloc_strdup((*server_info), "");
+	(*server_info)->profile_path = talloc_strdup((*server_info), "");
+	(*server_info)->home_directory = talloc_strdup((*server_info), "");
+	(*server_info)->home_drive = talloc_strdup((*server_info), "");
+
+	(*server_info)->last_logon = 0;
+	(*server_info)->last_logoff = 0;
+	(*server_info)->acct_expiry = 0;
+	(*server_info)->last_password_change = 0;
+	(*server_info)->allow_password_change = 0;
+	(*server_info)->force_password_change = 0;
+
+	(*server_info)->logon_count = 0;
+	(*server_info)->bad_password_count = 0;
+
+	(*server_info)->acct_flags = ACB_NORMAL;
+
+	return NT_STATUS_OK;
+}
+
 /**
- * Return a guest logon for guest users (username = "")
+ * Return a anonymous logon for anonymous users (username = "")
  *
  * Typically used as the first module in the auth chain, this allows
  * guest logons to be dealt with in one place.  Non-guest logons 'fail'
  * and pass onto the next module.
  **/
 
-static NTSTATUS check_guest_security(const struct auth_context *auth_context,
+static NTSTATUS check_anonymous_security(const struct auth_context *auth_context,
 				     void *my_private_data, 
 				     TALLOC_CTX *mem_ctx,
 				     const struct auth_usersupplied_info *user_info, 
@@ -44,8 +97,8 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 
 	if (!(user_info->internal_username.str 
 	      && *user_info->internal_username.str)) {
-		nt_status = make_server_info_guest(discard_const(auth_context), 
-						   server_info);
+		nt_status = make_server_info_anonymous(discard_const(auth_context), 
+							server_info);
 	}
 
 	return nt_status;
@@ -53,15 +106,15 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 
 /* Guest modules initialisation */
 
-static NTSTATUS auth_init_guest(struct auth_context *auth_context, 
+static NTSTATUS auth_init_anonymous(struct auth_context *auth_context, 
 				const char *options, 
 				struct auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
 
-	(*auth_method)->auth = check_guest_security;
-	(*auth_method)->name = "guest";
+	(*auth_method)->auth = check_anonymous_security;
+	(*auth_method)->name = "anonymous";
 	return NT_STATUS_OK;
 }
 
@@ -175,8 +228,8 @@ NTSTATUS auth_builtin_init(void)
 	NTSTATUS ret;
 	struct auth_operations ops;
 
-	ops.name = "guest";
-	ops.init = auth_init_guest;
+	ops.name = "anonymous";
+	ops.init = auth_init_anonymous;
 	ret = auth_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' auth backend!\n",
