@@ -45,6 +45,8 @@ RCSID("$Id$");
 
 #include "roken.h"
 
+#ifndef HAVE_STRTOK_R
+
 char *
 strtok_r(char *s1, const char *s2, char **lasts)
 {
@@ -65,3 +67,4 @@ strtok_r(char *s1, const char *s2, char **lasts)
   return ret;
 }
 
+#endif /* HAVE_STRTOK_R */
