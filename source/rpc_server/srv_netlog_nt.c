@@ -79,7 +79,7 @@ NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u,
 /****************************************************************************
 Send a message to smbd to do a sam synchronisation
 **************************************************************************/
-static void send_sync_message()
+static void send_sync_message(void)
 {
         TDB_CONTEXT *tdb;
 
@@ -599,8 +599,9 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	SAM_ACCOUNT *sampass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
 	UNISTR2 *uni_samlogon_domain = NULL;
-	fstring nt_username;
-	fstring nt_domain;
+	UNISTR2 *uni_samlogon_workstation = NULL;
+	fstring nt_username, nt_domain, nt_workstation;
+        
 	BOOL ret;
 
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
@@ -633,12 +634,14 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	case INTERACTIVE_LOGON_TYPE:
 		uni_samlogon_user = &q_u->sam_id.ctr->auth.id1.uni_user_name;
  		uni_samlogon_domain = &q_u->sam_id.ctr->auth.id1.uni_domain_name;
+                uni_samlogon_workstation = &q_u->sam_id.ctr->auth.id1.uni_wksta_name;
             
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NET_LOGON_TYPE:
 		uni_samlogon_user = &q_u->sam_id.ctr->auth.id2.uni_user_name;
 		uni_samlogon_domain = &q_u->sam_id.ctr->auth.id2.uni_domain_name;
+		uni_samlogon_workstation = &q_u->sam_id.ctr->auth.id2.uni_wksta_name;
             
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
@@ -651,8 +654,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	rpcstr_pull(nt_username,uni_samlogon_user->buffer,sizeof(nt_username),uni_samlogon_user->uni_str_len*2,0);
 	rpcstr_pull(nt_domain,uni_samlogon_domain->buffer,sizeof(nt_domain),uni_samlogon_domain->uni_str_len*2,0);
+	rpcstr_pull(nt_workstation,uni_samlogon_workstation->buffer,sizeof(nt_workstation),uni_samlogon_workstation->uni_str_len*2,0);
 
-	DEBUG(3,("User:[%s] Requested Domain:[%s]\n", nt_username, nt_domain));
+	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, 
+                 nt_workstation, nt_domain));
         
 	/*
 	 * Convert to a UNIX username.
@@ -676,15 +681,43 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	ret = pdb_getsampwnam(sampass, nt_username);
 	unbecome_root();
 
-	if (ret == False){
+	if (ret == False) {
 		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
+        
+        /* Test account expire time */
 
-	/* lkclXXXX this is the point at which, if the login was
-		successful, that the SAM Local Security Authority should
-		record that the user is logged in to the domain.
-	*/
+        if (time(NULL) > sampass->kickoff_time)
+                return NT_STATUS_ACCOUNT_EXPIRED;
+        
+        /* Test workstation. Workstation list is comma separated. */
+        
+        if (sampass->workstations && *sampass->workstations) {
+                char *s = strdup(sampass->workstations);
+                BOOL invalid_ws = True;
+                fstring tok;
+
+                while(next_token(&s, tok, ",", sizeof(tok))) {
+                        if(strequal(tok, nt_workstation)) {
+                                invalid_ws = False;
+                                break;
+                        }
+                }
+
+                free(s);
+
+                if (invalid_ws) 
+                        return NT_STATUS_INVALID_WORKSTATION;
+        }
+        
+        /* Test logon hours. */
+        
+        /* Test must change password. */
+
+	/* This is the point at which, if the login was successful, that
+           the SAM Local Security Authority should record that the user is
+           logged in to the domain.  */
     
 	{
 		DOM_GID *gids = NULL;
