@@ -167,9 +167,13 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 }
 
 /****************************************************************************
-open a file
+ open a file - exposing the full horror of the NT API :-).
+ Used in smbtorture.
 ****************************************************************************/
-int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
+
+int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
+		 uint32 FileAttributes, uint32 ShareAccess,
+		 uint32 CreateDisposition, uint32 CreateOptions)
 {
 	char *p;
 	int len;
@@ -190,10 +194,10 @@ int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 		SIVAL(cli->outbuf,smb_ntcreate_Flags, 0);
 	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
 	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, DesiredAccess);
-	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, 0x0);
-	SIVAL(cli->outbuf,smb_ntcreate_ShareAccess, 0x03);
-	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, 0x01);
-	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, 0x0);
+	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, FileAttributes);
+	SIVAL(cli->outbuf,smb_ntcreate_ShareAccess, ShareAccess);
+	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, CreateDisposition);
+	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, CreateOptions);
 	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
 
 	p = smb_buf(cli->outbuf);
@@ -217,6 +221,16 @@ int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 	}
 
 	return SVAL(cli->inbuf,smb_vwv2 + 1);
+}
+
+/****************************************************************************
+open a file
+****************************************************************************/
+
+int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
+{
+	return cli_nt_create_full(cli, fname, DesiredAccess, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_EXISTS_OPEN, 0x0);
 }
 
 /****************************************************************************
