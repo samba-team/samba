@@ -187,13 +187,12 @@ struct lsa_AuditLogInfo {
 };
 
 struct lsa_AuditSettings {
-	uint32 count;
-	uint32 *settings;
 };
 
 struct lsa_AuditEventsInfo {
 	uint32 auditing_mode;
-	struct lsa_AuditSettings *settings;
+	uint32 *settings;
+	uint32 count;
 };
 
 struct lsa_DomainInfo {
