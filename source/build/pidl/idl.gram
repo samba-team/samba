@@ -78,10 +78,12 @@ base_element: property_list(s?) type pointer(s?) identifier array_len(?)
             | <error>
 
 array_len: 
-	 '[]'
+	 '[' ']'
 	 { "*" }
-	 | '[' <commit> constant ']' 
-         { $item{constant} }
+	 | '[' '*' ']'
+	 { "*" }
+	 | '[' <commit> text ']' 
+         { "$item{text}" }
          | <error?>
 
 element_list1: base_element(s? /;/) ';' 
@@ -105,6 +107,7 @@ property: 'unique'
 	  | 'context_handle'
 	  | 'string'
 	  | 'public'
+	  | 'relative'
 	  | 'subcontext'
 	  | 'byte_count_pointer' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
