@@ -124,13 +124,14 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name,
 
 BOOL init_domain_list(void)
 {
-	NTSTATUS result;
+	BOOL result = False;
+	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	extern struct winbindd_methods cache_methods;
-	struct winbindd_domain *domain;
+	struct winbindd_domain *domain = NULL;
 	DOM_SID *dom_sids;
 	char **names;
-	int num_domains = 0;
+	int i, num_domains = 0;
 
 	if (!(mem_ctx = talloc_init_named("init_domain_list")))
 		return False;
@@ -139,7 +140,25 @@ BOOL init_domain_list(void)
 
 	free_domain_list();
 
-	/* Add ourselves as the first entry */
+	/* Add each trusted domain to the trusted list */
+
+	DEBUG(1, ("getting trusted domain list\n"));
+
+	status = cache_methods.trusted_domains(
+		domain, mem_ctx, (uint *)&num_domains, &names, &dom_sids);
+
+	if (!NT_STATUS_IS_OK(status))
+		goto done;
+
+	for(i = 0; i < num_domains; i++) {
+		domain = add_trusted_domain(names[i], &cache_methods);
+		if (!domain) continue;
+		sid_copy(&domain->sid, &dom_sids[i]);
+		DEBUG(1,("Added trusted domain %s (%s)\n", 
+			 domain->name, sid_string_static(&domain->sid)));
+	}
+
+	/* Add ourselves as the last (head) entry */
 
 	domain = add_trusted_domain(lp_workgroup_unix(), &cache_methods);
 
@@ -149,30 +168,14 @@ BOOL init_domain_list(void)
 		return False;
 	}
 
-	DEBUG(1,("Added domain %s (%s)\n", domain->name, 
+	DEBUG(1,("Added our domain %s (%s)\n", domain->name, 
 		 sid_string_static(&domain->sid)));
 
-	DEBUG(1, ("getting trusted domain list\n"));
+	result = True;
 
-	result = cache_methods.trusted_domains(
-		domain, mem_ctx, (uint *)&num_domains, &names, &dom_sids);
-
-	/* Add each domain to the trusted domain list */
-
-	if (NT_STATUS_IS_OK(result)) {
-		int i;
-		for(i = 0; i < num_domains; i++) {
-			domain = add_trusted_domain(names[i], &cache_methods);
-			if (!domain) continue;
-			sid_copy(&domain->sid, &dom_sids[i]);
-			DEBUG(1,("Added domain %s (%s)\n", 
-				 domain->name, 
-				 sid_string_static(&domain->sid)));
-		}
-	}
-
+done:
 	talloc_destroy(mem_ctx);
-	return True;
+	return result;
 }
 
 /* Given a domain name, return the struct winbindd domain info for it 
