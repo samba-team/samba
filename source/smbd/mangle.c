@@ -42,7 +42,7 @@ int str_checksum(char *s)
   while( *s )
     {
     c = *s;
-    res ^= (c << (15-(i%15))) ^ (c >> (i % 15));
+    res ^= (c << (i % 15)) ^ (c >> (15-(i%15)));
     s++; i++;
     }
   return(res);
