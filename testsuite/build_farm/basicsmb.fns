@@ -153,5 +153,4 @@ then
     loglevel=1
 fi
 
-
-pwd=`pwd`
+# NB $pwd is not really `pwd`
