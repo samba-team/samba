@@ -23,8 +23,8 @@
 static struct mangle_fns *mangle_fns;
 
 /* this allows us to add more mangling backends */
-static struct {
-	char *name;
+static const struct {
+	const char *name;
 	struct mangle_fns *(*init_fn)(void);
 } mangle_backends[] = {
 	{ "hash", mangle_hash_init },

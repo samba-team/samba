@@ -30,9 +30,9 @@ static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
  Return the name of a charset to give to iconv().
 ****************************************************************************/
 
-static char *charset_name(charset_t ch)
+static const char *charset_name(charset_t ch)
 {
-	char *ret = NULL;
+	const char *ret = NULL;
 
 	if (ch == CH_UCS2) ret = "UCS-2LE";
 	else if (ch == CH_UNIX) ret = lp_unix_charset();
@@ -75,8 +75,8 @@ void init_iconv(void)
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
-			char *n1 = charset_name((charset_t)c1);
-			char *n2 = charset_name((charset_t)c2);
+			const char *n1 = charset_name((charset_t)c1);
+			const char *n2 = charset_name((charset_t)c2);
 			if (conv_handles[c1][c2] &&
 			    strcmp(n1, conv_handles[c1][c2]->from_name) == 0 &&
 			    strcmp(n2, conv_handles[c1][c2]->to_name) == 0)
@@ -140,7 +140,7 @@ size_t convert_string(charset_t from, charset_t to,
 	o_len=destlen;
 	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
 	if(retval==-1) {
-	    	char *reason="unknown error";
+	    	const char *reason="unknown error";
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
@@ -215,7 +215,7 @@ convert:
 			   &inbuf, &i_len,
 			   &outbuf, &o_len);
 	if(retval == -1) 		{
-	    	char *reason="unknown error";
+	    	const char *reason="unknown error";
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";

@@ -327,7 +327,7 @@ void cli_shutdown(struct cli_state *cli)
  Set socket options on a open connection.
 ****************************************************************************/
 
-void cli_sockopt(struct cli_state *cli, char *options)
+void cli_sockopt(struct cli_state *cli, const char *options)
 {
 	set_socket_options(cli->fd, options);
 }

@@ -30,7 +30,7 @@ typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t
  *     */
 
 struct charset_functions {
-	char *name;
+	const char *name;
 	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
 				   char **outbuf, size_t *outbytesleft);
 	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,

@@ -80,7 +80,7 @@ static REGISTRY_KEY *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
  *******************************************************************/
  
 static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *parent,
-				char *subkeyname, uint32 access_granted  )
+				const char *subkeyname, uint32 access_granted  )
 {
 	REGISTRY_KEY 	*regkey = NULL;
 	NTSTATUS     	result = NT_STATUS_OK;
@@ -341,7 +341,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
 	NTSTATUS 		status = NT_STATUS_NO_SUCH_FILE;
 	fstring 		name;
-	char                    *value_ascii = "";
+	const char              *value_ascii = "";
 	fstring                 value;
 	int                     value_length;
 	REGISTRY_KEY 		*regkey = find_regkey_index_by_hnd( p, &q_u->pol );

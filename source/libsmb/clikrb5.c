@@ -94,7 +94,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB krb5_get_ticket(char *principal, time_t time_offset)
+DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
 {
 	krb5_error_code retval;
 	krb5_data packet;

@@ -420,10 +420,10 @@ typedef struct key_sec_desc_s {
  * There should eventually be one to deal with security keys as well
  */
 
-typedef int (*key_print_f)(char *path, char *key_name, char *class_name, 
+typedef int (*key_print_f)(const char *path, char *key_name, char *class_name, 
 			   int root, int terminal, int values);
 
-typedef int (*val_print_f)(char *path, char *val_name, int val_type, 
+typedef int (*val_print_f)(const char *path, char *val_name, int val_type, 
 			   int data_len, void *data_blk, int terminal,
 			   int first, int last);
 
@@ -431,7 +431,7 @@ typedef int (*sec_print_f)(SEC_DESC *sec_desc);
 
 typedef struct regf_struct_s REGF;
 
-int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path, 
+int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path, 
 		    key_print_f key_print, sec_print_f sec_print,
 		    val_print_f val_print);
 
@@ -476,7 +476,7 @@ int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
   return 1;
 }
 
-int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
+int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path,
 		    key_print_f key_print, sec_print_f sec_print,
 		    val_print_f val_print)
 {
@@ -875,10 +875,10 @@ typedef struct vk_struct {
 
 typedef struct _val_str { 
   unsigned int val;
-  char * str;
+  const char * str;
 } VAL_STR;
 
-VAL_STR reg_type_names[] = {
+const VAL_STR reg_type_names[] = {
    { 1, "REG_SZ" },
    { 2, "REG_EXPAND_SZ" },
    { 3, "REG_BIN" },
@@ -887,7 +887,7 @@ VAL_STR reg_type_names[] = {
    { 0, NULL },
 };
 
-char *val_to_str(unsigned int val, VAL_STR *val_array)
+const char *val_to_str(unsigned int val, const VAL_STR *val_array)
 {
   int i = 0;
 
@@ -1364,7 +1364,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 {
   char val_name[1024];
   int nam_len, dat_len, flag, dat_type, dat_off, vk_id;
-  char *val_type;
+  const char *val_type;
   VAL_KEY *tmp = NULL; 
 
   if (!vk_hdr) return NULL;
@@ -1754,7 +1754,7 @@ int nt_load_registry(REGF *regf)
  * key print function here ...
  */
 
-int print_key(char *path, char *name, char *class_name, int root, 
+int print_key(const char *path, char *name, char *class_name, int root, 
 	      int terminal, int vals)
 {
 
@@ -1794,7 +1794,7 @@ int print_sec(SEC_DESC *sec_desc)
 /*
  * Value print function here ...
  */
-int print_val(char *path, char *val_name, int val_type, int data_len, 
+int print_val(const char *path, char *val_name, int val_type, int data_len, 
 	      void *data_blk, int terminal, int first, int last)
 {
   char data_asc[1024];

@@ -25,8 +25,8 @@
 #define DBGC_CLASS DBGC_PASSDB
 
 /** List of various built-in passdb modules */
-const struct {
-    char *name;
+static const struct {
+    const char *name;
     /* Function to create a member of the pdb_methods list */
     pdb_init_function init;
 } builtin_pdb_init_functions[] = {
@@ -58,7 +58,7 @@ static void lazy_initialize_passdb()
 	}
 }
 
-BOOL smb_register_passdb(char *name, pdb_init_function init, int version) 
+BOOL smb_register_passdb(const char *name, pdb_init_function init, int version) 
 {
 	struct pdb_init_function_entry *entry = backends;
 

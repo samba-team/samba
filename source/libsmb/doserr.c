@@ -24,7 +24,7 @@
 
 typedef const struct
 {
-	char *dos_errstr;
+	const char *dos_errstr;
 	WERROR werror;
 } werror_code_struct;
 
@@ -73,7 +73,7 @@ werror_code_struct dos_errs[] =
 /*****************************************************************************
  returns a DOS error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-char *dos_errstr(WERROR werror)
+const char *dos_errstr(WERROR werror)
 {
         static pstring msg;
         int idx = 0;

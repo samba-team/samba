@@ -27,14 +27,14 @@
 typedef struct _known_sid_users {
 	uint32 rid;
 	enum SID_NAME_USE sid_name_use;
-	char *known_user_name;
+	const char *known_user_name;
 } known_sid_users;
 
 static struct sid_name_map_info
 {
 	DOM_SID *sid;
-	char *name;
-	known_sid_users *known_users;
+	const char *name;
+	const known_sid_users *known_users;
 } sid_name_map[MAX_SID_NAMES];
 
 extern DOM_SID global_sid_Builtin; 				/* Local well-known domain */
@@ -46,16 +46,16 @@ extern DOM_SID global_sid_NT_Authority;    		/* NT Authority */
 static BOOL sid_name_map_initialized = False;
 /* static known_sid_users no_users[] = {{0, 0, NULL}}; */
 
-static known_sid_users everyone_users[] = {
+static const known_sid_users everyone_users[] = {
 	{ 0, SID_NAME_WKN_GRP, "Everyone" },
 	{0, (enum SID_NAME_USE)0, NULL}};
 
-static known_sid_users creator_owner_users[] = {
+static const known_sid_users creator_owner_users[] = {
 	{ 0, SID_NAME_WKN_GRP, "Creator Owner" },
 	{ 1, SID_NAME_WKN_GRP, "Creator Group" },
 	{0, (enum SID_NAME_USE)0, NULL}};
 
-static known_sid_users nt_authority_users[] = {
+static const known_sid_users nt_authority_users[] = {
 	{  1, SID_NAME_ALIAS, "Dialup" },
 	{  2, SID_NAME_ALIAS, "Network"},
 	{  3, SID_NAME_ALIAS, "Batch"},
@@ -68,7 +68,7 @@ static known_sid_users nt_authority_users[] = {
 	{ 18, SID_NAME_ALIAS, "SYSTEM"},
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
-static known_sid_users builtin_groups[] = {
+static const known_sid_users builtin_groups[] = {
 	{ BUILTIN_ALIAS_RID_ADMINS, SID_NAME_ALIAS, "Administrators" },
 	{ BUILTIN_ALIAS_RID_USERS, SID_NAME_ALIAS, "Users" },
 	{ BUILTIN_ALIAS_RID_GUESTS, SID_NAME_ALIAS, "Guests" },
@@ -284,7 +284,7 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 		init_sid_name_map();
 
 	for (i=0; sid_name_map[i].sid != NULL; i++) {
-		known_sid_users *users = sid_name_map[i].known_users;
+		const known_sid_users *users = sid_name_map[i].known_users;
 
 		if (users == NULL)
 			continue;

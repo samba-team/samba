@@ -109,14 +109,14 @@ static char* Expand(connection_struct *conn, int snum, char* s)
 /*******************************************************************
   check a API string for validity when we only need to check the prefix
   ******************************************************************/
-static BOOL prefix_ok(char *str,char *prefix)
+static BOOL prefix_ok(const char *str, const char *prefix)
 {
   return(strncmp(str,prefix,strlen(prefix)) == 0);
 }
 
 struct pack_desc {
-  char* format;	    /* formatstring for structure */
-  char* subformat;  /* subformat for structure */
+  const char* format;	    /* formatstring for structure */
+  const char* subformat;  /* subformat for structure */
   char* base;	    /* baseaddress of buffer */
   int buflen;	   /* remaining size for fixed part; on init: length of base */
   int subcount;	    /* count of substructures */
@@ -125,11 +125,11 @@ struct pack_desc {
   char* stringbuf;  /* pointer into buffer for remaining variable part */
   int neededlen;    /* total needed size */
   int usedlen;	    /* total used size (usedlen <= neededlen and usedlen <= buflen) */
-  char* curpos;	    /* current position; pointer into format or subformat */
+  const char* curpos;	    /* current position; pointer into format or subformat */
   int errcode;
 };
 
-static int get_counter(char** p)
+static int get_counter(const char** p)
 {
   int i, n;
   if (!p || !(*p)) return(1);
@@ -144,7 +144,7 @@ static int get_counter(char** p)
   }
 }
 
-static int getlen(char* p)
+static int getlen(const char* p)
 {
   int n = 0;
   if (!p) return(0);
@@ -329,7 +329,7 @@ static int package(struct pack_desc* p, ...)
 #define PACKl(desc,t,v,l) package(desc,v,l)
 #endif
 
-static void PACKI(struct pack_desc* desc,char *t,int v)
+static void PACKI(struct pack_desc* desc, const char *t,int v)
 {
   PACK(desc,t,v);
 }
@@ -1704,7 +1704,7 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	char *UserName = skip_string(str2,1);
 	char *p = skip_string(UserName,1);
 	int uLevel = SVAL(p,0);
-	char *p2;
+	const char *level_string;
 	int count=0;
 
 	*rparam_len = 8;
@@ -1715,13 +1715,13 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 		return False;
 	switch( uLevel ) {
 		case 0:
-			p2 = "B21";
+			level_string = "B21";
 			break;
 		default:
 			return False;
 	}
 
-	if (strcmp(p2,str2) != 0)
+	if (strcmp(level_string,str2) != 0)
 		return False;
 
 	*rdata_len = mdrcnt + 1024;
@@ -2584,6 +2584,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(UserName,1);
 	int uLevel = SVAL(p,0);
 	char *p2;
+	const char *level_string;
 
     /* get NIS home of a previously validated user - simeon */
     /* With share level security vuid will always be zero.
@@ -2602,15 +2603,15 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	if (strcmp(str1,"zWrLh") != 0) return False;
 	switch( uLevel )
 	{
-		case 0: p2 = "B21"; break;
-		case 1: p2 = "B21BB16DWzzWz"; break;
-		case 2: p2 = "B21BB16DWzzWzDzzzzDDDDWb21WWzWW"; break;
-		case 10: p2 = "B21Bzzz"; break;
-		case 11: p2 = "B21BzzzWDDzzDDWWzWzDWb21W"; break;
+		case 0: level_string = "B21"; break;
+		case 1: level_string = "B21BB16DWzzWz"; break;
+		case 2: level_string = "B21BB16DWzzWzDzzzzDDDDWb21WWzWW"; break;
+		case 10: level_string = "B21Bzzz"; break;
+		case 11: level_string = "B21BzzzWDDzzDDWWzWzDWb21W"; break;
 		default: return False;
 	}
 
-	if (strcmp(p2,str2) != 0) return False;
+	if (strcmp(level_string,str2) != 0) return False;
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = REALLOC(*rdata,*rdata_len);
@@ -3407,9 +3408,9 @@ static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,cha
 
 
 
-const static struct
+static const struct
 {
-  char *name;
+  const char *name;
   int id;
   BOOL (*fn)(connection_struct *,uint16,char *,char *,
 	     int,int,char **,char **,int *,int *);

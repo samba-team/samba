@@ -75,9 +75,9 @@ static BOOL load_msg(const char *msg_file)
 
 
 /* work out what language to use from locale variables */
-static char *get_lang(void)
+static const char *get_lang(void)
 {
-	char *vars[] = {"LANGUAGE", "LC_ALL", "LC_LANG", "LANG", NULL};
+	const char *vars[] = {"LANGUAGE", "LC_ALL", "LC_LANG", "LANG", NULL};
 	int i;
 	char *p;
 
@@ -123,7 +123,7 @@ BOOL lang_tdb_init(const char *lang)
 	/* if no lang then we don't translate */
 	if (!lang) return True;
 
-	asprintf(&msg_path, "%s.msg", lib_path((char *)lang));
+	asprintf(&msg_path, "%s.msg", lib_path((const char *)lang));
 	if (stat(msg_path, &st) != 0) {
 		/* the msg file isn't available */
 		free(msg_path);

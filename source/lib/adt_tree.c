@@ -325,7 +325,7 @@ done:
  Recursive routine to print out all children of a TREE_NODE
  *************************************************************************/
 
-static void sorted_tree_print_children( TREE_NODE *node, int debug, char *path )
+static void sorted_tree_print_children( TREE_NODE *node, int debug, const char *path )
 {
 	int i;
 	int num_children;

@@ -27,11 +27,11 @@ extern BOOL torture_showall;
 enum deny_result {A_0=0, A_X=1, A_R=2, A_W=3, A_RW=5};
 
 
-static char *denystr(int denymode)
+static const char *denystr(int denymode)
 {
 	struct {
 		int v;
-		char *name; 
+		const char *name; 
 	} deny_modes[] = {
 		{DENY_DOS, "DENY_DOS"},
 		{DENY_ALL, "DENY_ALL"},
@@ -47,11 +47,11 @@ static char *denystr(int denymode)
 	return "DENY_XXX";
 }
 
-static char *openstr(int mode)
+static const char *openstr(int mode)
 {
 	struct {
 		int v;
-		char *name; 
+		const char *name; 
 	} open_modes[] = {
 		{O_RDWR, "O_RDWR"},
 		{O_RDONLY, "O_RDONLY"},
@@ -64,11 +64,11 @@ static char *openstr(int mode)
 	return "O_XXX";
 }
 
-static char *resultstr(enum deny_result res)
+static const char *resultstr(enum deny_result res)
 {
 	struct {
 		enum deny_result res;
-		char *name; 
+		const char *name; 
 	} results[] = {
 		{A_X, "X"},
 		{A_0, "-"},
@@ -1412,7 +1412,7 @@ BOOL torture_denytest1(int dummy)
 	int fnum1, fnum2;
 	int i;
 	BOOL correct = True;
-	char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
+	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 
 	if (!torture_open_connection(&cli1)) {
 		return False;
@@ -1431,7 +1431,7 @@ BOOL torture_denytest1(int dummy)
 
 	for (i=0; i<ARRAY_SIZE(denytable1); i++) {
 		enum deny_result res;
-		char *fname = fnames[denytable1[i].isexe];
+		const char *fname = fnames[denytable1[i].isexe];
 
 		progress_bar(i, ARRAY_SIZE(denytable1));
 
@@ -1498,7 +1498,7 @@ BOOL torture_denytest2(int dummy)
 	int fnum1, fnum2;
 	int i;
 	BOOL correct = True;
-	char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
+	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -1515,7 +1515,7 @@ BOOL torture_denytest2(int dummy)
 
 	for (i=0; i<ARRAY_SIZE(denytable2); i++) {
 		enum deny_result res;
-		char *fname = fnames[denytable2[i].isexe];
+		const char *fname = fnames[denytable2[i].isexe];
 
 		progress_bar(i, ARRAY_SIZE(denytable1));
 

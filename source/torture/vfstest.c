@@ -403,7 +403,7 @@ static void process_file(struct vfs_state *pvfs, char *filename) {
 	}
 }
 
-void exit_server(char *reason)
+void exit_server(const char *reason)
 {
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
@@ -484,7 +484,7 @@ int main(int argc, char *argv[])
 	extern BOOL 		AllowDebugChange;
 	static struct vfs_state vfs;
 	int i;
-	static char		*filename = "";
+	static const char	*filename = "";
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */

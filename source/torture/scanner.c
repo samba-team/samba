@@ -29,7 +29,7 @@
 /****************************************************************************
 look for a partial hit
 ****************************************************************************/
-static void trans2_check_hit(char *format, int op, int level, NTSTATUS status)
+static void trans2_check_hit(const char *format, int op, int level, NTSTATUS status)
 {
 	if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_LEVEL) ||
 	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ||
@@ -78,7 +78,7 @@ static NTSTATUS try_trans2(struct cli_state *cli,
 
 
 static NTSTATUS try_trans2_len(struct cli_state *cli, 
-			     char *format,
+			     const char *format,
 			     int op, int level,
 			     char *param, char *data,
 			     int param_len, int *data_len,
@@ -113,7 +113,7 @@ static NTSTATUS try_trans2_len(struct cli_state *cli,
 check for existance of a trans2 call
 ****************************************************************************/
 static BOOL scan_trans2(struct cli_state *cli, int op, int level, 
-			int fnum, int dnum, char *fname)
+			int fnum, int dnum, const char *fname)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -193,7 +193,7 @@ BOOL torture_trans2_scan(int dummy)
 {
 	static struct cli_state cli;
 	int op, level;
-	char *fname = "\\scanner.dat";
+	const char *fname = "\\scanner.dat";
 	int fnum, dnum;
 
 	printf("starting trans2 scan test\n");
@@ -233,7 +233,7 @@ BOOL torture_trans2_scan(int dummy)
 /****************************************************************************
 look for a partial hit
 ****************************************************************************/
-static void nttrans_check_hit(char *format, int op, int level, NTSTATUS status)
+static void nttrans_check_hit(const char *format, int op, int level, NTSTATUS status)
 {
 	if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_LEVEL) ||
 	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ||
@@ -280,7 +280,7 @@ static NTSTATUS try_nttrans(struct cli_state *cli,
 
 
 static NTSTATUS try_nttrans_len(struct cli_state *cli, 
-			     char *format,
+			     const char *format,
 			     int op, int level,
 			     char *param, char *data,
 			     int param_len, int *data_len,
@@ -315,7 +315,7 @@ static NTSTATUS try_nttrans_len(struct cli_state *cli,
 check for existance of a nttrans call
 ****************************************************************************/
 static BOOL scan_nttrans(struct cli_state *cli, int op, int level, 
-			int fnum, int dnum, char *fname)
+			int fnum, int dnum, const char *fname)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -395,7 +395,7 @@ BOOL torture_nttrans_scan(int dummy)
 {
 	static struct cli_state cli;
 	int op, level;
-	char *fname = "\\scanner.dat";
+	const char *fname = "\\scanner.dat";
 	int fnum, dnum;
 
 	printf("starting nttrans scan test\n");

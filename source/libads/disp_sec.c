@@ -22,7 +22,7 @@
 
 static struct perm_mask_str {
 	uint32  mask;
-	char   *str;
+	const char   *str;
 } perms[] = {
 	{SEC_RIGHTS_FULL_CTRL,		"[Full Control]"},
 
@@ -83,7 +83,7 @@ static void ads_disp_perms(uint32 type)
 /* display ACE */
 static void ads_disp_ace(SEC_ACE *sec_ace)
 {
-	char *access_type = "UNKNOWN";
+	const char *access_type = "UNKNOWN";
 
 	if (!sec_ace_object(sec_ace->type)) {
 		printf("------- ACE (type: 0x%02x, flags: 0x%02x, size: 0x%02x, mask: 0x%x)\n", 
@@ -121,7 +121,7 @@ static void ads_disp_ace(SEC_ACE *sec_ace)
 }
 
 /* display ACL */
-static void ads_disp_acl(SEC_ACL *sec_acl, char *type)
+static void ads_disp_acl(SEC_ACL *sec_acl, const char *type)
 {
         if (!sec_acl)
 		printf("------- (%s) ACL not present\n", type);

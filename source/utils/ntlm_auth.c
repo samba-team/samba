@@ -297,7 +297,7 @@ BOOL hex_decode(const char *hex_buf_in, unsigned char **out_buffer, size_t *size
 	size_t hex_buf_in_len = strlen(hex_buf_in);
 	unsigned char  partial_byte_hex;
 	unsigned char  partial_byte;
-	char           *hexchars = "0123456789ABCDEF";
+	const char     *hexchars = "0123456789ABCDEF";
 	char           *p;
 	BOOL           high = True;
 	

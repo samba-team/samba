@@ -43,13 +43,13 @@ enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 struct perm_value {
-	char *perm;
+	const char *perm;
 	uint32 mask;
 };
 
 /* These values discovered by inspection */
 
-static struct perm_value special_values[] = {
+static const struct perm_value special_values[] = {
 	{ "R", 0x00120089 },
 	{ "W", 0x00120116 },
 	{ "X", 0x001200a0 },
@@ -59,7 +59,7 @@ static struct perm_value special_values[] = {
 	{ NULL, 0 },
 };
 
-static struct perm_value standard_values[] = {
+static const struct perm_value standard_values[] = {
 	{ "READ",   0x001200a9 },
 	{ "CHANGE", 0x001301bf },
 	{ "FULL",   0x001f01ff },
@@ -70,7 +70,7 @@ static struct cli_state *global_hack_cli;
 static POLICY_HND pol;
 static BOOL got_policy_hnd;
 
-static struct cli_state *connect_one(char *share);
+static struct cli_state *connect_one(const char *share);
 
 /* Open cli connection and policy handle */
 
@@ -161,7 +161,7 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 /* print an ACE on a FILE, using either numeric or ascii representation */
 static void print_ace(FILE *f, SEC_ACE *ace)
 {
-	struct perm_value *v;
+	const struct perm_value *v;
 	fstring sidstr;
 	int do_print = 0;
 	uint32 got_mask;
@@ -234,7 +234,7 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 	unsigned atype, aflags, amask;
 	DOM_SID sid;
 	SEC_ACCESS mask;
-	struct perm_value *v;
+	const struct perm_value *v;
 
 	ZERO_STRUCTP(ace);
 	p = strchr_m(str,':');
@@ -708,7 +708,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *connect_one(char *share)
+static struct cli_state *connect_one(const char *share)
 {
 	struct cli_state *c;
 	struct in_addr ip;

@@ -65,9 +65,6 @@ done:
 /* find the servers time on the opt_host host */
 static time_t nettime(int *zone)
 {
-	extern BOOL opt_have_ip;
-	extern struct in_addr opt_dest_ip;
-	extern char *opt_host; 
 	return cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, zone);
 }
 
@@ -155,9 +152,6 @@ static int net_time_zone(int argc, const char **argv)
 int net_time(int argc, const char **argv)
 {
 	time_t t;
-	extern BOOL opt_have_ip;
-	extern struct in_addr opt_dest_ip;
-	extern char *opt_host; 
 	struct functable func[] = {
 		{"SYSTEM", net_time_system},
 		{"SET", net_time_set},

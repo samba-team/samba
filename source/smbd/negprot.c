@@ -377,9 +377,9 @@ protocol [LANMAN2.1]
 #define ARCH_ALL      0x3F
  
 /* List of supported protocols, most desired first */
-static struct {
-	char *proto_name;
-	char *short_name;
+static const struct {
+	const char *proto_name;
+	const char *short_name;
 	int (*proto_reply_fn)(char *, char *);
 	int protocol_level;
 } supported_protocols[] = {

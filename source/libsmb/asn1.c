@@ -338,7 +338,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 }
 
 /* check that the next object ID is correct */
-BOOL asn1_check_OID(ASN1_DATA *data, char *OID)
+BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 {
 	char *id;
 

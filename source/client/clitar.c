@@ -121,12 +121,12 @@ extern int get_total_size;
 static int blocksize=20;
 static int tarhandle;
 
-static void writetarheader(int f,  char *aname, SMB_BIG_UINT size, time_t mtime,
-			   char *amode, unsigned char ftype);
+static void writetarheader(int f,  const char *aname, SMB_BIG_UINT size, time_t mtime,
+			   const char *amode, unsigned char ftype);
 static void do_atar(char *rname,char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo);
 static void oct_it(SMB_BIG_UINT value, int ndgs, char *p);
-static void fixtarname(char *tptr, char *fp, int l);
+static void fixtarname(char *tptr, const char *fp, int l);
 static int dotarbuf(int f, char *b, int n);
 static void dozerobuf(int f, int n);
 static void dotareof(int f);
@@ -164,8 +164,8 @@ static char *string_create_s(int size)
 /****************************************************************************
 Write a tar header to buffer
 ****************************************************************************/
-static void writetarheader(int f,  char *aname, SMB_BIG_UINT size, time_t mtime,
-			   char *amode, unsigned char ftype)
+static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t mtime,
+			   const char *amode, unsigned char ftype)
 {
   union hblock hb;
   int i, chk, l;
@@ -414,7 +414,7 @@ static void dotareof(int f)
 /****************************************************************************
 (Un)mangle DOS pathname, make nonabsolute
 ****************************************************************************/
-static void fixtarname(char *tptr, char *fp, int l)
+static void fixtarname(char *tptr, const char *fp, int l)
 {
 	/* add a '.' to start of file name, convert from ugly dos \'s in path
 	 * to lovely unix /'s :-} */

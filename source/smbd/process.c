@@ -339,7 +339,7 @@ force write permissions on print services.
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
 */
-const static struct smb_message_struct
+static const struct smb_message_struct
 {
   const char *name;
   int (*fn)(connection_struct *conn, char *, char *, int, int);
@@ -890,7 +890,7 @@ return a string containing the function name of a SMB command
 ****************************************************************************/
 const char *smb_fn_name(int type)
 {
-	static char *unknown_name = "SMBunknown";
+	const char *unknown_name = "SMBunknown";
 
 	if (smb_messages[type].name == NULL)
 		return(unknown_name);

@@ -204,7 +204,7 @@ static int rap_share_add(int argc, const char **argv)
 	strlcpy(sinfo.share_name, sharename, sizeof(sinfo.share_name));
 	sinfo.reserved1 = '\0';
 	sinfo.share_type = 0;
-	sinfo.comment = opt_comment;
+	sinfo.comment = smb_xstrdup(opt_comment);
 	sinfo.perms = 0;
 	sinfo.maximum_users = opt_maxusers;
 	sinfo.active_users = 0;
@@ -644,7 +644,7 @@ static int rap_user_add(int argc, const char **argv)
 			
 	userinfo.userflags = opt_flags;
 	userinfo.reserved1 = '\0';
-	userinfo.comment = opt_comment;
+	userinfo.comment = smb_xstrdup(opt_comment);
 	userinfo.priv = 1; 
 	userinfo.home_dir = NULL;
 	userinfo.logon_script = NULL;
@@ -757,7 +757,7 @@ static int rap_group_add(int argc, const char **argv)
 	/* BB check for length 21 or smaller explicitly ? BB */
 	safe_strcpy(grinfo.group_name, argv[0], sizeof(grinfo.group_name));
 	grinfo.reserved1 = '\0';
-	grinfo.comment = opt_comment;
+	grinfo.comment = smb_xstrdup(opt_comment);
 	
 	ret = cli_NetGroupAdd(cli, &grinfo);
 	cli_shutdown(cli);

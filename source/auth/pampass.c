@@ -65,7 +65,7 @@ typedef int (*smb_pam_conv_fn)(int, const struct pam_message **, struct pam_resp
  PAM error handler.
  *********************************************************************/
 
-static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int dbglvl)
+static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, const char *msg, int dbglvl)
 {
 
 	if( pam_error != PAM_SUCCESS) {
@@ -83,7 +83,7 @@ static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, 
 *********************************************************************/
 
 static BOOL smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
-							char *msg, int dbglvl, 
+					    const char *msg, int dbglvl, 
 					    NTSTATUS *nt_status)
 {
 	*nt_status = pam_to_nt_status(pam_error);
