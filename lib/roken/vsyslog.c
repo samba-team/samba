@@ -88,6 +88,7 @@ vsyslog(int pri, const char *fmt, va_list ap)
 	} else
 	    *p2++ = *p;
     }
+    *p2 = '\0';
 
     vasprintf (&buf, fmt2, ap);
     free (fmt2);
