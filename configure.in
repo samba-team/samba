@@ -502,6 +502,8 @@ AC_CHECK_DECLARATION([#include <stdlib.h>], optind)
 AC_CHECK_DECLARATION([#include <stdlib.h>], opterr)
 AC_CHECK_DECLARATION([#include <stdlib.h>], optopt)
 
+AC_CHECK_DECLARATION([#include <stdlib.h>], environ)
+
 dnl
 dnl Check for fields in struct utmp
 dnl
@@ -521,6 +523,12 @@ dnl Check for struct winsize
 dnl
 
 AC_KRB_STRUCT_WINSIZE
+
+dnl
+dnl Check for struct spwd
+dnl
+
+AC_KRB_STRUCT_SPWD
 
 dnl
 dnl Check for sa_len in struct sockaddr
