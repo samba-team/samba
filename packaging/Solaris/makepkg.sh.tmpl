@@ -98,15 +98,6 @@ add_dynamic_entries()
   # Create a symbolic link to the Samba book in docs/ for beginners
   echo 's none samba/docs/samba_book=htmldocs/using_samba'
 
-  echo "#\n# Text Docs \n#"
-  echo d none samba/docs/textdocs 0755 root other
-  cd $DISTR_BASE/docs/textdocs
-  for textdoc in *
-  do 
-    if [ -f $textdoc ]; then
-      echo f none samba/docs/textdocs/$textdoc=docs/textdocs/$textdoc 0644 root other
-    fi
-  done
   echo "#\n# SWAT \n#"
   cd $DISTR_BASE
   list=`find swat -type d | grep -v "/CVS$"`
@@ -119,6 +110,13 @@ add_dynamic_entries()
   do
     echo "f none samba/$i=$i 0644 root other"
   done
+  # add the .msg files for SWAT
+  echo "#\n# msg files \n#"
+    for file in $DISTR_BASE/source/po/*.msg ; do
+      bfile=`basename $file`
+      echo f none /usr/local/samba/lib/$bfile=source/po/$bfile
+    done
+
   echo "#\n# HTML documentation for SWAT\n#"
   cd $DISTR_BASE/docs/htmldocs
   for htmldoc in *
