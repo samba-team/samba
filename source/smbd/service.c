@@ -192,10 +192,14 @@ static int server_destructor(void *ptr)
 
 	socket_destroy(conn->socket);
 
-	event_remove_fd(conn->event.ctx, conn->event.fde);
-	conn->event.fde = NULL;
-	event_remove_timed(conn->event.ctx, conn->event.idle);
-	conn->event.idle = NULL;
+	if (conn->event.fde) {
+		event_remove_fd(conn->event.ctx, conn->event.fde);
+		conn->event.fde = NULL;
+	}
+	if (conn->event.idle) {
+		event_remove_timed(conn->event.ctx, conn->event.idle);
+		conn->event.idle = NULL;
+	}
 
 	DLIST_REMOVE(conn->server_socket->connection_list, conn);
 
