@@ -681,7 +681,7 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 		*unix_groups = Realloc(unix_groups, sizeof(gid_t) * n_unix_groups);
 		if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
 			DEBUG(0, ("get_user_groups_from_local_sam: failed to get the unix group list\n"));
-			SAFE_FREE(unix_groups);
+			SAFE_FREE(*unix_groups);
 			passwd_free(&usr);
 			return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */
 		}
@@ -695,7 +695,7 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 		*groups   = malloc(sizeof(DOM_SID) * n_unix_groups);
 		if (!*groups) {
 			DEBUG(0, ("get_user_group_from_local_sam: malloc() failed for DOM_SID list!\n"));
-			SAFE_FREE(unix_groups);
+			SAFE_FREE(*unix_groups);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -704,9 +704,9 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 
 	for (i = 0; i < *n_groups; i++) {
 		if (!gid_to_sid(&(*groups)[i], (*unix_groups)[i])) {
-			DEBUG(1, ("get_user_groups_from_local_sam: failed to convert gid %ld to a sid!\n", (long int)unix_groups[i+1]));
-			SAFE_FREE(groups);
-			SAFE_FREE(unix_groups);
+			DEBUG(1, ("get_user_groups_from_local_sam: failed to convert gid %ld to a sid!\n", (long int)(*unix_groups)[i+1]));
+			SAFE_FREE(*groups);
+			SAFE_FREE(*unix_groups);
 			return NT_STATUS_NO_SUCH_USER;
 		}
 	}
