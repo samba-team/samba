@@ -54,7 +54,7 @@ strerror(int eno)
     static char emsg[1024];
 
     if(eno < 0 || eno >= sys_nerr)
-	sprintf(emsg, "Error %d occurred.", eno);
+	snprintf(emsg, sizeof(emsg), "Error %d occurred.", eno);
     else
 	strcpy(emsg, sys_errlist[eno]);
 

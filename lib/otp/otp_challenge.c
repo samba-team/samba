@@ -65,7 +65,9 @@ otp_challenge (OtpContext *ctx, char *user, char *str, size_t len)
   otp_db_close (dbm);
   if (ret)
     return ret;
-  sprintf (str, "[ otp-%s %u %s ]", ctx->alg->name, ctx->n-1, ctx->seed);
+  snprintf (str, len,
+	    "[ otp-%s %u %s ]",
+	    ctx->alg->name, ctx->n-1, ctx->seed);
   ctx->challengep = 1;
   return 0;
 }

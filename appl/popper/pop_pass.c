@@ -49,7 +49,8 @@ pop_pass (POP *p)
 			      "Password supplied for \"%s\" is incorrect.",
 			      p->user));
 
-	 sprintf (tkt, TKT_ROOT "_popper.%d", (int)getpid());
+	 snprintf (tkt, sizeof(tkt),
+		   TKT_ROOT "_popper.%u", (unsigned)getpid());
 	 krb_set_tkt_string (tkt);
 	 if (otp_verify_user (&p->otp_ctx, p->pop_parm[1]) == 0)
 	     ;
@@ -78,7 +79,7 @@ pop_pass (POP *p)
     }
 
     /*  Build the name of the user's maildrop */
-    sprintf(p->drop_name, "%s/%s", POP_MAILDIR, p->user);
+    snprintf(p->drop_name, sizeof(p->drop_name), "%s/%s", POP_MAILDIR, p->user);
 
     /*  Make a temporary copy of the user's maildrop */
     /*    and set the group and user id */

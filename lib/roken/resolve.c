@@ -97,6 +97,7 @@ dns_free_data(struct dns_reply *r)
 	rr = rr->next;
 	free(tmp);
     }
+    free (r);
 }
 
 static struct dns_reply*

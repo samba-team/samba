@@ -64,7 +64,9 @@ afs_verify(char *name,
 
   if (krb_get_lrealm (lrealm, 1) != KFAILURE &&
       (pwd = k_getpwnam (name)) != NULL) {
-    sprintf (tkt_string, "%s%d_%d", TKT_ROOT, (int)pwd->pw_uid, (int)getpid());
+    snprintf (tkt_string, sizeof(tkt_string),
+	      "%s%d_%d", TKT_ROOT,
+	      (unsigned)pwd->pw_uid, (unsigned)getpid());
     krb_set_tkt_string (tkt_string);
     ret = krb_verify_user (name, "", lrealm, password, 1, NULL);
     if (ret == KSUCCESS) {

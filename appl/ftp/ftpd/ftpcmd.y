@@ -1288,11 +1288,10 @@ copy(char *s)
 {
 	char *p;
 
-	p = malloc((unsigned) strlen(s) + 1);
+	p = strdup(s);
 	if (p == NULL)
 		fatal("Ran out of memory.");
-	strcpy(p, s);
-	return (p);
+	return p;
 }
 
 static void
@@ -1327,11 +1326,11 @@ help(struct tab *ctab, char *s)
 			columns = 1;
 		lines = (NCMDS + columns - 1) / columns;
 		for (i = 0; i < lines; i++) {
-		    sprintf(buf, "   ");
+		    strcpy (buf, "   ");
 		    for (j = 0; j < columns; j++) {
 			c = ctab + j * lines + i;
-			sprintf(buf + strlen(buf), "%s%c", c->name,
-				c->implemented ? ' ' : '*');
+			snprintf (buf + strlen(buf), sizeof(buf) - strlen(buf),
+				  "%s%c", c->name, c->implemented ? ' ' : '*');
 			if (c + lines >= &ctab[NCMDS])
 			    break;
 			w = strlen(c->name) + 1;

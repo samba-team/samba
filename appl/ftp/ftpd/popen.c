@@ -86,10 +86,11 @@ ftp_rooted(const char *path)
     static char home[MaxPathLen] = "";
     static char newpath[MaxPathLen];
     struct passwd *pwd;
+
     if(!home[0])
 	if((pwd = k_getpwnam("ftp")))
 	    strcpy(home, pwd->pw_dir);
-    sprintf(newpath, "%s/%s", home, path);
+    snprintf(newpath, sizeof(newpath), "%s/%s", home, path);
     if(access(newpath, X_OK))
 	strcpy(newpath, path);
     return newpath;

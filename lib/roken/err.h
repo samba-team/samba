@@ -49,7 +49,7 @@
 
 extern const char *__progname;
 
-#ifndef __GNUC__
+#if !defined(__GNUC__) && !defined(__attribute__)
 #define __attribute__(x)
 #endif
 

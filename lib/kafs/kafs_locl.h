@@ -83,6 +83,7 @@
 #ifdef HAVE_RESOLV_H
 #include <resolv.h>
 #endif
+#include <roken.h>
 
 #include <krb.h>
 #include <kafs.h>

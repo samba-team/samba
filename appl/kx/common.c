@@ -159,7 +159,8 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 	     err (1, "socket AF_UNIX");
 	 memset (&unixaddr, 0, sizeof(unixaddr));
 	 unixaddr.sun_family = AF_UNIX;
-	 sprintf (unixaddr.sun_path, X_UNIX_PATH "%u", dpy);
+	 snprintf (unixaddr.sun_path, sizeof(unixaddr.sun_path),
+		   X_UNIX_PATH "%u", dpy);
 	 if(bind(unixfd,
 		 (struct sockaddr *)&unixaddr,
 		 sizeof(unixaddr)) < 0) {
@@ -225,7 +226,8 @@ connect_local_xsocket (unsigned dnr)
      if (fd < 0)
 	 err (1, "socket AF_UNIX");
      addr.sun_family = AF_UNIX;
-     sprintf (addr.sun_path, "/tmp/.X11-unix/X%u", dnr);
+     snprintf (addr.sun_path, sizeof(addr.sun_path),
+	       X_UNIX_PATH "%u", dnr);
      if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	 err (1, "connect");
      return fd;
@@ -249,7 +251,7 @@ create_and_write_cookie (char *xauthfile,
      auth.family = FamilyLocal;
      auth.address = hostname;
      auth.address_length = strlen(auth.address);
-     sprintf (tmp, "%d", display_num);
+     snprintf (tmp, sizeof(tmp), "%d", display_num);
      auth.number_length = strlen(tmp);
      auth.number = tmp;
      auth.name = COOKIE_TYPE;

@@ -24,10 +24,8 @@ pop_msg(POP *p, int stat, char *format, ...)
     mp = message;
 
     /*  Format the POP status code at the beginning of the message */
-    if (stat == POP_SUCCESS)
-        sprintf (mp,"%s ",POP_OK);
-    else
-        sprintf (mp,"%s ",POP_ERR);
+    snprintf (mp, sizeof(message), "%s ",
+	      (stat == POP_SUCCESS) ? POP_OK : POP_ERR);
 
     /*  Point past the POP status indicator in the message message */
     mp += strlen(mp);

@@ -208,11 +208,11 @@ login(char *host)
 	    char prompt[128];
 	    if(myname && 
 	       (!strcmp(user, "ftp") || !strcmp(user, "anonymous"))){
-		sprintf(defaultpass, "%s@%s", myname, mydomain);
-		sprintf(prompt, "Password (%s): ", defaultpass);
+		snprintf(defaultpass, sizeof(defaultpass), "%s@%s", myname, mydomain);
+		snprintf(prompt, sizeof(prompt), "Password (%s): ", defaultpass);
 	    }else{
 		strcpy(defaultpass, "");
-		sprintf(prompt, "Password: ");
+		snprintf(prompt, sizeof(prompt), "Password: ");
 	    }
 	    pass = defaultpass;
 	    des_read_pw_string (tmp, sizeof(tmp), prompt, 0);
@@ -1140,15 +1140,11 @@ abort:
 int
 initconn(void)
 {
-    char *p, *a;
     int result, len, tmpno = 0;
     int on = 1;
     int a0, a1, a2, a3, p0, p1;
 
     if (passivemode) {
-	u_int32_t tmpaddr;
-	u_int16_t tmpport;
-
 	data = socket(AF_INET, SOCK_STREAM, 0);
 	if (data < 0) {
 	    perror("ftp: socket");
@@ -1644,7 +1640,7 @@ abort_remote(FILE *din)
      * send IAC in urgent mode instead of DM because 4.3BSD places oob mark
      * after urgent byte rather than before as is protocol now
      */
-    sprintf(buf, "%c%c%c", IAC, IP, IAC);
+    snprintf(buf, sizeof(buf), "%c%c%c", IAC, IP, IAC);
     if (send(fileno(cout), buf, 3, MSG_OOB) != 3)
 	warn("abort");
     fprintf(cout,"%cABOR\r\n", DM);

@@ -101,7 +101,7 @@ void kauth(int argc, char **argv)
     for(; *p && *p != ' ' && *p != '\r' && *p != '\n'; p++);
     *p = 0;
     
-    sprintf(buf, "Password for %s:", name);
+    snprintf(buf, sizeof(buf), "Password for %s:", name);
     if (des_read_pw_string (passwd, sizeof(passwd)-1, buf, 0))
         *passwd = '\0';
     des_string_to_key (passwd, &key);

@@ -60,12 +60,10 @@ setenv(const char *var, const char *val, int rewrite)
     if (!rewrite && getenv(var) != 0)
 	return 0;
   
-    if ((t = malloc(strlen(var) + strlen(val) + 2)) == 0)
+    asprintf (&t, "%s=%s", var, val);
+    if (t == NULL)
 	return -1;
 
-    strcpy(t, var);
-    strcat(t, "=");
-    strcat(t, val);
     if (putenv(t) == 0)
 	return 0;
     else

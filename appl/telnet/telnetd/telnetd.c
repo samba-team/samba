@@ -750,10 +750,10 @@ void doit(struct sockaddr_in *who)
 	if (secflag) {
 		char slave_dev[16];
 
-		sprintf(tty_dev, "/dev/pty/%03d", ptynum);
+		snprintf(tty_dev, sizeof(tty_dev), "/dev/pty/%03d", ptynum);
 		if (setdevs(tty_dev, &dv) < 0)
 		 	fatal(net, "cannot set pty security");
-		sprintf(slave_dev, "/dev/ttyp%03d", ptynum);
+		snprintf(slave_dev, sizeof(slave_dev), "/dev/ttyp%03d", ptynum);
 		if (setdevs(slave_dev, &dv) < 0)
 		 	fatal(net, "cannot set tty security");
 	}
@@ -936,7 +936,8 @@ telnet(f, p)
 	 */
 	if (his_want_state_is_will(TELOPT_ECHO)) {
 		DIAG(TD_OPTIONS,
-			{sprintf(nfrontp, "td: simulating recv\r\n");
+			{snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+				  "td: simulating recv\r\n");
 			 nfrontp += strlen(nfrontp);});
 		willoption(TELOPT_ECHO);
 	}
@@ -1051,7 +1052,8 @@ telnet(f, p)
 #endif	/* LINEMODE */
 
 	DIAG(TD_REPORT,
-		{sprintf(nfrontp, "td: Entering processing loop\r\n");
+		{snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+			  "td: Entering processing loop\r\n");
 		 nfrontp += strlen(nfrontp);});
 
 
@@ -1171,7 +1173,8 @@ telnet(f, p)
 			netip = netibuf;
 		    }
 		    DIAG((TD_REPORT | TD_NETDATA),
-			    {sprintf(nfrontp, "td: netread %d chars\r\n", ncc);
+			    {snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+				     "td: netread %d chars\r\n", ncc);
 			     nfrontp += strlen(nfrontp);});
 		    DIAG(TD_NETDATA, printdata("nd", netip, ncc));
 		}
@@ -1235,12 +1238,14 @@ telnet(f, p)
 					    ptyibuf[0] & TIOCPKT_DOSTOP ? 1 : 0;
 					if (newflow != flowmode) {
 						flowmode = newflow;
-						sprintf(nfrontp,
-							"%c%c%c%c%c%c",
-							IAC, SB, TELOPT_LFLOW,
-							flowmode ? LFLOW_ON
+						snprintf(nfrontp,
+							 BUFSIZ -
+							 (nfrontp - netobuf),
+							 "%c%c%c%c%c%c",
+							 IAC, SB, TELOPT_LFLOW,
+							 flowmode ? LFLOW_ON
 								 : LFLOW_OFF,
-							IAC, SE);
+							 IAC, SE);
 						nfrontp += 6;
 						DIAG(TD_OPTIONS, printsub('>',
 						    (unsigned char *)nfrontp-4,

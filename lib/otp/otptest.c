@@ -46,13 +46,14 @@ RCSID("$Id$");
 #include <otp.h>
 
 static int
-test_one(OtpKey key1, char *name, char *val, void (*print)(OtpKey,char*),
+test_one(OtpKey key1, char *name, char *val,
+	 void (*print)(OtpKey,char*, size_t),
 	 OtpAlgorithm *alg)
 {
   char buf[256];
   OtpKey key2;
 
-  (*print)(key1, buf);
+  (*print)(key1, buf, sizeof(buf));
   printf ("%s: %s, ", name, buf);
   if (strcmp (buf, val) != 0) {
     printf ("failed(*%s* != *%s*)\n", buf, val);

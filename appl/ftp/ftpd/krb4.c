@@ -175,8 +175,8 @@ int krb4_mic(char *msg)
 	return -1;
     }
     
-    tmp = strdup(msg);
-    sprintf(tmp, "%.*s", (int)m_data.app_length, m_data.app_data);
+    tmp = malloc(strlen(msg) + 1);
+    snprintf(tmp, strlen(msg) + 1, "%.*s", (int)m_data.app_length, m_data.app_data);
     if(!strstr(tmp, "\r\n"))
 	strcat(tmp, "\r\n");
     new_ftp_command(tmp);
@@ -217,7 +217,7 @@ int krb4_enc(char *msg)
     }
     
     tmp = strdup(msg);
-    sprintf(tmp, "%.*s", (int)m_data.app_length, m_data.app_data);
+    snprintf(tmp, strlen(msg) + 1, "%.*s", (int)m_data.app_length, m_data.app_data);
     if(!strstr(tmp, "\r\n"))
 	strcat(tmp, "\r\n");
     new_ftp_command(tmp);

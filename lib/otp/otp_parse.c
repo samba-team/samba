@@ -2183,7 +2183,7 @@ parse_words(unsigned wn[],
   return 0;
 }
 
-static
+static int
 otp_parse_internal (OtpKey key, char *str, OtpAlgorithm *alg,
 		    int (*convert)(char *, void *))
 {

@@ -301,7 +301,8 @@ main(int argc, char **argv)
 
 	/* detach from any tickets and tokens */
 
-	sprintf(tkfile, "/tmp/ftp_%u", (unsigned int)getpid());
+	snprintf(tkfile, sizeof(tkfile),
+		 "/tmp/ftp_%u", (unsigned)getpid());
 	krb_set_tkt_string(tkfile);
 	if(k_hasafs())
 	    k_setpag();
@@ -412,7 +413,7 @@ main(int argc, char **argv)
 	debug = 0;
 
 	/* set this here so it can be put in wtmp */
-	sprintf(ttyline, "ftp%u", (unsigned)getpid());
+	snprintf(ttyline, sizeof(ttyline), "ftp%u", (unsigned)getpid());
 
 
 	/*	freopen(_PATH_DEVNULL, "w", stderr); */
@@ -493,15 +494,14 @@ lostconn(int signo)
 static char *
 sgetsave(char *s)
 {
-	char *new = malloc((unsigned) strlen(s) + 1);
+	char *new = strdup(s);
 
 	if (new == NULL) {
 		perror_reply(421, "Local resource failure: malloc");
 		dologout(1);
 		/* NOTREACHED */
 	}
-	strcpy(new, s);
-	return (new);
+	return new;
 }
 
 /*
@@ -785,10 +785,10 @@ int do_login(int code, char *passwd)
 	if (guest) {
 		reply(code, "Guest login ok, access restrictions apply.");
 #ifdef HAVE_SETPROCTITLE
-		sprintf(proctitle, "%s: anonymous/%.*s", remotehost,
-		    sizeof(proctitle) - sizeof(remotehost) -
-		    sizeof(": anonymous/"), passwd);
-		setproctitle(proctitle);
+		snprintf (proctitle, sizeof(proctitle),
+			  "%s: anonymous/%s",
+			  remotehost,
+			  passwd);
 #endif /* HAVE_SETPROCTITLE */
 		if (logging)
 			syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s(%s), %s",
@@ -798,7 +798,7 @@ int do_login(int code, char *passwd)
 	} else {
 		reply(code, "User %s logged in.", pw->pw_name);
 #ifdef HAVE_SETPROCTITLE
-		sprintf(proctitle, "%s: %s", remotehost, pw->pw_name);
+		snprintf(proctitle, sizeof(proctitle), "%s: %s", remotehost, pw->pw_name);
 		setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
 		if (logging)
@@ -943,15 +943,9 @@ retrieve(char *cmd, char *name)
 			char *tail = name + strlen(name) - strlen(p->ext);
 			
 			if(strcmp(tail, p->ext) == 0){
-			    strncpy(line, p->cmd, sizeof(line));
-			    line[sizeof(line) - 1] = '\0';
-			    strncat(line, name, sizeof(line)-strlen(line));
-			    line[sizeof(line) - 1] = '\0';
-			    line[strlen(line) - strlen(p->ext)] = 0; 
-#if 0
-			    sprintf(line, p->cmd, name);
-			    /* XXX */
-#endif
+			    snprintf (line, sizeof(line),
+				      "%s%s",
+				      p->cmd, name);
 			    break;
 			}
 		    }
@@ -966,7 +960,8 @@ retrieve(char *cmd, char *name)
 		    }
 		}
 	} else {
-		sprintf(line, cmd, name), name = line;
+		snprintf(line, sizeof(line), cmd, name);
+		name = line;
 		fin = ftpd_popen(line, "r", 1, 0);
 		closefunc = ftpd_pclose;
 		st.st_size = -1;
@@ -1183,7 +1178,7 @@ dataconn(char *name, off_t size, char *mode)
 	file_size = size;
 	byte_count = 0;
 	if (size != (off_t) -1)
-		sprintf(sizebuf, " (%ld bytes)", size);
+		snprintf(sizebuf, sizeof(sizebuf), " (%ld bytes)", size);
 	else
 		strcpy(sizebuf, "");
 	if (pdata >= 0) {
@@ -1448,7 +1443,7 @@ statfilecmd(char *filename)
 	int c;
 	char line[LINE_MAX];
 
-	sprintf(line, "/bin/ls -la %s", filename);
+	snprintf(line, sizeof(line), "/bin/ls -la %s", filename);
 	fin = ftpd_popen(line, "r", 1, 0);
 	lreply(211, "status of %s:", filename);
 	while ((c = getc(fin)) != EOF) {
@@ -1544,12 +1539,12 @@ int_reply(int n, char *c, const char *fmt, va_list ap)
   char *p;
   p=buf;
   if(n){
-      sprintf(p, "%d%s", n, c);
+      snprintf(p, sizeof(buf), "%d%s", n, c);
       p+=strlen(p);
   }
-  vsprintf(p, fmt, ap);
+  vsnprintf(p, sizeof(buf) - strlen(p), fmt, ap);
   p+=strlen(p);
-  sprintf(p, "\r\n");
+  snprintf(p, sizeof(buf) - strlen(p), "\r\n");
   p+=strlen(p);
   auth_printf("%s", buf);
   fflush(stdout);
@@ -1719,7 +1714,7 @@ dolog(struct sockaddr_in *sin)
 {
 	inaddr2str (sin->sin_addr, remotehost, sizeof(remotehost));
 #ifdef HAVE_SETPROCTITLE
-	sprintf(proctitle, "%s: connected", remotehost);
+	snprintf(proctitle, sizeof(proctitle), "%s: connected", remotehost);
 	setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
 
@@ -1867,11 +1862,8 @@ gunique(char *local)
 	}
 	if (cp)
 		*cp = '/';
-	strcpy(new, local);
-	cp = new + strlen(new);
-	*cp++ = '.';
 	for (count = 1; count < 100; count++) {
-		sprintf(cp, "%d", count);
+		snprintf (new, sizeof(new), "%s.%d", local, count);
 		if (stat(new, &st) < 0)
 			return (new);
 	}
@@ -1958,7 +1950,7 @@ send_file_list(char *whichf)
 	  goto out;
 	transflag++;
       }
-      sprintf(buf, "%s%s\n", dirname,
+      snprintf(buf, sizeof(buf), "%s%s\n", dirname,
 	      type == TYPE_A ? "\r" : "");
       auth_write(fileno(dout), buf, strlen(buf));
       byte_count += strlen(dirname) + 1;
@@ -1977,7 +1969,7 @@ send_file_list(char *whichf)
       if (!strcmp(dir->d_name, ".."))
 	continue;
 
-      sprintf(nbuf, "%s/%s", dirname, dir->d_name);
+      snprintf(nbuf, sizeof(nbuf), "%s/%s", dirname, dir->d_name);
 
       /*
        * We have to do a stat to insure it's
@@ -1992,11 +1984,11 @@ send_file_list(char *whichf)
 	  transflag++;
 	}
 	if(strncmp(nbuf, "./", 2) == 0)
-	  sprintf(buf, "%s%s\n", nbuf +2,
-		  type == TYPE_A ? "\r" : "");
+	  snprintf(buf, sizeof(buf), "%s%s\n", nbuf +2,
+		   type == TYPE_A ? "\r" : "");
 	else
-	  sprintf(buf, "%s%s\n", nbuf,
-		  type == TYPE_A ? "\r" : "");
+	  snprintf(buf, sizeof(buf), "%s%s\n", nbuf,
+		   type == TYPE_A ? "\r" : "");
 	auth_write(fileno(dout), buf, strlen(buf));
 	byte_count += strlen(nbuf) + 1;
       }
@@ -2031,7 +2023,11 @@ find(char *pattern)
 {
     char line[1024];
     FILE *f;
-    sprintf(line, "/bin/locate -d %s %s", ftp_rooted("/etc/locatedb"), pattern);
+
+    snprintf(line, sizeof(line),
+	     "/bin/locate -d %s %s",
+	     ftp_rooted("/etc/locatedb"),
+	     pattern);
     f = ftpd_popen(line, "r", 1, 1);
     if(f == NULL){
 	perror_reply(550, "/bin/locate");

@@ -63,7 +63,8 @@ ttloop(void)
 {
     void netflush(void);
 
-    DIAG(TD_REPORT, {sprintf(nfrontp, "td: ttloop\r\n");
+    DIAG(TD_REPORT, {snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+			      "td: ttloop\r\n");
 		     nfrontp += strlen(nfrontp);});
     if (nfrontp-nbackp) {
 	netflush();
@@ -76,7 +77,8 @@ ttloop(void)
 	syslog(LOG_INFO, "ttloop:  peer died: %m\n");
 	exit(1);
     }
-    DIAG(TD_REPORT, {sprintf(nfrontp, "td: ttloop read %d chars\r\n", ncc);
+    DIAG(TD_REPORT, {snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+			      "td: ttloop read %d chars\r\n", ncc);
 		     nfrontp += strlen(nfrontp);});
     netip = netibuf;
     telrcv();			/* state machine */
@@ -120,7 +122,9 @@ ptyflush(void)
 
 	if ((n = pfrontp - pbackp) > 0) {
 		DIAG((TD_REPORT | TD_PTYDATA),
-			{ sprintf(nfrontp, "td: ptyflush %d chars\r\n", n);
+			{ snprintf(nfrontp,
+				   BUFSIZ - (nfrontp - netobuf),
+				   "td: ptyflush %d chars\r\n", n);
 			  nfrontp += strlen(nfrontp); });
 		DIAG(TD_PTYDATA, printdata("pd", pbackp, n));
 		n = write(ourpty, pbackp, n);
@@ -252,7 +256,8 @@ netflush(void)
 
     if ((n = nfrontp - nbackp) > 0) {
 	DIAG(TD_REPORT,
-	    { sprintf(nfrontp, "td: netflush %d chars\r\n", n);
+	    { snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+		       "td: netflush %d chars\r\n", n);
 	      n += strlen(nfrontp);  /* get count first */
 	      nfrontp += strlen(nfrontp);  /* then move pointer */
 	    });
@@ -346,7 +351,7 @@ void fatal(int f, char *msg)
 {
 	char buf[BUFSIZ];
 
-	sprintf(buf, "telnetd: %s.\r\n", msg);
+	snprintf(buf, sizeof(buf), "telnetd: %s.\r\n", msg);
 #if	defined(ENCRYPTION)
 	if (encrypt_output) {
 		/*
@@ -365,9 +370,9 @@ void fatal(int f, char *msg)
 	void
 fatalperror(int f, char *msg)
 {
-	char buf[BUFSIZ], *strerror(int);
+	char buf[BUFSIZ];
 
-	sprintf(buf, "%s: %s", msg, strerror(errno));
+	snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(errno));
 	fatal(f, buf);
 }
 
@@ -520,11 +525,23 @@ void putf(char *cp, char *where)
 printoption(char *fmt, int option)
 {
 	if (TELOPT_OK(option))
-		sprintf(nfrontp, "%s %s\r\n", fmt, TELOPT(option));
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s %s\r\n",
+			 fmt,
+			 TELOPT(option));
 	else if (TELCMD_OK(option))
-		sprintf(nfrontp, "%s %s\r\n", fmt, TELCMD(option));
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s %s\r\n",
+			 fmt,
+			 TELCMD(option));
 	else
-		sprintf(nfrontp, "%s %d\r\n", fmt, option);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s %d\r\n",
+			 fmt,
+			 option);
 	nfrontp += strlen(nfrontp);
 	return;
 }
@@ -542,8 +559,10 @@ printsub(int direction, unsigned char *pointer, int length)
 		return;
 
 	if (direction) {
-	    sprintf(nfrontp, "td: %s suboption ",
-					direction == '<' ? "recv" : "send");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "td: %s suboption ",
+		     direction == '<' ? "recv" : "send");
 	    nfrontp += strlen(nfrontp);
 	    if (length >= 3) {
 		int j;
@@ -552,72 +571,121 @@ printsub(int direction, unsigned char *pointer, int length)
 		j = pointer[length-1];
 
 		if (i != IAC || j != SE) {
-		    sprintf(nfrontp, "(terminated by ");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "(terminated by ");
 		    nfrontp += strlen(nfrontp);
 		    if (TELOPT_OK(i))
-			sprintf(nfrontp, "%s ", TELOPT(i));
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%s ",
+				 TELOPT(i));
 		    else if (TELCMD_OK(i))
-			sprintf(nfrontp, "%s ", TELCMD(i));
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%s ",
+				 TELCMD(i));
 		    else
-			sprintf(nfrontp, "%d ", i);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%d ",
+				 i);
 		    nfrontp += strlen(nfrontp);
 		    if (TELOPT_OK(j))
-			sprintf(nfrontp, "%s", TELOPT(j));
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%s",
+				 TELOPT(j));
 		    else if (TELCMD_OK(j))
-			sprintf(nfrontp, "%s", TELCMD(j));
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%s",
+				 TELCMD(j));
 		    else
-			sprintf(nfrontp, "%d", j);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%d",
+				 j);
 		    nfrontp += strlen(nfrontp);
-		    sprintf(nfrontp, ", not IAC SE!) ");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     ", not IAC SE!) ");
 		    nfrontp += strlen(nfrontp);
 		}
 	    }
 	    length -= 2;
 	}
 	if (length < 1) {
-	    sprintf(nfrontp, "(Empty suboption??\?)");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "(Empty suboption??\?)");
 	    nfrontp += strlen(nfrontp);
 	    return;
 	}
 	switch (pointer[0]) {
 	case TELOPT_TTYPE:
-	    sprintf(nfrontp, "TERMINAL-TYPE ");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "TERMINAL-TYPE ");
 	    nfrontp += strlen(nfrontp);
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
-		sprintf(nfrontp, "IS \"%.*s\"", length-2, (char *)pointer+2);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "IS \"%.*s\"",
+			 length-2,
+			 (char *)pointer+2);
 		break;
 	    case TELQUAL_SEND:
-		sprintf(nfrontp, "SEND");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "SEND");
 		break;
 	    default:
-		sprintf(nfrontp,
-				"- unknown qualifier %d (0x%x).",
-				pointer[1], pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "- unknown qualifier %d (0x%x).",
+			 pointer[1], pointer[1]);
 	    }
 	    nfrontp += strlen(nfrontp);
 	    break;
 	case TELOPT_TSPEED:
-	    sprintf(nfrontp, "TERMINAL-SPEED");
+	    snprintf(nfrontp,
+		    BUFSIZ - (nfrontp - netobuf),
+		    "TERMINAL-SPEED");
 	    nfrontp += strlen(nfrontp);
 	    if (length < 2) {
-		sprintf(nfrontp, " (empty suboption??\?)");
+		snprintf(nfrontp,
+			BUFSIZ - (nfrontp - netobuf),
+			" (empty suboption??\?)");
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
-		sprintf(nfrontp, " IS %.*s", length-2, (char *)pointer+2);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " IS %.*s",
+			 length-2,
+			 (char *)pointer+2);
 		nfrontp += strlen(nfrontp);
 		break;
 	    default:
 		if (pointer[1] == 1)
-		    sprintf(nfrontp, " SEND");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " SEND");
 		else
-		    sprintf(nfrontp, " %d (unknown)", pointer[1]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " %d (unknown)",
+			     pointer[1]);
 		nfrontp += strlen(nfrontp);
 		for (i = 2; i < length; i++) {
-		    sprintf(nfrontp, " ?%d?", pointer[i]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " ?%d?",
+			     pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		}
 		break;
@@ -625,105 +693,169 @@ printsub(int direction, unsigned char *pointer, int length)
 	    break;
 
 	case TELOPT_LFLOW:
-	    sprintf(nfrontp, "TOGGLE-FLOW-CONTROL");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "TOGGLE-FLOW-CONTROL");
 	    nfrontp += strlen(nfrontp);
 	    if (length < 2) {
-		sprintf(nfrontp, " (empty suboption??\?)");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " (empty suboption??\?)");
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
 	    switch (pointer[1]) {
 	    case LFLOW_OFF:
-		sprintf(nfrontp, " OFF"); break;
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " OFF");
+		break;
 	    case LFLOW_ON:
-		sprintf(nfrontp, " ON"); break;
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " ON");
+		break;
 	    case LFLOW_RESTART_ANY:
-		sprintf(nfrontp, " RESTART-ANY"); break;
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " RESTART-ANY");
+		break;
 	    case LFLOW_RESTART_XON:
-		sprintf(nfrontp, " RESTART-XON"); break;
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " RESTART-XON");
+		break;
 	    default:
-		sprintf(nfrontp, " %d (unknown)", pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " %d (unknown)",
+			 pointer[1]);
 	    }
 	    nfrontp += strlen(nfrontp);
 	    for (i = 2; i < length; i++) {
-		sprintf(nfrontp, " ?%d?", pointer[i]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " ?%d?",
+			 pointer[i]);
 		nfrontp += strlen(nfrontp);
 	    }
 	    break;
 
 	case TELOPT_NAWS:
-	    sprintf(nfrontp, "NAWS");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "NAWS");
 	    nfrontp += strlen(nfrontp);
 	    if (length < 2) {
-		sprintf(nfrontp, " (empty suboption??\?)");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " (empty suboption??\?)");
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
 	    if (length == 2) {
-		sprintf(nfrontp, " ?%d?", pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " ?%d?",
+			 pointer[1]);
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
-	    sprintf(nfrontp, " %d %d (%d)",
-		pointer[1], pointer[2],
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     " %d %d (%d)",
+		     pointer[1],
+		     pointer[2],
 		(int)((((unsigned int)pointer[1])<<8)|((unsigned int)pointer[2])));
 	    nfrontp += strlen(nfrontp);
 	    if (length == 4) {
-		sprintf(nfrontp, " ?%d?", pointer[3]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " ?%d?",
+			 pointer[3]);
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
-	    sprintf(nfrontp, " %d %d (%d)",
-		pointer[3], pointer[4],
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     " %d %d (%d)",
+		     pointer[3], pointer[4],
 		(int)((((unsigned int)pointer[3])<<8)|((unsigned int)pointer[4])));
 	    nfrontp += strlen(nfrontp);
 	    for (i = 5; i < length; i++) {
-		sprintf(nfrontp, " ?%d?", pointer[i]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " ?%d?",
+			 pointer[i]);
 		nfrontp += strlen(nfrontp);
 	    }
 	    break;
 
 	case TELOPT_LINEMODE:
-	    sprintf(nfrontp, "LINEMODE ");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "LINEMODE ");
 	    nfrontp += strlen(nfrontp);
 	    if (length < 2) {
-		sprintf(nfrontp, " (empty suboption??\?)");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " (empty suboption??\?)");
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
 	    switch (pointer[1]) {
 	    case WILL:
-		sprintf(nfrontp, "WILL ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "WILL ");
 		goto common;
 	    case WONT:
-		sprintf(nfrontp, "WONT ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "WONT ");
 		goto common;
 	    case DO:
-		sprintf(nfrontp, "DO ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "DO ");
 		goto common;
 	    case DONT:
-		sprintf(nfrontp, "DONT ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "DONT ");
 	    common:
 		nfrontp += strlen(nfrontp);
 		if (length < 3) {
-		    sprintf(nfrontp, "(no option??\?)");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "(no option??\?)");
 		    nfrontp += strlen(nfrontp);
 		    break;
 		}
 		switch (pointer[2]) {
 		case LM_FORWARDMASK:
-		    sprintf(nfrontp, "Forward Mask");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "Forward Mask");
 		    nfrontp += strlen(nfrontp);
 		    for (i = 3; i < length; i++) {
-			sprintf(nfrontp, " %x", pointer[i]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " %x", pointer[i]);
 			nfrontp += strlen(nfrontp);
 		    }
 		    break;
 		default:
-		    sprintf(nfrontp, "%d (unknown)", pointer[2]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "%d (unknown)",
+			     pointer[2]);
 		    nfrontp += strlen(nfrontp);
 		    for (i = 3; i < length; i++) {
-			sprintf(nfrontp, " %d", pointer[i]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " %d",
+				 pointer[i]);
 			nfrontp += strlen(nfrontp);
 		    }
 		    break;
@@ -731,80 +863,129 @@ printsub(int direction, unsigned char *pointer, int length)
 		break;
 
 	    case LM_SLC:
-		sprintf(nfrontp, "SLC");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "SLC");
 		nfrontp += strlen(nfrontp);
 		for (i = 2; i < length - 2; i += 3) {
 		    if (SLC_NAME_OK(pointer[i+SLC_FUNC]))
-			sprintf(nfrontp, " %s", SLC_NAME(pointer[i+SLC_FUNC]));
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " %s",
+				 SLC_NAME(pointer[i+SLC_FUNC]));
 		    else
-			sprintf(nfrontp, " %d", pointer[i+SLC_FUNC]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " %d",
+				 pointer[i+SLC_FUNC]);
 		    nfrontp += strlen(nfrontp);
 		    switch (pointer[i+SLC_FLAGS]&SLC_LEVELBITS) {
 		    case SLC_NOSUPPORT:
-			sprintf(nfrontp, " NOSUPPORT"); break;
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " NOSUPPORT"); break;
 		    case SLC_CANTCHANGE:
-			sprintf(nfrontp, " CANTCHANGE"); break;
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " CANTCHANGE"); break;
 		    case SLC_VARIABLE:
-			sprintf(nfrontp, " VARIABLE"); break;
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " VARIABLE");
+			break;
 		    case SLC_DEFAULT:
-			sprintf(nfrontp, " DEFAULT"); break;
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " DEFAULT");
+			break;
 		    }
 		    nfrontp += strlen(nfrontp);
-		    sprintf(nfrontp, "%s%s%s",
-			pointer[i+SLC_FLAGS]&SLC_ACK ? "|ACK" : "",
-			pointer[i+SLC_FLAGS]&SLC_FLUSHIN ? "|FLUSHIN" : "",
-			pointer[i+SLC_FLAGS]&SLC_FLUSHOUT ? "|FLUSHOUT" : "");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "%s%s%s",
+			     pointer[i+SLC_FLAGS]&SLC_ACK ? "|ACK" : "",
+			     pointer[i+SLC_FLAGS]&SLC_FLUSHIN ? "|FLUSHIN" : "",
+			     pointer[i+SLC_FLAGS]&SLC_FLUSHOUT ? "|FLUSHOUT" : "");
 		    nfrontp += strlen(nfrontp);
 		    if (pointer[i+SLC_FLAGS]& ~(SLC_ACK|SLC_FLUSHIN|
 						SLC_FLUSHOUT| SLC_LEVELBITS)) {
-			sprintf(nfrontp, "(0x%x)", pointer[i+SLC_FLAGS]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "(0x%x)",
+				 pointer[i+SLC_FLAGS]);
 			nfrontp += strlen(nfrontp);
 		    }
-		    sprintf(nfrontp, " %d;", pointer[i+SLC_VALUE]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " %d;",
+			     pointer[i+SLC_VALUE]);
 		    nfrontp += strlen(nfrontp);
 		    if ((pointer[i+SLC_VALUE] == IAC) &&
 			(pointer[i+SLC_VALUE+1] == IAC))
 				i++;
 		}
 		for (; i < length; i++) {
-		    sprintf(nfrontp, " ?%d?", pointer[i]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " ?%d?",
+			     pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		}
 		break;
 
 	    case LM_MODE:
-		sprintf(nfrontp, "MODE ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "MODE ");
 		nfrontp += strlen(nfrontp);
 		if (length < 3) {
-		    sprintf(nfrontp, "(no mode??\?)");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "(no mode??\?)");
 		    nfrontp += strlen(nfrontp);
 		    break;
 		}
 		{
 		    char tbuf[32];
-		    sprintf(tbuf, "%s%s%s%s%s",
-			pointer[2]&MODE_EDIT ? "|EDIT" : "",
-			pointer[2]&MODE_TRAPSIG ? "|TRAPSIG" : "",
-			pointer[2]&MODE_SOFT_TAB ? "|SOFT_TAB" : "",
-			pointer[2]&MODE_LIT_ECHO ? "|LIT_ECHO" : "",
-			pointer[2]&MODE_ACK ? "|ACK" : "");
-		    sprintf(nfrontp, "%s", tbuf[1] ? &tbuf[1] : "0");
+		    snprintf(tbuf,
+			     sizeof(tbuf),
+			     "%s%s%s%s%s",
+			     pointer[2]&MODE_EDIT ? "|EDIT" : "",
+			     pointer[2]&MODE_TRAPSIG ? "|TRAPSIG" : "",
+			     pointer[2]&MODE_SOFT_TAB ? "|SOFT_TAB" : "",
+			     pointer[2]&MODE_LIT_ECHO ? "|LIT_ECHO" : "",
+			     pointer[2]&MODE_ACK ? "|ACK" : "");
+		    snprintf(nfrontp,
+			    BUFSIZ - (nfrontp - netobuf),
+			    "%s",
+			    tbuf[1] ? &tbuf[1] : "0");
 		    nfrontp += strlen(nfrontp);
 		}
 		if (pointer[2]&~(MODE_EDIT|MODE_TRAPSIG|MODE_ACK)) {
-		    sprintf(nfrontp, " (0x%x)", pointer[2]);
+		    snprintf(nfrontp,
+			    BUFSIZ - (nfrontp - netobuf),
+			     " (0x%x)",
+			     pointer[2]);
 		    nfrontp += strlen(nfrontp);
 		}
 		for (i = 3; i < length; i++) {
-		    sprintf(nfrontp, " ?0x%x?", pointer[i]);
+		    snprintf(nfrontp,
+			    BUFSIZ - (nfrontp - netobuf),
+			     " ?0x%x?",
+			     pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		}
 		break;
 	    default:
-		sprintf(nfrontp, "%d (unknown)", pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%d (unknown)",
+			 pointer[1]);
 		nfrontp += strlen(nfrontp);
 		for (i = 2; i < length; i++) {
-		    sprintf(nfrontp, " %d", pointer[i]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " %d", pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		}
 	    }
@@ -814,23 +995,35 @@ printsub(int direction, unsigned char *pointer, int length)
 	    char *cp;
 	    int j, k;
 
-	    sprintf(nfrontp, "STATUS");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "STATUS");
 	    nfrontp += strlen(nfrontp);
 
 	    switch (pointer[1]) {
 	    default:
 		if (pointer[1] == TELQUAL_SEND)
-		    sprintf(nfrontp, " SEND");
+		    snprintf(nfrontp,
+			    BUFSIZ - (nfrontp - netobuf),
+			     " SEND");
 		else
-		    sprintf(nfrontp, " %d (unknown)", pointer[1]);
+		    snprintf(nfrontp,
+			    BUFSIZ - (nfrontp - netobuf),
+			     " %d (unknown)",
+			     pointer[1]);
 		nfrontp += strlen(nfrontp);
 		for (i = 2; i < length; i++) {
-		    sprintf(nfrontp, " ?%d?", pointer[i]);
+		    snprintf(nfrontp,
+			    BUFSIZ - (nfrontp - netobuf),
+			     " ?%d?",
+			     pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		}
 		break;
 	    case TELQUAL_IS:
-		sprintf(nfrontp, " IS\r\n");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " IS\r\n");
 		nfrontp += strlen(nfrontp);
 
 		for (i = 2; i < length; i++) {
@@ -842,17 +1035,29 @@ printsub(int direction, unsigned char *pointer, int length)
 		    common2:
 			i++;
 			if (TELOPT_OK(pointer[i]))
-			    sprintf(nfrontp, " %s %s", cp, TELOPT(pointer[i]));
+			    snprintf(nfrontp,
+				     BUFSIZ - (nfrontp - netobuf),
+				     " %s %s",
+				     cp,
+				     TELOPT(pointer[i]));
 			else
-			    sprintf(nfrontp, " %s %d", cp, pointer[i]);
+			    snprintf(nfrontp,
+				     BUFSIZ - (nfrontp - netobuf),
+				     " %s %d",
+				     cp,
+				     pointer[i]);
 			nfrontp += strlen(nfrontp);
 
-			sprintf(nfrontp, "\r\n");
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "\r\n");
 			nfrontp += strlen(nfrontp);
 			break;
 
 		    case SB:
-			sprintf(nfrontp, " SB ");
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " SB ");
 			nfrontp += strlen(nfrontp);
 			i++;
 			j = k = i;
@@ -869,19 +1074,26 @@ printsub(int direction, unsigned char *pointer, int length)
 			}
 			printsub(0, &pointer[i], k - i);
 			if (i < length) {
-			    sprintf(nfrontp, " SE");
+			    snprintf(nfrontp,
+				    BUFSIZ - (nfrontp - netobuf),
+				    " SE");
 			    nfrontp += strlen(nfrontp);
 			    i = j;
 			} else
 			    i = j - 1;
 
-			sprintf(nfrontp, "\r\n");
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "\r\n");
 			nfrontp += strlen(nfrontp);
 
 			break;
 
 		    default:
-			sprintf(nfrontp, " %d", pointer[i]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " %d",
+				 pointer[i]);
 			nfrontp += strlen(nfrontp);
 			break;
 		    }
@@ -892,38 +1104,58 @@ printsub(int direction, unsigned char *pointer, int length)
 	  }
 
 	case TELOPT_XDISPLOC:
-	    sprintf(nfrontp, "X-DISPLAY-LOCATION ");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "X-DISPLAY-LOCATION ");
 	    nfrontp += strlen(nfrontp);
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
-		sprintf(nfrontp, "IS \"%.*s\"", length-2, (char *)pointer+2);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "IS \"%.*s\"",
+			 length-2,
+			 (char *)pointer+2);
 		break;
 	    case TELQUAL_SEND:
-		sprintf(nfrontp, "SEND");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "SEND");
 		break;
 	    default:
-		sprintf(nfrontp, "- unknown qualifier %d (0x%x).",
-				pointer[1], pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "- unknown qualifier %d (0x%x).",
+			 pointer[1], pointer[1]);
 	    }
 	    nfrontp += strlen(nfrontp);
 	    break;
 
 	case TELOPT_NEW_ENVIRON:
-	    sprintf(nfrontp, "NEW-ENVIRON ");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "NEW-ENVIRON ");
 	    goto env_common1;
 	case TELOPT_OLD_ENVIRON:
-	    sprintf(nfrontp, "OLD-ENVIRON");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "OLD-ENVIRON");
 	env_common1:
 	    nfrontp += strlen(nfrontp);
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
-		sprintf(nfrontp, "IS ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "IS ");
 		goto env_common;
 	    case TELQUAL_SEND:
-		sprintf(nfrontp, "SEND ");
+		snprintf(nfrontp,
+			BUFSIZ - (nfrontp - netobuf),
+			"SEND ");
 		goto env_common;
 	    case TELQUAL_INFO:
-		sprintf(nfrontp, "INFO ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "INFO ");
 	    env_common:
 		nfrontp += strlen(nfrontp);
 		{
@@ -931,25 +1163,33 @@ printsub(int direction, unsigned char *pointer, int length)
 		    for (i = 2; i < length; i++ ) {
 			switch (pointer[i]) {
 			case NEW_ENV_VAR:
-			    sprintf(nfrontp, "\" VAR " + noquote);
+			    snprintf(nfrontp,
+				     BUFSIZ - (nfrontp - netobuf),
+				     "\" VAR " + noquote);
 			    nfrontp += strlen(nfrontp);
 			    noquote = 2;
 			    break;
 
 			case NEW_ENV_VALUE:
-			    sprintf(nfrontp, "\" VALUE " + noquote);
+			    snprintf(nfrontp,
+				     BUFSIZ - (nfrontp - netobuf),
+				     "\" VALUE " + noquote);
 			    nfrontp += strlen(nfrontp);
 			    noquote = 2;
 			    break;
 
 			case ENV_ESC:
-			    sprintf(nfrontp, "\" ESC " + noquote);
+			    snprintf(nfrontp,
+				     BUFSIZ - (nfrontp - netobuf),
+				     "\" ESC " + noquote);
 			    nfrontp += strlen(nfrontp);
 			    noquote = 2;
 			    break;
 
 			case ENV_USERVAR:
-			    sprintf(nfrontp, "\" USERVAR " + noquote);
+			    snprintf(nfrontp,
+				     BUFSIZ - (nfrontp - netobuf),
+				     "\" USERVAR " + noquote);
 			    nfrontp += strlen(nfrontp);
 			    noquote = 2;
 			    break;
@@ -962,8 +1202,10 @@ printsub(int direction, unsigned char *pointer, int length)
 				}
 				*nfrontp++ = pointer[i];
 			    } else {
-				sprintf(nfrontp, "\" %03o " + noquote,
-							pointer[i]);
+				snprintf(nfrontp,
+					 BUFSIZ - (nfrontp - netobuf),
+					 "\" %03o " + noquote,
+					 pointer[i]);
 				nfrontp += strlen(nfrontp);
 				noquote = 2;
 			    }
@@ -979,58 +1221,90 @@ printsub(int direction, unsigned char *pointer, int length)
 
 #if	defined(AUTHENTICATION)
 	case TELOPT_AUTHENTICATION:
-	    sprintf(nfrontp, "AUTHENTICATION");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "AUTHENTICATION");
 	    nfrontp += strlen(nfrontp);
 
 	    if (length < 2) {
-		sprintf(nfrontp, " (empty suboption??\?)");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " (empty suboption??\?)");
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
 	    switch (pointer[1]) {
 	    case TELQUAL_REPLY:
 	    case TELQUAL_IS:
-		sprintf(nfrontp, " %s ", (pointer[1] == TELQUAL_IS) ?
-							"IS" : "REPLY");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " %s ",
+			 (pointer[1] == TELQUAL_IS) ?
+				"IS" : "REPLY");
 		nfrontp += strlen(nfrontp);
 		if (AUTHTYPE_NAME_OK(pointer[2]))
-		    sprintf(nfrontp, "%s ", AUTHTYPE_NAME(pointer[2]));
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "%s ",
+			     AUTHTYPE_NAME(pointer[2]));
 		else
-		    sprintf(nfrontp, "%d ", pointer[2]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "%d ",
+			     pointer[2]);
 		nfrontp += strlen(nfrontp);
 		if (length < 3) {
-		    sprintf(nfrontp, "(partial suboption??\?)");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "(partial suboption??\?)");
 		    nfrontp += strlen(nfrontp);
 		    break;
 		}
-		sprintf(nfrontp, "%s|%s",
-			((pointer[3] & AUTH_WHO_MASK) == AUTH_WHO_CLIENT) ?
-			"CLIENT" : "SERVER",
-			((pointer[3] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
-			"MUTUAL" : "ONE-WAY");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s|%s",
+			 ((pointer[3] & AUTH_WHO_MASK) == AUTH_WHO_CLIENT) ?
+			 "CLIENT" : "SERVER",
+			 ((pointer[3] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
+			 "MUTUAL" : "ONE-WAY");
 		nfrontp += strlen(nfrontp);
 
 		auth_printsub(&pointer[1], length - 1, buf, sizeof(buf));
-		sprintf(nfrontp, "%s", buf);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s",
+			 buf);
 		nfrontp += strlen(nfrontp);
 		break;
 
 	    case TELQUAL_SEND:
 		i = 2;
-		sprintf(nfrontp, " SEND ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " SEND ");
 		nfrontp += strlen(nfrontp);
 		while (i < length) {
 		    if (AUTHTYPE_NAME_OK(pointer[i]))
-			sprintf(nfrontp, "%s ", AUTHTYPE_NAME(pointer[i]));
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%s ",
+				 AUTHTYPE_NAME(pointer[i]));
 		    else
-			sprintf(nfrontp, "%d ", pointer[i]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%d ",
+				 pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		    if (++i >= length) {
-			sprintf(nfrontp, "(partial suboption??\?)");
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "(partial suboption??\?)");
 			nfrontp += strlen(nfrontp);
 			break;
 		    }
-		    sprintf(nfrontp, "%s|%s ",
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "%s|%s ",
 			((pointer[i] & AUTH_WHO_MASK) == AUTH_WHO_CLIENT) ?
 							"CLIENT" : "SERVER",
 			((pointer[i] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
@@ -1042,7 +1316,9 @@ printsub(int direction, unsigned char *pointer, int length)
 
 	    case TELQUAL_NAME:
 		i = 2;
-		sprintf(nfrontp, " NAME \"");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " NAME \"");
 		nfrontp += strlen(nfrontp);
 		while (i < length)
 		    *nfrontp++ = pointer[i++];
@@ -1051,7 +1327,10 @@ printsub(int direction, unsigned char *pointer, int length)
 
 	    default:
 		    for (i = 2; i < length; i++) {
-			sprintf(nfrontp, " ?%d?", pointer[i]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 " ?%d?",
+				 pointer[i]);
 			nfrontp += strlen(nfrontp);
 		    }
 		    break;
@@ -1061,85 +1340,131 @@ printsub(int direction, unsigned char *pointer, int length)
 
 #if	defined(ENCRYPTION)
 	case TELOPT_ENCRYPT:
-	    sprintf(nfrontp, "ENCRYPT");
+	    snprintf(nfrontp,
+		     BUFSIZ - (nfrontp - netobuf),
+		     "ENCRYPT");
 	    nfrontp += strlen(nfrontp);
 	    if (length < 2) {
-		sprintf(nfrontp, " (empty suboption?)");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " (empty suboption?)");
 		nfrontp += strlen(nfrontp);
 		break;
 	    }
 	    switch (pointer[1]) {
 	    case ENCRYPT_START:
-		sprintf(nfrontp, " START");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " START");
 		nfrontp += strlen(nfrontp);
 		break;
 
 	    case ENCRYPT_END:
-		sprintf(nfrontp, " END");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " END");
 		nfrontp += strlen(nfrontp);
 		break;
 
 	    case ENCRYPT_REQSTART:
-		sprintf(nfrontp, " REQUEST-START");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " REQUEST-START");
 		nfrontp += strlen(nfrontp);
 		break;
 
 	    case ENCRYPT_REQEND:
-		sprintf(nfrontp, " REQUEST-END");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " REQUEST-END");
 		nfrontp += strlen(nfrontp);
 		break;
 
 	    case ENCRYPT_IS:
 	    case ENCRYPT_REPLY:
-		sprintf(nfrontp, " %s ", (pointer[1] == ENCRYPT_IS) ?
-							"IS" : "REPLY");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " %s ",
+			 (pointer[1] == ENCRYPT_IS) ?
+				"IS" : "REPLY");
 		nfrontp += strlen(nfrontp);
 		if (length < 3) {
-		    sprintf(nfrontp, " (partial suboption?)");
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " (partial suboption?)");
 		    nfrontp += strlen(nfrontp);
 		    break;
 		}
 		if (ENCTYPE_NAME_OK(pointer[2]))
-		    sprintf(nfrontp, "%s ", ENCTYPE_NAME(pointer[2]));
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     "%s ",
+			     ENCTYPE_NAME(pointer[2]));
 		else
-		    sprintf(nfrontp, " %d (unknown)", pointer[2]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " %d (unknown)",
+			     pointer[2]);
 		nfrontp += strlen(nfrontp);
 
 		encrypt_printsub(&pointer[1], length - 1, buf, sizeof(buf));
-		sprintf(nfrontp, "%s", buf);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s",
+			 buf);
 		nfrontp += strlen(nfrontp);
 		break;
 
 	    case ENCRYPT_SUPPORT:
 		i = 2;
-		sprintf(nfrontp, " SUPPORT ");
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " SUPPORT ");
 		nfrontp += strlen(nfrontp);
 		while (i < length) {
 		    if (ENCTYPE_NAME_OK(pointer[i]))
-			sprintf(nfrontp, "%s ", ENCTYPE_NAME(pointer[i]));
+			snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+				 "%s ",
+				 ENCTYPE_NAME(pointer[i]));
 		    else
-			sprintf(nfrontp, "%d ", pointer[i]);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%d ",
+				 pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		    i++;
 		}
 		break;
 
 	    case ENCRYPT_ENC_KEYID:
-		sprintf(nfrontp, " ENC_KEYID %d", pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " ENC_KEYID %d",
+			 pointer[1]);
 		nfrontp += strlen(nfrontp);
 		goto encommon;
 
 	    case ENCRYPT_DEC_KEYID:
-		sprintf(nfrontp, " DEC_KEYID %d", pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " DEC_KEYID %d",
+			 pointer[1]);
 		nfrontp += strlen(nfrontp);
 		goto encommon;
 
 	    default:
-		sprintf(nfrontp, " %d (unknown)", pointer[1]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " %d (unknown)",
+			 pointer[1]);
 		nfrontp += strlen(nfrontp);
 	    encommon:
 		for (i = 2; i < length; i++) {
-		    sprintf(nfrontp, " %d", pointer[i]);
+		    snprintf(nfrontp,
+			     BUFSIZ - (nfrontp - netobuf),
+			     " %d",
+			     pointer[i]);
 		    nfrontp += strlen(nfrontp);
 		}
 		break;
@@ -1149,17 +1474,28 @@ printsub(int direction, unsigned char *pointer, int length)
 
 	default:
 	    if (TELOPT_OK(pointer[0]))
-		sprintf(nfrontp, "%s (unknown)", TELOPT(pointer[0]));
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s (unknown)",
+			 TELOPT(pointer[0]));
 	    else
-		sprintf(nfrontp, "%d (unknown)", pointer[i]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%d (unknown)",
+			 pointer[i]);
 	    nfrontp += strlen(nfrontp);
 	    for (i = 1; i < length; i++) {
-		sprintf(nfrontp, " %d", pointer[i]);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " %d",
+			 pointer[i]);
 		nfrontp += strlen(nfrontp);
 	    }
 	    break;
 	}
-	sprintf(nfrontp, "\r\n");
+	snprintf(nfrontp,
+		 BUFSIZ - (nfrontp - netobuf),
+		 "\r\n");
 	nfrontp += strlen(nfrontp);
 }
 
@@ -1179,10 +1515,16 @@ printdata(char *tag, char *ptr, int cnt)
 		}
 
 		/* add a line of output */
-		sprintf(nfrontp, "%s: ", tag);
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 "%s: ",
+			 tag);
 		nfrontp += strlen(nfrontp);
 		for (i = 0; i < 20 && cnt; i++) {
-			sprintf(nfrontp, "%02x", *ptr);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%02x",
+				 *ptr);
 			nfrontp += strlen(nfrontp);
 			if (isprint(*ptr)) {
 				xbuf[i] = *ptr;
@@ -1197,7 +1539,10 @@ printdata(char *tag, char *ptr, int cnt)
 			ptr++;
 		}
 		xbuf[i] = '\0';
-		sprintf(nfrontp, " %s\r\n", xbuf );
+		snprintf(nfrontp,
+			 BUFSIZ - (nfrontp - netobuf),
+			 " %s\r\n",
+			 xbuf);
 		nfrontp += strlen(nfrontp);
 	}
 }

@@ -32,7 +32,8 @@ RCSID("$Id$");
 #include <krb.h>
 #include <kafs.h>
 
-#include "roken.h"
+#include <roken.h>
+#include <err.h>
 
 static char name[ANAME_SZ];
 static char inst[INST_SZ];
@@ -65,7 +66,7 @@ static unsigned short	Width, Height;
 static Widget		widget;
 static GC		gc;
 static XtIntervalId	timeout_id;
-static char	       *ProgName, *words;
+static char	       *words;
 static int		x, y;
 static Pixel		Black, White;
 static XFontStruct    *font;
@@ -151,7 +152,7 @@ get_words(void)
     if(appres.text_prog){
 	pp = popen(appres.text_prog, "r");
 	if(!pp){
-	    perror(appres.text_prog);
+	    warn ("popen %s", appres.text_prog);
 	    return appres.text;
 	}
 	fread(buf, BUFSIZ, 1, pp);
@@ -161,7 +162,7 @@ get_words(void)
     if(appres.file){
 	pp = fopen(appres.file, "r");
 	if(!pp){
-	    perror(appres.file);
+	    warn ("fopen %s", appres.file);
 	    return appres.text;
 	}
 	fread(buf, BUFSIZ, 1, pp);
@@ -172,11 +173,10 @@ get_words(void)
     return appres.text;
 }
 
-static
-void
+static void
 usage(void)
 {
-    fprintf(stderr, "usage: %s [options] [message]\n", ProgName);
+    fprintf(stderr, "usage: %s [options] [message]\n", __progname);
     fprintf(stderr, "-fg color     foreground color\n");
     fprintf(stderr, "-bg color     background color\n");
     fprintf(stderr, "-rv           reverse foreground/background colors\n");
@@ -193,36 +193,43 @@ usage(void)
 static void
 init_words (int argc, char **argv)
 {
-    char buf[BUFSIZ];
     int i = 0;
 
-    while(argv[i]){
-	if(strcmp(argv[i], "-p") == 0){
+    while(argv[i]) {
+	if(strcmp(argv[i], "-p") == 0) {
 	    i++;
-	    if(argv[i]){
+	    if(argv[i]) {
 		appres.text_prog = argv[i];
 		i++;
-	    }else{
-		fprintf(stderr, "-p requires an argument\n");
+	    } else {
+		warnx ("-p requires an argument");
 		usage();
 	    }
-	}else if(strcmp(argv[i], "-f") == 0){
+	} else if(strcmp(argv[i], "-f") == 0) {
 	    i++;
-	    if(argv[i]){
+	    if(argv[i]) {
 		appres.file = argv[i];
 		i++;
-	    }else{
-		sprintf(buf, "%s/.msgfile", getenv("HOME"));
-		appres.file = strdup(buf);
+	    } else {
+		asprintf (&appres.file,
+			  "%s/.msgfile", getenv("HOME"));
+		if (appres.file == NULL)
+		    errx (1, "cannot allocate memory for message");
 	    }
-	}else{
-	    strcpy(buf, "");
-	    while(argv[i]){
-		strcat(buf, argv[i]);
-		strcat(buf, " ");
-		i++;
+	} else {
+	    appres.text = strdup("");
+	    if (appres.text == NULL)
+		errx (1, "cannot allocate memory for message");
+	    while (argv[i]) {
+		int n = strlen (argv[i]);
+		char *tmp = realloc(appres.text,
+				    strlen(appres.text) + n + 2);
+		if (tmp == NULL)
+		    errx (1, "cannot allocate memory for message");
+		strcat (appres.text, argv[i]);
+		strcat (appres.text, " ");
+		++i;
 	    }
-	    appres.text = strdup(buf);
 	}
     }
 }
@@ -251,7 +258,7 @@ zrefresh(void)
 {
   switch (fork()) {
   case -1:
-      fprintf(stderr, "Warning %s: Failed to fork zrefresh\n", ProgName);
+      warn ("zrefresh: fork");
       return -1;
   case 0:
       /* Child */
@@ -431,10 +438,11 @@ post_prompt_box(Window window)
     time_y = prompt_y = Height / 2;
     box_y = prompt_y - 3 * font_height(font);
 
-    if (inst[0] == 0)
-	sprintf (s, "User: %s@%s", name, realm);
-    else
-	sprintf (s, "User: %s.%s@%s", name, inst, realm);
+    snprintf (s, sizeof(s), "User: %s%s%s@%s", name,
+	      inst[0] ? "." : "",
+	      inst ? inst : "",
+	      realm);
+
     /* erase current guy -- text message may still exist */
     XSetForeground(dpy, gc, Black);
     XFillRectangle(dpy, window, gc, x, y, 64, 64);
@@ -511,11 +519,13 @@ countdown(XtPointer _t, XtIntervalId *_d)
     }
     seconds = time(0) - locked_at;
     if (seconds >= 3600)
-      sprintf(buf, "Locked for %d:%02d:%02d    ",
-                   (int)seconds/3600, (int)seconds/60%60, (int)seconds%60);
+      snprintf(buf, sizeof(buf),
+	       "Locked for %d:%02d:%02d    ",
+	       (int)seconds/3600, (int)seconds/60%60, (int)seconds%60);
     else
-      sprintf(buf, "Locked for %2d:%02d    ",
-		     (int)seconds/60, (int)seconds%60);
+      snprintf(buf, sizeof(buf),
+	       "Locked for %2d:%02d    ",
+	       (int)seconds/60, (int)seconds%60);
       
     XDrawImageString(dpy, XtWindow(widget), gc,
 	time_x, time_y, buf, strlen(buf));
@@ -562,10 +572,9 @@ verify(char *password)
 	return 0;
     }
 
-    if(ret != INTK_BADPW){
-	fprintf(stderr, "%s: Warning: %s\n", ProgName, 
-		(ret < 0) ? strerror(ret) : krb_get_err_text(ret));
-    }
+    if(ret != INTK_BADPW)
+	warnx ("warning: %s",
+	       (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
     
     /*
      * Try copy of users password.
@@ -852,6 +861,8 @@ main (int argc, char **argv)
     Widget override;
     XGCValues gcvalues;
 
+    set_progname (argv[0]);
+
     /*
      * Must be setuid root to read /etc/shadow, copy encrypted
      * passwords here and then switch to sane uid.
@@ -859,17 +870,11 @@ main (int argc, char **argv)
     {
       struct passwd *pw;
       if (!(pw = k_getpwuid(0)))
-	{
-	  fprintf(stderr, "%s: can't get root's passwd!\n", ProgName);
-	  exit(1);
-	}
+	errx (1, "can't get root's passwd!");
       strcpy(root_cpass, pw->pw_passwd);
 
       if (!(pw = k_getpwuid(getuid())))
-	{
-	  fprintf(stderr, "%s: Can't get your password entry!\n", ProgName);
-	  exit(1);
-	} 
+	errx (1, "Can't get your password entry!");
       strcpy(user_cpass, pw->pw_passwd);
       setuid(getuid());
       /* Now we're no longer running setuid root. */
@@ -880,11 +885,6 @@ main (int argc, char **argv)
 	STRING[i] = ((unsigned long)rand() % ('~' - ' ')) + ' ';
 
     locked_at = time(0);
-
-    if ((ProgName = strrchr(*argv, '/')) != 0)
-	ProgName++;
-    else
-	ProgName = *argv;
 
     krb_get_default_principal(name, inst, realm);
     
@@ -904,10 +904,7 @@ main (int argc, char **argv)
     dpy = XtDisplay(override);
     
     if (dpy == 0)
-      {
-	fprintf(stderr, "Error: Can't open display:\n");
-	exit(1);
-      }
+      errx (1, "Error: Can't open display");
 
     Width = DisplayWidth(dpy, DefaultScreen(dpy)) + 2;
     Height = DisplayHeight(dpy, DefaultScreen(dpy)) + 2;

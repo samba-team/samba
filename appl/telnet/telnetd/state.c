@@ -436,7 +436,8 @@ send_do(int option, int init)
 			set_his_want_state_will(option);
 		do_dont_resp[option]++;
 	}
-	sprintf(nfrontp, (char *)doopt, option);
+	snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+		 (char *)doopt, option);
 	nfrontp += sizeof (dont) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send do", option));
@@ -655,7 +656,8 @@ send_dont(int option, int init)
 		set_his_want_state_wont(option);
 		do_dont_resp[option]++;
 	}
-	sprintf(nfrontp, (char *)dont, option);
+	snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+		 (char *)dont, option);
 	nfrontp += sizeof (doopt) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send dont", option));
@@ -802,7 +804,8 @@ send_will(int option, int init)
 		set_my_want_state_will(option);
 		will_wont_resp[option]++;
 	}
-	sprintf(nfrontp, (char *)will, option);
+	snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+		 (char *)will, option);
 	nfrontp += sizeof (doopt) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send will", option));
@@ -959,7 +962,8 @@ send_wont(int option, int init)
 		set_my_want_state_wont(option);
 		will_wont_resp[option]++;
 	}
-	sprintf(nfrontp, (char *)wont, option);
+	snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
+		 (char *)wont, option);
 	nfrontp += sizeof (wont) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send wont", option));
@@ -1355,7 +1359,9 @@ suboption(void)
 	    env_ovar_wrong:
 			env_ovar = OLD_ENV_VALUE;
 			env_ovalue = OLD_ENV_VAR;
-			DIAG(TD_OPTIONS, {sprintf(nfrontp,
+			DIAG(TD_OPTIONS, {snprintf(nfrontp,
+						   BUFSIZ -
+						   (nfrontp - netobuf),
 				"ENVIRON VALUE and VAR are reversed!\r\n");
 				nfrontp += strlen(nfrontp);});
 

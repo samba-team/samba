@@ -26,7 +26,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     int                     nchar;                  /*  Bytes written/read */
 
     /*  Create a temporary maildrop into which to copy the updated maildrop */
-    sprintf(p->temp_drop,POP_DROP,p->user);
+    snprintf(p->temp_drop, sizeof(p->temp_drop), POP_DROP,p->user);
 
 #ifdef DEBUG
     if(p->debug)

@@ -418,9 +418,9 @@ doit_active (char *host, char *user,
 	return 1;
     display_num = tmp;
     if (tcpp)
-	sprintf (display, "localhost:%u", display_num);
+	snprintf (display, display_size, "localhost:%u", display_num);
     else
-	sprintf (display, ":%u", display_num);
+	snprintf (display, display_size, ":%u", display_num);
     strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
     if (create_and_write_cookie (xauthfile, cookie, cookie_len))
 	return 1;

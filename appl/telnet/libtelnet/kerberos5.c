@@ -512,12 +512,12 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 #endif	/* FORWARD */
 
     default:
-	sprintf(lbuf, " %d (unknown)", data[3]);
+	snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
 	strncpy((char *)buf, lbuf, buflen);
     common2:
 	BUMP(buf, buflen);
 	for (i = 4; i < cnt; i++) {
-	    sprintf(lbuf, " %d", data[i]);
+	    snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
 	    strncpy((char *)buf, lbuf, buflen);
 	    BUMP(buf, buflen);
 	}

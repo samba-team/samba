@@ -94,10 +94,11 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
   strncpy (newctx.seed, argv[1], sizeof(newctx.seed));
   newctx.seed[sizeof(newctx.seed) - 1] = '\0';
   strlwr(newctx.seed);
-  sprintf (prompt, "[ otp-%s %u %s ]",
-	   newctx.alg->name,
-	   newctx.n, 
-	   newctx.seed);
+  snprintf (prompt, sizeof(prompt),
+	    "[ otp-%s %u %s ]",
+	    newctx.alg->name,
+	    newctx.n, 
+	    newctx.seed);
   if (des_read_pw_string (pw, sizeof(pw), prompt, 0) == 0 &&
       otp_parse (newctx.key, pw, alg) == 0) {
     ctx = &newctx;
@@ -132,7 +133,7 @@ verify_user_otp(char *username)
     return 1; 
   }
 
-  sprintf (prompt, "%s's %s Password: ", username, ss);
+  snprintf (prompt, sizeof(prompt), "%s's %s Password: ", username, ss);
   des_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0);
   return otp_verify_user (&ctx, passwd);
 }

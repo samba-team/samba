@@ -159,8 +159,9 @@ start_slc(getit)
 	slcchange = 0;
 	if (getit)
 		init_termbuf();
-	sprintf((char *)slcbuf, "%c%c%c%c",
-					IAC, SB, TELOPT_LINEMODE, LM_SLC);
+	snprintf((char *)slcbuf, sizeof(slcbuf),
+		 "%c%c%c%c",
+		 IAC, SB, TELOPT_LINEMODE, LM_SLC);
 	slcptr = slcbuf + 4;
 
 }  /* end of start_slc */
@@ -200,7 +201,8 @@ end_slc(bufp)
 			*bufp = &slcbuf[4];
 			return(slcptr - slcbuf - 4);
 		} else {
-			sprintf((char *)slcptr, "%c%c", IAC, SE);
+			snprintf((char *)slcptr, sizeof(slcbuf) - (slcptr - slcbuf),
+				 "%c%c", IAC, SE);
 			slcptr += 2;
 			len = slcptr - slcbuf;
 			writenet(slcbuf, len);

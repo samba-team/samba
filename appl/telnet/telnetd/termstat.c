@@ -276,9 +276,11 @@ localstat()
 # endif	/* KLUDGELINEMODE */
 			send_do(TELOPT_LINEMODE, 1);
 			/* send along edit modes */
-			sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC, SB,
-				TELOPT_LINEMODE, LM_MODE, useeditmode,
-				IAC, SE);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%c%c%c%c%c%c%c", IAC, SB,
+				 TELOPT_LINEMODE, LM_MODE, useeditmode,
+				 IAC, SE);
 			nfrontp += 7;
 			editmode = useeditmode;
 # ifdef	KLUDGELINEMODE
@@ -305,7 +307,9 @@ localstat()
 			/*
 			 * Send along appropriate edit mode mask.
 			 */
-			sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC, SB,
+			snprintf(nfrontp,
+				BUFSIZ - (nfrontp - netobuf),
+				"%c%c%c%c%c%c%c", IAC, SB,
 				TELOPT_LINEMODE, LM_MODE, useeditmode,
 				IAC, SE);
 			nfrontp += 7;
@@ -352,19 +356,23 @@ flowstat()
 	if (his_state_is_will(TELOPT_LFLOW)) {
 		if (tty_flowmode() != flowmode) {
 			flowmode = tty_flowmode();
-			sprintf(nfrontp, "%c%c%c%c%c%c",
-					IAC, SB, TELOPT_LFLOW,
-					flowmode ? LFLOW_ON : LFLOW_OFF,
-					IAC, SE);
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%c%c%c%c%c%c",
+				 IAC, SB, TELOPT_LFLOW,
+				 flowmode ? LFLOW_ON : LFLOW_OFF,
+				 IAC, SE);
 			nfrontp += 6;
 		}
 		if (tty_restartany() != restartany) {
 			restartany = tty_restartany();
-			sprintf(nfrontp, "%c%c%c%c%c%c",
-					IAC, SB, TELOPT_LFLOW,
-					restartany ? LFLOW_RESTART_ANY
+			snprintf(nfrontp,
+				 BUFSIZ - (nfrontp - netobuf),
+				 "%c%c%c%c%c%c",
+				 IAC, SB, TELOPT_LFLOW,
+				 restartany ? LFLOW_RESTART_ANY
 						   : LFLOW_RESTART_XON,
-					IAC, SE);
+				 IAC, SE);
 			nfrontp += 6;
 		}
 	}
@@ -438,9 +446,11 @@ clientstat(code, parm1, parm2)
 					useeditmode |= MODE_SOFT_TAB;
 				if (tty_islitecho())
 					useeditmode |= MODE_LIT_ECHO;
-				sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC,
-					SB, TELOPT_LINEMODE, LM_MODE,
-							useeditmode, IAC, SE);
+				snprintf(nfrontp,
+					 BUFSIZ - (nfrontp - netobuf),
+					 "%c%c%c%c%c%c%c", IAC,
+					 SB, TELOPT_LINEMODE, LM_MODE,
+					 useeditmode, IAC, SE);
 				nfrontp += 7;
 				editmode = useeditmode;
 			}
@@ -497,10 +507,12 @@ clientstat(code, parm1, parm2)
 			set_termbuf();
 
  			if (!ack) {
- 				sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC,
-					SB, TELOPT_LINEMODE, LM_MODE,
- 					useeditmode|MODE_ACK,
- 					IAC, SE);
+ 				snprintf(nfrontp,
+					 BUFSIZ - (nfrontp - netobuf),
+					 "%c%c%c%c%c%c%c", IAC,
+					 SB, TELOPT_LINEMODE, LM_MODE,
+					 useeditmode|MODE_ACK,
+					 IAC, SE);
  				nfrontp += 7;
  			}
 

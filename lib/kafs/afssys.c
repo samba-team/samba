@@ -73,7 +73,7 @@ aix_setup(void)
     if (getuid() != 0 && !isSuid() && (p = getenv("AFSLIBPATH")) != NULL)
 	strcpy(path, p);
     else
-	sprintf(path, "%s/afslib.so", LIBDIR);
+	snprintf(path, sizeof(path), "%s/afslib.so", LIBDIR);
 	
     ptr = dlopen(path, 0);
     if(ptr){

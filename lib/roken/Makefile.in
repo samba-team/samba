@@ -38,7 +38,7 @@ SOURCES = \
 	herror.c hstrerror.c inaddr2str.c inet_aton.c \
 	initgroups.c k_getpwnam.c k_getpwuid.c lstat.c \
 	memmove.c mini_inetd.c putenv.c rcmd.c setegid.c setenv.c \
-	seteuid.c signal.c strcasecmp.c strchr.c strdup.c \
+	seteuid.c signal.c snprintf.c strcasecmp.c strchr.c strdup.c \
 	strerror.c strftime.c strlwr.c strnlen.c strrchr.c \
 	strupr.c tm2time.c unsetenv.c verify.c verr.c \
 	verrx.c vsyslog.c vwarn.c vwarnx.c warn.c warnx.c \

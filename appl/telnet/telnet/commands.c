@@ -1658,9 +1658,8 @@ env_init()
 			hbuf[256] = '\0';
 		}
 
-		cp = (char *)malloc(strlen(hbuf) + strlen(cp2) + 1);
-		sprintf((char *)cp, "%s%s", hbuf, cp2);
-		free(ep->value);
+		asprintf (&cp, "%s%s", hbuf, cp2);
+		free (ep->value);
 		ep->value = (unsigned char *)cp;
 	}
 	/*

@@ -198,8 +198,9 @@ siad_ses_authent(sia_collect_func_t *collect,
 
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
 	    return SIADFAIL;
-	sprintf((char*)entity->mech[pkgind], "%s%d_%d", 
-		TKT_ROOT, pwd->pw_uid, getpid());
+	snprintf((char*)entity->mech[pkgind], sizeof(entity->mech[pkgind]),
+		 "%s%d_%d", 
+		 TKT_ROOT, pwd->pw_uid, getpid());
 	krb_set_tkt_string((char*)entity->mech[pkgind]);
 	
 	krb_get_lrealm(realm, 1);
@@ -235,7 +236,7 @@ siad_ses_launch(sia_collect_func_t *collect,
     char buf[MaxPathLen];
     static char env[64];
     chown((char*)entity->mech[pkgind],entity->pwd->pw_uid, entity->pwd->pw_gid);
-    sprintf(env, "KRBTKFILE=%s", (char*)entity->mech[pkgind]);
+    snprintf(env, sizeof(env), "KRBTKFILE=%s", (char*)entity->mech[pkgind]);
     putenv(env);
     if (k_hasafs()) {
 	char cell[64];
@@ -294,18 +295,13 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 	if(collect == NULL)
 	    return SIADFAIL;
 	setup_password(entity, &prompt);
-	prompt.prompt = malloc(strlen(toname) + strlen(toinst) + 
-			       strlen(realm) + sizeof("'s Password: ") + 2);
-	if(prompt.prompt == NULL)
+	asprintf (&prompt.prompt,
+		  "%s%s%s@%s's Password: ",
+		  toname, toinst[0] ? "." : "",
+		  toinst[0] ? toinst, "",
+		  realm);
+	if (prompt.prompt == NULL)
 	    return SIADFAIL;
-	strcpy(prompt.prompt, toname);
-	if(toinst[0]){
-	    strcat(prompt.prompt, ".");
-	    strcat(prompt.prompt, toinst);
-	}
-	strcat(prompt.prompt, "@");
-	strcat(prompt.prompt, realm);
-	strcat(prompt.prompt, "'s Password: ");
 	ret = (*collect)(0, SIAONELINER, (unsigned char*)"", 1, &prompt);
 	free(prompt.prompt);
 	if(ret != SIACOLSUCCESS)
@@ -319,8 +315,9 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 	if(krb_kuserok(toname, toinst, realm, entity->name))
 	    return SIADFAIL;
 	
-	sprintf((char*)entity->mech[pkgind], "/tmp/tkt_%s_to_%s_%d", 
-		pwd->pw_name, topwd->pw_name, getpid());
+	snprintf((char*)entity->mech[pkgind], sizeof(entity->mech[pkgind]),
+		 "/tmp/tkt_%s_to_%s_%d", 
+		 pwd->pw_name, topwd->pw_name, getpid());
 	krb_set_tkt_string((char*)entity->mech[pkgind]);
 	ret = krb_verify_user(toname, toinst, realm, entity->password, 1, NULL);
 	if(ret){

@@ -74,6 +74,7 @@ RCSID("$Id$");
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <roken.h>
 
 #include "encrypt.h"
 #include "auth.h"
@@ -304,27 +305,27 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	if (UserNameRequested && !kuserok(&adat, UserNameRequested)){
 	    char ts[MaxPathLen];
 	    struct passwd *pw = getpwnam(UserNameRequested);
+
 	    if(pw){
-		sprintf(ts, "%s%d", TKT_ROOT, pw->pw_uid);
+		snprintf(ts, sizeof(ts), "%s%u", TKT_ROOT, pw->pw_uid);
 		setenv("KRBTKFILE", ts, 1);
 	    }
 	    Data(ap, KRB_ACCEPT, NULL, 0);
 	} else {
-	    char *msg = malloc(ANAME_SZ + 1 + INST_SZ +
-			       REALM_SZ +
-			       strlen(UserNameRequested) + 80);
-	    
+	    char *msg;
+
+	    asprintf (&msg, "user `%s' is not authorized to "
+		      "login as `%s'", 
+		      krb_unparse_name_long(adat.pname, 
+					    adat.pinst, 
+					    adat.prealm), 
+		      UserNameRequested);
 	    if (msg == NULL)
 		Data(ap, KRB_REJECT, NULL, 0);
-	    sprintf (msg, "user `%s' is not authorized to "
-		     "login as `%s'", 
-		     krb_unparse_name_long(adat.pname, 
-					   adat.pinst, 
-					   adat.prealm), 
-		     UserNameRequested);
-	    
-	    Data(ap, KRB_REJECT, (void *)msg, -1);
-	    free(msg);
+	    else {
+		Data(ap, KRB_REJECT, (void *)msg, -1);
+		free(msg);
+	    }
 	}
 	auth_finished(ap, AUTH_USER);
 	break;
@@ -367,7 +368,6 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	{
 	    des_key_schedule ks;
 	    unsigned char netcred[sizeof(CREDENTIALS)];
-	    char *msg;
 	    CREDENTIALS cred;
 	    int ret;
 	    if(cnt > sizeof(cred))
@@ -538,12 +538,12 @@ kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 	goto common2;
 
     default:
-	sprintf(lbuf, " %d (unknown)", data[3]);
+	snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
 	strncpy((char *)buf, lbuf, buflen);
     common2:
 	BUMP(buf, buflen);
 	for (i = 4; i < cnt; i++) {
-	    sprintf(lbuf, " %d", data[i]);
+	    snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
 	    strncpy((char *)buf, lbuf, buflen);
 	    BUMP(buf, buflen);
 	}
@@ -589,7 +589,6 @@ kerberos4_cksum(unsigned char *d, int n)
 static int
 pack_cred(CREDENTIALS *cred, unsigned char *buf)
 {
-    int l;
     unsigned char *p = buf;
     
     p += krb_put_nir(cred->service, cred->instance, cred->realm, p);

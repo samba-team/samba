@@ -625,12 +625,13 @@ printsub(char direction, unsigned char *pointer, int length)
 		}
 		{
 		    char tbuf[64];
-		    sprintf(tbuf, "%s%s%s%s%s",
-			pointer[2]&MODE_EDIT ? "|EDIT" : "",
-			pointer[2]&MODE_TRAPSIG ? "|TRAPSIG" : "",
-			pointer[2]&MODE_SOFT_TAB ? "|SOFT_TAB" : "",
-			pointer[2]&MODE_LIT_ECHO ? "|LIT_ECHO" : "",
-			pointer[2]&MODE_ACK ? "|ACK" : "");
+		    snprintf(tbuf, sizeof(tbuf),
+			     "%s%s%s%s%s",
+			     pointer[2]&MODE_EDIT ? "|EDIT" : "",
+			     pointer[2]&MODE_TRAPSIG ? "|TRAPSIG" : "",
+			     pointer[2]&MODE_SOFT_TAB ? "|SOFT_TAB" : "",
+			     pointer[2]&MODE_LIT_ECHO ? "|LIT_ECHO" : "",
+			     pointer[2]&MODE_ACK ? "|ACK" : "");
 		    fprintf(NetTrace, "%s", tbuf[1] ? &tbuf[1] : "0");
 		}
 		if (pointer[2]&~(MODE_MASK))

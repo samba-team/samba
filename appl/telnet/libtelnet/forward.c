@@ -418,7 +418,7 @@ rd_and_store_for_creds(inbuf, ticket, lusername)
 	return -1;
     }
 
-    sprintf(ccname, "FILE:/tmp/krb5cc_%d", pwd->pw_uid);
+    snprintf(ccname, sizeof(ccname), "FILE:/tmp/krb5cc_%d", pwd->pw_uid);
 
     if (retval = krb5_cc_resolve(ccname, &ccache)) {
 	return(retval);

@@ -357,7 +357,7 @@ char *line_nodev;
 char *line_notty;
 
 #ifdef	CRAY
-char *myline = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+char myline[] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif	/* CRAY */
 
 #ifndef HAVE_PTSNAME
@@ -392,9 +392,9 @@ set_utid(void)
     /* Derive utmp ID from pty slave number */
     if(isdigit(line_notty[0]) && sscanf(line_notty, "%d", &ptynum) == 1)
 	
-	sprintf(utid, "tn%02x", ptynum & 0xff);
+	snprintf(utid, sizeof(utid), "tn%02x", ptynum & 0xff);
     else
-	sprintf(utid, "tn%s", line_notty);
+	snprintf(utid, sizeof(utid), "tn%s", line_notty);
 }
 #else
 void
@@ -459,11 +459,11 @@ int getpty(int *ptynum)
 #ifndef CRAY
 
 #ifndef	__hpux
-	sprintf(line, "/dev/ptyXX");
+	snprintf(line, sizeof(Xline), "/dev/ptyXX");
 	p1 = &line[8];
 	p2 = &line[9];
 #else
-	sprintf(line, "/dev/ptym/ptyXX");
+	snprintf(line, sizeof(Xline), "/dev/ptym/ptyXX");
 	p1 = &line[13];
 	p2 = &line[14];
 #endif
@@ -511,11 +511,11 @@ int getpty(int *ptynum)
 	struct stat sb;
 
 	for (*ptynum = lowpty; *ptynum <= highpty; (*ptynum)++) {
-		sprintf(myline, "/dev/pty/%03d", *ptynum);
+		snprintf(myline, sizeof(myline), "/dev/pty/%03d", *ptynum);
 		p = open(myline, 2);
 		if (p < 0)
 			continue;
-		sprintf(line, "/dev/ttyp%03d", *ptynum);
+		snprintf(line, sizeof(Xline), "/dev/ttyp%03d", *ptynum);
 		/*
 		 * Here are some shenanigans to make sure that there
 		 * are no listeners lurking on the line.
@@ -1514,8 +1514,9 @@ void start_login(char *host, int autologin, char *name)
 			len = strlen(name)+1;
 			write(xpty, name, len);
 			write(xpty, name, len);
-			sprintf(speed, "%s/%d", (cp = getenv("TERM")) ? cp : "",
-				(def_rspeed > 0) ? def_rspeed : 9600);
+			snprintf(speed, sizeof(speed),
+				 "%s/%d", (cp = getenv("TERM")) ? cp : "",
+				 (def_rspeed > 0) ? def_rspeed : 9600);
 			len = strlen(speed)+1;
 			write(xpty, speed, len);
 

@@ -54,7 +54,7 @@ print (int argc,
        char **argv,
        int count,
        OtpAlgorithm *alg,
-       void (*print_fn)(OtpKey, char *))
+       void (*print_fn)(OtpKey, char *, size_t))
 {
   char pw[64];
   OtpKey key;
@@ -74,7 +74,7 @@ print (int argc,
 
     alg->next (key);
     if (i >= n - count) {
-      (*print_fn)(key, s);
+      (*print_fn)(key, s, sizeof(s));
       printf ("%d: %s\n", i + 1, s);
     }
   }
@@ -88,7 +88,7 @@ main (int argc, char **argv)
   int count = 10;
   int hexp = 0;
   int extendedp = 0;
-  void (*fn)(OtpKey, char *);
+  void (*fn)(OtpKey, char *, size_t);
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
   set_progname (argv[0]);

@@ -510,12 +510,14 @@ int krb4_write_enc(FILE *F, char *fmt, va_list ap)
     char *p;
     char buf[1024];
     char enc[1024];
-    vsprintf(buf, fmt, ap);
+
+    vsnprintf(buf, sizeof(buf), fmt, ap);
     len = krb_mk_priv(buf, enc, strlen(buf), schedule, &key, 
 		      &myctladdr, &hisctladdr);
     base64_encode(enc, len, &p);
 
     fprintf(F, "ENC %s", p);
+    free (p);
     return 0;
 }
 

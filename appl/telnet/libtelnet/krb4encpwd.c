@@ -255,7 +255,7 @@ krb4encpwd_is(ap, data, cnt)
 		  int i;
 
 		  time(&now);
-		  sprintf(challenge, "%x", now);
+		  snprintf(challenge, sizeof(challenge), "%x", now);
 		  Data(ap, KRB4_ENCPWD_CHALLENGE, challenge, strlen(challenge));
 		}
 		break;
@@ -389,12 +389,12 @@ krb4encpwd_printsub(data, cnt, buf, buflen)
 		goto common2;
 
 	default:
-		sprintf(lbuf, " %d (unknown)", data[3]);
+		snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
 		strncpy((char *)buf, lbuf, buflen);
 	common2:
 		BUMP(buf, buflen);
 		for (i = 4; i < cnt; i++) {
-			sprintf(lbuf, " %d", data[i]);
+			snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
 			strncpy((char *)buf, lbuf, buflen);
 			BUMP(buf, buflen);
 		}

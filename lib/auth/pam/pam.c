@@ -105,7 +105,7 @@ auth_login(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
 
     pmsg = &msg;
     msg.msg_style = PAM_PROMPT_ECHO_OFF;
-    sprintf(prompt, "%s's Password: ", user);
+    snprintf(prompt, sizeof(prompt), "%s's Password: ", user);
     msg.msg = prompt;
 
     ret = conv->conv(1, (const struct pam_message**)&pmsg, 
@@ -116,8 +116,9 @@ auth_login(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     {
 	char tkt[1024];
 	struct passwd *pw = getpwnam(user);
+
 	if(pw){
-	    sprintf(tkt, "%s%d", TKT_ROOT, pw->pw_uid);
+	    snprintf(tkt, sizeof(tkt), "%s%d", TKT_ROOT, pw->pw_uid);
 	    ret = doit(pamh, user, "", resp->resp, tkt);
 	    if(ret == PAM_SUCCESS)
 		chown(tkt, pw->pw_uid, pw->pw_gid);
@@ -155,7 +156,7 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     }
     pmsg = &msg;
     msg.msg_style = PAM_PROMPT_ECHO_OFF;
-    sprintf(prompt, "%s's Password: ", krb_unparse_name(&pr));
+    snprintf(prompt, sizeof(prompt), "%s's Password: ", krb_unparse_name(&pr));
     msg.msg = prompt;
 
     ret = conv->conv(1, (const struct pam_message**)&pmsg, 
@@ -165,7 +166,8 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     
     {
 	char tkt[1024];
-	sprintf(tkt, "%s_%s_to_%s", TKT_ROOT, pw->pw_name, user);
+
+	snprintf(tkt, sizeof(tkt),"%s_%s_to_%s", TKT_ROOT, pw->pw_name, user);
 	ret = doit(pamh, pr.name, pr.instance, resp->resp, tkt);
 	if(ret == PAM_SUCCESS)
 	    chown(tkt, pw->pw_uid, pw->pw_gid);
