@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -125,34 +125,89 @@ krb5_free_creds (krb5_context context, krb5_creds *c)
     return 0;
 }
 
+/* XXX these do not belong here */
+static krb5_boolean
+krb5_data_equal(const krb5_data *a, const krb5_data *b)
+{
+    if(a->length != b->length)
+	return FALSE;
+    return memcmp(a->data, b->data, a->length) == 0;
+}
+
+static krb5_boolean
+krb5_times_equal(const krb5_times *a, const krb5_times *b)
+{
+    return a->starttime == b->starttime &&
+	a->authtime == b->authtime &&
+	a->endtime == b->endtime &&
+	a->renew_till == b->renew_till;
+}
+
 /*
  * Return TRUE if `mcreds' and `creds' are equal (`whichfields'
  * determines what equal means).
  */
 
 krb5_boolean
-krb5_compare_creds(krb5_context context, krb5_flags whichfields, 
-		   const krb5_creds *mcreds, const krb5_creds *creds)
+krb5_compare_creds(krb5_context context, krb5_flags whichfields,
+		   const krb5_creds * mcreds, const krb5_creds * creds)
 {
-    krb5_boolean match;
-    krb5_error_code (*matchfun)(krb5_context, 
-				krb5_const_principal, 
-				krb5_const_principal);
+    krb5_boolean match = TRUE;
+    
+    if (match && mcreds->server) {
+	if (whichfields & (KRB5_TC_DONT_MATCH_REALM | KRB5_TC_MATCH_SRV_NAMEONLY)) 
+	    match = krb5_principal_compare_any_realm (context, mcreds->server, 
+						      creds->server);
+	else
+	    match = krb5_principal_compare (context, mcreds->server, 
+					    creds->server);
+    }
 
-    if(whichfields & KRB5_TC_DONT_MATCH_REALM)
-	matchfun = krb5_principal_compare_any_realm;
-    else
-	matchfun = krb5_principal_compare;
+    if (match && mcreds->client) {
+	if(whichfields & KRB5_TC_DONT_MATCH_REALM)
+	    match = krb5_principal_compare_any_realm (context, mcreds->client, 
+						      creds->client);
+	else
+	    match = krb5_principal_compare (context, mcreds->client, 
+					    creds->client);
+    }
+	    
+    if (match && (whichfields & KRB5_TC_MATCH_KEYTYPE))
+	match = krb5_enctypes_compatible_keys(context,
+					      mcreds->session.keytype,
+					      creds->session.keytype);
 
-    match = (*matchfun)(context, mcreds->server, creds->server);
+    if (match && (whichfields & KRB5_TC_MATCH_FLAGS_EXACT))
+	match = mcreds->flags.i == creds->flags.i;
 
-    if (match && mcreds->client)
-	match = (*matchfun)(context, mcreds->client, creds->client);
+    if (match && (whichfields & KRB5_TC_MATCH_FLAGS))
+	match = (creds->flags.i & mcreds->flags.i) == mcreds->flags.i;
 
-    if(match && (whichfields & KRB5_TC_MATCH_KEYTYPE) &&
-       !krb5_enctypes_compatible_keys (context,
-				       mcreds->session.keytype,
-				       creds->session.keytype))
-	match = FALSE;
+    if (match && (whichfields & KRB5_TC_MATCH_TIMES_EXACT))
+	match = krb5_times_equal(&mcreds->times, &creds->times);
+    
+    if (match && (whichfields & KRB5_TC_MATCH_TIMES))
+	/* compare only expiration times */
+	match = (mcreds->times.renew_till <= creds->times.renew_till) &&
+	    (mcreds->times.endtime <= creds->times.endtime);
+
+    if (match && (whichfields & KRB5_TC_MATCH_AUTHDATA)) {
+	unsigned int i;
+	if(mcreds->authdata.len != creds->authdata.len)
+	    match = FALSE;
+	else
+	    for(i = 0; match && i < mcreds->authdata.len; i++)
+		match = (mcreds->authdata.val[i].ad_type == 
+			 creds->authdata.val[i].ad_type) &&
+		    krb5_data_equal(&mcreds->authdata.val[i].ad_data,
+				    &creds->authdata.val[i].ad_data);
+    }
+    if (match && (whichfields & KRB5_TC_MATCH_2ND_TKT))
+	match = krb5_data_equal(&mcreds->second_ticket, &creds->second_ticket);
+
+    if (match && (whichfields & KRB5_TC_MATCH_IS_SKEY))
+	match = ((mcreds->second_ticket.length == 0) == 
+		 (creds->second_ticket.length == 0));
+
     return match;
 }
