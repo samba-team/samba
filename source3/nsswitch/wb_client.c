@@ -29,25 +29,35 @@
 
 BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type)
 {
+	extern pstring global_myname;
 	struct winbindd_request request;
-        struct winbindd_response response;
+	struct winbindd_response response;
 	enum nss_status result;
 	
-	if (!sid || !name_type) return False;
+	if (!sid || !name_type)
+		return False;
 
-        /* Send off request */
+	/* Send off request */
 
-        ZERO_STRUCT(request);
-        ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
 
-        fstrcpy(request.data.name, name);
-        if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
+	fstrcpy(request.data.name, name);
+	if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
 		string_to_sid(sid, response.data.sid.sid);
 		*name_type = response.data.sid.type;
+	} else {
+
+		/*
+		 * Try a local lookup - winbindd may not
+		 * be running.
+		 */
+
+		return lookup_local_name(global_myname, name, sid, name_type);
 	}
 
-        return result == NSS_STATUS_SUCCESS;
+	return result == NSS_STATUS_SUCCESS;
 }
 
 /* Call winbindd to convert sid to name */
@@ -62,7 +72,8 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 	uint32 rid;
 	fstring sid_str;
 	
-	if (!name_type) return False;
+	if (!name_type)
+		return False;
 
 	/* Check if this is our own sid.  This should perhaps be done by
 	   winbind?  For the moment handle it here. */
