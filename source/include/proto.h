@@ -4811,7 +4811,7 @@ void status_page(void);
 /*The following definitions come from  winregd/srv_reg_nt.c  */
 
 uint32 _reg_close(POLICY_HND *pol);
-uint32 _reg_open(uint32 *access_mask,POLICY_HND *pol);
+uint32 _reg_open(POLICY_HND *pol, uint32 access_mask);
 BOOL api_reg_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  winregd/winregd.c  */

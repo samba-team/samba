@@ -107,7 +107,7 @@ static void api_reg_open( rpcsrv_struct *p, prs_struct *data,
         /* grab the reg open */
         reg_io_q_open_hklm("", &q_u, data, 0);
  
-        r_u.status = _reg_open(&q_u.access_mask,&r_u.pol);
+        r_u.status = _reg_open(&r_u.pol, q_u.access_mask);
  
         /* store the response in the SMB stream */
         reg_io_r_open_hklm("", &r_u, rdata, 0); 
