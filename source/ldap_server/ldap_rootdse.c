@@ -315,8 +315,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	const char **attrs = NULL;
 
 	if (r->scope != LDAP_SEARCH_SCOPE_BASE) {
-		count = -1;
-		goto no_base_scope;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	local_ctx = talloc_named(call, 0, "rootdse_Search local memory context");
