@@ -22,8 +22,11 @@
 typedef unsigned tdb_len;
 typedef unsigned tdb_off;
 
+#define TDB_MAGIC_FOOD "TDB file\n"
+
 /* this is stored at the front of every database */
 struct tdb_header {
+	char magic_food[32]; /* for /etc/magic */
 	unsigned version; /* version of the code */
 	unsigned hash_size; /* number of hash entries */
 };
