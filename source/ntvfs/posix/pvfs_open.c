@@ -52,6 +52,8 @@ static int pvfs_fd_destructor(void *p)
 {
 	struct pvfs_file *f = p;
 
+	pvfs_lock_close_pending(f->pvfs, f);
+
 	brl_close(f->pvfs->brl_context, &f->locking_key, f->fnum);
 
 	if (f->fd != -1) {
@@ -220,6 +222,8 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	pvfs_lock_close_pending(pvfs, f);
 
 	status = brl_close(pvfs->brl_context, &f->locking_key, f->fnum);
 	if (!NT_STATUS_IS_OK(status)) {

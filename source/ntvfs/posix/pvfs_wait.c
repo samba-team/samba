@@ -71,7 +71,7 @@ static void pvfs_wait_timeout(struct event_context *ev, struct timed_event *te, 
 static int pvfs_wait_destructor(void *ptr)
 {
 	struct pvfs_wait *pwait = ptr;
-	messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait->private);
+	messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
 	event_remove_timed(pwait->ev, pwait->te);
 	return 0;
 }

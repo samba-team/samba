@@ -152,7 +152,7 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 
 	/* we've now got the pending lock. try and get the rest, which might
 	   lead to more pending locks */
-	for (i=pending->pending_lock;i<lck->lockx.in.lock_cnt;i++) {		
+	for (i=pending->pending_lock+1;i<lck->lockx.in.lock_cnt;i++) {		
 		if (pending) {
 			pending->pending_lock = i;
 		}
@@ -184,16 +184,33 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 		}
 	}
 
-	brl_unlock(pvfs->brl_context,
-		   &f->locking_key,
-		   req->smbpid,
-		   f->fnum,
-		   lck->lock.in.offset,
-		   lck->lock.in.count);
-
 	/* we've managed to get all the locks. Tell the client */
 	req->async.status = NT_STATUS_OK;
 	req->async.send_fn(req);
+}
+
+
+/*
+  called when we close a file that might have pending locks
+*/
+void pvfs_lock_close_pending(struct pvfs_state *pvfs, struct pvfs_file *f)
+{
+	struct pvfs_pending_lock *p, *next;
+	NTSTATUS status;
+
+	for (p=f->pending_list;p;p=next) {
+		next = p->next;
+		DLIST_REMOVE(f->pending_list, p);
+		status = brl_remove_pending(pvfs->brl_context, &f->locking_key, p);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("pvfs_lock_close_pending: failed to remove pending lock - %s\n", 
+				 nt_errstr(status)));
+		}
+		talloc_free(p->wait_handle);
+		p->req->async.status = NT_STATUS_RANGE_NOT_LOCKED;
+		p->req->async.send_fn(p->req);
+	}
+
 }
 
 
@@ -303,11 +320,14 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		return pvfs_lock_cancel(pvfs, req, lck, f);
 	}
 
-	if (lck->lockx.in.mode & 
-	    (LOCKING_ANDX_OPLOCK_RELEASE |
-	     LOCKING_ANDX_CHANGE_LOCKTYPE |
-	     LOCKING_ANDX_CANCEL_LOCK)) {
-		/* todo: need to add support for these */
+	if (lck->lockx.in.mode & LOCKING_ANDX_CHANGE_LOCKTYPE) {
+		/* this seems to not be supported by any windows server,
+		   or used by any clients */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (lck->lockx.in.mode & LOCKING_ANDX_OPLOCK_RELEASE) {
+		DEBUG(0,("received unexpected oplock break\n"));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
