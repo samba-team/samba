@@ -1,5 +1,13 @@
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
+	* Makefile.am: unvis.c, and vis.h
+
+	* vis.h: vis.h from NetBSD
+
+	* unvis.c: unvis from NetBSD
+
+	* roken.h.in: cleanup previous
+
 	* roken-common.h: make `extern "C"' into a macro, this make emacs
 	much happier
 
