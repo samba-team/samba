@@ -669,6 +669,13 @@ static NTSTATUS cvfs_trans2(struct request_context *req, struct smb_trans2 *tran
 	ASYNC_RECV_TAIL(trans2, async_trans2);
 }
 
+
+/* SMBtrans - not used on file shares */
+static NTSTATUS cvfs_trans(struct request_context *req, struct smb_trans2 *trans2)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
 /*
   initialise the CIFS->CIFS backend, registering ourselves with the ntvfs subsystem
  */
@@ -709,6 +716,7 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.search_first = cvfs_search_first;
 	ops.search_next = cvfs_search_next;
 	ops.search_close = cvfs_search_close;
+	ops.trans = cvfs_trans;
 
 	/* only define this one for trans2 testing */
 	ops.trans2 = cvfs_trans2;

@@ -220,11 +220,9 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	if (strncasecmp(p->pipe_name, "\\pipe\\", 6) != 0) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	while (p->pipe_name[0] == '\\') {
+		p->pipe_name++;
 	}
-	p->pipe_name += 6;
 
 	/*
 	  we're all set, now ask the dcerpc server subsystem to open the 
@@ -293,7 +291,51 @@ static NTSTATUS ipc_copy(struct request_context *req, struct smb_copy *cp)
 */
 static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	struct ipc_private *private = req->conn->ntvfs_private;
+	DATA_BLOB data;
+	uint16 fnum;
+	struct pipe_state *p;
+	NTSTATUS status;
+
+	switch (rd->generic.level) {
+	case RAW_READ_READ:
+		fnum = rd->read.in.fnum;
+		data.length = rd->read.in.count;
+		data.data = rd->read.out.data;
+		break;
+	case RAW_READ_READX:
+		fnum = rd->readx.in.fnum;
+		data.length = rd->readx.in.maxcnt;
+		data.data = rd->readx.out.data;
+		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	p = pipe_state_find(private, fnum);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = dcesrv_output(p->pipe_state, &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (rd->generic.level) {
+	case RAW_READ_READ:
+		rd->read.out.nread = data.length;
+		break;
+	case RAW_READ_READX:
+		rd->readx.out.remaining = 0;
+		rd->readx.out.compaction_mode = 0;
+		rd->readx.out.nread = data.length;
+		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -301,7 +343,52 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 */
 static NTSTATUS ipc_write(struct request_context *req, union smb_write *wr)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	struct ipc_private *private = req->conn->ntvfs_private;
+	DATA_BLOB data;
+	uint16 fnum;
+	struct pipe_state *p;
+	NTSTATUS status;
+
+	switch (wr->generic.level) {
+	case RAW_WRITE_WRITE:
+		fnum = wr->write.in.fnum;
+		data.data = wr->write.in.data;
+		data.length = wr->write.in.count;
+		break;
+
+	case RAW_WRITE_WRITEX:
+		fnum = wr->writex.in.fnum;
+		data.data = wr->writex.in.data;
+		data.length = wr->writex.in.count;
+		break;
+
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	p = pipe_state_find(private, fnum);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = dcesrv_input(p->pipe_state, &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (wr->generic.level) {
+	case RAW_WRITE_WRITE:
+		wr->write.out.nwritten = data.length;
+		break;
+	case RAW_WRITE_WRITEX:
+		wr->writex.out.nwritten = data.length;
+		wr->writex.out.remaining = 0;
+		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -421,6 +508,52 @@ NTSTATUS ipc_search_close(struct request_context *req, union smb_search_close *i
 }
 
 
+/* SMBtrans - used to provide access to SMB pipes */
+static NTSTATUS ipc_trans(struct request_context *req, struct smb_trans2 *trans)
+{
+	struct pipe_state *p;
+	struct ipc_private *private = req->conn->ntvfs_private;
+	NTSTATUS status;
+	
+	if (trans->in.setup_count != 2 ||
+	    trans->in.setup[0] != TRANSACT_DCERPCCMD) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* the fnum is in setup[1] */
+	p = pipe_state_find(private, trans->in.setup[1]);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* pass the data to the dcerpc server. Note that we don't
+	   expect this to fail, and things like NDR faults are not
+	   reported at this stage. Those sorts of errors happen in the
+	   dcesrv_output stage */
+	status = dcesrv_input(p->pipe_state, &trans->in.data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	  now ask the dcerpc system for some output. This doesn't yet handle
+	  async calls. Again, we only expect NT_STATUS_OK. If the call fails then
+	  the error is encoded at the dcerpc level
+	*/
+	status = dcesrv_output(p->pipe_state, &trans->out.data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	trans->out.setup_count = 0;
+	trans->out.setup = NULL;
+	trans->out.params = data_blob(NULL, 0);
+
+	return NT_STATUS_OK;
+}
+
+
+
 /*
   initialialise the IPC backend, registering ourselves with the ntvfs subsystem
  */
@@ -460,6 +593,7 @@ NTSTATUS ntvfs_ipc_init(void)
 	ops.search_first = ipc_search_first;
 	ops.search_next = ipc_search_next;
 	ops.search_close = ipc_search_close;
+	ops.trans = ipc_trans;
 
 	/* register ourselves with the NTVFS subsystem. */
 	ret = register_backend("ntvfs", &ops);

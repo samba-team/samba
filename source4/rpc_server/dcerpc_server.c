@@ -108,6 +108,24 @@ void dcesrv_endpoint_disconnect(struct dcesrv_state *p)
 }
 
 
+/*
+  provide some input to a dcerpc endpoint server. This passes data
+  from a dcerpc client into the server
+*/
+NTSTATUS dcesrv_input(struct dcesrv_state *p, const DATA_BLOB *data)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/*
+  retrieve some output from a dcerpc server. The amount of data that
+  is wanted is in data->length
+*/
+NTSTATUS dcesrv_output(struct dcesrv_state *p, DATA_BLOB *data)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 
 /*
   a useful function for implementing the query endpoint op
