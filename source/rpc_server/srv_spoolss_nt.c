@@ -4595,7 +4595,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	convert_printer_info(info, printer, level);
 
-	if (info->info_2->devmode_ptr != 0) {
+	if (devmode) {
 		/* we have a valid devmode
 		   convert it and link it*/
 
