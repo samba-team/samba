@@ -147,8 +147,8 @@ static SL_cmd commands[] = {
     },
     { "help",		help, "help"},
     { "?"},
-    { "quit" },
     { "exit",		exit_kadmin, "exit"},
+    { "quit" },
     { NULL}
 };
 
