@@ -1480,6 +1480,128 @@ void samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_s
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
+/*******************************************************************
+makes a SAMR_Q_DELETE_DOM_GROUP structure.
+********************************************************************/
+void make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_c, POLICY_HND *hnd)
+{
+	if (q_c == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_samr_q_delete_dom_group\n"));
+
+	memcpy(&(q_c->group_pol), hnd, sizeof(q_c->group_pol));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_delete_dom_group");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("group_pol", &(q_u->group_pol), ps, depth); 
+}
+
+/*******************************************************************
+makes a SAMR_R_DELETE_DOM_GROUP structure.
+********************************************************************/
+void make_samr_r_delete_dom_group(SAMR_R_DELETE_DOM_GROUP *r_u,
+		uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_delete_dom_group\n"));
+
+	r_u->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_delete_dom_group(char *desc,  SAMR_R_DELETE_DOM_GROUP *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_delete_dom_group");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+
+
+/*******************************************************************
+makes a SAMR_Q_DEL_GROUPMEM structure.
+********************************************************************/
+void make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_e,
+				POLICY_HND *pol,
+				uint32 rid)
+{
+	if (q_e == NULL || pol == NULL) return;
+
+	DEBUG(5,("make_samr_q_del_groupmem\n"));
+
+	memcpy(&(q_e->pol), pol, sizeof(*pol));
+
+	q_e->rid = rid;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_del_groupmem(char *desc,  SAMR_Q_DEL_GROUPMEM *q_e, prs_struct *ps, int depth)
+{
+	if (q_e == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_del_groupmem");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("rid    ", ps, depth, &(q_e->rid));
+}
+
+
+/*******************************************************************
+makes a SAMR_R_DEL_GROUPMEM structure.
+********************************************************************/
+void make_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM *r_u, POLICY_HND *pol,
+		uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_del_groupmem\n"));
+
+	r_u->status = status;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_del_groupmem(char *desc,  SAMR_R_DEL_GROUPMEM *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_del_groupmem");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
 
 /*******************************************************************
 makes a SAMR_Q_ADD_GROUPMEM structure.
@@ -2806,7 +2928,7 @@ void samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_s
 	prs_uint32("rid", ps, depth, &(r_u->rid));
 
 	prs_uint32("status", ps, depth, &(r_u->status));
-	}
+}
 
 
 
@@ -2902,6 +3024,62 @@ void samr_io_r_del_aliasmem(char *desc,  SAMR_R_DEL_ALIASMEM *r_u, prs_struct *p
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
+
+/*******************************************************************
+makes a SAMR_Q_DELETE_DOM_ALIAS structure.
+********************************************************************/
+void make_samr_q_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_c, POLICY_HND *hnd)
+{
+	if (q_c == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_samr_q_delete_dom_alias\n"));
+
+	memcpy(&(q_c->alias_pol), hnd, sizeof(q_c->alias_pol));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_delete_dom_alias(char *desc,  SAMR_Q_DELETE_DOM_ALIAS *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_delete_dom_alias");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth); 
+}
+
+/*******************************************************************
+makes a SAMR_R_DELETE_DOM_ALIAS structure.
+********************************************************************/
+void make_samr_r_delete_dom_alias(SAMR_R_DELETE_DOM_ALIAS *r_u,
+		uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_delete_dom_alias\n"));
+
+	r_u->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_delete_dom_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_delete_dom_alias");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
 
 /*******************************************************************
 makes a SAMR_Q_QUERY_ALIASMEM structure.

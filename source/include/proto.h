@@ -2119,6 +2119,18 @@ void samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_s
 void make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
 		uint32 rid, uint32 status);
 void samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth);
+void make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_c, POLICY_HND *hnd);
+void samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_struct *ps, int depth);
+void make_samr_r_delete_dom_group(SAMR_R_DELETE_DOM_GROUP *r_u,
+		uint32 status);
+void samr_io_r_delete_dom_group(char *desc,  SAMR_R_DELETE_DOM_GROUP *r_u, prs_struct *ps, int depth);
+void make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_e,
+				POLICY_HND *pol,
+				uint32 rid);
+void samr_io_q_del_groupmem(char *desc,  SAMR_Q_DEL_GROUPMEM *q_e, prs_struct *ps, int depth);
+void make_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM *r_u, POLICY_HND *pol,
+		uint32 status);
+void samr_io_r_del_groupmem(char *desc,  SAMR_R_DEL_GROUPMEM *r_u, prs_struct *ps, int depth);
 void make_samr_q_add_groupmem(SAMR_Q_ADD_GROUPMEM *q_e,
 				POLICY_HND *pol,
 				uint32 rid);
@@ -2212,6 +2224,11 @@ void make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u, POLICY_HND *hnd,
 				DOM_SID *sid);
 void samr_io_q_del_aliasmem(char *desc,  SAMR_Q_DEL_ALIASMEM *q_u, prs_struct *ps, int depth);
 void samr_io_r_del_aliasmem(char *desc,  SAMR_R_DEL_ALIASMEM *r_u, prs_struct *ps, int depth);
+void make_samr_q_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_c, POLICY_HND *hnd);
+void samr_io_q_delete_dom_alias(char *desc,  SAMR_Q_DELETE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
+void make_samr_r_delete_dom_alias(SAMR_R_DELETE_DOM_ALIAS *r_u,
+		uint32 status);
+void samr_io_r_delete_dom_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_c, POLICY_HND *hnd);
 void samr_io_q_query_aliasmem(char *desc,  SAMR_Q_QUERY_ALIASMEM *q_u, prs_struct *ps, int depth);
 void make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
