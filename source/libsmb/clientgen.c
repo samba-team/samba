@@ -2991,7 +2991,7 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 	if (strequal(srv_name, "*SMBSERVER"))
 	{
 		fstrcpy(ip_name, "\\\\");
-		inet_aton(&ip_name[2], destip);
+		fstrcpy(&ip_name[2], inet_ntoa(*destip));
 		srv_name = ip_name;
 	}
 
