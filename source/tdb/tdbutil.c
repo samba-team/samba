@@ -54,6 +54,7 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 
 /****************************************************************************
  Fetch a value by a arbitrary blob key, return -1 if not found.
+ JRA. DEPRECATED ! Use tdb_fetch_int32_byblob instead.
 ****************************************************************************/
 
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
@@ -74,6 +75,7 @@ int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 
 /****************************************************************************
  Fetch a value by string key, return -1 if not found.
+ JRA. DEPRECATED ! Use tdb_fetch_int32 instead.
 ****************************************************************************/
 
 int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr)
@@ -83,6 +85,7 @@ int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr)
 
 /****************************************************************************
  Store a value by an arbitary blob key, return 0 on success, -1 on failure.
+ JRA. DEPRECATED ! Use tdb_store_int32_byblob instead.
 ****************************************************************************/
 
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v)
@@ -99,11 +102,72 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v)
 
 /****************************************************************************
  Store a value by string key, return 0 on success, -1 on failure.
+ JRA. DEPRECATED ! Use tdb_store_int32 instead.
 ****************************************************************************/
 
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v)
 {
 	return tdb_store_int_byblob(tdb, keystr, strlen(keystr) + 1, v);
+}
+
+/****************************************************************************
+ Fetch a int32 value by a arbitrary blob key, return -1 if not found.
+ Output is int32 in native byte order.
+****************************************************************************/
+
+int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
+{
+	TDB_DATA key, data;
+	int32 ret;
+
+	key.dptr = keyval;
+	key.dsize = len;
+	data = tdb_fetch(tdb, key);
+	if (!data.dptr || data.dsize != sizeof(int32))
+		return -1;
+	
+	ret = IVAL(data.dptr,0);
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+/****************************************************************************
+ Fetch a int32 value by string key, return -1 if not found.
+ Output is int32 in native byte order.
+****************************************************************************/
+
+int32 tdb_fetch_int32(TDB_CONTEXT *tdb, char *keystr)
+{
+	return tdb_fetch_int32_byblob(tdb, keystr, strlen(keystr) + 1);
+}
+
+/****************************************************************************
+ Store a int32 value by an arbitary blob key, return 0 on success, -1 on failure.
+ Input is int32 in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+int tdb_store_int32_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int32 v)
+{
+	TDB_DATA key, data;
+	int32 v_store;
+
+	key.dptr = keystr;
+	key.dsize = len;
+	SIVAL(&v_store,0,v);
+	data.dptr = (void *)&v_store;
+	data.dsize = sizeof(int32);
+
+	return tdb_store(tdb, key, data, TDB_REPLACE);
+}
+
+/****************************************************************************
+ Store a int32 value by string key, return 0 on success, -1 on failure.
+ Input is int32 in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+int tdb_store_int32(TDB_CONTEXT *tdb, char *keystr, int32 v)
+{
+	return tdb_store_int32_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
 
 /****************************************************************************
