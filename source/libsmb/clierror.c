@@ -29,26 +29,30 @@
 
 static const struct
 {
-  int err;
-  char *message;
-} rap_errmap[] =
-{
-  {5,    "User has insufficient privilege" },
-  {86,   "The specified password is invalid" },
-  {2226, "Operation only permitted on a Primary Domain Controller"  },
-  {2242, "The password of this user has expired." },
-  {2243, "The password of this user cannot change." },
-  {2244, "This password cannot be used now (password history conflict)." },
-  {2245, "The password is shorter than required." },
-  {2246, "The password of this user is too recent to change."},
+	int err;
+	char *message;
+} rap_errmap[] = {
+	{5,    "RAP5: User has insufficient privilege" },
+	{50,   "RAP50: Not supported by server" },
+	{65,   "RAP65: Access denied" },
+	{86,   "RAP86: The specified password is invalid" },
+	{2220, "RAP2220: Group does not exist" },
+	{2221, "RAP2221: User does not exist" },
+	{2226, "RAP2226: Operation only permitted on a Primary Domain Controller"  },
+	{2237, "RAP2237: User is not in group" },
+	{2242, "RAP2242: The password of this user has expired." },
+	{2243, "RAP2243: The password of this user cannot change." },
+	{2244, "RAP2244: This password cannot be used now (password history conflict)." },
+	{2245, "RAP2245: The password is shorter than required." },
+	{2246, "RAP2246: The password of this user is too recent to change."},
 
-  /* these really shouldn't be here ... */
-  {0x80, "Not listening on called name"},
-  {0x81, "Not listening for calling name"},
-  {0x82, "Called name not present"},
-  {0x83, "Called name present, but insufficient resources"},
+	/* these really shouldn't be here ... */
+	{0x80, "Not listening on called name"},
+	{0x81, "Not listening for calling name"},
+	{0x82, "Called name not present"},
+	{0x83, "Called name present, but insufficient resources"},
 
-  {0, NULL}
+	{0, NULL}
 };  
 
 /****************************************************************************
