@@ -162,6 +162,9 @@ static void thread_terminate_connection(struct server_connection *conn, const ch
 {
 	DEBUG(0,("thread_terminate_connection: reason[%s]\n",reason));
 	conn->service->ops->close_connection(conn,reason);
+	close(conn->event.fde->fd);
+	event_remove_fd(conn->event.ctx, conn->event.fde);
+	event_remove_timed(conn->event.ctx, conn->event.idle);
 	/* terminate this thread */
 	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
 }

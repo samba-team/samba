@@ -122,6 +122,9 @@ static void single_terminate_connection(struct server_connection *conn, const ch
 {
 	DEBUG(0,("single_terminate_connection: reason[%s]\n",reason));
 	conn->service->ops->close_connection(conn,reason);
+	close(conn->event.fde->fd);
+	event_remove_fd(conn->event.ctx, conn->event.fde);
+	event_remove_timed(conn->event.ctx, conn->event.idle);
 }
 
 static int single_get_id(struct smbsrv_request *req)

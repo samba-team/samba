@@ -217,10 +217,6 @@ void dcesrv_tcp_close(struct server_connection *conn, const char *reason)
 
 	DEBUG(5,("dcesrv_tcp_close: %s\n",reason));
 
-	close(conn->event.fde->fd);
-	event_remove_fd_all(conn->event.ctx, conn->socket->fde->fd);
-	event_remove_timed(conn->event.ctx, conn->event.idle);
-
 	talloc_destroy(dce_conn->mem_ctx);
 
 	return;
