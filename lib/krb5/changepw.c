@@ -53,7 +53,121 @@ str2data (krb5_data *d,
 }
 
 /*
- * Change password protocol defined by draft-....-04.txt
+ * Change password protocol defined by /*
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#include <krb5_locl.h>
+
+RCSID("$Id$");
+
+static void
+str2data (krb5_data *d,
+	  const char *fmt,
+	  ...) __attribute__ ((format (printf, 2, 3)));
+
+static void
+str2data (krb5_data *d,
+	  const char *fmt,
+	  ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    d->length = vasprintf ((char **)&d->data, fmt, args);
+    va_end(args);
+}
+
+/*
+ * Change password protocol defined by /*
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#include <krb5_locl.h>
+
+RCSID("$Id$");
+
+static void
+str2data (krb5_data *d,
+	  const char *fmt,
+	  ...) __attribute__ ((format (printf, 2, 3)));
+
+static void
+str2data (krb5_data *d,
+	  const char *fmt,
+	  ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    d->length = vasprintf ((char **)&d->data, fmt, args);
+    va_end(args);
+}
+
+/*
+ * Change password protocol defined by
+ * draft-ietf-cat-kerb-chg-password-02.txt
+ * 
+ * Share the response part of the protocol with MS set password
+ * (RFC3244)
  */
 
 static krb5_error_code
@@ -138,112 +252,6 @@ chgpw_send_request (krb5_context context,
 out2:
     krb5_data_free (&ap_req_data);
     return ret;
-}
-
-static krb5_error_code
-chgpw_process_reply (krb5_context context,
-		     krb5_auth_context auth_context,
-		     int sock,
-		     int *result_code,
-		     krb5_data *result_code_string,
-		     krb5_data *result_string,
-		     const char *host)
-{
-    krb5_error_code ret;
-    u_char reply[BUFSIZ];
-    size_t len;
-    u_int16_t pkt_len, pkt_ver;
-    krb5_data ap_rep_data, priv_data;
-    int save_errno;
-
-    ret = recvfrom (sock, reply, sizeof(reply), 0, NULL, NULL);
-    if (ret < 0) {
-	save_errno = errno;
-	krb5_set_error_string(context, "recvfrom %s: %s",
-			      host, strerror(save_errno));
-	return save_errno;
-    }
-
-    len = ret;
-    pkt_len = (reply[0] << 8) | (reply[1]);
-    pkt_ver = (reply[2] << 8) | (reply[3]);
-
-    if (pkt_len != len) {
-	str2data (result_string, "client: wrong len in reply");
-	*result_code = KRB5_KPASSWD_MALFORMED;
-	return 0;
-    }
-    if (pkt_ver != 0x0001) {
-	str2data (result_string,
-		  "client: wrong version number (%d)", pkt_ver);
-	*result_code = KRB5_KPASSWD_MALFORMED;
-	return 0;
-    }
-
-    ap_rep_data.data = reply + 6;
-    ap_rep_data.length  = (reply[4] << 8) | (reply[5]);
-    priv_data.data   = (u_char*)ap_rep_data.data + ap_rep_data.length;
-    priv_data.length = len - ap_rep_data.length - 6;
-    if ((u_char *)priv_data.data + priv_data.length > reply + len)
-	return KRB5_KPASSWD_MALFORMED;
-  
-    if (ap_rep_data.length) {
-	krb5_ap_rep_enc_part *ap_rep;
-	u_char *p;
-
-	ret = krb5_rd_rep (context,
-			   auth_context,
-			   &ap_rep_data,
-			   &ap_rep);
-	if (ret)
-	    return ret;
-
-	krb5_free_ap_rep_enc_part (context, ap_rep);
-
-	ret = krb5_rd_priv (context,
-			    auth_context,
-			    &priv_data,
-			    result_code_string,
-			    NULL);
-	if (ret) {
-	    krb5_data_free (result_code_string);
-	    return ret;
-	}
-
-	if (result_code_string->length < 2) {
-	    *result_code = KRB5_KPASSWD_MALFORMED;
-	    str2data (result_string,
-		      "client: bad length in result");
-	    return 0;
-	}
-	p = result_code_string->data;
-      
-	*result_code = (p[0] << 8) | p[1];
-	krb5_data_copy (result_string,
-			(unsigned char*)result_code_string->data + 2,
-			result_code_string->length - 2);
-	return 0;
-    } else {
-	KRB_ERROR error;
-	size_t size;
-	u_char *p;
-      
-	ret = decode_KRB_ERROR(reply + 6, len - 6, &error, &size);
-	if (ret) {
-	    return ret;
-	}
-	if (error.e_data->length < 2) {
-	    krb5_warnx (context, "too short e_data to print anything usable");
-	    return 1;		/* XXX */
-	}
-
-	p = error.e_data->data;
-	*result_code = (p[0] << 8) | p[1];
-	krb5_data_copy (result_string,
-			p + 2,
-			error.e_data->length - 2);
-	return 0;
-    }
 }
 
 /*
@@ -347,13 +355,13 @@ out2:
 }
 
 static krb5_error_code
-setpw_process_reply (krb5_context context,
-		     krb5_auth_context auth_context,
-		     int sock,
-		     int *result_code,
-		     krb5_data *result_code_string,
-		     krb5_data *result_string,
-		     const char *host)
+process_reply (krb5_context context,
+	       krb5_auth_context auth_context,
+	       int sock,
+	       int *result_code,
+	       krb5_data *result_code_string,
+	       krb5_data *result_string,
+	       const char *host)
 {
     krb5_error_code ret;
     u_char reply[BUFSIZ];
@@ -373,8 +381,8 @@ setpw_process_reply (krb5_context context,
     len = ret;
 
     if (len < 6) {
-	krb5_set_error_string(context, "server %s sent to short message "
-			      "(%d bytes)", host, len);
+	str2data (result_string, "server %s sent to short message "
+		  "(%d bytes)", host, len);
 	return KRB5_KPASSWD_MALFORMED;
     }
 
@@ -416,8 +424,7 @@ setpw_process_reply (krb5_context context,
 	*result_code = KRB5_KPASSWD_MALFORMED;
 	return 0;
     }
-    if (pkt_ver != KRB5_KPASSWD_VERS_SETPW &&
-	pkt_ver != KRB5_KPASSWD_VERS_CHANGEPW) {
+    if (pkt_ver != KRB5_KPASSWD_VERS_CHANGEPW) {
 	str2data (result_string,
 		  "client: wrong version number (%d)", pkt_ver);
 	*result_code = KRB5_KPASSWD_MALFORMED;
@@ -438,6 +445,9 @@ setpw_process_reply (krb5_context context,
 	krb5_data priv_data;
 	u_char *p;
 
+	priv_data.data   = (u_char*)ap_rep_data.data + ap_rep_data.length;
+	priv_data.length = len - ap_rep_data.length - 6;
+
 	ret = krb5_rd_rep (context,
 			   auth_context,
 			   &ap_rep_data,
@@ -446,9 +456,6 @@ setpw_process_reply (krb5_context context,
 	    return ret;
 
 	krb5_free_ap_rep_enc_part (context, ap_rep);
-
-	priv_data.data   = (u_char*)ap_rep_data.data + ap_rep_data.length;
-	priv_data.length = len - ap_rep_data.length - 6;
 
 	ret = krb5_rd_priv (context,
 			    auth_context,
@@ -524,8 +531,8 @@ struct kpwd_proc {
     kpwd_send_request send_req;
     kpwd_process_reply process_rep;
 } procs[] = {
-    { "MS set password", setpw_send_request, setpw_process_reply },
-    { "change password", chgpw_send_request, chgpw_process_reply },
+    { "MS set password", setpw_send_request, process_reply },
+    { "change password", chgpw_send_request, process_reply },
     { NULL }
 };
 
@@ -731,7 +738,6 @@ krb5_set_password (krb5_context	 context,
 	    return ret;
     } else
 	principal = targprinc;
-
 
     ret = krb5_make_principal(context, &creds.server, 
 			      *krb5_princ_realm(context, principal),
