@@ -395,7 +395,7 @@ int getpty(int *ptynum)
     int p;
     char *cp, *p1, *p2;
     int i;
-#if SunOS == 4
+#if SunOS == 40
     int dummy;
 #endif
 #if 0 /* && defined(HAVE_OPENPTY) */
@@ -464,14 +464,14 @@ int getpty(int *ptynum)
 #endif
 		chown(line, 0, 0);
 		chmod(line, 0600);
-#if SunOS == 4
+#if SunOS == 40
 		if (ioctl(p, TIOCGPGRP, &dummy) == 0
 		    || errno != EIO) {
 		    chmod(line, 0666);
 		    close(p);
 		    line[5] = 'p';
 		} else
-#endif /* SunOS == 4 */
+#endif /* SunOS == 40 */
 		    return(p);
 	    }
 	}

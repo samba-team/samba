@@ -60,7 +60,7 @@
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
 #include <sys/ioctl.h>
 #endif
 #ifdef TIME_WITH_SYS_TIME

@@ -61,7 +61,7 @@
 #include <fcntl.h>
 #endif
 
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
 #include <sys/ioctl.h>
 #endif
 #ifdef HAVE_PWD_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -48,7 +48,7 @@ RCSID("$Id$");
 #include <stdio.h>
 
 #ifdef HAVE_NETDB_H
-#if (defined(SunOS) && (SunOS >= 5))
+#if (defined(SunOS) && (SunOS >= 50))
 #define hstrerror broken_proto
 #endif
 #include <netdb.h>

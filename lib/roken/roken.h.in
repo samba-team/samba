@@ -95,7 +95,7 @@
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
 #include <sys/ioctl.h>
 #endif
 #ifdef TIME_WITH_SYS_TIME
@@ -232,7 +232,7 @@ char *strerror(int eno);
 
 #if !defined(HAVE_HSTRERROR) || defined(NEED_HSTRERROR_PROTO)
 /* This causes a fatal error under Psoriasis */
-#if !(defined(SunOS) && (SunOS >= 5))
+#if !(defined(SunOS) && (SunOS >= 50))
 const char *hstrerror(int herr);
 #endif
 #endif

@@ -81,7 +81,7 @@
 /* including both <sys/ioctl.h> and <termios.h> in SunOS 4 generates a
    lot of warnings */
 
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
 #include <sys/ioctl.h>
 #endif
 #ifdef HAVE_SYS_FILIO_H

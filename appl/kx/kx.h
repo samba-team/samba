@@ -113,7 +113,7 @@
 #endif
 
 /* as far as we know, this is only used with later versions of Slowlaris */
-#if SunOS == 5 && defined(HAVE_SYS_STROPTS_H) && defined(HAVE_FATTACH) && defined(I_PUSH)
+#if SunOS >= 50 && defined(HAVE_SYS_STROPTS_H) && defined(HAVE_FATTACH) && defined(I_PUSH)
 #define MAY_HAVE_X11_PIPES
 #endif
 
