@@ -140,6 +140,12 @@ krb5_parse_name(krb5_context context,
 		c = '\b';
 	    else if(c == '0')
 		c = '\0';
+	    else if(c == '\0') {
+		krb5_set_error_string (context,
+				       "trailing \\ in principal name");
+		ret = KRB5_PARSE_MALFORMED;
+		goto exit;
+	    }
 	}else if(c == '/' || c == '@'){
 	    if(got_realm){
 		krb5_set_error_string (context,
