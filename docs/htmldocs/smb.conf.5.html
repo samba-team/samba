@@ -471,6 +471,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#netbiosaliases"><strong>netbios aliases</strong></a>
 <p><br><li > <a href="smb.conf.5.html#netbiosname"><strong>netbios name</strong></a>
 <p><br><li > <a href="smb.conf.5.html#nishomedir"><strong>nis homedir</strong></a>
+<p><br><li > <a href="smb.conf.5.html#ntaclsupport"><strong>nt acl support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ntpipesupport"><strong>nt pipe support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ntsmbsupport"><strong>nt smb support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#nullpasswords"><strong>null passwords</strong></a>
@@ -719,13 +720,14 @@ regardless if the owner of the file is the currently logged on user or not.
 <li><strong><strong>announce as (G)</strong></strong>
 <p><br>This specifies what type of server <a href="nmbd.8.html"><strong>nmbd</strong></a> will
 announce itself as, to a network neighborhood browse list. By default
-this is set to Windows NT. The valid options are : "NT", "Win95" or
-"WfW" meaning Windows NT, Windows 95 and Windows for Workgroups
-respectively. Do not change this parameter unless you have a specific
-need to stop Samba appearing as an NT server as this may prevent Samba
-servers from participating as browser servers correctly.
+this is set to Windows NT. The valid options are : "NT", which is a
+synonym for "NT Server", "NT Server", "NT Workstation", "Win95" or
+"WfW" meaning Windows NT Server, Windows NT Workstation, Windows 95
+and Windows for Workgroups respectively. Do not change this parameter
+unless you have a specific need to stop Samba appearing as an NT server
+as this may prevent Samba servers from participating as browser servers correctly.
 <p><br><strong>Default:</strong>
-<code>	announce as = NT</code>
+<code>	announce as = NT Server</code>
 <p><br><strong>Example</strong>
 <code>	announce as = Win95</code>
 <p><br><a name="announceversion"></a>
@@ -2637,6 +2639,13 @@ system and the Samba server with this option must also be a
 <code>	nis homedir = false</code>
 <p><br><strong>Example:</strong>
 <code>	nis homedir = true</code>
+<p><br><a name="ntaclsupport"></a>
+<li><strong><strong>nt acl support (G)</strong></strong>
+<p><br>This boolean parameter controls whether <a href="smbd.8.html"><strong>smbd</strong></a>
+will attempt to map UNIX permissions into Windows NT access control lists.
+This is currently an experimental option and is off by default.
+<p><br><strong>Default:</strong>
+<code>	nt acl support = no</code>
 <p><br><a name="ntpipesupport"></a>
 <li><strong><strong>nt pipe support (G)</strong></strong>
 <p><br>This boolean parameter controls whether <a href="smbd.8.html"><strong>smbd</strong></a>

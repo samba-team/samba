@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "07 Feb 1999" "smb.conf 2.0.1"
+.TH "smb\&.conf " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -701,6 +701,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBnis homedir\fP
 .IP 
 .IP o 
+\fBnt acl support\fP
+.IP 
+.IP o 
 \fBnt pipe support\fP
 .IP 
 .IP o 
@@ -1303,14 +1306,15 @@ regardless if the owner of the file is the currently logged on user or not\&.
 .IP 
 This specifies what type of server \fBnmbd\fP will
 announce itself as, to a network neighborhood browse list\&. By default
-this is set to Windows NT\&. The valid options are : "NT", "Win95" or
-"WfW" meaning Windows NT, Windows 95 and Windows for Workgroups
-respectively\&. Do not change this parameter unless you have a specific
-need to stop Samba appearing as an NT server as this may prevent Samba
-servers from participating as browser servers correctly\&.
+this is set to Windows NT\&. The valid options are : "NT", which is a
+synonym for "NT Server", "NT Server", "NT Workstation", "Win95" or
+"WfW" meaning Windows NT Server, Windows NT Workstation, Windows 95
+and Windows for Workgroups respectively\&. Do not change this parameter
+unless you have a specific need to stop Samba appearing as an NT server
+as this may prevent Samba servers from participating as browser servers correctly\&.
 .IP 
 \fBDefault:\fP
-\f(CW	announce as = NT\fP
+\f(CW	announce as = NT Server\fP
 .IP 
 \fBExample\fP
 \f(CW	announce as = Win95\fP
@@ -3840,6 +3844,15 @@ system and the Samba server with this option must also be a
 .IP 
 \fBExample:\fP
 \f(CW	nis homedir = true\fP
+.IP 
+.IP "\fBnt acl support (G)\fP" 
+.IP 
+This boolean parameter controls whether \fBsmbd\fP
+will attempt to map UNIX permissions into Windows NT access control lists\&.
+This is currently an experimental option and is off by default\&.
+.IP 
+\fBDefault:\fP
+\f(CW	nt acl support = no\fP
 .IP 
 .IP "\fBnt pipe support (G)\fP" 
 .IP 

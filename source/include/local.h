@@ -197,4 +197,7 @@
 
 #define DEFAULT_PASSWD_CHAT "*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*"
 
+/* Minimum length of allowed password when changing UNIX password. */
+#define MINPASSWDLENGTH 5
+
 #endif

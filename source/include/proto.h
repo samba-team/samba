@@ -314,6 +314,9 @@ char *fgets_slash(char *s2,int maxlen,FILE *f);
 
 /*The following definitions come from  lib/util_sec.c  */
 
+int trapdoor_set_effective_uid(uid_t uid);
+int trapdoor_set_real_uid(uid_t uid);
+int trapdoor_set_effective_gid(gid_t gid);
 void gain_root_privilege(void);
 void gain_root_group_privilege(void);
 int set_effective_uid(uid_t uid);
@@ -1076,6 +1079,7 @@ int lp_machine_password_timeout(void);
 int lp_change_notify_timeout(void);
 int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
+int lp_min_passwd_length(void);
 int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );

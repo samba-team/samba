@@ -866,8 +866,8 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 		{
 			make_srv_info_102(&ctr.srv.sv102,
 			                  500, global_myname, lp_serverstring(),
-			                  5, 4, /* major/minor version - NT 5.4 :-) */
-			                  0x4100b, /* browsing stuff SV_TYPE_XXXX */
+			                  lp_major_announce_version(), lp_minor_announce_version(),
+			                  lp_default_server_announce(),
 			                  0xffffffff, /* users */
 			                  0xf, /* disc */
 			                  0, /* hidden */
@@ -881,8 +881,8 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 		{
 			make_srv_info_101(&ctr.srv.sv101,
 			                  500, global_myname,
-			                  5, 4, /* major/minor version - NT 5.4 :-) */
-			                  0x4100b, /* browsing stuff SV_TYPE_XXXX */
+			                  lp_major_announce_version(), lp_minor_announce_version(),
+			                  lp_default_server_announce(),
 			                  lp_serverstring());
 			break;
 		}

@@ -609,6 +609,8 @@ it() link(bf(max xmit))(maxxmit)
 
 it() link(bf(message command))(messagecommand)
 
+it() link(bf(min passwd length))(minpasswdlength)
+
 it() link(bf(min wins ttl))(minwinsttl)
 
 it() link(bf(name resolve order))(nameresolveorder)
@@ -1063,14 +1065,15 @@ dit(bf(announce as (G)))
 
 This specifies what type of server url(bf(nmbd))(nmbd.8.html) will
 announce itself as, to a network neighborhood browse list. By default
-this is set to Windows NT. The valid options are : "NT", "Win95" or
-"WfW" meaning Windows NT, Windows 95 and Windows for Workgroups
-respectively. Do not change this parameter unless you have a specific
-need to stop Samba appearing as an NT server as this may prevent Samba
-servers from participating as browser servers correctly.
+this is set to Windows NT. The valid options are : "NT", which is a
+synonym for "NT Server", "NT Server", "NT Workstation", "Win95" or
+"WfW" meaning Windows NT Server, Windows NT Workstation, Windows 95
+and Windows for Workgroups respectively. Do not change this parameter
+unless you have a specific need to stop Samba appearing as an NT server
+as this may prevent Samba servers from participating as browser servers correctly.
 
   bf(Default:)
-tt(	announce as = NT)
+tt(	announce as = NT Server)
 
   bf(Example)
 tt(	announce as = Win95)
@@ -3556,6 +3559,20 @@ tt(	min print space = 0)
 
   bf(Example:)
 tt(	min print space = 2000)
+
+label(minpasswdlength)
+dit(bf(min passwd length (G)))
+
+This option sets the minimum length in characters of a plaintext password
+than smbd will accept when performing UNIX password changing.
+
+See also link(bf("unix password sync"))(unixpasswordsync),
+link(bf("passwd program"))(passwdprogram) and link(bf("passwd chat
+debug"))(passwdchatdebug).
+
+  bf(Default:)
+tt(	min passwd length = 5)
+
 
 label(minwinsttl)
 dit(bf(min wins ttl (G)))

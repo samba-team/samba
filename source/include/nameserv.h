@@ -546,11 +546,6 @@ struct packet_struct
    affects non-permanent self names (in seconds) */
 #define MAX_REFRESH_TIME (60*20)
 
-/* Types of machine we can announce as. */
-#define ANNOUNCE_AS_NT 1
-#define ANNOUNCE_AS_WIN95 2
-#define ANNOUNCE_AS_WFW 3
-
 /* Macro's to enumerate subnets either with or without
    the UNICAST subnet. */
 

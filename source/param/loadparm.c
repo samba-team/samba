@@ -185,6 +185,7 @@ typedef struct
   int change_notify_timeout;
   int stat_cache_size;
   int map_to_guest;
+  int min_passwd_length;
 #ifdef WITH_LDAP
   int ldap_port;
 #endif /* WITH_LDAP */
@@ -465,8 +466,13 @@ static struct enum_list enum_printing[] = {{PRINT_SYSV, "sysv"}, {PRINT_AIX, "ai
 					   {PRINT_LPRNG, "lprng"}, {PRINT_SOFTQ, "softq"},
 					   {-1, NULL}};
 
-static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT, "NT"}, {ANNOUNCE_AS_WIN95, "win95"},
-					      {ANNOUNCE_AS_WFW, "WfW"}, {-1, NULL}};
+/* Types of machine we can announce as. */
+#define ANNOUNCE_AS_NT_SERVER 1
+#define ANNOUNCE_AS_WIN95 2
+#define ANNOUNCE_AS_WFW 3
+#define ANNOUNCE_AS_NT_WORKSTATION 4
+
+static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT_SERVER, "NT"}, {ANNOUNCE_AS_NT_SERVER, "NT Server"}, {ANNOUNCE_AS_NT_WORKSTATION, "NT Workstation"}, {ANNOUNCE_AS_WIN95, "win95"}, {ANNOUNCE_AS_WFW, "WfW"}, {-1, NULL}};
 
 static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "upper"}, {-1, NULL}};
 
@@ -519,6 +525,8 @@ static struct parm_struct parm_table[] =
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
   {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
+  {"min passwd length",     P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
+  {"min password length",   P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
   {"map to guest",     P_ENUM,    P_GLOBAL, &Globals.map_to_guest,      NULL,   enum_map_to_guest, 0},
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
@@ -883,7 +891,7 @@ static void init_globals(void)
   Globals.lm_interval = 60;
   Globals.shmem_size = SHMEM_SIZE;
   Globals.stat_cache_size = 50; /* Number of stat translations we'll keep */
-  Globals.announce_as = ANNOUNCE_AS_NT;
+  Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
   Globals.bUnixRealname = False;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
   Globals.bNISHomeMap = False;
@@ -904,6 +912,7 @@ static void init_globals(void)
   Globals.bNTAclSupport = False; /* Don't use NT ACLs by default. */
   Globals.bStatCache = True; /* use stat cache by default */
   Globals.map_to_guest = 0; /* By Default, "Never" */
+  Globals.min_passwd_length = MINPASSWDLENGTH; /* By Default, 5. */
 
 #ifdef WITH_LDAP
   /* default values for ldap */
@@ -1227,6 +1236,7 @@ FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_change_notify_timeout,&Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_stat_cache_size,&Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest,&Globals.map_to_guest)
+FN_GLOBAL_INTEGER(lp_min_passwd_length,&Globals.min_passwd_length)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
@@ -2623,8 +2633,10 @@ static void set_default_server_announce_type(void)
 {
   default_server_announce = (SV_TYPE_WORKSTATION | SV_TYPE_SERVER |
                               SV_TYPE_SERVER_UNIX | SV_TYPE_PRINTQ_SERVER);
-  if(lp_announce_as() == ANNOUNCE_AS_NT)
+  if(lp_announce_as() == ANNOUNCE_AS_NT_SERVER)
     default_server_announce |= (SV_TYPE_SERVER_NT | SV_TYPE_NT);
+  if(lp_announce_as() == ANNOUNCE_AS_NT_WORKSTATION)
+    default_server_announce |= SV_TYPE_NT;
   else if(lp_announce_as() == ANNOUNCE_AS_WIN95)
     default_server_announce |= SV_TYPE_WIN95_PLUS;
   else if(lp_announce_as() == ANNOUNCE_AS_WFW)

@@ -52,7 +52,6 @@
 extern int DEBUGLEVEL;
 
 #if ALLOW_CHANGE_PASSWORD
-#define MINPASSWDLENGTH 5
 #define BUFSIZE 512
 
 static int findpty(char **slave)
@@ -400,9 +399,10 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 
   /* Take the passed information and test it for minimum criteria */
   /* Minimum password length */
-  if (strlen(newpass) < MINPASSWDLENGTH) /* too short, must be at least MINPASSWDLENGTH */ 
+  if (strlen(newpass) < lp_min_passwd_length()) /* too short, must be at least MINPASSWDLENGTH */ 
     {
-      DEBUG(2,("Password Change: %s, New password is shorter than MINPASSWDLENGTH\n",name));
+      DEBUG(0,("Password Change: user %s, New password is shorter than minimum password length = %d\n",
+            name, lp_min_passwd_length()));
       return (False);		/* inform the user */
     }
   
