@@ -1,3 +1,13 @@
+2004-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rc2.c: rc2 implementation
+	
+	* rc2.h: rc2 implementation
+	
+	* rc2test.c: rc2 implementation
+	
+	* Makefile.am: rc2 implementation
+
 2004-03-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: new arcfour implementation
