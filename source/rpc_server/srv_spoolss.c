@@ -286,9 +286,10 @@ static BOOL api_spoolss_getprinterdriver2(uint16 vuid, prs_struct *data, prs_str
 	/* that's an [in out] buffer */
 	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
 
-	r_u.status = _spoolss_getprinterdriver2(&q_u.handle, &q_u.architecture, q_u.level, q_u.unknown,
+	r_u.status = _spoolss_getprinterdriver2(&q_u.handle, &q_u.architecture, q_u.level, 
+						q_u.clientmajorversion, q_u.clientminorversion,
 						r_u.buffer, q_u.offered,
-						&r_u.needed, &r_u.unknown0, &r_u.unknown1);
+						&r_u.needed, &r_u.servermajorversion, &r_u.serverminorversion);
 	
 	if(!spoolss_io_r_getprinterdriver2("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdriver2: unable to marshall SPOOL_R_GETPRINTERDRIVER2.\n"));

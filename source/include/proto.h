@@ -2651,9 +2651,10 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 			      uint32 *needed, uint32 *returned);
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, uint32 unknown,
+uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
+				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
-				uint32 *needed, uint32 *unknown0, uint32 *unknown1);
+				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion);
 uint32 _spoolss_startpageprinter(const POLICY_HND *handle);
 uint32 _spoolss_endpageprinter(const POLICY_HND *handle);
 uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
@@ -2691,7 +2692,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
-				uint32 user_switch, const  SPOOL_USER_CTR *user,
+				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle);
 uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 				uint32 level,

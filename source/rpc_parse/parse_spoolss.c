@@ -1933,7 +1933,7 @@ BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *
 
 	buffer->struct_start=prs_offset(ps);
 
-	if(!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!spoolss_smb_io_unistr(desc, &info->name, ps, depth))
 		return False;
 
 	return True;
@@ -2318,7 +2318,9 @@ uint32 spoolss_size_driverdir_info_1(DRIVER_DIRECTORY_1 *info)
 {
 	int size=0;
 
-	size+=size_of_relative_string( &info->name );
+	size=str_len_uni(&info->name);	/* the string length       */
+	size=size+1;			/* add the leading zero    */
+	size=size*2;			/* convert in char         */
 
 	return size;
 }
@@ -2419,7 +2421,9 @@ BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
 	if(!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
 		
-	if(!prs_uint32("unknown", ps, depth, &q_u->unknown))
+	if(!prs_uint32("clientmajorversion", ps, depth, &q_u->clientmajorversion))
+		return False;
+	if(!prs_uint32("clientminorversion", ps, depth, &q_u->clientminorversion))
 		return False;
 
 	return True;
@@ -2444,9 +2448,9 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, 
 		return False;
 	if (!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
-	if (!prs_uint32("unknown0", ps, depth, &r_u->unknown0))
+	if (!prs_uint32("servermajorversion", ps, depth, &r_u->servermajorversion))
 		return False;
-	if (!prs_uint32("unknown1", ps, depth, &r_u->unknown1))
+	if (!prs_uint32("serverminorversion", ps, depth, &r_u->serverminorversion))
 		return False;		
 	if (!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
