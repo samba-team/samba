@@ -358,7 +358,6 @@ int main(int argc, char *argv[])
 	static char *config_file = dyn_CONFIGFILE;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
-	extern BOOL 		AllowDebugChange;
 	struct samtest_state st;
 
 
