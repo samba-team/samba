@@ -229,7 +229,16 @@ static void net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
 static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 {
 	struct smb_passwd *smb_pass;
-	extern int Client;
+
+#if 0
+    /*
+     * Currently this code is redundent as we already have a filter
+     * by hostname list. What this code really needs to do is to 
+     * get a hosts allowed/hosts denied list from the SAM database
+     * on a per user basis, and make the access decision there.
+     * I will leave this code here for now as a reminder to implement
+     * this at a later date. JRA.
+     */
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
 	                  client_name(Client), client_addr(Client)))
@@ -237,6 +246,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", mach_acct));
 		return False;
 	}
+#endif /* 0 */
 
 	become_root(True);
 	smb_pass = getsmbpwnam(mach_acct);

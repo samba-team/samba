@@ -352,8 +352,8 @@ static service sDefault =
   False,   /* bAlternatePerm */
   False,   /* revalidate */
   False,   /* case sensitive */
-  False,   /* case preserve */
-  False,   /* short case preserve */
+  True,   /* case preserve */
+  True,   /* short case preserve */
   False,  /* case mangle */
   True,  /* status */
   True,  /* bHideDotFiles */
@@ -592,10 +592,6 @@ static struct parm_struct parm_table[] =
   {"domain guest group",P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL,   NULL,  0},
   {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
   {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL,  0},
-  {"domain hosts allow",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL,  0},
-  {"domain allow hosts",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL,  0},
-  {"domain hosts deny", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL,  0},
-  {"domain deny hosts", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL,  0},
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
