@@ -44,6 +44,10 @@
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
 #endif
 
+#ifndef MS_MOVE 
+#define MS_MOVE 8192 
+#endif 
+
 char * thisprogram;
 int verboseflag = 0;
 static int got_password = 0;
@@ -227,7 +231,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	return rc;
 }
 
-static int parse_options(char * options)
+static int parse_options(char * options, int filesys_flags)
 {
 	char * data;
 	char * percent_char = 0;
@@ -394,7 +398,7 @@ static int parse_options(char * options)
 
 			if (strcmp (data, "fmask") == 0) {
 				printf ("WARNING: CIFS mount option 'fmask' is deprecated. Use 'file_mode' instead.\n");
-				data = "file_mode";
+				data = "file_mode"; /* BB fix this */
 			}
 		} else if (strcmp(data, "dir_mode") == 0 || strcmp(data, "dmask")==0) {
 			if (!value || !*value) {
@@ -410,6 +414,28 @@ static int parse_options(char * options)
 				printf ("WARNING: CIFS mount option 'dmask' is deprecated. Use 'dir_mode' instead.\n");
 				data = "dir_mode";
 			}
+			/* the following eight mount options should be
+			stripped out from what is passed into the kernel
+			since these eight options are best passed as the
+			mount flags rather than redundantly to the kernel 
+			and could generate spurious warnings depending on the
+			level of the corresponding cifs vfs kernel code */
+		} else if (strncmp(data, "nosuid", 6) == 0) {
+			filesys_flags |= MS_NOSUID;
+		} else if (strncmp(data, "suid", 4) == 0) {
+			filesys_flags &= ~MS_NOSUID;
+		} else if (strncmp(data, "nodev", 5) == 0) {
+			filesys_flags |= MS_NODEV;
+		} else if (strncmp(data, "dev", 3) == 0) {
+			filesys_flags &= ~MS_NODEV;
+		} else if (strncmp(data, "noexec", 6) == 0) {
+			filesys_flags |= MS_NOEXEC;
+		} else if (strncmp(data, "exec", 4) == 0) {
+			filesys_flags &= ~MS_NOEXEC;
+		} else if (strncmp(data, "ro", 3) == 0) {
+			filesys_flags |= MS_RDONLY;
+		} else if (strncmp(data, "rw", 2) == 0) {
+			filesys_flags &= ~MS_RDONLY;
 		} /* else if (strnicmp(data, "port", 4) == 0) {
 		if (value && *value) {
 			vol->port =
@@ -522,7 +548,9 @@ char * parse_server(char * unc_name)
 
 static struct option longopts[] = {
 	{ "all", 0, 0, 'a' },
-	{ "help", 0, 0, 'h' },
+	{ "help",0, 0, 'h' },
+	{ "move",0, 0, 'm' },
+	{ "bind",0, 0, 'b' },
 	{ "read-only", 0, 0, 'r' },
 	{ "ro", 0, 0, 'r' },
 	{ "verbose", 0, 0, 'v' },
@@ -530,12 +558,11 @@ static struct option longopts[] = {
 	{ "read-write", 0, 0, 'w' },
 	{ "rw", 0, 0, 'w' },
 	{ "options", 1, 0, 'o' },
-	{ "types", 1, 0, 't' },
+	{ "type", 1, 0, 't' },
 	{ "rsize",1, 0, 'R' },
 	{ "wsize",1, 0, 'W' },
 	{ "uid", 1, 0, '1'},
 	{ "gid", 1, 0, '2'},
-	{ "uuid",1,0,'U' },
 	{ "user",1,0,'u'},
 	{ "username",1,0,'u'},
 	{ "dom",1,0,'d'},
@@ -544,13 +571,14 @@ static struct option longopts[] = {
 	{ "pass",1,0,'p'},
 	{ "credentials",1,0,'c'},
 	{ "port",1,0,'P'},
+	/* { "uuid",1,0,'U'}, */ /* BB unimplemented */
 	{ NULL, 0, 0, 0 }
 };
 
 int main(int argc, char ** argv)
 {
 	int c;
-	int flags = MS_MANDLOCK | MS_MGC_VAL;
+	int flags = MS_MANDLOCK; /* no need to set legacy MS_MGC_VAL */
 	char * orgoptions = NULL;
 	char * share_name = NULL;
 	char * domain_name = NULL;
@@ -615,6 +643,12 @@ int main(int argc, char ** argv)
 		case 'n':
 		    ++nomtab;
 		    break;
+		case 'b':
+			flags |= MS_BIND;
+			break;
+		case 'm':
+			flags |= MS_MOVE;
+			break;
 		case 'o':
 			orgoptions = strdup(optarg);
 		    break;
@@ -693,7 +727,7 @@ int main(int argc, char ** argv)
 
 	ipaddr = parse_server(share_name);
 	
-	if (orgoptions && parse_options(orgoptions))
+	if (orgoptions && parse_options(orgoptions, flags))
 		return 1;
 
 	/* BB save off path and pop after mount returns? */
