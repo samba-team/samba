@@ -1777,12 +1777,25 @@ static BOOL run_deferopen(struct cli_state *cli, int dummy)
 
 	while (i < 4) {
 		int fnum = -1;
+
 		do {
+			struct timeval tv_start, tv_end;
+			GetTimeOfDay(&tv_start);
 			fnum = cli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
 				FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE,
 				NTCREATEX_DISP_OPEN_IF, 0, 0);
 			if (fnum != -1) {
 				break;
+			}
+			GetTimeOfDay(&tv_end);
+			if (NT_STATUS_EQUAL(cli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
+				/* Sharing violation errors need to be 1 second apart. */
+				long long tdif = usec_time_diff(&tv_end, &tv_start);
+				if (tdif < 500000 || tdif > 1500000) {
+					fprintf(stderr,"Timing incorrect %lld.%lld for share violation\n",
+						tdif / (long long)1000000, 
+						tdif % (long long)1000000);
+				}
 			}
 		} while (NT_STATUS_EQUAL(cli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION));
 
