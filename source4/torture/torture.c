@@ -217,6 +217,10 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
                 return status;
         }
 
+	/* this ensures that the reference count is decremented so
+	   a pipe close will really close the link */
+	cli_tree_close(cli->tree);
+
 	/* bind to the pipe, using the uuid as the key */
 	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4061,6 +4065,7 @@ static struct {
         {"RPC-EPMAPPER", torture_rpc_epmapper, 0},
         {"RPC-WINREG", torture_rpc_winreg, 0},
         {"RPC-MGMT", torture_rpc_mgmt, 0},
+        {"RPC-SCANNER", torture_rpc_scanner, 0},
 	{NULL, NULL, 0}};
 
 
