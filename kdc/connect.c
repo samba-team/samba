@@ -214,7 +214,7 @@ init_descr(struct descr *d)
 }
 
 /*
- * re-intialize all `n' ->sa in `d'.
+ * re-initialize all `n' ->sa in `d'.
  */
 
 static void
