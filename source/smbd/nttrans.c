@@ -1590,7 +1590,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
     return(ERROR(ERRDOS,ERRnomem));
 
   if(max_data_count < NO_NT_SEC_DESC_REPLY_SIZE) {
-    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL, params, 4, *ppdata, 0);
+    send_nt_replies(inbuf, outbuf, bufsize, 0xC0000000|NT_STATUS_BUFFER_TOO_SMALL,
+                    params, 4, *ppdata, 0);
     return -1;
   }
 
