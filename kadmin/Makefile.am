@@ -33,10 +33,11 @@ COMMON_LDADD = \
 	$(DBLIB)
 
 kadmind_LDADD = $(KRB4LIB) $(top_builddir)/lib/kadm5/libkadm5srv.la \
-	$(COMMON_LDADD)
+	$(COMMON_LDADD) \
 	$(LIB_dlopen)
 
 kadmin_LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
 	$(top_builddir)/lib/kadm5/libkadm5srv.la \
-	$(COMMON_LDADD)
+	$(COMMON_LDADD) \
+	$(LIB_dlopen)
