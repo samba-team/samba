@@ -275,7 +275,7 @@ interface IUnknown
 	/* Returns the interface with the specified IID 
 	   if implemented by this object */
 	HRESULT QueryInterface([in] IID *riid
-						   /*FIXME, [out] void **data*/);
+	   /*FIXME, [out] void **data*/);
 
 	/*****************/
 	/* Function 0x01 */
@@ -293,11 +293,15 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	HRESULT CreateInstance();
+	HRESULT CreateInstance(/*FIXME[in] IUnknown *pUnknown, 
+			       [in] IID *riid,
+			       [out, iid_is(riid)] void **ppv*/);
 
 	HRESULT RemoteCreateInstance();
 
-	HRESULT LockServer();
+	/* Set lock to TRUE when you want to do a lock
+	and set it to FALSE when you want to unlock */
+	HRESULT LockServer([in] uint8 lock);
 
 	HRESULT RemoteLockServer();
 }
@@ -450,16 +454,6 @@ interface ISystemActivator : IUnknown
 	void IRunDown_Dummy();
 }
 
-
-// Service Control Manager
-
-[
-	uuid(),
-	version(2.0)
-] interface SCM
-{
-	void SCM_Dummy();
-}
 
 [
 	object,
