@@ -306,7 +306,7 @@ int ltdb_search_dn(struct ldb_module *module, char *dn,
 		return -1;		
 	}
 
-	(*res)[0] = msg2;
+	(*res)[0] = talloc_steal(*res, msg2);
 	(*res)[1] = NULL;
 
 	return 1;
@@ -341,7 +341,7 @@ int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 
 	(*res) = res2;
 
-	(*res)[*count] = msg2;
+	(*res)[*count] = talloc_steal(*res, msg2);
 	(*res)[(*count)+1] = NULL;
 	(*count)++;
 
