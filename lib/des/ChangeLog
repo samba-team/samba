@@ -1,4 +1,10 @@
-2005-01-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* des.c: add DES_set_key_checked
+
+	* des.h: add DES_set_key_checked
+
+2005-03-01  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* des-tables.h: Add the missing file
 	
