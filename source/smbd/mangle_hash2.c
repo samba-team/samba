@@ -141,14 +141,12 @@ static BOOL cache_init(void)
 {
 	if (prefix_cache) return True;
 
-	prefix_cache = malloc(sizeof(char *) * MANGLE_CACHE_SIZE);
+	prefix_cache = calloc(MANGLE_CACHE_SIZE, sizeof(char *));
 	if (!prefix_cache) return False;
 
-	prefix_cache_hashes = malloc(sizeof(u32) * MANGLE_CACHE_SIZE);
+	prefix_cache_hashes = calloc(MANGLE_CACHE_SIZE, sizeof(u32));
 	if (!prefix_cache_hashes) return False;
 
-	memset(prefix_cache, 0, sizeof(char *) * MANGLE_CACHE_SIZE);
-	memset(prefix_cache_hashes, 0, sizeof(char *) * MANGLE_CACHE_SIZE);
 	return True;
 }
 
