@@ -88,6 +88,8 @@ static void usage(void)
   printf("\t-B broadcast address  the address to use for broadcasts\n");
   printf("\t-M                    searches for a master browser\n");
   printf("\t-S                    lookup node status as well\n");
+  printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
+  printf("\t-A                    Do a node status on <name> as an IP Address\n");
   printf("\n");
 }
 
@@ -108,6 +110,7 @@ int main(int argc,char *argv[])
   static pstring servicesf = CONFIGFILE;
   struct in_addr bcast_addr;
   BOOL got_bcast = False;
+  BOOL lookup_by_ip = False;
   
   DEBUGLEVEL = 1;
   *lookup = 0;
@@ -118,7 +121,7 @@ int main(int argc,char *argv[])
 
   charset_initialise();
 
-  while ((opt = getopt(argc, argv, "d:B:i:s:SMrh")) != EOF)
+  while ((opt = getopt(argc, argv, "d:B:i:s:SMrhA")) != EOF)
     switch (opt)
       {
       case 'B':
@@ -149,6 +152,9 @@ int main(int argc,char *argv[])
 	usage();
 	exit(0);
 	break;
+      case 'A':
+        lookup_by_ip = True;
+        break;
       default:
 	usage();
 	exit(1);
@@ -181,6 +187,16 @@ int main(int argc,char *argv[])
       struct in_addr ip;
 
       fstrcpy(lookup,argv[i]);
+
+      if(lookup_by_ip)
+      {
+        strcpy(lookup,"*");
+        ip = *interpret_addr2(argv[i]);
+        printf("Looking up status of %s\n",inet_ntoa(ip));
+        name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL,NULL);
+        printf("\n");
+        continue;
+      }
 
       if (find_master) {
 	if (*lookup == '-') {

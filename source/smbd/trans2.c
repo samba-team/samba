@@ -1181,12 +1181,32 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       data_size = 4;
       break;
 
-    case SMB_QUERY_FILE_NAME_INFO:
+    /* Get the 8.3 name - used if NT SMB was negotiated. */
     case SMB_QUERY_FILE_ALT_NAME_INFO:
+      {
+        pstring short_name;
+        pstrcpy(short_name,fname);
+        /* Mangle if not already 8.3 */
+        if(!is_8_3(short_name, True))
+        {
+          if(!name_map_mangle(short_name,True,SNUM(cnum)))
+            *short_name = '\0';
+        }
+        strncpy(pdata + 4,short_name,12);
+        (pdata + 4)[12] = 0;
+        strupper(pdata + 4);
+        l = strlen(pdata + 4);
+        data_size = 4 + l;
+        SIVAL(pdata,0,l);
+      }
+      break;
+
+    case SMB_QUERY_FILE_NAME_INFO:
       data_size = 4 + l;
       SIVAL(pdata,0,l);
       pstrcpy(pdata+4,fname);
       break;
+
     case SMB_QUERY_FILE_ALLOCATION_INFO:
     case SMB_QUERY_FILE_END_OF_FILEINFO:
       data_size = 8;
