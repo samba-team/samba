@@ -522,7 +522,7 @@ static myFILE *OpenConfFile( const char *FileName )
   int lvl = in_client?1:0;
   myFILE *ret;
 
-  ret = (myFILE *)malloc(sizeof(*ret));
+  ret = malloc_p(myFILE);
   if (!ret) return NULL;
 
   ret->buf = file_load(FileName, &ret->size);

@@ -184,7 +184,7 @@ interface security
 	typedef [public] struct {
 		uint16 revision;
 		[value(ndr_size_security_acl(r))] uint16 size;
-		uint32 num_aces;
+		[range(0,1000)] uint32 num_aces;
 		security_ace aces[num_aces];
 	} security_acl;
 

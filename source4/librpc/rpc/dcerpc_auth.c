@@ -70,7 +70,7 @@ NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t aut
 		}
 	}
 
-	p->security_state.auth_info = talloc(p, sizeof(*p->security_state.auth_info));
+	p->security_state.auth_info = talloc_p(p, struct dcerpc_auth);
 	if (!p->security_state.auth_info) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -150,7 +150,7 @@ NTSTATUS dcerpc_bind_alter(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t aut
 		}
 	}
 
-	p->security_state.auth_info = talloc(p, sizeof(*p->security_state.auth_info));
+	p->security_state.auth_info = talloc_p(p, struct dcerpc_auth);
 	if (!p->security_state.auth_info) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

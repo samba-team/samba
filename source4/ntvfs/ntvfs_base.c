@@ -32,7 +32,7 @@
 /* the list of currently registered NTVFS backends, note that there
  * can be more than one backend with the same name, as long as they
  * have different typesx */
-static struct {
+static struct ntvfs_backend {
 	const struct ntvfs_ops *ops;
 } *backends = NULL;
 static int num_backends;
@@ -57,7 +57,7 @@ NTSTATUS ntvfs_register(const void *_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	backends = Realloc(backends, sizeof(backends[0]) * (num_backends+1));
+	backends = realloc_p(backends, struct ntvfs_backend, num_backends+1);
 	if (!backends) {
 		smb_panic("out of memory in ntvfs_register");
 	}

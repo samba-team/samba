@@ -292,7 +292,7 @@ static void nss_test_initgroups(char *name, gid_t gid)
 	int i;
 	NSS_STATUS status;
 
-	groups = (gid_t *)malloc(size * sizeof(gid_t));
+	groups = (gid_t *)malloc_array_p(gid_t, size);
 	groups[0] = gid;
 
 	status = nss_initgroups(name, gid, &groups, &start, &size);
