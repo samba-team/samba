@@ -98,16 +98,25 @@ static uint32 check_any(char *trust_account, uchar trust_passwd[16])
                                     trust_account, trust_passwd, 
                                     SEC_CHAN_WKSTA, &validation_level);	
 	
-	if (result == NT_STATUS_NOPROBLEMO)
+	safe_free(ip_list);
+	return 0;
+
+	if (result == NT_STATUS_NOPROBLEMO) {
+		safe_free(ip_list);
 		return result;
+	}
 
 	/* OK, now try other domain controllers */
 	
  try_others:
 
+	safe_free(ip_list);
+	ip_list = NULL;
+
 	if (!get_dc_list(False, lp_workgroup(), &ip_list, &count)) {
 		DEBUG(0, ("could not find domain controller for "
 			  "domain %s\n", lp_workgroup()));
+		safe_free(ip_list);
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
@@ -136,6 +145,7 @@ static uint32 check_any(char *trust_account, uchar trust_passwd[16])
 			break;
 	}
 
+	safe_free(ip_list);
 	return result;
 }
 
