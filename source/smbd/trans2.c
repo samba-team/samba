@@ -4161,7 +4161,7 @@ int reply_trans2(connection_struct *conn,
 				goto bad_param;
 			
 			if (num_params) {
-				if (param_disp + num_params >= total_params)
+				if (param_disp + num_params > total_params)
 					goto bad_param;
 				if ((param_disp + num_params < param_disp) ||
 						(param_disp + num_params < num_params))
@@ -4177,7 +4177,7 @@ int reply_trans2(connection_struct *conn,
 				memcpy( &params[param_disp], smb_base(inbuf) + param_off, num_params);
 			}
 			if (num_data) {
-				if (data_disp + num_data >= total_data)
+				if (data_disp + num_data > total_data)
 					goto bad_param;
 				if ((data_disp + num_data < data_disp) ||
 						(data_disp + num_data < num_data))
