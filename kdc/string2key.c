@@ -11,7 +11,8 @@ int main(int argc, char **argv)
     int i;
     krb5_init_context(&context);
     krb5_parse_name(context, argv[1], &princ);
-    salt.length = salt.data = 0;
+    salt.length = 0;
+    salt.data = NULL;
     krb5_get_salt(princ, &salt);
     krb5_string_to_key(argv[2], &salt, &key);
     for(i = 0; i < key.contents.length; i++)
