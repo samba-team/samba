@@ -28,8 +28,7 @@
 static krb5_error_code krb5_mk_req2(krb5_context context, 
 				    krb5_auth_context *auth_context, 
 				    const krb5_flags ap_req_options,
-				    const char *service, 
-				    const char *realm,
+				    const char *principle,
 				    krb5_ccache ccache, 
 				    krb5_data *outbuf)
 {
@@ -39,10 +38,9 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 	krb5_creds 		  creds;
 	krb5_data in_data;
 	
-	retval = krb5_build_principal(context, &server, strlen(realm),
-				      realm, service, NULL);
+	retval = krb5_parse_name(context, principle, &server);
 	if (retval) {
-		DEBUG(1,("Failed to build principle for %s@%s\n", service, realm));
+		DEBUG(1,("Failed to parse principle %s\n", principle));
 		return retval;
 	}
 	
@@ -89,7 +87,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB krb5_get_ticket(char *service, char *realm)
+DATA_BLOB krb5_get_ticket(char *principle)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -114,7 +112,7 @@ DATA_BLOB krb5_get_ticket(char *service, char *realm)
 	if ((retval = krb5_mk_req2(context, 
 				   &auth_context, 
 				   0, 
-				   service, realm,
+				   principle,
 				   ccdef, &packet))) {
 		goto failed;
 	}

@@ -271,24 +271,11 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
 */
 DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principle)
 {
-	char *p;
-	fstring service;
-	char *realm;
 	DATA_BLOB tkt, tkt_wrapped, targ;
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};
 
-	fstrcpy(service, principle);
-	p = strchr_m(service, '@');
-	if (!p) {
-		DEBUG(1,("Malformed principle [%s] in spnego_gen_negTokenTarg\n",
-			 principle));
-		return data_blob(NULL, 0);
-	}
-	*p = 0;
-	realm = p+1;
-
 	/* get a kerberos ticket for the service */
-	tkt = krb5_get_ticket(service, realm);
+	tkt = krb5_get_ticket(principle);
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt);

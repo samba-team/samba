@@ -387,6 +387,8 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principle, c
 {
 	DATA_BLOB blob2, negTokenTarg;
 
+	d_printf("Doing kerberos session setup\n");
+
 	/* generate the encapsulated kerberos5 ticket */
 	negTokenTarg = spnego_gen_negTokenTarg(cli, principle);
 
@@ -508,6 +510,8 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	uint8 guid[16];
 	int i;
 	BOOL got_kerberos_mechanism = False;
+
+	d_printf("Doing spnego session setup\n");
 
 	/* the server might not even do spnego */
 	if (cli->secblob.length == 16) {
