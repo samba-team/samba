@@ -15,7 +15,7 @@ interface schannel
 	*/
 	typedef struct {
 		astring domain;
-		astring account_name;
+		astring workstation;
 	} schannel_bind_3;
 
 	typedef struct {

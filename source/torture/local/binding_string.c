@@ -25,7 +25,7 @@
 
 static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 {
-	struct dcerpc_binding b, b2;
+	struct dcerpc_binding *b, *b2;
 	const char *s, *s2;
 	struct epm_tower tower;
 	NTSTATUS status;
@@ -37,7 +37,7 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 		return False;
 	}
 
-	s = dcerpc_binding_string(mem_ctx, &b);
+	s = dcerpc_binding_string(mem_ctx, b);
 	if (!s) {
 		DEBUG(0, ("Error converting binding back to string for '%s'\n", binding)); 
 		return False;
@@ -49,7 +49,7 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 	}
 
 	/* Generate protocol towers */
-	status = dcerpc_binding_build_tower(mem_ctx, &b, &tower);
+	status = dcerpc_binding_build_tower(mem_ctx, b, &tower);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("Error generating protocol tower from '%s': %s\n", binding, nt_errstr(status)));
 		return False;
@@ -65,18 +65,18 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 
 	/* Compare to a stripped down version of the binding string because 
 	 * the protocol tower doesn't contain the extra option data */
-	b.options = NULL;
+	b->options = NULL;
 
-	b.flags = 0;
+	b->flags = 0;
 	
-	s = dcerpc_binding_string(mem_ctx, &b);
+	s = dcerpc_binding_string(mem_ctx, b);
 	if (!s) {
 		DEBUG(0, ("Error converting binding back to string for (stripped down) '%s'\n", binding)); 
 		return False;
 	}
 
 
-	s2 = dcerpc_binding_string(mem_ctx, &b2);
+	s2 = dcerpc_binding_string(mem_ctx, b2);
 	if (!s) {
 		DEBUG(0, ("Error converting binding back to string for '%s'\n", binding)); 
 		return False;

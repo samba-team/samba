@@ -209,7 +209,7 @@ BOOL torture_userinfo(void)
 	NTSTATUS status;
 	const char *binding;
 	struct dcerpc_pipe *p;
-	struct dcerpc_binding b;
+	struct dcerpc_binding *b;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle h;
@@ -236,7 +236,7 @@ BOOL torture_userinfo(void)
 		ret = False;
 		goto done;
 	}
-	name.string = b.host;
+	name.string = b->host;
 
 	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
 		ret = False;

@@ -58,7 +58,7 @@ static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
 {
 	struct dcesrv_endpoint *ep;
 	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
-		if (endpoints_match(&ep->ep_description, ep_description)) {
+		if (endpoints_match(ep->ep_description, ep_description)) {
 			return ep;
 		}
 	}
@@ -166,7 +166,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 {
 	struct dcesrv_endpoint *ep;
 	struct dcesrv_if_list *ifl;
-	struct dcerpc_binding binding;
+	struct dcerpc_binding *binding;
 	BOOL add_ep = False;
 	NTSTATUS status;
 	
@@ -179,13 +179,13 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 
 	/* check if this endpoint exists
 	 */
-	if ((ep=find_endpoint(dce_ctx, &binding))==NULL) {
+	if ((ep=find_endpoint(dce_ctx, binding))==NULL) {
 		ep = talloc(dce_ctx, struct dcesrv_endpoint);
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		ZERO_STRUCTP(ep);
-		ep->ep_description = binding;
+		ep->ep_description = talloc_reference(ep, binding);
 		add_ep = True;
 	}
 

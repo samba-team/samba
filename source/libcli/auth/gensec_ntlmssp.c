@@ -245,6 +245,9 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 	}
 
+	nt_status = ntlmssp_set_workstation(gensec_ntlmssp_state->ntlmssp_state,
+					    gensec_get_workstation(gensec_security));
+
 	gensec_security->private_data = gensec_ntlmssp_state;
 
 	return NT_STATUS_OK;

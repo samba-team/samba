@@ -194,7 +194,7 @@ NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *dom
 NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation) 
 {
 	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state, workstation);
-	if (!ntlmssp_state->domain) {
+	if (!ntlmssp_state->workstation) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
@@ -346,7 +346,7 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
 		if (ntlmssp_state->server_role == ROLE_STANDALONE) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
-			return ntlmssp_state->get_global_myname();
+			return ntlmssp_state->server_name;
 		} else {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN;
 			return ntlmssp_state->get_domain();
@@ -531,7 +531,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		msrpc_gen(out_mem_ctx, 
 			  &struct_blob, "aaaaa",
 			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
-			  NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
+			  NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->server_name,
 			  NTLMSSP_NAME_TYPE_DOMAIN_DNS, dnsdomname,
 			  NTLMSSP_NAME_TYPE_SERVER_DNS, dnsname,
 			  0, "");
@@ -923,7 +923,9 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmss
 	(*ntlmssp_state)->set_challenge = set_challenge;
 	(*ntlmssp_state)->may_set_challenge = may_set_challenge;
 
-	(*ntlmssp_state)->get_global_myname = lp_netbios_name;
+	(*ntlmssp_state)->workstation = NULL;
+	(*ntlmssp_state)->server_name = lp_netbios_name();
+
 	(*ntlmssp_state)->get_domain = lp_workgroup;
 	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
 
@@ -990,7 +992,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
 		  ntlmssp_state->get_domain(), 
-		  ntlmssp_state->get_global_myname());
+		  ntlmssp_state->workstation);
 
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
@@ -1240,7 +1242,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		       nt_response.data, nt_response.length,
 		       ntlmssp_state->domain, 
 		       ntlmssp_state->user, 
-		       ntlmssp_state->get_global_myname(), 
+		       ntlmssp_state->workstation, 
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags)) {
 		
@@ -1279,7 +1281,7 @@ NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmss
 
 	(*ntlmssp_state)->role = NTLMSSP_CLIENT;
 
-	(*ntlmssp_state)->get_global_myname = lp_netbios_name;
+	(*ntlmssp_state)->workstation = lp_netbios_name();
 	(*ntlmssp_state)->get_domain = lp_workgroup;
 
 	(*ntlmssp_state)->unicode = lp_parm_bool(-1, "ntlmssp_client", "unicode", True);

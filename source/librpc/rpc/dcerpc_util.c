@@ -323,11 +323,17 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 /*
   parse a binding string into a dcerpc_binding structure
 */
-NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding *b)
+NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out)
 {
+	struct dcerpc_binding *b;
 	char *options, *type;
 	char *p;
 	int i, j, comma_count;
+
+	b = talloc(mem_ctx, struct dcerpc_binding);
+	if (!b) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	p = strchr(s, '@');
 
@@ -373,14 +379,14 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 
 	p = strchr(s, '[');
 	if (p) {
-		b->host = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+		b->host = talloc_strndup(b, s, PTR_DIFF(p, s));
 		options = talloc_strdup(mem_ctx, p+1);
 		if (options[strlen(options)-1] != ']') {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		options[strlen(options)-1] = 0;
 	} else {
-		b->host = talloc_strdup(mem_ctx, s);
+		b->host = talloc_strdup(b, s);
 		options = NULL;
 	}
 
@@ -393,18 +399,19 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	b->endpoint = NULL;
 
 	if (!options) {
+		*b_out = b;
 		return NT_STATUS_OK;
 	}
 
 	comma_count = count_chars(options, ',');
 
-	b->options = talloc_array(mem_ctx, const char *, comma_count+2);
+	b->options = talloc_array(b, const char *, comma_count+2);
 	if (!b->options) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; (p = strchr(options, ',')); i++) {
-		b->options[i] = talloc_strndup(mem_ctx, options, PTR_DIFF(p, options));
+		b->options[i] = talloc_strndup(b, options, PTR_DIFF(p, options));
 		if (!b->options[i]) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -441,6 +448,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	if (b->options[0] == NULL)
 		b->options = NULL;
 	
+	*b_out = b;
 	return NT_STATUS_OK;
 }
 
@@ -657,9 +665,13 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 	return -1;
 }
 
-NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding *binding)
+NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding **b_out)
 {
 	NTSTATUS status;
+	struct dcerpc_binding *binding;
+
+	binding = talloc(mem_ctx, struct dcerpc_binding);
+	NT_STATUS_HAVE_NO_MEMORY(binding);
 
 	ZERO_STRUCT(binding->object);
 	binding->options = NULL;
@@ -699,6 +711,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	if (tower->num_floors >= 5) {
 		binding->host = dcerpc_floor_get_rhs_data(mem_ctx, &tower->floors[4]);
 	}
+	*b_out = binding;
 	return NT_STATUS_OK;
 }
 
@@ -773,7 +786,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 }
 
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
-				 const char *uuid, uint_t version)
+				const char *uuid, uint_t version)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
@@ -781,42 +794,51 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	struct policy_handle handle;
 	struct GUID guid;
 	struct epm_twr_t twr, *twr_r;
-	struct dcerpc_binding epmapper_binding;
+	struct dcerpc_binding *epmapper_binding;
 	const struct dcerpc_interface_table *table = idl_iface_by_uuid(uuid);
 	int i;
 
 	/* First, check if there is a default endpoint specified in the IDL */
 
 	if (table) {
-		struct dcerpc_binding default_binding;
+		struct dcerpc_binding *default_binding;
 
-		binding->authservice = talloc_strdup(mem_ctx, table->authservices->names[0]);
+		binding->authservice = talloc_strdup(binding, table->authservices->names[0]);
 
 		/* Find one of the default pipes for this interface */
 		for (i = 0; i < table->endpoints->count; i++) {
 			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
 
-			if (NT_STATUS_IS_OK(status) && default_binding.transport == binding->transport && default_binding.endpoint) {
-				binding->endpoint = talloc_strdup(mem_ctx, default_binding.endpoint);
-				return NT_STATUS_OK;
+			if (NT_STATUS_IS_OK(status)) {
+				if (default_binding->transport == binding->transport && default_binding->endpoint) {
+					binding->endpoint = talloc_reference(binding, default_binding->endpoint);
+					talloc_free(default_binding);
+					return NT_STATUS_OK;
+				} else {
+					talloc_free(default_binding);
+				}
 			}
 		}
 	}
 
+	epmapper_binding = talloc_zero(mem_ctx, struct dcerpc_binding);
+	if (!epmapper_binding) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCT(epmapper_binding);
-	epmapper_binding.transport = binding->transport;
-	epmapper_binding.host = binding->host;
-	epmapper_binding.options = NULL;
-	epmapper_binding.flags = 0;
-	epmapper_binding.endpoint = NULL;
-	epmapper_binding.authservice = NULL;
+	epmapper_binding->transport = binding->transport;
+	epmapper_binding->host = talloc_reference(epmapper_binding, 
+						  binding->host);
+	epmapper_binding->options = NULL;
+	epmapper_binding->flags = 0;
+	epmapper_binding->endpoint = NULL;
+	epmapper_binding->authservice = NULL;
 	
 	status = dcerpc_pipe_connect_b(&p,
-					&epmapper_binding,
-				   DCERPC_EPMAPPER_UUID,
-				   DCERPC_EPMAPPER_VERSION,
-				   NULL, NULL, NULL);
+				       epmapper_binding,
+				       DCERPC_EPMAPPER_UUID,
+				       DCERPC_EPMAPPER_VERSION,
+				       NULL, NULL, NULL, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -866,7 +888,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 		return NT_STATUS_PORT_UNREACHABLE;
 	}
 
-	binding->endpoint = dcerpc_floor_get_rhs_data(mem_ctx, &twr_r->tower.floors[3]);
+	binding->endpoint = talloc_reference(binding, dcerpc_floor_get_rhs_data(mem_ctx, &twr_r->tower.floors[3]));
 
 	dcerpc_pipe_close(p);
 
@@ -877,13 +899,14 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 /* 
    perform an authenticated bind if needed
 */
-static NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p, 
-				 struct dcerpc_binding *binding,
-				 const char *pipe_uuid, 
-				 uint32_t pipe_version,
-				 const char *domain,
-				 const char *username,
-				 const char *password)
+NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p, 
+			  struct dcerpc_binding *binding,
+			  const char *pipe_uuid, 
+			  uint32_t pipe_version,
+			  const char *workstation,
+			  const char *domain,
+			  const char *username,
+			  const char *password)
 {
 	NTSTATUS status;
 	p->conn->flags = binding->flags;
@@ -893,7 +916,8 @@ static NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
-						   domain, username, password);
+						   domain, workstation, 
+						   username, password);
 	} else if (username && username[0]) {
 		uint8_t auth_type;
 		if (binding->flags & DCERPC_AUTH_SPNEGO) {
@@ -905,6 +929,7 @@ static NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		}
 
 		status = dcerpc_bind_auth_password(p, pipe_uuid, pipe_version, 
+						   workstation, 
 						   domain, username, password, 
 						   auth_type,
 						   binding->authservice);
@@ -925,6 +950,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 					     struct dcerpc_binding *binding,
 					     const char *pipe_uuid, 
 					     uint32_t pipe_version,
+					     const char *workstation,
 					     const char *domain,
 					     const char *username,
 					     const char *password)
@@ -957,23 +983,14 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 
 	pipe_name = binding->endpoint;
 
-	if (!strncasecmp(pipe_name, "/pipe/", 6) || 
-	    !strncasecmp(pipe_name, "\\pipe\\", 6)) {
-		pipe_name += 6;
-	}
-
-	if (pipe_name[0] != '\\') {
-		pipe_name = talloc_asprintf(tmp_ctx, "\\%s", pipe_name);
-	}
-	
 	if (!username || !username[0] || 
 	    (binding->flags & DCERPC_SCHANNEL_ANY)) {
-		status = smbcli_full_connection(p->conn, &cli, lp_netbios_name(),
+		status = smbcli_full_connection(p->conn, &cli, workstation,
 						binding->host, 
 						"ipc$", NULL, 
 						"", "", NULL);
 	} else {
-		status = smbcli_full_connection(p->conn, &cli, lp_netbios_name(),
+		status = smbcli_full_connection(p->conn, &cli, workstation,
 						binding->host, 
 						"ipc$", NULL,
 						username, domain,
@@ -995,12 +1012,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 	if (!(binding->flags & DCERPC_AUTH_OPTIONS)) {
 		username = NULL;
 	}
-	
-	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
 
 	(*pp) = p;
 	talloc_free(tmp_ctx);
@@ -1013,10 +1024,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **pp, 
 					    struct dcerpc_binding *binding,
 					    const char *pipe_uuid, 
-					    uint32_t pipe_version,
-					    const char *domain,
-					    const char *username,
-					    const char *password)
+					    uint32_t pipe_version)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -1050,12 +1058,6 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **pp,
    		return status;
 	}
 
-	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
-
 	(*pp) = p;
 	talloc_free(tmp_ctx);
 
@@ -1069,10 +1071,7 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **pp,
 static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(struct dcerpc_pipe **pp, 
 						      struct dcerpc_binding *binding,
 						      const char *pipe_uuid, 
-						      uint32_t pipe_version,
-						      const char *domain,
-						      const char *username,
-						      const char *password)
+						      uint32_t pipe_version)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -1097,12 +1096,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(struct dcerpc_pipe **pp,
                 return status;
 	}
 
-	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
-
 	(*pp) = p;
  
 	return status;
@@ -1113,10 +1106,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(struct dcerpc_pipe **pp,
 static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **pp, 
 						 struct dcerpc_binding *binding,
 						 const char *pipe_uuid, 
-						 uint32_t pipe_version,
-						 const char *domain,
-						 const char *username,
-						 const char *password)
+						 uint32_t pipe_version)
 {
 	NTSTATUS status;
 	uint32_t port = 0;
@@ -1153,12 +1143,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **pp,
                 return status;
         }
 
-	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
-
 	(*pp) = p;
 	talloc_free(tmp_ctx);
  
@@ -1172,31 +1156,40 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **pp,
 			       struct dcerpc_binding *binding,
 			       const char *pipe_uuid, 
 			       uint32_t pipe_version,
+			       const char *workstation,
 			       const char *domain,
 			       const char *username,
 			       const char *password)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-
+	
 	switch (binding->transport) {
 	case NCACN_NP:
 		status = dcerpc_pipe_connect_ncacn_np(pp, binding, pipe_uuid, pipe_version,
-						      domain, username, password);
+						      workstation, domain, username, password);
 		break;
 	case NCACN_IP_TCP:
-		status = dcerpc_pipe_connect_ncacn_ip_tcp(pp, binding, pipe_uuid, pipe_version,
-							  domain, username, password);
+		status = dcerpc_pipe_connect_ncacn_ip_tcp(pp, binding, pipe_uuid, pipe_version);
 		break;
 	case NCACN_UNIX_STREAM:
-		status = dcerpc_pipe_connect_ncacn_unix_stream(pp, binding, pipe_uuid, pipe_version, 
-							       domain, username, password);
+		status = dcerpc_pipe_connect_ncacn_unix_stream(pp, binding, pipe_uuid, pipe_version);
 		break;
 	case NCALRPC:
-		status = dcerpc_pipe_connect_ncalrpc(pp, binding, pipe_uuid, pipe_version, 
-						     domain, username, password);
+		status = dcerpc_pipe_connect_ncalrpc(pp, binding, pipe_uuid, pipe_version);
 		break;
 	default:
 		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dcerpc_pipe_auth(*pp, binding, pipe_uuid, pipe_version, workstation, domain, username, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(*pp);
+		*pp = NULL;
+		return status;
 	}
 
 	return status;
@@ -1209,15 +1202,19 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **pp,
 			     const char *binding,
 			     const char *pipe_uuid, 
 			     uint32_t pipe_version,
+			     const char *workstation,
 			     const char *domain,
 			     const char *username,
 			     const char *password)
 {
-	struct dcerpc_binding b;
+	struct dcerpc_binding *b;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = dcerpc_parse_binding(tmp_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1226,9 +1223,10 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **pp,
 		return status;
 	}
 
-	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, &b)));
+	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, b)));
 
-	status = dcerpc_pipe_connect_b(pp, &b, pipe_uuid, pipe_version, domain, username, password);
+	status = dcerpc_pipe_connect_b(pp, b, pipe_uuid, pipe_version, workstation, 
+				       domain, username, password);
 
 	talloc_free(tmp_ctx);
 
@@ -1243,13 +1241,12 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **pp,
   will be on the same SMB connection, but use a new fnum
 */
 NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
-				     const char *pipe_name,
-				     const char *pipe_uuid,
-				     uint32_t pipe_version)
+				     struct dcerpc_binding *b)
+
+
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	struct dcerpc_binding b;
 
 	(*p2) = dcerpc_pipe_init(p);
 	if (*p2 == NULL) {
@@ -1262,23 +1259,15 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 		if (!tree) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		status = dcerpc_pipe_open_smb((*p2)->conn, tree, pipe_name);
+		status = dcerpc_pipe_open_smb((*p2)->conn, tree, b->endpoint);
 		break;
 
 	case NCACN_IP_TCP:
-		status = dcerpc_parse_binding(p, p->conn->binding_string, &b);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		status = dcerpc_pipe_open_tcp((*p2)->conn, b.host, atoi(b.endpoint));
+		status = dcerpc_pipe_open_tcp((*p2)->conn, b->host, atoi(b->endpoint));
 		break;
 
 	case NCALRPC:
-		status = dcerpc_parse_binding(p, p->conn->binding_string, &b);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		status = dcerpc_pipe_open_pipe((*p2)->conn, b.endpoint);
+		status = dcerpc_pipe_open_pipe((*p2)->conn, b->endpoint);
 		break;
 
 	default:
@@ -1291,12 +1280,6 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 	}
 
 	(*p2)->conn->flags = p->conn->flags;
-
-	status = dcerpc_bind_auth_none(*p2, pipe_uuid, pipe_version);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(*p2);
-                return status;
-        }
 
 	return NT_STATUS_OK;
 }

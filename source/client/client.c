@@ -2558,6 +2558,7 @@ static BOOL browse_host(const char *query_host)
 	status = dcerpc_pipe_connect(&p, binding, 
 				     DCERPC_SRVSVC_UUID, 
 				     DCERPC_SRVSVC_VERSION,
+				     lp_netbios_name(),
 				     domain, 
 				     username, password);
 	if (!NT_STATUS_IS_OK(status)) {

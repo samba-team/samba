@@ -95,7 +95,7 @@ struct ntlmssp_state
 
 	char *user;
 	char *domain;
-	char *workstation;
+	const char *workstation;
 	char *password;
 	char *server_domain;
 
@@ -161,7 +161,7 @@ struct ntlmssp_state
 	 */
 	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
-	const char *(*get_global_myname)(void);
+	const char *server_name;
 	const char *(*get_domain)(void);
 
 	/* SMB Signing */

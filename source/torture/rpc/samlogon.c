@@ -28,6 +28,7 @@
 #include "lib/crypto/crypto.h"
 
 #define TEST_MACHINE_NAME "samlogontest"
+#define TEST_USER_NAME "samlogontestuser"
 
 enum ntlm_break {
 	BREAK_BOTH,
@@ -1067,6 +1068,7 @@ static const struct ntlm_tests {
 static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct creds_CredentialState *creds, 
 			  const char *account_domain, const char *account_name, 
+			  const char *plain_pass,
 			  int n_subtests)
 {
 	int i, v, l, f;
@@ -1084,7 +1086,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.mem_ctx = mem_ctx;
 	samlogon_state.account_name = account_name;
 	samlogon_state.account_domain = account_domain;
-	samlogon_state.password = lp_parm_string(-1, "torture", "password");
+	samlogon_state.password = plain_pass;
 	samlogon_state.p = p;
 	samlogon_state.creds = creds;
 
@@ -1149,13 +1151,13 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 */
 static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  struct creds_CredentialState *creds, 
-				  const char *account_domain, const char *account_name)
+				  const char *account_domain, const char *account_name,
+				  const char *plain_pass)
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogonWithFlags r;
 	struct netr_Authenticator a, ra;
 	struct netr_PasswordInfo pinfo;
-	const char *plain_pass;
 
 	ZERO_STRUCT(a);
 	ZERO_STRUCT(r);
@@ -1179,8 +1181,6 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	pinfo.identity_info.account_name.string = account_name;
 	pinfo.identity_info.workstation.string = TEST_MACHINE_NAME;
 
-	plain_pass = lp_parm_string(-1, "torture", "password");
-
 	E_deshash(plain_pass, pinfo.lmpassword.hash);
 	E_md4hash(plain_pass, pinfo.ntpassword.hash);
 
@@ -1195,13 +1195,13 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing netr_LogonSamLogonWithFlags (Interactive Logon)\n");
 
 	status = dcerpc_netr_LogonSamLogonWithFlags(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("netr_LogonSamLogonWithFlags - %s\n", nt_errstr(status));
+	if (!r.out.return_authenticator || !creds_client_check(creds, &r.out.return_authenticator->cred)) {
+		printf("Credential chaining failed\n");
 		return False;
 	}
 
-	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
-		printf("Credential chaining failed\n");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("netr_LogonSamLogonWithFlags - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -1214,14 +1214,20 @@ BOOL torture_rpc_samlogon(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	struct dcerpc_binding b;
-	TALLOC_CTX *mem_ctx;
+	struct dcerpc_binding *b;
+	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_netlogon");
 	BOOL ret = True;
-	void *join_ctx;
+	struct test_join *join_ctx;
+#if 0
+	struct test_join *user_ctx;
+	const char *user_password;
+#endif
+	char *test_machine_account;
 	const char *machine_password;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	int i;
-	
+	int ci;
+
 	unsigned int credential_flags[] = {
 		NETLOGON_NEG_AUTH2_FLAGS,
 		NETLOGON_NEG_ARCFOUR,
@@ -1232,17 +1238,88 @@ BOOL torture_rpc_samlogon(void)
 
 	struct creds_CredentialState *creds;
 
-	mem_ctx = talloc_init("torture_rpc_netlogon");
-
+	struct {
+		const char *domain;
+		const char *username;
+		const char *password;
+		BOOL network_login;
+	} usercreds[] = {
+		{
+			lp_parm_string(-1, "torture", "userdomain"),
+			lp_parm_string(-1, "torture", "username"),
+			lp_parm_string(-1, "torture", "password"),
+			True
+		},
+		{
+			NULL,
+			talloc_asprintf(mem_ctx, 
+					"%s@%s", 
+					lp_parm_string(-1, "torture", "username"), 
+					lp_parm_string(-1, "torture", "userdomain")),
+			lp_parm_string(-1, "torture", "password"),
+			False
+		},
+		{
+			NULL,
+			talloc_asprintf(mem_ctx, 
+					"%s@%s", 
+					lp_parm_string(-1, "torture", "username"), 
+					lp_realm()),
+			lp_parm_string(-1, "torture", "password"),
+			True
+		},
+#if 0
+		{	
+			lp_parm_string(-1, "torture", "userdomain"),
+			TEST_USER_NAME,
+			NULL,
+			True
+		},
+		{
+			NULL,
+			talloc_asprintf(mem_ctx, 
+					"%s@%s", 
+					TEST_USER_NAME,
+					lp_realm()),
+			NULL,
+			True
+		},
+		{
+			NULL,
+			talloc_asprintf(mem_ctx, 
+					"%s@%s", 
+					TEST_USER_NAME,
+					lp_parm_string(-1, "torture", "userdomain")),
+			NULL,
+			False
+		}
+#endif
+	};
+		
+	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,
 	 * if we wish to test against trusted domains, we must be a
 	 * workstation here */
-	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_WSTRUST, 
-				       &machine_password);
+	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), ACB_WSTRUST, 
+					   &machine_password);
 	if (!join_ctx) {
 		printf("Failed to join as Workstation\n");
 		return False;
 	}
+#if 0
+	user_ctx = torture_create_testuser(TEST_USER_NAME,
+					   lp_parm_string(-1, "torture", "userdomain"),
+					   ACB_NORMAL, 
+					   &user_password);
+	if (!user_ctx) {
+		printf("Failed to join as Workstation\n");
+		return False;
+	}
+
+	usercreds[3].password = user_password;
+	usercreds[4].password = user_password;
+	usercreds[5].password = user_password;
+#endif
 
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1254,14 +1331,15 @@ BOOL torture_rpc_samlogon(void)
 	/* We have to use schannel, otherwise the SamLogonEx fails
 	 * with INTERNAL_ERROR */
 
-	b.flags &= ~DCERPC_AUTH_OPTIONS;
-	b.flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
-	status = dcerpc_pipe_connect_b(&p, &b, 
+	status = dcerpc_pipe_connect_b(&p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       lp_workgroup(), 
 				       TEST_MACHINE_NAME,
+				       lp_workgroup(), 
+				       test_machine_account,
 				       machine_password);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1275,91 +1353,46 @@ BOOL torture_rpc_samlogon(void)
 		goto failed;
 	}
 
-	if (!test_InteractiveLogon(p, mem_ctx, creds,
-			   lp_parm_string(-1, "torture", "userdomain"),
-			   lp_parm_string(-1, "torture", "username"))) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, creds, 
-			   lp_parm_string(-1, "torture", "userdomain"),
-			   lp_parm_string(-1, "torture", "username"), 
-			   0)) {
-		ret = False;
-	}
-
-	if (!test_InteractiveLogon(p, mem_ctx, creds, 
-				   NULL,
-				   talloc_asprintf(mem_ctx, 
-						   "%s@%s", 
-						   lp_parm_string(-1, "torture", "username"), 
-						   lp_parm_string(-1, "torture", "userdomain")))) {
-		ret = False;
-	}
-
-	if (!test_InteractiveLogon(p, mem_ctx, creds, 
-				   NULL,
-				   talloc_asprintf(mem_ctx, 
-						   "%s@%s", 
-						   lp_parm_string(-1, "torture", "username"), 
-						   lp_realm()))) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, creds, 
-			   NULL, 
-			   talloc_asprintf(mem_ctx, 
-					   "%s@%s", 
-					   lp_parm_string(-1, "torture", "username"), 
-					   lp_realm()),
-			   0)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, creds, 
-			   NULL, 
-			   talloc_asprintf(mem_ctx, 
-					   "%s@%s", 
-					   lp_parm_string(-1, "torture", "username"), 
-					   lp_realm()),
-			   0)) {
-		ret = False;
+	for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
+		
+		if (!test_InteractiveLogon(p, mem_ctx, creds,
+					   usercreds[ci].domain,
+					   usercreds[ci].username,
+					   usercreds[ci].password)) {
+			ret = False;
+		}
+		
+		if (usercreds[ci].network_login) {
+			if (!test_SamLogon(p, mem_ctx, creds, 
+					   usercreds[ci].domain,
+					   usercreds[ci].username,
+					   usercreds[ci].password,
+					   0)) {
+				ret = False;
+			}
+		}
 	}
 
 	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
 		
-		if (!test_SetupCredentials2(p, mem_ctx, credential_flags[i],
-					    TEST_MACHINE_NAME, machine_password, 
-					    SEC_CHAN_WKSTA, creds)) {
-			return False;
-		}
-		
-		if (!test_InteractiveLogon(p, mem_ctx, creds,
-					   NULL, 
-					   talloc_asprintf(mem_ctx, 
-							   "%s@%s", 
-							   lp_parm_string(-1, "torture", "username"), 
-							   lp_parm_string(-1, "torture", "userdomain")))) {
-			ret = False;
-		}
-		
-		if (!test_InteractiveLogon(p, mem_ctx, creds,
-					   NULL, 
-					   talloc_asprintf(mem_ctx, 
-							   "%s@%s", 
-							   lp_parm_string(-1, "torture", "username"), 
-							   lp_realm()))) {
-			ret = False;
-		}
-		
-		if (!test_SamLogon(p, mem_ctx, creds, 
-				   NULL, 
-				   talloc_asprintf(mem_ctx, 
-						   "%s@%s", 
-						   lp_parm_string(-1, "torture", "username"), 
-						   lp_realm()),
-				   1)) {
-			ret = False;
+		for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
+			
+			if (!test_InteractiveLogon(p, mem_ctx, creds,
+						   usercreds[ci].domain,
+						   usercreds[ci].username,
+						   usercreds[ci].password)) {
+				ret = False;
+			}
+			
+			if (usercreds[ci].network_login) {
+				if (!test_SamLogon(p, mem_ctx, creds, 
+						   usercreds[ci].domain,
+						   usercreds[ci].username,
+						   usercreds[ci].password,
+						   1)) {
+					ret = False;
+				}
+			}
 		}
 	}
 
@@ -1369,6 +1402,8 @@ failed:
 	torture_rpc_close(p);
 
 	torture_leave_domain(join_ctx);
-
+#if 0
+	torture_leave_domain(user_ctx);
+#endif
 	return ret;
 }

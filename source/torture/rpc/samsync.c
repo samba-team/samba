@@ -1284,10 +1284,10 @@ BOOL torture_rpc_samsync(void)
 	struct test_join *join_ctx2;
 	struct test_join *user_ctx;
 	const char *machine_password;
-	const char *machine_password2;
+	const char *wksta_machine_password;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
-	struct dcerpc_binding b;
-	struct dcerpc_binding b_netlogon_wksta;
+	struct dcerpc_binding *b;
+	struct dcerpc_binding *b_netlogon_wksta;
 	struct samr_Connect c;
 	struct samr_SetDomainInfo s;
 	struct policy_handle *domain_policy;
@@ -1298,17 +1298,23 @@ BOOL torture_rpc_samsync(void)
 
 	struct samsync_state *samsync_state;
 
+	char *test_machine_account;
+
+	char *test_wksta_machine_account;
+
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 
-	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_SVRTRUST, 
-				       &machine_password);
+	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), ACB_SVRTRUST, 
+					   &machine_password);
 	if (!join_ctx) {
 		printf("Failed to join as BDC\n");
 		return False;
 	}
 	
-	join_ctx2 = torture_join_domain(TEST_WKSTA_MACHINE_NAME, lp_workgroup(), ACB_WSTRUST, 
-				       &machine_password2);
+	test_wksta_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_WKSTA_MACHINE_NAME);
+	join_ctx2 = torture_create_testuser(test_wksta_machine_account, lp_workgroup(), ACB_WSTRUST, 
+					    &wksta_machine_password);
 	if (!join_ctx2) {
 		printf("Failed to join as member\n");
 		return False;
@@ -1409,17 +1415,19 @@ BOOL torture_rpc_samsync(void)
 		goto failed;
 	}
 
-	b.flags &= ~DCERPC_AUTH_OPTIONS;
-	b.flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN;
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN;
 
-	status = dcerpc_pipe_connect_b(&samsync_state->p, &b, 
+	status = dcerpc_pipe_connect_b(&samsync_state->p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       lp_workgroup(), 
 				       TEST_MACHINE_NAME,
+				       lp_workgroup(), 
+				       test_machine_account,
 				       machine_password);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
 		ret = False;
 		goto failed;
 	}
@@ -1438,17 +1446,20 @@ BOOL torture_rpc_samsync(void)
 		goto failed;
 	}
 
-	b_netlogon_wksta.flags &= ~DCERPC_AUTH_OPTIONS;
-	b_netlogon_wksta.flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN;
+	b_netlogon_wksta->flags &= ~DCERPC_AUTH_OPTIONS;
+	b_netlogon_wksta->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN;
 
-	status = dcerpc_pipe_connect_b(&samsync_state->p_netlogon_wksta, &b_netlogon_wksta, 
+	status = dcerpc_pipe_connect_b(&samsync_state->p_netlogon_wksta, 
+				       b_netlogon_wksta, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       lp_workgroup(), 
 				       TEST_WKSTA_MACHINE_NAME,
-				       machine_password2);
+				       lp_workgroup(), 
+				       test_wksta_machine_account,
+				       wksta_machine_password);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect to server as a Workstation: %s\n", nt_errstr(status));
 		ret = False;
 		goto failed;
 	}

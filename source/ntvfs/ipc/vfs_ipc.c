@@ -180,7 +180,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 {
 	struct pipe_state *p;
 	NTSTATUS status;
-	struct dcerpc_binding ep_description;
+	struct dcerpc_binding *ep_description;
 	struct ipc_private *private = ntvfs->private_data;
 	int fnum;
 	struct stream_connection *srv_conn = req->smb_conn->connection;
@@ -191,6 +191,9 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 
 	p = talloc(req, struct pipe_state);
 	NT_STATUS_HAVE_NO_MEMORY(p);
+
+	ep_description = talloc(req, struct dcerpc_binding);
+	NT_STATUS_HAVE_NO_MEMORY(ep_description);
 
 	while (fname[0] == '\\') fname++;
 
@@ -211,15 +214,15 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  know what interface the user actually wants, just that they want
 	  one of the interfaces attached to this pipe endpoint.
 	*/
-	ep_description.transport = NCACN_NP;
-	ep_description.endpoint = p->pipe_name;
+	ep_description->transport = NCACN_NP;
+	ep_description->endpoint = talloc_reference(ep_description, p->pipe_name);
 
 	/* The session info is refcount-increased in the 
 	 * dcesrv_endpoint_search_connect() function
 	 */
 	status = dcesrv_endpoint_search_connect(private->dcesrv,
 						p,
-						&ep_description, 
+						ep_description, 
 						req->session->session_info,
 						srv_conn,
 						&p->dce_conn);

@@ -33,7 +33,6 @@ struct dcerpc_schannel_state {
 	enum schannel_position state;
 	struct schannel_state *schannel_state;
 	struct creds_CredentialState *creds;
-	char *account_name;
 };
 
 /*
@@ -104,7 +103,8 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 	NTSTATUS status;
 	struct schannel_bind bind_schannel;
 	struct schannel_bind_ack bind_schannel_ack;
-	const char *account_name;
+	const char *workstation;
+	const char *domain;
 	*out = data_blob(NULL, 0);
 
 	switch (gensec_security->gensec_role) {
@@ -114,7 +114,8 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 			return NT_STATUS_OK;
 		}
 		
-		status = schannel_start(&dce_schan_state->schannel_state, 
+		status = schannel_start(dce_schan_state,
+					&dce_schan_state->schannel_state, 
 					dce_schan_state->creds->session_key,
 					True);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -130,11 +131,11 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 		bind_schannel.u.info23.domain = gensec_security->user.domain;
 		bind_schannel.u.info23.account_name = gensec_security->user.name;
 		bind_schannel.u.info23.dnsdomain = str_format_nbt_domain(out_mem_ctx, fulldomainname);
-		bind_schannel.u.info23.workstation = str_format_nbt_domain(out_mem_ctx, gensec_security->user.name);
+		bind_schannel.u.info23.workstation = str_format_nbt_domain(out_mem_ctx, gensec_get_workstation(gensec_security));
 #else
 		bind_schannel.bind_type = 3;
 		bind_schannel.u.info3.domain = gensec_security->user.domain;
-		bind_schannel.u.info3.account_name = gensec_security->user.name;
+		bind_schannel.u.info3.workstation = gensec_get_workstation(gensec_security);
 #endif
 		
 		status = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel,
@@ -163,27 +164,29 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 		}
 		
 		if (bind_schannel.bind_type == 23) {
-			account_name = bind_schannel.u.info23.account_name;
+			workstation = bind_schannel.u.info23.workstation;
+			domain = bind_schannel.u.info23.domain;
 		} else {
-			account_name = bind_schannel.u.info3.account_name;
+			workstation = bind_schannel.u.info3.workstation;
+			domain = bind_schannel.u.info3.domain;
 		}
 		
 		/* pull the session key for this client */
-		status = schannel_fetch_session_key(out_mem_ctx, account_name, &dce_schan_state->creds);
+		status = schannel_fetch_session_key(out_mem_ctx, workstation, 
+						    domain, &dce_schan_state->creds);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Could not find session key for attempted schannel connection on %s: %s\n",
-				  account_name, nt_errstr(status)));
+			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",
+				  workstation, nt_errstr(status)));
 			return status;
 		}
 
-		dce_schan_state->account_name = talloc_strdup(dce_schan_state, account_name);
-		
 		/* start up the schannel server code */
-		status = schannel_start(&dce_schan_state->schannel_state, 
+		status = schannel_start(dce_schan_state,
+					&dce_schan_state->schannel_state, 
 					dce_schan_state->creds->session_key, False);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Could not initialise schannel state for account %s: %s\n",
-				  account_name, nt_errstr(status)));
+			DEBUG(3, ("Could not initialise schannel state from client %s: %s\n",
+				  workstation, nt_errstr(status)));
 			return status;
 		}
 		talloc_steal(dce_schan_state, dce_schan_state->schannel_state);
@@ -195,8 +198,8 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 		status = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel_ack, 
 					      (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Could not return schannel bind ack for account %s: %s\n",
-				  account_name, nt_errstr(status)));
+			DEBUG(3, ("Could not return schannel bind ack for client %s: %s\n",
+				  workstation, nt_errstr(status)));
 			return status;
 		}
 
@@ -248,18 +251,6 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 }
 		
 
-/*
-  end crypto state
-*/
-static int dcerpc_schannel_destroy(void *ptr)
-{
-	struct dcerpc_schannel_state *dce_schan_state = ptr;
-
-	schannel_end(&dce_schan_state->schannel_state);
-
-	return 0;
-}
-
 static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 {
 	struct dcerpc_schannel_state *dce_schan_state;
@@ -272,8 +263,6 @@ static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
 	gensec_security->private_data = dce_schan_state;
 
-	talloc_set_destructor(dce_schan_state, dcerpc_schannel_destroy);
-	
 	return NT_STATUS_OK;
 }
 
@@ -306,6 +295,7 @@ static NTSTATUS dcerpc_schannel_client_start(struct gensec_security *gensec_secu
   get a schannel key using a netlogon challenge on a secondary pipe
 */
 static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
+				    const char *workstation,
 				    const char *domain,
 				    const char *username,
 				    const char *password,
@@ -313,13 +303,15 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 				    struct creds_CredentialState *creds)
 {
 	NTSTATUS status;
+	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p2;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	struct samr_Password mach_pwd;
-	const char *workgroup, *workstation;
+	const char *workgroup;
 	uint32_t negotiate_flags;
+	TALLOC_CTX *tmp_ctx;
 
 	if (p->conn->flags & DCERPC_SCHANNEL_128) {
 		negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
@@ -327,20 +319,45 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 		negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	}
 
-	workstation = username;
 	workgroup = domain;
+
+	tmp_ctx = talloc_new(NULL);
 
 	/*
 	  step 1 - establish a netlogon connection, with no authentication
 	*/
-	status = dcerpc_secondary_connection(p, &p2, 
-					     DCERPC_NETLOGON_NAME, 
-					     DCERPC_NETLOGON_UUID, 
-					     DCERPC_NETLOGON_VERSION);
+
+	/* Find the original binding string */
+	status = dcerpc_parse_binding(tmp_ctx, p->conn->binding_string, &b);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", p->conn->binding_string));
+		talloc_free(tmp_ctx);
 		return status;
 	}
 
+	/* Make binding string for netlogon, not the other pipe */
+	status = dcerpc_epm_map_binding(tmp_ctx, b, DCERPC_NETLOGON_UUID, DCERPC_NETLOGON_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
+			 DCERPC_NETLOGON_UUID, nt_errstr(status)));
+		talloc_free(p);
+		return status;
+	}
+
+	status = dcerpc_secondary_connection(p, &p2, b);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	talloc_free(tmp_ctx);
+
+	status = dcerpc_bind_auth_none(p2, DCERPC_NETLOGON_UUID, 
+				       DCERPC_NETLOGON_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(p2);
+                return status;
+        }
 
 	/*
 	  step 2 - request a netlogon challenge
@@ -361,11 +378,13 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	  step 3 - authenticate on the netlogon pipe
 	*/
 	E_md4hash(password, mach_pwd.hash);
-	creds_client_init(creds, &credentials1, &credentials2, &mach_pwd, &credentials3,
+	creds_client_init(creds, &credentials1, &credentials2, 
+			  workstation, domain, username, 
+			  &mach_pwd, &credentials3,
 			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;
-	a.in.account_name = talloc_asprintf(p, "%s$", workstation);
+	a.in.account_name = username;
 	a.in.secure_channel_type = chan_type;
 	a.in.computer_name = workstation;
 	a.in.negotiate_flags = &negotiate_flags;
@@ -398,9 +417,6 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 */
 NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 					   const char *uuid, uint_t version,
-					   const char *domain,
-					   const char *username,
-					   const char *password,
 					   struct creds_CredentialState *creds)
 {
 	NTSTATUS status;
@@ -411,17 +427,28 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = gensec_set_username(p->conn->security_state.generic_state, username);
+	status = gensec_set_workstation(p->conn->security_state.generic_state, creds->computer_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to set schannel username to %s: %s\n", username, nt_errstr(status)));
+		DEBUG(1, ("Failed to set schannel workstation to %s: %s\n", 
+			  creds->computer_name, nt_errstr(status)));
 		talloc_free(p->conn->security_state.generic_state);
 		p->conn->security_state.generic_state = NULL;
 		return status;
 	}
 	
-	status = gensec_set_domain(p->conn->security_state.generic_state, domain);
+	status = gensec_set_username(p->conn->security_state.generic_state, creds->account_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to set schannel domain to %s: %s\n", domain, nt_errstr(status)));
+		DEBUG(1, ("Failed to set schannel username to %s: %s\n", 
+			  creds->account_name, nt_errstr(status)));
+		talloc_free(p->conn->security_state.generic_state);
+		p->conn->security_state.generic_state = NULL;
+		return status;
+	}
+	
+	status = gensec_set_domain(p->conn->security_state.generic_state, creds->domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set schannel domain to %s: %s\n", 
+			  creds->domain, nt_errstr(status)));
 		talloc_free(p->conn->security_state.generic_state);
 		p->conn->security_state.generic_state = NULL;
 		return status;
@@ -456,6 +483,7 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 
 NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 				   const char *uuid, uint_t version,
+				   const char *workstation,
 				   const char *domain,
 				   const char *username,
 				   const char *password)
@@ -477,6 +505,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	}
 
 	status = dcerpc_schannel_key(p, domain, 
+				     workstation,
 				     username,
 				     password, 
 				     chan_type,
@@ -488,9 +517,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	return dcerpc_bind_auth_schannel_withkey(p, uuid, version, domain,
-						 username, password,
-						 creds);
+	return dcerpc_bind_auth_schannel_withkey(p, uuid, version, creds);
 }
 
 static BOOL dcerpc_schannel_have_feature(struct gensec_security *gensec_security,

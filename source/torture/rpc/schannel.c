@@ -93,6 +93,8 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.logon_level = 2;
 	r.in.logon.network = &ninfo;
 
+	printf("Testing LogonSamLogon with name %s\n", username);
+	
 	for (i=2;i<3;i++) {
 		ZERO_STRUCT(auth2);
 		creds_client_authenticator(creds, &auth);
@@ -121,13 +123,14 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	const char *machine_password;
 	NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
-	struct dcerpc_binding b;
+	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;
 	struct creds_CredentialState *creds;
+	char *test_machine_account = talloc_asprintf(NULL, "%s$", TEST_MACHINE_NAME);
 
-	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), acct_flags,
-				       &machine_password);
+	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), 
+					   acct_flags, &machine_password);
 	if (!join_ctx) {
 		printf("Failed to join domain with acct_flags=0x%x\n", acct_flags);
 		return False;
@@ -139,17 +142,18 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	b.flags &= ~DCERPC_AUTH_OPTIONS;
-	b.flags |= dcerpc_flags;
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= dcerpc_flags;
 
-	status = dcerpc_pipe_connect_b(&p, &b, 
+	status = dcerpc_pipe_connect_b(&p, b, 
 				       DCERPC_SAMR_UUID,
 				       DCERPC_SAMR_VERSION,
-				       lp_workgroup(), 
 				       TEST_MACHINE_NAME,
+				       lp_workgroup(), 
+				       test_machine_account,
 				       machine_password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect with schannel\n");
+		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
 		goto failed;
 	}
 
@@ -158,27 +162,33 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	status = dcerpc_schannel_creds(p->conn->security_state.generic_state, mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad binding string %s\n", binding);
 		goto failed;
 	}
-
 
 	/* Also test that when we connect to the netlogon pipe, that
 	 * the credentials we setup on the first pipe are valid for
 	 * the second */
 
-	b.flags &= ~DCERPC_AUTH_OPTIONS;
-	b.flags |= dcerpc_flags;
+	/* Swap the binding details from SAMR to NETLOGON */
+	status = dcerpc_epm_map_binding(mem_ctx, b, DCERPC_NETLOGON_UUID,
+					DCERPC_NETLOGON_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
 
-	status = dcerpc_pipe_connect_b(&p_netlogon, &b, 
-				       DCERPC_NETLOGON_UUID,
-				       DCERPC_NETLOGON_VERSION,
-				       lp_workgroup(), 
-				       TEST_MACHINE_NAME,
-				       machine_password);
+	status = dcerpc_secondary_connection(p, &p_netlogon, 
+					     b);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	status = dcerpc_bind_auth_schannel_withkey(p_netlogon, 
+						   DCERPC_NETLOGON_UUID,
+						   DCERPC_NETLOGON_VERSION, 
+						   creds);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;

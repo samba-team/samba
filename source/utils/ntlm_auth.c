@@ -395,7 +395,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(1, ("SPENGO login failed to initialise: %s\n", nt_errstr(nt_status)));
+			DEBUG(1, ("SPNEGO login failed to initialise: %s\n", nt_errstr(nt_status)));
 			mux_printf(mux_id, "BH\n");
 			return;
 		}
