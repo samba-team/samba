@@ -60,7 +60,7 @@ static BOOL test_TransportEnum(struct dcerpc_pipe *p,
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_array);
 
-	info.u.array = &info_array;
+	info.u.array = NULL;
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.info = &info;

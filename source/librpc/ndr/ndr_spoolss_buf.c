@@ -25,7 +25,7 @@
 #include "includes.h"
 
 NTSTATUS pull_spoolss_PrinterInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
-				       uint16 level, uint32 count,
+				       uint32 level, uint32 count,
 				       union spoolss_PrinterInfo **info)
 {
 	int i;
@@ -36,7 +36,7 @@ NTSTATUS pull_spoolss_PrinterInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 	NDR_ALLOC_N(ndr, *info, count);
 	for (i=0;i<count;i++) {
-		NDR_CHECK(ndr_pull_spoolss_PrinterInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &level, &(*info)[i]));
+		NDR_CHECK(ndr_pull_spoolss_PrinterInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
 	}
 	return NT_STATUS_OK;
 }

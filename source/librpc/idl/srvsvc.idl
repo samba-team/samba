@@ -77,22 +77,17 @@
 	typedef struct {
 	} srvsvc_NetConnCtrDefault;
 
-	typedef [nodiscriminant,public] union {
+	typedef union {
 		case(0) srvsvc_NetConnCtr0 *ctr0;
 		case(1) srvsvc_NetConnCtr1 *ctr1;
 		default srvsvc_NetConnCtrDefault ctrDefault;
-	} srvsvc_NetConnSubCtr;
-
-	typedef struct {
-		uint32 level;
-		uint32 level2;
-		[switch_is(level)] srvsvc_NetConnSubCtr subctr;
 	} srvsvc_NetConnCtr;
 
 	WERROR srvsvc_NetConnEnum(
 		[in]   unistr *server_unc,
 		[in]   unistr *path,
-		[in,out]   srvsvc_NetConnCtr ctr,
+		[in,out]   uint32 level,
+		[in,out,switch_is(level)]   srvsvc_NetConnCtr ctr,
 		[in]   uint32 preferred_len,
 		[out]   uint32 total,
 		[in,out]   uint32 *resume_handle
@@ -126,23 +121,18 @@
 	typedef struct {
 	} srvsvc_NetFileCtrDefault;
 
-	typedef [nodiscriminant,public] union {
+	typedef union {
 		case(2) srvsvc_NetFileCtr2 *ctr2;
 		case(3) srvsvc_NetFileCtr3 *ctr3;
 		default srvsvc_NetFileCtrDefault ctrDefault;
-	} srvsvc_NetFileSubCtr;
-
-	typedef struct {
-		uint32 level;
-		uint32 level2;
-		[switch_is(level)] srvsvc_NetFileSubCtr subctr;
 	} srvsvc_NetFileCtr;
 
 	WERROR srvsvc_NetFileEnum(
 		[in]   unistr *server_unc,
 		[in]   unistr *path,
 		[in]   unistr *user,
-		[in,out]   srvsvc_NetFileCtr ctr,
+		[in,out] uint32 level,
+		[in,out,switch_is(level)]   srvsvc_NetFileCtr ctr,
 		[in]   uint32 preferred_len,
 		[out]   uint32 total,
 		[in,out]   uint32 *resume_handle
@@ -230,26 +220,21 @@
 	typedef struct {
 	} srvsvc_NetSessCtrDefault;
 
-	typedef [nodiscriminant,public] union {
+	typedef union {
 		case(0) srvsvc_NetSessCtr0 *ctr0;
 		case(1) srvsvc_NetSessCtr1 *ctr1;
 		case(2) srvsvc_NetSessCtr2 *ctr2;
 		case(10) srvsvc_NetSessCtr10 *ctr10;
 		case(502) srvsvc_NetSessCtr502 *ctr502;
 		default srvsvc_NetSessCtrDefault ctrDefault;
-	} srvsvc_NetSessSubCtr;
-
-	typedef struct {
-		uint32 level;
-		uint32 level2;
-		[switch_is(level)] srvsvc_NetSessSubCtr subctr;
 	} srvsvc_NetSessCtr;
 
 	WERROR srvsvc_NetSessEnum(
 		[in]   unistr *server_unc,
 		[in]   unistr *client,
 		[in]   unistr *user,
-		[in,out]   srvsvc_NetSessCtr ctr,
+		[in,out]   uint32 level,
+		[in,out,switch_is(level)]   srvsvc_NetSessCtr ctr,
 		[in]   uint32 preferred_len,
 		[out]   uint32 total,
 		[in,out]   uint32 *resume_handle
@@ -337,24 +322,19 @@
 	typedef struct {
 	} srvsvc_NetShareCtrDefault;
 
-	typedef [nodiscriminant,public] union {
+	typedef union {
 		case(0) srvsvc_NetShareCtr0 *ctr0;
 		case(1) srvsvc_NetShareCtr1 *ctr1;
 		case(2) srvsvc_NetShareCtr2 *ctr2;
 		case(501) srvsvc_NetShareCtr501 *ctr501;
 		case(502) srvsvc_NetShareCtr502 *ctr502;
 		default srvsvc_NetShareCtrDefault ctrDefault;
-	} srvsvc_NetShareSubCtr;
-
-	typedef struct {
-		uint32 level;
-		[switch_is(level)] srvsvc_NetShareSubCtr subctr;
 	} srvsvc_NetShareCtr;
-	
+
 	WERROR srvsvc_NetShareEnumAll(
 		[in]       unistr *server_unc,
-		[in]       uint32 level,
-		[in,out]   srvsvc_NetShareCtr ctr,
+		[in,out]   uint32 level,
+		[in,out,switch_is(level)]   srvsvc_NetShareCtr ctr,
 		[in]       uint32 preferred_len,
 		[out]      uint32 totalentries,
 		[in,out]   uint32 *resume_handle
@@ -441,7 +421,7 @@
 	typedef struct {
 	} srvsvc_NetDiskCtrDefault;
 
-	typedef [nodiscriminant,public] union {
+	typedef union {
 		case(0) srvsvc_NetDiskCtr0 ctr0;
 		case(1) srvsvc_NetDiskCtr1 ctr1;
 		case(2) srvsvc_NetDiskCtr2 ctr2;
@@ -522,22 +502,17 @@
 	typedef struct {
 	} srvsvc_NetTransportCtrDefault;
 
-	typedef [nodiscriminant,public] union {
+	typedef union {
 		case(0) srvsvc_NetTransportCtr0 *ctr0;
 		case(1) srvsvc_NetTransportCtr1 *ctr1;
 		case(2) srvsvc_NetTransportCtr2 *ctr2;
 		default srvsvc_NetTransportCtrDefault ctrDefault;
-	} srvsvc_NetTransportSubCtr;
-
-	typedef struct {
-		uint32 level;
-		uint32 level2;
-		[switch_is(level)] srvsvc_NetTransportSubCtr subctr;
 	} srvsvc_NetTransportCtr;
-	
+
 	WERROR srvsvc_NetTransportEnum(
 		[in]   unistr *server_unc,
-		[in,out]   srvsvc_NetTransportCtr ctr,
+		[in,out] uint32 level,
+		[in,out,switch_is(level)]   srvsvc_NetTransportCtr ctr,
 		[in]   uint32 preferred_len,
 		[out]   uint32 total,
 		[in,out]   uint32 *resume_handle
@@ -594,8 +569,8 @@
 	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
 		[in]       unistr *server_unc,
-	 	[in]	   uint32 level,
-		[in,out]   srvsvc_NetShareCtr ctr,
+	 	[in,out]	   uint32 level,
+		[in,out,switch_is(level)]   srvsvc_NetShareCtr ctr,
 		[in]       uint32 preferred_len,
 		[out]      uint32 totalentries,
 		[in,out]   uint32 *resume_handle

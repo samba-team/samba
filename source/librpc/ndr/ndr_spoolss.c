@@ -791,7 +791,6 @@ NTSTATUS ndr_push_spoolss_UserLevel(struct ndr_push *ndr, int ndr_flags, uint16 
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_uint16(ndr, level));
 	switch (level) {
 	case 1:
 	NDR_CHECK(ndr_push_ptr(ndr, r->level1));
@@ -829,6 +828,7 @@ NTSTATUS ndr_push_spoolss_OpenPrinterEx(struct ndr_push *ndr, struct spoolss_Ope
 	}
 	NDR_CHECK(ndr_push_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.devmode_ctr));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.access_required));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
 	NDR_CHECK(ndr_push_spoolss_UserLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.userlevel));
 
@@ -1171,11 +1171,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union spoolss_PrinterInfo *r)
+NTSTATUS ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, int ndr_flags, uint16 level, union spoolss_PrinterInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 	NDR_CHECK(ndr_pull_spoolss_PrinterInfo1(ndr, NDR_SCALARS, &r->info1));
 	break; }
@@ -1205,12 +1205,12 @@ NTSTATUS ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, int ndr_flags, uint1
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 		NDR_CHECK(ndr_pull_spoolss_PrinterInfo1(ndr, NDR_BUFFERS, &r->info1));
 	break;
@@ -1240,7 +1240,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -1337,10 +1337,7 @@ NTSTATUS ndr_pull_spoolss_GetPrinter(struct ndr_pull *ndr, struct spoolss_GetPri
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_subcontext_union_fn(ndr, &_level, r->out.info, (ndr_pull_union_fn_t) ndr_pull_spoolss_PrinterInfo));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
-	}
+	NDR_CHECK(ndr_pull_subcontext_union_fn(ndr, r->in.level, r->out.info, (ndr_pull_union_fn_t) ndr_pull_spoolss_PrinterInfo));
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, r->out.buf_size));
 	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));

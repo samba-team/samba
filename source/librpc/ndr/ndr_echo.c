@@ -50,7 +50,7 @@ NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
 
 NTSTATUS ndr_push_TestCall2(struct ndr_push *ndr, struct TestCall2 *r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
 
 	return NT_STATUS_OK;
 }
@@ -187,7 +187,7 @@ NTSTATUS ndr_pull_echo_info6(struct ndr_pull *ndr, int ndr_flags, struct echo_in
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_align(ndr, 1));
 	NDR_CHECK(ndr_pull_uint8(ndr, &r->v1));
 	NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_SCALARS, &r->info1));
 	ndr_pull_struct_end(ndr);
@@ -202,7 +202,7 @@ NTSTATUS ndr_pull_echo_info7(struct ndr_pull *ndr, int ndr_flags, struct echo_in
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_uint8(ndr, &r->v1));
 	NDR_CHECK(ndr_pull_echo_info4(ndr, NDR_SCALARS, &r->info4));
 	ndr_pull_struct_end(ndr);
@@ -213,12 +213,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_Info *r)
+NTSTATUS ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags, uint16 level, union echo_Info *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 	NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_SCALARS, &r->info1));
 	break; }
@@ -248,12 +247,12 @@ NTSTATUS ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, 
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 		NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_BUFFERS, &r->info1));
 	break;
@@ -283,7 +282,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -299,10 +298,12 @@ NTSTATUS ndr_pull_TestCall2(struct ndr_pull *ndr, struct TestCall2 *r)
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_echo_Info(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
+	NDR_CHECK(ndr_pull_echo_Info(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, r->out.info));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -483,6 +484,19 @@ void ndr_print_echo_info6(struct ndr_print *ndr, const char *name, struct echo_i
 	ndr->depth--;
 }
 
+void ndr_print_echo_XXX(struct ndr_print *ndr, const char *name, uint16 level, union echo_XXX *r)
+{
+	ndr_print_union(ndr, name, level, "echo_XXX");
+	switch (level) {
+	case 1:
+	ndr_print_echo_info1(ndr, "info1", &r->info1);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
+}
+
 void ndr_print_echo_info7(struct ndr_print *ndr, const char *name, struct echo_info7 *r)
 {
 	ndr_print_struct(ndr, name, "echo_info7");
@@ -536,7 +550,7 @@ void ndr_print_TestCall2(struct ndr_print *ndr, const char *name, int flags, str
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "TestCall2");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr_print_uint32(ndr, "level", r->in.level);
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

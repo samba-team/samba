@@ -878,12 +878,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union lsa_PolicyInformation *r)
+NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, uint16 level, union lsa_PolicyInformation *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 	NDR_CHECK(ndr_pull_lsa_AuditLogInfo(ndr, NDR_SCALARS, &r->audit_log));
 	break; }
@@ -933,12 +932,12 @@ NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, uin
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 		NDR_CHECK(ndr_pull_lsa_AuditLogInfo(ndr, NDR_BUFFERS, &r->audit_log));
 	break;
@@ -988,7 +987,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -1004,10 +1003,12 @@ NTSTATUS ndr_pull_lsa_QueryInfoPolicy(struct ndr_pull *ndr, struct lsa_QueryInfo
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint16 _level;
+		NDR_CHECK(ndr_pull_uint16(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
+	NDR_CHECK(ndr_pull_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, r->out.info));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 

@@ -94,6 +94,10 @@ struct echo_info6 {
 	struct echo_info1 info1;
 };
 
+union echo_XXX {
+/* [case(1)] */ struct echo_info1 info1;
+};
+
 struct echo_info7 {
 	uint8 v1;
 	struct echo_info4 info4;
@@ -111,7 +115,7 @@ union echo_Info {
 
 struct TestCall2 {
 	struct {
-		uint16 level;
+		uint32 level;
 	} in;
 
 	struct {

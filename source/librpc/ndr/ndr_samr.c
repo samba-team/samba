@@ -886,12 +886,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_DomainInfo *r)
+NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 level, union samr_DomainInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 	NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, &r->info1));
 	break; }
@@ -941,12 +940,12 @@ NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *l
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 		NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_BUFFERS, &r->info1));
 	break;
@@ -996,7 +995,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -1012,10 +1011,12 @@ NTSTATUS ndr_pull_samr_QueryDomainInfo(struct ndr_pull *ndr, struct samr_QueryDo
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_samr_DomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint16 _level;
+		NDR_CHECK(ndr_pull_uint16(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
+	NDR_CHECK(ndr_pull_samr_DomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, r->out.info));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -1238,12 +1239,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_GroupInfo *r)
+NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 level, union samr_GroupInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 	NDR_CHECK(ndr_pull_samr_GroupInfoAll(ndr, NDR_SCALARS, &r->all));
 	break; }
@@ -1261,12 +1261,12 @@ NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *le
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 		NDR_CHECK(ndr_pull_samr_GroupInfoAll(ndr, NDR_BUFFERS, &r->all));
 	break;
@@ -1284,7 +1284,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -1300,10 +1300,12 @@ NTSTATUS ndr_pull_samr_QueryGroupInfo(struct ndr_pull *ndr, struct samr_QueryGro
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_samr_GroupInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint16 _level;
+		NDR_CHECK(ndr_pull_uint16(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
+	NDR_CHECK(ndr_pull_samr_GroupInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, r->out.info));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -1405,12 +1407,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_AliasInfo *r)
+NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 level, union samr_AliasInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 	NDR_CHECK(ndr_pull_samr_AliasInfoAll(ndr, NDR_SCALARS, &r->all));
 	break; }
@@ -1424,12 +1425,12 @@ NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *le
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 		NDR_CHECK(ndr_pull_samr_AliasInfoAll(ndr, NDR_BUFFERS, &r->all));
 	break;
@@ -1443,7 +1444,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -1459,10 +1460,12 @@ NTSTATUS ndr_pull_samr_QueryAliasInfo(struct ndr_pull *ndr, struct samr_QueryAli
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_samr_AliasInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint16 _level;
+		NDR_CHECK(ndr_pull_uint16(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
+	NDR_CHECK(ndr_pull_samr_AliasInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, r->out.info));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -1984,12 +1987,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_UserInfo *r)
+NTSTATUS ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_flags, uint16 level, union samr_UserInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 	NDR_CHECK(ndr_pull_samr_UserInfo1(ndr, NDR_SCALARS, &r->info1));
 	break; }
@@ -2063,12 +2065,12 @@ NTSTATUS ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *lev
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 		NDR_CHECK(ndr_pull_samr_UserInfo1(ndr, NDR_BUFFERS, &r->info1));
 	break;
@@ -2142,7 +2144,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -2158,10 +2160,12 @@ NTSTATUS ndr_pull_samr_QueryUserInfo(struct ndr_pull *ndr, struct samr_QueryUser
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_samr_UserInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint16 _level;
+		NDR_CHECK(ndr_pull_uint16(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
+	NDR_CHECK(ndr_pull_samr_UserInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, r->out.info));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
