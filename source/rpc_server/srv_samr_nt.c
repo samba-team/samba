@@ -1180,7 +1180,6 @@ uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAM
     int num_groups = 0;
     pstring groups;
     uint32 rid;
-	prs_struct *rdata = &p->out_data.rdata;
 
     r_u->status = NT_STATUS_NO_PROBLEMO;
 
@@ -1203,7 +1202,7 @@ uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAM
 
     get_domain_user_groups(groups, sam_pass->smb_name);
     gids = NULL;
-    num_groups = make_dom_gids(prs_get_mem_context(rdata), groups, &gids);
+    num_groups = make_dom_gids(p->mem_ctx, groups, &gids);
 
     /* construct the response.  lkclXXXX: gids are not copied! */
     init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
@@ -1221,7 +1220,6 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
 {
     SAM_UNK_CTR ctr;
     uint16 switch_value = 0;
-    prs_struct *rdata = &p->out_data.rdata;
 
     ZERO_STRUCT(ctr);
 
@@ -1263,7 +1261,7 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
             break;
     }
 
-    init_samr_r_query_dom_info(prs_get_mem_context(rdata), &r_u, switch_value, &ctr, status);
+    init_samr_r_query_dom_info(p->mem_ctx, &r_u, switch_value, &ctr, status);
 
     DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 
@@ -1449,3 +1447,419 @@ uint32 _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_LO
     return r_u->status;
 }
 
+/**********************************************************************
+ api_samr_enum_domains
+ **********************************************************************/
+uint32 _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_ENUM_DOMAINS *r_u)
+{
+	fstring dom[2];
+
+	r_u->status = NT_STATUS_NO_PROBLEMO;
+
+	fstrcpy(dom[0],global_myworkgroup);
+	fstrcpy(dom[1],"Builtin");
+
+	init_samr_r_enum_domains(p->mem_ctx, r_u, q_u->start_idx, dom, 2); 
+
+	return r_u->status;
+}
+
+/*******************************************************************
+ api_samr_open_alias
+ ********************************************************************/
+
+uint32 _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_ALIAS *r_u)
+{
+	DOM_SID sid;
+	POLICY_HND domain_pol = q_u->dom_pol;
+	uint32 alias_rid = q_u->rid_alias;
+	POLICY_HND *alias_pol = &r_u->pol;
+
+	r_u->status = NT_STATUS_NO_PROBLEMO;
+
+	/* get the domain policy. */
+	if (find_lsa_policy_by_hnd(&domain_pol) == -1)
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_lsa_policy_hnd(alias_pol))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	/* Get the domain SID stored in the domain policy */
+	if(!get_lsa_policy_samr_sid(&domain_pol, &sid)) {
+		close_lsa_policy_hnd(alias_pol);
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* append the alias' RID to it */
+	if(!sid_append_rid(&sid, alias_rid)) {
+		close_lsa_policy_hnd(alias_pol);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* associate a RID with the (unique) handle. */
+	if (!set_lsa_policy_samr_sid(alias_pol, &sid)) {
+		/* oh, whoops.  don't know what error message to return, here */
+		close_lsa_policy_hnd(alias_pol);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return r_u->status;
+}
+
+/*******************************************************************
+ set_user_info_10
+ ********************************************************************/
+static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+
+	if (id10 == NULL) {
+		DEBUG(5, ("set_user_info_10: NULL id10\n"));
+		return False;
+	}
+
+	if (pwd == NULL)
+		return False;
+
+	copy_sam_passwd(&new_pwd, pwd);
+
+	new_pwd.acct_ctrl = id10->acb_info;
+
+	if(!mod_sam21pwd_entry(&new_pwd, True))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ set_user_info_12
+ ********************************************************************/
+static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+	static uchar nt_hash[16];
+	static uchar lm_hash[16];
+
+	if (pwd == NULL)
+		return False;
+
+	if (id12 == NULL) {
+		DEBUG(2, ("set_user_info_12: id12 is NULL\n"));
+		return False;
+	}
+
+	pdb_init_sam(&new_pwd);
+	copy_sam_passwd(&new_pwd, pwd);
+
+	memcpy(nt_hash, id12->nt_pwd, sizeof(nt_hash));
+	memcpy(lm_hash, id12->lm_pwd, sizeof(lm_hash));
+
+	new_pwd.smb_passwd = lm_hash;
+	new_pwd.smb_nt_passwd = nt_hash;
+
+	if(!mod_sam21pwd_entry(&new_pwd, True))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ set_user_info_21
+ ********************************************************************/
+static BOOL set_user_info_21 (SAM_USER_INFO_21 *id21, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+	static uchar nt_hash[16];
+	static uchar lm_hash[16];
+
+	if (id21 == NULL) {
+		DEBUG(5, ("set_user_info_21: NULL id21\n"));
+		return False;
+	}
+
+	if (pwd == NULL)
+		return False;
+
+	pdb_init_sam(&new_pwd);
+	/* we make a copy so that we can modify stuff */	
+	copy_sam_passwd(&new_pwd, pwd);
+	copy_id21_to_sam_passwd(&new_pwd, id21);
+
+	if (pwd->smb_nt_passwd != NULL) {
+		memcpy(nt_hash, pwd->smb_nt_passwd, 16);
+		new_pwd.smb_nt_passwd = nt_hash;
+	} else
+		new_pwd.smb_nt_passwd = NULL;
+
+	if (pwd->smb_nt_passwd != NULL) {
+		memcpy(lm_hash, pwd->smb_passwd, 16);
+		new_pwd.smb_passwd = lm_hash;
+	} else
+		new_pwd.smb_passwd = NULL;
+
+	if(!mod_sam21pwd_entry(&new_pwd, True))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+ set_user_info_23
+ ********************************************************************/
+static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+	static uchar nt_hash[16];
+	static uchar lm_hash[16];
+	pstring buf;
+	uint32 len;
+
+	if (id23 == NULL) {
+		DEBUG(5, ("set_user_info_23: NULL id23\n"));
+		return False;
+	}
+
+	if (pwd == NULL)
+		return False;
+
+	pdb_init_sam(&new_pwd);
+	copy_sam_passwd(&new_pwd, pwd);
+	copy_id23_to_sam_passwd(&new_pwd, id23);
+
+	memset(buf, 0, sizeof(pstring));
+
+	if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len, nt_hash, lm_hash))
+		return False;
+
+	new_pwd.smb_passwd = lm_hash;
+	new_pwd.smb_nt_passwd = nt_hash;
+
+	/* if it's a trust account, don't update /etc/passwd */
+	if ( ( (new_pwd.acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+	     ( (new_pwd.acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
+	     ( (new_pwd.acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
+	     DEBUG(5, ("Changing trust account password, not updating /etc/passwd\n"));
+	} else {
+
+		/* update the UNIX password */
+		if (lp_unix_password_sync() )
+			if(!chgpasswd(new_pwd.smb_name, "", buf, True))
+				return False;
+	}
+
+	memset(buf, 0, sizeof(buf));
+
+	if(!mod_sam21pwd_entry(&new_pwd, True))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+ set_user_info_24
+ ********************************************************************/
+static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+	static uchar nt_hash[16];
+	static uchar lm_hash[16];
+	uint32 len;
+	pstring buf;
+
+	if (pwd == NULL)
+		return False;
+
+	pdb_init_sam(&new_pwd);
+	copy_sam_passwd(&new_pwd, pwd);
+
+	memset(buf, 0, sizeof(pstring));
+
+	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len, nt_hash, lm_hash))
+		return False;
+
+	new_pwd.smb_passwd = lm_hash;
+	new_pwd.smb_nt_passwd = nt_hash;
+	
+	/* if it's a trust account, don't update /etc/passwd */
+	if ( ( (new_pwd.acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+	     ( (new_pwd.acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
+	     ( (new_pwd.acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
+	     DEBUG(5, ("Changing trust account password, not updating /etc/passwd\n"));
+	} else {
+
+		/* update the UNIX password */
+		if (lp_unix_password_sync() )
+			if(!chgpasswd(new_pwd.smb_name, "", buf, True))
+				return False;
+	}
+	
+	memset(buf, 0, sizeof(buf));
+	
+	DEBUG(5,("set_user_info_24: pdb_update_sam_account()\n"));
+
+	/* update the SAMBA password */
+	if(!mod_sam21pwd_entry(&new_pwd, True))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ samr_reply_set_userinfo
+ ********************************************************************/
+
+uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, 
+                                 SAM_USERINFO_CTR *ctr, pipes_struct *p)
+{
+	(&q_u.pol, q_u.switch_value, &ctr, p);
+
+	uint32 rid = 0x0;
+	DOM_SID sid;
+	struct current_user user;
+	struct smb_passwd *smb_pass;
+	unsigned char sess_key[16];
+	POLICY_HND *pol = &q_u->pol;
+	uint16 switch_value = q_u->switch_value;
+	SAM_USERINFO_CTR *ctr = NULL;
+
+	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
+	if (!ctr)
+	  return NT_STATUS_NOMEMORY;
+
+	q_u->ctr = ctr;
+
+	if (p->ntlmssp_auth_validated) 	{
+		memcpy(&user, &p->pipe_user, sizeof(user));
+	} else 	{
+		extern struct current_user current_user;
+		memcpy(&user, &current_user, sizeof(user));
+	}
+
+	/* search for the handle */
+	if (find_lsa_policy_by_hnd(pol) == -1)
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* find the policy handle.  open a policy on it. */
+	if (!get_lsa_policy_samr_sid(pol, &sid))
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_split_rid(&sid, &rid);
+
+	DEBUG(5, ("_samr_set_userinfo: rid:0x%x, level:%d\n", rid, switch_value));
+
+	if (ctr == NULL) {
+		DEBUG(5, ("_samr_set_userinfo: NULL info level\n"));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+
+	/* 
+	 * We need the NT hash of the user who is changing the user's password.
+	 * This NT hash is used to generate a "user session key"
+	 * This "user session key" is in turn used to encrypt/decrypt the user's password.
+	 */
+
+	become_root();
+	smb_pass = getsmbpwuid(user.uid);
+	unbecome_root();
+	if(smb_pass == NULL) {
+		DEBUG(0,("_samr_set_userinfo: Unable to get smbpasswd entry for uid %u\n", (unsigned int)user.uid ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+		
+	memset(sess_key, '\0', 16);
+	mdfour(sess_key, smb_pass->smb_nt_passwd, 16);
+
+	/* ok!  user info levels (lots: see MSDEV help), off we go... */
+	switch (switch_value) {
+		case 0x12:
+			if (!set_user_info_12(ctr->info.id12, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+
+		case 24:
+			SamOEMhash(ctr->info.id24->pass, sess_key, 1);
+			if (!set_user_info_24(ctr->info.id24, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+
+		case 23:
+			SamOEMhash(ctr->info.id23->pass, sess_key, 1);
+			if (!set_user_info_23(ctr->info.id23, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return r_u->status;
+}
+
+/*******************************************************************
+ samr_reply_set_userinfo2
+ ********************************************************************/
+
+static uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SET_USERINFO2 *r_u)
+{
+	DOM_SID sid;
+	uint32 rid = 0x0;
+	SAM_USERINFO_CTR *ctr = NULL;
+	POLICY_HND *pol = &q_u->pol;
+	uint16 switch_value = q_u->switch_value;
+
+	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
+	if (!ctr)
+	  return NT_STATUS_NOMEMORY;
+
+	q_u->ctr = ctr;
+
+	/* search for the handle */
+	if (find_lsa_policy_by_hnd(pol) == -1)
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* find the policy handle.  open a policy on it. */
+	if (!get_lsa_policy_samr_sid(pol, &sid))
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_split_rid(&sid, &rid);
+
+	DEBUG(5, ("samr_reply_set_userinfo2: rid:0x%x\n", rid));
+
+	if (ctr == NULL) {
+		DEBUG(5, ("samr_reply_set_userinfo2: NULL info level\n"));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	ctr->switch_value = switch_value;
+
+	/* ok!  user info levels (lots: see MSDEV help), off we go... */
+	switch (switch_value) {
+		case 21:
+			if (!set_user_info_21(ctr->info.id21, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+		case 16:
+			if (!set_user_info_10(ctr->info.id10, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return r_u->status;
+}
