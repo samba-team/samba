@@ -831,7 +831,8 @@ using pam_ldap, this allows changing both unix and windows passwords at once.
 	<varlistentry>
 		<term>only</term>
 		<listitem><para>Only update the LDAP password and let the LDAP server worry 
-				about the other fields.</para></listitem>
+				about the other fields. This option is only available when 
+				the LDAP library supports LDAP_EXOP_X_MODIFY_PASSWD. </para></listitem>
 	</varlistentry>
 </variablelist>
 
