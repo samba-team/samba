@@ -925,7 +925,11 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[NT_HASH_LEN], enum
 
 	data_blob_clear_free(&sampass->private.nt_pw);
 	
-	sampass->private.nt_pw = data_blob(pwd, NT_HASH_LEN);
+       if (pwd) {
+               sampass->private.nt_pw = data_blob(pwd, NT_HASH_LEN);
+       } else {
+               sampass->private.nt_pw = data_blob(NULL, 0);
+       }
 
 	return pdb_set_init_flags(sampass, PDB_NTPASSWD, flag);
 }
@@ -941,7 +945,11 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[LM_HASH_LEN], 
 
 	data_blob_clear_free(&sampass->private.lm_pw);
 	
-	sampass->private.lm_pw = data_blob(pwd, LM_HASH_LEN);
+       if (pwd) {
+               sampass->private.lm_pw = data_blob(pwd, LM_HASH_LEN);
+       } else {
+               sampass->private.lm_pw = data_blob(NULL, 0);
+       }
 
 	return pdb_set_init_flags(sampass, PDB_LMPASSWD, flag);
 }
