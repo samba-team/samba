@@ -1222,7 +1222,7 @@ static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig)
 {
   char *p;
   pstring p1, p2;
-  fstring ebase,eext,sbase,sext;
+  fstring ebase,sbase;
   BOOL matched;
 
   /* Make local copies of str and regexp */
