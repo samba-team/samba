@@ -594,7 +594,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
 
   if (uLevel==52) {
     int i,ok=0;
-    pstring tok,driver,short_name;
+    pstring tok,driver,datafile, langmon, helpfile, datatype;
     char *p,*q;
     FILE *f;
     pstring fname;
@@ -621,33 +621,58 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
 
     fclose(f);
 
-    next_token(&p,short_name,":");
-    next_token(&p,driver,":");
+    next_token(&p,driver,":");			/* driver file name */
+    next_token(&p,datafile,":");		/* data file name */
+/*
+ * for the next tokens - which may be empty - I have to check for empty
+ * tokens first because the next_token function will skip all empty
+ * token fields 
+ */
+    if (*p == ':') {
+	*helpfile = '\0';
+	p++;
+    }else
+        next_token(&p,helpfile,":");		/* help file */
+    if (*p == ':') {
+	*langmon = '\0';
+	p++;
+    }else
+        next_token(&p,langmon,":");		/* language monitor */
+
+    next_token(&p,datatype,":");		/* default data type */
 
     PACKI(desc,"W",0x0400);                      /* don't know */
-    PACKS(desc,"z",lp_printerdriver(snum));        /* long printer name */
+    PACKS(desc,"z",lp_printerdriver(snum));      /* long printer name */
 
     if (ok)
     {
-      PACKS(desc,"z",driver);                    /* Driver Name */
-      PACKS(desc,"z",short_name);                /* short printer name */
+      PACKS(desc,"z",driver);                    /* Driverfile Name */
+      PACKS(desc,"z",datafile);                  /* Datafile name */
+      PACKS(desc,"z",langmon);			 /* language monitor */
       DEBUG(3,("Driver:%s:\n",driver));
-      DEBUG(3,("short name:%s:\n",short_name));
+      DEBUG(3,("Data File:%s:\n",datafile));
+      DEBUG(3,("Language Monitor:%s:\n",langmon));
     }
     else 
     {
       PACKS(desc,"z","");
       PACKS(desc,"z","");
+      PACKS(desc,"z","");
     }
 
-    PACKS(desc,"z","");
     PACKS(desc,"z",lp_driverlocation(snum));       /* share to retrieve files */
-    PACKS(desc,"z","EMF");
-    PACKS(desc,"z","");
-    if (ok)
+    if (ok) {
+      PACKS(desc,"z",datatype);			   /* default data type */
+      PACKS(desc,"z",helpfile);                    /* helpfile name */
       PACKS(desc,"z",driver);                      /* driver name */
-    else
+      DEBUG(3,("Data Type:%s:\n",datatype));
+      DEBUG(3,("Help File:%s:\n",helpfile));
+    }
+    else {
+      PACKS(desc,"z","RAW");
       PACKS(desc,"z","");
+      PACKS(desc,"z","");
+    }
     PACKI(desc,"N",count);                         /* number of files to copy */
     for (i=0;i<count;i++)
     {
