@@ -611,10 +611,10 @@ int main(int argc, char *argv[])
 	int 			olddebug;
 	pstring 		cmdstr = "", 
 				servicesf = CONFIGFILE;
-	fstring 		password,
-				username,
-				domain,
-				server;
+	fstring 		password = "",
+	                        username = "",
+	                        domain = "",
+	                        server = "";
 	struct cli_state	*cli;
 	pstring			logfile;
 	struct cmd_set **cmd_set;
@@ -640,8 +640,6 @@ int main(int argc, char *argv[])
 	 * BSD, and Linux (glibc) implementations work similarly to
 	 * allow the server name anywhere on the command-line.
 	 */
-
-	pstrcpy(server, "");
 
         while (argc > optind) {
 		while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
@@ -755,7 +753,7 @@ int main(int argc, char *argv[])
 		char *pass = getpass("Password:");
 		if (pass) {
 			fstrcpy(password, pass);
-	}
+		}
 	}
 
 	if (!strlen(username) && !got_pass)
