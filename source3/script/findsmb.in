@@ -57,8 +57,9 @@ open(NMBLOOKUP,"$SAMBABIN/nmblookup $BCAST '*' --debuglevel=0|") ||
 @ipaddrs = sort ipsort grep(s/ \*<00>.*$//,<NMBLOOKUP>);
 
 # print header info
-
-print "\nIP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION $BCAST\n";
+print "\n                                *=DMB\n";
+print "                                +=LMB\n";
+print "IP ADDR         NETBIOS NAME     WORKGROUP/OS/VERSION $BCAST\n";
 print "---------------------------------------------------------------------\n";
 
 foreach $ip (@ipaddrs)		# loop through each IP address found
