@@ -1471,7 +1471,7 @@ static void
 dir_list_fn(file_info *finfo, const char *mask, void *state)
 {
 
-  fprintf(stderr, "Finfo->name=%s, mask=%s\n", finfo->name, mask);
+  /*  fprintf(stderr, "Finfo->name=%s, mask=%s, mode=%0X\n", finfo->name, mask, finfo->mode);*/
   if (add_dirent((struct smbc_file *)state, finfo->name, "", 
 		 (finfo->mode&aDIR?SMBC_DIR:SMBC_FILE)) < 0) {
 
@@ -1561,14 +1561,30 @@ int smbc_opendir(const char *fname)
 
     /* We have server and share and path empty ... so list the workgroups */
 
-    /*    fprintf(stderr, "Workgroup is: %s\n", lp_workgroup()); */
-    cli_get_backup_server(my_netbios_name, lp_workgroup(), server, sizeof(server));
+    /*cli_get_backup_server(my_netbios_name, lp_workgroup(), server, sizeof(server));*/
+
+    if (!resolve_name(lp_workgroup(), &rem_ip, 0x1d)) {
+      
+      errno = EINVAL;  /* Something wrong with smb.conf? */
+      return -1;
+
+    }
 
     smbc_file_table[slot]->dir_type = SMBC_WORKGROUP;
 
-  /*
-   * Get a connection to IPC$ on the server if we do not already have one
-   */
+    /* find the name of the server ... */
+
+    if (!name_status_find(0, rem_ip, server)) {
+
+      fprintf(stderr, "Could not get the name of local master browser ...\n");
+      errno = EINVAL;
+      return -1;
+
+    }
+
+    /*
+     * Get a connection to IPC$ on the server if we do not already have one
+     */
 
     srv = smbc_server(server, "IPC$", lp_workgroup(), user, password);
 
@@ -1618,7 +1634,15 @@ int smbc_opendir(const char *fname)
 	 * Get the backup list ...
 	 */
 
-	cli_get_backup_server(my_netbios_name, server, buserver, sizeof(buserver));
+	/*cli_get_backup_server(my_netbios_name, server, buserver, sizeof(buserver)); */
+
+	if (!name_status_find(0, rem_ip, buserver)) {
+
+	  fprintf(stderr, "Could not get name of local master browser ...\n");
+	  errno = EPERM;  /* FIXME, is this correct */
+	  return -1;
+
+	}
 
 	/*
 	 * Get a connection to IPC$ on the server if we do not already have one
