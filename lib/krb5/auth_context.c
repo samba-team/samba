@@ -81,8 +81,8 @@ krb5_auth_con_free(krb5_context context,
     }
     if(auth_context->keyblock)
 	krb5_free_keyblock(context, auth_context->keyblock);
-    free_EncryptionKey(&auth_context->remote_subkey);
-    free_EncryptionKey(&auth_context->local_subkey);
+    krb5_free_keyblock(context, auth_context->remote_subkey);
+    krb5_free_keyblock(context, auth_context->local_subkey);
     free (auth_context);
     return 0;
 }
@@ -212,12 +212,23 @@ krb5_auth_con_getaddrs(krb5_context context,
     return 0;
 }
 
+static krb5_error_code
+copy_key(krb5_context context,
+	 krb5_keyblock *in,
+	 krb5_keyblock **out)
+{
+    if(in)
+	return krb5_copy_keyblock(context, in, out);
+    *out = NULL; /* is this right? */
+    return 0;
+}
+
 krb5_error_code
 krb5_auth_con_getkey(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_keyblock **keyblock)
 {
-    return krb5_copy_keyblock(context, auth_context->keyblock, keyblock);
+    return copy_key(context, auth_context->keyblock, keyblock);
 }
 
 krb5_error_code
@@ -225,14 +236,7 @@ krb5_auth_con_getlocalsubkey(krb5_context context,
 			     krb5_auth_context auth_context,
 			     krb5_keyblock **keyblock)
 {
-  *keyblock = malloc(sizeof(**keyblock));
-  if (*keyblock == NULL)
-    return ENOMEM;
-  (*keyblock)->keytype = auth_context->local_subkey.keytype;
-  (*keyblock)->keyvalue.length = 0;
-  return krb5_data_copy (&(*keyblock)->keyvalue,
-			 auth_context->local_subkey.keyvalue.data,
-			 auth_context->local_subkey.keyvalue.length);
+    return copy_key(context, auth_context->local_subkey, keyblock);
 }
 
 krb5_error_code
@@ -240,14 +244,7 @@ krb5_auth_con_getremotesubkey(krb5_context context,
 			      krb5_auth_context auth_context,
 			      krb5_keyblock **keyblock)
 {
-  *keyblock = malloc(sizeof(**keyblock));
-  if (*keyblock == NULL)
-    return ENOMEM;
-  (*keyblock)->keytype = auth_context->remote_subkey.keytype;
-  (*keyblock)->keyvalue.length = 0;
-  return krb5_data_copy (&(*keyblock)->keyvalue,
-			 auth_context->remote_subkey.keyvalue.data,
-			 auth_context->remote_subkey.keyvalue.length);
+    return copy_key(context, auth_context->remote_subkey, keyblock);
 }
 
 krb5_error_code
