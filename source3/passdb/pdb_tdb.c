@@ -101,7 +101,6 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, hourslen;
 	BOOL ret = True;
-	pstring sub_buffer;
 	struct passwd *pw;
 	uid_t uid = -1;
 	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
@@ -278,7 +277,7 @@ done:
  Intialize a BYTE buffer from a SAM_ACCOUNT struct
  *********************************************************************/
 static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
-				    uint8 **buf, const SAM_ACCOUNT *sampass)
+				    uint8 **buf, SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
@@ -673,7 +672,7 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT *sam_pass)
+static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_pass)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb;
@@ -729,7 +728,7 @@ static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, const SAM_
  Update the TDB SAM
 ****************************************************************************/
 
-static BOOL tdb_update_sam(struct pdb_methods *my_methods, const SAM_ACCOUNT* newpwd, int flag)
+static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, int flag)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb = NULL;
@@ -864,7 +863,7 @@ done:
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_update_sam_account (struct pdb_methods *my_methods, const SAM_ACCOUNT *newpwd)
+static BOOL tdbsam_update_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
 {
 	return (tdb_update_sam(my_methods, newpwd, TDB_MODIFY));
 }
@@ -873,7 +872,7 @@ static BOOL tdbsam_update_sam_account (struct pdb_methods *my_methods, const SAM
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_add_sam_account (struct pdb_methods *my_methods, const SAM_ACCOUNT *newpwd)
+static BOOL tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
 {
 	return (tdb_update_sam(my_methods, newpwd, TDB_INSERT));
 }
