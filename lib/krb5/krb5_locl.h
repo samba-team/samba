@@ -93,6 +93,9 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
@@ -100,6 +103,8 @@
 #include <sys/filio.h>
 #endif
 #include <roken.h>
+#include <parse_time.h>
+#include <base64.h>
 
 #include <des.h>
 #include <md4.h>
