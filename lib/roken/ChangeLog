@@ -1,4 +1,8 @@
-2005-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-04-04  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* resolve-test.c: print size_t by casting to unsigned long
+	
+2005-04-01 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* snprintf-test.c (try): reset va_list argument between reuse,
 	from Peter Kruty <xkruty@fi.muni.cz>
