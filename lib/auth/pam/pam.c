@@ -128,7 +128,7 @@ pdeb(const char *format, ...)
   if (ctrl_off(KRB4_DEBUG))
     return;
   va_start(args, format);
-  openlog("pam_krb4", LOG_CONS|LOG_PID, LOG_AUTH);
+  openlog("pam_krb4", LOG_PID, LOG_AUTH);
   vsyslog(LOG_DEBUG, format, args);
   va_end(args);
   closelog();
