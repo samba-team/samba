@@ -691,6 +691,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 		if( strchr_m(fname, ':')) {
 			
+#ifdef WITH_QUOTAS
 			if ((fake_file_type=is_fake_file(fname))!=0) {
 				/*
 				 * here we go! support for changing the disk quotas --metze
@@ -702,9 +703,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				 * xp also tries a QUERY_FILE_INFO on the file and then close it
 				 */
 			} else {
+#endif
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+#ifdef WITH_QUOTAS
 			}
+#endif
 		}
 	}
 	
@@ -1828,6 +1832,7 @@ static int call_nt_transact_ioctl(connection_struct *conn,
 }
 
 
+#ifdef WITH_QUOTAS
 /****************************************************************************
  Reply to get user quota 
 ****************************************************************************/
@@ -2197,6 +2202,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn,
 
 	return -1;
 }
+#endif /* WITH_QUOTAS */
 
 /****************************************************************************
  Reply to a SMBNTtrans.
@@ -2441,6 +2447,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 					&setup, &params, &data);
 			END_PROFILE_NESTED(NT_transact_query_security_desc);
 			break;
+#ifdef WITH_QUOTAS
 		case NT_TRANSACT_GET_USER_QUOTA:
 			START_PROFILE_NESTED(NT_transact_get_user_quota);
 			outsize = call_nt_transact_get_user_quota(conn, inbuf, outbuf, 
@@ -2459,6 +2466,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 						&data, data_count);
 			END_PROFILE_NESTED(NT_transact_set_user_quota);
 			break;					
+#endif /* WITH_QUOTAS */
 		default:
 			/* Error in request */
 			DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));
