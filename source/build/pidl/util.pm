@@ -343,5 +343,15 @@ sub has_direct_buffers($)
 	return 0;
 }
 
+# return 1 if the string is a C constant
+sub is_constant($)
+{
+	my $s = shift;
+	if ($s =~ /^\d/) {
+		return 1;
+	}
+	return 0;
+}
+
 1;
 
