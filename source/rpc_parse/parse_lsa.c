@@ -1790,8 +1790,8 @@ BOOL lsa_io_q_priv_info(char *desc, LSA_Q_PRIV_INFO * q_q,
 		return False;
 	prs_align(ps);
 
-	prs_uint16("unk0", ps, depth, &q_q->unk0);
-	prs_uint16("unk1", ps, depth, &q_q->unk1);
+	prs_uint16("lang_id    ", ps, depth, &q_q->unk0);
+	prs_uint16("lang_id_sys", ps, depth, &q_q->unk1);
 
 	return True;
 }
@@ -1831,7 +1831,8 @@ BOOL lsa_io_r_priv_info(char *desc, LSA_R_PRIV_INFO * r_q,
 		ps->align = old_align;
 	}
 
-	prs_uint16("unk", ps, depth, &r_q->unk);
+	prs_uint16("lang_id", ps, depth, &r_q->unk);
+	prs_align(ps);
 	prs_uint32("status", ps, depth, &r_q->status);
 
 	return True;
