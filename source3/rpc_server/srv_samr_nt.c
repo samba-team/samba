@@ -1188,7 +1188,10 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
                            user handle. Where else does this hurt?
 			   -- Volker
 			*/
+#if 0
+			/* We cannot do this here - it kills performace. JRA. */
 			free_samr_users(info);
+#endif
 		case 0x2:
 		case 0x4:
 			become_root();		
