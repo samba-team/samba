@@ -103,6 +103,8 @@ mini_inetd (int port)
 	    err (1, "bind");
 	if (listen (fds[i], SOMAXCONN) < 0)
 	    err (1, "listen");
+	if (fds[i] >= FD_SETSIZE)
+	    errx (1, "fd too large");
 	FD_SET(fds[i], &orig_read_set);
 	max_fd = max(max_fd, fds[i]);
 	++i;
