@@ -37,6 +37,264 @@ REGISTRY_HOOK reg_hooks[] = {
 };
 
 
+/*
+ * Utility functions for REGSUBKEY_CTR
+ */
+
+/***********************************************************************
+ Init the talloc context held by a REGSUBKEY_CTR structure
+ **********************************************************************/
+
+void regsubkey_ctr_init( REGSUBKEY_CTR *ctr )
+{
+	if ( !ctr->ctx )
+		ctr->ctx = talloc_init();
+}
+
+/***********************************************************************
+ Add a new key to the array
+ **********************************************************************/
+
+int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, char *keyname )
+{
+	uint32 len;
+	char **pp;
+	
+	if ( keyname )
+	{
+		len = strlen( keyname );
+
+		/* allocate a space for the char* in the array */
+		
+		if (  ctr->subkeys == 0 )
+			ctr->subkeys = talloc( ctr->ctx, sizeof(char*) );
+		else {
+			pp = talloc_realloc( ctr->ctx, ctr->subkeys, sizeof(char*)*(ctr->num_subkeys+1) );
+			if ( pp )
+				ctr->subkeys = pp;
+		}
+
+		/* allocate the string and save it in the array */
+		
+		ctr->subkeys[ctr->num_subkeys] = talloc( ctr->ctx, len+1 );
+		strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );
+		ctr->num_subkeys++;
+	}
+	
+	return ctr->num_subkeys;
+}
+ 
+/***********************************************************************
+ How many keys does the container hold ?
+ **********************************************************************/
+
+int regsubkey_ctr_numkeys( REGSUBKEY_CTR *ctr )
+{
+	return ctr->num_subkeys;
+}
+
+/***********************************************************************
+ Retreive a specific key string
+ **********************************************************************/
+
+char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 key_index )
+{
+	if ( ! (key_index < ctr->num_subkeys) )
+		return NULL;
+		
+	return ctr->subkeys[key_index];
+}
+
+/***********************************************************************
+ free memory held by a REGSUBKEY_CTR structure
+ **********************************************************************/
+
+void regsubkey_ctr_destroy( REGSUBKEY_CTR *ctr )
+{
+	if ( ctr ) {
+		talloc_destroy( ctr->ctx );	
+		ZERO_STRUCTP( ctr );
+	}
+}
+
+
+/*
+ * Utility functions for REGVAL_CTR
+ */
+
+/***********************************************************************
+ Init the talloc context held by a REGSUBKEY_CTR structure
+ **********************************************************************/
+
+void regval_ctr_init( REGVAL_CTR *ctr )
+{
+	if ( !ctr->ctx )
+		ctr->ctx = talloc_init();
+}
+
+/***********************************************************************
+ How many keys does the container hold ?
+ **********************************************************************/
+
+int regval_ctr_numvals( REGVAL_CTR *ctr )
+{
+	return ctr->num_values;
+}
+
+/***********************************************************************
+ allocate memory for and duplicate a REGISTRY_VALUE.
+ This is malloc'd memory so the caller should free it when done
+ **********************************************************************/
+
+REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
+{
+	REGISTRY_VALUE 	*copy = NULL;
+	BOOL		fail = True;
+	
+	if ( !val )
+		return NULL;
+	
+	if ( !(copy = malloc( sizeof(REGISTRY_VALUE) )) ) {
+		DEBUG(0,("dup_registry_value: malloc() failed!\n"));
+		return NULL;
+	}
+	
+	/* copy all the non-pointer initial data */
+	
+	memcpy( copy, val, sizeof(REGISTRY_VALUE) );
+	
+	switch ( val->type ) {
+		case REG_SZ:
+			if ( !(copy->data.string = strdup( val->data.string )) ) {
+				DEBUG(0,("dup_registry_value: strdup() failed for [%s]!\n",
+					val->data.string));
+				goto done;
+			}
+			break;
+			
+		case REG_DWORD:
+			/* nothing to be done; already copied by memcpy() */
+			break;
+			
+		case REG_BINARY:
+			if ( !(copy->data.string = memdup( val->data.binary, val->size )) ) {
+				DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
+					val->size));
+				goto done;
+			}
+			break;
+	 } 
+	 
+	 fail = False;
+	 
+done:
+	if ( fail )
+		SAFE_FREE( copy );
+
+	return copy;	
+}
+
+/**********************************************************************
+ free the memory allocated to a REGISTRY_VALUE 
+ *********************************************************************/
+ 
+void free_registry_value( REGISTRY_VALUE *val )
+{
+	if ( !val )
+		return;
+		
+	switch ( val->type ) 
+	{
+		case REG_SZ:
+			SAFE_FREE( val->data.string );
+			break;
+		case REG_BINARY:
+			SAFE_FREE( val->data.binary );
+			break;
+	}
+	
+	SAFE_FREE( val );
+	
+	return;
+}
+
+/***********************************************************************
+ Retreive a pointer to a specific value.  Caller shoud dup the structure
+ since this memory may go away with a regval_ctr_destroy()
+ **********************************************************************/
+
+REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
+{
+	if ( !(idx < ctr->num_values) )
+		return NULL;
+		
+	return ctr->values[idx];
+}
+
+/***********************************************************************
+ Ad a new regostry value to the array
+ **********************************************************************/
+
+int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type, 
+                         char *data_p, size_t size )
+{
+	REGISTRY_VALUE **ppreg;
+	uint16 len;
+	
+	if ( name )
+	{
+		len = strlen( name );
+
+		/* allocate a slot in the array of pointers */
+		
+		if (  ctr->num_values == 0 )
+			ctr->values = talloc( ctr->ctx, sizeof(REGISTRY_VALUE*) );
+		else {
+			ppreg = talloc_realloc( ctr->ctx, ctr->values, sizeof(REGISTRY_VALUE*)*(ctr->num_values+1) );
+			if ( ppreg )
+				ctr->values = ppreg;
+		}
+
+		/* allocate a new valuie and store the pointer in the arrya */
+		
+		ctr->values[ctr->num_values] = talloc( ctr->ctx, sizeof(REGISTRY_VALUE) );
+
+		/* init the value */
+	
+		fstrcpy( ctr->values[ctr->num_values]->valuename, name );
+		ctr->values[ctr->num_values]->type = type;
+		switch ( type )
+		{
+			case REG_SZ:
+				ctr->values[ctr->num_values]->data.string = talloc_strdup( ctr->ctx, data_p );
+				break;
+			case REG_DWORD:
+				break;
+			case REG_BINARY:
+				ctr->values[ctr->num_values]->data.binary = talloc_memdup( ctr->ctx, data_p, size );
+				break;
+				
+		}
+		ctr->values[ctr->num_values]->size = size;
+		
+		ctr->num_values++;
+	}
+
+	return ctr->num_values;
+}
+
+/***********************************************************************
+ free memory held by a REGVAL_CTR structure
+ **********************************************************************/
+
+void regval_ctr_destroy( REGVAL_CTR *ctr )
+{
+	if ( ctr ) {
+		talloc_destroy( ctr->ctx );
+		ZERO_STRUCTP( ctr );
+	}
+}
+
 /***********************************************************************
  Open the registry database and initialize the REGISTRY_HOOK cache
  ***********************************************************************/
@@ -152,6 +410,34 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	return result;
 }
 
+
+/***********************************************************************
+ retreive a specific subkey specified by index.  Caller is 
+ responsible for freeing memory
+ ***********************************************************************/
+
+BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 key_index )
+{
+	REGVAL_CTR 	ctr;
+	REGISTRY_VALUE	*v;
+	
+	ZERO_STRUCTP( &ctr );
+	
+	regval_ctr_init( &ctr );
+	
+	if ( fetch_reg_values( key, &ctr) == -1 )
+		return False;
+
+	if ( !(v = regval_ctr_specific_value( &ctr, key_index )) )
+		return False;
+
+	*val = dup_registry_value( v );
+
+	regval_ctr_destroy( &ctr ); 
+	
+	return True;
+}
+
 /***********************************************************************
  Utility function for splitting the base path of a registry path off
  by setting base and new_path to the apprapriate offsets withing the
@@ -182,175 +468,4 @@ BOOL reg_split_path( char *path, char **base, char **new_path )
 }
 
 
-/*
- * Utility functions for REGSUBKEY_CTR
- */
-
-/***********************************************************************
- Init the talloc context held by a REGSUBKEY_CTR structure
- **********************************************************************/
-
-void regsubkey_ctr_init( REGSUBKEY_CTR *ctr )
-{
-	if ( !ctr->ctx )
-		ctr->ctx = talloc_init();
-}
-
-/***********************************************************************
- Add a new key to the array
- **********************************************************************/
-
-int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, char *keyname )
-{
-	uint32 len;
-	char **pp;
-	
-	if ( keyname )
-	{
-		len = strlen( keyname );
-
-		if (  ctr->subkeys == 0 )
-			ctr->subkeys = talloc( ctr->ctx, sizeof(char*) );
-		else {
-			pp = talloc_realloc( ctr->ctx, ctr->subkeys, sizeof(char*)*(ctr->num_subkeys+1) );
-			if ( pp )
-				ctr->subkeys = pp;
-		}
-
-		ctr->subkeys[ctr->num_subkeys] = talloc( ctr->ctx, len+1 );
-		strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );
-		ctr->num_subkeys++;
-	}
-	
-	return ctr->num_subkeys;
-}
- 
-/***********************************************************************
- How many keys does the container hold ?
- **********************************************************************/
-
-int regsubkey_ctr_numkeys( REGSUBKEY_CTR *ctr )
-{
-	return ctr->num_subkeys;
-}
-
-/***********************************************************************
- Retreive a specific key string
- **********************************************************************/
-
-char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 key_index )
-{
-	if ( ! (key_index < ctr->num_subkeys) )
-		return NULL;
-		
-	return ctr->subkeys[key_index];
-}
-
-/***********************************************************************
- free memory held by a REGSUBKEY_CTR structure
- **********************************************************************/
-
-void regsubkey_ctr_destroy( REGSUBKEY_CTR *ctr )
-{
-	if ( ctr ) {
-		talloc_destroy( ctr->ctx );	
-		ZERO_STRUCTP( ctr );
-	}
-}
-
-
-/*
- * Utility functions for REGVAL_CTR
- */
-
-/***********************************************************************
- Init the talloc context held by a REGSUBKEY_CTR structure
- **********************************************************************/
-
-void regval_ctr_init( REGVAL_CTR *ctr )
-{
-	if ( !ctr->ctx )
-		ctr->ctx = talloc_init();
-}
-
-/***********************************************************************
- How many keys does the container hold ?
- **********************************************************************/
-
-int regval_ctr_numvals( REGVAL_CTR *ctr )
-{
-	return ctr->num_values;
-}
-
-REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
-{
-	if ( !(idx < ctr->num_values) )
-		return NULL;
-		
-	return ctr->values[idx];
-}
-
-/***********************************************************************
- Ad a new regostry value to the array
- **********************************************************************/
-
-int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type, 
-                         char *data_p, size_t size )
-{
-	REGISTRY_VALUE **ppreg;
-	uint16 len;
-	
-	if ( name )
-	{
-		len = strlen( name );
-
-		/* allocate a slot in the array of pointers */
-		
-		if (  ctr->num_values == 0 )
-			ctr->values = talloc( ctr->ctx, sizeof(REGISTRY_VALUE*) );
-		else {
-			ppreg = talloc_realloc( ctr->ctx, ctr->values, sizeof(REGISTRY_VALUE*)*(ctr->num_values+1) );
-			if ( ppreg )
-				ctr->values = ppreg;
-		}
-
-		/* allocate a new valuie and store the pointer in the arrya */
-		
-		ctr->values[ctr->num_values] = talloc( ctr->ctx, sizeof(REGISTRY_VALUE) );
-
-		/* init the value */
-	
-		fstrcpy( ctr->values[ctr->num_values]->valuename, name );
-		ctr->values[ctr->num_values]->type = type;
-		switch ( type )
-		{
-			case REG_SZ:
-				ctr->values[ctr->num_values]->data.string = talloc_strdup( ctr->ctx, data_p );
-				break;
-			case REG_DWORD:
-				break;
-			case REG_BINARY:
-				ctr->values[ctr->num_values]->data.binary = talloc_memdup( ctr->ctx, data_p, size );
-				break;
-				
-		}
-		ctr->values[ctr->num_values]->size = size;
-		
-		ctr->num_values++;
-	}
-
-	return ctr->num_values;
-}
-
-/***********************************************************************
- free memory held by a REGVAL_CTR structure
- **********************************************************************/
-
-void regval_ctr_destroy( REGVAL_CTR *ctr )
-{
-	if ( ctr ) {
-		talloc_destroy( ctr->ctx );
-		ZERO_STRUCTP( ctr );
-	}
-}
 

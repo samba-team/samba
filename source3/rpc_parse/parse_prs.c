@@ -893,9 +893,11 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = (uint16 *)prs_alloc_mem(ps,str->buf_len);
-		if (str->buffer == NULL)
-			return False;
+		if ( str->buf_len ) {
+			str->buffer = (uint16 *)prs_alloc_mem(ps,str->buf_len);
+			if ( str->buffer == NULL )
+				return False;
+		}
 	}
 
 	p = (char *)str->buffer;

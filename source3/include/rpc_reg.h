@@ -32,7 +32,6 @@
 #define REG_CREATE_KEY		0x06
 #define REG_DELETE_KEY		0x07
 #define REG_DELETE_VALUE	0x08
-#define REG_ENUM_VALUE		0x0a
 #define REG_FLUSH_KEY		0x0b
 #define REG_GET_KEY_SEC		0x0c
 #define	_REG_UNK_0D		0x0d
@@ -50,6 +49,7 @@
 #define REG_OPEN_HKU		0x04
 #define REG_CLOSE		0x05
 #define REG_ENUM_KEY		0x09
+#define REG_ENUM_VALUE		0x0a
 #define REG_OPEN_ENTRY		0x0f
 #define REG_QUERY_KEY		0x10
 #define REG_INFO		0x11
@@ -97,6 +97,7 @@ typedef struct {
 		char	*string;
 		uint32	dword;
 		uint8	*binary;
+		void 	*void_ptr;	/* for casting only */
 	} data;
 } REGISTRY_VALUE;
 
@@ -314,6 +315,7 @@ typedef struct q_reg_query_value_info
 	uint32 ptr2;       /* pointer */
 	uint32 len_value2; /* */
 
+
 } REG_Q_ENUM_VALUE;
 
 /* REG_R_ENUM_VALUE */
@@ -326,7 +328,7 @@ typedef struct r_reg_enum_value_info
 	uint32 type;        /* 1 = UNISTR, 3 = BYTES, 4 = DWORD, 7 = MULTI_UNISTR */
 
 	uint32 ptr_value;       /* pointer */
-	BUFFER2 *buf_value;    /* value, in byte buffer */
+	BUFFER2 buf_value;    /* value, in byte buffer */
 
 	uint32 ptr1;            /* pointer */
 	uint32 len_value1;       /* */

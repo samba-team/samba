@@ -237,10 +237,14 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	lenmax = sizemax = 0;
 	num_values = regval_ctr_numvals( &values );
 	
-	for ( i=0; i<num_values && val; i++ ) {
+	val = regval_ctr_specific_value( &values, 0 );
+	
+	for ( i=0; i<num_values && val; i++ ) 
+	{
+		lenmax  = MAX(lenmax,  strlen(val->valuename)+1 );
+		sizemax = MAX(sizemax, val->size );
+		
 		val = regval_ctr_specific_value( &values, i );
-		lenmax  = MAX(lenmax,  strlen(val[i].valuename)+1 );
-		sizemax = MAX(sizemax, val[i].size );
 	}
 
 	*maxnum   = num_values;
@@ -477,6 +481,45 @@ NTSTATUS _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u
 	
 done:	
 	SAFE_FREE( subkey );
+	return status;
+}
+
+/*****************************************************************************
+ Implementation of REG_ENUM_VALUE
+ ****************************************************************************/
+ 
+NTSTATUS _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE *r_u)
+{
+	NTSTATUS 	status = NT_STATUS_OK;
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	REGISTRY_VALUE	*val;
+	
+	
+	DEBUG(5,("_reg_enum_value: Enter\n"));
+	
+	if ( !regkey )
+		return NT_STATUS_INVALID_HANDLE;	
+
+	DEBUG(8,("_reg_enum_key: enumerating values for key [%s]\n", regkey->name));
+
+	if ( !fetch_reg_values_specific( regkey, &val, q_u->val_index ) )
+	{
+		status = NT_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+	
+	DEBUG(10,("_reg_enum_value: retrieved value named  [%s]\n", val->valuename));
+	
+	/* subkey has the string name now */
+	
+	init_reg_r_enum_val( r_u, val );
+
+
+	DEBUG(5,("_reg_enum_value: Exit\n"));
+	
+done:	
+	SAFE_FREE( val );
+	
 	return status;
 }
 
