@@ -76,7 +76,7 @@ if test "$withval" = no; then
 fi
 ])
 
-dnl AC_ROKEN(9,[/usr/heimdal /usr/athena],[$(top_builddir)/lib/roken/libroken.la])
+AC_ROKEN(9,[/usr/heimdal /usr/athena],[$(top_builddir)/lib/roken/libroken.la])
 
 AC_TEST_PACKAGE_NEW(openldap,[#include <ldap.h>],[-lldap -llber])
 
@@ -704,11 +704,7 @@ dnl
 dnl libroken references crypt and dbopen
 dnl
 
-dnl LIB_roken="\$(top_builddir)/lib/vers/libvers.la ${LIB_roken}"
-
-dnl LIB_roken='$(top_builddir)/lib/vers/libvers.la $(top_builddir)/lib/roken/libroken.la $(LIB_crypt) $(LIB_dbopen)'
-dnl AC_SUBST(LIB_roken)dnl
-LIB_roken='$(top_builddir)/lib/roken/libroken.la $(LIB_crypt) $(LIB_dbopen)'
+LIB_roken="\$(top_builddir)/lib/vers/libvers.la ${LIB_roken}"
 AC_SUBST(LIB_roken)dnl
 
 AC_CACHE_CHECK(if realloc if broken, ac_cv_func_realloc_broken, [
@@ -1056,6 +1052,7 @@ AC_OUTPUT(Makefile 			\
 	lib/roken/Makefile		\
 	lib/sl/Makefile			\
 	lib/vers/Makefile		\
+	lib/kdfs/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\
@@ -1092,8 +1089,8 @@ dnl
 HEIMDALVERSION="$PACKAGE-$VERSION"
 
 cat > include/newversion.h.in <<EOF
-char *heimdal_long_version = "@(#)\$Version: $HEIMDALVERSION by @USER@ on @HOST@ ($host) @DATE@ \$";
-char *heimdal_version = "$HEIMDALVERSION";
+const char *heimdal_long_version = "@(#)\$Version: $HEIMDALVERSION by @USER@ on @HOST@ ($host) @DATE@ \$";
+const char *heimdal_version = "$HEIMDALVERSION";
 EOF
 
 if test -f include/version.h && cmp -s include/newversion.h.in include/version.h.in; then
