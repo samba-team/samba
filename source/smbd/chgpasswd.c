@@ -245,7 +245,8 @@ static int expect(int master, char *issue, char *expected)
 		if (strequal(expected, "."))
 			return True;
 
-		timeout = 2000;
+		/* Initial timeout. */
+		timeout = lp_passwd_chat_timeout() * 1000;
 		nread = 0;
 		buffer[nread] = 0;
 
@@ -261,8 +262,10 @@ static int expect(int master, char *issue, char *expected)
 				pstrcpy( str, buffer);
 				trim_char( str, ' ', ' ');
 
-				if ((match = (unix_wild_match(expected, str) == 0)))
-					timeout = 200;
+				if ((match = (unix_wild_match(expected, str) == 0))) {
+					/* Now data has started to return, lower timeout. */
+					timeout = lp_passwd_chat_timeout() * 100;
+				}
 			}
 		}
 
