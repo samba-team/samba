@@ -48,13 +48,13 @@ static uint16 *ucs2_to_unixcp;
 
  if null_terminate is True then null terminate the packet (adds 2 bytes)
 
- the return value is the length consumed by the string, including the
+ the return value is the length in bytes consumed by the string, including the
  null termination if applied
 ********************************************************************/
 
-int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
+size_t dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
 {
-	int ret = 0;
+	size_t ret = 0;
 	while (*src && (len > 2)) {
 		size_t skip = get_character_len(*src);
 		smb_ucs2_t val = (*src & 0xff);
@@ -81,51 +81,6 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
 		ret += 2;
 	}
 	return(ret);
-}
-
-/*******************************************************************
- Put an ASCII string into a UNICODE string.
-
- Warning: doesn't do any codepage !!! BAD !!!
- 
- Help ! Fix Me ! Fix Me !
-********************************************************************/
-
-void ascii_to_unistr(char *dest, const char *src, size_t maxlen)
-{
-	char *destend = dest + maxlen;
-	char c;
-
-	while (dest < destend) {
-		c = *(src++);
-		if (c == 0) break;
-
-		SSVAL(dest, 0, (uint16)c);
-		dest += 2;
-	}
-	SSVAL(dest, 0, 0);
-}
-
-/*******************************************************************
- * HORRIBLE HACK!
-********************************************************************/
-void unistr_to_ascii(char *dest, const uint16 *src, int len)
-{
-	char *destend = dest + len;
-	register uint16 c;
-
-	while (dest < destend)
-	{
-		c = *(src++);
-		if (c == 0)
-		{
-			break;
-		}
-
-		*(dest++) = (char)c;
-	}
-
-	*dest = 0;
 }
 
 /*******************************************************************
