@@ -435,7 +435,7 @@ void *map_file(char *fname, size_t size)
 		int fd;
 		fd = open(fname, O_RDONLY, 0);
 		if (fd == -1) {
-			DEBUG(1,("Failed to load %s - %s\n", fname, strerror(errno)));
+			DEBUG(2,("Failed to load %s - %s\n", fname, strerror(errno)));
 			return NULL;
 		}
 		p = mmap(NULL, size, PROT_READ, MAP_SHARED|MAP_FILE, fd, 0);
