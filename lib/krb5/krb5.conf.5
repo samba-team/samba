@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd October 31, 2004
+.Dd December  8, 2004
 .Dt KRB5.CONF 5
 .Os HEIMDAL
 .Sh NAME
@@ -377,17 +377,17 @@ Turn on Kerberos 4 support.
 To what realm v4 requests should be mapped.
 .It Li enable-524 = Va BOOL
 Should the Kerberos 524 converting facility be turned on.
-Default is same as
+Default is the same as
 .Va enable-kerberos4 .
 .It Li enable-http = Va BOOL
 Should the kdc answer kdc-requests over http.
 .It Li enable-kaserver = Va BOOL
 If this kdc should emulate the AFS kaserver.
 .It Li check-ticket-addresses = Va BOOL
-verify the addresses in the tickets used in tgs requests.
+Verify the addresses in the tickets used in tgs requests.
 .\" XXX
 .It Li allow-null-ticket-addresses = Va BOOL
-Allow addresses-less tickets.
+Allow address-less tickets.
 .\" XXX
 .It Li allow-anonymous = Va BOOL
 If the kdc is allowed to hand out anonymous tickets.
@@ -424,7 +424,7 @@ If pre-authentication is required to talk to the kadmin server.
 If a principal already have its password set for expiration, this is
 the time it will be valid for after a change.
 .It Li default_keys = Va keytypes...
-for each entry in
+For each entry in
 .Va default_keys
 try to parse it as a sequence of
 .Va etype:salttype:salt
