@@ -22,8 +22,8 @@ install-build-headers::
 		else file="$$f"; fi; \
 		if cmp -s  $$file $(buildkadm5include)/$$f 2> /dev/null ; then \
 		: ; else \
-			echo "$(INSTALL_DATA) $$file $(buildkadm5include)/$$f";\
-			$(INSTALL_DATA) $$file $(buildkadm5include)/$$f; \
+			echo "cp $$file $(buildkadm5include)/$$f";\
+			cp $$file $(buildkadm5include)/$$f; \
 		fi ; \
 	done
 
