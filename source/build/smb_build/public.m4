@@ -276,7 +276,7 @@ dnl		1:name
 dnl		)
 AC_DEFUN([SMB_SUBSYSTEM_NOPROTO],
 [
-	[SMB_SUBSYSTEM_NOPROTO_][$1]="1"
+	[SMB_SUBSYSTEM_NOPROTO_][$1]="YES"
 ])
 
 dnl SMB_SUBSYSTEM(
@@ -293,6 +293,10 @@ AC_DEFUN([SMB_SUBSYSTEM],
 		[SMB_SUBSYSTEM_ENABLE_][$1]="YES";
 	fi
 
+	if test -z "$[SMB_SUBSYSTEM_NOPROTO_][$1]"; then
+		[SMB_SUBSYSTEM_NOPROTO_][$1]="NO";
+	fi
+
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
@@ -303,7 +307,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 @{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$5\");
 #
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
-\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{NOPROTO}{$1} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
+\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{NOPROTO} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
 # End Subsystem $1
 ###################################
 "
@@ -320,6 +324,10 @@ AC_DEFUN([SMB_SUBSYSTEM_MK],
 		[SMB_SUBSYSTEM_ENABLE_][$1]="YES";
 	fi
 
+	if test -z "$[SMB_SUBSYSTEM_NOPROTO_][$1]"; then
+		[SMB_SUBSYSTEM_NOPROTO_][$1]="NO";
+	fi
+
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
@@ -330,7 +338,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 @{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
 #
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
-\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{NOPROTO}{$1} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
+\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{NOPROTO} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
 # End Subsystem $1
 ###################################
 "
