@@ -227,3 +227,27 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed)
     len -= copy_len;
   }
 }
+
+/*******************************************************************
+ Use the random number generator to generate a random string.
+********************************************************************/
+
+static char c_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+ _-#.,";
+
+char *generate_random_str(size_t len)
+{
+	static unsigned char retstr[256];
+	size_t i;
+
+	memset(retstr, '\0', sizeof(retstr));
+
+	if (len > sizeof(retstr)-1)
+		len = sizeof(retstr) -1;
+	generate_random_buffer( retstr, len, False);
+	for (i = 0; i < len; i++)
+		retstr[i] = c_list[ retstr[i] % sizeof(c_list) ];
+
+	retstr[i] = '\0';
+
+	return retstr;
+}
