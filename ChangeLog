@@ -1,3 +1,13 @@
+1999-09-21  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/Makefile.am: add asn1_print
+
+	* lib/asn1/asn1_print.c: new program for printing DER-structures
+
+	* lib/asn1/der_put.c: make functions more consistent
+
+	* lib/asn1/der_get.c: make functions more consistent
+
 1999-09-16  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: test for strlcpy, strlcat
