@@ -56,7 +56,7 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
  only supports info level 100 at the moment.
 
  ********************************************************************/
-static void wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
+static BOOL wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 				prs_struct *rdata,
 				int status)
 {
@@ -69,9 +69,12 @@ static void wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 	init_wks_r_query_info(&r_u, q_u->switch_value, &wks100, status);
 
 	/* store the response in the SMB stream */
-	wks_io_r_query_info("", &r_u, rdata, 0);
+	if(!wks_io_r_query_info("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("wks_query_info: %d\n", __LINE__));
+
+	return True;
 }
 
 /*******************************************************************
@@ -82,10 +85,12 @@ static BOOL api_wks_query_info(prs_struct *data, prs_struct *rdata)
 	WKS_Q_QUERY_INFO q_u;
 
 	/* grab the net share enum */
-	wks_io_q_query_info("", &q_u, data, 0);
+	if(!wks_io_q_query_info("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	wks_reply_query_info(&q_u, rdata, 0x0);
+	if(!wks_reply_query_info(&q_u, rdata, 0x0))
+		return False;
 
 	return True;
 }
