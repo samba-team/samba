@@ -100,6 +100,7 @@ proto (int sock, const char *hostname, const char *service)
 				 NULL);
     if(status)
 	krb5_err(context, 1, status, "krb5_make_principal");
+    mcred.client = client;
     
     status = krb5_cc_retrieve_cred(context, ccache, 0, &mcred, &cred);
     if(status)
