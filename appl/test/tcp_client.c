@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,7 +48,6 @@ proto (int sock, const char *hostname, const char *service)
     int addrlen;
     krb5_address remote_addr, local_addr;
     krb5_context context;
-    krb5_ccache ccache;
     krb5_auth_context auth_context;
     krb5_error_code status;
     krb5_principal server;
@@ -69,11 +68,6 @@ proto (int sock, const char *hostname, const char *service)
     status = krb5_init_context(&context);
     if (status)
 	errx (1, "krb5_init_context: %s",
-	      krb5_get_err_text(context, status));
-
-    status = krb5_cc_default (context, &ccache);
-    if (status)
-	errx (1, "krb5_cc_default: %s",
 	      krb5_get_err_text(context, status));
 
     status = krb5_auth_con_init (context, &auth_context);
@@ -115,7 +109,7 @@ proto (int sock, const char *hostname, const char *service)
 			    AP_OPTS_MUTUAL_REQUIRED,
 			    NULL,
 			    NULL,
-			    ccache,
+			    NULL,
 			    NULL,
 			    NULL,
 			    NULL);
