@@ -1019,7 +1019,7 @@
 		<term><anchor id="ADDMACHINESCRIPT">add machine script (G)</term>
 		<listitem><para>This is the full pathname to a script that will 
 		be run by <ulink url="smbd.8.html">smbd(8)</ulink>  when a machine is added
-                to it's domain using the administrator username and password method.
+                to it's domain using the administrator username and password method. </para>
 
 		<para>This option is only required when using sam back-ends tied to the
                 Unix uid method of RID calculation such as smbpasswd.  This option is only
