@@ -3371,7 +3371,7 @@ static void cmd_help(char *dum_in, char *dum_out)
       }
 }
 
-#ifdef 0
+#ifndef HAVE_LIBREADLINE
 
 /****************************************************************************
 wait for keyboard activity, swallowing network packets
@@ -3406,8 +3406,8 @@ static void wait_keyboard(char *buffer)
       chkpath("\\",False);
     }  
 }
-#endif
-#ifdef HAVE_LIBREADLINE
+
+#else /* if HAVE_LIBREADLINE */
 
 /****************************************************************************
   completion routines for GNU Readline
