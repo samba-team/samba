@@ -101,6 +101,8 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 	(*p)->private = NULL;
 	(*p)->call_list = NULL;
 	(*p)->cli_max_recv_frag = 0;
+	(*p)->ndr = NULL;
+	(*p)->dispatch = NULL;
 
 	/* make sure the endpoint server likes the connection */
 	status = ops->connect(*p);
@@ -148,7 +150,56 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
 
-	/* now form the NDR for the bind_ack */
+	/* now form the NDR for the fault */
+	push = ndr_push_init_ctx(call->mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	rep = talloc(call->mem_ctx, sizeof(*rep));
+	if (!rep) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rep->data = ndr_push_blob(push);
+	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+
+	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
+
+	return NT_STATUS_OK;	
+}
+
+
+/*
+  return a dcerpc bind_nak
+*/
+static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
+{
+	struct ndr_push *push;
+	struct dcerpc_packet pkt;
+	struct dcesrv_call_reply *rep;
+	NTSTATUS status;
+
+	/* setup a bind_ack */
+	pkt.rpc_vers = 5;
+	pkt.rpc_vers_minor = 0;
+	pkt.drep[0] = 0x10; /* Little endian */
+	pkt.drep[1] = 0;
+	pkt.drep[2] = 0;
+	pkt.drep[3] = 0;
+	pkt.auth_length = 0;
+	pkt.call_id = call->pkt.call_id;
+	pkt.ptype = DCERPC_PKT_BIND_NAK;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.u.bind_nak.reject_reason = reason;
+	pkt.u.bind_nak.num_versions = 0;
+
+	/* now form the NDR for the bind_nak */
 	push = ndr_push_init_ctx(call->mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
@@ -184,16 +235,17 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	struct ndr_push *push;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
+	uint32 result=0, reason=0;
 
 	if (call->pkt.u.bind.num_contexts != 1 ||
 	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+		return dcesrv_bind_nak(call, 0);
 	}
 
 	if_version = call->pkt.u.bind.ctx_list[0].abstract_syntax.major_version;
 	uuid = GUID_string(call->mem_ctx, &call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid);
 	if (!uuid) {
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+		return dcesrv_bind_nak(call, 0);
 	}
 
 	transfer_syntax_version = call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].major_version;
@@ -203,13 +255,14 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	    strcasecmp(NDR_GUID, transfer_syntax) != 0 ||
 	    NDR_GUID_VERSION != transfer_syntax_version) {
 		/* we only do NDR encoded dcerpc */
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+		return dcesrv_bind_nak(call, 0);
 	}
 
 	if (!call->dce->ops->set_interface(call->dce, uuid, if_version)) {
 		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
 		/* we don't know about that interface */
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+		result = DCERPC_BIND_PROVIDER_REJECT;
+		reason = DCERPC_BIND_REASON_ASYNTAX;
 	}
 
 	if (call->dce->cli_max_recv_frag == 0) {
@@ -230,15 +283,19 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
-	pkt.u.bind_ack.secondary_address = talloc_asprintf(call->mem_ctx, "\\PIPE\\%s", 
-							 call->dce->ndr->name);
+	if (call->dce->ndr) {
+		pkt.u.bind_ack.secondary_address = talloc_asprintf(call->mem_ctx, "\\PIPE\\%s", 
+								   call->dce->ndr->name);
+	} else {
+		pkt.u.bind_ack.secondary_address = "";
+	}
 	pkt.u.bind_ack.num_results = 1;
 	pkt.u.bind_ack.ctx_list = talloc(call->mem_ctx, sizeof(struct dcerpc_ack_ctx));
 	if (!pkt.u.bind_ack.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	pkt.u.bind_ack.ctx_list[0].result = 0;
-	pkt.u.bind_ack.ctx_list[0].reason = 0;
+	pkt.u.bind_ack.ctx_list[0].result = result;
+	pkt.u.bind_ack.ctx_list[0].reason = reason;
 	GUID_from_string(uuid, &pkt.u.bind_ack.ctx_list[0].syntax.uuid);
 	pkt.u.bind_ack.ctx_list[0].syntax.major_version = if_version;
 	pkt.u.bind_ack.ctx_list[0].syntax.minor_version = 0;
@@ -300,13 +357,13 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	/* unravel the NDR for the packet */
 	status = call->dce->ndr->calls[opnum].ndr_pull(pull, NDR_IN, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
 
 	/* call the dispatch function */
 	status = call->dce->dispatch[opnum](call->dce, call->mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
 
 	/* form the reply NDR */
@@ -317,7 +374,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	status = call->dce->ndr->calls[opnum].ndr_push(push, NDR_OUT, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
 
 	stub = ndr_push_blob(push);
@@ -426,19 +483,19 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 
 		/* we only allow fragmented requests, no other packet types */
 		if (call->pkt.ptype != DCERPC_PKT_REQUEST) {
-			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
 
 		/* this is a continuation of an existing call - find the call then
 		   tack it on the end */
 		call = dcesrv_find_call(dce, call2->pkt.call_id);
 		if (!call) {
-			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
 
 		if (call->pkt.ptype != call2->pkt.ptype) {
 			/* trying to play silly buggers are we? */
-			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
 
 		alloc_size = call->pkt.u.request.stub_and_verifier.length +
@@ -451,7 +508,7 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 			talloc_realloc(call->mem_ctx,
 				       call->pkt.u.request.stub_and_verifier.data, alloc_size);
 		if (!call->pkt.u.request.stub_and_verifier.data) {
-			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
 		memcpy(call->pkt.u.request.stub_and_verifier.data +
 		       call->pkt.u.request.stub_and_verifier.length,
