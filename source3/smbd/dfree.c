@@ -94,8 +94,6 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 		lines = file_lines_pload(syscmd, NULL, True);
 		if (lines) {
 			char *line = lines[0];
-			if (strlen(line) > 0)
-				line[strlen(line)-1] = '\0';
 
 			DEBUG (3, ("Read input from dfree, \"%s\"\n", line));
 
