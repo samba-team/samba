@@ -25,8 +25,10 @@
 #define NDR_BE(ndr) (((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN)
 #define NDR_SVAL(ndr, ofs) (NDR_BE(ndr)?RSVAL(ndr->data,ofs):SVAL(ndr->data,ofs))
 #define NDR_IVAL(ndr, ofs) (NDR_BE(ndr)?RIVAL(ndr->data,ofs):IVAL(ndr->data,ofs))
+#define NDR_IVALS(ndr, ofs) (NDR_BE(ndr)?RIVALS(ndr->data,ofs):IVALS(ndr->data,ofs))
 #define NDR_SSVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSSVAL(ndr->data,ofs,v); } else SSVAL(ndr->data,ofs,v); } while (0)
 #define NDR_SIVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSIVAL(ndr->data,ofs,v); } else SIVAL(ndr->data,ofs,v); } while (0)
+#define NDR_SIVALS(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSIVALS(ndr->data,ofs,v); } else SIVALS(ndr->data,ofs,v); } while (0)
 
 
 /*
@@ -86,6 +88,18 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32_t *v)
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
 	*v = NDR_IVAL(ndr, ndr->offset);
+	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  parse a int32_t
+*/
+NTSTATUS ndr_pull_int32(struct ndr_pull *ndr, int32_t *v)
+{
+	NDR_PULL_ALIGN(ndr, 4);
+	NDR_PULL_NEED_BYTES(ndr, 4);
+	*v = NDR_IVALS(ndr, ndr->offset);
 	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
@@ -280,6 +294,18 @@ NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32_t v)
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
 	NDR_SIVAL(ndr, ndr->offset, v);
+	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a int32_t
+*/
+NTSTATUS ndr_push_int32(struct ndr_push *ndr, int32_t v)
+{
+	NDR_PUSH_ALIGN(ndr, 4);
+	NDR_PUSH_NEED_BYTES(ndr, 4);
+	NDR_SIVALS(ndr, ndr->offset, v);
 	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
@@ -845,6 +871,11 @@ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t v)
 void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
+}
+
+void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v)
+{
+	ndr->print(ndr, "%-25s: %d", name, v);
 }
 
 void ndr_print_uint64(struct ndr_print *ndr, const char *name, uint64_t v)

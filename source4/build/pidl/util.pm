@@ -219,6 +219,7 @@ sub type_align($)
     return 8, if ($type eq "HYPER_T");
     return 2, if ($type eq "wchar_t");
     return 4, if ($type eq "DATA_BLOB");
+    return 4, if ($type eq "int32");
 
     # it must be an external type - all we can do is guess 
     return 4;
