@@ -74,6 +74,7 @@ static int tdb_user21_traverse(TDB_CONTEXT * tdb,
 	}
 
 	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
+	safe_free(dbuf.dptr);
 
 	usr = &data->usr[data->num_sam_entries];
 	if (sam_io_user_info21("usr", usr, &ps, 0))

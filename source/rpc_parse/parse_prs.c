@@ -138,7 +138,8 @@ void prs_set_packtype(prs_struct *ps, const uint8 *pack_type)
 /*******************************************************************
  create a parse structure
  ********************************************************************/
-void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io)
+void prs_create(prs_struct *ps, const char *data, uint32 size,
+		uint8 align, BOOL io)
 {
 	DEBUG(200, ("prs_create: data:%p size:%d align:%d io:%s\n",
 		    data, size, align, BOOLSTR(io)));
@@ -150,9 +151,6 @@ void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io)
 		DEBUG(1, ("WARNING: prs_create initialised a buffer "
 			  "in marshalling-mode\n"));
 	}
-
-	/* *arg* */
-	/* safe_free(data); */
 
 	CHECK_STRUCT(ps);
 }
@@ -1345,6 +1343,7 @@ void prs_tdb_fetch(TDB_CONTEXT * tdb, prs_struct *pk, prs_struct *pd)
 	data = tdb_fetch(tdb, key);
 
 	prs_create(pd, data.dptr, data.dsize, 4, True);
+	safe_free(data.dptr);
 }
 
 
@@ -1372,6 +1371,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
 
 	ZERO_STRUCTP(ps);
 	prs_create(ps, dbuf.dptr, dbuf.dsize, 4, UNMARSHALL);
+	safe_free(dbuf.dptr);
 
 	return 0;
 }

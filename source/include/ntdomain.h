@@ -145,10 +145,49 @@ typedef struct rpcsrv_struct
 
 	int c;			/* socket */
 
-}
-rpcsrv_struct;
+} rpcsrv_struct;
+
+struct ntuser_creds;
 
 struct cli_connection;
+
+typedef void* cli_rpc_info;
+
+typedef struct cli_connect_fns
+{
+	/* create new connection.  strictly speaking, one arg should be
+	 * full dce/rpc format: e.g "ncacn_np:\\server\pipe\pipename" */
+	cli_rpc_info *(*cli_connect_add)(const char *pipe_name,
+				  const vuser_key *key,
+				  const char *srv_name,
+				  const struct ntuser_creds *ntc,
+				  BOOL reuse, BOOL *is_new_connection);
+
+	/* terminate client connection */
+	void (*cli_connection_free)(cli_rpc_info *con);
+
+	/* get nt creds associated with an msrpc session. */
+	struct ntdom_info *(*cli_conn_get_ntinfo)(cli_rpc_info *con);
+
+	/* get a server name associated with a connection */
+	const char *(*cli_con_get_srvname)(cli_rpc_info *con);
+
+	/* write a full PDU (in data) to a pipe */
+	BOOL (*rpc_api_write)(cli_rpc_info *con, prs_struct *data);
+
+	/* read a full PDU (in rdata) from a pipe */
+	BOOL (*rpc_api_rcv_pdu)(struct cli_connection*, cli_rpc_info *con_info,
+			prs_struct *rdata);
+
+	/* detect dead servers. The fd is set to -1 when we get an error */
+	BOOL (*rpc_con_ok)(cli_rpc_info *con);
+
+	/* write a full PDU (in data) and read a full PDU (in rdata) */
+	BOOL (*rpc_api_send_rcv_pdu)(struct cli_connection*,
+			cli_rpc_info *con_info,
+			prs_struct *data, prs_struct *rdata);
+
+} cli_connect_fns;
 
 typedef struct cli_auth_fns
 {
@@ -166,8 +205,7 @@ typedef struct cli_auth_fns
 	BOOL (*cli_decode_pdu) (struct cli_connection *, prs_struct *,
 				int, int);
 
-}
-cli_auth_fns;
+} cli_auth_fns;
 
 typedef struct srv_auth_fns
 {
@@ -183,8 +221,7 @@ typedef struct srv_auth_fns
 	/* creates an authenticated PDU */
 	BOOL (*api_create_pdu) (rpcsrv_struct *, uint32, prs_struct *);
 
-}
-srv_auth_fns;
+} srv_auth_fns;
 
 typedef struct pipes_struct
 {

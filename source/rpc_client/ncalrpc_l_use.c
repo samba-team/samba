@@ -48,6 +48,7 @@ static void ncalrpc_use_free(struct ncalrpc_use *cli)
 			ncalrpc_l_shutdown(cli->cli);
 		}
 		free(cli->cli);
+		cli->cli = NULL;
 	}
 
 	free(cli);
@@ -222,7 +223,6 @@ struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 	if (!ncalrpc_l_establish_connection(cli->cli, pipe_name))
 	{
 		DEBUG(0, ("ncalrpc_l_use_add: connection failed\n"));
-		cli->cli = NULL;
 		ncalrpc_use_free(cli);
 		return NULL;
 	}

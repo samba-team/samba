@@ -326,8 +326,9 @@ char *rep_inet_ntoa(struct in_addr ip);
 
 /*The following definitions come from  lib/select.c  */
 
+void sys_select_signal(void);
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval);
 
 /*The following definitions come from  lib/set_uid.c  */
 
@@ -3565,8 +3566,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle);
 uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
-				uint32 level,
-				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
+				uint32 level, const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
 					NEW_BUFFER *buffer, uint32 offered, 
 					uint32 *needed);

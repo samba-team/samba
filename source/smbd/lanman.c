@@ -3230,7 +3230,9 @@ int api_reply(connection_struct * conn, uint16 vuid, char *outbuf, char *data,
 				&rdata, &rparam, &rdata_len, &rparam_len);
 
 	prs_create(&rdata_buf, rdata, rdata_len, 0, False);
+	safe_free(rdata);
 	prs_create(&rparam_buf, rparam, rparam_len, 0, False);
+	safe_free(rparam);
 
 	/* now send the reply */
 	send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0, False);

@@ -104,7 +104,7 @@ static BOOL api_noauth_create_pdu(rpcsrv_struct * l, uint32 data_start,
 	/* make a pointer to the rdata data, NOT A COPY */
 
 	prs_create(&rdata_i, prs_data(&l->rdata, data_start),
-		   data_len, l->rdata.align, rdata_i.io);
+		   data_len, l->rdata.align, False);
 	rdata_i.offset = data_len;
 	l->rdata_offset += data_len;
 

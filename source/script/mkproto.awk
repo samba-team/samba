@@ -126,7 +126,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^msrpc_service_fns/ ) {
+  if( $0 ~ /^msrpc_service_fns|^cli_connect_fns/ ) {
     gotstart = 1;
   }
 

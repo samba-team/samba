@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   SMB client generic functions
+   DCE/RPC client generic functions
    Copyright (C) Andrew Tridgell              1994-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
@@ -31,24 +31,13 @@ vuser_key *user_key = NULL;
 
 extern int DEBUGLEVEL;
 
-enum
-{ MSRPC_NONE, MSRPC_LOCAL, MSRPC_SMB };
-
 struct cli_connection
 {
 	char *srv_name;
 	char *pipe_name;
-	struct user_creds usr_creds;
 
-	int type;
-
-	union
-	{
-		struct ncacn_np *smb;
-		struct msrpc_local *local;
-		void *cli;
-	}
-	msrpc;
+	cli_connect_fns *con_fns;
+	cli_rpc_info *con_info;
 
 	cli_auth_fns *auth;
 	void *auth_info;
@@ -73,7 +62,7 @@ static void free_con_array(uint32 num_entries,
 	free_void_array(num_entries, (void **)entries, *fn);
 }
 
-static struct cli_connection *add_con_to_array(uint32 * len,
+static struct cli_connection *add_con_to_array(uint32 *len,
 					       struct cli_connection ***array,
 					       struct cli_connection *con)
 {
@@ -98,8 +87,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 {
 	struct cli_connection *con = NULL;
 	BOOL is_new_connection = False;
-
-	vuser_key key;
+	struct ntuser_creds *ntc = NULL;
 
 	con = (struct cli_connection *)malloc(sizeof(*con));
 
@@ -109,10 +97,6 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 	}
 
 	memset(con, 0, sizeof(*con));
-	con->type = MSRPC_NONE;
-
-	copy_user_creds(&con->usr_creds, NULL);
-	con->usr_creds.reuse = reuse;
 
 	if (srv_name != NULL)
 	{
@@ -123,48 +107,25 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
+	if (usr_creds != NULL)
+	{
+		ntc = &usr_creds->ntc;
+	}
+
 	if (strequal(srv_name, "\\\\."))
 	{
-		con->type = MSRPC_LOCAL;
-		become_root(False);
-		con->msrpc.local = ncalrpc_l_use_add(pipe_name, user_key,
-						     reuse,
-						     &is_new_connection);
-		/*
-		 * XXX - this rebinds on the same pipe,
-		 * only necessary, when the loopback connection
-		 * was first iniated as a forward
-		 */
-		is_new_connection = True;
-		unbecome_root(False);
+		con->con_fns = ncalrpc_get_fns();
 	}
 	else
 	{
-		struct ntuser_creds *ntc = NULL;
-		if (usr_creds != NULL)
-		{
-			ntc = &usr_creds->ntc;
-		}
-		con->type = MSRPC_SMB;
-		con->msrpc.smb =
-			ncacn_np_use_add(pipe_name, user_key, srv_name,
-					 ntc, reuse,
-					 &is_new_connection);
-
-		if (con->msrpc.smb == NULL) 
-		{
-			cli_connection_free(con);
-			return NULL;
-		}
-
-		key = con->msrpc.smb->smb->nt.key;
-		con->msrpc.smb->smb->nt.key.pid = 0;
-		con->msrpc.smb->smb->nt.key.vuid = UID_FIELD_INVALID;
-		copy_nt_creds(&con->usr_creds.ntc,
-		              &con->msrpc.smb->smb->usr);
+		con->con_fns = ncacn_np_get_fns();
 	}
 
-	if (con->msrpc.cli != NULL)
+	con->con_info = con->con_fns->cli_connect_add(pipe_name, user_key,
+						     srv_name, ntc,
+						     reuse, &is_new_connection);
+
+	if (con->con_info != NULL)
 	{
 		if (is_new_connection)
 		{
@@ -185,7 +146,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 			}
 
 			if (!rpc_pipe_bind(con, pipe_name, &abstract,
-							&transfer))
+					   &transfer))
 			{
 				DEBUG(0, ("rpc_pipe_bind failed\n"));
 				cli_connection_free(con);
@@ -198,7 +159,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 			con->auth = cli_conn_get_authfns(con);
 			if (con->auth_info != NULL)
 			{
-				DEBUG(1,("cli_con_get: TODO: auth reuse\n"));
+				DEBUG(1, ("cli_con_get: TODO: auth reuse\n"));
 				cli_connection_free(con);
 				return NULL;
 			}
@@ -210,16 +171,12 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		}
 	}
 
-	if (con->msrpc.cli == NULL)
+	if (con->con_info == NULL)
 	{
 		cli_connection_free(con);
 		return NULL;
 	}
 
-	if (con->type == MSRPC_SMB)
-	{
-		con->msrpc.smb->smb->nt.key = key;
-	}
 	add_con_to_array(&num_cons, &con_list, con);
 	return con;
 }
@@ -234,39 +191,15 @@ void cli_connection_free(struct cli_connection *con)
 
 	DEBUG(10, ("cli_connection_free: %d\n", __LINE__));
 
-	if (con->msrpc.cli != NULL)
+	if (con->con_info != NULL)
 	{
-		switch (con->type)
-		{
-			case MSRPC_LOCAL:
-			{
-				DEBUG(10, ("msrpc local connection\n"));
-				ncalrpc_l_use_del(con->pipe_name,
-						  &con->msrpc.local->nt.key,
-						  False, &closed);
-				con->msrpc.local = NULL;
-				break;
-			}
-			case MSRPC_SMB:
-			{
-				DEBUG(10, ("msrpc smb connection\n"));
-				ncacn_np_use_del(con->srv_name,
-						 con->pipe_name,
-						 &con->msrpc.smb->smb->nt.key,
-						 False, &closed);
-				con->msrpc.smb = NULL;
-				break;
-			}
-		}
+		/* this function responsible for disposing of con_info! */
+		/* do not call free(con->con_info) here as well!!! */
+		con->con_fns->cli_connection_free(con->con_info);
+		con->con_info = NULL;
 	}
 
 	DEBUG(10, ("cli_connection_free: closed: %s\n", BOOLSTR(closed)));
-
-	if (con->msrpc.cli != NULL)
-	{
-		free(con->msrpc.cli);
-	}
-	con->msrpc.cli = NULL;
 
 	if (con->srv_name != NULL)
 	{
@@ -284,8 +217,6 @@ void cli_connection_free(struct cli_connection *con)
 		free(con->auth_info);
 		con->auth_info = NULL;
 	}
-
-	memset(&con->usr_creds, 0, sizeof(con->usr_creds));
 
 	for (i = 0; i < num_cons; i++)
 	{
@@ -326,7 +257,7 @@ BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
 			      struct cli_connection **con,
 			      cli_auth_fns * auth, void *auth_creds)
 {
-        BOOL reuse = True;
+	BOOL reuse = True;
 
 	/*
 	 * allocate
@@ -383,7 +314,7 @@ BOOL cli_connection_getsrv(const char *srv_name, const char *pipe_name,
 /****************************************************************************
 obtain client state
 ****************************************************************************/
-BOOL cli_connection_get(const POLICY_HND * pol, struct cli_connection **con)
+BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con)
 {
 	return get_policy_con(get_global_hnd_cache(), pol, con);
 }
@@ -391,7 +322,7 @@ BOOL cli_connection_get(const POLICY_HND * pol, struct cli_connection **con)
 /****************************************************************************
 link a child policy handle to a parent one
 ****************************************************************************/
-BOOL cli_pol_link(POLICY_HND * to, const POLICY_HND * from)
+BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 {
 	struct cli_connection *con = NULL;
 
@@ -411,7 +342,7 @@ BOOL cli_pol_link(POLICY_HND * to, const POLICY_HND * from)
 /****************************************************************************
 set a user session key associated with a connection 
 ****************************************************************************/
-BOOL cli_get_usr_sesskey(const POLICY_HND * pol, uchar usr_sess_key[16])
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16])
 {
 	struct ntdom_info *nt;
 	struct cli_connection *con;
@@ -518,24 +449,13 @@ struct ntdom_info *cli_conn_get_ntinfo(struct cli_connection *con)
 	{
 		return NULL;
 	}
-	if (con->msrpc.cli == NULL)
+	if (con->con_info == NULL)
 	{
 		DEBUG(1, ("cli_conn_get_ntinfo: NULL msrpc (closed)\n"));
 		return NULL;
 	}
 
-	switch (con->type)
-	{
-		case MSRPC_LOCAL:
-		{
-			return &con->msrpc.local->nt;
-		}
-		case MSRPC_SMB:
-		{
-			return &con->msrpc.smb->smb->nt;
-		}
-	}
-	return NULL;
+	return con->con_fns->cli_conn_get_ntinfo(con->con_info);
 }
 
 /****************************************************************************
@@ -563,26 +483,14 @@ policy handle.
 ****************************************************************************/
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 {
-	char *desthost = NULL;
+	const char *desthost = NULL;
 
 	if (con == NULL)
 	{
 		return False;
 	}
 
-	switch (con->type)
-	{
-		case MSRPC_SMB:
-		{
-			desthost = con->msrpc.smb->smb->desthost;
-			break;
-		}
-		case MSRPC_LOCAL:
-		{
-			desthost = con->srv_name;
-			break;
-		}
-	}
+	desthost = con->con_fns->cli_con_get_srvname(con->con_info);
 
 	if (strnequal("\\\\", desthost, 2))
 	{
@@ -601,7 +509,7 @@ BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 get a user session key associated with a connection associated with a
 policy handle.
 ****************************************************************************/
-BOOL cli_get_sesskey(const POLICY_HND * pol, uchar sess_key[16])
+BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16])
 {
 	struct cli_connection *con = NULL;
 
@@ -692,14 +600,14 @@ BOOL rpc_hnd_ok(const POLICY_HND *hnd)
 {
 	struct cli_connection *con = NULL;
 
-	return cli_connection_get(hnd, &con) &&	rpc_con_ok(con);
+	return cli_connection_get(hnd, &con) && rpc_con_ok(con);
 }
 
 /****************************************************************************
  send a request on an rpc pipe.
  ****************************************************************************/
-BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
-		      prs_struct * data, prs_struct * rdata)
+BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
+		      prs_struct *data, prs_struct *rdata)
 {
 	struct cli_connection *con = NULL;
 
@@ -708,7 +616,8 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
 		return False;
 	}
 
-	if (!rpc_con_ok(con)) return False;
+	if (!rpc_con_ok(con))
+		return False;
 
 	return rpc_con_pipe_req(con, op_num, data, rdata);
 }
@@ -717,7 +626,7 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
  send a request on an rpc pipe.
  ****************************************************************************/
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
-		      prs_struct * data, prs_struct * rdata)
+		      prs_struct *data, prs_struct *rdata)
 {
 	BOOL ret;
 	DEBUG(10, ("rpc_con_pipe_req: op_num %d offset %d used: %d\n",
@@ -730,110 +639,42 @@ BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
 }
 
 /****************************************************************************
- write to a pipe
+ write a full PDU to a pipe
 ****************************************************************************/
-BOOL rpc_api_write(struct cli_connection *con, prs_struct * data)
+BOOL rpc_api_write(struct cli_connection *con, prs_struct *data)
 {
-	switch (con->type)
-	{
-		case MSRPC_SMB:
-		{
-			struct cli_state *cli = con->msrpc.smb->smb;
-			int fnum = con->msrpc.smb->fnum;
-			return cli_write(cli, fnum, 0x0008,
-					 data->data, 0,
-					 prs_data_size(data),
-					 prs_data_size(data)) > 0;
-		}
-		case MSRPC_LOCAL:
-		{
-			data->offset = prs_data_size(data);
-			prs_link(NULL, data, NULL);
-			return msrpc_send(con->msrpc.local->fd, data);
-		}
-	}
-	return False;
+	return con->con_fns->rpc_api_write(con->con_info, data);
 }
 
-BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct * rdata)
+/****************************************************************************
+ read a full PDU from a pipe
+****************************************************************************/
+BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
 {
-	switch (con->type)
-	{
-		case MSRPC_SMB:
-		{
-			struct cli_state *cli = con->msrpc.smb->smb;
-			int fnum = con->msrpc.smb->fnum;
-			return cli_rcv_pdu(con, cli, fnum, rdata);
-		}
-		case MSRPC_LOCAL:
-		{
-			BOOL ret;
-			ret = msrpc_send(con->msrpc.local->fd, NULL);
-			ret = msrpc_receive(con->msrpc.local->fd, rdata);
-			rdata->io = True;
-			rdata->offset = 0;
-			rdata->start = 0;
-			rdata->end = prs_data_size(rdata);
-			return ret;
-		}
-	}
-	return False;
+	return con->con_fns->rpc_api_rcv_pdu(con,
+			con->con_info, rdata);
 }
 
-/* this allows us to detect dead servers. The cli->fd is set to -1 when
-   we get an error */
+/****************************************************************************
+ this allows us to detect dead servers. 
+****************************************************************************/
 BOOL rpc_con_ok(struct cli_connection *con)
 {
-	if (!con) return False;
+	if (!con)
+		return False;
 
-	switch (con->type)
-	{
-		case MSRPC_SMB:
-			{
-				struct cli_state *cli;
-				if (!con->msrpc.smb) return False;
-				cli = con->msrpc.smb->smb;
-				if (cli->fd == -1) return False;
-				return True;
-			}
-			break;
-
-		case MSRPC_LOCAL:
-			return True;
-	}
-	return False;
+	return con->con_fns->rpc_con_ok(con->con_info);
 }
 
 
-BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct * data,
-			  prs_struct * rdata)
+/****************************************************************************
+ write full PDU to pipe then read full PDU from pipe.
+****************************************************************************/
+BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
+			  prs_struct *rdata)
 {
-	switch (con->type)
-	{
-		case MSRPC_SMB:
-		{
-			struct ntdom_info *nt = cli_conn_get_ntinfo(con);
-			struct cli_state *cli = con->msrpc.smb->smb;
-			int fnum = con->msrpc.smb->fnum;
-			if (cli->fd == -1) return False;
-			return cli_send_and_rcv_pdu(con, cli, fnum, data,
-						    rdata, nt->max_xmit_frag);
-		}
-		case MSRPC_LOCAL:
-		{
-			BOOL ret;
-			data->offset = prs_data_size(data);
-			prs_link(NULL, data, NULL);
-			ret = msrpc_send(con->msrpc.local->fd, data) &&
-				msrpc_receive(con->msrpc.local->fd, rdata);
-			rdata->io = True;
-			rdata->offset = 0;
-			rdata->start = 0;
-			rdata->end = prs_data_size(rdata);
-			return ret;
-		}
-	}
-	return False;
+	return con->con_fns->rpc_api_send_rcv_pdu(con,
+			con->con_info, data, rdata);
 }
 
 /* connection policy state-info */
@@ -858,7 +699,7 @@ static void free_policy_con(void *dev)
 /****************************************************************************
   set con state
 ****************************************************************************/
-BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,
+BOOL set_policy_con(struct policy_cache *cache, POLICY_HND *hnd,
 		    struct cli_connection *con,
 		    void (*free_fn) (struct cli_connection *))
 {
@@ -884,7 +725,7 @@ BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,
 /****************************************************************************
   get con state
 ****************************************************************************/
-BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND * hnd,
+BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND *hnd,
 		    struct cli_connection **con)
 {
 	struct con_info *dev;

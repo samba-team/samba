@@ -544,7 +544,10 @@ static void usage(char *pname)
 	int port445 = SMB_PORT2;
 	int opt;
 	extern char *optarg;
+	extern int optind;
 	
+	optind = -1;
+
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif

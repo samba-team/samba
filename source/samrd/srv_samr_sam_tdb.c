@@ -84,6 +84,7 @@ static int tdb_domain_traverse(TDB_CONTEXT *tdb,
 	ZERO_STRUCTP(str);
 
 	prs_create(&key, kbuf.dptr, kbuf.dsize, 4, True);
+	safe_free(kbuf.dptr);
 
 	if (smb_io_unistr2("dom", str, True, &key, 0))
 	{
