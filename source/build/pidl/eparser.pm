@@ -63,10 +63,9 @@ sub ParseParameter($)
 	return $res;
     }
 
-    $res .= "\t/* Unhandled IDL type '$p->{TYPE}' in $p->{PARENT}->{NAME} */\n";
+    $res .= "\tproto_tree_add_text(tree, tvb, offset, -1, \"Unhandled IDL type '$p->{TYPE}'\");\n";
 
     return $res;
-    # exit(1);
 }
 
 #####################################################################
@@ -113,6 +112,51 @@ sub ParseFunction($)
 }
 
 #####################################################################
+# parse a function
+sub ParseEnum($$)
+{
+    my($name) = shift;
+    my($enum) = shift;
+
+    return "/* Enum $name */\n\n";
+}
+
+#####################################################################
+# parse a function
+sub ParseStruct($$)
+{
+    my($name) = shift;
+    my($struct) = shift;
+
+    return "/* Struct $name */\n\n";
+}
+
+#####################################################################
+# parse a function
+sub ParseUnion($$)
+{
+    my($name) = shift;
+    my($union) = shift;
+
+    return "/* Union $name */\n\n";
+}
+
+#####################################################################
+# parse a function
+sub ParseTypedef($)
+{ 
+    my($typedef) = shift;
+    my($data) = $typedef->{DATA};
+    my($res) = "";
+
+    $res .= ParseEnum($typedef->{NAME}, $data), if $data->{TYPE} eq "ENUM";
+    $res .= ParseStruct($typedef->{NAME}, $data), if $data->{TYPE} eq "STRUCT";
+    $res .= ParseUnion($typedef->{NAME}, $data), if $data->{TYPE} eq "UNION";
+
+    return $res;
+}
+
+#####################################################################
 # parse the interface definitions
 sub Pass2Interface($)
 {
@@ -122,6 +166,7 @@ sub Pass2Interface($)
 
     foreach my $d (@{$data}) {
 	$res .= ParseFunction($d), if $d->{TYPE} eq "FUNCTION";
+	$res .= ParseTypedef($d), if $d->{TYPE} eq "TYPEDEF";
     }
 
     return $res;
@@ -226,7 +271,8 @@ EOF
 		$res .= "static int hf_$hf_name = -1;\n";
 		$hf_info{$hf_name} = {
 		    'ft' => type2ft($params->{TYPE}),
-		    'base' => type2base($params->{TYPE})
+		    'base' => type2base($params->{TYPE}),
+		    'name' => $params->{NAME}
 		    };
 	    }
 	}
@@ -312,7 +358,7 @@ EOF
 
     foreach my $hf (keys(%hf_info)) {
 	$hf_register_info .= "\t{ &hf_$hf,\n";
-	$hf_register_info .= "\t  { \"$hf\", \"$hf\", $hf_info{$hf}{ft}, $hf_info{$hf}{base},\n";
+	$hf_register_info .= "\t  { \"$hf_info{$hf}{name}\", \"$hf\", $hf_info{$hf}{ft}, $hf_info{$hf}{base},\n";
 	$hf_register_info .= "\t  NULL, 0, \"$hf\", HFILL }},\n";
     }
     
