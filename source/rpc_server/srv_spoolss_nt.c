@@ -296,10 +296,10 @@ static uint32 delete_printer_handle(POLICY_HND *hnd)
 			path = tmpdir();
 		
 		/* Printer->dev.handlename equals portname equals sharename */
-		slprintf(command, sizeof(command), "%s \"%s\"", cmd,
+		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
 					Printer->dev.handlename);
 		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
-        slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+        slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
@@ -1275,7 +1275,7 @@ static void spoolss_notify_server_name(int snum,
 	pstring temp_name, temp;
 	uint32 len;
 
-	snprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	len = (uint32)dos_PutUniCode(temp, temp_name, sizeof(temp) - 2, True);
 
@@ -2467,16 +2467,16 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int 
 
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, lp_comment(snum));
 	}
 	else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 		
-	snprintf(chaine2,sizeof(chaine)-1,"%s", ntprinter->info_2->printername);
+	slprintf(chaine2,sizeof(chaine)-1,"%s", ntprinter->info_2->printername);
 
 	init_unistr(&printer->description, chaine);
 	init_unistr(&printer->name, chaine2);	
@@ -2535,10 +2535,10 @@ static DEVICEMODE *construct_dev_mode(int snum)
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
-	snprintf(adevice, sizeof(adevice), printer->info_2->printername);
+	slprintf(adevice, sizeof(adevice)-1, printer->info_2->printername);
 	init_unistr(&devmode->devicename, adevice);
 
-	snprintf(aform, sizeof(aform), ntdevmode->formname);
+	slprintf(aform, sizeof(aform)-1, ntdevmode->formname);
 	init_unistr(&devmode->formname, aform);
 
 	devmode->specversion      = ntdevmode->specversion;
@@ -2809,9 +2809,9 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 
 	*returned=1;
 	
-	snprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", global_myname);		
-	snprintf(desc, sizeof(desc)-1,"%s", global_myname);
-	snprintf(comment, sizeof(comment)-1, "Logged on Domain");
+	slprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", global_myname);		
+	slprintf(desc, sizeof(desc)-1,"%s", global_myname);
+	slprintf(comment, sizeof(comment)-1, "Logged on Domain");
 
 	init_unistr(&printer->description, desc);
 	init_unistr(&printer->name, printername);	
@@ -3223,19 +3223,19 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_IN
 
 
     if (strlen(driver.info_3->driverpath)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
 		init_unistr( &info->driverpath, temp );
     } else
         init_unistr( &info->driverpath, "" );
 
 	if (strlen(driver.info_3->datafile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 	
 	if (strlen(driver.info_3->configfile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );	
 	} else
 		init_unistr( &info->configfile, "" );
@@ -3289,7 +3289,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 			if (!v) v = ""; /* hack to handle null lists */
 		}
 		if (strlen(v) == 0) break;
-		snprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
+		slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
 			DEBUG(0,("init_unistr_array: Realloc error\n" ));
@@ -3322,25 +3322,25 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
     if (strlen(driver.info_3->driverpath)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
         init_unistr( &info->driverpath, temp );
     } else
         init_unistr( &info->driverpath, "" );
     
     if (strlen(driver.info_3->datafile)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
         init_unistr( &info->datafile, temp );
     } else
         init_unistr( &info->datafile, "" );
 
     if (strlen(driver.info_3->configfile)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
         init_unistr( &info->configfile, temp );	
     } else
         init_unistr( &info->configfile, "" );
 
     if (strlen(driver.info_3->helpfile)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
         init_unistr( &info->helpfile, temp );
     } else
         init_unistr( &info->helpfile, "" );
@@ -3401,25 +3401,25 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
 	if (strlen(driver.info_3->driverpath)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
 		init_unistr( &info->driverpath, temp );
 	} else
 		init_unistr( &info->driverpath, "" );
 
 	if (strlen(driver.info_3->datafile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 
 	if (strlen(driver.info_3->configfile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );	
 	} else
 		init_unistr( &info->configfile, "" );
 
 	if (strlen(driver.info_3->helpfile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
 		init_unistr( &info->helpfile, temp );
 	} else
 		init_unistr( &info->helpfile, "" );
@@ -3984,8 +3984,8 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
 
 	/* we force some elements to "correct" values */
-	slprintf(info->servername, sizeof(info->servername), "\\\\%s", global_myname);
-	slprintf(info->printername, sizeof(info->printername), "\\\\%s\\%s",
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname);
+	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
 		 global_myname, lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
 	info->attributes = PRINTER_ATTRIBUTE_SHARED   \
@@ -4021,8 +4021,8 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 	
-	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-	slprintf(command, sizeof(command), "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, driverlocation);
@@ -4495,7 +4495,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	struct tm *t;
 	
 	t=gmtime(&queue->time);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;	
 	init_unistr(&job_info->printername, lp_servicename(snum));
@@ -4524,11 +4524,11 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	struct tm *t;
 
 	t=gmtime(&queue->time);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;
 	
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter->info_2->printername);
+	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter->info_2->printername);
 
 	init_unistr(&job_info->printername, chaine);
 	
@@ -5209,8 +5209,8 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		else
 			path = tmpdir();
 
-		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-		slprintf(command, sizeof(command), "%s \"%d\"", cmd, 1);
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
@@ -5307,8 +5307,8 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		else
 			path = tmpdir();
 
-		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-		slprintf(command, sizeof(command), "%s \"%d\"", cmd, 2);
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 2);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));

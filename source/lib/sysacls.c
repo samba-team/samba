@@ -433,17 +433,17 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 			 * than just returning an error
 			 */
 			default:
-				snprintf(tagbuf, sizeof tagbuf, "0x%x",
+				slprintf(tagbuf, sizeof(tagbuf)-1, "0x%x",
 					ap->a_type);
 				tag = tagbuf;
-				snprintf(idbuf, sizeof idbuf, "%ld",
+				slprintf(idbuf, sizeof(idbuf)-1, "%ld",
 					(long)ap->a_id);
 				id = idbuf;
 				break;
 
 			case SMB_ACL_USER:
 				if ((pw = getpwuid(ap->a_id)) == NULL) {
-					snprintf(idbuf, sizeof idbuf, "%ld",
+					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
 						(long)ap->a_id);
 					id = idbuf;
 				} else {
@@ -455,7 +455,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 
 			case SMB_ACL_GROUP:
 				if ((gr = getgrgid(ap->a_id)) == NULL) {
-					snprintf(idbuf, sizeof idbuf, "%ld",
+					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
 						(long)ap->a_id);
 					id = idbuf;
 				} else {
@@ -497,7 +497,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 			}
 		}
 
-		snprintf(&text[len], nbytes, "%s:%s:%s\n", tag, id, perms);
+		slprintf(&text[len], nbytes-1, "%s:%s:%s\n", tag, id, perms);
 		len += nbytes - 1;
 	}
 

@@ -171,7 +171,7 @@ int cups_printername_ok(char *name)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
 
-	snprintf(uri, sizeof(uri), "ipp://localhost/printers/%s", dos_to_unix(name,False));
+	slprintf(uri, sizeof(uri)-1, "ipp://localhost/printers/%s", dos_to_unix(name,False));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);

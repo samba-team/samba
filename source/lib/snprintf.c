@@ -804,6 +804,7 @@ static void dopr_outch (char *buffer, size_t *currlen, size_t maxlen, char c)
 }
 #endif /* !HAVE_VSNPRINTF */
 
+#if 0 /* DONT USE SNPRINTF !!! */
 #ifndef HAVE_SNPRINTF
 /* VARARGS3 */
 #ifdef HAVE_STDARGS
@@ -827,7 +828,7 @@ static void dopr_outch (char *buffer, size_t *currlen, size_t maxlen, char c)
   VA_END;
   return(strlen(str));
 }
-
+#endif
 
 #else
  /* keep compilers happy about empty files */
