@@ -8,7 +8,7 @@ There have been several fixes and internal enhancements which include:
 
 * Several compile fixes for Solaris and HP-UX
 * More printing fixes for Windows NT/2k/XP clients
-* Enhanced VFS recycle bin
+* New options for the VFS recycle bin library
 * New internal signal handling semantics relating to directory change
   notification and oplocks
 
@@ -29,8 +29,8 @@ Added/changed parameters
 Deprecated Parameters
 ---------------------
 
-The following parameters have been marked as deprecated and will be
-removed in Samba 3.0
+The following parameters have been marked as deprecated and will be removed
+in Samba 3.0
 
 * strip dot
 * status
@@ -47,13 +47,13 @@ Changes in 2.2.5
 
 See the cvs log for SAMBA_2_2 for more details
 
-1)  Removal of many compiler warnings, incorrect Makefile dependencies,
-    and bad autoconf tests on various platforms--Solaris & HP-UX 10.20
+1)  Removal of several compiler warnings, incorrect Makefile dependencies,
+    and wrong autoconf tests on various platforms--Solaris & HP-UX 10.20
     being the predominantly reported platforms
 2)  Fixed winbindd crash bug on the IBM s390 running Linux
 3)  Inclusion of enhanced Linux quota support
-4)  Correctly link against Sun LDAP libraries on Solaris 8 (even
-    through there is no apparent SSL support there)
+4)  Correctly link against Sun LDAP libraries on Solaris 8 (even through
+    there is no apparent SSL support there)
 5)  POSIX conformance patches
 6)  Include new configure --enable-cups option (can also be disabled even
     if CUPS libraries are installed on the system)
@@ -63,59 +63,62 @@ See the cvs log for SAMBA_2_2 for more details
 9)  fixed bug to prevent root account from being deleted by the
     "delete user script"
 10) Inclusion of autoconf script for building VFS modules
-11) Add new extensions to the VFS recycle bin library (see
+11) Add new run time options to the VFS recycle bin library (see
     examples/VFS/recycle/README for details)
 12) Include findsmb perl script as part of the "make install" process
-13) Return correct error code for EnumPrinters(PRINTER_ENUM_RMOTE, InfoLevel1)
+13) Return correct error code for EnumPrinters(PRINTER_ENUM_REMOTE, InfoLevel1)
     to fix a bug where printers appear at the workgroup level in the Windows
     NT/2k APW browse list
-14) Added support to nmblookup to return NMB flags (See nmblookup(8) for details)
-15) Fix length bug that caused password changes form Windows NT/2k clients to
+14) Added support to nmblookup to return NMB flags (See nmblookup(8) for
+    details)
+15) Fix length bug that caused password changes from Windows NT/2k clients to
     occasionally fail
-16) Correct false password expiration when using --with-ldapsam caused by missing
-    attributes in the directory
-17) added -S option to smbpasswd for storing the SID from a domain controller
-    as the local machine SID in secrets.tdb.  See the smbpasswd(8) man page for details.
-18) Various fixes for UNIX CIFS extensions
-19) Fix CIDR notation in "hosts allow/deny"
-20) Change semantics of an idle connection--no open files and no open handles;
-    We can idle a connection if there are only open named pipes.  Fixes scalability
-    problem on Samba print servers and NT/2k clients.
+16) Correct false password expiration when using --with-ldapsam caused by
+    missing attributes in the directory
+17) added -S option to smbpasswd for storing the SID of a domain controller
+    as the local machine SID in secrets.tdb.  See the smbpasswd(8) man page
+    for details.
+18) Various fixes for UNIX CIFS extensions commands
+19) Fixed CIDR notation in "hosts allow/deny"
+20) Change semantics of an idle connection to mean "no open files and no
+    open handles".  We cannot idle a connection if there are open named
+    pipe handles.  This fixes scalability problem on Samba print servers
+    and NT/2k clients introduced in 2.2.4
 21) Fix germam umlaut problem when returning ACL entries
-22) Return NT_STATUS_OBJECT_NAME_NOT_FOUND not NT_STATUS_NO_SUCH_FILE for ENOENT.
-    This fixes the bug of running the MS access.exe binary and database files
-    from a Samba share documented in the 2.2.4 release
-23) Corrected signal handling relating to
+22) Return NT_STATUS_OBJECT_NAME_NOT_FOUND for ENOENT.  This fixes the bug
+    of running the Microsoft Access executable (msaccess.exe) and database
+    files from a Samba share documented in the 2.2.4 release
+23) Corrected signal handling relating to directory change notification and
+    kernel oplocks
 24) Fix bug in unix_to_nt_time() that appeared on files dated close to Daylight
-    Savings time
-25) Corrected alignment bug in spoolss parsing code which caused Win2k/XP clients
-    not to be able to view printer properties from a Samba host
-26) Correct spoolss parsing bug affecting printing from ACT! 2000 running on
-    Windows 2k/XP clients
+    Savings Time
+25) Corrected alignment bug in spoolss parsing code which caused Win2k/XP
+    clients not to be able to view printer properties from a Samba host
+26) Fixed spoolss parsing bug causing printing from ACT! 2000 running on
+    Windows 2k/XP clients to fail
 27) Fixed incorrect error check in mod_share_entry()
-28) Allow %S in dfs root paths
-29) Correct bug regarding the use of 'wbinfo -A'
-30) Fix bug in libnss_wins.so on RedHat 7.3 systems
-31) Store the key for a name to sid cache entry in upper case rather than
+28) Allow %S variable in MS-DFS root paths
+29) Correct a bug regarding the use of 'wbinfo -A'
+30) Fixed libnss_wins.so to correctly work on RedHat 7.3 systems
+31) Store the key for a name-to-sid cache entry in upper case rather than
     whatever case the request was made in.  This gets rid of duplicate
     cache entries.
-32) Fix bug causing the pid stored in winbindd's pid file to be the wrong
-    id
-33) Enhanced the error reporting of wbinfo
+32) Fix bug causing the pid stored in winbindd's pid file to be the wrong id
+33) Enhanced error reporting messages of wbinfo
 34) Parameterize block size on disk size return
 35) Added new parameter to allow incoming ACLs to have owner and group forced
     to the currently logged in user. This fixes the XCOPY /O problem
-36) Fixed bug in local_change_password() caused by reusing a struct passwd*
-    pointer
+36) Fixed bug in local_change_password() caused by reusing a struct
+    passwd* pointer
 37) Change default value for "ldap port" to 389 if "ldap ssl = no"
 38) Updated HOWTO's, manpages, and general documentation....
 39) Allow root as well as domain admins to open an LDAP connection
 40) Fixed veto files bug with ".*"
-41) Fixed unitialized variable bug in smbpasswd that was causing a random IP address
-    to be used in the connection when joinnig a domain
-42) Fix for joining a domain with a netbios name of 15 characters and pre-creating
-    the account on the DC
-43) Added links to new documentation to SWAT welcome page
+41) Fixed uninitialized variable bug in smbpasswd that was causing a random
+    IP address to be used in the connection when joining a domain
+42) Fix for joining a domain with a netbios name of 15 characters and
+    pre-creating the account on the DC
+43) Added links to new documentation on SWAT welcome page
 
 
               =========================================
