@@ -202,14 +202,14 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
  authorization_data if available.
 ***********************************************************************************/
 
-NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket, 
+NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
+			   krb5_context context,
+			   krb5_auth_context auth_context,
+			   const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
-			   DATA_BLOB *ap_rep,
-			   DATA_BLOB *session_key)
+			   DATA_BLOB *ap_rep)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
-	krb5_context context = NULL;
-	krb5_auth_context auth_context = NULL;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
 	krb5_rcache rcache = NULL;
@@ -219,38 +219,18 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	char *host_princ_s = NULL;
 	BOOL got_replay_mutex = False;
 
-	fstring myname;
+	char *myname;
 	BOOL auth_ok = False;
 
 	ZERO_STRUCT(packet);
 	ZERO_STRUCTP(auth_data);
 	ZERO_STRUCTP(ap_rep);
-	ZERO_STRUCTP(session_key);
-
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_init_context failed (%s)\n", error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
-	ret = krb5_set_default_realm(context, realm);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_set_default_realm failed (%s)\n", error_message(ret)));
-		goto out;
-	}
 
 	/* This whole process is far more complex than I would
            like. We have to go through all this to allow us to store
            the secret internally, instead of using /etc/krb5.keytab */
 
-	ret = krb5_auth_con_init(context, &auth_context);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_auth_con_init failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-
-	name_to_fqdn(myname, global_myname());
+	myname = name_to_fqdn(mem_ctx, global_myname());
 	strlower_m(myname);
 	asprintf(&host_princ_s, "host/%s@%s", myname, lp_realm());
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);
@@ -309,18 +289,15 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 		goto out;
 	}
 
-	*ap_rep = data_blob(packet.data, packet.length);
+	*ap_rep = data_blob_talloc(mem_ctx, packet.data, packet.length);
 	SAFE_FREE(packet.data);
 	packet.length = 0;
-
-	get_krb5_smb_session_key(context, auth_context, session_key, True);
-	dump_data_pw("SMB session key (from ticket)\n", session_key->data, session_key->length);
 
 #if 0
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
 #endif
 
-	get_auth_data_from_tkt(auth_data, tkt);
+	get_auth_data_from_tkt(mem_ctx, auth_data, tkt);
 
 #if 0
 	if (tkt->enc_part2) {
@@ -363,14 +340,6 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	}
 
 	SAFE_FREE(host_princ_s);
-
-	if (auth_context) {
-		krb5_auth_con_free(context, auth_context);
-	}
-
-	if (context) {
-		krb5_free_context(context);
-	}
 
 	return sret;
 }
