@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <stdarg.h>
 #include "tdb.h"
 #include "spinlock.h"
 #else
@@ -152,7 +153,9 @@ struct list_struct {
    this functions locks/unlocks 1 byte at the specified offset.
 
    On error, errno is also set so that errors are passed back properly
-   through tdb_open(). */
+   through tdb_open().
+
+   @param probe True to not emit errors if the lock fails. */
 static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, 
 		      int rw_type, int lck_type, int probe)
 {
@@ -173,8 +176,8 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 
 	if (fcntl(tdb->fd,lck_type,&fl)) {
 		if (!probe) {
-			TDB_LOG((tdb, 5,"tdb_brlock failed at offset %d rw_type=%d lck_type=%d\n", 
-				 offset, rw_type, lck_type));
+			TDB_LOG((tdb, 5,"tdb_brlock failed at offset %d rw_type=%d lck_type=%d: %s\n", 
+				 offset, rw_type, lck_type, strerror(errno)));
 		}
 		/* errno set by fcntl */
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
@@ -1369,6 +1372,33 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	return ret;
 }
 
+
+static int tdb_read_header(TDB_CONTEXT *tdb)
+{
+	int readlen = read(tdb->fd, &tdb->header, sizeof(tdb->header));
+	
+	if (readlen == 0) {
+		/* file is just empty, still needs to be created */
+	} else if (readlen == -1) {
+		TDB_LOG((tdb, 0, "tdb_read_header: failed to read tdb header of %s: %s\n",
+			 tdb->name, strerror(errno)));
+	} else if (readlen != sizeof(tdb->header)) {
+		TDB_LOG((tdb, 0, "tdb_read_header: tdb header in %s is truncated at byte %d\n",
+			 tdb->name, readlen));
+	} else if (strcmp(tdb->header.magic_food, TDB_MAGIC_FOOD) != 0) {
+		TDB_LOG((tdb, 0, "tdb_read_header: rotten food in %s\n", tdb->name));
+		errno = EIO;
+	} else if (tdb->header.version != TDB_VERSION
+		   && tdb->header.version != TDB_BYTEREV(TDB_VERSION)) {
+		TDB_LOG((tdb, 0, "tdb_read_header: bad version in header of %s: %#x\n",
+			 tdb->name, tdb->header.version));
+	} else {
+		return 1;
+	}
+	return 0;
+}
+
+
 /* open the database, creating it if necessary 
 
    The open_flags and mode are passed straight to the open call on the
@@ -1378,21 +1408,24 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
    Return is NULL on error, in which case errno is also set.  Don't 
    try to call tdb_error or tdb_errname, just do strerror(errno).  */
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
-		      int open_flags, mode_t mode)
+		      int open_flags, mode_t mode,
+		      tdb_log_func log_func)
 {
-	TDB_CONTEXT tdb, *ret, *i;
+	TDB_CONTEXT tdb[1], *ret, *i;
 	struct stat st;
-	int rev = 0, locked;
+	int rev, locked;
 
-	memset(&tdb, 0, sizeof(tdb));
-	tdb.fd = -1;
-	tdb.name = NULL;
-	tdb.map_ptr = NULL;
-	tdb.lockedkeys = NULL;
-	tdb.flags = tdb_flags;
-	tdb.open_flags = open_flags;
+	memset(tdb, 0, sizeof(tdb));
+ 	tdb->fd = -1;
+	tdb->name = NULL;
+	tdb->map_ptr = NULL;
+	tdb->lockedkeys = NULL;
+	tdb->flags = tdb_flags;
+	tdb->open_flags = open_flags;
+	tdb_logging_function(tdb, log_func);
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
+		TDB_LOG((tdb, 0, "tdb_open: tdb cannot be opened O_WRONLY\n"));
 		errno = EINVAL;
 		goto fail;
 	}
@@ -1400,87 +1433,102 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	if (hash_size == 0)
 		hash_size = DEFAULT_HASH_SIZE;
 	if ((open_flags & O_ACCMODE) == O_RDONLY) {
-		tdb.read_only = 1;
+		tdb->read_only = 1;
 		/* read only databases don't do locking or clear if first */
-		tdb.flags |= TDB_NOLOCK;
-		tdb.flags &= ~TDB_CLEAR_IF_FIRST;
+		tdb->flags |= TDB_NOLOCK;
+		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
 	}
 
 	/* internal databases don't mmap or lock, and start off cleared */
-	if (tdb.flags & TDB_INTERNAL) {
-		tdb.flags |= (TDB_NOLOCK | TDB_NOMMAP);
-		tdb.flags &= ~TDB_CLEAR_IF_FIRST;
-		tdb_new_database(&tdb, hash_size);
+	if (tdb->flags & TDB_INTERNAL) {
+		tdb->flags |= (TDB_NOLOCK | TDB_NOMMAP);
+		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
+		tdb_new_database(tdb, hash_size);
 		goto internal;
 	}
 
-	if ((tdb.fd = open(name, open_flags, mode)) == -1)
+	tdb->name = (char *)strdup(name);
+	if (!tdb->name) {
+		TDB_LOG((tdb, 0, "tdb_open: couldn't allocate memory for name\n"));
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	if ((tdb->fd = open(name, open_flags, mode)) == -1) {
+		TDB_LOG((tdb, 0, "tdb_open: failed to open %s: %s\n",
+			 name, strerror(errno)));
 		goto fail;	/* errno set by open(2) */
+	}
 
 	/* ensure there is only one process initialising at once */
-	if (tdb_brlock(&tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1)
+	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1)
 		goto fail;	/* errno set by tdb_brlock */
 
-	/* we need to zero database if we are the only one with it open */
-	if ((locked = (tdb_brlock(&tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))
+	/* We need to zero database if we are the only one with it
+	 * open.  Be quiet if the lock fails. */
+	if ((locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 1) == 0))
 	    && (tdb_flags & TDB_CLEAR_IF_FIRST)) {
 		open_flags |= O_CREAT;
-		if (ftruncate(tdb.fd, 0) == -1)
+		if (ftruncate(tdb->fd, 0) == -1) {
+			TDB_LOG((tdb, 0, "tdb_open: couldn't truncate %s: %s\n",
+				 name, strerror(errno)));
 			goto fail; /* errno set by ftruncate */
+		}
 	}
-
-	if (read(tdb.fd, &tdb.header, sizeof(tdb.header)) != sizeof(tdb.header)
-	    || strcmp(tdb.header.magic_food, TDB_MAGIC_FOOD) != 0
-	    || (tdb.header.version != TDB_VERSION
-		&& !(rev = (tdb.header.version==TDB_BYTEREV(TDB_VERSION))))) {
+	
+	if (tdb_read_header(tdb)) {
+		rev = tdb->header.version = TDB_BYTEREV(TDB_VERSION);
+	} else {
 		/* its not a valid database - possibly initialise it */
-		if (!(open_flags & O_CREAT) || tdb_new_database(&tdb, hash_size) == -1) {
+		if (!(open_flags & O_CREAT)) {
+			TDB_LOG((tdb, 0, "tdb_open: database header not OK and O_CREAT not specified\n"));
 			errno = EIO; /* ie bad format or something */
 			goto fail;
+		} else if (tdb_new_database(tdb, hash_size) == -1) {
+			goto fail;
 		}
-		rev = (tdb.flags & TDB_CONVERT);
+
+		rev = (tdb->flags & TDB_CONVERT);
 	}
+
 	if (!rev)
-		tdb.flags &= ~TDB_CONVERT;
+		tdb->flags &= ~TDB_CONVERT;
 	else {
-		tdb.flags |= TDB_CONVERT;
-		convert(&tdb.header, sizeof(tdb.header));
+		tdb->flags |= TDB_CONVERT;
+		convert(&tdb->header, sizeof(tdb->header));
 	}
-	if (fstat(tdb.fd, &st) == -1)
+	if (fstat(tdb->fd, &st) == -1) {
+		TDB_LOG((tdb, 0, "tdb_open: fstat of %s failed: %s\n",
+			 name, strerror(errno)));
 		goto fail;
+	}
 
 	/* Is it already in the open list?  If so, fail. */
 	for (i = tdbs; i; i = i->next) {
 		if (i->device == st.st_dev && i->inode == st.st_ino) {
 			errno = EBUSY;
-			close(tdb.fd);
+			close(tdb->fd);
 			return NULL;
 		}
 	}
 
-	/* map the database and fill in the return structure */
-	tdb.name = (char *)strdup(name);
-	if (!tdb.name) {
+	tdb->map_size = st.st_size;
+	tdb->device = st.st_dev;
+	tdb->inode = st.st_ino;
+	tdb->locked = calloc(tdb->header.hash_size+1, sizeof(tdb->locked[0]));
+	if (!tdb->locked) {
 		errno = ENOMEM;
 		goto fail;
 	}
-	tdb.map_size = st.st_size;
-	tdb.device = st.st_dev;
-	tdb.inode = st.st_ino;
-	tdb.locked = calloc(tdb.header.hash_size+1, sizeof(tdb.locked[0]));
-	if (!tdb.locked) {
-		errno = ENOMEM;
-		goto fail;
-	}
-	tdb_mmap(&tdb);
+	tdb_mmap(tdb);
 	if (locked) {
-		if (!tdb.read_only)
-			tdb_clear_spinlocks(&tdb);
-		if (tdb_brlock(&tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1)
+		if (!tdb->read_only)
+			tdb_clear_spinlocks(tdb);
+		if (tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1)
 			goto fail;
 	}
 	/* leave this lock in place to indicate it's in use */
-	if (tdb_brlock(&tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
+	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
 		goto fail;
 
  internal:
@@ -1488,8 +1536,8 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		errno = ENOMEM;
 		goto fail;
 	}
-	*ret = tdb;
-	if (tdb_brlock(&tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
+	*ret = *tdb;
+	if (tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
 		goto fail;
 	ret->next = tdbs;
 	tdbs = ret;
@@ -1498,18 +1546,18 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
  fail:
 	{ int save_errno = errno;
 	
-	if (tdb.map_ptr) {
-		if (tdb.flags & TDB_INTERNAL)
-			free(tdb.map_ptr);
+	if (tdb->map_ptr) {
+		if (tdb->flags & TDB_INTERNAL)
+			free(tdb->map_ptr);
 		else
-			tdb_munmap(&tdb);
+			tdb_munmap(tdb);
 	}
-	if (tdb.name)
-		free(tdb.name);
-	if (tdb.fd != -1)
-		close(tdb.fd);
-	if (tdb.locked)
-		free(tdb.locked);
+	if (tdb->name)
+		free(tdb->name);
+	if (tdb->fd != -1)
+		close(tdb->fd);
+	if (tdb->locked)
+		free(tdb->locked);
 	errno = save_errno;
 	return NULL;
 	}
@@ -1638,6 +1686,16 @@ void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key)
 	tdb_unlock(tdb, BUCKET(tdb_hash(&key)), F_WRLCK);
 }
 
+
+void tdb_log_to_stderr(TDB_CONTEXT *tdb, int level, const char *format, ...)
+{
+	va_list ap;
+    
+	va_start(ap, format);
+	vfprintf(stderr, format, ap);
+	va_end(ap);
+	fflush(stderr);
+}
 
 /* register a loging function */
 void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...))

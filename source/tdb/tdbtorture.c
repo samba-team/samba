@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 	}
 
 	db = tdb_open("torture.tdb", 2, TDB_CLEAR_IF_FIRST, 
-		      O_RDWR | O_CREAT, 0600);
+		      O_RDWR | O_CREAT, 0600, tdb_log_to_stderr);
 	if (!db) {
 		fatal("db open failed");
 	}
