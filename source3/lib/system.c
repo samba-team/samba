@@ -1372,7 +1372,7 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_FSETXATTR)
-	return fsetxattr(path, name, value, size, flags);
+	return fsetxattr(filedes, name, value, size, flags);
 #else
 	errno = ENOSYS;
 	return -1;
