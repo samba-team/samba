@@ -23,13 +23,13 @@
 #include "includes.h"
 
 
-static NTSTATUS echo_AddOne(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)
+static NTSTATUS echo_AddOne(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)
 {
 	*r->out.v = *r->in.v + 1;
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_EchoData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_EchoData *r)
+static NTSTATUS echo_EchoData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_EchoData *r)
 {
 	if (!r->in.len) {
 		return NT_STATUS_OK;
@@ -44,12 +44,12 @@ static NTSTATUS echo_EchoData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, str
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_SinkData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_SinkData *r)
+static NTSTATUS echo_SinkData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SinkData *r)
 {
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_SourceData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_SourceData *r)
+static NTSTATUS echo_SourceData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SourceData *r)
 {
 	int i;
 	for (i=0;i<r->in.len;i++) {
@@ -59,14 +59,14 @@ static NTSTATUS echo_SourceData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, s
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestCall(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_TestCall *r)
+static NTSTATUS echo_TestCall(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall *r)
 {
 	r->out.s2 = "this is a test string";
 	
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestCall2(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_TestCall2 *r)
+static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall2 *r)
 {
 	r->out.info = talloc(mem_ctx, sizeof(*r->out.info));
 	if (!r->out.info) {

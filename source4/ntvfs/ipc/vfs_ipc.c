@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
    default IPC$ NTVFS backend
+
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan (metze) Metzmacher 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +41,7 @@ struct ipc_private {
 		TALLOC_CTX *mem_ctx;
 		const char *pipe_name;
 		uint16 fnum;
-		struct dcesrv_state *pipe_state;
+		struct dcesrv_connection *dce_conn;
 		uint16 ipc_state;
 	} *pipe_list;
 
@@ -77,7 +79,7 @@ again:
 static void pipe_shutdown(struct ipc_private *private, struct pipe_state *p)
 {
 	TALLOC_CTX *mem_ctx = private->pipe_list->mem_ctx;
-	dcesrv_endpoint_disconnect(private->pipe_list->pipe_state);
+	dcesrv_endpoint_disconnect(private->pipe_list->dce_conn);
 	DLIST_REMOVE(private->pipe_list, private->pipe_list);
 	talloc_destroy(mem_ctx);
 }
@@ -192,7 +194,7 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 	struct pipe_state *p;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	struct dcesrv_endpoint endpoint;
+	struct dcesrv_ep_description ep_description;
 	struct ipc_private *private = req->conn->ntvfs_private;
 
 	mem_ctx = talloc_init("ipc_open '%s'", fname);
@@ -235,10 +237,10 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 	  finalised for Samba4
 	*/
 
-	endpoint.type = ENDPOINT_SMB;
-	endpoint.info.smb_pipe = p->pipe_name;
+	ep_description.type = ENDPOINT_SMB;
+	ep_description.info.smb_pipe = p->pipe_name;
 
-	status = dcesrv_endpoint_connect(&req->smb->dcesrv, &endpoint, &p->pipe_state);
+	status = dcesrv_endpoint_search_connect(&req->smb->dcesrv, &ep_description, &p->dce_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return status;
@@ -386,7 +388,7 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	status = dcesrv_output(p->pipe_state, &data);
+	status = dcesrv_output(p->dce_conn, &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -440,7 +442,7 @@ static NTSTATUS ipc_write(struct request_context *req, union smb_write *wr)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	status = dcesrv_input(p->pipe_state, &data);
+	status = dcesrv_input(p->dce_conn, &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -599,7 +601,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *t
 	   expect this to fail, and things like NDR faults are not
 	   reported at this stage. Those sorts of errors happen in the
 	   dcesrv_output stage */
-	status = dcesrv_input(p->pipe_state, &trans->in.data);
+	status = dcesrv_input(p->dce_conn, &trans->in.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -609,7 +611,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *t
 	  async calls. Again, we only expect NT_STATUS_OK. If the call fails then
 	  the error is encoded at the dcerpc level
 	*/
-	status = dcesrv_output(p->pipe_state, &trans->out.data);
+	status = dcesrv_output(p->dce_conn, &trans->out.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

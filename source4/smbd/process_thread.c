@@ -110,7 +110,7 @@ static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde
 	
 	ev = event_context_init();
 	MUTEX_LOCK_BY_ID(MUTEX_SMBD);
-	init_rpcsession(ev, fde->private, accepted_fd);
+	init_rpc_session(ev, fde->private, accepted_fd);
 	MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
 	
 	pthread_attr_init(&thread_attr);

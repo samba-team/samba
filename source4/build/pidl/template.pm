@@ -18,8 +18,7 @@ sub Template($)
 	my $name = $interface->{NAME};
 
 	$res .= 
-"
-/* 
+"/* 
    Unix SMB/CIFS implementation.
 
    endpoint server for the $name pipe
@@ -53,7 +52,7 @@ sub Template($)
 /* 
   $fname 
 */
-static NTSTATUS $fname(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS $fname(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct $fname *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -85,4 +84,3 @@ sub Parse($)
 }
 
 1;
-

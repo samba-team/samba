@@ -233,7 +233,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="ntvfs_ipc ntvfs_simple ntvfs_print ntvfs_cifs"
+default_static_modules="ntvfs_ipc ntvfs_simple ntvfs_print ntvfs_cifs dcerpc_rpcecho dcerpc_epmapper dcerpc_remote"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules=""
@@ -2830,6 +2830,7 @@ SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 
 sinclude(ntvfs/config.m4)
+sinclude(rpc_server/config.m4)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 

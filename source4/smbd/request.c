@@ -62,6 +62,10 @@ struct request_context *init_smb_request(struct server_context *smb)
 	smb->socket.pkt_count++;
 
 	req = talloc(mem_ctx, sizeof(*req));
+	if (!req) {
+		return NULL;
+	}
+
 	ZERO_STRUCTP(req);
 
 	/* setup the request context */

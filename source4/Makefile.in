@@ -284,12 +284,12 @@ NTVFS_POSIX_OBJ = ntvfs/posix/vfs_posix.o
 SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o \
 	ntvfs/ntvfs_generic.o @NTVFS_STATIC@
 
-SMBD_RPC_OBJ = rpc_server/dcerpc_server.o \
-		rpc_server/dcesrv_auth.o \
-		rpc_server/dcerpc_tcp.o \
-		rpc_server/handles.o \
-		rpc_server/echo/rpc_echo.o \
-		rpc_server/epmapper/rpc_epmapper.o
+DCERPC_RPCECHO_OBJ = rpc_server/echo/rpc_echo.o
+DCERPC_EPMAPPER_OBJ = rpc_server/epmapper/rpc_epmapper.o
+DCERPC_REMOTE_OBJ = rpc_server/remote/dcesrv_remote.o
+
+SMBD_RPC_OBJ = rpc_server/dcerpc_server.o rpc_server/dcesrv_auth.o \
+		rpc_server/dcerpc_tcp.o rpc_server/handles.o @DCERPC_STATIC@
 
 SMBD_OBJ_SRV = smbd/connection.o \
 	       smbd/session.o \

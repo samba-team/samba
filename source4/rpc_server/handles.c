@@ -25,7 +25,7 @@
 /*
   allocate a new rpc handle
 */
-struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_state *dce, 
+struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn, 
 					uint8 handle_type)
 {
 	TALLOC_CTX *mem_ctx;
@@ -46,7 +46,7 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_state *dce,
 	h->wire_handle.handle_type = handle_type;
 	uuid_generate_random(&h->wire_handle.uuid);
 	
-	DLIST_ADD(dce->handles, h);
+	DLIST_ADD(dce_conn->handles, h);
 
 	return h;
 }
@@ -54,10 +54,10 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_state *dce,
 /*
   destroy a rpc handle
 */
-void dcesrv_handle_destroy(struct dcesrv_state *dce, 
+void dcesrv_handle_destroy(struct dcesrv_connection *dce_conn, 
 			   struct dcesrv_handle *h)
 {
-	DLIST_REMOVE(dce->handles, h);
+	DLIST_REMOVE(dce_conn->handles, h);
 	talloc_destroy(h->mem_ctx);
 }
 
@@ -66,17 +66,17 @@ void dcesrv_handle_destroy(struct dcesrv_state *dce,
   find an internal handle given a wire handle. If the wire handle is NULL then
   allocate a new handle
 */
-struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_state *dce, 
+struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection *dce_conn, 
 					  struct policy_handle *p,
 					  uint8 handle_type)
 {
 	struct dcesrv_handle *h;
 
 	if (policy_handle_empty(p)) {
-		return dcesrv_handle_new(dce, handle_type);
+		return dcesrv_handle_new(dce_conn, handle_type);
 	}
 
-	for (h=dce->handles; h; h=h->next) {
+	for (h=dce_conn->handles; h; h=h->next) {
 		if (h->wire_handle.handle_type == p->handle_type &&
 		    uuid_equal(&p->uuid, &h->wire_handle.uuid)) {
 			if (p->handle_type != handle_type) {
