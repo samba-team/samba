@@ -109,6 +109,7 @@ DECL(change_random_key);
 void init_des_key(hdb_entry *ent);
 void set_keys(hdb_entry *ent, char *password);
 char *time2str(time_t t);
+char *time2rstr(time_t t);
 void event2string(Event *ev, char **str);
 void print_hdbflags (FILE *fp, HDBFlags flags);
 int parse_hdbflags (const char *s, HDBFlags *flags);
