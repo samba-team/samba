@@ -3213,7 +3213,9 @@ static void usage(void)
 
 	dbf = stdout;
 
+#ifdef HAVE_SETBUFFER
 	setbuffer(stdout, NULL, 0);
+#endif
 
 	charset_initialise();
 
