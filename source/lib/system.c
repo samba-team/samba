@@ -60,7 +60,7 @@ static int pollfd(int fd)
   return(r);
 }
 
-int sys_select(fd_set *fds,struct timeval *tval)
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
   fd_set fds2;
   int counter=0;
@@ -69,41 +69,75 @@ int sys_select(fd_set *fds,struct timeval *tval)
   FD_ZERO(&fds2);
 
   while (1) 
-    {
-      int i;
-      for (i=0;i<255;i++) {
-	if (FD_ISSET(i,fds) && pollfd(i)>0) {
-	  found++;
-	  FD_SET(i,&fds2);
-	}
+  {
+    int i;
+    for (i=0;i<maxfd;i++) {
+      if (FD_ISSET(i,fds) && pollfd(i)>0) {
+        found++;
+        FD_SET(i,&fds2);
       }
+    }
 
-      if (found) {
-	memcpy((void *)fds,(void *)&fds2,sizeof(fds2));
-	return(found);
-      }
+    if (found) {
+      memcpy((void *)fds,(void *)&fds2,sizeof(fds2));
+      return(found);
+    }
       
-      if (tval && tval->tv_sec < counter) return(0);
+    if (tval && tval->tv_sec < counter) return(0);
       sleep(1);
       counter++;
-    }
+  }
 }
 
-#else
-int sys_select(fd_set *fds,struct timeval *tval)
+#else /* !NO_SELECT */
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
+#ifdef USE_POLL
+  struct pollfd pfd[256];
+  int i;
+  int maxpoll;
+  int timeout;
+  int pollrtn;
+
+  maxpoll = 0;
+  for( i = 0; i < maxfd; i++) {
+    if(FD_ISSET(i,fds)) {
+      struct pollfd *pfdp = &pfd[maxpoll++];
+      pfdp->fd = i;
+      pfdp->events = POLLIN;
+      pfdp->revents = 0;
+    }
+  }
+
+  timeout = (tval != NULL) ? (tval->tv_sec * 1000) + (tval->tv_usec/1000) :
+                -1;
+  errno = 0;
+  do {
+    pollrtn = poll( &pfd[0], maxpoll, timeout);
+  } while (pollrtn<0 && errno == EINTR);
+
+  FD_ZERO(fds);
+
+  for( i = 0; i < maxpoll; i++)
+    if( pfd[i].revents & POLLIN )
+      FD_SET(pfd[i].fd,fds);
+
+  return pollrtn;
+#else /* USE_POLL */
+
   struct timeval t2;
   int selrtn;
 
   do {
     if (tval) memcpy((void *)&t2,(void *)tval,sizeof(t2));
     errno = 0;
-    selrtn = select(255,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
+    selrtn = select(maxfd,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
   } while (selrtn<0 && errno == EINTR);
 
   return(selrtn);
 }
-#endif
+#endif /* USE_POLL */
+#endif /* NO_SELECT */
 
 
 /*******************************************************************

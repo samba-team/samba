@@ -1883,7 +1883,7 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
       FD_ZERO(&fds);
       FD_SET(fd,&fds);
       
-      selrtn = sys_select(&fds,&timeout);
+      selrtn = sys_select(fd+1,&fds,&timeout);
 
       /* Check if error */
       if(selrtn == -1) {
@@ -1943,7 +1943,7 @@ int read_max_udp(int fd,char *buffer,int bufsize,int maxtime)
   timeout.tv_sec = maxtime / 1000;
   timeout.tv_usec = (maxtime % 1000) * 1000;
 
-  selrtn = sys_select(&fds,maxtime>0?&timeout:NULL);
+  selrtn = sys_select(fd+1,&fds,maxtime>0?&timeout:NULL);
 
   if (!FD_ISSET(fd,&fds))
     return 0;
@@ -2269,7 +2269,7 @@ BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
     to.tv_sec = timeout / 1000;
     to.tv_usec = (timeout % 1000) * 1000;
 
-    selrtn = sys_select(&fds,&to);
+    selrtn = sys_select(fd+1,&fds,&to);
 
     /* Check if error */
     if(selrtn == -1) 
@@ -2437,7 +2437,7 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
   to.tv_sec = timeout / 1000;
   to.tv_usec = (timeout % 1000) * 1000;
 
-  selrtn = sys_select(&fds,timeout>0?&to:NULL);
+  selrtn = sys_select(MAX(smbfd,oplock_fd)+1,&fds,timeout>0?&to:NULL);
 
   /* Check if error */
   if(selrtn == -1) {
@@ -2601,7 +2601,7 @@ void msleep(int t)
  
     FD_ZERO(&fds);
     errno = 0;
-    sys_select(&fds,&tval);
+    sys_select(0,&fds,&tval);
 
     GetTimeOfDay(&t2);
     tdiff = TvalDiff(&t1,&t2);
