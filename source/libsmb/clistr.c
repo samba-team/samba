@@ -40,17 +40,18 @@ is -1 then no maxiumum is used
 ****************************************************************************/
 int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int flags)
 {
-	int len;
+	int len=0;
 
 	/* treat a pstring as "unlimited" length */
 	if (dest_len == -1) {
 		dest_len = sizeof(pstring);
 	}
 
-	if (clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
+	if (clistr_align(cli, PTR_DIFF(dest, cli->outbuf))) {
 		*(char *)dest = 0;
 		dest++;
 		dest_len--;
+		len++;
 	}
 
 	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
@@ -72,7 +73,7 @@ int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int 
 	if (flags & CLISTR_UPPER) {
 		strupper_w(dest);
 	}
-	len = strlen(src)*2;
+	len += strlen(src)*2;
 	if (flags & CLISTR_TERMINATE) len += 2;
 	return len;
 }

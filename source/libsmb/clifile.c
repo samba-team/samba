@@ -172,6 +172,7 @@ open a file
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 {
 	char *p;
+	int len;
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -194,10 +195,15 @@ int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, 0x01);
 	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, 0x0);
 	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
-	SSVAL(cli->outbuf,smb_ntcreate_NameLength, strlen(fname));
 
 	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, fname, -1, CLISTR_TERMINATE | CLISTR_CONVERT);
+	/* this alignment and termination is critical for netapp filers. Don't change */
+	p += clistr_align(cli, PTR_DIFF(p, cli->outbuf));
+	len = clistr_push(cli, p, fname, -1, CLISTR_CONVERT);
+	p += len;
+	SSVAL(cli->outbuf,smb_ntcreate_NameLength, len);
+	SSVAL(p, 0, 0);
+	p += 2;
 
 	cli_setup_bcc(cli, p);
 
@@ -248,7 +254,7 @@ int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 	p++; /* Alignment */
 	pstrcpy(uni, fname);
 	unix_to_dos(uni, True);
-	p += dos_struni2(p, uni, (strlen(fname) + 1) * 2);
+	p += dos_struni2(p, uni, (strlen(fname) + 1) * 2) * 2;
 	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
