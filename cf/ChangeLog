@@ -1,5 +1,7 @@
 Thu Mar 18 11:02:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* Makefile.am.common: define LIB_kafs and LIB_gssapi
+
 	* krb-find-db.m4: subst DBLIB also
 
 	* check-xau.m4: test for Xau{Read,Write}Auth

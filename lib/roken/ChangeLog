@@ -1,3 +1,7 @@
+Thu Mar 18 12:53:32 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: parse_units.h
+
 Sat Mar 13 23:31:35 1999  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (SOURCES): add glob.c

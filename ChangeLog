@@ -1,5 +1,19 @@
 Thu Mar 18 11:33:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* configure.in: LIB_kdb, have_err_h, have_fnmatch_h, have_glob_h
+
+	* lib/asn1/Makefile.am: der.h
+
+	* kpasswd/kpasswdd.c: admin.h -> kadm5/admin.h
+
+	* kdc/Makefile.am: remove junk
+
+	* kadmin/Makefile.am: sl.a -> sl.la
+
+	* appl/afsutil/Makefile.am: remove EXTRA_bin_PROGRAMS
+
+	* admin/Makefile.am: sl.a -> sl.la
+
 	* configure.in: condition KRB5; AC_CHECK_XAU
 
 	* Makefile.am: include Makefile.am.common
