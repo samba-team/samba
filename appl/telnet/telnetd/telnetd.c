@@ -572,6 +572,7 @@ usage()
 #ifdef LINEMODE
 	fprintf(stderr, " [-l]");
 #endif
+	fprintf(stderr, " [-L login]");
 	fprintf(stderr, " [-n]");
 #ifdef	CRAY
 	fprintf(stderr, " [-r[lowpty]-[highpty]]");
