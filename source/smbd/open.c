@@ -492,8 +492,8 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 
         BOOL opb_ret;
 
-        DEBUG(5,("open_mode_check: breaking oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
+        DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
+dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 
         /* Oplock break - unlock to request it. */
         unlock_share_entry(conn, dev, inode);

@@ -4333,7 +4333,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	BOOL break_to_none = (oplocklevel == 0);
 
     DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
-              fsp->fnum, (unsigned int)oplocklevel ));
+              (unsigned int)oplocklevel, fsp->fnum ));
 
     /*
      * Make sure we have granted an exclusive or batch oplock on this file.
