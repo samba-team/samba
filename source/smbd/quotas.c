@@ -277,11 +277,6 @@ static int xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 
 static int xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
-	gqr_status status;
-	union {
-		rquota gqr_rquota;
-	} getquota_rslt_u;
-  
 	if (!xdr_int(xdrsp, &quotastat)) {
 		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
 		return 0;
@@ -456,7 +451,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 		return(False) ;
   
 	devno = sbuf.st_dev ;
-	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,devno));
+	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,(unsigned int)devno));
 	if ( devno != devno_cached ) {
 		devno_cached = devno ;
 #if defined(SUNOS5)
@@ -464,7 +459,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 			return(False) ;
     
 		found = False ;
-		slprintf(devopt, sizeof(devopt) - 1, "dev=%x", devno);
+		slprintf(devopt, sizeof(devopt) - 1, "dev=%x", (unsigned int)devno);
 		while (getmntent(fd, &mnt) == 0) {
 			if( !hasmntopt(&mnt, devopt) )
 				continue;
@@ -491,7 +486,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 		while ((mnt = getmntent(fd)) != NULL) {
 			if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
 				continue ;
-			DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt->mnt_dir,sbuf.st_dev));
+			DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n", mnt->mnt_dir,(unsigned int)sbuf.st_dev));
 			if (sbuf.st_dev == devno) {
 				found = True ;
 				break;
