@@ -956,19 +956,36 @@ static BOOL spoolss_smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int 
 static BOOL smb_io_relstr(char *desc, prs_struct *ps, int depth, UNISTR *buffer,
                    uint32 *start_offset, uint32 *end_offset)
 {
-	uint32 struct_offset;
-	uint32 relative_offset;
-	
-	struct_offset=ps->offset;
-	*end_offset-= 2*(str_len_uni(buffer)+1);
-	ps->offset=*end_offset;
-	spoolss_smb_io_unistr(desc, buffer, ps, depth);
+	if (!ps->io)
+	{
+		uint32 struct_offset = ps->offset;
+		uint32 relative_offset;
+		
+		/* writing */
+		*end_offset -= 2*(str_len_uni(buffer)+1);
+		ps->offset=*end_offset;
+		spoolss_smb_io_unistr(desc, buffer, ps, depth);
 
-	ps->offset=struct_offset;
-	relative_offset=*end_offset-*start_offset;
+		ps->offset=struct_offset;
+		relative_offset=*end_offset-*start_offset;
 
-	prs_uint32("offset", ps, depth, &(relative_offset));
+		prs_uint32("offset", ps, depth, &(relative_offset));
+	}
+	else
+	{
+		uint32 old_offset;
+		uint32 relative_offset;
 
+		prs_uint32("offset", ps, depth, &(relative_offset));
+
+		old_offset = ps->offset;
+		ps->offset = (*start_offset) + relative_offset;
+
+		spoolss_smb_io_unistr(desc, buffer, ps, depth);
+
+		*end_offset = ps->offset;
+		ps->offset = old_offset;
+	}
 	return True;
 }
 

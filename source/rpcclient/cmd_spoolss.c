@@ -44,8 +44,9 @@ void cmd_spoolss_enum_printers(struct client_info *info)
 {
 	uint16 nt_pipe_fnum;
 	fstring srv_name;
-	void **printers = NULL;
-	uint32 count = 0;
+	void **ctr = NULL;
+	uint32 num = 0;
+	uint32 level = 1;
 
 	BOOL res = True;
 
@@ -59,7 +60,7 @@ void cmd_spoolss_enum_printers(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SPOOLSS, &nt_pipe_fnum) : False;
 
 	res = res ? spoolss_enum_printers(smb_cli, nt_pipe_fnum, 
-	                        0x40, srv_name, 1, &count, &printers) : False;
+	                        0x40, srv_name, level, &num, &ctr) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
@@ -67,14 +68,17 @@ void cmd_spoolss_enum_printers(struct client_info *info)
 	if (res)
 	{
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-		report(out_hnd, "OK\n");
+		display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, num, ctr);
+		display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, num, ctr);
+		display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, num, ctr);
 	}
 	else
 	{
 		DEBUG(5,("cmd_spoolss_enum_printer: query failed\n"));
+		report(out_hnd, "FAILED\n");
 	}
 
-	free_void_array(count, printers, free);
+	free_void_array(num, ctr, free);
 }
 
 /****************************************************************************

@@ -3587,6 +3587,16 @@ void display_sam_unk_info_2(FILE *out_hnd, enum action_type action,
 				SAM_UNK_INFO_2 *info2);
 void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 				uint32 switch_value, SAM_UNK_CTR *ctr);
+void display_print_info_0(FILE *out_hnd, enum action_type action,
+		PRINTER_INFO_0 *i0);
+void display_print_info_1(FILE *out_hnd, enum action_type action,
+		PRINTER_INFO_1 *i1);
+void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action,
+				uint32 count, PRINTER_INFO_0 **ctr);
+void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action,
+				uint32 count, PRINTER_INFO_1 **ctr);
+void display_printer_info_ctr(FILE *out_hnd, enum action_type action,
+				uint32 level, uint32 count, void **ctr);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 

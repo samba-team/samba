@@ -2525,6 +2525,200 @@ void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 	}
 }
 
+/****************************************************************************
+printer info level 0 display function
+****************************************************************************/
+void display_print_info_0(FILE *out_hnd, enum action_type action,
+		PRINTER_INFO_0 *i0)
+{
+	if (i0 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "Printer Info Level 0:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring name;
+			fstring serv;
+
+			unistr_to_ascii(name, i0->printername.buffer, sizeof(name)-1);
+			unistr_to_ascii(serv, i0->servername .buffer, sizeof(serv)-1);
+
+			fprintf(out_hnd, "\tprinter name:\t%s\n", name);
+			fprintf(out_hnd, "\tserver name:\t%s\n", serv);
+			fprintf(out_hnd, "\t[Other info not displayed]\n");
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+void display_print_info_1(FILE *out_hnd, enum action_type action,
+		PRINTER_INFO_1 *i1)
+{
+	if (i1 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "Printer Info Level 1:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring desc;
+			fstring name;
+			fstring comm;
+
+			unistr_to_ascii(desc, i1->description.buffer, sizeof(desc)-1);
+			unistr_to_ascii(name, i1->name       .buffer, sizeof(name)-1);
+			unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm)-1);
+
+			fprintf(out_hnd, "\tflags:\t%d\n", i1->flags);
+			fprintf(out_hnd, "\tname:\t%s\n", name);
+			fprintf(out_hnd, "\tdescription:\t%s\n", desc);
+			fprintf(out_hnd, "\tcomment:\t%s\n", comm);
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+connection info level 0 container display function
+****************************************************************************/
+void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action,
+				uint32 count, PRINTER_INFO_0 **ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_printer_info_0_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < count; i++)
+			{
+				display_print_info_0(out_hnd, ACTION_HEADER   , ctr[i]);
+				display_print_info_0(out_hnd, ACTION_ENUMERATE, ctr[i]);
+				display_print_info_0(out_hnd, ACTION_FOOTER   , ctr[i]);
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+connection info level 1 container display function
+****************************************************************************/
+void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action,
+				uint32 count, PRINTER_INFO_1 **ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_printer_info_1_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < count; i++)
+			{
+				display_print_info_1(out_hnd, ACTION_HEADER   , ctr[i]);
+				display_print_info_1(out_hnd, ACTION_ENUMERATE, ctr[i]);
+				display_print_info_1(out_hnd, ACTION_FOOTER   , ctr[i]);
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+connection info container display function
+****************************************************************************/
+void display_printer_info_ctr(FILE *out_hnd, enum action_type action,
+				uint32 level, uint32 count, void **ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_printer_info_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (level)
+	{
+		case 0:
+		{
+			display_printer_info_0_ctr(out_hnd, action,
+			                   count, (PRINTER_INFO_0**)ctr);
+			break;
+		}
+		case 1:
+		{
+			display_printer_info_1_ctr(out_hnd, action,
+			                   count, (PRINTER_INFO_1**)ctr);
+			break;
+		}
+		default:
+		{
+			fprintf(out_hnd, "display_printer_info_ctr: Unknown Info Level\n");
+			break;
+		}
+	}
+}
 
 #if COPY_THIS_TEMPLATE
 /****************************************************************************
