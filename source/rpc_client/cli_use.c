@@ -48,7 +48,9 @@ static void cli_use_free(struct cli_use *cli)
 	{
 		if (cli->cli->initialised)
 		{
-			cli_ulogoff(cli->cli);
+			/* only call logoff() if we have a valid socket */
+			if (cli->cli->fd != -1)
+				cli_ulogoff(cli->cli);
 			cli_shutdown(cli->cli);
 		}
 		free(cli->cli);
