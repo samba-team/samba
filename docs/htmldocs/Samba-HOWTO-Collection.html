@@ -181,76 +181,215 @@ HREF="#AEN209"
 ><DT
 >2. <A
 HREF="#AEN212"
->LanMan and NT Password Encryption in Samba 2.x</A
+>Integrating MS Windows networks with Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.1. <A
 HREF="#AEN223"
->Introduction</A
+>Agenda</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN227"
->How does it work?</A
+HREF="#AEN245"
+>Name Resolution in a pure Unix/Linux world</A
+></DT
+><DD
+><DL
+><DT
+>2.2.1. <A
+HREF="#AEN248"
+><TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+></A
 ></DT
 ><DT
+>2.2.2. <A
+HREF="#AEN264"
+><TT
+CLASS="FILENAME"
+>/etc/resolv.conf</TT
+></A
+></DT
+><DT
+>2.2.3. <A
+HREF="#AEN275"
+><TT
+CLASS="FILENAME"
+>/etc/host.conf</TT
+></A
+></DT
+><DT
+>2.2.4. <A
+HREF="#AEN283"
+><TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+></A
+></DT
+></DL
+></DD
+><DT
 >2.3. <A
-HREF="#AEN238"
->Important Notes About Security</A
+HREF="#AEN295"
+>Name resolution as used within MS Windows networking</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.3.1. <A
-HREF="#AEN257"
->Advantages of SMB Encryption</A
+HREF="#AEN307"
+>The NetBIOS Name Cache</A
 ></DT
 ><DT
 >2.3.2. <A
-HREF="#AEN264"
->Advantages of non-encrypted passwords</A
+HREF="#AEN312"
+>The LMHOSTS file</A
+></DT
+><DT
+>2.3.3. <A
+HREF="#AEN320"
+>HOSTS file</A
+></DT
+><DT
+>2.3.4. <A
+HREF="#AEN325"
+>DNS Lookup</A
+></DT
+><DT
+>2.3.5. <A
+HREF="#AEN328"
+>WINS Lookup</A
 ></DT
 ></DL
 ></DD
 ><DT
 >2.4. <A
-HREF="#AEN273"
+HREF="#AEN342"
+>How browsing functions and how to deploy stable and 
+dependable browsing using Samba</A
+></DT
+><DT
+>2.5. <A
+HREF="#AEN352"
+>MS Windows security options and how to configure 
+Samba for seemless integration</A
+></DT
+><DD
+><DL
+><DT
+>2.5.1. <A
+HREF="#AEN369"
+>Use MS Windows NT as an authentication server</A
+></DT
+><DT
+>2.5.2. <A
+HREF="#AEN377"
+>Make Samba a member of an MS Windows NT security domain</A
+></DT
+><DT
+>2.5.3. <A
+HREF="#AEN391"
+>Configure Samba as an authentication server</A
+></DT
+><DD
+><DL
+><DT
+>2.5.3.1. <A
+HREF="#AEN398"
+>Users</A
+></DT
+><DT
+>2.5.3.2. <A
+HREF="#AEN405"
+>MS Windows NT Machine Accounts</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>2.6. <A
+HREF="#AEN410"
+>Configuration of Samba as ...</A
+></DT
+></DL
+></DD
+><DT
+>3. <A
+HREF="#AEN421"
+>LanMan and NT Password Encryption in Samba 2.x</A
+></DT
+><DD
+><DL
+><DT
+>3.1. <A
+HREF="#AEN432"
+>Introduction</A
+></DT
+><DT
+>3.2. <A
+HREF="#AEN436"
+>How does it work?</A
+></DT
+><DT
+>3.3. <A
+HREF="#AEN447"
+>Important Notes About Security</A
+></DT
+><DD
+><DL
+><DT
+>3.3.1. <A
+HREF="#AEN466"
+>Advantages of SMB Encryption</A
+></DT
+><DT
+>3.3.2. <A
+HREF="#AEN473"
+>Advantages of non-encrypted passwords</A
+></DT
+></DL
+></DD
+><DT
+>3.4. <A
+HREF="#AEN482"
 ><A
 NAME="SMBPASSWDFILEFORMAT"
 ></A
 >The smbpasswd file</A
 ></DT
 ><DT
->2.5. <A
-HREF="#AEN325"
+>3.5. <A
+HREF="#AEN534"
 >The smbpasswd Command</A
 ></DT
 ><DT
->2.6. <A
-HREF="#AEN364"
+>3.6. <A
+HREF="#AEN573"
 >Setting up Samba to support LanManager Encryption</A
 ></DT
 ></DL
 ></DD
 ><DT
->3. <A
-HREF="#AEN379"
+>4. <A
+HREF="#AEN588"
 >Hosting a Microsoft Distributed File System tree on Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->3.1. <A
-HREF="#AEN390"
+>4.1. <A
+HREF="#AEN599"
 >Instructions</A
 ></DT
 ><DD
 ><DL
 ><DT
->3.1.1. <A
-HREF="#AEN425"
+>4.1.1. <A
+HREF="#AEN634"
 >Notes</A
 ></DT
 ></DL
@@ -258,83 +397,83 @@ HREF="#AEN425"
 ></DL
 ></DD
 ><DT
->4. <A
-HREF="#AEN434"
+>5. <A
+HREF="#AEN643"
 >Printing Support in Samba 2.2.x</A
 ></DT
 ><DD
 ><DL
 ><DT
->4.1. <A
-HREF="#AEN445"
+>5.1. <A
+HREF="#AEN654"
 >Introduction</A
 ></DT
 ><DT
->4.2. <A
-HREF="#AEN467"
+>5.2. <A
+HREF="#AEN676"
 >Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
->4.2.1. <A
-HREF="#AEN478"
+>5.2.1. <A
+HREF="#AEN687"
 >Creating [print$]</A
 ></DT
 ><DT
->4.2.2. <A
-HREF="#AEN513"
+>5.2.2. <A
+HREF="#AEN722"
 >Setting Drivers for Existing Printers</A
 ></DT
 ><DT
->4.2.3. <A
-HREF="#AEN530"
+>5.2.3. <A
+HREF="#AEN739"
 >Support a large number of printers</A
 ></DT
 ><DT
->4.2.4. <A
-HREF="#AEN541"
+>5.2.4. <A
+HREF="#AEN750"
 >Adding New Printers via the Windows NT APW</A
 ></DT
 ><DT
->4.2.5. <A
-HREF="#AEN566"
+>5.2.5. <A
+HREF="#AEN775"
 >Samba and Printer Ports</A
 ></DT
 ></DL
 ></DD
 ><DT
->4.3. <A
-HREF="#AEN574"
+>5.3. <A
+HREF="#AEN783"
 >The Imprints Toolset</A
 ></DT
 ><DD
 ><DL
 ><DT
->4.3.1. <A
-HREF="#AEN578"
+>5.3.1. <A
+HREF="#AEN787"
 >What is Imprints?</A
 ></DT
 ><DT
->4.3.2. <A
-HREF="#AEN588"
+>5.3.2. <A
+HREF="#AEN797"
 >Creating Printer Driver Packages</A
 ></DT
 ><DT
->4.3.3. <A
-HREF="#AEN591"
+>5.3.3. <A
+HREF="#AEN800"
 >The Imprints server</A
 ></DT
 ><DT
->4.3.4. <A
-HREF="#AEN595"
+>5.3.4. <A
+HREF="#AEN804"
 >The Installation Client</A
 ></DT
 ></DL
 ></DD
 ><DT
->4.4. <A
-HREF="#AEN617"
+>5.4. <A
+HREF="#AEN826"
 ><A
 NAME="MIGRATION"
 ></A
@@ -343,138 +482,138 @@ NAME="MIGRATION"
 ></DL
 ></DD
 ><DT
->5. <A
-HREF="#AEN661"
+>6. <A
+HREF="#AEN870"
 >security = domain in Samba 2.x</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.1. <A
-HREF="#AEN679"
+>6.1. <A
+HREF="#AEN888"
 >Joining an NT Domain with Samba 2.2</A
 ></DT
 ><DT
->5.2. <A
-HREF="#AEN743"
+>6.2. <A
+HREF="#AEN952"
 >Samba and Windows 2000 Domains</A
 ></DT
 ><DT
->5.3. <A
-HREF="#AEN748"
+>6.3. <A
+HREF="#AEN957"
 >Why is this better than security = server?</A
 ></DT
 ></DL
 ></DD
 ><DT
->6. <A
-HREF="#AEN764"
+>7. <A
+HREF="#AEN973"
 >How to Configure Samba 2.2 as a Primary Domain Controller</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.1. <A
-HREF="#AEN781"
+>7.1. <A
+HREF="#AEN990"
 >Prerequisite Reading</A
 ></DT
 ><DT
->6.2. <A
-HREF="#AEN787"
+>7.2. <A
+HREF="#AEN996"
 >Background</A
 ></DT
 ><DT
->6.3. <A
-HREF="#AEN827"
+>7.3. <A
+HREF="#AEN1036"
 >Configuring the Samba Domain Controller</A
 ></DT
 ><DT
->6.4. <A
-HREF="#AEN870"
+>7.4. <A
+HREF="#AEN1079"
 >Creating Machine Trust Accounts and Joining Clients 
 to the Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.4.1. <A
-HREF="#AEN884"
+>7.4.1. <A
+HREF="#AEN1093"
 >Manually creating machine trust accounts</A
 ></DT
 ><DT
->6.4.2. <A
-HREF="#AEN912"
+>7.4.2. <A
+HREF="#AEN1121"
 >Creating machine trust accounts "on the fly"</A
 ></DT
 ></DL
 ></DD
 ><DT
->6.5. <A
-HREF="#AEN923"
+>7.5. <A
+HREF="#AEN1132"
 >Common Problems and Errors</A
 ></DT
 ><DT
->6.6. <A
-HREF="#AEN971"
+>7.6. <A
+HREF="#AEN1180"
 >System Policies and Profiles</A
 ></DT
 ><DT
->6.7. <A
-HREF="#AEN1015"
+>7.7. <A
+HREF="#AEN1224"
 >What other help can I get ?</A
 ></DT
 ><DT
->6.8. <A
-HREF="#AEN1129"
+>7.8. <A
+HREF="#AEN1338"
 >Domain Control for Windows 9x/ME</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.8.1. <A
-HREF="#AEN1159"
+>7.8.1. <A
+HREF="#AEN1368"
 >Configuration Instructions:	Network Logons</A
 ></DT
 ><DT
->6.8.2. <A
-HREF="#AEN1193"
+>7.8.2. <A
+HREF="#AEN1402"
 >Configuration Instructions:	Setting up Roaming User Profiles</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.8.2.1. <A
-HREF="#AEN1201"
+>7.8.2.1. <A
+HREF="#AEN1410"
 >Windows NT Configuration</A
 ></DT
 ><DT
->6.8.2.2. <A
-HREF="#AEN1209"
+>7.8.2.2. <A
+HREF="#AEN1418"
 >Windows 9X Configuration</A
 ></DT
 ><DT
->6.8.2.3. <A
-HREF="#AEN1217"
+>7.8.2.3. <A
+HREF="#AEN1426"
 >Win9X and WinNT Configuration</A
 ></DT
 ><DT
->6.8.2.4. <A
-HREF="#AEN1224"
+>7.8.2.4. <A
+HREF="#AEN1433"
 >Windows 9X Profile Setup</A
 ></DT
 ><DT
->6.8.2.5. <A
-HREF="#AEN1260"
+>7.8.2.5. <A
+HREF="#AEN1469"
 >Windows NT Workstation 4.0</A
 ></DT
 ><DT
->6.8.2.6. <A
-HREF="#AEN1273"
+>7.8.2.6. <A
+HREF="#AEN1482"
 >Windows NT Server</A
 ></DT
 ><DT
->6.8.2.7. <A
-HREF="#AEN1276"
+>7.8.2.7. <A
+HREF="#AEN1485"
 >Sharing Profiles between W95 and NT Workstation 4.0</A
 ></DT
 ></DL
@@ -482,190 +621,190 @@ HREF="#AEN1276"
 ></DL
 ></DD
 ><DT
->6.9. <A
-HREF="#AEN1286"
+>7.9. <A
+HREF="#AEN1495"
 >DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></DT
 ></DL
 ></DD
 ><DT
->7. <A
-HREF="#AEN1311"
+>8. <A
+HREF="#AEN1520"
 >Unifed Logons between Windows NT and UNIX using Winbind</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.1. <A
-HREF="#AEN1329"
+>8.1. <A
+HREF="#AEN1538"
 >Abstract</A
 ></DT
 ><DT
->7.2. <A
-HREF="#AEN1333"
+>8.2. <A
+HREF="#AEN1542"
 >Introduction</A
 ></DT
 ><DT
->7.3. <A
-HREF="#AEN1346"
+>8.3. <A
+HREF="#AEN1555"
 >What Winbind Provides</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.3.1. <A
-HREF="#AEN1353"
+>8.3.1. <A
+HREF="#AEN1562"
 >Target Uses</A
 ></DT
 ></DL
 ></DD
 ><DT
->7.4. <A
-HREF="#AEN1357"
+>8.4. <A
+HREF="#AEN1566"
 >How Winbind Works</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.4.1. <A
-HREF="#AEN1362"
+>8.4.1. <A
+HREF="#AEN1571"
 >Microsoft Remote Procedure Calls</A
 ></DT
 ><DT
->7.4.2. <A
-HREF="#AEN1366"
+>8.4.2. <A
+HREF="#AEN1575"
 >Name Service Switch</A
 ></DT
 ><DT
->7.4.3. <A
-HREF="#AEN1382"
+>8.4.3. <A
+HREF="#AEN1591"
 >Pluggable Authentication Modules</A
 ></DT
 ><DT
->7.4.4. <A
-HREF="#AEN1390"
+>8.4.4. <A
+HREF="#AEN1599"
 >User and Group ID Allocation</A
 ></DT
 ><DT
->7.4.5. <A
-HREF="#AEN1394"
+>8.4.5. <A
+HREF="#AEN1603"
 >Result Caching</A
 ></DT
 ></DL
 ></DD
 ><DT
->7.5. <A
-HREF="#AEN1397"
+>8.5. <A
+HREF="#AEN1606"
 >Installation and Configuration</A
 ></DT
 ><DT
->7.6. <A
-HREF="#AEN1403"
+>8.6. <A
+HREF="#AEN1612"
 >Limitations</A
 ></DT
 ><DT
->7.7. <A
-HREF="#AEN1415"
+>8.7. <A
+HREF="#AEN1624"
 >Conclusion</A
 ></DT
 ></DL
 ></DD
 ><DT
->8. <A
-HREF="#AEN1418"
+>9. <A
+HREF="#AEN1627"
 >UNIX Permission Bits and WIndows NT Access Control Lists</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.1. <A
-HREF="#AEN1429"
+>9.1. <A
+HREF="#AEN1638"
 >Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></DT
 ><DT
->8.2. <A
-HREF="#AEN1438"
+>9.2. <A
+HREF="#AEN1647"
 >How to view file security on a Samba share</A
 ></DT
 ><DT
->8.3. <A
-HREF="#AEN1449"
+>9.3. <A
+HREF="#AEN1658"
 >Viewing file ownership</A
 ></DT
 ><DT
->8.4. <A
-HREF="#AEN1469"
+>9.4. <A
+HREF="#AEN1678"
 >Viewing file or directory permissions</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.4.1. <A
-HREF="#AEN1484"
+>9.4.1. <A
+HREF="#AEN1693"
 >File Permissions</A
 ></DT
 ><DT
->8.4.2. <A
-HREF="#AEN1498"
+>9.4.2. <A
+HREF="#AEN1707"
 >Directory Permissions</A
 ></DT
 ></DL
 ></DD
 ><DT
->8.5. <A
-HREF="#AEN1505"
+>9.5. <A
+HREF="#AEN1714"
 >Modifying file or directory permissions</A
 ></DT
 ><DT
->8.6. <A
-HREF="#AEN1527"
+>9.6. <A
+HREF="#AEN1736"
 >Interaction with the standard Samba create mask 
 	parameters</A
 ></DT
 ><DT
->8.7. <A
-HREF="#AEN1591"
+>9.7. <A
+HREF="#AEN1800"
 >Interaction with the standard Samba file attribute 
 	mapping</A
 ></DT
 ></DL
 ></DD
 ><DT
->9. <A
-HREF="#AEN1601"
+>10. <A
+HREF="#AEN1810"
 >OS2 Client HOWTO</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.1. <A
-HREF="#AEN1612"
+>10.1. <A
+HREF="#AEN1821"
 >FAQs</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.1.1. <A
-HREF="#AEN1614"
+>10.1.1. <A
+HREF="#AEN1823"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
->9.1.2. <A
-HREF="#AEN1629"
+>10.1.2. <A
+HREF="#AEN1838"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
->9.1.3. <A
-HREF="#AEN1638"
+>10.1.3. <A
+HREF="#AEN1847"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
->9.1.4. <A
-HREF="#AEN1642"
+>10.1.4. <A
+HREF="#AEN1851"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -674,32 +813,32 @@ HREF="#AEN1642"
 ></DL
 ></DD
 ><DT
->10. <A
-HREF="#AEN1651"
+>11. <A
+HREF="#AEN1860"
 >HOWTO Access Samba source code via CVS</A
 ></DT
 ><DD
 ><DL
 ><DT
->10.1. <A
-HREF="#AEN1658"
+>11.1. <A
+HREF="#AEN1867"
 >Introduction</A
 ></DT
 ><DT
->10.2. <A
-HREF="#AEN1663"
+>11.2. <A
+HREF="#AEN1872"
 >CVS Access to samba.org</A
 ></DT
 ><DD
 ><DL
 ><DT
->10.2.1. <A
-HREF="#AEN1666"
+>11.2.1. <A
+HREF="#AEN1875"
 >Access via CVSweb</A
 ></DT
 ><DT
->10.2.2. <A
-HREF="#AEN1671"
+>11.2.2. <A
+HREF="#AEN1880"
 >Access via cvs</A
 ></DT
 ></DL
@@ -1534,7 +1673,7 @@ CLASS="CHAPTER"
 ><HR><H1
 ><A
 NAME="AEN212"
->Chapter 2. LanMan and NT Password Encryption in Samba 2.x</A
+>Chapter 2. Integrating MS Windows networks with Samba</A
 ></H1
 ><DIV
 CLASS="SECT1"
@@ -1542,7 +1681,1099 @@ CLASS="SECT1"
 CLASS="SECT1"
 ><A
 NAME="AEN223"
->2.1. Introduction</A
+>2.1. Agenda</A
+></H1
+><P
+>To identify the key functional mechanisms of MS Windows networking 
+to enable the deployment of Samba as a means of extending and/or 
+replacing MS Windows NT/2000 technology.</P
+><P
+>We will examine:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>Name resolution in a pure Unix/Linux TCP/IP 
+	environment
+	</P
+></LI
+><LI
+><P
+>Name resolution as used within MS Windows 
+	networking
+	</P
+></LI
+><LI
+><P
+>How browsing functions and how to deploy stable 
+	and dependable browsing using Samba
+	</P
+></LI
+><LI
+><P
+>MS Windows security options and how to 
+	configure Samba for seemless integration
+	</P
+></LI
+><LI
+><P
+>Configuration of Samba as:</P
+><P
+></P
+><OL
+TYPE="a"
+><LI
+><P
+>A stand-alone server</P
+></LI
+><LI
+><P
+>An MS Windows NT 3.x/4.0 security domain member
+		</P
+></LI
+><LI
+><P
+>An alternative to an MS Windows NT 3.x/4.0 Domain Controller
+		</P
+></LI
+></OL
+></LI
+></OL
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN245"
+>2.2. Name Resolution in a pure Unix/Linux world</A
+></H1
+><P
+>The key configuration files : </P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN248"
+>2.2.1. <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+></A
+></H2
+><P
+>Contains a static list of IP Addresses and names.
+eg:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	127.0.0.1	localhost localhost.localdomain
+	192.168.1.1	bigbox.caldera.com	bigbox	alias4box</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>The purpose of <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> is to provide a 
+name resolution mechanism so that uses do not need to remember 
+IP addresses.</P
+><P
+>Network packets that are sent over the physical network transport 
+layer communicate not via IP addresses but rather using the Media 
+Access Control address, or MAC address. IP Addresses are currently 
+32 bits in length and are typically presented as four (4) decimal 
+numbers that are separated by a dot (or period). eg: 168.192.1.1</P
+><P
+>MAC Addresses use 48 bits (or 6 bytes) and are typically represented 
+as two digit hexadecimal numbers separated by colons. eg: 
+40:8e:0a:12:34:56</P
+><P
+>Every network interfrace must have an MAC address. Associated with 
+a MAC address there may be one or more IP addresses. There is NO 
+relationship between an IP address and a MAC address, all such assignments 
+are arbitary or discretionary in nature. At the most basic level all 
+network communications takes place using MAC addressing. Since MAC 
+addresses must be globally unique, and generally remains fixed for 
+any particular interface, the assignment of an IP address makes sense 
+from a network management perspective. More than one IP address can 
+be assigned per MAC address. One address must be the primary IP address, 
+this is the address that will be returned in the ARP reply.</P
+><P
+>When a user or a process wants to communicate with another machine 
+the protocol implementation ensures that the "machine name" or "host 
+name" is resolved to an IP address in a manner that is controlled 
+by the TCP/IP configuration control files. The file 
+<TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> is one such file.</P
+><P
+>When the IP address of the destination interface has been 
+determined a protocol called ARP/RARP isused to identify 
+the MAC address of the target interface. ARP stands for Address 
+Resolution Protocol, and is a broadcast oriented method that 
+uses UDP (User Datagram Protocol) to send a request to all 
+interfaces on the local network segment using the all 1's MAC 
+address. Network interfaces are programmed to respond to two 
+MAC addresses only; their own unique address and the address 
+ff:ff:ff:ff:ff:ff. The reply packet from an ARP request will 
+contain the MAC address and the primary IP address for each 
+interface.</P
+><P
+>The <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> file is foundational to all 
+Unix/Linux TCP/IP installations and as a minumum will contain 
+the localhost and local network interface IP addresses and the 
+primary names by which they are known within the local machine. 
+This file helps to prime the pump so that a basic level of name 
+resolution can exist before any other method of name resolution 
+becomes available.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN264"
+>2.2.2. <TT
+CLASS="FILENAME"
+>/etc/resolv.conf</TT
+></A
+></H2
+><P
+>This file tells the name resolution libraries:</P
+><P
+></P
+><UL
+><LI
+><P
+>The name of the domain to which the machine 
+	belongs
+	</P
+></LI
+><LI
+><P
+>The name(s) of any domains that should be 
+	automatically searched when trying to resolve unqualified 
+	host names to their IP address
+	</P
+></LI
+><LI
+><P
+>The name or IP address of available Domain 
+	Name Servers that may be asked to perform name to address 
+	translation lookups
+	</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN275"
+>2.2.3. <TT
+CLASS="FILENAME"
+>/etc/host.conf</TT
+></A
+></H2
+><P
+><TT
+CLASS="FILENAME"
+>/etc/host.conf</TT
+> is the primary means by 
+which the setting in /etc/resolv.conf may be affected. It is a 
+critical configuration file.  This file controls the order by 
+which name resolution may procede. The typical structure is:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	order hosts,bind
+	multi on</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>then both addresses should be returned. Please refer to the 
+man page for host.conf for further details.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN283"
+>2.2.4. <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+></A
+></H2
+><P
+>This file controls the actual name resolution targets. The 
+file typically has resolver object specifications as follows:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	# /etc/nsswitch.conf
+	#
+	# Name Service Switch configuration file.
+	#
+
+	passwd:		compat
+	# Alternative entries for password authentication are:
+	# passwd:	compat files nis ldap winbind
+	shadow:		compat
+	group:		compat
+
+	hosts:		files nis dns
+	# Alternative entries for host name resolution are:
+	# hosts:	files dns nis nis+ hesoid db compat ldap wins
+	networks:	nis files dns
+
+	ethers:		nis files
+	protocols:	nis files
+	rpc:		nis files
+	services:	nis files</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Of course, each of these mechanisms requires that the appropriate 
+facilities and/or services are correctly configured.</P
+><P
+>It should be noted that unless a network request/message must be 
+sent, TCP/IP networks are silent. All TCP/IP communications assumes a 
+principal of speaking only when necessary.</P
+><P
+>Samba version 2.2.0 will add Linux support for extensions to 
+the name service switch infrastructure so that linux clients will 
+be able to obtain resolution of MS Windows NetBIOS names to IP 
+Addresses. To gain this functionality Samba needs to be compiled 
+with appropriate arguments to the make command (ie: <B
+CLASS="COMMAND"
+>make 
+nsswitch/libnss_wins.so</B
+>). The resulting library should 
+then be installed in the <TT
+CLASS="FILENAME"
+>/lib</TT
+> directory and 
+the "wins" parameter needs to be added to the "hosts:" line in 
+the <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> file. At this point it 
+will be possible to ping any MS Windows machine by it's NetBIOS 
+machine name, so long as that machine is within the workgroup to 
+which both the samba machine and the MS Windows machine belong.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN295"
+>2.3. Name resolution as used within MS Windows networking</A
+></H1
+><P
+>MS Windows networking is predicated about the name each machine 
+is given. This name is known variously (and inconsistently) as 
+the "computer name", "machine name", "networking name", "netbios name", 
+"SMB name". All terms mean the same thing with the exception of 
+"netbios name" which can apply also to the name of the workgroup or the 
+domain name. The terms "workgroup" and "domain" are really just a 
+simply name with which the machine is associated. All NetBIOS names 
+are exactly 16 characters in length. The 16th character is reserved. 
+It is used to store a one byte value that indicates service level 
+information for the NetBIOS name that is registered. A NetBIOS machine 
+name is therefore registered for each service type that is provided by 
+the client/server.</P
+><P
+>The following are typical NetBIOS name/service type registrations:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	Unique NetBIOS Names:
+		MACHINENAME&#60;00&#62;	= Server Service is running on MACHINENAME
+		MACHINENAME&#60;03&#62; = Generic Machine Name (NetBIOS name)
+		MACHINENAME&#60;20&#62; = LanMan Server service is running on MACHINENAME
+		WORKGROUP&#60;1b&#62; = Domain Master Browser
+
+	Group Names:
+		WORKGROUP&#60;03&#62; = Generic Name registered by all members of WORKGROUP
+		WORKGROUP&#60;1c&#62; = Domain Controllers / Netlogon Servers
+		WORKGROUP&#60;1d&#62; = Local Master Browsers
+		WORKGROUP&#60;1e&#62; = Internet Name Resolvers</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>It should be noted that all NetBIOS machines register their own 
+names as per the above. This is in vast contrast to TCP/IP 
+installations where traditionally the system administrator will 
+determine in the /etc/hosts or in the DNS database what names 
+are associated with each IP address.</P
+><P
+>One further point of clarification should be noted, the <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> 
+file and the DNS records do not provide the NetBIOS name type information 
+that MS Windows clients depend on to locate the type of service that may 
+be needed. An example of this is what happens when an MS Windows client 
+wants to locate a domain logon server. It find this service and the IP 
+address of a server that provides it by performing a lookup (via a 
+NetBIOS broadcast) for enumeration of all machines that have 
+registered the name type *&#60;1c&#62;. A logon request is then sent to each 
+IP address that is returned in the enumerated list of IP addresses. Which 
+ever machine first replies then ends up providing the logon services.</P
+><P
+>The name "workgroup" or "domain" really can be confusing since these 
+have the added significance of indicating what is the security 
+architecture of the MS Windows network. The term "workgroup" indicates 
+that the primary nature of the network environment is that of a 
+peer-to-peer design. In a WORKGROUP all machines are responsible for 
+their own security, and generally such security is limited to use of 
+just a password (known as SHARE MORE security). In most situations 
+with peer-to-peer networking the users who control their own machines 
+will simply opt to have no security at all. It is possible to have 
+USER MODE security in a WORKGROUP environment, thus requiring use 
+of a user name and a matching password.</P
+><P
+>MS Windows networking is thus predetermined to use machine names 
+for all local and remote machine message passing. The protocol used is 
+called Server Message Block (SMB) and this is implemented using 
+the NetBIOS protocol (Network Basic Input Output System). NetBIOS can 
+be encapsulated using LLC (Logical Link Control) protocol - in which case 
+the resulting protocol is called NetBEUI (Network Basic Extended User 
+Interface). NetBIOS can also be run over IPX (Internetworking Packet 
+Exchange) protocol as used by Novell NetWare, and it can be run 
+over TCP/IP protocols - in which case the resulting protocol is called 
+NBT or NetBT, the NetBIOS over TCP/IP.</P
+><P
+>MS Windows machines use a complex array of name resolution mechanisms. 
+Since we are primarily concerned with TCP/IP this demonstration is 
+limited to this area.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN307"
+>2.3.1. The NetBIOS Name Cache</A
+></H2
+><P
+>All MS Windows machines employ an in memory buffer in which is 
+stored the NetBIOS names and their IP addresses for all external 
+machines that that the local machine has communicated with over the 
+past 10-15 minutes. It is more efficient to obtain an IP address 
+for a machine from the local cache than it is to go through all the 
+configured name resolution mechanisms.</P
+><P
+>If a machine whose name is in the local name cache has been shut 
+down before the name had been expired and flushed from the cache, then 
+an attempt to exchange a message with that machine will be subject 
+to time-out delays. ie: It's name is in the cache, so a name resolution 
+lookup will succeed, but the machine can not respond. This can be 
+frustrating for users - but it is a characteristic of the protocol.</P
+><P
+>The MS Windows utility that allows examination of the NetBIOS 
+name cache is called "nbtstat". The Samba equivalent of this 
+is called "nmblookup".</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN312"
+>2.3.2. The LMHOSTS file</A
+></H2
+><P
+>This file is usually located in MS Windows NT 4.0 or 
+2000 in <TT
+CLASS="FILENAME"
+>C:\WINNT\SYSTEM32\DRIVERS\ETC</TT
+> and contains 
+the IP Address and the machine name in matched pairs. The 
+<TT
+CLASS="FILENAME"
+>LMHOSTS</TT
+> file performs NetBIOS name 
+to IP address mapping oriented.</P
+><P
+>It typically looks like:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	# Copyright (c) 1998 Microsoft Corp.
+	#
+	# This is a sample LMHOSTS file used by the Microsoft Wins Client (NetBIOS
+	# over TCP/IP) stack for Windows98
+	#
+	# This file contains the mappings of IP addresses to NT computernames
+	# (NetBIOS) names.  Each entry should be kept on an individual line.
+	# The IP address should be placed in the first column followed by the
+	# corresponding computername. The address and the comptername
+	# should be separated by at least one space or tab. The "#" character
+	# is generally used to denote the start of a comment (see the exceptions
+	# below).
+	#
+	# This file is compatible with Microsoft LAN Manager 2.x TCP/IP lmhosts
+	# files and offers the following extensions:
+	#
+	#      #PRE
+	#      #DOM:&#60;domain&#62;
+	#      #INCLUDE &#60;filename&#62;
+	#      #BEGIN_ALTERNATE
+	#      #END_ALTERNATE
+	#      \0xnn (non-printing character support)
+	#
+	# Following any entry in the file with the characters "#PRE" will cause
+	# the entry to be preloaded into the name cache. By default, entries are
+	# not preloaded, but are parsed only after dynamic name resolution fails.
+	#
+	# Following an entry with the "#DOM:&#60;domain&#62;" tag will associate the
+	# entry with the domain specified by &#60;domain&#62;. This affects how the
+	# browser and logon services behave in TCP/IP environments. To preload
+	# the host name associated with #DOM entry, it is necessary to also add a
+	# #PRE to the line. The &#60;domain&#62; is always preloaded although it will not
+	# be shown when the name cache is viewed.
+	#
+	# Specifying "#INCLUDE &#60;filename&#62;" will force the RFC NetBIOS (NBT)
+	# software to seek the specified &#60;filename&#62; and parse it as if it were
+	# local. &#60;filename&#62; is generally a UNC-based name, allowing a
+	# centralized lmhosts file to be maintained on a server.
+	# It is ALWAYS necessary to provide a mapping for the IP address of the
+	# server prior to the #INCLUDE. This mapping must use the #PRE directive.
+	# In addtion the share "public" in the example below must be in the
+	# LanManServer list of "NullSessionShares" in order for client machines to
+	# be able to read the lmhosts file successfully. This key is under
+	# \machine\system\currentcontrolset\services\lanmanserver\parameters\nullsessionshares
+	# in the registry. Simply add "public" to the list found there.
+	#
+	# The #BEGIN_ and #END_ALTERNATE keywords allow multiple #INCLUDE
+	# statements to be grouped together. Any single successful include
+	# will cause the group to succeed.
+	#
+	# Finally, non-printing characters can be embedded in mappings by
+	# first surrounding the NetBIOS name in quotations, then using the
+	# \0xnn notation to specify a hex value for a non-printing character.
+	#
+	# The following example illustrates all of these extensions:
+	#
+	# 102.54.94.97     rhino         #PRE #DOM:networking  #net group's DC
+	# 102.54.94.102    "appname  \0x14"                    #special app server
+	# 102.54.94.123    popular            #PRE             #source server
+	# 102.54.94.117    localsrv           #PRE             #needed for the include
+	#
+	# #BEGIN_ALTERNATE
+	# #INCLUDE \\localsrv\public\lmhosts
+	# #INCLUDE \\rhino\public\lmhosts
+	# #END_ALTERNATE
+	#
+	# In the above example, the "appname" server contains a special
+	# character in its name, the "popular" and "localsrv" server names are
+	# preloaded, and the "rhino" server name is specified so it can be used
+	# to later #INCLUDE a centrally maintained lmhosts file if the "localsrv"
+	# system is unavailable.
+	#
+	# Note that the whole file is parsed including comments on each lookup,
+	# so keeping the number of comments to a minimum will improve performance.
+	# Therefore it is not advisable to simply add lmhosts file entries onto the
+	# end of this file.</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN320"
+>2.3.3. HOSTS file</A
+></H2
+><P
+>This file is usually located in MS Windows NT 4.0 or 2000 in 
+<TT
+CLASS="FILENAME"
+>C:\WINNT\SYSTEM32\DRIVERS\ETC</TT
+> and contains 
+the IP Address and the IP hostname in matched pairs. It can be 
+used by the name resolution infrastructure in MS Windows, depending 
+on how the TCP/IP environment is configured. This file is in 
+every way the equivalent of the Unix/Linux <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> file.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN325"
+>2.3.4. DNS Lookup</A
+></H2
+><P
+>This capability is configured in the TCP/IP setup area in the network 
+configuration facility. If enabled an elaborate name resolution sequence 
+is followed the precise nature of which isdependant on what the NetBIOS 
+Node Type parameter is configured to. A Node Type of 0 means use 
+NetBIOS broadcast (over UDP broadcast) is first used if the name 
+that is the subject of a name lookup is not found in the NetBIOS name 
+cache. If that fails then DNS, HOSTS and LMHOSTS are checked. If set to 
+Node Type 8, then a NetBIOS Unicast (over UDP Unicast) is sent to the 
+WINS Server to obtain a lookup before DNS, HOSTS, LMHOSTS, or broadcast 
+lookup is used.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN328"
+>2.3.5. WINS Lookup</A
+></H2
+><P
+>Refer to above details for section <EM
+>DNS Lookups</EM
+>. A 
+WINS (Windows Internet Name Server) service is the equivaent of the 
+rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
+the names and IP addresses that are registered by a Windows client 
+if the TCP/IP setup has been given at least one WINS Server IP Address.</P
+><P
+>To configure Samba to be a WINS server the following parameter needs 
+to be added to the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	wins support = Yes</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>To configure Samba to use a WINS server the following parameters are 
+needed in the smb.conf file:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	wins support = No
+	wins server = <TT
+CLASS="REPLACEABLE"
+><I
+>xxx.xxx.xxx.xxx</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>where <TT
+CLASS="REPLACEABLE"
+><I
+>xxx.xxx.xxx.xxx</I
+></TT
+> is the IP address 
+of the WINS server.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN342"
+>2.4. How browsing functions and how to deploy stable and 
+dependable browsing using Samba</A
+></H1
+><P
+>As stated above, MS Windows machines register their NetBIOS names 
+(ie: the machine name for each service type in operation) on start 
+up. Also, as stated above, the exact method by which this name registration 
+takes place is determined by whether or not the MS Windows client/server 
+has been given a WINS server address, whether or not LMHOSTS lookup 
+is enabled, or if DNS for NetBIOS name resolution is enabled, etc.</P
+><P
+>In the case where there is no WINS server all name registrations as 
+well as name lookups are done by UDP broadcast. This isolates name 
+resolution to the local subnet, unless LMHOSTS is used to list all 
+names and IP addresses. In such situations Samba provides a means by 
+which the samba server name may be forcibly injected into the browse 
+list of a remote MS Windows network (using the "remote announce" parameter).</P
+><P
+>Where a WINS server is used, the MS Windows client will use UDP 
+unicast to register with the WINS server. Such packets can be routed 
+and thus WINS allows name resolution to function across routed networks.</P
+><P
+>During the startup process an election will take place to create a 
+local master browser if one does not already exist. On each NetBIOS network 
+one machine will be elected to function as the domain master browser. This 
+domain browsing has nothing to do with MS security domain control. 
+Instead, the domain master browser serves the role of contacting each local 
+master browser (found by asking WINS or from LMHOSTS) and exchanging browse 
+list contents. This way every master browser will eventually obtain a complete 
+list of all machines that are on the network. Every 11-15 minutes an election 
+is held to determine which machine will be the master browser. By nature of 
+the election criteria used, the machine with the highest uptime, or the 
+most senior protocol version, or other criteria, will win the election 
+as domain master browser.</P
+><P
+>Clients wishing to browse the network make use of this list, but also depend 
+on the availability of correct name resolution to the respective IP 
+address/addresses. </P
+><P
+>Any configuration that breaks name resolution and/or browsing intrinsics 
+will annoy users because they will have to put up with protracted 
+inability to use the network services.</P
+><P
+>Samba supports a feature that allows forced synchonisation 
+of browse lists across routed networks using the "remote 
+browse sync" parameter in the smb.conf file. This causes Samba 
+to contact the local master browser on a remote network and 
+to request browse list synchronisation. This effectively bridges 
+two networks that are separated by routers. The two remote 
+networks may use either broadcast based name resolution or WINS 
+based name resolution, but it should be noted that the "remote 
+browse sync" parameter provides browse list synchronisation - and 
+that is distinct from name to address resolution, in other 
+words, for cross subnet browsing to function correctly it is 
+essential that a name to address resolution mechanism be provided. 
+This mechanism could be via DNS, <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+>, 
+and so on.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN352"
+>2.5. MS Windows security options and how to configure 
+Samba for seemless integration</A
+></H1
+><P
+>MS Windows clients may use encrypted passwords alone, or encrypted 
+as well as plain text passwords in the authentication process. It 
+should be realized that with the SMB protocol the password is passed 
+over the network either in plain text or encrypted. When encrypted 
+passwords are used a password that has been entered by the user is 
+encrypted in two ways:</P
+><P
+></P
+><UL
+><LI
+><P
+>The case preserved password is encrypted 
+	using an MD5/DES one way hash
+	</P
+></LI
+><LI
+><P
+>The case is converted to upper case and then 
+	encrypted using an MD5/DES one way hash</P
+></LI
+></UL
+><P
+>Both of these enrypted passwords are sent over the network 
+in the one authentication datagram.</P
+><P
+>MS Windows 95 pre-service pack 1, MS Windows NT versions 3.x 
+and version 4.0 pre-service pack 3 will use either mode of 
+password authentication. All versions of MS Windows that follow 
+these versions no longer support plain text passwords by default.</P
+><P
+>MS Windows clients have a habit of dropping network mappings that 
+have been idle for 10 minutes or longer. When the user attempts to 
+use the mapped drive connection that has been dropped the SMB protocol 
+has a mechanism by which the connection can be re-established using 
+a cached copy of the password.</P
+><P
+>When Microsoft changed the default password mode, they dropped support for 
+caching of the plain text password. This means that when the registry 
+parameter is changed to re-enable use of plain text passwords it appears to 
+work, but when a dropped mapping attempts to revalidate it will fail if 
+the remote authentication server does not support encrypted passwords. 
+This means that it is definitely not a good idea to re-enable plain text 
+password support in such clients.</P
+><P
+>It is recommended that the following parameters be added to the 
+smb.conf file:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	passsword level = 8
+	username level = 8</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>these configuration parameters will compensate for the fact that 
+in some circumstances MS Windows and MS DOS clients may twiddle the 
+password that has been supplied by the user by converting characters to 
+upper case. The above entries will try every combination of upper and 
+lower case for the first 8 characters. Please refer to the man page 
+for smb.conf for more information on use of these parameters.</P
+><P
+>The best option to adopt is to enable support for encrypted passwords 
+where ever Samba is used. There are three configuration possibilities 
+for support of encrypted passwords:</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN369"
+>2.5.1. Use MS Windows NT as an authentication server</A
+></H2
+><P
+>This method involves the additions of the following parameters 
+in the smb.conf file:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	encrypt passwords = Yes
+	security = server
+	password server = "NetBIOS_name_of_PDC"</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>There are two ways of identifying whether or not a username and 
+password pair was valid or not. One uses the reply information provided 
+as part of the authentication messaging process, the other uses 
+just and error code.</P
+><P
+>The down-side of this mode of configuration is the fact that 
+for security reasons Samba will send the password server a bogus 
+username and a bogus password and if the remote server fails to 
+reject the username and password pair then an alternative mode 
+of identification of validation is used. Where a site uses password 
+lock out after a certain number of failed authentication attempts 
+this will result in user lockouts.</P
+><P
+>Use of this mode of authentication does require there to be 
+a standard Unix account for the user, this account can be blocked 
+to prevent logons by other than MS Windows clients.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN377"
+>2.5.2. Make Samba a member of an MS Windows NT security domain</A
+></H2
+><P
+>This method involves additon of the following paramters in the smb.conf file:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	encrypt passwords = Yes
+	security = domain
+	workgroup = "name of NT domain"
+	password server = *</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>The use of the "*" argument to "password server" will cause samba 
+to locate the domain controller in a way analogous to the way 
+this is done within MS Windows NT.</P
+><P
+>In order for this method to work the Samba server needs to join the 
+MS Windows NT security domain. This is done as follows:</P
+><P
+></P
+><UL
+><LI
+><P
+>On the MS Windows NT domain controller using 
+	the Server Manager add a machine account for the Samba server.
+	</P
+></LI
+><LI
+><P
+>Next, on the Linux system execute: 
+	<B
+CLASS="COMMAND"
+>smbpasswd -r PDC_NAME -j DOMAIN_NAME</B
+>
+	</P
+></LI
+></UL
+><P
+>Use of this mode of authentication does require there to be 
+a standard Unix account for the user, this account can be 
+blocked to prevent logons by other than MS Windows clients.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN391"
+>2.5.3. Configure Samba as an authentication server</A
+></H2
+><P
+>This mode of authentication demands that there be on the 
+Unix/Linux system both a Unix style account as well as and 
+smbpasswd entry for the user. The Unix system account can be 
+locked if required as only the encrypted password will be 
+used for SMB client authentication.</P
+><P
+>This method involves addition of the following parameters to 
+the smb.conf file:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	encrypt passwords = Yes
+	security = user</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>in order for this method to work a Unix system account needs 
+to be created for each user, as well as for each MS Windows NT/2000 
+machine. The following structure is required.</P
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN398"
+>2.5.3.1. Users</A
+></H3
+><P
+>A user account that may provide a home directory should be 
+created. The following Linux system commands are typical of 
+the procedure for creating an account.</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	# useradd -s /bin/bash -d /home/"userid" -m
+	# passwd "userid"
+	  Enter Password: <TT
+CLASS="USERINPUT"
+><B
+>pass</B
+></TT
+>
+	  
+	# smbpasswd -a "userid"
+	  Enter Password: <TT
+CLASS="USERINPUT"
+><B
+>pass</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN405"
+>2.5.3.2. MS Windows NT Machine Accounts</A
+></H3
+><P
+>These are required only when Samba is used as a domain 
+controller.  Refer to the Samba-PDC-HOWTO for more details.</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	# useradd -a /bin/false -d /dev/null "machine_name"\$
+	# passwd -l "machine_name"\$
+	# smbpasswd -a -m "machine_name"</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN410"
+>2.6. Configuration of Samba as ...</A
+></H1
+><P
+></P
+><UL
+><LI
+><P
+>A Stand-alone server - No special action is needed 
+	other than to create user accounts. Stand-alone servers do NOT 
+	provide network logon services, meaning that machines that use this 
+	server do NOT perform a domain logon but instead make use only of 
+	the MS Windows logon which is local to the MS Windows 
+	workstation/server.
+	</P
+></LI
+><LI
+><P
+>An MS Windows NT 3.x/4.0 security domain member - 
+	Refer to the previous section(s) above.
+	</P
+></LI
+><LI
+><P
+>An alternative to an MS Windows NT 3.x/4.0 
+	Domain Controller - In the smb.conf file the following parameters 
+	should be added:</P
+></LI
+></UL
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>## please refer to the Samba PDC HOWTO chapter later in 
+## this collection for more details
+[global]
+	domain logons = Yes
+	; an OS level of 33 or more is recommended
+	os level = 33
+
+	[NETLOGON]
+		path = /somewhare/in/file/system
+		read only = yes
+		available = yes</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="AEN421"
+>Chapter 3. LanMan and NT Password Encryption in Samba 2.x</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN432"
+>3.1. Introduction</A
 ></H1
 ><P
 >With the development of LanManager and Windows NT 
@@ -1560,8 +2791,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN227"
->2.2. How does it work?</A
+NAME="AEN436"
+>3.2. How does it work?</A
 ></H1
 ><P
 >LanManager encryption is somewhat similar to UNIX 
@@ -1625,8 +2856,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN238"
->2.3. Important Notes About Security</A
+NAME="AEN447"
+>3.3. Important Notes About Security</A
 ></H1
 ><P
 >The unix and SMB password encryption techniques seem similar 
@@ -1717,8 +2948,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN257"
->2.3.1. Advantages of SMB Encryption</A
+NAME="AEN466"
+>3.3.1. Advantages of SMB Encryption</A
 ></H2
 ><P
 ></P
@@ -1746,8 +2977,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN264"
->2.3.2. Advantages of non-encrypted passwords</A
+NAME="AEN473"
+>3.3.2. Advantages of non-encrypted passwords</A
 ></H2
 ><P
 ></P
@@ -1777,8 +3008,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN273"
->2.4. <A
+NAME="AEN482"
+>3.4. <A
 NAME="SMBPASSWDFILEFORMAT"
 ></A
 >The smbpasswd file</A
@@ -1996,8 +3227,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN325"
->2.5. The smbpasswd Command</A
+NAME="AEN534"
+>3.5. The smbpasswd Command</A
 ></H1
 ><P
 >The smbpasswd command maintains the two 32 byte password fields 
@@ -2134,8 +3365,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN364"
->2.6. Setting up Samba to support LanManager Encryption</A
+NAME="AEN573"
+>3.6. Setting up Samba to support LanManager Encryption</A
 ></H1
 ><P
 >This is a very brief description on how to setup samba to 
@@ -2181,16 +3412,16 @@ HREF="#SMBPASSWDFILEFORMAT"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN379"
->Chapter 3. Hosting a Microsoft Distributed File System tree on Samba</A
+NAME="AEN588"
+>Chapter 4. Hosting a Microsoft Distributed File System tree on Samba</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN390"
->3.1. Instructions</A
+NAME="AEN599"
+>4.1. Instructions</A
 ></H1
 ><P
 >The Distributed File System (or Dfs) provides a means of 
@@ -2346,8 +3577,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN425"
->3.1.1. Notes</A
+NAME="AEN634"
+>4.1.1. Notes</A
 ></H2
 ><P
 ></P
@@ -2379,16 +3610,16 @@ NAME="AEN425"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN434"
->Chapter 4. Printing Support in Samba 2.2.x</A
+NAME="AEN643"
+>Chapter 5. Printing Support in Samba 2.2.x</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN445"
->4.1. Introduction</A
+NAME="AEN654"
+>5.1. Introduction</A
 ></H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
@@ -2471,8 +3702,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN467"
->4.2. Configuration</A
+NAME="AEN676"
+>5.2. Configuration</A
 ></H1
 ><DIV
 CLASS="WARNING"
@@ -2539,8 +3770,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN478"
->4.2.1. Creating [print$]</A
+NAME="AEN687"
+>5.2.1. Creating [print$]</A
 ></H2
 ><P
 >In order to support the uploading of printer driver 
@@ -2733,8 +3964,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN513"
->4.2.2. Setting Drivers for Existing Printers</A
+NAME="AEN722"
+>5.2.2. Setting Drivers for Existing Printers</A
 ></H2
 ><P
 >The initial listing of printers in the Samba host's 
@@ -2805,8 +4036,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN530"
->4.2.3. Support a large number of printers</A
+NAME="AEN739"
+>5.2.3. Support a large number of printers</A
 ></H2
 ><P
 >One issue that has arisen during the development
@@ -2880,8 +4111,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN541"
->4.2.4. Adding New Printers via the Windows NT APW</A
+NAME="AEN750"
+>5.2.4. Adding New Printers via the Windows NT APW</A
 ></H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
@@ -2986,8 +4217,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN566"
->4.2.5. Samba and Printer Ports</A
+NAME="AEN775"
+>5.2.5. Samba and Printer Ports</A
 ></H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
@@ -3023,8 +4254,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN574"
->4.3. The Imprints Toolset</A
+NAME="AEN783"
+>5.3. The Imprints Toolset</A
 ></H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
@@ -3041,8 +4272,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN578"
->4.3.1. What is Imprints?</A
+NAME="AEN787"
+>5.3.1. What is Imprints?</A
 ></H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
@@ -3073,8 +4304,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN588"
->4.3.2. Creating Printer Driver Packages</A
+NAME="AEN797"
+>5.3.2. Creating Printer Driver Packages</A
 ></H2
 ><P
 >The process of creating printer driver packages is beyond
@@ -3089,8 +4320,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN591"
->4.3.3. The Imprints server</A
+NAME="AEN800"
+>5.3.3. The Imprints server</A
 ></H2
 ><P
 >The Imprints server is really a database server that 
@@ -3109,8 +4340,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN595"
->4.3.4. The Installation Client</A
+NAME="AEN804"
+>5.3.4. The Installation Client</A
 ></H2
 ><P
 >More information regarding the Imprints installation client 
@@ -3212,8 +4443,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN617"
->4.4. <A
+NAME="AEN826"
+>5.4. <A
 NAME="MIGRATION"
 ></A
 >Migration to from Samba 2.0.x to 2.2.x</A
@@ -3389,16 +4620,16 @@ TARGET="_top"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN661"
->Chapter 5. security = domain in Samba 2.x</A
+NAME="AEN870"
+>Chapter 6. security = domain in Samba 2.x</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN679"
->5.1. Joining an NT Domain with Samba 2.2</A
+NAME="AEN888"
+>6.1. Joining an NT Domain with Samba 2.2</A
 ></H1
 ><P
 >In order for a Samba-2 server to join an NT domain, 
@@ -3624,8 +4855,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN743"
->5.2. Samba and Windows 2000 Domains</A
+NAME="AEN952"
+>6.2. Samba and Windows 2000 Domains</A
 ></H1
 ><P
 >Many people have asked regarding the state of Samba's ability to participate in
@@ -3649,8 +4880,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN748"
->5.3. Why is this better than security = server?</A
+NAME="AEN957"
+>6.3. Why is this better than security = server?</A
 ></H1
 ><P
 >Currently, domain security in Samba doesn't free you from 
@@ -3735,16 +4966,16 @@ TARGET="_top"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN764"
->Chapter 6. How to Configure Samba 2.2 as a Primary Domain Controller</A
+NAME="AEN973"
+>Chapter 7. How to Configure Samba 2.2 as a Primary Domain Controller</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN781"
->6.1. Prerequisite Reading</A
+NAME="AEN990"
+>7.1. Prerequisite Reading</A
 ></H1
 ><P
 >Before you continue readingin this chapter, please make sure 
@@ -3771,8 +5002,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN787"
->6.2. Background</A
+NAME="AEN996"
+>7.2. Background</A
 ></H1
 ><DIV
 CLASS="NOTE"
@@ -3928,8 +5159,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN827"
->6.3. Configuring the Samba Domain Controller</A
+NAME="AEN1036"
+>7.3. Configuring the Samba Domain Controller</A
 ></H1
 ><P
 >The first step in creating a working Samba PDC is to 
@@ -4150,8 +5381,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN870"
->6.4. Creating Machine Trust Accounts and Joining Clients 
+NAME="AEN1079"
+>7.4. Creating Machine Trust Accounts and Joining Clients 
 to the Domain</A
 ></H1
 ><P
@@ -4208,8 +5439,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN884"
->6.4.1. Manually creating machine trust accounts</A
+NAME="AEN1093"
+>7.4.1. Manually creating machine trust accounts</A
 ></H2
 ><P
 >The first step in creating a machine trust account by hand is to 
@@ -4348,8 +5579,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN912"
->6.4.2. Creating machine trust accounts "on the fly"</A
+NAME="AEN1121"
+>7.4.2. Creating machine trust accounts "on the fly"</A
 ></H2
 ><P
 >The second, and most recommended way of creating machine trust accounts 
@@ -4396,8 +5627,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN923"
->6.5. Common Problems and Errors</A
+NAME="AEN1132"
+>7.5. Common Problems and Errors</A
 ></H1
 ><P
 ></P
@@ -4595,8 +5826,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN971"
->6.6. System Policies and Profiles</A
+NAME="AEN1180"
+>7.6. System Policies and Profiles</A
 ></H1
 ><P
 >Much of the information necessary to implement System Policies and
@@ -4752,8 +5983,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1015"
->6.7. What other help can I get ?</A
+NAME="AEN1224"
+>7.7. What other help can I get ?</A
 ></H1
 ><P
 >There are many sources of information available in the form 
@@ -5148,8 +6379,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1129"
->6.8. Domain Control for Windows 9x/ME</A
+NAME="AEN1338"
+>7.8. Domain Control for Windows 9x/ME</A
 ></H1
 ><DIV
 CLASS="NOTE"
@@ -5284,8 +6515,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1159"
->6.8.1. Configuration Instructions:	Network Logons</A
+NAME="AEN1368"
+>7.8.1. Configuration Instructions:	Network Logons</A
 ></H2
 ><P
 >To use domain logons and profiles you need to do the following:</P
@@ -5473,8 +6704,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1193"
->6.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
+NAME="AEN1402"
+>7.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
 ></H2
 ><DIV
 CLASS="WARNING"
@@ -5520,8 +6751,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1201"
->6.8.2.1. Windows NT Configuration</A
+NAME="AEN1410"
+>7.8.2.1. Windows NT Configuration</A
 ></H3
 ><P
 >To support WinNT clients, inn the [global] section of smb.conf set the
@@ -5564,8 +6795,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1209"
->6.8.2.2. Windows 9X Configuration</A
+NAME="AEN1418"
+>7.8.2.2. Windows 9X Configuration</A
 ></H3
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
@@ -5604,8 +6835,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1217"
->6.8.2.3. Win9X and WinNT Configuration</A
+NAME="AEN1426"
+>7.8.2.3. Win9X and WinNT Configuration</A
 ></H3
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
@@ -5642,8 +6873,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1224"
->6.8.2.4. Windows 9X Profile Setup</A
+NAME="AEN1433"
+>7.8.2.4. Windows 9X Profile Setup</A
 ></H3
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
@@ -5798,8 +7029,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1260"
->6.8.2.5. Windows NT Workstation 4.0</A
+NAME="AEN1469"
+>7.8.2.5. Windows NT Workstation 4.0</A
 ></H3
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
@@ -5880,8 +7111,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1273"
->6.8.2.6. Windows NT Server</A
+NAME="AEN1482"
+>7.8.2.6. Windows NT Server</A
 ></H3
 ><P
 >There is nothing to stop you specifying any path that you like for the
@@ -5894,8 +7125,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1276"
->6.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
+NAME="AEN1485"
+>7.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
 ></H3
 ><DIV
 CLASS="WARNING"
@@ -5959,8 +7190,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1286"
->6.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
+NAME="AEN1495"
+>7.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></H1
 ><DIV
 CLASS="WARNING"
@@ -6080,16 +7311,16 @@ within its registry.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN1311"
->Chapter 7. Unifed Logons between Windows NT and UNIX using Winbind</A
+NAME="AEN1520"
+>Chapter 8. Unifed Logons between Windows NT and UNIX using Winbind</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1329"
->7.1. Abstract</A
+NAME="AEN1538"
+>8.1. Abstract</A
 ></H1
 ><P
 >Integration of UNIX and Microsoft Windows NT through 
@@ -6110,8 +7341,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1333"
->7.2. Introduction</A
+NAME="AEN1542"
+>8.2. Introduction</A
 ></H1
 ><P
 >It is well known that UNIX and Microsoft Windows NT have 
@@ -6164,8 +7395,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1346"
->7.3. What Winbind Provides</A
+NAME="AEN1555"
+>8.3. What Winbind Provides</A
 ></H1
 ><P
 >Winbind unifies UNIX and Windows NT account management by 
@@ -6206,8 +7437,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1353"
->7.3.1. Target Uses</A
+NAME="AEN1562"
+>8.3.1. Target Uses</A
 ></H2
 ><P
 >Winbind is targeted at organizations that have an 
@@ -6230,8 +7461,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1357"
->7.4. How Winbind Works</A
+NAME="AEN1566"
+>8.4. How Winbind Works</A
 ></H1
 ><P
 >The winbind system is designed around a client/server 
@@ -6250,8 +7481,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1362"
->7.4.1. Microsoft Remote Procedure Calls</A
+NAME="AEN1571"
+>8.4.1. Microsoft Remote Procedure Calls</A
 ></H2
 ><P
 >Over the last two years, efforts have been underway 
@@ -6276,8 +7507,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1366"
->7.4.2. Name Service Switch</A
+NAME="AEN1575"
+>8.4.2. Name Service Switch</A
 ></H2
 ><P
 >The Name Service Switch, or NSS, is a feature that is 
@@ -6355,8 +7586,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1382"
->7.4.3. Pluggable Authentication Modules</A
+NAME="AEN1591"
+>8.4.3. Pluggable Authentication Modules</A
 ></H2
 ><P
 >Pluggable Authentication Modules, also known as PAM, 
@@ -6404,8 +7635,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1390"
->7.4.4. User and Group ID Allocation</A
+NAME="AEN1599"
+>8.4.4. User and Group ID Allocation</A
 ></H2
 ><P
 >When a user or group is created under Windows NT 
@@ -6430,8 +7661,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1394"
->7.4.5. Result Caching</A
+NAME="AEN1603"
+>8.4.5. Result Caching</A
 ></H2
 ><P
 >An active system can generate a lot of user and group 
@@ -6453,8 +7684,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1397"
->7.5. Installation and Configuration</A
+NAME="AEN1606"
+>8.5. Installation and Configuration</A
 ></H1
 ><P
 >The easiest way to install winbind is by using the packages 
@@ -6484,8 +7715,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1403"
->7.6. Limitations</A
+NAME="AEN1612"
+>8.6. Limitations</A
 ></H1
 ><P
 >Winbind has a number of limitations in its current 
@@ -6532,8 +7763,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1415"
->7.7. Conclusion</A
+NAME="AEN1624"
+>8.7. Conclusion</A
 ></H1
 ><P
 >The winbind system, through the use of the Name Service 
@@ -6548,16 +7779,16 @@ NAME="AEN1415"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN1418"
->Chapter 8. UNIX Permission Bits and WIndows NT Access Control Lists</A
+NAME="AEN1627"
+>Chapter 9. UNIX Permission Bits and WIndows NT Access Control Lists</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1429"
->8.1. Viewing and changing UNIX permissions using the NT 
+NAME="AEN1638"
+>9.1. Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></H1
 ><P
@@ -6595,8 +7826,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1438"
->8.2. How to view file security on a Samba share</A
+NAME="AEN1647"
+>9.2. How to view file security on a Samba share</A
 ></H1
 ><P
 >From an NT 4.0 client, single-click with the right 
@@ -6641,8 +7872,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1449"
->8.3. Viewing file ownership</A
+NAME="AEN1658"
+>9.3. Viewing file ownership</A
 ></H1
 ><P
 >Clicking on the <B
@@ -6727,8 +7958,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1469"
->8.4. Viewing file or directory permissions</A
+NAME="AEN1678"
+>9.4. Viewing file or directory permissions</A
 ></H1
 ><P
 >The third button is the <B
@@ -6789,8 +8020,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1484"
->8.4.1. File Permissions</A
+NAME="AEN1693"
+>9.4.1. File Permissions</A
 ></H2
 ><P
 >The standard UNIX user/group/world triple and 
@@ -6851,8 +8082,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1498"
->8.4.2. Directory Permissions</A
+NAME="AEN1707"
+>9.4.2. Directory Permissions</A
 ></H2
 ><P
 >Directories on an NT NTFS file system have two 
@@ -6883,8 +8114,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1505"
->8.5. Modifying file or directory permissions</A
+NAME="AEN1714"
+>9.5. Modifying file or directory permissions</A
 ></H1
 ><P
 >Modifying file and directory permissions is as simple 
@@ -6981,8 +8212,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1527"
->8.6. Interaction with the standard Samba create mask 
+NAME="AEN1736"
+>9.6. Interaction with the standard Samba create mask 
 	parameters</A
 ></H1
 ><P
@@ -7254,8 +8485,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1591"
->8.7. Interaction with the standard Samba file attribute 
+NAME="AEN1800"
+>9.7. Interaction with the standard Samba file attribute 
 	mapping</A
 ></H1
 ><P
@@ -7301,24 +8532,24 @@ CLASS="COMMAND"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN1601"
->Chapter 9. OS2 Client HOWTO</A
+NAME="AEN1810"
+>Chapter 10. OS2 Client HOWTO</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1612"
->9.1. FAQs</A
+NAME="AEN1821"
+>10.1. FAQs</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1614"
->9.1.1. How can I configure OS/2 Warp Connect or 
+NAME="AEN1823"
+>10.1.1. How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></H2
 ><P
@@ -7376,8 +8607,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1629"
->9.1.2. How can I configure OS/2 Warp 3 (not Connect), 
+NAME="AEN1838"
+>10.1.2. How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></H2
 ><P
@@ -7429,8 +8660,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1638"
->9.1.3. Are there any other issues when OS/2 (any version) 
+NAME="AEN1847"
+>10.1.3. Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></H2
 ><P
@@ -7451,8 +8682,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1642"
->9.1.4. How do I get printer driver download working 
+NAME="AEN1851"
+>10.1.4. How do I get printer driver download working 
 		for OS/2 clients?</A
 ></H2
 ><P
@@ -7499,16 +8730,16 @@ CLASS="REPLACEABLE"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN1651"
->Chapter 10. HOWTO Access Samba source code via CVS</A
+NAME="AEN1860"
+>Chapter 11. HOWTO Access Samba source code via CVS</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1658"
->10.1. Introduction</A
+NAME="AEN1867"
+>11.1. Introduction</A
 ></H1
 ><P
 >Samba is developed in an open environnment.  Developers use CVS
@@ -7529,8 +8760,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1663"
->10.2. CVS Access to samba.org</A
+NAME="AEN1872"
+>11.2. CVS Access to samba.org</A
 ></H1
 ><P
 >The machine samba.org runs a publicly accessible CVS 
@@ -7542,8 +8773,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1666"
->10.2.1. Access via CVSweb</A
+NAME="AEN1875"
+>11.2.1. Access via CVSweb</A
 ></H2
 ><P
 >You can access the source code via your 
@@ -7563,8 +8794,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1671"
->10.2.2. Access via cvs</A
+NAME="AEN1880"
+>11.2.2. Access via cvs</A
 ></H2
 ><P
 >You can also access the source code via a 

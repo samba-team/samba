@@ -9,6 +9,7 @@
 <!ENTITY OS2-Client SYSTEM "OS2-Client-HOWTO.sgml">
 <!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 <!ENTITY CVS-Access SYSTEM "CVS-Access.sgml">
+<!ENTITY IntegratingWithWindows SYSTEM "Integrating-with-Windows.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -42,6 +43,7 @@ Cheers, jerry
 </dedication>
 
 &UNIX-INSTALL;
+&IntegratingWithWindows;
 &ENCRYPTION;
 &MS-Dfs-Setup;
 &PRINTER-DRIVER2;
