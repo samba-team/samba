@@ -129,6 +129,10 @@ BOOL secrets_named_mutex(const char *name, uint_t timeout, size_t *p_ref_count)
 	size_t ref_count = *p_ref_count;
 	int ret = 0;
 
+	secrets_init();
+	if (!tdb)
+		return False;
+
 	if (ref_count == 0) {
 		ret = tdb_lock_bystring(tdb->tdb, name, timeout);
 		if (ret == 0)
@@ -151,6 +155,10 @@ void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 	size_t ref_count = *p_ref_count;
 
 	SMB_ASSERT(ref_count != 0);
+
+	secrets_init();
+	if (!tdb)
+		return;
 
 	if (ref_count == 1) {
 		tdb_unlock_bystring(tdb->tdb, name);
