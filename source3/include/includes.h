@@ -1029,6 +1029,11 @@ extern int DEBUGLEVEL;
 #define RTLD_NOW 0
 #endif
 
+/* needed for some systems without iconv */
+#ifndef EILSEQ
+#define EILSEQ EINVAL
+#endif
+
 /* add varargs prototypes with printf checking */
 int fdprintf(int , char *, ...) PRINTF_ATTRIBUTE(2,3);
 #ifndef HAVE_SNPRINTF_DECL
