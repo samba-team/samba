@@ -458,7 +458,7 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *floor, struct GUID *uuid, u
 		return status;
 	}
 
-	status = ndr_pull_uint16(ndr, if_version);
+	status = ndr_pull_uint16(ndr, NDR_SCALARS, if_version);
 
 	talloc_free(mem_ctx);
 
@@ -472,7 +472,7 @@ DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, struct GUID *uuid, uin
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
 	ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, uuid);
-	ndr_push_uint16(ndr, if_version);
+	ndr_push_uint16(ndr, NDR_SCALARS, if_version);
 
 	return ndr_push_blob(ndr);
 }

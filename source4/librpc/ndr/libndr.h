@@ -195,7 +195,7 @@ enum ndr_err_code {
 #define NDR_PUSH_ALIGN(ndr, n) do { \
 	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
 		uint32_t _pad = ((ndr->offset + (n-1)) & ~(n-1)) - ndr->offset; \
-		while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, 0)); \
+		while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0)); \
 	} \
 } while(0)
 
