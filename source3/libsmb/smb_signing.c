@@ -255,6 +255,7 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 	const size_t offset_end_of_sig = (smb_ss_field + 8);
 	unsigned char sequence_buf[8];
 	struct MD5Context md5_ctx;
+	unsigned char key_buf[16];
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
@@ -276,8 +277,14 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 	MD5Init(&md5_ctx);
 
 	/* intialise with the key */
-	MD5Update(&md5_ctx, data->mac_key.data, 
-		  data->mac_key.length); 
+	/* NB. When making and verifying SMB signatures, Windows apparently
+		zero-pads the key to 128 bits if it isn't long enough.
+		From Nalin Dahyabhai <nalin@redhat.com> */
+	MD5Update(&md5_ctx, data->mac_key.data, data->mac_key.length); 
+	if (data->mac_key.length < sizeof(key_buf)) {
+		memset(key_buf, 0, sizeof(key_buf));
+		MD5Update(&md5_ctx, key_buf, sizeof(key_buf) - data->mac_key.length);
+	}
 
 	/* copy in the first bit of the SMB header */
 	MD5Update(&md5_ctx, buf + 4, smb_ss_field - 4);
