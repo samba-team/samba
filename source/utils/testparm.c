@@ -47,28 +47,28 @@ static int do_global_checks(void)
 	SMB_STRUCT_STAT st;
 
 	if (lp_security() >= SEC_DOMAIN && !lp_encrypted_passwords()) {
-		printf("ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must always be set to 'true'.\n");
+		fprintf(stderr, "ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must always be set to 'true'.\n");
 		ret = 1;
 	}
 
 	if (lp_wins_support() && lp_wins_server_list()) {
-		printf("ERROR: both 'wins support = true' and 'wins server = <server list>' \
+		fprintf(stderr, "ERROR: both 'wins support = true' and 'wins server = <server list>' \
 cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
 	if (!directory_exist(lp_lockdir(), &st)) {
-		printf("ERROR: lock directory %s does not exist\n",
+		fprintf(stderr, "ERROR: lock directory %s does not exist\n",
 		       lp_lockdir());
 		ret = 1;
 	} else if ((st.st_mode & 0777) != 0755) {
-		printf("WARNING: lock directory %s should have permissions 0755 for browsing to work\n",
+		fprintf(stderr, "WARNING: lock directory %s should have permissions 0755 for browsing to work\n",
 		       lp_lockdir());
 		ret = 1;
 	}
 
 	if (!directory_exist(lp_piddir(), &st)) {
-		printf("ERROR: pid directory %s does not exist\n",
+		fprintf(stderr, "ERROR: pid directory %s does not exist\n",
 		       lp_piddir());
 		ret = 1;
 	}
@@ -84,7 +84,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		else if(lp_security() == SEC_DOMAIN)
 			pstrcpy(sec_setting, "domain");
 
-		printf("ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
+		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
 to a valid password server.\n", sec_setting );
 		ret = 1;
 	}
@@ -95,7 +95,7 @@ to a valid password server.\n", sec_setting );
 	 */
 
 	if(*lp_hosts_equiv() && !lp_hostname_lookups()) {
-		printf("ERROR: The setting 'hosts equiv = %s' requires that 'hostname lookups = yes'.\n", lp_hosts_equiv());
+		fprintf(stderr, "ERROR: The setting 'hosts equiv = %s' requires that 'hostname lookups = yes'.\n", lp_hosts_equiv());
 		ret = 1;
 	}
 
@@ -114,7 +114,7 @@ to a valid password server.\n", sec_setting );
 #endif
 
 			if(lp_passwd_program() == NULL) {
-				printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
+				fprintf( stderr, "ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
 parameter.\n" );
 				ret = 1;
 			} else {
@@ -128,7 +128,7 @@ parameter.\n" );
 				next_token(&p, truncated_prog, NULL, sizeof(pstring));
 
 				if(access(truncated_prog, F_OK) == -1) {
-					printf("ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
+					fprintf(stderr, "ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
 cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 					ret = 1;
 				}
@@ -139,7 +139,7 @@ cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 #endif
 
 		if(lp_passwd_chat() == NULL) {
-			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd chat' \
+			fprintf(stderr, "ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd chat' \
 parameter.\n");
 			ret = 1;
 		}
@@ -151,7 +151,7 @@ parameter.\n");
 
 		if(lp_encrypted_passwords()) {
 			if(strstr( lp_passwd_chat(), "%o")!=NULL) {
-				printf("ERROR: the 'passwd chat' script [%s] expects to use the old plaintext password \
+				fprintf(stderr, "ERROR: the 'passwd chat' script [%s] expects to use the old plaintext password \
 via the %%o substitution. With encrypted passwords this is not possible.\n", lp_passwd_chat() );
 				ret = 1;
 			}
@@ -159,32 +159,32 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	}
 
 	if (strlen(lp_winbind_separator()) != 1) {
-		printf("ERROR: the 'winbind separator' parameter must be a single character.\n");
+		fprintf(stderr,"ERROR: the 'winbind separator' parameter must be a single character.\n");
 		ret = 1;
 	}
 
 	if (*lp_winbind_separator() == '+') {
-		printf("'winbind separator = +' might cause problems with group membership.\n");
+		fprintf(stderr,"'winbind separator = +' might cause problems with group membership.\n");
 	}
 
 	if (lp_algorithmic_rid_base() < BASE_RID) {
 		/* Try to prevent admin foot-shooting, we can't put algorithmic
 		   rids below 1000, that's the 'well known RIDs' on NT */
-		printf("'algorithmic rid base' must be equal to or above %lu\n", BASE_RID);
+		fprintf(stderr,"'algorithmic rid base' must be equal to or above %lu\n", BASE_RID);
 	}
 
 	if (lp_algorithmic_rid_base() & 1) {
-		printf("'algorithmic rid base' must be even.\n");
+		fprintf(stderr,"'algorithmic rid base' must be even.\n");
 	}
 
 #ifndef HAVE_DLOPEN
 	if (lp_preload_modules()) {
-		printf("WARNING: 'preload modules = ' set while loading plugins not supported.\n");
+		fprintf(stderr,"WARNING: 'preload modules = ' set while loading plugins not supported.\n");
 	}
 #endif
 
 	if (!lp_passdb_backend()) {
-		printf("ERROR: passdb backend must have a value or be left out\n");
+		fprintf(stderr,"ERROR: passdb backend must have a value or be left out\n");
 	}
 
 	return ret;
@@ -236,27 +236,27 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		set_local_machine_name(new_local_machine, True);
 	}
 
-	dbf = x_stdout;
+	dbf = x_stderr;
 	DEBUGLEVEL = 2;
 	AllowDebugChange = False;
 
-	printf("Load smb config files from %s\n",config_file);
+	fprintf(stderr,"Load smb config files from %s\n",config_file);
 
 	if (!lp_load(config_file,False,True,False)) {
-		printf("Error loading services.\n");
+		fprintf(stderr,"Error loading services.\n");
 		return(1);
 	}
 
-	printf("Loaded services file OK.\n");
+	fprintf(stderr,"Loaded services file OK.\n");
 
 	ret = do_global_checks();
 
 	for (s=0;s<1000;s++) {
 		if (VALID_SNUM(s))
 			if (strlen(lp_servicename(s)) > 12) {
-				printf( "WARNING: You have some share names that are longer than 12 characters.\n" );
-				printf( "These may not be accessible to some older clients.\n" );
-				printf( "(Eg. Windows9x, WindowsMe, and smbclient prior to Samba 3.0.)\n" );
+				fprintf(stderr, "WARNING: You have some share names that are longer than 12 characters.\n" );
+				fprintf(stderr, "These may not be accessible to some older clients.\n" );
+				fprintf(stderr, "(Eg. Windows9x, WindowsMe, and smbclient prior to Samba 3.0.)\n" );
 				break;
 			}
 	}
@@ -271,7 +271,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 					char *hasstar = strchr_m(deny_list[i], '*');
 					char *hasquery = strchr_m(deny_list[i], '?');
 					if(hasstar || hasquery) {
-						printf("Invalid character %c in hosts deny list (%s) for service %s.\n",
+						fprintf(stderr,"Invalid character %c in hosts deny list (%s) for service %s.\n",
 							   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
 					}
 				}
@@ -282,35 +282,35 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 					char *hasstar = strchr_m(allow_list[i], '*');
 					char *hasquery = strchr_m(allow_list[i], '?');
 					if(hasstar || hasquery) {
-						printf("Invalid character %c in hosts allow list (%s) for service %s.\n",
+						fprintf(stderr,"Invalid character %c in hosts allow list (%s) for service %s.\n",
 							   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );
 					}
 				}
 			}
 
 			if(lp_level2_oplocks(s) && !lp_oplocks(s)) {
-				printf("Invalid combination of parameters for service %s. \
+				fprintf(stderr,"Invalid combination of parameters for service %s. \
 					   Level II oplocks can only be set if oplocks are also set.\n",
 					   lp_servicename(s) );
 			}
 
 			if (lp_map_hidden(s) && !(lp_create_mask(s) & S_IXOTH)) {
-				printf("Invalid combination of parameters for service %s. \
+				fprintf(stderr,"Invalid combination of parameters for service %s. \
 					   Map hidden can only work if create mask includes octal 01 (S_IXOTH).\n",
 					   lp_servicename(s) );
 			}
 			if (lp_map_hidden(s) && (lp_force_create_mode(s) & S_IXOTH)) {
-				printf("Invalid combination of parameters for service %s. \
+				fprintf(stderr,"Invalid combination of parameters for service %s. \
 					   Map hidden can only work if force create mode excludes octal 01 (S_IXOTH).\n",
 					   lp_servicename(s) );
 			}
 			if (lp_map_system(s) && !(lp_create_mask(s) & S_IXGRP)) {
-				printf("Invalid combination of parameters for service %s. \
+				fprintf(stderr,"Invalid combination of parameters for service %s. \
 					   Map system can only work if create mask includes octal 010 (S_IXGRP).\n",
 					   lp_servicename(s) );
 			}
 			if (lp_map_system(s) && (lp_force_create_mode(s) & S_IXGRP)) {
-				printf("Invalid combination of parameters for service %s. \
+				fprintf(stderr,"Invalid combination of parameters for service %s. \
 					   Map system can only work if force create mode excludes octal 010 (S_IXGRP).\n",
 					   lp_servicename(s) );
 			}
@@ -319,29 +319,29 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 
 	if (!silent_mode) {
-		printf("Server role: ");
+		fprintf(stderr,"Server role: ");
 		switch(lp_server_role()) {
 			case ROLE_STANDALONE:
-				printf("ROLE_STANDALONE\n");
+				fprintf(stderr,"ROLE_STANDALONE\n");
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				printf("ROLE_DOMAIN_MEMBER\n");
+				fprintf(stderr,"ROLE_DOMAIN_MEMBER\n");
 				break;
 			case ROLE_DOMAIN_BDC:
-				printf("ROLE_DOMAIN_BDC\n");
+				fprintf(stderr,"ROLE_DOMAIN_BDC\n");
 				break;
 			case ROLE_DOMAIN_PDC:
-				printf("ROLE_DOMAIN_PDC\n");
+				fprintf(stderr,"ROLE_DOMAIN_PDC\n");
 				break;
 			default:
-				printf("Unknown -- internal error?\n");
+				fprintf(stderr,"Unknown -- internal error?\n");
 				break;
 		}
 	}
 
 	if (!cname) {
 		if (!silent_mode) {
-			printf("Press enter to see a dump of your service definitions\n");
+			fprintf(stderr,"Press enter to see a dump of your service definitions\n");
 			fflush(stdout);
 			getc(stdin);
 		}
@@ -354,10 +354,10 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 			if (VALID_SNUM(s)) {
 				if (allow_access(lp_hostsdeny(-1), lp_hostsallow(-1), cname, caddr)
 				    && allow_access(lp_hostsdeny(s), lp_hostsallow(s), cname, caddr)) {
-					printf("Allow connection from %s (%s) to %s\n",
+					fprintf(stderr,"Allow connection from %s (%s) to %s\n",
 						   cname,caddr,lp_servicename(s));
 				} else {
-					printf("Deny connection from %s (%s) to %s\n",
+					fprintf(stderr,"Deny connection from %s (%s) to %s\n",
 						   cname,caddr,lp_servicename(s));
 				}
 			}
