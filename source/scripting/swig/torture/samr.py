@@ -8,7 +8,7 @@ def test_Connect(handle):
     print 'testing samr_Connect'
 
     r = {}
-    r['system_name'] = '\0\0'
+    r['system_name'] = [0]
     r['access_mask'] = 0x02000000
 
     result = dcerpc.samr_Connect(pipe, r)
