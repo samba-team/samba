@@ -164,7 +164,7 @@ SMBLDAP_OBJ = @SMBLDAP@
 
 LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
-          lib/interfaces.o lib/pidfile.o lib/replace.o \
+          lib/interfaces.o lib/pidfile.o lib/replace.o lib/replace1.o \
           lib/signal.o lib/system.o lib/sendfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_getent.o lib/util_pw.o lib/access.o lib/smbrun.o \
@@ -435,7 +435,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) lib/dummyroot.o
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.po
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/replace1.po lib/snprintf.po
 
 SMBW_OBJ1 = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -607,9 +607,9 @@ WINBINDD_OBJ = \
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
-WINBIND_NSS_OBJ = nsswitch/wb_common.o @WINBIND_NSS_EXTRA_OBJS@
+WINBIND_NSS_OBJ = nsswitch/wb_common.o lib/replace1.o @WINBIND_NSS_EXTRA_OBJS@
 
-WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
+WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po) lib/snprintf.po
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
@@ -968,7 +968,8 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 
 @WINBIND_WINS_NSS@: $(WINBIND_WINS_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_PICOBJS) -lc \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_PICOBJS) \
+		$(KRBCLIENT_OBJ) $(LDAPLIBS) $(KRB5LIBS) -lc \
 		@SONAMEFLAG@`basename $@`
 
 nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
