@@ -76,6 +76,7 @@ hookup(char *host, int port)
 		hp->h_addr_list[0],
 		sizeof(hisctladdr.sin_addr));
 	strncpy(hostnamebuf, hp->h_name, sizeof(hostnamebuf));
+	hostnamebuf[sizeof(hostnamebuf) - 1] = '\0';
     }
     hostname = hostnamebuf;
     s = socket(hisctladdr.sin_family, SOCK_STREAM, 0);
