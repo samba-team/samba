@@ -55,7 +55,28 @@ krb5_mk_rep(krb5_context context,
 
     body.ctime = auth_context->authenticator->ctime;
     body.cusec = auth_context->authenticator->cusec;
-    body.subkey = NULL;
+    if (auth_context->flags & KRB5_AUTH_CONTEXT_USE_SUBKEY) {
+	if (auth_context->local_subkey == NULL) {
+	    ret = krb5_auth_con_generatelocalsubkey(context,
+						    auth_context,
+						    auth_context->keyblock);
+	    if(ret) {
+		krb5_set_error_string (context,
+				       "krb5_mk_rep: generating subkey");
+		free_EncAPRepPart(&body);
+		return ret;
+	    }
+	}
+	ret = krb5_copy_keyblock(context, auth_context->local_subkey,
+				 &body.subkey);
+	if (ret) {
+	    krb5_set_error_string (context,
+				   "krb5_copy_keyblock: out of memory");
+	    free_EncAPRepPart(&body);
+	    return ENOMEM;
+	}
+    } else
+	body.subkey = NULL;
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
 	if(auth_context->local_seqnumber == 0) 
 	    krb5_generate_seq_number (context,
@@ -64,6 +85,7 @@ krb5_mk_rep(krb5_context context,
 	ALLOC(body.seq_number, 1);
 	if (body.seq_number == NULL) {
 	    krb5_set_error_string (context, "malloc: out of memory");
+	    free_EncAPRepPart(&body);
 	    return ENOMEM;
 	}
 	*(body.seq_number) = auth_context->local_seqnumber;
