@@ -260,6 +260,8 @@ BOOL free_privilege(PRIVILEGE_SET *priv_set)
 	priv_set->count=0;
 	priv_set->control=0;
 	priv_set->set=NULL;
+
+	return True;
 }
 
 /****************************************************************************
