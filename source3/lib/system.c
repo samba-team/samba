@@ -963,7 +963,7 @@ typedef struct _popen_list
 
 static popen_list *popen_chain;
 
-FILE *sys_popen(const char *command, const char *mode)
+FILE *sys_popen(const char *command, const char *mode, BOOL paranoid)
 {
 	int parent_end, child_end;
 	int pipe_fds[2];
@@ -998,6 +998,61 @@ FILE *sys_popen(const char *command, const char *mode)
 
 	if(!(argl = extract_args(command)))
 		goto err_exit;
+
+	if(paranoid) {
+		/*
+		 * Do some basic paranioa checks. Do a stat on the parent
+		 * directory and ensure it's not world writable. Do a stat
+		 * on the file itself and ensure it's owned by root and not
+		 * world writable. Note this does *not* prevent symlink races,
+		 * but is a generic "don't let the admin screw themselves"
+		 * check.
+		 */
+
+		SMB_STRUCT_STAT st;
+		pstring dir_name;
+		char *ptr = strrchr(argl[0], '/');
+	
+		if(sys_stat(argl[0], &st) != 0)
+			goto err_exit;
+
+		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
+			errno = EACCES;
+			goto err_exit;
+		}
+		
+		if(!ptr) {
+			/*
+			 * No '/' in name - use current directory.
+			 */
+			pstrcpy(dir_name, ".");
+		} else {
+
+			/*
+			 * Copy into a pstring and do the checks
+			 * again (in case we were length tuncated).
+			 */
+
+			pstrcpy(dir_name, argl[0]);
+			ptr = strrchr(dir_name, '/');
+			if(!ptr) {
+				errno = EINVAL;
+				goto err_exit;
+			}
+			if(strcmp(dir_name, "/") != 0)
+				*ptr = '\0';
+			if(!dir_name[0])
+				pstrcpy(dir_name, ".");
+		}
+
+		if(sys_stat(argl[0], &st) != 0)
+			goto err_exit;
+
+		if(!S_ISDIR(st.st_mode) || (st.st_mode & S_IWOTH)) {
+			errno = EACCES;
+			goto err_exit;
+		}
+	}
 
 	entry->child_pid = fork();
 

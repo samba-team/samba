@@ -49,7 +49,7 @@ static void populate_printers(void)
 {
 	FILE *fp;
 
-	if ((fp = sys_popen("/usr/bin/lpstat -v", "r")) != NULL) {
+	if ((fp = sys_popen("/usr/bin/lpstat -v", "r", False)) != NULL) {
 		char buf[BUFSIZ];
 
 		while (fgets(buf, sizeof (buf), fp) != NULL) {

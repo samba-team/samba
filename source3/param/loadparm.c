@@ -2039,7 +2039,7 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 		DEBUG(4, ("handle_source_env: source env from pipe\n"));
 		p++;
 
-		if ((env = sys_popen(p, "r")) == NULL) {
+		if ((env = sys_popen(p, "r", True)) == NULL) {
 			DEBUG(0,("handle_source_env: Failed to popen %s. Error was %s\n", p, strerror(errno) ));
 			return(False);
 		}
@@ -2050,11 +2050,29 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 
 	} else {
 
+		SMB_STRUCT_STAT st;
+
 		DEBUG(4, ("handle_source_env: source env from file %s\n", fname));
 		if ((env = sys_fopen(fname, "r")) == NULL) {
 			DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
 			return(False);
 		}
+
+		/*
+		 * Ensure this file is owned by root and not writable by world.
+		 */
+		if(fstat(fileno(env), &st) != 0) {
+			DEBUG(0,("handle_source_env: Failed to stat file %s, Error was %s\n", fname, strerror(errno) ));
+			fclose(env);
+			return False;
+		}
+
+		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
+			DEBUG(0,("handle_source_env: unsafe to source env file %s. Not owned by root or world writable\n", fname ));
+			fclose(env);
+			return False;
+		}
+
 		result=source_env(env);
 		fclose(env);
 	}

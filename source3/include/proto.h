@@ -233,7 +233,7 @@ DIR *wsys_opendir(const smb_ucs2_t *wfname);
 smb_ucs2_t *wsys_getwd(smb_ucs2_t *s);
 int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid);
 int wsys_chroot(const smb_ucs2_t *wfname);
-FILE *sys_popen(const char *command, const char *mode);
+FILE *sys_popen(const char *command, const char *mode, BOOL paranoid);
 int sys_pclose( FILE *fp);
 
 /*The following definitions come from  lib/talloc.c  */
