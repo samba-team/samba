@@ -1171,7 +1171,7 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 /****************************************************************************
  ASCII art time again... JRA :-).
 
- We have 3 cases to process when moving from an NT ACL to a POSIX ACL. Firstly,
+ We have 4 cases to process when moving from an NT ACL to a POSIX ACL. Firstly,
  we insist the ACL is in canonical form (ie. all DENY entries preceede ALLOW
  entries). Secondly, the merge code has ensured that all duplicate SID entries for
  allow or deny have been merged, so the same SID can only appear once in the deny
@@ -1243,6 +1243,15 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
  be a snapshot depending on current group membership but is the
  best we can do and has the advantage of failing closed rather
  than open.
+ ---------------------------------------------------------------------------
+ Fourth pass - cope with cumulative permissions.
+
+ for all allow user entries, if there exists an allow group entry with
+ more permissive permissions, and the user is in that group, rewrite the
+ allow user permissions to contain both sets of permissions.
+
+ Currently the code for this is #ifdef'ed out as these semantics make
+ no sense to me. JRA.
  ---------------------------------------------------------------------------
 
  Note we *MUST* do the deny user pass first as this will convert deny user
@@ -1432,6 +1441,45 @@ static void process_deny_list( canon_ace **pp_ace_list )
 		DLIST_DEMOTE(ace_list, curr_ace, tmp_ace);
 
 	}
+
+	/* Doing this fourth pass allows Windows semantics to be layered
+	 * on top of POSIX semantics. I'm not sure if this is desirable.
+	 * For example, in W2K ACLs there is no way to say, "Group X no
+	 * access, user Y full access" if user Y is a member of group X.
+	 * This seems completely broken semantics to me.... JRA.
+	 */
+
+#if 0
+	/* Pass 4 above - deal with allow entries. */
+
+	for (curr_ace = ace_list; curr_ace; curr_ace = curr_ace_next) {
+		canon_ace *allow_ace_p;
+
+		curr_ace_next = curr_ace->next; /* So we can't lose the link. */
+
+		if (curr_ace->attr != ALLOW_ACE)
+			continue;
+
+		if (curr_ace->owner_type != UID_ACE)
+			continue;
+
+		for (allow_ace_p = ace_list; allow_ace_p; allow_ace_p = allow_ace_p->next) {
+
+			if (allow_ace_p->attr != ALLOW_ACE)
+				continue;
+
+			/* We process GID_ACE entries only. */
+
+			if (allow_ace_p->owner_type != GID_ACE)
+				continue;
+
+			/* OR in the group perms. */
+
+			if (uid_entry_in_group( curr_ace, allow_ace_p))
+				curr_ace->perms |= allow_ace_p->perms;
+		}
+	}
+#endif
 
 	*pp_ace_list = ace_list;
 }
