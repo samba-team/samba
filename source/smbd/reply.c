@@ -1748,8 +1748,10 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
 			 * return ENOSYS then pretend we just got a normal read.
 			 */
-			if (errno == ENOSYS)
+			if (errno == ENOSYS) {
+				set_use_sendfile(SNUM(conn), False);
 				goto normal_read;
+			}
 
 			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
@@ -2111,8 +2113,10 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
 			 * return ENOSYS then pretend we just got a normal read.
 			 */
-			if (errno == ENOSYS)
+			if (errno == ENOSYS) {
+				set_use_sendfile(SNUM(conn), False);
 				goto normal_read;
+			}
 
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
