@@ -1173,7 +1173,7 @@ VAL_KEY *nt_delete_reg_value(REG_KEY *key, char *name)
  * Convert a string of the form S-1-5-x[-y-z-r] to a SID
  */
 static
-int string_to_sid(DOM_SID **sid, const char *sid_str)
+int sid_string_to_sid(DOM_SID **sid, const char *sid_str)
 {
   int i = 0, auth;
   const char *lstr; 
@@ -1226,7 +1226,7 @@ ACE *nt_create_ace(int type, int flags, unsigned int perms, const char *sid)
   ace->type = type;
   ace->flags = flags;
   ace->perms = perms;
-  if (!string_to_sid(&ace->trustee, sid))
+  if (!sid_string_to_sid(&ace->trustee, sid))
     goto error;
   return ace;
 
@@ -1287,8 +1287,8 @@ SEC_DESC *nt_create_def_sec_desc(REGF *regf)
 
   tmp->rev = 1;
   tmp->type = 0x8004;
-  if (!string_to_sid(&tmp->owner, "S-1-5-32-544")) goto error;
-  if (!string_to_sid(&tmp->group, "S-1-5-18")) goto error;
+  if (!sid_string_to_sid(&tmp->owner, "S-1-5-32-544")) goto error;
+  if (!sid_string_to_sid(&tmp->group, "S-1-5-18")) goto error;
   tmp->sacl = NULL;
   tmp->dacl = nt_create_default_acl(regf);
 
@@ -3987,7 +3987,7 @@ int main(int argc, char *argv[])
     case 'O':
       def_owner_sid_str = strdup(optarg);
       regf_opt += 2;
-      if (!string_to_sid(&lsid, def_owner_sid_str)) {
+      if (!sid_string_to_sid(&lsid, def_owner_sid_str)) {
 	fprintf(stderr, "Default Owner SID: %s is incorrectly formatted\n",
 		def_owner_sid_str);
 	free(&def_owner_sid_str[0]);
