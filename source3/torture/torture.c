@@ -555,7 +555,7 @@ static BOOL run_readwritelarge(int dummy)
 	int fnum1;
 	char *lockfname = "\\large.dat";
 	size_t fsize;
-	char buf[0x10000];
+	char buf[126*1024];
 	BOOL correct = True;
  
 	if (!torture_open_connection(&cli1)) {
@@ -564,7 +564,7 @@ static BOOL run_readwritelarge(int dummy)
 	cli_sockopt(&cli1, sockops);
 	memset(buf,'\0',sizeof(buf));
 	
-	cli1.max_xmit = 0x11000;
+	cli1.max_xmit = 128*1024;
 	
 	printf("starting readwritelarge\n");
  
@@ -578,13 +578,8 @@ static BOOL run_readwritelarge(int dummy)
    
 	cli_write(&cli1, fnum1, 0, buf, 0, sizeof(buf));
 
-	if (!cli_close(&cli1, fnum1)) {
-		printf("close failed (%s)\n", cli_errstr(&cli1));
-		correct = False;
-	}
-
-	if (!cli_qpathinfo(&cli1, lockfname, NULL, NULL, NULL, &fsize, NULL)) {
-		printf("qpathinfo failed (%s)\n", cli_errstr(&cli1));
+	if (!cli_qfileinfo(&cli1, fnum1, NULL, &fsize, NULL, NULL, NULL, NULL, NULL)) {
+		printf("qfileinfo failed (%s)\n", cli_errstr(&cli1));
 		correct = False;
 	}
 
@@ -592,6 +587,11 @@ static BOOL run_readwritelarge(int dummy)
 		printf("readwritelarge test 1 succeeded (size = %x)\n", fsize);
 	else {
 		printf("readwritelarge test 1 failed (size = %x)\n", fsize);
+		correct = False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close failed (%s)\n", cli_errstr(&cli1));
 		correct = False;
 	}
 
@@ -606,8 +606,22 @@ static BOOL run_readwritelarge(int dummy)
 		return False;
 	}
 	
+	cli1.max_xmit = 4*1024;
+	
 	cli_smbwrite(&cli1, fnum1, buf, 0, sizeof(buf));
 	
+	if (!cli_qfileinfo(&cli1, fnum1, NULL, &fsize, NULL, NULL, NULL, NULL, NULL)) {
+		printf("qfileinfo failed (%s)\n", cli_errstr(&cli1));
+		correct = False;
+	}
+
+	if (fsize == sizeof(buf))
+		printf("readwritelarge test 2 succeeded (size = %x)\n", fsize);
+	else {
+		printf("readwritelarge test 2 failed (size = %x)\n", fsize);
+		correct = False;
+	}
+
 	if (!cli_close(&cli1, fnum1)) {
 		printf("close failed (%s)\n", cli_errstr(&cli1));
 		correct = False;

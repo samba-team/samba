@@ -366,6 +366,8 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 
 		size1 -= size;
 		total += size;
+		offset += size;
+
 	} while (size1);
 
 	return total;
