@@ -35,7 +35,7 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 		NTSTATUS status;
 		DATA_BLOB blob;
 		blob.length = len - 4;
-		blob.data = (void *)(((char *)response->extra_data) + 4);
+		blob.data = (uint8_t *)(((char *)response->extra_data) + 4);
 		
 		status = ndr_pull_struct_blob(&blob, mem_ctx, info3,
 					      (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
