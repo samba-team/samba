@@ -440,7 +440,6 @@ do_v5 (char *host,
        int forkp)
 {
     krb5_error_code ret;
-    krb5_ccache ccache;
     krb5_auth_context auth_context = NULL;
     krb5_principal server;
     int s;
@@ -449,11 +448,6 @@ do_v5 (char *host,
     if (s < 0)
 	return 1;
 
-    ret = krb5_cc_default (context, &ccache);
-    if (ret) {
-	warnx ("krb5_cc_default: %s", krb5_get_err_text (context, ret));
-	return 1;
-    }
     ret = krb5_sname_to_principal (context,
 				   host,
 				   "pop",
@@ -474,7 +468,7 @@ do_v5 (char *host,
 			 0,
 			 NULL,
 			 NULL,
-			 ccache,
+			 NULL,
 			 NULL,
 			 NULL,
 			 NULL);
