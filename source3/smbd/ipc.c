@@ -64,11 +64,11 @@ extern fstring local_machine;
 
 extern int Client;
 
-static BOOL api_Unsupported(int cnum,int uid, char *param,char *data,
+static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
 			    char **rdata,char **rparam,
 			    int *rdata_len,int *rparam_len);
-static BOOL api_TooSmall(int cnum,int uid, char *param,char *data,
+static BOOL api_TooSmall(int cnum,uint16 vuid, char *param,char *data,
 			 int mdrcnt,int mprcnt,
 			 char **rdata,char **rparam,
 			 int *rdata_len,int *rparam_len);
@@ -578,7 +578,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
   DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",SERVICE(snum),count));
 }
 
-static BOOL api_DosPrintQGetInfo(int cnum,int uid, char *param,char *data,
+static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -651,7 +651,7 @@ static BOOL api_DosPrintQGetInfo(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   view list of all print jobs on all queues
   ****************************************************************************/
-static BOOL api_DosPrintQEnum(int cnum, int uid, char* param, char* data,
+static BOOL api_DosPrintQEnum(int cnum, uint16 vuid, char* param, char* data,
  			      int mdrcnt, int mprcnt,
  			      char **rdata, char** rparam,
  			      int *rdata_len, int *rparam_len)
@@ -948,7 +948,7 @@ static BOOL srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
   view list of servers available (or possibly domains). The info is
   extracted from lists saved by nmbd on the local host
   ****************************************************************************/
-static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
+static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
 			       int mdrcnt, int mprcnt, char **rdata, 
 			       char **rparam, int *rdata_len, int *rparam_len)
 {
@@ -1175,7 +1175,7 @@ static int fill_share_info(int cnum, int snum, int uLevel,
   return len;
 }
 
-static BOOL api_RNetShareGetInfo(int cnum,int uid, char *param,char *data,
+static BOOL api_RNetShareGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -1210,7 +1210,7 @@ static BOOL api_RNetShareGetInfo(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   view list of shares available
   ****************************************************************************/
-static BOOL api_RNetShareEnum(int cnum,int uid, char *param,char *data,
+static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
   			      int mdrcnt,int mprcnt,
   			      char **rdata,char **rparam,
   			      int *rdata_len,int *rparam_len)
@@ -1274,7 +1274,7 @@ static BOOL api_RNetShareEnum(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   get the time of day info
   ****************************************************************************/
-static BOOL api_NetRemoteTOD(int cnum,int uid, char *param,char *data,
+static BOOL api_NetRemoteTOD(int cnum,uint16 vuid, char *param,char *data,
 			     int mdrcnt,int mprcnt,
 			     char **rdata,char **rparam,
 			     int *rdata_len,int *rparam_len)
@@ -1323,7 +1323,7 @@ static BOOL api_NetRemoteTOD(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   set the user password
   ****************************************************************************/
-static BOOL api_SetUserPassword(int cnum,int uid, char *param,char *data,
+static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -1365,7 +1365,7 @@ static BOOL api_SetUserPassword(int cnum,int uid, char *param,char *data,
   delete a print job
   Form: <W> <> 
   ****************************************************************************/
-static BOOL api_RDosPrintJobDel(int cnum,int uid, char *param,char *data,
+static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -1427,7 +1427,7 @@ static BOOL api_RDosPrintJobDel(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintQueuePurge(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintQueuePurge(int cnum,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -1498,7 +1498,7 @@ static int check_printjob_info(struct pack_desc* desc,
   return True;
 }
 
-static BOOL api_PrintJobInfo(int cnum,int uid,char *param,char *data,
+static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
   			     int mdrcnt,int mprcnt,
   			     char **rdata,char **rparam,
   			     int *rdata_len,int *rparam_len)
@@ -1579,7 +1579,7 @@ static BOOL api_PrintJobInfo(int cnum,int uid,char *param,char *data,
 	      GetWd(wd);
 	      unbecome_user();
 	      
-	      if (!become_user(Files[i].cnum,uid) || 
+	      if (!become_user(Files[i].cnum,vuid) || 
 		  !become_service(Files[i].cnum,True))
 		break;
 	      
@@ -1605,7 +1605,7 @@ static BOOL api_PrintJobInfo(int cnum,int uid,char *param,char *data,
 /****************************************************************************
   get info about the server
   ****************************************************************************/
-static BOOL api_RNetServerGetInfo(int cnum,int uid, char *param,char *data,
+static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				  int mdrcnt,int mprcnt,
 				  char **rdata,char **rparam,
 				  int *rdata_len,int *rparam_len)
@@ -1712,7 +1712,7 @@ static BOOL api_RNetServerGetInfo(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   get info about the server
   ****************************************************************************/
-static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
+static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -1787,7 +1787,7 @@ static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
 #define USER_PRIV_USER 1
 #define USER_PRIV_ADMIN 2
 
-static BOOL api_RNetUserGetInfo(int cnum,int uid, char *param,char *data,
+static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -1927,7 +1927,7 @@ static BOOL api_RNetUserGetInfo(int cnum,int uid, char *param,char *data,
 /*******************************************************************
   get groups that a user is a member of
   ******************************************************************/
-static BOOL api_NetUserGetGroups(int cnum,int uid, char *param,char *data,
+static BOOL api_NetUserGetGroups(int cnum,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -1974,7 +1974,7 @@ static BOOL api_NetUserGetGroups(int cnum,int uid, char *param,char *data,
 }
 
 
-static BOOL api_WWkstaUserLogon(int cnum,int uid, char *param,char *data,
+static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -2047,7 +2047,7 @@ static BOOL api_WWkstaUserLogon(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   api_WAccessGetUserPerms
   ****************************************************************************/
-static BOOL api_WAccessGetUserPerms(int cnum,int uid, char *param,char *data,
+static BOOL api_WAccessGetUserPerms(int cnum,uint16 vuid, char *param,char *data,
 				    int mdrcnt,int mprcnt,
 				    char **rdata,char **rparam,
 				    int *rdata_len,int *rparam_len)
@@ -2075,7 +2075,7 @@ static BOOL api_WAccessGetUserPerms(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   api_WPrintJobEnumerate
   ****************************************************************************/
-static BOOL api_WPrintJobGetInfo(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintJobGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -2141,7 +2141,7 @@ static BOOL api_WPrintJobGetInfo(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintJobEnumerate(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintJobEnumerate(int cnum,uint16 vuid, char *param,char *data,
 				   int mdrcnt,int mprcnt,
 				   char **rdata,char **rparam,
 				   int *rdata_len,int *rparam_len)
@@ -2258,7 +2258,7 @@ static void fill_printdest_info(int cnum, int snum, int uLevel,
   }
 }
 
-static BOOL api_WPrintDestGetInfo(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintDestGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				  int mdrcnt,int mprcnt,
 				  char **rdata,char **rparam,
 				  int *rdata_len,int *rparam_len)
@@ -2317,7 +2317,7 @@ static BOOL api_WPrintDestGetInfo(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintDestEnum(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintDestEnum(int cnum,uint16 vuid, char *param,char *data,
 			       int mdrcnt,int mprcnt,
 			       char **rdata,char **rparam,
 			       int *rdata_len,int *rparam_len)
@@ -2375,7 +2375,7 @@ static BOOL api_WPrintDestEnum(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintDriverEnum(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintDriverEnum(int cnum,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -2420,7 +2420,7 @@ static BOOL api_WPrintDriverEnum(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintQProcEnum(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintQProcEnum(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -2466,7 +2466,7 @@ static BOOL api_WPrintQProcEnum(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintPortEnum(int cnum,int uid, char *param,char *data,
+static BOOL api_WPrintPortEnum(int cnum,uint16 vuid, char *param,char *data,
 			       int mdrcnt,int mprcnt,
 			       char **rdata,char **rparam,
 			       int *rdata_len,int *rparam_len)
@@ -2524,13 +2524,13 @@ struct
   {
     { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
     { "TransactNmPipe",	"lsarpc",	0x26,	api_LsarpcTNP },
-    { NULL,		NULL,		-1,	api_Unsupported }
+    { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
   };
 
 /****************************************************************************
   handle remote api calls delivered to a named pipe already opened.
   ****************************************************************************/
-static int api_fd_reply(int cnum,int uid,char *outbuf,
+static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 		 	uint16 *setup,char *data,char *params,
 		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
@@ -2570,20 +2570,20 @@ static int api_fd_reply(int cnum,int uid,char *outbuf,
   rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
-  reply = api_fd_commands[i].fn(cnum,uid,params,data,mdrcnt,mprcnt,
+  reply = api_fd_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
 			        &rdata,&rparam,&rdata_len,&rparam_len);
   
   if (rdata_len > mdrcnt ||
       rparam_len > mprcnt)
     {
-      reply = api_TooSmall(cnum,uid,params,data,mdrcnt,mprcnt,
+      reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
     }
   
   
   /* if we get False back then it's actually unsupported */
   if (!reply)
-    api_Unsupported(cnum,uid,params,data,mdrcnt,mprcnt,
+    api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
   
   /* now send the reply */
@@ -2602,7 +2602,7 @@ static int api_fd_reply(int cnum,int uid,char *outbuf,
 /****************************************************************************
   the buffer was too small
   ****************************************************************************/
-static BOOL api_TooSmall(int cnum,int uid, char *param,char *data,
+static BOOL api_TooSmall(int cnum,uint16 vuid, char *param,char *data,
 			 int mdrcnt,int mprcnt,
 			 char **rdata,char **rparam,
 			 int *rdata_len,int *rparam_len)
@@ -2623,7 +2623,7 @@ static BOOL api_TooSmall(int cnum,int uid, char *param,char *data,
 /****************************************************************************
   the request is not supported
   ****************************************************************************/
-static BOOL api_Unsupported(int cnum,int uid, char *param,char *data,
+static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
 			    char **rdata,char **rparam,
 			    int *rdata_len,int *rparam_len)
@@ -2651,38 +2651,38 @@ struct
   BOOL (*fn)();
   int flags;
 } api_commands[] = {
-  {"RNetShareEnum",	0,	api_RNetShareEnum,0},
-  {"RNetShareGetInfo",	1,	api_RNetShareGetInfo,0},
-  {"RNetServerGetInfo",	13,	api_RNetServerGetInfo,0},
-  {"RNetUserGetInfo",	56,	api_RNetUserGetInfo,0},
-  {"NetUserGetGroups",	59,	api_NetUserGetGroups,0},
-  {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
-  {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
-  {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
-  {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
-  {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
-  {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobPause",	82,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobResume",83,	api_RDosPrintJobDel,0},
-  {"WPrintDestEnum",	84,	api_WPrintDestEnum,0},
-  {"WPrintDestGetInfo",	85,	api_WPrintDestGetInfo,0},
-  {"NetRemoteTOD",	91,	api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	103,	api_WPrintQueuePurge,0},
-  {"NetServerEnum",	104,	api_RNetServerEnum,0},
-  {"WAccessGetUserPerms",105,	api_WAccessGetUserPerms,0},
-  {"SetUserPassword",	115,	api_SetUserPassword,0},
-  {"WWkstaUserLogon",	132,	api_WWkstaUserLogon,0},
-  {"PrintJobInfo",	147,	api_PrintJobInfo,0},
-  {"WPrintDriverEnum",	205,	api_WPrintDriverEnum,0},
-  {"WPrintQProcEnum",	206,	api_WPrintQProcEnum,0},
-  {"WPrintPortEnum",	207,	api_WPrintPortEnum,0},
-  {NULL,		-1,	api_Unsupported,0}};
+  {"RNetShareEnum",	0,	(BOOL (*)())api_RNetShareEnum,0},
+  {"RNetShareGetInfo",	1,	(BOOL (*)())api_RNetShareGetInfo,0},
+  {"RNetServerGetInfo",	13,	(BOOL (*)())api_RNetServerGetInfo,0},
+  {"RNetUserGetInfo",	56,	(BOOL (*)())api_RNetUserGetInfo,0},
+  {"NetUserGetGroups",	59,	(BOOL (*)())api_NetUserGetGroups,0},
+  {"NetWkstaGetInfo",	63,	(BOOL (*)())api_NetWkstaGetInfo,0},
+  {"DosPrintQEnum",	69,	(BOOL (*)())api_DosPrintQEnum,0},
+  {"DosPrintQGetInfo",	70,	(BOOL (*)())api_DosPrintQGetInfo,0},
+  {"WPrintJobEnumerate",76,	(BOOL (*)())api_WPrintJobEnumerate,0},
+  {"WPrintJobGetInfo",	77,	(BOOL (*)())api_WPrintJobGetInfo,0},
+  {"RDosPrintJobDel",	81,	(BOOL (*)())api_RDosPrintJobDel,0},
+  {"RDosPrintJobPause",	82,	(BOOL (*)())api_RDosPrintJobDel,0},
+  {"RDosPrintJobResume",83,	(BOOL (*)())api_RDosPrintJobDel,0},
+  {"WPrintDestEnum",	84,	(BOOL (*)())api_WPrintDestEnum,0},
+  {"WPrintDestGetInfo",	85,	(BOOL (*)())api_WPrintDestGetInfo,0},
+  {"NetRemoteTOD",	91,	(BOOL (*)())api_NetRemoteTOD,0},
+  {"WPrintQueuePurge",	103,	(BOOL (*)())api_WPrintQueuePurge,0},
+  {"NetServerEnum",	104,	(BOOL (*)())api_RNetServerEnum,0},
+  {"WAccessGetUserPerms",105,	(BOOL (*)())api_WAccessGetUserPerms,0},
+  {"SetUserPassword",	115,	(BOOL (*)())api_SetUserPassword,0},
+  {"WWkstaUserLogon",	132,	(BOOL (*)())api_WWkstaUserLogon,0},
+  {"PrintJobInfo",	147,	(BOOL (*)())api_PrintJobInfo,0},
+  {"WPrintDriverEnum",	205,	(BOOL (*)())api_WPrintDriverEnum,0},
+  {"WPrintQProcEnum",	206,	(BOOL (*)())api_WPrintQProcEnum,0},
+  {"WPrintPortEnum",	207,	(BOOL (*)())api_WPrintPortEnum,0},
+  {NULL,		-1,	(BOOL (*)())api_Unsupported,0}};
 
 
 /****************************************************************************
   handle remote api calls
   ****************************************************************************/
-static int api_reply(int cnum,int uid,char *outbuf,char *data,char *params,
+static int api_reply(int cnum,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
   int api_command = SVAL(params,0);
@@ -2707,21 +2707,21 @@ static int api_reply(int cnum,int uid,char *outbuf,char *data,char *params,
   rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
 
-  reply = api_commands[i].fn(cnum,uid,params,data,mdrcnt,mprcnt,
+  reply = api_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
 			     &rdata,&rparam,&rdata_len,&rparam_len);
 
 
   if (rdata_len > mdrcnt ||
       rparam_len > mprcnt)
     {
-      reply = api_TooSmall(cnum,uid,params,data,mdrcnt,mprcnt,
+      reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
     }
 	    
 
   /* if we get False back then it's actually unsupported */
   if (!reply)
-    api_Unsupported(cnum,uid,params,data,mdrcnt,mprcnt,
+    api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
 
       
@@ -2740,17 +2740,17 @@ static int api_reply(int cnum,int uid,char *outbuf,char *data,char *params,
 /****************************************************************************
   handle named pipe commands
   ****************************************************************************/
-static int named_pipe(int cnum,int uid, char *outbuf,char *name,
+static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 		      uint16 *setup,char *data,char *params,
 		      int suwcnt,int tdscnt,int tpscnt,
 		      int msrcnt,int mdrcnt,int mprcnt)
 {
 
   if (strequal(name,"LANMAN"))
-    return(api_reply(cnum,uid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt));
+    return(api_reply(cnum,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt));
 
 if (strlen(name) < 1)
-  return(api_fd_reply(cnum,uid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt));
+  return(api_fd_reply(cnum,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt));
 
 
   DEBUG(3,("named pipe command on <%s> 0x%X setup1=%d\n",
@@ -2772,7 +2772,7 @@ int reply_trans(char *inbuf,char *outbuf)
 
   int outsize = 0;
   int cnum = SVAL(inbuf,smb_tid);
-  int uid = SVAL(inbuf,smb_uid);
+  uint16 vuid = SVAL(inbuf,smb_uid);
 
   int tpscnt = SVAL(inbuf,smb_vwv0);
   int tdscnt = SVAL(inbuf,smb_vwv1);
@@ -2860,7 +2860,7 @@ int reply_trans(char *inbuf,char *outbuf)
   
 
   if (strncmp(name,"\\PIPE\\",strlen("\\PIPE\\")) == 0)
-    outsize = named_pipe(cnum,uid,outbuf,name+strlen("\\PIPE\\"),setup,data,params,
+    outsize = named_pipe(cnum,vuid,outbuf,name+strlen("\\PIPE\\"),setup,data,params,
 			 suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
 
 
@@ -2869,7 +2869,7 @@ int reply_trans(char *inbuf,char *outbuf)
   if (setup) free(setup);
 
   if (close_on_completion)
-    close_cnum(cnum,uid);
+    close_cnum(cnum,vuid);
 
   if (one_way)
     return(-1);
