@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -246,6 +246,15 @@ main(int argc, char **argv)
 		errx (1, "Bad port `%s'", port_str);
 	    port = htons(port);
 	}
+    }
+    if (port == 0) {
+#ifdef KRB5
+	port = krb5_getportbyname (context, "kpop", "tcp", 1109);
+#elif defined(KRB4)
+	port = k_getportbyname ("kpop", "tcp", 1109);
+#else
+#error must define KRB4 or KRB5
+#endif
     }
 
 #if defined(KRB4) && defined(KRB5)
