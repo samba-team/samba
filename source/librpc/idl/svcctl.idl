@@ -46,7 +46,7 @@
 	const int SERVICE_STATE_INACTIVE = 0x02;
 	const int SERVICE_STATE_ALL      = 0x00;
 
-	typedef [public] bitmap {
+	typedef [public,bitmap32bit] bitmap {
 		SV_TYPE_WORKSTATION       = 0x00000001,
 		SV_TYPE_SERVER            = 0x00000002,
 		SV_TYPE_SQLSERVER         = 0x00000004,
