@@ -219,7 +219,11 @@ static void load_config(void)
 /* spit out the html for a link with an image */
 static void image_link(char *name,char *hlink, char *src, int width, int height)
 {
-	printf("<A HREF=\"%s\"><img width=%d height=%d src=\"%s\" alt=\"%s\"></A>\n", hlink, width, height, src, name);
+	printf("<A HREF=\"%s/%s\"><img width=%d height=%d src=\"%s%s\" alt=\"%s\"></A>\n", 
+	       cgi_baseurl(),
+	       hlink, width, height, 
+	       cgi_rooturl(),
+	       src, name);
 }
 
 /* display the main navigation controls at the top of each page along
@@ -562,7 +566,7 @@ int main(int argc, char *argv[])
 	cgi_setup(SWATDIR, auth_required);
 
 	print_header();
-
+	
 	charset_initialise();
 
 	/* if this binary is setuid then run completely as root */
@@ -574,7 +578,7 @@ int main(int argc, char *argv[])
 
 	show_main_buttons();
 
-	page = cgi_baseurl();
+	page = cgi_pathinfo();
 
 	if (strcmp(page, "globals")==0) {
 		globals_page();

@@ -44,6 +44,7 @@ static int request_post;
 static int request_get;
 static char *query_string;
 static char *baseurl;
+static char *pathinfo;
 
 static void unescape(char *buf)
 {
@@ -545,9 +546,7 @@ void cgi_setup(char *rootdir, int auth_required)
 	char *url=NULL;
 	char *p;
 #if CGI_LOGGING
-	FILE *f = fopen("/tmp/cgi.log", "a");
-
-	fprintf(f,"\n[Date: %s]\n", http_timestring(time(NULL)));
+	FILE *f;
 #endif
 
 	if (chdir(rootdir)) {
@@ -560,11 +559,16 @@ void cgi_setup(char *rootdir, int auth_required)
 		return;
 	}
 
+#if CGI_LOGGING
+	f = fopen("/tmp/cgi.log", "a");
+	if (f) fprintf(f,"\n[Date: %s]\n", http_timestring(time(NULL)));
+#endif
+
 	/* we are a mini-web server. We need to read the request from stdin
 	   and handle authentication etc */
 	while (fgets(line, sizeof(line)-1, stdin)) {
 #if CGI_LOGGING
-		fputs(line, f);
+		if (f) fputs(line, f);
 #endif
 		if (line[0] == '\r' || line[0] == '\n') break;
 		if (strncasecmp(line,"GET ", 4)==0) {
@@ -584,7 +588,7 @@ void cgi_setup(char *rootdir, int auth_required)
 		/* ignore all other requests! */
 	}
 #if CGI_LOGGING
-	fclose(f);
+	if (f) fclose(f);
 #endif
 
 	if (auth_required && !authenticated) {
@@ -618,7 +622,8 @@ void cgi_setup(char *rootdir, int auth_required)
 
 	printf("HTTP/1.1 200 OK\r\nConnection: close\r\n");
 	printf("Date: %s\r\n", http_timestring(time(NULL)));
-	baseurl = url+1;
+	baseurl = "";
+	pathinfo = url+1;
 }
 
 
@@ -627,5 +632,36 @@ return the current pages URL
   ***************************************************************************/
 char *cgi_baseurl(void)
 {
-	return baseurl;
+	if (baseurl) {
+		return baseurl;
+	}
+	return getenv("SCRIPT_NAME");
 }
+
+/***************************************************************************
+return the root URL for images etc
+  ***************************************************************************/
+char *cgi_rooturl(void)
+{
+	if (baseurl) {
+		return "/";
+	}
+	return "/swat/";
+}
+
+
+/***************************************************************************
+return the current pages path info
+  ***************************************************************************/
+char *cgi_pathinfo(void)
+{
+	char *r;
+	if (pathinfo) {
+		return pathinfo;
+	}
+	r = getenv("PATH_INFO");
+	if (!r) return "";
+	if (*r == '/') r++;
+	return r;
+}
+
