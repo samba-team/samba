@@ -356,17 +356,22 @@ krb5_vlog_msg(krb5_context context,
      __attribute__((format (printf, 5, 0)))
 {
     char *msg;
+    char *actual;
     char buf[64];
     time_t t;
     int i;
 
     vasprintf(&msg, fmt, ap);
+    if (msg != NULL)
+	actual = msg;
+    else
+	actual = fmt;
     t = time(NULL);
     krb5_format_time(context, t, buf, sizeof(buf), TRUE);
     for(i = 0; i < fac->len; i++)
 	if(fac->val[i].min <= level && 
 	   (fac->val[i].max < 0 || fac->val[i].max >= level))
-	    (*fac->val[i].log)(buf, msg, fac->val[i].data);
+	    (*fac->val[i].log)(buf, actual, fac->val[i].data);
     *reply = msg;
     return 0;
 }
