@@ -525,6 +525,92 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/** Query info policy2
+ *
+ *  @param domain_name - returned remote server's domain name
+ *  @param dns_name - returned remote server's dns domain name
+ *  @param forest_name - returned remote server's forest name
+ *  @param domain_guid - returned remote server's domain guid
+ *  @param domain_sid - returned remote server's domain sid */
+
+NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *pol, uint16 info_class, 
+				    fstring domain_name, fstring dns_name,
+				    fstring forest_name, GUID *domain_guid,
+				    DOM_SID *domain_sid)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_INFO2 q;
+	LSA_R_QUERY_INFO2 r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (info_class != 12)
+		goto done;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query2(&q, pol, info_class);
+
+	if (!lsa_io_q_query_info2("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_QUERYINFO2, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_info2("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	ZERO_STRUCTP(domain_sid);
+	ZERO_STRUCTP(domain_guid);
+	domain_name[0] = '\0';
+
+	if (r.info.dns_dom_info.hdr_nb_dom_name.buffer) {
+		unistr2_to_ascii(domain_name,
+				 &r.info.dns_dom_info.uni_nb_dom_name,
+				 sizeof(fstring) - 1);
+	}
+	if (r.info.dns_dom_info.hdr_dns_dom_name.buffer) {
+		unistr2_to_ascii(dns_name,
+				 &r.info.dns_dom_info.uni_dns_dom_name,
+				 sizeof(fstring) - 1);
+	}
+	if (r.info.dns_dom_info.hdr_forest_name.buffer) {
+		unistr2_to_ascii(forest_name,
+				 &r.info.dns_dom_info.uni_forest_name,
+				 sizeof(fstring) - 1);
+	}
+	
+	memcpy(domain_guid, &r.info.dns_dom_info.dom_guid, sizeof(GUID));
+
+	if (r.info.dns_dom_info.ptr_dom_sid != 0) {
+		*domain_sid = r.info.dns_dom_info.dom_sid.sid;
+	}
+	
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /**
  * Enumerate list of trusted domains
  *

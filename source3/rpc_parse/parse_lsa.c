@@ -2166,6 +2166,19 @@ BOOL lsa_io_dns_dom_info(char *desc, LSA_DNS_DOM_INFO *info,
 }
 
 /*******************************************************************
+ Inits an LSA_Q_QUERY_INFO2 structure.
+********************************************************************/
+
+void init_q_query2(LSA_Q_QUERY_INFO2 *q_q, POLICY_HND *hnd, uint16 info_class)
+{
+	DEBUG(5, ("init_q_query2\n"));
+
+	memcpy(&q_q->pol, hnd, sizeof(q_q->pol));
+
+	q_q->info_class = info_class;
+}
+
+/*******************************************************************
  Reads or writes an LSA_Q_QUERY_DNSDOMINFO structure.
 ********************************************************************/
 
