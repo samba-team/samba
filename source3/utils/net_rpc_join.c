@@ -240,7 +240,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 			     acct_name, nt_errstr(result)));
 
 	if (name_types[0] != SID_NAME_USER) {
-		DEBUG(0, ("%s is not a user account\n", acct_name));
+		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types[0]));
 		goto done;
 	}
 
