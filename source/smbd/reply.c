@@ -499,8 +499,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   BOOL doencrypt = lp_encrypted_passwords();
   START_PROFILE(SMBsesssetupX);
 
-  *smb_apasswd = 0;
-  *smb_ntpasswd = 0;
+  ZERO_STRUCT(smb_apasswd);
+  ZERO_STRUCT(smb_ntpasswd);
   
   smb_bufsize = SVAL(inbuf,smb_vwv2);
 
