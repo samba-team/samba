@@ -1,179 +1,123 @@
-.TH SMBTAR 1 "09 Oct 1998" "smbtar 2.0.0-alpha11"
-.SH NAME
-smbtar \- shell script for backing up SMB shares directly to UNIX tape drive
-.SH SYNOPSIS
-.B smbtar
-.B \-s
-.I server
-[
-.B \-p
-.I password
-] [
-.B \-x
-.I service
-] [
-.B \-X
-] [
-.B \-d
-.I directory
-] [
-.B \-u
-.I user
-] [
-.B \-t
-.I tape
-] [
-.B \-b
-.I blocksize
-] [
-.B \-N
-.I filename
-] [
-.B \-i
-] [
-.B \-r
-] [
-.B \-l
-.I log level
-] [
-.B \-v
-]
-.I filenames...
-.SH DESCRIPTION
-This program is an extension to the Samba suite.
-
-.B smbtar
-is a very small shell script on top of
-.BR smbclient ,
-which dumps SMB shares directly to tape.
-.SH OPTIONS
-.B \-s
-.I server
-.RS 3
-The PC that the share resides upon.
-.RE
-
-.B \-x
-.I service
-.RS 3
-The share name on the PC to connect to. Default:
-.I backup.
-.RE
-
-.B \-X
-.RS 3
-Exclude mode. Exclude
-.I filenames...
-from tar create or restore.
-.RE
-
-.B \-d
-.I directory
-.RS 3
-Change to initial
-.I directory
-before restoring / backing up files.
-.RE
-
-.B \-v
-.RS 3
-Verbose mode.
-.RE
-
-.B \-p
-.I password
-
-.RS 3
-The password to use to access a share. Default: none
-.RE
-
-.B \-u
-.I user
-.RS 3
-The user id to connect as. Default: UNIX login name.
-.RE
-
-.B \-t
-.I tape
-.RS 3
-Tape device. May be regular file or tape device. Default: Tape environmental
-variable; if not set, a file called
-.IR tar.out .
-.RE
-
-.B \-b
-.I blocksize
-.RS 3
-Blocking factor. Defaults to 20. See
-.BR tar (1)
-for a fuller explanation.
-.RE
-
-.B \-N
-.I filename
-.RS 3
-Backup only files newer than filename. Could be used (for example) on a log
-file to implement incremental backups.
-.RE
-
-.B \-i
-.RS 3
-Incremental mode; tar files are only backed up if they have the
-archive bit set. The archive bit is reset after each file is read.
-.RE
-
-.B \-r
-.RS 3
-Restore. Files are restored to the share from the tar file.
-.RE
-
-.B \-l
-.I log level
-.RS 3
-Log (debug) level. Corresponds to
-.B \-d
-flag of
-.BR smbclient (1).
-.RE
-.SH ENVIRONMENT VARIABLES
-The TAPE variable specifies the default tape device to write to. May
-be overridden with the
-.B \-t
-option.
-.SH BUGS
-The
-.B smbtar
-script has different options from ordinary tar and tar
-called from
-.BR smbclient .
-.SH CAVEATS
-Sites that are more careful about security may not like the way
-the script handles PC passwords. Backup and restore work on entire shares,
-should work on file lists. smbtar works best with GNU tar and may
-not work well with other versions.
-.SH VERSION
-This man page is correct for version 1.9.15p8 of the Samba suite.
-.SH SEE ALSO
-.BR smbclient (8), 
-.BR smb.conf (8) 
-.SH DIAGNOSTICS
-See diagnostics for 
-.B smbclient
-command.
-.SH CREDITS
-The original Samba software and related utilities were created by 
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
-of the Source for this project.
-
-Ricky Poulten (poultenr@logica.co.uk) wrote the tar extension and this
-man page. The
-.B smbtar
-script was heavily rewritten and improved by
-Martin Kraemer <Martin.Kraemer@mch.sni.de>. Many thanks to everyone
-who suggested extensions, improvements, bug fixes, etc.
-
-See
-.BR smb.conf (5)
-for a full list of contributors and details of how to submit bug reports,
-comments etc.
-
+.TH "smbtar" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+smbtar \- shell script for backing up SMB/CIFS shares directly to UNIX tape drives
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBsmbtar\fP -s server [-p password] [-x service] [-X] [-d directory] [-u user] [-t tape] [-b blocksize] [-N filename] [-i] [-r] [-l log level] [-v] filenames
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite\&.
+.PP 
+\fBsmbtar\fP is a very small shell script on top of
+\fBsmbclient\fP which dumps SMB shares directly
+to tape\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+.IP 
+.IP "\fB-s server\fP" 
+The SMB/CIFS server that the share resides upon\&.
+.IP 
+.IP "\fB-x service\fP" 
+The share name on the server to connect
+to\&. The default is \f(CWbackup\fP\&.
+.IP 
+.IP "\fB-X\fP" 
+Exclude mode\&. Exclude filenames\&.\&.\&. from tar create or
+restore\&.
+.IP 
+.IP "\fB-d directory\fP" 
+Change to initial \fIdirectory\fP before restoring
+/ backing up files\&.
+.IP 
+.IP "\fB-v\fP" 
+Verbose mode\&.
+.IP 
+.IP "\fB-p password\fP" 
+The password to use to access a share\&. Default:
+none
+.IP 
+.IP "\fB-u user\fP" 
+The user id to connect as\&. Default: UNIX login name\&.
+.IP 
+.IP "\fB-t tape\fP" 
+Tape device\&. May be regular file or tape
+device\&. Default: \fITAPE\fP environmental variable; if not set, a file
+called \f(CWtar\&.out\fP\&.
+.IP 
+.IP "\fB-b blocksize\fP" 
+Blocking factor\&. Defaults to 20\&. See \fBtar (1)\fP
+for a fuller explanation\&.
+.IP 
+.IP "\fB-N filename\fP" 
+Backup only files newer than filename\&. Could be
+used (for example) on a log file to implement incremental backups\&.
+.IP 
+.IP "\fB-i\fP" 
+Incremental mode; tar files are only backed up if they
+have the archive bit set\&. The archive bit is reset after each file is
+read\&.
+.IP 
+.IP "\fB-r\fP" 
+Restore\&. Files are restored to the share from the tar
+file\&.
+.IP 
+.IP "\fB-l log level\fP" 
+Log (debug) level\&. Corresponds to the
+\fB-d\fP flag of \fBsmbclient
+(1)\fP\&.
+.IP 
+.PP 
+.SH "ENVIRONMENT VARIABLES" 
+.PP 
+The TAPE variable specifies the default tape device to write to\&. May
+be overridden with the \fB-t\fP option\&.
+.PP 
+.SH "BUGS" 
+.PP 
+The \fBsmbtar\fP script has different options from ordinary tar and tar
+called from \fBsmbclient\fP\&.
+.PP 
+.SH "CAVEATS" 
+.PP 
+Sites that are more careful about security may not like the way the
+script handles PC passwords\&. Backup and restore work on entire shares,
+should work on file lists\&. \fBsmbtar\fP works best with GNU tar and may
+not work well with other versions\&.
+.PP 
+.SH "VERSION" 
+.PP 
+This man page is correct for version 2\&.0 of the Samba suite\&.
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBsmbclient (1)\fP, \fBsmb\&.conf
+(5)\fP
+.PP 
+.SH "DIAGNOSTICS" 
+.PP 
+See the \fBDIAGNOSTICS\fP section for
+the \fBsmbclient\fP command\&.
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+Ricky Poulten \fIpoultenr@logica\&.co\&.uk\fP wrote the tar extension and
+this man page\&. The \fBsmbtar\fP script was heavily rewritten and
+improved by Martin Kraemer \fIMartin\&.Kraemer@mch\&.sni\&.de\fP\&. Many
+thanks to everyone who suggested extensions, improvements, bug fixes,
+etc\&. The man page sources were converted to YODL format (another
+excellent piece of Open Source software) and updated for the Samba2\&.0
+release by Jeremy Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+.PP 
+See \fBsamba (7)\fP to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc\&.
+.PP 

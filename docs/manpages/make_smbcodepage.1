@@ -1,131 +1,142 @@
-.TH MAKE_SMBCODEPAGE 1 "09 Oct 1998" "make_smbcodepage 2.0.0-alpha11"
-.SH NAME
-make_smbcodepage \- create a binary codepage definition file from an ascii codepage definition source file, or reverse the process.
-.SH SYNOPSIS
-.B make_smbcodepage
-.I c|d
-.I codepage
-.I inputfile
-.I outputfile
-.SH DESCRIPTION
-This program is part of the Samba suite.
-
-.B make_smbcodepage
-compiles or de-compiles codepage files for use with the internationalization
-features of Samba 1.9.18.
-
-An ascii Samba codepage definition file is a description that tells Samba
-how to map from upper to lower case for characters greater than ascii 127
-in the specified DOS code page.  Note that for certain DOS codepages 
-(437 for example) mapping from lower to upper case may be asynchronous. 
-For example, in code page 437 lower case a acute maps to a plain upper 
-case A when going from lower to upper case, but maps from plain upper 
-case A to plain lower case a when lower casing a character.
-
-A binary Samba codepage definition file is a binary representation
-of the same information, including a value that specifies what codepage
-this file is describing.
-
-As Samba does not yet use UNICODE (current for Samba version 1.9.18)
-you must specify the client code page that your DOS and Windows clients
+.TH "make_smbcodepage" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+make_codepage \- Construct a codepage file for Samba
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBmake_smbcodepage\fP [c|d] codepage inputfile outputfile
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite\&.
+.PP 
+\fBmake_smbcodepage\fP compiles or de-compiles codepage files for use
+with the internationalization features of Samba 2\&.0
+.PP 
+.SH "OPTIONS" 
+.PP 
+.IP 
+.IP "c|d" 
+This tells make_smbcodepage if it is compiling (c) a text
+format code page file to binary, or (d) de-compiling a binary codepage
+file to text\&.
+.IP 
+.IP "codepage" 
+This is the codepage we are processing (a number, eg\&. 850)\&.
+.IP 
+.IP "inputfile" 
+This is the input file to process\&. In the \'c\' case this
+will be a text codepage definition file such as the ones found in the
+Samba \fIsource/codepages\fP directory\&. In the \'d\' case this will be the
+binary format codepage definition file normally found in the
+\fIlib/codepages\fP directory in the Samba install directory path\&.
+.IP 
+.IP "outputfile" 
+This is the output file to produce\&.
+.IP 
+.PP 
+.SH "Samba Codepage Files" 
+.PP 
+A text Samba codepage definition file is a description that tells
+Samba how to map from upper to lower case for characters greater than
+ascii 127 in the specified DOS code page\&.  Note that for certain DOS
+codepages (437 for example) mapping from lower to upper case may be
+asynchronous\&. For example, in code page 437 lower case a acute maps to
+a plain upper case A when going from lower to upper case, but maps
+from plain upper case A to plain lower case a when lower casing a
+character\&.
+.PP 
+A binary Samba codepage definition file is a binary representation of
+the same information, including a value that specifies what codepage
+this file is describing\&.
+.PP 
+As Samba does not yet use UNICODE (current for Samba version 2\&.0) you
+must specify the client code page that your DOS and Windows clients
 are using if you wish to have case insensitivity done correctly for
-your particular language. The default codepage Samba uses is 850
-(Western European). Ascii codepage definition sample files are provided
-in the Samba distribution for codepages 437 (USA), 850 (Western European)
-852 (MS-DOS Latin 2) and 932 (Kanji SJIS). Users are encouraged to
-write ascii codepage definition files for their own code pages and
-donate them to samba-bugs@samba.anu.edu.au. All codepage files in the
-Samba source directory are compiled and installed when a 'make install'
-command is issued there.
-
-An ascii codepage definition file consists of multiple lines containing
-four fields. These fields are :
-.B lower
-which is the (hex) lower case character mapped on this line.
-.B upper
-which is the (hex) upper case character that the lower case character
-will map to.
-.B map upper to lower
-which is a boolean value (put either True or False here) which tells
-Samba if it is to map the given upper case character to the given
-lower case character when lower casing a filename.
-.B map lower to upper
-which is a boolean value (put either True or False here) which tells
-Samba if it is to map the given lower case character to the given
-upper case character when upper casing a filename.
-
-.SH OPTIONS
-.I c|d
-
-.RS 3
-This tells make_smbcodepage if it is compiling (c) an ascii code page file
-to binary, or de-compiling a binary codepage file to ascii.
-.RE
-
-.I codepage
-
-.RS 3
-This is the codepage we are processing (a number, eg. 850)
-.RE
-
-.I inputfile
-
-.RS 3
-This is the input file to process.
-.RE
-
-.I outputfile
-
-.RS 3
-This is the output file to produce.
-.RE
-
-.SH FILES
-.B codepage_def.<codepage>
-.RS 3
-These are the input (ascii) codepage files provided in the Samba
-source/ directory.
-.RE
-.SH FILES
-.B codepage.<codepage>
-.RS 3
-These are the output (binary) codepage files produced and placed in the Samba
-destination lib/codepage/ directory.
-.RE 
-
-.SH ENVIRONMENT VARIABLES
-Not applicable.
-.SH INSTALLATION
-The location of the server and its support files is a matter for individual
-system administrators. The following are thus suggestions only.
-
-It is recommended that the
-.B make_smbcodepage
-program be installed under the /usr/local/samba hierarchy, in a directory readable
-by all, writeable only by root. The program itself should be executable by all.
-The program should NOT be setuid or setgid!
-.SH VERSION
-This man page is (mostly) correct for version 1.9.18 of the Samba suite, plus some
-of the recent patches to it. These notes will necessarily lag behind 
-development of the software, so it is possible that your version of 
-the program has extensions or parameter semantics that differ from or are not 
-covered by this man page. Please notify these to the address below for 
-rectification.
-.SH SEE ALSO
-.BR smb.conf (5),
-.BR smbd (8)
-
-.SH BUGS
-None known.
-.SH CREDITS
-The
-.B make_smbcodepage
-program was written by Jeremy Allison (jallison@whistle.com) as part of the 
-Internationalization effort of the Samba software.
-
-Please send bug reports to samba-bugs@samba.anu.edu.au.
-
-See
-.BR samba (7)
-for a full list of contributors and details on how to 
-submit bug reports, comments etc.
+your particular language\&. The default codepage Samba uses is 850
+(Western European)\&. Text codepage definition sample files are
+provided in the Samba distribution for codepages 437 (USA), 737
+(Greek), 850 (Western European) 852 (MS-DOS Latin 2), 861 (Icelandic),
+866 (Cyrillic), 932 (Kanji SJIS), 936 (Simplified Chinese), 949
+(Hangul) and 950 (Traditional Chinese)\&. Users are encouraged to write
+text codepage definition files for their own code pages and donate
+them to \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. All codepage files in the
+Samba \fIsource/codepages\fP directory are compiled and installed when a
+\fI\'make install\'\fP command is issued there\&.
+.PP 
+The client codepage used by the \fBsmbd\fP server is
+configured using the \fBclient code
+page\fP parameter in the
+\fBsmb\&.conf\fP file\&.
+.PP 
+.SH "FILES" 
+.PP 
+\fBcodepage_def\&.<codepage>\fP
+.PP 
+These are the input (text) codepage files provided in the Samba
+\fIsource/codepages\fP directory\&.
+.PP 
+A text codepage definition file consists of multiple lines
+containing four fields\&. These fields are : 
+.PP 
+.IP 
+.IP o 
+\fBlower\fP: which is the (hex) lower case character mapped on this
+line\&.
+.IP 
+.IP o 
+\fBupper\fP: which is the (hex) upper case character that the lower
+case character will map to\&.
+.IP 
+.IP o 
+\fBmap upper to lower\fP which is a boolean value (put either True
+or False here) which tells Samba if it is to map the given upper case
+character to the given lower case character when lower casing a
+filename\&.
+.IP 
+.IP o 
+\fBmap lower to upper\fP which is a boolean value (put either True
+or False here) which tells Samba if it is to map the given lower case
+character to the given upper case character when upper casing a
+filename\&.
+.IP 
+.PP 
+\fBcodepage\&.<codepage>\fP These are the output (binary) codepage files
+produced and placed in the Samba destination \fIlib/codepage\fP
+directory\&.
+.PP 
+.SH "INSTALLATION" 
+.PP 
+The location of the server and its support files is a matter for
+individual system administrators\&. The following are thus suggestions
+only\&.
+.PP 
+It is recommended that the \fBmake_smbcodepage\fP program be installed
+under the \fI/usr/local/samba\fP hierarchy, in a directory readable by
+all, writeable only by root\&. The program itself should be executable
+by all\&.  The program should NOT be setuid or setgid!
+.PP 
+.SH "VERSION" 
+.PP 
+This man page is correct for version 2\&.0 of the Samba suite\&.
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBsmb\&.conf(5)\fP, \fBsmbd (8)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+The original Samba man pages were written by Karl Auer\&. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2\&.0 release by Jeremy
+Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+.PP 
+See \fBsamba (7)\fP to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc\&.

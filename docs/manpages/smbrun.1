@@ -1,74 +1,67 @@
-.TH SMBRUN 1 "09 Oct 1998" "smbrun 2.0.0-alpha11"
-.SH NAME
+.TH "smbrun" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
 smbrun \- interface program between smbd and external programs
-.SH SYNOPSIS
-.B smbrun
-.I shell-command
-.SH DESCRIPTION
-This program is part of the Samba suite.
-
-.B smbrun
-is a very small 'glue' program, which runs shell commands for
-the
-.B smbd
-daemon (see
-.BR smbd (8)).
-
-It first changes to the highest effective user and group ID that it can, 
-then runs the command line provided using the system() call. This program is
-necessary to allow some operating systems to run external programs as non-root.
-.SH OPTIONS
-.I shell-command
-
-.RS 3
-The shell command to execute.
-
-The command should have a fully-qualified path.
-.RE
-.SH ENVIRONMENT VARIABLES
-The PATH variable set for the environment in which
-.B smbrun
-is executed will affect what executables are located and executed if a
-fully-qualified path is not given in the command.
-.SH INSTALLATION
-The location of the server and its support files is a matter for individual
-system administrators. The following are thus suggestions only.
-
-It is recommended that the
-.B smbrun
-program be installed under the /usr/local/samba hierarchy, in a directory readable
-by all, writeable only by root. The program should be executable by all.
-The program should NOT be setuid or setgid!
-.SH VERSION
-This man page is (mostly) correct for version 1.9.00 of the Samba suite, plus some
-of the recent patches to it. These notes will necessarily lag behind 
-development of the software, so it is possible that your version of 
-the program has extensions or parameter semantics that differ from or are not 
-covered by this man page. Please notify these to the address below for 
-rectification.
-.SH SEE ALSO
-.BR smbd (8), 
-.BR smb.conf (8) 
-.SH DIAGNOSTICS
-If
-.B smbrun
-cannot be located or cannot be executed by
-.B smbd
-then appropriate messages will be found in the
-.B smbd
-logs. Other diagnostics are
-dependent on the shell-command being run. It is advisable for your shell
-commands to issue suitable diagnostics to aid trouble-shooting.
-.SH BUGS
-None known.
-.SH CREDITS
-The original Samba software and related utilities were created by 
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
-of the Source for this project.
-
-This man page was written by Karl Auer. Bug reports to samba-bugs@samba.anu.edu.au.
-
-See
-.BR smb.conf (5)
-for a full list of contributors and details of how to 
-submit bug reports, comments etc.
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBsmbrun\fP shell-command
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite\&.
+.PP 
+\fBsmbrun\fP is a very small \'glue\' program, which runs shell commands
+for the \fBsmbd\fP daemon \fBsmbd
+(8)\fP\&.
+.PP 
+It first changes to the highest effective user and group ID that it
+can, then runs the command line provided using the system() call\&. This
+program is necessary to allow some operating systems to run external
+programs as non-root\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+.IP 
+.IP "\fBshell-command\fP" 
+The shell command to execute\&.  The command
+should have a fully-qualified path\&.
+.IP 
+.PP 
+.SH "ENVIRONMENT VARIABLES" 
+.PP 
+The \fIPATH\fP variable set for the environment in which \fBsmbrun\fP is
+executed will affect what executables are located and executed if a
+fully-qualified path is not given in the command\&.
+.PP 
+.SH "DIAGNOSTICS" 
+.PP 
+If \fBsmbrun\fP cannot be located or cannot be executed by
+\fBsmbd\fP then appropriate messages will be found in
+the \fBsmbd\fP logs\&. Other diagnostics are dependent
+on the shell-command being run\&. It is advisable for your shell
+commands to issue suitable diagnostics to aid trouble-shooting\&.
+.PP 
+.SH "VERSION" 
+.PP 
+This man page is correct for version 2\&.0 of the Samba suite\&.
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBsmb\&.conf (5)\fP, \fBsmbd (8)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+The original Samba man pages were written by Karl Auer\&. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2\&.0 release by Jeremy
+Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+.PP 
+See \fBsamba (7)\fP to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc\&.

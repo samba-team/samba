@@ -1,202 +1,158 @@
-.TH SAMBA 7 "09 Oct 1998" "samba 2.0.0-alpha11"
-.SH NAME
-Samba \- a LanManager like fileserver for UNIX
-.SH SYNOPSIS
-.B Samba
-.SH DESCRIPTION
-The
-.B Samba
-software suite is a collection of programs that implements the SMB
-protocol for UNIX systems. This protocol is sometimes also referred to
-as the LanManager or Netbios protocol.
-.SH COMPONENTS
-
-The Samba suite is made up of several components. Each component is
-described in a separate manual page. It is strongly recommended that
+.TH "Samba" "7" "23 Oct 1998" "Samba" "" 
+.PP 
+.SH "NAME" 
+Samba \- A Windows SMB/CIFS fileserver for UNIX
+.PP 
+.SH "SYNOPSIS" 
+\fBSamba\fP
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+The Samba software suite is a collection of programs that implements
+the Server Message Block(commenly abbreviated as SMB) protocol for
+UNIX systems\&. This protocol is sometimes also referred to as the
+Common Internet File System (CIFS), LanManager or NetBIOS protocol\&.
+.PP 
+.SH "COMPONENTS" 
+.PP 
+The Samba suite is made up of several components\&. Each component is
+described in a separate manual page\&. It is strongly recommended that
 you read the documentation that comes with Samba and the manual pages
-of those components that you use. If the manual pages aren't clear
-enough then please send me a patch!
-
+of those components that you use\&. If the manual pages aren\'t clear
+enough then please send a patch to \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+.PP 
+.IP 
+.IP "\fBsmbd\fP" 
+.br 
+.br 
+The \fBsmbd\fP
+(8) daemon provides the file and print services to SMB
+clients, such as Windows 95/98, Windows NT, Windows for Workgroups or
+LanManager\&. The configuration file for this daemon is described in
+\fBsmb\&.conf (5)\fP\&.
+.IP 
+.IP "\fBnmbd\fP" 
+.br 
+.br 
+The \fBnmbd\fP
+(8) daemon provides NetBIOS nameserving and browsing
+support\&. The configuration file for this daemon is described in
+\fBsmb\&.conf (5)\fP\&.
+.IP 
+.IP "\fBsmbclient\fP" 
+.br 
+.br 
+The \fBsmbclient\fP
+(1) program implements a simple ftp-like
+client\&. This is useful for accessing SMB shares on other compatible
+servers (such as Windows NT), and can also be used to allow a UNIX box
+to print to a printer attached to any SMB server (such as a PC running
+Windows NT)\&.
+.IP 
+.IP "\fBtestparm\fP" 
+.br 
+.br 
+The \fBtestparm
+(1)\fP utility allows you to test your \fBsmb\&.conf
+(5)\fP configuration file\&.
+.IP 
+.IP "\fBtestprns\fP" 
+.br 
+.br 
+the \fBtestprns
+(1)\fP utility allows you to test the printers defined
+in your printcap file\&.
+.IP 
+.IP "\fBsmbstatus\fP" 
+.br 
+.br 
+The \fBsmbstatus\fP
+(1) utility allows you to tell who is currently
+using the \fBsmbd (8)\fP server\&.
+.IP 
+.IP "\fBnmblookup\fP" 
+.br 
+.br 
+the
+\fBnmblookup (1)\fP utility allows NetBIOS name
+queries to be made from the UNIX machine\&.
+.IP 
+.IP "\fBmake_smbcodepage\fP" 
+.br 
+.br 
 The
-.BR smbd (8)
-daemon provides the file and print services to SMB clients,
-such as Windows for Workgroups, Windows NT or LanManager. The
-configuration file for this daemon is described in
-.BR smb.conf (5).
-
-The
-.BR nmbd (8)
-daemon provides Netbios nameserving and browsing
-support. It can also be run interactively to query other name service
-daemons.
-
-The
-.BR smbclient (1)
-program implements a simple ftp-like client. This is
-useful for accessing SMB shares on other compatible servers (such as
-WfWg), and can also be used to allow a UNIX box to print to a printer
-attached to any SMB server (such as a PC running WfWg).
-
-The
-.BR testparm (1)
-utility allows you to test your
-.BR smb.conf (5)
-configuration file.
-
-The
-.BR smbstatus (1)
-utility allows you to tell who is currently using the
-.BR smbd (8)
-server.
-.SH AVAILABILITY
-
-The Samba software suite is licensed under the Gnu Public License. A
-copy of that license should have come with the package. You are
-encouraged to distribute copies of the Samba suite, but please keep it
-intact.
-
+\fBmake_smbcodepage (1)\fP utility allows
+you to create SMB code page definition files for your \fBsmbd
+(8)\fP server\&.
+.IP 
+.IP "\fBsmbpasswd\fP" 
+.br 
+.br 
+The \fBsmbpasswd
+(8)\fP utility allows you to change SMB encrypted
+passwords on Samba and Windows NT(tm) servers\&.
+.IP 
+.PP 
+.SH "AVAILABILITY" 
+.PP 
+The Samba software suite is licensed under the GNU Public License
+(GPL)\&. A copy of that license should have come with the package in the
+file COPYING\&. You are encouraged to distribute copies of the Samba
+suite, but please keep obey the terms of this license\&.
+.PP 
 The latest version of the Samba suite can be obtained via anonymous
-ftp from samba.anu.edu.au in the directory pub/samba/. It is
-also available on several mirror sites worldwide.
-
+ftp from samba\&.anu\&.edu\&.au in the directory pub/samba/\&. It is
+also available on several mirror sites worldwide\&.
+.PP 
 You may also find useful information about Samba on the newsgroup
-comp.protocols.smb and the Samba mailing list. Details on how to join
-the mailing list are given in the README file that comes with Samba.
-
+comp\&.protocols\&.smb and the Samba mailing list\&. Details on how to join
+the mailing list are given in the README file that comes with Samba\&.
+.PP 
 If you have access to a WWW viewer (such as Netscape or Mosaic) then
 you will also find lots of useful information, including back issues
-of the Samba mailing list, at http://samba.anu.edu.au/samba/
-.SH AUTHOR
-
-The main author of the Samba suite is Andrew Tridgell. He may be
-contacted via e-mail at samba-bugs@samba.anu.edu.au.
-
-There have also been an enormous number of contributors to Samba from
-all over the world. A partial list of these contributors is included
-in the CREDITS section below. The list is, however, badly out of
-date. More up to date info may be obtained from the change-log that
-comes with the Samba source code.
-.SH CONTRIBUTIONS
-
+of the Samba mailing list, at
+http://samba\&.anu\&.edu\&.au/samba/\&.
+.PP 
+.SH "VERSION" 
+.PP 
+This man page is correct for version 2\&.0 of the Samba suite\&. 
+.PP 
+.SH "CONTRIBUTIONS" 
+.PP 
 If you wish to contribute to the Samba project, then I suggest you
-join the Samba mailing list.
-
+join the Samba mailing list at \fIsamba@samba\&.anu\&.edu\&.au\fP\&. See the
+Web page at
+http://samba\&.anu\&.edu\&.au/listproc
+for details on how to do this\&.
+.PP 
 If you have patches to submit or bugs to report then you may mail them
-directly to samba-bugs@samba.anu.edu.au. Note, however, that due to the
-enormous popularity of this package I may take some time to repond to
-mail. I prefer patches in "diff \-u" format.
-.SH CREDITS
-
-Contributors to the project are (in alphabetical order by email address):
-
-(NOTE: This list is very out of date)
-
- Adams, Graham
- 	(gadams@ddrive.demon.co.uk)
- Allison, Jeremy
- 	(jeremy@netcom.com)
- Andrus, Ross
- 	(ross@augie.insci.com)
- Auer, Karl
- 	(Karl.Auer@anu.edu.au)
- Bogstad, Bill
- 	(bogstad@cs.jhu.edu)
- Boreham, Bryan
- 	(Bryan@alex.com)
- Boreham, David
- 	(davidb@ndl.co.uk)
- Butler, Michael
- 	(imb@asstdc.scgt.oz.au)
- ???
-	(charlie@edina.demon.co.uk)
- Chua, Michael
- 	(lpc@solomon.technet.sg)
- Cochran, Marc
-	(mcochran@wellfleet.com)
- Dey, Martin N
- 	(mnd@netmgrs.co.uk)
- Errath, Maximilian
- 	(errath@balu.kfunigraz.ac.at)
- Fisher, Lee
- 	(leefi@microsoft.com)
- Foderaro, Sean
- 	(jkf@frisky.Franz.COM)
- Greer, Brad
- 	(brad@cac.washington.edu)
- Griffith, Michael A
- 	(grif@cs.ucr.edu)
- Grosen, Mark
- 	(MDGrosen@spectron.COM)
- ????
- 	(gunjkoa@dep.sa.gov.au)
- Haapanen, Tom
- 	(tomh@metrics.com)
- Hench, Mike
-	(hench@cae.uwm.edu)
- Horstman, Mark A
- 	(mh2620@sarek.sbc.com)
- Hudson, Tim
- 	(tim.hudson@gslmail.mincom.oz.au)
- Hulthen, Erik Magnus
- 	(magnus@axiom.se)
- ???
-	(imb@asstdc.scgt.oz.au)
- Iversen, Per Steinar
- 	(iversen@dsfys1.fi.uib.no)
- Kaara, Pasi
- 	(ppk@atk.tpo.fi)
- Karman, Merik
- 	(merik@blackadder.dsh.oz.au)
- Kiff, Martin
- 	(mgk@newton.npl.co.uk)
- Kiick, Chris
- 	(cjkiick@flinx.b11.ingr.com)
- Kukulies, Christoph
- 	(kuku@acds.physik.rwth-aachen.de)
- ???
-	(lance@fox.com)
- Leighton, Luke
-	(lkcl@pires.co.uk)
- Lendecke, Volker
- 	(lendecke@namu01.gwdg.de)
- ???
- 	(lonnie@itg.ti.com)
- Mahoney, Paul Thomas
- 	(ptm@xact1.xact.com)
- Mauelshagen, Heinz
- 	(mauelsha@ez.da.telekom.de)
- Merrick, Barry G
- 	(bgm@atml.co.uk)
- Mol, Marcel
- 	(marcel@fanout.et.tudeflt.nl)
- ???
-	(njw@cpsg.com.au)
- ???
-	(noses@oink.rhein.de)
- Owens, John
- 	(john@micros.com)
- Pierson, Jacques
- 	(pierson@ketje.enet.dec.com)
- Powell, Mark
- 	(mark@scot1.ucsalf.ac.uk)
- Reiz, Steven
- 	(sreiz@aie.nl)
- Schlaeger, Joerg
- 	(joergs@toppoint.de)
- S{rkel{, Vesa
- 	(vesku@rankki.kcl.fi)
- Terpstra, John
-	(jht@aquasoft.com.au)
- Tridgell, Andrew
- 	(samba-bugs@samba.anu.edu.au)
- Troyer, Dean
- 	(troyer@saifr00.ateng.az.honeywell.com)
- Wakelin, Ross
- 	(rossw@march.co.uk)
- Wessels, Stefan
- 	(SWESSELS@dos-lan.cs.up.ac.za)
- Young, Ian A
- 	(iay@threel.co.uk)
- van der Zwan, Paul
- 	(paulzn@olivetti.nl)
-
+directly to \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Note, however, that due to
+the enormous popularity of this package the Samba Team may take some
+time to repond to mail\&. We prefer patches in \fIdiff -u\fP format\&.
+.PP 
+.SH "CREDITS" 
+.PP 
+Contributors to the project are now too numerous to mention here but
+all deserve the thanks of all Samba users\&. To see a full list, look at
+ftp://samba\&.anu\&.edu\&.au/pub/samba/alpha/change-log
+for the pre-CVS changes and at
+ftp://samba\&.anu\&.edu\&.au/pub/samba/alpha/cvs\&.log
+for the contributors to Samba post-CVS\&. CVS is the Open Source source
+code control system used by the Samba Team to develop Samba\&. The
+project would have been unmanageable without it\&.
+.PP 
+In addition, several commercial organisations now help fund the Samba
+Team with money and equipment\&. For details see the Samba Web pages at
+http://samba\&.anu\&.edu\&.au/samba/samba-thanks\&.html\&.
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+The original Samba man pages were written by Karl Auer\&. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2\&.0 release by Jeremy
+Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.

@@ -1,112 +1,85 @@
-.TH TESTPRNS 1 "09 Oct 1998" "testprns 2.0.0-alpha11"
-.SH NAME
-testprns \- check printer name for validity with smbd
-.SH SYNOPSIS
-.B testprns
-.I printername
-[
-.I printcapname
-]
-.SH DESCRIPTION
-This program is part of the Samba suite.
-
-.B testprns
-is a very simple test program to determine whether a given 
-printer name is valid for use in a service to be provided by
-.B smbd.
-
-"Valid" in this context means "can be found in the printcap specified". This
-program is very stupid - so stupid in fact that it would be wisest to always
-specify the printcap file to use.
-.SH OPTIONS
-.I printername
-
-.RS 3
-The printer name to validate.
-
-Printer names are taken from the first field in each record in the printcap
-file, single printer names and sets of aliases separated by vertical bars
-("|") are recognised. Note that no validation or checking of the printcap
-syntax is done beyond that required to extract the printer name. It may
-be that the print spooling system is more forgiving or less forgiving
-than 
-.BR testprns .
-However, if
-.B testprns
-finds the printer then
-.B smbd
-should do so as well.
-.RE
-
-.I printcapname
-
-.RS 3
-This is the name of the printcap file to search for the given printer name
-in.
-
-If no printcap name is specified,
-.B testprns
-will attempt to scan the printcap file specified at compile time 
-(PRINTCAP_NAME).
-.RE
-.SH FILES
-.B /etc/printcap
-.RS 3
-This is usually the default printcap file to scan. See
-.BR printcap (5)).
-.RE
-.SH ENVIRONMENT VARIABLES
-Not applicable.
-.SH INSTALLATION
-The location of the server and its support files is a matter for individual
-system administrators. The following are thus suggestions only.
-
-It is recommended that the
-.B testprns
-program be installed under the /usr/local/samba hierarchy, in a directory readable
-by all, writeable only by root. The program should be executable by all.
-The program should NOT be setuid or setgid!
-.SH VERSION
-This man page is (mostly) correct for version 1.9.00 of the Samba suite, plus some
-of the recent patches to it. These notes will necessarily lag behind 
-development of the software, so it is possible that your version of 
-the program has extensions or parameter semantics that differ from or are not 
-covered by this man page. Please notify these to the address below for 
-rectification.
-.SH SEE ALSO
-.BR printcap (5),
-.BR smbd (8), 
-.BR smbclient (1)
-.SH DIAGNOSTICS
-If a printer is found to be valid, the message "Printer name <printername> is 
-valid" will be displayed.
-
-If a printer is found to be invalid, the message "Printer name <printername> 
-is not valid" will be displayed.
-
-All messages that would normally be logged during operation of
-.B smbd
-are
-logged by this program to the file
-.I test.log
-in the current directory. The program runs at debuglevel 3, so quite extensive
-logging information is written. The log should be checked carefully for errors
-and warnings.
-
-Other messages are self-explanatory.
-.SH BUGS
-None known.
-.SH CREDITS
-The original Samba software and related utilities were created by 
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
-of the Source for this project.
-
-The
-.B testprns
-program and this man page were written by Karl Auer. Bug reports to 
-samba-bugs@samba.anu.edu.au.
-
-See
-.BR samba (7)
-for a full list of contributors and details of how to 
-submit bug reports, comments etc.
+.TH "testparm" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+testparm \- check printer name for validity with smbd 
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBtestprns\fP printername [printcapname]
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite\&.
+.PP 
+\fBtestprns\fP is a very simple test program to determine whether a
+given printer name is valid for use in a service to be provided by
+\fBsmbd\fP\&.
+.PP 
+"Valid" in this context means "can be found in the printcap
+specified"\&. This program is very stupid - so stupid in fact that it
+would be wisest to always specify the printcap file to use\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+.IP 
+.IP "\fBprintername\fP" 
+The printer name to validate\&.
+.IP 
+Printer names are taken from the first field in each record in the
+printcap file, single printer names and sets of aliases separated by
+vertical bars ("|") are recognised\&. Note that no validation or
+checking of the printcap syntax is done beyond that required to
+extract the printer name\&. It may be that the print spooling system is
+more forgiving or less forgiving than \fBtestprns\fP\&. However, if
+\fBtestprns\fP finds the printer then \fBsmbd\fP should
+do so as well\&.
+.IP 
+.IP "\fBprintcapname\fP" 
+This is the name of the printcap file within
+which to search for the given printer name\&.
+.IP 
+If no printcap name is specified \fBtestprns\fP will attempt to scan the
+printcap file name specified at compile time\&.
+.IP 
+.PP 
+.SH "FILES" 
+.PP 
+\fB/etc/printcap\fP This is usually the default printcap file to
+scan\&. See \fBprintcap (5)\fP\&.
+.PP 
+.SH "DIAGNOSTICS" 
+.PP 
+If a printer is found to be valid, the message "Printer name
+<printername> is valid" will be displayed\&.
+.PP 
+If a printer is found to be invalid, the message "Printer name
+<printername> is not valid" will be displayed\&.
+.PP 
+All messages that would normally be logged during operation of the
+\fBSamba\fP daemons are logged by this program to the
+file \f(CWtest\&.log\fP in the current directory\&. The program runs at
+debuglevel 3, so quite extensive logging information is written\&. The
+log should be checked carefully for errors and warnings\&.
+.PP 
+Other messages are self-explanatory\&.
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBprintcap (5)\fP, \fBsmbd (8)\fP, \fBsmbclient
+(1)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+The original Samba man pages were written by Karl Auer\&. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2\&.0 release by Jeremy
+Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+.PP 
+See \fBsamba (7)\fP to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc\&.
