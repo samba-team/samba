@@ -551,7 +551,7 @@ void dos_clean_name(char *s)
 	/* remove any double slashes */
 	all_string_sub(s, "\\\\", "\\", 0);
 
-	while ((p = strstr(s,"\\..\\")) != NULL) {
+	while ((p = strstr_m(s,"\\..\\")) != NULL) {
 		pstring s1;
 
 		*p = 0;
@@ -589,7 +589,7 @@ void unix_clean_name(char *s)
 			pstrcpy(s,"./");
 	}
 
-	while ((p = strstr(s,"/../")) != NULL) {
+	while ((p = strstr_m(s,"/../")) != NULL) {
 		pstring s1;
 
 		*p = 0;
