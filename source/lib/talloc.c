@@ -39,7 +39,7 @@ struct talloc_chunk {
 	uint_t magic;
 	uint_t ref_count;
 	int (*destructor)(void *);
-	char *name;
+	const char *name;
 };
 
 /* panic if we get a bad magic value */
@@ -133,7 +133,7 @@ static void talloc_set_name_v(void *ptr, const char *fmt, va_list ap) PRINTF_ATT
 static void talloc_set_name_v(void *ptr, const char *fmt, va_list ap)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
-	vasprintf(&tc->name, fmt, ap);
+	tc->name = talloc_vasprintf(ptr, fmt, ap);
 }
 
 /*
@@ -145,6 +145,16 @@ void talloc_set_name(void *ptr, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
 	va_start(ap, fmt);
 	talloc_set_name_v(ptr, fmt, ap);
 	va_end(ap);
+}
+
+/*
+   more efficient way to add a name to a pointer - the name must point to a 
+   true string constant
+*/
+void talloc_set_name_const(void *ptr, const char *name)
+{
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	tc->name = name;
 }
 
 /*
@@ -166,6 +176,25 @@ void *talloc_named(void *context, size_t size,
 	va_start(ap, fmt);
 	talloc_set_name_v(ptr, fmt, ap);
 	va_end(ap);
+
+	return ptr;
+}
+
+/*
+  create a named talloc pointer. Any talloc pointer can be named, and
+  talloc_named() operates just like talloc() except that it allows you
+  to name the pointer.
+*/
+void *talloc_named_const(void *context, size_t size, const char *name)
+{
+	void *ptr;
+
+	ptr = talloc(context, size);
+	if (ptr == NULL) {
+		return NULL;
+	}
+
+	talloc_set_name_const(ptr, name);
 
 	return ptr;
 }
@@ -250,7 +279,6 @@ int talloc_free(void *ptr)
 	}
 
 	tc->magic = TALLOC_MAGIC_FREE;
-	if (tc->name) free(tc->name);
 
 	free(tc);
 	return 0;
