@@ -117,8 +117,7 @@ sub is_inline_array($)
 sub is_varying_array($)
 {
 	my $e = shift;
-	return 1 if (util::has_property($e, "length_is"));
-	return 0;
+	return util::has_property($e, "length_is");
 }
 
 # return 1 if this is a surrounding array (sometimes 
@@ -210,9 +209,9 @@ sub c_push_prefix($)
 
 	if ($e->{TYPE} =~ "string") {
 		$ret = "";
-	} elsif (is_scalar_type($e->{TYPE}) &&
-	    $e->{POINTERS}) {
-		$ret = "*";
+	} elsif (is_scalar_type($e->{TYPE}) and $e->{POINTERS} and 
+		!util::array_size($e)) {
+		$ret .="*";
 	} elsif (!is_scalar_type($e->{TYPE}) &&
 	    !$e->{POINTERS} &&
 	    !util::array_size($e)) {
@@ -432,6 +431,7 @@ sub ParseArrayPush($$$$)
 	my $ndr = shift;
 	my $var_prefix = shift;
 	my $ndr_flags = shift;
+	my $cprefix = c_push_prefix($e);
 
 	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 
@@ -449,9 +449,9 @@ sub ParseArrayPush($$$$)
 	}
 
 	if (is_scalar_type($e->{TYPE})) {
-		pidl "NDR_CHECK(ndr_push_array_$e->{TYPE}($ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));";
+		pidl "NDR_CHECK(ndr_push_array_$e->{TYPE}($ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}, $size));";
 	} else {
-		pidl "NDR_CHECK(ndr_push_array($ndr, $ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));";
+		pidl "NDR_CHECK(ndr_push_array($ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}, sizeof($cprefix$var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));";
 	}
 }
 
@@ -462,16 +462,16 @@ sub ParseArrayPrint($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
-	my $ptr_prefix = c_ptr_prefix($e);
+	my $cprefix = c_push_prefix($e);
 
 	if (is_varying_array($e)) {
 		$size = ParseExpr($e, util::has_property($e, "length_is"), $var_prefix);
 	}
 
 	if (is_scalar_type($e->{TYPE})) {
-		pidl "ndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME}, $size);";
+		pidl "ndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME}, $size);";
 	} else {
-		pidl "ndr_print_array(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_print_fn_t)ndr_print_$e->{TYPE});";
+		pidl "ndr_print_array(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME}, sizeof($cprefix$var_prefix$e->{NAME}\[0]), $size, (ndr_print_fn_t)ndr_print_$e->{TYPE});";
 	}
 }
 
@@ -482,7 +482,7 @@ sub CheckArraySizes($$)
 	my $e = shift;
 	my $var_prefix = shift;
 
-	if (!is_surrounding_array($e) && is_conformant_array($e)) {
+	if (is_conformant_array($e)) {
 		my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 		pidl "if ($var_prefix$e->{NAME}) {";
 		indent;
@@ -525,56 +525,59 @@ sub ParseArrayPull($$$$)
 	my $var_prefix = shift;
 	my $ndr_flags = shift;
 
-	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
-	my $alloc_size = $size;
+	my $cprefix = c_pull_prefix($e);
+	my $length = ParseExpr($e, util::array_size($e), $var_prefix);
+	my $size = $length;
+
+	if (is_conformant_array($e)) {
+		$size = "ndr_get_array_size($ndr, &$var_prefix$e->{NAME})";
+	}
 
 	# if this is a conformant array then we use that size to allocate, and make sure
 	# we allocate enough to pull the elements
-	if (is_conformant_array($e) and is_surrounding_array($e)) {
-		$alloc_size = "ndr_get_array_size($ndr, &$var_prefix$e->{NAME})";
-		check_null_pointer($size);
-		pidl "if ($size > $alloc_size) {";
-		indent;
-		pidl "return ndr_pull_error($ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);";
-		deindent;
-		pidl "}";
-	} elsif (!is_inline_array($e)) {
-		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
-			my $size2 = substr($size, 1);
-			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {	NDR_ALLOC($ndr, $size2); }";
+	if (!is_inline_array($e) and not is_surrounding_array($e)) {
+		if ($var_prefix =~ /^r->out/ && $length =~ /^\*r->in/) {
+			my $length2 = substr($length, 1);
+			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {	NDR_ALLOC($ndr, $length2); }";
 		}
 
 		ParseArrayPullPreceding($e, $var_prefix, $ndr_flags);
+	}
 
-		$alloc_size = "ndr_get_array_size($ndr, &$var_prefix$e->{NAME})";
+	if (is_varying_array($e)) {
+		pidl "NDR_CHECK(ndr_pull_array_length($ndr, &$var_prefix$e->{NAME}));";
+		$length = "ndr_get_array_length($ndr, &$var_prefix$e->{NAME})";
+	}
+
+	check_null_pointer($length);
+
+	if ($length ne $size) {
+		pidl "if ($length > $size) {";
+		indent;
+		pidl "return ndr_pull_error($ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $size, $length);";
+		deindent;
+		pidl "}";
 	}
 
 	if ((need_alloc($e) && !is_fixed_array($e)) ||
 	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
 		if (!is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
-			pidl "NDR_ALLOC_N($ndr, $var_prefix$e->{NAME}, $alloc_size);";
+			pidl "NDR_ALLOC_N($ndr, $var_prefix$e->{NAME}, $size);";
 		}
 	}
 
 	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
 		if (!is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "if ($ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-			pidl "\tNDR_ALLOC_N($ndr, $var_prefix$e->{NAME}, $alloc_size);";
+			pidl "\tNDR_ALLOC_N($ndr, $var_prefix$e->{NAME}, $size);";
 			pidl "}";
 		}
 	}
 
-	if (is_varying_array($e)) {
-		pidl "NDR_CHECK(ndr_pull_array_length($ndr, &$var_prefix$e->{NAME}));";
-		$size = "ndr_get_array_length($ndr, &$var_prefix$e->{NAME})";
-	}
-
-	check_null_pointer($size);
-
 	if (is_scalar_type($e->{TYPE})) {
-		pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));";
+		pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}, $length));";
 	} else {
-		pidl "NDR_CHECK(ndr_pull_array($ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));";
+		pidl "NDR_CHECK(ndr_pull_array($ndr, $ndr_flags, (void **)$cprefix$var_prefix$e->{NAME}, sizeof($cprefix$var_prefix$e->{NAME}\[0]), $length, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));";
 	}
 }
 
