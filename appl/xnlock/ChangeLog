@@ -1,3 +1,7 @@
+Thu Mar 11 14:59:20 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* xnlock.c: add some if-braces to keep gcc happy
+
 Sun Nov 22 10:36:45 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (WFLAGS): set

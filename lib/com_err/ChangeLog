@@ -1,3 +1,7 @@
+Thu Mar 11 15:00:51 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* parse.y: prototype for error_message
+
 Sun Nov 22 10:39:02 1998  Assar Westerlund  <assar@sics.se>
 
 	* compile_et.h: include ctype and roken

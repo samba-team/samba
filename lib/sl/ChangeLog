@@ -1,3 +1,7 @@
+Thu Mar 11 15:01:01 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* parse.y: prototype for error_message
+
 Tue Feb  9 23:45:37 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.in: add snprintf.o to make_cmds

@@ -1,3 +1,15 @@
+Thu Mar 11 15:02:21 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* iruserok.c: move innetgr() to separate file
+
+	* innetgr.c: move innetgr() to separate file
+
+	* hstrerror.c (hstrerror): add const to return type
+
+	* erealloc.c: fix types in format string
+
+	* emalloc.c: fix types in format string
+
 Wed Mar 10 16:36:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* resolve.c: ugly fix for crays
