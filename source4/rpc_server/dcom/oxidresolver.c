@@ -24,6 +24,24 @@
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
 #include "rpc_server/dcerpc_server.h"
 
+struct OXIDObject
+{
+	struct GUID OID;
+};
+
+struct PingSet
+{
+	HYPER_T id;
+	struct OXIDObject *objects;
+	struct PingSet *prev, *next;
+};
+
+/* Maximum number of missed ping calls before a client is presumed 
+ * gone */
+#define MAX_MISSED_PINGS		3
+
+/* Maximum number of seconds between two ping calls */
+#define MAX_PING_TIME		   60
 
 /* 
   ResolveOxid 
@@ -44,13 +62,18 @@ static WERROR SimplePing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 	return WERR_NOT_SUPPORTED;
 }
 
-
 /* 
   ComplexPing 
 */
 static WERROR ComplexPing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ComplexPing *r)
 {
+	struct PingSet *ps;
+	
+	/* If r->in.SetId == 0, create new PingSet */
+	
+	/* Otherwise, look up pingset by id */
+	
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -61,7 +84,7 @@ static WERROR ComplexPing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 static WERROR ServerAlive(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ServerAlive *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return WERR_OK;
 }
 
 
@@ -83,6 +106,9 @@ static WERROR ServerAlive2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/* FIXME: Regularly ping objects in use by local programs on 
+ * remote servers */
 
 
 /* include the generated boilerplate */
