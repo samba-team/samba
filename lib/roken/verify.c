@@ -8,6 +8,9 @@ RCSID("$Id$");
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
 #include "roken.h"
 
 #if defined(__ultrix) || defined(sun)
