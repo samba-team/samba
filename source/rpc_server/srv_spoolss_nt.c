@@ -4928,7 +4928,7 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *s
 			pstrcpy( line, v );
 			
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
-		
+
 		/* add one extra unit16 for the second terminating NULL */
 		
 		if ( (tuary=Realloc(*uni_array, (j+1+strlen(line)+2)*sizeof(uint16))) == NULL ) {
