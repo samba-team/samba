@@ -727,29 +727,31 @@ static void passwd_page(void)
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW_PSWD);
 	printf("<tr><td> Re-type New Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
+	printf("</table>\n");
 
 	/*
 	 * Create all the control buttons for requesting action
 	 */
-	printf("<tr><td><input type=submit name=%s value=\"Change Password\"></td></tr>\n", CHG_S_PASSWD_FLAG);
+	printf("<input type=submit name=%s value=\"Change Password\">\n", 
+	       CHG_S_PASSWD_FLAG);
 	if (demo_mode || am_root()) {
-		printf("<tr><td><input type=submit name=%s value=\"Add New User\"></td></tr>\n", ADD_USER_FLAG);
-		printf("<tr><td><input type=submit name=%s value=\"Disable User\"></td></tr>\n", DISABLE_USER_FLAG);
-		printf("<tr><td><input type=submit name=%s value=\"Enable User\"></td></tr>\n", ENABLE_USER_FLAG);
+		printf("<input type=submit name=%s value=\"Add New User\">\n",
+		       ADD_USER_FLAG);
+		printf("<input type=submit name=%s value=\"Disable User\">\n", 
+		       DISABLE_USER_FLAG);
+		printf("<input type=submit name=%s value=\"Enable User\">\n", 
+		       ENABLE_USER_FLAG);
 	}
+	printf("<p></FORM>\n");
 
 	/*
-	 * Do some work if change, add, disable or enable was requested. It could be
-	 * this is the first time through this code, so there isn't anything to do.
-	 */
+	 * Do some work if change, add, disable or enable was
+	 * requested. It could be this is the first time through this
+	 * code, so there isn't anything to do.  */
 	if ((cgi_variable(CHG_S_PASSWD_FLAG)) || (cgi_variable(ADD_USER_FLAG)) ||
 	    (cgi_variable(DISABLE_USER_FLAG)) || (cgi_variable(ENABLE_USER_FLAG))) {
 		chg_passwd();		
 	}
-
-	printf("</table>\n");
-
-	printf("</FORM>\n");
 
 	printf("<H2>Client/Server Password Management</H2>\n");
 
@@ -771,23 +773,25 @@ static void passwd_page(void)
 	printf("<tr><td> Remote Machine : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",RHOST);
 
+	printf("</table>");
+
 	/*
 	 * Create all the control buttons for requesting action
 	 */
-	printf("<tr><td><input type=submit name=%s value=\"Change Password\"></td></tr>", CHG_R_PASSWD_FLAG);
+	printf("<input type=submit name=%s value=\"Change Password\">", 
+	       CHG_R_PASSWD_FLAG);
+
+	printf("<p></FORM>\n");
 
 	/*
-	 * Do some work if a request has been made to change the password somewhere other
-	 * than the server. It could be this is the first time through this code, so there 
-	 * isn't anything to do.
-	 */
+	 * Do some work if a request has been made to change the
+	 * password somewhere other than the server. It could be this
+	 * is the first time through this code, so there isn't
+	 * anything to do.  */
 	if (cgi_variable(CHG_R_PASSWD_FLAG)) {
 		chg_passwd();		
 	}
 
-	printf("</table>");
-
-	printf("</FORM>\n");
 }
 
 /****************************************************************************
