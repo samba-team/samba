@@ -1,0 +1,35 @@
+#include "idl_types.h"
+
+/*
+   IDL structures for xattr file attributes
+
+   this has nothing to do with RPC, we are just using our NDR/IDL
+   infrastructure as a convenient way to store linearised information
+   about a file in a architecture independent manner
+*/
+
+interface xattr
+{
+	const string XATTR_DOSATTRIB_NAME = "user.DosAttrib";
+	const string XATTR_DOSATTRIB_ESTIMATED_SIZE = 64;
+
+	/* by using a union we can cope with new version of 
+	   this structure more easily */
+	typedef struct {
+		uint32 attrib;
+		uint32 ea_size;
+		uint64 size;
+		uint64 alloc_size;
+		NTTIME create_time;
+		NTTIME change_time;
+	} xattr_DosInfo1;
+
+	typedef union {
+		[case(1)] xattr_DosInfo1 info1;
+	} xattr_DosInfo;
+
+	typedef [public] struct {
+		uint16 version;
+		[switch_is(version)] xattr_DosInfo info;
+	} xattr_DosAttrib;
+}

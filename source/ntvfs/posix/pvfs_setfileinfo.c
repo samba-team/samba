@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "include/includes.h"
+#include "includes.h"
 #include "vfs_posix.h"
 #include "system/time.h"
 
@@ -163,6 +163,13 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		}
 	}
 
+	*f->name = newstats;
+
+#if HAVE_XATTR_SUPPORT
+	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
+		return pvfs_xattr_save(pvfs, f->name, f->fd);
+	}
+#endif
 
 	return NT_STATUS_OK;
 }
@@ -286,6 +293,14 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 			return pvfs_map_errno(pvfs, errno);
 		}
 	}
+
+	*name = newstats;
+
+#if HAVE_XATTR_SUPPORT
+	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
+		return pvfs_xattr_save(pvfs, name, -1);
+	}
+#endif
 
 	return NT_STATUS_OK;
 }

@@ -1517,6 +1517,13 @@ const struct unix_error_map unix_nt_errmap[] = {
 	{ EPIPE,        NT_STATUS_CONNECTION_DISCONNECTED },
 	{ ECONNREFUSED, NT_STATUS_CONNECTION_REFUSED },
 	{ EBUSY,        NT_STATUS_SHARING_VIOLATION },
+	{ ENOTSUP,      NT_STATUS_NOT_SUPPORTED},
+#ifdef ENOATTR
+	{ ENOATTR,      NT_STATUS_NOT_FOUND },
+#endif
+#ifdef ENODATA
+	{ ENODATA,      NT_STATUS_NOT_FOUND },
+#endif
 #ifdef EDQUOT
 	{ EDQUOT,       NT_STATUS_QUOTA_EXCEEDED },
 #endif

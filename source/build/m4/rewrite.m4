@@ -1455,16 +1455,6 @@ if test x"$samba_cv_HAVE_COMPARISON_FN_T" = x"yes"; then
 	AC_DEFINE(HAVE_COMPARISON_FN_T,1,[Whether or not we have comparison_fn_t])
 fi
 
-############################################
-# Check if we have extended attributes
-AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h)
-AC_SEARCH_LIBS(getxattr, [attr])
-AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
-AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
-AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
-AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
-AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
-
 #################################################
 # check for ACL support
 

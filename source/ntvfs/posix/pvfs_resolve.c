@@ -27,7 +27,7 @@
 */
 
 
-#include "include/includes.h"
+#include "includes.h"
 #include "vfs_posix.h"
 #include "system/dir.h"
 
@@ -175,7 +175,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 	name->full_name = partial_name;
 
 	if (name->exists) {
-		return pvfs_fill_dos_info(pvfs, name);
+		return pvfs_fill_dos_info(pvfs, name, -1);
 	}
 
 	return NT_STATUS_OK;
@@ -446,7 +446,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	/* if we can stat() the full name now then we are done */
 	if (stat((*name)->full_name, &(*name)->st) == 0) {
 		(*name)->exists = True;
-		return pvfs_fill_dos_info(pvfs, *name);
+		return pvfs_fill_dos_info(pvfs, *name, -1);
 	}
 
 	/* search for a matching filename */
@@ -489,7 +489,7 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	(*name)->original_name = talloc_strdup(*name, fname);
 	(*name)->stream_name = NULL;
 
-	status = pvfs_fill_dos_info(pvfs, *name);
+	status = pvfs_fill_dos_info(pvfs, *name, -1);
 
 	return status;
 }
@@ -534,5 +534,5 @@ NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 
 	name->exists = True;
 	
-	return pvfs_fill_dos_info(pvfs, name);
+	return pvfs_fill_dos_info(pvfs, name, fd);
 }

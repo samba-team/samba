@@ -318,9 +318,7 @@ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRI
 /*
   a useful helper function for printing idl structures via DEBUG()
 */
-void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
-		     const char *name,
-		     void *ptr)
+void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 {
 	struct ndr_print *ndr;
 
@@ -337,10 +335,7 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 /*
   a useful helper function for printing idl unions via DEBUG()
 */
-void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint32_t, void *),
-			   const char *name,
-			   uint32_t level,
-			   void *ptr)
+void ndr_print_union_debug(ndr_print_union_fn_t fn, const char *name, uint32_t level, void *ptr)
 {
 	struct ndr_print *ndr;
 
@@ -356,10 +351,7 @@ void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint32_t
 /*
   a useful helper function for printing idl function calls via DEBUG()
 */
-void ndr_print_function_debug(void (*fn)(struct ndr_print *, const char *, int , void *),
-			      const char *name,
-			      int flags,
-			      void *ptr)
+void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int flags, void *ptr)
 {
 	struct ndr_print *ndr;
 
@@ -481,10 +473,8 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
   handle subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
-NTSTATUS ndr_pull_subcontext_fn(struct ndr_pull *ndr, 
-				size_t sub_size,
-				void *base,
-				NTSTATUS (*fn)(struct ndr_pull *, void *))
+NTSTATUS ndr_pull_subcontext_fn(struct ndr_pull *ndr, size_t sub_size, 
+				void *base, ndr_pull_fn_t fn)
 {
 	struct ndr_pull *ndr2;
 	NDR_ALLOC(ndr, ndr2);
@@ -499,10 +489,8 @@ NTSTATUS ndr_pull_subcontext_fn(struct ndr_pull *ndr,
 }
 
 
-NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr, 
-				      size_t sub_size,
-				      void *base,
-				      NTSTATUS (*fn)(struct ndr_pull *, int , void *))
+NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr, size_t sub_size,
+				      void *base, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr2;
 	NDR_ALLOC(ndr, ndr2);
@@ -516,11 +504,8 @@ NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr, 
-				      size_t sub_size,
-				      uint32_t level,
-				      void *base,
-				      NTSTATUS (*fn)(struct ndr_pull *, int , uint32_t , void *))
+NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr, size_t sub_size,
+				      uint32_t level, void *base, ndr_pull_union_fn_t fn)
 {
 	struct ndr_pull *ndr2;
 
@@ -566,10 +551,8 @@ static NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
   handle subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
-NTSTATUS ndr_push_subcontext_fn(struct ndr_push *ndr, 
-				size_t sub_size,
-				void *base,
-				NTSTATUS (*fn)(struct ndr_push *, void *))
+NTSTATUS ndr_push_subcontext_fn(struct ndr_push *ndr, size_t sub_size, 
+				void *base, ndr_push_fn_t fn)
 {
 	struct ndr_push *ndr2;
 
@@ -586,10 +569,8 @@ NTSTATUS ndr_push_subcontext_fn(struct ndr_push *ndr,
 /*
   handle subcontext buffers for function that take a flags arg
 */
-NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr, 
-				      size_t sub_size,
-				      void *base,
-				      NTSTATUS (*fn)(struct ndr_push *, int, void *))
+NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr, size_t sub_size,
+				      void *base, ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr2;
 
@@ -606,11 +587,8 @@ NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr,
 /*
   handle subcontext buffers for function that take a union
 */
-NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr, 
-				      size_t sub_size,
-				      uint32_t level,
-				      void *base,
-				      NTSTATUS (*fn)(struct ndr_push *, int, uint32_t, void *))
+NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr, size_t sub_size,
+				      uint32_t level, void *base, ndr_push_union_fn_t fn)
 {
 	struct ndr_push *ndr2;
 
@@ -763,7 +741,7 @@ NTSTATUS ndr_push_relative2(struct ndr_push *ndr, const void *p)
   pull a union from a blob using NDR
 */
 NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t level, void *p,
-			     NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, uint32_t, void *))
+			     ndr_pull_union_fn_t fn)
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
@@ -777,7 +755,7 @@ NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t leve
   pull a struct from a blob using NDR
 */
 NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			      NTSTATUS (*fn)(struct ndr_pull *, int , void *))
+			      ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
@@ -791,7 +769,7 @@ NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *
   push a struct to a blob using NDR
 */
 NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			      NTSTATUS (*fn)(struct ndr_push *, int , void *))
+			      ndr_push_flags_fn_t fn)
 {
 	NTSTATUS status;
 	struct ndr_push *ndr;

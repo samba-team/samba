@@ -1,4 +1,13 @@
 ################################################
+# Start MODULE posix_xattr
+[MODULE::posix_xattr]
+INIT_OBJ_FILES = \
+		ntvfs/posix/pvfs_xattr.o
+# End MODULE posix_xattr
+################################################
+
+
+################################################
 # Start MODULE ntvfs_posix
 [MODULE::ntvfs_posix]
 INIT_OBJ_FILES = \

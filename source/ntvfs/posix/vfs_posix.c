@@ -24,7 +24,7 @@
   This is the default backend
 */
 
-#include "include/includes.h"
+#include "includes.h"
 #include "vfs_posix.h"
 
 
@@ -43,6 +43,10 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (lp_strict_sync(snum))    pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
 	if (lp_strict_locking(snum)) pvfs->flags |= PVFS_FLAG_STRICT_LOCKING;
 	if (lp_ci_filesystem(snum))  pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
+
+#if HAVE_XATTR_SUPPORT
+	if (lp_parm_bool(snum, "posix", "xattr", True)) pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
+#endif
 
 	pvfs->sharing_violation_delay = 1000000;
 	delay = lp_parm_int(snum, "posix", "sharedelay");
