@@ -197,7 +197,7 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,
   send a SMB trans or trans2 request
   ****************************************************************************/
 BOOL cli_send_trans_request(char *outbuf,int trans,
-			       char *name,int name_len, int fid,int flags,
+			       char *name,int namelen, int fid,int flags,
 			       char *data,char *param,uint16 *setup,
 			       int ldata,int lparam,int lsetup,
 			       int mdata,int mparam,int msetup)
@@ -218,7 +218,7 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
   SSVAL(outbuf,smb_tid,cnum);
   cli_setup_pkt(outbuf);
 
-  outparam = smb_buf(outbuf)+(trans==SMBtrans ? name_len+1 : 3);
+  outparam = smb_buf(outbuf)+(trans==SMBtrans ? namelen+1 : 3);
   outdata = outparam+this_lparam;
 
   /* primary request */
@@ -238,7 +238,7 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
     SSVAL(outbuf,smb_setup+i*SIZEOFWORD,setup[i]);
   p = smb_buf(outbuf);
   if (trans==SMBtrans)
-    memcpy(p,name, name_len+1);			/* name[] */
+    memcpy(p,name, namelen+1);			/* name[] */
   else
     {
       *p++ = 0;				/* put in a null smb_name */

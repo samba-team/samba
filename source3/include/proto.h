@@ -83,7 +83,7 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,
                                    int *data_len,int *param_len,
 				   char **data,char **param);
 BOOL cli_send_trans_request(char *outbuf,int trans,
-			       char *name,int name_len, int fid,int flags,
+			       char *name,int namelen, int fid,int flags,
 			       char *data,char *param,uint16 *setup,
 			       int ldata,int lparam,int lsetup,
 			       int mdata,int mparam,int msetup);
@@ -106,17 +106,18 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
 /*The following definitions come from  credentials.c  */
 
+char *credstr(uchar *cred);
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		       uint32 session_key[2]);
-void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp, 
+		      uchar session_key[8]);
+void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
-int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
+int cred_assert(DOM_CHAL *cred, char session_key[8], DOM_CHAL *stored_cred,
 		UTIME timestamp);
-BOOL clnt_deal_with_creds(uint32 sess_key[2],
-		DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
-BOOL deal_with_creds(uint32 sess_key[2],
-		DOM_CRED *sto_clnt_cred, 
-		DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
+BOOL clnt_deal_with_creds(char sess_key[8],
+			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
+BOOL deal_with_creds(uchar sess_key[8],
+		     DOM_CRED *sto_clnt_cred, 
+		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
 
 /*The following definitions come from  dir.c  */
 
@@ -815,14 +816,14 @@ BOOL do_lsa_auth2(uint16 fnum, uint32 call_id,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
         DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
 BOOL do_lsa_sam_logon(uint16 fnum, uint32 call_id,
-		uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
+		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
 		LSA_USER_INFO *user_info,
 		DOM_CRED *srv_cred);
 BOOL do_lsa_sam_logoff(uint16 fnum, uint32 call_id,
-		uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
+		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
