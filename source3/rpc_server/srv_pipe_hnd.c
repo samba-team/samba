@@ -112,7 +112,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p->open = True;
 	p->device_state = 0;
 	p->conn = conn;
-	p->uid  = vuid;
+	p->vuid  = vuid;
 	
 	p->rhdr.data  = NULL;
 	p->rdata.data = NULL;

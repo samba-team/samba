@@ -2383,7 +2383,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
        Don't depend on vuser being non-null !!. JRA */
     user_struct *vuser = get_valid_user_struct(vuid);
     if(vuser != NULL)
-      DEBUG(3,("  Username of UID %d is %s\n", vuser->uid, vuser->name));
+      DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, vuser->name));
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);

@@ -23,8 +23,8 @@
 
 extern int DEBUGLEVEL;
 
-static int initial_uid;
-static int initial_gid;
+static uid_t initial_uid;
+static gid_t initial_gid;
 
 /* what user is current? */
 extern struct current_user current_user;
@@ -61,17 +61,16 @@ void init_uid(void)
 /****************************************************************************
   become the specified uid 
 ****************************************************************************/
-static BOOL become_uid(int uid)
+static BOOL become_uid(uid_t uid)
 {
 	if (initial_uid != 0) {
 		return(True);
 	}
 	
-	if (uid == -1 || uid == 65535) {
+	if (uid == (uid_t)-1 || ((sizeof(uid_t) == 2) && (uid == (uid_t)65535))) {
 		static int done;
 		if (!done) {
-			DEBUG(1,("WARNING: using uid %d is a security risk\n",
-				 uid));
+			DEBUG(1,("WARNING: using uid %d is a security risk\n",(int)uid));
 			done=1;
 		}
 	}
@@ -79,9 +78,9 @@ static BOOL become_uid(int uid)
 #ifdef HAVE_TRAPDOOR_UID
 #ifdef HAVE_SETUIDX
 	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
-	if (setuidx(ID_EFFECTIVE, (uid_t)uid) != 0) {
-		if (seteuid((uid_t)uid) != 0) {
-			DEBUG(1,("Can't set uid (setuidx)\n"));
+	if (setuidx(ID_EFFECTIVE, uid) != 0) {
+		if (seteuid(uid) != 0) {
+			DEBUG(1,("Can't set uid %d (setuidx)\n", (int)uid));
 			return False;
 		}
 	}
@@ -96,14 +95,14 @@ static BOOL become_uid(int uid)
 #endif
       {
 	DEBUG(0,("Couldn't set uid %d currently set to (%d,%d)\n",
-		 uid,(int)getuid(), (int)geteuid()));
-	if (uid > 32000) {
+		 (int)uid,(int)getuid(), (int)geteuid()));
+	if (uid > (uid_t)32000) {
 		DEBUG(0,("Looks like your OS doesn't like high uid values - try using a different account\n"));
 	}
 	return(False);
       }
 
-    if (((uid == -1) || (uid == 65535)) && geteuid() != uid) {
+    if (((uid == (uid_t)-1) || ((sizeof(uid_t) == 2) && (uid == 65535))) && (geteuid() != uid)) {
 	    DEBUG(0,("Invalid uid -1. perhaps you have a account with uid 65535?\n"));
 	    return(False);
     }
@@ -117,13 +116,13 @@ static BOOL become_uid(int uid)
 /****************************************************************************
   become the specified gid
 ****************************************************************************/
-static BOOL become_gid(int gid)
+static BOOL become_gid(gid_t gid)
 {
   if (initial_uid != 0)
     return(True);
 
-  if (gid == -1 || gid == 65535) {
-    DEBUG(1,("WARNING: using gid %d is a security risk\n",gid));    
+  if (gid == (gid_t)-1 || ((sizeof(gid_t) == 2) && (gid == (gid_t)65535))) {
+    DEBUG(1,("WARNING: using gid %d is a security risk\n",(int)gid));    
   }
   
 #ifdef HAVE_SETRESUID
@@ -133,7 +132,7 @@ static BOOL become_gid(int gid)
 #endif
       {
 	DEBUG(0,("Couldn't set gid %d currently set to (%d,%d)\n",
-		 gid,(int)getgid(),(int)getegid()));
+		 (int)gid,(int)getgid(),(int)getegid()));
 	if (gid > 32000) {
 		DEBUG(0,("Looks like your OS doesn't like high gid values - try using a different account\n"));
 	}
@@ -149,7 +148,7 @@ static BOOL become_gid(int gid)
 /****************************************************************************
   become the specified uid and gid
 ****************************************************************************/
-static BOOL become_id(int uid,int gid)
+static BOOL become_id(uid_t uid,gid_t gid)
 {
 	return(become_gid(gid) && become_uid(uid));
 }
@@ -213,8 +212,9 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 BOOL become_user(connection_struct *conn, uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
-	int snum,gid;
-	int uid;
+	int snum;
+    gid_t gid;
+	uid_t uid;
 
 	/*
 	 * We need a separate check in security=share mode due to vuid

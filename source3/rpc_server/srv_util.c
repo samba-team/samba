@@ -246,7 +246,7 @@ static BOOL api_rpc_command(pipes_struct *p,
 
 	/* do the actual command */
 	p->rdata.offset = 0; 
-	api_rpc_cmds[fn_num].fn(p->uid, data, &(p->rdata));
+	api_rpc_cmds[fn_num].fn(p->vuid, data, &(p->rdata));
 
 	if (p->rdata.data == NULL || p->rdata.offset == 0)
 	{

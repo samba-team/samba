@@ -286,7 +286,7 @@ static void lsa_reply_lookup_rids(prs_struct *rdata,
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy( int uid, prs_struct *data,
+static void api_lsa_open_policy( uint16 vuid, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL q_o;
@@ -305,7 +305,7 @@ static void api_lsa_open_policy( int uid, prs_struct *data,
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static void api_lsa_enum_trust_dom( int uid, prs_struct *data,
+static void api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	LSA_Q_ENUM_TRUST_DOM q_e;
@@ -316,14 +316,13 @@ static void api_lsa_enum_trust_dom( int uid, prs_struct *data,
 	lsa_io_q_enum_trust_dom("", &q_e, data, 0);
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_enum_trust_dom(&q_e, rdata,
-	                                      0, NULL, NULL);
+	lsa_reply_enum_trust_dom(&q_e, rdata, 0, NULL, NULL);
 }
 
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static void api_lsa_query_info( int uid, prs_struct *data,
+static void api_lsa_query_info( uint16 vuid, prs_struct *data,
                                 prs_struct *rdata )
 {
 	LSA_Q_QUERY_INFO q_i;
@@ -343,7 +342,7 @@ static void api_lsa_query_info( int uid, prs_struct *data,
 /***************************************************************************
 api_lsa_lookup_sids
  ***************************************************************************/
-static void api_lsa_lookup_sids( int uid, prs_struct *data,
+static void api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
                                  prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_SIDS q_l;
@@ -363,20 +362,20 @@ static void api_lsa_lookup_sids( int uid, prs_struct *data,
 	pstrcpy(dom_name, lp_workgroup());
 
 	string_to_sid(&sid_S_1_1, "S-1-1");
-        string_to_sid(&sid_S_1_3, "S-1-3");
-        string_to_sid(&sid_S_1_5, "S-1-5");
+    string_to_sid(&sid_S_1_3, "S-1-3");
+    string_to_sid(&sid_S_1_5, "S-1-5");
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_lookup_sids(rdata,
-                              q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
-                              dom_name, &global_machine_sid, /* domain name, domain SID */
-                              &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
+    lsa_reply_lookup_sids(rdata,
+                          q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
+                          dom_name, &global_machine_sid, /* domain name, domain SID */
+                          &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
 }
 
 /***************************************************************************
 api_lsa_lookup_names
  ***************************************************************************/
-static void api_lsa_lookup_names( int uid, prs_struct *data,
+static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata )
 {
 	int i;
@@ -400,8 +399,8 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	pstrcpy(dom_name, lp_workgroup());
 
 	string_to_sid(&sid_S_1_1, "S-1-1");
-        string_to_sid(&sid_S_1_3, "S-1-3");
-        string_to_sid(&sid_S_1_5, "S-1-5");
+    string_to_sid(&sid_S_1_3, "S-1-3");
+    string_to_sid(&sid_S_1_5, "S-1-5");
 
 	SMB_ASSERT_ARRAY(q_l.lookup_name, q_l.num_entries);
 
@@ -437,18 +436,24 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static void api_lsa_close( int uid, prs_struct *data,
+static void api_lsa_close( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata)
 {
 	/* XXXX this is NOT good */
 	char *q = mem_data(&(rdata->data), rdata->offset);
 
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0); 
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
 
 	rdata->offset += 24;
 }
@@ -456,18 +461,24 @@ static void api_lsa_close( int uid, prs_struct *data,
 /***************************************************************************
  api_lsa_open_secret
  ***************************************************************************/
-static void api_lsa_open_secret( int uid, prs_struct *data,
+static void api_lsa_open_secret( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata)
 {
 	/* XXXX this is NOT good */
 	char *q = mem_data(&(rdata->data), rdata->offset);
 
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0); q += 4;
-	SIVAL(q, 0, 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND); q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0);
+    q += 4;
+	SIVAL(q, 0, 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND);
+    q += 4;
 	
 	rdata->offset += 24;
 }
@@ -494,4 +505,3 @@ BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds, data);
 }
-

@@ -267,7 +267,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 /*************************************************************************
  api_net_req_chal:
  *************************************************************************/
-static void api_net_req_chal( int uid,
+static void api_net_req_chal( uint16 vuid,
                               prs_struct *data,
                               prs_struct *rdata)
 {
@@ -279,9 +279,10 @@ static void api_net_req_chal( int uid,
 
 	user_struct *vuser;
 
-	DEBUG(5,("api_net_req_chal(%d): vuid %d\n", __LINE__, uid));
+	DEBUG(5,("api_net_req_chal(%d): vuid %d\n", __LINE__, (int)vuid));
 
-	if ((vuser = get_valid_user_struct(uid)) == NULL) return;
+	if ((vuser = get_valid_user_struct(vuid)) == NULL)
+      return;
 
 	/* grab the challenge... */
 	net_io_q_req_chal("", &q_r, data, 0);
@@ -327,7 +328,7 @@ static void api_net_req_chal( int uid,
 /*************************************************************************
  api_net_auth_2:
  *************************************************************************/
-static void api_net_auth_2( int uid,
+static void api_net_auth_2( uint16 vuid,
                             prs_struct *data,
                             prs_struct *rdata)
 {
@@ -339,7 +340,8 @@ static void api_net_auth_2( int uid,
 
 	user_struct *vuser;
 
-	if ((vuser = get_valid_user_struct(uid)) == NULL) return;
+	if ((vuser = get_valid_user_struct(vuid)) == NULL)
+      return;
 
 	srv_time.time = 0;
 
@@ -371,7 +373,7 @@ static void api_net_auth_2( int uid,
 /*************************************************************************
  api_net_srv_pwset:
  *************************************************************************/
-static void api_net_srv_pwset( int uid,
+static void api_net_srv_pwset( uint16 vuid,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -383,7 +385,8 @@ static void api_net_srv_pwset( int uid,
 	BOOL ret;
 	user_struct *vuser;
 
-	if ((vuser = get_valid_user_struct(uid)) == NULL) return;
+	if ((vuser = get_valid_user_struct(vuid)) == NULL)
+      return;
 
 	/* grab the challenge and encrypted password ... */
 	net_io_q_srv_pwset("", &q_a, data, 0);
@@ -452,7 +455,7 @@ static void api_net_srv_pwset( int uid,
 /*************************************************************************
  api_net_sam_logoff:
  *************************************************************************/
-static void api_net_sam_logoff( int uid,
+static void api_net_sam_logoff( uint16 vuid,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -463,7 +466,8 @@ static void api_net_sam_logoff( int uid,
 
 	user_struct *vuser;
 
-	if ((vuser = get_valid_user_struct(uid)) == NULL) return;
+	if ((vuser = get_valid_user_struct(vuid)) == NULL)
+      return;
 
 	/* the DOM_ID_INFO_1 structure is a bit big.  plus we might want to
 	   dynamically allocate it inside net_io_q_sam_logon, at some point */
@@ -572,7 +576,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 /*************************************************************************
  api_net_sam_logon:
  *************************************************************************/
-static void api_net_sam_logon( int uid,
+static void api_net_sam_logon( uint16 vuid,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -586,7 +590,7 @@ static void api_net_sam_logon( int uid,
 
   user_struct *vuser = NULL;
 
-  if ((vuser = get_valid_user_struct(uid)) == NULL)
+  if ((vuser = get_valid_user_struct(vuid)) == NULL)
     return;
 
   q_l.sam_id.ctr = &ctr;
@@ -795,7 +799,7 @@ static void api_net_sam_logon( int uid,
 /*************************************************************************
  api_net_trust_dom_list:
  *************************************************************************/
-static void api_net_trust_dom_list( int uid,
+static void api_net_trust_dom_list( uint16 vuid,
                                  prs_struct *data,
                                  prs_struct *rdata)
 {
@@ -825,7 +829,7 @@ static void api_net_trust_dom_list( int uid,
 /*************************************************************************
  api_net_logon_ctrl2:
  *************************************************************************/
-static void api_net_logon_ctrl2( int uid,
+static void api_net_logon_ctrl2( uint16 vuid,
                                  prs_struct *data,
                                  prs_struct *rdata)
 {

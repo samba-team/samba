@@ -80,12 +80,10 @@ extern int DEBUGLEVEL;
 
 BOOL translation = False;
 
-extern int cnum;
-extern int mid;
-extern int pid;
-extern int tid;
-extern int gid;
-extern int uid;
+extern uint16 cnum;
+extern uint16 mid;
+extern uint16 pid;
+extern uint16 vuid;
 
 extern BOOL have_ip;
 extern int max_xmit;
@@ -97,7 +95,7 @@ extern BOOL tar_reset;
 /* clitar bits end */
  
 
-int myumask = 0755;
+mode_t myumask = 0755;
 
 extern pstring scope;
 
@@ -642,9 +640,8 @@ static void usage(char *pname)
   TimeInit();
   charset_initialise();
 
-  pid = getpid();
-  uid = getuid();
-  gid = getgid();
+  pid = (uint16)getpid();
+  uid = (uint16)getuid();
   mid = pid + 100;
   myumask = umask(0);
   umask(myumask);

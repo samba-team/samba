@@ -107,7 +107,7 @@ user_struct *get_valid_user_struct(uint16 vuid)
     return NULL;
   vuid -= VUID_OFFSET;
   if ((vuid >= (uint16)num_validated_users) || 
-     (validated_users[vuid].uid == -1) || (validated_users[vuid].gid == -1))
+     (validated_users[vuid].uid == (uid_t)-1) || (validated_users[vuid].gid == (gid_t)-1))
     return NULL;
   return &validated_users[vuid];
 }
@@ -121,17 +121,19 @@ void invalidate_vuid(uint16 vuid)
 
   if (vuser == NULL) return;
 
-  vuser->uid = -1;
-  vuser->gid = -1;
+  vuser->uid = (uid_t)-1;
+  vuser->gid = (gid_t)-1;
 
   vuser->n_sids = 0;
 
   /* same number of igroups as groups */
   vuser->n_groups = 0;
 
-  if (vuser->groups) free(vuser->groups);
+  if (vuser->groups)
+    free((char *)vuser->groups);
 
-  if (vuser->sids) free(vuser->sids);
+  if (vuser->sids)
+    free((char *)vuser->sids);
 
   vuser->sids    = NULL;
   vuser->groups  = NULL;
@@ -153,11 +155,11 @@ char *validated_username(uint16 vuid)
 /****************************************************************************
 Setup the groups a user belongs to.
 ****************************************************************************/
-int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups)
+int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i,ngroups;
-	GID_T *groups;
-	GID_T grp = 0;
+	gid_t grp = 0;
+    gid_t *groups = NULL;
 
 	if (-1 == initgroups(user,gid)) {
 		if (getuid() == 0) {
@@ -170,15 +172,18 @@ int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups)
 		return -1;
 	}
 
-	ngroups = getgroups(0,&grp);
-	if (ngroups <= 0) ngroups = 32;
+	ngroups = sys_getgroups(0,&grp);
+	if (ngroups <= 0)
+      ngroups = 32;
 
-	groups = (GID_T *)malloc(sizeof(groups[0])*ngroups);
+    if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL) {
+      DEBUG(0,("setup_groups malloc fail !\n"));
+      return -1;
+    }
 
-	ngroups = getgroups(ngroups,(gid_t *)groups);
+    ngroups = sys_getgroups(ngroups,groups);
 
 	(*p_ngroups) = ngroups;
-
 	(*p_groups) = groups;
 
 	DEBUG( 3, ( "%s is in %d groups: ", user, ngroups ) );
@@ -196,7 +201,7 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest)
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest)
 {
   user_struct *vuser;
   struct passwd *pwfile; /* for getting real name from passwd file */
@@ -258,7 +263,7 @@ uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOO
 	       &vuser->n_groups,
 	       &vuser->groups);
 
-  DEBUG(3,("uid %d registered to name %s\n",uid,unix_name));
+  DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
   DEBUG(3, ("Clearing default real name\n"));
   fstrcpy(vuser->real_name, "<Full Name>\0");

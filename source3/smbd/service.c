@@ -485,7 +485,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "as user %s ", user );
-		dbgtext( "(uid=%d, gid=%d) ", conn->uid, conn->gid );
+		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
 		dbgtext( "(pid %d)\n", (int)getpid() );
 	}
 	

@@ -345,8 +345,8 @@ struct sam_passwd
 	char *unknown_str ; /* don't know what this is, yet. */
 	char *munged_dial ; /* munged path name and dial-back tel number */
 
-	int smb_userid;       /* this is actually the unix uid_t */
-	int smb_grpid;        /* this is actually the unix gid_t */
+	uid_t smb_userid;       /* this is actually the unix uid_t */
+	gid_t smb_grpid;        /* this is actually the unix gid_t */
 	uint32 user_rid;      /* Primary User ID */
 	uint32 group_rid;     /* Primary Group ID */
 
@@ -366,7 +366,7 @@ struct sam_passwd
 
 struct smb_passwd
 {
-	int smb_userid;     /* this is actually the unix uid_t */
+	uid_t smb_userid;     /* this is actually the unix uid_t */
 	char *smb_name;     /* username string */
 
 	unsigned char *smb_passwd; /* Null if no password */
@@ -447,7 +447,7 @@ typedef struct
 
 struct uid_cache {
   int entries;
-  int list[UID_CACHE_SIZE];
+  uid_t list[UID_CACHE_SIZE];
 };
 
 typedef struct
@@ -472,8 +472,8 @@ typedef struct connection_struct
 	char *connectpath;
 	char *origpath;
 	char *user; /* name of user who *opened* this connection */
-	int uid; /* uid of user who *opened* this connection */
-	int gid; /* gid of user who *opened* this connection */
+	uid_t uid; /* uid of user who *opened* this connection */
+	gid_t gid; /* gid of user who *opened* this connection */
 
 	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
 
@@ -481,7 +481,7 @@ typedef struct connection_struct
 
 	/* This groups info is valid for the user that *opened* the connection */
 	int ngroups;
-	GID_T *groups;
+	gid_t *groups;
 	
 	time_t lastused;
 	BOOL used;
@@ -494,10 +494,11 @@ typedef struct connection_struct
 struct current_user
 {
 	connection_struct *conn;
-	int vuid;
-	int uid, gid;
+	uint16 vuid;
+	uid_t uid;
+    gid_t gid;
 	int ngroups;
-	GID_T *groups;
+	gid_t *groups;
 };
 
 typedef struct files_struct
@@ -509,7 +510,7 @@ typedef struct files_struct
 	SMB_OFF_T pos;
 	SMB_OFF_T size;
 	mode_t mode;
-	int vuid;
+	uint16 vuid;
 	char *mmap_ptr;
 	SMB_OFF_T mmap_size;
 	write_bmpx_struct *wbmpx_ptr;
@@ -542,8 +543,8 @@ struct dcinfo
 
 typedef struct
 {
-  int uid; /* uid of a validated user */
-  int gid; /* gid of a validated user */
+  uid_t uid; /* uid of a validated user */
+  gid_t gid; /* gid of a validated user */
 
   fstring requested_name; /* user name from the client */
   fstring name; /* unix user name of a validated user */
@@ -553,7 +554,7 @@ typedef struct
   /* following groups stuff added by ih */
   /* This groups info is needed for when we become_user() for this uid */
   int n_groups;
-  GID_T *groups;
+  gid_t *groups;
 
   int n_sids;
   int *sids;
@@ -714,8 +715,8 @@ struct connect_record
   int magic;
   int pid;
   int cnum;
-  int uid;
-  int gid;
+  uid_t uid;
+  gid_t gid;
   char name[24];
   char addr[24];
   char machine[128];
@@ -727,7 +728,7 @@ struct connection_options {
   int protocol;
   /* Connection-Options */
   uint32 max_xmit;
-  uint16 server_uid;
+  uint16 server_vuid;
   uint16 tid;
   /* The following are LANMAN 1.0 options */
   uint16 sec_mode;

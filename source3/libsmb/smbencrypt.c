@@ -121,7 +121,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
-void SMBOWFencrypt(uchar passwd[16], char *c8, uchar p24[24])
+void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
  

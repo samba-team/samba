@@ -5,7 +5,7 @@
 
 /*The following definitions come from  client/client.c  */
 
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo);
+void do_dir(char *inbuf,char *outbuf,char *mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo);
 char *complete_cmd_null(char *text, int state);
 void complete_process_file(file_info *f);
 char *complete_remote_file(char *text, int state);
@@ -180,13 +180,14 @@ int dos_utime(char *fname,struct utimbuf *times);
 int dos_rename(char *from, char *to);
 int dos_chmod(char *fname,mode_t mode);
 char *dos_getwd(char *s);
-int sys_chown(char *fname,int uid,int gid);
+int sys_chown(char *fname,uid_t uid,gid_t gid);
 int sys_chroot(char *dname);
 struct hostent *sys_gethostbyname(char *name);
 BOOL set_process_capability( uint32 cap_flag, BOOL enable );
 BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable );
 long sys_random(void);
 void sys_srandom(unsigned int seed);
+int sys_getgroups(int setlen, gid_t *gidset);
 
 /*The following definitions come from  lib/time.c  */
 
@@ -227,7 +228,7 @@ BOOL next_token(char **ptr,char *buff,char *sep, int bufsize);
 char **toktocliplist(int *ctok, char *sep);
 void set_socket_options(int fd, char *options);
 void close_sockets(void );
-BOOL in_group(gid_t group, int current_gid, int ngroups, GID_T *groups);
+BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups);
 char *StrCpy(char *dest,char *src);
 char *StrnCpy(char *dest,char *src,int n);
 void putip(void *dest,void *src);
@@ -315,8 +316,8 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);
 struct hostent *Get_Hostbyname(char *name);
 BOOL process_exists(int pid);
-char *uidtoname(int uid);
-char *gidtoname(int gid);
+char *uidtoname(uid_t uid);
+char *gidtoname(gid_t gid);
 void smb_panic(char *why);
 char *readdirname(void *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);
@@ -400,7 +401,7 @@ BOOL cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 void cli_error(struct cli_state *cli, int *eclass, int *num);
 void cli_sockopt(struct cli_state *cli, char *options);
-int cli_setpid(struct cli_state *cli, int pid);
+uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 BOOL cli_reestablish_connection(struct cli_state *cli);
 BOOL cli_establish_connection(struct cli_state *cli, 
 				char *dest_host, struct in_addr *dest_ip,
@@ -482,7 +483,7 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
-void SMBOWFencrypt(uchar passwd[16], char *c8, uchar p24[24]);
+void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 
 /*The following definitions come from  libsmb/smberr.c  */
@@ -2036,8 +2037,8 @@ BOOL set_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
-int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups);
-uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest);
+int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass,

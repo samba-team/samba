@@ -58,7 +58,7 @@ typedef struct pipes_struct
 	struct pipes_struct *next, *prev;
 	int pnum;
 	connection_struct *conn;
-	int uid;
+	uint16 vuid;
 	BOOL open; /* open connection */
 	uint16 device_state;
 	fstring name;
@@ -88,7 +88,7 @@ struct api_struct
 {  
   char *name;
   uint8 opnum;
-  void (*fn) (int uid, prs_struct*, prs_struct*);
+  void (*fn) (uint16 vuid, prs_struct*, prs_struct*);
 };
 
 struct mem_desc
