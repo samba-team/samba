@@ -780,6 +780,10 @@ static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
 	blob2 = ndr_push_blob(push);
 
 	if (!data_blob_equal(&blob, &blob2)) {
+		DEBUG(3,("original:\n"));
+		dump_data(3, blob.data, blob.length);
+		DEBUG(3,("secondary:\n"));
+		dump_data(3, blob2.data, blob2.length);
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
 				      "Error in input validation data - %s",
 				      nt_errstr(status));
@@ -855,6 +859,10 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
 	blob2 = ndr_push_blob(push);
 
 	if (!data_blob_equal(&blob, &blob2)) {
+		DEBUG(3,("original:\n"));
+		dump_data(3, blob.data, blob.length);
+		DEBUG(3,("secondary:\n"));
+		dump_data(3, blob2.data, blob2.length);
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
 				      "Error in output validation data - %s",
 				      nt_errstr(status));

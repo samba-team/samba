@@ -443,7 +443,6 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 	BOOL ret = True;
-
 	printf("\nTesting QueryInfoPolicy\n");
 
 	for (i=1;i<13;i++) {
@@ -454,8 +453,9 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
 
-		if ((i == 9 || i == 10) &&
+		if ((i == 9 || i == 10 || i == 11) &&
 		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			printf("server failed level %u (OK)\n", i);
 			continue;
 		}
 

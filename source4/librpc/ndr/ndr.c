@@ -564,6 +564,7 @@ NTSTATUS ndr_push_subcontext_fn(struct ndr_push *ndr,
 	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
 	if (!ndr2) return NT_STATUS_NO_MEMORY;
 
+	ndr2->flags = ndr->flags;
 	NDR_CHECK(fn(ndr2, base));
 	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
 	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
@@ -583,6 +584,7 @@ NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr,
 	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
 	if (!ndr2) return NT_STATUS_NO_MEMORY;
 
+	ndr2->flags = ndr->flags;
 	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, base));
 	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
 	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
@@ -603,6 +605,7 @@ NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr,
 	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
 	if (!ndr2) return NT_STATUS_NO_MEMORY;
 
+	ndr2->flags = ndr->flags;
 	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
 	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
 	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
