@@ -242,11 +242,11 @@ static NTSTATUS ipc_open_generic(struct smbsrv_request *req, const char *fname,
 	ep_description.info.smb_pipe = p->pipe_name;
 
 	/* tell the RPC layer the session_info */
-	if (req->user_ctx->vuser) {
+	if (req->session) {
 		/* The session info is refcount-increased in the 
 		   dcesrv_endpoint_search_connect() function */
 
-		session_info = req->user_ctx->vuser->session_info;
+		session_info = req->session->session_info;
 	}
 
 	status = dcesrv_endpoint_search_connect(&req->smb_conn->dcesrv, 

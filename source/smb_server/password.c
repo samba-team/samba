@@ -26,20 +26,20 @@ check if a uid has been validated, and return an pointer to the user_struct
 if it has. NULL if not. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-struct user_struct *get_valid_user_struct(struct smbsrv_connection *smb, uint16_t vuid)
+struct smbsrv_session *smbsrv_session_find(struct smbsrv_connection *smb_conn, uint16_t vuid)
 {
-	user_struct *usp;
+	struct smbsrv_session *sess;
 	int count=0;
 
 	if (vuid == UID_FIELD_INVALID)
 		return NULL;
 
-	for (usp=smb->users.validated_users;usp;usp=usp->next,count++) {
-		if (vuid == usp->vuid) {
+	for (sess=smb_conn->sessions.session_list; sess; sess=sess->next,count++) {
+		if (vuid == sess->vuid) {
 			if (count > 10) {
-				DLIST_PROMOTE(smb->users.validated_users, usp);
+				DLIST_PROMOTE(smb_conn->sessions.session_list, sess);
 			}
-			return usp;
+			return sess;
 		}
 	}
 
@@ -49,38 +49,37 @@ struct user_struct *get_valid_user_struct(struct smbsrv_connection *smb, uint16_
 /****************************************************************************
 invalidate a uid
 ****************************************************************************/
-void invalidate_vuid(struct smbsrv_connection *smb, uint16_t vuid)
+void smbsrv_invalidate_vuid(struct smbsrv_connection *smb_conn, uint16_t vuid)
 {
-	user_struct *vuser = get_valid_user_struct(smb, vuid);
+	struct smbsrv_session *sess = smbsrv_session_find(smb_conn, vuid);
 
-	if (vuser == NULL)
+	if (sess == NULL)
 		return;
 
-	session_yield(vuser);
+	session_yield(sess);
 
-	free_session_info(&vuser->session_info);
+	free_session_info(&sess->session_info);
 
-	DLIST_REMOVE(smb->users.validated_users, vuser);
+	DLIST_REMOVE(smb_conn->sessions.session_list, sess);
 
 	/* clear the vuid from the 'cache' on each connection, and
 	   from the vuid 'owner' of connections */
 	/* REWRITE: conn_clear_vuid_cache(smb, vuid); */
 
-	SAFE_FREE(vuser);
-	smb->users.num_validated_vuids--;
+	smb_conn->sessions.num_validated_vuids--;
 }
 
 /****************************************************************************
 invalidate all vuid entries for this process
 ****************************************************************************/
-void invalidate_all_vuids(struct smbsrv_connection *smb)
+void smbsrv_invalidate_all_vuids(struct smbsrv_connection *smb_conn)
 {
-	user_struct *usp, *next=NULL;
+	struct smbsrv_session *sess,*next=NULL;
 
-	for (usp=smb->users.validated_users;usp;usp=next) {
-		next = usp->next;
+	for (sess=smb_conn->sessions.session_list; sess; sess=next) {
+		next = sess->next;
 		
-		invalidate_vuid(smb, usp->vuid);
+		smbsrv_invalidate_vuid(smb_conn, sess->vuid);
 	}
 }
 
@@ -98,53 +97,60 @@ void invalidate_all_vuids(struct smbsrv_connection *smb)
  *
  */
 
-int register_vuid(struct smbsrv_connection *smb,
-		  struct auth_session_info *session_info,
-		  const char *smb_name)
+uint16_t smbsrv_register_session(struct smbsrv_connection *smb_conn,
+						struct auth_session_info *session_info,
+						struct gensec_security *gensec_ctx)
 {
-	user_struct *vuser = NULL;
+	struct smbsrv_session *sess = NULL;
 
-	/* Ensure no vuid gets registered in share level security. */
-	if(lp_security() == SEC_SHARE)
-		return UID_FIELD_INVALID;
-
-	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
-	if (smb->users.num_validated_vuids >= 0xFFFF-VUID_OFFSET)
-		return UID_FIELD_INVALID;
-
-	if((vuser = (user_struct *)malloc( sizeof(user_struct) )) == NULL) {
-		DEBUG(0,("Failed to malloc users struct!\n"));
+	sess = talloc_p(smb_conn->mem_ctx, struct smbsrv_session);
+	if(sess == NULL) {
+		DEBUG(0,("talloc_p(smb_conn->mem_ctx, struct smbsrv_session) failed\n"));
 		return UID_FIELD_INVALID;
 	}
 
-	ZERO_STRUCTP(vuser);
+	ZERO_STRUCTP(sess);
+	sess->vuid = UID_FIELD_INVALID;
+
+	/* Ensure no vuid gets registered in share level security. */
+	/* TODO: replace lp_security with a flag in smbsrv_connection */
+	if(lp_security() == SEC_SHARE)
+		return sess->vuid;
+
+	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
+	if (smb_conn->sessions.num_validated_vuids >= 0xFFFF-VUID_OFFSET)
+		return sess->vuid;
 
 	/* Allocate a free vuid. Yes this is a linear search... :-) */
-	while (get_valid_user_struct(smb, smb->users.next_vuid) != NULL ) {
-		smb->users.next_vuid++;
+	while (smbsrv_session_find(smb_conn, smb_conn->sessions.next_vuid) != NULL ) {
+		smb_conn->sessions.next_vuid++;
 		/* Check for vuid wrap. */
-		if (smb->users.next_vuid == UID_FIELD_INVALID)
-			smb->users.next_vuid = VUID_OFFSET;
+		if (smb_conn->sessions.next_vuid == UID_FIELD_INVALID)
+			smb_conn->sessions.next_vuid = VUID_OFFSET;
 	}
 
 	DEBUG(10,("register_vuid: allocated vuid = %u\n", 
-		  (uint_t)smb->users.next_vuid));
+		  (uint_t)smb_conn->sessions.next_vuid));
 
-	vuser->vuid = smb->users.next_vuid;
+	sess->vuid = smb_conn->sessions.next_vuid;
+	smb_conn->sessions.next_vuid++;
+	smb_conn->sessions.num_validated_vuids++;
 
 	/* use this to keep tabs on all our info from the authentication */
-	vuser->session_info = session_info;
+	sess->session_info = session_info;
+	sess->gensec_ctx = gensec_ctx;
 
-	smb->users.next_vuid++;
-	smb->users.num_validated_vuids++;
+	sess->smb_conn = smb_conn;
+	DLIST_ADD(smb_conn->sessions.session_list, sess);
 
-	DLIST_ADD(smb->users.validated_users, vuser);
-
-	if (!session_claim(smb, vuser)) {
-		DEBUG(1,("Failed to claim session for vuid=%d\n", vuser->vuid));
-		invalidate_vuid(smb, vuser->vuid);
+	/* we only need to do session_claim() when the session_setup is complete
+	 * for spnego session_info is NULL the first time
+	 */
+	if (session_info && !session_claim(sess)) {
+		DEBUG(1,("Failed to claim session for vuid=%d\n", sess->vuid));
+		smbsrv_invalidate_vuid(smb_conn, sess->vuid);
 		return UID_FIELD_INVALID;
 	}
 
-	return vuser->vuid;
+	return sess->vuid;
 }

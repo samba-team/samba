@@ -2112,7 +2112,7 @@ void reply_ulogoffX(struct smbsrv_request *req)
 		DEBUG(0,("REWRITE: not closing user files\n"));
 	}
 
-	invalidate_vuid(req->smb_conn, vuid);
+	smbsrv_invalidate_vuid(req->smb_conn, vuid);
 
 	req_setup_reply(req, 2, 0);
 

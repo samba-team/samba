@@ -114,21 +114,6 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 }
 
 /*
-  setup the user_ctx element of a request
-*/
-static void setup_user_context(struct smbsrv_request *req)
-{
-	struct smbsrv_user *user_ctx;
-
-	user_ctx = talloc(req->mem_ctx, sizeof(*user_ctx));
-	user_ctx->vuid = SVAL(req->in.hdr, HDR_UID);
-	user_ctx->vuser = get_valid_user_struct(req->smb_conn, user_ctx->vuid);
-
-	req->user_ctx = user_ctx;
-}
-
-
-/*
 These flags determine some of the permissions required to do an operation 
 
 Note that I don't set NEED_WRITE on some write operations because they
@@ -459,13 +444,13 @@ static void switch_message(int type, struct smbsrv_request *req)
 	req->tcon = conn_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
 
 	/* setup the user context for this request */
-	setup_user_context(req);
+	req->session = smbsrv_session_find(req->smb_conn, session_tag);
 
 	/* Ensure this value is replaced in the incoming packet. */
 	SSVAL(req->in.hdr,HDR_UID,session_tag);
 
-	if (req->user_ctx) {
-		req->user_ctx->vuid = session_tag;
+	if (req->session) {
+		req->session->vuid = session_tag;
 	}
 	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_conn->connection->service->model_ops->get_id(req)));
 
@@ -481,7 +466,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	}
 
 	/* see if the vuid is valid */
-	if ((flags & AS_USER) && !req->user_ctx->vuser) {
+	if ((flags & AS_USER) && !req->session) {
 		if (!(flags & AS_GUEST)) {
 			req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 			return;
@@ -859,7 +844,7 @@ void smbsrv_accept(struct server_connection *conn)
 
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
-	smb_conn->users.next_vuid = VUID_OFFSET;
+	smb_conn->sessions.next_vuid = VUID_OFFSET;
 
 	conn_init(smb_conn);
 

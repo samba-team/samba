@@ -29,14 +29,20 @@
 */
 
 /* the current user context for a request */
-struct smbsrv_user {
+struct smbsrv_session {
+	struct smbsrv_session *prev, *next;
+
+	struct smbsrv_connection *smb_conn;
+
 	/* the vuid is used to specify the security context for this
 	   request. Note that this may not be the same vuid as we
 	   received on the wire (for example, for share mode or guest
 	   access) */
 	uint16_t vuid;
 
-	struct user_struct *vuser;
+	struct gensec_security *gensec_ctx;
+
+	struct auth_session_info *session_info;
 };
 
 
@@ -89,8 +95,8 @@ struct smbsrv_request {
 	/* conn is only set for operations that have a valid TID */
 	struct smbsrv_tcon *tcon;
 
-	/* the user context is derived from the vuid plus smb.conf options */
-	struct smbsrv_user *user_ctx;
+	/* the session context is derived from the vuid */
+	struct smbsrv_session *session;
 
 	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
 	unsigned control_flags;
@@ -295,14 +301,11 @@ struct smbsrv_connection {
 
 	/* context associated with currently valid session setups */
 	struct {
-		/* users from session setup */
-		char *session_users; /* was a pstring */
-	
-		/* this holds info on user ids that are already validated for this VC */
-		struct user_struct *validated_users;
-		int next_vuid; /* initialise to VUID_OFFSET */
+		/* this holds info on session vuids that are already validated for this VC */
+		struct smbsrv_session *session_list;
+		uint16_t next_vuid; /* initialise to VUID_OFFSET */
 		int num_validated_vuids;
-	} users;
+	} sessions;
 
 	/* this holds long term state specific to the printing subsystem */
 	struct {
