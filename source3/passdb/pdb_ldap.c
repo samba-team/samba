@@ -1365,23 +1365,25 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 	rid = pdb_get_user_rid(sampass);
 
-	if ( (rid==0) && (!IS_SAM_DEFAULT(sampass, PDB_UID)) ) {
-		rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(sampass));
-	} else if (ldap_state->permit_non_unix_accounts) {
-		rid = ldapsam_get_next_available_nua_rid(ldap_state);
-		if (rid == 0) {
-			DEBUG(0, ("NO user RID specified on account %s, and "
-				  "findining next available NUA RID failed, "
-				  "cannot store!\n",
-				  pdb_get_username(sampass)));
+	if (rid == 0) {
+		if (!IS_SAM_DEFAULT(sampass, PDB_UID)) {
+			rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(sampass));
+		} else if (ldap_state->permit_non_unix_accounts) {
+			rid = ldapsam_get_next_available_nua_rid(ldap_state);
+			if (rid == 0) {
+				DEBUG(0, ("NO user RID specified on account %s, and "
+					  "findining next available NUA RID failed, "
+					  "cannot store!\n",
+					  pdb_get_username(sampass)));
+				ldap_mods_free(*mods, 1);
+				return False;
+			}
+		} else {
+			DEBUG(0, ("NO user RID specified on account %s, "
+				  "cannot store!\n", pdb_get_username(sampass)));
 			ldap_mods_free(*mods, 1);
 			return False;
 		}
-	} else {
-		DEBUG(0, ("NO user RID specified on account %s, "
-			  "cannot store!\n", pdb_get_username(sampass)));
-		ldap_mods_free(*mods, 1);
-		return False;
 	}
 
 	slprintf(temp, sizeof(temp) - 1, "%i", rid);
@@ -1391,15 +1393,17 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 	rid = pdb_get_group_rid(sampass);
 
-	if ( (rid==0) && (!IS_SAM_DEFAULT(sampass, PDB_GID)) ) {
-		rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
-	} else if (ldap_state->permit_non_unix_accounts) {
-		rid = DOMAIN_GROUP_RID_USERS;
-	} else {
-		DEBUG(0, ("NO group RID specified on account %s, "
-			  "cannot store!\n", pdb_get_username(sampass)));
-		ldap_mods_free(*mods, 1);
-		return False;
+	if (rid == 0) {
+		if (!IS_SAM_DEFAULT(sampass, PDB_GID)) {
+			rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
+		} else if (ldap_state->permit_non_unix_accounts) {
+			rid = DOMAIN_GROUP_RID_USERS;
+		} else {
+			DEBUG(0, ("NO group RID specified on account %s, "
+				  "cannot store!\n", pdb_get_username(sampass)));
+			ldap_mods_free(*mods, 1);
+			return False;
+		}
 	}
 
 	slprintf(temp, sizeof(temp) - 1, "%i", rid);
