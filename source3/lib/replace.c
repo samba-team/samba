@@ -124,7 +124,7 @@ Corrections by richard.kettlewell@kewill.com
 /*
  * Search for a match in a netgroup. This replaces it on broken systems.
  */
- int innetgr(char *group,char *host,char *user,char *dom)
+ int innetgr(const char *group,const char *host,const char *user,const char *dom)
 {
 	char *hst, *usr, *dm;
   

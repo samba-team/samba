@@ -47,9 +47,9 @@
  */
 
 struct smb_pam_userdata {
-	char *PAM_username;
-	char *PAM_password;
-	char *PAM_newpassword;
+	const char *PAM_username;
+	const char *PAM_password;
+	const char *PAM_newpassword;
 };
 
 typedef int (*smb_pam_conv_fn)(int, const struct pam_message **, struct pam_response **, void *appdata_ptr);
@@ -180,7 +180,7 @@ static void special_char_sub(char *buf)
 	all_string_sub(buf, "\\t", "\t", 0);
 }
 
-static void pwd_sub(char *buf, char *username, char *oldpass, char *newpass)
+static void pwd_sub(char *buf, const char *username, const char *oldpass, const char *newpass)
 {
 	pstring_sub(buf, "%u", username);
 	all_string_sub(buf, "%o", oldpass, sizeof(fstring));
@@ -399,8 +399,8 @@ static void smb_free_pam_conv(struct pam_conv *pconv)
  Allocate a pam_conv struct.
 ****************************************************************************/
 
-static struct pam_conv *smb_setup_pam_conv(smb_pam_conv_fn smb_pam_conv_fnptr, char *user,
-					char *passwd, char *newpass)
+static struct pam_conv *smb_setup_pam_conv(smb_pam_conv_fn smb_pam_conv_fnptr, const char *user,
+					const char *passwd, const char *newpass)
 {
 	struct pam_conv *pconv = (struct pam_conv *)malloc(sizeof(struct pam_conv));
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)malloc(sizeof(struct smb_pam_userdata));
@@ -445,9 +445,10 @@ static BOOL smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
  * Start PAM authentication for specified account
  */
 
-static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost, struct pam_conv *pconv)
+static BOOL smb_pam_start(pam_handle_t **pamh, const char *user, const char *rhost, struct pam_conv *pconv)
 {
 	int pam_error;
+	const char *our_rhost;
 
 	*pamh = (pam_handle_t *)NULL;
 
@@ -460,14 +461,16 @@ static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost, struct p
 	}
 
 	if (rhost == NULL) {
-		rhost = client_name();
+		our_rhost = client_name();
 		if (strequal(rhost,"UNKNOWN"))
-			rhost = client_addr();
+			our_rhost = client_addr();
+	} else {
+		our_rhost = rhost;
 	}
 
 #ifdef PAM_RHOST
-	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", rhost));
-	pam_error = pam_set_item(*pamh, PAM_RHOST, rhost);
+	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", our_rhost));
+	pam_error = pam_set_item(*pamh, PAM_RHOST, our_rhost);
 	if(!smb_pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
 		smb_pam_end(*pamh, pconv);
 		*pamh = (pam_handle_t *)NULL;
@@ -664,7 +667,7 @@ static BOOL smb_internal_pam_session(pam_handle_t *pamh, char *user, char *tty, 
  * Internal PAM Password Changer.
  */
 
-static BOOL smb_pam_chauthtok(pam_handle_t *pamh, char * user)
+static BOOL smb_pam_chauthtok(pam_handle_t *pamh, const char * user)
 {
 	int pam_error;
 
@@ -846,7 +849,7 @@ NTSTATUS smb_pam_passcheck(char * user, char * password)
  * PAM Password Change Suite
  */
 
-BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword)
+BOOL smb_pam_passchange(const char * user, const char * oldpassword, const char * newpassword)
 {
 	/* Appropriate quantities of root should be obtained BEFORE calling this function */
 	struct pam_conv *pconv = NULL;

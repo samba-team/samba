@@ -77,7 +77,7 @@ static BOOL ldap_connect_system(LDAP *ldap_struct)
 /*******************************************************************
  connect to the ldap server under a particular user.
 ******************************************************************/	
-static BOOL ldap_connect_user(LDAP *ldap_struct, char *user, char *password)
+static BOOL ldap_connect_user(LDAP *ldap_struct, const char *user, const char *password)
 {
 	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) ! = LDAP_SUCCESS)
 	{
@@ -111,7 +111,7 @@ static BOOL ldap_search_one_user(LDAP *ldap_struct, char *filter, LDAPMessage **
 /*******************************************************************
  run the search by name.
 ******************************************************************/	
-static BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMessage **result)
+static BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, const char *user, LDAPMessage **result)
 {	
 	pstring filter;
 	/*
@@ -374,7 +374,7 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
  manage memory used by the array, by each struct, and values
 
 ************************************************************************/
-static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *value)
+static void make_a_mod(LDAPMod ***modlist,int modop, const char *attribute, const char *value)
 {
 	LDAPMod **mods, **tmods;
 	int i;
@@ -980,21 +980,6 @@ static BOOL del_ldappwd_entry(const char *name)
   return False; /* Dummy... */
 }
 
-static struct sam_disp_info *getldapdispnam(char *name)
-{
-	return pdb_sam_to_dispinfo(getldap21pwnam(name));
-}
-
-static struct sam_disp_info *getldapdisprid(uint32 rid)
-{
-	return pdb_sam_to_dispinfo(getldap21pwrid(rid));
-}
-
-static struct sam_disp_info *getldapdispent(void *vp)
-{
-	return pdb_sam_to_dispinfo(getldap21pwent(vp));
-}
-
 static struct sam_passwd *getldap21pwuid(uid_t uid)
 {
 	return pdb_smb_to_sam(iterate_getsam21pwuid(pdb_uid_to_user_rid(uid)));
@@ -1018,10 +1003,7 @@ static struct passdb_ops ldap_ops =
 	iterate_getsam21pwuid,       /* From passdb.c */
 	iterate_getsam21pwrid,       /* From passdb.c */
 	add_ldap21pwd_entry,
-	mod_ldap21pwd_entry,
-	getldapdispnam,
-	getldapdisprid,
-	getldapdispent
+	mod_ldap21pwd_entry
 };
 
 struct passdb_ops *ldap_initialize_password_db(void)

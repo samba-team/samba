@@ -154,7 +154,7 @@ int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
 /*******************************************************************
  gets a domain user's groups
  ********************************************************************/
-void get_domain_user_groups(char *domain_groups, char *user)
+void get_domain_user_groups(char *domain_groups, const char *user)
 {
 	pstring tmp;
 

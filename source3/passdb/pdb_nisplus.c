@@ -156,7 +156,7 @@ static char *make_nisname_from_uid(int uid, char *pfile)
 /***************************************************************
  make_nisname_from_name
  ****************************************************************/
-static char *make_nisname_from_name(char *user_name, char *pfile)
+static char *make_nisname_from_name(const char *user_name, char *pfile)
 {
 	static pstring nisname;
 
@@ -171,7 +171,7 @@ static char *make_nisname_from_name(char *user_name, char *pfile)
 /*************************************************************************
  gets a NIS+ attribute
  *************************************************************************/
-static void get_single_attribute(nis_object *new_obj, int col,
+static void get_single_attribute(const nis_object *new_obj, int col,
 				char *val, int len)
 {
 	int entry_len;
@@ -190,7 +190,7 @@ static void get_single_attribute(nis_object *new_obj, int col,
 /************************************************************************
  makes a struct sam_passwd from a NIS+ object.
  ************************************************************************/
-static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
+static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj)
 {
   char *ptr;
   pstring full_name;    /* this must be translated to dos code page */
@@ -405,7 +405,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 /************************************************************************
  makes a struct sam_passwd from a NIS+ result.
  ************************************************************************/
-static BOOL make_sam_from_nisresult(SAM_ACCOUNT *pw_buf, nis_result *result)
+static BOOL make_sam_from_nisresult(SAM_ACCOUNT *pw_buf, const nis_result *result)
 {
 	if (pw_buf == NULL || result == NULL) return False;
 
@@ -436,7 +436,7 @@ static BOOL make_sam_from_nisresult(SAM_ACCOUNT *pw_buf, nis_result *result)
  sets a NIS+ attribute
  *************************************************************************/
 static void set_single_attribute(nis_object *new_obj, int col,
-				char *val, int len, int flags)
+				const char *val, int len, int flags)
 {
 	if (new_obj == NULL) return;
 
@@ -453,7 +453,7 @@ static void set_single_attribute(nis_object *new_obj, int col,
  copy or modify nis object. this object is used to add or update
  nisplus table entry.
  ****************************************************************/
-static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
+static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
 			       nis_object *old)
 {
   /*
@@ -470,7 +470,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
    *               store
    */
   BOOL need_to_modify = False;
-  char *name;                      /* from SAM */
+  const char *name = pdb_get_username(sampass);       /* from SAM */
   /* these must be static or allocate and free entry columns! */
   static fstring uid;                     /* from SAM */
   static fstring user_rid;                /* from SAM */
@@ -489,8 +489,6 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
   static fstring acct_desc;               /* from SAM */
   static char empty[1];                   /* just an empty string */
 
-
-  name = pdb_get_username(sampass);
   slprintf(uid, sizeof(uid)-1, "%u", pdb_get_uid(sampass));
   slprintf(user_rid, sizeof(user_rid)-1, "%u",
 	   pdb_get_user_rid(sampass)? pdb_get_user_rid(sampass):
@@ -768,7 +766,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
 			   pdb_get_hours_len(sampass)-1, EN_MODIFIED);
     }  
   } else {
-    char *homedir, *dirdrive, *logon_script, *profile_path, *workstations;
+    const char *homedir, *dirdrive, *logon_script, *profile_path, *workstations;
 
     *empty = '\0'; /* empty string */
 
@@ -844,7 +842,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
 /***************************************************************
  calls nis_list, returns results.
  ****************************************************************/
-static nis_result *nisp_get_nis_list(char *nis_name, uint_t flags)
+static nis_result *nisp_get_nis_list(const char *nis_name, uint_t flags)
 {
 	nis_result *result;
 	int i;
@@ -940,7 +938,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
+BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
 {
 	/* Static buffers we will return. */
 	nis_result *result = NULL;
@@ -1056,7 +1054,7 @@ BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid)
 /*************************************************************************
  Routine to remove entry from the nisplus smbpasswd table
  *************************************************************************/
-BOOL pdb_delete_sam_account(char *sname)
+BOOL pdb_delete_sam_account(const char *sname)
 {
   char *pfile = lp_smb_passwd_file();
   pstring nisname;
@@ -1112,7 +1110,7 @@ BOOL pdb_delete_sam_account(char *sname)
 /************************************************************************
  Routine to add an entry to the nisplus passwd file.
 *************************************************************************/
-BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
+BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
 {
   int local_user = 0;
   char           *pfile;
@@ -1307,7 +1305,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 /************************************************************************
  Routine to modify the nisplus passwd entry.
 ************************************************************************/
-BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
+BOOL pdb_update_sam_account(const SAM_ACCOUNT * newpwd, BOOL override)
 {
   nis_result *result, *addresult;
   nis_object *obj;

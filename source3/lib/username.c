@@ -299,7 +299,7 @@ static BOOL user_in_netgroup_list(const char *user, const char *ngname)
  Check if a user is in a winbind group.
 ****************************************************************************/
   
-static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_answered)
+static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL *winbind_answered)
 {
 	int num_groups;
 	int i;
@@ -407,7 +407,7 @@ static BOOL user_in_unix_group_list(const char *user,const char *gname)
  Check if a user is in a group list. Ask winbind first, then use UNIX.
 ****************************************************************************/
 
-BOOL user_in_group_list(char *user,char *gname)
+BOOL user_in_group_list(const char *user, const char *gname)
 {
 	BOOL winbind_answered = False;
 	BOOL ret = user_in_winbind_group_list(user, gname, &winbind_answered);
@@ -423,7 +423,7 @@ BOOL user_in_group_list(char *user,char *gname)
  and netgroup lists.
 ****************************************************************************/
 
-BOOL user_in_list(char *user,char **list)
+BOOL user_in_list(const char *user,char **list)
 {
 
   if (!list || !*list) return False;
@@ -505,7 +505,7 @@ BOOL user_in_list(char *user,char **list)
  it assumes the string starts lowercased
 ****************************************************************************/
 
-static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(char *),int N)
+static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(const char *),int N)
 {
   ssize_t len = (ssize_t)strlen(s);
   int i;
@@ -539,7 +539,7 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
  it assumes the string starts lowercased
 ****************************************************************************/
 
-static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(char *),int N)
+static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(const char *),int N)
 {
   int n;
   struct passwd *ret;

@@ -51,9 +51,9 @@
 
 extern struct passdb_ops pdb_ops;
 
-static BOOL check_oem_password(char *user,
-			       uchar * lmdata, uchar * lmhash,
-			       uchar * ntdata, uchar * nthash,
+static BOOL check_oem_password(const char *user,
+			       uchar * lmdata, const uchar * lmhash,
+			       const uchar * ntdata, const uchar * nthash,
 			       SAM_ACCOUNT **hnd, char *new_passwd,
 			       int new_passwd_size);
 
@@ -598,7 +598,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	uchar unenc_old_pw[16];
 	SAM_ACCOUNT *sampass = NULL;
 	uint16 acct_ctrl;
-	uint8 *lanman_pw;
+	const uint8 *lanman_pw;
 	BOOL ret;
 	
 	become_root();
@@ -663,7 +663,7 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 	uchar unenc_new_pw[16];
 	BOOL ret;
 	uint16 acct_ctrl;
-	uint8 *pwd;
+	const uint8 *pwd;
 
 	if (sampass == NULL) {
 		DEBUG(0,("change_lanman_password: no smb password entry.\n"));
@@ -759,16 +759,16 @@ BOOL pass_oem_change(char *user,
  but does use the lm OEM password to check the nt hashed-hash.
 
 ************************************************************/
-static BOOL check_oem_password(char *user,
-			       uchar * lmdata, uchar * lmhash,
-			       uchar * ntdata, uchar * nthash,
+static BOOL check_oem_password(const char *user,
+			       uchar * lmdata, const uchar * lmhash,
+			       const uchar * ntdata, const uchar * nthash,
 			       SAM_ACCOUNT **hnd, char *new_passwd,
 			       int new_passwd_size)
 {
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
 	SAM_ACCOUNT *sampass = NULL;
-	uint8 *lanman_pw, *nt_pw;
+	const uint8 *lanman_pw, *nt_pw;
 	uint16 acct_ctrl;
 	int new_pw_len;
 	uchar new_ntp16[16];
@@ -827,7 +827,7 @@ static BOOL check_oem_password(char *user,
 	/* 
 	 * Call the hash function to get the new password.
 	 */
-	SamOEMhash((uchar *) lmdata, (uchar *)lanman_pw, 516);
+	SamOEMhash( lmdata, lanman_pw, 516);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of

@@ -271,7 +271,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	BOOL guest_user = False;
 	SAM_ACCOUNT *sampass = NULL;
 	uchar null_smb_passwd[16];
-	uchar *smb_passwd_ptr = NULL;
+	const uchar *smb_passwd_ptr = NULL;
 	
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 

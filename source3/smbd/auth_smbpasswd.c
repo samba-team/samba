@@ -65,8 +65,8 @@ static BOOL smb_pwd_check_ntlmv1(const uchar *password,
 core of smb password checking routine.
 ****************************************************************************/
 static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
-				uchar *part_passwd,
-				uchar const *c8,
+				const uchar *part_passwd,
+				const uchar *c8,
 				const char *user, const char *domain,
 				char user_sess_key[16])
 {
@@ -109,7 +109,7 @@ static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
 ****************************************************************************/
 NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, char user_sess_key[16])
 {
-	uint8 *nt_pw, *lm_pw;
+	const uint8 *nt_pw, *lm_pw;
 	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	
 	if (!user_info || !sampass) 

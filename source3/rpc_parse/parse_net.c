@@ -1209,12 +1209,12 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	int 		len_user_name, len_full_name, len_home_dir,
 			len_dir_drive, len_logon_script, len_profile_path;
 			
-	char*		user_name = pdb_get_username(sampw);
-	char*		full_name = pdb_get_fullname(sampw);
-	char*		home_dir  = pdb_get_homedir(sampw);
-	char*		dir_drive = pdb_get_dirdrive(sampw);
-	char*		logon_script = pdb_get_logon_script(sampw);
-	char*		profile_path = pdb_get_profile_path(sampw);
+	const char*		user_name = pdb_get_username(sampw);
+	const char*		full_name = pdb_get_fullname(sampw);
+	const char*		home_dir  = pdb_get_homedir(sampw);
+	const char*		dir_drive = pdb_get_dirdrive(sampw);
+	const char*		logon_script = pdb_get_logon_script(sampw);
+	const char*		profile_path = pdb_get_profile_path(sampw);
 
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);

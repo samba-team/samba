@@ -249,7 +249,7 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 /* Fetch the list of groups a user is a member of from winbindd.  This is
    used by winbind_initgroups and winbind_getgroups. */
 
-static int wb_getgroups(char *user, gid_t **groups)
+static int wb_getgroups(const char *user, gid_t **groups)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -357,7 +357,7 @@ int winbind_initgroups(char *user, gid_t gid)
    time consuming.  If size is zero, list is not modified and the total
    number of groups for the user is returned. */
 
-int winbind_getgroups(char *user, int size, gid_t *list)
+int winbind_getgroups(const char *user, int size, gid_t *list)
 {
 	gid_t *groups = NULL;
 	int result, i;
@@ -433,7 +433,7 @@ BOOL winbind_gidtoname(fstring name, gid_t gid)
 
 /* Utility function. Convert a name to a uid_t if possible. */
 
-BOOL winbind_nametouid(uid_t *puid, char *name)
+BOOL winbind_nametouid(uid_t *puid, const char *name)
 {
 	DOM_SID sid;
 	enum SID_NAME_USE name_type;
@@ -450,7 +450,7 @@ BOOL winbind_nametouid(uid_t *puid, char *name)
 
 /* Utility function. Convert a name to a gid_t if possible. */
 
-BOOL winbind_nametogid(gid_t *pgid, char *gname)
+BOOL winbind_nametogid(gid_t *pgid, const char *gname)
 {
 	DOM_SID g_sid;
 	enum SID_NAME_USE name_type;

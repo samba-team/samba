@@ -264,7 +264,7 @@ Routine to manage the LDAPMod structure array
 manage memory used by the array, by each struct, and values
 
 ************************************************************************/
-static void make_a_mod (LDAPMod *** modlist, int modop, char *attribute, char *value)
+static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value)
 {
 	LDAPMod **mods;
 	int i;
@@ -522,7 +522,7 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 Initialize SAM_ACCOUNT from an LDAP query
 (Based on init_buffer_from_sam in pdb_tdb.c)
 *********************************************************************/
-static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * sampass)
+static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCOUNT * sampass)
 {
 	pstring temp;
 
@@ -676,7 +676,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT * user)
 /**********************************************************************
 Get SAM_ACCOUNT entry from LDAP by username 
 *********************************************************************/
-BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
+BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
 {
 	LDAP *ldap_struct;
 	LDAPMessage *result;
@@ -820,7 +820,7 @@ BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid)
 /**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
-BOOL pdb_delete_sam_account(char *sname)
+BOOL pdb_delete_sam_account(const char *sname)
 {
 	int rc;
 	char *dn;
@@ -871,7 +871,7 @@ BOOL pdb_delete_sam_account(char *sname)
 /**********************************************************************
 Update SAM_ACCOUNT 
 *********************************************************************/
-BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
+BOOL pdb_update_sam_account(const SAM_ACCOUNT * newpwd, BOOL override)
 {
 	int rc;
 	char *dn;
@@ -932,7 +932,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 /**********************************************************************
 Add SAM_ACCOUNT to LDAP 
 *********************************************************************/
-BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
+BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
 {
 	int rc;
 	pstring filter;

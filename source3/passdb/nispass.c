@@ -504,7 +504,7 @@ static BOOL setnisppwpos(void *vp, SMB_BIG_UINT tok)
  sets a NIS+ attribute
  *************************************************************************/
 static void set_single_attribute(nis_object *new_obj, int col,
-				char *val, int len, int flags)
+				const char *val, int len, int flags)
 {
 	if (new_obj == NULL) return;
 
@@ -1031,21 +1031,6 @@ static struct smb_passwd *getnisppwuid(uid_t smb_userid)
 	return pdb_sam_to_smb(getnisp21pwuid(smb_userid));
 }
 
-static struct sam_disp_info *getnispdispnam(char *name)
-{
-	return pdb_sam_to_dispinfo(getnisp21pwnam(name));
-}
-
-static struct sam_disp_info *getnispdisprid(uint32 rid)
-{
-	return pdb_sam_to_dispinfo(getnisp21pwrid(rid));
-}
-
-static struct sam_disp_info *getnispdispent(void *vp)
-{
-	return pdb_sam_to_dispinfo(getnisp21pwent(vp));
-}
-
 static struct passdb_ops nispasswd_ops = {
   startnisppwent,
   endnisppwent,
@@ -1063,10 +1048,7 @@ static struct passdb_ops nispasswd_ops = {
   getnisp21pwuid,
   getnisp21pwrid, 
   add_nisp21pwd_entry,
-  mod_nisp21pwd_entry,
-  getnispdispnam,
-  getnispdisprid,
-  getnispdispent
+  mod_nisp21pwd_entry
 };
 
 struct passdb_ops *nisplus_initialize_password_db(void)
