@@ -466,6 +466,7 @@ int main(int argc, const char **argv)
 		{ "password", 0, POPT_ARG_STRING, &password, OPT_PASSWORD, "User's plaintext password"},		
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ 0, 0, 0, 0 }
 	};
 

@@ -711,6 +711,7 @@ int main(int argc, char **argv)
 		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "'ping' winbindd to see if it is alive" },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ 0, 0, 0, 0 }
 	};
 
