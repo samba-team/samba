@@ -37,7 +37,7 @@ $lastone = "nothing";
 if (@ARGV[0]) {
 	$filename = @ARGV[0];
 } else {
-	$filename = "/usr3/samba20/samba/source/param/loadparm.c";
+	$filename = "source/param/loadparm.c";
 }
 
 open (INFILE,$filename) || die "unable to open $filename\n";
