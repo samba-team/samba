@@ -1296,6 +1296,14 @@ static uint32 size_of_relative_string(UNISTR *string)
 }
 
 /*******************************************************************
+ * return the length of a uint32 + sec desc
+ ********************************************************************/
+static uint32 size_of_sec_desc(SEC_DESC *sec)
+{
+	return 4+1024;
+}
+
+/*******************************************************************
  * return the length of a uint32 (obvious, but the code is clean)
  ********************************************************************/
 static uint32 size_of_device_mode(DEVICEMODE *devmode)
@@ -1486,6 +1494,63 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 /*******************************************************************
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
+static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
+		SEC_DESC **secdesc)
+{
+	prs_struct *ps=&(buffer->prs);
+
+	prs_debug(ps, depth, desc, "new_smb_io_relsecdesc");
+	depth++;
+
+	if (MARSHALLING(ps))
+	{
+		uint32 struct_offset = prs_offset(ps);
+		uint32 relative_offset;
+		
+		if (*secdesc != NULL)
+		{
+			buffer->string_at_end -= 256; /* HACK! */
+			
+			prs_set_offset(ps, buffer->string_at_end);
+			
+			/* write the secdesc */
+			if (!sec_io_desc(desc, *secdesc, ps, depth))
+				return False;
+
+			prs_set_offset(ps, struct_offset);
+		}
+
+		relative_offset=buffer->string_at_end - buffer->struct_start;
+		/* write its offset */
+		if (!prs_uint32("offset", ps, depth, &relative_offset))
+			return False;
+	}
+	else
+	{
+		uint32 old_offset;
+		
+		/* read the offset */
+		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
+			return False;
+
+		old_offset = prs_offset(ps);
+		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
+
+		/* read the sd */
+		*secdesc = g_new(SEC_DESC, 1);
+		if (*secdesc == NULL)
+			return False;
+		if (!sec_io_desc(desc, *secdesc, ps, depth))
+			return False;
+
+		prs_set_offset(ps, old_offset);
+	}
+	return True;
+}
+
+/*******************************************************************
+ Parse a DEVMODE structure and its relative pointer.
+********************************************************************/
 static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
 {
 	prs_struct *ps=&(buffer->prs);
@@ -1663,9 +1728,6 @@ BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
-	/* hack for the SEC DESC */
-	uint32 pipo=0;
-
 	prs_struct *ps=&(buffer->prs);
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
@@ -1701,8 +1763,9 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-	if (!prs_uint32("security descriptor", ps, depth, &pipo))
+	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
 		return False;
+
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
 		return False;
 	if (!prs_uint32("priority", ps, depth, &info->priority))
@@ -1718,6 +1781,26 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!prs_uint32("jobs", ps, depth, &info->cjobs))
 		return False;
 	if (!prs_uint32("averageppm", ps, depth, &info->averageppm))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a PRINTER_INFO_3 structure.
+********************************************************************/  
+BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
+{
+	prs_struct *ps=&(buffer->prs);
+
+	prs_debug(ps, depth, desc, "new_smb_io_printer_info_3");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+	
+	if (!prs_uint32("flags", ps, depth, &info->flags))
+		return False;
+	if (!sec_io_desc("sec_desc", &info->sec, ps, depth))
 		return False;
 
 	return True;
@@ -2281,7 +2364,7 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 {
 	int size=0;
 		
-	size+=4;      /* the security descriptor */
+	size += size_of_sec_desc( info->secdesc );
 	
 	size+=size_of_device_mode( info->devmode );
 	
@@ -2307,6 +2390,18 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	size+=size_of_uint32( &info->cjobs );
 	size+=size_of_uint32( &info->averageppm );	
 	return size;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
+{
+	/* well, we don't actually *know* the damn size of the
+	 * security descriptor.  spoolss is a stupidly designed
+	 * api.
+	 */
+	return size_of_sec_desc( &info->sec );
 }
 
 /*******************************************************************
@@ -2829,9 +2924,7 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
 		return False;
 	
-	if(!prs_uint32("security.size_of_buffer", ps, depth, &q_u->security.size_of_buffer))
-		return False;
-	if(!prs_uint32("security.data", ps, depth, &q_u->security.data))
+	if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
 		return False;
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
@@ -3290,6 +3383,23 @@ BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, p
 }
 
 /*******************************************************************
+ Parse a SPOOL_PRINTER_INFO_LEVEL_3 structure.
+********************************************************************/  
+BOOL spool_io_printer_info_level_3(char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, prs_struct *ps, int depth)
+{	
+	prs_debug(ps, depth, desc, "spool_io_printer_info_level_3");
+	depth++;
+		
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("secdesc_ptr", ps, depth, &il->secdesc_ptr))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a SPOOL_PRINTER_INFO_LEVEL_2 structure.
 ********************************************************************/  
 BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth)
@@ -3406,23 +3516,36 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		 * and by setprinter when updating printer's info
 		 */	
 		case 1:
+		{
 			if (UNMARSHALLING(ps)) {
-				il->info_1=(SPOOL_PRINTER_INFO_LEVEL_1 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_1));
+				il->info_1=g_new(SPOOL_PRINTER_INFO_LEVEL_1, 1);
 				if(il->info_1 == NULL)
 					return False;
 			}
 			if (!spool_io_printer_info_level_1("", il->info_1, ps, depth))
 				return False;
 			break;		
+		}
 		case 2:
 			if (UNMARSHALLING(ps)) {
-				il->info_2=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
+				il->info_2=g_new(SPOOL_PRINTER_INFO_LEVEL_2, 1);
 				if(il->info_2 == NULL)
 					return False;
 			}
 			if (!spool_io_printer_info_level_2("", il->info_2, ps, depth))
 				return False;
 			break;		
+		case 3:
+		{
+			if (UNMARSHALLING(ps)) {
+				il->info_3=g_new(SPOOL_PRINTER_INFO_LEVEL_3, 1);
+				if(il->info_3 == NULL)
+					return False;
+			}
+			if (!spool_io_printer_info_level_3("", il->info_3, ps, depth))
+				return False;
+			break;		
+		}
 	}
 
 	return True;
@@ -4607,11 +4730,27 @@ void free_devmode(DEVICEMODE *devmode)
 	}
 }
 
+void free_printer_info_3(PRINTER_INFO_3 *printer)
+{
+	if (printer!=NULL)
+	{
+		free_sec_desc(&printer->sec);
+		free(printer);
+	}
+}
+
 void free_printer_info_2(PRINTER_INFO_2 *printer)
 {
 	if (printer!=NULL)
 	{
 		free_devmode(printer->devmode);
+		printer->devmode = NULL;
+		if (printer->secdesc != NULL)
+		{
+			free_sec_desc(printer->secdesc);
+			free(printer->secdesc);
+			printer->secdesc = NULL;
+		}
 		free(printer);
 	}
 }
