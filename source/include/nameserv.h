@@ -20,6 +20,8 @@
    
 */
 
+#define GET_TTL(ttl) ((ttl)?MIN(ttl,lp_max_ttl()):lp_max_ttl())
+
 /* NTAS uses 2, NT uses 1, WfWg uses 0 */
 #define MAINTAIN_LIST    2
 #define ELECTION_VERSION 1
@@ -33,8 +35,12 @@
 #define NMB_REG         0x05 /* see rfc1002.txt 4.2.2,3,5,6,7,8 */
 #define NMB_REG_REFRESH 0x09 /* see rfc1002.txt 4.2.4 */
 #define NMB_REL         0x06 /* see rfc1002.txt 4.2.9,10,11 */
-#define NMB_WAIT_ACK    0x07 /* see rfc1002.txt 4.2.17 */
+#define NMB_WAIT_ACK    0x07 /* see rfc1002.txt 4.2.16 */
 /* XXXX what about all the other types?? 0x1, 0x2, 0x3, 0x4, 0x8? */
+
+#define FIND_SELF  0x01
+#define FIND_WINS  0x02
+#define FIND_LOCAL 0x04
 
 /* NetBIOS flags */
 #define NB_GROUP  0x80
@@ -83,13 +89,14 @@ enum master_state { MST_NONE, MST_WON, MST_MSB, MST_BROWSER, MST_DOMAIN };
 
 enum state_type
 {
-	NAME_STATUS_MASTER_CHECK,
-	NAME_STATUS_CHECK,
+	NAME_STATUS_PDC_SRV_CHK,
+	NAME_STATUS_SRV_CHK,
+	NAME_REGISTER_CHALLENGE,
 	NAME_REGISTER,
 	NAME_RELEASE,
 	NAME_QUERY_CONFIRM,
 	NAME_QUERY_SYNC,
-	NAME_QUERY_MST_SRV_CHK,
+	NAME_QUERY_PDC_SRV_CHK,
 	NAME_QUERY_SRV_CHK,
 	NAME_QUERY_FIND_MST,
 	NAME_QUERY_MST_CHK
@@ -189,7 +196,8 @@ struct response_record
 
   BOOL bcast;
   BOOL recurse;
-  struct in_addr to_ip;
+  struct in_addr send_ip;
+  struct in_addr reply_to_ip;
 
   int num_msgs;
 

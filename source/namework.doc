@@ -2,26 +2,15 @@
 the module namework.c deals with NetBIOS datagram packets, primarily.
 it deals with nmbd's workgroup browser side and the domain log in
 side. none of the functionality here has specification documents available.
-empirical observation of packet traces has been the order of the day.
+empirical observation of packet traces has been the order of the day,
+along with some guess-work.
 
 beware!
 
 the receipt of datagram packets for workgroup browsing are dealt with here.
 some of the functions listed here will call others outside of this
-module, or will activate functionality dealt with by other modules.
-
-these include: namedb.c, nameannounce.c, nameelect.c,
-               namelogon.c, and namebrowse.c.
-
-
-/*************************************************************************
-  process_dgram()
-  *************************************************************************/
-
-this function is responsible for identifying whether the datagram
-packet received is a browser packet or a domain logon packet. it
-also does some filtering of certain types of packets (e.g it
-filters out error packets).
+module, or will activate functionality dealt with by other modules
+(namedb, nameannounce, nameelect, namelogon, and namebrowse).
 
 
 /*************************************************************************
@@ -95,7 +84,8 @@ samba do not implement this latter option.
 this datagram is sent by a master browser to a primary domain
 controller. it is a way to ensure that master browsers are
 kept in sync with a primary domain controller across a wide
-area network.
+area network. on receipt of an ANN_MasterAnnouncement we
+should sync browse lists with the sender.
 
 (i never got the hang of this one when i was experimenting.
 i forget exactly what it's for, and i never fully worked

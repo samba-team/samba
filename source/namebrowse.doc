@@ -1,0 +1,69 @@
+this module deals with queueing servers that samba must sync browse
+lists with. it will always issue a name query immediately before
+actually carrying out the NetServerEnum call, to ensure that time
+is not wasted by a remote server's failure.
+
+this module was created to minimise the amount of NetServerEnum calls
+that samba may be asked to perform, by maintaining the name of a server
+for up to a minute after the NetServerEnum call was issued, and
+disallowing further NetServerEnum calls to this remote server until
+the entry is removed.
+
+samba can ask for a NetServerEnum call to be issued to grab a remote
+server's list of servers and workgroups either in its capacity as
+a primary domain controller (domain master browser), as a local
+master browser.
+
+samba does not deal with becoming a backup master browser properly
+at present.
+
+
+/*************************************************************************
+  do_browser_lists()
+  *************************************************************************/
+
+this function is responsible for finding an appropriate entry in the
+sync browser cache, initiating a name query (which results in a
+NetServerEnum call if there is a positive response), and then
+removing all entries that have been actioned and have been around
+for over a minute.
+
+
+/*************************************************************************
+  start_sync_browse_entry()
+  *************************************************************************/
+
+this function is responsible for initiating a name query. if a
+positive response is received, then this will result in a
+NetServerEnum api call.
+
+samba will only initiate this process if it is a master browser
+for this workgroup.
+
+
+/*************************************************************************
+  add_browser_entry()
+  *************************************************************************/
+
+this function is responsible for adding a browser into the list of
+servers to sync browse lists with. if the server entry has already
+been added and syncing browse lists has already been initiated, it
+will not be added again.
+
+
+/*************************************************************************
+  expire_browse_cache()
+  *************************************************************************/
+
+this function is responsible for removing entries that have had the
+sync browse list initiated (whether that succeeded or not is beyond
+this function's scope) and have been in the cache for a while.
+
+
+/*************************************************************************
+  add_browse_entry()
+  *************************************************************************/
+
+this function is responsible for adding a new entry into the list
+of servers to sync browse lists with at some point in the near future.
+

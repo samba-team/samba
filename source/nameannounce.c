@@ -70,12 +70,16 @@ void announce_request(struct work_record *work, struct in_addr ip)
   CVAL(p,0) = ANN_AnnouncementRequest;
   p++;
 
-  CVAL(p,0) = work->token; /* flags?? XXXX probably a token*/
+  CVAL(p,0) = work->token; /* (local) unique workgroup token id */
   p++;
   StrnCpy(p,myname,16);
   strupper(p);
   p = skip_string(p,1);
   
+  /* XXXX note: if we sent the announcement request to 0x1d instead
+     of 0x1e, then we could get the master browser to announce to
+     us instead of the members of the workgroup. wha-hey! */
+
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
 		      myname,work->work_group,0x20,0x1e,ip,*iface_ip(ip));
 }
@@ -118,17 +122,21 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 {                     
   add_browser_entry(serv_name, name_type, work_name, 0, ip);
 
-  if (state == NAME_QUERY_MST_SRV_CHK)
-    {
-      /* announce ourselves as a master browser to serv_name */
-      do_announce_request(myname, serv_name, ANN_MasterAnnouncement,
+  if (state == NAME_STATUS_PDC_SRV_CHK)
+  {
+    /* announce ourselves as a master browser to serv_name */
+    do_announce_request(myname, serv_name, ANN_MasterAnnouncement,
 			  0x20, 0, ip);
-    }
+  }
 }
 
 
 /****************************************************************************
   construct a host announcement unicast
+
+  this function should not be used heavily, and only when we are _not_
+  a master browser and _not_ a primary domain controller.
+
   **************************************************************************/
 void announce_backup(void)
 {
@@ -158,18 +166,11 @@ void announce_backup(void)
 	  
 	  if (!work) continue;
 
+      if (AM_MASTER(work) && AM_DOMCTL(work)) continue;
+
 	  /* found one: announce it across all domains */
 	  for (d = subnetlist; d; d = d->next)
 	    {
-	      int type=0;
-
-	      if (AM_DOMCTL(work)) {
-		type = 0x1b;
-	      } else if (AM_MASTER(work)) {
-		type = 0x1d;
-	      } else {
-		continue;
-	      }
 	      
 	      DEBUG(2,("sending announce backup %s workgroup %s(%d)\n",
 		       inet_ntoa(d->bcast_ip),work->work_group,
@@ -185,12 +186,31 @@ void announce_backup(void)
 	      p += 5;
 	      p++;
 	      
-	      send_mailslot_reply(BROWSE_MAILSLOT,
+	      if (!AM_DOMCTL(work))
+          {
+            /* only ask for a list of backup domain controllers
+               if we are not a domain controller ourselves */
+			
+	      	send_mailslot_reply(BROWSE_MAILSLOT,
 				  ClientDGRAM,outbuf,
 				  PTR_DIFF(p,outbuf),
 				  myname, work->work_group,
-				  0x0,type,d->bcast_ip,
+				  0x0,0x1b,d->bcast_ip,
 				  *iface_ip(d->bcast_ip));
+          }
+
+	      if (!AM_MASTER(work))
+          {
+            /* only ask for a list of master browsers if we
+               are not a master browser ourselves */
+
+	      	send_mailslot_reply(BROWSE_MAILSLOT,
+				  ClientDGRAM,outbuf,
+				  PTR_DIFF(p,outbuf),
+				  myname, work->work_group,
+				  0x0,0x1b,d->bcast_ip,
+				  *iface_ip(d->bcast_ip));
+          }
 	    }
 	}
     }
@@ -222,12 +242,12 @@ static void do_announce_host(int command,
 	StrnCpy(p+5,server_name,16);
 	strupper(p+5);
 
-	CVAL(p,21) = 2; /* major version */
-	CVAL(p,22) = 2; /* minor version */
+	CVAL(p,21) = 0x02; /* major version */
+	CVAL(p,22) = 0x02; /* minor version */
 
 	SIVAL(p,23,server_type);
 	SSVAL(p,27,0xaa55); /* browse signature */
-	SSVAL(p,29,1); /* browse version */
+	SSVAL(p,29,0x001f); /* browse version: CIFS draft 1.0 indicates 0x001f */
 
 	strcpy(p+31,server_comment);
 	p += 31;
@@ -239,6 +259,28 @@ static void do_announce_host(int command,
 					  from_name, to_name,
 					  from_type, to_type,
 					  to_ip, from_ip);
+}
+
+
+/****************************************************************************
+  remove all samba's server entries
+  ****************************************************************************/
+void remove_my_servers(void)
+{
+	struct subnet_record *d; 
+	for (d = subnetlist; d; d = d->next)
+	{
+		struct work_record *work;
+		for (work = d->workgrouplist; work; work = work->next)
+		{
+			struct server_record *s;
+			for (s = work->serverlist; s; s = s->next)
+			{
+				if (!strequal(myname,s->serv.name)) continue;
+				announce_server(d, work, s->serv.name, s->serv.comment, 0, 0);
+			}
+		}
+	}
 }
 
 
@@ -309,6 +351,11 @@ void announce_host(void)
 	  struct server_record *s;
 	  BOOL announce = False;
 	  
+      /* must work on the code that does announcements at up to
+         30 seconds later if a master browser sends us a request
+         announce.
+       */
+
 	  if (work->needannounce) {
 	    /* drop back to a max 3 minute announce - this is to prevent a
 	       single lost packet from stuffing things up for too long */
@@ -364,7 +411,7 @@ void announce_host(void)
   least 15 minutes.
   
   this actually gets done in search_and_sync_workgroups() via the
-  NAME_QUERY_MST_SRV_CHK command, if there is a response from the
+  NAME_QUERY_PDC_SRV_CHK command, if there is a response from the
   name query initiated here.  see response_name_query()
   **************************************************************************/
 void announce_master(void)
@@ -419,9 +466,9 @@ void announce_master(void)
 			  ip = ipzero;
 			  
 			  queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,
-						 NAME_QUERY_MST_SRV_CHK,
+						 NAME_QUERY_PDC_SRV_CHK,
 						 work->work_group,0x1b,0,0,
-						 False, False, ip);
+						 False, False, ip, ip);
 			}
 		      else
 			{
@@ -429,9 +476,9 @@ void announce_master(void)
 			  for (d2 = subnetlist; d2; d2 = d2->next)
 			    {
 			      queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-						   NAME_QUERY_MST_SRV_CHK,
+						   NAME_QUERY_PDC_SRV_CHK,
 						   work->work_group,0x1b,0,0,
-						   True, False, d2->bcast_ip);
+						   True, False, d2->bcast_ip, d2->bcast_ip);
 			    }
 			}
 		    }
@@ -463,9 +510,9 @@ void announce_master(void)
 	      /* check the existence of a pdc for this workgroup, and if
 		 one exists at the specified ip, sync with it and announce
 		 ourselves as a master browser to it */
-	      queue_netbios_pkt_wins(d,ClientNMB, NMB_QUERY,NAME_QUERY_MST_SRV_CHK,
+	      queue_netbios_pkt_wins(d,ClientNMB, NMB_QUERY,NAME_QUERY_PDC_SRV_CHK,
 				     work->work_group,0x1b, 0, 0,
-				     bcast, False, ip);
+				     bcast, False, ip, ip);
 	    }
 	}
     }

@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1995
+   Copyright (C) Andrew Tridgell 1994-1996
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -63,8 +63,6 @@ extern int  updatecount;
 #define DOMCTL_TYPE (SV_TYPE_DOMAIN_CTRL   )
 
 extern time_t StartupTime;
-
-#define GET_TTL(ttl) ((ttl)?MIN(ttl,lp_max_ttl()):lp_max_ttl())
 
 
 /****************************************************************************
@@ -385,7 +383,7 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 		    {
 		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
 					   work->work_group,0x1d,0,0,
-					   False,False,back_ip);
+					   False,False,back_ip,back_ip);
 		      return;
 		    }
 		}
@@ -811,50 +809,4 @@ void process_browse_packet(struct packet_struct *p,char *buf,int len)
     }
 }
 
-
-/****************************************************************************
-process udp 138 datagrams
-****************************************************************************/
-void process_dgram(struct packet_struct *p)
-{
-  char *buf;
-  char *buf2;
-  int len;
-  struct dgram_packet *dgram = &p->packet.dgram;
-
-  if (dgram->header.msg_type != 0x10 &&
-      dgram->header.msg_type != 0x11 &&
-      dgram->header.msg_type != 0x12) {
-    /* don't process error packets etc yet */
-    return;
-  }
-
-  buf = &dgram->data[0];
-  buf -= 4; /* XXXX for the pseudo tcp length - 
-	       someday I need to get rid of this */
-
-  if (CVAL(buf,smb_com) != SMBtrans) return;
-
-  len = SVAL(buf,smb_vwv11);
-  buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
-
-  DEBUG(4,("datagram from %s to %s for %s of type %d len=%d\n",
-	   namestr(&dgram->source_name),namestr(&dgram->dest_name),
-	   smb_buf(buf),CVAL(buf2,0),len));
-
- 
-  if (len <= 0) return;
-
-   /* datagram packet received for the browser mailslot */
-   if (strequal(smb_buf(buf),BROWSE_MAILSLOT)) {
-     process_browse_packet(p,buf2,len);
-     return;
-   }
-
-   /* datagram packet received for the domain log on mailslot */
-   if (strequal(smb_buf(buf),NET_LOGON_MAILSLOT)) {
-     process_logon_packet(p,buf2,len);
-     return;
-   }
-}
 
