@@ -33,14 +33,14 @@ struct _privatedata {
 static void winreg_unbind(struct dcesrv_connection *dc, const struct dcesrv_interface *di) 
 {
 	struct _privatedata *data = dc->private;
-	reg_free(data->registry);
+	if (data) reg_free(data->registry);
 }
 
 static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_interface *di) 
 {
 	struct _privatedata *data;
 	data = talloc(dc->mem_ctx, sizeof(struct _privatedata));
-	data->registry = reg_open("nt4", "/home/aurelia/jelmer/NTUSER.DAT", False);
+	data->registry = reg_open(lp_parm_string(-1,"winreg","subsystem"),lp_parm_string(-1,"winreg", "file"), False);
 	if(!data->registry) return NT_STATUS_UNSUCCESSFUL;
 	dc->conn->private = data;
 	return NT_STATUS_OK;
