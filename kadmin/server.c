@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -361,7 +361,7 @@ kadmind_loop(krb5_context context,
 	    krb5_errx(context, 1, "read error: %d", errno);
 	if(n < 4)
 	    krb5_errx(context, 1, "short read (%ld)", (long int)n);
-	k_get_int(tmp, &len, 4);
+	_krb5_get_int(tmp, &len, 4);
 	if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
 	    len = len << 16;
 	    krb4_packet = 1;
@@ -385,7 +385,7 @@ kadmind_loop(krb5_context context,
 	if(ret) 
 	    krb5_err(context, 1, ret, "krb5_mk_priv");
 
-	k_put_int(tmp, reply.length, 4);
+	_krb5_put_int(tmp, reply.length, 4);
 
 	iov[0].iov_base = tmp;
 	iov[0].iov_len = 4;
