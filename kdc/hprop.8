@@ -1,4 +1,4 @@
-.\" Copyright (c) 2000 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2000 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd June 19, 2000
+.Dd December  8, 2004
 .Dt HPROP 8
 .Os HEIMDAL
 .Sh NAME
@@ -39,6 +39,7 @@
 .Nd propagate the KDC database
 .Sh SYNOPSIS
 .Nm
+.Bk -words
 .Oo Fl m Ar file \*(Ba Xo
 .Fl -master-key= Ns Pa file
 .Xc
@@ -73,6 +74,7 @@
 .Op Fl h | Fl -help
 .Op Ar host Ns Op : Ns Ar port
 .Ar ...
+.Ek
 .Sh DESCRIPTION
 .Nm
 takes a principal database in a specified format and converts it into
