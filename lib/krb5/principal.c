@@ -170,11 +170,12 @@ quote_string(const char *s, char *out, size_t index, size_t len)
 }
 
 
-krb5_error_code
-krb5_unparse_name_fixed(krb5_context context,
-			krb5_const_principal principal,
-			char *name,
-			size_t len)
+static krb5_error_code
+unparse_name_fixed(krb5_context context,
+		   krb5_const_principal principal,
+		   char *name,
+		   size_t len,
+		   krb5_boolean short_form)
 {
     size_t index = 0;
     int i;
@@ -182,12 +183,43 @@ krb5_unparse_name_fixed(krb5_context context,
 	if(i)
 	    add_char(name, index, len, '/');
 	index = quote_string(princ_ncomp(principal, i), name, index, len);
+    } 
+    /* add realm if different from default realm */
+    if(short_form) {
+	krb5_realm r;
+	krb5_error_code ret;
+	ret = krb5_get_default_realm(context, &r);
+	if(ret)
+	    return ret;
+	if(strcmp(princ_realm(principal), r) != 0)
+	    short_form = 0;
+	free(r);
     }
-    add_char(name, index, len, '@');
-    index = quote_string(princ_realm(principal), name, index, len);
-    if(index == len)
-	return ENOMEM; /* XXX */
+    if(!short_form) {
+	add_char(name, index, len, '@');
+	index = quote_string(princ_realm(principal), name, index, len);
+	if(index == len)
+	    return ENOMEM; /* XXX */
+    }
     return 0;
+}
+
+krb5_error_code
+krb5_unparse_name_fixed(krb5_context context,
+			krb5_const_principal principal,
+			char *name,
+			size_t len)
+{
+    return unparse_name_fixed(context, principal, name, len, FALSE);
+}
+
+krb5_error_code
+krb5_unparse_name_fixed_short(krb5_context context,
+			      krb5_const_principal principal,
+			      char *name,
+			      size_t len)
+{
+    return unparse_name_fixed(context, principal, name, len, TRUE);
 }
 
 krb5_error_code
