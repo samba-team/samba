@@ -236,7 +236,7 @@ static void fail_register(struct subnet_record *subrec, struct response_record *
                           struct nmb_name *nmbname)
 {  
   DEBUG(0,("fail_register: Failed to register name %s on subnet %s.\n",
-            namestr(nmbname), subrec->subnet_name));
+            nmb_namestr(nmbname), subrec->subnet_name));
 }  
 
 /****************************************************************************

@@ -148,7 +148,7 @@ static void unbecome_local_master_success(struct subnet_record *subrec,
   memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
 
   DEBUG(3,("unbecome_local_master_success: released name %s.\n",
-             namestr(released_name)));
+             nmb_namestr(released_name)));
 
   /* Now reset the workgroup and server state. */
   reset_workgroup_state( subrec, released_name->name, force_new_election );
@@ -178,7 +178,7 @@ static void unbecome_local_master_fail(struct subnet_record *subrec, struct resp
   memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
 
   DEBUG(0,("unbecome_local_master_fail: failed to release name %s. \
-Removing from namelist anyway.\n", namestr(fail_name)));
+Removing from namelist anyway.\n", nmb_namestr(fail_name)));
 
   /* Do it anyway. */
   namerec = find_name_on_subnet(subrec, fail_name, FIND_SELF_NAME);
@@ -244,7 +244,7 @@ static void release_msbrowse_name_success(struct subnet_record *subrec,
                       struct in_addr released_ip)
 {
   DEBUG(4,("release_msbrowse_name_success: Released name %s on subnet %s\n.",
-           namestr(released_name), subrec->subnet_name ));
+           nmb_namestr(released_name), subrec->subnet_name ));
 
   /* Remove the permanent MSBROWSE name added into the unicast subnet. */
   remove_permanent_name_from_unicast( subrec, released_name);
@@ -261,7 +261,7 @@ static void release_msbrowse_name_fail( struct subnet_record *subrec,
   struct name_record *namerec;
 
   DEBUG(4,("release_msbrowse_name_fail: Failed to release name %s on subnet %s\n.",
-           namestr(fail_name), subrec->subnet_name ));
+           nmb_namestr(fail_name), subrec->subnet_name ));
 
   /* Release the name anyway. */
   namerec = find_name_on_subnet(subrec, fail_name, FIND_SELF_NAME);
@@ -424,7 +424,7 @@ static void become_local_master_fail2(struct subnet_record *subrec,
   struct work_record *work = find_workgroup_on_subnet( subrec, fail_name->name);
 
   DEBUG(0,("become_local_master_fail2: failed to register name %s on subnet %s. \
-Failed to become a local master browser.\n", namestr(fail_name), subrec->subnet_name));
+Failed to become a local master browser.\n", nmb_namestr(fail_name), subrec->subnet_name));
 
   if(!work)
   {
@@ -508,7 +508,7 @@ in workgroup %s on subnet %s\n",
 
   DEBUG(0,("become_local_master_fail1: Failed to become a local master browser for \
 workgroup %s on subnet %s. Couldn't register name %s.\n",
-       work->work_group, subrec->subnet_name, namestr(fail_name)));
+       work->work_group, subrec->subnet_name, nmb_namestr(fail_name)));
 }
 
 /******************************************************************

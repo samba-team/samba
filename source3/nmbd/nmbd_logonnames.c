@@ -68,7 +68,7 @@ in workgroup %s on subnet %s\n",
 
   DEBUG(0,("become_logon_server_fail: Failed to become a domain master for \
 workgroup %s on subnet %s. Couldn't register name %s.\n",
-       work->work_group, subrec->subnet_name, namestr(fail_name)));
+       work->work_group, subrec->subnet_name, nmb_namestr(fail_name)));
 
 }
 

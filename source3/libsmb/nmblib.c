@@ -66,7 +66,7 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
 
   DEBUGADD( 4, ( "    %s: nmb_name=%s rr_type=%d rr_class=%d ttl=%d\n",
                  hdr,
-                 namestr(&res->rr_name),
+                 nmb_namestr(&res->rr_name),
                  res->rr_type,
                  res->rr_class,
                  res->ttl ) );
@@ -131,7 +131,7 @@ void debug_nmb_packet(struct packet_struct *p)
   if (nmb->header.qdcount)
     {
       DEBUGADD( 4, ( "    question: q_name=%s q_type=%d q_class=%d\n",
-                     namestr(&nmb->question.question_name),
+                     nmb_namestr(&nmb->question.question_name),
                      nmb->question.question_type,
                      nmb->question.question_class) );
     }
@@ -289,7 +289,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 /*******************************************************************
   useful for debugging messages
   ******************************************************************/
-char *namestr(struct nmb_name *n)
+char *nmb_namestr(struct nmb_name *n)
 {
   static int i=0;
   static fstring ret[4];

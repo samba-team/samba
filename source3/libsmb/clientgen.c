@@ -2541,7 +2541,7 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	fstrcpy(dest_host, cli->full_dest_host_name);
 
 	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
-		 namestr(&calling), namestr(&called), 
+		 nmb_namestr(&calling), nmb_namestr(&called), 
 		 inet_ntoa(cli->dest_ip),
 		 cli->user_name, cli->domain));
 
@@ -2571,7 +2571,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				BOOL do_shutdown, BOOL do_tcon)
 {
 	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s]\n",
-		          namestr(calling), namestr(called), inet_ntoa(*dest_ip),
+		          nmb_namestr(calling), nmb_namestr(called), inet_ntoa(*dest_ip),
 	              cli->user_name, cli->domain));
 
 	/* establish connection */
@@ -2586,7 +2586,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_connect(cli, dest_host, dest_ip))
 		{
 			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
-					  namestr(calling), inet_ntoa(*dest_ip)));
+					  nmb_namestr(calling), inet_ntoa(*dest_ip)));
 			return False;
 		}
 	}

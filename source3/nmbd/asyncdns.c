@@ -305,7 +305,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		dns_queue = p;
 	}
 
-	DEBUG(3,("added DNS query for %s\n", namestr(question)));
+	DEBUG(3,("added DNS query for %s\n", nmb_namestr(question)));
 	return True;
 }
 
@@ -321,7 +321,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 	char *qname = question->name;
 	struct in_addr dns_ip;
 
-	DEBUG(3,("DNS search for %s - ", namestr(question)));
+	DEBUG(3,("DNS search for %s - ", nmb_namestr(question)));
 
         /* Unblock TERM signal so we can be killed in DNS lookup. */
         BlockSignals(False, SIGTERM);

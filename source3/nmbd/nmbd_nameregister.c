@@ -57,7 +57,7 @@ static void register_name_response(struct subnet_record *subrec,
   if(!nmb_name_equal(question_name, answer_name))
   {
     DEBUG(0,("register_name_response: Answer name %s differs from question \
-name %s.\n", namestr(answer_name), namestr(question_name)));
+name %s.\n", nmb_namestr(answer_name), nmb_namestr(question_name)));
     return;
   }
 
@@ -80,7 +80,7 @@ name %s.\n", namestr(answer_name), namestr(question_name)));
       rrec->num_msgs--;
 
       DEBUG(5,("register_name_response: Ignoring broadcast response to \
-registration of name %s due to old Samba server bug.\n", namestr(answer_name)));
+registration of name %s due to old Samba server bug.\n", nmb_namestr(answer_name)));
       return;
     }
 #endif /* OLD_SAMBA_SERVER_HACK */
@@ -88,7 +88,7 @@ registration of name %s due to old Samba server bug.\n", namestr(answer_name)));
     /* Someone else has the name. Log the problem. */
     DEBUG(1,("register_name_response: Failed to register \
 name %s on subnet %s via broadcast. Error code was %d. Reject came from IP %s\n", 
-              namestr(answer_name), 
+              nmb_namestr(answer_name), 
               subrec->subnet_name, nmb->header.rcode, inet_ntoa(p->ip)));
     success = False;
   }
@@ -102,7 +102,7 @@ name %s on subnet %s via broadcast. Error code was %d. Reject came from IP %s\n"
 
       DEBUG(0,("register_name_response: server at IP %s rejected our \
 name registration of %s with error code %d.\n", inet_ntoa(p->ip), 
-                  namestr(answer_name), nmb->header.rcode));
+                  nmb_namestr(answer_name), nmb->header.rcode));
 
     }
     else if(nmb->header.opcode == NMB_WACK_OPCODE)
@@ -111,7 +111,7 @@ name registration of %s with error code %d.\n", inet_ntoa(p->ip),
          the response but don't send out any more register requests. */
 
       DEBUG(5,("register_name_response: WACK from WINS server %s in registering \
-name %s on subnet %s.\n", inet_ntoa(p->ip), namestr(answer_name), subrec->subnet_name));
+name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(answer_name), subrec->subnet_name));
 
       rrec->repeat_count = 0;
       /* How long we should wait for. */
@@ -130,7 +130,7 @@ name %s on subnet %s.\n", inet_ntoa(p->ip), namestr(answer_name), subrec->subnet
   } 
 
   DEBUG(5,("register_name_response: %s in registering name %s on subnet %s.\n",
-        success ? "success" : "failure", namestr(answer_name), subrec->subnet_name));
+        success ? "success" : "failure", nmb_namestr(answer_name), subrec->subnet_name));
 
   if(success)
   {
@@ -213,7 +213,7 @@ responding.\n", inet_ntoa(rrec->packet->ip)));
   }
 
   DEBUG(5,("register_name_timeout_response: %s in registering name %s on subnet %s.\n",
-        success ? "success" : "failure", namestr(question_name), subrec->subnet_name));
+        success ? "success" : "failure", nmb_namestr(question_name), subrec->subnet_name));
   if(success)
   {
     /* Enter the registered name into the subnet name database before calling
@@ -302,7 +302,7 @@ static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
         ip_list[i]) == NULL)
     {
       DEBUG(0,("multihomed_register_name: Failed to send packet trying to \
-register name %s IP %s\n", namestr(nmbname), inet_ntoa(ip_list[i]) ));
+register name %s IP %s\n", nmb_namestr(nmbname), inet_ntoa(ip_list[i]) ));
 
       free((char *)ip_list);
       return True;
@@ -352,7 +352,7 @@ BOOL register_name(struct subnet_record *subrec,
         nb_flags) == NULL)
   {
     DEBUG(0,("register_name: Failed to send packet trying to register name %s\n",
-          namestr(&nmbname)));
+          nmb_namestr(&nmbname)));
     return True;
   }
   return False;
@@ -387,7 +387,7 @@ BOOL refresh_name(struct subnet_record *subrec, struct name_record *namerec,
         namerec->data.ip[i]) == NULL)
     {
       DEBUG(0,("refresh_name: Failed to send packet trying to refresh name %s\n",
-            namestr(&namerec->name)));
+            nmb_namestr(&namerec->name)));
       return True;
     }
   }

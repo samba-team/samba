@@ -114,7 +114,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
   
   DEBUG(3,("process_host_announce: from %s<%02x> IP %s to \
 %s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              namestr(&dgram->dest_name),announce_name));
+              nmb_namestr(&dgram->dest_name),announce_name));
 
   DEBUG(5,("process_host_announce: ttl=%d server type=%08x comment=%s\n",
 	   ttl, servertype,comment));
@@ -213,7 +213,7 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
 
   DEBUG(3,("process_workgroup_announce: from %s<%02x> IP %s to \
 %s for workgroup %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              namestr(&dgram->dest_name),workgroup_announce_name));
+              nmb_namestr(&dgram->dest_name),workgroup_announce_name));
 
   DEBUG(5,("process_workgroup_announce: ttl=%d server type=%08x master browser=%s\n",
            ttl, servertype, master_name));
@@ -222,7 +222,7 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
   if (!strequal(dgram->dest_name.name, MSBROWSE) || (dgram->dest_name.name_type != 0x1))
   {
     DEBUG(0,("process_workgroup_announce: from IP %s should be to __MSBROWSE__<0x01> not %s\n",
-              inet_ntoa(p->ip), namestr(&dgram->dest_name)));
+              inet_ntoa(p->ip), nmb_namestr(&dgram->dest_name)));
     return;
   }
 
@@ -267,7 +267,7 @@ void process_local_master_announce(struct subnet_record *subrec, struct packet_s
 
   DEBUG(3,("process_local_master_announce: from %s<%02x> IP %s to \
 %s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              namestr(&dgram->dest_name),server_name));
+              nmb_namestr(&dgram->dest_name),server_name));
 
   DEBUG(5,("process_local_master_announce: ttl=%d server type=%08x comment=%s\n",
            ttl, servertype, comment));
@@ -440,7 +440,7 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 
   DEBUG(3,("process_lm_host_announce: LM Announcement from %s<%02x> IP %s to \
 %s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              namestr(&dgram->dest_name),announce_name));
+              nmb_namestr(&dgram->dest_name),announce_name));
 
   DEBUG(5,("process_lm_host_announce: os=(%d,%d) ttl=%d server type=%08x comment=%s\n",
           osmajor, osminor, ttl, servertype,comment));
@@ -552,7 +552,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
   bzero(outbuf,sizeof(outbuf));
 
   DEBUG(3,("send_backup_list_response: sending backup list for workgroup %s to %s IP %s\n",
-	   work->work_group, namestr(send_to_name), inet_ntoa(sendto_ip)));
+	   work->work_group, nmb_namestr(send_to_name), inet_ntoa(sendto_ip)));
   
   p = outbuf;
   
@@ -632,8 +632,8 @@ void process_get_backup_list_request(struct subnet_record *subrec,
   char *workgroup_name = dgram->dest_name.name;
 
   DEBUG(3,("process_get_backup_list_request: request from %s IP %s to %s.\n",
-           namestr(&dgram->source_name), inet_ntoa(p->ip),
-           namestr(&dgram->dest_name)));
+           nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
+           nmb_namestr(&dgram->dest_name)));
   
   /* We have to be a master browser, or a domain master browser
      for the requested workgroup. That means it must be our
@@ -707,7 +707,7 @@ void process_reset_browser(struct subnet_record *subrec,
 
   DEBUG(1,("process_reset_browser: received diagnostic browser reset \
 request from %s IP %s state=0x%X\n",
-             namestr(&dgram->source_name), inet_ntoa(p->ip), state));
+             nmb_namestr(&dgram->source_name), inet_ntoa(p->ip), state));
 
   /* Stop being a local master browser on all our broadcast subnets. */
   if (state & 0x1)
@@ -758,8 +758,8 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
   char *workgroup_name = dgram->dest_name.name;
  
   DEBUG(3,("process_announce_request: Announce request from %s IP %s to %s.\n",
-           namestr(&dgram->source_name), inet_ntoa(p->ip),
-           namestr(&dgram->dest_name)));
+           nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
+           nmb_namestr(&dgram->dest_name)));
   
   /* We only send announcement requests on our workgroup. */
   if(strequal(workgroup_name, global_myworkgroup) == False)
@@ -794,8 +794,8 @@ void process_lm_announce_request(struct subnet_record *subrec, struct packet_str
   char *workgroup_name = dgram->dest_name.name;
 
   DEBUG(3,("process_lm_announce_request: Announce request from %s IP %s to %s.\n",
-           namestr(&dgram->source_name), inet_ntoa(p->ip),
-           namestr(&dgram->dest_name)));
+           nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
+           nmb_namestr(&dgram->dest_name)));
 
   /* We only send announcement requests on our workgroup. */
   if(strequal(workgroup_name, global_myworkgroup) == False)

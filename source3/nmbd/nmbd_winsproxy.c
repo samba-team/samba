@@ -55,7 +55,7 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
   if(num_ips == 0)
   {
     DEBUG(0,("wins_proxy_name_query_request_success: Invalid number of IP records (0) \
-returned for name %s.\n", namestr(nmbname) ));
+returned for name %s.\n", nmb_namestr(nmbname) ));
     return;
   }
 
@@ -104,7 +104,7 @@ returned for name %s.\n", namestr(nmbname) ));
         DEBUG( 5, ( "wins_proxy_name_query_request_success: name %s is a WINS \
 proxy name and is also on the same subnet (%s) as the requestor. \
 Not replying.\n",
-                    namestr(&namerec->name),
+                    nmb_namestr(&namerec->name),
                     orig_broadcast_subnet->subnet_name ) );
         return;
       }
@@ -130,7 +130,7 @@ static void wins_proxy_name_query_request_fail(struct subnet_record *subrec,
                                     struct nmb_name *question_name, int fail_code)
 {
   DEBUG(4,("wins_proxy_name_query_request_fail: WINS server returned error code %d for lookup \
-of name %s.\n", fail_code, namestr(question_name) ));
+of name %s.\n", fail_code, nmb_namestr(question_name) ));
 }
 
 /****************************************************************************

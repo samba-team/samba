@@ -141,7 +141,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
   {
     dbgtext( "announce_local_master_browser_to_domain_master_browser:\n" );
     dbgtext( "Sending local master announce to " );
-    dbgtext( "%s for workgroup %s.\n", namestr(&work->dmb_name),
+    dbgtext( "%s for workgroup %s.\n", nmb_namestr(&work->dmb_name),
                                        work->work_group );
   }
 
@@ -161,7 +161,7 @@ static void sync_with_dmb(struct work_record *work)
   {
     dbgtext( "sync_with_dmb:\n" );
     dbgtext( "Initiating sync with domain master browser " );
-    dbgtext( "%s ", namestr(&work->dmb_name) );
+    dbgtext( "%s ", nmb_namestr(&work->dmb_name) );
     dbgtext( "at IP %s ", inet_ntoa(work->dmb_addr) );
     dbgtext( "for workgroup %s\n", work->work_group );
   }
@@ -364,7 +364,7 @@ static void find_domain_master_name_query_fail(struct subnet_record *subrec,
     dbgtext( "find_domain_master_name_query_fail:\n" );
     dbgtext( "Unable to find the Domain Master Browser name " );
     dbgtext( "%s for the workgroup %s.\n",
-             namestr(question_name), question_name->name );
+             nmb_namestr(question_name), question_name->name );
     dbgtext( "Unable to sync browse lists in this workgroup.\n" );
   }
 }
@@ -593,7 +593,7 @@ static void find_all_domain_master_names_query_fail(struct subnet_record *subrec
   {
     dbgtext( "find_domain_master_name_query_fail:\n" );
     dbgtext( "WINS server did not reply to a query for name " );
-    dbgtext( "%s.\nThis means it ", namestr(question_name) );
+    dbgtext( "%s.\nThis means it ", nmb_namestr(question_name) );
     dbgtext( "is probably not a Samba 1.9.18 or above WINS server.\n" );
   }
 }

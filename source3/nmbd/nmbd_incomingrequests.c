@@ -81,7 +81,7 @@ void process_name_release_request(struct subnet_record *subrec,
      */
     DEBUG(0,("process_name_release_request: unicast name release request \
 received for name %s from IP %s on subnet %s. Error - should be sent to WINS server\n",
-          namestr(question), inet_ntoa(owner_ip), subrec->subnet_name));      
+          nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name));      
 
     send_name_release_response(FMT_ERR, p);
     return;
@@ -89,7 +89,7 @@ received for name %s from IP %s on subnet %s. Error - should be sent to WINS ser
 
   DEBUG(3,("process_name_release_request: Name release on name %s, \
 subnet %s from owner IP %s\n",
-           namestr(&nmb->question.question_name),
+           nmb_namestr(&nmb->question.question_name),
            subrec->subnet_name, inet_ntoa(owner_ip)));
   
   /* If someone is releasing a broadcast group name, just ignore it. */
@@ -107,7 +107,7 @@ subnet %s from owner IP %s\n",
   {
     DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
 group release name %s from IP %s on subnet %s with no group bit set.\n",
-        namestr(question), inet_ntoa(owner_ip), subrec->subnet_name ));
+        nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name ));
     return;
   }
 
@@ -121,7 +121,7 @@ group release name %s from IP %s on subnet %s with no group bit set.\n",
     rcode = ACT_ERR;
     DEBUG(0, ("process_name_release_request: Attempt to release name %s from IP %s \
 on subnet %s being rejected as it is one of our names.\n", 
-          namestr(&nmb->question.question_name), inet_ntoa(owner_ip), subrec->subnet_name));
+          nmb_namestr(&nmb->question.question_name), inet_ntoa(owner_ip), subrec->subnet_name));
   }
 
   if(rcode == 0)
@@ -177,7 +177,7 @@ void process_name_refresh_request(struct subnet_record *subrec,
      */
     DEBUG(0,("process_name_refresh_request: unicast name registration request \
 received for name %s from IP %s on subnet %s. Error - should be sent to WINS server\n",
-          namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
     
     send_name_registration_response(FMT_ERR, 0, p);
     return;
@@ -187,7 +187,7 @@ received for name %s from IP %s on subnet %s. Error - should be sent to WINS ser
      refreshes. */
      
   DEBUG(3,("process_name_refresh_request: Name refresh for name %s \
-IP %s on subnet %s\n", namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
      
 }
     
@@ -220,14 +220,14 @@ void process_name_registration_request(struct subnet_record *subrec,
      */
     DEBUG(0,("process_name_registration_request: unicast name registration request \
 received for name %s from IP %s on subnet %s. Error - should be sent to WINS server\n",
-          namestr(question), inet_ntoa(from_ip), subrec->subnet_name));      
+          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));      
 
     send_name_registration_response(FMT_ERR, 0, p);
     return;
   }
 
   DEBUG(3,("process_name_registration_request: Name registration for name %s \
-IP %s on subnet %s\n", namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
   
   /* See if the name already exists. */
   namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
@@ -266,7 +266,7 @@ IP %s on subnet %s\n", namestr(question), inet_ntoa(from_ip), subrec->subnet_nam
       update_name_ttl(namerec, ttl);
 
       DEBUG(3,("process_name_registration_request: Updated name record %s \
-with IP %s on subnet %s\n",namestr(&namerec->name),inet_ntoa(from_ip), subrec->subnet_name));
+with IP %s on subnet %s\n",nmb_namestr(&namerec->name),inet_ntoa(from_ip), subrec->subnet_name));
       return;
     }
   }
@@ -328,14 +328,14 @@ void process_node_status_request(struct subnet_record *subrec, struct packet_str
   struct name_record *namerec;
 
   DEBUG(3,("process_node_status_request: status request for name %s from IP %s on \
-subnet %s.\n", namestr(&nmb->question.question_name), inet_ntoa(p->ip),
+subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip),
           subrec->subnet_name));
 
   if((namerec = find_name_on_subnet(subrec, &nmb->question.question_name,
                                     FIND_SELF_NAME)) == 0)
   {
     DEBUG(1,("process_node_status_request: status request for name %s from IP %s on \
-subnet %s - name not found.\n", namestr(&nmb->question.question_name),
+subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
           inet_ntoa(p->ip), subrec->subnet_name));
 
     return;
@@ -462,7 +462,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
   int i;
  
   DEBUG(3,("process_name_query_request: Name query from %s on subnet %s for name %s\n", 
-            inet_ntoa(p->ip), subrec->subnet_name, namestr(question)));
+            inet_ntoa(p->ip), subrec->subnet_name, nmb_namestr(question)));
   
   /* Look up the name in the cache - if the request is a broadcast request that
      came from a subnet we don't know about then search all the broadcast subnets
@@ -479,7 +479,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
    && ( (namerec->data.death_time != PERMANENT_TTL)
      && (namerec->data.death_time < p->timestamp) ) )
   {
-    DEBUG(5,("process_name_query_request: expired name %s\n", namestr(&namerec->name)));
+    DEBUG(5,("process_name_query_request: expired name %s\n", nmb_namestr(&namerec->name)));
     namerec = NULL;
   }
 
@@ -526,7 +526,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
           {
             DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also \
 on the same subnet (%s) as the requestor. Not replying.\n", 
-                   namestr(&namerec->name), subrec->subnet_name ));
+                   nmb_namestr(&namerec->name), subrec->subnet_name ));
             return;
           }
         }   
