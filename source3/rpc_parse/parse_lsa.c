@@ -1071,12 +1071,10 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		const char *name = names[i];
-		const char *dom_name = dom_names[i];
 		char *full_name;
 		int len;
 
-		full_name = talloc_asprintf(mem_ctx, "%s\\%s", dom_name, name);
+		full_name = talloc_asprintf(mem_ctx, "%s\\%s", dom_names[i], names[i]);
 		if (!full_name) {
 			DEBUG(0, ("init_q_lookup_names(): out of memory doing talloc_asprintf\n"));
 			return;
