@@ -196,6 +196,11 @@ void dcesrv_sock_init(struct server_service *service, const struct model_ops *mo
 
 	DEBUG(1,("dcesrv_sock_init\n"));
 
+	/* Make sure the directory for NCALRPC exists */
+	if (!directory_exist(lp_ncalrpc_dir(), NULL)) {
+		mkdir(lp_ncalrpc_dir(), 700);
+	}
+
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		switch (e->ep_description.transport) {
 		case NCACN_UNIX_STREAM:
