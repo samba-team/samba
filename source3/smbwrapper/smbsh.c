@@ -36,7 +36,7 @@ static void smbsh_usage(void)
 int main(int argc, char *argv[])
 {
 	char *p, *u;
-	const char *libd = dyn_BINDIR;
+	const char *libd = dyn_LIBDIR;
 	pstring line, wd;
 	int opt;
 	extern char *optarg;
