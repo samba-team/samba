@@ -64,7 +64,6 @@ struct pyconv py_DRIVER_INFO_6[] = {
 	{ "monitor_name", PY_UNISTR, offsetof(DRIVER_INFO_6, monitorname) },
 	{ "default_datatype", PY_UNISTR, offsetof(DRIVER_INFO_6, defaultdatatype) },
 	/* driver_date */
-
 	{ "padding", PY_UINT32, offsetof(DRIVER_INFO_6, padding) },
 	{ "driver_version_low", PY_UINT32, offsetof(DRIVER_INFO_6, driver_version_low) },
 	{ "driver_version_high", PY_UINT32, offsetof(DRIVER_INFO_6, driver_version_high) },
@@ -84,6 +83,7 @@ struct pyconv py_DRIVER_DIRECTORY_1[] = {
 BOOL py_from_DRIVER_INFO_1(PyObject **dict, DRIVER_INFO_1 *info)
 {
 	*dict = from_struct(info, py_DRIVER_INFO_1);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(1));
 	return True;
 }
 
@@ -95,6 +95,7 @@ BOOL py_to_DRIVER_INFO_1(DRIVER_INFO_1 *info, PyObject *dict)
 BOOL py_from_DRIVER_INFO_2(PyObject **dict, DRIVER_INFO_2 *info)
 {
 	*dict = from_struct(info, py_DRIVER_INFO_2);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(2));
 	return True;
 }
 
@@ -106,6 +107,7 @@ BOOL py_to_DRIVER_INFO_2(DRIVER_INFO_2 *info, PyObject *dict)
 BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info)
 {
 	*dict = from_struct(info, py_DRIVER_INFO_3);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(3));
 	return True;
 }
 
@@ -119,6 +121,7 @@ BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict)
 BOOL py_from_DRIVER_INFO_6(PyObject **dict, DRIVER_INFO_6 *info)
 {
 	*dict = from_struct(info, py_DRIVER_INFO_6);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(6));
 	return True;
 }
 
@@ -130,6 +133,7 @@ BOOL py_to_DRIVER_INFO_6(DRIVER_INFO_6 *info, PyObject *dict)
 BOOL py_from_DRIVER_DIRECTORY_1(PyObject **dict, DRIVER_DIRECTORY_1 *info)
 {
 	*dict = from_struct(info, py_DRIVER_DIRECTORY_1);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(1));
 	return True;
 }
 
