@@ -437,6 +437,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 {
 	struct tm tm2, tm3;
 	time_t t;
+	static int zone = -1;
 
 	tm2 = *tm;
 
@@ -445,7 +446,10 @@ char *rep_inet_ntoa(struct in_addr ip)
 	tm2 = *tm;
 	tm2.tm_isdst = tm3.tm_isdst;
 	t = mktime(&tm2);
-	t -= TimeDiff();
+	if (zone == -1) {
+		zone = get_time_zone();
+	}
+	t -= zone;
 
 	return t;
 }
