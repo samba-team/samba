@@ -1,3 +1,24 @@
+Sun Mar 16 18:13:52 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/sendauth.c: implemented functionality
+
+	* lib/krb5/rd_rep.c: Use `krb5_decrypt'
+
+	* lib/krb5/cache.c (krb5_cc_get_name): return default if `id' ==
+ 	NULL
+
+	* lib/krb5/principal.c (krb5_free_principal): added `context'
+ 	argument.  Changed all callers.
+	
+	(krb5_sname_to_principal): new function
+
+	* lib/krb5/auth_context.c (krb5_free_authenticator): add `context'
+ 	argument.  Changed all callers
+
+	* lib/krb5/{net_write.c,net_read.c,recvauth.c}: new files
+
+	* lib/asn1/gen.c: Fix encoding and decoding of BitStrings
+
 Fri Mar 14 11:29:00 1997  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: look for *dbm?
