@@ -1,3 +1,27 @@
+1999-12-03  Assar Westerlund  <assar@sics.se>
+
+	* getaddrinfo.c (add_hostent): search for the canonical name among
+	all aliases
+	(getaddrinfo): handle AI_NUMERICHOST correctly
+	* Makefile.am (EXTRA_libroken_la_SOURCES): add freeaddinfo,
+	getaddrinfo, getnameinfo, gai_strerror
+	(getaddrinfo_test): add
+	* Makefile.in (SOURCES): add freeaddinfo, getaddrinfo,
+	getnameinfo, gai_strerror
+	(getaddrinfo_test): add
+	* roken.h.in: arpa/inet.h: include
+	(socklen_t): add
+	(struct addrinfo): add
+	(EAI_*): add
+	(NI_*): add
+	(AI_*): add
+	(getaddrinfo, getnameinfo, freeaddrinfo, gai_strerror): add
+	* getnameinfo.c: new file
+	* getaddrinfo-test.c: new file
+	* gai_strerror.c: new file
+	* getaddrinfo.c: new file
+	* freeaddrinfo.c: new file
+
 1999-11-25  Assar Westerlund  <assar@sics.se>
 
 	* getopt.c (getopt): return -1 instead of EOF.  From
