@@ -224,7 +224,7 @@ int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,24,(strlen(fname) + 1) * 2 + 1,True);
+	set_message(cli->outbuf,24,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBntcreateX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -248,8 +248,8 @@ int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 	p++; /* Alignment */
 	pstrcpy(uni, fname);
 	unix_to_dos(uni, True);
-	dos_struni2(p, uni, (strlen(fname) + 1) * 2);
-
+	p += dos_struni2(p, uni, (strlen(fname) + 1) * 2);
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return -1;
@@ -386,7 +386,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0', smb_size);
 
-	set_message(cli->outbuf,8,10,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -403,6 +403,11 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	SSVAL(p, 0, cli->pid);
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
+
+	p += 10;
+
+	cli_setup_bcc(cli, p);
+
 	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
@@ -431,7 +436,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,8,10,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -448,7 +453,8 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 	SSVAL(p, 0, cli->pid);
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
-
+	p += 10;
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
@@ -478,7 +484,7 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0', smb_size);
 
-	set_message(cli->outbuf,8,20,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -497,6 +503,9 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 	SIVAL(p, 8, (offset&0xffffffff));
 	SIVAL(p, 12, (len>>32));
 	SIVAL(p, 16, (len&0xffffffff));
+	p += 20;
+
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
@@ -525,7 +534,7 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,8,20,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -544,7 +553,8 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 	SIVAL(p, 8, (offset&0xffffffff));
 	SIVAL(p, 12, (len>>32));
 	SIVAL(p, 16, (len&0xffffffff));
-
+	p += 20;
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
@@ -671,7 +681,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,8,strlen(fname)+4,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBsetatr;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -681,11 +691,11 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 	put_dos_date3(cli->outbuf,smb_vwv1, t);
 
 	p = smb_buf(cli->outbuf);
-	*p = 4;
-	pstrcpy(p+1, fname);
-	unix_to_dos(p+1,True);
-	p = skip_string(p,1);
-	*p = 4;
+	*p++ = 4;
+	p += clistr_push(cli, p, fname, -1, CLISTR_TERMINATE | CLISTR_CONVERT);
+	*p++ = 4;
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
