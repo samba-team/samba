@@ -90,8 +90,8 @@
 </sect1>
 
 <sect1>
-	<title><anchor id="SMBPASSWDFILEFORMAT"/>The smbpasswd file</title>
-	
+	<title>The smbpasswd file</title>
+	<anchor id="SMBPASSWDFILEFORMAT"/>
 	<para>In order for Samba to participate in the above protocol 
 	it must be able to look up the 16 byte hashed values given a user name.
 	Unfortunately, as the UNIX password value is also a one way hash
@@ -169,7 +169,8 @@ username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:
 	entry would look like :</para>
 
 	<para><programlisting>
-	bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Bob's full name:/bobhome:/bobshell
+bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:
+	[U          ]:LCT-00000000:Bob's full name:/bobhome:/bobshell
 	</programlisting></para>
 	
 	<para>If you are allowing users to use the smbpasswd command to set 
