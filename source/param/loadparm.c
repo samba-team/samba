@@ -73,6 +73,7 @@ extern pstring user_socket_options;
 extern pstring global_myname;
 pstring global_scope = "";
 
+
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
 #endif
@@ -1792,6 +1793,7 @@ static int add_a_service(service * pservice, char *name)
 	tservice = *pservice;
 
 	/* it might already exist */
+
 	if (name)
 	{
 		i = getservicebyname(name, NULL);
@@ -3430,16 +3432,26 @@ does not copy the found service.
 int lp_servicenumber(char *pszServiceName)
 {
 	int iService;
+	fstring serviceName;
+	
 
 	for (iService = iNumServices - 1; iService >= 0; iService--)
-		if (VALID(iService) && ServicePtrs[iService]->szService &&
-				strequal(ServicePtrs[iService]->szService, pszServiceName))
-			break;
+	{
+		if (VALID(iService) && ServicePtrs[iService]->szService) 
+		{
+			/*
+			 * The substitution here is used to support %U is 
+			 * service names
+			 */
+			fstrcpy(serviceName, ServicePtrs[iService]->szService);
+			standard_sub_basic(serviceName);
+			if (strequal(serviceName, pszServiceName))
+				break;
+		}
+	}
 
 	if (iService < 0)
-		DEBUG(7,
-		      ("lp_servicenumber: couldn't find %s\n",
-		       pszServiceName));
+		DEBUG(7,("lp_servicenumber: couldn't find %s\n", pszServiceName));
 
 	return (iService);
 }
