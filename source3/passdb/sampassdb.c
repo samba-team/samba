@@ -134,10 +134,17 @@ struct sam_passwd *getsam21pwent(void *vp)
 
 BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
+	struct sam_passwd *mapped;
+
 	DEBUG(10,("mod_sam21pwd_entry: unix user %s rid %d\n", 
 		pwd->unix_name, pwd->user_rid));
 
- 	return pwdb_ops->mod_sam21pwd_entry(pwdb_sam_map_names(pwd), override);
+	mapped = pwdb_sam_map_names(pwd);
+	if (mapped != NULL)
+	{
+		return pwdb_ops->mod_sam21pwd_entry(mapped, override);
+	}
+	return False;
 }
 
 /************************************************************************
