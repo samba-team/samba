@@ -417,7 +417,7 @@ is the same thing as no salt at all).
 
 Common types of salting includes
 
-@itemize
+@itemize @bullet
 @item @code{v4} (or @code{des:pw-salt:})
 
 The Kerberos 4 salting is using no salt att all. Reson there is colon
