@@ -1,3 +1,10 @@
+1999-10-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pop_init.c (krb5_authenticate): don't use the principal
+	associated with the socket for authentication, instead let
+	krb5_rd_req pick the correct one from the ticket; just check that
+	it actually was a pop-ticket
+
 1999-08-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pop_init.c (pop_init): don't freehostent if ch == NULL
