@@ -1904,7 +1904,8 @@ BOOL samr_io_r_open_group(char *desc,  SAMR_R_OPEN_GROUP *r_u, prs_struct *ps, i
 makes a GROUP_INFO1 structure.
 ********************************************************************/
 BOOL make_samr_group_info1(GROUP_INFO1 *gr1,
-				char *acct_name, char *acct_desc)
+				char *acct_name, char *acct_desc,
+				uint32 num_members)
 {
 	int desc_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	int acct_len = acct_name != NULL ? strlen(acct_name) : 0;
@@ -1915,7 +1916,7 @@ BOOL make_samr_group_info1(GROUP_INFO1 *gr1,
 	make_uni_hdr(&(gr1->hdr_acct_name), acct_len);
 
 	gr1->unknown_1 = 0x3;
-	gr1->unknown_2 = 0x3;
+	gr1->num_members = num_members;
 
 	make_uni_hdr(&(gr1->hdr_acct_desc), desc_len);
 
@@ -1941,7 +1942,7 @@ BOOL samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int dept
 	smb_io_unihdr ("hdr_acct_name", &(gr1->hdr_acct_name) , ps, depth); 
 
 	prs_uint32("unknown_1", ps, depth, &(gr1->unknown_1));
-	prs_uint32("unknown_2", ps, depth, &(gr1->unknown_2));
+	prs_uint32("num_members", ps, depth, &(gr1->num_members));
 
 	smb_io_unihdr ("hdr_acct_desc", &(gr1->hdr_acct_desc) , ps, depth); 
 
