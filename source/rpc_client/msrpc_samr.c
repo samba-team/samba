@@ -1411,13 +1411,24 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 		return False;
 	}
 
+	/* Why do we have to try to (re-)set the ACB to be the same as what
+	   we passed in the samr_create_dom_user() call?  When a NT
+	   workstation is joined to a domain by an administrator the
+	   acb_info is set to 0x80.  For a normal user with "Add
+	   workstations to the domain" rights the acb_info is 0x84.  I'm
+	   not sure whether it is supposed to make a difference or not.  NT
+	   seems to cope with either value so don't bomb out if the set
+	   userinfo2 level 0x10 fails.  -tpot */
+
 	p10 = ctr.info.id10;
 
 	if (p10 != NULL && p10->acb_info != acb_info)
 	{
+		BOOL res2;
+
 		p10->acb_info = acb_info;
 
-		res1 = set_samr_set_userinfo2( pol_dom, 0x10, *rid, (void*)p10);
+		res2 = set_samr_set_userinfo2( pol_dom, 0x10, *rid, (void*)p10);
 	}
 	else
 	{	
