@@ -24,8 +24,8 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-%apply unsigned char { uint8_t };
-%apply char { int8_t };
+%apply int { uint8_t };
+%apply int { int8_t };
 %apply unsigned int { uint16_t };
 %apply int { int16_t };
 %apply unsigned long long { uint64_t };
