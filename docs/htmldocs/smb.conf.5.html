@@ -2526,12 +2526,6 @@ error. Unfortunately WfWg totally ignores the error code and carries
 on regardless, saying that the message was delivered.
 <p><br>If you want to silently delete it then try:
 <p><br><code>"message command = rm %s"</code>.
-<p><br>For the really adventurous, try something like this:
-<p><br><code>message command = csh -c 'csh &lt; %s |&amp; /usr/local/samba/bin/smbclient -M %m; rm %s' &amp;</code>
-<p><br>this would execute the command as a script on the server, then give
-them the result in a WinPopup message. Note that this could cause a
-loop if you send a message from the server using smbclient! You better
-wrap the above in a script that checks for this :-)
 <p><br><strong>Default:</strong>
 <code>	no message command</code>
 <p><br><strong>Example:</strong>

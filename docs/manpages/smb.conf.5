@@ -3698,15 +3698,6 @@ If you want to silently delete it then try:
 .IP 
 \f(CW"message command = rm %s"\fP\&.
 .IP 
-For the really adventurous, try something like this:
-.IP 
-\f(CWmessage command = csh -c \'csh < %s |& /usr/local/samba/bin/smbclient -M %m; rm %s\' &\fP
-.IP 
-this would execute the command as a script on the server, then give
-them the result in a WinPopup message\&. Note that this could cause a
-loop if you send a message from the server using smbclient! You better
-wrap the above in a script that checks for this :-)
-.IP 
 \fBDefault:\fP
 \f(CW	no message command\fP
 .IP 
