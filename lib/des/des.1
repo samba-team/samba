@@ -66,7 +66,7 @@ takes care to destroy the key argument immediately upon entry.
 If your shell keeps a history file be careful to make sure it is not
 world readable.
 .LP
-Since this program attempts to maintain compatibility with sunOS's
+Since this program attempts to maintain compatibility with SunOS's
 des(1) command, there are 2 different methods used to convert the user
 supplied key to a des key.
 Whenever and one or more of
@@ -74,7 +74,7 @@ Whenever and one or more of
 or
 .B \-3
 options are used, the key conversion procedure will not be compatible
-with the sunOS des(1) version but will use all the user supplied
+with the SunOS des(1) version but will use all the user supplied
 character to generate the des key.
 .B des
 command reads from standard input unless
@@ -96,7 +96,7 @@ option is used then triple ecb encryption is performed.
 If the key is less than 8 characters long, the flag has no effect.
 .TP
 .B \-e
-Encrypt data using an 8 byte key in a manner compatible with sunOS
+Encrypt data using an 8 byte key in a manner compatible with SunOS
 des(1).
 .TP
 .B \-E
@@ -115,7 +115,7 @@ stderr.
 If a filename was specified after the
 .B \-c
 option, the checksum is output to that file.
-The checksum is generated using a key generated in a sunOS compatible
+The checksum is generated using a key generated in a SunOS compatible
 manner.
 .TP
 .B \-C
@@ -128,10 +128,10 @@ and
 options
 .TP
 .B \-f
-Does nothing - allowed for compatibility with sunOS des(1) command.
+Does nothing - allowed for compatibility with SunOS des(1) command.
 .TP
 .B \-s
-Does nothing - allowed for compatibility with sunOS des(1) command.
+Does nothing - allowed for compatibility with SunOS des(1) command.
 .TP
 .B "\-k \fIkey\fP"
 Use the encryption
