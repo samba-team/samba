@@ -50,7 +50,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	int i;
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_pull(inbuf, pipe_name, smb_buf(inbuf), sizeof(pipe_name), -1, STR_TERMINATE);
+	srvstr_pull_buf(inbuf, pipe_name, smb_buf(inbuf), sizeof(pipe_name), STR_TERMINATE);
 
 	/* If the name doesn't start \PIPE\ then this is directed */
 	/* at a mailslot or something we really, really don't understand, */

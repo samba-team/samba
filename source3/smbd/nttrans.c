@@ -502,7 +502,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	int pnum = -1;
 	char *p = NULL;
 
-	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
+	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
@@ -609,7 +609,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
-			srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
+			srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 
 			if( strchr_m(fname, ':')) {
 				END_PROFILE(SMBntcreateX);
@@ -635,10 +635,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			dir_name_len++;
 		}
 
-		srvstr_pull(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 
-			-1, STR_TERMINATE);
+		srvstr_pull_buf(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, STR_TERMINATE);
 	} else {
-		srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
+		srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 	}
 	
 	/*
@@ -880,7 +879,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 		return ERROR_DOS(ERRDOS,ERRbadaccess);
 	}
 
-	srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
+	srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
 
     if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
       return ret;
@@ -1096,7 +1095,7 @@ static int call_nt_transact_create(connection_struct *conn,
        * Check to see if this is a mac fork of some kind.
        */
 
-      srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
+      srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
 
       if( strchr_m(fname, ':')) {
           return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
@@ -1122,9 +1121,9 @@ static int call_nt_transact_create(connection_struct *conn,
     }
 
     srvstr_pull(inbuf, &fname[dir_name_len], params+53, sizeof(fname)-dir_name_len, 
-		-1, STR_TERMINATE);
+		total_parameter_count-53, STR_TERMINATE);
   } else {
-    srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
+	  srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
   }
 
   /*
