@@ -36,20 +36,18 @@
  * SUCH DAMAGE. 
  */
 
+#include "kadm5_locl.h"
+
 RCSID("$Id$");
 
-/* this file is included by client_glue.c, and server_glue.c */
-
-#ifndef __CALL
-#error Must define __CALL
-#endif
+#define __CALL(F, P) (*((kadm5_common_context*)server_handle)->funcs.F)P;
 
 kadm5_ret_t
 kadm5_chpass_principal(void *server_handle,
 		       krb5_principal princ,
 		       char *password)
 {
-    return __CALL(chpass_principal(server_handle, princ, password));
+    return __CALL(chpass_principal, (server_handle, princ, password));
 }
 
 kadm5_ret_t
@@ -58,26 +56,26 @@ kadm5_create_principal(void *server_handle,
 		       u_int32_t mask,
 		       char *password)
 {
-    return __CALL(create_principal(server_handle, princ, mask, password));
+    return __CALL(create_principal, (server_handle, princ, mask, password));
 }
 
 kadm5_ret_t
 kadm5_delete_principal(void *server_handle,
 		       krb5_principal princ)
 {
-    return __CALL(delete_principal(server_handle, princ));
+    return __CALL(delete_principal, (server_handle, princ));
 }
 
 kadm5_ret_t
 kadm5_destroy (void *server_handle)
 {
-    return __CALL(destroy(server_handle));
+    return __CALL(destroy, (server_handle));
 }
 
 kadm5_ret_t
 kadm5_flush (void *server_handle)
 {
-    return __CALL(flush(server_handle));
+    return __CALL(flush, (server_handle));
 }
 
 kadm5_ret_t
@@ -86,45 +84,7 @@ kadm5_get_principal(void *server_handle,
 		    kadm5_principal_ent_t out,
 		    u_int32_t mask)
 {
-    return __CALL(get_principal(server_handle, princ, out, mask));
-}
-
-kadm5_ret_t
-kadm5_init_with_password(char *client_name,
-			 char *pass,
-			 char *service_name,
-			 kadm5_config_params *realm_params,
-			 unsigned long struct_version,
-			 unsigned long api_version,
-			 void **server_handle)
-{
-    return __CALL(init_with_password(client_name,
-					 pass,
-					 service_name,
-					 realm_params,
-					 struct_version,
-					 api_version,
-					 server_handle));
-}
-
-kadm5_ret_t
-kadm5_init_with_password_ctx(krb5_context context,
-			     char *client_name,
-			     char *pass,
-			     char *service_name,
-			     kadm5_config_params *realm_params,
-			     unsigned long struct_version,
-			     unsigned long api_version,
-			     void **server_handle)
-{
-    return __CALL(init_with_password_ctx(context,
-					     client_name,
-					     pass,
-					     service_name,
-					     realm_params,
-					     struct_version,
-					     api_version,
-					     server_handle));
+    return __CALL(get_principal, (server_handle, princ, out, mask));
 }
 
 kadm5_ret_t
@@ -132,7 +92,7 @@ kadm5_modify_principal(void *server_handle,
 		       kadm5_principal_ent_t princ,
 		       u_int32_t mask)
 {
-    return __CALL(modify_principal(server_handle, princ, mask));
+    return __CALL(modify_principal, (server_handle, princ, mask));
 }
 
 kadm5_ret_t
@@ -141,7 +101,7 @@ kadm5_randkey_principal(void *server_handle,
 			krb5_keyblock **new_keys,
 			int *n_keys)
 {
-    return __CALL(randkey_principal(server_handle, princ, new_keys, n_keys));
+    return __CALL(randkey_principal, (server_handle, princ, new_keys, n_keys));
 }
 
 kadm5_ret_t
@@ -149,7 +109,7 @@ kadm5_rename_principal(void *server_handle,
 		       krb5_principal source,
 		       krb5_principal target)
 {
-    return __CALL(rename_principal(server_handle, source, target));
+    return __CALL(rename_principal, (server_handle, source, target));
 }
 
 kadm5_ret_t
@@ -158,12 +118,12 @@ kadm5_get_principals(void *server_handle,
 		     char ***princs,
 		     int *count)
 {
-    return __CALL(get_principals(server_handle, exp, princs, count));
+    return __CALL(get_principals, (server_handle, exp, princs, count));
 }
 
 kadm5_ret_t
 kadm5_get_privs(void *server_handle,
 		u_int32_t *privs)
 {
-    return __CALL(get_privs(server_handle, privs));
+    return __CALL(get_privs, (server_handle, privs));
 }

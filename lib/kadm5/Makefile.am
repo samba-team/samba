@@ -11,8 +11,8 @@ idir = $(top_builddir)/include/kadm5
 inc_DATA = kadm5_err.h
 
 COMMON_SOURCES = \
-	acl.c chpass_c.c chpass_s.c context_s.c create_c.c	\
-	create_s.c delete_c.c delete_s.c destroy_c.c		\
+	acl.c chpass_c.c chpass_s.c common_glue.c context_s.c	\
+	create_c.c create_s.c delete_c.c delete_s.c destroy_c.c	\
 	destroy_s.c ent_setup.c error.c flush.c free.c		\
 	get_c.c get_s.c get_princs_c.c get_princs_s.c 		\
 	init_c.c init_s.c kadm5_err.c				\

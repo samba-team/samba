@@ -40,6 +40,24 @@
 
 RCSID("$Id$");
 
+static void
+set_funcs(kadm5_server_context *c)
+{
+#define SET(C, F) (C)->funcs.F = kadm5 ## _s_ ## F
+    SET(c, chpass_principal);
+    SET(c, chpass_principal);
+    SET(c, create_principal);
+    SET(c, delete_principal);
+    SET(c, destroy);
+    SET(c, flush);
+    SET(c, get_principal);
+    SET(c, get_principals);
+    SET(c, get_privs);
+    SET(c, modify_principal);
+    SET(c, randkey_principal);
+    SET(c, rename_principal);
+};
+
 kadm5_ret_t
 _kadm5_s_init_context(kadm5_server_context **ctx, 
 		      kadm5_config_params *params,
@@ -49,6 +67,7 @@ _kadm5_s_init_context(kadm5_server_context **ctx,
     if(*ctx == NULL)
 	return ENOMEM;
     memset(*ctx, 0, sizeof(**ctx));
+    set_funcs(*ctx);
     (*ctx)->context = context;
     initialize_kadm5_error_table(&context->et_list);
 #if 0

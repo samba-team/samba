@@ -38,8 +38,43 @@
 
 #include "kadm5_locl.h"
 
-/* $Id$ */
+RCSID("$Id$");
 
-#define __CALL(FUNC) kadm5 ## _s_ ## FUNC
+kadm5_ret_t
+kadm5_init_with_password(char *client_name,
+			 char *pass,
+			 char *service_name,
+			 kadm5_config_params *realm_params,
+			 unsigned long struct_version,
+			 unsigned long api_version,
+			 void **server_handle)
+{
+    return kadm5_s_init_with_password(client_name,
+				      pass,
+				      service_name,
+				      realm_params,
+				      struct_version,
+				      api_version,
+				      server_handle);
+}
 
-#include "common_glue.c"
+kadm5_ret_t
+kadm5_init_with_password_ctx(krb5_context context,
+			     char *client_name,
+			     char *pass,
+			     char *service_name,
+			     kadm5_config_params *realm_params,
+			     unsigned long struct_version,
+			     unsigned long api_version,
+			     void **server_handle)
+{
+    return kadm5_s_init_with_password_ctx(context,
+					  client_name,
+					  pass,
+					  service_name,
+					  realm_params,
+					  struct_version,
+					  api_version,
+					  server_handle);
+}
+

@@ -62,10 +62,36 @@
 #include <roken.h>
 #include <parse_units.h>
 
+struct kadm_func {
+    kadm5_ret_t (*chpass_principal) (void *, krb5_principal, char*);
+    kadm5_ret_t (*create_principal) (void*, kadm5_principal_ent_t, 
+				     u_int32_t, char*);
+    kadm5_ret_t (*delete_principal) (void*, krb5_principal);
+    kadm5_ret_t (*destroy) (void*);
+    kadm5_ret_t (*flush) (void*);
+    kadm5_ret_t (*get_principal) (void*, krb5_principal, 
+				  kadm5_principal_ent_t, u_int32_t);
+    kadm5_ret_t (*get_principals) (void*, const char*, char***, int*);
+    kadm5_ret_t (*get_privs) (void*, u_int32_t*);
+    kadm5_ret_t (*modify_principal) (void*, kadm5_principal_ent_t, u_int32_t);
+    kadm5_ret_t (*randkey_principal) (void*, krb5_principal, 
+				      krb5_keyblock**, int*);
+    kadm5_ret_t (*rename_principal) (void*, krb5_principal, krb5_principal);
+};
+
+/* XXX should be integrated */
+typedef struct kadm5_common_context {
+    krb5_context context;
+    krb5_boolean my_context;
+    struct kadm_func funcs;
+    void *data;
+}kadm5_common_context;
+
 typedef struct kadm5_server_context {
     krb5_context context;
     krb5_boolean my_context;
-    kadm5_config_params config;
+    struct kadm_func funcs;
+    /* */
     HDB *db;
     krb5_principal caller;
     unsigned acl_flags;
@@ -75,7 +101,8 @@ typedef struct kadm5_server_context {
 typedef struct kadm5_client_context {
     krb5_context context;
     krb5_boolean my_context;
-    kadm5_config_params config;
+    struct kadm_func funcs;
+    /* */
     krb5_auth_context ac;
     char *realm;
     char *admin_server;
