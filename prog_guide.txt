@@ -1,3 +1,5 @@
+
+
 THIS IS INCOMPLETE! I'M ONLY COMMITING IT IN ORDER TO SOLICIT COMMENTS
 FROM A FEW PEOPLE. DON'T TAKE THIS AS THE FINAL VERSION YET.
 
@@ -523,7 +525,8 @@ string.
 
 The format is:
 
-  TRANSPORT:host:[flags]
+  TRANSPORT:host:[flags] or 
+  TRANSPORT:[flags] (for server side or general specifications)
 
 where TRANSPORT is either ncacn_np for SMB or ncacn_ip_tcp for RPC/TCP
 
