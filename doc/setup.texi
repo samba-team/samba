@@ -635,6 +635,8 @@ client kerberos library and the KDC.
 @section Setting up DNS
 @cindex Setting up DNS
 
+@subsection Using DNS to find KDC
+
 If there is information about where to find the KDC or kadmind for a
 realm in the @file{krb5.conf} for a realm, that information will be
 preferred and DNS will not be queried.
@@ -671,3 +673,22 @@ _kerberos-adm._tcp	SRV	10 1 749 kerberos.example.com.
 More information about DNS SRV resource records can be found in
 RFC-2782 (A DNS RR for specifying the location of services (DNS SRV)).
 
+@subsection Using DNS to map hostname to Kerberos realm
+
+Heimdal also support a way to lookup realm from a hostname. This to
+minimize configuration needed on clients. Using this have the backdraw
+that clients can be redirect by an attacker to realms within the same
+cross realm trust and made belive they talk to the right server (since
+kerberos authentication will succeed). 
+
+Example configuration that informs clients that for the realms
+it.example.com and srv.example.com, they should use the realm
+EXAMPLE.COM.
+
+@example
+
+$ORIGIN example.com.
+_kerberos.it		TXT     "EXAMPLE.COM"
+_kerberos.srv		TXT     "EXAMPLE.COM"
+
+@end example
