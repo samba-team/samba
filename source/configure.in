@@ -1759,7 +1759,7 @@ AC_ARG_WITH(tdbpwd,
 # check for a LDAP password database
 AC_MSG_CHECKING(whether to use LDAP password database)
 AC_ARG_WITH(ldap,
-[  --with-ldap             Include Experimental LDAP-Sam support (default=no)],
+[  --with-ldapsam          Include Experimental LDAP-Sam support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
