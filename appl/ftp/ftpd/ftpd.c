@@ -135,6 +135,7 @@ RCSID("$Id$");
 #include "auth.h"
 
 #include <krb.h>
+
 #include <kafs.h>
 #include "roken.h"
 
