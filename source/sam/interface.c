@@ -317,6 +317,7 @@ NTSTATUS context_sam_lookup_domain(const SAM_CONTEXT *context, const NT_USER_TOK
 
 	while (tmp_methods) {
 		if (strcmp(domain, tmp_methods->domain_name) == 0) {
+			(*domainsid) = (DOM_SID *)malloc(sizeof(DOM_SID));
 			sid_copy((*domainsid), &tmp_methods->domain_sid);
 			return NT_STATUS_OK;
 		}
