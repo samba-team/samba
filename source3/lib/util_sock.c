@@ -791,9 +791,9 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebin
     { DEBUG(0,("gethostname failed\n")); return -1; } 
 
   /* get host info */
-  if ((hp = Get_Hostbyname(host_name)) == 0) 
+  if ((hp = sys_gethostbyname(host_name)) == 0) 
     {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",host_name));
+      DEBUG(0,( "sys_gethostbyname: Unknown host %s\n",host_name));
       return -1;
     }
   
@@ -945,8 +945,8 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	struct hostent *hp;
 	int     i;
 	
-	if ((hp = Get_Hostbyname(remotehost)) == 0) {
-		DEBUG(0,("Get_Hostbyname(%s): lookup failure.\n", remotehost));
+	if ((hp = sys_gethostbyname(remotehost)) == 0) {
+		DEBUG(0,("sys_gethostbyname(%s): lookup failure.\n", remotehost));
 		return False;
 	} 
 

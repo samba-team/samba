@@ -772,7 +772,7 @@ static BOOL resolve_hosts(const char *name,
 
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
-	if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		struct in_addr return_ip;
 		putip((char *)&return_ip,(char *)hp->h_addr);
 		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
