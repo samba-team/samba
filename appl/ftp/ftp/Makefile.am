@@ -8,6 +8,12 @@ INCLUDES = -I$(srcdir)/../common $(INCLUDE_readline) $(INCLUDE_krb4) $(INCLUDE_r
 
 bin_PROGRAMS = ftp
 
+if KRB4
+krb4_sources = $(EXTRA_ftp_SOURCES)
+else
+krb4_sources = 
+endif
+
 ftp_SOURCES = \
 	cmds.c \
 	cmdtab.c \
@@ -17,9 +23,10 @@ ftp_SOURCES = \
 	domacro.c \
 	globals.c \
 	security.c \
-	krb4.c \
-	kauth.c \
+	$(krb4_sources) \
 	gssapi.c
+
+EXTRA_ftp_SOURCES = krb4.c kauth.c
 
 LDADD = \
 	../common/libcommon.a \

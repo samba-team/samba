@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -93,8 +93,12 @@ name_to_level(const char *name)
 #ifdef FTP_SERVER
 
 static struct sec_server_mech *mechs[] = {
+#ifdef KRB5
     &gss_server_mech,
+#endif
+#ifdef KRB4
     &krb4_server_mech,
+#endif
     NULL
 };
 
@@ -103,8 +107,12 @@ static struct sec_server_mech *mech;
 #else
 
 static struct sec_client_mech *mechs[] = {
+#ifdef KRB5
     &gss_client_mech,
+#endif
+#ifdef KRB4
     &krb4_client_mech,
+#endif
     NULL
 };
 

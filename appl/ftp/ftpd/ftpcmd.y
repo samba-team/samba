@@ -493,6 +493,7 @@ cmd
 
 	| SITE SP KAUTH check_login SP STRING CRLF
 		{
+#ifdef KRB4
 			char *p;
 			
 			if(guest)
@@ -509,35 +510,55 @@ cmd
 			}
 			if($6 != NULL)
 			    free($6);
+#else
+			reply(500, "Command not implemented.");
+#endif
 		}
 	| SITE SP KLIST check_login CRLF
 		{
+#ifdef KRB4
 		    if($4)
 			klist();
+#else
+		    reply(500, "Command not implemented.");
+#endif
 		}
 	| SITE SP KDESTROY check_login CRLF
 		{
+#ifdef KRB4
 		    if($4)
 			kdestroy();
+#else
+		    reply(500, "Command not implemented.");
+#endif
 		}
 	| SITE SP KRBTKFILE check_login SP STRING CRLF
 		{
+#ifdef KRB4
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($4 && $6)
 			krbtkfile($6);
 		    if($6)
 			free($6);
+#else
+		    reply(500, "Command not implemented.");
+#endif
 		}
 	| SITE SP AFSLOG check_login CRLF
 		{
+#ifdef KRB4
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($4)
 			afslog(NULL);
+#else
+		    reply(500, "Command not implemented.");
+#endif
 		}
 	| SITE SP AFSLOG check_login SP STRING CRLF
 		{
+#ifdef KRB4
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($4){
@@ -545,6 +566,9 @@ cmd
 		    }
 		    if($6)
 			free($6);
+#else
+		    reply(500, "Command not implemented.");
+#endif
 		}
 	| SITE SP FIND check_login SP STRING CRLF
 		{
