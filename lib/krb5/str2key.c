@@ -175,7 +175,7 @@ krb5_string_to_key (char *str,
      free (s);
      des_set_odd_parity (&tempkey);
      if (des_is_weak_key (&tempkey))
-	 xor ((unsigned char *)&tempkey, (unsigned char*)"0x000x000x000x000x000x000x000xF0");
+	 xor ((unsigned char *)&tempkey, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
      memcpy (key->keyvalue.data, &tempkey, sizeof(tempkey));
      key->keytype = KEYTYPE_DES;
      key->keyvalue.length = sizeof(tempkey);
