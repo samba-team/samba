@@ -339,7 +339,9 @@ the child as it may leave the caller in a privilaged state.
 static BOOL setup_stdout_file(char *outfile,BOOL shared)
 {  
   int fd;
+  struct stat st;
   mode_t mode = S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH;
+  int flags = O_RDWR|O_CREAT|O_TRUNC|O_EXCL;
 
   close(1);
 
@@ -354,9 +356,15 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
 #endif
   }
 
-  /* now create the file with O_EXCL set */
-  unlink(outfile);
-  fd = open(outfile,O_RDWR|O_CREAT|O_TRUNC|O_EXCL,mode);
+  if(stat(outfile, &st) == 0) {
+    /* Check we're not deleting a device file. */ 
+    if(st.st_mode & S_IFREG)
+      unlink(outfile);
+    else
+      flags = O_RDWR;
+  }
+  /* now create the file */
+  fd = open(outfile,flags,mode);
 
   if (fd == -1) return False;
 

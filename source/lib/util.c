@@ -2912,7 +2912,8 @@ connect_again:
     goto connect_again;
   }
 
-  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY)) {
+  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
+         errno == EAGAIN)) {
       DEBUG(1,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
       close(res);
       return -1;
