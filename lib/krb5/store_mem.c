@@ -104,7 +104,7 @@ krb5_storage_from_mem(void *buf, size_t len)
 	return NULL;
     }
     sp->data = s;
-    sp->host_byteorder = 0;
+    sp->flags = 0;
     s->base = buf;
     s->size = len;
     s->ptr = buf;
