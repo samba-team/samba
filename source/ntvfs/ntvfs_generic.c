@@ -56,6 +56,143 @@ static BOOL is_exe_file(const char *fname)
 
 
 /* 
+   NTVFS openx to ntcreatex mapper
+*/
+NTSTATUS ntvfs_map_open_openx(struct smbsrv_request *req, 
+			      union smb_open *io, 
+			      union smb_open *io2,
+			      struct ntvfs_module_context *ntvfs)
+{
+	NTSTATUS status;
+
+	ZERO_STRUCT(io2->generic.in);
+	io2->generic.level = RAW_OPEN_GENERIC;
+	if (io->openx.in.flags & OPENX_FLAGS_REQUEST_OPLOCK) {
+		io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_OPLOCK;
+	}
+	if (io->openx.in.flags & OPENX_FLAGS_REQUEST_BATCH_OPLOCK) {
+		io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	}
+	
+	switch (io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) {
+	case OPENX_MODE_ACCESS_READ:
+		io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+		io->openx.out.access = OPENX_MODE_ACCESS_READ;
+		break;
+	case OPENX_MODE_ACCESS_WRITE:
+		io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
+		io->openx.out.access = OPENX_MODE_ACCESS_WRITE;
+		break;
+	case OPENX_MODE_ACCESS_RDWR:
+	case OPENX_MODE_ACCESS_FCB:
+	case OPENX_MODE_ACCESS_EXEC:
+		io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
+		io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
+		break;
+	default:
+		return NT_STATUS_INVALID_LOCK_SEQUENCE;
+	}
+	
+	switch (io->openx.in.open_mode & OPENX_MODE_DENY_MASK) {
+	case OPENX_MODE_DENY_READ:
+		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE;
+		break;
+	case OPENX_MODE_DENY_WRITE:
+		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
+		break;
+	case OPENX_MODE_DENY_ALL:
+		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+		break;
+	case OPENX_MODE_DENY_NONE:
+		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+		break;
+	case OPENX_MODE_DENY_DOS:
+		/* DENY_DOS is quite strange - it depends on the filename! */
+		if (is_exe_file(io->openx.in.fname)) {
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+		} else {
+			if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) == 
+			    OPENX_MODE_ACCESS_READ) {
+				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
+			} else {
+				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+			}
+		}
+		break;
+	case OPENX_MODE_DENY_FCB:
+		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+		break;
+	default:
+		return NT_STATUS_INVALID_LOCK_SEQUENCE;
+	}
+	
+	switch (io->openx.in.open_func) {
+	case (OPENX_OPEN_FUNC_OPEN):
+		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN;
+		break;
+	case (OPENX_OPEN_FUNC_TRUNC):
+		io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE;
+		break;
+	case (OPENX_OPEN_FUNC_FAIL | OPENX_OPEN_FUNC_CREATE):
+		io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
+		break;
+	case (OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE):
+		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+		break;
+	case (OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE):
+		io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+		break;			
+	default:
+		/* this one is very strange */
+		if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) ==
+		    OPENX_MODE_ACCESS_EXEC) {
+			io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
+			break;
+		}
+		return NT_STATUS_INVALID_LOCK_SEQUENCE;
+	}
+	
+	io2->generic.in.alloc_size = 0;
+	io2->generic.in.file_attr = io->openx.in.file_attrs;
+	io2->generic.in.fname = io->openx.in.fname;
+	
+	status = ntvfs->ops->open(ntvfs, req, io2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	io->openx.out.fnum        = io2->generic.out.fnum;
+	io->openx.out.attrib      = io2->generic.out.attrib;
+	io->openx.out.write_time  = nt_time_to_unix(io2->generic.out.write_time);
+	io->openx.out.size        = io2->generic.out.size;
+	io->openx.out.ftype       = 0;
+	io->openx.out.devstate    = 0;
+	io->openx.out.action      = io2->generic.out.create_action;
+	io->openx.out.unique_fid  = 0;
+	io->openx.out.access_mask = io2->generic.in.access_mask;
+	io->openx.out.unknown     = 0;
+	
+	/* we need to extend the file to the requested size if
+	   it was newly created */
+	if (io2->generic.out.create_action == NTCREATEX_ACTION_CREATED &&
+	    io->openx.in.size != 0) {
+		union smb_setfileinfo *sf;
+		sf = talloc_p(req, union smb_setfileinfo);
+		if (sf != NULL) {
+			sf->generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+			sf->generic.file.fnum = io2->generic.out.fnum;
+			sf->end_of_file_info.in.size = io->openx.in.size;
+			status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
+			if (NT_STATUS_IS_OK(status)) {
+				io->openx.out.size = io->openx.in.size;
+			}
+		}
+	}
+	
+	return NT_STATUS_OK;
+}
+
+/* 
    NTVFS open generic to any mapper
 */
 NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io, 
@@ -78,131 +215,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		return NT_STATUS_INVALID_LEVEL;
 
 	case RAW_OPEN_OPENX:
-		ZERO_STRUCT(io2->generic.in);
-		io2->generic.level = RAW_OPEN_GENERIC;
-		if (io->openx.in.flags & OPENX_FLAGS_REQUEST_OPLOCK) {
-			io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_OPLOCK;
-		}
-		if (io->openx.in.flags & OPENX_FLAGS_REQUEST_BATCH_OPLOCK) {
-			io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-		}
-
-		switch (io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) {
-		case OPENX_MODE_ACCESS_READ:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
-			io->openx.out.access = OPENX_MODE_ACCESS_READ;
-			break;
-		case OPENX_MODE_ACCESS_WRITE:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
-			io->openx.out.access = OPENX_MODE_ACCESS_WRITE;
-			break;
-		case OPENX_MODE_ACCESS_RDWR:
-		case OPENX_MODE_ACCESS_FCB:
-		case OPENX_MODE_ACCESS_EXEC:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
-			io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
-			break;
-		default:
-			return NT_STATUS_INVALID_LOCK_SEQUENCE;
-		}
-
-		switch (io->openx.in.open_mode & OPENX_MODE_DENY_MASK) {
-		case OPENX_MODE_DENY_READ:
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE;
-			break;
-		case OPENX_MODE_DENY_WRITE:
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
-			break;
-		case OPENX_MODE_DENY_ALL:
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-			break;
-		case OPENX_MODE_DENY_NONE:
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
-			break;
-		case OPENX_MODE_DENY_DOS:
-			/* DENY_DOS is quite strange - it depends on the filename! */
-			if (is_exe_file(io->openx.in.fname)) {
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
-			} else {
-				if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) == 
-				    OPENX_MODE_ACCESS_READ) {
-					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
-				} else {
-					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-				}
-			}
-			break;
-		case OPENX_MODE_DENY_FCB:
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-			break;
-		default:
-			return NT_STATUS_INVALID_LOCK_SEQUENCE;
-		}
-
-		switch (io->openx.in.open_func) {
-		case (OPENX_OPEN_FUNC_OPEN):
-			io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN;
-			break;
-		case (OPENX_OPEN_FUNC_TRUNC):
-			io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE;
-			break;
-		case (OPENX_OPEN_FUNC_FAIL | OPENX_OPEN_FUNC_CREATE):
-			io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
-			break;
-		case (OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE):
-			io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
-			break;
-		case (OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE):
-			io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
-			break;			
-		default:
-			/* this one is very strange */
-			if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) ==
-			    OPENX_MODE_ACCESS_EXEC) {
-				io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
-				break;
-			}
-			return NT_STATUS_INVALID_LOCK_SEQUENCE;
-		}
-
-		io2->generic.in.alloc_size = 0;
-		io2->generic.in.file_attr = io->openx.in.file_attrs;
-		io2->generic.in.fname = io->openx.in.fname;
-
-		status = ntvfs->ops->open(ntvfs, req, io2);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		io->openx.out.fnum        = io2->generic.out.fnum;
-		io->openx.out.attrib      = io2->generic.out.attrib;
-		io->openx.out.write_time  = nt_time_to_unix(io2->generic.out.write_time);
-		io->openx.out.size        = io2->generic.out.size;
-		io->openx.out.ftype       = 0;
-		io->openx.out.devstate    = 0;
-		io->openx.out.action      = io2->generic.out.create_action;
-		io->openx.out.unique_fid  = 0;
-		io->openx.out.access_mask = io2->generic.in.access_mask;
-		io->openx.out.unknown     = 0;
-		
-		/* we need to extend the file to the requested size if
-		   it was newly created */
-		if (io2->generic.out.create_action == NTCREATEX_ACTION_CREATED &&
-		    io->openx.in.size != 0) {
-			union smb_setfileinfo *sf;
-			sf = talloc_p(req, union smb_setfileinfo);
-			if (sf != NULL) {
-				sf->generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
-				sf->generic.file.fnum = io2->generic.out.fnum;
-				sf->end_of_file_info.in.size = io->openx.in.size;
-				status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
-				if (NT_STATUS_IS_OK(status)) {
-					io->openx.out.size = io->openx.in.size;
-				}
-			}
-		}
-				
-		return NT_STATUS_OK;
+		return ntvfs_map_open_openx(req, io, io2, ntvfs);
 
 
 	case RAW_OPEN_OPEN:
