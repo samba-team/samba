@@ -450,7 +450,7 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS include/proto.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) $(SHLIBS)
+all : SHOWFLAGS include/proto.h include/build_env.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) $(SHLIBS)
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
