@@ -199,6 +199,27 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 */
 
 	FD_ZERO(&fds);
+
+	/*
+	 * Ensure we process oplock break messages by preference.
+	 * We have to do this before the select, after the select
+	 * and if the select returns EINTR. This is due to the fact
+	 * that the selects called from async_processing can eat an EINTR
+	 * caused by a signal (we can't take the break message there).
+	 * This is hideously complex - *MUST* be simplified for 3.0 ! JRA.
+	 */
+
+	if (oplock_message_waiting(&fds)) {
+		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
+		async_processing(buffer, buffer_len);
+		/*
+		 * After async processing we must go and do the select again, as
+		 * the state of the flag in fds for the server file descriptor is
+		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
+		 */
+		goto again;
+	}
+	
 	FD_SET(smbd_server_fd(),&fds);
 	maxfd = setup_oplock_select_set(&fds);
 

@@ -24,8 +24,8 @@
 #if HAVE_KERNEL_OPLOCKS_LINUX
 
 static VOLATILE sig_atomic_t signals_received;
-static VOLATILE sig_atomic_t signals_processed;
-static VOLATILE sig_atomic_t fd_pending; /* the fd of the current pending signal */
+#define FD_PENDING_SIZE 100
+static VOLATILE sig_atomic_t fd_pending_array[FD_PENDING_SIZE];
 
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
@@ -53,9 +53,10 @@ static VOLATILE sig_atomic_t fd_pending; /* the fd of the current pending signal
 
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	BlockSignals(True, sig);
-	fd_pending = (sig_atomic_t)info->si_fd;
-	signals_received++;
+	if (signals_received < FD_PENDING_SIZE - 1) {
+		fd_pending_array[signals_received] = (sig_atomic_t)info->si_fd;
+		signals_received++;
+	} /* Else signal is lost. */
 	sys_select_signal();
 }
 
@@ -125,20 +126,28 @@ static int linux_setlease(int fd, int leasetype)
 
 static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_len)
 {
-	BOOL ret = True;
+	int fd;
 	struct files_struct *fsp;
 
-	if (signals_received == signals_processed)
-		return False;
+	BlockSignals(True, RT_SIGNAL_LEASE);
+	fd = fd_pending_array[0];
+	fsp = file_find_fd(fd);
+	fd_pending_array[0] = (sig_atomic_t)-1;
+	if (signals_received > 1)
+		memmove(&fd_pending_array[0], &fd_pending_array[1],
+			sizeof(sig_atomic_t)*(signals_received-1));
+	signals_received--;
+	/* now we can receive more signals */
+	BlockSignals(False, RT_SIGNAL_LEASE);
 
-	if ((fsp = file_find_fd(fd_pending)) == NULL) {
-		DEBUG(0,("Invalid file descriptor %d in kernel oplock break!\n", (int)fd_pending));
-		ret = False;
-		goto out;
+	if (fsp == NULL) {
+		DEBUG(0,("Invalid file descriptor %d in kernel oplock break!\n", (int)fd));
+		return False;
 	}
 
 	DEBUG(3,("linux_oplock_receive_message: kernel oplock break request received for \
-dev = %x, inode = %.0f\n", (unsigned int)fsp->dev, (double)fsp->inode ));
+dev = %x, inode = %.0f fd = %d, fileid = %lu \n", (unsigned int)fsp->dev, (double)fsp->inode,
+			fd, fsp->file_id));
      
 	/*
 	 * Create a kernel oplock break message.
@@ -156,13 +165,7 @@ dev = %x, inode = %.0f\n", (unsigned int)fsp->dev, (double)fsp->inode ));
 	memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&fsp->inode, sizeof(fsp->inode));	
 	memcpy(buffer + KERNEL_OPLOCK_BREAK_FILEID_OFFSET, (char *)&fsp->file_id, sizeof(fsp->file_id));	
 
- out:
-	/* now we can receive more signals */
-	fd_pending = (sig_atomic_t)-1;
-	signals_processed++;
-	BlockSignals(False, RT_SIGNAL_LEASE);
-     
-	return ret;
+	return True;
 }
 
 /****************************************************************************
@@ -245,7 +248,7 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
 
 static BOOL linux_oplock_msg_waiting(fd_set *fds)
 {
-	return signals_processed != signals_received;
+	return signals_received != 0;
 }
 
 /****************************************************************************
