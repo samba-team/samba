@@ -1,3 +1,8 @@
+2000-04-11  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c (krb5_get_wrapped_length): the padding should
+	be done after having added confounder and checksum
+
 2000-04-09  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_addrs.c (find_all_addresses): apperently solaris
