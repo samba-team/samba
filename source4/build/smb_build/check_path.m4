@@ -4,19 +4,7 @@ dnl  Copyright (C) Stefan (metze) Metzmacher 2004
 dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
-dnl _SMB_BUILD_CHECK_PATH(
-dnl		1:dummy
-dnl		)
 
-dnl #######################################################
-dnl ### And now the implementation			###
-dnl #######################################################
-
-dnl _SMB_BUILD_CHECK_PATH(
-dnl		1:dummy
-dnl		)
-AC_DEFUN([_SMB_BUILD_CHECK_PATH],
-[
 #################################################
 # Directory handling stuff to support both the
 # legacy SAMBA directories and FHS compliant
@@ -185,5 +173,3 @@ AC_ARG_WITH(static-modules,
 		eval SMB_MODULE_$i=STATIC
 	done
 fi ])
-
-])
