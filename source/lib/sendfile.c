@@ -143,11 +143,92 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 #elif defined(SOLARIS_SENDFILE_API)
 
-/* Hmmm. Can't find Solaris sendfile API docs.... Where is it ? */
+/*
+ * Solaris sendfile code written by Pierre Belanger <belanger@yahoo.com>.
+ */
+
+#include <sys/sendfile.h>
+
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
-	errno = ENOSYS;
-	return -1;
+	int sfvcnt;
+	size_t total, xferred;
+	struct sendfilevec vec[2];
+	ssize_t hdr_len = 0;
+
+	if (header) {
+		sfvcnt = 2;
+
+		vec[0].sfv_fd = SFV_FD_SELF;
+		vec[0].sfv_flag = 0;
+		vec[0].sfv_off = header->data;
+		vec[0].sfv_len = header->length;
+
+		vec[1].sfv_fd = fromfd;
+		vec[1].sfv_flag = 0;
+		vec[1].sfv_off = offset;
+		vec[1].sfv_len = count;
+
+		hdr_len = header->length;
+	} else {
+		sfvcnt = 1;
+
+		vec[0].sfv_fd = fromfd;
+		vec[0].sfv_flag = 0;
+		vec[0].sfv_off = offset;
+		vec[0].sfv_len = count;
+	}
+
+	total = count + hdr_len;
+
+	while (total) {
+		ssize_t nwritten;
+
+		/*
+		 * Although not listed in the API error returns, this is almost certainly
+		 * a slow system call and will be interrupted by a signal with EINTR. JRA.
+		 */
+
+		xferred = 0;
+
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_SENDFILEV64)
+			nwritten = sendfilev64(tofd, vec, sfvcnt, &xferred);
+#else
+			nwritten = sendfilev(tofd, vec, sfvcnt, &xferred);
+#endif
+		if (nwritten == -1 && errno == EINTR) {
+			if (xferred == 0)
+				continue; /* Nothing written yet. */
+			else
+				nwritten = xferred;
+		}
+
+		if (nwritten == -1)
+			return -1;
+		if (nwritten == 0)
+			return -1; /* I think we're at EOF here... */
+
+		/*
+		 * If this was a short (signal interrupted) write we may need
+		 * to subtract it from the header data, or null out the header
+		 * data altogether if we wrote more than vec[0].sfv_len bytes.
+		 * We move vec[1].* to vec[0].* and set sfvcnt to 1
+		 */
+
+		if (sfvcnt == 2 && nwritten >= vec[0].sfv_len) {
+			vec[1].sfv_off += nwritten - vec[0].sfv_len;
+			vec[1].sfv_len -= nwritten - vec[0].sfv_len;
+
+			/* Move vec[1].* to vec[0].* and set sfvcnt to 1 */
+			vec[0] = vec[1];
+			sfvcnt = 1;
+		} else {
+			vec[0].sfv_off += nwritten;
+			vec[0].sfv_len -= nwritten;
+		}
+		total -= nwritten;
+	}
+	return count + hdr_len;
 }
 
 #elif defined(HPUX_SENDFILE_API)
