@@ -654,6 +654,8 @@ int smbw_dir_open(const char *fname, int flags)
 
 	dir->fd = fd + SMBW_FD_OFFSET;
 
+	DEBUG(4,("  -> %d\n", dir->count));
+
 	return dir->fd;
 
  failed:
@@ -1053,6 +1055,9 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 			    sizeof(dirp->d_name)-1);
 		dir->offset++;
 		count -= dirp->d_reclen;
+		if (dir->offset == dir->count) {
+			dirp->d_off = -1;
+		}
 		dirp++;
 		n++;
 	}
@@ -1410,10 +1415,48 @@ int smbw_chmod(const char *fname, mode_t newmode)
 	return -1;
 }
 
+
+/***************************************************** 
+a wrapper for lseek() on directories
+*******************************************************/
+off_t smbw_dir_lseek(int fd, off_t offset, int whence)
+{
+	struct smbw_dir *dir;
+	off_t ret;
+
+	DEBUG(4,("%s offset=%d whence=%d\n", __FUNCTION__, 
+		 (int)offset, whence));
+
+	dir = smbw_dir(fd);
+	if (!dir) {
+		errno = EBADF;
+		return -1;
+	}
+
+	switch (whence) {
+	case SEEK_SET:
+		dir->offset = offset/sizeof(struct dirent);
+		break;
+	case SEEK_CUR:
+		dir->offset += offset/sizeof(struct dirent);
+		break;
+	case SEEK_END:
+		dir->offset = (dir->count * sizeof(struct dirent)) + offset;
+		dir->offset /= sizeof(struct dirent);
+		break;
+	}
+
+	ret = dir->offset * sizeof(struct dirent);
+
+	DEBUG(4,("   -> %d\n", (int)ret));
+
+	return ret;
+}
+
 /***************************************************** 
 a wrapper for lseek()
 *******************************************************/
-ssize_t smbw_lseek(int fd, off_t offset, int whence)
+off_t smbw_lseek(int fd, off_t offset, int whence)
 {
 	struct smbw_file *file;
 	uint32 size;
@@ -1424,9 +1467,9 @@ ssize_t smbw_lseek(int fd, off_t offset, int whence)
 
 	file = smbw_file(fd);
 	if (!file) {
-		errno = EBADF;
+		off_t ret = smbw_dir_lseek(fd, offset, whence);
 		smbw_busy--;
-		return -1;
+		return ret;
 	}
 
 	switch (whence) {
