@@ -6,6 +6,7 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		lib/tdb/common/tdbutil.o \
 		lib/tdb/common/spinlock.o
+NOPROTO=YES
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
 #
