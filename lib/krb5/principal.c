@@ -631,7 +631,7 @@ krb5_principal_match(krb5_context context,
 }
 
 
-struct v4_name_convert {
+static struct v4_name_convert {
     const char *from;
     const char *to; 
 } default_v4_name_convert[] = {
