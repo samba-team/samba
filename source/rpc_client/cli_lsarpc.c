@@ -606,7 +606,7 @@ uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
 		r_l.dom_ref = &ref;
 		r_l.dom_rid = t_rids;
 
-		lsa_io_r_lookup_names(ctx, "", &r_l, &rbuf, 0);
+		lsa_io_r_lookup_names("", &r_l, &rbuf, 0);
 		p = rbuf.data_offset != 0;
 
 		if (p && r_l.status != 0) {
