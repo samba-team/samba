@@ -122,6 +122,7 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->server.realm);
 		SAFE_FREE((*ads)->server.workgroup);
 		SAFE_FREE((*ads)->server.ldap_server);
+		SAFE_FREE((*ads)->server.ldap_uri);
 
 		SAFE_FREE((*ads)->auth.realm);
 		SAFE_FREE((*ads)->auth.password);

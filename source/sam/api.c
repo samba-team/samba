@@ -50,7 +50,7 @@ NTSTATUS sam_set_sec_desc(const NT_USER_TOKEN *access_token, const DOM_SID *sid,
 	return sam_context->sam_set_sec_desc(sam_context, access_token, sid, sd);
 }
 
-NTSTATUS sam_lookup_sid(const NT_USER_TOKEN *access_token, const DOM_SID *sid, char **name, uint32 *type)
+NTSTATUS sam_lookup_sid(const NT_USER_TOKEN *access_token, TALLOC_CTX *mem_ctx, const DOM_SID *sid, char **name, uint32 *type)
 {
 	SAM_CONTEXT *sam_context = sam_get_static_context(False);
 
@@ -58,10 +58,10 @@ NTSTATUS sam_lookup_sid(const NT_USER_TOKEN *access_token, const DOM_SID *sid, c
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return sam_context->sam_lookup_sid(sam_context, access_token, sid, name, type);
+	return sam_context->sam_lookup_sid(sam_context, access_token, mem_ctx, sid, name, type);
 }
 
-NTSTATUS sam_lookup_name(const NT_USER_TOKEN *access_token, const char *domain, const char *name, DOM_SID **sid,  uint32 *type)
+NTSTATUS sam_lookup_name(const NT_USER_TOKEN *access_token, const char *domain, const char *name, DOM_SID *sid,  uint32 *type)
 {
 	SAM_CONTEXT *sam_context = sam_get_static_context(False);
 
@@ -69,7 +69,7 @@ NTSTATUS sam_lookup_name(const NT_USER_TOKEN *access_token, const char *domain, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return sam_context->sam_lookup_name(sam_context, access_token, domain, name, sid, type);
+	return sam_context->sam_lookup_name(sam_context, access_token,domain, name, sid, type);
 }
 
 /* Domain API */
@@ -120,7 +120,7 @@ NTSTATUS sam_get_domain_by_sid(const NT_USER_TOKEN *access_token, const uint32 a
 
 /* Account API */
 
-NTSTATUS sam_create_account(const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS sam_create_account(const NT_USER_TOKEN *access_token, const uint32 access_desired, TALLOC_CTX *mem_ctx, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_CONTEXT *sam_context = sam_get_static_context(False);
 
@@ -128,7 +128,7 @@ NTSTATUS sam_create_account(const NT_USER_TOKEN *access_token, const uint32 acce
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return sam_context->sam_create_account(sam_context, access_token, access_desired, domainsid, account_name, acct_ctrl, account);
+	return sam_context->sam_create_account(sam_context, access_token, access_desired, mem_ctx, domainsid, account_name, acct_ctrl, account);
 }
 
 NTSTATUS sam_add_account(const DOM_SID *domainsid, const SAM_ACCOUNT_HANDLE *account)

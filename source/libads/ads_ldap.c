@@ -83,7 +83,7 @@ done:
 /* convert a sid to a user or group name */
 NTSTATUS ads_sid_to_name(ADS_STRUCT *ads,
 			 TALLOC_CTX *mem_ctx,
-			 DOM_SID *sid,
+			 const DOM_SID *sid,
 			 char **name,
 			 enum SID_NAME_USE *type)
 {

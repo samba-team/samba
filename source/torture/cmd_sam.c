@@ -99,7 +99,7 @@ static NTSTATUS cmd_lookup_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, in
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = context_sam_lookup_sid(st->context, st->token, &sid, &name, &type))) {
+	if (!NT_STATUS_IS_OK(status = context_sam_lookup_sid(st->context, st->token, mem_ctx, &sid, &name, &type))) {
 		printf("context_sam_lookup_sid failed!\n");
 		return status;
 	}
@@ -112,7 +112,7 @@ static NTSTATUS cmd_lookup_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, in
 
 static NTSTATUS cmd_lookup_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	DOM_SID *sid;
+	DOM_SID sid;
 	uint32 type;
 	NTSTATUS status;
 	if (argc != 3) {
@@ -125,7 +125,7 @@ static NTSTATUS cmd_lookup_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 		return status;
 	}
 
-	printf("SID: %s\n", sid_string_static(sid));
+	printf("SID: %s\n", sid_string_static(&sid));
 	printf("Type: %d\n", type);
 	
 	return NT_STATUS_OK;

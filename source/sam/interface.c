@@ -32,6 +32,8 @@ extern DOM_SID global_sid_Builtin;
 
 const struct sam_init_function_entry builtin_sam_init_functions[] = {
 	{ "plugin", sam_init_plugin },
+	{ "ads", sam_init_ads },
+	{ "skel", sam_init_skel },
 	{ NULL, NULL}
 };
 
@@ -79,7 +81,7 @@ NTSTATUS sam_get_methods_by_name(const SAM_CONTEXT *context, SAM_METHODS **sam_m
 	tmp_methods = context->methods;
 
 	while (tmp_methods) {
-		if (!strcmp(domainname, tmp_methods->domain_name))
+		if (strequal(domainname, tmp_methods->domain_name))
 		{
 			(*sam_method) = tmp_methods;
 			return NT_STATUS_OK;
@@ -143,7 +145,7 @@ NTSTATUS context_sam_set_sec_desc(const SAM_CONTEXT *context, const NT_USER_TOKE
 }
 
 
-NTSTATUS context_sam_lookup_name(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const char *domain, const char *name, DOM_SID **sid, uint32 *type)
+NTSTATUS context_sam_lookup_name(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const char *domain, const char *name, DOM_SID *sid, uint32 *type)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -169,7 +171,7 @@ NTSTATUS context_sam_lookup_name(const SAM_CONTEXT *context, const NT_USER_TOKEN
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_lookup_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const DOM_SID *sid, char **name, uint32 *type)
+NTSTATUS context_sam_lookup_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, TALLOC_CTX *mem_ctx, const DOM_SID *sid, char **name, uint32 *type)
 {
 	SAM_METHODS	*tmp_methods;
 	uint32		rid;
@@ -194,7 +196,7 @@ NTSTATUS context_sam_lookup_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN 
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_lookup_sid(tmp_methods, access_token, sid, name, type))) {
+	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_lookup_sid(tmp_methods, access_token, mem_ctx, sid, name, type))) {
 		DEBUG(4,("sam_lookup_name for %s in backend %s failed\n",
 				 sid_string_static(sid), tmp_methods->backendname));
 		return nt_status;
@@ -354,7 +356,7 @@ NTSTATUS context_sam_get_domain_by_sid(const SAM_CONTEXT *context, const NT_USER
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, TALLOC_CTX *mem_ctx, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -371,7 +373,7 @@ NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TO
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_account(tmp_methods, access_token, access_desired, account_name, acct_ctrl, account))) {
+	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_account(tmp_methods, access_token, access_desired, mem_ctx, account_name, acct_ctrl, account))) {
 		DEBUG(4,("sam_create_account in backend %s failed\n",
 				 tmp_methods->backendname));
 		return nt_status;
@@ -924,21 +926,21 @@ static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_b
 	if ((tmp = strchr(tmp_string, '|')) != NULL) {
 		DEBUGADD(20,("a domain name has been specified\n"));
 		*tmp = 0;
-		backend_entry->domain_name = tmp + 1;
+		backend_entry->domain_name = smb_xstrdup(tmp + 1);
 		tmp_string = tmp + 1;
 	}
 	
 	if ((tmp = strchr(tmp_string, ':')) != NULL) {
 		DEBUG(20,("options for the backend have been specified\n"));
 		*tmp = 0;
-		backend_entry->module_params = tmp + 1;
+		backend_entry->module_params = smb_xstrdup(tmp + 1);
 		tmp_string = tmp + 1;
 	}
 		
 	if (backend_entry->domain_name == NULL) {
 		DEBUG(10,("make_backend_entry: no domain was specified for sam module %s. Useing default domain %s\n",
 			backend_entry->module_name, lp_workgroup()));
-		backend_entry->domain_name = lp_workgroup();
+		backend_entry->domain_name = smb_xstrdup(lp_workgroup());
 	}
 	
 	if ((backend_entry->domain_sid = (DOM_SID *)malloc(sizeof(DOM_SID))) == NULL) {
@@ -1109,11 +1111,12 @@ NTSTATUS make_sam_context_list(SAM_CONTEXT **context, char **sam_backends_param)
 
 	DEBUG(6,("There are %d domains listed with there backends\n", nBackends));
 
-	if ((backends = (SAM_BACKEND_ENTRY *)malloc(sizeof(SAM_BACKEND_ENTRY)*nBackends)) == NULL) {
+	if ((backends = (SAM_BACKEND_ENTRY *)malloc(sizeof(*backends)*nBackends)) == NULL) {
 		DEBUG(0,("make_sam_context_list: failed to allocate backends\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(backends);
+
+	memset(backends, '\0', sizeof(*backends)*nBackends);
 
 	for (i = 0; i < nBackends; i++) {
 		DEBUG(8,("processing %s\n",sam_backends_param[i]));

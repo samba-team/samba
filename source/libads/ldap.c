@@ -67,6 +67,29 @@ static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 	return True;
 }
 
+/*
+  try a connection to a given ldap server, based on URL, returning True if successful
+ */
+static BOOL ads_try_connect_uri(ADS_STRUCT *ads)
+{
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+	DEBUG(5,("ads_try_connect: trying ldap server at URI '%s'\n", 
+		 ads->server.ldap_uri));
+
+	
+	if (ldap_initialize((LDAP**)&(ads->ld), ads->server.ldap_uri) == LDAP_SUCCESS) {
+		return True;
+	}
+	DEBUG(0, ("ldap_initialize: %s\n", strerror(errno)));
+	
+#else 
+
+	DEBUG(1, ("no URL support in LDAP libs!\n"));
+#endif
+
+	return False;
+}
+
 /* used by the IP comparison function */
 struct ldap_ip {
 	struct in_addr ip;
@@ -210,6 +233,13 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ads->last_attempt = time(NULL);
 	ads->ld = NULL;
 
+	/* try with a URL based server */
+
+	if (ads->server.ldap_uri &&
+	    ads_try_connect_uri(ads)) {
+		goto got_connection;
+	}
+
 	/* try with a user specified server */
 	if (ads->server.ldap_server && 
 	    ads_try_connect(ads, ads->server.ldap_server, LDAP_PORT)) {
@@ -276,6 +306,14 @@ got_connection:
 
 	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
 		return ADS_SUCCESS;
+	}
+
+	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
+		return ADS_ERROR(ldap_simple_bind_s( ads->ld, NULL, NULL));
+	}
+
+	if (ads->auth.flags & ADS_AUTH_SIMPLE_BIND) {
+		return ADS_ERROR(ldap_simple_bind_s( ads->ld, ads->auth.user_name, ads->auth.password));
 	}
 
 	return ads_sasl_bind(ads);
@@ -1771,8 +1809,9 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	ads->config.realm = strdup(p+2);
 	ads->config.bind_path = ads_build_dn(ads->config.realm);
 
-	DEBUG(3,("got ldap server name %s@%s\n", 
-		 ads->config.ldap_server_name, ads->config.realm));
+	DEBUG(3,("got ldap server name %s@%s, using bind path: %s\n", 
+		 ads->config.ldap_server_name, ads->config.realm,
+		 ads->config.bind_path));
 
 	ads->config.current_time = ads_parse_time(timestr);
 
