@@ -53,6 +53,9 @@ struct pvfs_state {
 
 	/* the sharing violation timeout */
 	uint_t sharing_violation_delay;
+
+	/* filesystem attributes (see FS_ATTR_*) */
+	uint32_t fs_attribs;
 };
 
 

@@ -458,6 +458,10 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	(*name)->exists = False;
 	(*name)->stream_exists = False;
 
+	if (!(pvfs->fs_attribs & FS_ATTR_NAMED_STREAMS)) {
+		flags &= ~PVFS_RESOLVE_STREAMS;
+	}
+
 	/* do the basic conversion to a unix formatted path,
 	   also checking for allowable characters */
 	status = pvfs_unix_path(pvfs, cifs_name, flags, *name);
