@@ -1,6 +1,10 @@
 1999-07-06  Assar Westerlund  <assar@sics.se>
 
-	* etc/services.append: new file
+	* lib/krb5/addr_families.c (ipv6_parse_addr): remove duplicate
+ 	variable
+	(ipv6_sockaddr2port): fix typo
+
+	* etc/services.append: beginning of a file with services
 
 	* lib/krb5/cache.c (krb5_cc_resolve): fall-back to files if
  	there's no prefix.  also clean-up a little bit.
