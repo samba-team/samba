@@ -37,8 +37,18 @@
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>winbindd</command> is a daemon that provides 
-	a service for the Name Service Switch capability that is present 
-	in most modern C libraries.  The Name Service Switch allows user 
+	a number of services to the Name Service Switch capability found
+	in most modern C libraries, to arbitary applications via PAM
+	and <program>ntlm_auth</program> and to Samba itself.</para>
+
+    <para>Even if winbind is not used for nsswitch, it still provides a
+    service to <program>smbd</program>, ntlm_auth and the PAM modules, by managing connections to
+    domain controllers.  In this configuraiton the
+    <smbconfoption><name>idmap uid</name></smbconfoption> and
+    <smbconfoption><name>idmap gid</name></smbconfoption>
+    parameters are not required. (This is known as `netlogon proxy only mode'.)</para>
+
+        <para> The Name Service Switch allows user 
 	and system information to be obtained from different databases 
 	services such as NIS or DNS.  The exact behaviour can be configured 
 	throught the <filename>/etc/nsswitch.conf</filename> file.  
@@ -52,12 +62,15 @@
 	services via an associated PAM module. </para>
 	
 	<para>
-	The <filename>pam_winbind</filename> module in the 2.2.2 release only 
-	supports the <parameter>auth</parameter> and <parameter>account</parameter> 
-	module-types.  The latter simply
-	performs a getpwnam() to verify that the system can obtain a uid for the
-	user.  If the <filename>libnss_winbind</filename> library has been correctly 
-	installed, this should always succeed.
+	The <filename>pam_winbind</filename> module supports the
+        <parameter>auth</parameter>, <parameter>account</parameter>
+        and <parameter>password</parameter>
+        module-types.  It should be noted that the 
+        <parameter>account</parameter> module simply performs a getpwnam() to verify that
+        the system can obtain a uid for the user, as the domain
+        controller has already performed access control.  If the
+        <filename>libnss_winbind</filename> library has been correctly
+        installed, or an alternate source of names configured, this should always succeed.
 	</para>
 
 	<para>The following nsswitch databases are implemented by 
@@ -180,9 +193,9 @@ hosts:		files wins
 	<title>NAME AND ID RESOLUTION</title>
 
 	<para>Users and groups on a Windows NT server are assigned 
-	a relative id (rid) which is unique for the domain when the 
+	a security id (SID) which is globally unique when the 
 	user or group is created.  To convert the Windows NT user or group 
-	into a unix user or group, a mapping between rids and unix user 
+	into a unix user or group, a mapping between SIDs and unix user 
 	and group ids is required.  This is one of the jobs that <command>
 	winbindd</command> performs. </para>
 
@@ -194,11 +207,16 @@ hosts:		files wins
 	in a database file under the Samba lock directory and will be 
 	remembered. </para>
 
-	<para>WARNING: The rid to unix id database is the only location 
+	<para>WARNING: The SID to unix id database is the only location 
 	where the user and group mappings are stored by winbindd.  If this 
 	file is deleted or corrupted, there is no way for winbindd to 
 	determine which user and group ids correspond to Windows NT user 
 	and group rids. </para>
+
+        <para>See the <smbconfoption><name>idmap
+        backend</name></smbconfoption> parameter in
+        <filename>smb.conf</filename> for options for sharing this
+        database, such as via LDAP.</para>
 </refsect1>
 
 
@@ -218,6 +236,8 @@ hosts:		files wins
 		<smbconfoption><name>idmap uid</name></smbconfoption></para></listitem>
 		<listitem><para>
 		<smbconfoption><name>idmap gid</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>idmap backend</name></smbconfoption></para></listitem>
 		<listitem><para>
 		<smbconfoption><name>winbind cache time</name></smbconfoption></para></listitem>
 		<listitem><para>
@@ -317,11 +337,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 
 	<para><citerefentry><refentrytitle>nmbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> must be running on the local machine 
-	for <command>winbindd</command> to work. <command>winbindd</command> queries
-	the list of trusted domains for the Windows NT server
-	on startup and when a SIGHUP is received.  Thus, for a running <command>
-	winbindd</command> to become aware of new trust relationships between 
-	servers, it must be sent a SIGHUP signal. </para>
+	for <command>winbindd</command> to work. </para>
 
 	<para>PAM is really easy to misconfigure.  Make sure you know what 
 	you are doing when modifying PAM configuration files.  It is possible 
@@ -330,9 +346,10 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	<para>If more than one UNIX machine is running <command>winbindd</command>, 
 	then in general the user and groups ids allocated by winbindd will not 
 	be the same.  The user and group ids will only be valid for the local 
-	machine.</para>
+	machine, unless a shared <smbconfoption><name>idmap
+	backend</name></smbconfoption> is configured.</para>
 
-	<para>If the the Windows NT RID to UNIX user and group id mapping 
+	<para>If the the Windows NT SID to UNIX user and group id mapping 
 	file is damaged or destroyed then the mappings will be lost. </para>
 </refsect1>
 
@@ -358,8 +375,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		<term>SIGUSR2</term>
 		<listitem><para>The SIGUSR2 signal will cause <command>
 		winbindd</command> to write status information to the winbind 
-		log file including information about the number of user and 
-		group ids allocated by <command>winbindd</command>.</para>
+		log file.</para>
 
 		<para>Log files are stored in the filename specified by the 
 		log file parameter.</para></listitem>
@@ -440,6 +456,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	<refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry>, <citerefentry>
 	<refentrytitle>wbinfo</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, <citerefentry>
+	<refentrytitle>ntlm_auth</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry>
 	<refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry></para>
