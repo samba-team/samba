@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,14 +56,14 @@ log_realloc(krb5_log_facility *f)
     return fp;
 }
 
-struct s2i{
+struct s2i {
     char *s;
     int val;
 };
 
 #define L(X) { #X, LOG_ ## X }
 
-struct s2i syslogvals[] = {
+static struct s2i syslogvals[] = {
     L(EMERG),
     L(ALERT),
     L(CRIT),
