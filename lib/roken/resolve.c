@@ -241,7 +241,8 @@ parse_reply(unsigned char *data, int len)
     return r;
 }
 
-static dns_lookup_int(const char *domain, int rr_class, int rr_type)
+static int
+dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
     unsigned char reply[1024];
     int len;
@@ -253,7 +254,7 @@ static dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	_res.options |= RES_DEBUG;
 	fprintf(stderr, "dns_lookup(%s, %s)\n", domain, type_name);
     }
-    len = res_search(domain, rr_type, rr_type, reply, sizeof(reply));
+    len = res_search(domain, rr_class, rr_type, reply, sizeof(reply));
     if (_resolve_debug) {
         _res.options = old_options;
 	fprintf(stderr, "dns_lookup(%s, %s) --> %d\n", domain, type_name, len);
