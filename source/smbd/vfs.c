@@ -267,7 +267,7 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	   (smb_probe_module("vfs", vfs_object) && 
 		(entry = vfs_find_backend_entry(vfs_object)))) {
 
-		DEBUG(0,("Successfully loaded %s with the new modules system\n", vfs_object));
+		DEBUG(3,("Successfully loaded %s with the new modules system\n", vfs_object));
 		
 		if ((ops = entry->init(&conn->vfs_ops, conn->vfs_private)) == NULL) {
 			DEBUG(0, ("vfs init function from %s failed\n", vfs_object));
