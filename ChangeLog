@@ -1,3 +1,7 @@
+2002-08-17  Assar Westerlund  <assar@ratatosk.pdc.kth.se>
+
+	* Release 0.4f
+
 2002-08-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.h: turn strings into pointers, so we can assign to
