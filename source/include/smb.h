@@ -1157,6 +1157,7 @@ struct bitmap {
 #define FILE_OPEN_BY_FILE_ID	  0x2000
 
 /* Responses when opening a file. */
+#define FILE_WAS_SUPERSEDED 0
 #define FILE_WAS_OPENED 1
 #define FILE_WAS_CREATED 2
 #define FILE_WAS_OVERWRITTEN 3
