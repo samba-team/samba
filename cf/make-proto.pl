@@ -8,8 +8,9 @@ $brace = 0;
 $line = "";
 $debug = 0;
 $oproto = 1;
+$private_func_re = "^_";
 
-do Getopts('o:p:dqP:') || die "foo";
+do Getopts('o:p:dqR:P:') || die "foo";
 
 if($opt_d) {
     $debug = 1;
@@ -17,6 +18,10 @@ if($opt_d) {
 
 if($opt_q) {
     $oproto = 0;
+}
+
+if($opt_R) {
+    $private_func_re = $opt_R;
 }
 
 while(<>) {
@@ -178,7 +183,7 @@ $private_h_header .= "#ifdef __STDC__
 }
 foreach(sort keys %funcs){
     if(/^(main)$/) { next }
-    if(/^_/) {
+    if(/$private_func_re/) {
 	$private_h .= $funcs{$_} . "\n\n";
 	if($funcs{$_} =~ /__attribute__/) {
 	    $private_attribute_seen = 1;
