@@ -764,7 +764,7 @@ bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 
 bin/smbmount@EXEEXT@: $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS)
 
 bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
