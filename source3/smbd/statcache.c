@@ -90,14 +90,28 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
   }
 
   original_path = strdup(full_orig_name);
-  if (!original_path) 
+  if (!original_path) {
+	  SAFE_FREE(translated_path);
 	  return;
+  }
 
   original_path_length = strlen(original_path);
 
+  if(original_path[original_path_length-1] == '/') {
+    original_path[original_path_length-1] = '\0';
+    original_path_length--;
+  }
+
   if(!case_sensitive)
 	  strupper(original_path);
-  
+
+  if(!(original_path_length == translated_path_length)) {
+	  DEBUG(0, ("OOPS - tried to store stat cache entry for non-equal length paths [%s] %u and [%s] %u)!\n", original_path, original_path_length, translated_path, translated_path_length));
+	  SAFE_FREE(original_path);
+	  SAFE_FREE(translated_path);
+	  return;
+  }
+
 #if 0
   /*
    * We will only replace namelen characters 
@@ -119,6 +133,8 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 	  found_scp = (stat_cache_entry *)(hash_elem->value);
 	  if (strcmp((found_scp->translated_path), orig_translated_path) == 0) {
 		  /* already in hash table */
+		  SAFE_FREE(original_path);
+		  SAFE_FREE(translated_path);
 		  return;
 	  }
 	  /* hash collision - remove before we re-add */
@@ -133,6 +149,8 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 				       +original_path_length
 				       +translated_path_length)) == NULL) {
 	  DEBUG(0,("stat_cache_add: Out of memory !\n"));
+	  SAFE_FREE(original_path);
+	  SAFE_FREE(translated_path);
 	  return;
   }
 
@@ -143,6 +161,9 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
   scp->translated_path_length = translated_path_length;
 
   hash_insert(&stat_cache, (char *)scp, original_path);
+
+  SAFE_FREE(original_path);
+  SAFE_FREE(translated_path);
 
   DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->original_path, scp->translated_path));
 }
