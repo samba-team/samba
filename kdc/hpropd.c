@@ -165,6 +165,7 @@ static int version_flag;
 static int print_dump;
 static char *database = HDB_DEFAULT_DB;
 static int from_stdin;
+static char *local_realm;
 #ifdef KRB4
 static int v4dump;
 #endif
@@ -177,6 +178,7 @@ struct getargs args[] = {
     { "inetd",	   'i',	arg_negative_flag,	&inetd_flag,
       "Not started from inetd" },
     { "keytab",   'k',	arg_string, &ktname,	"keytab to use for authentication", "keytab" },
+    { "realm",   'r',	arg_string, &local_realm, "realm to use" },
 #ifdef KRB4
     { "v4dump",       '4',  arg_flag, &v4dump, "create v4 type DB" },
 #endif
@@ -231,6 +233,9 @@ main(int argc, char **argv)
     if (v4dump && database == HDB_DEFAULT_DB)
        database = "/var/kerberos/524_dump";
 #endif /* KRB4 */
+
+    if(local_realm != NULL)
+	krb5_set_default_realm(context, local_realm);
     
     if(help_flag)
 	usage(0);
