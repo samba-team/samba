@@ -2623,7 +2623,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	/*
 	 * If it's the first connection, contact the client
-	 * and connect to the IPC$ share anonumously
+	 * and connect to the IPC$ share anonymously
 	 */
 	if (smb_connections==0) {
 		fstring unix_printer;
