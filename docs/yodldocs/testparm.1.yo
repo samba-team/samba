@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(testparm)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(testparm htmlcommand((1)))(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(testparm)(check an smb.conf configuration file for internal correctness)
@@ -44,9 +44,9 @@ then testparm will examine the url(bf("hosts
 allow"))(smb.conf.5.html#hostsallow) and url(bf("hosts
 deny"))(smb.conf.5.html#hostsdeny) parameters in the
 url(bf(smb.conf))(smb.conf.5.html) file to determine if the hostname
-with this IP address would be allowed acces to the
+with this IP address would be allowed access to the
 url(bf(smbd))(smbd.8.html) server. If this parameter is supplied, the
-hostIP parameter must also be supplied.
+link(hostIP)(hostIP) parameter must also be supplied.
 
 label(hostIP)
 dit(bf(hostIP)) This is the IP address of the host specified in the

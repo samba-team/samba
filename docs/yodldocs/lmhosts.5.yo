@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au)
 
-manpage(lmhosts)(5)(23 Oct 1998)(Samba)(SAMBA)
+manpage(lmhosts htmlcommand((5)))(5)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(lmhosts)(The Samba NetBIOS hosts file)
@@ -15,7 +15,7 @@ manpagedescription()
 
 This file is part of the bf(Samba) suite.
 
-lmhosts is the bf(Samba) NetBIOS name to IP address mapping file.  It
+bf(lmhosts) is the bf(Samba) NetBIOS name to IP address mapping file.  It
 is very similar to the bf(/etc/hosts) file format, except that the
 hostname component must correspond to the NetBIOS naming format.
 
@@ -81,7 +81,7 @@ label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 

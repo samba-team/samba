@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smbclient)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smbclient htmlcommand((1)))(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(smbclient)(ftp-like client to access SMB/CIFS resources on servers)
@@ -112,7 +112,7 @@ may be used.
 
 endit()
 
-If this parameter is not set then the name resolver order defined
+If this parameter is not set then the name resolve order defined
 in the url(bf(smb.conf))(smb.conf.5.html) file parameter 
 url((bf(name resolve order)))(smb.conf.5.html#nameresolveorder)
 will be used.
@@ -261,7 +261,7 @@ the environment variable tt(USER) or tt(LOGNAME) in that order.  If no
 username is supplied and neither environment variable exists the
 username "GUEST" will be used.
 
-If the tt(USER) environment variable containts a '%' character,
+If the tt(USER) environment variable contains a '%' character,
 everything after that will be treated as a password. This allows you
 to set the environment variable to be tt(USER=username%password) so
 that a password is not passed on the command line (where it may be
@@ -323,7 +323,7 @@ Samba source code for the complete list.
 
 label(minusm)
 dit(bf(-m max protocol level)) With the new code in Samba2.0,
-bf(smbclient) allways attempts to connect at the maximum
+bf(smbclient) always attempts to connect at the maximum
 protocols level the server supports. This parameter is
 preserved for backwards compatibility, but any string
 following the bf(-m) will be ignored.
@@ -350,12 +350,12 @@ share. The secondary tar flags that can be given to this option are :
 	share. Unless the link(bf(-D))(minusD) option is given, the tar files will be
 	restored from the top level of the share. Must be followed by the name
 	of the tar file, device or tt("-") for standard input. Mutually exclusive
-	with the bf(c) flag. Restored files have theuir creation times (mtime)
+	with the bf(c) flag. Restored files have their creation times (mtime)
 	set to the date saved in the tar file. Directories currently do not
 	get their creation dates restored properly.
 
 	dit(bf(I)) Include files and directories. Is the default
-	behaviour when filenames are specified above. Causes tar files to
+	behavior when filenames are specified above. Causes tar files to
 	be included in an extract or create (and therefore everything else to
 	be excluded). See example below.  Filename globbing does not work for
 	included files for extractions (yet).
@@ -458,13 +458,13 @@ be case sensitive, depending on the command.
 You can specify file names which have spaces in them by quoting the
 name with double quotes, for example "a long file name".
 
-Parameters shown in square brackets (eg., "[parameter]") are
+Parameters shown in square brackets (e.g., "[parameter]") are
 optional. If not given, the command will use suitable
-defaults. Parameters shown in angle brackets (eg., "<parameter>") are
+defaults. Parameters shown in angle brackets (e.g., "<parameter>") are
 required.
 
 Note that all commands operating on the server are actually performed
-by issuing a request to the server. Thus the behaviour may vary from
+by issuing a request to the server. Thus the behavior may vary from
 server to server, depending on how the server was implemented.
 
 The commands available are given here in alphabetical order.
@@ -584,7 +584,7 @@ mode to suit either binary data (such as graphical information) or
 text. Subsequent print commands will use the currently set print
 mode.
 
-label(prompt) dir(bf(prompt)) Toggle prompting for filenames during
+label(prompt) dit(bf(prompt)) Toggle prompting for filenames during
 operation of the link(bf(mget))(mget) and link(bf(mput))(mput)
 commands.
 
@@ -598,15 +598,15 @@ the server. If specified, name the remote copy "remote file name".
 Note that all transfers in smbclient are binary. See also the
 link(bf(lowercase))(lowercase) command.
 
-label(queue) dir(bf(queue)) Displays the print queue, showing the job
+label(queue) dit(bf(queue)) Displays the print queue, showing the job
 id, name, size and current status.
 
 label(quit) dit(bf(quit)) See the link(bf(exit))(exit) command.
 
-label(rd) dir(bf(rd <directory name>)) See the link(bf(rmdir))(rmdir)
+label(rd) dit(bf(rd <directory name>)) See the link(bf(rmdir))(rmdir)
 command.
 
-label(recurse) dir(bf(recurse)) Toggle directory recursion for the
+label(recurse) dit(bf(recurse)) Toggle directory recursion for the
 commands link(bf(mget))(mget) and link(bf(mput))(mput).
 
 When toggled ON, these commands will process all directories in the
@@ -622,14 +622,14 @@ link(bf(mget))(mget) or link(bf(mput))(mput) commands will be copied,
 and any mask specified using the link(bf(mask))(mask) command will be
 ignored.
 
-label(rm) dir(bf(rm <mask>)) Remove all files matching mask from
+label(rm) dit(bf(rm <mask>)) Remove all files matching mask from
 the current working directory on the server.
 
 label(rmdir) dit(bf(rmdir <directory name>)) Remove the specified
 directory (user access privileges permitting) from the server.
 
 label(tar) dit(bf(tar <c|x>[IXbgNa])) Performs a tar operation - see
-the link(bf(-T))(minusT) command line option above. Behaviour may be
+the link(bf(-T))(minusT) command line option above. Behavior may be
 affected by the link(bf(tarmode))(tarmode) command (see below). Using
 g (incremental) and N (newer) will affect tarmode settings. Note that
 using the "-" option with tar x may not work - use the command line
@@ -639,8 +639,8 @@ label(blocksize) dit(bf(blocksize <blocksize>)) Blocksize. Must be
 followed by a valid (greater than zero) blocksize. Causes tar file to
 be written out in blocksize*TBLOCK (usually 512 byte) blocks.
 
-label(tarmode) dir(bf(tarmode <full|inc|reset|noreset>)) Changes tar's
-behaviour with regard to archive bits. In full mode, tar will back up
+label(tarmode) dit(bf(tarmode <full|inc|reset|noreset>)) Changes tar's
+behavior with regard to archive bits. In full mode, tar will back up
 everything regardless of the archive bit setting (this is the default
 mode). In incremental mode, tar will only back up files with the
 archive bit set. In reset mode, tar will reset the archive bit on all
@@ -659,7 +659,7 @@ label(NOTES)
 manpagesection(NOTES)
 
 Some servers are fussy about the case of supplied usernames,
-passwords, share names (aka service names) and machine names. If you
+passwords, share names (AKA service names) and machine names. If you
 fail to connect try giving all parameters in uppercase.
 
 It is often necessary to use the link(bf(-n))(minusn) option when connecting to some
@@ -694,7 +694,7 @@ should be executable by all. The client should em(NOT) be setuid or
 setgid!
 
 The client log files should be put in a directory readable and
-writable only by the user.
+writeable only by the user.
 
 To test the client, you will need to know the name of a running
 SMB/CIFS server. It is possible to run url(bf(smbd (8)))(smbd.8.html)

@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smb.conf)(5)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smb.conf htmlcommand((5)))(5)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(smb.conf)(The configuration file for the Samba suite)
@@ -79,7 +79,7 @@ them. The client provides the username. As older clients only provide
 passwords and not usernames, you may specify a list of usernames to
 check against the password using the link(bf("user="))(user) option in
 the share definition. For modern clients such as Windows 95/98 and
-Windows NT, this should not be neccessary.
+Windows NT, this should not be necessary.
 
 Note that the access rights granted by the server are masked by the
 access rights granted to the specified or guest UNIX user by the host
@@ -94,7 +94,7 @@ verb(
 
  	[foo]
  		path = /home/bar
- 		writable = true
+ 		writeable = true
 
 )
 
@@ -173,7 +173,7 @@ following is a typical and suitable [homes] section:
 
 verb(
  	[homes]
- 		writable = yes
+ 		writeable = yes
 )
 
 An important point is that if guest access is specified in the [homes]
@@ -223,14 +223,14 @@ endit()
 Note that the [printers] service MUST be printable - if you specify
 otherwise, the server will refuse to load the configuration file.
 
-Typically the path specified would be that of a world-writable spool
+Typically the path specified would be that of a world-writeable spool
 directory with the sticky bit set on it. A typical [printers] entry
 would look like this:
 
 verb(
  	[printers]
  		path = /usr/spool/public
- 		writable = no
+ 		writeable = no
  		guest ok = yes
  		printable = yes 
 )
@@ -245,7 +245,7 @@ verb(        alias|alias|alias|alias...    )
 
 Each alias should be an acceptable printer name for your printing
 subsystem. In the link(bf([global]))(global) section, specify the new
-file as your printcap.  The server will then only recognise names
+file as your printcap.  The server will then only recognize names
 found in your pseudo-printcap, which of course can contain whatever
 aliases you like. The same technique could be used simply to limit
 access to a subset of your local printers.
@@ -259,7 +259,7 @@ NOTE: On SYSV systems which use lpstat to determine what printers are
 defined on the system you may be able to use link(bf("printcap name =
 lpstat"))(printcapname) to automatically obtain a list of
 printers. See the link(bf("printcap name"))(printcapname) option for
-more detils.
+more details.
 
 enddit()
 
@@ -269,8 +269,8 @@ manpagesection(PARAMETERS)
 Parameters define the specific attributes of sections.
 
 Some parameters are specific to the link(bf([global]))(global) section
-(eg., link(bf(security))(security)).  Some parameters are usable in
-all sections (eg., link(bf(create mode))(createmode)). All others are
+(e.g., link(bf(security))(security)).  Some parameters are usable in
+all sections (e.g., link(bf(create mode))(createmode)). All others are
 permissible only in normal sections. For the purposes of the following
 descriptions the link(bf([homes]))(homes) and
 link(bf([printers]))(printers) sections will be considered normal.
@@ -279,7 +279,7 @@ specific to the link(bf([global]))(global) section. The letter tt('S')
 indicates that a parameter can be specified in a service specific
 section. Note that all tt('S') parameters can also be specified in the
 link(bf([global]))(global) section - in which case they will define
-the default behaviour for all services.
+the default behavior for all services.
 
 Parameters are arranged here in alphabetical order - this may not
 create best bedfellows, but at least you can find them! Where there
@@ -358,8 +358,8 @@ it() bf(%d) = The process id of the current server process.
 
 label(percenta) 
 it() bf(%a) = the architecture of the remote
-machine. Only some are recognised, and those may not be 100%
-reliable. It currently recognises Samba, WfWg, WinNT and
+machine. Only some are recognized, and those may not be 100%
+reliable. It currently recognizes Samba, WfWg, WinNT and
 Win95. Anything else will be known as "UNKNOWN". If it gets it wrong
 then sending a level 3 log to email(samba-bugs@samba.anu.edu.au)
 should allow it to be fixed.
@@ -1065,7 +1065,7 @@ dit(bf(announce as (G)))
 This specifies what type of server url(bf(nmbd))(nmbd.8.html) will
 announce itself as, to a network neighborhood browse list. By default
 this is set to Windows NT. The valid options are : "NT", "Win95" or
-"WfW" meaining Windows NT, Windows 95 and Windows for Workgroups
+"WfW" meaning Windows NT, Windows 95 and Windows for Workgroups
 respectively. Do not change this parameter unless you have a specific
 need to stop Samba appearing as an NT server as this may prevent Samba
 servers from participating as browser servers correctly.
@@ -1152,7 +1152,7 @@ the interface list given in the link(bf('interfaces'))(interfaces)
 parameter. This restricts the networks that url(bf(smbd))(smbd.8.html)
 will serve to packets coming in those interfaces.  Note that you
 should not use this parameter for machines that are serving PPP or
-other intermittant or non-broadcast network interfaces as it will not
+other intermittent or non-broadcast network interfaces as it will not
 cope with non-permanent interfaces.
 
 In addition, to change a users SMB password, the
@@ -1199,16 +1199,9 @@ tt(	blocking locks = True)
 tt(	blocking locks = False)
 
 label(browsable)
-dit(bf(broweable (S)))
+dit(bf(browseable (S)))
 
-This controls whether this share is seen in the list of available
-shares in a net view and in the browse list.
-
-  bf(Default:)
-tt(	browsable = Yes)
-
-  bf(Example:)
-tt(	browsable = No)
+Synonym for link(bf(browseable))(browseable).
 
 label(browselist)
 dit(bf(browse list(G)))
@@ -1223,7 +1216,14 @@ tt(	browse list = Yes)
 label(browseable)
 dit(bf(browseable))
 
-Synonym for link(bf(browsable))(browsable).
+This controls whether this share is seen in the list of available
+shares in a net view and in the browse list.
+
+  bf(Default:)
+tt(	browseable = Yes)
+
+  bf(Example:)
+tt(	browseable = No)
 
 label(casesensitive)
 dit(bf(case sensitive (G)))
@@ -1320,7 +1320,7 @@ described more fully in the manual page url(bf(make_smbcodepage
 to map lower to upper case characters to provide the case insensitivity
 of filenames that Windows clients expect.
 
-Samba currenly ships with the following code page files :
+Samba currently ships with the following code page files :
 
 startit()
 
@@ -1401,11 +1401,11 @@ Shift-JIS to JUNET code with different shift-in, shift out codes.
 it() bf(EUC)  Convert an incoming Shift-JIS character to EUC code.
 
 it() bf(HEX) Convert an incoming Shift-JIS character to a 3 byte hex
-representation, ie. tt(:AB).
+representation, i.e. tt(:AB).
 
 it() bf(CAP) Convert an incoming Shift-JIS character to the 3 byte hex
-representation used by the Columbia Appletalk Program (CAP),
-ie. tt(:AB).  This is used for compatibility between Samba and CAP.
+representation used by the Columbia AppleTalk Program (CAP),
+i.e. tt(:AB).  This is used for compatibility between Samba and CAP.
 
 endit()
 
@@ -1467,7 +1467,7 @@ dit(bf(create mask (S)))
 
 A synonym for this parameter is link(bf('create mode'))(createmode).
 
-When a file is created, the neccessary permissions are calculated
+When a file is created, the necessary permissions are calculated
 according to the mapping from DOS modes to UNIX permissions, and the
 resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
 This parameter may be thought of as a bit-wise MASK for the UNIX modes
@@ -1626,7 +1626,7 @@ If this option is set to True, then Samba will attempt to recursively
 delete any files and directories within the vetoed directory. This can
 be useful for integration with file serving systems such as bf(NetAtalk),
 which create meta-files within directories you might normally veto
-DOS/Windows users from seeing (eg. tt(.AppleDouble))
+DOS/Windows users from seeing (e.g. tt(.AppleDouble))
 
 Setting tt('delete veto files = True') allows these directories to be 
 transparently deleted when the parent directory is deleted (so long
@@ -1677,7 +1677,7 @@ return value can give the block size in bytes. The default blocksize
 is 1024 bytes.
 
 Note: Your script should em(NOT) be setuid or setgid and should be
-owned by (and writable only by) root!
+owned by (and writeable only by) root!
 
   bf(Default:)
 tt(	By default internal routines for determining the disk capacity
@@ -1714,7 +1714,7 @@ dit(bf(directory mask (S)))
 This parameter is the octal modes which are used when converting DOS
 modes to UNIX modes when creating UNIX directories.
 
-When a directory is created, the neccessary permissions are calculated
+When a directory is created, the necessary permissions are calculated
 according to the mapping from DOS modes to UNIX permissions, and the
 resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
 This parameter may be thought of as a bit-wise MASK for the UNIX modes
@@ -1727,7 +1727,7 @@ directory to modify it.
 
 Following this Samba will bit-wise 'OR' the UNIX mode created from
 this parameter with the value of the "force directory mode"
-parameter. This parameter is set to 000 by default (ie. no extra mode
+parameter. This parameter is set to 000 by default (i.e. no extra mode
 bits are added).
 
 See the link(bf("force directory mode"))(forcedirectorymode) parameter
@@ -1774,7 +1774,7 @@ bf(domain admin group (G))
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
-Samba NT Domain Controller functionality please subscibe to the
+Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.anu.edu.au)
 
@@ -1784,7 +1784,7 @@ dit(bf(domain admin users (G)))
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
-Samba NT Domain Controller functionality please subscibe to the
+Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.anu.edu.au)
 
@@ -1801,7 +1801,7 @@ dit(bf(domain groups (G)))
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
-Samba NT Domain Controller functionality please subscibe to the
+Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.anu.edu.au)
 
@@ -1811,7 +1811,7 @@ dit(bf(domain guest group (G)))
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
-Samba NT Domain Controller functionality please subscibe to the
+Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.anu.edu.au)
 
@@ -1821,7 +1821,7 @@ dit(bf(domain guest users (G)))
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
-Samba NT Domain Controller functionality please subscibe to the
+Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.anu.edu.au)
 
@@ -1835,7 +1835,7 @@ Samba documentation directory tt(docs/) shipped with the source code.
 
 Note that Win95/98 Domain logons are em(NOT) the same as Windows
 NT Domain logons. NT Domain logons require a Primary Domain Controller
-(PDC) for the Domain. It is inteded that in a future release Samba
+(PDC) for the Domain. It is intended that in a future release Samba
 will be able to provide this functionality for Windows NT clients
 also.
 
@@ -1846,7 +1846,7 @@ label(domainmaster)
 dit(bf(domain master (G)))
 
 Tell url(bf(nmbd))(nmbd.8.html) to enable WAN-wide browse list
-collation.Setting this option causes url(bf(nmbd))(nmbd.8.html) to
+collation. Setting this option causes url(bf(nmbd))(nmbd.8.html) to
 claim a special domain specific NetBIOS name that identifies it as a
 domain master browser for its given
 link(bf(workgroup))(workgroup). Local master browsers in the same
@@ -1860,7 +1860,7 @@ list, instead of just the list for their broadcast-isolated subnet.
 Note that Windows NT Primary Domain Controllers expect to be able to
 claim this link(bf(workgroup))(workgroup) specific special NetBIOS
 name that identifies them as domain master browsers for that
-link(bf(workgroup))(workgroup) by default (ie. there is no way to
+link(bf(workgroup))(workgroup) by default (i.e. there is no way to
 prevent a Windows NT PDC from attempting to do this). This means that
 if this parameter is set and url(bf(nmbd))(nmbd.8.html) claims the
 special name for a link(bf(workgroup))(workgroup) before a Windows NT
@@ -1873,7 +1873,7 @@ tt(	domain master = no)
 label(dont descend)
 dit(bf(dont descend (S)))
 
-There are certain directories on some systems (eg., the tt(/proc) tree
+There are certain directories on some systems (e.g., the tt(/proc) tree
 under Linux) that are either not of interest to clients or are
 infinitely deep (recursive). This parameter allows you to specify a
 comma-delimited list of directories that the server should always show
@@ -1892,7 +1892,7 @@ tt(	dont descend = /proc,/dev)
 label(dosfiletimeresolution)
 dit(bf(dos filetime resolution (S)))
 
-Under the DOS and Windows FAT filesystem, the finest granulatity on
+Under the DOS and Windows FAT filesystem, the finest granularity on
 time resolution is two seconds. Setting this parameter for a share
 causes Samba to round the reported time down to the nearest two second
 boundary when a query call that requires one second resolution is made
@@ -1923,7 +1923,7 @@ the timestamp on it. Under POSIX semantics, only the owner of the file
 or root may change the timestamp. By default, Samba runs with POSIX
 semantics and refuses to change the timestamp on a file if the user
 smbd is acting on behalf of is not the file owner. Setting this option
-to True allows DOS semantics and smbd will change the file timstamp as
+to True allows DOS semantics and smbd will change the file timestamp as
 DOS requires.
 
   bf(Default:)
@@ -2024,10 +2024,10 @@ url(bf(smbd))(smbd.8.html) from following symbolic links in a
 particular share. Setting this parameter to em("No") prevents any file
 or directory that is a symbolic link from being followed (the user
 will get an error).  This option is very useful to stop users from
-adding a symbolic link to tt(/etc/pasword) in their home directory for
+adding a symbolic link to tt(/etc/passwd) in their home directory for
 instance.  However it will slow filename lookups down slightly.
 
-This option is enabled (ie. url(bf(smbd))(smbd.8.html) will follow
+This option is enabled (i.e. url(bf(smbd))(smbd.8.html) will follow
 symbolic links) by default.
 
 label(forcecreatemode)
@@ -2036,7 +2036,7 @@ dit(bf(force create mode (S)))
 This parameter specifies a set of UNIX mode bit permissions that will
 em(*always*) be set on a file created by Samba. This is done by
 bitwise 'OR'ing these bits onto the mode bits of a file that is being
-created. The default for this parameter is (in octel) 000. The modes
+created. The default for this parameter is (in octal) 000. The modes
 in this parameter are bitwise 'OR'ed onto the file mode after the mask
 set in the link(bf("create mask"))(createmask) parameter is applied.
 
@@ -2059,7 +2059,7 @@ dit(bf(force directory mode (S)))
 This parameter specifies a set of UNIX mode bit permissions that will
 em(*always*) be set on a directory created by Samba. This is done by
 bitwise 'OR'ing these bits onto the mode bits of a directory that is
-being created. The default for this parameter is (in octel) 0000 which
+being created. The default for this parameter is (in octal) 0000 which
 will not add any extra permission bits to a created directory. This
 operation is done after the mode mask in the parameter
 link(bf("directory mask"))(directorymask) is applied.
@@ -2134,7 +2134,7 @@ tt(	fstype = Samba)
 label(getwdcache)
 dit(bf(getwd cache (G)))
 
-This is a tuning option. When this is enabled a cacheing algorithm
+This is a tuning option. When this is enabled a caching algorithm
 will be used to reduce the time taken for getwd() calls. This can have
 a significant impact on performance, especially when the
 link(bf(widelinks))(widelinks) parameter is set to False.
@@ -2230,8 +2230,8 @@ Each entry in the list must be separated by a tt('/'), which allows
 spaces to be included in the entry.  tt('*') and tt('?') can be used
 to specify multiple files or directories as in DOS wildcards.
 
-Each entry must be a unix path, not a DOS path and must not include the 
-unix directory separator tt('/').
+Each entry must be a Unix path, not a DOS path and must not include the 
+Unix directory separator tt('/').
 
 Note that the case sensitivity option is applicable in hiding files.
 
@@ -2416,7 +2416,7 @@ parameter allows the use of them to be turned on or off.
 Kernel oplocks support allows Samba link(bf(oplocks))(oplocks) to be
 broken whenever a local UNIX process or NFS operation accesses a file
 that url(bf(smbd))(smbd.8.html) has oplocked. This allows complete
-data consistancy between SMB/CIFS, NFS and local file access (and is a
+data consistency between SMB/CIFS, NFS and local file access (and is a
 em(very) cool feature :-).
 
 This parameter defaults to em("On") on systems that have the support,
@@ -2571,7 +2571,7 @@ link(bf("printers"))(printers) section for more details.
   bf(Default:)
 tt(	load printers = yes)
 
-  bg(Example:)
+  bf(Example:)
 tt(	load printers = no)
 
 label(localmaster)
@@ -2706,15 +2706,15 @@ client.  The share must be writeable when the logs in for the first
 time, in order that the Windows 95/98 client can create the user.dat
 and other directories.
 
-Thereafter, the directories and any of contents can, if required, be
-made read-only.  It is not adviseable that the USER.DAT file be made
+Thereafter, the directories and any of the contents can, if required, be
+made read-only.  It is not advisable that the USER.DAT file be made
 read-only - rename it to USER.MAN to achieve the desired effect (a
 em(MAN)datory profile).
 
 Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in.  Therefore, it is vital
 that the logon path does not include a reference to the homes share
-(i.e setting this parameter to tt(\\%N\HOMES\profile_path) will cause
+(i.e. setting this parameter to tt(\\%N\HOMES\profile_path) will cause
 problems).
 
 This option takes the standard substitutions, allowing you to have
@@ -2746,7 +2746,7 @@ tt(/usr/local/samba/netlogon/STARTUP.BAT)
 
 The contents of the batch file is entirely your choice.  A suggested
 command would be to add tt(NET TIME \\SERVER /SET /YES), to force every
-machine to synchronise clocks with the same time server.  Another use
+machine to synchronize clocks with the same time server.  Another use
 would be to add tt(NET USE U: \\SERVER\UTILS) for commonly used
 utilities, or tt(NET USE Q: \\SERVER\ISO9001_QA) for example.
 
@@ -2820,7 +2820,7 @@ previous identical bf(lpq) command will be used if the cached data is
 less than 10 seconds old. A large value may be advisable if your
 bf(lpq) command is very slow.
 
-A value of 0 will disable cacheing completely.
+A value of 0 will disable caching completely.
 
 See also the link(bf("printing"))(printing) parameter.
 
@@ -3000,8 +3000,8 @@ See the section on link(bf("NAME MANGLING"))(NAMEMANGLING).
 label(mangledmap)
 dit(bf(mangled map (S)))
 
-This is for those who want to directly map UNIX file names which are
-not representable on Windows/DOS.  The mangling of names is not always
+This is for those who want to directly map UNIX file names which can
+not be represented on Windows/DOS.  The mangling of names is not always
 what is needed.  In particular you may have documents with file
 extensions that differ between DOS and UNIX. For example, under UNIX
 it is common to use tt(".html") for HTML files, whereas under
@@ -3012,7 +3012,7 @@ So to map tt("html") to tt("htm") you would use:
 tt(  mangled map = (*.html *.htm))
 
 One very useful case is to remove the annoying tt(";1") off the ends
-of filenames on some CDROMS (only visible under some UNIXes). To do
+of filenames on some CDROMS (only visible under some UNIXs). To do
 this use a map of (*;1 *).
 
   bf(default:)
@@ -3133,7 +3133,7 @@ source code, documents, etc...
 
 Note that this requires the link(bf("create mask"))(createmask)
 parameter to be set such that owner execute bit is not masked out
-(ie. it must include 100). See the parameter link(bf("create
+(i.e. it must include 100). See the parameter link(bf("create
 mask"))(createmask) for details.
 
   bf(Default:)
@@ -3149,7 +3149,7 @@ This controls whether DOS style hidden files should be mapped to the
 UNIX world execute bit.
 
 Note that this requires the link(bf("create mask"))(createmask) to be
-set such that the world execute bit is not masked out (ie. it must
+set such that the world execute bit is not masked out (i.e. it must
 include 001). See the parameter link(bf("create mask"))(createmask)
 for details.
 
@@ -3166,7 +3166,7 @@ This controls whether DOS style system files should be mapped to the
 UNIX group execute bit.
 
 Note that this requires the link(bf("create mask"))(createmask) to be
-set such that the group execute bit is not masked out (ie. it must
+set such that the group execute bit is not masked out (i.e. it must
 include 010). See the parameter link(bf("create mask"))(createmask)
 for details.
 
@@ -3180,7 +3180,7 @@ label(maptoguest)
 dit(bf(map to guest (G)))
 
 This parameter is only useful in link(bf(security))(security) modes
-other than link(bf("security=share"))(securityequalshare) - ie. user,
+other than link(bf("security=share"))(securityequalshare) - i.e. user,
 server, and domain.
 
 This parameter can take three different values, which tell
@@ -3202,7 +3202,7 @@ account"))(guestaccount).
 it() bf("Bad Password") - Means user logins with an invalid
 password are treated as a guest login and mapped into the
 link(bf("guest account"))(guestaccount). Note that this can
-cause problems as it means that any user mistyping their
+cause problems as it means that any user incorrectly typing their
 password will be silently logged on a bf("guest") - and 
 will not know the reason they cannot access files they think
 they should - there will have been no message given to them
@@ -3304,7 +3304,7 @@ dit(bf(maxopenfiles (G)))
 This parameter limits the maximum number of open files that one
 url(bf(smbd))(smbd.8.html) file serving process may have open for
 a client at any one time. The default for this parameter is set
-very high (10,000) as Samba uses only one bit per un-opened file.
+very high (10,000) as Samba uses only one bit per unopened file.
 
 The limit of the number of open files is usually set by the
 UNIX per-process file descriptor limit rather than this parameter
@@ -3567,7 +3567,7 @@ tt(	nis homedir = true)
 label(ntpipesupport)
 dit(bf(nt pipe support (G)))
 
-This boolean parameter controlls whether url(bf(smbd))(smbd.8.html)
+This boolean parameter controls whether url(bf(smbd))(smbd.8.html)
 will allow Windows NT clients to connect to the NT SMB specific
 tt(IPC$) pipes. This is a developer debugging option and can be left
 alone.
@@ -3578,7 +3578,7 @@ tt(	nt pipe support = yes)
 label(ntsmbsupport)
 dit(bf(nt smb support (G)))
 
-This boolean parameter controlls whether url(bf(smbd))(smbd.8.html)
+This boolean parameter controls whether url(bf(smbd))(smbd.8.html)
 will negotiate NT specific SMB support with Windows NT
 clients. Although this is a developer debugging option and should be
 left alone, benchmarking has discovered that Windows NT clients give
@@ -3655,15 +3655,15 @@ dit(bf(oplocks (S)))
 
 This boolean option tells smbd whether to issue oplocks (opportunistic
 locks) to file open requests on this share. The oplock code can
-dramatically (approx 30% or more) improve the speed of access to files
-on Samba servers. It allows the clients to agressively cache files
+dramatically (approx. 30% or more) improve the speed of access to files
+on Samba servers. It allows the clients to aggressively cache files
 locally and you may want to disable this option for unreliable network
 environments (it is turned on by default in Windows NT Servers).  For
 more information see the file Speed.txt in the Samba docs/ directory.
 
 Oplocks may be selectively turned off on certain files on a per share basis.
-See the 'veto oplock files' parameter. On some systems oplocks are recognised
-by the underlying operating system. This allows data synchronisation between
+See the 'veto oplock files' parameter. On some systems oplocks are recognized
+by the underlying operating system. This allows data synchronization between
 all access to oplocked files, whether it be via Samba or NFS or a local
 UNIX process. See the link(bf(kernel oplocks))(kerneloplocks) parameter
 for details.
@@ -3704,7 +3704,7 @@ dit(bf(panic action (G)))
 This is a Samba developer option that allows a system command to be
 called when either url(bf(smbd))(smbd.8.html) or
 url(bf(nmbd))(nmbd.8.html) crashes. This is usually used to draw
-attention to the fact that a problem occured.
+attention to the fact that a problem occurred.
 
   bf(Default:)
 tt(	panic action = <empty string>)
@@ -3783,7 +3783,7 @@ dit(bf(passwd program (G)))
 
 The name of a program that can be used to set UNIX user passwords.
 Any occurrences of link(bf(%u))(percentu) will be replaced with the
-user name. The user name is checked for existance before calling the
+user name. The user name is checked for existence before calling the
 password changing program.
 
 Also note that many passwd programs insist in em("reasonable")
@@ -3794,7 +3794,7 @@ Windows for Workgroups) uppercase the password before sending it.
 em(Note) that if the link(bf("unix password sync"))(unixpasswordsync)
 parameter is set to tt("True") then this program is called em(*AS
 ROOT*) before the SMB password in the
-url(bf(smbpassswd))(smbpasswd.5.html) file is changed. If this UNIX
+url(bf(smbpasswd))(smbpasswd.5.html) file is changed. If this UNIX
 password change fails, then url(bf(smbd))(smbd.8.html) will fail to
 change the SMB password also (this is by design).
 
@@ -3889,8 +3889,8 @@ better restrict them with hosts allow!
 If the link(bf("security"))(security) parameter is set to
 bf("domain"), then the list of machines in this option must be a list
 of Primary or Backup Domain controllers for the
-link(bf(Domain))(workgroup), as the Samba server is cryptographically
-in that domain, and will use crpytographically authenticated RPC calls
+link(bf(Domain))(workgroup), as the Samba server is cryptographicly
+in that domain, and will use cryptographicly authenticated RPC calls
 to authenticate the user logging on. The advantage of using
 link(bf("security=domain"))(securityequaldomain) is that if you list
 several hosts in the bf("password server") option then
@@ -3938,7 +3938,7 @@ where print data will spool prior to being submitted to the host for
 printing.
 
 For a printable service offering guest access, the service should be
-readonly and the path should be world-writable and have the sticky bit
+readonly and the path should be world-writeable and have the sticky bit
 set. This is not mandatory of course, but you probably won't get the
 results you expect if you do otherwise.
 
@@ -4103,12 +4103,12 @@ If there is neither a specified print command for a printable service
 nor a global print command, spool files will be created but not
 processed and (most importantly) not removed.
 
-Note that printing may fail on some UNIXes from the tt("nobody")
+Note that printing may fail on some UNIXs from the tt("nobody")
 account. If this happens then create an alternative guest account that
 can print and set the link(bf("guest account"))(guestaccount) in the
 link(bf("[global]"))(global) section.
 
-You can form quite complex print commands by realising that they are
+You can form quite complex print commands by realizing that they are
 just passed to a shell. For example the following will log a print
 job, print the file, then remove it. Note that tt(';') is the usual
 separator for command in shell scripts.
@@ -4378,7 +4378,7 @@ dit(bf(queueresume command (S)))
 
 This parameter specifies the command to be executed on the server host
 in order to resume the printerqueue. It is the command to undo the
-behaviour that is caused by the previous parameter
+behavior that is caused by the previous parameter
 (link(bf("queuepause command))(queuepausecommand)).
  
 This command should be a program or script which takes a printer name
@@ -4432,9 +4432,9 @@ label(readonly)
 dit(bf(read only (S)))
 
 Note that this is an inverted synonym for
-link(bf("writable"))(writable) and link(bf("write ok"))(writeok).
+link(bf("writeable"))(writeable) and link(bf("write ok"))(writeok).
 
-See also link(bf("writable"))(writable) and link(bf("write
+See also link(bf("writeable"))(writeable) and link(bf("write
 ok"))(writeok).
 
 label(readprediction)
@@ -4535,7 +4535,7 @@ label(remotebrowsesync)
 dit(bf(remote browse sync (G)))
 
 This option allows you to setup url(bf(nmbd))(nmbd.8.html) to
-periodically request synchronisation of browse lists with the master
+periodically request synchronization of browse lists with the master
 browser of a samba server that is on a remote segment. This option
 will allow you to gain browse lists for multiple workgroups across
 routed networks. This is done in a manner that does not work with any
@@ -4551,7 +4551,7 @@ For example:
 tt(	remote browse sync = 192.168.2.255 192.168.4.255)
 
 the above line would cause url(bf(nmbd))(nmbd.8.html) to request the
-master browser on the specified subnets or addresses to synchronise
+master browser on the specified subnets or addresses to synchronize
 their browse lists with the local server.
 
 The IP addresses you choose would normally be the broadcast addresses
@@ -4602,7 +4602,7 @@ Synonym for link(bf("root directory"))(rootdirectory).
 label(rootdirectory)
 dit(bf(root directory (G)))
 
-The server will tt("chroot()") (ie. Change it's root directory) to
+The server will tt("chroot()") (i.e. Change it's root directory) to
 this directory on startup. This is not strictly necessary for secure
 operation. Even without it the server will deny access to files not in
 one of the service entries. It may also check for, and deny access to,
@@ -4641,7 +4641,7 @@ dit(bf(root preexec (S)))
 
 This is the same as the link(bf("preexec"))(preexec) parameter except
 that the command is run as root. This is useful for mounting
-filesystems (such as cdroms) before a connection is finalised.
+filesystems (such as cdroms) before a connection is finalized.
 
 See also link(bf("preexec"))(preexec).
 
@@ -4671,7 +4671,7 @@ In previous versions of Samba the default was
 link(bf("security=share"))(securityequalshare) mainly because that was
 the only option at one stage.
 
-There is a bug in WfWg that has relevence to this setting. When in
+There is a bug in WfWg that has relevance to this setting. When in
 user or server level security a WfWg client will totally ignore the
 password you type in the "connect drive" dialog box. This makes it
 very difficult (if not impossible) to connect to a Samba service as
@@ -4689,7 +4689,7 @@ difficult to setup guest shares with
 link(bf(security=user))(securityequaluser), see the link(bf("map to
 guest"))(maptoguest)parameter for details.
 
-It is possible to use url(bf(smbd))(smbd.8.html) in a em("hybred
+It is possible to use url(bf(smbd))(smbd.8.html) in a em("hybrid
 mode") where it is offers both user and share level security under
 different link(bf(NetBIOS aliases))(netbiosaliases). See the
 link(bf(NetBIOS aliases))(netbiosaliases) and the
@@ -4775,7 +4775,7 @@ are then applied and may change the UNIX user to use on this
 connection, but only after the user has been successfully
 authenticated.
 
-em(Note) that the the name of the resource being requested is
+em(Note) that the name of the resource being requested is
 em(*not*) sent to the server until after the server has successfully
 authenticated the client. This is why guest shares don't work in user
 level security without allowing the server to automatically map unknown
@@ -4802,7 +4802,7 @@ the same as link(bf("security=user"))(securityequaluser). It only
 affects how the server deals with the authentication, it does not in
 any way affect what the client sees.
 
-em(Note) that the the name of the resource being requested is
+em(Note) that the name of the resource being requested is
 em(*not*) sent to the server until after the server has successfully
 authenticated the client. This is why guest shares don't work in server
 level security without allowing the server to automatically map unknown
@@ -4836,7 +4836,7 @@ the same as link(bf("security=user"))(securityequaluser). It only
 affects how the server deals with the authentication, it does not in
 any way affect what the client sees.
 
-em(Note) that the the name of the resource being requested is
+em(Note) that the name of the resource being requested is
 em(*not*) sent to the server until after the server has successfully
 authenticated the client. This is why guest shares don't work in domain
 level security without allowing the server to automatically map unknown
@@ -4849,7 +4849,7 @@ bf("security=domain) with respect to multi-byte character
 set usernames. The communication with a Domain Controller
 must be done in UNICODE and Samba currently does not widen
 multi-byte user names to UNICODE correctly, thus a multi-byte
-username will not be recognised correctly at the Domain Controller.
+username will not be recognized correctly at the Domain Controller.
 This issue will be addressed in a future release.
 
 See also the section link(bf("NOTE ABOUT USERNAME/PASSWORD
@@ -4904,7 +4904,7 @@ tt( 	set directory = yes)
 label(sharemodes)
 dit(bf(share modes (S)))
 
-This enables or disables the honouring of the tt("share modes") during a
+This enables or disables the honoring of the tt("share modes") during a
 file open. These modes are used by clients to gain exclusive read or
 write access to a file.
 
@@ -5014,9 +5014,9 @@ appropriate documentation for your operating system first (perhaps
 bf("man setsockopt") will help).
 
 You may find that on some systems Samba will say "Unknown socket
-option" when you supply an option. This means you either mis-typed it
-or you need to add an include file to includes.h for your OS. If the
-latter is the case please send the patch to
+option" when you supply an option. This means you either incorrectly 
+typed it or you need to add an include file to includes.h for your OS. 
+If the latter is the case please send the patch to
 email(samba-bugs@samba.anu.edu.au).
 
 Any of the supported socket options may be combined in any way you
@@ -5109,7 +5109,7 @@ em(Note) that for export control reasons this code is em(**NOT**)
 enabled by default in any current binary version of Samba.
 
 This variable defines where to look up the Certification
-Autorities. The given directory should contain one file for each CA
+Authorities. The given directory should contain one file for each CA
 that samba will trust.  The file name must be the hash value over the
 "Distinguished Name" of the CA. How this directory is set up is
 explained later in this document. All files within the directory that
@@ -5133,7 +5133,7 @@ This variable is a second way to define the trusted CAs. The
 certificates of the trusted CAs are collected in one big file and this
 variable points to the file. You will probably only use one of the two
 ways to define your CAs. The first choice is preferable if you have
-many CAs or want to be flexible, the second is perferable if you only
+many CAs or want to be flexible, the second is preferable if you only
 have one CA and want to keep things simple (you won't need to create
 the hashed file names). You don't need this variable if you don't
 verify client certificates.
@@ -5373,7 +5373,7 @@ change this parameter.
 	status = yes
 
 label(strictlocking)
-dir(bf(strict locking (S)))
+dit(bf(strict locking (S)))
 
 This is a boolean that controls the handling of file locking in the
 server. When this is set to tt("yes") the server will check every read and
@@ -5400,7 +5400,7 @@ Many Windows applications (including the Windows 98 explorer shell)
 seem to confuse flushing buffer contents to disk with doing a sync to
 disk. Under UNIX, a sync call forces the process to be suspended until
 the kernel has ensured that all outstanding data in kernel disk
-buffers has been safely stored onto stable storate. This is very slow
+buffers has been safely stored onto stable storage. This is very slow
 and should only be done rarely. Setting this parameter to "no" (the
 default) means that smbd ignores the Windows applications requests for
 a sync call. There is only a possibility of losing data if the
@@ -5447,7 +5447,7 @@ See also the link(bf("strict sync"))(strictsync) parameter.
   bf(Default:)
 tt(	sync always = no)
 
-  bf(xample:)
+  bf(Example:)
 tt(	sync always = yes)
 
 label(syslog)
@@ -5456,9 +5456,9 @@ dit(bf(syslog (G)))
 This parameter maps how Samba debug messages are logged onto the
 system syslog logging levels. Samba debug level zero maps onto syslog
 LOG_ERR, debug level one maps onto LOG_WARNING, debug level two maps
-to LOG_NOTICE, debug level three maps onto LOG_INFO.  The paramter
+to LOG_NOTICE, debug level three maps onto LOG_INFO.  The parameter
 sets the threshold for doing the mapping, all Samba debug messages
-above this threashold are mapped to syslog LOG_DEBUG messages.
+above this threshold are mapped to syslog LOG_DEBUG messages.
 
   bf(Default:)
 tt(	syslog = 1)
@@ -5514,7 +5514,7 @@ tt(	timestamp logs = False)
 label(unixpasswordsync)
 dit(bf(unix password sync (G)))
 
-This boolean parameter controlls whether Samba attempts to synchronise
+This boolean parameter controls whether Samba attempts to synchronize
 the UNIX password with the SMB password when the encrypted SMB
 password in the smbpasswd file is changed. If this is set to true the
 program specified in the link(bf("passwd program"))(passwdprogram)
@@ -5675,7 +5675,7 @@ tries all lowercase, followed by the username with the first letter
 capitalized, and fails if the username is not found on the UNIX
 machine.
 
-If this parameter is set to non-zero the behaviour changes. This
+If this parameter is set to non-zero the behavior changes. This
 parameter is a number that specifies the number of uppercase
 combinations to try whilst trying to determine the UNIX user name. The
 higher the number the more combinations will be tried, but the slower
@@ -5691,7 +5691,7 @@ tt(	username level = 5)
 label(usernamemap)
 dit(bf(username map (G)))
 
-This option allows you to to specify a file containing a mapping of
+This option allows you to specify a file containing a mapping of
 usernames from the clients to the server. This can be used for several
 purposes. The most common is to map usernames that users use on DOS or
 Windows machines to those that the UNIX box uses. The other is to map
@@ -5813,13 +5813,13 @@ See also the link(bf("client code page"))(clientcodepage) parameter.
   bf(Default:)
 verb(
 	Samba defaults to using a reasonable set of valid characters
-	for english systems
+	for English systems
 )
 
   bf(Example)
 tt(	valid chars = 0345:0305 0366:0326 0344:0304)
 
-The above example allows filenames to have the swedish characters in
+The above example allows filenames to have the Swedish characters in
 them.
 
 NOTE: It is actually quite difficult to correctly produce a bf("valid
@@ -6004,7 +6004,7 @@ label(workgroup)
 dit(bf(workgroup (G)))
 
 This controls what workgroup your server will appear to be in when
-queried by clients. Note that this parameter also controlls the Domain
+queried by clients. Note that this parameter also controls the Domain
 name used with the link(bf("security=domain"))(securityequaldomain)
 setting.
 
@@ -6017,24 +6017,7 @@ tt( 	set at compile time to WORKGROUP)
 label(writable)
 dit(bf(writable (S)))
 
-An inverted synonym is link(bf("read only"))(readonly).
-
-If this parameter is tt("no"), then users of a service may not create
-or modify files in the service's directory.
-
-Note that a printable service link(bf(("printable = yes")))(printable)
-will em(*ALWAYS*) allow writing to the directory (user privileges
-permitting), but only via spooling operations.
-
-  bf(Default:)
-tt( 	writable = no)
-
-  bf(Examples:)
-verb(
- 	read only = no
- 	writable = yes
- 	write ok = yes
-)
+Synonym for link(bf("writeable"))(writeable) for people who can't spell :-).
 
 label(writelist)
 dit(bf(write list (S)))
@@ -6059,7 +6042,7 @@ tt(	write list = admin, root, @staff)
 label(writeok)
 dit(bf(write ok (S)))
 
-Synonym for link(bf(writable))(writable).
+Synonym for link(bf(writeable))(writeable).
 
 label(writeraw)
 dit(bf(write raw (G)))
@@ -6074,7 +6057,24 @@ tt( 	write raw = yes)
 label(writeable)
 dit(bf(writeable))
 
-Synonym for link(bf("writable"))(writable) for people who can't spell :-).
+An inverted synonym is link(bf("read only"))(readonly).
+
+If this parameter is tt("no"), then users of a service may not create
+or modify files in the service's directory.
+
+Note that a printable service link(bf(("printable = yes")))(printable)
+will em(*ALWAYS*) allow writing to the directory (user privileges
+permitting), but only via spooling operations.
+
+  bf(Default:)
+tt( 	writeable = no)
+
+  bf(Examples:)
+verb(
+ 	read only = no
+ 	writeable = yes
+ 	write ok = yes
+)
 
 label(WARNINGS)
 manpagesection(WARNINGS)

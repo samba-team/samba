@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(testprns)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(testprns htmlcommand((1)))(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(testprns)(check printer name for validity with smbd )
@@ -33,7 +33,7 @@ dit(bf(printername)) The printer name to validate.
 
 Printer names are taken from the first field in each record in the
 printcap file, single printer names and sets of aliases separated by
-vertical bars ("|") are recognised. Note that no validation or
+vertical bars ("|") are recognized. Note that no validation or
 checking of the printcap syntax is done beyond that required to
 extract the printer name. It may be that the print spooling system is
 more forgiving or less forgiving than bf(testprns). However, if

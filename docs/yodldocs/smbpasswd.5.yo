@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smbpasswd)(5)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smbpasswd htmlcommand((5)))(5)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(smbpasswd)(The Samba encrypted password file)
@@ -16,7 +16,7 @@ manpagedescription()
 This file is part of the bf(Samba) suite.
 
 smbpasswd is the bf(Samba) encrypted password file. It contains
-the username, unix user id and the SMB hashed passwords of the
+the username, Unix user id and the SMB hashed passwords of the
 user, as well as account flag information and the time the password
 was last changed. This file format has been evolving with Samba
 and has had several different formats in the past.
@@ -25,7 +25,7 @@ label(FILEFORMAT)
 manpagesection(FILE FORMAT)
 
 The format of the smbpasswd file used by Samba 2.0 is very similar to
-the familiar unix bf(passwd (5)) file. It is an ASCII file containing
+the familiar Unix bf(passwd (5)) file. It is an ASCII file containing
 one line for each user. Each field within each line is separated from
 the next by a colon. Any entry beginning with # is ignored. The
 smbpasswd file contains the following information for each user:
@@ -43,7 +43,7 @@ dit(bf(uid)) nl() nl()
 
 	This is the UNIX uid. It must match the uid field for the same
 	user entry in the standard UNIX passwd file. If this does not
-	match then Samba will refuse to recognis this bf(smbpasswd) file entry
+	match then Samba will refuse to recognize this bf(smbpasswd) file entry
 	as being valid for a user.
 
 label(LanmanPasswordHash)
@@ -54,7 +54,7 @@ dit(bf(Lanman Password Hash)) nl() nl()
 	string with the users password as the DES key. This is the same
 	password used by Windows 95/98 machines. Note that this password hash
 	is regarded as weak as it is vulnerable to dictionary attacks and if
-	two users choose the same password this entry will be identical (ie.
+	two users choose the same password this entry will be identical (i.e.
 	the password is not em("salted") as the UNIX password is). If the
 	user has a null password this field will contain the characters
 	tt("NO PASSWORD") as the start of the hex string. If the hex string
@@ -64,7 +64,7 @@ dit(bf(Lanman Password Hash)) nl() nl()
 
 	em(WARNING !!). Note that, due to the challenge-response nature of the
 	SMB/CIFS authentication protocol, anyone with a knowledge of this
-	password hash will be able to impersonate the user of the network.
+	password hash will be able to impersonate the user on the network.
 	For this reason these hashes are known as em("plain text equivalent")
 	and must em(NOT) be made available to anyone but the root user. To
 	protect these passwords the bf(smbpasswd) file is placed in a
@@ -84,12 +84,12 @@ dit(bf(NT Password Hash)) nl() nl()
 	Password Hash))(LanmanPasswordHash) as it preserves the case of the
 	password and uses a much higher quality hashing algorithm. However, it
 	is still the case that if two users choose the same password this
-	entry will be identical (ie. the password is not em("salted") as the
+	entry will be identical (i.e. the password is not em("salted") as the
 	UNIX password is).
 
 	em(WARNING !!). Note that, due to the challenge-response nature of the
 	SMB/CIFS authentication protocol, anyone with a knowledge of this
-	password hash will be able to impersonate the user of the network.
+	password hash will be able to impersonate the user on the network.
 	For this reason these hashes are known as em("plain text equivalent")
 	and must em(NOT) be made available to anyone but the root user. To
 	protect these passwords the bf(smbpasswd) file is placed in a
@@ -109,8 +109,8 @@ dit(bf(Account Flags)) nl() nl()
 		startit()
 
 		label(capU)
-		it() bf('U') This means this is a em("User") account, ie. an ordinary
-		user. Only bf(User) and link(bf(Worskstation Trust))(capW) accounts are
+		it() bf('U') This means this is a em("User") account, i.e. an ordinary
+		user. Only bf(User) and link(bf(Workstation Trust))(capW) accounts are
 		currently supported in the bf(smbpasswd) file.
 
 		label(capN)
@@ -122,7 +122,7 @@ dit(bf(Account Flags)) nl() nl()
 		in the url(bf(smb.conf (5)))(smb.conf.5.html) config file.
 
 		label(capD)
-		it() bf('D') This means the account is diabled and no SMB/CIFS logins 
+		it() bf('D') This means the account is disabled and no SMB/CIFS logins 
 		will be	allowed for this user.
 
 		label(capW)
@@ -197,13 +197,15 @@ label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
 The original Samba man pages were written by Karl Auer. The man page
 sources were converted to YODL format (another excellent piece of Open
-Source software) and updated for the Samba2.0 release by Jeremy
+Source software, available at
+url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/)) 
+and updated for the Samba2.0 release by Jeremy
 Allison, email(samba-bugs@samba.anu.edu.au).
 
 See url(bf(samba (7)))(samba.7.html) to find out how to get a full
