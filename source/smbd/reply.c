@@ -320,7 +320,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if (Protocol < PROTOCOL_NT1) {
 		set_message(outbuf,2,0,True);
 		p = smb_buf(outbuf);
-		p += srvstr_push(inbuf, outbuf, p, devicename, -1, 
+		p += srvstr_push(outbuf, p, devicename, -1, 
 				 STR_CONVERT|STR_TERMINATE|STR_ASCII);
 		set_message_end(outbuf,p);
 	} else {
@@ -330,9 +330,9 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		set_message(outbuf,3,0,True);
 
 		p = smb_buf(outbuf);
-		p += srvstr_push(inbuf, outbuf, p, devicename, -1, 
+		p += srvstr_push(outbuf, p, devicename, -1, 
 				 STR_CONVERT|STR_TERMINATE|STR_ASCII);
-		p += srvstr_push(inbuf, outbuf, p, fsname, -1, 
+		p += srvstr_push(outbuf, p, fsname, -1, 
 				 STR_CONVERT|STR_TERMINATE);
 		
 		set_message_end(outbuf,p);
@@ -1013,9 +1013,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     char *p;
     set_message(outbuf,3,0,True);
     p = smb_buf(outbuf);
-    p += srvstr_push(inbuf, outbuf, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
-    p += srvstr_push(inbuf, outbuf, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
-    p += srvstr_push(inbuf, outbuf, p, global_myworkgroup, -1, STR_TERMINATE|STR_CONVERT);
+    p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
+    p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
+    p += srvstr_push(outbuf, p, global_myworkgroup, -1, STR_TERMINATE|STR_CONVERT);
     set_message_end(outbuf,p);
     /* perhaps grab OS version here?? */
   }
