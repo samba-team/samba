@@ -466,7 +466,7 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 static BOOL get_sam_group_entries(struct getent_state *ent)
 {
 	uint32 status, num_entries;
-	struct acct_info *name_list = NULL;
+	struct acct_info *name_list = NULL, *tnl;
         
 	if (ent->got_all_sam_entries) {
 		return False;
@@ -512,10 +512,16 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 		if (num_entries) {
 
-			name_list = Realloc(name_list,
-					    sizeof(struct acct_info) *
-					    (ent->num_sam_entries +
-					     num_entries));
+			tnl = Realloc(name_list,
+						sizeof(struct acct_info) *
+						(ent->num_sam_entries + num_entries));
+			if(tnl == NULL) {
+				DEBUG(0,("get_sam_group_entries: unable ro realloc a structure!\n"));
+				SAFE_FREE(name_list);
+				return False;
+			}
+			else
+				name_list = tnl;
 
 			memcpy(&name_list[ent->num_sam_entries],
 			       sam_grp_entries, 
