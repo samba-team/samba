@@ -45,8 +45,9 @@ struct addr_operations {
     krb5_address_type atype;
     size_t max_sockaddr_size;
     krb5_error_code (*sockaddr2addr)(const struct sockaddr *, krb5_address *);
-    krb5_boolean (*uninteresting)(const struct sockaddr *);
     void (*h_addr2sockaddr)(const char *, struct sockaddr *, int *, int);
+    krb5_error_code (*h_addr2addr)(const char *, krb5_address *);
+    krb5_boolean (*uninteresting)(const struct sockaddr *);
     void (*anyaddr)(struct sockaddr *, int *, int);
 };
 
@@ -65,16 +66,6 @@ ipv4_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
     return krb5_data_copy(&a->address, buf, 4);
 }
 
-/*
- * Are there any addresses that should be considered `uninteresting'?
- */
-
-static krb5_boolean
-ipv4_uninteresting (const struct sockaddr *sa)
-{
-    return FALSE;
-}
-
 static void
 ipv4_h_addr2sockaddr(const char *addr,
 		     struct sockaddr *sa, int *sa_size, int port)
@@ -86,6 +77,27 @@ ipv4_h_addr2sockaddr(const char *addr,
     sin->sin_family = AF_INET;
     sin->sin_port   = port;
     sin->sin_addr   = *((struct in_addr *)addr);
+}
+
+static krb5_error_code
+ipv4_h_addr2addr (const char *addr,
+		  krb5_address *a)
+{
+    unsigned char buf[4];
+
+    a->addr_type = KRB5_ADDRESS_INET;
+    memcpy(buf, addr, 4);
+    return krb5_data_copy(&a->address, buf, 4);
+}
+
+/*
+ * Are there any addresses that should be considered `uninteresting'?
+ */
+
+static krb5_boolean
+ipv4_uninteresting (const struct sockaddr *sa)
+{
+    return FALSE;
 }
 
 static void
@@ -128,6 +140,27 @@ ipv6_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
     }
 }
 
+static void
+ipv6_h_addr2sockaddr(const char *addr,
+		     struct sockaddr *sa, int *sa_size, int port)
+{
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+
+    memset (sin6, 0, sizeof(*sin6));
+    *sa_size = sizeof(*sin6);
+    sin6->sin6_family = AF_INET6;
+    sin6->sin6_port   = port;
+    sin6->sin6_addr   = *((struct in6_addr *)addr);
+}
+
+static krb5_error_code
+ipv6_h_addr2addr (const char *addr,
+		  krb5_address *a)
+{
+    a->addr_type = KRB5_ADDRESS_INET6;
+    return krb5_data_copy(&a->address, addr, sizeof(struct in6_addr));
+}
+
 /*
  * 
  */
@@ -145,19 +178,6 @@ ipv6_uninteresting (const struct sockaddr *sa)
     return IN6_IS_ADDR_LOOPBACK(in6)
 	|| IN6_IS_ADDR_LINKLOCAL(in6)
 	|| IN6_IS_ADDR_V4COMPAT(in6);
-}
-
-static void
-ipv6_h_addr2sockaddr(const char *addr,
-		     struct sockaddr *sa, int *sa_size, int port)
-{
-    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
-
-    memset (sin6, 0, sizeof(*sin6));
-    *sa_size = sizeof(*sin6);
-    sin6->sin6_family = AF_INET6;
-    sin6->sin6_port   = port;
-    sin6->sin6_addr   = *((struct in6_addr *)addr);
 }
 
 static void
@@ -180,12 +200,12 @@ ipv6_anyaddr (struct sockaddr *sa, int *sa_size, int port)
 
 static struct addr_operations at[] = {
     {AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
-     ipv4_sockaddr2addr, ipv4_uninteresting, ipv4_h_addr2sockaddr,
-     ipv4_anyaddr},
+     ipv4_sockaddr2addr, ipv4_h_addr2sockaddr, ipv4_h_addr2addr,
+     ipv4_uninteresting, ipv4_anyaddr},
 #if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
     {AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
-     ipv6_sockaddr2addr, ipv6_uninteresting, ipv6_h_addr2sockaddr,
-     ipv6_anyaddr}
+     ipv6_sockaddr2addr, ipv6_h_addr2sockaddr, ipv6_h_addr2addr,
+     ipv6_uninteresting, ipv6_anyaddr}
 #endif
 };
 
@@ -248,6 +268,16 @@ krb5_h_addr2sockaddr (int af,
 	return KRB5_PROG_ATYPE_NOSUPP;
     (*a->h_addr2sockaddr)(addr, sa, sa_size, port);
     return 0;
+}
+
+krb5_error_code
+krb5_h_addr2addr (int af,
+		  const char *haddr, krb5_address *addr)
+{
+    struct addr_operations *a = find_addr_type(af);
+    if (a == NULL)
+	return KRB5_PROG_ATYPE_NOSUPP;
+    return (*a->h_addr2addr)(haddr, addr);
 }
 
 krb5_error_code
