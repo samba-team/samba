@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,13 +44,13 @@ typedef struct fd_storage{
 static ssize_t
 fd_fetch(krb5_storage *sp, void *data, size_t size)
 {
-    return read(FD(sp), data, size);
+    return net_read(FD(sp), data, size);
 }
 
 static ssize_t
 fd_store(krb5_storage *sp, const void *data, size_t size)
 {
-    return write(FD(sp), data, size);
+    return net_write(FD(sp), data, size);
 }
 
 static off_t
