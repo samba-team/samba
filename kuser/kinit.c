@@ -518,7 +518,7 @@ main (int argc, char **argv)
 				   use_keytab, keytab_str,
 				   passwd, sizeof(passwd));
 	memset(passwd, 0, sizeof(passwd));
-	if (exit_val = 0 || ret == KRB5KRB_AP_ERR_V4_REPLY) {
+	if (exit_val == 0 || ret == KRB5KRB_AP_ERR_V4_REPLY) {
 	    krb5_free_context (context);
 	    return exit_val;
 	}
