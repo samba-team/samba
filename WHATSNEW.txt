@@ -1,20 +1,9 @@
-          WHATS NEW IN 1.9.18alpha14 Dec 23rd 1997
-          ========================================
+          WHATS NEW IN 1.9.18 - January 7th 1998.
+          =======================================
 
-This is NOT a production release of Samba code.
-For production servers please run Samba 1.9.17p5
-or later releases in the 1.9.17 series.
-
-In this release (1.9.18alpha14) the Domain controller 
-code should not be turned on. The Domain controller 
-code stream is now being developed in a separate code 
-development branch. To participate in this important 
-work, read the instructions on how to get the source
-code for the BRANCH_NTDOM Samba branch in the document 
-
-docs/CVS_ACCESS.txt 
-
-available in this Samba release.
+This is the latest stable release of Samba. This is the
+version that all production Samba servers should be running
+for all current bug-fixes.
 
 This release contains three major changes to the 
 1.9.17 series and much re-written code.
