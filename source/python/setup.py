@@ -157,7 +157,8 @@ setup(
 
     Extension(name = "smb",
               sources = [samba_srcdir + "python/py_smb.c",
-                         samba_srcdir + "python/py_common.c"],
+                         samba_srcdir + "python/py_common.c",
+                         samba_srcdir + "python/py_ntsec.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
               extra_compile_args = flags_list,
