@@ -68,6 +68,17 @@ krb5_get_credentials (krb5_context context,
      * XXX - Check if cred found in ccache
      */
 
+    *out_creds = malloc(sizeof(**out_creds));
+    memset(*out_creds, 0, sizeof(**out_creds));
+
+    err = krb5_cc_retrieve_cred(context, ccache, 0, in_creds, *out_creds);
+    if (err == 0)
+      return err;
+    else if (err != KRB5_CC_END) {
+      free(*out_creds);
+      return err;
+    }
+
     /*
      * Prepare Tgs_Req.
      */
@@ -194,8 +205,6 @@ krb5_get_credentials (krb5_context context,
 	len = decode_TGS_REP(resp.data, resp.length, &rep.part1);
 	if(len < 0)
 	    return ASN1_PARSE_ERROR;
-	*out_creds = malloc(sizeof(**out_creds));
-	memset(*out_creds, 0, sizeof(**out_creds));
 	err = extract_ticket(context, &rep, *out_creds, key_proc, key, NULL, NULL);
 	if(err)
 	    return err;
