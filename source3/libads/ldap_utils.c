@@ -54,15 +54,20 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 			return status;
 		}
 
-		if (*res) ads_msgfree(ads, *res);
+		if (*res) 
+			ads_msgfree(ads, *res);
 		*res = NULL;
+		
 		DEBUG(3,("Reopening ads connection to realm '%s' after error %s\n", 
 			 ads->config.realm, ads_errstr(status)));
+			 
 		if (ads->ld) {
 			ldap_unbind(ads->ld); 
 		}
+		
 		ads->ld = NULL;
 		status = ads_connect(ads);
+		
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
 				 ads_errstr(status)));
