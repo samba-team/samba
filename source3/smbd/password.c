@@ -152,6 +152,7 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   if (!validated_users)
     {
       DEBUG(0,("Failed to realloc users struct!\n"));
+      num_validated_users = 0;
       return UID_FIELD_INVALID;
     }
 
