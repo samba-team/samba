@@ -27,8 +27,9 @@ static pstring cvtbuf;
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 
 /****************************************************************************
-return the name of a charset to give to iconv()
+ Return the name of a charset to give to iconv().
 ****************************************************************************/
+
 static char *charset_name(charset_t ch)
 {
 	char *ret = NULL;
@@ -43,7 +44,6 @@ static char *charset_name(charset_t ch)
 	return ret;
 }
 
-
 static void lazy_initialize_conv(void)
 {
 	static int initialized = False;
@@ -57,8 +57,9 @@ static void lazy_initialize_conv(void)
 }
 
 /****************************************************************************
- Initialize iconv conversion descriptors 
+ Initialize iconv conversion descriptors.
 ****************************************************************************/
+
 void init_iconv(void)
 {
 	int c1, c2;
@@ -66,13 +67,11 @@ void init_iconv(void)
 
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
-	if (!conv_handles[CH_UNIX][CH_UCS2]) {
+	if (!conv_handles[CH_UNIX][CH_UCS2])
 		conv_handles[CH_UNIX][CH_UCS2] = smb_iconv_open("UCS-2LE", "ASCII");
-	}
-	if (!conv_handles[CH_UCS2][CH_UNIX]) {
+
+	if (!conv_handles[CH_UCS2][CH_UNIX])
 		conv_handles[CH_UCS2][CH_UNIX] = smb_iconv_open("ASCII", "UCS-2LE");
-	}
-	
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
@@ -80,13 +79,14 @@ void init_iconv(void)
 			char *n2 = charset_name((charset_t)c2);
 			if (conv_handles[c1][c2] &&
 			    strcmp(n1, conv_handles[c1][c2]->from_name) == 0 &&
-			    strcmp(n2, conv_handles[c1][c2]->to_name) == 0) continue;
+			    strcmp(n2, conv_handles[c1][c2]->to_name) == 0)
+				continue;
 
 			did_reload = True;
 
-			if (conv_handles[c1][c2]) {
+			if (conv_handles[c1][c2])
 				smb_iconv_close(conv_handles[c1][c2]);
-			}
+
 			conv_handles[c1][c2] = smb_iconv_open(n2,n1);
 			if (conv_handles[c1][c2] == (smb_iconv_t)-1) {
 				DEBUG(0,("Conversion from %s to %s not supported\n",
@@ -111,6 +111,7 @@ void init_iconv(void)
  * @param destlen maximal length allowed for string
  * @retval the number of bytes occupied in the destination
  **/
+
 size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
@@ -121,7 +122,8 @@ size_t convert_string(charset_t from, charset_t to,
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
 
-	if (srclen == -1) srclen = strlen(src)+1;
+	if (srclen == (size_t)-1)
+		srclen = strlen(src)+1;
 
 	lazy_initialize_conv();
 
@@ -129,7 +131,7 @@ size_t convert_string(charset_t from, charset_t to,
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, use as is */
-		int len = MIN(srclen,destlen);
+		size_t len = MIN(srclen,destlen);
 		memcpy(dest,src,len);
 		return len;
 	}
@@ -137,22 +139,24 @@ size_t convert_string(charset_t from, charset_t to,
 	i_len=srclen;
 	o_len=destlen;
 	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
-	if(retval==-1) 		
-	{
+	if(retval==-1) {
 	    	char *reason="unknown error";
-		switch(errno)
-		{ case EINVAL: reason="Incomplete multibyte sequence"; break;
-		  case E2BIG:  reason="No more room"; 
-		   	       DEBUG(0, ("convert_string: Required %d, available %d\n",
-			       srclen, destlen));
-			       /* we are not sure we need srclen bytes,
+		switch(errno) {
+			case EINVAL:
+				reason="Incomplete multibyte sequence";
+				break;
+			case E2BIG:
+				reason="No more room"; 
+				DEBUG(0, ("convert_string: Required %d, available %d\n",
+					srclen, destlen));
+				/* we are not sure we need srclen bytes,
 			          may be more, may be less.
 				  We only know we need more than destlen
 				  bytes ---simo */
-				
-						
 		               break;
-		  case EILSEQ: reason="Illegal multibyte sequence"; break;
+			case EILSEQ:
+			       reason="Illegal multibyte sequence";
+			       break;
 		}
 		/* smb_panic(reason); */
 	}
@@ -168,6 +172,7 @@ size_t convert_string(charset_t from, charset_t to,
  *
  * @retval Size in bytes of the converted string; or -1 in case of error.
  **/
+
 size_t convert_string_allocate(charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
@@ -179,7 +184,8 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 
 	*dest = NULL;
 
-	if (src == NULL || srclen == -1) return -1;
+	if (src == NULL || srclen == (size_t)-1)
+		return (size_t)-1;
 
 	lazy_initialize_conv();
 
@@ -199,31 +205,30 @@ convert:
 	if (!ob) {
 		DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
 		SAFE_FREE(outbuf);
-		return -1;
+		return (size_t)-1;
 	}
-	else outbuf = ob;
+	else
+		outbuf = ob;
 	i_len = srclen;
 	o_len = destlen;
 	retval = smb_iconv(descriptor,
 			   &inbuf, &i_len,
 			   &outbuf, &o_len);
-	if(retval == -1) 		
-	{
+	if(retval == -1) 		{
 	    	char *reason="unknown error";
-		switch(errno)
-		{
-		case EINVAL:
-			reason="Incomplete multibyte sequence";
-			break;
-		case E2BIG:
-			goto convert;		
-		case EILSEQ:
-			reason="Illegal multibyte sequence";
-			break;
+		switch(errno) {
+			case EINVAL:
+				reason="Incomplete multibyte sequence";
+				break;
+			case E2BIG:
+				goto convert;		
+			case EILSEQ:
+				reason="Illegal multibyte sequence";
+				break;
 		}
 		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
 		/* smb_panic(reason); */
-		return -1;
+		return (size_t)-1;
 	}
 	
 	destlen = destlen - o_len;
@@ -231,7 +236,7 @@ convert:
 	if (!*dest) {
 		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
 		SAFE_FREE(ob);
-		return -1;
+		return (size_t)-1;
 	}
 
 	return destlen;
@@ -246,6 +251,7 @@ convert:
  *
  * @retval Size in bytes of the converted string; or -1 in case of error.
  **/
+
 size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
@@ -254,37 +260,40 @@ size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 
 	*dest = NULL;
 	dest_len=convert_string_allocate(from, to, src, srclen, &alloced_string);
-	if (dest_len == -1)
-		return -1;
+	if (dest_len == (size_t)-1)
+		return (size_t)-1;
 	*dest = talloc_memdup(ctx, alloced_string, dest_len);
 	SAFE_FREE(alloced_string);
 	if (*dest == NULL)
-		return -1;
+		return (size_t)-1;
 	return dest_len;
 }
 
-int unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
+size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 {
-	int size;
+	size_t size;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
 	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
-	if (!strupper_w(buffer) && (dest == src)) return srclen;
+	if (!strupper_w(buffer) && (dest == src))
+		return srclen;
 	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }
 
-int unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
+size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
-	int size;
+	size_t size;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
 	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
-	if (!strlower_w(buffer) && (dest == src)) return srclen;
+	if (!strlower_w(buffer) && (dest == src))
+		return srclen;
 	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }
 
 
-int ucs2_align(const void *base_ptr, const void *p, int flags)
+size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 {
-	if (flags & (STR_NOALIGN|STR_ASCII)) return 0;
+	if (flags & (STR_NOALIGN|STR_ASCII))
+		return 0;
 	return PTR_DIFF(p, base_ptr) & 1;
 }
 
@@ -295,18 +304,18 @@ return the number of bytes occupied by the string in the destination
 flags can have:
   STR_TERMINATE means include the null termination
   STR_UPPER     means uppercase in the destination
-dest_len is the maximum length allowed in the destination. If dest_len
+dest_len is the maximum length in bytes allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
-int push_ascii(void *dest, const char *src, int dest_len, int flags)
+
+size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
-	int src_len = strlen(src);
+	size_t src_len = strlen(src);
 	pstring tmpbuf;
 
 	/* treat a pstring as "unlimited" length */
-	if (dest_len == -1) {
+	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
-	}
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
@@ -314,93 +323,93 @@ int push_ascii(void *dest, const char *src, int dest_len, int flags)
 		src = tmpbuf;
 	}
 
-	if (flags & STR_TERMINATE) {
+	if (flags & STR_TERMINATE)
 		src_len++;
-	}
 
 	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
 }
 
-int push_ascii_fstring(void *dest, const char *src)
+size_t push_ascii_fstring(void *dest, const char *src)
 {
 	return push_ascii(dest, src, sizeof(fstring), STR_TERMINATE);
 }
 
-int push_ascii_pstring(void *dest, const char *src)
+size_t push_ascii_pstring(void *dest, const char *src)
 {
 	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
 }
 
-int push_pstring(void *dest, const char *src)
+size_t push_pstring(void *dest, const char *src)
 {
 	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
 }
-
 
 /****************************************************************************
-copy a string from a dos codepage source to a unix char* destination
-flags can have:
-  STR_TERMINATE means the string in src is null terminated
-if STR_TERMINATE is set then src_len is ignored
-src_len is the length of the source area in bytes
-return the number of bytes occupied by the string in src
-the resulting string in "dest" is always null terminated
+ Copy a string from a dos codepage source to a unix char* destination.
+ Flags can have:
+   STR_TERMINATE means the string in src is null terminated.
+ if STR_TERMINATE is set then src_len is ignored.
+ src_len is the length of the source area in bytes.
+ Return the number of bytes occupied by the string in src.
+ The resulting string in "dest" is always null terminated.
 ****************************************************************************/
-int pull_ascii(char *dest, const void *src, int dest_len, int src_len, int flags)
-{
-	int ret;
 
-	if (dest_len == -1) {
+size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+{
+	size_t ret;
+
+	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
-	}
 
 	if (flags & STR_TERMINATE) {
-		if (src_len == -1) {
+		if (src_len == (size_t)-1) {
 			src_len = strlen(src) + 1;
 		} else {
-			int len = strnlen(src, src_len);
-			if (len < src_len) len++;
+			size_t len = strnlen(src, src_len);
+			if (len < src_len)
+				len++;
 			src_len = len;
 		}
 	}
 
 	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
 
-	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
+	if (dest_len)
+		dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;
 }
 
-int pull_ascii_pstring(char *dest, const void *src)
+size_t pull_ascii_pstring(char *dest, const void *src)
 {
 	return pull_ascii(dest, src, sizeof(pstring), -1, STR_TERMINATE);
 }
 
-int pull_ascii_fstring(char *dest, const void *src)
+size_t pull_ascii_fstring(char *dest, const void *src)
 {
 	return pull_ascii(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
 /****************************************************************************
-copy a string from a char* src to a unicode destination
-return the number of bytes occupied by the string in the destination
-flags can have:
-  STR_TERMINATE means include the null termination
-  STR_UPPER     means uppercase in the destination
-  STR_NOALIGN   means don't do alignment
-dest_len is the maximum length allowed in the destination. If dest_len
-is -1 then no maxiumum is used
+ Copy a string from a char* src to a unicode destination.
+ Return the number of bytes occupied by the string in the destination.
+ Flags can have:
+  STR_TERMINATE means include the null termination.
+  STR_UPPER     means uppercase in the destination.
+  STR_NOALIGN   means don't do alignment.
+ dest_len is the maximum length allowed in the destination. If dest_len
+ is -1 then no maxiumum is used.
 ****************************************************************************/
-int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, int flags)
+
+size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
-	int len=0;
-	int src_len = strlen(src);
+	size_t len=0;
+	size_t src_len = strlen(src);
 	pstring tmpbuf;
 
 	/* treat a pstring as "unlimited" length */
-	if (dest_len == -1) {
+	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
-	}
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
@@ -408,9 +417,8 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
 		src = tmpbuf;
 	}
 
-	if (flags & STR_TERMINATE) {
+	if (flags & STR_TERMINATE)
 		src_len++;
-	}
 
 	if (ucs2_align(base_ptr, dest, flags)) {
 		*(char *)dest = 0;
@@ -434,9 +442,10 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
  * @retval The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-int push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
+
+size_t push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
 	return convert_string_talloc(ctx, CH_UNIX, CH_UCS2, src, src_len, (void **)dest);
@@ -450,32 +459,33 @@ int push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
  * @retval The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-int push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
+
+size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
 	return convert_string_allocate(CH_UNIX, CH_UCS2, src, src_len, (void **)dest);	
 }
 
 /****************************************************************************
-copy a string from a char* src to a UTF-8 destination
-return the number of bytes occupied by the string in the destination
-flags can have:
+ Copy a string from a char* src to a UTF-8 destination.
+ Return the number of bytes occupied by the string in the destination
+ Flags can have:
   STR_TERMINATE means include the null termination
   STR_UPPER     means uppercase in the destination
-dest_len is the maximum length allowed in the destination. If dest_len
-is -1 then no maxiumum is used
+ dest_len is the maximum length allowed in the destination. If dest_len
+ is -1 then no maxiumum is used.
 ****************************************************************************/
-int push_utf8(void *dest, const char *src, int dest_len, int flags)
+
+size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 {
-	int src_len = strlen(src);
+	size_t src_len = strlen(src);
 	pstring tmpbuf;
 
 	/* treat a pstring as "unlimited" length */
-	if (dest_len == -1) {
+	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
-	}
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
@@ -483,19 +493,18 @@ int push_utf8(void *dest, const char *src, int dest_len, int flags)
 		src = tmpbuf;
 	}
 
-	if (flags & STR_TERMINATE) {
+	if (flags & STR_TERMINATE)
 		src_len++;
-	}
 
 	return convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len);
 }
 
-int push_utf8_fstring(void *dest, const char *src)
+size_t push_utf8_fstring(void *dest, const char *src)
 {
 	return push_utf8(dest, src, sizeof(fstring), STR_TERMINATE);
 }
 
-int push_utf8_pstring(void *dest, const char *src)
+size_t push_utf8_pstring(void *dest, const char *src)
 {
 	return push_utf8(dest, src, sizeof(pstring), STR_TERMINATE);
 }
@@ -507,9 +516,10 @@ int push_utf8_pstring(void *dest, const char *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+
+size_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
 	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, (void**)dest);
@@ -522,63 +532,67 @@ int push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int push_utf8_allocate(char **dest, const char *src)
+
+size_t push_utf8_allocate(char **dest, const char *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
 	return convert_string_allocate(CH_UNIX, CH_UTF8, src, src_len, (void **)dest);	
 }
 
 /****************************************************************************
-copy a string from a ucs2 source to a unix char* destination
-flags can have:
-  STR_TERMINATE means the string in src is null terminated
-  STR_NOALIGN   means don't try to align
-if STR_TERMINATE is set then src_len is ignored if it is -1
-src_len is the length of the source area in bytes
-return the number of bytes occupied by the string in src
-the resulting string in "dest" is always null terminated
+ Copy a string from a ucs2 source to a unix char* destination.
+ Flags can have:
+  STR_TERMINATE means the string in src is null terminated.
+  STR_NOALIGN   means don't try to align.
+ if STR_TERMINATE is set then src_len is ignored if it is -1.
+ src_len is the length of the source area in bytes
+ Return the number of bytes occupied by the string in src.
+ The resulting string in "dest" is always null terminated.
 ****************************************************************************/
-int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, int src_len, int flags)
-{
-	int ret;
 
-	if (dest_len == -1) {
+size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+{
+	size_t ret;
+
+	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
-	}
 
 	if (ucs2_align(base_ptr, src, flags)) {
 		src = (const void *)((const char *)src + 1);
-		if (src_len > 0) src_len--;
+		if (src_len > 0)
+			src_len--;
 	}
 
 	if (flags & STR_TERMINATE) {
-		if (src_len == -1) {
+		if (src_len == (size_t)-1) {
 			src_len = strlen_w(src)*2 + 2;
 		} else {
-			int len = strnlen_w(src, src_len/2);
-			if (len < src_len/2) len++;
+			size_t len = strnlen_w(src, src_len/2);
+			if (len < src_len/2)
+				len++;
 			src_len = len*2;
 		}
 	}
 
 	/* ucs2 is always a multiple of 2 bytes */
-	if (src_len != -1)
+	if (src_len != (size_t)-1)
 		src_len &= ~1;
 	
 	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len);
-	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
+	if (dest_len)
+		dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;
 }
 
-int pull_ucs2_pstring(char *dest, const void *src)
+size_t pull_ucs2_pstring(char *dest, const void *src)
 {
 	return pull_ucs2(NULL, dest, src, sizeof(pstring), -1, STR_TERMINATE);
 }
 
-int pull_ucs2_fstring(char *dest, const void *src)
+size_t pull_ucs2_fstring(char *dest, const void *src)
 {
 	return pull_ucs2(NULL, dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
@@ -590,9 +604,10 @@ int pull_ucs2_fstring(char *dest, const void *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int pull_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+
+size_t pull_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const smb_ucs2_t *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
 	*dest = NULL;
 	return convert_string_talloc(ctx, CH_UCS2, CH_UNIX, src, src_len, dest);	
 }
@@ -604,52 +619,55 @@ int pull_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int pull_ucs2_allocate(void **dest, const char *src)
+
+size_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
 	*dest = NULL;
 	return convert_string_allocate(CH_UCS2, CH_UNIX, src, src_len, dest);	
 }
 
 /****************************************************************************
-copy a string from a utf-8 source to a unix char* destination
-flags can have:
-  STR_TERMINATE means the string in src is null terminated
-if STR_TERMINATE is set then src_len is ignored
-src_len is the length of the source area in bytes
-return the number of bytes occupied by the string in src
-the resulting string in "dest" is always null terminated
+ Copy a string from a utf-8 source to a unix char* destination.
+ Flags can have:
+  STR_TERMINATE means the string in src is null terminated.
+ if STR_TERMINATE is set then src_len is ignored.
+ src_len is the length of the source area in bytes
+ Return the number of bytes occupied by the string in src.
+ The resulting string in "dest" is always null terminated.
 ****************************************************************************/
-int pull_utf8(char *dest, const void *src, int dest_len, int src_len, int flags)
-{
-	int ret;
 
-	if (dest_len == -1) {
+size_t pull_utf8(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+{
+	size_t ret;
+
+	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
-	}
 
 	if (flags & STR_TERMINATE) {
-		if (src_len == -1) {
+		if (src_len == (size_t)-1) {
 			src_len = strlen(src) + 1;
 		} else {
-			int len = strnlen(src, src_len);
-			if (len < src_len) len++;
+			size_t len = strnlen(src, src_len);
+			if (len < src_len)
+				len++;
 			src_len = len;
 		}
 	}
 
 	ret = convert_string(CH_UTF8, CH_UNIX, src, src_len, dest, dest_len);
-	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
+	if (dest_len)
+		dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;
 }
 
-int pull_utf8_pstring(char *dest, const void *src)
+size_t pull_utf8_pstring(char *dest, const void *src)
 {
 	return pull_utf8(dest, src, sizeof(pstring), -1, STR_TERMINATE);
 }
 
-int pull_utf8_fstring(char *dest, const void *src)
+size_t pull_utf8_fstring(char *dest, const void *src)
 {
 	return pull_utf8(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
@@ -661,9 +679,10 @@ int pull_utf8_fstring(char *dest, const void *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+
+size_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = strlen(src)+1;
 	*dest = NULL;
 	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);	
 }
@@ -675,27 +694,29 @@ int pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int pull_utf8_allocate(void **dest, const char *src)
+
+size_t pull_utf8_allocate(void **dest, const char *src)
 {
-	int src_len = strlen(src)+1;
+	size_t src_len = strlen(src)+1;
 	*dest = NULL;
 	return convert_string_allocate(CH_UTF8, CH_UNIX, src, src_len, dest);	
 }
  
 /****************************************************************************
-copy a string from a char* src to a unicode or ascii
-dos codepage destination choosing unicode or ascii based on the 
-flags in the SMB buffer starting at base_ptr
-return the number of bytes occupied by the string in the destination
-flags can have:
-  STR_TERMINATE means include the null termination
-  STR_UPPER     means uppercase in the destination
-  STR_ASCII     use ascii even with unicode packet
-  STR_NOALIGN   means don't do alignment
-dest_len is the maximum length allowed in the destination. If dest_len
-is -1 then no maxiumum is used
+ Copy a string from a char* src to a unicode or ascii
+ dos codepage destination choosing unicode or ascii based on the 
+ flags in the SMB buffer starting at base_ptr.
+ Return the number of bytes occupied by the string in the destination.
+ flags can have:
+  STR_TERMINATE means include the null termination.
+  STR_UPPER     means uppercase in the destination.
+  STR_ASCII     use ascii even with unicode packet.
+  STR_NOALIGN   means don't do alignment.
+ dest_len is the maximum length allowed in the destination. If dest_len
+ is -1 then no maxiumum is used.
 ****************************************************************************/
-int push_string(const void *base_ptr, void *dest, const char *src, int dest_len, int flags)
+
+size_t push_string(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
@@ -707,20 +728,20 @@ int push_string(const void *base_ptr, void *dest, const char *src, int dest_len,
 
 
 /****************************************************************************
-copy a string from a unicode or ascii source (depending on
-the packet flags) to a char* destination
-flags can have:
-  STR_TERMINATE means the string in src is null terminated
-  STR_UNICODE   means to force as unicode
-  STR_ASCII     use ascii even with unicode packet
-  STR_NOALIGN   means don't do alignment
-if STR_TERMINATE is set then src_len is ignored is it is -1
-src_len is the length of the source area in bytes
-return the number of bytes occupied by the string in src
-the resulting string in "dest" is always null terminated
+ Copy a string from a unicode or ascii source (depending on
+ the packet flags) to a char* destination.
+ Flags can have:
+  STR_TERMINATE means the string in src is null terminated.
+  STR_UNICODE   means to force as unicode.
+  STR_ASCII     use ascii even with unicode packet.
+  STR_NOALIGN   means don't do alignment.
+ if STR_TERMINATE is set then src_len is ignored is it is -1
+ src_len is the length of the source area in bytes.
+ Return the number of bytes occupied by the string in src.
+ The resulting string in "dest" is always null terminated.
 ****************************************************************************/
-int pull_string(const void *base_ptr, char *dest, const void *src, int dest_len, int src_len, 
-		int flags)
+
+size_t pull_string(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
@@ -730,7 +751,7 @@ int pull_string(const void *base_ptr, char *dest, const void *src, int dest_len,
 	return pull_ascii(dest, src, dest_len, src_len, flags);
 }
 
-int align_string(const void *base_ptr, const char *p, int flags)
+size_t align_string(const void *base_ptr, const char *p, int flags)
 {
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
@@ -740,14 +761,13 @@ int align_string(const void *base_ptr, const char *p, int flags)
 	return 0;
 }
 
-
-
 /****************************************************************************
-convert from ucs2 to unix charset and return the
-allocated and converted string or NULL if an error occurred.
-you must provide a zero terminated string.
-the returning string will be zero terminated.
+ Convert from ucs2 to unix charset and return the
+ allocated and converted string or NULL if an error occurred.
+ You must provide a zero terminated string.
+ The returning string will be zero terminated.
 ****************************************************************************/
+
 char *acnv_u2ux(const smb_ucs2_t *src)
 {
 	size_t slen;
@@ -756,16 +776,19 @@ char *acnv_u2ux(const smb_ucs2_t *src)
 	
 	slen = (strlen_w(src) + 1) * sizeof(smb_ucs2_t);
 	dlen = convert_string_allocate(CH_UCS2, CH_UNIX, src, slen, &dest);
-	if (dlen == -1) return NULL;
-	else return dest;
+	if (dlen == (size_t)-1)
+		return NULL;
+	else
+		return dest;
 }
 
 /****************************************************************************
-convert from unix to ucs2 charset and return the
-allocated and converted string or NULL if an error occurred.
-you must provide a zero terminated string.
-the returning string will be zero terminated.
+ Convert from unix to ucs2 charset and return the
+ allocated and converted string or NULL if an error occurred.
+ You must provide a zero terminated string.
+ The returning string will be zero terminated.
 ****************************************************************************/
+
 smb_ucs2_t *acnv_uxu2(const char *src)
 {
 	size_t slen;
@@ -774,16 +797,19 @@ smb_ucs2_t *acnv_uxu2(const char *src)
 	
 	slen = strlen(src) + 1;
 	dlen = convert_string_allocate(CH_UNIX, CH_UCS2, src, slen, &dest);
-	if (dlen == -1) return NULL;
-	else return dest;
+	if (dlen == (size_t)-1)
+		return NULL;
+	else
+		return dest;
 }
 
 /****************************************************************************
-convert from ucs2 to dos charset and return the
-allocated and converted string or NULL if an error occurred.
-you must provide a zero terminated string.
-the returning string will be zero terminated.
+ Convert from ucs2 to dos charset and return the
+ allocated and converted string or NULL if an error occurred.
+ You must provide a zero terminated string.
+ The returning string will be zero terminated.
 ****************************************************************************/
+
 char *acnv_u2dos(const smb_ucs2_t *src)
 {
 	size_t slen;
@@ -792,16 +818,19 @@ char *acnv_u2dos(const smb_ucs2_t *src)
 	
 	slen = (strlen_w(src) + 1) * sizeof(smb_ucs2_t);
 	dlen = convert_string_allocate(CH_UCS2, CH_DOS, src, slen, &dest);
-	if (dlen == -1) return NULL;
-	else return dest;
+	if (dlen == (size_t)-1)
+		return NULL;
+	else
+		return dest;
 }
 
 /****************************************************************************
-convert from dos to ucs2 charset and return the
-allocated and converted string or NULL if an error occurred.
-you must provide a zero terminated string.
-the returning string will be zero terminated.
+ Convert from dos to ucs2 charset and return the
+ allocated and converted string or NULL if an error occurred.
+ You must provide a zero terminated string.
+ The returning string will be zero terminated.
 ****************************************************************************/
+
 smb_ucs2_t *acnv_dosu2(const char *src)
 {
 	size_t slen;
@@ -810,6 +839,8 @@ smb_ucs2_t *acnv_dosu2(const char *src)
 	
 	slen = strlen(src) + 1;
 	dlen = convert_string_allocate(CH_DOS, CH_UCS2, src, slen, &dest);
-	if (dlen == -1) return NULL;
-	else return dest;
+	if (dlen == (size_t)-1)
+		return NULL;
+	else
+		return dest;
 }
