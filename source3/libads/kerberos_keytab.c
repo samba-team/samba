@@ -295,18 +295,19 @@ out:
 
 int ads_keytab_flush(ADS_STRUCT *ads)
 {
-	krb5_error_code ret;
-	krb5_context context;
-	krb5_keytab keytab;
-	krb5_kt_cursor cursor;
-	krb5_keytab_entry entry;
+	krb5_error_code ret = 0;
+	krb5_context context = NULL;
+	krb5_keytab keytab = NULL;
+	krb5_kt_cursor cursor = NULL;
+	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
 	char keytab_name[MAX_KEYTAB_NAME_LEN];
 
+	ZERO_STRUCT(kt_entry);
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("could not krb5_init_context: %s\n",error_message(ret)));
+		DEBUG(1,("ads_keytab_flush: could not krb5_init_context: %s\n",error_message(ret)));
 		return ret;
 	}
 #ifdef HAVE_WRFILE_KEYTAB
@@ -317,27 +318,28 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	ret = krb5_kt_default_name(context, (char *) &keytab_name[0], MAX_KEYTAB_NAME_LEN - 2);
 #endif
 	if (ret) {
-		DEBUG(1,("krb5_kt_default failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
 		goto out;
 	}
-	DEBUG(1,("Using default keytab: %s\n", (char *) &keytab_name));
+	DEBUG(3,("ads_keytab_flush: Using default keytab: %s\n", (char *) &keytab_name));
 	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
 	if (ret) {
-		DEBUG(1,("krb5_kt_default failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
 		goto out;
 	}
-	DEBUG(1,("Using default keytab: %s\n", (char *) &keytab_name));
 	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
 	if (ret) {
-		DEBUG(1,("krb5_kt_default failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
 		goto out;
 	}
 
 	kvno = (krb5_kvno) ads_get_kvno(ads, global_myname());
 	if (kvno == -1) {       /* -1 indicates a failure */
-		DEBUG(1,("Error determining the system's kvno.\n"));
+		DEBUG(1,("ads_keytab_flush: Error determining the system's kvno.\n"));
 		goto out;
 	}
+
+HERE
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT) {
@@ -371,7 +373,22 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 
 out:
 
-	krb5_kt_close(context, keytab);
+	{
+		krb5_keytab_entry zero_kt_entry;
+		ZERO_STRUCT(zero_kt_entry);
+		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+			krb5_kt_free_entry(context, &kt_entry);
+		}
+	}
+	if (cursor && keytab) {
+		krb5_kt_end_seq_get(context, keytab, &cursor);	
+	}
+	if (keytab) {
+		krb5_kt_close(context, keytab);
+	}
+	if (context) {
+		krb5_free_context(context);
+	}
 	return ret;
 }
 
