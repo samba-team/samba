@@ -20,7 +20,7 @@ sub GetElementLevelTable($)
 
 	my $order = [];
 	my $is_deferred = 0;
-	
+
 	# First, all the pointers
 	foreach my $i (1..need_wire_pointer($e)) {
 		push (@$order, { 
@@ -182,6 +182,29 @@ sub array_type($)
 	return undef;
 }
 
+#####################################################################
+# work out the correct alignment for a structure or union
+sub find_largest_alignment($)
+{
+	my $s = shift;
+
+	my $align = 1;
+	for my $e (@{$s->{ELEMENTS}}) {
+		my $a = 1;
+
+		if (Ndr::need_wire_pointer($e)) {
+			$a = 4; 
+		} else { 
+			$a = align_type($e->{TYPE}); 
+		}
+
+		$align = $a if ($align < $a);
+	}
+
+	return $align;
+}
+
+
 # determine if an element needs a reference pointer on the wire
 # in its NDR representation
 sub need_wire_pointer($)
@@ -200,6 +223,242 @@ sub need_wire_pointer($)
 	}
 
 	return $n;
+}
+
+sub ParseElement($)
+{
+	my $e = shift;
+
+	return {
+		NAME => $e->{NAME},
+		PROPERTIES => $e->{PROPERTIES},
+		LEVELS => GetElementLevelTable($e)
+	};
+}
+
+sub ParseStruct($)
+{
+	my $e = shift;
+	my @elements = ();
+
+	foreach my $x (@{$e->{ELEMENTS}}) 
+	{
+		push @elements, ParseElement($x);
+	}
+
+	return {
+		TYPE => "STRUCT",
+		ELEMENTS => \@elements,
+		PROPERTIES => $e->{PROPERTIES}
+	};
+}
+
+sub ParseUnion($)
+{
+	my $e = shift;
+	my @elements = ();
+	
+	foreach my $x (@{$e->{ELEMENTS}}) 
+	{
+		my $t;
+		if ($x->{TYPE} eq "EMPTY") {
+			$t = { TYPE => "EMPTY" };
+		} else {
+			$t = ParseElement($x);
+			if (util::has_property($t, "default")) {
+				$t->{DEFAULT} = "default";
+			} else {
+				$t->{CASE} = $t->{PROPERTIES}->{CASE};
+			}
+		}
+		push @elements, $t;
+	}
+
+	return {
+		TYPE => "UNION",
+		ELEMENTS => \@elements,
+		PROPERTIES => $e->{PROPERTIES}
+	};
+}
+
+sub ParseEnum($)
+{
+	my $e = shift;
+
+	return {
+		TYPE => "ENUM",
+		ELEMENTS => $e->{ELEMENTS},
+		PROPERTIES => $e->{PROPERTIES}
+	};
+}
+
+sub ParseBitmap($)
+{
+	my $e = shift;
+
+	return {
+		TYPE => "BITMAP",
+		ELEMENTS => $e->{ELEMENTS},
+		PROPERTIES => $e->{PROPERTIES}
+	};
+}
+
+sub ParseTypedef($$)
+{
+	my $ndr = shift;
+	my $d = shift;
+	my $data;
+
+	if ($d->{DATA}->{TYPE} eq "STRUCT" or $d->{DATA}->{TYPE} eq "UNION") {
+		CheckPointerTypes($d->{DATA}, $ndr->{PROPERTIES}->{pointer_default});
+	}
+
+	if (defined($d->{PROPERTIES}) && !defined($d->{DATA}->{PROPERTIES})) {
+		$d->{DATA}->{PROPERTIES} = $d->{PROPERTIES};
+	}
+
+	if ($d->{DATA}->{TYPE} eq "STRUCT") {
+		$data = ParseStruct($d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq "UNION") {
+		$data = ParseUnion($d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq "ENUM") {
+		$data = ParseEnum($d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq "BITMAP") {
+		$data = ParseBitmap($d->{DATA});
+	} else {
+		die("Unknown data type '$d->{DATA}->{TYPE}'");
+	}
+
+	return {
+		TYPE => "TYPEDEF",
+		PROPERTIES => $d->{PROPERTIES},
+		DATA => $data
+	};
+}
+
+sub ParseFunction($$)
+{
+	my $ndr = shift;
+	my $d = shift;
+	my @in = ();
+	my @out = ();
+
+	CheckPointerTypes($d, 
+		$ndr->{PROPERTIES}->{pointer_default}  # MIDL defaults to "ref"
+	);
+
+	foreach my $x ($d->{ELEMENTS}) {
+		if (util::has_property($x, "in")) {
+			push @in, ParseElement($x);
+		}
+		if (util::has_property($x, "out")) {
+			push @out, ParseElement($x);
+		}
+	}
+	
+	return {
+			TYPE => "FUNCTION",
+			RETURN_TYPE => $d->{RETURN_TYPE},
+			PROPERTIES => $d->{PROPERTIES},
+			ELEMENTS => {
+				IN => \@in,
+				OUT => \@out
+			}
+		};
+}
+
+sub CheckPointerTypes($$)
+{
+	my $s = shift;
+	my $default = shift;
+
+	foreach my $e (@{$s->{ELEMENTS}}) {
+		if ($e->{POINTERS}) {
+			if (not defined(Ndr::pointer_type($e))) {
+				$e->{PROPERTIES}->{$default} = 1;
+			}
+
+			if (Ndr::pointer_type($e) eq "ptr") {
+				print "Warning: ptr is not supported by pidl yet\n";
+			}
+		}
+	}
+}
+
+sub ParseInterface($)
+{
+	my $idl = shift;
+	my @functions = ();
+	my @typedefs = ();
+	my $version;
+
+	if (not util::has_property($idl, "pointer_default")) {
+		# MIDL defaults to "ptr" in DCE compatible mode (/osf)
+		# and "unique" in Microsoft Extensions mode (default)
+		$idl->{PROPERTIES}->{pointer_default} = "unique";
+	}
+
+	foreach my $d (@{$idl->{DATA}}) {
+		if ($d->{TYPE} eq "DECLARE" or $d->{TYPE} eq "TYPEDEF") {
+			push (@typedefs, ParseTypedef($idl, $d));
+		}
+
+		if ($d->{TYPE} eq "FUNCTION") {
+			push (@functions, ParseFunction($idl, $d));
+		}
+	}
+	
+	$version = "0.0";
+
+	if(defined $idl->{PROPERTIES}->{version}) { 
+		$version = $idl->{PROPERTIES}->{version}; 
+	}
+	
+
+	return { 
+		NAME => $idl->{NAME},
+		UUID => util::has_property($idl, "uuid"),
+		VERSION => $version,
+		TYPE => "INTERFACE",
+		PROPERTIES => $idl->{PROPERTIES},
+		FUNCTIONS => \@functions,
+		TYPEDEFS => \@typedefs
+	};
+}
+
+# Convert a IDL tree to a NDR tree
+# Gives a result tree describing all that's necessary for easily generating
+# NDR parsers
+# - list of interfaces
+#  - list with functions
+#   - list with in elements
+#   - list with out elements
+#  - list of typedefs
+#   - list with structs
+#    - alignment of structure
+#    - list with elements
+#   - list with unions
+#    - alignment of union
+#    - list with elements
+#   - list with enums
+#    - base type
+#   - list with bitmaps
+#    - base type
+# per element: 
+#  - alignment
+#  - "level" table
+# properties are saved
+# pointer types explicitly specified
+sub Parse($)
+{
+	my $idl = shift;
+	my @ndr = ();
+
+	foreach my $x (@{$idl}) {
+		push @ndr, ParseInterface($x);
+	}
+
+	return \@ndr;
 }
 
 1;
