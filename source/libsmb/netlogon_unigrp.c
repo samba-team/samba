@@ -41,7 +41,7 @@ BOOL uni_group_cache_init(void)
 {
 	if (!netlogon_unigrp_tdb) {
 		netlogon_unigrp_tdb = tdb_open_log(lock_path("netlogon_unigrp.tdb"), 0,
-						   TDB_NOLOCK, O_RDWR | O_CREAT, 0644);
+						   TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
 	}
 
 	return (netlogon_unigrp_tdb != NULL);
@@ -111,7 +111,7 @@ uint32* uni_group_cache_fetch(DOM_SID *domain, uint32 user_rid,
 	}
 	if (!netlogon_unigrp_tdb) {
 		netlogon_unigrp_tdb = tdb_open_log(lock_path("netlogon_unigrp.tdb"), 0,
-                				    TDB_NOLOCK, O_RDWR, 0644);
+                				    TDB_DEFAULT, O_RDWR, 0644);
 	}
 	if (!netlogon_unigrp_tdb) {
 		DEBUG(5,("uni_group_cache_fetch: cannot open netlogon_unigrp.tdb for read - normal if not created yet\n"));
