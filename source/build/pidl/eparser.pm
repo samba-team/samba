@@ -10,6 +10,7 @@ use strict;
 
 # the list of needed functions
 my %needed;
+my %bitmaps;
 
 my $module;
 my $if_uuid;
@@ -210,6 +211,17 @@ sub NeededFunction($)
 	};
 }
 
+sub bitmapbase($)
+{
+    my $e = shift;
+
+    return "32", if util::has_property($e->{DATA}, "bitmap32bit");
+    return "16", if util::has_property($e->{DATA}, "bitmap16bit");
+    return "8", if util::has_property($e->{DATA}, "bitmap8bit");
+
+    die("can't calculate bitmap size for $e->{NAME}");
+}
+
 sub NeededTypedef($)
 {
 	my $t = shift;
@@ -296,12 +308,15 @@ sub NeededTypedef($)
 	}
 
 	if ($t->{DATA}->{TYPE} eq "BITMAP") {
+
+	    $bitmaps{$t->{NAME}} = $t;
+
 	    foreach my $e (@{$t->{DATA}{ELEMENTS}}) {
 		$e =~ /^(.*?) \( (.*?) \)$/;
 		$needed{"hf_$t->{NAME}_$1"} = {
-		    'name' => "$t->{NAME} $1",
+		    'name' => "$1",
 		    'ft' => "FT_BOOLEAN",
-		    'base' => "32",
+		    'base' => bitmapbase($t),
 		    'bitmask' => "$2"
 		    };
 	    }
@@ -615,9 +630,6 @@ sub RewriteC($$$)
         s/(^static\ NTSTATUS\ ndr_pull_(.+?),\ (enum\ .+?)\))
 	    /static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smgx;
 	s/uint(8|16|32) v;/uint$1_t v;/smg;
-	s/(ndr_pull_([^\)]*?)\(ndr,\ &v\);)
-	    /ndr_pull_$2(ndr, tree, hf, &v);/smgx;
-
 	s/(ndr_pull_([^\(]+?)\(ndr,\ &_level\);)
 	    /ndr_pull_$2(ndr, tree, hf_${cur_fn}_level, &_level);/smgx;
 
@@ -625,6 +637,23 @@ sub RewriteC($$$)
 
         s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ uint(8|16|32)\ \*r\))
 	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint$4_t *r)/smgx;
+
+        if (/ndr_pull_([^\)]*?)\(ndr, &v\);/) {
+
+	    s/(ndr_pull_([^\)]*?)\(ndr,\ &v\);)
+		/ndr_pull_$2(ndr, tree, hf, &v);/smgx;
+
+	    pidl $_;
+
+	    if (defined($bitmaps{$cur_fn})) {
+		foreach my $e (@{$bitmaps{$cur_fn}->{DATA}{ELEMENTS}}) {
+		    $e =~ /^(.*?) \( (.*?) \)$/;
+		    pidl "\tproto_tree_add_boolean(tree->proto_tree, hf_${cur_fn}_$1, ndr->tvb, ndr->offset - sizeof(v), sizeof(v), v);\n";
+		}
+	    }
+
+	    next;
+	}
 
 	# Call ethereal wrappers for pull of scalar values in
 	# structures and functions, e.g
