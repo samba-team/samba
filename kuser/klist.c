@@ -197,7 +197,7 @@ static struct getargs args[] = {
       NULL, NULL}
 };
 
-static int
+static void
 usage (int ret)
 {
     arg_printusage (args,
