@@ -118,6 +118,7 @@ loop (int s, int errsock)
 	    else if (ret == 0) {
 		close (STDIN_FILENO);
 		FD_CLR(STDIN_FILENO, &real_readset);
+		shutdown (s, SHUT_WR);
 	    } else
 		do_write (s, buf, ret);
 	}
