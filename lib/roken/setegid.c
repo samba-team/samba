@@ -2,7 +2,8 @@
 
 RCSID("$Id$");
 
-int setegid(int egid)
+int
+setegid(int egid)
 {
 #ifdef HAVE_SETREGID
     return setregid(-1, egid);
@@ -12,5 +13,5 @@ int setegid(int egid)
     return setresgid(-1, egid, -1);
 #endif
 
-    return -1
+    return -1;
 }

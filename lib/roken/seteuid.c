@@ -2,7 +2,8 @@
 
 RCSID("$Id$");
 
-int seteuid(int euid)
+int
+seteuid(int euid)
 {
 #ifdef HAVE_SETREUID
     return setreuid(-1, euid);
@@ -12,5 +13,5 @@ int seteuid(int euid)
     return setresuid(-1, euid, -1);
 #endif
 
-    return -1
+    return -1;
 }

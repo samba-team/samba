@@ -33,7 +33,7 @@ libtelnet.a: $(OBJECTS)
 	$(RANLIB) libtelnet.a
 
 install:
-	@echo "Nothing to install in libtelnet"
+	@true
 
 clean cleandir:
 	rm -f *.o *.a \#* *~ core
