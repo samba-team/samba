@@ -1355,6 +1355,9 @@ tgs_rep2(KDC_REQ_BODY *b,
     krb5_principal sp = NULL;
     AuthorizationData *auth_data = NULL;
 
+    *csec  = NULL;
+    *cusec = NULL;
+
     memset(&ap_req, 0, sizeof(ap_req));
     ret = krb5_decode_ap_req(context, &tgs_req->padata_value, &ap_req);
     if(ret){
@@ -1437,8 +1440,20 @@ tgs_rep2(KDC_REQ_BODY *b,
 
 	ret = krb5_auth_getauthenticator(context, ac, &auth);
 	if (ret == 0) {
-	    *csec = &auth->ctime;
-	    *cusec = &auth->cusec;
+	    *csec   = malloc(sizeof(**csec));
+	    if (*csec == NULL) {
+		krb5_free_authenticator(context, &auth);
+		kdc_log(0, "malloc failed");
+		goto out2;
+	    }
+	    **csec  = auth->ctime;
+	    *cusec  = malloc(sizeof(**cusec));
+	    if (*cusec == NULL) {
+		krb5_free_authenticator(context, &auth);
+		kdc_log(0, "malloc failed");
+		goto out2;
+	    }
+	    **csec  = auth->cusec;
 	    krb5_free_authenticator(context, &auth);
 	}
     }
@@ -1676,7 +1691,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    free_ent(client);
     }
 out2:
-    if(ret)
+    if(ret) {
 	krb5_mk_error(context,
 		      ret,
 		      e_text,
@@ -1686,6 +1701,11 @@ out2:
 		      NULL,
 		      NULL,
 		      reply);
+	free(*csec);
+	free(*cusec);
+	*csec  = NULL;
+	*cusec = NULL;
+    }
     krb5_free_principal(context, cp);
     krb5_free_principal(context, sp);
     if (ticket) {
@@ -1700,6 +1720,7 @@ out2:
 
     if(krbtgt)
 	free_ent(krbtgt);
+
     return ret;
 }
 
