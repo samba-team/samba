@@ -7967,6 +7967,34 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	return _spoolss_setprinterdata(p, &q_u_local, &r_u_local);
 }
 
+
+/********************************************************************
+ * spoolss_deleteprinterdataex
+ ********************************************************************/
+
+WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX *q_u, SPOOL_R_DELETEPRINTERDATAEX *r_u)
+{
+	SPOOL_Q_DELETEPRINTERDATA q_u_local;
+	SPOOL_R_DELETEPRINTERDATA r_u_local;
+	fstring key;
+	
+        /* From MSDN documentation of SetPrinterDataEx: pass request to
+           SetPrinterData if key is "PrinterDriverData" */
+
+        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+
+        if (strcmp(key, "PrinterDriverData") != 0)
+	        return WERR_INVALID_PARAM;
+	
+	memcpy(&q_u_local.handle, &q_u->handle, sizeof(POLICY_HND));
+	copy_unistr2(&q_u_local.valuename, &q_u->valuename);
+	
+	return _spoolss_deleteprinterdata( p, &q_u_local, &r_u_local );
+}
+
+
+
+
 /********************************************************************
  * spoolss_enumprinterkey
  ********************************************************************/
@@ -8227,3 +8255,45 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	return result;
 }
+
+/********************************************************************
+ * spoolss_addprinterdriverex
+ ********************************************************************/
+
+WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *q_u, SPOOL_R_ADDPRINTERDRIVEREX *r_u)
+{
+	return WERR_OK;
+}
+
+/********************************************************************
+ * spoolss_deleteprinterdriverex
+ ********************************************************************/
+
+WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, SPOOL_R_DELETEPRINTERDRIVEREX *r_u)
+{
+	return WERR_OK;
+}
+
+/********************************************************************
+ * spoolss_deleteprinterkey
+ ********************************************************************/
+
+WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u, SPOOL_R_DELETEPRINTERKEY *r_u)
+{
+	fstring key;
+	
+        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+
+        if (strcmp(key, "PrinterDriverData") != 0)
+	        return WERR_INVALID_PARAM;
+		
+	/* 
+	 * this is what 2k returns when you try to delete the "PrinterDriverData"
+	 * key
+	 */
+	 
+	return WERR_ACCESS_DENIED;	
+}
+
+
+
