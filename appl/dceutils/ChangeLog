@@ -1,3 +1,7 @@
+2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: set compiler flags
+
 2000-07-01  Assar Westerlund  <assar@sics.se>
 
 	* imported stuff from Ake Sandgren <ake@cs.umu.se>

@@ -1,5 +1,26 @@
+2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: subst AIX compiler flags
+
+2000-07-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: pass sixth parameter to test-package; use some
+	newer autoconf constructs
+
+	* ltmain.sh: update to libtool 1.3c
+
+	* ltconfig: update to libtool 1.3c
+
+	* configure.in: update this to newer auto*/libtool
+
+	* appl/Makefile.am: use conditional for dce
+	
+	* lib/Makefile.am: use conditional for dce
+	
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/write_message.c: krb5_write_{priv,save}_message
+	* lib/krb5/read_message.c: krb5_read_{priv,save}_message
 	* lib/krb5/convert_creds.c: try port kerberos/88 if no response on
 	krb524/4444
 
