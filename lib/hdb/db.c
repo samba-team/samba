@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -102,13 +102,21 @@ DB_seq(krb5_context context, HDB *db,
     data.length = value.size;
     if (hdb_value2entry(context, &data, entry))
 	return DB_seq(context, db, flags, entry, R_NEXT);
-    if (db->master_key_set && (flags & HDB_F_DECRYPT))
-	hdb_unseal_keys (context, db, entry);
-    if (entry->principal == NULL) {
-	entry->principal = malloc(sizeof(*entry->principal));
-	hdb_key2principal(context, &key_data, entry->principal);
+    if (db->master_key_set && (flags & HDB_F_DECRYPT)) {
+	code = hdb_unseal_keys (context, db, entry);
+	if (code)
+	    hdb_free_entry (context, entry);
     }
-    return 0;
+    if (code == 0 && entry->principal == NULL) {
+	entry->principal = malloc(sizeof(*entry->principal));
+	if (entry->principal == NULL) {
+	    code = ENOMEM;
+	    hdb_free_entry (context, entry);
+	} else {
+	    hdb_key2principal(context, &key_data, entry->principal);
+	}
+    }
+    return code;
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -75,7 +75,7 @@ NDBM_seq(krb5_context context, HDB *db,
     struct ndbm_db *d = (struct ndbm_db *)db->db;
     datum key, value;
     krb5_data key_data, data;
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
     if(first)
 	key = dbm_firstkey(d->db);
@@ -93,13 +93,21 @@ NDBM_seq(krb5_context context, HDB *db,
     data.length = value.dsize;
     if(hdb_value2entry(context, &data, entry))
 	return NDBM_seq(context, db, flags, entry, 0);
-    if (db->master_key_set && (flags & HDB_F_DECRYPT))
-	hdb_unseal_keys (context, db, entry);
+    if (db->master_key_set && (flags & HDB_F_DECRYPT)) {
+	ret = hdb_unseal_keys (context, db, entry);
+	if (ret)
+	    hdb_free_entry (context, entry);
+    }
     if (entry->principal == NULL) {
 	entry->principal = malloc (sizeof(*entry->principal));
-	hdb_key2principal (context, &key_data, entry->principal);
+	if (entry->principal == NULL) {
+	    ret = ENOMEM;
+	    hdb_free_entry (context, entry);
+	} else {
+	    hdb_key2principal (context, &key_data, entry->principal);
+	}
     }
-    return 0;
+    return ret;
 }
 
 

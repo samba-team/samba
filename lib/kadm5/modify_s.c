@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,7 +63,9 @@ modify_principal(void *server_handle,
     if(ret)
 	goto out2;
 
-    hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent);
+    if (ret)
+	goto out2;
 
     kadm5_log_modify (context,
 		      &ent,

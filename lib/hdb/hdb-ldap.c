@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2000, PADL Software Pty Ltd.
+ * Copyright (c) 1999 - 2001, PADL Software Pty Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -888,8 +888,11 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
     } while (rc == LDAP_RES_SEARCH_REFERENCE);
 
     if (ret == 0) {
-	if (db->master_key_set && (flags & HDB_F_DECRYPT))
-	    hdb_unseal_keys(context, db, entry);
+	if (db->master_key_set && (flags & HDB_F_DECRYPT)) {
+	    ret = hdb_unseal_keys(context, db, entry);
+	    if (ret)
+		hdb_free_entry(context,entry);
+	}
     }
 
     return ret;
@@ -1106,8 +1109,11 @@ LDAP_fetch(krb5_context context, HDB * db, unsigned flags,
 
     ret = LDAP_message2entry(context, db, e, entry);
     if (ret == 0) {
-	if (db->master_key_set && (flags & HDB_F_DECRYPT))
-	    hdb_unseal_keys(context, db, entry);
+	if (db->master_key_set && (flags & HDB_F_DECRYPT)) {
+	    ret = hdb_unseal_keys(context, db, entry);
+	    if (ret)
+		hdb_free_entry(context,entry);
+	}
     }
 
   out:
@@ -1135,7 +1141,9 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 	e = ldap_first_entry((LDAP *) db->db, msg);
     }
 
-    hdb_seal_keys(context, db, entry);
+    ret = hdb_seal_keys(context, db, entry);
+    if (ret)
+	goto out;
 
     /* turn new entry into LDAPMod array */
     ret = LDAP_entry2mods(context, db, entry, e, &mods);
