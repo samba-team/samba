@@ -35,6 +35,7 @@
 
 RCSID("$Id$");
 
+static char *cache_str;
 static char *etype_str;
 static int version_flag;
 static int help_flag;
@@ -42,6 +43,8 @@ static int transit_check = 1;
 static int canonicalize = 0;
 
 struct getargs args[] = {
+    { "cache",		'c', arg_string, &cache_str,
+      "credential cache to use", "cache"},
     { "enctype",	'e', arg_string, &etype_str,
       "encryption type to use", "enctype"},
     { "transit-check",	0,   arg_negative_flag, &transit_check },
@@ -98,6 +101,16 @@ main(int argc, char **argv)
     ret = krb5_cc_default(context, &cache);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_default");
+
+    if(cache_str) {
+	ret = krb5_cc_resolve(context, cache_str, &cache);
+	if (ret)
+	    krb5_err (context, 1, ret, "%s", cache_str);
+    } else {
+	ret = krb5_cc_default (context, &cache);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_cc_resolve");
+    }
 
     memset(&in, 0, sizeof(in));
 
