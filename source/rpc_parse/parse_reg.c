@@ -545,7 +545,7 @@ BOOL reg_io_r_query_key(const char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps,
  Inits a structure.
 ********************************************************************/
 
-void init_reg_q_unknown_1a(REG_Q_UNKNOWN_1A *q_o, POLICY_HND *hnd)
+void init_reg_q_getversion(REG_Q_GETVERSION *q_o, POLICY_HND *hnd)
 {
 	memcpy(&q_o->pol, hnd, sizeof(q_o->pol));
 }
@@ -555,12 +555,12 @@ void init_reg_q_unknown_1a(REG_Q_UNKNOWN_1A *q_o, POLICY_HND *hnd)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_unknown_1a(const char *desc,  REG_Q_UNKNOWN_1A *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_getversion(const char *desc,  REG_Q_GETVERSION *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_unknown_1a");
+	prs_debug(ps, depth, desc, "reg_io_q_getversion");
 	depth++;
 
 	if(!prs_align(ps))
@@ -576,12 +576,12 @@ BOOL reg_io_q_unknown_1a(const char *desc,  REG_Q_UNKNOWN_1A *r_q, prs_struct *p
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_unknown_1a(const char *desc,  REG_R_UNKNOWN_1A *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_getversion(const char *desc,  REG_R_GETVERSION *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_unknown_1a");
+	prs_debug(ps, depth, desc, "reg_io_r_getversion");
 	depth++;
 
 	if(!prs_align(ps))

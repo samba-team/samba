@@ -301,13 +301,13 @@ done:
 /****************************************************************************
 do a REG Unknown 1A
 ****************************************************************************/
-WERROR cli_reg_unknown_1a(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, uint32 *unk)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
-	REG_Q_UNKNOWN_1A q_o;
-	REG_R_UNKNOWN_1A r_o;
+	REG_Q_GETVERSION q_o;
+	REG_R_GETVERSION r_o;
 	WERROR result = WERR_GENERAL_FAILURE;
 
 	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
@@ -315,17 +315,17 @@ WERROR cli_reg_unknown_1a(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_reg_q_unknown_1a(&q_o, hnd);
+	init_reg_q_getversion(&q_o, hnd);
 
-	if (!reg_io_q_unknown_1a("", &q_o, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_WINREG, REG_UNKNOWN_1A, &qbuf, &rbuf))
+	if (!reg_io_q_getversion("", &q_o, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_WINREG, REG_GETVERSION, &qbuf, &rbuf))
 		goto done;
 
 	ZERO_STRUCT(r_o);
 
 	/* Unmarshall response */
 
-	if (!reg_io_r_unknown_1a("", &r_o, &rbuf, 0))
+	if (!reg_io_r_getversion("", &r_o, &rbuf, 0))
 		goto done;
 
 	result = r_o.status;

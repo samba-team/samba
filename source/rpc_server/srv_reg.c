@@ -268,25 +268,25 @@ static BOOL api_reg_query_key(pipes_struct *p)
 }
 
 /*******************************************************************
- api_reg_unknown_1a
+ api_reg_getversion
  ********************************************************************/
 
-static BOOL api_reg_unknown_1a(pipes_struct *p)
+static BOOL api_reg_getversion(pipes_struct *p)
 {
-	REG_Q_UNKNOWN_1A q_u;
-	REG_R_UNKNOWN_1A r_u;
+	REG_Q_GETVERSION q_u;
+	REG_R_GETVERSION r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!reg_io_q_unknown_1a("", &q_u, data, 0))
+	if(!reg_io_q_getversion("", &q_u, data, 0))
 		return False;
 
-	r_u.status = _reg_unknown_1a(p, &q_u, &r_u);
+	r_u.status = _reg_getversion(p, &q_u, &r_u);
 
-	if(!reg_io_r_unknown_1a("", &r_u, rdata, 0))
+	if(!reg_io_r_getversion("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -384,7 +384,7 @@ static struct api_struct api_reg_cmds[] =
       { "REG_INFO"               , REG_INFO               , api_reg_info             },
       { "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
       { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
-      { "REG_UNKNOWN_1A"         , REG_UNKNOWN_1A         , api_reg_unknown_1a       },
+      { "REG_GETVERSION"         , REG_GETVERSION         , api_reg_getversion       },
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         }
 };
 

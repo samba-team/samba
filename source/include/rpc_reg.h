@@ -51,12 +51,12 @@
 #define REG_OPEN_ENTRY		0x0f
 #define REG_QUERY_KEY		0x10
 #define REG_INFO		0x11
-#define REG_SAVE_KEY		0x14	/* no idea what the real name is */
+#define REG_SAVE_KEY		0x14
 #define REG_SET_KEY_SEC		0x15
 #define REG_CREATE_VALUE	0x16
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
-#define REG_UNKNOWN_1A		0x1a
+#define REG_GETVERSION		0x1a
 
 
 #define HKEY_CLASSES_ROOT	0x80000000
@@ -397,25 +397,20 @@ typedef struct r_reg_query_key_info
 } REG_R_QUERY_KEY;
 
 
-/* REG_Q_UNKNOWN_1A */
-typedef struct q_reg_unk_1a_info
-{
+/* REG_Q_GETVERSION */
+typedef struct {
 	POLICY_HND pol;       /* policy handle */
+} REG_Q_GETVERSION;
 
-} REG_Q_UNKNOWN_1A;
-
-/* REG_R_UNKNOWN_1A */
-typedef struct r_reg_unk_1a_info
-{
+/* REG_R_GETVERSION */
+typedef struct {
 	uint32 unknown;         /* 0x0500 0000 */
 	WERROR status;         /* return status */
+} REG_R_GETVERSION;
 
-} REG_R_UNKNOWN_1A;
 
-
-/* REG_Q_UNKNOWN_1A */
-typedef struct q_reg_unknown_14
-{
+/* REG_Q_SAVE_KEY */
+typedef struct {
 	POLICY_HND pol;       /* policy handle */
 	
 	UNIHDR  hdr_file;	/* unicode product type header */
@@ -423,15 +418,12 @@ typedef struct q_reg_unknown_14
 				/* e.g. "c:\temp\test.dat" */
 	
 	uint32 unknown;		/* 0x0000 0000 */
-
 } REG_Q_SAVE_KEY;
 
 
-/* REG_R_UNKNOWN_1A */
-typedef struct r_reg_unknown_14
-{
+/* REG_R_SAVE_KEY */
+typedef struct {
 	WERROR status;         /* return status */
-
 } REG_R_SAVE_KEY;
 
 

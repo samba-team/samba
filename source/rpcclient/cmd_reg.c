@@ -136,7 +136,7 @@ static void cmd_reg_enum(struct client_info *info)
 		time_t key_mod_time;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, &key_pol,
+		res2 = res1 ? do_reg_getversion(smb_cli, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)
@@ -176,7 +176,7 @@ static void cmd_reg_enum(struct client_info *info)
 		fstring val_name;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, &key_pol,
+		res2 = res1 ? do_reg_getversion(smb_cli, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)

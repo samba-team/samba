@@ -485,22 +485,22 @@ WERROR _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_
 
 
 /*****************************************************************************
- Implementation of REG_UNKNOWN_1A
+ Implementation of REG_GETVERSION
  ****************************************************************************/
  
-WERROR _reg_unknown_1a(pipes_struct *p, REG_Q_UNKNOWN_1A *q_u, REG_R_UNKNOWN_1A *r_u)
+WERROR _reg_getversion(pipes_struct *p, REG_Q_GETVERSION *q_u, REG_R_GETVERSION *r_u)
 {
 	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	
-	DEBUG(5,("_reg_unknown_1a: Enter\n"));
+	DEBUG(5,("_reg_getversion: Enter\n"));
 	
 	if ( !regkey )
 		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 	
 	r_u->unknown = 0x00000005;	/* seems to be consistent...no idea what it means */
 	
-	DEBUG(5,("_reg_unknown_1a: Exit\n"));
+	DEBUG(5,("_reg_getversion: Exit\n"));
 	
 	return status;
 }

@@ -4013,7 +4013,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		/* When 'restrict anonymous = 2' guest connections to ipc$
 		   are denied */
 		lp_add_ipc("IPC$", (lp_restrict_anonymous() < 2));
-		lp_add_ipc("ADMIN$", False);
+		/* lp_add_ipc("ADMIN$", False); */
 	}
 
 	set_server_role();
