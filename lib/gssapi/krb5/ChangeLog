@@ -1,4 +1,41 @@
+2004-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* acquire_cred.c (gss_acquire_cred): check usage before even
+	bothering to process it, add both keytab and initial tgt if
+	requested
+
+	* wrap.c: support cfx, try to handle acceptor asserted subkey
+	
+	* unwrap.c: support cfx, try to handle acceptor asserted subkey
+	
+	* verify_mic.c: support cfx
+	
+	* get_mic.c: support cfx
+	
+	* test_sequence.c: handle changed signature of
+	gssapi_msg_order_create
+
+	* import_sec_context.c: handle acceptor asserted subkey
+	
+	* init_sec_context.c: handle acceptor asserted subkey
+	
+	* accept_sec_context.c: handle acceptor asserted subkey
+	
+	* sequence.c: add dummy use_64 argument to gssapi_msg_order_create
+	
+	* gssapi_locl.h: add partial support for CFX
+	
+	* Makefile.am (noinst_PROGRAMS) += test_cred
+	
+	* test_cred.c: gssapi credential testing
+
+	* test_acquire_cred.c: fix comment
+	
 2004-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* arcfour.h: drop structures for message formats, no longer used
+	
+	* arcfour.c: comment describing message formats
 
 	* accept_sec_context.c (spnego_accept_sec_context): make sure the
 	length of the choice element doesn't overrun us
