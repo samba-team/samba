@@ -29,6 +29,8 @@
 BOOL epm_io_handle(const char *desc, EPM_HANDLE *handle, prs_struct *ps,
 		   int depth)
 {
+	if (!prs_align(ps))
+		return False;
 
 	if (!prs_uint8s(False, "data", ps, depth, handle->data, 
 			sizeof(handle->data)))
@@ -66,6 +68,11 @@ NTSTATUS init_epm_floor(EPM_FLOOR *floor, uint8 protocol)
 		break;
 	case EPM_FLOOR_IP:
 		floor->rhs.length = sizeof(floor->rhs.ip.addr);
+		break;
+	case EPM_FLOOR_NMPIPES:
+	case EPM_FLOOR_LRPC:
+	case EPM_FLOOR_NETBIOS:
+		floor->rhs.length = strlen(floor->rhs.string) + 1;
 		break;
 	default:
 		break;
@@ -114,6 +121,33 @@ NTSTATUS init_epm_floor_ip(EPM_FLOOR *floor, uint8 addr[4])
 }
 
 /*******************************************************************
+ inits an EPM_FLOOR structure for named pipe
+********************************************************************/
+NTSTATUS init_epm_floor_np(EPM_FLOOR *floor, const char *pipe_name)
+{
+	safe_strcpy(floor->rhs.string, pipe_name, sizeof(floor->rhs.string)-1);
+	return init_epm_floor(floor, EPM_FLOOR_NMPIPES);
+}
+
+/*******************************************************************
+ inits an EPM_FLOOR structure for named pipe
+********************************************************************/
+NTSTATUS init_epm_floor_lrpc(EPM_FLOOR *floor, const char *pipe_name)
+{
+	safe_strcpy(floor->rhs.string, pipe_name, sizeof(floor->rhs.string)-1);
+	return init_epm_floor(floor, EPM_FLOOR_LRPC);
+}
+
+/*******************************************************************
+ inits an EPM_FLOOR structure for named pipe
+********************************************************************/
+NTSTATUS init_epm_floor_nb(EPM_FLOOR *floor, char *host_name)
+{
+	safe_strcpy(floor->rhs.string, host_name, sizeof(floor->rhs.string)-1);
+	return init_epm_floor(floor, EPM_FLOOR_NETBIOS);
+}
+
+/*******************************************************************
  reads and writes EPM_FLOOR.
 ********************************************************************/
 BOOL epm_io_floor(const char *desc, EPM_FLOOR *floor,
@@ -154,6 +188,14 @@ BOOL epm_io_floor(const char *desc, EPM_FLOOR *floor,
 		if (!prs_uint8s(False, "ip_addr", ps, depth, 
 				floor->rhs.ip.addr,
 				sizeof(floor->rhs.ip.addr)))
+			return False;
+		break;
+	case EPM_FLOOR_NMPIPES:
+	case EPM_FLOOR_LRPC:
+	case EPM_FLOOR_NETBIOS:
+		if (!prs_uint8s(False, "string", ps, depth,
+				floor->rhs.string,
+				floor->rhs.length))
 			return False;
 		break;
 	default:
@@ -226,9 +268,6 @@ BOOL epm_io_tower(const char *desc, EPM_TOWER *tower,
 		if (!epm_io_floor("floor", tower->floors + i, ps, depth))
 			return False;
 	}
-
-	if (!prs_uint8("unknown", ps, depth, &tower->unknown))
-		return False;
 
 	return True;
 }

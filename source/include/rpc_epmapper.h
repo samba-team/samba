@@ -30,7 +30,8 @@
 #define EPM_FLOOR_RPC     0x0b   /* tower is for connection-oriented rpc  */
 #define EPM_FLOOR_TCP     0x07   /* floor contains tcp port number        */
 #define EPM_FLOOR_IP      0x09   /* floor contains IP address             */
-#define EPM_FLOOR_NMPIPES 0x10   /* floor contains remote named pipe name */
+#define EPM_FLOOR_NMPIPES 0x0f   /* floor contains remote named pipe name */
+#define EPM_FLOOR_LRPC    0x10   /* floor contains local named pipe name  */
 #define EPM_FLOOR_NETBIOS 0x11   /* floor contains netbios address        */
 #define EPM_FLOOR_NETBEUI 0x12   /* floor contains netbeui address        */
 #define EPM_FLOOR_SOCKET  0x20
@@ -63,6 +64,7 @@ typedef struct
 		struct {
 			uint8 addr[4];
 		} ip;
+		char string[MAXHOSTNAMELEN+3]; /* hostname + \\ + null term */
 	} rhs;
 } EPM_FLOOR;
 
