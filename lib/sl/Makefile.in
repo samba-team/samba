@@ -26,6 +26,7 @@ bindir = @bindir@
 includedir = @includedir@
 
 PICFLAGS = @PICFLAGS@
+EXECSUFFIX = @EXECSUFFIX@
  
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
@@ -34,7 +35,7 @@ LIBNAME = $(LIBPREFIX)sl
 sl_LIB = $(LIBNAME).$(LIBEXT)
 ss_LIB = $(LIBPREFIX)ss.$(LIBEXT)
 LDSHARED = @LDSHARED@
-PROGS = mk_cmds
+PROGS = mk_cmds$(EXECSUFFIX)
 
 LIB_SOURCES = sl.c ss.c
 
@@ -97,8 +98,8 @@ $(OBJECTS): ../../include/config.h
 
 $(mk_cmds_OBJECTS): parse.h
 
-mk_cmds: $(mk_cmds_OBJECTS)
-	$(CC) -o mk_cmds $(mk_cmds_OBJECTS) -L../roken -lroken
+mk_cmds$(EXECSUFFIX): $(mk_cmds_OBJECTS)
+	$(CC) -o $@ $(mk_cmds_OBJECTS) -L../roken -lroken
 
 parse.c parse.h: $(srcdir)/parse.y
 	$(YACC) -d $(srcdir)/parse.y

@@ -37,7 +37,7 @@ SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 LDSHARED = @LDSHARED@
 lib_LIBRARIES = $(LIBNAME).$(LIBEXT)
-bin_PROGRAMS = compile_et
+bin_PROGRAMS = compile_et$(EXECSUFFIX)
 include_HEADERS = com_right.h com_err.h
 
 SOURCES = error.c com_err.c compile_et.c
@@ -105,7 +105,7 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIBNAME).a: $(OBJECTS)
+$(LIBNAME).$(LIBEXT): $(OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
@@ -119,8 +119,8 @@ COBJ = compile_et.o parse.o lex.o
 
 $(COBJ): parse.h
 
-compile_et: $(COBJ)
-	$(CC) -o compile_et $(COBJ) -L../roken -lroken
+compile_et$(EXECSUFFIX): $(COBJ)
+	$(CC) -o $@ $(COBJ) -L../roken -lroken
 
 parse.c parse.h: $(srcdir)/parse.y
 	$(YACC) -d $(srcdir)/parse.y
