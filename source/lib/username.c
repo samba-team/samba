@@ -55,9 +55,10 @@ BOOL split_domain_and_name(const char *name, char *domain, char* username)
 	} else if (lp_winbind_use_default_domain()) {
 		fstrcpy(username, name);
 		fstrcpy(domain, lp_workgroup());
-	} else
+	} else {
 		return False;
-	
+	}
+
 	DEBUG(10,("split_domain_and_name: all is fine, domain is |%s| and name is |%s|\n", domain, username));
 	return True;
 }
@@ -238,6 +239,8 @@ BOOL map_username(char *user)
  *   - using lp_usernamelevel() for permutations.
 ****************************************************************************/
 
+static struct passwd *Get_Pwnam_ret = NULL;
+
 static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 {
 	struct passwd *ret = NULL;
@@ -252,14 +255,14 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	   common case on UNIX systems */
 	strlower(user2);
 	DEBUG(5,("Trying _Get_Pwnam(), username as lowercase is %s\n",user2));
-	ret = sys_getpwnam(user2);
+	ret = getpwnam_alloc(user2);
 	if(ret)
 		goto done;
 
 	/* Try as given, if username wasn't originally lowercase */
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n", user));
-		ret = sys_getpwnam(user);
+		ret = getpwnam_alloc(user);
 		if(ret)
 			goto done;
 	}
@@ -268,7 +271,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	strupper(user2);
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n", user2));
-		ret = sys_getpwnam(user2);
+		ret = getpwnam_alloc(user2);
 		if(ret)
 			goto done;
 	}
@@ -276,10 +279,31 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	/* Try all combinations up to usernamelevel */
 	strlower(user2);
 	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n", lp_usernamelevel(), user2));
-	ret = uname_string_combinations(user2, sys_getpwnam, lp_usernamelevel());
+	ret = uname_string_combinations(user2, getpwnam_alloc, lp_usernamelevel());
 
 done:
 	DEBUG(5,("Get_Pwnam_internals %s find user [%s]!\n",ret ? "did":"didn't", user));
+
+	/* This call used to just return the 'passwd' static buffer.
+	   This could then have accidental reuse implications, so 
+	   we now malloc a copy, and free it in the next use.
+
+	   This should cause the (ab)user to segfault if it 
+	   uses an old struct. 
+	   
+	   This is better than useing the wrong data in security
+	   critical operations.
+
+	   The real fix is to make the callers free the returned 
+	   malloc'ed data.
+	*/
+
+	if (Get_Pwnam_ret) {
+		passwd_free(&Get_Pwnam_ret);
+	}
+	
+	Get_Pwnam_ret = ret;
+
 	return ret;
 }
 
@@ -288,7 +312,7 @@ done:
   NOTE: This can potentially modify 'user'! 
 ****************************************************************************/
 
-struct passwd *Get_Pwnam_Modify(char *user)
+struct passwd *Get_Pwnam_Modify(fstring user)
 {
 	fstring user2;
 	struct passwd *ret;
@@ -320,8 +344,6 @@ struct passwd *Get_Pwnam(const char *user)
 
 	ret = Get_Pwnam_internals(user, user2);
 	
-	DEBUG(5,("Get_Pwnam %s find user [%s]!\n",ret ? "did":"didn't", user));
-
 	return ret;  
 }
 
