@@ -552,8 +552,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	{
 		if (cli_list(cli, mask, attribute, do_list_helper) == -1)
 		{
-			DEBUG(0, ("Error listing directory: %s\n",
-				  cli_errstr(cli)));
+			DEBUG(0, ("%s listing %s\n", cli_errstr(cli), mask));
 		}
 	}
 
