@@ -1,4 +1,8 @@
 /*
+ * NOTE: If you change this file, please merge it into rsync, samba, etc.
+ */
+
+/*
  * Copyright Patrick Powell 1995
  * This code is based on code written by Patrick Powell (papowell@astart.com)
  * It may be used for any purpose as long as this notice remains intact
@@ -60,6 +64,9 @@
 #else
 #define NULL 0
 #endif
+
+/* TODO: Perhaps always include config.h, but strip out the macros for
+ * snprintf() etc when in test mode? */
 
 #ifdef TEST_SNPRINTF /* need math library headers for testing */
 #include <math.h>
@@ -866,8 +873,9 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 		"-16.16f",
 		NULL
 	};
+	/* XXX: What does "0203.9" even mean?  An octal floating point number??? */
 	double fp_nums[] = { 6442452944.1234, -1.5, 134.21, 91340.2, 341.1234, 0203.9, 0.96, 0.996, 
-			     0.9996, 1.996, 4.136, 5.030201, 0};
+			     0.9996, 1.996, 4.136, 5.030201, 0, 0.00205};
 	char *int_fmt[] = {
 		"%-1.5d",
 		"%1.5d",
