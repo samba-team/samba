@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBLOOKUP" "1" "02 May 2002" "" ""
+.TH "NMBLOOKUP" "1" "16 May 2002" "" ""
 .SH NAME
 nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
 .SH SYNOPSIS
 .sp
-\fBnmblookup\fR [ \fB-M\fR ]  [ \fB-R\fR ]  [ \fB-S\fR ]  [ \fB-r\fR ]  [ \fB-A\fR ]  [ \fB-h\fR ]  [ \fB-B <broadcast address>\fR ]  [ \fB-U <unicast address>\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-s <smb config file>\fR ]  [ \fB-i <NetBIOS scope>\fR ]  [ \fB-T\fR ]  \fBname\fR
+\fBnmblookup\fR [ \fB-f\fR ]  [ \fB-M\fR ]  [ \fB-R\fR ]  [ \fB-S\fR ]  [ \fB-r\fR ]  [ \fB-A\fR ]  [ \fB-h\fR ]  [ \fB-B <broadcast address>\fR ]  [ \fB-U <unicast address>\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-s <smb config file>\fR ]  [ \fB-i <NetBIOS scope>\fR ]  [ \fB-T\fR ]  \fBname\fR
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -19,6 +19,11 @@ queries. The options allow the name queries to be directed at a
 particular IP broadcast area or to a particular machine. All queries 
 are done over UDP.
 .SH "OPTIONS"
+.TP
+\fB-f\fR
+Causes nmblookup to print out the flags
+in the NMB packet headers. These flags will print out as 
+strings like Authoritative, Recursion_Desired, Recursion_available, etc.
 .TP
 \fB-M\fR
 Searches for a master browser by looking 
