@@ -1391,6 +1391,7 @@ char *strstr_m(const char *src, const char *findstr)
 void strlower_m(char *s)
 {
 	size_t len;
+	int errno_save;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -1408,11 +1409,13 @@ void strlower_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
 	len = strlen(s) + 1;
+	errno_save = errno;
 	errno = 0;
 	unix_strlower(s,len,s,len);	
 	/* Catch mb conversion errors that may not terminate. */
 	if (errno)
 		s[len-1] = '\0';
+	errno = errno_save;
 }
 
 /**
@@ -1422,6 +1425,7 @@ void strlower_m(char *s)
 void strupper_m(char *s)
 {
 	size_t len;
+	int errno_save;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -1439,11 +1443,13 @@ void strupper_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	len = strlen(s) + 1;
+	errno_save = errno;
 	errno = 0;
 	unix_strupper(s,len,s,len);	
 	/* Catch mb conversion errors that may not terminate. */
 	if (errno)
 		s[len-1] = '\0';
+	errno = errno_save;
 }
 
 /**
