@@ -183,6 +183,12 @@ int sys_setgroups(int setlen, gid_t *gidset);
 struct passwd *sys_getpwnam(const char *name);
 struct passwd *sys_getpwuid(uid_t uid);
 
+/*The following definitions come from  lib/talloc.c  */
+
+TALLOC_CTX *talloc_init(void);
+void *talloc(TALLOC_CTX *t, size_t size);
+void talloc_destroy(TALLOC_CTX *t);
+
 /*The following definitions come from  lib/time.c  */
 
 void GetTimeOfDay(struct timeval *tval);
@@ -1006,6 +1012,7 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  param/loadparm.c  */
 
+void lp_talloc_free(void);
 char *lp_logfile(void);
 char *lp_smbrun(void);
 char *lp_configfile(void);

@@ -470,6 +470,9 @@ static void process(void)
 
     /* check for new network interfaces */
     reload_interfaces(t);
+
+    /* free up temp memory */
+    lp_talloc_free();
   }
 } /* process */
 

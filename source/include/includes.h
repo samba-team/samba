@@ -614,6 +614,7 @@ extern int errno;
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
+#include "talloc.h"
 #include "interfaces.h"
 
 #ifdef HAVE_FNMATCH

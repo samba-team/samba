@@ -1090,57 +1090,43 @@ static void init_locals(void)
     }
 }
 
-#define NUMBER_OF_STATIC_STRING_BUFS 20
+static TALLOC_CTX *lp_talloc;
 
 /******************************************************************* a
-convenience routine to grab string parameters into a rotating buffer,
+free up temporary memory - called from the main loop
+********************************************************************/
+void lp_talloc_free(void)
+{
+    if (!lp_talloc) return;
+    talloc_destroy(lp_talloc);
+    lp_talloc = NULL;
+}
+
+/*******************************************************************
+convenience routine to grab string parameters into temporary memory
 and run standard_sub_basic on them. The buffers can be written to by
 callers without affecting the source string.
 ********************************************************************/
 static char *lp_string(const char *s)
 {
-  static char *bufs[NUMBER_OF_STATIC_STRING_BUFS];
-  static size_t buflen[NUMBER_OF_STATIC_STRING_BUFS ];
-  static int next = -1;  
-  char *ret;
-  int i;
-  size_t len = s?strlen(s):0;
+    size_t len = s?strlen(s):0;
+    char *ret;
 
-  if (next == -1) {
-    /* initialisation */
-    for (i=0;i<NUMBER_OF_STATIC_STRING_BUFS ;i++) {
-      bufs[i] = NULL;
-      buflen[i] = 0;
-    }
-    next = 0;
-  }
+    if (!lp_talloc) lp_talloc = talloc_init();
 
-  len = MAX(len+100,sizeof(pstring)); /* the +100 is for some
-					 substitution room */
+    ret = (char *)talloc(lp_talloc, len + 100); /* leave room for substitution */
 
-  if (buflen[next] != len) {
-    buflen[next] = len;
-    if (bufs[next])
-      free(bufs[next]);
-    bufs[next] = (char *)malloc(len);
-    if (!bufs[next]) {
-      DEBUG(0,("out of memory in lp_string()"));
-      exit(1);
-    }
-  } 
+    if (!ret) return NULL;
 
-  ret = &bufs[next][0];
-  next = (next+1)%NUMBER_OF_STATIC_STRING_BUFS ;
+    if (!s)
+        *ret = 0;
+    else
+        StrnCpy(ret,s,len);
 
-  if (!s) 
-    *ret = 0;
-  else
-    StrnCpy(ret,s,len-1);
+    trim_string(ret, "\"", "\"");
 
-  trim_string(ret, "\"", "\"");
-
-  standard_sub_basic(ret);
-  return(ret);
+    standard_sub_basic(ret);
+    return(ret);
 }
 
 
