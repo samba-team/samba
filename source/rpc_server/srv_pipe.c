@@ -1104,6 +1104,22 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 }
 
 /****************************************************************************
+ Return a user struct for a pipe user.
+****************************************************************************/
+
+struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+{
+	if (p->ntlmssp_auth_validated) {
+		memcpy(user, &p->pipe_user, sizeof(struct current_user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(user, &current_user, sizeof(struct current_user));
+	}
+
+	return user;
+}
+
+/****************************************************************************
  Find the correct RPC function to call for this request.
  If the pipe is authenticated then become the correct UNIX user
  before doing the call.

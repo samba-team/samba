@@ -928,12 +928,12 @@ uint32 _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET
 
 uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, SRV_R_NET_SHARE_GET_INFO *r_u)
 {
-	char *share_name;
+	fstring share_name;
 
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));
 
 	/* Create the list of shares for the response. */
-	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
+	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 	init_srv_r_net_share_get_info(p->mem_ctx, r_u, share_name, q_u->info_level);
 
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));
@@ -947,13 +947,16 @@ uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
 
 uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
 {
-	char *share_name;
+	fstring share_name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
 	int snum;
+	fstring servicename;
+	fstring comment;
+	pstring pathname;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
-	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
+	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
 	r_u->switch_value = 0;
 
@@ -993,29 +996,51 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 }
 
 /*******************************************************************
- Net share add. Stub for now. JRA.
+ Net share add. Call 'add_share_command "sharename" "pathname" "comment"'
 ********************************************************************/
 
 uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
 {
+	struct current_user user;
+	pstring command;
 	uint32 status = NT_STATUS_NOPROBLEMO;
+	fstring share_name;
+	fstring comment;
+	pstring pathname;
+	char *ptr;
+	int type;
+	int snum;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
 	r_u->switch_value = 0;
 
+	get_current_user(&user,p);
+
+	if (user.uid != 0)
+		return ERROR_ACCESS_DENIED;
+
+	if (!lp_add_share_cmd())
+		return ERROR_ACCESS_DENIED;
+
 	switch (q_u->info_level) {
 	case 1:
+		/* Not enough info in a level 1 to do anything. */
 		status = ERROR_ACCESS_DENIED;
 		break;
 	case 2:
-		status = ERROR_ACCESS_DENIED;
+		unistr2_to_ascii(share_name, &q_u->info.share.info2.info_2_str.uni_netname, sizeof(share_name));
+		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
+		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		break;
 	case 502:
 		/* we set sd's here. FIXME. JRA */
-		status = ERROR_ACCESS_DENIED;
+		unistr2_to_ascii(share_name, &q_u->info.share.info502.info_502_str.uni_netname, sizeof(share_name));
+		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
+		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
 		break;
 	case 1005:
+		/* DFS only level. */
 		status = ERROR_ACCESS_DENIED;
 		break;
 	default:
@@ -1023,6 +1048,26 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		status = NT_STATUS_INVALID_INFO_CLASS;
 		break;
 	}
+
+	snum = find_service(share_name);
+
+	/* Share already exists. */
+	if (snum >= 0)
+		return NT_STATUS_BAD_NETWORK_NAME;
+
+	/* Convert any '\' paths to '/' */
+	unix_format(pathname);
+	unix_clean_name(pathname);
+
+	/* NT is braindead - it wants a C: prefix to a pathname ! */
+	ptr = pathname;
+	if (strlen(pathname) > 2 && ptr[1] == ':' && ptr[0] != '/')
+		ptr += 2;
+
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
+			lp_add_share_cmd(), share_name, ptr, comment );
+
+/* HERE ! JRA */
 
 	r_u->status = status;
 
@@ -1032,26 +1077,50 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 }
 
 /*******************************************************************
- Net share delete. Stub for now. JRA.
+ Net share delete. Call "delete share command" with the share name as
+ a parameter.
 ********************************************************************/
 
 uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
 {
-	char *share_name;
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	struct current_user user;
+	pstring command;
+	fstring share_name;
+	int ret;
 	int snum;
 
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
 
-	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
+	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
 	snum = find_service(share_name);
 
 	if (snum < 0)
 		return NT_STATUS_BAD_NETWORK_NAME;
 
-	/* Stub... */
-	return ERROR_ACCESS_DENIED;
+	get_current_user(&user,p);
+
+	if (user.uid != 0)
+		return ERROR_ACCESS_DENIED;
+
+	if (!lp_delete_share_cmd())
+		return ERROR_ACCESS_DENIED;
+
+	slprintf(command, sizeof(command)-1, "%s \"%s\"", lp_delete_share_cmd(), lp_servicename(snum));
+	dos_to_unix(command, True);  /* Convert to unix-codepage */
+
+	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
+	if ((ret = smbrun(command, NULL, False)) != 0) {
+		DEBUG(0,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
+		return ERROR_ACCESS_DENIED;
+	}
+
+	/* Send SIGHUP to process group. */
+	kill(0, SIGHUP);
+
+	lp_killservice(snum);
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
