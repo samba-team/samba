@@ -357,6 +357,10 @@ int get_window_size(int fd, struct winsize *);
 #endif
 #endif
 
+#ifndef HAVE_VSYSLOG
+void vsyslog(int pri, const char *fmt, va_list ap);
+#endif
+
 #ifndef HAVE_OPTARG_DECLARATION
 extern char *optarg;
 #endif
