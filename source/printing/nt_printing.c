@@ -314,7 +314,7 @@ static int traverse_counting_printers(TDB_CONTEXT *t, TDB_DATA key,
  
 /*******************************************************************
  Update the spooler global c_setprinter. This variable is initialized
- when the parent smbd starts whith the number of existing printers. It
+ when the parent smbd starts with the number of existing printers. It
  is monotonically increased by the current number of printers *after*
  each add or delete printer RPC. Only Microsoft knows why... JRR020119
 ********************************************************************/
