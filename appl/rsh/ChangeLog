@@ -1,3 +1,12 @@
+2000-08-10  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c: move code to do config/command parsing correctly.
+
+2000-08-09  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c (main): only fetch stuff from krb5.conf when no option has
+	been given
+
 2000-08-01  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c (doit): loop until we create an error socket of an
