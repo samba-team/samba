@@ -684,6 +684,8 @@ BOOL winbind_setup_common(void)
 
 	/* Check winbindd parameters are valid */
 
+	ZERO_STRUCT(server_state);
+
 	if (!winbindd_param_init())
 		return False;
 
@@ -692,8 +694,6 @@ BOOL winbind_setup_common(void)
 	   domains. */ 
 
 	init_domain_list();
-
-	ZERO_STRUCT(server_state);
 
 	/* Winbind daemon initialisation */
 
