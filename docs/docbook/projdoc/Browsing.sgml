@@ -534,10 +534,10 @@ options in the [global] section of the smb.conf file :
 
 <para>
 <programlisting>
-        domain master = yes
-        local master = yes
-        preferred master = yes
-        os level = 65
+domain master = yes
+local master = yes
+preferred master = yes
+os level = 65
 </programlisting>
 </para>
 
@@ -559,10 +559,10 @@ smb.conf file :
 
 <para>
 <programlisting>
-        domain master = no
-        local master = yes
-        preferred master = yes
-        os level = 65
+domain master = no
+local master = yes
+preferred master = yes
+os level = 65
 </programlisting>
 </para>
 
@@ -588,10 +588,10 @@ options in the [global] section of the smb.conf file :
 
 <para>
 <programlisting>
-        domain master = no
-        local master = no
-        preferred master = no
-        os level = 0
+domain master = no
+local master = no
+preferred master = no
+os level = 0
 </programlisting>
 </para>
 
@@ -619,10 +619,10 @@ file :
 
 <para>
 <programlisting>
-        domain master = no
-        local master = yes
-        preferred master = yes
-        os level = 65
+domain master = no
+local master = yes
+preferred master = yes
+os level = 65
 </programlisting>
 </para>
 
