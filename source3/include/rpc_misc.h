@@ -21,11 +21,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "ntdomain.h"
+#include "rpc_dce.h"
+
 #ifndef _RPC_MISC_H /* _RPC_MISC_H */
 #define _RPC_MISC_H 
 
 
-#include "rpc_dce.h"
 
 /* well-known RIDs - Relative IDs */
 
@@ -292,6 +294,39 @@ typedef struct lsa_policy_info
   uint8 data[POL_HND_SIZE]; /* policy handle */
 
 } POLICY_HND;
+
+
+/*
+ * A client connection's state, pipe name, 
+ * user credentials, etc...
+ */
+typedef struct _cli_auth_fns cli_auth_fns;
+struct user_creds;
+struct cli_connection {
+
+        uint32                  num_connections;
+        char                    *srv_name;
+        char                    *pipe_name;
+        struct user_creds       usr_creds;
+
+        struct cli_state        *pCli_state;
+
+        cli_auth_fns            *auth;
+
+        void                    *auth_info;
+        void                    *auth_creds;
+};
+
+
+/* 
+ * Associate a POLICY_HND with a cli_connection
+ */
+typedef struct rpc_hnd_node {
+
+	POLICY_HND		hnd;
+	struct cli_connection 	*cli;
+
+} RPC_HND_NODE;
 
 typedef struct uint64_s
 {

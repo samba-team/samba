@@ -612,6 +612,7 @@ extern int errno;
 #include "trans2.h"
 #include "nterr.h"
 #include "secrets.h"
+#include "util_list.h"
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
