@@ -1,0 +1,236 @@
+#
+# @(#) Test wbinfo client access to winbind daemon
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+load_lib "$srcdir/lib/default-nt-names.exp"
+
+# Get list of users and groups
+
+set user_list [util_start "bin/wbinfo" "-u"]
+set group_list [util_start "bin/wbinfo" "-g"]
+
+verbose "user list is:\n$user_list"
+verbose "group list is:\n$group_list"
+
+# Check lists contain default NT user and group names
+
+foreach { user } $domain_users {
+    set test_desc "user $user in wbinfo domain users"
+    if {![regexp $user $user_list]} {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+}
+
+foreach { group } $domain_groups {
+    set test_desc "group $group in wbinfo domain groups"
+    if {![regexp $group $group_list]} {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+}
+
+# Lookup sids for all names
+
+foreach { user } $domain_users {
+    set test-desc "get sid for user $user"
+    set sid [util_start "bin/wbinfo" "-n \"$user\""]
+
+    verbose "got sid $sid"
+
+    if { ![regexp "S-" $sid] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+
+    lappend user_sid_list $sid
+}
+
+foreach { group } $domain_groups {
+    set test_desc "get sid for group $group"
+    set sid [util_start "bin/wbinfo" "-n \"$group\""]
+
+    verbose "got sid $sid"
+
+    if { ![regexp "S-" $sid] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+
+    lappend group_sid_list $sid
+}
+
+# Check reverse lookup of sids to names
+
+set count 0
+
+foreach { sid } $user_sid_list {
+    set test_desc "reverse user name lookup for sid $sid"
+    set name [util_start "bin/wbinfo" "-s $sid"]
+
+    verbose "Got name $name"
+
+    if { $name != [lindex $domain_users $count] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+
+    incr count
+}
+
+set count 0
+
+foreach { sid } $group_sid_list {
+    set test_desc "reverse group name lookup for sid $sid"
+    set name [util_start "bin/wbinfo" "-s $sid"]
+
+    verbose "Got name $name"
+
+    if { $name != [lindex $domain_groups $count] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+
+    incr count
+}
+
+# Get mapped list of uids from winbindd
+
+set output [util_start "getent" "passwd"]
+set user_list [split $output "\n"]
+
+foreach { user_entry } $user_list {
+    if { [regexp $domain $user_entry] } {
+	set field_list [split $user_entry ":"]
+	set username_uid_sid [lappend username_uid_sid [list \
+		[lindex $field_list 0] \
+		[lindex $field_list 2] \
+		[util_start "bin/wbinfo" "-n \"[lindex $field_list 0]\""]]]
+    }
+}
+
+# Get mapped list of gids from winbindd
+
+set output [util_start "getent" "group"]
+set group_list [split $output "\n"]
+
+foreach { group_entry } $group_list {
+    if { [regexp $domain $group_entry] } {
+	set field_list [split $group_entry ":"]
+	set groupname_gid_sid [lappend groupname_gid_sid [list \
+		[lindex $field_list 0] \
+		[lindex $field_list 2] \
+		[util_start "bin/wbinfo" "-n \"[lindex $field_list 0]\""]]]
+    }
+}
+
+# OK, now we have enough info to cross-check the uid/gid -> sid and 
+# sid -> uid/gid functions
+
+foreach { user } $username_uid_sid {
+    set sid [util_start "bin/wbinfo" "-U [lindex $user 1]"]
+    set uid [util_start "bin/wbinfo" "-S [lindex $user 2]"]
+
+    set test_desc "lookup sid by uid [lindex $user 1]"
+
+    if { $sid != [lindex $user 2] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+
+    set test_desc "lookup uid by sid [lindex $user 2]"
+
+    if { $uid != [lindex $user 1] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+}
+
+foreach { group } $groupname_gid_sid {
+    set sid [util_start "bin/wbinfo" "-G [lindex $group 1]"]
+    set gid [util_start "bin/wbinfo" "-Y [lindex $group 2]"]
+
+    set test_desc "lookup sid by gid [lindex $group 1]"
+
+    if { $sid != [lindex $group 2] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+
+    set test_desc "lookup gid by sid [lindex $group 2]"
+
+    if { $gid != [lindex $group 1] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+}
+
+# Check exit codes
+
+proc check_errcode { args } {
+    global errorCode
+    set test_desc [lindex $args 0]
+    set cmd [lindex $args 1]
+    set result [lindex $args 2]
+
+    set errorCode ""
+    verbose "Spawning $cmd"
+    catch "exec $cmd" output
+    set exit_code [lindex $errorCode 2]
+    if { $exit_code == "" } { set exit_code 0 }
+
+    if { $exit_code == $result } {
+	verbose "process returned correct exit code $exit_code"
+	pass $test_desc
+    } else {
+	verbose "process returned bad exit code $exit_code instead of $result"
+	fail $test_desc
+    }
+}
+
+set admin_sid [util_start "bin/wbinfo" "-n Administrator"]
+if {![regexp "S-" $admin_sid]} {
+    error "Could not get sid for administrator"
+}
+
+set domusers_sid [util_start "bin/wbinfo" "-n Domain\\ Users"]
+if {![regexp "S-" $domusers_sid]} {
+    error "Could not get sid for Domain Users"
+}
+
+# Some conditions not tested:
+#   - bad list users/groups
+#   - good uid/gid to sid
+
+set errcode_tests [list \
+	{ "no arg" "bin/wbinfo" 1 } \
+	{ "invalid arg" "bin/wbinfo -@" 1 } \
+	{ "list users" "bin/wbinfo -u" 0 } \
+	{ "list groups" "bin/wbinfo -g" 0 } \
+	{ "good name to sid" "bin/wbinfo -n Administrator" 0 } \
+	{ "bad name to sid" "bin/wbinfo -n asmithee" 1 } \
+	{ "good sid to name" "bin/wbinfo -s $admin_sid" 0 } \
+	{ "bad sid to name" "bin/wbinfo -s S-1234" 1 } \
+	{ "bad uid to sid" "bin/wbinfo -U 0" 1 } \
+	{ "bad gid to sid" "bin/wbinfo -G 0" 1} \
+	{ "good sid to uid" "bin/wbinfo -S $admin_sid" 0 } \
+	{ "bad sid to uid" "bin/wbinfo -S S-1234" 1 } \
+	{ "good sid to gid" "bin/wbinfo -Y $domusers_sid" 0 } \
+	{ "bad sid to gid" "bin/wbinfo -Y S-1234" 1 } \
+	]
+
+foreach { test } $errcode_tests {
+    check_errcode [lindex $test 0] [lindex $test 1] [lindex $test 2]
+}
