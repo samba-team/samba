@@ -15,6 +15,7 @@ AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
 AC_SUBST(SHLIBEXT)
+AC_SUBST(BLDSHARED)
 
 # compile with optimisation and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -607,17 +608,22 @@ HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 PICFLAG=""
 SHLIBEXT="so"
+BLDSHARED="false"
 
 # and these are for particular systems
 case "$host_os" in
-		*linux*)   AC_DEFINE(LINUX);;
+		*linux*)   AC_DEFINE(LINUX)
+					BLDSHARED="true"
+		;;
 		*solaris*) AC_DEFINE(SUNOS5)
 					LDSHFLAGS="-G"
+					BLDSHARED="true"
 		;;
 		*sunos*) AC_DEFINE(SUNOS4)
 					LDSHFLAGS=""
 		;;
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
+			BLDSHARED="true"
 		;;
 		*irix*) AC_DEFINE(IRIX)
 			case "$host_os" in
