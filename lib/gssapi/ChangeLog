@@ -1,5 +1,7 @@
 2003-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* sequence.c (elem_insert): fix a off by one index counter
+	
 	* inquire_cred.c (gss_inquire_cred): handle cred_handle beeing
 	GSS_C_NO_CREDENTIAL and use the default cred then.
 	
