@@ -6,6 +6,7 @@
    Largely re-written by Andrew Tridgell, September 1994
 
    Copyright (C) Simo Sorce 2001
+   Copyright (C) Alexander Bokovoy 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1802,6 +1803,48 @@ FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 FN_GLOBAL_BOOL(lp_algorithmic_rid_base, &Globals.bAlgorithmicRidBase)
 
+typedef struct _param_opt_struct param_opt_struct;
+struct _param_opt_struct {
+	char *key;
+	char *value;
+	param_opt_struct *prev, *next;
+};
+
+static param_opt_struct *param_opt = NULL;
+
+/* Return parametric option from given service. Type is a part of option before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+/* Returned value is allocated in 'lp_talloc' context */
+char *lp_parm_string(const char *servicename, const char *type, const char *option)
+{
+    param_opt_struct *data;
+    pstring vfskey;
+    
+    if (param_opt != NULL) {
+	    ZERO_STRUCT(vfskey);
+	    pstr_sprintf(vfskey, "%s:%s:%s", (servicename==NULL) ? "global" : servicename,
+		    type, option);
+	    data = param_opt;
+	    while (data) {
+		    if (strcmp(data->key, vfskey) == 0) {
+			    return lp_string(data->value);
+		    }
+		    data = data->next;
+	    }
+	    /* Try to fetch the same option but from globals */
+	    pstr_sprintf(vfskey, "global:%s:%s", type, option);
+	    data = param_opt;
+	    while (data) {
+		    if (strcmp(data->key, vfskey) == 0) {
+			    return lp_string(data->value);
+		    }
+		    data = data->next;
+	    }
+	
+    }
+    return NULL;
+}
+
 /* local prototypes */
 
 static int map_parameter(char *pszParmName);
@@ -2054,7 +2097,12 @@ static int map_parameter(char *pszParmName)
 		if (strwicmp(parm_table[iIndex].label, pszParmName) == 0)
 			return (iIndex);
 
-	DEBUG(0, ("Unknown parameter encountered: \"%s\"\n", pszParmName));
+	/* Warn only if it isn't parametric option */
+	if (strchr(pszParmName, ':') == NULL)
+		DEBUG(0, ("Unknown parameter encountered: \"%s\"\n", pszParmName));
+	/* We do return 'fail' for parametric options as well because they are
+	   stored in different storage
+	 */
 	return (-1);
 }
 
@@ -2780,14 +2828,32 @@ then assume we are in the globals
 ***************************************************************************/
 BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 {
-	int parmnum, i;
+	int parmnum, i, slen;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
+	pstring vfskey;
+	char *sep;
+	param_opt_struct *paramo;
 
 	parmnum = map_parameter(pszParmName);
 
 	if (parmnum < 0)
 	{
+		if ((sep=strchr(pszParmName, ':')) != NULL) {
+			*sep = 0;
+			ZERO_STRUCT(vfskey);
+			pstr_sprintf(vfskey, "%s:%s:", 
+				(snum >= 0) ? lp_servicename(snum) : "global", pszParmName);
+			slen = strlen(vfskey);
+			safe_strcat(vfskey, sep+1, sizeof(pstring));
+			trim_string(vfskey+slen, " ", " ");
+			paramo = smb_xmalloc(sizeof(param_opt_struct));
+			paramo->key = strdup(vfskey);
+			paramo->value = strdup(pszParmValue);
+			DLIST_ADD(param_opt, paramo);
+			*sep = ':';
+			return (True);
+		}
 		DEBUG(0,
 		      ("Ignoring unknown parameter \"%s\"\n", pszParmName));
 		return (True);
@@ -3147,6 +3213,9 @@ Display the contents of the global structure.
 static void dump_globals(FILE *f)
 {
 	int i;
+	param_opt_struct *data;
+	char *s;
+	
 	fprintf(f, "# Global parameters\n[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
@@ -3160,6 +3229,17 @@ static void dump_globals(FILE *f)
 			print_parameter(&parm_table[i], parm_table[i].ptr, f);
 			fprintf(f, "\n");
 		}
+	if (param_opt != NULL) {
+		data = param_opt;
+		while(data) {
+		    if (((s=strstr(data->key, "global")) == data->key) &&
+			(*(s+strlen("global")) == ':')) {
+			    fprintf(f, "\t%s = %s\n", s+strlen("global")+1, data->value);
+		    }
+		    data = data->next;
+		}
+        }
+
 }
 
 /***************************************************************************
@@ -3174,13 +3254,15 @@ BOOL lp_is_default(int snum, struct parm_struct *parm)
 			       ((char *)&sDefault) + pdiff);
 }
 
-
 /***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
 static void dump_a_service(service * pService, FILE * f)
 {
 	int i;
+	param_opt_struct *data;
+	char *s, *sn;
+	
 	if (pService != &sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
 
@@ -3212,6 +3294,17 @@ static void dump_a_service(service * pService, FILE * f)
 					((char *)pService) + pdiff, f);
 			fprintf(f, "\n");
 		}
+	if (param_opt != NULL) {
+		data = param_opt;
+		sn = (pService == &sDefault) ? "global" : pService->szService;
+		while(data) {
+		    if (((s=strstr(data->key, sn)) == data->key) &&
+			(*(s+strlen(sn)) == ':')) {
+			    fprintf(f, "\t%s = %s\n", s+strlen(sn)+1, data->value);
+		    }
+		    data = data->next;
+		}
+        }
 }
 
 
@@ -3492,6 +3585,7 @@ static void set_server_role(void)
 }
 
 
+
 /***************************************************************************
 Load the services array from the services file. Return True on success, 
 False on failure.
@@ -3501,6 +3595,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 {
 	pstring n2;
 	BOOL bRetval;
+	param_opt_struct *data, *pdata;
 
 	pstrcpy(n2, pszFname);
 	standard_sub_basic(current_user_info.smb_name, n2);
@@ -3509,6 +3604,8 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	bRetval = False;
 
+	DEBUG(3, ("lp_load: refreshing parmaters\n"));
+	
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;
 
@@ -3520,6 +3617,18 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		lp_save_defaults();
 	}
 
+	if (param_opt != NULL) {
+		data = param_opt;
+		while (data) {
+			SAFE_FREE(data->key);
+			SAFE_FREE(data->value);
+			pdata = data->next;
+			SAFE_FREE(data);
+			data = pdata;
+		}
+		param_opt = NULL;
+	}
+	
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
 	bRetval = pm_process(n2, do_section, do_parameter);
@@ -3552,7 +3661,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	return (bRetval);
 }
-
 
 /***************************************************************************
 reset the max number of services
