@@ -1,5 +1,6 @@
 2000-07-27  Assar Westerlund  <assar@sics.se>
 
+	* ftpd/gss_userok.c (gss_userok): only do AFS iff KRB4
 	* ftpd/ftpd.c (krb5_verify): only do AFS stuff if KRB4
 
 2000-07-07  Assar Westerlund  <assar@sics.se>
