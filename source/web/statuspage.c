@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+static pid_t smbd_pid;
 
 static char *tstring(time_t t)
 {
@@ -93,7 +94,8 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 	struct connections_data crec;
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 	
-	if (crec.cnum != -1 || !process_exists(crec.pid)) return 0;
+	if (crec.cnum != -1 || !process_exists(crec.pid) ||
+	    (crec.pid == smbd_pid)) return 0;
 
 	printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
 	       (int)crec.pid,
@@ -132,6 +134,8 @@ void status_page(void)
 	int autorefresh=0;
 	int refresh_interval=30;
 	TDB_CONTEXT *tdb;
+
+	smbd_pid = pidfile_pid("smbd");
 
 	if (cgi_variable("smbd_restart")) {
 		stop_smbd();
