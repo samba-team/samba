@@ -12,9 +12,9 @@
 interface krb5pac
 {
 	typedef struct {
-		NTTIME unknown_time;
-		uint16 size;
-		uint16 account_name[size/2];
+		NTTIME logon_time;
+		uint16 unknown;
+		nstring account_name;
 	} UNKNOWN_TYPE_10;
 
 	typedef struct {
