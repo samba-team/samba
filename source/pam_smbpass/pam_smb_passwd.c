@@ -126,7 +126,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     /* obtain user record */
     pdb_init_sam(&sampass);
-    pdb_samgetpwnam(sampass,user);
+    pdb_getsampwnam(sampass,user);
 
     if (sampass == NULL) {
         _log_err( LOG_ALERT, "Failed to find entry for user %s.", user );

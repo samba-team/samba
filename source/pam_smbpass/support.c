@@ -317,7 +317,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
     }
 #endif
 
-    if (!pdb_get_lm_pw(sampass))
+    if (!pdb_get_lanman_passwd(sampass))
     {
         _log_err( LOG_DEBUG, "user %s has null SMB password"
                   , name );
