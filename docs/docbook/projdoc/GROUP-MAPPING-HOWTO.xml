@@ -302,7 +302,7 @@ manually before putting them into active service.
 	<title>Adding MS Windows Groups to MS Windows Groups Fails</title>
 
 		<para>
-		Samba-3 does NOT support nexted groups from the MS Windows control environment.
+		Samba-3 does NOT support nested groups from the MS Windows control environment.
 		</para>
 
 	</sect2>

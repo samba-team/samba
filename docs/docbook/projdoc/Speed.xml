@@ -248,23 +248,31 @@ error, collisions, etc... look normal for ethernet.
 <title>Corrupt tdb Files</title>
 
 <para>
-<screen>
-Well today it happend.... our first major troubles using samba. This is
-no complaints but just some questions :-)
+Well today it happend, our first major problem using samba.
 Our samba PDC server has been hosting 3 TB of data to our 500+ users
 [Windows NT/XP]  for the last 3 years using samba, no problem.
 But today all shares went SLOW; very slow. Also the main smbd kept
-spawning new processes so we had 1600+ running smbd's.... ( while
-normally we avg. 250 ).
+spawning new processes so we had 1600+ running smbd's (normally we avg. 250).
 It crashed the SUN E3500 cluster twice. After alot of searching I
-decided to rm ./var/locks/*.tbl and YES I was happy again.
+decided to <command>rm /var/locks/*.tbl</command>. Happy again.
+</para>
 
+<para>
 Q1) Is there any method of keeping the *.tbl files in top condition or
 how to early detect corruption?
+</para>
 
+<para>
+A1) Yes, run <command>tdbbackup</command> each time after stoping nmbd and before starting nmbd.
+</para>
+
+<para>
 Q2) What I also would like to mention is that the service latency seems
 alot lower then before the locks cleanup, any ideas on keeping it top notch?
-</screen>
+</para>
+
+<para>
+A2) Yes! Samba answer as for Q1!
 </para>
 
 </sect1>
