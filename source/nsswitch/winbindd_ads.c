@@ -220,7 +220,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*info) = talloc(mem_ctx, count * sizeof(**info));
+	(*info) = talloc_zero(mem_ctx, count * sizeof(**info));
 	if (!*info) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -308,7 +308,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*info) = talloc(mem_ctx, count * sizeof(**info));
+	(*info) = talloc_zero(mem_ctx, count * sizeof(**info));
 	if (!*info) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -628,7 +628,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids) + 1;
-	(*user_gids) = (uint32 *)talloc(mem_ctx, sizeof(uint32) * count);
+	(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * count);
 	(*user_gids)[(*num_groups)++] = primary_group;
 
 	for (i=1;i<count;i++) {
@@ -690,9 +690,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*rid_mem) = talloc(mem_ctx, sizeof(uint32) * count);
-	(*name_types) = talloc(mem_ctx, sizeof(uint32) * count);
-	(*names) = talloc(mem_ctx, sizeof(char *) * count);
+	(*rid_mem) = talloc_zero(mem_ctx, sizeof(uint32) * count);
+	(*name_types) = talloc_zero(mem_ctx, sizeof(uint32) * count);
+	(*names) = talloc_zero(mem_ctx, sizeof(char *) * count);
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		uint32 atype, rid;

@@ -447,8 +447,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 #define MAX_LOOKUP_RIDS 900
 
-        *names = talloc(mem_ctx, *num_names * sizeof(char *));
-        *name_types = talloc(mem_ctx, *num_names * sizeof(uint32));
+        *names = talloc_zero(mem_ctx, *num_names * sizeof(char *));
+        *name_types = talloc_zero(mem_ctx, *num_names * sizeof(uint32));
 
         for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
                 int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
