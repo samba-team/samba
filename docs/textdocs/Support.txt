@@ -27,7 +27,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                27
+    AMERICA - USA                                28
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
@@ -600,6 +600,20 @@ primary systems are SCO, Caldera Linux, and Solaris on Sun systems.
 Celestial has been in business since late 1984 working primarily on
 medium to large Unix systems.  More information is available on our
 web site, http://www.celestial.com/.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+WASHINGTON STATE - USA
+
+Jeff Clithero              jeff@octopi.com     APPGEN Vertical
+Interstellar Octopus, Ltd. Voice 360-379-1754  Accounting Solutions
+1829 Lincoln St.           PgVm  800-893-9517  Integration Services
+Port Townsend, WA USA      FAX   360-379-1753  Sales and Support
+
+We support SAMBA commercially.
+
+In the US/Canada we provide 800 number for our clients and can go
+onsite to customers in the Northwest US and Vancouver, BC areas.
 ------------------------------------------------------------------------------
 
 
