@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -129,6 +129,7 @@ extern int LIBPREFIX(fclose)      __P((FILE *));
 
 #include "roken.h"
 #include "security.h"
+#include <des.h> /* for des_read_pw_string */
 
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);
