@@ -98,7 +98,9 @@ MODULES = $(CHARSET_MODULES) $(DCERPC_MODULES) $(NTVFS_MODULES)
 TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
 TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o 
 
-LIB_OBJ = lib/version.o lib/charcnv.o lib/debug.o lib/fault.o \
+CHARSET_OBJS = @CHARSET_OBJS@
+
+LIB_OBJ = lib/version.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
           lib/interfaces.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/system.o lib/sendfile.o lib/time.o \
@@ -112,12 +114,12 @@ LIB_OBJ = lib/version.o lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/talloc.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o \
-	  lib/md5.o lib/hmacmd5.o lib/iconv.o lib/smbpasswd.o \
+	  lib/md5.o lib/hmacmd5.o lib/smbpasswd.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o \
-	  lib/ldap_escape.o lib/events.o lib/mutex.o
+	  lib/ldap_escape.o lib/events.o lib/mutex.o $(CHARSET_OBJS)
 
 READLINE_OBJ = lib/readline.o
 
@@ -197,42 +199,32 @@ AUTH_OBJ = auth/auth.o auth/auth_sam.o \
 
 SMBD_OBJ_MAIN = smbd/server.o
 
-NTVFS_CIFS_OBJ = ntvfs/cifs/vfs_cifs.o
-NTVFS_SIMPLE_OBJ = ntvfs/simple/vfs_simple.o ntvfs/simple/svfs_util.o
-NTVFS_IPC_OBJ = ntvfs/ipc/vfs_ipc.o
-NTVFS_PRINT_OBJ = ntvfs/print/vfs_print.o
-NTVFS_POSIX_OBJ = ntvfs/posix/vfs_posix.o
+NTVFS_OBJS = @NTVFS_OBJS@
+NTVFS_LIBS = @NTVFS_LIBS@
 
-SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o \
-	ntvfs/ntvfs_generic.o @NTVFS_STATIC@
-
-DCERPC_RPCECHO_OBJ = rpc_server/echo/rpc_echo.o
-DCERPC_EPMAPPER_OBJ = rpc_server/epmapper/rpc_epmapper.o
-DCERPC_REMOTE_OBJ = rpc_server/remote/dcesrv_remote.o
-
-SMBD_RPC_OBJ = rpc_server/dcerpc_server.o rpc_server/dcesrv_auth.o \
-		rpc_server/dcerpc_tcp.o rpc_server/handles.o @DCERPC_STATIC@
+DCERPC_OBJS = @DCERPC_OBJS@
+DCERPC_LIBS = @DCERPC_LIBS@
 
 SMBD_OBJ_SRV = smbd/connection.o \
-		smbd/session.o \
+		smbd/session.o smbd/process.o \
 		smbd/password.o smbd/conn.o \
 		smbd/negprot.o smbd/request.o \
 		smbd/reply.o smbd/sesssetup.o \
 		smbd/trans2.o smbd/search.o smbd/nttrans.o \
 		lib/server_mutex.o \
 		smbd/build_options.o smbd/service.o \
-		smbd/rewrite.o $(SMBD_RPC_OBJ) \
-		$(SMBD_NTVFS_OBJ) @SMBD_EXTRA_OBJS@ 
+		smbd/rewrite.o $(DCERPC_OBJS) \
+		$(NTVFS_OBJS) @SMBD_EXTRA_OBJS@
 
-PROCESS_MODEL_OBJ = smbd/process.o smbd/process_model.o smbd/process_standard.o \
-			smbd/process_single.o
+PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
+PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
 
-SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJ) $(SMBD_OBJ_SRV) \
+SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJS) $(SMBD_OBJ_SRV) \
 		$(PARAM_OBJ) $(SECRETS_OBJ) $(PASSDB_OBJ)  \
 		$(AUTH_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)
 
-SMBD_OBJ = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE)
-
+SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) @BUILD_POPT@
+SMBD_LIBS = $(LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(NTVFS_LIBS)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
 
@@ -273,14 +265,14 @@ NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ_SRV) \
-	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJ) \
+	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJS) \
 	    $(LIBSMB_OBJ) \
 	    $(LIBRAW_OBJ) $(LIBCLIAUTH_OBJ) \
 	    $(SMBTORTURE_OBJ1) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
 	    $(PASSDB_OBJ) \
 	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
-	    $(LIB_OBJ) $(POPT_LIB_OBJ)
+	    $(LIB_OBJ) $(POPT_LIB_OBJ) \
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
@@ -398,10 +390,9 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbd@EXEEXT@: $(SMBD_OBJS) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) \
-	  $(LIBS) @SMBD_EXTRA_LIBS@ @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJS) $(LDFLAGS) $(DYNEXP) $(SMBD_LIBS)
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -528,7 +519,7 @@ proto_test:
 .PHONY: headers proto
 
 realclean: clean delheaders
-	-rm -f config.log $(BIN_PROGS) $(MODULES) $(SBIN_PROGS) bin/.dummy script/findsmb
+	-rm -f config.log $(BIN_PROGS) $(MODULES) $(SBIN_PROGS) bin/.dummy
 
 distclean: realclean
 	-rm -f include/stamp-h

@@ -49,7 +49,7 @@ AC_DEFUN(SMB_MODULE_DEFAULT,
 ])
 
 dnl Mark specified module as shared
-dnl SMB_MODULE(1:name,2:subsystem,3:default_build,4:object_files,5:shared_object,6:libs,7:whatif-static,8:whatif-shared,9:whatif-not)
+dnl SMB_MODULE(1:name,2:subsystem,3:default_build,4:object_files,5:private_proto_file,6:libs,7:whatif-static,8:whatif-shared,9:whatif-not)
 AC_DEFUN(SMB_MODULE,
 [
 	AC_MSG_CHECKING([how to build $1])
@@ -71,7 +71,8 @@ AC_DEFUN(SMB_MODULE,
 	
 	if test x"$DEST" = xSHARED; then
 		AC_DEFINE([$1][_init], [init_module], [Whether to build $1 as shared module])
-		$2_MODULES="$$2_MODULES $5"
+		$2_MODULES="$$2_MODULES bin/$1.$SHLIBEXT"
+		[MODULE_][$1][_PROTO]="$5"
 		[MODULE_][$1][_LIBS]="$6"
 		AC_MSG_RESULT([shared])
 		[$8]
@@ -79,6 +80,7 @@ AC_DEFUN(SMB_MODULE,
 	elif test x"$DEST" = xSTATIC; then
 		[init_static_modules_]translit([$2], [A-Z], [a-z])="$[init_static_modules_]translit([$2], [A-Z], [a-z]) $1_init();"
 		string_static_modules="$string_static_modules $1"
+		[MODULE_][$1][_PROTO]="$5"
 		$2_STATIC="$$2_STATIC $4"
 		$2_LIBS="$$2_LIBS $6"
 		[$7]
@@ -90,13 +92,35 @@ AC_DEFUN(SMB_MODULE,
 	fi
 ])
 
-dnl Mark specified module as shared
-dnl SMB_SUBSYSTEM(1:name,2:init_objectfile)
+dnl SMB_SUBSYSTEM(1:name,2:init_objectfile,3:extra_objectfiles,4:public_proto_header,5:private_proto_header,6:libs)
 AC_DEFUN(SMB_SUBSYSTEM,
 [
+	dnl the core object files of the subsystem
+	$1_BASE="$2 $3"
+	AC_SUBST($1_BASE)
+
+	dnl the staticly linked modules of the subsystem
 	AC_SUBST($1_STATIC)
+
+	dnl all object files of the subsystem
+	$1_OBJS="$$1_BASE $$1_STATIC"
+	AC_SUBST($1_OBJS)
+
+	dnl the libs required by the subsystem
+	$1_LIBS="$6 $$1_LIBS"
 	AC_SUBST($1_LIBS)
+
+	dnl the shared objects modules of the subsystem
 	AC_SUBST($1_MODULES)
+
+	dnl the public_prototype_header file
+	$1_PUBLIC_HEADER="$4"
+	AC_SUBST($1_PUBLIC_PROTO)
+
+	dnl the private_prototype_header file
+	$1_PRIVATE_HEADER="$5"
+	AC_SUBST($1_PRIVATE_PROTO)
+
 	AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{$init_static_modules_]translit([$1], [A-Z], [a-z])[}], [Static init functions])
 	ifelse([$2], , :, [rm -f $2])
 ])

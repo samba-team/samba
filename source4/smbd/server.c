@@ -91,7 +91,7 @@ static void add_socket(struct event_context *events,
  Open the socket communication.
 ****************************************************************************/
 static void open_sockets_smbd(struct event_context *events,
-			      struct model_ops *model_ops)
+			      const struct model_ops *model_ops)
 {
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		int num_interfaces = iface_count();
@@ -194,7 +194,7 @@ static BOOL init_structs(void)
 static void setup_process_model(struct event_context *events, 
 				const char *model)
 {
-	struct model_ops *ops;
+	const struct model_ops *ops;
 
 	process_model_init();
 
