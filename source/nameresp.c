@@ -101,14 +101,14 @@ static void dead_netbios_entry(struct subnet_record *d,
 
 			if ((!NAME_GROUP(n->nb_flags)))
 			{
-				struct subnet_record *d = find_subnet(ipgrp);
-				if (d)
+				struct subnet_record *d1 = find_subnet(ipgrp);
+				if (d1)
 				{
 					/* remove the name that had been registered with us,
 					   and we're now getting no response when challenging.
 					   see rfc1001.txt 15.5.2
 					 */
-					remove_netbios_name(d, n->name.name, n->name.name_type,
+					remove_netbios_name(d1, n->name.name, n->name.name_type,
 									REGISTER, n->to_ip);
 				}
 			}
