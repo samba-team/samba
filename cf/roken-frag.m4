@@ -317,9 +317,11 @@ AC_BROKEN([					\
 	writev					\
 ])
 
-rk_BROKEN_GETNAMEINFO
-if test "$ac_cv_func_getnameinfo_broken" = yes; then
-	LIBOBJS="$LIBOBJS getnameinfo.o"
+if test "$ac_cv_func_getnameinfo" = "yes"; then
+  rk_BROKEN_GETNAMEINFO
+  if test "$ac_cv_func_getnameinfo_broken" = yes; then
+    LIBOBJS="$LIBOBJS getnameinfo.o"
+  fi
 fi
 
 AC_NEED_PROTO([#include <stdlib.h>], setenv)
