@@ -107,12 +107,11 @@ struct vfs_ops audit_ops = {
 /* VFS initialisation function.  Return initialised vfs_ops structure
    back to SAMBA. */
 
-struct vfs_ops *vfs_init(void)
+BOOL vfs_init(connection_struct *conn)
 {
 	openlog("smbd_audit", LOG_PID, SYSLOG_FACILITY);
-	syslog(SYSLOG_PRIORITY, "VFS_INIT: &audit_ops: 0x%8.8x\n", 
-	       &audit_ops);
-	return(&audit_ops);
+	syslog(SYSLOG_PRIORITY, "VFS_INIT: vfs_ops loaded\n");
+	return True;
 }
 
 /* Implementation of vfs_ops.  Pass everything on to the default

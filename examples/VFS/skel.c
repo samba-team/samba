@@ -38,109 +38,20 @@
 #include <includes.h>
 #include <vfs.h>
 
-/* Function prototypes */
-
-    /* Disk operations */
-
-    int skel_connect(struct connection_struct *conn, char *service, char *user);    void skel_disconnect(struct connection_struct *conn);
-    SMB_BIG_UINT skel_disk_free(struct connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize,
-                              SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-
-    /* Directory operations */
-
-    DIR *skel_opendir(struct connection_struct *conn, char *fname);
-    struct dirent *skel_readdir(struct connection_struct *conn, DIR *dirp);
-    int skel_mkdir(struct connection_struct *conn, char *path, mode_t mode);
-    int skel_rmdir(struct connection_struct *conn, char *path);
-    int skel_closedir(struct connection_struct *conn, DIR *dir);
-
-    /* File operations */
-
-    int skel_open(struct connection_struct *conn, char *fname, int flags, mode_t mode);
-    int skel_close(struct files_struct *fsp, int fd);
-    ssize_t skel_read(struct files_struct *fsp, int fd, char *data, size_t n);
-    ssize_t skel_write(struct files_struct *fsp, int fd, char *data, size_t n);
-    SMB_OFF_T skel_lseek(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
-    int skel_rename(struct connection_struct *conn, char *old, char *new);
-    int skel_fsync(struct files_struct *fsp, int fd);
-    int skel_stat(struct connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf);
-    int skel_fstat(struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
-    int skel_lstat(struct connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf);
-    int skel_unlink(struct connection_struct *conn, char *path);
-    int skel_chmod(struct connection_struct *conn, char *path, mode_t mode);
-        int skel_chown(struct connection_struct *conn, char *path, uid_t uid, gid_t gid);
-        int skel_chdir(struct connection_struct *conn, char *path);
-        char *skel_getwd(struct connection_struct *conn, char *buf);
-    int skel_utime(struct connection_struct *conn, char *path, struct utimbuf *times);
-        int skel_ftruncate(struct files_struct *fsp, int fd, SMB_OFF_T offset);
-        BOOL skel_lock(struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-
-    /* NT file access control list operations */
-
-        size_t skel_fget_nt_acl(struct files_struct *fsp, int fd, struct security_descriptor_info **ppdesc);
-        size_t skel_get_nt_acl(struct files_struct *fsp, char *name, struct security_descriptor_info **ppdesc);
-        BOOL skel_fset_nt_acl(struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor_info *psd);
-        BOOL skel_set_nt_acl(struct files_struct *fsp, char *name, uint32 security_info_sent, struct security_descriptor_info *psd);
+extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
+struct vfs_ops skel_ops;
 
 
-/* VFS operations structure */
-
-struct vfs_ops skel_ops = {
-
-	/* Disk operations */
-
-	skel_connect,
-	skel_disconnect,
-	skel_disk_free,
-	
-	/* Directory operations */
-
-	skel_opendir,
-	skel_readdir,
-	skel_mkdir,
-	skel_rmdir,
-	skel_closedir,
-
-	/* File operations */
-
-	skel_open,
-	skel_close,
-	skel_read,
-	skel_write,
-	skel_lseek,
-	skel_rename,
-	skel_fsync,
-	skel_stat,
-	skel_fstat,
-	skel_lstat,
-	skel_unlink,
-	skel_chmod,
-        skel_chown,
-        skel_chdir,
-        skel_getwd,
-	skel_utime,
-	skel_ftruncate,
-	skel_lock,
-
-	/* NT File ACL operations */
-
-        skel_fget_nt_acl,
-        skel_get_nt_acl,
-        skel_fset_nt_acl,
-        skel_set_nt_acl
-};
 
 /* VFS initialisation - return vfs_ops function pointer structure */
 
-struct vfs_ops *vfs_init(int *vfs_version)
+BOOL vfs_init(connection_struct *conn)
 {
-	*vfs_version = SMB_VFS_INTERFACE_VERSION;
-	return(&skel_ops);
+    DEBUG(3, ("Initialising default vfs hooks\n"));
+ 
+    memcpy(&conn->vfs_ops, &skel_ops, sizeof(struct vfs_ops));
+    return True;
 }
-
-/* Implementation of VFS functions.  Insert your useful stuff here */
-
-extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
 
 int skel_connect(struct connection_struct *conn, char *service, char *user)    
 {
@@ -245,9 +156,19 @@ int skel_chmod(struct connection_struct *conn, char *path, mode_t mode)
 	return default_vfs_ops.chmod(conn, path, mode);
 }
 
+int skel_fchmod(struct files_struct *fsp, int fd, mode_t mode)
+{
+	return default_vfs_ops.fchmod(fsp, fd, mode);
+}
+
 int skel_chown(struct connection_struct *conn, char *path, uid_t uid, gid_t gid)
 {
 	return default_vfs_ops.chown(conn, path, uid, gid);
+}
+
+int skel_fchown(struct files_struct *fsp, int fd, uid_t uid, gid_t gid)
+{
+	return default_vfs_ops.fchown(fsp, fd, uid, gid);
 }
 
 int skel_chdir(struct connection_struct *conn, char *path)
@@ -275,6 +196,16 @@ BOOL skel_lock(struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_O
 	return default_vfs_ops.lock(fsp, fd, op, offset, count, type);
 }
 
+BOOL skel_symlink(struct connection_struct *conn, const char *oldpath, const char *newpath)
+{
+	return default_vfs_ops.symlink(conn, oldpath, newpath);
+}
+
+BOOL skel_readlink(struct connection_struct *conn, const char *path, char *buf, size_t bufsiz)
+{
+	return default_vfs_ops.readlink(conn, path, buf, bufsiz);
+}
+
 size_t skel_fget_nt_acl(struct files_struct *fsp, int fd, struct security_descriptor_info **ppdesc)
 {
 	return default_vfs_ops.fget_nt_acl(fsp, fd, ppdesc);
@@ -295,3 +226,67 @@ BOOL skel_set_nt_acl(struct files_struct *fsp, char *name, uint32 security_info_
 	return default_vfs_ops.set_nt_acl(fsp, name, security_info_sent, psd);
 }
 
+BOOL skel_chmod_acl(struct connection_struct *conn, char *name, mode_t mode)
+{
+	return default_vfs_ops.chmod_acl(conn, name, mode);
+}
+
+BOOL skel_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode)
+{
+	return default_vfs_ops.fchmod_acl(fsp, fd, mode);
+}
+
+
+/* VFS operations structure */
+
+struct vfs_ops skel_ops = {
+
+	/* Disk operations */
+
+	skel_connect,
+	skel_disconnect,
+	skel_disk_free,
+	
+	/* Directory operations */
+
+	skel_opendir,
+	skel_readdir,
+	skel_mkdir,
+	skel_rmdir,
+	skel_closedir,
+
+	/* File operations */
+
+	skel_open,
+	skel_close,
+	skel_read,
+	skel_write,
+	skel_lseek,
+	skel_rename,
+	skel_fsync,
+	skel_stat,
+	skel_fstat,
+	skel_lstat,
+	skel_unlink,
+	skel_chmod,
+	skel_fchmod,
+        skel_chown,
+        skel_fchown,
+        skel_chdir,
+        skel_getwd,
+	skel_utime,
+	skel_ftruncate,
+	skel_lock,
+	skel_symlink,
+	skel_readlink,
+
+	/* NT File ACL operations */
+
+        skel_fget_nt_acl,
+        skel_get_nt_acl,
+        skel_fset_nt_acl,
+        skel_set_nt_acl,
+
+	skel_chmod_acl,
+	skel_fchmod_acl
+};
