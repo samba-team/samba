@@ -1,5 +1,8 @@
 2002-08-22  Johan Danielsson  <joda@pdc.kth.se>
-	
+
+	* kdc/kdc.8: add blurb about adding and removing addresses; update
+	kdc.conf section to match reality
+
 	* configure.in: KRB_SENDAUTH_VLEN seems to always have existed, so
 	don't define it
 	
