@@ -42,10 +42,10 @@ static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 }
 
 /****************************************************************************
- Lock a chain by string. Return -1 if timeout or lock failed.
+ Lock a chain by string. Return -1 if lock failed.
 ****************************************************************************/
 
-int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, uint_t timeout)
+int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
@@ -64,10 +64,10 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 }
 
 /****************************************************************************
- Read lock a chain by string. Return -1 if timeout or lock failed.
+ Read lock a chain by string. Return -1 if lock failed.
 ****************************************************************************/
 
-int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, uint_t timeout)
+int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
@@ -252,7 +252,7 @@ int32_t tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32_t *o
 	int32_t val;
 	int32_t ret = -1;
 
-	if (tdb_lock_bystring(tdb, keystr,0) == -1)
+	if (tdb_lock_bystring(tdb, keystr) == -1)
 		return -1;
 
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
@@ -293,7 +293,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32_t *ol
 	uint32_t val;
 	BOOL ret = False;
 
-	if (tdb_lock_bystring(tdb, keystr,0) == -1)
+	if (tdb_lock_bystring(tdb, keystr) == -1)
 		return False;
 
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
