@@ -935,10 +935,12 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 			printf("QuerySecret failed - %s\n", nt_errstr(status));
 			ret = False;
 		} else {
-
-			if (r8.out.new_val->buf == NULL) {
+			if (!r8.out.new_val || !r8.out.old_val) {
+				printf("in/out pointers not returned, despite being set on in for QuerySecret\n");
+				ret = False;
+			} else if (r8.out.new_val->buf == NULL) {
 				if (i != LOCAL) { 
-					printf("NEW secret buffer not returned after OLD set\n");
+					printf("NEW secret buffer not returned after GLOBAL OLD set\n");
 					ret = False;
 				}
 			} else if (r8.out.old_val->buf == NULL) {
@@ -948,6 +950,10 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				printf("Both times not returned after OLD set\n");
 				ret = False;
 			} else {
+				if (i == LOCAL) { 
+					printf("NEW secret buffer should not be returned after LOCAL OLD set\n");
+					ret = False;
+				}
 				blob1.data = r8.out.new_val->buf->data;
 				blob1.length = r8.out.new_val->buf->length;
 				
