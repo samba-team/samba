@@ -1,5 +1,10 @@
 2001-09-18  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/hpropd.c: add realm override option
+
+	* lib/krb5/set_default_realm.c (krb5_set_default_realm): make
+	realm parameter const
+
 	* kdc/hprop.c: more free's
 
 	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_keytab): free key
