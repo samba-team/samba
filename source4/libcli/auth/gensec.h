@@ -41,9 +41,9 @@ struct gensec_target {
 	const char *service;
 };
 
-#define GENSEC_WANT_SESSION_KEY 0x1
-#define GENSEC_WANT_SIGN 0x2
-#define GENSEC_WANT_SEAL 0x4
+#define GENSEC_FEATURE_SESSION_KEY	0x00000001
+#define GENSEC_FEATURE_SIGN		0x00000002
+#define GENSEC_FEATURE_SEAL		0x00000004
 
 /* GENSEC mode */
 enum gensec_role
@@ -99,6 +99,7 @@ struct gensec_security {
 	enum gensec_role gensec_role;
 	BOOL subcontext;
 	uint32 want_features;
+	uint32 have_features;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

@@ -195,8 +195,8 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	size_t nread;
 
 	if (!conn->gensec || !conn->session_info ||
-	   !(gensec_have_feature(conn->gensec, GENSEC_WANT_SIGN) &&
-	     gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL))) {
+	   !(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) &&
+	     gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
 		return read_into_buf(sock, &conn->in_buffer);
 	}
 
@@ -254,7 +254,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	tmp_blob.data = buf + (4 + creds.length);
 	tmp_blob.length = (4 + sasl_length) - (4 + creds.length);
 
-	if (gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL)) {
+	if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
 		status = gensec_unseal_packet(conn->gensec, mem_ctx,
 					      tmp_blob.data, tmp_blob.length,
 					      tmp_blob.data, tmp_blob.length,
@@ -320,8 +320,8 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 	TALLOC_CTX *mem_ctx;
 
 	if (!conn->gensec || !conn->session_info ||
-	   !(gensec_have_feature(conn->gensec, GENSEC_WANT_SIGN) &&
-	     gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL))) {
+	   !(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) &&
+	     gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
 		return write_from_buf(sock, &conn->out_buffer);
 	}
 
@@ -338,7 +338,7 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 		goto nodata;
 	}
 
-	if (gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL)) {
+	if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
 		status = gensec_seal_packet(conn->gensec, mem_ctx,
 					    tmp_blob.data, tmp_blob.length,
 					    tmp_blob.data, tmp_blob.length,

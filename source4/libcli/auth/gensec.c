@@ -137,6 +137,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 
 	(*gensec_security)->subcontext = False;
 	(*gensec_security)->want_features = 0;
+	(*gensec_security)->have_features = 0;
 	return NT_STATUS_OK;
 }
 
@@ -232,11 +233,11 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-		gensec_want_feature(gensec_security, GENSEC_WANT_SIGN);
+		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 	}
 	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		gensec_want_feature(gensec_security, GENSEC_WANT_SIGN);
-		gensec_want_feature(gensec_security, GENSEC_WANT_SEAL);
+		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
+		gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 	}
 
 	return gensec_start_mech(gensec_security);
@@ -310,8 +311,8 @@ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->unseal_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	if (!(gensec_security->want_features & GENSEC_WANT_SEAL)) {
-		if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+		if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 			return gensec_check_packet(gensec_security, mem_ctx, 
 						   data, length, 
 						   whole_pdu, pdu_length, 
@@ -335,7 +336,7 @@ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->check_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	if (!(gensec_security->want_features & GENSEC_WANT_SIGN)) {
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
@@ -351,8 +352,8 @@ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->seal_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	if (!(gensec_security->want_features & GENSEC_WANT_SEAL)) {
-		if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+		if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 			return gensec_sign_packet(gensec_security, mem_ctx, 
 						  data, length, 
 						  whole_pdu, pdu_length, 
@@ -373,7 +374,7 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->sign_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	if (!(gensec_security->want_features & GENSEC_WANT_SIGN)) {
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
@@ -385,7 +386,7 @@ size_t gensec_sig_size(struct gensec_security *gensec_security)
 	if (!gensec_security->ops->sig_size) {
 		return 0;
 	}
-	if (!(gensec_security->want_features & GENSEC_WANT_SIGN)) {
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		return 0;
 	}
 	
@@ -398,10 +399,6 @@ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->session_key) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	if (!(gensec_security->want_features & GENSEC_WANT_SESSION_KEY)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
 	return gensec_security->ops->session_key(gensec_security, session_key);
 }
 
@@ -474,7 +471,7 @@ void gensec_want_feature(struct gensec_security *gensec_security,
 BOOL gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32 feature) 
 {
-	if (gensec_security->want_features & feature) {
+	if (gensec_security->have_features & feature) {
 		return True;
 	}
 
