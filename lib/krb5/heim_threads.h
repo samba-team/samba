@@ -74,8 +74,8 @@
 #define	HEIMDAL_RWLOCK_destroy(l) rwlock_destroy(l)	
 
 #define HEIMDAL_thread_key thread_key_t
-#define HEIMDAL_key_create(k,d) thr_keycreate(k,d)
-#define HEIMDAL_setspecific(k,s) thr_setspecific(k,s)
+#define HEIMDAL_key_create(k,d,r) do { r = thr_keycreate(k,d); } while(0)
+#define HEIMDAL_setspecific(k,s,r) do { r = thr_setspecific(k,s); } while(0)
 #define HEIMDAL_getspecific(k) thr_getspecific(k)
 #define HEIMDAL_key_delete(k) thr_keydelete(k)
 
@@ -99,9 +99,9 @@
 #define	HEIMDAL_RWLOCK_destroy(l) pthread_rwlock_destroy(l)	
 
 #define HEIMDAL_thread_key pthread_key_t
-#define HEIMDAL_key_create(k,d) pthread_key_create(k,d)
-#define HEIMDAL_setspecific(k,s) pthread_setspecific(k,s)
-#define HEIMDAL_getspecific(k) pthread_setspecific(k)
+#define HEIMDAL_key_create(k,d,r) do { r = pthread_key_create(k,d); } while(0)
+#define HEIMDAL_setspecific(k,s,r) do { r = pthread_setspecific(k,s); } while(0)
+#define HEIMDAL_getspecific(k) pthread_getspecific(k)
 #define HEIMDAL_key_delete(k) pthread_key_delete(k)
 
 #elif defined(HEIMDAL_DEBUG_THREADS)
@@ -159,11 +159,11 @@ typedef struct heim_thread_key {
 } heim_thread_key;
 
 #define HEIMDAL_thread_key heim_thread_key
-#define HEIMDAL_key_create(k,d) \
-	do { (k)->value = NULL; (k)->destructor = (d); } while(0)
-#define HEIMDAL_setspecific(k,s) do { (k)->value = s ; } while(0)
-#define HEIMDAL_getspecific(k) ((k)->value)
-#define HEIMDAL_key_delete(k) do { (*(k)->destructor)((k)->value); } while(0)
+#define HEIMDAL_key_create(k,d,r) \
+	do { (k)->value = NULL; (k)->destructor = (d); r = 0; } while(0)
+#define HEIMDAL_setspecific(k,s,r) do { (k).value = s ; r = 0; } while(0)
+#define HEIMDAL_getspecific(k) ((k).value)
+#define HEIMDAL_key_delete(k) do { (*(k).destructor)((k).value); } while(0)
 
 #undef HEIMDAL_internal_thread_key
 #endif /* HEIMDAL_internal_thread_key */
