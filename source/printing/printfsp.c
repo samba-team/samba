@@ -50,10 +50,6 @@ files_struct *print_fsp_open(connection_struct *conn,char *jobname)
 	/* setup a full fsp */
 	fsp->print_jobid = jobid;
 	fsp->fd = print_job_fd(jobid);
-	conn->vfs_ops.fstat(fsp->fd, &sbuf);
-	fsp->mode = sbuf.st_mode;
-	fsp->inode = sbuf.st_ino;
-	fsp->dev = sbuf.st_dev;
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
 	fsp->size = 0;
@@ -73,6 +69,10 @@ files_struct *print_fsp_open(connection_struct *conn,char *jobname)
 	string_set(&fsp->fsp_name,print_job_fname(jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
+	conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf);
+	fsp->mode = sbuf.st_mode;
+	fsp->inode = sbuf.st_ino;
+	fsp->dev = sbuf.st_dev;
 
 	conn->num_files_open++;
 

@@ -637,6 +637,9 @@ extern int errno;
 
 #ifdef WITH_PROFILE
 #include "profile.h"
+#else
+#define START_PROFILE(x)
+#define END_PROFILE(x)
 #endif
 
 #ifndef MAXCODEPAGELINES
