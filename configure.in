@@ -55,7 +55,7 @@ AC_EXEEXT
 dnl AC_KRB_PROG_YACC
 AC_PROG_YACC
 AM_PROG_LEX
-AC_PROG_RANLIB
+dnl AC_PROG_RANLIB
 AC_PROG_AWK
 AC_KRB_PROG_LN_S
 
@@ -444,7 +444,8 @@ AC_AUTH_MODULES
 
 rk_DESTDIRS
 
-LTLIBOBJS=`echo "$LIBOBJS" | sed 's/\.o/\.lo/g'`
+LTLIBOBJS=`echo "$LIB@&t@OBJS" |
+	sed 's,\.[[^.]]* ,.lo ,g;s,\.[[^.]]*$,.lo,'`
 AC_SUBST(LTLIBOBJS)
 AC_CONFIG_FILES(Makefile 		\
 	include/Makefile		\
