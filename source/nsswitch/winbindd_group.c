@@ -42,6 +42,7 @@ static void winbindd_fill_grent(struct winbindd_gr *gr, char *gr_name,
 
 static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid, 
                                     char *domain_name, uint32 group_rid, 
+                                    POLICY_HND *sam_dom_handle,
                                     struct winbindd_gr *gr)
 {
     uint32 num_names = 0;
@@ -60,10 +61,11 @@ static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid,
     /* Lookup group information */
 
     if (!winbindd_lookup_groupmem(server_name, domain_sid, group_rid, 
-                                  &num_names, &rid_mem, &names, &name_types) &&
+                                  sam_dom_handle, &num_names, &rid_mem, 
+                                  &names, &name_types) &&
         !winbindd_lookup_aliasmem(server_name, global_sid_builtin, 
-                                  group_rid, &num_names, &sids, &names, 
-                                  &name_types)) {
+                                  group_rid, sam_dom_handle, &num_names, 
+                                  &sids, &names, &name_types)) {
 
         DEBUG(1, ("fill_grent_mem(): group rid %d not a domain or local "
                   "group\n", group_rid));
@@ -101,12 +103,30 @@ static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid,
     
     pstrcpy(gr->gr_mem, groupmem_list);
 
+    /* Free memory */
+
+    if (name_types != NULL) { free(name_types); }
+    if (rid_mem != NULL) { free(rid_mem); }
+
+    if (names != NULL) { 
+        int i;
+
+        for (i = 0; i < num_names; i++) {
+            if (names[i] != NULL) {
+                free(names[i]);
+            }
+        }
+
+        free(names); 
+    }
+
     return True;
 }
 
 /* Return a group structure from a group name */
 
 enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
+                                                  POLICY_HND *sam_dom_handle,
                                                   struct winbindd_gr *gr)
 {
     DOM_SID domain_sid, domain_group_sid;
@@ -170,7 +190,7 @@ enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
         sid_split_rid(&temp, &group_rid);
         
         if (!winbindd_fill_grent_mem(domain_controller, &domain_sid, 
-                                     name_domain, group_rid, gr)) {
+                                     name_domain, group_rid, NULL, gr)) {
             return WINBINDD_ERROR;
         }
     }
@@ -234,7 +254,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(gid_t gid,
 
     winbindd_fill_grent(gr, group_name, surs_gid.id);
     winbindd_fill_grent_mem(domain_controller, &domain_sid, domain_name,
-                            group_rid, gr);
+                            group_rid, NULL, gr);
 
     return WINBINDD_OK;
 }
@@ -467,7 +487,8 @@ enum winbindd_result winbindd_getgrent(pid_t pid, struct winbindd_gr *gr)
    
                 /* Get group entry from group name */
 
-                result = winbindd_getgrnam_from_group(domain_group_name, gr);
+                result = winbindd_getgrnam_from_group(
+                    domain_group_name, &sam_pipe->sam_dom_handle, gr);
                 sam_pipe->index++;
                                                       
                 if (result == WINBINDD_OK) {

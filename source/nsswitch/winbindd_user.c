@@ -71,7 +71,8 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
 /* Return a password structure from a username */
 
-enum winbindd_result winbindd_getpwnam_from_user(char *user_name, 
+enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
+                                                 POLICY_HND *sam_dom_handle,
                                                  struct winbindd_pw *pw)
 {
     uint32 name_type, user_rid;
@@ -115,7 +116,7 @@ enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
     sid_split_rid(&tmp_sid, &user_rid);
 
     if (!winbindd_lookup_userinfo(domain_controller, &domain_sid, user_rid, 
-                                  &user_info)) {
+                                  sam_dom_handle, &user_info)) {
         DEBUG(1, ("pwnam_from_user(): error getting user info for user '%s'\n",
                   name_user));
         return WINBINDD_ERROR;
@@ -200,7 +201,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(uid_t uid,
     sid_split_rid(&tmp_sid, &user_rid);
 
     if (!winbindd_lookup_userinfo(domain_controller, &domain_sid, user_rid, 
-                                  &user_info)) {
+                                  NULL, &user_info)) {
         DEBUG(1, ("pwnam_from_uid(): error getting user info for user '%s'\n",
                   username));
         return WINBINDD_ERROR;
@@ -373,8 +374,10 @@ enum winbindd_result winbindd_endpwent(pid_t pid)
 
         for(i = 0; i < enum_pwent->num_sam_pipes; i++) {
             if (enum_pwent->sam_pipes[i].valid) {
-                samr_close(&enum_pwent->sam_pipes[i].sam_dom_handle);
-                samr_close(&enum_pwent->sam_pipes[i].sam_handle);
+                BOOL res;
+
+                res = samr_close(&enum_pwent->sam_pipes[i].sam_dom_handle);
+                res = samr_close(&enum_pwent->sam_pipes[i].sam_handle);
             }
         }
 
@@ -453,7 +456,9 @@ enum winbindd_result winbindd_getpwent(pid_t pid, struct winbindd_pw *pw)
                 
                 /* Get passwd entry from user name */
                 
-                result = winbindd_getpwnam_from_user(domain_user_name, pw);
+                result = winbindd_getpwnam_from_user(domain_user_name, 
+                                                     &sam_pipe->sam_dom_handle,
+                                                     pw);
                 sam_pipe->index++;
                 
                 /* Return if user lookup worked */

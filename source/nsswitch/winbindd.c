@@ -107,6 +107,11 @@ BOOL winbindd_lookup_by_name(char *system_name, DOM_SID *level5_sid,
         }
     }
     
+    /* Free memory */
+
+    if (types != NULL) { free(types); }
+    if (sids != NULL) { free(sids); }
+
     return res;
 }
 
@@ -125,7 +130,7 @@ int winbindd_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
     res = lsa_open_policy(system_name, &lsa_handle, True, 
                           SEC_RIGHTS_MAXIMUM_ALLOWED);
 
-    res = res ? lsa_lookup_sids(&lsa_handle, num_sids, (DOM_SID **)&sid,
+    res = res ? lsa_lookup_sids(&lsa_handle, num_sids, &sid,
                                 &names, &types, &num_names) : False;
 
     lsa_close(&lsa_handle);
@@ -142,40 +147,67 @@ int winbindd_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
         }
     }
 
+    /* Free memory */
+
+    if (types != NULL) { free(types); }
+
+    if (names != NULL) { 
+        int i;
+
+        for (i = 0; i < num_names; i++) {
+            if (names[i] != NULL) {
+                free(names[i]);
+            }
+            free(names); 
+        }
+    }
+
     return res;
 }
 
 /* Lookup user information from a rid */
 
-int winbindd_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
-                             uint32 user_rid, SAM_USERINFO_CTR *user_info)
+int winbindd_lookup_userinfo(char *system_name, DOM_SID *dom_sid,
+                             uint32 user_rid, POLICY_HND *sam_dom_handle,
+                             SAM_USERINFO_CTR *user_info)
 {
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res, res1;
+    POLICY_HND sam_handle, local_sam_dom_handle;
+    BOOL res = True, local_handle = False;
+
+    if (sam_dom_handle == NULL) {
+        sam_dom_handle = &local_sam_dom_handle;
+        local_handle = True;
+    }
 
     /* Open connection to SAM pipe and SAM domain */
 
-    res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                       &sam_handle);
+    if (local_handle) {
 
-    res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                 level5_sid, &sam_dom_handle) : False;
+        res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                           &sam_handle);
+
+        res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                     dom_sid, sam_dom_handle) : False;
+    }
+
     /* Get user info */
 
-    res1 = res ? get_samr_query_userinfo(&sam_dom_handle, 0x15, user_rid,
-                                        user_info) : False;
+    res = res ? get_samr_query_userinfo(sam_dom_handle, 0x15, 
+                                        user_rid, user_info) : False;
 
     /* Close up shop */
 
-    samr_close(&sam_dom_handle);
-    samr_close(&sam_handle);
+    if (local_handle) {
+        samr_close(sam_dom_handle);
+        samr_close(&sam_handle);
+    }
 
-    return res && res1;
+    return res;
 }                                   
 
 /* Lookup group information from a rid */
 
-int winbindd_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
+int winbindd_lookup_groupinfo(char *system_name, DOM_SID *dom_sid,
                               uint32 group_rid, GROUP_INFO_CTR *info)
 {
     POLICY_HND sam_handle, sam_dom_handle;
@@ -186,7 +218,7 @@ int winbindd_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
     res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_handle);
 
     res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                 level5_sid, &sam_dom_handle) : False;
+                                 dom_sid, &sam_dom_handle) : False;
     /* Query group info */
     
     res = res ? get_samr_query_groupinfo(&sam_dom_handle, 1,
@@ -202,30 +234,40 @@ int winbindd_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
 
 /* Lookup group membership given a rid */
 
-int winbindd_lookup_groupmem(char *system_name, DOM_SID *level5_sid,
-                             uint32 group_rid, uint32 *num_names,
-                             uint32 **rid_mem, char ***names,
-                             uint32 **name_types)
+int winbindd_lookup_groupmem(char *system_name, DOM_SID *dom_sid,
+                             uint32 group_rid, POLICY_HND *sam_dom_handle,
+                             uint32 *num_names, uint32 **rid_mem, 
+                             char ***names, uint32 **name_types)
 {
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res;
+    POLICY_HND sam_handle, local_sam_dom_handle;
+    BOOL res = True, local_handle = False;
+
+    if (sam_dom_handle == NULL) {
+        sam_dom_handle = &local_sam_dom_handle;
+        local_handle = True;
+    }
 
     /* Open connection to SAM pipe and SAM domain */
 
-    res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                       &sam_handle);
+    if (local_handle) {
 
-    res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                 level5_sid, &sam_dom_handle) : False;
+        res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                           &sam_handle);
+
+        res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                     dom_sid, sam_dom_handle) : False;
+    }
     /* Query group membership */
     
-    res = res ? sam_query_groupmem(&sam_dom_handle, group_rid, num_names, 
+    res = res ? sam_query_groupmem(sam_dom_handle, group_rid, num_names, 
                                    rid_mem, names, name_types) : False;
 
     /* Close up shop */
 
-    samr_close(&sam_dom_handle);
-    samr_close(&sam_handle);
+    if (local_handle) {
+        samr_close(sam_dom_handle);
+        samr_close(&sam_handle);
+    }
 
     return res;
 }
@@ -233,38 +275,48 @@ int winbindd_lookup_groupmem(char *system_name, DOM_SID *level5_sid,
 /* Lookup alias membership given a rid */
 
 int winbindd_lookup_aliasmem(char *system_name, DOM_SID *dom_sid,
-                             uint32 alias_rid, uint32 *num_names,
-                             DOM_SID ***sids, char ***names,
-                             uint32 **name_types)
+                             uint32 alias_rid, POLICY_HND *sam_dom_handle,
+                             uint32 *num_names, DOM_SID ***sids, 
+                             char ***names, uint32 **name_types)
 {
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res;
+    POLICY_HND sam_handle, local_sam_dom_handle;
+    BOOL res = True, local_handle = False;
+
+    if (sam_dom_handle == NULL) {
+        sam_dom_handle = &local_sam_dom_handle;
+        local_handle = True;
+    }
 
     /* Open connection to SAM pipe and SAM domain */
 
-    res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                       &sam_handle);
+    if (local_handle) {
 
-    res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                 dom_sid, &sam_dom_handle) : False;
+        res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                           &sam_handle);
+
+        res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                     dom_sid, sam_dom_handle) : False;
+    }
 
     /* Query alias membership */
     
-    res = res ? sam_query_aliasmem(system_name, &sam_dom_handle, alias_rid,
+    res = res ? sam_query_aliasmem(system_name, sam_dom_handle, alias_rid,
                                    num_names, sids, names, name_types)
         : False;
 
     /* Close up shop */
 
-    samr_close(&sam_dom_handle);
-    samr_close(&sam_handle);
+    if (local_handle) {
+        samr_close(sam_dom_handle);
+        samr_close(&sam_handle);
+    }
 
     return res;
 }
 
 /* Lookup alias information given a rid */
 
-int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *level5_sid,
+int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *dom_sid,
                               uint32 alias_rid, ALIAS_INFO_CTR *info)
 {
     POLICY_HND sam_handle, sam_dom_handle;
@@ -276,7 +328,7 @@ int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *level5_sid,
                        &sam_handle);
 
     res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                 level5_sid, &sam_dom_handle) : False;
+                                 dom_sid, &sam_dom_handle) : False;
     /* Query group info */
     
     res = res ? get_samr_query_aliasinfo(&sam_dom_handle, 1,
@@ -326,37 +378,28 @@ int main(int argc, char **argv)
 
     TimeInit();
     charset_initialise();
-    generate_wellknown_sids();
+    codepage_initialise(lp_client_code_page());
 
     if (!lp_load(CONFIGFILE, True, False, False)) {
         fprintf(stderr, "error opening config file\n");
         exit(1);
     }
 
-    codepage_initialise(lp_client_code_page());
+    pwdb_initialise(False);
 
     /* Setup signal handlers */
 
-    signal (SIGINT, termination_handler);
-    signal (SIGQUIT, termination_handler);
-    signal (SIGTERM, termination_handler);
-    signal (SIGPIPE, SIG_IGN);
+    signal(SIGINT, termination_handler);
+    signal(SIGQUIT, termination_handler);
+    signal(SIGTERM, termination_handler);
+    signal(SIGPIPE, SIG_IGN);
 
     /* Get the domain sid */
-
-#if 0
-    if (strcmp(lp_passwordserver(), "") == 0) {
-        DEBUG(0, ("No password server specified in smb.conf!\n"));
-        return 1;
-    }
-#endif
 
     if (!winbindd_surs_init()) {
         DEBUG(0, ("Could not initialise surs information\n"));
         return 1;
     }
-
-//    sid_copy(&global_sam_sid, &domain_sid); /* ??? */
 
     /* Loop waiting for requests */
 
@@ -399,7 +442,7 @@ int main(int argc, char **argv)
 
         case WINBINDD_GETPWNAM_FROM_USER: 
             response.result = 
-                winbindd_getpwnam_from_user(request.data.username, 
+                winbindd_getpwnam_from_user(request.data.username, NULL,
                                             &response.data.pw);
             break;
             
@@ -425,7 +468,7 @@ int main(int argc, char **argv)
 
         case WINBINDD_GETGRNAM_FROM_GROUP:
             response.result = 
-                winbindd_getgrnam_from_group(request.data.groupname, 
+                winbindd_getgrnam_from_group(request.data.groupname, NULL,
                                              &response.data.gr);
             break;
 
