@@ -110,6 +110,7 @@ struct encryption_type {
     krb5_enctype type;
     const char *name;
     size_t blocksize;
+    size_t padsize;
     size_t confoundersize;
     struct key_type *keytype;
     struct checksum_type *checksum;
@@ -1951,6 +1952,7 @@ static struct encryption_type enctype_null = {
     ETYPE_NULL,
     "null",
     1,
+    1,
     0,
     &keytype_null,
     &checksum_none,
@@ -1961,6 +1963,7 @@ static struct encryption_type enctype_null = {
 static struct encryption_type enctype_des_cbc_crc = {
     ETYPE_DES_CBC_CRC,
     "des-cbc-crc",
+    8,
     8,
     8,
     &keytype_des,
@@ -1974,6 +1977,7 @@ static struct encryption_type enctype_des_cbc_md4 = {
     "des-cbc-md4",
     8,
     8,
+    8,
     &keytype_des,
     &checksum_rsa_md4,
     &checksum_rsa_md4_des,
@@ -1985,6 +1989,7 @@ static struct encryption_type enctype_des_cbc_md5 = {
     "des-cbc-md5",
     8,
     8,
+    8,
     &keytype_des,
     &checksum_rsa_md5,
     &checksum_rsa_md5_des,
@@ -1994,6 +1999,7 @@ static struct encryption_type enctype_des_cbc_md5 = {
 static struct encryption_type enctype_arcfour_hmac_md5 = {
     ETYPE_ARCFOUR_HMAC_MD5,
     "arcfour-hmac-md5",
+    1,
     1,
     8,
     &keytype_arcfour,
@@ -2007,6 +2013,7 @@ static struct encryption_type enctype_des3_cbc_md5 = {
     "des3-cbc-md5",
     8,
     8,
+    8,
     &keytype_des3,
     &checksum_rsa_md5,
     &checksum_rsa_md5_des3,
@@ -2016,6 +2023,7 @@ static struct encryption_type enctype_des3_cbc_md5 = {
 static struct encryption_type enctype_des3_cbc_sha1 = {
     ETYPE_DES3_CBC_SHA1,
     "des3-cbc-sha1",
+    8,
     8,
     8,
     &keytype_des3_derived,
@@ -2029,6 +2037,7 @@ static struct encryption_type enctype_old_des3_cbc_sha1 = {
     "old-des3-cbc-sha1",
     8,
     8,
+    8,
     &keytype_des3,
     &checksum_sha1,
     &checksum_hmac_sha1_des3,
@@ -2038,6 +2047,7 @@ static struct encryption_type enctype_old_des3_cbc_sha1 = {
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
     "des-cbc-none",
+    8,
     8,
     0,
     &keytype_des,
@@ -2050,6 +2060,7 @@ static struct encryption_type enctype_des_cfb64_none = {
     ETYPE_DES_CFB64_NONE,
     "des-cfb64-none",
     1,
+    1,
     0,
     &keytype_des,
     &checksum_none,
@@ -2061,6 +2072,7 @@ static struct encryption_type enctype_des_pcbc_none = {
     ETYPE_DES_PCBC_NONE,
     "des-pcbc-none",
     8,
+    8,
     0,
     &keytype_des,
     &checksum_none,
@@ -2071,6 +2083,7 @@ static struct encryption_type enctype_des_pcbc_none = {
 static struct encryption_type enctype_des3_cbc_none = {
     ETYPE_DES3_CBC_NONE,
     "des3-cbc-none",
+    8,
     8,
     0,
     &keytype_des3_derived,
@@ -2291,7 +2304,7 @@ encrypt_internal_derived(krb5_context context,
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
 
     sz = et->confoundersize + len;
-    block_sz = (sz + et->blocksize - 1) &~ (et->blocksize - 1); /* pad */
+    block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
     total_sz = block_sz + checksum_sz;
     p = calloc(1, total_sz);
     if(p == NULL) {
@@ -2359,7 +2372,7 @@ encrypt_internal(krb5_context context,
     checksum_sz = CHECKSUMSIZE(et->checksum);
     
     sz = et->confoundersize + checksum_sz + len;
-    block_sz = (sz + et->blocksize - 1) &~ (et->blocksize - 1); /* pad */
+    block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
     p = calloc(1, block_sz);
     if(p == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
@@ -3118,11 +3131,11 @@ wrapped_length (krb5_context context,
 		size_t       data_len)
 {
     struct encryption_type *et = crypto->et;
-    size_t blocksize = et->blocksize;
+    size_t padsize = et->padsize;
     size_t res;
 
     res =  et->confoundersize + et->checksum->checksumsize + data_len;
-    res =  (res + blocksize - 1) / blocksize * blocksize;
+    res =  (res + padsize - 1) / padsize * padsize;
     return res;
 }
 
@@ -3132,11 +3145,11 @@ wrapped_length_dervied (krb5_context context,
 			size_t       data_len)
 {
     struct encryption_type *et = crypto->et;
-    size_t blocksize = et->blocksize;
+    size_t padsize = et->padsize;
     size_t res;
 
     res =  et->confoundersize + data_len;
-    res =  (res + blocksize - 1) / blocksize * blocksize;
+    res =  (res + padsize - 1) / padsize * padsize;
     res += et->checksum->checksumsize;
     return res;
 }
