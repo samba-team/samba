@@ -30,8 +30,72 @@ extern struct cmd_set lsarpc_commands[];
 extern struct cmd_set samr_commands[];
 extern struct cmd_set spoolss_commands[];
 
+/* List to hold groups of commands */
+static struct cmd_list {
+	struct cmd_list *prev, *next;
+	struct cmd_set *cmd_set;
+} *cmd_list;
+
 
 DOM_SID domain_sid;
+
+/****************************************************************************
+handle completion of commands for readline
+****************************************************************************/
+static char **completion_fn(char *text, int start, int end)
+{
+#define MAX_COMPLETIONS 100
+	char **matches;
+	int i, count=0;
+	struct cmd_list *commands = cmd_list;
+
+#if 0	/* JERRY */
+	/* FIXME!!!  -- what to do when completing argument? */
+	/* for words not at the start of the line fallback 
+	   to filename completion */
+	if (start) 
+		return NULL;
+#endif
+
+	/* make sure we have a list of valid commands */
+	if (!commands) 
+		return NULL;
+
+	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	if (!matches) return NULL;
+
+	matches[count++] = strdup(text);
+	if (!matches[0]) return NULL;
+
+	while (commands && count < MAX_COMPLETIONS-1) 
+	{
+		if (!commands->cmd_set)
+			break;
+		
+		for (i=0; commands->cmd_set[i].name; i++)
+		{
+			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
+				commands->cmd_set[i].fn) 
+			{
+				matches[count] = strdup(commands->cmd_set[i].name);
+				if (!matches[count]) 
+					return NULL;
+				count++;
+			}
+		}
+		
+		commands = commands->next;
+		
+	}
+
+	if (count == 2) {
+		free(matches[0]);
+		matches[0] = strdup(matches[1]);
+	}
+	matches[count] = NULL;
+	return matches;
+}
+
 /***********************************************************************
  * read in username/password credentials from a file
  */
@@ -137,8 +201,15 @@ void fetch_domain_sid(struct cli_state *cli)
 	uint32 result = 0, info_class = 5;
 	fstring domain_name;
 	static BOOL got_domain_sid;
+	TALLOC_CTX *mem_ctx;
 
 	if (got_domain_sid) return;
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		goto error;
+	}
 
 
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
@@ -146,13 +217,13 @@ void fetch_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	
-	if ((result = cli_lsa_open_policy(cli, True, 
+	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol) != NT_STATUS_NOPROBLEMO)) {
 		goto error;
 	}
 
-	if ((result = cli_lsa_query_info_policy(cli, &pol, info_class, 
+	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 						domain_name, &domain_sid))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto error;
@@ -160,8 +231,9 @@ void fetch_domain_sid(struct cli_state *cli)
 
 	got_domain_sid = True;
 
-	cli_lsa_close(cli, &pol);
+	cli_lsa_close(cli, mem_ctx, &pol);
 	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
 
 	return;
 
@@ -192,12 +264,6 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 	fstrcpy(creds->domain, domain);
 }
 
-/* List to hold groups of commands */
-
-static struct cmd_list {
-	struct cmd_list *prev, *next;
-	struct cmd_set *cmd_set;
-} *cmd_list;
 
 static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 {
@@ -235,6 +301,7 @@ static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
 {
 	exit(0);
+	return NT_STATUS_NOPROBLEMO; /* NOTREACHED */
 }
 
 /* Build in rpcclient commands */
@@ -339,7 +406,7 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	BOOL found = False;
 	pstring buf;
 	char *p = cmd;
-	uint32 result;
+	uint32 result=0;
 
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
 		return 0;
@@ -596,15 +663,14 @@ static void usage(char *pname)
 
 	/* Loop around accepting commands */
 	while(1) {
-		pstring prompt, cmd;
+		pstring prompt;
 		char *line;
 
-		ZERO_STRUCT(cmd);
-		
 		slprintf(prompt, sizeof(prompt) - 1, "rpcclient $> ");
 
-		line = smb_readline(prompt, NULL, NULL);
+		line = smb_readline(prompt, NULL, completion_fn);
 
 		process_cmd(&cli, line);
 	}
 }
+
