@@ -1,3 +1,7 @@
+Sat Apr 18 21:43:11 1998  Johan Danielsson  <joda@puffer.pdc.kth.se>
+
+	* Release 0.0o
+
 Sat Apr 18 21:13:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* appl/rsh/rsh.c: Don't try v5 if (only) `-4' is specified.
