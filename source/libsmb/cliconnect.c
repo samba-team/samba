@@ -772,7 +772,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	}
 	if (cli->fd == -1) {
 		DEBUG(1,("Error connecting to %s (%s)\n",
-			 inet_ntoa(*ip),strerror(errno)));
+			 ip?inet_ntoa(*ip):host,strerror(errno)));
 
 		/* Store a negative namecache lookup for this name.
 		   If we have cached a bad IP address then we don't
