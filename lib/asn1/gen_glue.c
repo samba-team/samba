@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,17 +54,17 @@ generate_2int (Symbol *s)
     fprintf (codefile,
 	     "int %s2int(%s f)\n"
 	     "{\n"
-	     "\treturn\n",
+	     "int r = 0;\n",
 	     s->gen_name, s->gen_name);
 
     for (m = t->members; m && m->val != tag; m = m->next) {
-	fprintf (codefile, "\t(f.%s << %d) |\n",
+	fprintf (codefile, "if(f.%s) r |= (1 << %d);\n",
 		 m->gen_name, m->val);
 	
 	if (tag == -1)
 	    tag = m->val;
     }
-    fprintf (codefile, "\t0;\n"
+    fprintf (codefile, "return r;\n"
 	     "}\n\n");
 }
 
