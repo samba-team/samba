@@ -1226,7 +1226,9 @@ static void init_printer_values(service *pService)
 
 		case PRINT_CUPS:
 #ifdef HAVE_CUPS
-			string_set(&pService->szLpqcommand, "");
+			/* set the lpq command to contain the destination printer
+			   name only.  This is used by cups_queue_get() */
+			string_set(&pService->szLpqcommand, "%p");
 			string_set(&pService->szLprmcommand, "");
 			string_set(&pService->szPrintcommand, "");
 			string_set(&pService->szLppausecommand, "");
