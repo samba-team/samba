@@ -76,6 +76,9 @@ struct
 #ifdef IPTOS_THROUGHPUT
   {"IPTOS_THROUGHPUT",  IPPROTO_IP,    IP_TOS,          IPTOS_THROUGHPUT,  OPT_ON},
 #endif
+#ifdef SO_REUSEPORT
+  {"SO_REUSEPORT",      SOL_SOCKET,    SO_REUSEPORT,    0,                 OPT_BOOL},
+#endif
 #ifdef SO_SNDBUF
   {"SO_SNDBUF",         SOL_SOCKET,    SO_SNDBUF,       0,                 OPT_INT},
 #endif
@@ -841,7 +844,14 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebin
 		val=1;
 	else
 		val=0;
-    setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val));
+    if(setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1)
+		DEBUG(dlevel,("setsockopt: SO_REUSEADDR=%d on port %d failed with error = %s\n",
+			val, port, strerror(errno) ));
+#ifdef SO_REUSEPORT
+    if(setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1)
+		DEBUG(dlevel,("setsockopt: SO_REUSEPORT=%d on port %d failed with error = %s\n",
+			val, port, strerror(errno) ));
+#endif /* SO_REUSEPORT */
   }
 
   /* now we've got a socket - we need to bind it */
