@@ -854,7 +854,10 @@ krb5_524_conv_principal(krb5_context context,
     return 0;
 }
 
-
+/*
+ * Create a principal in `ret_princ' for the service `sname' running
+ * on host `hostname'.
+ */
 			
 krb5_error_code
 krb5_sname_to_principal (krb5_context context,
@@ -869,39 +872,23 @@ krb5_sname_to_principal (krb5_context context,
 	
     if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN)
 	return KRB5_SNAME_UNSUPP_NAMETYPE;
-    if(hostname == NULL){
+    if(hostname == NULL) {
 	gethostname(localhost, sizeof(localhost));
 	hostname = localhost;
     }
     if(sname == NULL)
 	sname = "host";
     if(type == KRB5_NT_SRV_HST) {
-	int error;
-	struct addrinfo hints, *res;
-	char *host;
-
-	memset (&hints, 0, sizeof(hints));
-	hints.ai_flags = AI_CANONNAME;
-
-	error = getaddrinfo (hostname, NULL, &hints, &res);
-	if (error == 0) {
-	    if (res->ai_canonname != NULL)
-		host = strdup (res->ai_canonname);
-	    else
-		host = strdup (hostname);
-	    freeaddrinfo (res);
-	} else {
-	    host = strdup (hostname);
-	}
-	if (host == NULL)
-	    return ENOMEM;
+	ret = krb5_expand_hostname (context, hostname, &host);
+	if (ret)
+	    return ret;
 	strlwr(host);
 	hostname = host;
     }
     ret = krb5_get_host_realm(context, hostname, &realms);
-    if(ret) {
+    if(ret)
 	return ret;
-    }
+
     ret = krb5_make_principal(context, ret_princ, realms[0], sname,
 			      hostname, NULL);
     if(host)
