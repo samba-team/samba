@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -61,6 +61,11 @@ kadm5_s_chpass_principal(void *server_handle,
     ret = _kadm5_set_modifier(context, &ent);
     if(ret)
 	goto out2;
+
+    kadm5_log_modify (context,
+		      &ent,
+		      KADM5_PRINCIPAL | KADM5_MOD_NAME | KADM5_MOD_TIME |
+		      KADM5_KEY_DATA | KADM5_KVNO);
     
     ret = context->db->store(context->context, context->db, 1, &ent);
 out2:
