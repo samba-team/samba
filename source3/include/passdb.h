@@ -34,13 +34,6 @@
 
 #define PASSDB_INTERFACE_VERSION 4
 
-/* use this inside a passdb module */
-#define PDB_MODULE_VERSIONING_MAGIC \
-int pdb_version(void)\
-{\
-	return PASSDB_INTERFACE_VERSION;\
-}
-
 typedef struct pdb_context 
 {
 	struct pdb_methods *pdb_methods;

@@ -40,8 +40,6 @@ static int xmlsam_debug_level = DBGC_ALL;
 #undef DBGC_CLASS
 #define DBGC_CLASS xmlsam_debug_level
 
-PDB_MODULE_VERSIONING_MAGIC 
-
 static char * iota(int a) {
 	static char tmp[10];
 
@@ -514,7 +512,7 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
+NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 		 const char *location)
 {
 	NTSTATUS nt_status;
@@ -564,4 +562,14 @@ NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 	LIBXML_TEST_VERSION xmlKeepBlanksDefault(0);
 
 	return NT_STATUS_OK;
+}
+
+int init_module(void);
+
+int init_module() 
+{
+	if(smb_register_passdb("xml", xmlsam_init, PASSDB_INTERFACE_VERSION))
+		return 0;
+
+	return 1;
 }

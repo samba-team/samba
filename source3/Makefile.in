@@ -116,7 +116,7 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
-MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ bin/developer.@SHLIBEXT@ @MODULE_PDB_MYSQL@ @MODULE_PDB_XML@
+MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ bin/developer.@SHLIBEXT@ @MODULE_MYSQL@ @MODULE_XML@
 
 ######################################################################
 # object file lists
@@ -223,12 +223,12 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
-		passdb/pdb_tdb.o passdb/pdb_ldap.o passdb/pdb_plugin.o \
+		passdb/pdb_tdb.o passdb/pdb_ldap.o \
 		passdb/pdb_unix.o passdb/util_sam_sid.o \
 		passdb/pdb_compat.o passdb/pdb_nisplus.o
 
-PDB_XML_OBJ = passdb/pdb_xml.o
-PDB_MYSQL_OBJ = passdb/pdb_mysql.o
+XML_OBJ = modules/xml.o
+MYSQL_OBJ = modules/mysql.o
 DEVEL_HELP_OBJ = modules/developer.o
 
 SAM_STATIC_MODULES = sam/sam_plugin.o sam/sam_skel.o sam/sam_ads.o
@@ -838,9 +838,9 @@ nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
 		@SONAMEFLAG@`basename $@` -lpam
 
-bin/pdb_mysql.@SHLIBEXT@: $(PDB_MYSQL_OBJ)
+bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PDB_MYSQL_OBJ) @MYSQL_LIBS@ \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ) @MYSQL_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
 bin/developer.@SHLIBEXT@: $(DEVEL_HELP_OBJ)
@@ -848,9 +848,9 @@ bin/developer.@SHLIBEXT@: $(DEVEL_HELP_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/pdb_xml.@SHLIBEXT@: $(PDB_XML_OBJ)
+bin/xml.@SHLIBEXT@: $(XML_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PDB_XML_OBJ) @XML_LIBS@ \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ) @XML_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
 bin/vfs_audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
