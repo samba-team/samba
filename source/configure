@@ -1043,7 +1043,7 @@ fi
 # these are the defaults, good for lots of systems
 PICFLAG="-fpic"
 HOST_OS="$host_os"
-LDSHFLAGS="-shared";;
+LDSHFLAGS="-shared"
 
 # and these are for particular systems
 case "$host_os" in
