@@ -94,6 +94,9 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, string, default_keytab, 
 	       KEYTAB_DEFAULT, "default_keytab_name");
 
+    INIT_FIELD(context, string, default_keytab_modify, 
+	       KEYTAB_DEFAULT_MODIFY, "default_keytab_modify_name");
+
     INIT_FIELD(context, string, time_fmt, 
 	       "%Y-%m-%dT%H:%M:%S", "time_format");
 
