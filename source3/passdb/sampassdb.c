@@ -1,0 +1,515 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   Password and authentication handling
+   Copyright (C) Jeremy Allison 1996-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
+      
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+#include "nterr.h"
+
+extern int DEBUGLEVEL;
+extern DOM_SID global_sam_sid;
+
+/*
+ * NOTE. All these functions are abstracted into a structure
+ * that points to the correct function for the selected database. JRA.
+ *
+ * NOTE.  for the get/mod/add functions, there are two sets of functions.
+ * one supports struct sam_passwd, the other supports struct smb_passwd.
+ * for speed optimisation it is best to support both these sets.
+ * 
+ * it is, however, optional to support one set but not the other: there
+ * is conversion-capability built in to passdb.c, and run-time error
+ * detection for when neither are supported.
+ * 
+ * password database writers are recommended to implement the sam_passwd
+ * functions in a first pass, as struct sam_passwd contains more
+ * information, needed by the NT Domain support.
+ * 
+ * an API writer is expected to create either one set (struct smb_passwd) or
+ * the other (struct sam_passwd) OR both, and optionally also to write display
+ * info routines * (struct sam_disp_info).  functions which the API writer
+ * chooses NOT to write must be wrapped in conversion functions (pwdb_x_to_y)
+ * such that API users can call any function and still get valid results.
+ *
+ * the password API does NOT fill in the gaps if you set an API function
+ * to NULL: it will deliberately attempt to call the NULL function.
+ *
+ */
+
+static struct sam_passdb_ops *pwdb_ops;
+
+/***************************************************************
+ Initialise the password db operations.
+***************************************************************/
+
+BOOL initialise_sam_password_db(void)
+{
+  if (pwdb_ops)
+  {
+    return True;
+  }
+
+#ifdef WITH_NISPLUS
+  pwdb_ops =  nisplus_initialise_sam_password_db();
+#elif defined(WITH_LDAP)
+  pwdb_ops = ldap_initialise_sam_password_db();
+#elif defined(USE_SMBPASS_DB)
+  pwdb_ops = file_initialise_sam_password_db();
+#endif 
+
+  return (pwdb_ops != NULL);
+}
+
+/*
+ * Functions that return/manipulate a struct sam_passwd.
+ */
+
+/***************************************************************
+ Start to enumerate the smb or sam passwd list. Returns a void pointer
+ to ensure no modification outside this module.
+
+ Note that currently it is being assumed that a pointer returned
+ from this function may be used to enumerate struct sam_passwd
+ entries as well as struct smb_passwd entries. This may need
+ to change. JRA.
+
+****************************************************************/
+
+void *startsam21pwent(BOOL update)
+{
+  return pwdb_ops->startsam21pwent(update);
+}
+
+/***************************************************************
+ End enumeration of the sam passwd list.
+
+ Note that currently it is being assumed that a pointer returned
+ from this function may be used to enumerate struct sam_passwd
+ entries as well as struct smb_passwd entries. This may need
+ to change. JRA.
+
+****************************************************************/
+
+void endsam21pwent(void *vp)
+{
+  pwdb_ops->endsam21pwent(vp);
+}
+
+/*************************************************************************
+ Routine to return the next entry in the smb passwd list.
+ *************************************************************************/
+
+struct sam_passwd *getsam21pwent(void *vp)
+{
+	return pwdb_sam_map_names(pwdb_ops->getsam21pwent(vp));
+}
+
+/************************************************************************
+ Utility function to search sam passwd by name.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+
+struct sam_passwd *iterate_getsam21pwntnam(const char *name)
+{
+	struct sam_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by name: %s\n", name));
+
+	/* Open the smb password database - not for update. */
+	fp = startsmbpwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsam21pwent(fp)) != NULL && !strequal(pwd->nt_name, name))
+	{
+		DEBUG(10, ("iterate: %s 0x%x\n", pwd->nt_name, pwd->user_rid));
+	}
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("found by name: %s\n", name));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Utility function to search sam passwd by rid.  use this if your database
+ does not have search facilities.
+
+ search capability by both rid and uid are needed as the rid <-> uid
+ mapping may be non-monotonic.  
+
+*************************************************************************/
+
+struct sam_passwd *iterate_getsam21pwrid(uint32 rid)
+{
+	struct sam_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by rid: %x\n", rid));
+
+	/* Open the smb password file - not for update. */
+	fp = startsmbpwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsam21pwent(fp)) != NULL && pwd->user_rid != rid)
+	{
+		DEBUG(10, ("iterate: %s 0x%x\n", pwd->nt_name, pwd->user_rid));
+	}
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("found by user_rid: %x\n", rid));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Utility function to search sam passwd by uid.  use this if your database
+ does not have search facilities.
+
+ search capability by both rid and uid are needed as the rid <-> uid
+ mapping may be non-monotonic.  
+
+*************************************************************************/
+
+struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
+{
+	struct sam_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by uid: %x\n", (int)uid));
+
+	/* Open the smb password file - not for update. */
+	fp = startsmbpwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsam21pwent(fp)) != NULL && pwd->unix_uid != uid)
+	{
+	}
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("found by unix_uid: %x\n", (int)uid));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+/*************************************************************************
+ Routine to return a display info structure, by rid
+ *************************************************************************/
+struct sam_disp_info *getsamdisprid(uint32 rid)
+{
+	return pwdb_ops->getsamdisprid(rid);
+}
+
+/************************************************************************
+ Routine to search sam passwd by name.
+*************************************************************************/
+
+struct sam_passwd *getsam21pwntnam(const char *name)
+{
+	return pwdb_sam_map_names(pwdb_ops->getsam21pwntnam(name));
+}
+
+/************************************************************************
+ Routine to search sam passwd by rid.  
+*************************************************************************/
+
+struct sam_passwd *getsam21pwrid(uint32 rid)
+{
+	return pwdb_sam_map_names(pwdb_ops->getsam21pwrid(rid));
+}
+
+
+/**********************************************************
+ **********************************************************
+
+ utility routines which are likely to be useful to all password
+ databases
+
+ **********************************************************
+ **********************************************************/
+
+/*************************************************************
+ initialises a struct sam_disp_info.
+ **************************************************************/
+
+static void pwdb_init_dispinfo(struct sam_disp_info *user)
+{
+	if (user == NULL) return;
+	bzero(user, sizeof(*user));
+	user->user_rid = 0xffffffff;
+}
+
+/*************************************************************
+ initialises a struct sam_passwd.
+ **************************************************************/
+void pwdb_init_sam(struct sam_passwd *user)
+{
+	if (user == NULL) return;
+	bzero(user, sizeof(*user));
+	unix_to_nt_time(&user->logon_time            , (time_t)-1);
+	unix_to_nt_time(&user->logoff_time           , (time_t)-1);
+	unix_to_nt_time(&user->kickoff_time          , (time_t)-1);
+	unix_to_nt_time(&user->pass_last_set_time    , (time_t)-1);
+	unix_to_nt_time(&user->pass_can_change_time  , (time_t)-1);
+	unix_to_nt_time(&user->pass_must_change_time , (time_t)-1);
+
+	user->unix_uid = (uid_t)-1;
+	user->unix_gid = (gid_t)-1;
+	user->user_rid  = 0xffffffff;
+	user->group_rid = 0xffffffff;
+}
+
+/*************************************************************************
+ Routine to return the next entry in the sam passwd list.
+ *************************************************************************/
+
+struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user)
+{
+	static struct sam_disp_info disp_info;
+
+	if (user == NULL) return NULL;
+
+	pwdb_init_dispinfo(&disp_info);
+
+	disp_info.nt_name   = user->nt_name;
+	disp_info.full_name = user->full_name;
+	disp_info.user_rid  = user->user_rid;
+
+	return &disp_info;
+}
+
+/*************************************************************
+ converts a sam_passwd structure to a smb_passwd structure.
+ **************************************************************/
+
+struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user)
+{
+	static struct smb_passwd pw_buf;
+	static fstring nt_name;
+	static fstring unix_name;
+
+	if (user == NULL) return NULL;
+
+	pwdb_init_smb(&pw_buf);
+
+	fstrcpy(nt_name  , user->nt_name);
+	fstrcpy(unix_name, user->unix_name);
+	pw_buf.nt_name            = nt_name;
+	pw_buf.unix_name          = unix_name;
+	pw_buf.unix_uid           = user->unix_uid;
+	pw_buf.user_rid           = user->user_rid;
+	pw_buf.smb_passwd         = user->smb_passwd;
+	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
+	pw_buf.acct_ctrl          = user->acct_ctrl;
+	pw_buf.pass_last_set_time = nt_time_to_unix(&user->pass_last_set_time);
+
+	return &pw_buf;
+}
+
+
+/*************************************************************
+ converts a smb_passwd structure to a sam_passwd structure.
+ **************************************************************/
+
+struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
+{
+	static struct sam_passwd pw_buf;
+	static fstring nt_name;
+	static fstring unix_name;
+
+	if (user == NULL) return NULL;
+
+	pwdb_init_sam(&pw_buf);
+
+	fstrcpy(nt_name  , user->nt_name);
+	fstrcpy(unix_name, user->unix_name);
+	pw_buf.nt_name            = nt_name;
+	pw_buf.unix_name          = unix_name;
+	pw_buf.unix_uid           = user->unix_uid;
+	pw_buf.user_rid           = user->user_rid;
+	pw_buf.smb_passwd         = user->smb_passwd;
+	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
+	pw_buf.acct_ctrl          = user->acct_ctrl;
+	unix_to_nt_time(&pw_buf.pass_last_set_time, user->pass_last_set_time);
+
+	return &pw_buf;
+}
+
+static BOOL trust_account_warning_done = False;
+
+/*************************************************************
+ fills in missing details.  one set of details _must_ exist.
+ **************************************************************/
+struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam)
+{
+	DOM_NAME_MAP gmep;
+	BOOL found = False;
+	DOM_SID sid;
+	static fstring unix_name;
+	static fstring nt_name;
+
+	DEBUG(10,("pwdb_sam_map_names\n"));
+
+	/*
+	 * name details
+	 */
+
+	if (sam == NULL)
+	{
+		return NULL;
+	}
+
+	if (!found && sam->unix_name != NULL)
+	{
+		found = lookupsmbpwnam(sam->unix_name, &gmep);
+	}
+	if (!found && sam->unix_uid  != (uid_t)-1)
+	{
+		found = lookupsmbpwuid(sam->unix_uid , &gmep);
+	}
+	if (!found && sam->user_rid != 0xffffffff)
+	{
+		sid_copy(&sid, &global_sam_sid);
+		sid_append_rid(&sid, sam->user_rid);
+		found = lookupsmbpwsid  (&sid        , &gmep);
+	}
+	if (!found && sam->nt_name  != NULL)
+	{
+		found = lookupsmbpwntnam(sam->nt_name, &gmep);
+	}
+
+	if (!found)
+	{
+		return NULL;
+	}
+
+	if (!sid_front_equal(&global_sam_sid, &gmep.sid))
+	{
+		return NULL;
+	}
+
+	fstrcpy(unix_name, gmep.unix_name);
+	fstrcpy(nt_name  , gmep.nt_name  );
+	if (sam->unix_name == NULL      ) sam->unix_name = unix_name;
+	if (sam->nt_name   == NULL      ) sam->nt_name   = nt_name  ;
+	if (sam->unix_uid  == (uid_t)-1 ) sam->unix_uid  = (uid_t)gmep.unix_id;
+	if (sam->user_rid  == 0xffffffff) sid_split_rid(&gmep.sid, &sam->user_rid);
+
+	/*
+	 * group details
+	 */
+
+	found = False;
+
+	if (sam->unix_gid != (gid_t)-1 && sam->group_rid != 0xffffffff)
+	{
+		return sam;
+	}
+
+	if (sam->unix_gid == (gid_t)-1 && sam->group_rid == 0xffffffff)
+	{
+		struct passwd *pass = getpwnam(unix_name);
+		if (pass != NULL)
+		{
+			sam->unix_gid = pass->pw_gid;
+		}
+		else
+		{
+			DEBUG(0,("pwdb_sam_map_names: no unix password entry for %s\n",
+			          unix_name));
+		}
+	}
+
+	if (!found && sam->unix_gid  != (gid_t)-1)
+	{
+		found = lookupsmbgrpgid(sam->unix_gid , &gmep);
+	}
+	if (!found && sam->group_rid != 0xffffffff)
+	{
+		sid_copy(&sid, &global_sam_sid);
+		sid_append_rid(&sid, sam->group_rid);
+		found = lookupsmbgrpsid(&sid        , &gmep);
+	}
+
+	if (!found)
+	{
+		if (IS_BITS_SET_SOME(sam->acct_ctrl, ACB_WSTRUST|ACB_DOMTRUST|ACB_SVRTRUST))
+		{
+			if (!trust_account_warning_done)
+			{
+				trust_account_warning_done = True;
+				DEBUG(0, ("\
+pwdb_sam_map_names: your unix password database appears to have difficulties\n\
+resolving trust account %s, probably because it ends in a '$'.\n\
+you will get this warning only once (for all trust accounts)\n", unix_name));
+			}
+			/*
+			 * oh, dear.
+			 */
+			if (sam->unix_gid != (gid_t)-1)
+			{
+				sam->unix_gid = (gid_t)-1;
+			}
+			sam->group_rid = DOMAIN_GROUP_RID_USERS;
+
+			return sam;
+		}
+		else
+		{
+			DEBUG(0, ("pwdb_sam_map_names: could not find Primary Group for %s\n",
+				   unix_name));
+			return NULL;
+		}
+	}
+
+	if (!sid_front_equal(&global_sam_sid, &gmep.sid))
+	{
+		return NULL;
+	}
+
+	if (sam->unix_gid  == (gid_t)-1 ) sam->unix_gid  = (gid_t)gmep.unix_id;
+	if (sam->group_rid == 0xffffffff) sid_split_rid(&gmep.sid, &sam->group_rid);
+
+	return sam;
+}
