@@ -1,3 +1,13 @@
+2005-03-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* display_status.c (gssapi_krb5_set_error_string): don't misuse
+	the krb5_get_error_string api
+
+2005-03-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* compat.c (_gss_DES3_get_mic_compat): don't unlock mutex
+	here. Bug reported by Stefan Metzmacher <metze@samba.org>
+
 2005-02-21  Luke Howard  <lukeh@padl.com>
 
 	* init_sec_context.c: don't call krb5_get_credentials() with
