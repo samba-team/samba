@@ -1,3 +1,8 @@
+2001-07-02  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswdd.c (doit): make failing to bind a socket a
+	non-fatal error, and abort if no sockets were bound
+
 2001-07-01  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krbhst.c: remember the real port number when falling
