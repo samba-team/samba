@@ -304,17 +304,17 @@ static int ldap_search_one_user_by_rid (LDAP * ldap_struct, uint32 rid,
 }
 
 /*******************************************************************
-search an attribute and return the first value found.
+ search an attribute and return the first value found.
+ the string in 'value' is unchanged if the attribute does not exist
 ******************************************************************/
+
 static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 		     char *attribute, char *value)
 {
 	char **values;
 
 	if ((values = ldap_get_values (ldap_struct, entry, attribute)) == NULL) {
-		value = NULL;
-		DEBUG (2, ("get_single_attribute: [%s] = [<does not exist>]\n", attribute));
-		
+		DEBUG (2, ("get_single_attribute: [%s] = [<does not exist>]\n", attribute));	
 		return False;
 	}
 
@@ -326,10 +326,10 @@ static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 }
 
 /************************************************************************
-Routine to manage the LDAPMod structure array
-manage memory used by the array, by each struct, and values
-
+ Routine to manage the LDAPMod structure array
+ manage memory used by the array, by each struct, and values
 ************************************************************************/
+
 static void make_a_mod (LDAPMod *** modlist, int modop, char *attribute, char *value)
 {
 	LDAPMod **mods;
@@ -463,23 +463,31 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	pstrcpy(domain, lp_workgroup());
 
-	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
-	pass_last_set_time = (time_t) atol(temp);
+	pass_last_set_time 	= TIME_T_MAX;
+	logon_time 		= TIME_T_MAX;
+	logoff_time 		= TIME_T_MAX;
+	kickoff_time 		= TIME_T_MAX;
+	pass_can_change_time 	= TIME_T_MAX;
+	pass_must_change_time 	= TIME_T_MAX;
+	
 
-	get_single_attribute(ldap_struct, entry, "logonTime", temp);
-	logon_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "pwdLastSet", temp))
+		pass_last_set_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "logoffTime", temp);
-	logoff_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "logonTime", temp))
+		logon_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "kickoffTime", temp);
-	kickoff_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "logoffTime", temp))
+		logoff_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "pwdCanChange", temp);
-	pass_can_change_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "kickoffTime", temp))
+		kickoff_time = (time_t) atol(temp);
 
-	get_single_attribute(ldap_struct, entry, "pwdMustChange", temp);
-	pass_must_change_time = (time_t) atol(temp);
+	if (get_single_attribute(ldap_struct, entry, "pwdCanChange", temp))
+		pass_can_change_time = (time_t) atol(temp);
+
+	if (get_single_attribute(ldap_struct, entry, "pwdMustChange", temp))
+		pass_must_change_time = (time_t) atol(temp);
 
 	/* recommend that 'gecos' and 'displayName' should refer to the same
 	 * attribute OID.  userFullName depreciated, only used by Samba

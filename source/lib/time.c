@@ -33,14 +33,6 @@ int extra_time_offset = 0;
 #define CHAR_BIT 8
 #endif
 
-#ifndef TIME_T_MIN
-#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
-		    : ~ (time_t) 0 << (sizeof (time_t) * CHAR_BIT - 1))
-#endif
-#ifndef TIME_T_MAX
-#define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
-#endif
-
 /*******************************************************************
  External access to time_t_min and time_t_max.
 ********************************************************************/

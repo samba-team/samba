@@ -199,6 +199,15 @@ typedef struct nttime_info
 
 } NTTIME;
 
+#ifndef TIME_T_MIN
+#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
+                    : ~ (time_t) 0 << (sizeof (time_t) * CHAR_BIT - 1))
+#endif
+#ifndef TIME_T_MAX
+#define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
+#endif
+
+
 /* the following rather strange looking definitions of NTSTATUS and WERROR
    and there in order to catch common coding errors where different error types
    are mixed up. This is especially important as we slowly convert Samba
