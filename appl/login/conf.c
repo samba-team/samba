@@ -34,7 +34,6 @@
 
 RCSID("$Id$");
 
-#ifdef HAVE_CGETENT
 static char *confbuf;
 
 static int
@@ -54,13 +53,3 @@ login_conf_get_string(const char *str)
 	return NULL;
     return value;
 }
-
-#else
-
-char *
-login_conf_get_string(const char *str)
-{
-    return NULL;
-}
-
-#endif
