@@ -299,7 +299,7 @@ do
 done
 for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
-/usr/bin/make_unicodemap CP$i.TXT /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
+/usr/bin/make_unicodemap $i /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
 done
 
 # Add swat entry to /etc/services if not already there
