@@ -643,18 +643,18 @@ int main(int argc, char **argv)
 
 		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u', "Lists all domain users"},
 		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g', "Lists all domain groups" },
-		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N', "Converts NetBIOS name to IP (WINS)" },
-		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name (WINS)" },
-		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid" },
-		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name" },
-		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" },
-		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid" },
-		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid" },
-		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid" },
+		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N', "Converts NetBIOS name to IP (WINS)", "NETBIOS-NAME" },
+		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name (WINS)", "IP" },
+		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid", "NAME" },
+		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name", "SID" },
+		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" , "UID" },
+		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
+		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
+		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "show sequence numbers of all domains" },
-		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups" },
+		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "'ping' winbindd to see if it is alive" },
@@ -794,36 +794,35 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
-                case 'a': {
-                        BOOL got_error = False;
+		case 'a': {
+					  BOOL got_error = False;
 
-                        if (!wbinfo_auth(string_arg)) {
-                                d_printf("Could not authenticate user %s with "
-                                       "plaintext password\n", string_arg);
-                                got_error = True;
-                        }
+					  if (!wbinfo_auth(string_arg)) {
+						  d_printf("Could not authenticate user %s with "
+								   "plaintext password\n", string_arg);
+						  got_error = True;
+					  }
 
-                        if (!wbinfo_auth_crap(string_arg)) {
-                                d_printf("Could not authenticate user %s with "
-                                       "challenge/response\n", string_arg);
-                                got_error = True;
-                        }
-			
-                        if (got_error)
-                                goto done;
-                        break;
-		}
-                case 'p': {
+					  if (!wbinfo_auth_crap(string_arg)) {
+						  d_printf("Could not authenticate user %s with "
+								   "challenge/response\n", string_arg);
+						  got_error = True;
+					  }
 
-                        if (!wbinfo_ping()) {
-                                d_printf("could not ping winbindd!\n");
-                                goto done;
-			}
-                        break;
-		}
+					  if (got_error)
+						  goto done;
+					  break;
+				  }
+		case 'p': {
+					  if (!wbinfo_ping()) {
+						  d_printf("could not ping winbindd!\n");
+						  goto done;
+					  }
+					  break;
+				  }
 		case OPT_SET_AUTH_USER:
-			if (!(wbinfo_set_auth_user(string_arg)))
-				goto done;
+				  if (!(wbinfo_set_auth_user(string_arg)))
+					  goto done;
 			break;
 		default:
 			d_fprintf(stderr, "Invalid option\n");
