@@ -1,4 +1,17 @@
+2001-06-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5.h: add opaque krb5_krbhst_handle type
+
+	* lib/krb5/krbhst.c: change void* to krb5_krbhst_handle
+
+	* lib/krb5/krb5.h: types for new krbhst api
+
+	* lib/krb5/krbhst.c: implement a new api that looks up one host at
+	a time, instead of making a list of hosts
+
 2001-06-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: test for initstate and setstate
 
 	* lib/krb5/krbhst.c: remove rfc2052 support
 
