@@ -1606,14 +1606,15 @@ static int read_inclusion_file(char *filename)
     }
     
     if ((strlen(buf) + 1 + inclusion_buffer_sofar) >= inclusion_buffer_size) {
+      char *ib;
       inclusion_buffer_size *= 2;
-      inclusion_buffer = Realloc(inclusion_buffer,inclusion_buffer_size);
-      if (! inclusion_buffer) {
-	DEBUG(0,("failure enlarging inclusion buffer to %d bytes\n",
-		 inclusion_buffer_size));
-	error = 1;
-	break;
-      }
+      ib = Realloc(inclusion_buffer,inclusion_buffer_size);
+      if (! ib) {
+        DEBUG(0,("failure enlarging inclusion buffer to %d bytes\n", inclusion_buffer_size));
+        error = 1;
+        break;
+      } else
+        inclusion_buffer = ib;
     }
     
     safe_strcpy(inclusion_buffer + inclusion_buffer_sofar, buf, inclusion_buffer_size - inclusion_buffer_sofar);

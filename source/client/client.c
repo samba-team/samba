@@ -422,20 +422,21 @@ static void adjust_do_list_queue(void)
 
 static void add_to_do_list_queue(const char* entry)
 {
+	char *dlq;
+
 	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
 	while (new_end > do_list_queue_size)
 	{
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
-		do_list_queue = Realloc(do_list_queue, do_list_queue_size);
-		if (! do_list_queue) {
+		dlq = Realloc(do_list_queue, do_list_queue_size);
+		if (!dlq) {
 			DEBUG(0,("failure enlarging do_list_queue to %d bytes\n",
-				 (int)do_list_queue_size));
+				(int)do_list_queue_size));
 			reset_do_list_queue();
-		}
-		else
-		{
+		} else {
+			do_list_queue = dlq;
 			memset(do_list_queue + do_list_queue_size / 2,
 			       0, do_list_queue_size / 2);
 		}
