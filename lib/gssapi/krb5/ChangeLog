@@ -1,3 +1,8 @@
+2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: test_acquire_cred_LDADD: use libgssapi.la not
+	./libgssapi.la (make make -jN work)
+
 2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gssapi.3: spelling
