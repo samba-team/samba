@@ -73,7 +73,8 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	struct timeval to;
 	int maxfd;
 
-	DEBUG(10,("receive_message_or_msrpc: timeout %d fd %d\n", timeout, c));
+	DEBUG(10,
+	      ("receive_message_or_msrpc: timeout %d fd %d\n", timeout, c));
 
 	smb_read_error = 0;
 
@@ -104,7 +105,7 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	{
 		/* something is wrong. Maybe the socket is dead? */
 		smb_read_error = READ_ERROR;
-		DEBUG(2,("read error on loop-back socket\n"));
+		DEBUG(2, ("read error on loop-back socket\n"));
 		return False;
 	}
 
@@ -112,7 +113,7 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	if (selrtn == 0)
 	{
 		smb_read_error = READ_TIMEOUT;
-		DEBUG(2,("timeout on loop-back socket\n"));
+		DEBUG(2, ("timeout on loop-back socket\n"));
 		return False;
 	}
 
@@ -238,7 +239,7 @@ BOOL get_user_creds(int c, vuser_key * uk)
 
 	DEBUG(10, ("get_user_creds: first request\n"));
 
-	rl = read_data(c, (char*)&buf, sizeof(len));
+	rl = read_data(c, (char *)&buf, sizeof(len));
 
 	if (rl != sizeof(len))
 	{
@@ -312,7 +313,8 @@ BOOL get_user_creds(int c, vuser_key * uk)
 
 	status = new_con ? 0x0 : 0x1;
 
-	if (write_socket(c, (char*)&status, sizeof(status)) != sizeof(status))
+	if (write_socket(c, (char *)&status, sizeof(status)) !=
+	    sizeof(status))
 	{
 		return False;
 	}
@@ -458,7 +460,7 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 		{
 			time_t t;
 
-			if (counter > 365 * 3600) /* big number of seconds. */
+			if (counter > 365 * 3600)	/* big number of seconds. */
 			{
 				counter = 0;
 				service_load_counter = 0;

@@ -101,7 +101,8 @@ static uint32 direct_samr_userinfo(const UNISTR2 * uni_user,
 		}
 		else
 		{
-			status_pwd = _samr_query_userinfo(&usr_pol, level, ctr);
+			status_pwd =
+				_samr_query_userinfo(&usr_pol, level, ctr);
 		}
 	}
 	if (status_usr == NT_STATUS_NOPROBLEMO)
@@ -986,8 +987,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* interactive login. */
 				status =
 					net_login_interactive(&
-							      (sam_id->ctr->
-							       auth.id1),
+							      (sam_id->
+							       ctr->auth.id1),
 							      &dc);
 				(*auth_resp) = 1;
 				break;
@@ -997,10 +998,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* network login.  lm challenge and 24 byte responses */
 				status =
 					net_login_network(&
-							  (sam_id->ctr->auth.
-							   id2), acb_info,
-							  &dc, usr_sess_key,
-lm_pw8);
+							  (sam_id->ctr->
+							   auth.id2),
+							  acb_info, &dc,
+usr_sess_key, lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				(*auth_resp) = 1;

@@ -139,8 +139,8 @@ uint32 _reg_open_entry(const POLICY_HND * pol, const UNISTR2 * uni_name,
 /*******************************************************************
  _reg_info
  ********************************************************************/
-uint32 _reg_info(POLICY_HND* pol, BUFFER2* buf, uint32* type)
-{      
+uint32 _reg_info(POLICY_HND * pol, BUFFER2 * buf, uint32 * type)
+{
 	fstring name;
 
 	if (!get_policy_reg_name(get_global_hnd_cache(), pol, name))
@@ -148,7 +148,8 @@ uint32 _reg_info(POLICY_HND* pol, BUFFER2* buf, uint32* type)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
+	if (strequal
+	    (name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
 	{
 		char *key;
 		if (lp_server_role() == ROLE_DOMAIN_PDC)
@@ -164,9 +165,9 @@ uint32 _reg_info(POLICY_HND* pol, BUFFER2* buf, uint32* type)
 	}
 	else
 	{
-		return 0x2; /* Win32 status code.  ick */
-	}	
-	
+		return 0x2;	/* Win32 status code.  ick */
+	}
+
 	return NT_STATUS_NOPROBLEMO;
 }
 

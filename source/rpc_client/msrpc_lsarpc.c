@@ -224,7 +224,7 @@ BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
 /****************************************************************************
 put data into secret buffer.
 ****************************************************************************/
-void secret_store_data(STRING2 * secret, const char* data, int len)
+void secret_store_data(STRING2 * secret, const char *data, int len)
 {
 	ZERO_STRUCTP(secret);
 
@@ -240,7 +240,7 @@ void secret_store_data(STRING2 * secret, const char* data, int len)
 /****************************************************************************
 put data into secret buffer.
 ****************************************************************************/
-void secret_store_data2(STRING2 * secret, const char* data, int len)
+void secret_store_data2(STRING2 * secret, const char *data, int len)
 {
 	ZERO_STRUCTP(secret);
 
@@ -269,11 +269,12 @@ BOOL msrpc_lsa_set_secret(const char *srv_name,
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy(srv_name,
-				     &lsa_pol, True, 0x02000000) : False;
+				    &lsa_pol, True, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret(&lsa_pol,
-				     secret_name, 0x02000000, &pol_sec) : False;
+				     secret_name, 0x02000000,
+				     &pol_sec) : False;
 
 	res2 =
 		res1 ? (lsa_set_secret(&pol_sec, &secret) ==
@@ -321,7 +322,7 @@ BOOL msrpc_lsa_query_secret(const char *srv_name,
 /****************************************************************************
 obtains a trust account password
 ****************************************************************************/
-BOOL secret_get_data(const STRING2 *secret, uchar *data, uint32 *len)
+BOOL secret_get_data(const STRING2 * secret, uchar * data, uint32 * len)
 {
 	(*len) = IVAL(secret->buffer, 0);
 	if (secret->str_str_len != (*len) + 8)
@@ -339,7 +340,7 @@ BOOL secret_get_data(const STRING2 *secret, uchar *data, uint32 *len)
 /****************************************************************************
 obtains a trust account password
 ****************************************************************************/
-BOOL secret_to_nt_owf(uchar trust_passwd[16], const STRING2 *secret)
+BOOL secret_to_nt_owf(uchar trust_passwd[16], const STRING2 * secret)
 {
 	UNISTR2 uni_pwd;
 	uint32 len;
@@ -352,7 +353,7 @@ BOOL secret_to_nt_owf(uchar trust_passwd[16], const STRING2 *secret)
 	}
 	for (i = 0; i < len; i++)
 	{
-		uni_pwd.buffer[i] = SVAL(data, i*2);
+		uni_pwd.buffer[i] = SVAL(data, i * 2);
 	}
 	uni_pwd.uni_str_len = len / 2;
 	uni_pwd.uni_max_len = len / 2;

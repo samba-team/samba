@@ -34,29 +34,29 @@ extern int DEBUGLEVEL;
 /****************************************************************************
  set secret tdb database
 ****************************************************************************/
-static BOOL set_tdbsecdb(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *tdb)
+static BOOL set_tdbsecdb(struct policy_cache *cache, POLICY_HND * hnd,
+			 TDB_CONTEXT * tdb)
 {
 	if (tdb != NULL)
 	{
-		if (set_policy_state(cache, hnd, tdb_close, (void*)tdb))
+		if (set_policy_state(cache, hnd, tdb_close, (void *)tdb))
 		{
 			return True;
 		}
 		tdb_close(tdb);
 		return False;
 	}
-	DEBUG(3,("Error setting policy secret database\n"));
+	DEBUG(3, ("Error setting policy secret database\n"));
 	return False;
 }
 
 /****************************************************************************
   get tdb database handle
 ****************************************************************************/
-static BOOL get_tdbsecdb(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **tdb)
+static BOOL get_tdbsecdb(struct policy_cache *cache, const POLICY_HND * hnd,
+			 TDB_CONTEXT ** tdb)
 {
-	(*tdb) = (TDB_CONTEXT*)get_policy_state_info(cache, hnd);
+	(*tdb) = (TDB_CONTEXT *) get_policy_state_info(cache, hnd);
 
 	return True;
 }
@@ -66,11 +66,12 @@ typedef struct tdb_sec_info
 	UNISTR2 name;
 	TDB_CONTEXT *tdb;
 
-} TDB_SEC_INFO;
+}
+TDB_SEC_INFO;
 
-static void secnamefree(void*inf)
+static void secnamefree(void *inf)
 {
-	TDB_SEC_INFO *dev = (TDB_SEC_INFO*)inf;
+	TDB_SEC_INFO *dev = (TDB_SEC_INFO *) inf;
 	if (dev != NULL)
 	{
 		tdb_close(dev->tdb);
@@ -81,9 +82,8 @@ static void secnamefree(void*inf)
 /****************************************************************************
   set tdb secret name
 ****************************************************************************/
-static BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *tdb,
-				const UNISTR2 *name)
+static BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND * hnd,
+			   TDB_CONTEXT * tdb, const UNISTR2 * name)
 {
 	TDB_SEC_INFO *dev = malloc(sizeof(*dev));
 
@@ -91,31 +91,32 @@ static BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND *hnd,
 	{
 		copy_unistr2(&dev->name, name);
 		dev->tdb = tdb;
-		if (set_policy_state(cache, hnd, secnamefree, (void*)dev))
+		if (set_policy_state(cache, hnd, secnamefree, (void *)dev))
 		{
 			if (DEBUGLVL(3))
 			{
 				fstring tmp;
-				unistr2_to_ascii(tmp, name, sizeof(tmp)-1);
-				DEBUG(3,("setting tdb secret name=%s\n", tmp));
+				unistr2_to_ascii(tmp, name, sizeof(tmp) - 1);
+				DEBUG(3,
+				      ("setting tdb secret name=%s\n", tmp));
 			}
 			return True;
 		}
 		free(dev);
 		return False;
 	}
-	DEBUG(3,("Error setting tdb secret name\n"));
+	DEBUG(3, ("Error setting tdb secret name\n"));
 	return False;
 }
 
 /****************************************************************************
   get tdb secret name
 ****************************************************************************/
-static BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **tdb,
-				UNISTR2 *name)
+static BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND * hnd,
+			   TDB_CONTEXT ** tdb, UNISTR2 * name)
 {
-	TDB_SEC_INFO *dev = (TDB_SEC_INFO*)get_policy_state_info(cache, hnd);
+	TDB_SEC_INFO *dev =
+		(TDB_SEC_INFO *) get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
@@ -130,15 +131,15 @@ static BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND *hnd,
 		return True;
 	}
 
-	DEBUG(3,("Error getting policy rid\n"));
+	DEBUG(3, ("Error getting policy rid\n"));
 	return False;
 }
+
 /***************************************************************************
 lsa_reply_open_policy2
  ***************************************************************************/
-uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
-				const LSA_OBJ_ATTR *attr,
-				uint32 des_access)
+uint32 _lsa_open_policy2(const UNISTR2 * server_name, POLICY_HND * hnd,
+			 const LSA_OBJ_ATTR * attr, uint32 des_access)
 {
 	if (hnd == NULL)
 	{
@@ -147,13 +148,12 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), hnd, des_access))
+			     get_sec_ctx(), hnd, des_access))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	policy_hnd_set_name(get_global_hnd_cache(),
-			    hnd, "open_policy2");
+	policy_hnd_set_name(get_global_hnd_cache(), hnd, "open_policy2");
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -161,9 +161,8 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 /***************************************************************************
 lsa_reply_open_policy
  ***************************************************************************/
-uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
-			const LSA_OBJ_ATTR *attr,
-			uint32 des_access)
+uint32 _lsa_open_policy(const UNISTR2 * server_name, POLICY_HND * hnd,
+			const LSA_OBJ_ATTR * attr, uint32 des_access)
 {
 	if (hnd == NULL)
 	{
@@ -172,13 +171,12 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), hnd, des_access))
+			     get_sec_ctx(), hnd, des_access))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	policy_hnd_set_name(get_global_hnd_cache(),
-			    hnd, "open_policy");
+	policy_hnd_set_name(get_global_hnd_cache(), hnd, "open_policy");
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -186,12 +184,12 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 /***************************************************************************
 _lsa_enum_trust_dom
  ***************************************************************************/
-uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
-			   uint32 *num_doms, UNISTR2 **uni_names,
-			   DOM_SID ***sids)
+uint32 _lsa_enum_trust_dom(POLICY_HND * hnd, uint32 * enum_ctx,
+			   uint32 * num_doms, UNISTR2 ** uni_names,
+			   DOM_SID *** sids)
 {
 	/* Should send on something good */
-	
+
 	*enum_ctx = 0;
 	*num_doms = 0;
 	*uni_names = NULL;
@@ -204,16 +202,16 @@ uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 _lsa_lookup_names
  ***************************************************************************/
 static uint32 get_remote_sid(const char *dom_name, char *find_name,
-			     DOM_SID *sid, uint32 *rid, uint32 *sid_name_use)
+			     DOM_SID * sid, uint32 * rid,
+			     uint32 * sid_name_use)
 {
 	fstring srv_name;
 	fstring dummy;
 	uint32 status;
 
-	DEBUG(10, ("lookup remote name: %s %s\n",
-	           dom_name, find_name));
+	DEBUG(10, ("lookup remote name: %s %s\n", dom_name, find_name));
 
-	if (! get_any_dc_name(dom_name, srv_name))
+	if (!get_any_dc_name(dom_name, srv_name))
 	{
 		return NT_STATUS_NONE_MAPPED;
 	}
@@ -223,22 +221,20 @@ static uint32 get_remote_sid(const char *dom_name, char *find_name,
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	status = lookup_lsa_name(dom_name, find_name,
-				 sid, sid_name_use);
+	status = lookup_lsa_name(dom_name, find_name, sid, sid_name_use);
 
 	if (status == NT_STATUS_NOPROBLEMO &&
-	   (!sid_split_rid(sid, rid) ||
-	    !map_domain_sid_to_name(sid, dummy)))
+	    (!sid_split_rid(sid, rid) || !map_domain_sid_to_name(sid, dummy)))
 	{
 		status = NT_STATUS_NONE_MAPPED;
 	}
 	return status;
 }
 
-uint32 _lsa_lookup_names(const POLICY_HND *pol,
-			 uint32 num_entries, const UNISTR2 *name,
-			 DOM_R_REF *ref, DOM_RID2 **ret_rid2,
-			 uint32 *mapped_count)
+uint32 _lsa_lookup_names(const POLICY_HND * pol,
+			 uint32 num_entries, const UNISTR2 * name,
+			 DOM_R_REF * ref, DOM_RID2 ** ret_rid2,
+			 uint32 * mapped_count)
 {
 	int i;
 	int total = 0;
@@ -261,7 +257,7 @@ uint32 _lsa_lookup_names(const POLICY_HND *pol,
 		fstring full_name;
 		uint32 sid_name_use = SID_NAME_UNKNOWN;
 
-		unistr2_to_ascii(full_name, &name[i], sizeof(full_name)-1);
+		unistr2_to_ascii(full_name, &name[i], sizeof(full_name) - 1);
 		find_name = strdup(full_name);
 
 		if (!split_domain_name(full_name, dom_name, find_name))
@@ -286,19 +282,20 @@ uint32 _lsa_lookup_names(const POLICY_HND *pol,
 			{
 				pstring tmp;
 				sid_to_string(tmp, &find_sid);
-				DEBUG(10,("lookup sam name: %s %s\n",
-				           tmp, find_name));
+				DEBUG(10, ("lookup sam name: %s %s\n",
+					   tmp, find_name));
 				status1 = lookup_sam_name(NULL,
-				                         &find_sid,
-				                         find_name,
-							 &rid, &sid_name_use);
+							  &find_sid,
+							  find_name,
+							  &rid,
+							  &sid_name_use);
 				sid_copy(&sid, &find_sid);
 			}
 			else
 			{
 				status1 = get_remote_sid(dom_name, find_name,
-							&sid, &rid,
-							&sid_name_use);
+							 &sid, &rid,
+							 &sid_name_use);
 			}
 		}
 
@@ -340,12 +337,11 @@ uint32 _lsa_lookup_names(const POLICY_HND *pol,
 /***************************************************************************
 _lsa_lookup_sids
  ***************************************************************************/
-uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
-			uint32 num_entries, DOM_SID2 *sid,
-			const LOOKUP_LEVEL *level,
-			DOM_R_REF *ref,
-			LSA_TRANS_NAME_ENUM *trn,
-			uint32 *mapped_count)
+uint32 _lsa_lookup_sids(const POLICY_HND * hnd,
+			uint32 num_entries, DOM_SID2 * sid,
+			const LOOKUP_LEVEL * level,
+			DOM_R_REF * ref,
+			LSA_TRANS_NAME_ENUM * trn, uint32 * mapped_count)
 {
 	int i;
 	int total = 0;
@@ -364,36 +360,36 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 	{
 		uint32 status1 = NT_STATUS_NOPROBLEMO;
 		DOM_SID find_sid = sid[i].sid;
-		DOM_SID tmp_sid  = sid[i].sid;
+		DOM_SID tmp_sid = sid[i].sid;
 		uint32 rid = 0xffffffff;
 		int dom_idx = -1;
 		fstring name;
 		fstring dom_name;
 		uint32 sid_name_use = 0;
-		
+
 		memset(dom_name, 0, sizeof(dom_name));
-		memset(name    , 0, sizeof(name    ));
+		memset(name, 0, sizeof(name));
 
 		if (map_domain_sid_to_name(&find_sid, dom_name))
 		{
 			sid_name_use = SID_NAME_DOMAIN;
 			name[0] = 0;
 		}
-		else if (sid_split_rid         (&find_sid, &rid) &&
+		else if (sid_split_rid(&find_sid, &rid) &&
 			 map_domain_sid_to_name(&find_sid, dom_name))
 		{
 			if (sid_equal(&find_sid, &global_sam_sid) ||
 			    sid_equal(&find_sid, global_sid_builtin))
 			{
 				status1 = lookup_sam_rid(dom_name,
-				             &find_sid, rid,
-				             name, &sid_name_use);
+							 &find_sid, rid,
+							 name, &sid_name_use);
 			}
 			else
 			{
 				status1 = lookup_lsa_sid(dom_name,
-				             &tmp_sid,
-				             name, &sid_name_use);
+							 &tmp_sid,
+							 name, &sid_name_use);
 			}
 		}
 		else
@@ -412,9 +408,9 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 			snprintf(name, sizeof(name), "%08x", rid);
 			sid_name_use = SID_NAME_UNKNOWN;
 		}
-		make_lsa_trans_name(&(trn->name    [total]),
-		                    &(trn->uni_name[total]),
-		                    sid_name_use, name, dom_idx);
+		make_lsa_trans_name(&(trn->name[total]),
+				    &(trn->uni_name[total]),
+				    sid_name_use, name, dom_idx);
 		total++;
 	}
 
@@ -433,8 +429,8 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 /***************************************************************************
 _lsa_query_info
  ***************************************************************************/
-uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
-			   fstring domain_name, DOM_SID *domain_sid)
+uint32 _lsa_query_info_pol(POLICY_HND * hnd, uint16 info_class,
+			   fstring domain_name, DOM_SID * domain_sid)
 {
 	fstring name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
@@ -465,7 +461,7 @@ uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 		default:
 		{
 			DEBUG(3, ("unknown info level in Lsa Query: %d\n",
-			          info_class));
+				  info_class));
 			status = NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
@@ -484,7 +480,7 @@ uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 /***************************************************************************
 _lsa_close
  ***************************************************************************/
-uint32 _lsa_close(POLICY_HND *hnd)
+uint32 _lsa_close(POLICY_HND * hnd)
 {
 	if (!close_policy_hnd(get_global_hnd_cache(), hnd))
 	{
@@ -496,9 +492,8 @@ uint32 _lsa_close(POLICY_HND *hnd)
 /***************************************************************************
  _lsa_set_secret
  ***************************************************************************/
-uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
-				const STRING2 *val,
-				uint32 unknown)
+uint32 _lsa_set_secret(const POLICY_HND * hnd_secret,
+		       const STRING2 * val, uint32 unknown)
 {
 	TDB_CONTEXT *tdb = NULL;
 	UNISTR2 secret_name;
@@ -507,7 +502,7 @@ uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
 	NTTIME ntt;
 
 	if (!pol_get_usr_sesskey(get_global_hnd_cache(), hnd_secret,
-	                         user_sess_key))
+				 user_sess_key))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -518,17 +513,17 @@ uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
 	ZERO_STRUCT(secret_name);
 
 	if (!get_tdbsecname(get_global_hnd_cache(), hnd_secret, &tdb,
-	                    &secret_name))
+			    &secret_name))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (tdb_writelock(tdb) != 0)
 	{
-		DEBUG(10,("_lsa_set_secret: write lock denied\n"));
+		DEBUG(10, ("_lsa_set_secret: write lock denied\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	
+
 	if (!tdb_lookup_secret(tdb, &secret_name, &sec))
 	{
 		return NT_STATUS_ACCESS_DENIED;
@@ -538,13 +533,13 @@ uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
-		
+
 	/* store old info */
 	memcpy(&sec->oldinfo, &sec->curinfo, sizeof(sec->oldinfo));
 
 	/* decode and store new value, update time */
 	if (!nt_decrypt_string2(&sec->curinfo.value.enc_secret, val,
-	                        user_sess_key))
+				user_sess_key))
 	{
 		safe_free(sec);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -553,8 +548,8 @@ uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
 	{
 		sec->curinfo.ptr_value = 1;
 		make_strhdr2(&sec->curinfo.value.hdr_secret,
-		              sec->curinfo.value.enc_secret.str_max_len,
-		              sec->curinfo.value.enc_secret.str_str_len, 1);
+			     sec->curinfo.value.enc_secret.str_max_len,
+			     sec->curinfo.value.enc_secret.str_str_len, 1);
 		sec->curinfo.value.ptr_secret = 1;
 	}
 
@@ -570,7 +565,7 @@ uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
 	}
 
 	tdb_writeunlock(tdb);
-	
+
 	safe_free(sec);
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -578,9 +573,9 @@ uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
 /***************************************************************************
  _lsa_query_secret
  ***************************************************************************/
-uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
-				STRING2 *curval, NTTIME *curtime,
-				STRING2 *oldval, NTTIME *oldtime)
+uint32 _lsa_query_secret(const POLICY_HND * hnd_secret,
+			 STRING2 * curval, NTTIME * curtime,
+			 STRING2 * oldval, NTTIME * oldtime)
 {
 	TDB_CONTEXT *tdb = NULL;
 	UNISTR2 secret_name;
@@ -588,7 +583,7 @@ uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 	uchar user_sess_key[16];
 
 	if (!pol_get_usr_sesskey(get_global_hnd_cache(), hnd_secret,
-	                         user_sess_key))
+				 user_sess_key))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -599,7 +594,7 @@ uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 	ZERO_STRUCT(secret_name);
 
 	if (!get_tdbsecname(get_global_hnd_cache(), hnd_secret, &tdb,
-	                    &secret_name))
+			    &secret_name))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -613,7 +608,7 @@ uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
-		
+
 	if (curtime != NULL)
 	{
 		(*curtime) = sec->curinfo.last_update;
@@ -624,8 +619,8 @@ uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 	}
 	if (curval != NULL)
 	{
-		if (!nt_encrypt_string2(curval, &sec->curinfo.value.enc_secret,
-		                        user_sess_key))
+		if (!nt_encrypt_string2
+		    (curval, &sec->curinfo.value.enc_secret, user_sess_key))
 		{
 			safe_free(sec);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -633,8 +628,8 @@ uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 	}
 	if (oldval != NULL)
 	{
-		if (!nt_encrypt_string2(oldval, &sec->oldinfo.value.enc_secret,
-		                        user_sess_key))
+		if (!nt_encrypt_string2
+		    (oldval, &sec->oldinfo.value.enc_secret, user_sess_key))
 		{
 			safe_free(sec);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -647,9 +642,9 @@ uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 /***************************************************************************
  _lsa_create_secret
  ***************************************************************************/
-uint32 _lsa_create_secret(const POLICY_HND *hnd,
-			const UNISTR2 *secret_name, uint32 des_access,
-			POLICY_HND *hnd_secret)
+uint32 _lsa_create_secret(const POLICY_HND * hnd,
+			  const UNISTR2 * secret_name, uint32 des_access,
+			  POLICY_HND * hnd_secret)
 {
 	TDB_CONTEXT *tdb;
 	LSA_SECRET sec;
@@ -665,14 +660,14 @@ uint32 _lsa_create_secret(const POLICY_HND *hnd,
 
 	if (tdb_lookup_secret(tdb, secret_name, NULL))
 	{
-		DEBUG(10,("_lsa_create_secret: secret exists\n"));
+		DEBUG(10, ("_lsa_create_secret: secret exists\n"));
 		/* XXX - shouldn't tdb be closed here? (Elrond) */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd_link(get_global_hnd_cache(),
-		hnd, hnd_secret, des_access))
+				  hnd, hnd_secret, des_access))
 	{
 		tdb_close(tdb);
 		return NT_STATUS_ACCESS_DENIED;
@@ -681,7 +676,8 @@ uint32 _lsa_create_secret(const POLICY_HND *hnd,
 	policy_hnd_set_name(get_global_hnd_cache(),
 			    hnd_secret, "secret (create)");
 
-	if (!set_tdbsecname(get_global_hnd_cache(), hnd_secret, tdb, secret_name))
+	if (!set_tdbsecname
+	    (get_global_hnd_cache(), hnd_secret, tdb, secret_name))
 	{
 		close_policy_hnd(get_global_hnd_cache(), hnd_secret);
 		return NT_STATUS_ACCESS_DENIED;
@@ -707,18 +703,20 @@ uint32 _lsa_create_secret(const POLICY_HND *hnd,
 /***************************************************************************
  _lsa_open_secret
  ***************************************************************************/
-uint32 _lsa_open_secret(const POLICY_HND *hnd,
-			const UNISTR2 *secret_name, uint32 des_access,
-			POLICY_HND *hnd_secret)
+uint32 _lsa_open_secret(const POLICY_HND * hnd,
+			const UNISTR2 * secret_name, uint32 des_access,
+			POLICY_HND * hnd_secret)
 {
 	TDB_CONTEXT *tdb;
 
 	tdb = open_secret_db(O_RDWR);
 	if (tdb == NULL)
 	{
-		DEBUG(0, ("_lsa_open_secret: couldn't open secret_db. Possible attack?"));
-		DEBUG(0, ("\nuid=%d, gid=%d, euid=%d, egid=%d\n",
-			  getuid(), getgid(), geteuid(), getegid()));
+		DEBUG(0,
+		      ("_lsa_open_secret: couldn't open secret_db. Possible attack?"));
+		DEBUG(0,
+		      ("\nuid=%d, gid=%d, euid=%d, egid=%d\n", getuid(),
+		       getgid(), geteuid(), getegid()));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -730,7 +728,7 @@ uint32 _lsa_open_secret(const POLICY_HND *hnd,
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd_link(get_global_hnd_cache(),
-		hnd, hnd_secret, des_access))
+				  hnd, hnd_secret, des_access))
 	{
 		tdb_close(tdb);
 		return NT_STATUS_ACCESS_DENIED;
@@ -739,7 +737,8 @@ uint32 _lsa_open_secret(const POLICY_HND *hnd,
 	policy_hnd_set_name(get_global_hnd_cache(),
 			    hnd_secret, "secret (open)");
 
-	if (!set_tdbsecname(get_global_hnd_cache(), hnd_secret, tdb, secret_name))
+	if (!set_tdbsecname
+	    (get_global_hnd_cache(), hnd_secret, tdb, secret_name))
 	{
 		close_policy_hnd(get_global_hnd_cache(), hnd_secret);
 		return NT_STATUS_ACCESS_DENIED;

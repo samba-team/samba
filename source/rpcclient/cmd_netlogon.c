@@ -48,7 +48,7 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 	fstring name;
 	fstring sid;
 	DOM_SID sid1;
-	uint32 user_rid; 
+	uint32 user_rid;
 	int opt;
 	char *password = NULL;
 	pstring upwb;
@@ -110,16 +110,19 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 	DEBUG(5, ("do_nt_login_test: username %s from: %s\n",
 		  nt_user_name, info->myhostname));
 
-	res = res ? msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
-						 old_trust_passwd, NULL) : False;
-
 	safe_strcpy(acct_name, argv[0], sizeof(acct_name));
-	len = strlen(acct_name)-1;
+	len = strlen(acct_name) - 1;
 	if (acct_name[len] == '$')
 	{
 		safe_strcpy(name, argv[0], sizeof(name));
 		name[len] = 0;
 	}
+
+	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
+				       trust_acct,
+				       old_trust_passwd,
+				       SEC_CHAN_WKSTA,
+				       &validation_level) == 0x0 : False;
 
 	/*
 	 * generate new random password.  unicode string is stored
@@ -128,7 +131,7 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 
 	upw.uni_str_len = 0xc;
 	upw.uni_max_len = 0xc;
-	password = (char*)upw.buffer;
+	password = (char *)upw.buffer;
 	plen = upw.uni_str_len * 2;
 	generate_random_buffer(password, plen, True);
 
@@ -141,17 +144,17 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 	 * local copy-of trust account out-of-sync with the
 	 * remote one, and you're stuffed!
 	 */
-	res = lsa_open_policy( wks_name, &lsa_pol, True, 0x02000000);
+	res = lsa_open_policy(wks_name, &lsa_pol, True, 0x02000000);
 
 	if (!res)
 	{
 		report(out_hnd, "Connection to %s FAILED\n", wks_name);
 		report(out_hnd, "(Do a \"use \\\\%s -U localadmin\")\n",
-				 wks_name);
+		       wks_name);
 
 		return;
 	}
-	res1 = lsa_open_secret( &lsa_pol, "$MACHINE.ACC", 0x020003, &pol_sec);
+	res1 = lsa_open_secret(&lsa_pol, "$MACHINE.ACC", 0x020003, &pol_sec);
 
 	if (!res1)
 	{
@@ -165,17 +168,19 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 	{
 		lsa_close(&lsa_pol);
 		lsa_close(&pol_sec);
-		report(out_hnd, "Query local Trust Account password: Failed\n");
+		report(out_hnd,
+		       "Query local Trust Account password: Failed\n");
 		return;
 	}
-	
+
 	if (net_srv_pwset(srv_name, &sid1,
-	                              acct_name, , password, plen,
-	                              &user_rid) != NT_STATUS_NOPROBLEMO)
+			  acct_name,, password, plen,
+			  &user_rid) != NT_STATUS_NOPROBLEMO)
 	{
 		lsa_close(&lsa_pol);
 		lsa_close(&pol_sec);
-		report(out_hnd, "Set remote Trust Account password: Failed\n");
+		report(out_hnd,
+		       "Set remote Trust Account password: Failed\n");
 		return;
 	}
 
@@ -203,12 +208,6 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 
 	memset(&upw, 0, sizeof(upw));
 	memset(ntpw, 0, sizeof(ntpw));
-}
-	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
-				       trust_acct,
-				       old_trust_passwd,
-				       SEC_CHAN_WKSTA,
-				       &validation_level) == 0x0 : False;
 
 
 	report(out_hnd, "cmd_nt_login: login (%s) test succeeded: %s\n",

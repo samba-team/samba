@@ -558,7 +558,7 @@ BOOL make_unk_info12(SAM_UNK_INFO_12 * u_12)
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
-			     prs_struct * ps, int depth)
+			      prs_struct * ps, int depth)
 {
 	if (u_12 == NULL)
 		return False;
@@ -626,9 +626,9 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 	prs_debug(ps, depth, desc, "sam_io_unk_info2");
 	depth++;
 
-	prs_uint32("unknown_0", ps, depth, &u_2->unknown_0); /* 0x0000 0000 */
-	prs_uint32("unknown_1", ps, depth, &u_2->unknown_1); /* 0x8000 0000 */
-	prs_uint32("unknown_2", ps, depth, &u_2->unknown_2); /* 0x0000 0000 */
+	prs_uint32("unknown_0", ps, depth, &u_2->unknown_0);	/* 0x0000 0000 */
+	prs_uint32("unknown_1", ps, depth, &u_2->unknown_1);	/* 0x8000 0000 */
+	prs_uint32("unknown_2", ps, depth, &u_2->unknown_2);	/* 0x0000 0000 */
 
 	prs_uint32("ptr_0", ps, depth, &u_2->ptr_0);
 	smb_io_unihdr("hdr_domain", &u_2->hdr_domain, ps, depth);
@@ -638,20 +638,21 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 	   pointer is referring to
 	 */
 
-	prs_uint32("seq_num ", ps, depth, &u_2->seq_num); /* 0x0000 0099 or 0x1000 0000 */
-	prs_uint32("unknown_3 ", ps, depth, &u_2->unknown_3); /* 0x0000 0000 */
+	prs_uint32("seq_num ", ps, depth, &u_2->seq_num);	/* 0x0000 0099 or 0x1000 0000 */
+	prs_uint32("unknown_3 ", ps, depth, &u_2->unknown_3);	/* 0x0000 0000 */
 
-	prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4); /* 0x0000 0001 */
-	prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5); /* 0x0000 0003 */
-	prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6); /* 0x0000 0001 */
+	prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4);	/* 0x0000 0001 */
+	prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5);	/* 0x0000 0003 */
+	prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6);	/* 0x0000 0001 */
 	prs_uint32("num_domain_usrs ", ps, depth, &u_2->num_domain_usrs);
 	prs_uint32("num_domain_grps", ps, depth, &u_2->num_domain_grps);
 	prs_uint32("num_local_grps", ps, depth, &u_2->num_local_grps);
 
-	prs_uint8s(False, "padding", ps, depth, u_2->padding, sizeof(u_2->padding));
+	prs_uint8s(False, "padding", ps, depth, u_2->padding,
+		   sizeof(u_2->padding));
 
 	smb_io_unistr2("uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer,
-		       ps, depth);	
+		       ps, depth);
 	prs_align(ps);
 	smb_io_unistr2("uni_server", &u_2->uni_server, u_2->hdr_server.buffer,
 		       ps, depth);
@@ -687,10 +688,11 @@ static BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 * u_1,
 	prs_debug(ps, depth, desc, "sam_io_unk_info1");
 	depth++;
 
-	prs_uint8s(False, "padding", ps, depth, u_1->padding, sizeof(u_1->padding));
+	prs_uint8s(False, "padding", ps, depth, u_1->padding,
+		   sizeof(u_1->padding));
 
-	prs_uint32("unknown_1", ps, depth, &u_1->unknown_1); /* 0x8000 0000 */
-	prs_uint32("unknown_2", ps, depth, &u_1->unknown_2); /* 0x0000 0000 */
+	prs_uint32("unknown_1", ps, depth, &u_1->unknown_1);	/* 0x8000 0000 */
+	prs_uint32("unknown_2", ps, depth, &u_1->unknown_2);	/* 0x0000 0000 */
 
 	prs_align(ps);
 
@@ -749,8 +751,8 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 			case 0x0c:
 			{
 				sam_io_unk_info12("unk_inf12",
-						 &r_u->ctr->info.inf12, ps,
-						 depth);
+						  &r_u->ctr->info.inf12, ps,
+						  depth);
 				break;
 			}
 			case 0x07:
@@ -1268,7 +1270,8 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 		if (UNMARSHALLING(ps) && (r_u->num_entries2 != 0))
 		{
 			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
-			r_u->uni_acct_name = g_new(UNISTR2, r_u->num_entries2);
+			r_u->uni_acct_name =
+				g_new(UNISTR2, r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_acct_name == NULL)
@@ -2016,8 +2019,8 @@ BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR *ctr,
-				prs_struct *ps, int depth)
+static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr,
+				prs_struct * ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -2598,8 +2601,8 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 			if (r_u->num_rids != 0)
 			{
 				r_u->rid = (uint32 *) Realloc(r_u->rid,
-							      sizeof(r_u->
-								     rid[0]) *
+							      sizeof(r_u->rid
+								     [0]) *
 							      r_u->num_rids);
 				if (r_u->rid == NULL)
 				{
@@ -2620,11 +2623,10 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 			if (r_u->num_attrs != 0)
 			{
 				r_u->attr = (uint32 *) Realloc(r_u->attr,
-							       sizeof(r_u->
-								      attr[0])
+							       sizeof
+							       (r_u->attr[0])
 							       *
-							       r_u->
-							       num_attrs);
+							       r_u->num_attrs);
 				if (r_u->attr == NULL)
 				{
 					samr_free_r_query_groupmem(r_u);
@@ -5303,13 +5305,12 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   NTTIME * pass_must_change_time,	/* all zeros */
 			   char *user_name,	/* NULL */
 			   char *full_name,
-			   char *home_dir, char *dir_drive, char *log_scr, char *prof_path, char *desc, char *wkstas, char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
-			   uint32 group_rid,
-			   uint32 acb_info,
-			   uint32 unknown_3,
-			   uint16 logon_divs,
-			   LOGON_HRS * hrs,
-			   uint32 unknown_5,
+			   char *home_dir, char *dir_drive, char *log_scr,
+			   char *prof_path, char *desc, char *wkstas,
+			   char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
+			   uint32 group_rid, uint32 acb_info,
+			   uint32 unknown_3, uint16 logon_divs,
+			   LOGON_HRS * hrs, uint32 unknown_5,
 			   char newpass[516], uint32 unknown_6)
 {
 	int len_user_name = user_name != NULL ? strlen(user_name) : 0;
@@ -5426,7 +5427,7 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 
 	prs_uint32("user_rid      ", ps, depth, &(usr->user_rid));	/* User ID */
 	prs_uint32("group_rid     ", ps, depth, &(usr->group_rid));	/* Group ID */
-	prs_uint32("acb_info      ", ps, depth, &(usr->acb_info));	
+	prs_uint32("acb_info      ", ps, depth, &(usr->acb_info));
 
 	prs_uint32("unknown_3     ", ps, depth, &(usr->unknown_3));
 	prs_uint16("logon_divs    ", ps, depth, &(usr->logon_divs));	/* logon divisions per week */
@@ -5747,7 +5748,7 @@ BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr, prs_struct * ps,
 
 	prs_uint32("user_rid      ", ps, depth, &(usr->user_rid));	/* User ID */
 	prs_uint32("group_rid     ", ps, depth, &(usr->group_rid));	/* Group ID */
-	prs_uint32("acb_info      ", ps, depth, &(usr->acb_info));	
+	prs_uint32("acb_info      ", ps, depth, &(usr->acb_info));
 
 	prs_uint32("unknown_3     ", ps, depth, &(usr->unknown_3));
 	prs_uint16("logon_divs    ", ps, depth, &(usr->logon_divs));	/* logon divisions per week */
@@ -5824,9 +5825,7 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 		{
 			ctr->info.id = (SAM_USER_INFO_10 *) Realloc(NULL,
 								    sizeof
-								    (*ctr->
-								     info.
-								     id10));
+								    (*ctr->info.id10));
 			if (ctr->info.id == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
@@ -5846,9 +5845,7 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 
 			ctr->info.id = (SAM_USER_INFO_11 *) Realloc(NULL,
 								    sizeof
-								    (*ctr->
-								     info.
-								     id11));
+								    (*ctr->info.id11));
 			make_sam_user_info11(ctr->info.id11, &expire,
 					     "BROOKFIELDS$",	/* name */
 					     0x03ef,	/* user rid */
@@ -5862,9 +5859,7 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 		{
 			ctr->info.id = (SAM_USER_INFO_12 *) Realloc(NULL,
 								    sizeof
-								    (*ctr->
-								     info.
-								     id12));
+								    (*ctr->info.id12));
 			if (ctr->info.id == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
@@ -5943,8 +5938,8 @@ BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, const uchar * sess_key,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR *ctr,
-				 prs_struct *ps, int depth)
+static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr,
+				 prs_struct * ps, int depth)
 {
 	BOOL ret;
 	if (ctr == NULL)
@@ -5975,7 +5970,7 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR *ctr,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
-			ret = sam_io_user_info10("", ctr->info.id10, ps, 
+			ret = sam_io_user_info10("", ctr->info.id10, ps,
 						 depth);
 			break;
 		}
@@ -6084,7 +6079,8 @@ frees a structure.
 ********************************************************************/
 void free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr)
 {
-	if (ctr == NULL) return;
+	if (ctr == NULL)
+		return;
 	safe_free(ctr->info.id);
 	ctr->info.id = NULL;
 }
@@ -6213,7 +6209,8 @@ frees a structure.
 ********************************************************************/
 void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL)
+		return;
 	free_samr_userinfo_ctr(q_u->ctr);
 }
 

@@ -35,16 +35,16 @@ extern fstring global_myworkgroup;
 /***************************************************************************
 make_dom_query
  ***************************************************************************/
-static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
+static void make_dom_query(DOM_QUERY * d_q, char *dom_name, DOM_SID * dom_sid)
 {
 	fstring sid_str;
 	int domlen = strlen(dom_name);
 
-	d_q->uni_dom_str_len = (domlen+1) * 2;
+	d_q->uni_dom_str_len = (domlen + 1) * 2;
 	d_q->uni_dom_max_len = domlen * 2;
 
-	d_q->buffer_dom_name = domlen  != 0    ? 1 : 0; /* domain buffer pointer */
-	d_q->buffer_dom_sid  = dom_sid != NULL ? 1 : 0; /* domain sid pointer */
+	d_q->buffer_dom_name = domlen != 0 ? 1 : 0;	/* domain buffer pointer */
+	d_q->buffer_dom_sid = dom_sid != NULL ? 1 : 0;	/* domain sid pointer */
 
 	/* this string is supposed to be character short */
 	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
@@ -58,20 +58,21 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 /***************************************************************************
 make_reply_lookup_names
  ***************************************************************************/
-static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
-				    DOM_R_REF *ref, uint32 num_entries,
-				    DOM_RID2 *rid2, uint32 mapped_count,
+static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES * r_l,
+				    DOM_R_REF * ref, uint32 num_entries,
+				    DOM_RID2 * rid2, uint32 mapped_count,
 				    uint32 status)
 {
-	r_l->ptr_dom_ref  = (ref != NULL ? 1 : 0);
-	r_l->dom_ref      = ref;
+	r_l->ptr_dom_ref = (ref != NULL ? 1 : 0);
+	r_l->dom_ref = ref;
 
-	if (rid2 == NULL) num_entries = 0;
+	if (rid2 == NULL)
+		num_entries = 0;
 
-	r_l->num_entries  = num_entries;
-	r_l->ptr_entries  = (rid2 != NULL ? 1 : 0);
+	r_l->num_entries = num_entries;
+	r_l->ptr_entries = (rid2 != NULL ? 1 : 0);
 	r_l->num_entries2 = num_entries;
-	r_l->dom_rid      = rid2;
+	r_l->dom_rid = rid2;
 
 	r_l->mapped_count = mapped_count;
 
@@ -81,21 +82,22 @@ static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 /***************************************************************************
 make_reply_lookup_sids
  ***************************************************************************/
-static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
-				DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *names,
-				uint32 mapped_count, uint32 status)
+static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS * r_l,
+				   DOM_R_REF * ref,
+				   LSA_TRANS_NAME_ENUM * names,
+				   uint32 mapped_count, uint32 status)
 {
-	r_l->ptr_dom_ref  = 1;
-	r_l->dom_ref      = ref;
-	r_l->names        = names;
+	r_l->ptr_dom_ref = 1;
+	r_l->dom_ref = ref;
+	r_l->names = names;
 	r_l->mapped_count = mapped_count;
-	r_l->status       = status;
+	r_l->status = status;
 }
 
 /***************************************************************************
 lsa_reply_lookup_sids
  ***************************************************************************/
-static BOOL lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, prs_struct *rdata)
+static BOOL lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, prs_struct * rdata)
 {
 	LSA_R_LOOKUP_SIDS r_l;
 	DOM_R_REF ref;
@@ -123,8 +125,8 @@ static BOOL lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, prs_struct *rdata)
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static BOOL api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
-                             prs_struct *rdata )
+static BOOL api_lsa_open_policy2(rpcsrv_struct * p, prs_struct * data,
+				 prs_struct * rdata)
 {
 	LSA_Q_OPEN_POL2 q_o;
 	LSA_R_OPEN_POL2 r_o;
@@ -138,16 +140,15 @@ static BOOL api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	r_o.status = _lsa_open_policy2(&q_o.uni_server_name, &r_o.pol,
-				       &q_o.attr,
-				       q_o.des_access);
+				       &q_o.attr, q_o.des_access);
 	return lsa_io_r_open_pol2("", &r_o, rdata, 0);
 }
 
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static BOOL api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
-                             prs_struct *rdata )
+static BOOL api_lsa_open_policy(rpcsrv_struct * p, prs_struct * data,
+				prs_struct * rdata)
 {
 	LSA_Q_OPEN_POL q_o;
 	LSA_R_OPEN_POL r_o;
@@ -161,15 +162,15 @@ static BOOL api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	r_o.status = _lsa_open_policy(NULL, &r_o.pol,
-	                              &q_o.attr, q_o.des_access);
+				      &q_o.attr, q_o.des_access);
 	return lsa_io_r_open_pol("", &r_o, rdata, 0);
 }
 
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static BOOL api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_lsa_enum_trust_dom(rpcsrv_struct * p, prs_struct * data,
+				   prs_struct * rdata)
 {
 	uint32 status;
 	uint32 enum_context;
@@ -195,8 +196,7 @@ static BOOL api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
 				     &uni_names, &sids);
 
 	make_r_enum_trust_dom(&r_e, enum_context,
-			      num_doms, uni_names, sids,
-			      status);
+			      num_doms, uni_names, sids, status);
 
 	/* store the response in the SMB stream */
 	ret = lsa_io_r_enum_trust_dom("", &r_e, rdata, 0);
@@ -211,8 +211,8 @@ static BOOL api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static BOOL api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
-                                prs_struct *rdata )
+static BOOL api_lsa_query_info(rpcsrv_struct * p, prs_struct * data,
+			       prs_struct * rdata)
 {
 	LSA_Q_QUERY_INFO q_i;
 	LSA_R_QUERY_INFO r_i;
@@ -237,7 +237,7 @@ static BOOL api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 	{
 		/* set up the LSA QUERY INFO response */
 
-		r_i.undoc_buffer = 0x1; 
+		r_i.undoc_buffer = 0x1;
 		r_i.info_class = q_i.info_class;
 
 		make_dom_query(&r_i.dom.id5, name, &sid);
@@ -250,8 +250,8 @@ static BOOL api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_lookup_sids
  ***************************************************************************/
-static BOOL api_lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
-                                 prs_struct *rdata )
+static BOOL api_lsa_lookup_sids(rpcsrv_struct * p, prs_struct * data,
+				prs_struct * rdata)
 {
 	LSA_Q_LOOKUP_SIDS q_l;
 	ZERO_STRUCT(q_l);
@@ -269,8 +269,8 @@ static BOOL api_lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_lookup_names
  ***************************************************************************/
-static BOOL api_lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata )
+static BOOL api_lsa_lookup_names(rpcsrv_struct * p, prs_struct * data,
+				 prs_struct * rdata)
 {
 	LSA_Q_LOOKUP_NAMES q_l;
 	LSA_R_LOOKUP_NAMES r_l;
@@ -311,8 +311,8 @@ static BOOL api_lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static BOOL api_lsa_close( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata)
+static BOOL api_lsa_close(rpcsrv_struct * p, prs_struct * data,
+			  prs_struct * rdata)
 {
 	LSA_R_CLOSE r_c;
 	LSA_Q_CLOSE q_c;
@@ -325,7 +325,7 @@ static BOOL api_lsa_close( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-	r_c.pol = q_c.pol; /* in/out */
+	r_c.pol = q_c.pol;	/* in/out */
 	r_c.status = _lsa_close(&r_c.pol);
 	return lsa_io_r_close("", &r_c, rdata, 0);
 }
@@ -333,8 +333,8 @@ static BOOL api_lsa_close( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
  api_lsa_create_secret
  ***************************************************************************/
-static BOOL api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata)
+static BOOL api_lsa_create_secret(rpcsrv_struct * p, prs_struct * data,
+				  prs_struct * rdata)
 {
 	LSA_R_CREATE_SECRET r_o;
 	LSA_Q_CREATE_SECRET q_o;
@@ -348,16 +348,16 @@ static BOOL api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	r_o.status = _lsa_create_secret(&q_o.pol,
-				      &q_o.uni_secret, q_o.des_access,
-				      &r_o.pol);
+					&q_o.uni_secret, q_o.des_access,
+					&r_o.pol);
 	return lsa_io_r_create_secret("", &r_o, rdata, 0);
 }
 
 /***************************************************************************
  api_lsa_set_secret.  AGH!  HACK! :)
  ***************************************************************************/
-static BOOL api_lsa_set_secret( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata)
+static BOOL api_lsa_set_secret(rpcsrv_struct * p, prs_struct * data,
+			       prs_struct * rdata)
 {
 	LSA_Q_SET_SECRET q_o;
 	LSA_R_SET_SECRET r_o;
@@ -371,7 +371,8 @@ static BOOL api_lsa_set_secret( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-	if (q_o.value.ptr_secret) val = &q_o.value.enc_secret;
+	if (q_o.value.ptr_secret)
+		val = &q_o.value.enc_secret;
 
 	r_o.status = _lsa_set_secret(&q_o.pol, val, q_o.unknown);
 
@@ -381,8 +382,8 @@ static BOOL api_lsa_set_secret( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
  api_lsa_query_secret.  AGH!  HACK! :)
  ***************************************************************************/
-static BOOL api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata)
+static BOOL api_lsa_query_secret(rpcsrv_struct * p, prs_struct * data,
+				 prs_struct * rdata)
 {
 	LSA_R_QUERY_SECRET r_o;
 	LSA_Q_QUERY_SECRET q_o;
@@ -400,29 +401,32 @@ static BOOL api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	/* HACK! */
-	if (q_o.sec.curinfo.ptr_value  != 0) curval = &q_o.sec.curinfo.value.enc_secret;
-	if (q_o.sec.curinfo.ptr_update != 0) curtim = &q_o.sec.curinfo.last_update;
-	if (q_o.sec.oldinfo.ptr_value  != 0) oldval = &q_o.sec.oldinfo.value.enc_secret;
-	if (q_o.sec.oldinfo.ptr_update != 0) oldtim = &q_o.sec.oldinfo.last_update;
+	if (q_o.sec.curinfo.ptr_value != 0)
+		curval = &q_o.sec.curinfo.value.enc_secret;
+	if (q_o.sec.curinfo.ptr_update != 0)
+		curtim = &q_o.sec.curinfo.last_update;
+	if (q_o.sec.oldinfo.ptr_value != 0)
+		oldval = &q_o.sec.oldinfo.value.enc_secret;
+	if (q_o.sec.oldinfo.ptr_update != 0)
+		oldtim = &q_o.sec.oldinfo.last_update;
 
 	r_o.status = _lsa_query_secret(&q_o.pol,
-	                                curval, curtim,
-	                                oldval, oldtim);
+				       curval, curtim, oldval, oldtim);
 
-	memcpy(&r_o.sec, &q_o.sec, sizeof(r_o.sec)); /* urgh! HACK! */
-	if (r_o.sec.curinfo.ptr_value != 0) /* MORE HACK! */
+	memcpy(&r_o.sec, &q_o.sec, sizeof(r_o.sec));	/* urgh! HACK! */
+	if (r_o.sec.curinfo.ptr_value != 0)	/* MORE HACK! */
 	{
 		r_o.sec.curinfo.value.ptr_secret = 1;
 		make_strhdr2(&r_o.sec.curinfo.value.hdr_secret,
-		              r_o.sec.curinfo.value.enc_secret.str_str_len,
-		              r_o.sec.curinfo.value.enc_secret.str_max_len, 1);
+			     r_o.sec.curinfo.value.enc_secret.str_str_len,
+			     r_o.sec.curinfo.value.enc_secret.str_max_len, 1);
 	}
-	if (r_o.sec.oldinfo.ptr_value != 0) /* MORE HACK! */
+	if (r_o.sec.oldinfo.ptr_value != 0)	/* MORE HACK! */
 	{
 		r_o.sec.curinfo.value.ptr_secret = 1;
 		make_strhdr2(&r_o.sec.oldinfo.value.hdr_secret,
-		              r_o.sec.oldinfo.value.enc_secret.str_str_len,
-		              r_o.sec.oldinfo.value.enc_secret.str_max_len, 1);
+			     r_o.sec.oldinfo.value.enc_secret.str_str_len,
+			     r_o.sec.oldinfo.value.enc_secret.str_max_len, 1);
 	}
 
 	return lsa_io_r_query_secret("", &r_o, rdata, 0);
@@ -431,8 +435,8 @@ static BOOL api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
  api_lsa_create_secret
  ***************************************************************************/
-static BOOL api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata)
+static BOOL api_lsa_open_secret(rpcsrv_struct * p, prs_struct * data,
+				prs_struct * rdata)
 {
 	LSA_R_OPEN_SECRET r_o;
 	LSA_Q_OPEN_SECRET q_o;
@@ -454,26 +458,25 @@ static BOOL api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
 /***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
-static const struct api_struct api_lsa_cmds[] =
-{
-	{ "LSA_OPENPOLICY2"    , LSA_OPENPOLICY2    , api_lsa_open_policy2   },
-	{ "LSA_OPENPOLICY"     , LSA_OPENPOLICY     , api_lsa_open_policy    },
-	{ "LSA_QUERYINFOPOLICY", LSA_QUERYINFOPOLICY, api_lsa_query_info     },
-	{ "LSA_ENUMTRUSTDOM"   , LSA_ENUMTRUSTDOM   , api_lsa_enum_trust_dom },
-	{ "LSA_CLOSE"          , LSA_CLOSE          , api_lsa_close          },
-	{ "LSA_OPENSECRET"     , LSA_OPENSECRET     , api_lsa_open_secret    },
-	{ "LSA_CREATESECRET"   , LSA_CREATESECRET   , api_lsa_create_secret  },
-	{ "LSA_QUERYSECRET"    , LSA_QUERYSECRET    , api_lsa_query_secret   },
-	{ "LSA_SETSECRET"      , LSA_SETSECRET      , api_lsa_set_secret     },
-	{ "LSA_LOOKUPSIDS"     , LSA_LOOKUPSIDS     , api_lsa_lookup_sids    },
-	{ "LSA_LOOKUPNAMES"    , LSA_LOOKUPNAMES    , api_lsa_lookup_names   },
-	{ NULL                 , 0                  , NULL                   }
+static const struct api_struct api_lsa_cmds[] = {
+	{"LSA_OPENPOLICY2", LSA_OPENPOLICY2, api_lsa_open_policy2},
+	{"LSA_OPENPOLICY", LSA_OPENPOLICY, api_lsa_open_policy},
+	{"LSA_QUERYINFOPOLICY", LSA_QUERYINFOPOLICY, api_lsa_query_info},
+	{"LSA_ENUMTRUSTDOM", LSA_ENUMTRUSTDOM, api_lsa_enum_trust_dom},
+	{"LSA_CLOSE", LSA_CLOSE, api_lsa_close},
+	{"LSA_OPENSECRET", LSA_OPENSECRET, api_lsa_open_secret},
+	{"LSA_CREATESECRET", LSA_CREATESECRET, api_lsa_create_secret},
+	{"LSA_QUERYSECRET", LSA_QUERYSECRET, api_lsa_query_secret},
+	{"LSA_SETSECRET", LSA_SETSECRET, api_lsa_set_secret},
+	{"LSA_LOOKUPSIDS", LSA_LOOKUPSIDS, api_lsa_lookup_sids},
+	{"LSA_LOOKUPNAMES", LSA_LOOKUPNAMES, api_lsa_lookup_names},
+	{NULL, 0, NULL}
 };
 
 /***************************************************************************
  api_ntLsarpcTNP
  ***************************************************************************/
-BOOL api_ntlsa_rpc(rpcsrv_struct *p)
+BOOL api_ntlsa_rpc(rpcsrv_struct * p)
 {
 	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds);
 }
