@@ -101,7 +101,7 @@ static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path
 			close((int)fd_pending_array[i]);
 			fd_pending_array[i] = (sig_atomic_t)-1;
 			if (signals_received - i - 1) {
-				memmove(&fd_pending_array[i], &fd_pending_array[i+1],
+ 				memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
 						sizeof(sig_atomic_t)*(signals_received-i-1));
 			}
 			data->directory_handle = -1;
@@ -130,7 +130,7 @@ static void kernel_remove_notify(void *datap)
 				close(fd);
 				fd_pending_array[i] = (sig_atomic_t)-1;
 				if (signals_received - i - 1) {
-					memmove(&fd_pending_array[i], &fd_pending_array[i+1],
+ 					memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
 							sizeof(sig_atomic_t)*(signals_received-i-1));
 				}
 				data->directory_handle = -1;
