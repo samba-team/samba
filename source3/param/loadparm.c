@@ -207,11 +207,11 @@ typedef struct
 	int iLockSpinTime;
 	char *szLdapMachineSuffix;
 	char *szLdapUserSuffix;
-	int ldap_port;
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapFilter;
 	char *szLdapAdminDn;
+	int ldap_passwd_sync; 
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
@@ -597,6 +597,22 @@ static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "Off"},
 	{LDAP_SSL_START_TLS, "start tls"},
 	{LDAP_SSL_START_TLS, "start_tls"},
+	{-1, NULL}
+};
+
+static struct enum_list enum_ldap_passwd_sync[] = {
+	{LDAP_PASSWD_SYNC_ON, "Yes"},
+	{LDAP_PASSWD_SYNC_ON, "yes"},
+	{LDAP_PASSWD_SYNC_ON, "on"},
+	{LDAP_PASSWD_SYNC_ON, "On"},
+	{LDAP_PASSWD_SYNC_OFF, "no"},
+	{LDAP_PASSWD_SYNC_OFF, "No"},
+	{LDAP_PASSWD_SYNC_OFF, "off"},
+	{LDAP_PASSWD_SYNC_OFF, "Off"},
+#ifdef LDAP_EXOP_X_MODIFY_PASSWD	
+	{LDAP_PASSWD_SYNC_ONLY, "Only"},
+	{LDAP_PASSWD_SYNC_ONLY, "only"},
+#endif /* LDAP_EXOP_X_MODIFY_PASSWD */	
 	{-1, NULL}
 };
 
@@ -987,12 +1003,13 @@ static struct parm_struct parm_table[] = {
 
 	{"Ldap Options", P_SEP, P_SEPARATOR},
 	
-        {"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-        {"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, handle_ldap_machine_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-        {"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, handle_ldap_user_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, handle_ldap_machine_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, handle_ldap_user_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1357,6 +1374,7 @@ static void init_globals(void)
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
+	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -1570,6 +1588,7 @@ FN_GLOBAL_STRING(lp_ldap_user_suffix, &Globals.szLdapUserSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
+FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
