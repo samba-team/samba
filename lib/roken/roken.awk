@@ -6,7 +6,7 @@ BEGIN {
 	print "#endif"
 	print "#include <stdio.h>"
 	print ""
-	print "int main()"
+	print "int main(int argc, char **argv)"
 	print "{"
 	    print "puts(\"/* This is an OS dependent, generated file */\");"
 	print "puts(\"\\n\");"
