@@ -619,6 +619,8 @@ it() link(bf(netbios name))(netbiosname)
 
 it() link(bf(nis homedir))(nishomedir)
 
+it() link(bf(nt acl support))(ntaclsupport)
+
 it() link(bf(nt pipe support))(ntpipesupport)
 
 it() link(bf(nt smb support))(ntsmbsupport)
@@ -3681,6 +3683,16 @@ tt(	nis homedir = false)
 
   bf(Example:)
 tt(	nis homedir = true)
+
+label(ntaclsupport)
+dit(bf(nt acl support (G)))
+
+This boolean parameter controls whether url(bf(smbd))(smbd.8.html)
+will attempt to map UNIX permissions into Windows NT access control lists.
+This is currently an experimental option and is off by default.
+
+  bf(Default:)
+tt(	nt acl support = no)
 
 label(ntpipesupport)
 dit(bf(nt pipe support (G)))
