@@ -6,12 +6,13 @@ include $(top_srcdir)/Makefile.am.common
 DFSPROGS = k5dcecon
 if AIX
 AIX_DFSPROGS = dpagaix
-dpagaix_LDFLAGS = -Wl,-edpagaix -Wl,dfspag.exp
-dpagaix_LDADD =
-CC = xlc_r4
 endif
 
 libexec_PROGRAMS = $(DFSPROGS) $(AIX_DFSPROGS)
+
+dpagaix_CFLAGS = @dpagaix_CFLAGS@
+dpagaix_LDFLAGS = @dpagaix_LDFLAGS@
+dpagaix_LDADD = @dpagaix_LDADD@
 
 LIB_dce = -ldce
 
