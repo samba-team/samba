@@ -56,20 +56,25 @@ do_read (int fd,
 	    u_int32_t len, outer_len;
 	    int status;
 	    krb5_data data;
+	    void *edata;
 
 	    ret = krb5_net_read (context, &fd, &len, 4);
 	    if (ret <= 0)
 		return ret;
 	    len = ntohl(len);
-	    outer_len = krb5_get_wrapped_length (context, crypto, len);
-	    if (outer_len > sz)
+	    if (len > sz)
 		abort ();
-	    ret = krb5_net_read (context, &fd, buf, outer_len);
+	    outer_len = krb5_get_wrapped_length (context, crypto, len);
+	    edata = malloc (outer_len);
+	    if (edata == NULL)
+		errx (1, "malloc: cannot allocate %u bytes", outer_len);
+	    ret = krb5_net_read (context, &fd, edata, outer_len);
 	    if (ret <= 0)
 		return ret;
 
 	    status = krb5_decrypt(context, crypto, KRB5_KU_OTHER_ENCRYPTED, 
-				  buf, outer_len, &data);
+				  edata, outer_len, &data);
+	    free (edata);
 	    
 	    if (status)
 		errx (1, "%s", krb5_get_err_text (context, status));
