@@ -9,7 +9,7 @@ $topdir = (shift @ARGV) or $topdir = ".";
 
 $curdir = $ENV{PWD};
 
-chdir($topdir."/docs/docbook/smbdotconf");
+chdir("smbdotconf");
 
 open(IN,"xsltproc --xinclude --param smb.context ALL generate-context.xsl parameters.all.xml|");
 
