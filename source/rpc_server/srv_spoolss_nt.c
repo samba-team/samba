@@ -3710,6 +3710,8 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 	if (add_a_printer_driver(driver, level)!=0)
 		return ERROR_ACCESS_DENIED;
 
+	safe_free(driver.info_3);
+
 	return NT_STATUS_NO_PROBLEMO;
 }
 
