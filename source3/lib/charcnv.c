@@ -367,7 +367,7 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 		src = tmpbuf;
 	}
 
-	if (flags & STR_TERMINATE)
+	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
 	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);

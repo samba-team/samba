@@ -66,6 +66,7 @@ typedef int BOOL;
 #define STR_ASCII 4
 #define STR_UNICODE 8
 #define STR_NOALIGN 16
+#define STR_TERMINATE_ASCII 128
 
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
