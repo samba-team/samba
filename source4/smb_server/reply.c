@@ -1355,6 +1355,11 @@ void reply_tdis(struct smbsrv_request *req)
 {
 	REQ_CHECK_WCT(req, 0);
 
+	if (req->tcon == NULL) {
+		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+		return;
+	}
+
 	close_cnum(req->tcon);
 
 	/* construct reply */
