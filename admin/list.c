@@ -77,7 +77,7 @@ do_list(const char *keytab_string)
 	goto out;
     }
 
-    fprintf (stderr, "%s:\n\n", keytab_string);
+    printf ("%s:\n\n", keytab_string);
 	
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
@@ -102,7 +102,7 @@ do_list(const char *keytab_string)
 	if (ret != 0) 
 	    asprintf(&kp->etype, "unknown (%d)", entry.keyblock.keytype);
 	CHECK_MAX(etype);
-	krb5_unparse_name_short(context, entry.principal, &kp->principal);
+	krb5_unparse_name(context, entry.principal, &kp->principal);
 	CHECK_MAX(principal);
 	if (list_timestamp) {
 	    char tstamp[256];
