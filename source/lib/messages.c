@@ -298,12 +298,16 @@ void message_dispatch(void)
 	size_t len;
 	struct dispatch_fns *dfn;
 
-	if (!received_signal) return;
+	if (!received_signal)
+		return;
+
+	DEBUG(10,("message_dispatch: received_signal = %d\n", received_signal));
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
+				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
 				dfn->fn(msg_type, src, buf, len);
 			}
 		}

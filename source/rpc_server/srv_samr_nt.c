@@ -900,6 +900,8 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 
 	DEBUG(10,("get_group_alias_entries: returning %d entries\n", *p_num_entries));
 
+	if (num_entries >= max_entries)
+		return STATUS_MORE_ENTRIES;
 	return NT_STATUS_OK;
 }
 
@@ -1007,7 +1009,7 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 
 	/*safe_free(grp);*/
 
-	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx, num_entries);
+	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx + num_entries, num_entries);
 
 	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
 
