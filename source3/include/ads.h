@@ -145,3 +145,25 @@ typedef void **ADS_MODLIST;
 /* account types */
 #define ATYPE_GROUP               0x10000000
 #define ATYPE_USER                0x30000000
+
+/* Mailslot or cldap getdcname response flags */
+#define ADS_PDC            0x00000001  /* DC is PDC */
+#define ADS_GC             0x00000004  /* DC is a GC of forest */
+#define ADS_LDAP           0x00000008  /* DC is an LDAP server */
+#define ADS_DS             0x00000010  /* DC supports DS */
+#define ADS_KDC            0x00000020  /* DC is running KDC */
+#define ADS_TIMESERV       0x00000040  /* DC is running time services */
+#define ADS_CLOSEST        0x00000080  /* DC is closest to client */
+#define ADS_WRITABLE       0x00000100  /* DC has writable DS */
+#define ADS_GOOD_TIMESERV  0x00000200  /* DC has hardware clock
+	  				 (and running time) */
+#define ADS_NDNC           0x00000400  /* DomainName is non-domain NC serviced
+	  				 by LDAP server */
+#define ADS_PINGS          0x0000FFFF  /* Ping response */
+#define ADS_DNS_CONTROLLER 0x20000000  /* DomainControllerName is a DNS name*/
+#define ADS_DNS_DOMAIN     0x40000000  /* DomainName is a DNS name */
+#define ADS_DNS_FOREST     0x80000000  /* DnsForestName is a DNS name */
+
+/* DomainCntrollerAddressType */
+#define ADS_INET_ADDRESS      0x00000001
+#define ADS_NETBIOS_ADDRESS   0x00000002
