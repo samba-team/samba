@@ -37,8 +37,7 @@ template: userTemplate
 template: groupTemplate
 
 dn: @MODULES
-@MODULE: timestamps
-@MODULE: schema
+@LIST: timestamps,schema
 
 # Top, Schema, Configuration, schema, test
 dn: CN=Top,CN=Schema,CN=Configuration,DC=schema,DC=test

@@ -45,53 +45,100 @@
 #include <dlfcn.h>
 #endif
 
-#define LDB_MODULE_PREFIX	"modules"
-#define LDB_MODULE_PREFIX_LEN	7
-#define LDB_MODULE_SEP		':'
+#define LDB_MODULE_PREFIX	"modules:"
+#define LDB_MODULE_PREFIX_LEN	8
+
+static char *talloc_strdup_no_spaces(struct ldb_context *ldb, const char *string)
+{
+	int i, len;
+	char *trimmed;
+
+	trimmed = talloc_strdup(ldb, string);
+	if (!trimmed) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in talloc_strdup_trim_spaces()\n");
+		return NULL;
+	}
+
+	len = strlen(trimmed);
+	for (i = 0; trimmed[i] != '\0'; i++) {
+		switch (trimmed[i]) {
+		case ' ':
+		case '\t':
+		case '\n':
+			memmove(&trimmed[i], &trimmed[i + 1], len -i -1);
+			break;
+		}
+	}
+
+	return trimmed;
+}
+
+
+/* modules are called in inverse order on the stack.
+   Lets place them as an admin would think the right order is.
+   Modules order is imprtant */
+static char **ldb_modules_list_from_string(struct ldb_context *ldb, const char *string)
+{
+	char **modules = NULL;
+	char *modstr, *p;
+	int i;
+
+	/* spaces not admitted */
+	modstr = talloc_strdup_no_spaces(ldb, string);
+	if ( ! modstr) {
+		return NULL;
+	}
+
+	modules = talloc_realloc(ldb, modules, char *, 2);
+	if ( ! modules ) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()\n");
+		talloc_free(modstr);
+		return NULL;
+	}
+	talloc_steal(modules, modstr);
+
+	i = 0;
+	while ((p = strrchr(modstr, ',')) != NULL) {
+		*p = '\0';
+		p++;
+		modules[i] = p;
+
+		i++;
+		modules = talloc_realloc(ldb, modules, char *, i + 2);
+		if ( ! modules ) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()\n");
+			return NULL;
+		}
+
+	}
+	modules[i] = modstr;
+
+	modules[i + 1] = NULL;
+
+	return modules;
+}
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
-	struct ldb_module *current;
-	char **modules;
-	int mnum, i;
+	char **modules = NULL;
+	int i;
 
 	/* find out which modules we are requested to activate */
-	modules = NULL;
-	mnum = 0;
 
+	/* check if we have a custom module list passd as ldb option */
 	if (options) {
-		char *q, *p;
-
 		for (i = 0; options[i] != NULL; i++) {
-			if (strncmp(options[i], LDB_MODULE_PREFIX, 
-				    LDB_MODULE_PREFIX_LEN) == 0) {
-				p = q = talloc_strdup(ldb, &options[i][LDB_MODULE_PREFIX_LEN]);
-				if (*q != ':') {
-					talloc_free(q);
-					return -1;
-				}
-				do {
-					*p = '\0';
-					q = p + 1;
-					mnum++;
-					modules = talloc_realloc(ldb, modules, char *, mnum);
-					if (!modules) {
-						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_load_modules()\n");
-						return -1;
-					}
-					modules[mnum - 1] = q;
-				} while ((p = strchr(q, LDB_MODULE_SEP)));
+			if (strncmp(options[i], LDB_MODULE_PREFIX, LDB_MODULE_PREFIX_LEN) == 0) {
+				modules = ldb_modules_list_from_string(ldb, &options[i][LDB_MODULE_PREFIX_LEN]);
 			}
 		}
 	}
 
-	if (!modules && strcmp("ldap", ldb->modules->ops->name)) { 
-		/* no modules in the options, look for @MODULES in the
-		   db (not for ldap) */
+	/* if not overloaded by options and the backend is not ldap try to load the modules list form ldb */
+	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) { 
 		int ret;
 		const char * const attrs[] = { "@LIST" , NULL};
 		struct ldb_message **msg = NULL;
-		char *modstr, *c, *p; 
 
 		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", attrs, &msg);
 		if (ret == 0 || (ret == 1 && msg[0]->num_elements == 0)) {
@@ -103,139 +150,104 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			}
 			if (ret > 1) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found, bailing out\n");
+				talloc_free(msg);
 				return -1;
 			}
 
-/*
-			for (j = 0; j < msg[0]->num_elements; j++) {
-				for (k = 0; k < msg[0]->elements[j].num_values; k++) {
-					pn++;
-					modules = talloc_realloc(ldb, modules, char *, pn);
-					if (!modules) {
-						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
-						return -1;
-					}
-					modules[pn - 1] = talloc_strndup(modules, msg[0]->elements[j].values[k].data, msg[0]->elements[j].values[k].length);
-					if (!modules[pn - 1]) {
-						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
-						return -1;
-					}
-				}
-			}
-*/
-			modstr = msg[0]->elements[0].values[0].data;
-			for (c = modstr, mnum = 0; c != NULL; mnum++) {
-				c = strchr(c, ',');
-				if (c != NULL) {
-					c++;
-					if (*c == '\0') { /* avoid failing if the modules string lasts with ',' */
-						break;
-					}
-				}
-			}
-			
+			modules = ldb_modules_list_from_string(ldb, msg[0]->elements[0].values[0].data);
 
-			modules = talloc_array(ldb, char *, mnum);
-			if ( ! modules ) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_load_modules()\n");
-				return -1;
-			}
-
-			for (p = c = modstr, i = 0; mnum > i; i++) {
-				c = strchr(p, ',');
-				if (c) {
-					*c = '\0';
-				}
-				/* modules are seeked in inverse order. Lets place them as an admin would think the right order is */
-				modules[mnum - i - 1] = talloc_strdup(modules, p);
-				p = c + 1;
-			}
 		}
+
 		talloc_free(msg);
 	}
 
-	if (modules) {
-		for (i = 0; i < mnum; i++) {
+	if (modules == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database\n");
+		return 0;
+	}
+
+	for (i = 0; modules[i] != NULL; i++) {
 #ifdef HAVE_DLOPEN_DISABLED
-			void *handle;
-			ldb_module_init_function init;
-			struct stat st;
-			char *filename;
-			const char *errstr;
+		void *handle;
+		ldb_module_init_function init;
+		struct stat st;
+		char *filename;
+		const char *errstr;
 #endif
+		struct ldb_module *current;
 
-			if (strcmp(modules[i], "schema") == 0) {
-				current = schema_module_init(ldb, options);
-				if (!current) {
-					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-					return -1;
-				}
-				DLIST_ADD(ldb->modules, current);
-				continue;
-			}
-
-			if (strcmp(modules[i], "timestamps") == 0) {
-				current = timestamps_module_init(ldb, options);
-				if (!current) {
-					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-					return -1;
-				}
-				DLIST_ADD(ldb->modules, current);
-				continue;
-			}
-
-#ifdef _SAMBA_BUILD_
-			if (strcmp(modules[i], "samldb") == 0) {
-				current = samldb_module_init(ldb, options);
-				if (!current) {
-					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-					return -1;
-				}
-				DLIST_ADD(ldb->modules, current);
-				continue;
-			}
-#endif
-
-#ifdef HAVE_DLOPEN_DISABLED
-			filename = talloc_asprintf(ldb, "%s.so", modules[i]);
-			if (!filename) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Talloc failed!\n");
-				return -1;
-			}
-
-			if (stat(filename, &st) < 0) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module [%s] not found, bailing out!\n", modules[i]);
-				return -1;
-			}
-
-			handle = dlopen(filename, RTLD_LAZY);
-
-			if (!handle) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Error loading module %s [%s]\n", modules[i], dlerror());
-				return -1;
-			}
-
-			init = (ldb_module_init_function)dlsym(handle, "init_module");
-
-			errstr = dlerror();
-			if (errstr) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Error trying to resolve symbol 'init_module' in %s [%s]\n", modules[i], errstr);
-				return -1;
-			}
-
-			current = init(ldb, options);
+		if (strcmp(modules[i], "schema") == 0) {
+			current = schema_module_init(ldb, options);
 			if (!current) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
 				return -1;
 			}
 			DLIST_ADD(ldb->modules, current);
-#else
+			continue;
+		}
+
+		if (strcmp(modules[i], "timestamps") == 0) {
+			current = timestamps_module_init(ldb, options);
+			if (!current) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+				return -1;
+			}
+			DLIST_ADD(ldb->modules, current);
+			continue;
+		}
+
+#ifdef _SAMBA_BUILD_
+		if (strcmp(modules[i], "samldb") == 0) {
+			current = samldb_module_init(ldb, options);
+			if (!current) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+				return -1;
+			}
+			DLIST_ADD(ldb->modules, current);
+			continue;
+		}
+#endif
+
+#ifdef HAVE_DLOPEN_DISABLED
+		filename = talloc_asprintf(ldb, "%s.so", modules[i]);
+		if (!filename) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "Talloc failed!\n");
+			return -1;
+		}
+
+		if (stat(filename, &st) < 0) {
 			ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module [%s] not found, bailing out!\n", modules[i]);
 			return -1;
-#endif
 		}
+
+		handle = dlopen(filename, RTLD_LAZY);
+
+		if (!handle) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "Error loading module %s [%s]\n", modules[i], dlerror());
+			return -1;
+		}
+
+		init = (ldb_module_init_function)dlsym(handle, "init_module");
+
+		errstr = dlerror();
+		if (errstr) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "Error trying to resolve symbol 'init_module' in %s [%s]\n", modules[i], errstr);
+			return -1;
+		}
+
+		current = init(ldb, options);
+		if (!current) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+			return -1;
+		}
+		DLIST_ADD(ldb->modules, current);
+#else
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module [%s] not found, bailing out!\n", modules[i]);
+		return -1;
+#endif
 	}
 
+	talloc_free(modules);
 	return 0; 
 }
 

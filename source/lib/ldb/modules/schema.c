@@ -108,7 +108,7 @@ static struct schema_attribute *schema_find_attribute(struct schema_attribute_li
 /* get all the attributes and objectclasses found in msg and put them in schema_structure
    attributes go in the entry_attrs structure for later checking
    objectclasses go in the objectclasses structure */
-static int get_msg_attributes(struct schema_structures *ss, const struct ldb_message *msg)
+static int get_msg_attributes(struct schema_structures *ss, const struct ldb_message *msg, int flag_mask)
 {
 	int i, j, k, l;
 
@@ -132,13 +132,13 @@ static int get_msg_attributes(struct schema_structures *ss, const struct ldb_mes
 
 			for (k = 0, l = ss->objectclasses.num; k < msg->elements[i].num_values; k++) {
 				ss->objectclasses.attr[l].name = msg->elements[i].values[k].data;
-				ss->objectclasses.attr[l].flags = msg->elements[i].flags;
+				ss->objectclasses.attr[l].flags = msg->elements[i].flags & flag_mask;
 				l++;
 			}
 			ss->objectclasses.num += msg->elements[i].num_values;
 		}
 
-		ss->entry_attrs.attr[j].flags = msg->elements[i].flags;
+		ss->entry_attrs.attr[j].flags = msg->elements[i].flags & flag_mask;
 		ss->entry_attrs.attr[j].name = talloc_reference(ss->entry_attrs.attr,
 							    msg->elements[i].name);
 		if (ss->entry_attrs.attr[j].name == NULL) {
@@ -163,7 +163,8 @@ static int get_entry_attributes(struct ldb_context *ldb, const char *dn, struct 
 	}
 	talloc_steal(ss, srch);
 
-	ret = get_msg_attributes(ss, *srch);
+	/* set flags to 0 as flags on search have undefined values */
+	ret = get_msg_attributes(ss, *srch, 0);
 	if (ret != 0) {
 		ldb_search_free(ldb, srch);
 		return ret;
@@ -336,7 +337,7 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 		return -1;
 	}
 
-	ret = get_msg_attributes(entry_structs, msg);
+	ret = get_msg_attributes(entry_structs, msg, SCHEMA_FLAG_MOD_MASK);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
@@ -430,7 +431,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 	}
 
 	/* get list of values to modify */
-	ret = get_msg_attributes(entry_structs, msg);
+	ret = get_msg_attributes(entry_structs, msg, SCHEMA_FLAG_MOD_MASK);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
