@@ -1,3 +1,8 @@
+2000-08-10  Assar Westerlund  <assar@sics.se>
+
+	* mini_inetd.c (accept_it): type-correctness on parameters to
+	accept
+
 2000-08-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken.h.in: add proto compat for getsockname
