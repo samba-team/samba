@@ -2288,6 +2288,11 @@ LIBS=""
   
 LDAP_LIBS="$LIBS";
 LIBS="$ac_save_LIBS";
+else
+    # Can't have ADS support without LDAP
+    if test x"$with_ads_support" = x"yes"; then
+       AC_MSG_ERROR(Active directory support requires LDAP)
+    fi
 fi
 
 if test x"$with_ads_support" = x"yes"; then
