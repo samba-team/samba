@@ -82,6 +82,15 @@ char *dos_readdirname(DIR *p)
 #endif
 
 /*******************************************************************
+ A chown() wrapper that calls dos_to_unix.
+********************************************************************/
+
+int dos_chown(char *fname, uid_t uid, gid_t gid)
+{
+  return(sys_chown(dos_to_unix(fname,False),uid,gid));
+}
+
+/*******************************************************************
  A stat() wrapper that calls dos_to_unix.
 ********************************************************************/
 
@@ -100,14 +109,20 @@ int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
- Mkdir() that calls dos_to_unix.  Don't use this call unless you
- really want to access a file on disk.  Use the vfs_ops.mkdir() 
- function instead.
+ Mkdir() that calls dos_to_unix.
+ Cope with UNIXes that don't allow high order mode bits on mkdir.
+ Patch from gcarter@lanier.com.
+ Don't use this call unless you really want to access a file on 
+ disk.  Use the vfs_ops.mkdir() function instead.
 ********************************************************************/
 
 int dos_mkdir(char *dname,mode_t mode)
 {
-  return(mkdir(dos_to_unix(dname,False),mode));
+  int ret = mkdir(dos_to_unix(dname,False),mode);
+  if(!ret)
+    return(dos_chmod(dname,mode));
+  else
+    return ret;
 }
 
 /*******************************************************************
@@ -243,11 +258,19 @@ int copy_reg(char *source, const char *dest)
 
 int dos_rename(char *from, char *to)
 {
+    int rcode;  
     pstring zfrom, zto;
 
     pstrcpy (zfrom, dos_to_unix (from, False));
     pstrcpy (zto, dos_to_unix (to, False));
-    return file_rename(zfrom, zto);
+    rcode = rename (zfrom, zto);
+
+    if (errno == EXDEV) 
+    {
+      /* Rename across filesystems needed. */
+      rcode = copy_reg (zfrom, zto);        
+    }
+    return rcode;
 }
 
 /*******************************************************************
@@ -308,7 +331,7 @@ time_t dos_file_modtime(char *fname)
 
 SMB_OFF_T dos_file_size(char *file_name)
 {
-  return file_size(dos_to_unix(file_name, False));
+  return get_file_size(dos_to_unix(file_name, False));
 }
 
 /*******************************************************************
@@ -394,7 +417,7 @@ char *dos_GetWd(char *path)
     getwd_cache_init = True;
     for (i=0;i<MAX_GETWDCACHE;i++)
     {
-      string_init(&ino_list[i].dos_path,"");
+      string_set(&ino_list[i].dos_path,"");
       ino_list[i].valid = False;
     }
   }
@@ -404,7 +427,7 @@ char *dos_GetWd(char *path)
 
   if (sys_stat(".",&st) == -1)
   {
-    DEBUG(0,("Very strange, couldn't stat \".\"\n"));
+    DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
     return(dos_getwd(path));
   }
 

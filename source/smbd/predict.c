@@ -37,7 +37,7 @@ static int rp_timeout = 5;
 static time_t rp_time = 0;
 static char *rp_buffer = NULL;
 static BOOL predict_skip=False;
-extern time_t smb_last_time;
+extern struct timeval smb_last_time;
 
 /****************************************************************************
 handle read prediction on a file
@@ -53,7 +53,7 @@ ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char *
   if (fd == rp_fd && 
       offset >= rp_offset && 
       possible>0 &&
-      smb_last_time-rp_time < rp_timeout)
+      smb_last_time.tv_secs - rp_time < rp_timeout)
   {
     ret = possible;
     if (buf)

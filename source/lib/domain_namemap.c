@@ -157,26 +157,32 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 	}
 	else
 	{
+		POSIX_ID id;
+
 		switch (type)
 		{
 			case DOM_MAP_USER:
 			{
 				grp->type = SID_NAME_USER;
+				id.type = SURS_POSIX_UID_AS_USR;
 				break;
 			}
 			case DOM_MAP_DOMAIN:
 			{
 				grp->type = SID_NAME_DOM_GRP;
+				id.type = SURS_POSIX_GID_AS_GRP;
 				break;
 			}
 			case DOM_MAP_LOCAL:
 			{
 				grp->type = SID_NAME_ALIAS;
+				id.type = SURS_POSIX_GID_AS_ALS;
 				break;
 			}
 		}
 
-		ret = surs_unixid_to_sam_sid(grp->unix_id, grp->type, &grp->sid, False);
+		id.id = grp->unix_id;
+		ret = surs_unixid_to_sam_sid(&id, &grp->sid, False);
 	}
 
 	sid_to_string(sid_str, &grp->sid);
@@ -776,6 +782,8 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint32 *type)
 static BOOL get_sid_and_type(const char *fullntname, uint32 expected_type,
 				DOM_NAME_MAP *gmep)
 {
+	POSIX_ID id;
+
 	/*
 	 * check with the PDC to see if it owns the name.  if so,
 	 * the SID is resolved with the PDC database.
@@ -804,7 +812,29 @@ static BOOL get_sid_and_type(const char *fullntname, uint32 expected_type,
 	{
 		return False;
 	}
-	if (!surs_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid, False))
+
+	switch (gmep->type)
+	{
+		case SID_NAME_USER:
+		{
+			id.type = SURS_POSIX_UID_AS_USR;
+			break;
+		}
+		case SID_NAME_DOM_GRP:
+		{
+			id.type = SURS_POSIX_GID_AS_GRP;
+			break;
+		}
+		case SID_NAME_ALIAS:
+		{
+			id.type = SURS_POSIX_GID_AS_ALS;
+			break;
+		}
+	}
+
+	id.id = gmep->unix_id;
+
+	if (!surs_unixid_to_sam_sid(&id, &gmep->sid, False))
 	{
 		return False;
 	}
@@ -824,6 +854,7 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 	}
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
+		POSIX_ID id;
 		static fstring nt_name;
 		static fstring unix_name;
 		static fstring nt_domain;
@@ -861,7 +892,29 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 		 */
 
 		gmep->nt_domain = global_sam_name;
-		surs_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid, False);
+
+		switch (gmep->type)
+		{
+			case SID_NAME_USER:
+			{
+				id.type = SURS_POSIX_UID_AS_USR;
+				break;
+			}
+			case SID_NAME_DOM_GRP:
+			{
+				id.type = SURS_POSIX_GID_AS_GRP;
+				break;
+			}
+			case SID_NAME_ALIAS:
+			{
+				id.type = SURS_POSIX_GID_AS_ALS;
+				break;
+			}
+		}
+
+		id.id = gmep->unix_id;
+
+		surs_unixid_to_sam_sid(&id, &gmep->sid, False);
 
 		return True;
 	}
@@ -936,6 +989,7 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 	}
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
+		POSIX_ID id;
 		static fstring nt_name;
 		static fstring unix_name;
 		static fstring nt_domain;
@@ -966,10 +1020,33 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 
 		gmep->type = SID_NAME_USER;
 		sid_copy(&gmep->sid, sid);
-		if (!surs_sam_sid_to_unixid(&gmep->sid, gmep->type, &gmep->unix_id, False))
+
+		if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
 		{
 			return False;
 		}
+
+		gmep->unix_id = id.id;
+
+		switch (id.type)
+		{
+			case SURS_POSIX_UID_AS_USR:
+			{
+				gmep->type= SID_NAME_USER;
+				break;
+			}
+			case SURS_POSIX_GID_AS_GRP:
+			{
+				gmep->type= SID_NAME_DOM_GRP;
+				break;
+			}
+			case SURS_POSIX_GID_AS_ALS:
+			{
+				gmep->type= SID_NAME_ALIAS;
+				break;
+			}
+		}
+
 		fstrcpy(gmep->nt_name, uidtoname((uid_t)gmep->unix_id));
 		fstrcpy(gmep->unix_name, gmep->nt_name);
 		gmep->nt_domain = global_sam_name;
@@ -1018,6 +1095,7 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 	}
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
+		POSIX_ID id;
 		static fstring nt_name;
 		static fstring unix_name;
 		static fstring nt_domain;
@@ -1063,10 +1141,32 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 		}
 
 		sid_copy(&gmep->sid, sid);
-		if (!surs_sam_sid_to_unixid(&gmep->sid, gmep->type, &gmep->unix_id, False))
+		if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
 		{
 			return False;
 		}
+
+		gmep->unix_id = id.id;
+
+		switch (id.type)
+		{
+			case SURS_POSIX_UID_AS_USR:
+			{
+				gmep->type= SID_NAME_USER;
+				break;
+			}
+			case SURS_POSIX_GID_AS_GRP:
+			{
+				gmep->type= SID_NAME_DOM_GRP;
+				break;
+			}
+			case SURS_POSIX_GID_AS_ALS:
+			{
+				gmep->type= SID_NAME_ALIAS;
+				break;
+			}
+		}
+
 		fstrcpy(gmep->nt_name, gidtoname((gid_t)gmep->unix_id));
 		fstrcpy(gmep->unix_name, gmep->nt_name);
 		gmep->nt_domain = global_sam_name;

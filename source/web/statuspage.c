@@ -134,8 +134,7 @@ void status_page(void)
 	TDB_CONTEXT *tdb;
 
 	if (cgi_variable("smbd_restart")) {
-		if (smbd_running())
-			stop_smbd();
+		stop_smbd();
 		start_smbd();
 	}
 
@@ -148,8 +147,7 @@ void status_page(void)
 	}
 
 	if (cgi_variable("nmbd_restart")) {
-		if (nmbd_running())
-			stop_nmbd();
+		stop_nmbd();
 		start_nmbd();
 	}
 	if (cgi_variable("nmbd_start")) {

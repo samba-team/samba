@@ -606,8 +606,7 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 
 void prs_mem_free(prs_struct *ps)
 {
-	if (ps->data)
-		free(ps->data);
+	safe_free(ps->data);
 	ps->data = NULL;
 	ps->offset = 0;
 }
@@ -780,8 +779,8 @@ BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct * ps, int depth,
 		return False;
 	}
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, data8s,
-		     len) ps->offset = end_offset;
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, data8s, len);
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -890,7 +889,8 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct * ps, int depth,
 	}
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q,
-		     str->buffer, str->buf_len) ps->offset = end_offset;
+		     str->buffer, str->buf_len);
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -927,7 +927,8 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct * ps, int depth,
 	}
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q,
-		     str->buffer, str->str_str_len) ps->offset = end_offset;
+		     str->buffer, str->str_str_len);
+	ps->offset = end_offset;
 
 	return True;
 }

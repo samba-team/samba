@@ -282,8 +282,7 @@ typedef struct nttime_info
 	uint32 low;
 	uint32 high;
 
-}
-NTTIME;
+} NTTIME;
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001	/* 1 = User account disabled */
@@ -378,8 +377,7 @@ typedef struct sid_info
 	 */
 	uint32 sub_auths[MAXSUBAUTHS];	/* pointer to sub-authorities. */
 
-}
-DOM_SID;
+} DOM_SID;
 
 
 typedef struct group_name_info
@@ -392,7 +390,8 @@ typedef struct group_name_info
 	uint32 type;
 	uint32 unix_id;
 
-} DOM_NAME_MAP;
+}
+DOM_NAME_MAP;
 
 /* map either local aliases, domain groups or builtin aliases */
 typedef enum
@@ -413,7 +412,8 @@ typedef struct local_grp_member_info
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 	fstring name;		/* matches with sid: must be of the form "DOMAIN\account" */
 
-} LOCAL_GRP_MEMBER;
+}
+LOCAL_GRP_MEMBER;
 
 /* enumerate these to get list of local groups */
 
@@ -424,7 +424,8 @@ typedef struct local_grp_info
 	fstring comment;
 	uint32 rid;		/* alias rid */
 
-} LOCAL_GRP;
+}
+LOCAL_GRP;
 
 /*** query a domain group, get a list of these: shows who is in that group ***/
 
@@ -436,7 +437,8 @@ typedef struct domain_grp_member_info
 	uint32 rid;		/* rid of domain group member */
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 
-} DOMAIN_GRP_MEMBER;
+}
+DOMAIN_GRP_MEMBER;
 
 /*** enumerate these to get list of domain groups ***/
 
@@ -448,7 +450,8 @@ typedef struct domain_grp_info
 	uint32 rid;		/* group rid */
 	uint8 attr;		/* attributes forced to be set to 0x7: SE_GROUP_xxx */
 
-} DOMAIN_GRP;
+}
+DOMAIN_GRP;
 
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
@@ -461,8 +464,7 @@ DOM_CHAL;
 typedef struct time_info
 {
 	uint32 time;
-}
-UTIME;
+} UTIME;
 
 /* DOM_CREDs - timestamped client or server credentials */
 typedef struct cred_info
@@ -481,7 +483,18 @@ typedef struct
 	int32 wr_error;		/* Cached errors */
 	BOOL wr_mode;		/* write through mode) */
 	BOOL wr_discard;	/* discard all further data */
-} write_bmpx_struct;
+}
+write_bmpx_struct;
+
+typedef struct write_cache
+{
+	SMB_OFF_T file_size;
+	SMB_OFF_T offset;
+	size_t alloc_size;
+	size_t data_size;
+	char *data;
+}
+write_cache;
 
 /*
  * Structure used to indirect fd's from the files_struct.
@@ -502,7 +515,8 @@ typedef struct file_fd_struct
 	int fd_writeonly;
 	int real_open_flags;
 	BOOL delete_on_close;
-} file_fd_struct;
+}
+file_fd_struct;
 
 typedef struct files_struct
 {
@@ -514,23 +528,25 @@ typedef struct files_struct
 	SMB_OFF_T size;
 	mode_t mode;
 	uint16 vuid;
-	char *mmap_ptr;
-	SMB_OFF_T mmap_size;
 	write_bmpx_struct *wbmpx_ptr;
+	write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;
 	time_t pending_modtime;
+	int oplock_type;
+	int sent_oplock_break;
 	BOOL open;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
 	BOOL print_file;
 	BOOL modified;
-	BOOL granted_oplock;
-	BOOL sent_oplock_break;
 	BOOL is_directory;
+	BOOL directory_delete_on_close;
+	BOOL stat_open;
 	char *fsp_name;
-} files_struct;
+}
+files_struct;
 
 /*
  * Structure used to keep directory state information around.
@@ -554,7 +570,8 @@ typedef struct
 {
 	char *name;
 	BOOL is_wild;
-} name_compare_entry;
+}
+name_compare_entry;
 
 /* Include VFS stuff */
 
@@ -576,8 +593,8 @@ typedef struct connection_struct
 	BOOL read_only;
 	BOOL admin_user;
 #ifdef USE_RENEWABLE_AFS_TICKET
-        pid_t afs_ticket_pid;
-#endif /* USE_RENEWABLE_AFS_TICKET */
+	pid_t afs_ticket_pid;
+#endif				/* USE_RENEWABLE_AFS_TICKET */
 
 	char *dirpath;
 	char *connectpath;
@@ -608,7 +625,8 @@ typedef struct connection_struct
 	name_compare_entry *veto_list;	/* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list;	/* Per-share list of files to refuse oplocks on. */
 
-} connection_struct;
+}
+connection_struct;
 
 /* Domain controller authentication protocol info */
 struct dcinfo
@@ -635,7 +653,8 @@ typedef struct
 	time_t time;
 	char user[30];
 	char file[100];
-} print_queue_struct;
+}
+print_queue_struct;
 
 enum
 { LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR };
@@ -644,7 +663,8 @@ typedef struct
 {
 	fstring message;
 	int status;
-} print_status_struct;
+}
+print_status_struct;
 
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct
@@ -677,6 +697,12 @@ typedef struct
 }
 share_mode_entry;
 
+
+#define SHAREMODE_FN_CAST() \
+	void (*)(share_mode_entry *, char*)
+
+#define SHAREMODE_FN(fn) \
+	void (*fn)(share_mode_entry *, char*)
 
 /* each implementation of the share mode code needs
    to support the following operations */
@@ -911,6 +937,17 @@ struct aliasdb_ops
 	BOOL (*getuseraliasntnam) (const char *, LOCAL_GRP **, int *);
 };
 
+/*
+ * Flags for local user manipulation.
+ */
+
+#define LOCAL_ADD_USER 0x1
+#define LOCAL_DELETE_USER 0x2
+#define LOCAL_DISABLE_USER 0x4
+#define LOCAL_ENABLE_USER 0x8
+#define LOCAL_TRUST_ACCOUNT 0x10
+#define LOCAL_SET_NO_PASSWORD 0x20
+
 /* this is used for smbstatus */
 
 struct connect_record
@@ -998,11 +1035,24 @@ typedef enum
 }
 parm_class;
 
+/* passed to br lock code */
+enum brl_type
+{ READ_LOCK, WRITE_LOCK };
+
 struct enum_list
 {
 	int value;
 	char *name;
 };
+
+#define BRLOCK_FN_CAST() \
+	void (*)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
+#define BRLOCK_FN(fn) \
+	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
 
 struct parm_struct
 {
@@ -1019,7 +1069,8 @@ struct parm_struct
 		int ivalue;
 		char *svalue;
 		char cvalue;
-	} def;
+	}
+	def;
 };
 
 struct bitmap
@@ -1028,16 +1079,17 @@ struct bitmap
 	int n;
 };
 
-#define FLAG_BASIC 1		/* fundamental options */
-#define FLAG_HIDE  2		/* options that should be hidden in SWAT */
-#define FLAG_PRINT 4		/* printing options */
-#define FLAG_GLOBAL 8		/* local options that should be globally settable in SWAT */
+#define FLAG_BASIC 	0x01	/* fundamental options */
+#define FLAG_SHARE 	0x02	/* file sharing options */
+#define FLAG_PRINT 	0x04	/* printing options */
+#define FLAG_GLOBAL 	0x08	/* local options that should be globally settable in SWAT */
 #define FLAG_DEPRECATED 0x10	/* options that should no longer be used */
+#define FLAG_HIDE  	0x20	/* options that should be hidden in SWAT */
+#define FLAG_DOS_STRING 0x40	/* convert from UNIX to DOS codepage when reading this string. */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
 #endif /* LOCKING_VERSION */
-
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
@@ -1200,6 +1252,9 @@ struct bitmap
 #define NT_TRANSACT_QUERY_SECURITY_DESC    6
 #define NT_TRANSACT_GET_DFS_REFERRAL    0x10
 
+/* Relevant IOCTL codes */
+#define IOCTL_QUERY_JOB_INFO      0x530060
+
 /* these are the trans2 sub fields for primary requests */
 #define smb_tpscnt smb_vwv0
 #define smb_tdscnt smb_vwv1
@@ -1287,6 +1342,11 @@ struct bitmap
 
 /* this is used on a TConX. I'm not sure the name is very helpful though */
 #define SMB_SUPPORT_SEARCH_BITS        0x0001
+#define SMB_SHARE_IN_DFS               0x0002
+
+/* Named pipe write mode flags. Used in writeX calls. */
+#define PIPE_RAW_MODE 0x4
+#define PIPE_START_MESSAGE 0x8
 
 /* these are the constants used in the above call. */
 /* DesiredAccess */
@@ -1301,6 +1361,8 @@ struct bitmap
 #define FILE_READ_ATTRIBUTES  0x080
 #define FILE_WRITE_ATTRIBUTES 0x100
 
+#define FILE_ALL_ATTRIBUTES   0x1FF
+
 /* Generic access masks & rights. */
 #define SPECIFIC_RIGHTS_MASK 0x00FFFFL
 #define STANDARD_RIGHTS_MASK 0xFF0000L
@@ -1309,7 +1371,31 @@ struct bitmap
 #define WRITE_DAC_ACCESS     (1L<<18)
 #define WRITE_OWNER_ACCESS   (1L<<19)
 #define SYNCHRONIZE_ACCESS   (1L<<20)
+
 #define SYSTEM_SECURITY_ACCESS (1L<<24)
+#define GENERIC_ALL_ACCESS   (1<<28)
+#define GENERIC_EXECUTE_ACCESS  (1<<29)
+#define GENERIC_WRITE_ACCESS   (1<<30)
+#define GENERIC_READ_ACCESS   (((unsigned)1)<<31)
+
+#define FILE_ALL_STANDARD_ACCESS 0x1F0000
+
+/* Mapping of access rights to UNIX perms. */
+#if 0				/* Don't use all here... JRA. */
+#define UNIX_ACCESS_RWX (FILE_ALL_ATTRIBUTES|FILE_ALL_STANDARD_ACCESS)
+#else
+#define UNIX_ACCESS_RWX (UNIX_ACCESS_R|UNIX_ACCESS_W|UNIX_ACCESS_X)
+#endif
+
+#define UNIX_ACCESS_R (READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS|\
+			FILE_READ_ATTRIBUTES|FILE_READ_EA|FILE_READ_DATA)
+#define UNIX_ACCESS_W (READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS|\
+			FILE_WRITE_ATTRIBUTES|FILE_WRITE_EA|\
+			FILE_APPEND_DATA|FILE_WRITE_DATA)
+#define UNIX_ACCESS_X (READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS|\
+			FILE_EXECUTE|FILE_READ_ATTRIBUTES)
+
+#define UNIX_ACCESS_NONE (WRITE_OWNER_ACCESS)
 
 /* Flags field. */
 #define REQUEST_OPLOCK 2
@@ -1377,10 +1463,17 @@ struct bitmap
 #define RENAME_REPLACE_IF_EXISTS 1
 
 /* Filesystem Attributes. */
-#define FILE_CASE_SENSITIVE_SEARCH 0x1
-#define FILE_CASE_PRESERVED_NAMES 0x2
-#define FILE_UNICODE_ON_DISK 0x4
-#define FILE_PERISITANT_ACLS 0x8
+#define FILE_CASE_SENSITIVE_SEARCH 0x01
+#define FILE_CASE_PRESERVED_NAMES 0x02
+#define FILE_UNICODE_ON_DISK 0x04
+/* According to cifs9f, this is 4, not 8 */
+/* Acconding to testing, this actually sets the security attribute! */
+#define FILE_PERSISTENT_ACLS 0x08
+/* These entries added from cifs9f --tsb */
+#define FILE_FILE_COMPRESSION 0x08
+#define FILE_VOLUME_QUOTAS 0x10
+#define FILE_DEVICE_IS_MOUNTED 0x20
+#define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */
 #define FILE_NOTIFY_CHANGE_FILE_NAME   0x001
@@ -1535,6 +1628,8 @@ char *strdup(char *s);
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000
 #define FLAGS2_UNICODE_STRINGS        0x8000
 
+#define FLAGS2_WIN2K_SIGNATURE        0xC852 /* Hack alert ! For now... JRA. */
+
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
 #define CAP_RAW_MODE          0x00000001
@@ -1574,12 +1669,12 @@ enum server_types
 /* printing types */
 enum printing_types
 { PRINT_BSD, PRINT_SYSV, PRINT_AIX, PRINT_HPUX,
-	PRINT_QNX, PRINT_PLP, PRINT_LPRNG, PRINT_SOFTQ
+	PRINT_QNX, PRINT_PLP, PRINT_LPRNG, PRINT_SOFTQ, PRINT_CUPS
 };
 
 /* Remote architectures we know about. */
 enum remote_arch_types
-{ RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_SAMBA };
+{ RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA };
 
 /* case handling */
 enum case_handling
@@ -1618,6 +1713,11 @@ enum ssl_version_enum
 #define DEFAULT_CLIENT_CODE_PAGE MSDOS_LATIN_1_CODEPAGE
 #endif /* KANJI */
 
+/* Global val set if multibyte codepage. */
+extern int global_is_multibyte_codepage;
+
+#define get_character_len(x) (global_is_multibyte_codepage ? skip_multibyte_char((x)) : 0)
+
 /* 
  * Size of buffer to use when moving files across filesystems. 
  */
@@ -1628,6 +1728,12 @@ enum ssl_version_enum
  */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
+
+/*
+ * Used in chaining code.
+ */
+
+extern int chain_size;
 
 /*
  * Map the Core and Extended Oplock requesst bits down
@@ -1673,6 +1779,15 @@ extern int unix_ERR_code;
 #define EXTENDED_OPLOCK_GRANTED (1<<15)
 
 /*
+ * Return values for oplock types.
+ */
+
+#define NO_OPLOCK_RETURN 0
+#define EXCLUSIVE_OPLOCK_RETURN 1
+#define BATCH_OPLOCK_RETURN 2
+#define LEVEL_II_OPLOCK_RETURN 3
+
+/*
  * Loopback command offsets.
  */
 
@@ -1684,8 +1799,9 @@ extern int unix_ERR_code;
 
 /*
  * Oplock break command code to send over the udp socket.
+ * The same message is sent for both exlusive and level II breaks. 
  * 
- * Form of this is :
+ * The form of this is :
  *
  *  0     2       6        10       14    14+devsize 14+devsize+inodesize
  *  +----+--------+--------+--------+-------+--------+
@@ -1695,11 +1811,13 @@ extern int unix_ERR_code;
 
 #define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_SEC_OFFSET 6
-#define OPLOCK_BREAK_USEC_OFFSET 10
-#define OPLOCK_BREAK_DEV_OFFSET 14
+#define OPLOCK_BREAK_SEC_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
+#define OPLOCK_BREAK_USEC_OFFSET (OPLOCK_BREAK_SEC_OFFSET + sizeof(time_t))
+#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_USEC_OFFSET + sizeof(long))
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+
+#define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 
 /*
  * Capabilities abstracted for different systems.
@@ -1737,8 +1855,7 @@ typedef struct
 	uint32 pid;
 	uint16 vuid;
 
-}
-vuser_key;
+} vuser_key;
 
 struct use_info
 {
@@ -1768,7 +1885,8 @@ typedef struct
 
 	NET_USER_INFO_3 usr;
 
-} user_struct;
+}
+user_struct;
 
 struct current_user
 {
@@ -1779,6 +1897,21 @@ struct current_user
 	int ngroups;
 	gid_t *groups;
 };
+
+/*
+ * Reasons for cache flush.
+ */
+
+#define NUM_FLUSH_REASONS 8	/* Keep this in sync with the enum below. */
+enum flush_reason_enum
+{ SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
+	OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH
+};
+
+/* Defines for the sent_oplock_break field above. */
+#define NO_BREAK_SENT 0
+#define EXCLUSIVE_BREAK_SENT 1
+#define LEVEL_II_BREAK_SENT 2
 
 /* A netbios name structure. */
 struct nmb_name
@@ -1873,7 +2006,8 @@ typedef struct subst_creds
 	fstring myhostname;
 	fstring remote_machine;
 
-} CREDS_SUBST;
+}
+CREDS_SUBST;
 
 #include "rpc_creds.h"
 
@@ -1924,7 +2058,8 @@ typedef struct netsec_creds
 
 	uchar sess_key[16];	/* NETLOGON session key */
 
-} netsec_creds;
+}
+netsec_creds;
 
 struct policy;
 struct bitmap;

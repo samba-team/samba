@@ -32,18 +32,19 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 makes a DOM_CLNT_SRV structure.
 ********************************************************************/
-static BOOL make_clnt_srv(DOM_CLNT_SRV *log,
-				const char *logon_srv, 
-				const char *comp_name)
+static BOOL make_clnt_srv(DOM_CLNT_SRV * log,
+			  const char *logon_srv, const char *comp_name)
 {
-	if (log == NULL) return False;
+	if (log == NULL)
+		return False;
 
-	DEBUG(5,("make_clnt_srv: %d\n", __LINE__));
+	DEBUG(5, ("make_clnt_srv: %d\n", __LINE__));
 
 	if (logon_srv != NULL)
 	{
 		log->undoc_buffer = 1;
-		make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv)+1);
+		make_unistr2(&(log->uni_logon_srv), logon_srv,
+			     strlen(logon_srv) + 1);
 	}
 	else
 	{
@@ -53,7 +54,8 @@ static BOOL make_clnt_srv(DOM_CLNT_SRV *log,
 	if (comp_name != NULL)
 	{
 		log->undoc_buffer2 = 1;
-		make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name)+1);
+		make_unistr2(&(log->uni_comp_name), comp_name,
+			     strlen(comp_name) + 1);
 	}
 	else
 	{
@@ -66,19 +68,22 @@ static BOOL make_clnt_srv(DOM_CLNT_SRV *log,
 /*******************************************************************
 reads or writes a DOM_CLNT_SRV structure.
 ********************************************************************/
-static BOOL smb_io_clnt_srv(char *desc,  DOM_CLNT_SRV *log, prs_struct *ps, int depth)
+static BOOL smb_io_clnt_srv(char *desc, DOM_CLNT_SRV * log, prs_struct *ps,
+			    int depth)
 {
-	if (log == NULL) return False;
+	if (log == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_clnt_srv");
 	depth++;
 
 	prs_align(ps);
-	
-	prs_uint32("undoc_buffer ", ps, depth, &(log->undoc_buffer ));
+
+	prs_uint32("undoc_buffer ", ps, depth, &(log->undoc_buffer));
 	if (log->undoc_buffer != 0)
 	{
-		smb_io_unistr2("unistr2", &(log->uni_logon_srv), log->undoc_buffer, ps, depth);
+		smb_io_unistr2("unistr2", &(log->uni_logon_srv),
+			       log->undoc_buffer, ps, depth);
 	}
 
 	prs_align(ps);
@@ -86,7 +91,8 @@ static BOOL smb_io_clnt_srv(char *desc,  DOM_CLNT_SRV *log, prs_struct *ps, int 
 	prs_uint32("undoc_buffer2", ps, depth, &(log->undoc_buffer2));
 	if (log->undoc_buffer2 != 0)
 	{
-		smb_io_unistr2("unistr2", &(log->uni_comp_name), log->undoc_buffer2, ps, depth);
+		smb_io_unistr2("unistr2", &(log->uni_comp_name),
+			       log->undoc_buffer2, ps, depth);
 	}
 
 	return True;
@@ -95,22 +101,23 @@ static BOOL smb_io_clnt_srv(char *desc,  DOM_CLNT_SRV *log, prs_struct *ps, int 
 /*******************************************************************
 makes a DOM_LOG_INFO structure.
 ********************************************************************/
-BOOL make_log_info(DOM_LOG_INFO *log,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name)
+BOOL make_log_info(DOM_LOG_INFO * log,
+		   const char *logon_srv, const char *acct_name,
+		   uint16 sec_chan, const char *comp_name)
 {
-	if (log == NULL) return False;
+	if (log == NULL)
+		return False;
 
-	DEBUG(5,("make_log_info %d\n", __LINE__));
+	DEBUG(5, ("make_log_info %d\n", __LINE__));
 
 	log->undoc_buffer = 1;
 
-	make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv)+1);
-	make_unistr2(&(log->uni_acct_name), acct_name, strlen(acct_name)+1);
+	make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv) + 1);
+	make_unistr2(&(log->uni_acct_name), acct_name, strlen(acct_name) + 1);
 
 	log->sec_chan = sec_chan;
 
-	make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name)+1);
+	make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name) + 1);
 
 	return True;
 }
@@ -118,15 +125,17 @@ BOOL make_log_info(DOM_LOG_INFO *log,
 /*******************************************************************
 reads or writes a DOM_LOG_INFO structure.
 ********************************************************************/
-BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth)
+BOOL smb_io_log_info(char *desc, DOM_LOG_INFO * log, prs_struct *ps,
+		     int depth)
 {
-	if (log == NULL) return False;
+	if (log == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_log_info");
 	depth++;
 
 	prs_align(ps);
-	
+
 	prs_uint32("undoc_buffer", ps, depth, &(log->undoc_buffer));
 
 	smb_io_unistr2("unistr2", &(log->uni_logon_srv), True, ps, depth);
@@ -142,25 +151,18 @@ BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth)
 /*******************************************************************
 makes a DOM_CLNT_INFO2 structure.
 ********************************************************************/
-BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				const char *logon_srv, const char *comp_name,
-				DOM_CRED *clnt_cred)
+BOOL make_clnt_info2(DOM_CLNT_INFO2 * clnt,
+		     const char *logon_srv, const char *comp_name,
+		     DOM_CRED * clnt_cred)
 {
-	if (clnt == NULL) return False;
+	if (clnt == NULL)
+		return False;
 
-	DEBUG(5,("make_clnt_info: %d\n", __LINE__));
+	DEBUG(5, ("make_clnt_info: %d\n", __LINE__));
 
 	make_clnt_srv(&(clnt->login), logon_srv, comp_name);
 
-	if (clnt_cred != NULL)
-	{
-		clnt->ptr_cred = 1;
-		memcpy(&(clnt->cred), clnt_cred, sizeof(clnt->cred));
-	}
-	else
-	{
-		clnt->ptr_cred = 0;
-	}
+	clnt->ptr_cred = Memcpy(&clnt->cred, clnt_cred, sizeof(clnt->cred));
 
 	return True;
 }
@@ -168,21 +170,23 @@ BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
 /*******************************************************************
 reads or writes a DOM_CLNT_INFO2 structure.
 ********************************************************************/
-BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth)
+BOOL smb_io_clnt_info2(char *desc, DOM_CLNT_INFO2 * clnt, prs_struct *ps,
+		       int depth)
 {
-	if (clnt == NULL) return False;
+	if (clnt == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_clnt_info2");
 	depth++;
 
 	prs_align(ps);
-	
+
 	smb_io_clnt_srv("", &(clnt->login), ps, depth);
 
 	prs_align(ps);
-	
+
 	prs_uint32("ptr_cred", ps, depth, &(clnt->ptr_cred));
-	smb_io_cred    ("", &(clnt->cred ), ps, depth);
+	smb_io_cred("", &(clnt->cred), ps, depth);
 
 	return True;
 }
@@ -190,17 +194,18 @@ BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int de
 /*******************************************************************
 makes a DOM_CLNT_INFO structure.
 ********************************************************************/
-BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-				DOM_CRED *cred)
+BOOL make_clnt_info(DOM_CLNT_INFO * clnt,
+		    const char *logon_srv, const char *acct_name,
+		    uint16 sec_chan, const char *comp_name, DOM_CRED * cred)
 {
-	if (clnt == NULL || cred == NULL) return False;
+	if (clnt == NULL || cred == NULL)
+		return False;
 
-	DEBUG(5,("make_clnt_info\n"));
+	DEBUG(5, ("make_clnt_info\n"));
 
-	make_log_info(&(clnt->login), logon_srv, acct_name, sec_chan, comp_name);
-	memcpy(&(clnt->cred), cred, sizeof(clnt->cred));
+	make_log_info(&(clnt->login), logon_srv, acct_name, sec_chan,
+		      comp_name);
+	Memcpy(&clnt->cred, cred, sizeof(clnt->cred));
 
 	return True;
 }
@@ -208,17 +213,19 @@ BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
 /*******************************************************************
 reads or writes a DOM_CLNT_INFO structure.
 ********************************************************************/
-BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth)
+BOOL smb_io_clnt_info(char *desc, DOM_CLNT_INFO * clnt, prs_struct *ps,
+		      int depth)
 {
-	if (clnt == NULL) return False;
+	if (clnt == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_clnt_info");
 	depth++;
 
 	prs_align(ps);
-	
+
 	smb_io_log_info("", &(clnt->login), ps, depth);
-	smb_io_cred    ("", &(clnt->cred ), ps, depth);
+	smb_io_cred("", &(clnt->cred), ps, depth);
 
 	return True;
 }
@@ -226,20 +233,14 @@ BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int dept
 /*******************************************************************
 makes an OWF_INFO structure.
 ********************************************************************/
-BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16])
+BOOL make_owf_info(OWF_INFO * hash, const uint8 data[16])
 {
-	if (hash == NULL) return False;
+	if (hash == NULL)
+		return False;
 
-	DEBUG(5,("make_owf_info: %d\n", __LINE__));
-	
-	if (data != NULL)
-	{
-		memcpy(hash->data, data, sizeof(hash->data));
-	}
-	else
-	{
-		ZERO_STRUCT(hash->data);
-	}
+	DEBUG(5, ("make_owf_info: %d\n", __LINE__));
+
+	Memcpy(hash->data, data, sizeof(hash->data));
 
 	return True;
 }
@@ -247,16 +248,17 @@ BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16])
 /*******************************************************************
 reads or writes an OWF_INFO structure.
 ********************************************************************/
-BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth)
+BOOL smb_io_owf_info(char *desc, OWF_INFO * hash, prs_struct *ps, int depth)
 {
-	if (hash == NULL) return False;
+	if (hash == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_owf_info");
 	depth++;
 
 	prs_align(ps);
-	
-	prs_uint8s (False, "data", ps, depth, hash->data, 16);
+
+	prs_uint8s(False, "data", ps, depth, hash->data, 16);
 
 	return True;
 }
@@ -264,7 +266,7 @@ BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_neg_flags(char *desc, NEG_FLAGS * neg, prs_struct * ps,
+static BOOL net_io_neg_flags(char *desc, NEG_FLAGS * neg, prs_struct *ps,
 			     int depth)
 {
 	if (neg == NULL)
@@ -284,7 +286,7 @@ static BOOL net_io_neg_flags(char *desc, NEG_FLAGS * neg, prs_struct * ps,
 reads or writes a NETLOGON_INFO_3 structure.
 ********************************************************************/
 static BOOL net_io_netinfo_3(char *desc, NETLOGON_INFO_3 * info,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -310,7 +312,7 @@ static BOOL net_io_netinfo_3(char *desc, NETLOGON_INFO_3 * info,
 reads or writes a NETLOGON_INFO_1 structure.
 ********************************************************************/
 static BOOL net_io_netinfo_1(char *desc, NETLOGON_INFO_1 * info,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -330,7 +332,7 @@ static BOOL net_io_netinfo_1(char *desc, NETLOGON_INFO_1 * info,
 reads or writes a NETLOGON_INFO_2 structure.
 ********************************************************************/
 static BOOL net_io_netinfo_2(char *desc, NETLOGON_INFO_2 * info,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -385,7 +387,7 @@ BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 * q_l,
 reads or writes an NET_Q_LOGON_CTRL2 structure.
 ********************************************************************/
 BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 * q_l,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (q_l == NULL)
 		return False;
@@ -420,7 +422,7 @@ BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 * r_l,
 
 	r_l->switch_value = switch_value;	/* should only be 0x1 */
 	r_l->status = status;
-	memcpy(&(r_l->logon), logon_info, sizeof(NETLOGON_INFO));
+	Memcpy(&r_l->logon, logon_info, sizeof(NETLOGON_INFO));
 
 	if (status == NT_STATUS_NOPROBLEMO)
 	{
@@ -438,7 +440,7 @@ BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 * r_l,
 reads or writes an NET_R_LOGON_CTRL2 structure.
 ********************************************************************/
 BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 * r_l,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (r_l == NULL)
 		return False;
@@ -490,7 +492,7 @@ BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 * r_l,
 reads or writes an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
 BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST * r_t,
-			prs_struct * ps, int depth)
+			prs_struct *ps, int depth)
 {
 	if (r_t == NULL)
 		return False;
@@ -511,7 +513,7 @@ BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST * r_t,
 reads or writes an NET_Q_TRUST_DOM_LIST structure.
 ********************************************************************/
 BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST * q_l,
-			prs_struct * ps, int depth)
+			prs_struct *ps, int depth)
 {
 	if (q_l == NULL)
 		return False;
@@ -557,7 +559,7 @@ BOOL make_q_req_chal(NET_Q_REQ_CHAL * q_c,
 /*******************************************************************
 reads or writes an NET_Q_REQ_CHAL structure.
 ********************************************************************/
-BOOL net_io_q_req_chal(char *desc, NET_Q_REQ_CHAL * q_c, prs_struct * ps,
+BOOL net_io_q_req_chal(char *desc, NET_Q_REQ_CHAL * q_c, prs_struct *ps,
 		       int depth)
 {
 	int old_align;
@@ -579,7 +581,7 @@ BOOL net_io_q_req_chal(char *desc, NET_Q_REQ_CHAL * q_c, prs_struct * ps,
 	ps->align = 0;
 
 	smb_io_unistr2("logon_clnt", &(q_c->uni_logon_clnt), True, ps, depth);
-	smb_io_chal("clnt_chal", &(q_c->clnt_chal), ps, depth);	
+	smb_io_chal("clnt_chal", &(q_c->clnt_chal), ps, depth);
 
 	ps->align = old_align;
 
@@ -589,7 +591,7 @@ BOOL net_io_q_req_chal(char *desc, NET_Q_REQ_CHAL * q_c, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL * r_c, prs_struct * ps,
+BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL * r_c, prs_struct *ps,
 		       int depth)
 {
 	if (r_c == NULL)
@@ -631,7 +633,7 @@ BOOL make_q_auth(NET_Q_AUTH * q_a,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_auth(char *desc, NET_Q_AUTH * q_a, prs_struct * ps, int depth)
+BOOL net_io_q_auth(char *desc, NET_Q_AUTH * q_a, prs_struct *ps, int depth)
 {
 	int old_align;
 	if (q_a == NULL)
@@ -655,7 +657,7 @@ BOOL net_io_q_auth(char *desc, NET_Q_AUTH * q_a, prs_struct * ps, int depth)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_auth(char *desc, NET_R_AUTH * r_a, prs_struct * ps, int depth)
+BOOL net_io_r_auth(char *desc, NET_R_AUTH * r_a, prs_struct *ps, int depth)
 {
 	if (r_a == NULL)
 		return False;
@@ -697,7 +699,7 @@ BOOL make_q_auth_2(NET_Q_AUTH_2 * q_a,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 * q_a, prs_struct * ps,
+BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 * q_a, prs_struct *ps,
 		     int depth)
 {
 	int old_align;
@@ -723,7 +725,7 @@ BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 * q_a, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 * r_a, prs_struct * ps,
+BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 * r_a, prs_struct *ps,
 		     int depth)
 {
 	if (r_a == NULL)
@@ -767,7 +769,7 @@ BOOL make_q_srv_pwset(NET_Q_SRV_PWSET * q_s,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET * q_s, prs_struct * ps,
+BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET * q_s, prs_struct *ps,
 			int depth)
 {
 	if (q_s == NULL)
@@ -787,7 +789,7 @@ BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET * q_s, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET * r_s, prs_struct * ps,
+BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET * r_s, prs_struct *ps,
 			int depth)
 {
 	if (r_s == NULL)
@@ -922,7 +924,7 @@ BOOL make_id_info1(NET_ID_INFO_1 * id, const char *domain_name,
 /*******************************************************************
 reads or writes an NET_ID_INFO_1 structure.
 ********************************************************************/
-static BOOL net_io_id_info1(char *desc, NET_ID_INFO_1 * id, prs_struct * ps,
+static BOOL net_io_id_info1(char *desc, NET_ID_INFO_1 * id, prs_struct *ps,
 			    int depth)
 {
 	if (id == NULL)
@@ -1013,7 +1015,7 @@ BOOL make_id_info4(NET_ID_INFO_4 * id, const char *domain_name,
 /*******************************************************************
 reads or writes an NET_ID_INFO_4 structure.
 ********************************************************************/
-static BOOL net_io_id_info4(char *desc, NET_ID_INFO_4 * id, prs_struct * ps,
+static BOOL net_io_id_info4(char *desc, NET_ID_INFO_4 * id, prs_struct *ps,
 			    int depth)
 {
 	if (id == NULL)
@@ -1131,7 +1133,7 @@ BOOL make_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 /*******************************************************************
 reads or writes an NET_ID_INFO_2 structure.
 ********************************************************************/
-static BOOL net_io_id_info2(char *desc, NET_ID_INFO_2 * id, prs_struct * ps,
+static BOOL net_io_id_info2(char *desc, NET_ID_INFO_2 * id, prs_struct *ps,
 			    int depth)
 {
 	if (id == NULL)
@@ -1193,16 +1195,8 @@ BOOL make_sam_info(DOM_SAM_INFO * sam,
 
 	make_clnt_info2(&(sam->client), logon_srv, comp_name, clnt_cred);
 
-	if (rtn_cred != NULL)
-	{
-		sam->ptr_rtn_cred = 1;
-		memcpy(&(sam->rtn_cred), rtn_cred, sizeof(sam->rtn_cred));
-	}
-	else
-	{
-		sam->ptr_rtn_cred = 0;
-	}
-
+	sam->ptr_rtn_cred =
+		Memcpy(&sam->rtn_cred, rtn_cred, sizeof(sam->rtn_cred));
 	sam->logon_level = logon_level;
 	sam->ctr = ctr;
 
@@ -1213,7 +1207,7 @@ BOOL make_sam_info(DOM_SAM_INFO * sam,
 reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
 static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR * ctr,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -1257,7 +1251,7 @@ static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR * ctr,
 /*******************************************************************
 reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
-static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO * sam, prs_struct * ps,
+static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO * sam, prs_struct *ps,
 			    int depth)
 {
 	if (sam == NULL)
@@ -1293,12 +1287,12 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 			  const NTTIME * pass_last_set_time,
 			  const NTTIME * pass_can_change_time,
 			  const NTTIME * pass_must_change_time,
-			  const UNISTR2 * user_name,
-			  const UNISTR2 * full_name,
-			  const UNISTR2 * log_scr,
-			  const UNISTR2 * prof_path,
-			  const UNISTR2 * home_dir,
-			  const UNISTR2 * dir_drive,
+			  const UNISTR2 *user_name,
+			  const UNISTR2 *full_name,
+			  const UNISTR2 *log_scr,
+			  const UNISTR2 *prof_path,
+			  const UNISTR2 *home_dir,
+			  const UNISTR2 *dir_drive,
 			  uint16 logon_count,
 			  uint16 bad_pw_count,
 			  uint32 user_id,
@@ -1307,9 +1301,9 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 			  const DOM_GID * gids,
 			  uint32 user_flgs,
 			  const char sess_key[16],
-			  const UNISTR2 * logon_srv,
-			  const UNISTR2 * logon_dom,
-			  const char *padding, const DOM_SID * dom_sid)
+			  const UNISTR2 *logon_srv,
+			  const UNISTR2 *logon_dom,
+			  const char *padding, const DOM_SID *dom_sid)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
@@ -1350,26 +1344,14 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	if (sess_key != NULL)
-	{
-		memcpy(usr->user_sess_key, sess_key,
-		       sizeof(usr->user_sess_key));
-	}
-	else
-	{
-		ZERO_STRUCT(usr->user_sess_key);
-	}
+	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, put a domain SID in */
 
-	ZERO_STRUCT(usr->padding);
-	if (padding != NULL)
-	{
-		memcpy(usr->padding, padding, 8);
-	}
+	Memcpy(usr->padding, padding, sizeof(usr->padding));
 
 	copy_unistr2(&(usr->uni_user_name), user_name);
 	copy_unistr2(&(usr->uni_full_name), full_name);
@@ -1421,7 +1403,7 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 			 uint32 user_flgs,
 			 char sess_key[16],
 			 char *logon_srv,
-			 char *logon_dom, char *padding, DOM_SID * dom_sid)
+			 char *logon_dom, char *padding, DOM_SID *dom_sid)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
@@ -1460,26 +1442,14 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	if (sess_key != NULL)
-	{
-		memcpy(usr->user_sess_key, sess_key,
-		       sizeof(usr->user_sess_key));
-	}
-	else
-	{
-		ZERO_STRUCT(usr->user_sess_key);
-	}
+	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, we're bothering to put a domain SID in */
 
-	ZERO_STRUCT(usr->padding);
-	if (padding != NULL)
-	{
-		memcpy(usr->padding, padding, 8);
-	}
+	Memcpy(usr->padding, padding, sizeof(usr->padding));
 
 	make_unistr2(&(usr->uni_user_name), user_name, len_user_name);
 	make_unistr2(&(usr->uni_full_name), full_name, len_full_name);
@@ -1512,7 +1482,7 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
+BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct *ps,
 		       int depth)
 {
 	uint32 i;
@@ -1600,7 +1570,7 @@ BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
  net_user_info_3_copy_from_ctr
  *************************************************************************/
 BOOL net_user_info_3_copy_from_ctr(NET_USER_INFO_3 * usr,
-		const NET_USER_INFO_CTR *ctr)
+				   const NET_USER_INFO_CTR * ctr)
 {
 	ZERO_STRUCTP(usr);
 	if (ctr->ptr_user_info == 0)
@@ -1613,30 +1583,30 @@ BOOL net_user_info_3_copy_from_ctr(NET_USER_INFO_3 * usr,
 		{
 			const NET_USER_INFO_2 *usr2 = ctr->usr.id2;
 			if (!make_net_user_info3W(usr,
-					  &usr2->logon_time,
-					  &usr2->logoff_time,
-					  &usr2->kickoff_time,
-					  &usr2->pass_last_set_time,
-					  &usr2->pass_can_change_time,
-					  &usr2->pass_must_change_time,
-					  &usr2->uni_user_name,
-					  &usr2->uni_full_name,
-					  &usr2->uni_logon_script,
-					  &usr2->uni_profile_path,
-					  &usr2->uni_home_dir,
-					  &usr2->uni_dir_drive,
-					  usr2->logon_count,
-					  usr2->bad_pw_count,
-					  usr2->user_id,
-					  usr2->group_id,
-					  usr2->num_groups,
-					  usr2->gids,
-					  usr2->user_flgs,
-					  usr2->user_sess_key,
-					  &usr2->uni_logon_srv,
-					  &usr2->uni_logon_dom,
-					  usr2->padding,
-					  &usr2->dom_sid.sid, NULL))
+						  &usr2->logon_time,
+						  &usr2->logoff_time,
+						  &usr2->kickoff_time,
+						  &usr2->pass_last_set_time,
+						  &usr2->pass_can_change_time,
+						  &usr2->
+						  pass_must_change_time,
+						  &usr2->uni_user_name,
+						  &usr2->uni_full_name,
+						  &usr2->uni_logon_script,
+						  &usr2->uni_profile_path,
+						  &usr2->uni_home_dir,
+						  &usr2->uni_dir_drive,
+						  usr2->logon_count,
+						  usr2->bad_pw_count,
+						  usr2->user_id,
+						  usr2->group_id,
+						  usr2->num_groups,
+						  usr2->gids, usr2->user_flgs,
+						  usr2->user_sess_key,
+						  &usr2->uni_logon_srv,
+						  &usr2->uni_logon_dom,
+						  usr2->padding,
+						  &usr2->dom_sid.sid, NULL))
 			{
 				return False;
 			}
@@ -1649,7 +1619,7 @@ BOOL net_user_info_3_copy_from_ctr(NET_USER_INFO_3 * usr,
 		}
 		default:
 		{
-			DEBUG(0,("invalid NET_USER_INFO_X info class\n"));
+			DEBUG(0, ("invalid NET_USER_INFO_X info class\n"));
 			return False;
 		}
 	}
@@ -1666,12 +1636,12 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 			  const NTTIME * pass_last_set_time,
 			  const NTTIME * pass_can_change_time,
 			  const NTTIME * pass_must_change_time,
-			  const UNISTR2 * user_name,
-			  const UNISTR2 * full_name,
-			  const UNISTR2 * log_scr,
-			  const UNISTR2 * prof_path,
-			  const UNISTR2 * home_dir,
-			  const UNISTR2 * dir_drive,
+			  const UNISTR2 *user_name,
+			  const UNISTR2 *full_name,
+			  const UNISTR2 *log_scr,
+			  const UNISTR2 *prof_path,
+			  const UNISTR2 *home_dir,
+			  const UNISTR2 *dir_drive,
 			  uint16 logon_count,
 			  uint16 bad_pw_count,
 			  uint32 user_id,
@@ -1680,10 +1650,10 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 			  const DOM_GID * gids,
 			  uint32 user_flgs,
 			  const char sess_key[16],
-			  const UNISTR2 * logon_srv,
-			  const UNISTR2 * logon_dom,
+			  const UNISTR2 *logon_srv,
+			  const UNISTR2 *logon_dom,
 			  const char *padding,
-			  const DOM_SID * dom_sid, const char *other_sids)
+			  const DOM_SID *dom_sid, const char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
@@ -1725,26 +1695,14 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	if (sess_key != NULL)
-	{
-		memcpy(usr->user_sess_key, sess_key,
-		       sizeof(usr->user_sess_key));
-	}
-	else
-	{
-		ZERO_STRUCT(usr->user_sess_key);
-	}
+	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, put a domain SID in */
 
-	ZERO_STRUCT(usr->padding);
-	if (padding != NULL)
-	{
-		memcpy(usr->padding, padding, 8);
-	}
+	Memcpy(usr->padding, padding, sizeof(usr->padding));
 
 	num_other_sids =
 		make_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
@@ -1803,7 +1761,7 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 			 char sess_key[16],
 			 char *logon_srv,
 			 char *logon_dom,
-			 char *padding, DOM_SID * dom_sid, char *other_sids)
+			 char *padding, DOM_SID *dom_sid, char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
@@ -1843,26 +1801,14 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	if (sess_key != NULL)
-	{
-		memcpy(usr->user_sess_key, sess_key,
-		       sizeof(usr->user_sess_key));
-	}
-	else
-	{
-		ZERO_STRUCT(usr->user_sess_key);
-	}
+	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, we're bothering to put a domain SID in */
 
-	ZERO_STRUCT(usr->padding);
-	if (padding != NULL)
-	{
-		memcpy(usr->padding, padding, 8);
-	}
+	Memcpy(usr->padding, padding, sizeof(usr->padding));
 
 	num_other_sids =
 		make_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
@@ -1901,7 +1847,7 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
+BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct *ps,
 		       int depth)
 {
 	uint32 i;
@@ -1919,7 +1865,8 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 	smb_io_time("kickoff_time", &(usr->kickoff_time), ps, depth);	/* kickoff time */
 	smb_io_time("pass_last_set_time", &(usr->pass_last_set_time), ps, depth);	/* password last set time */
 	smb_io_time("pass_can_change_time", &(usr->pass_can_change_time), ps, depth);	/* password can change time */
-	smb_io_time("pass_must_change_time", &(usr->pass_must_change_time), ps, depth);	/* password must change time */
+	smb_io_time("pass_must_change_time", &(usr->pass_must_change_time),
+		    ps, depth);	/* password must change time */
 
 	smb_io_unihdr("hdr_user_name", &(usr->hdr_user_name), ps, depth);	/* username unicode string header */
 	smb_io_unihdr("hdr_full_name", &(usr->hdr_full_name), ps, depth);	/* user's full name unicode string header */
@@ -1998,7 +1945,7 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON * q_l, prs_struct * ps,
+BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON * q_l, prs_struct *ps,
 			int depth)
 {
 	if (q_l == NULL)
@@ -2020,8 +1967,7 @@ makes a NET_R_SAM_LOGON structure.
 ********************************************************************/
 BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 		      const DOM_CRED * srv_creds,
-		      uint16 switch_value,
-		      void *id, uint32 status)
+		      uint16 switch_value, void *id, uint32 status)
 {
 	if (r_s == NULL)
 		return False;
@@ -2041,7 +1987,7 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 		if (id != NULL)
 		{
 			r_s->ctr.ptr_user_info = 1;
-			r_s->ctr.switch_value = switch_value;	
+			r_s->ctr.switch_value = switch_value;
 		}
 		else
 		{
@@ -2070,7 +2016,7 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 reads or writes a structure.
 ********************************************************************/
 BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -2090,7 +2036,8 @@ BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
 			{
 				if (UNMARSHALLING(ps))
 				{
-					ctr->usr.id2 = g_new(NET_USER_INFO_2, 1);
+					ctr->usr.id2 =
+						g_new(NET_USER_INFO_2, 1);
 				}
 				if (ctr->usr.id == NULL)
 				{
@@ -2104,7 +2051,8 @@ BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
 			{
 				if (UNMARSHALLING(ps))
 				{
-					ctr->usr.id3 = g_new(NET_USER_INFO_3, 1);
+					ctr->usr.id3 =
+						g_new(NET_USER_INFO_3, 1);
 				}
 				if (ctr->usr.id == NULL)
 				{
@@ -2143,7 +2091,7 @@ void free_net_user_info_ctr(NET_USER_INFO_CTR * ctr)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON * r_l, prs_struct * ps,
+BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON * r_l, prs_struct *ps,
 			int depth)
 {
 	if (r_l == NULL)
@@ -2153,11 +2101,11 @@ BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON * r_l, prs_struct * ps,
 	depth++;
 
 	prs_uint32("buffer_creds", ps, depth, &r_l->buffer_creds);
-	smb_io_cred("", &(r_l->srv_creds), ps, depth);	
+	smb_io_cred("", &(r_l->srv_creds), ps, depth);
 
 	net_io_user_info_ctr("", &r_l->ctr, ps, depth);
 
-	prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp);	
+	prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp);
 	prs_uint32("status      ", ps, depth, &r_l->status);
 
 	prs_align(ps);
@@ -2168,7 +2116,7 @@ BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON * r_l, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_sam_logoff(char *desc, NET_Q_SAM_LOGOFF * q_l, prs_struct * ps,
+BOOL net_io_q_sam_logoff(char *desc, NET_Q_SAM_LOGOFF * q_l, prs_struct *ps,
 			 int depth)
 {
 	if (q_l == NULL)
@@ -2217,7 +2165,7 @@ BOOL make_r_sam_logoff(NET_R_SAM_LOGOFF * r_s,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF * r_l, prs_struct * ps,
+BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF * r_l, prs_struct *ps,
 			 int depth)
 {
 	if (r_l == NULL)
@@ -2266,7 +2214,7 @@ BOOL make_q_sam_sync(NET_Q_SAM_SYNC * q_s,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct * ps,
+BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct *ps,
 		       int depth)
 {
 	if (q_s == NULL)
@@ -2313,7 +2261,7 @@ BOOL make_sam_delta_hdr(SAM_DELTA_HDR * delta, uint16 type, uint32 rid)
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR * delta,
-				 prs_struct * ps, int depth)
+				 prs_struct *ps, int depth)
 {
 	if (delta == NULL)
 		return False;
@@ -2335,7 +2283,7 @@ static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR * delta,
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO * info,
-				   prs_struct * ps, int depth)
+				   prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -2375,7 +2323,7 @@ static BOOL net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO * info,
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_group_info(char *desc, SAM_GROUP_INFO * info,
-				  prs_struct * ps, int depth)
+				  prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -2403,17 +2351,17 @@ static BOOL net_io_sam_group_info(char *desc, SAM_GROUP_INFO * info,
 makes a SAM_ACCOUNT_INFO structure.
 ********************************************************************/
 BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
-			   const UNISTR2 * user_name,
-			   const UNISTR2 * full_name,
+			   const UNISTR2 *user_name,
+			   const UNISTR2 *full_name,
 			   uint32 user_rid, uint32 group_rid,
-			   const UNISTR2 * home_dir,
-			   const UNISTR2 * dir_drive,
-			   const UNISTR2 * log_scr,
-			   const UNISTR2 * desc,
+			   const UNISTR2 *home_dir,
+			   const UNISTR2 *dir_drive,
+			   const UNISTR2 *log_scr,
+			   const UNISTR2 *desc,
 			   uint32 acb_info,
-			   const UNISTR2 * prof_path,
-			   const UNISTR2 * wkstas,
-			   const UNISTR2 * unk_str, const UNISTR2 * mung_dial)
+			   const UNISTR2 *prof_path,
+			   const UNISTR2 *wkstas,
+			   const UNISTR2 *unk_str, const UNISTR2 *mung_dial)
 {
 	int len_user_name = user_name != NULL ? user_name->uni_str_len : 0;
 	int len_full_name = full_name != NULL ? full_name->uni_str_len : 0;
@@ -2483,7 +2431,7 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_passwd_info(char *desc, SAM_PWD * pwd,
-				   prs_struct * ps, int depth)
+				   prs_struct *ps, int depth)
 {
 	if (pwd == NULL)
 		return False;
@@ -2509,7 +2457,7 @@ static BOOL net_io_sam_passwd_info(char *desc, SAM_PWD * pwd,
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
-				    SAM_ACCOUNT_INFO * info, prs_struct * ps,
+				    SAM_ACCOUNT_INFO * info, prs_struct *ps,
 				    int depth)
 {
 	BUFHDR2 hdr_priv_data;
@@ -2645,7 +2593,7 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO * info,
-				      prs_struct * ps, int depth)
+				      prs_struct *ps, int depth)
 {
 	uint32 i;
 	fstring tmp;
@@ -2705,7 +2653,7 @@ static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO * info,
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_alias_info(char *desc, SAM_ALIAS_INFO * info,
-				  prs_struct * ps, int depth)
+				  prs_struct *ps, int depth)
 {
 	if (info == NULL)
 		return False;
@@ -2733,7 +2681,7 @@ static BOOL net_io_sam_alias_info(char *desc, SAM_ALIAS_INFO * info,
 reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
-				      prs_struct * ps, int depth)
+				      prs_struct *ps, int depth)
 {
 	uint32 i;
 	fstring tmp;
@@ -2788,7 +2736,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 				 SAM_DELTA_CTR * delta, uint16 type,
-				 prs_struct * ps, int depth)
+				 prs_struct *ps, int depth)
 {
 	if (delta == NULL)
 		return False;
@@ -2876,7 +2824,7 @@ BOOL make_r_sam_sync(NET_R_SAM_SYNC * r_s,
 reads or writes a structure.
 ********************************************************************/
 BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
-		       NET_R_SAM_SYNC * r_s, prs_struct * ps, int depth)
+		       NET_R_SAM_SYNC * r_s, prs_struct *ps, int depth)
 {
 	uint32 i;
 

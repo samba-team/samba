@@ -22,8 +22,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef _DEBUG_H_
+#define _DEBUG_H_
 
 /* -------------------------------------------------------------------------- **
  * Debugging code.  See also debug.c

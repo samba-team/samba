@@ -31,42 +31,14 @@
 
 extern int DEBUGLEVEL;
 
-/*******************************************************************
- converts a RID to a UNIX ID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL sursalg_rid_to_unix_id(uint32 rid, uint32 *id, int type)
+static int sursalg_rid_posix_type(uint32 rid)
 {
-	if((id == NULL) || (rid < 1000))
-		return False;
-	rid -= 1000;
-	if((rid % RID_MULTIPLIER) != type)
-		return False;
-	*id = rid / RID_MULTIPLIER;
-	return True;
+	return ((rid-1000) % RID_MULTIPLIER);
 }
 
-/*******************************************************************
- converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL sursalg_user_rid_to_uid(uint32 user_rid, uint32 *id)
+static uint32 sursalg_rid_posix_id(uint32 rid)
 {
-	return sursalg_rid_to_unix_id(user_rid, id, RID_TYPE_USER);
-}
-
-/*******************************************************************
- converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL sursalg_group_rid_to_gid(uint32 group_rid, uint32 *id)
-{
-	return sursalg_rid_to_unix_id(group_rid, id, RID_TYPE_GROUP);
-}
-
-/*******************************************************************
- converts NT Alias RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL sursalg_alias_rid_to_gid(uint32 alias_rid, uint32 *id)
-{
-	return sursalg_rid_to_unix_id(alias_rid, id, RID_TYPE_ALIAS);
+	return (rid-1000) / RID_MULTIPLIER;
 }
 
 /*******************************************************************
@@ -97,14 +69,15 @@ static uint32 sursalg_uid_to_user_rid(uint32 uid)
 }
 
 /******************************************************************
- converts SID + SID_NAME_USE type to a UNIX id.  the Domain SID is,
+ converts SID to a UNIX id + type.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id,
+BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id,
 				BOOL create)
 {
 	DOM_SID tmp_sid;
 	uint32 rid;
+	int type;
 
 	sid_copy(&tmp_sid, sid);
 	sid_split_rid(&tmp_sid, &rid);
@@ -113,49 +86,60 @@ BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id,
 		return False;
 	}
 
+	if((id == NULL) || (rid < 1000))
+		return False;
+
+	type = sursalg_rid_posix_type(rid);
+	id->id = sursalg_rid_posix_id(rid);
+
 	switch (type)
 	{
-		case SID_NAME_USER:
+		case RID_TYPE_USER:
 		{
-			return sursalg_user_rid_to_uid(rid, id);
+			id->type = SURS_POSIX_UID_AS_USR;
+			return True;
 		}
-		case SID_NAME_ALIAS:
+		case RID_TYPE_ALIAS:
 		{
-			return sursalg_alias_rid_to_gid(rid, id);
+			id->type = SURS_POSIX_GID_AS_ALS;
+			return True;
 		}
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
+		case RID_TYPE_GROUP:
 		{
-			return sursalg_group_rid_to_gid(rid, id);
+			id->type = SURS_POSIX_GID_AS_GRP;
+			return True;
+		}
+		default:
+		{
+			break;
 		}
 	}
 	return False;
 }
 
 /******************************************************************
- converts UNIX gid + SID_NAME_USE type to a SID.  the Domain SID is,
+ converts UNIX id + type to a SID.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL surs_algdomonly_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
+BOOL surs_algdomonly_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid,
 				BOOL create)
 {
 	sid_copy(sid, &global_sam_sid);
-	switch (type)
+	switch (id->type)
 	{
-		case SID_NAME_USER:
+		case SURS_POSIX_UID_AS_USR:
 		{
-			sid_append_rid(sid, sursalg_uid_to_user_rid(id));
+			sid_append_rid(sid, sursalg_uid_to_user_rid(id->id));
 			return True;
 		}
-		case SID_NAME_ALIAS:
+		case SURS_POSIX_GID_AS_ALS:
 		{
-			sid_append_rid(sid, sursalg_gid_to_alias_rid(id));
+			sid_append_rid(sid, sursalg_gid_to_alias_rid(id->id));
 			return True;
 		}
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
+		case SURS_POSIX_GID_AS_GRP:
 		{
-			sid_append_rid(sid, sursalg_gid_to_group_rid(id));
+			sid_append_rid(sid, sursalg_gid_to_group_rid(id->id));
 			return True;
 		}
 	}

@@ -69,8 +69,7 @@ struct
 	int option;
 	int value;
 	int opttype;
-}
-socket_options[] =
+} socket_options[] =
 {
 	{
 	"SO_KEEPALIVE", SOL_SOCKET, SO_KEEPALIVE, 0, OPT_BOOL}
@@ -183,10 +182,10 @@ void set_socket_options(int fd, char *options)
 					int on = socket_options[i].value;
 					ret =
 						setsockopt(fd,
-							   socket_options[i].
-							   level,
-							   socket_options[i].
-							   option,
+							   socket_options
+							   [i].level,
+							   socket_options
+							   [i].option,
 							   (char *)&on,
 							   sizeof(int));
 				}
@@ -246,7 +245,7 @@ ssize_t read_udp_socket(int fd, char *buf, size_t len)
 	int socklen;
 
 	socklen = sizeof(sock);
-	memset((char *)&sock, 0,  socklen);
+	memset((char *)&sock, 0, socklen);
 	ZERO_STRUCT(lastip);
 	ret =
 		(ssize_t) recvfrom(fd, buf, len, 0, (struct sockaddr *)&sock,
@@ -562,7 +561,7 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 
 	smb_read_error = 0;
 
-	memset(buffer, 0,  smb_size + 100);
+	memset(buffer, 0, smb_size + 100);
 
 	len = read_smb_length_return_keepalive(fd, buffer, timeout);
 	if (len < 0)
@@ -1009,9 +1008,8 @@ char *client_addr(int fd)
 
 	if (getpeername(fd, &sa, &length) < 0)
 	{
-		DEBUG(0,
-		      ("getpeername failed. Error was %s\n",
-		       strerror(errno)));
+		DEBUG(0, ("getpeername failed. Error was %s\n",
+			  strerror(errno)));
 		return client_addr_buf;
 	}
 
@@ -1045,7 +1043,7 @@ int open_pipe_sock(char *path)
 
 	if (connect(sock, (struct sockaddr *)&sa, sizeof(sa)) < 0)
 	{
-		DEBUG(1, ("socket connect to %s failed: %s\n",
+		DEBUG(2, ("socket connect to %s failed: %s\n",
 			  sa.sun_path, strerror(errno)));
 		close(sock);
 		return -1;

@@ -180,11 +180,15 @@ A stat() wrapper that will deal with 64 bit filesizes.
 
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-  return stat64(fname, sbuf);
+	int ret;
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
+	ret = stat64(fname, sbuf);
 #else
-  return stat(fname, sbuf);
+	ret = stat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -193,11 +197,15 @@ int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
-  return fstat64(fd, sbuf);
+	int ret;
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
+	ret = fstat64(fd, sbuf);
 #else
-  return fstat(fd, sbuf);
+	ret = fstat(fd, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -206,11 +214,15 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
-  return lstat64(fname, sbuf);
+	int ret;
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
+	ret = lstat64(fname, sbuf);
 #else
-  return lstat(fname, sbuf);
+	ret = lstat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -219,7 +231,7 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 int sys_ftruncate(int fd, SMB_OFF_T offset)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_FTRUNCATE64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FTRUNCATE64)
   return ftruncate64(fd, offset);
 #else
   return ftruncate(fd, offset);
@@ -232,7 +244,7 @@ int sys_ftruncate(int fd, SMB_OFF_T offset)
 
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
   return lseek64(fd, offset, whence);
 #else
   return lseek(fd, offset, whence);
@@ -245,8 +257,10 @@ SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
 {
-#if defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
   return fseek64(fp, offset, whence);
+#elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEKO64)
+  return fseeko64(fp, offset, whence);
 #else
   return fseek(fp, offset, whence);
 #endif
@@ -258,8 +272,10 @@ int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
 
 SMB_OFF_T sys_ftell(FILE *fp)
 {
-#if defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
   return (SMB_OFF_T)ftell64(fp);
+#elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELLO64)
+  return (SMB_OFF_T)ftello64(fp);
 #else
   return (SMB_OFF_T)ftell(fp);
 #endif
@@ -308,16 +324,33 @@ FILE *sys_fopen(const char *path, const char *type)
 #endif
 }
 
+#if defined(HAVE_MMAP)
+
 /*******************************************************************
  An mmap() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
 void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset)
 {
-#if defined(LARGE_SMB_OFF_T) && defined(HAVE_MMAP64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_MMAP64)
   return mmap64(addr, len, prot, flags, fd, offset);
 #else
   return mmap(addr, len, prot, flags, fd, offset);
+#endif
+}
+
+#endif /* HAVE_MMAP */
+
+/*******************************************************************
+ A readdir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_READDIR64)
+  return readdir64(dirp);
+#else
+  return readdir(dirp);
 #endif
 }
 
@@ -339,18 +372,19 @@ system wrapper for getwd
 ********************************************************************/
 char *sys_getwd(char *s)
 {
-	char *wd;
+    char *wd;
 #ifdef HAVE_GETCWD
-	wd = (char *)getcwd(s, sizeof (pstring));
+    wd = (char *)getcwd(s, sizeof (pstring));
 #else
-	wd = (char *)getwd(s);
+    wd = (char *)getwd(s);
 #endif
-	return wd;
+    return wd;
 }
 
 /*******************************************************************
 chown isn't used much but OS/2 doesn't have it
 ********************************************************************/
+
 int sys_chown(const char *fname,uid_t uid,gid_t gid)
 {
 #ifndef HAVE_CHOWN
@@ -447,8 +481,11 @@ BOOL set_process_capability( uint32 cap_flag, BOOL enable )
     if (cap_set_proc(cap) == -1) {
       DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
             strerror(errno)));
+      cap_free(cap);
       return False;
     }
+
+    cap_free(cap);
 
     DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }
@@ -481,8 +518,11 @@ BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
     if (cap_set_proc(cap) == -1) {
       DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
             strerror(errno)));
+      cap_free(cap);
       return False;
     }
+
+    cap_free(cap);
 
     DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }
@@ -523,6 +563,20 @@ void sys_srandom(unsigned int seed)
 }
 
 /**************************************************************************
+ Returns equivalent to NGROUPS_MAX - using sysconf if needed.
+****************************************************************************/
+
+int groups_max(void)
+{
+#if defined(SYSCONF_SC_NGROUPS_MAX)
+  int ret = sysconf(_SC_NGROUPS_MAX);
+  return (ret == -1) ? NGROUPS_MAX : ret;
+#else
+  return NGROUPS_MAX;
+#endif
+}
+
+/**************************************************************************
  Wrapper for getgroups. Deals with broken (int) case.
 ****************************************************************************/
 
@@ -550,7 +604,8 @@ int sys_getgroups(int setlen, gid_t *gidset)
     return -1;
   } 
 
-  if (setlen == 0) setlen = 1;
+  if (setlen == 0)
+    setlen = groups_max();
 
   if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_getgroups: Malloc fail.\n"));
@@ -572,6 +627,57 @@ int sys_getgroups(int setlen, gid_t *gidset)
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
 
+#ifdef HAVE_SETGROUPS
+
+/**************************************************************************
+ Wrapper for setgroups. Deals with broken (int) case. Automatically used
+ if we have broken getgroups.
+****************************************************************************/
+
+int sys_setgroups(int setlen, gid_t *gidset)
+{
+#if !defined(HAVE_BROKEN_GETGROUPS)
+  return setgroups(setlen, gidset);
+#else
+
+  GID_T *group_list;
+  int i ; 
+
+  if (setlen == 0)
+    return 0 ;
+
+  if (setlen < 0 || setlen > groups_max()) {
+    errno = EINVAL; 
+    return -1;   
+  }
+
+  /*
+   * Broken case. We need to allocate a
+   * GID_T array of size setlen.
+   */
+
+  if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
+    DEBUG(0,("sys_setgroups: Malloc fail.\n"));
+    return -1;    
+  }
+ 
+  for(i = 0; i < setlen; i++) 
+    group_list[i] = (GID_T) gidset[i]; 
+
+  if(setgroups(setlen, group_list) != 0) {
+    int saved_errno = errno;
+    free((char *)group_list);
+    errno = saved_errno;
+    return -1;
+  }
+ 
+  free((char *)group_list);
+  return 0 ;
+#endif /* HAVE_BROKEN_GETGROUPS */
+}
+
+#endif /* HAVE_SETGROUPS */
+
 /*
  * We only wrap pw_name and pw_passwd for now as these
  * are the only potentially modified fields.
@@ -581,7 +687,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
  Helper function for getpwnam/getpwuid wrappers.
 ****************************************************************************/
 
-struct passwd *copy_passwd_struct(struct passwd *pass)
+static struct passwd *setup_pwret(struct passwd *pass)
 {
 	static pstring pw_name;
 	static pstring pw_passwd;
@@ -592,25 +698,16 @@ struct passwd *copy_passwd_struct(struct passwd *pass)
 		return NULL;
 	}
 
-	if (pass == &pw_ret)
-	{
-		/* catch silly error where buffer was already copied */
-		DEBUG(0,("copy_passwd_struct: can't copy internal buffer!\n"));
-		return NULL;
-	}
-
 	memcpy((char *)&pw_ret, pass, sizeof(struct passwd));
 
 	if (pass->pw_name)
 	{
-		pw_name[0] = '\0';
 		pw_ret.pw_name = pw_name;
 		pstrcpy(pw_ret.pw_name, pass->pw_name);
 	}
 
 	if (pass->pw_passwd)
 	{
-		pw_passwd[0] = '\0';
 		pw_ret.pw_passwd = pw_passwd;
 		pstrcpy(pw_ret.pw_passwd, pass->pw_passwd);
 	}
@@ -624,7 +721,7 @@ struct passwd *copy_passwd_struct(struct passwd *pass)
 
 struct passwd *sys_getpwnam(const char *name)
 {
-	return copy_passwd_struct(getpwnam(name));
+	return setup_pwret(getpwnam(name));
 }
 
 /**************************************************************************
@@ -633,7 +730,177 @@ struct passwd *sys_getpwnam(const char *name)
 
 struct passwd *sys_getpwuid(uid_t uid)
 {
-	return copy_passwd_struct(getpwuid(uid));
+	return setup_pwret(getpwuid(uid));
+}
+
+/**************************************************************************
+ The following are the UNICODE versions of *all* system interface functions
+ called within Samba. Ok, ok, the exceptions are the gethostbyXX calls,
+ which currently are left as ascii as they are not used other than in name
+ resolution.
+****************************************************************************/
+
+/**************************************************************************
+ Wide stat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_stat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
+{
+	pstring fname;
+	return sys_stat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
+}
+
+/**************************************************************************
+ Wide lstat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_lstat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
+{
+	pstring fname;
+	return sys_lstat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
+}
+
+/**************************************************************************
+ Wide creat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_creat(const smb_ucs2_t *wfname, mode_t mode)
+{
+	pstring fname;
+	return sys_creat(unicode_to_unix(fname,wfname,sizeof(fname)), mode);
+}
+
+/**************************************************************************
+ Wide open. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_open(const smb_ucs2_t *wfname, int oflag, mode_t mode)
+{
+	pstring fname;
+	return sys_open(unicode_to_unix(fname,wfname,sizeof(fname)), oflag, mode);
+}
+
+/**************************************************************************
+ Wide fopen. Just narrow and call sys_xxx.
+****************************************************************************/
+
+FILE *wsys_fopen(const smb_ucs2_t *wfname, const char *type)
+{
+	pstring fname;
+	return sys_fopen(unicode_to_unix(fname,wfname,sizeof(fname)), type);
+}
+
+/**************************************************************************
+ Wide opendir. Just narrow and call sys_xxx.
+****************************************************************************/
+
+DIR *wsys_opendir(const smb_ucs2_t *wfname)
+{
+	pstring fname;
+	return opendir(unicode_to_unix(fname,wfname,sizeof(fname)));
+}
+
+/**************************************************************************
+ Wide readdir. Return a structure pointer containing a wide filename.
+****************************************************************************/
+
+SMB_STRUCT_WDIRENT *wsys_readdir(DIR *dirp)
+{
+	static SMB_STRUCT_WDIRENT retval;
+	SMB_STRUCT_DIRENT *dirval = sys_readdir(dirp);
+
+	if(!dirval)
+		return NULL;
+
+	/*
+	 * The only POSIX defined member of this struct is d_name.
+	 */
+
+	unix_to_unicode(retval.d_name,dirval->d_name,sizeof(retval.d_name));
+
+	return &retval;
+}
+
+/**************************************************************************
+ Wide getwd. Call sys_xxx and widen. Assumes s points to a wpstring.
+****************************************************************************/
+
+smb_ucs2_t *wsys_getwd(smb_ucs2_t *s)
+{
+	pstring fname;
+	char *p = sys_getwd(fname);
+
+	if(!p)
+		return NULL;
+
+	return unix_to_unicode(s, p, sizeof(wpstring));
+}
+
+/**************************************************************************
+ Wide chown. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid)
+{
+	pstring fname;
+	return chown(unicode_to_unix(fname,wfname,sizeof(fname)), uid, gid);
+}
+
+/**************************************************************************
+ Wide chroot. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_chroot(const smb_ucs2_t *wfname)
+{
+	pstring fname;
+	return chroot(unicode_to_unix(fname,wfname,sizeof(fname)));
+}
+
+/**************************************************************************
+ Wide getpwnam. Return a structure pointer containing wide names.
+****************************************************************************/
+
+SMB_STRUCT_WPASSWD *wsys_getpwnam(const smb_ucs2_t *wname)
+{
+	static SMB_STRUCT_WPASSWD retval;
+	fstring name;
+	struct passwd *pwret = sys_getpwnam(unicode_to_unix(name,wname,sizeof(name)));
+
+	if(!pwret)
+		return NULL;
+
+	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
+	retval.pw_passwd = pwret->pw_passwd;
+	retval.pw_uid = pwret->pw_uid;
+	retval.pw_gid = pwret->pw_gid;
+	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
+	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
+	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
+
+	return &retval;
+}
+
+/**************************************************************************
+ Wide getpwuid. Return a structure pointer containing wide names.
+****************************************************************************/
+
+SMB_STRUCT_WPASSWD *wsys_getpwuid(uid_t uid)
+{
+	static SMB_STRUCT_WPASSWD retval;
+	struct passwd *pwret = sys_getpwuid(uid);
+
+	if(!pwret)
+		return NULL;
+
+	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
+	retval.pw_passwd = pwret->pw_passwd;
+	retval.pw_uid = pwret->pw_uid;
+	retval.pw_gid = pwret->pw_gid;
+	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
+	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
+	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
+
+	return &retval;
 }
 
 /**************************************************************************

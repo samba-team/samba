@@ -42,4 +42,9 @@
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
 #define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 
+#define wpstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wpstring))
+#define wpstrcat(d,s) safe_strcat_w((d),(s),sizeof(wpstring))
+#define wfstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wfstring))
+#define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
+
 #endif

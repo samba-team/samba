@@ -37,10 +37,10 @@
 
 /* for readability... */
 #define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)
-#define IS_DOS_DIR(test_mode) (((test_mode) & aDIR) != 0)
-#define IS_DOS_ARCHIVE(test_mode) (((test_mode) & aARCH) != 0)
-#define IS_DOS_SYSTEM(test_mode) (((test_mode) & aSYSTEM) != 0)
-#define IS_DOS_HIDDEN(test_mode) (((test_mode) & aHIDDEN) != 0)
+#define IS_DOS_DIR(test_mode)      (((test_mode) & aDIR) != 0)
+#define IS_DOS_ARCHIVE(test_mode)  (((test_mode) & aARCH) != 0)
+#define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
+#define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
 /* memory-allocation-helpers (idea and names from glib) */
 #define g_new(type, count) \
@@ -161,5 +161,70 @@
 #define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,__LINE__)
 
 #define SMB_ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
+
+/* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
+#define smb_buf(buf) (buf + smb_size + CVAL(buf,smb_wct)*2)
+#define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
+
+/* Note that chain_size must be available as an extern int to this macro. */
+#define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
+
+#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
+#define _smb_setlen(buf,len) buf[0] = 0; buf[1] = (len&0x10000)>>16; \
+        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF;
+
+/*********************************************************
+* Routine to check if a given string matches exactly.
+* Case can be significant or not.
+**********************************************************/
+
+#define exact_match(str, regexp, case_sig) \
+  ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0)
+
+/*******************************************************************
+find the difference in milliseconds between two struct timeval
+values
+********************************************************************/
+
+#define TvalDiff(tvalold,tvalnew) \
+  (((tvalnew)->tv_sec - (tvalold)->tv_sec)*1000 +  \
+	 ((int)(tvalnew)->tv_usec - (int)(tvalold)->tv_usec)/1000)
+
+/****************************************************************************
+true if two IP addresses are equal
+****************************************************************************/
+
+#define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
+
+/****************************************************************************
+ Used by dptr_zero.
+****************************************************************************/
+
+#define DPTR_MASK ((uint32)(((uint32)1)<<31))
+
+/****************************************************************************
+ Return True if the offset is at zero.
+****************************************************************************/
+
+#define dptr_zero(buf) ((IVAL(buf,1)&~DPTR_MASK) == 0)
+
+/*******************************************************************
+copy an IP address from one buffer to another
+********************************************************************/
+
+#define putip(dest,src) memcpy(dest,src,4)
+
+/****************************************************************************
+ Make a filename into unix format.
+****************************************************************************/
+
+#define unix_format(fname) string_replace(fname,'\\','/')
+
+/****************************************************************************
+ Make a file into DOS format.
+****************************************************************************/
+
+#define dos_format(fname) string_replace(fname,'/','\\')
+
 
 #endif /* _SMB_MACROS_H */

@@ -151,10 +151,10 @@ void winbindd_getgrnam_from_group(DOM_SID *domain_sid, char *domain_name,
 
     if (!(winbindd_surs_sam_sid_to_unixid(&domain_group_sid, 
                                           request->data.groupname,
-                                          SID_NAME_ALIAS, &unix_gid) ||
+                                          RID_TYPE_ALIAS, &unix_gid) ||
           winbindd_surs_sam_sid_to_unixid(&domain_group_sid, 
                                           request->data.groupname,
-                                          SID_NAME_DOM_GRP, &unix_gid))) {
+                                          RID_TYPE_GROUP, &unix_gid))) {
         DEBUG(1, ("error sursing unix gid for sid\n"));
     } else {
         DOM_SID temp;
@@ -189,9 +189,9 @@ void winbindd_getgrnam_from_gid(DOM_SID *domain_sid, char *domain_name,
 
     /* Get sid from gid */
 
-    if (!(winbindd_surs_unixid_to_sam_sid(request->data.gid, SID_NAME_ALIAS,
+    if (!(winbindd_surs_unixid_to_sam_sid(request->data.gid, RID_TYPE_ALIAS,
                                           &domain_group_sid, False) ||
-          winbindd_surs_unixid_to_sam_sid(request->data.gid, SID_NAME_DOM_GRP,
+          winbindd_surs_unixid_to_sam_sid(request->data.gid, RID_TYPE_GROUP,
                                           &domain_group_sid, False))) {
         DEBUG(1, ("Could not convert gid %d to domain or local sid\n",
                   request->data.gid));

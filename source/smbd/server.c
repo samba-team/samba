@@ -27,7 +27,6 @@ extern pstring debugf;
 extern fstring global_myworkgroup;
 extern fstring global_sam_name;
 extern pstring global_myname;
-extern dfs_internal dfs_struct;
 
 int am_parent = 1;
 
@@ -37,7 +36,6 @@ int last_message = -1;
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
-extern pstring scope;
 extern int DEBUGLEVEL;
 
 extern pstring user_socket_options;
@@ -114,7 +112,7 @@ static int open_server_socket(int port, uint32 ipaddr)
 /****************************************************************************
   open the socket communication
 ****************************************************************************/
-static BOOL open_sockets(BOOL is_daemon,int port,int port445)
+static BOOL open_sockets(BOOL is_daemon,int port, int port445)
 {
 	extern int Client;
 	extern int ClientPort;
@@ -183,7 +181,8 @@ max can be %d\n",
 		num_interfaces = 1;
 		
 		/* open an incoming socket */
-		s = open_server_socket(port, interpret_addr(lp_socket_address()));
+		s = open_server_socket(port,
+				   interpret_addr(lp_socket_address()));
 		if (s == -1)
 			return(False);
 		fd_listenset[0] = s;
@@ -207,11 +206,14 @@ max can be %d\n",
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(256,&lfds,NULL, NULL);
+		num = sys_select(FD_SETSIZE,&lfds,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR)
 			continue;
 		
+		/* check if we need to reload services */
+		check_reload(time(NULL));
+
 		/* Find the sockets that are read-ready -
 		   accept on these. */
 		for( ; num > 0; num--) {
@@ -332,6 +334,14 @@ BOOL reload_services(BOOL test)
 
 	ret = lp_load(servicesf,False,False,True);
 
+#ifdef MS_DFS
+	/* load the dfs maps of all the services having 
+	   a dfs_map parameter 
+	   we don't want to do this in lp_load because we want just the smbd
+	   server to load up the dfs maps into msdfs.tdb. not nmbd, swat etc*/
+	load_dfsmaps();
+#endif
+
 	load_printers();
 
 	/* perhaps the config filename is now set */
@@ -351,6 +361,7 @@ BOOL reload_services(BOOL test)
 	}
 
 	reset_mangled_cache();
+    reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
 	become_service(NULL,True);
@@ -361,9 +372,10 @@ BOOL reload_services(BOOL test)
 
 
 /****************************************************************************
-this prevents zombie child processes
+ Catch a sighup.
 ****************************************************************************/
-BOOL reload_after_sighup = False;
+
+VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
 
 static void sig_hup(int sig)
 {
@@ -438,6 +450,8 @@ void exit_server(char *reason)
 
 	conn_close_all();
 
+    respond_to_all_remaining_local_messages();
+
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
 		dfs_unlogin();
@@ -458,15 +472,11 @@ void exit_server(char *reason)
 	}    
 
 	locking_end();
+#ifdef MS_DFS
+	msdfs_end();
+#endif
 
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
-#ifdef MEM_MAN
-	{
-		extern FILE *dbf;
-		smb_mem_write_verbose(dbf);
-		dbgflush();
-	}
-#endif
 	exit(0);
 }
 
@@ -477,11 +487,25 @@ void exit_server(char *reason)
 ****************************************************************************/
 static void init_structs(void)
 {
+	/*
+	 * Set the machine NETBIOS name if not already
+	 * set from the config file.
+	 */
+
+	if (!*global_myname) {
+		char *p;
+		fstrcpy( global_myname, myhostname() );
+		p = strchr( global_myname, '.' );
+		if (p) 
+			*p = 0;
+	}
+
+	strupper( global_myname );
+
 	conn_init();
 	file_init();
 	init_rpc_pipe_hnd(); /* for RPC pipes */
 	init_dptrs();
-	init_dfs_table();
 }
 
 /****************************************************************************
@@ -489,20 +513,21 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-	DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
 
-	printf("Usage: %s [-D] [-p port] [-d debuglevel] ", pname);
-        printf("[-l log basename] [-s services file]\n" );
-	printf("Version %s\n",VERSION);
-	printf("\t-D                    become a daemon\n");
-	printf("\t-p port               listen on the specified port\n");
-	printf("\t-d debuglevel         set the debuglevel\n");
+	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	printf("       [-O socket options] [-s services file]\n");
+	printf("\t-D                    Become a daemon\n");
+	printf("\t-a                    Append to log file (default)\n");
+	printf("\t-o                    Overwrite log file, don't append\n");
+	printf("\t-P                    Passive only\n");
+	printf("\t-h                    Print usage\n");
+	printf("\t-?                    Print usage\n");
+	printf("\t-V                    Print version\n");
+	printf("\t-d debuglevel         Set the debuglevel\n");
 	printf("\t-l log basename.      Basename for log/debug files\n");
+	printf("\t-p port               Listen on the specified port\n");
+	printf("\t-O socket options     Socket options\n");
 	printf("\t-s services file.     Filename of services file\n");
-	printf("\t-P                    passive only\n");
-	printf("\t-a                    append to log file (default)\n");
-	printf("\t-o                    overwrite log file, don't append\n");
-	printf("\t-i scope              NetBIOS scope to use (default none)\n");
 	printf("\n");
 }
 
@@ -515,6 +540,7 @@ static void usage(char *pname)
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
+	BOOL specified_logfile = False;
 	int port = SMB_PORT;
 	int port445 = SMB_PORT2;
 	int opt;
@@ -524,56 +550,16 @@ static void usage(char *pname)
 	set_auth_parameters(argc,argv);
 #endif
 
-#ifdef HAVE_SETLUID
-	/* needed for SecureWare on SCO */
-	setluid(0);
-#endif
-
-	append_log = True;
-
-	TimeInit();
-
-	pstrcpy(debugf,SMBLOGFILE);  
-
-	pstrcpy(remote_machine, "smb");
-
-	setup_logging(argv[0],False);
-
-	charset_initialise();
-
-	/* make absolutely sure we run as root - to handle cases where people
-	   are crazy enough to have it setuid */
-	gain_root_privilege();
-	gain_root_group_privilege();
-
-	fault_setup((void (*)(void *))exit_server);
-	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
-
-	/* we are never interested in SIGPIPE */
-	BlockSignals(True,SIGPIPE);
-
-	/* we want total control over the permissions on created files,
-	   so set our umask to 0 */
-	umask(0);
-
-	dos_GetWd(OriginalDir);
-
-	init_uid();
-
 	/* this is for people who can't start the program correctly */
 	while (argc > 1 && (*argv[1] != '-')) {
 		argv++;
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:i:l:s:d:Dp:h?Paof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?VPaof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
-			break;
-
-		case 'i':
-			pstrcpy(scope,optarg);
 			break;
 
 		case 'P':
@@ -588,6 +574,7 @@ static void usage(char *pname)
 			break;
 
 		case 'l':
+			specified_logfile = True;
 			pstrcpy(debugf,optarg);
 			break;
 
@@ -620,10 +607,72 @@ static void usage(char *pname)
 			exit(0);
 			break;
 
+		case 'V':
+			printf("Version %s\n",VERSION);
+			exit(0);
+			break;
 		default:
+			DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
 			usage(argv[0]);
 			exit(1);
 		}
+
+#ifdef HAVE_SETLUID
+	/* needed for SecureWare on SCO */
+	setluid(0);
+#endif
+
+	/*
+	 * gain_root_privilege uses an assert than will cause a core
+	 * dump if euid != 0. Ensure this is the case.
+	 */
+
+	if(geteuid() != (uid_t)0) {
+		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
+		exit(1);
+	}
+
+	append_log = True;
+
+	TimeInit();
+
+	if(!specified_logfile)
+		pstrcpy(debugf,SMBLOGFILE);  
+
+	pstrcpy(remote_machine, "smb");
+
+	setup_logging(argv[0],False);
+
+	charset_initialise();
+
+	/* we want to re-seed early to prevent time delays causing
+           client problems at a later date. (tridge) */
+	generate_random_buffer(NULL, 0, False);
+
+	/* make absolutely sure we run as root - to handle cases where people
+	   are crazy enough to have it setuid */
+
+	gain_root_privilege();
+	gain_root_group_privilege();
+
+	fault_setup((void (*)(void *))exit_server);
+	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
+
+	/* we are never interested in SIGPIPE */
+	BlockSignals(True,SIGPIPE);
+
+#if defined(SIGFPE)
+	/* we are never interested in SIGFPE */
+	BlockSignals(True,SIGFPE);
+#endif
+
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	umask(0);
+
+	dos_GetWd(OriginalDir);
+
+	init_uid();
 
 	reopen_logs();
 
@@ -638,6 +687,10 @@ static void usage(char *pname)
 		exit(1);
 	}
 
+	/*
+	 * Do this before reload_services.
+	 */
+
 	if (!reload_services(False))
 		return(-1);	
 
@@ -650,16 +703,6 @@ static void usage(char *pname)
 	}
 #endif
 
-	/*
-	 * Set the machine NETBIOS name if not already
-	 * set from the config file.
-	 */
-	if (!*global_myname)
-	{
-		fstrcpy(global_myname, dns_to_netbios_name(myhostname()));
-	}
-	strupper(global_myname);
-
 #ifdef WITH_SSL
 	{
 		extern BOOL sslEnabled;
@@ -671,10 +714,7 @@ static void usage(char *pname)
 
 	codepage_initialise(lp_client_code_page());
 
-	if (!pwdb_initialise(True))
-	{
-		exit(1);
-	}
+	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 	
@@ -684,7 +724,6 @@ static void usage(char *pname)
 	/* If we are using the malloc debug code we can't use
 	   SIGUSR1 and SIGUSR2 to do debug level changes. */
 	
-#ifndef MEM_MAN
 #if defined(SIGUSR1)
 	CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
 #endif /* SIGUSR1 */
@@ -692,7 +731,6 @@ static void usage(char *pname)
 #if defined(SIGUSR2)
 	CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 #endif /* SIGUSR2 */
-#endif /* MEM_MAN */
 
 	DEBUG(3,( "loaded services\n"));
 
@@ -719,7 +757,16 @@ static void usage(char *pname)
 	if (!open_sockets(is_daemon,port,port445))
 		exit(1);
 
+	/*
+	 * Note that this call should be done after the fork() call
+	 * in open_sockets(), as some versions of the locking shared
+	 * memory code register openers in a flat file.
+	 */ 
+
 	if (!locking_init(0))
+		exit(1);
+
+	if(!pwdb_initialise(True))
 		exit(1);
 
 	/* possibly reload the services file. */

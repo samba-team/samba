@@ -117,17 +117,17 @@ void winbindd_getpwnam_from_user(DOM_SID *domain_sid, char *domain_name,
     sid_append_rid(&group_sid, user_info.info.id21->group_rid);
 
     res = winbindd_surs_sam_sid_to_unixid(&user_sid, request->data.username,
-                                          SID_NAME_USER, &unix_uid);
+                                          RID_TYPE_USER, &unix_uid);
 
     if (!res) {
         DEBUG(1, ("error sursing unix uid for sid\n"));
     } else {
 
         res = res ? (winbindd_surs_sam_sid_to_unixid(&group_sid, NULL,
-                                                     SID_NAME_ALIAS, 
+                                                     RID_TYPE_ALIAS, 
                                                      &unix_gid) ||
                      winbindd_surs_sam_sid_to_unixid(&group_sid, NULL,
-                                                     SID_NAME_DOM_GRP, 
+                                                     RID_TYPE_GROUP, 
                                                      &unix_gid)) : False;
         if (!res) {
             DEBUG(1, ("error sursing unix gid for sid\n"));
@@ -164,7 +164,7 @@ void winbindd_getpwnam_from_uid(DOM_SID *domain_sid,
 
     /* Get sid from uid */
 
-    if (!winbindd_surs_unixid_to_sam_sid(request->data.uid, SID_NAME_USER,
+    if (!winbindd_surs_unixid_to_sam_sid(request->data.uid, RID_TYPE_USER,
                                          &domain_user_sid, False)) {
         DEBUG(1, ("Could not convert uid %d to domain sid\n",
                   request->data.uid));
@@ -205,7 +205,7 @@ void winbindd_getpwnam_from_uid(DOM_SID *domain_sid,
     }
 
     res = winbindd_surs_sam_sid_to_unixid(&domain_user_sid, username,
-                                          SID_NAME_USER, &unix_uid);
+                                          RID_TYPE_USER, &unix_uid);
 
     if (!res) {
         DEBUG(1, ("error sursing unix uid for sid\n"));
@@ -214,9 +214,9 @@ void winbindd_getpwnam_from_uid(DOM_SID *domain_sid,
     /* ??? Should be domain_group-sid??? */
 
     res = res ? (winbindd_surs_sam_sid_to_unixid(&domain_user_sid, NULL,
-                                                 SID_NAME_ALIAS, &unix_gid) ||
+                                                 RID_TYPE_ALIAS, &unix_gid) ||
                  winbindd_surs_sam_sid_to_unixid(&domain_user_sid, NULL,
-                                                 SID_NAME_DOM_GRP, &unix_gid))
+                                                 RID_TYPE_GROUP, &unix_gid))
         : False;
 
     /* Fill in password structure */

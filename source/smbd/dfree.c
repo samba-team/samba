@@ -27,7 +27,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 normalise for DOS usage 
 ****************************************************************************/
-static void disk_norm(SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	/* check if the disk is beyond the max disk size */
 	SMB_BIG_UINT maxdisksize = lp_maxdisksize();
@@ -39,18 +39,23 @@ static void disk_norm(SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsiz
 		/* the -1 should stop applications getting div by 0
 		   errors */
 	}  
-	
+
 	while (*dfree > WORDMAX || *dsize > WORDMAX || *bsize < 512) {
 		*dfree /= 2;
 		*dsize /= 2;
 		*bsize *= 2;
-		if (*bsize > WORDMAX) {
-			*bsize = WORDMAX;
-			if (*dsize > WORDMAX)
-				*dsize = WORDMAX;
-			if (*dfree >  WORDMAX)
-				*dfree = WORDMAX;
-			break;
+		if(small_query) {	
+			/*
+			 * Force max to fit in 16 bit fields.
+			 */
+			if (*bsize > (WORDMAX*512)) {
+				*bsize = (WORDMAX*512);
+				if (*dsize > WORDMAX)
+					*dsize = WORDMAX;
+				if (*dfree >  WORDMAX)
+					*dfree = WORDMAX;
+				break;
+			}
 		}
 	}
 }
@@ -152,7 +157,7 @@ static int fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 
 #endif /* STAT_STATFS4 */
 
-#ifdef STAT_STATVFS		/* SVR4 */
+#if defined(STAT_STATVFS) || defined(STAT_STATVFS64)		/* SVR4 */
 # define CONVERT_BLOCKS(B) \
 	adjust_blocks ((SMB_BIG_UINT)(B), fsd.f_frsize ? (SMB_BIG_UINT)fsd.f_frsize : (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
 
@@ -185,17 +190,68 @@ static int fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 /****************************************************************************
   return number of 1K blocks available on a path and total number 
 ****************************************************************************/
-static SMB_BIG_UINT disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+
+static SMB_BIG_UINT disk_free(char *path, BOOL small_query, 
+                              SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	int dfree_retval;
 	SMB_BIG_UINT dfree_q = 0;
 	SMB_BIG_UINT bsize_q = 0;
 	SMB_BIG_UINT dsize_q = 0;
+	char *dfree_command;
 
 	(*dfree) = (*dsize) = 0;
 	(*bsize) = 512;
 
-	fsusage(path, dfree, dsize);
+
+	/*
+	 * If external disk calculation specified, use it.
+	 */
+
+	dfree_command = lp_dfree_command();
+	if (dfree_command && *dfree_command) {
+		pstring line;
+		char *p;
+		FILE *pp;
+
+		slprintf (line, sizeof(pstring) - 1, "%s %s", dfree_command, path);
+		DEBUG (3, ("disk_free: Running command %s\n", line));
+
+		pp = sys_popen(line, "r", False);
+		if (pp) {
+			fgets(line, sizeof(pstring), pp);
+			line[sizeof(pstring)-1] = '\0';
+			if (strlen(line) > 0)
+				line[strlen(line)-1] = '\0';
+
+			DEBUG (3, ("Read input from dfree, \"%s\"\n", line));
+
+			*dsize = (SMB_BIG_UINT)strtoul(line, &p, 10);
+			while (p && *p & isspace(*p))
+				p++;
+			if (p && *p)
+				*dfree = (SMB_BIG_UINT)strtoul(p, &p, 10);
+			while (p && *p & isspace(*p))
+				p++;
+			if (p && *p)
+				*bsize = (SMB_BIG_UINT)strtoul(p, NULL, 10);
+			else
+				*bsize = 1024;
+			sys_pclose (pp);
+			DEBUG (3, ("Parsed output of dfree, dsize=%u, dfree=%u, bsize=%u\n",
+				(unsigned int)*dsize, (unsigned int)*dfree, (unsigned int)*bsize));
+
+			if (!*dsize)
+				*dsize = 2048;
+			if (!*dfree)
+				*dfree = 1024;
+		} else {
+			DEBUG (0, ("disk_free: sys_popen() failed for command %s. Error was : %s\n",
+				line, strerror(errno) ));
+			fsusage(path, dfree, dsize);
+		}
+	} else
+		fsusage(path, dfree, dsize);
 
 	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
 		(*bsize) = bsize_q;
@@ -219,7 +275,7 @@ static SMB_BIG_UINT disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree
 		*dfree = MAX(1,*dfree);
 	}
 
-	disk_norm(bsize,dfree,dsize);
+	disk_norm(small_query,bsize,dfree,dsize);
 
 	if ((*bsize) < 1024) {
 		dfree_retval = (*dfree)/(1024/(*bsize));
@@ -234,7 +290,8 @@ static SMB_BIG_UINT disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree
 /****************************************************************************
 wrap it to get filenames right
 ****************************************************************************/
-SMB_BIG_UINT sys_disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+SMB_BIG_UINT sys_disk_free(char *path, BOOL small_query, 
+                           SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-	return(disk_free(dos_to_unix(path,False),bsize,dfree,dsize));
+	return(disk_free(dos_to_unix(path,False),small_query, bsize,dfree,dsize));
 }

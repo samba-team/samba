@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 makes a SAMR_Q_CLOSE_HND structure.
 ********************************************************************/
-BOOL make_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND * hnd)
+BOOL make_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND *hnd)
 {
 	if (q_c == NULL || hnd == NULL)
 		return False;
@@ -49,7 +49,7 @@ BOOL make_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND * hnd)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -66,7 +66,7 @@ BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -87,7 +87,7 @@ BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u,
 makes a SAMR_Q_LOOKUP_DOMAIN structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN * q_u,
-			       POLICY_HND * pol, const char *dom_name)
+			       POLICY_HND *pol, const char *dom_name)
 {
 	int len_name = strlen(dom_name);
 
@@ -108,7 +108,7 @@ BOOL make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN * q_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -132,7 +132,7 @@ BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN * q_u,
 makes a SAMR_R_LOOKUP_DOMAIN structure.
 ********************************************************************/
 BOOL make_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN * r_u,
-			       DOM_SID * dom_sid, uint32 status)
+			       DOM_SID *dom_sid, uint32 status)
 {
 	if (r_u == NULL)
 		return False;
@@ -154,7 +154,7 @@ BOOL make_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -181,7 +181,7 @@ BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D * q_u,
-			    const POLICY_HND * dom_pol, const DOM_SID * sid)
+			    const POLICY_HND *dom_pol, const DOM_SID *sid)
 {
 	if (q_u == NULL)
 		return False;
@@ -198,7 +198,7 @@ BOOL make_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_unknown_2d(char *desc, SAMR_Q_UNKNOWN_2D * q_u,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -221,7 +221,7 @@ BOOL samr_io_q_unknown_2d(char *desc, SAMR_Q_UNKNOWN_2D * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_unknown_2d(char *desc, SAMR_R_UNKNOWN_2D * r_u,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -240,8 +240,8 @@ BOOL samr_io_r_unknown_2d(char *desc, SAMR_R_UNKNOWN_2D * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u,
-			     const POLICY_HND * connect_pol, uint32 flags,
-			     const DOM_SID * sid)
+			     const POLICY_HND *connect_pol, uint32 flags,
+			     const DOM_SID *sid)
 {
 	if (q_u == NULL)
 		return False;
@@ -259,7 +259,7 @@ BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN * q_u,
-			   prs_struct * ps, int depth)
+			   prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -284,7 +284,7 @@ BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN * r_u,
-			   prs_struct * ps, int depth)
+			   prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -305,7 +305,7 @@ BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO * q_u,
-				   POLICY_HND * user_pol)
+				   POLICY_HND *user_pol)
 {
 	if (q_u == NULL)
 		return False;
@@ -321,7 +321,7 @@ BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_get_usrdom_pwinfo(char *desc, SAMR_Q_GET_USRDOM_PWINFO * q_u,
-				 prs_struct * ps, int depth)
+				 prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -338,7 +338,7 @@ BOOL samr_io_q_get_usrdom_pwinfo(char *desc, SAMR_Q_GET_USRDOM_PWINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_get_usrdom_pwinfo(char *desc, SAMR_R_GET_USRDOM_PWINFO * r_u,
-				 prs_struct * ps, int depth)
+				 prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -360,7 +360,7 @@ BOOL samr_io_r_get_usrdom_pwinfo(char *desc, SAMR_R_GET_USRDOM_PWINFO * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ * q_u,
-			       const POLICY_HND * user_pol, uint32 sec_info)
+			       const POLICY_HND *user_pol, uint32 sec_info)
 {
 	if (q_u == NULL)
 		return False;
@@ -378,7 +378,7 @@ BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_sec_obj(char *desc, SAMR_Q_QUERY_SEC_OBJ * q_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -399,7 +399,7 @@ BOOL samr_io_q_query_sec_obj(char *desc, SAMR_Q_QUERY_SEC_OBJ * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
-				POLICY_HND * domain_pol, uint16 switch_value)
+				POLICY_HND *domain_pol, uint16 switch_value)
 {
 	if (q_u == NULL)
 		return False;
@@ -416,7 +416,7 @@ BOOL make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_dom_info(char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -453,7 +453,7 @@ BOOL make_unk_info3(SAM_UNK_INFO_3 * u_3)
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 * u_3,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (u_3 == NULL)
 		return False;
@@ -488,7 +488,7 @@ BOOL make_unk_info6(SAM_UNK_INFO_6 * u_6)
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 * u_6,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (u_6 == NULL)
 		return False;
@@ -522,7 +522,7 @@ BOOL make_unk_info7(SAM_UNK_INFO_7 * u_7)
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 * u_7,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (u_7 == NULL)
 		return False;
@@ -558,7 +558,7 @@ BOOL make_unk_info12(SAM_UNK_INFO_12 * u_12)
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (u_12 == NULL)
 		return False;
@@ -618,7 +618,7 @@ BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2, char *domain, char *server)
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (u_2 == NULL)
 		return False;
@@ -680,7 +680,7 @@ BOOL make_unk_info1(SAM_UNK_INFO_1 * u_1)
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 * u_1,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (u_1 == NULL)
 		return False;
@@ -729,7 +729,7 @@ BOOL make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -811,7 +811,7 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 reads or writes a SAMR_R_QUERY_SEC_OBJ structure.
 ********************************************************************/
 BOOL samr_io_r_query_sec_obj(char *desc, SAMR_R_QUERY_SEC_OBJ * r_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -836,7 +836,7 @@ reads or writes a SAM_STR1 structure.
 ********************************************************************/
 static BOOL sam_io_sam_str1(char *desc, SAM_STR1 * sam, uint32 acct_buf,
 			    uint32 name_buf, uint32 desc_buf,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -885,7 +885,7 @@ static BOOL make_sam_entry1(SAM_ENTRY1 * sam, uint32 user_idx,
 reads or writes a SAM_ENTRY1 structure.
 ********************************************************************/
 static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -912,8 +912,7 @@ static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam,
 reads or writes a SAM_STR2 structure.
 ********************************************************************/
 static BOOL sam_io_sam_str2(char *desc, SAM_STR2 * sam, uint32 acct_buf,
-			    uint32 desc_buf,
-			    prs_struct * ps, int depth)
+			    uint32 desc_buf, prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -958,7 +957,7 @@ static BOOL make_sam_entry2(SAM_ENTRY2 * sam, uint32 user_idx,
 reads or writes a SAM_ENTRY2 structure.
 ********************************************************************/
 static BOOL sam_io_sam_entry2(char *desc, SAM_ENTRY2 * sam,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -984,8 +983,7 @@ static BOOL sam_io_sam_entry2(char *desc, SAM_ENTRY2 * sam,
 reads or writes a SAM_STR3 structure.
 ********************************************************************/
 static BOOL sam_io_sam_str3(char *desc, SAM_STR3 * sam, uint32 acct_buf,
-			    uint32 desc_buf,
-			    prs_struct * ps, int depth)
+			    uint32 desc_buf, prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1029,7 +1027,7 @@ static BOOL make_sam_entry3(SAM_ENTRY3 * sam, uint32 grp_idx,
 reads or writes a SAM_ENTRY3 structure.
 ********************************************************************/
 static BOOL sam_io_sam_entry3(char *desc, SAM_ENTRY3 * sam,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1072,7 +1070,7 @@ static BOOL make_sam_entry4(SAM_ENTRY4 * sam, uint32 user_idx,
 reads or writes a SAM_ENTRY4 structure.
 ********************************************************************/
 static BOOL sam_io_sam_entry4(char *desc, SAM_ENTRY4 * sam,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1110,7 +1108,7 @@ static BOOL make_sam_entry5(SAM_ENTRY5 * sam, uint32 grp_idx,
 reads or writes a SAM_ENTRY5 structure.
 ********************************************************************/
 static BOOL sam_io_sam_entry5(char *desc, SAM_ENTRY5 * sam,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1146,7 +1144,7 @@ BOOL make_sam_entry(SAM_ENTRY * sam, uint32 len_sam_name, uint32 rid)
 reads or writes a SAM_ENTRY structure.
 ********************************************************************/
 static BOOL sam_io_sam_entry(char *desc, SAM_ENTRY * sam,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1165,7 +1163,7 @@ static BOOL sam_io_sam_entry(char *desc, SAM_ENTRY * sam,
 /*******************************************************************
 makes a SAMR_Q_ENUM_DOM_USERS structure.
 ********************************************************************/
-BOOL make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND * pol,
+BOOL make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND *pol,
 				uint32 start_idx,
 				uint16 acb_mask, uint16 unk_1, uint32 size)
 {
@@ -1188,7 +1186,7 @@ BOOL make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND * pol,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_enum_dom_users(char *desc, SAMR_Q_ENUM_DOM_USERS * q_e,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -1248,7 +1246,7 @@ BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -1312,7 +1310,7 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 /*******************************************************************
 makes a SAMR_Q_QUERY_DISPINFO structure.
 ********************************************************************/
-BOOL make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND * pol,
+BOOL make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx,
 				uint32 max_entries)
 {
@@ -1336,7 +1334,7 @@ BOOL make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND * pol,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -1412,7 +1410,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 * sam,
 				  uint32 num_entries,
-				  prs_struct * ps, int depth)
+				  prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -1492,7 +1490,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 * sam,
 				  uint32 num_entries,
-				  prs_struct * ps, int depth)
+				  prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -1571,7 +1569,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 * sam,
 				  uint32 num_entries,
-				  prs_struct * ps, int depth)
+				  prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -1649,7 +1647,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
 				  uint32 num_entries,
-				  prs_struct * ps, int depth)
+				  prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -1724,7 +1722,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 * sam,
 				  uint32 num_entries,
-				  prs_struct * ps, int depth)
+				  prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -1786,7 +1784,7 @@ BOOL make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -1859,7 +1857,7 @@ BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 makes a SAMR_Q_OPEN_GROUP structure.
 ********************************************************************/
 BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP * q_c,
-			    const POLICY_HND * hnd,
+			    const POLICY_HND *hnd,
 			    uint32 access_mask, uint32 rid)
 {
 	if (q_c == NULL || hnd == NULL)
@@ -1878,7 +1876,7 @@ BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP * q_c,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_open_group(char *desc, SAMR_Q_OPEN_GROUP * q_u,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1900,7 +1898,7 @@ BOOL samr_io_q_open_group(char *desc, SAMR_Q_OPEN_GROUP * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_open_group(char *desc, SAMR_R_OPEN_GROUP * r_u,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -1950,7 +1948,7 @@ BOOL make_samr_group_info1(GROUP_INFO1 * gr1,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (gr1 == NULL)
 		return False;
@@ -2000,7 +1998,7 @@ BOOL make_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (gr4 == NULL)
 		return False;
@@ -2022,7 +2020,7 @@ BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
 reads or writes a structure.
 ********************************************************************/
 static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -2065,7 +2063,7 @@ static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr,
 makes a SAMR_Q_CREATE_DOM_GROUP structure.
 ********************************************************************/
 BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
-				  POLICY_HND * pol, const char *acct_desc)
+				  POLICY_HND *pol, const char *acct_desc)
 {
 	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	if (q_e == NULL || pol == NULL)
@@ -2088,7 +2086,7 @@ BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_create_dom_group(char *desc, SAMR_Q_CREATE_DOM_GROUP * q_e,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -2114,7 +2112,7 @@ BOOL samr_io_q_create_dom_group(char *desc, SAMR_Q_CREATE_DOM_GROUP * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_create_dom_group(char *desc, SAMR_R_CREATE_DOM_GROUP * r_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -2136,7 +2134,7 @@ BOOL samr_io_r_create_dom_group(char *desc, SAMR_R_CREATE_DOM_GROUP * r_u,
 makes a SAMR_Q_DELETE_DOM_GROUP structure.
 ********************************************************************/
 BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP * q_c,
-				  POLICY_HND * hnd)
+				  POLICY_HND *hnd)
 {
 	if (q_c == NULL || hnd == NULL)
 		return False;
@@ -2152,7 +2150,7 @@ BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP * q_c,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_delete_dom_group(char *desc, SAMR_Q_DELETE_DOM_GROUP * q_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -2169,7 +2167,7 @@ BOOL samr_io_q_delete_dom_group(char *desc, SAMR_Q_DELETE_DOM_GROUP * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_delete_dom_group(char *desc, SAMR_R_DELETE_DOM_GROUP * r_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -2190,7 +2188,7 @@ BOOL samr_io_r_delete_dom_group(char *desc, SAMR_R_DELETE_DOM_GROUP * r_u,
 makes a SAMR_Q_DEL_GROUPMEM structure.
 ********************************************************************/
 BOOL make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM * q_e,
-			      POLICY_HND * pol, uint32 rid)
+			      POLICY_HND *pol, uint32 rid)
 {
 	if (q_e == NULL || pol == NULL)
 		return False;
@@ -2208,7 +2206,7 @@ BOOL make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_del_groupmem(char *desc, SAMR_Q_DEL_GROUPMEM * q_e,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -2229,7 +2227,7 @@ BOOL samr_io_q_del_groupmem(char *desc, SAMR_Q_DEL_GROUPMEM * q_e,
 /*******************************************************************
 makes a SAMR_R_DEL_GROUPMEM structure.
 ********************************************************************/
-BOOL make_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM * r_u, POLICY_HND * pol,
+BOOL make_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM * r_u, POLICY_HND *pol,
 			      uint32 status)
 {
 	if (r_u == NULL)
@@ -2247,7 +2245,7 @@ BOOL make_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM * r_u, POLICY_HND * pol,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_del_groupmem(char *desc, SAMR_R_DEL_GROUPMEM * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -2267,7 +2265,7 @@ BOOL samr_io_r_del_groupmem(char *desc, SAMR_R_DEL_GROUPMEM * r_u,
 makes a SAMR_Q_ADD_GROUPMEM structure.
 ********************************************************************/
 BOOL make_samr_q_add_groupmem(SAMR_Q_ADD_GROUPMEM * q_e,
-			      POLICY_HND * pol, uint32 rid)
+			      POLICY_HND *pol, uint32 rid)
 {
 	if (q_e == NULL || pol == NULL)
 		return False;
@@ -2287,7 +2285,7 @@ BOOL make_samr_q_add_groupmem(SAMR_Q_ADD_GROUPMEM * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_add_groupmem(char *desc, SAMR_Q_ADD_GROUPMEM * q_e,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -2309,7 +2307,7 @@ BOOL samr_io_q_add_groupmem(char *desc, SAMR_Q_ADD_GROUPMEM * q_e,
 /*******************************************************************
 makes a SAMR_R_ADD_GROUPMEM structure.
 ********************************************************************/
-BOOL make_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM * r_u, POLICY_HND * pol,
+BOOL make_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM * r_u, POLICY_HND *pol,
 			      uint32 status)
 {
 	if (r_u == NULL)
@@ -2327,7 +2325,7 @@ BOOL make_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM * r_u, POLICY_HND * pol,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_add_groupmem(char *desc, SAMR_R_ADD_GROUPMEM * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -2347,7 +2345,7 @@ BOOL samr_io_r_add_groupmem(char *desc, SAMR_R_ADD_GROUPMEM * r_u,
 makes a SAMR_Q_SET_GROUPINFO structure.
 ********************************************************************/
 BOOL make_samr_q_set_groupinfo(SAMR_Q_SET_GROUPINFO * q_e,
-			       POLICY_HND * pol, GROUP_INFO_CTR * ctr)
+			       POLICY_HND *pol, GROUP_INFO_CTR * ctr)
 {
 	if (q_e == NULL || pol == NULL)
 		return False;
@@ -2365,7 +2363,7 @@ BOOL make_samr_q_set_groupinfo(SAMR_Q_SET_GROUPINFO * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_set_groupinfo(char *desc, SAMR_Q_SET_GROUPINFO * q_e,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -2403,7 +2401,7 @@ BOOL make_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO * r_u, uint32 status)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_set_groupinfo(char *desc, SAMR_R_SET_GROUPINFO * r_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -2422,7 +2420,7 @@ BOOL samr_io_r_set_groupinfo(char *desc, SAMR_R_SET_GROUPINFO * r_u,
 makes a SAMR_Q_QUERY_GROUPINFO structure.
 ********************************************************************/
 BOOL make_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO * q_e,
-				 POLICY_HND * pol, uint16 switch_level)
+				 POLICY_HND *pol, uint16 switch_level)
 {
 	if (q_e == NULL || pol == NULL)
 		return False;
@@ -2441,7 +2439,7 @@ BOOL make_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_groupinfo(char *desc, SAMR_Q_QUERY_GROUPINFO * q_e,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -2481,7 +2479,7 @@ BOOL make_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -2507,7 +2505,7 @@ BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
 /*******************************************************************
 makes a SAMR_Q_QUERY_GROUPMEM structure.
 ********************************************************************/
-BOOL make_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM * q_c, POLICY_HND * hnd)
+BOOL make_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM * q_c, POLICY_HND *hnd)
 {
 	if (q_c == NULL || hnd == NULL)
 		return False;
@@ -2523,7 +2521,7 @@ BOOL make_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM * q_c, POLICY_HND * hnd)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -2577,7 +2575,7 @@ BOOL make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -2602,10 +2600,10 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 			prs_uint32("num_rids", ps, depth, &(r_u->num_rids));
 			if (r_u->num_rids != 0)
 			{
-				r_u->rid = (uint32 *) Realloc(r_u->rid,
-							      sizeof(r_u->rid
-								     [0]) *
-							      r_u->num_rids);
+				r_u->rid = (uint32 *)Realloc(r_u->rid,
+							     sizeof(r_u->rid
+								    [0]) *
+							     r_u->num_rids);
 				if (r_u->rid == NULL)
 				{
 					samr_free_r_query_groupmem(r_u);
@@ -2624,11 +2622,11 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 
 			if (r_u->num_attrs != 0)
 			{
-				r_u->attr = (uint32 *) Realloc(r_u->attr,
-							       sizeof
-							       (r_u->attr[0])
-							       *
-							       r_u->num_attrs);
+				r_u->attr = (uint32 *)Realloc(r_u->attr,
+							      sizeof
+							      (r_u->attr[0])
+							      *
+							      r_u->num_attrs);
 				if (r_u->attr == NULL)
 				{
 					samr_free_r_query_groupmem(r_u);
@@ -2675,7 +2673,7 @@ void samr_free_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u)
 makes a SAMR_Q_QUERY_USERGROUPS structure.
 ********************************************************************/
 BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS * q_u,
-				  POLICY_HND * hnd)
+				  POLICY_HND *hnd)
 {
 	if (q_u == NULL || hnd == NULL)
 		return False;
@@ -2691,7 +2689,7 @@ BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_usergroups(char *desc, SAMR_Q_QUERY_USERGROUPS * q_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -2742,7 +2740,7 @@ BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID ** gid,
-		  prs_struct * ps, int depth)
+		  prs_struct *ps, int depth)
 {
 	uint32 i;
 	if (gid == NULL)
@@ -2786,7 +2784,7 @@ BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID ** gid,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -2819,7 +2817,7 @@ BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
 makes a SAMR_Q_ENUM_DOMAINS structure.
 ********************************************************************/
 BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS * q_e,
-			      const POLICY_HND * pol,
+			      const POLICY_HND *pol,
 			      uint32 start_idx, uint32 size)
 {
 	if (q_e == NULL || pol == NULL)
@@ -2839,7 +2837,7 @@ BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -2896,7 +2894,7 @@ BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -2964,7 +2962,7 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 makes a SAMR_Q_ENUM_DOM_GROUPS structure.
 ********************************************************************/
 BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS * q_e,
-				 const POLICY_HND * pol,
+				 const POLICY_HND *pol,
 				 uint32 start_idx, uint32 size)
 {
 	if (q_e == NULL || pol == NULL)
@@ -2984,7 +2982,7 @@ BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS * q_e,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -3041,7 +3039,7 @@ BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -3105,7 +3103,7 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 makes a SAMR_Q_ENUM_DOM_ALIASES structure.
 ********************************************************************/
 BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES * q_e,
-				  POLICY_HND * pol, uint32 start_idx,
+				  POLICY_HND *pol, uint32 start_idx,
 				  uint32 size)
 {
 	if (q_e == NULL || pol == NULL)
@@ -3126,7 +3124,7 @@ BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_enum_dom_aliases(char *desc, SAMR_Q_ENUM_DOM_ALIASES * q_e,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -3183,7 +3181,7 @@ BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -3265,7 +3263,7 @@ BOOL make_samr_alias_info3(ALIAS_INFO3 * al3, const char *acct_desc)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (al3 == NULL)
 		return False;
@@ -3287,7 +3285,7 @@ BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -3324,7 +3322,7 @@ BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr,
 makes a SAMR_Q_QUERY_ALIASINFO structure.
 ********************************************************************/
 BOOL make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO * q_e,
-				 const POLICY_HND * pol, uint16 switch_level)
+				 const POLICY_HND *pol, uint16 switch_level)
 {
 	if (q_e == NULL || pol == NULL)
 		return False;
@@ -3342,7 +3340,7 @@ BOOL make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO * q_e,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_aliasinfo(char *desc, SAMR_Q_QUERY_ALIASINFO * q_e,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (q_e == NULL)
 		return False;
@@ -3382,7 +3380,7 @@ BOOL make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_aliasinfo(char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -3409,7 +3407,7 @@ BOOL samr_io_r_query_aliasinfo(char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
 makes a SAMR_Q_SET_ALIASINFO structure.
 ********************************************************************/
 BOOL make_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO * q_u,
-			       const POLICY_HND * hnd, ALIAS_INFO_CTR * ctr)
+			       const POLICY_HND *hnd, ALIAS_INFO_CTR * ctr)
 {
 	if (q_u == NULL)
 		return False;
@@ -3426,7 +3424,7 @@ BOOL make_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_set_aliasinfo(char *desc, SAMR_Q_SET_ALIASINFO * q_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -3446,7 +3444,7 @@ BOOL samr_io_q_set_aliasinfo(char *desc, SAMR_Q_SET_ALIASINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_set_aliasinfo(char *desc, SAMR_R_SET_ALIASINFO * r_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -3465,7 +3463,7 @@ BOOL samr_io_r_set_aliasinfo(char *desc, SAMR_R_SET_ALIASINFO * r_u,
 makes a SAMR_Q_QUERY_USERALIASES structure.
 ********************************************************************/
 BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES * q_u,
-				   const POLICY_HND * hnd,
+				   const POLICY_HND *hnd,
 				   uint32 num_sids,
 				   uint32 *ptr_sid, DOM_SID2 * sid)
 {
@@ -3490,7 +3488,7 @@ BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES * q_u,
 reads or writes a SAMR_Q_QUERY_USERALIASES structure.
 ********************************************************************/
 BOOL samr_io_q_query_useraliases(char *desc, SAMR_Q_QUERY_USERALIASES * q_u,
-				 prs_struct * ps, int depth)
+				 prs_struct *ps, int depth)
 {
 	fstring tmp;
 	uint32 i;
@@ -3511,9 +3509,9 @@ BOOL samr_io_q_query_useraliases(char *desc, SAMR_Q_QUERY_USERALIASES * q_u,
 
 	if (q_u->num_sids2 != 0)
 	{
-		q_u->ptr_sid = (uint32 *) Realloc(q_u->ptr_sid,
-						  sizeof(q_u->ptr_sid[0]) *
-						  q_u->num_sids2);
+		q_u->ptr_sid = (uint32 *)Realloc(q_u->ptr_sid,
+						 sizeof(q_u->ptr_sid[0]) *
+						 q_u->num_sids2);
 		if (q_u->ptr_sid == NULL)
 		{
 			samr_free_q_query_useraliases(q_u);
@@ -3609,7 +3607,7 @@ BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid,
-		  prs_struct * ps, int depth)
+		  prs_struct *ps, int depth)
 {
 	fstring tmp;
 	uint32 i;
@@ -3655,7 +3653,7 @@ BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
-				 prs_struct * ps, int depth)
+				 prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -3682,7 +3680,7 @@ BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
 /*******************************************************************
 makes a SAMR_Q_OPEN_ALIAS structure.
 ********************************************************************/
-BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, const POLICY_HND * pol,
+BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, const POLICY_HND *pol,
 			    uint32 unknown_0, uint32 rid)
 {
 	if (q_u == NULL)
@@ -3704,7 +3702,7 @@ BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, const POLICY_HND * pol,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -3726,7 +3724,7 @@ BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
-			  prs_struct * ps, int depth)
+			  prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -3747,7 +3745,7 @@ BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
 makes a SAMR_Q_LOOKUP_RIDS structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS * q_u,
-			     const POLICY_HND * pol, uint32 flags,
+			     const POLICY_HND *pol, uint32 flags,
 			     uint32 num_rids, const uint32 *rid)
 {
 	if (q_u == NULL)
@@ -3761,7 +3759,7 @@ BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS * q_u,
 	q_u->flags = flags;
 	q_u->ptr = 0;
 	q_u->num_rids2 = num_rids;
-	q_u->rid = (uint32 *) memdup(rid, num_rids * sizeof(q_u->rid[0]));
+	q_u->rid = (uint32 *)memdup(rid, num_rids * sizeof(q_u->rid[0]));
 
 	return True;
 }
@@ -3770,7 +3768,7 @@ BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_lookup_rids(char *desc, SAMR_Q_LOOKUP_RIDS * q_u,
-			   prs_struct * ps, int depth)
+			   prs_struct *ps, int depth)
 {
 	uint32 i;
 	fstring tmp;
@@ -3797,8 +3795,8 @@ BOOL samr_io_q_lookup_rids(char *desc, SAMR_Q_LOOKUP_RIDS * q_u,
 
 	if (q_u->num_rids2 != 0)
 	{
-		q_u->rid = (uint32 *) Realloc(q_u->rid, sizeof(q_u->rid[0]) *
-					      q_u->num_rids2);
+		q_u->rid = (uint32 *)Realloc(q_u->rid, sizeof(q_u->rid[0]) *
+					     q_u->num_rids2);
 		if (q_u->rid == NULL)
 		{
 			samr_free_q_lookup_rids(q_u);
@@ -3841,7 +3839,7 @@ makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS * r_u,
 			     uint32 num_names, UNIHDR * hdr_name,
-			     UNISTR2 * uni_name, uint32 *type)
+			     UNISTR2 *uni_name, uint32 *type)
 {
 	if (r_u == NULL)
 		return False;
@@ -3884,7 +3882,7 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
-			   prs_struct * ps, int depth)
+			   prs_struct *ps, int depth)
 {
 	uint32 i;
 	fstring tmp;
@@ -3910,9 +3908,9 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 			return False;
 		}
 
-		r_u->uni_name = (UNISTR2 *) Realloc(r_u->uni_name,
-						    r_u->num_names2 *
-						    sizeof(r_u->uni_name[0]));
+		r_u->uni_name = (UNISTR2 *)Realloc(r_u->uni_name,
+						   r_u->num_names2 *
+						   sizeof(r_u->uni_name[0]));
 		if (r_u->uni_name == NULL)
 		{
 			free(r_u->hdr_name);
@@ -3940,8 +3938,8 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 
 	if (r_u->ptr_types != 0 && r_u->num_types1 != 0)
 	{
-		r_u->type = (uint32 *) Realloc(r_u->type, r_u->num_types2 *
-					       sizeof(r_u->type[0]));
+		r_u->type = (uint32 *)Realloc(r_u->type, r_u->num_types2 *
+					      sizeof(r_u->type[0]));
 		if (r_u->type == NULL)
 		{
 			if (r_u->uni_name != NULL)
@@ -3998,7 +3996,7 @@ void samr_free_r_lookup_rids(SAMR_R_LOOKUP_RIDS * r_u)
 /*******************************************************************
 makes a SAMR_Q_OPEN_ALIAS structure.
 ********************************************************************/
-BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS * q_u, POLICY_HND * hnd)
+BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS * q_u, POLICY_HND *hnd)
 {
 	if (q_u == NULL)
 		return False;
@@ -4015,7 +4013,7 @@ BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS * q_u, POLICY_HND * hnd)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_delete_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4032,7 +4030,7 @@ BOOL samr_io_q_delete_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_delete_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4053,7 +4051,7 @@ BOOL samr_io_r_delete_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
 makes a SAMR_Q_CREATE_DOM_ALIAS structure.
 ********************************************************************/
 BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
-				  POLICY_HND * hnd, const char *acct_desc)
+				  POLICY_HND *hnd, const char *acct_desc)
 {
 	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	if (q_u == NULL)
@@ -4075,7 +4073,7 @@ BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_create_dom_alias(char *desc, SAMR_Q_CREATE_DOM_ALIAS * q_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4101,7 +4099,7 @@ BOOL samr_io_q_create_dom_alias(char *desc, SAMR_Q_CREATE_DOM_ALIAS * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_create_dom_alias(char *desc, SAMR_R_CREATE_DOM_ALIAS * r_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4124,8 +4122,8 @@ BOOL samr_io_r_create_dom_alias(char *desc, SAMR_R_CREATE_DOM_ALIAS * r_u,
 /*******************************************************************
 makes a SAMR_Q_ADD_ALIASMEM structure.
 ********************************************************************/
-BOOL make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM * q_u, POLICY_HND * hnd,
-			      DOM_SID * sid)
+BOOL make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM * q_u, POLICY_HND *hnd,
+			      DOM_SID *sid)
 {
 	if (q_u == NULL)
 		return False;
@@ -4142,7 +4140,7 @@ BOOL make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM * q_u, POLICY_HND * hnd,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_add_aliasmem(char *desc, SAMR_Q_ADD_ALIASMEM * q_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4162,7 +4160,7 @@ BOOL samr_io_q_add_aliasmem(char *desc, SAMR_Q_ADD_ALIASMEM * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_add_aliasmem(char *desc, SAMR_R_ADD_ALIASMEM * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4181,8 +4179,8 @@ BOOL samr_io_r_add_aliasmem(char *desc, SAMR_R_ADD_ALIASMEM * r_u,
 /*******************************************************************
 makes a SAMR_Q_DEL_ALIASMEM structure.
 ********************************************************************/
-BOOL make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM * q_u, POLICY_HND * hnd,
-			      DOM_SID * sid)
+BOOL make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM * q_u, POLICY_HND *hnd,
+			      DOM_SID *sid)
 {
 	if (q_u == NULL)
 		return False;
@@ -4199,7 +4197,7 @@ BOOL make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM * q_u, POLICY_HND * hnd,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_del_aliasmem(char *desc, SAMR_Q_DEL_ALIASMEM * q_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4219,7 +4217,7 @@ BOOL samr_io_q_del_aliasmem(char *desc, SAMR_Q_DEL_ALIASMEM * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_del_aliasmem(char *desc, SAMR_R_DEL_ALIASMEM * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4238,7 +4236,7 @@ BOOL samr_io_r_del_aliasmem(char *desc, SAMR_R_DEL_ALIASMEM * r_u,
 makes a SAMR_Q_DELETE_DOM_ALIAS structure.
 ********************************************************************/
 BOOL make_samr_q_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS * q_c,
-				  POLICY_HND * hnd)
+				  POLICY_HND *hnd)
 {
 	if (q_c == NULL || hnd == NULL)
 		return False;
@@ -4254,7 +4252,7 @@ BOOL make_samr_q_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS * q_c,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_delete_dom_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4287,7 +4285,7 @@ BOOL make_samr_r_delete_dom_alias(SAMR_R_DELETE_DOM_ALIAS * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_delete_dom_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
-				prs_struct * ps, int depth)
+				prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4307,7 +4305,7 @@ BOOL samr_io_r_delete_dom_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
 makes a SAMR_Q_QUERY_ALIASMEM structure.
 ********************************************************************/
 BOOL make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM * q_c,
-				const POLICY_HND * hnd)
+				const POLICY_HND *hnd)
 {
 	if (q_c == NULL || hnd == NULL)
 		return False;
@@ -4323,7 +4321,7 @@ BOOL make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM * q_c,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_aliasmem(char *desc, SAMR_Q_QUERY_ALIASMEM * q_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4371,7 +4369,7 @@ BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	uint32 i;
 	uint32 ptr_sid[MAX_LOOKUP_SIDS];
@@ -4420,7 +4418,7 @@ BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 makes a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
-			      const POLICY_HND * pol, uint32 flags,
+			      const POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name)
 {
 	uint32 i;
@@ -4450,7 +4448,7 @@ BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -4568,7 +4566,7 @@ BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_lookup_names(char *desc, SAMR_R_LOOKUP_NAMES * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	uint32 i;
 	fstring tmp;
@@ -4685,7 +4683,7 @@ void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES * r_l)
 makes a SAMR_Q_DELETE_DOM_USER structure.
 ********************************************************************/
 BOOL make_samr_q_delete_dom_user(SAMR_Q_DELETE_DOM_USER * q_c,
-				 POLICY_HND * hnd)
+				 POLICY_HND *hnd)
 {
 	if (q_c == NULL || hnd == NULL)
 		return False;
@@ -4701,7 +4699,7 @@ BOOL make_samr_q_delete_dom_user(SAMR_Q_DELETE_DOM_USER * q_c,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_delete_dom_user(char *desc, SAMR_Q_DELETE_DOM_USER * q_u,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4718,7 +4716,7 @@ BOOL samr_io_q_delete_dom_user(char *desc, SAMR_Q_DELETE_DOM_USER * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_delete_dom_user(char *desc, SAMR_R_DELETE_DOM_USER * r_u,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4738,7 +4736,7 @@ BOOL samr_io_r_delete_dom_user(char *desc, SAMR_R_DELETE_DOM_USER * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER * q_u,
-			   const POLICY_HND * pol,
+			   const POLICY_HND *pol,
 			   uint32 access_mask, uint32 rid)
 {
 	if (q_u == NULL)
@@ -4757,7 +4755,7 @@ BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4781,7 +4779,7 @@ BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u,
-			 prs_struct * ps, int depth)
+			 prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4803,7 +4801,7 @@ BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
-			     POLICY_HND * pol,
+			     POLICY_HND *pol,
 			     const char *name,
 			     uint32 acb_info, uint32 access_mask)
 {
@@ -4829,7 +4827,7 @@ BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER * q_u,
-			   prs_struct * ps, int depth)
+			   prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4858,7 +4856,7 @@ BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER * r_u,
-			   prs_struct * ps, int depth)
+			   prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4882,7 +4880,7 @@ BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER * r_u,
 makes a SAMR_Q_QUERY_USERINFO structure.
 ********************************************************************/
 BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
-				POLICY_HND * hnd, uint16 switch_value)
+				POLICY_HND *hnd, uint16 switch_value)
 {
 	if (q_u == NULL || hnd == NULL)
 		return False;
@@ -4899,7 +4897,7 @@ BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4921,7 +4919,7 @@ BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
 reads or writes a LOGON_HRS structure.
 ********************************************************************/
 static BOOL sam_io_logon_hrs(char *desc, LOGON_HRS * hrs,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (hrs == NULL)
 		return False;
@@ -4955,27 +4953,10 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 
 	DEBUG(5, ("make_sam_user_info12\n"));
 
-	if (lm_pwd == NULL)
-	{
-		ZERO_STRUCT(usr->lm_pwd);
-		usr->lm_pwd_active = 0;
-	}
-	else
-	{
-		memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
-		usr->lm_pwd_active = 1;
-	}
-
-	if (nt_pwd == NULL)
-	{
-		ZERO_STRUCT(usr->nt_pwd);
-		usr->nt_pwd_active = 0;
-	}
-	else
-	{
-		memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
-		usr->nt_pwd_active = 1;
-	}
+	usr->lm_pwd_active =
+		Memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd)) ? 1 : 0;
+	usr->nt_pwd_active =
+		Memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd)) ? 1 : 0;
 
 	return True;
 }
@@ -4984,7 +4965,7 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 reads or writes a structure.
 ********************************************************************/
 BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
-			prs_struct * ps, int depth)
+			prs_struct *ps, int depth)
 {
 	if (u == NULL)
 		return False;
@@ -5025,7 +5006,7 @@ BOOL make_sam_user_info10(SAM_USER_INFO_10 * usr, uint32 acb_info)
 reads or writes a structure.
 ********************************************************************/
 BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr,
-			prs_struct * ps, int depth)
+			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -5093,7 +5074,7 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 * usr,
 reads or writes a structure.
 ********************************************************************/
 BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr,
-			prs_struct * ps, int depth)
+			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -5168,7 +5149,7 @@ BOOL make_sam_user_info24(SAM_USER_INFO_24 * usr,
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 * usr,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -5201,16 +5182,8 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/*
 			   const NTTIME * pass_last_set_time,	/* all zeros */
 			   const NTTIME * pass_can_change_time,	/* all zeros */
 			   const NTTIME * pass_must_change_time,	/* all zeros */
-			   const UNISTR2 * user_name,
-			   const UNISTR2 * full_name,
-			   const UNISTR2 * home_dir,
-			   const UNISTR2 * dir_drive,
-			   const UNISTR2 * log_scr,
-			   const UNISTR2 * prof_path,
-			   const UNISTR2 * desc,
-			   const UNISTR2 * wkstas,
-			   const UNISTR2 * unk_str,
-			   const UNISTR2 * mung_dial, uint32 user_rid,	/* 0x0000 0000 */
+			   const UNISTR2 *user_name,
+			   const UNISTR2 *full_name, const UNISTR2 *home_dir, const UNISTR2 *dir_drive, const UNISTR2 *log_scr, const UNISTR2 *prof_path, const UNISTR2 *desc, const UNISTR2 *wkstas, const UNISTR2 *unk_str, const UNISTR2 *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
 			   uint32 group_rid,
 			   uint32 acb_info,
 			   uint32 unknown_3,
@@ -5279,14 +5252,7 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/*
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	if (hrs)
-	{
-		memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
-	}
-	else
-	{
-		memset(&(usr->logon_hrs), 0xff, sizeof(usr->logon_hrs));
-	}
+	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }
@@ -5375,14 +5341,7 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	if (hrs)
-	{
-		memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
-	}
-	else
-	{
-		memset(&(usr->logon_hrs), 0xff, sizeof(usr->logon_hrs));
-	}
+	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }
@@ -5391,7 +5350,7 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
-			       prs_struct * ps, int depth)
+			       prs_struct *ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -5512,16 +5471,16 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   const NTTIME * pass_last_set_time,
 			   const NTTIME * pass_can_change_time,
 			   const NTTIME * pass_must_change_time,
-			   const UNISTR2 * user_name,
-			   const UNISTR2 * full_name,
-			   const UNISTR2 * home_dir,
-			   const UNISTR2 * dir_drive,
-			   const UNISTR2 * log_scr,
-			   const UNISTR2 * prof_path,
-			   const UNISTR2 * desc,
-			   const UNISTR2 * wkstas,
-			   const UNISTR2 * unk_str,
-			   const UNISTR2 * mung_dial,
+			   const UNISTR2 *user_name,
+			   const UNISTR2 *full_name,
+			   const UNISTR2 *home_dir,
+			   const UNISTR2 *dir_drive,
+			   const UNISTR2 *log_scr,
+			   const UNISTR2 *prof_path,
+			   const UNISTR2 *desc,
+			   const UNISTR2 *wkstas,
+			   const UNISTR2 *unk_str,
+			   const UNISTR2 *mung_dial,
 			   const uchar lm_pwd[16],
 			   const uchar nt_pwd[16],
 			   uint32 user_rid,
@@ -5561,22 +5520,8 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	make_uni_hdr(&(usr->hdr_unknown_str), len_unknown_str);
 	make_uni_hdr(&(usr->hdr_munged_dial), len_munged_dial);
 
-	if (lm_pwd == NULL)
-	{
-		ZERO_STRUCT(usr->lm_pwd);
-	}
-	else
-	{
-		memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
-	}
-	if (nt_pwd == NULL)
-	{
-		ZERO_STRUCT(usr->nt_pwd);
-	}
-	else
-	{
-		memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
-	}
+	Memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
+	Memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
 
 	usr->user_rid = user_rid;
 	usr->group_rid = group_rid;
@@ -5603,14 +5548,7 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	if (hrs)
-	{
-		memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
-	}
-	else
-	{
-		memset(&(usr->logon_hrs), 0xff, sizeof(usr->logon_hrs));
-	}
+	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }
@@ -5705,14 +5643,7 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	if (hrs)
-	{
-		memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
-	}
-	else
-	{
-		memset(&(usr->logon_hrs), 0xff, sizeof(usr->logon_hrs));
-	}
+	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }
@@ -5721,7 +5652,7 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 reads or writes a structure.
 ********************************************************************/
 BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
-			prs_struct * ps, int depth)
+			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -5863,7 +5794,9 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 
 			ctr->info.id = (SAM_USER_INFO_11 *) Realloc(NULL,
 								    sizeof
-								    (*ctr->info.id11));
+								    (*ctr->
+								     info.
+								     id11));
 			make_sam_user_info11(ctr->info.id11, &expire,
 					     "BROOKFIELDS$",	/* name */
 					     0x03ef,	/* user rid */
@@ -5954,7 +5887,7 @@ BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, const uchar * sess_key,
 reads or writes a structure.
 ********************************************************************/
 static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr,
-				 prs_struct * ps, int depth)
+				 prs_struct *ps, int depth)
 {
 	BOOL ret;
 	if (ctr == NULL)
@@ -6130,7 +6063,7 @@ BOOL make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO * r_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6164,7 +6097,7 @@ BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO * r_u,
 makes a SAMR_Q_SET_USERINFO structure.
 ********************************************************************/
 BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u,
-			      POLICY_HND * hnd,
+			      POLICY_HND *hnd,
 			      uint16 switch_value, void *info)
 {
 	uchar sess_key[16];
@@ -6195,7 +6128,7 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO * q_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6248,7 +6181,7 @@ BOOL make_samr_r_set_userinfo(SAMR_R_SET_USERINFO * r_u, uint32 status)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_set_userinfo(char *desc, SAMR_R_SET_USERINFO * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6268,7 +6201,7 @@ BOOL samr_io_r_set_userinfo(char *desc, SAMR_R_SET_USERINFO * r_u,
 makes a SAMR_Q_SET_USERINFO2 structure.
 ********************************************************************/
 BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
-			       POLICY_HND * hnd,
+			       POLICY_HND *hnd,
 			       uint16 switch_value, SAM_USERINFO_CTR * ctr)
 {
 	uint8 usr_sess_key[16];
@@ -6315,7 +6248,7 @@ BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 * q_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6366,7 +6299,7 @@ BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 * r_u, uint32 status)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_set_userinfo2(char *desc, SAMR_R_SET_USERINFO2 * r_u,
-			     prs_struct * ps, int depth)
+			     prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6409,7 +6342,7 @@ BOOL make_samr_q_connect(SAMR_Q_CONNECT * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u,
-		       prs_struct * ps, int depth)
+		       prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6433,7 +6366,7 @@ BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u,
-		       prs_struct * ps, int depth)
+		       prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6473,7 +6406,7 @@ BOOL make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON * q_u)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_connect_anon(char *desc, SAMR_Q_CONNECT_ANON * q_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6495,7 +6428,7 @@ BOOL samr_io_q_connect_anon(char *desc, SAMR_Q_CONNECT_ANON * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_connect_anon(char *desc, SAMR_R_CONNECT_ANON * r_u,
-			    prs_struct * ps, int depth)
+			    prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6536,7 +6469,7 @@ BOOL make_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_get_dom_pwinfo(char *desc, SAMR_Q_GET_DOM_PWINFO * q_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6563,7 +6496,7 @@ BOOL samr_io_q_get_dom_pwinfo(char *desc, SAMR_Q_GET_DOM_PWINFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_get_dom_pwinfo(char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6609,7 +6542,7 @@ BOOL make_enc_passwd(SAMR_ENC_PASSWD * pwd, const char pass[512])
 reads or writes a SAMR_ENC_PASSWD structure.
 ********************************************************************/
 BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD * pwd,
-			prs_struct * ps, int depth)
+			prs_struct *ps, int depth)
 {
 	if (pwd == NULL)
 		return False;
@@ -6655,7 +6588,7 @@ BOOL make_enc_hash(SAMR_ENC_HASH * hsh, const uchar hash[16])
 reads or writes a SAMR_ENC_HASH structure.
 ********************************************************************/
 BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH * hsh,
-		      prs_struct * ps, int depth)
+		      prs_struct *ps, int depth)
 {
 	if (hsh == NULL)
 		return False;
@@ -6714,7 +6647,7 @@ BOOL make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER * q_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6766,7 +6699,7 @@ BOOL make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER * r_u, uint32 status)
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER * r_u,
-			      prs_struct * ps, int depth)
+			      prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;

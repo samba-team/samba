@@ -110,6 +110,14 @@ END {
     gotstart = 1;
   }
 
+  if( $0 ~ /^hash_element/ ) {
+    gotstart = 1;
+  }
+
+  if( $0 ~ /^SMB_STRUCT_DIRENT/ ) {
+    gotstart = 1;
+  }
+
   if( $0 ~ /^UNISTR2|^LOCAL_GRP|^DOMAIN_GRP|^DOM_SID|^SEC_DESC/ ) {
     gotstart = 1;
   }
@@ -118,7 +126,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t/ ) {
+  if( $0 ~ /^TALLOC_CTX|^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^smb_ucs1_t/ ) {
     gotstart = 1;
   }
 

@@ -110,16 +110,15 @@ connection_struct *conn_new(void)
 
 	ZERO_STRUCTP(conn);
 	conn->cnum = i;
-	conn->smbd_pid = getpid();
 
 	bitmap_set(bmap, i);
 
 	num_open++;
 
-	string_init(&conn->user,"");
-	string_init(&conn->dirpath,"");
-	string_init(&conn->connectpath,"");
-	string_init(&conn->origpath,"");
+	string_set(&conn->user,"");
+	string_set(&conn->dirpath,"");
+	string_set(&conn->connectpath,"");
+	string_set(&conn->origpath,"");
 	
 	DLIST_ADD(Connections, conn);
 

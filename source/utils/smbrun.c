@@ -21,6 +21,37 @@
 
 #include "includes.h"
 
+/*
+ * stubs, to minimise linking, but unfortunately these are called
+ * in util_sec.c
+ */
+
+int DEBUGLEVEL;
+
+BOOL dbghdr( int level, char *file, char *func, int line )
+{
+  return( True );
+}
+
+#ifdef HAVE_STDARG_H
+ BOOL dbgtext( char *format_str, ... )
+  {
+  return( True );
+  } /* dbgtext */
+
+#else
+ BOOL dbgtext( va_alist )
+ va_dcl
+  {
+  return( True );
+  } /* dbgtext */
+
+#endif
+
+void smb_panic(char *reason)
+{
+	exit(1);
+}
 
 /*******************************************************************
 close the low 3 fd's and open dev/null in their place

@@ -79,8 +79,7 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	to.tv_sec = timeout / 1000;
 	to.tv_usec = (timeout % 1000) * 1000;
 
-	selrtn =
-		sys_select(MAX(maxfd, c) + 1, &fds, NULL,
+	selrtn = sys_select(MAX(maxfd, c) + 1, &fds, NULL,
 			   timeout > 0 ? &to : NULL);
 
 	/* Check if error */
@@ -163,7 +162,7 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 			int selrtn;
 			struct timeval to;
 			int maxfd;
-			int timeout = SMBD_SELECT_LOOP * 1000;
+			int timeout = SMBD_SELECT_TIMEOUT * 1000;
 
 			smb_read_error = 0;
 
@@ -174,8 +173,7 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 			to.tv_sec = timeout / 1000;
 			to.tv_usec = (timeout % 1000) * 1000;
 
-			selrtn =
-				sys_select(MAX(maxfd, l->c) + 1, NULL, &fds,
+			selrtn = sys_select(MAX(maxfd, l->c) + 1, NULL, &fds,
 					   timeout > 0 ? &to : NULL);
 
 			/* Check if error */
@@ -406,6 +404,7 @@ BOOL msrpcd_init(int c, rpcsrv_struct ** l)
 void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 		    const char *name)
 {
+	int counter = 0;
 	extern fstring remote_machine;
 	extern fstring local_machine;
 	extern pstring global_myname;
@@ -428,79 +427,58 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 
 	while (True)
 	{
-		int counter;
-		int service_load_counter = 0;
 		BOOL got_msrpc = False;
 		prs_struct pdu;
 
 		errno = 0;
 
-		for (counter = SMBD_SELECT_LOOP;
-		     !receive_message_or_msrpc(l->c, &pdu,
-					       SMBD_SELECT_LOOP * 1000,
-					       &got_msrpc);
-		     counter += SMBD_SELECT_LOOP)
+		counter = (counter + 1 ) % 200;
+		
+		if (!receive_message_or_msrpc(l->c, &pdu,
+					       SMBD_SELECT_TIMEOUT * 1000,
+					       &got_msrpc))
 		{
-			time_t t;
-
-			if (counter > 365 * 3600)	/* big number of seconds. */
-			{
-				counter = 0;
-				service_load_counter = 0;
-			}
-
 			if (smb_read_error == READ_EOF)
 			{
 				DEBUG(3, ("end of file from client\n"));
-				if (fn->idle != NULL)
-				{
-					become_root(False);
-					fn->idle();
-					unbecome_root(False);
-				}
-				return;
 			}
 
 			if (smb_read_error == READ_ERROR)
 			{
 				DEBUG(3, ("receive error (%s) exiting\n",
 					  strerror(errno)));
-				if (fn->idle != NULL)
-				{
-					become_root(False);
-					fn->idle();
-					unbecome_root(False);
-				}
-				return;
 			}
 
-			t = time(NULL);
-
-			/* check for smb.conf reload */
-			if (counter >=
-			    service_load_counter + SMBD_RELOAD_CHECK)
+			if (fn->idle != NULL)
 			{
-				service_load_counter = counter;
-
-				/* reload services, if files have changed. */
-				fn->reload_services(True);
+				become_root(False);
+				fn->idle();
+				unbecome_root(False);
 			}
 
+			return;
+		}
+
+		if (counter == 0)
+		{
+			/* reload services, if files have changed. */
+			fn->reload_services(True);
+		}
+
+		/*
+		 * If reload_after_sighup == True then we got a SIGHUP
+		 * and are being asked to reload. Fix from <branko.cibej@hermes.si>
+		 */
+
+		if (reload_after_sighup)
+		{
+			DEBUG(0,
+			      ("Reloading services after SIGHUP\n"));
+			fn->reload_services(False);
+			reload_after_sighup = False;
 			/*
-			 * If reload_after_sighup == True then we got a SIGHUP
-			 * and are being asked to reload. Fix from <branko.cibej@hermes.si>
+			 * Use this as an excuse to print some stats.
 			 */
-
-			if (reload_after_sighup)
-			{
-				DEBUG(0,
-				      ("Reloading services after SIGHUP\n"));
-				fn->reload_services(False);
-				reload_after_sighup = False;
-				/*
-				 * Use this as an excuse to print some stats.
-				 */
-			}
 		}
 
 		if (got_msrpc)
@@ -510,3 +488,4 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 		prs_free_data(&pdu);
 	}
 }
+

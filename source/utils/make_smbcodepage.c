@@ -3,7 +3,7 @@
    Version 1.9.
    Create codepage files from codepage_def.XXX files.
 
-   Copyright (C) Jeremy Allison 1997-1998.
+   Copyright (C) Jeremy Allison 1997-1999.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@ static void read_line( char **buf, char *line_buf, int size)
  * Returns the number of lines copied.
  */
 
-static int clean_data( char **buf, uint32 *size)
+static int clean_data( char **buf, size_t *size)
 {
   pstring linebuf;
   char *p = *buf;
@@ -165,7 +165,7 @@ static void parse_error(char *buf, char *msg)
 static int do_compile(int codepage, char *input_file, char *output_file)
 {
   FILE *fp = NULL;
-  uint32 size = 0;
+  size_t size = 0;
   char *buf = NULL;
   char output_buf[CODEPAGE_HEADER_SIZE + 4 * MAXCODEPAGELINES];
   int num_lines = 0;
@@ -309,7 +309,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
 
 static int do_decompile( int codepage, char *input_file, char *output_file)
 {
-  uint32 size = 0;
+  size_t size = 0;
   SMB_STRUCT_STAT st;
   char header_buf[CODEPAGE_HEADER_SIZE];
   char *buf = NULL;
@@ -325,7 +325,7 @@ static int do_decompile( int codepage, char *input_file, char *output_file)
     exit(1);
   }
 
-  size = (uint32)st.st_size;
+  size = (size_t)st.st_size;
 
   if( size < CODEPAGE_HEADER_SIZE || size > (CODEPAGE_HEADER_SIZE + 256))
   { 

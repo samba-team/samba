@@ -141,12 +141,12 @@ uint32 get_number(const char *tmp)
 	if (strnequal(tmp, "0x", 2))
 	{
 		ret = strtoul(tmp, (char **)NULL, 16);
-		DEBUG(10,("get_number: %s -> 0x%x\n", tmp, ret));
+		DEBUG(10, ("get_number: %s -> 0x%x\n", tmp, ret));
 	}
 	else
 	{
 		ret = strtoul(tmp, (char **)NULL, 10);
-		DEBUG(10,("get_number: %s -> %d\n", tmp, ret));
+		DEBUG(10, ("get_number: %s -> %d\n", tmp, ret));
 	}
 	return ret;
 }
@@ -184,7 +184,7 @@ char *Atoic(char *p, int *n, char *c)
 	return p;
 }
 
-uint32 *add_num_to_list(uint32 ** num, int *count, int val)
+uint32 *add_num_to_list(uint32 **num, int *count, int val)
 {
 	(*num) = Realloc((*num), ((*count) + 1) * sizeof(uint32));
 	if ((*num) == NULL)
@@ -200,7 +200,7 @@ uint32 *add_num_to_list(uint32 ** num, int *count, int val)
 /*************************************************************************
  reads a list of numbers
  *************************************************************************/
-char *get_numlist(char *p, uint32 ** num, int *count)
+char *get_numlist(char *p, uint32 **num, int *count)
 {
 	int val;
 
@@ -222,14 +222,6 @@ char *get_numlist(char *p, uint32 ** num, int *count)
 	}
 
 	return p;
-}
-
-/*******************************************************************
-copy an IP address from one buffer to another
-********************************************************************/
-void putip(void *dest, void *src)
-{
-	memcpy(dest, src, 4);
 }
 
 /*******************************************************************
@@ -332,22 +324,6 @@ char *attrib_string(uint16 mode)
 	return (attrstr);
 }
 
-/****************************************************************************
-  make a file into unix format
-****************************************************************************/
-void unix_format(char *fname)
-{
-	string_replace(fname, '\\', '/');
-}
-
-/****************************************************************************
-  make a file into dos format
-****************************************************************************/
-void dos_format(char *fname)
-{
-	string_replace(fname, '/', '\\');
-}
-
 /*******************************************************************
   show a smb message structure
 ********************************************************************/
@@ -394,26 +370,6 @@ void show_msg(char *buf)
 }
 
 /*******************************************************************
-  return the length of an smb packet
-********************************************************************/
-int smb_len(char *buf)
-{
-	return (PVAL(buf, 3) | (PVAL(buf, 2) << 8) |
-		((PVAL(buf, 1) & 1) << 16));
-}
-
-/*******************************************************************
-  set the length of an smb packet
-********************************************************************/
-void _smb_setlen(char *buf, int len)
-{
-	buf[0] = 0;
-	buf[1] = (len & 0x10000) >> 16;
-	buf[2] = (len & 0xFF00) >> 8;
-	buf[3] = len & 0xFF;
-}
-
-/*******************************************************************
   set the length and marker of an smb packet
 ********************************************************************/
 void smb_setlen(char *buf, int len)
@@ -432,51 +388,11 @@ void smb_setlen(char *buf, int len)
 int set_message(char *buf, int num_words, int num_bytes, BOOL zero)
 {
 	if (zero)
-		memset(buf + smb_size, 0,  num_words * 2 + num_bytes);
+		memset(buf + smb_size, 0, num_words * 2 + num_bytes);
 	CVAL(buf, smb_wct) = num_words;
 	SSVAL(buf, smb_vwv + num_words * SIZEOFWORD, num_bytes);
 	smb_setlen(buf, smb_size + num_words * 2 + num_bytes - 4);
 	return (smb_size + num_words * 2 + num_bytes);
-}
-
-/*******************************************************************
-return the number of smb words
-********************************************************************/
-static int smb_numwords(char *buf)
-{
-	return (CVAL(buf, smb_wct));
-}
-
-/*******************************************************************
-return the size of the smb_buf region of a message
-********************************************************************/
-int smb_buflen(char *buf)
-{
-	return (SVAL(buf, smb_vwv0 + smb_numwords(buf) * 2));
-}
-
-/*******************************************************************
-  return a pointer to the smb_buf data area
-********************************************************************/
-static int smb_buf_ofs(char *buf)
-{
-	return (smb_size + CVAL(buf, smb_wct) * 2);
-}
-
-/*******************************************************************
-  return a pointer to the smb_buf data area
-********************************************************************/
-char *smb_buf(char *buf)
-{
-	return (buf + smb_buf_ofs(buf));
-}
-
-/*******************************************************************
-return the SMB offset into an SMB buffer
-********************************************************************/
-int smb_offset(char *p, char *buf)
-{
-	return (PTR_DIFF(p, buf + 4) + chain_size);
 }
 
 
@@ -491,7 +407,7 @@ void dos_clean_name(char *s)
 	DEBUG(3, ("dos_clean_name [%s]\n", s));
 
 	/* remove any double slashes */
-	string_sub(s, "\\\\", "\\");
+	all_string_sub(s, "\\\\", "\\", 0);
 
 	while ((p = strstr(s, "\\..\\")) != NULL)
 	{
@@ -509,7 +425,273 @@ void dos_clean_name(char *s)
 
 	trim_string(s, NULL, "\\..");
 
-	string_sub(s, "\\.\\", "\\");
+	all_string_sub(s, "\\.\\", "\\", 0);
+}
+
+/*******************************************************************
+reduce a file name, removing .. elements. 
+********************************************************************/
+void unix_clean_name(char *s)
+{
+	char *p = NULL;
+
+	DEBUG(3, ("unix_clean_name [%s]\n", s));
+
+	/* remove any double slashes */
+	all_string_sub(s, "//", "/", 0);
+
+	/* Remove leading ./ characters */
+	if (strncmp(s, "./", 2) == 0)
+	{
+		trim_string(s, "./", NULL);
+		if (*s == 0)
+			pstrcpy(s, "./");
+	}
+
+	while ((p = strstr(s, "/../")) != NULL)
+	{
+		pstring s1;
+
+		*p = 0;
+		pstrcpy(s1, p + 3);
+
+		if ((p = strrchr(s, '/')) != NULL)
+			*p = 0;
+		else
+			*s = 0;
+		pstrcat(s, s1);
+	}
+
+	trim_string(s, NULL, "/..");
+}
+
+/*******************************************************************
+reduce a file name, removing .. elements and checking that 
+it is below dir in the heirachy. This uses dos_GetWd() and so must be run
+on the system that has the referenced file system.
+
+widelinks are allowed if widelinks is true
+********************************************************************/
+
+BOOL reduce_name(char *s, char *dir, BOOL widelinks)
+{
+#ifndef REDUCE_PATHS
+	return True;
+#else
+	pstring dir2;
+	pstring wd;
+	pstring base_name;
+	pstring newname;
+	char *p = NULL;
+	BOOL relative = (*s != '/');
+
+	*dir2 = *wd = *base_name = *newname = 0;
+
+	if (widelinks)
+	{
+		unix_clean_name(s);
+		/* can't have a leading .. */
+		if (strncmp(s, "..", 2) == 0 && (s[2] == 0 || s[2] == '/'))
+		{
+			DEBUG(3, ("Illegal file name? (%s)\n", s));
+			return (False);
+		}
+
+		if (strlen(s) == 0)
+			pstrcpy(s, "./");
+
+		return (True);
+	}
+
+	DEBUG(3, ("reduce_name [%s] [%s]\n", s, dir));
+
+	/* remove any double slashes */
+	all_string_sub(s, "//", "/", 0);
+
+	pstrcpy(base_name, s);
+	p = strrchr(base_name, '/');
+
+	if (!p)
+		return (True);
+
+	if (!dos_GetWd(wd))
+	{
+		DEBUG(0, ("couldn't getwd for %s %s\n", s, dir));
+		return (False);
+	}
+
+	if (dos_ChDir(dir) != 0)
+	{
+		DEBUG(0, ("couldn't chdir to %s\n", dir));
+		return (False);
+	}
+
+	if (!dos_GetWd(dir2))
+	{
+		DEBUG(0, ("couldn't getwd for %s\n", dir));
+		dos_ChDir(wd);
+		return (False);
+	}
+
+	if (p && (p != base_name))
+	{
+		*p = 0;
+		if (strcmp(p + 1, ".") == 0)
+			p[1] = 0;
+		if (strcmp(p + 1, "..") == 0)
+			*p = '/';
+	}
+
+	if (dos_ChDir(base_name) != 0)
+	{
+		dos_ChDir(wd);
+		DEBUG(3,
+		      ("couldn't chdir for %s %s basename=%s\n", s, dir,
+		       base_name));
+		return (False);
+	}
+
+	if (!dos_GetWd(newname))
+	{
+		dos_ChDir(wd);
+		DEBUG(2, ("couldn't get wd for %s %s\n", s, dir2));
+		return (False);
+	}
+
+	if (p && (p != base_name))
+	{
+		pstrcat(newname, "/");
+		pstrcat(newname, p + 1);
+	}
+
+	{
+		size_t l = strlen(dir2);
+		if (dir2[l - 1] == '/')
+			l--;
+
+		if (strncmp(newname, dir2, l) != 0)
+		{
+			dos_ChDir(wd);
+			DEBUG(2,
+			      ("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",
+			       s, dir2, newname, (int)l));
+			return (False);
+		}
+
+		if (relative)
+		{
+			if (newname[l] == '/')
+				pstrcpy(s, newname + l + 1);
+			else
+				pstrcpy(s, newname + l);
+		}
+		else
+			pstrcpy(s, newname);
+	}
+
+	dos_ChDir(wd);
+
+	if (strlen(s) == 0)
+		pstrcpy(s, "./");
+
+	DEBUG(3, ("reduced to %s\n", s));
+	return (True);
+#endif
+}
+
+/****************************************************************************
+expand some *s 
+****************************************************************************/
+static void expand_one(char *Mask, int len)
+{
+	char *p1;
+	while ((p1 = strchr(Mask, '*')) != NULL)
+	{
+		int lfill = (len + 1) - strlen(Mask);
+		int l1 = (p1 - Mask);
+		pstring tmp;
+		pstrcpy(tmp, Mask);
+		memset(tmp + l1, '?', lfill);
+		pstrcpy(tmp + l1 + lfill, Mask + l1 + 1);
+		pstrcpy(Mask, tmp);
+	}
+}
+
+/****************************************************************************
+parse out a filename from a path name. Assumes dos style filenames.
+****************************************************************************/
+static char *filename_dos(char *path, char *buf)
+{
+	char *p = strrchr(path, '\\');
+
+	if (!p)
+		pstrcpy(buf, path);
+	else
+		pstrcpy(buf, p + 1);
+
+	return (buf);
+}
+
+
+/****************************************************************************
+expand a wildcard expression, replacing *s with ?s
+****************************************************************************/
+void expand_mask(char *Mask, BOOL doext)
+{
+	pstring mbeg, mext;
+	pstring dirpart;
+	pstring filepart;
+	BOOL hasdot = False;
+	char *p1;
+	BOOL absolute = (*Mask == '\\');
+
+	*mbeg = *mext = *dirpart = *filepart = 0;
+
+	/* parse the directory and filename */
+	if (strchr(Mask, '\\'))
+		split_at_last_component(Mask, dirpart, '\\', NULL);
+
+	filename_dos(Mask, filepart);
+
+	pstrcpy(mbeg, filepart);
+	if ((p1 = strchr(mbeg, '.')) != NULL)
+	{
+		hasdot = True;
+		*p1 = 0;
+		p1++;
+		pstrcpy(mext, p1);
+	}
+	else
+	{
+		pstrcpy(mext, "");
+		if (strlen(mbeg) > 8)
+		{
+			pstrcpy(mext, mbeg + 8);
+			mbeg[8] = 0;
+		}
+	}
+
+	if (*mbeg == 0)
+		pstrcpy(mbeg, "????????");
+	if ((*mext == 0) && doext && !hasdot)
+		pstrcpy(mext, "???");
+
+	if (strequal(mbeg, "*") && *mext == 0)
+		pstrcpy(mext, "*");
+
+	/* expand *'s */
+	expand_one(mbeg, 8);
+	if (*mext)
+		expand_one(mext, 3);
+
+	pstrcpy(Mask, dirpart);
+	if (*dirpart || absolute)
+		pstrcat(Mask, "\\");
+	pstrcat(Mask, mbeg);
+	pstrcat(Mask, ".");
+	pstrcat(Mask, mext);
+
+	DEBUG(6, ("Mask expanded to [%s]\n", Mask));
 }
 
 
@@ -539,7 +721,7 @@ void make_dir_struct(char *buf, char *mask, char *fname, SMB_OFF_T size,
 	else
 		memcpy(buf + 1, mask2, MIN(strlen(mask2), 11));
 
-	memset(buf + 21, 0,  DIR_STRUCT_SIZE - 21);
+	memset(buf + 21, '\0', DIR_STRUCT_SIZE - 21);
 	CVAL(buf, 21) = mode;
 	put_dos_date(buf, 22, date);
 	SSVAL(buf, 26, size & 0xFFFF);
@@ -609,19 +791,6 @@ int set_blocking(int fd, BOOL set)
 	return fcntl(fd, F_SETFL, val);
 #undef FLAG_TO_SET
 }
-
-
-/*******************************************************************
-find the difference in milliseconds between two struct timeval
-values
-********************************************************************/
-int TvalDiff(struct timeval *tvalold, struct timeval *tvalnew)
-{
-	return ((tvalnew->tv_sec - tvalold->tv_sec) * 1000 +
-		((int)tvalnew->tv_usec - (int)tvalold->tv_usec) / 1000);
-}
-
-
 
 /****************************************************************************
 transfer some data between two fd's
@@ -743,47 +912,14 @@ void msleep(int t)
 	}
 }
 
-/****************************************************************************
-open the directory and look-up the matching names
-****************************************************************************/
-BOOL get_file_match(const char *dirname, const char *regexp,
-		    uint32 * total, char ***list)
-{
-	DIR *dirp;
-	char *dpname;
-
-	dirp = opendir(dirname);
-
-	if (dirp == NULL)
-	{
-		DEBUG(2, ("Error opening directory [%s]\n", dirname));
-		return False;
-	}
-
-	DEBUG(5, ("get_dir_match: %s with %s\n", dirname, regexp));
-
-	while ((dpname = readdirname(dirp)) != NULL)
-	{
-		if (do_match(dpname, regexp, False))
-		{
-			DEBUGADD(7, ("Found: [%s]\n", dpname));
-
-			add_chars_to_array(total, list, dpname);
-			DEBUGADD(6, ("Added: [%s]\n", dpname));
-		}
-	}
-
-	closedir(dirp);
-
-	return True;
-}
 
 /*********************************************************
 * Recursive routine that is called by unix_mask_match.
 * Does the actual matching. This is the 'original code' 
 * used by the unix matcher.
 *********************************************************/
-static BOOL unix_do_match(char *str, char *regexp, int case_sig)
+
+BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
 {
 	char *p;
 
@@ -797,8 +933,10 @@ static BOOL unix_do_match(char *str, char *regexp, int case_sig)
 				break;
 
 			case '*':
-				/* Look for a character matching 
-				   the one after the '*' */
+				/*
+				 * Look for a character matching 
+				 * the one after the '*'.
+				 */
 				p++;
 				if (!*p)
 					return True;	/* Automatic match */
@@ -809,6 +947,54 @@ static BOOL unix_do_match(char *str, char *regexp, int case_sig)
 						   : (toupper(*p) !=
 						      toupper(*str))))
 						str++;
+
+					/*
+					 * Patch from weidel@multichart.de. In the case of the regexp
+					 * '*XX*' we want to ensure there are at least 2 'X' characters
+					 * in the filename after the '*' for a match to be made.
+					 */
+
+					{
+						int matchcount = 0;
+
+						/*
+						 * Eat all the characters that match, but count how many there were.
+						 */
+
+						while (*str
+						       && (case_sig
+							   ? (*p ==
+							      *str)
+							   : (toupper(*p) ==
+							      toupper(*str))))
+						{
+							str++;
+							matchcount++;
+						}
+
+						/*
+						 * Now check that if the regexp had n identical characters that
+						 * matchcount had at least that many matches.
+						 */
+
+						while (
+						       (*(p + 1)
+							&& (case_sig
+							    ? (*(p + 1) ==
+							       *p)
+							    : (toupper
+							       (*(p + 1)) ==
+							       toupper(*p)))))
+						{
+							p++;
+							matchcount--;
+						}
+						if (matchcount <= 0)
+						{
+							return False;
+						}
+					}
+					str--;	/* We've eaten the match char after the '*' */
 					if (unix_do_match(str, p, case_sig))
 						return True;
 					if (!*str)
@@ -859,23 +1045,16 @@ static BOOL unix_do_match(char *str, char *regexp, int case_sig)
 * This is the 'original code' used by the unix matcher.
 *********************************************************/
 
-static BOOL unix_mask_match(char *str, char *regexp, int case_sig,
-			    BOOL trans2)
+static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig)
 {
 	char *p;
 	pstring p1, p2;
-	fstring ebase, eext, sbase, sext;
-
+	fstring ebase, sbase;
 	BOOL matched;
 
 	/* Make local copies of str and regexp */
 	StrnCpy(p1, regexp, sizeof(pstring) - 1);
 	StrnCpy(p2, str, sizeof(pstring) - 1);
-
-	if (!strchr(p2, '.'))
-	{
-		pstrcat(p2, ".");
-	}
 
 	/* Remove any *? and ** as they are meaningless */
 	for (p = p1; *p; p++)
@@ -889,41 +1068,10 @@ static BOOL unix_mask_match(char *str, char *regexp, int case_sig,
 	      ("unix_mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2,
 	       p1, case_sig));
 
-	if (trans2)
-	{
-		fstrcpy(ebase, p1);
-		fstrcpy(sbase, p2);
-	}
-	else
-	{
-		if ((p = strrchr(p1, '.')))
-		{
-			*p = 0;
-			fstrcpy(ebase, p1);
-			fstrcpy(eext, p + 1);
-		}
-		else
-		{
-			fstrcpy(ebase, p1);
-			eext[0] = 0;
-		}
+	fstrcpy(ebase, p1);
+	fstrcpy(sbase, p2);
 
-		if (!strequal(p2, ".") && !strequal(p2, "..")
-		    && (p = strrchr(p2, '.')))
-		{
-			*p = 0;
-			fstrcpy(sbase, p2);
-			fstrcpy(sext, p + 1);
-		}
-		else
-		{
-			fstrcpy(sbase, p2);
-			fstrcpy(sext, "");
-		}
-	}
-
-	matched = unix_do_match(sbase, ebase, case_sig) &&
-		(trans2 || unix_do_match(sext, eext, case_sig));
+	matched = unix_do_match(sbase, ebase, case_sig);
 
 	DEBUG(8, ("unix_mask_match returning %d\n", matched));
 
@@ -934,11 +1082,17 @@ static BOOL unix_mask_match(char *str, char *regexp, int case_sig,
 * Recursive routine that is called by mask_match.
 * Does the actual matching. Returns True if matched,
 * False if failed. This is the 'new' NT style matcher.
+* The win9x_semantics parameter is needed as Win9x matching
+* is *actually different*. In Win9x, trailing '?' characters
+* will only match the *exact* number of characters. Under
+* DOS and NT they match any number. This makes no
+* sense.....
 *********************************************************/
 
-BOOL do_match(char *str, const char *regexp, int case_sig)
+static BOOL do_match(char *str, char *regexp, int case_sig,
+		     BOOL win9x_semantics)
 {
-	const char *p;
+	char *p;
 
 	for (p = regexp; *p && *str;)
 	{
@@ -962,15 +1116,57 @@ BOOL do_match(char *str, const char *regexp, int case_sig)
 						   : (toupper(*p) !=
 						      toupper(*str))))
 						str++;
-					/* Now eat all characters that match, as
-					   we want the *last* character to match. */
-					while (*str
-					       && (case_sig ? (*p == *str)
-						   : (toupper(*p) ==
-						      toupper(*str))))
-						str++;
+
+					/*
+					 * Patch from weidel@multichart.de. In the case of the regexp
+					 * '*XX*' we want to ensure there are at least 2 'X' characters
+					 * in the filename after the '*' for a match to be made.
+					 */
+
+					{
+						int matchcount = 0;
+
+						/*
+						 * Eat all the characters that match, but count how many there were.
+						 */
+
+						while (*str
+						       && (case_sig
+							   ? (*p ==
+							      *str)
+							   : (toupper(*p) ==
+							      toupper(*str))))
+						{
+							str++;
+							matchcount++;
+						}
+
+						/*
+						 * Now check that if the regexp had n identical characters that
+						 * matchcount had at least that many matches.
+						 */
+
+						while (
+						       (*(p + 1)
+							&& (case_sig
+							    ? (*(p + 1) ==
+							       *p)
+							    : (toupper
+							       (*(p + 1)) ==
+							       toupper(*p)))))
+						{
+							p++;
+							matchcount--;
+						}
+						if (matchcount <= 0)
+						{
+							return False;
+						}
+					}
 					str--;	/* We've eaten the match char after the '*' */
-					if (do_match(str, p, case_sig))
+					if (do_match
+					    (str, p, case_sig,
+					     win9x_semantics))
 					{
 						return True;
 					}
@@ -1013,11 +1209,14 @@ BOOL do_match(char *str, const char *regexp, int case_sig)
 		return (True);
 	}
 
-	if (!*str && *p == '?')
+	if (!win9x_semantics)
 	{
-		while (*p == '?')
-			p++;
-		return (!*p);
+		if (!*str && *p == '?')
+		{
+			while (*p == '?')
+				p++;
+			return (!*p);
+		}
 	}
 
 	if (!*str && (*p == '*' && p[1] == '\0'))
@@ -1037,17 +1236,38 @@ BOOL do_match(char *str, const char *regexp, int case_sig)
 * This is the new 'NT style' matcher.
 *********************************************************/
 
-BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
+BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 {
 	char *p;
 	pstring t_pattern, t_filename, te_pattern, te_filename;
 	fstring ebase, eext, sbase, sext;
 
 	BOOL matched = False;
+	BOOL win9x_semantics = (get_remote_arch() == RA_WIN95) && trans2;
+
+	/* special case - if it is exactly the same then it always matches! */
+	if (exact_match(str, regexp, case_sig))
+		return True;
 
 	/* Make local copies of str and regexp */
 	pstrcpy(t_pattern, regexp);
 	pstrcpy(t_filename, str);
+
+	if (trans2)
+	{
+
+		/* a special case for 16 bit apps */
+		if (strequal(t_pattern, "????????.???"))
+			pstrcpy(t_pattern, "*");
+
+#if 0
+		/*
+		 * Handle broken clients that send us old 8.3 format.
+		 */
+		pstring_sub(t_pattern, "????????", "*");
+		pstring_sub(t_pattern, ".???", ".*");
+#endif
+	}
 
 #if 0
 	/* 
@@ -1065,8 +1285,9 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 #endif
 
 	/* Remove any *? and ** as they are meaningless */
-	string_sub(t_pattern, "*?", "*");
-	string_sub(t_pattern, "**", "*");
+	for (p = t_pattern; *p; p++)
+		while (*p == '*' && (p[1] == '?' || p[1] == '*'))
+			(void)pstrcpy(&p[1], &p[2]);
 
 	if (strequal(t_pattern, "*"))
 		return (True);
@@ -1090,7 +1311,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 		/*
 		 * Remove multiple "*." patterns.
 		 */
-		string_sub(te_pattern, "*.*.", "*.");
+		pstring_sub(te_pattern, "*.*.", "*.");
 		num_regexp_components = count_chars(te_pattern, '.');
 		num_path_components = count_chars(te_filename, '.');
 
@@ -1098,7 +1319,9 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 		 * Check for special 'hack' case of "DIR a*z". - needs to match a.b.c...z
 		 */
 		if (num_regexp_components == 0)
-			matched = do_match(te_filename, te_pattern, case_sig);
+			matched =
+				do_match(te_filename, te_pattern, case_sig,
+					 win9x_semantics);
 		else
 		{
 			for (cp1 = te_pattern, cp2 = te_filename; cp1;)
@@ -1110,13 +1333,26 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 				if (rp)
 					*rp = '\0';
 
-				if (cp1[strlen(cp1) - 1] == '*')
+				if (cp1[0] && cp1[strlen(cp1) - 1] == '*')
 					last_wcard_was_star = True;
 				else
 					last_wcard_was_star = False;
 
-				if (!do_match(cp2, cp1, case_sig))
+				if (!do_match
+				    (cp2, cp1, case_sig, win9x_semantics))
 					break;
+
+				/*
+				 * Ugly ! Special case for Win9x *only*. If filename is XXXX and pattern extension
+				 * is '*' or all '?' then disallow match.
+				 */
+
+				if (win9x_semantics)
+				{
+					if (*cp2 == '\0'
+					    && str_is_all(cp1, '?'))
+						break;
+				}
 
 				cp1 = rp ? rp + 1 : NULL;
 				cp2 = fp ? fp + 1 : "";
@@ -1138,7 +1374,8 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 
 						if ((cp1 != NULL)
 						    && do_match(cp2, cp1,
-								case_sig))
+								case_sig,
+								win9x_semantics))
 						{
 							cp2 =
 								fp ? fp +
@@ -1166,11 +1403,12 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 		if (strequal(t_filename, "."))
 		{
 			/*
-			 *  Patterns:  *.*  *. ?. ?  are valid
+			 *  Patterns:  *.*  *. ?. ? ????????.??? are valid.
 			 *
 			 */
 			if (strequal(t_pattern, "*.*")
 			    || strequal(t_pattern, "*.")
+			    || strequal(t_pattern, "????????.???")
 			    || strequal(t_pattern, "?.")
 			    || strequal(t_pattern, "?"))
 				matched = True;
@@ -1178,13 +1416,14 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 		else if (strequal(t_filename, ".."))
 		{
 			/*
-			 *  Patterns:  *.*  *. ?. ? *.? are valid
+			 *  Patterns:  *.*  *. ?. ? *.? ????????.??? are valid.
 			 *
 			 */
 			if (strequal(t_pattern, "*.*")
 			    || strequal(t_pattern, "*.")
 			    || strequal(t_pattern, "?.")
 			    || strequal(t_pattern, "?")
+			    || strequal(t_pattern, "????????.???")
 			    || strequal(t_pattern, "*.?")
 			    || strequal(t_pattern, "?.*"))
 				matched = True;
@@ -1242,17 +1481,17 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 				{
 					matched =
 						do_match(sbase, ebase,
-							 case_sig)
+							 case_sig, False)
 						&& do_match(sext, eext,
-							    case_sig);
+							    case_sig, False);
 				}
 				else
 				{
 					/* pattern has no extension */
 					/* Really: match complete filename with pattern ??? means exactly 3 chars */
 					matched =
-						do_match(str, ebase,
-							 case_sig);
+						do_match(str, ebase, case_sig,
+							 False);
 				}
 			}
 			else
@@ -1267,15 +1506,16 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 					/* pattern has extension */
 					matched =
 						do_match(sbase, ebase,
-							 case_sig)
+							 case_sig, False)
 						&& do_match(sext, eext,
-							    case_sig);
+							    case_sig, False);
+
 				}
 				else
 				{
 					matched =
 						do_match(sbase, ebase,
-							 case_sig);
+							 case_sig, False);
 #ifdef EMULATE_WEIRD_W95_MATCHING
 					/*
 					 * Even Microsoft has some problems
@@ -1289,7 +1529,8 @@ BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2)
 						fstrcat(sbase, ".");
 						matched =
 							do_match(sbase, ebase,
-								 case_sig);
+								 case_sig,
+								 False);
 					}
 #endif
 				}
@@ -1411,6 +1652,25 @@ this is a version of setbuffer() for those machines that only have setvbuf
 #endif
 
 
+/****************************************************************************
+ copies or initialises to zeros.  checks NULL pointers, basically.
+ returns True on an actual memcpy.
+ ****************************************************************************/
+BOOL Memcpy(void *to, const void *from, size_t size)
+{
+	if (to == NULL)
+	{
+		return False;
+	}
+	if (from == NULL)
+	{
+		memset(to, 0, size);
+		return False;
+	}
+
+	memcpy(to, from, size);
+	return True;
+}
 
 /****************************************************************************
 expand a pointer to be a particular size
@@ -1432,17 +1692,10 @@ void *Realloc(void *p, size_t size)
 	else
 		ret = (void *)realloc(p, size);
 
-#ifdef MEM_MAN
-	{
-		extern FILE *dbf;
-		smb_mem_write_info(ret, dbf);
-	}
-#endif
-
 	if (!ret)
 		DEBUG(0,
 		      ("Memory allocation error: failed to expand to %d bytes\n",
-		       size));
+		       (int)size));
 
 	return (ret);
 }
@@ -1499,19 +1752,6 @@ BOOL get_myname(char *my_name, struct in_addr *ip)
 
 	return (True);
 }
-
-
-/****************************************************************************
-true if two IP addresses are equal
-****************************************************************************/
-BOOL ip_equal(struct in_addr ip1, struct in_addr ip2)
-{
-	uint32 a1, a2;
-	a1 = ntohl(ip1.s_addr);
-	a2 = ntohl(ip2.s_addr);
-	return (a1 == a2);
-}
-
 
 /****************************************************************************
 interpret a protocol description string, with a default
@@ -1580,7 +1820,7 @@ uint32 interpret_addr(char *str)
 		putip((char *)&res, (char *)hp->h_addr);
 	}
 
-	if (res == (uint32) - 1)
+	if (res == (uint32)-1)
 		return (0);
 
 	return (res);
@@ -1731,23 +1971,22 @@ static char *automount_lookup(char *user_name)
 				if (object->zo_data.zo_type == ENTRY_OBJ)
 				{
 					entry =
-						&object->zo_data.
-						objdata_u.en_data;
+						&object->zo_data.objdata_u.
+						en_data;
 					DEBUG(5,
 					      ("NIS+ entry type: %s\n",
 					       entry->en_type));
 					DEBUG(3,
 					      ("NIS+ result: %s\n",
-					       entry->en_cols.
-					       en_cols_val[1].ec_value.
-					       ec_value_val));
+					       entry->en_cols.en_cols_val[1].
+					       ec_value.ec_value_val));
 
 					pstrcpy(last_value,
 						entry->en_cols.
 						en_cols_val[1].ec_value.
 						ec_value_val);
-					string_sub(last_value, "&",
-						   user_name);
+					pstring_sub(last_value, "&",
+						    user_name);
 					fstrcpy(last_key, user_name);
 				}
 			}
@@ -1901,38 +2140,40 @@ void standard_sub_basic(char *str)
 		switch (*(p + 1))
 		{
 			case 'I':
-				string_sub(p, "%I", client_connection_addr());
+				pstring_sub(p, "%I",
+					    client_connection_addr());
 				break;
 			case 'L':
-				string_sub(p, "%L", local_machine);
+				pstring_sub(p, "%L", local_machine);
 				break;
 			case 'M':
-				string_sub(p, "%M", client_connection_name());
+				pstring_sub(p, "%M",
+					    client_connection_name());
 				break;
 			case 'R':
-				string_sub(p, "%R", remote_proto);
+				pstring_sub(p, "%R", remote_proto);
 				break;
 			case 'T':
-				string_sub(p, "%T", timestring(False));
+				pstring_sub(p, "%T", timestring(False));
 				break;
 			case 'a':
-				string_sub(p, "%a", remote_arch);
+				pstring_sub(p, "%a", remote_arch);
 				break;
 			case 'd':
 			{
 				slprintf(pidstr, sizeof(pidstr) - 1, "%d",
 					 (int)getpid());
-				string_sub(p, "%d", pidstr);
+				pstring_sub(p, "%d", pidstr);
 				break;
 			}
 			case 'h':
-				string_sub(p, "%h", myhostname());
+				pstring_sub(p, "%h", myhostname());
 				break;
 			case 'm':
-				string_sub(p, "%m", remote_machine);
+				pstring_sub(p, "%m", remote_machine);
 				break;
 			case 'v':
-				string_sub(p, "%v", VERSION);
+				pstring_sub(p, "%v", VERSION);
 				break;
 			case '$':	/* Expand environment variables */
 			{
@@ -1976,7 +2217,7 @@ void standard_sub_basic(char *str)
 					    (sizeof(envname) - 1));
 				strncpy(envname, p, copylen);
 				envname[copylen] = '\0';
-				string_sub(p, envname, envval);
+				pstring_sub(p, envname, envval);
 				break;
 			}
 			case '\0':
@@ -2007,8 +2248,8 @@ void standard_sub_vuser(const user_struct * vuser, char *str)
 				if ((pass = Get_Pwnam(vuser->name, False)) !=
 				    NULL)
 				{
-					string_sub(p, "%G",
-						   gidtoname(pass->pw_gid));
+					pstring_sub(p, "%G",
+						    gidtoname(pass->pw_gid));
 				}
 				else
 				{
@@ -2017,11 +2258,11 @@ void standard_sub_vuser(const user_struct * vuser, char *str)
 				break;
 			}
 			case 'N':
-				string_sub(p, "%N",
-					   automount_server(vuser->name));
+				pstring_sub(p, "%N",
+					    automount_server(vuser->name));
 				break;
 			case 'U':
-				string_sub(p, "%U", vuser->requested_name);
+				pstring_sub(p, "%U", vuser->requested_name);
 				break;
 			case '\0':
 				p++;
@@ -2051,7 +2292,7 @@ void standard_sub(connection_struct * conn, user_struct * vuser, char *str)
 				if ((home = get_unixhome_dir(conn->user)) !=
 				    NULL)
 				{
-					string_sub(p, "%H", home);
+					pstring_sub(p, "%H", home);
 				}
 				else
 				{
@@ -2067,21 +2308,22 @@ void standard_sub(connection_struct * conn, user_struct * vuser, char *str)
 				 * "path =" string in [homes] and so needs the
 				 * service name, not the username.  */
 			case 'p':
-				string_sub(p, "%p",
-					   automount_path(lp_servicename
-							  (SNUM(conn))));
+				pstring_sub(p, "%p",
+					    automount_path(lp_servicename
+							   (SNUM(conn))));
 				break;
 			case 'P':
-				string_sub(p, "%P", conn->connectpath);
+				pstring_sub(p, "%P", conn->connectpath);
 				break;
 			case 'S':
-				string_sub(p, "%S",
-					   lp_servicename(SNUM(conn))); break;
+				pstring_sub(p, "%S",
+					    lp_servicename(SNUM(conn)));
+					break;
 			case 'g':
-				string_sub(p, "%g", gidtoname(conn->gid));
+				pstring_sub(p, "%g", gidtoname(conn->gid));
 				break;
 			case 'u':
-				string_sub(p, "%u", conn->user);
+				pstring_sub(p, "%u", conn->user);
 				break;
 
 			case '\0':
@@ -2393,13 +2635,13 @@ a readdir wrapper which just returns the file name
 ********************************************************************/
 char *readdirname(DIR * p)
 {
-	struct dirent *ptr;
+	SMB_STRUCT_DIRENT *ptr;
 	char *dname;
 
 	if (!p)
 		return (NULL);
 
-	ptr = (struct dirent *)readdir(p);
+	ptr = (SMB_STRUCT_DIRENT *) sys_readdir(p);
 	if (!ptr)
 		return (NULL);
 
@@ -2458,8 +2700,8 @@ BOOL is_in_path(char *name, name_compare_entry * namelist)
 			 * 'unix style' mask match, rather than the
 			 * new NT one.
 			 */
-			if (unix_mask_match(last_component, namelist->name,
-					    case_sensitive, False))
+			if (unix_mask_match
+			    (last_component, namelist->name, case_sensitive))
 			{
 				DEBUG(8,
 				      ("is_in_path: mask match succeeded\n"));
@@ -2667,7 +2909,7 @@ char *align4(char *q, char *base)
 	int mod = PTR_DIFF(q, base) & 3;
 	if (mod != 0)
 	{
-		q += 4-mod;
+		q += 4 - mod;
 	}
 	return q;
 }
@@ -2897,16 +3139,56 @@ int set_maxfiles(int requested_max)
 {
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	struct rlimit rlp;
-	getrlimit(RLIMIT_NOFILE, &rlp);
-	/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
-	 * account for the extra fd we need 
-	 * as well as the log files and standard
-	 * handles etc.  */
-	rlp.rlim_cur = MIN(requested_max, rlp.rlim_max);
-	setrlimit(RLIMIT_NOFILE, &rlp);
-	getrlimit(RLIMIT_NOFILE, &rlp);
+	int saved_current_limit;
+
+	if (getrlimit(RLIMIT_NOFILE, &rlp))
+	{
+		DEBUG(0,
+		      ("set_maxfiles: getrlimit (1) for RLIMIT_NOFILE failed with error %s\n",
+		       strerror(errno)));
+		/* just guess... */
+		return requested_max;
+	}
+
+	/* 
+	   * Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
+	   * account for the extra fd we need 
+	   * as well as the log files and standard
+	   * handles etc. Save the limit we want to set in case
+	   * we are running on an OS that doesn't support this limit (AIX)
+	   * which always returns RLIM_INFINITY for rlp.rlim_max.
+	 */
+
+	saved_current_limit = rlp.rlim_cur = MIN(requested_max, rlp.rlim_max);
+
+	if (setrlimit(RLIMIT_NOFILE, &rlp))
+	{
+		DEBUG(0,
+		      ("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d files failed with error %s\n",
+		       (int)rlp.rlim_cur, strerror(errno)));
+		/* just guess... */
+		return saved_current_limit;
+	}
+
+	if (getrlimit(RLIMIT_NOFILE, &rlp))
+	{
+		DEBUG(0,
+		      ("set_maxfiles: getrlimit (2) for RLIMIT_NOFILE failed with error %s\n",
+		       strerror(errno)));
+		/* just guess... */
+		return saved_current_limit;
+	}
+
+#if defined(RLIM_INFINITY)
+	if (rlp.rlim_cur == RLIM_INFINITY)
+		return saved_current_limit;
+#endif
+
+	if ((int)rlp.rlim_cur > saved_current_limit)
+		return saved_current_limit;
+
 	return rlp.rlim_cur;
-#else
+#else /* !defined(HAVE_GETRLIMIT) || !defined(RLIMIT_NOFILE) */
 	/*
 	 * No way to know - just guess...
 	 */
@@ -2926,8 +3208,7 @@ void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name)
 /*****************************************************************
  splits out the start of the key (HKLM or HKU) and the rest of the key
  *****************************************************************/
-BOOL reg_split_key(const char *full_keyname, uint32 * reg_type,
-		   char *key_name)
+BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 {
 	pstring tmp;
 
@@ -3304,7 +3585,7 @@ time_t pwdb_get_last_set_time(const char *p)
  ********************************************************************/
 static void set_time_in_string(char *p, int max_len, char *type, time_t t)
 {
-	slprintf(p, max_len, ":%s-%08X", type, (uint32) t);
+	slprintf(p, max_len, ":%s-%08X", type, (uint32)t);
 }
 
 /*******************************************************************
@@ -3396,7 +3677,7 @@ void pwdb_sethexpwd(char *p, const uchar * pwd, uint16 acct_ctrl)
  Routine to get the 32 hex characters and turn them
  into a 16 byte array.
 **************************************************************/
-BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 * acct_ctrl)
+BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl)
 {
 	if (strnequal(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32))
 	{
@@ -3419,6 +3700,38 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 * acct_ctrl)
 }
 
 /*****************************************************************
+like mktemp() but make sure that no % characters are used
+% characters are bad for us because of the macro subs
+ *****************************************************************/
+char *smbd_mktemp(char *template)
+{
+	char *p = mktemp(template);
+	char *p2;
+	SMB_STRUCT_STAT st;
+
+	if (!p)
+		return NULL;
+
+	while ((p2 = strchr(p, '%')))
+	{
+		p2[0] = 'A';
+		while (sys_stat(p, &st) == 0 && p2[0] < 'Z')
+		{
+			/* damn, it exists */
+			p2[0]++;
+		}
+		if (p2[0] == 'Z')
+		{
+			/* oh well ... better return something */
+			p2[0] = '%';
+			return p;
+		}
+	}
+
+	return p;
+}
+
+/*****************************************************************
 like strdup but for memory
  *****************************************************************/
 void *memdup(const void *p, size_t size)
@@ -3437,11 +3750,12 @@ void *memdup(const void *p, size_t size)
 
 /*****************************************************************
 get local hostname and cache result
- *****************************************************************/  
+ *****************************************************************/
 char *myhostname(void)
 {
 	static pstring ret;
-	if (ret[0] == 0) {
+	if (ret[0] == 0)
+	{
 		get_myname(ret, NULL);
 	}
 	return ret;
@@ -3492,6 +3806,37 @@ char *lock_path(char *name)
 	return fname;
 }
 
+/*******************************************************************
+ Given a filename - get its directory name
+ NB: Returned in static storage.  Caveats:
+ o  Not safe in thread environment.
+ o  Caller must not free.
+ o  If caller wishes to preserve, they should copy.
+********************************************************************/
+
+char *parent_dirname(const char *path)
+{
+	static pstring dirpath;
+	char *p;
+
+	if (!path)
+		return (NULL);
+
+	pstrcpy(dirpath, path);
+	p = strrchr(dirpath, '/');	/* Find final '/', if any */
+	if (!p)
+	{
+		pstrcpy(dirpath, ".");	/* No final "/", so dir is "." */
+	}
+	else
+	{
+		if (p == dirpath)
+			++p;	/* For root "/", leave "/" in place */
+		*p = '\0';
+	}
+	return dirpath;
+}
+
 struct field_info sid_name_info[] = {
 	{SID_NAME_UNKNOWN, "UNKNOWN"},	/* default */
 	{SID_NAME_USER, "User"},
@@ -3511,4 +3856,3 @@ const char *get_sid_name_use_str(uint32 sid_name_use)
 {
 	return enum_field_to_str(sid_name_use, sid_name_info, True);
 }
-

@@ -462,7 +462,7 @@
  */
 
 #ifndef SMB_INO_T
-#  ifdef HAVE_INO64_T
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)
 #    define SMB_INO_T ino64_t
 #  else
 #    define SMB_INO_T ino_t
@@ -470,7 +470,7 @@
 #endif
 
 #ifndef LARGE_SMB_INO_T
-#  if defined(HAVE_INO64_T) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
+#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
 #    define LARGE_SMB_INO_T 1
 #  endif
 #endif
@@ -482,12 +482,15 @@
 #endif
 
 #ifndef SMB_OFF_T
-#  ifdef HAVE_OFF64_T
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)
 #    define SMB_OFF_T off64_t
 #  else
 #    define SMB_OFF_T off_t
 #  endif
 #endif
+
+/* this should really be a 64 bit type if possible */
+#define br_off SMB_BIG_UINT
 
 #define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
 
@@ -497,7 +500,7 @@
  */
 
 #ifndef LARGE_SMB_OFF_T
-#  if defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
+#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
 #    define LARGE_SMB_OFF_T 1
 #  endif
 #endif
@@ -513,10 +516,22 @@
  */
 
 #ifndef SMB_STRUCT_STAT
-#  if defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
 #    define SMB_STRUCT_STAT struct stat64
 #  else
 #    define SMB_STRUCT_STAT struct stat
+#  endif
+#endif
+
+/*
+ * Type for dirent structure.
+ */
+
+#ifndef SMB_STRUCT_DIRENT
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
+#    define SMB_STRUCT_DIRENT struct dirent64
+#  else
+#    define SMB_STRUCT_DIRENT struct dirent
 #  endif
 #endif
 
@@ -525,7 +540,7 @@
  */
 
 #ifndef SMB_STRUCT_FLOCK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_STRUCT_FLOCK struct flock64
 #  else
 #    define SMB_STRUCT_FLOCK struct flock
@@ -533,7 +548,7 @@
 #endif
 
 #ifndef SMB_F_SETLKW
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_SETLKW F_SETLKW64
 #  else
 #    define SMB_F_SETLKW F_SETLKW
@@ -541,7 +556,7 @@
 #endif
 
 #ifndef SMB_F_SETLK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_SETLK F_SETLK64
 #  else
 #    define SMB_F_SETLK F_SETLK
@@ -549,7 +564,7 @@
 #endif
 
 #ifndef SMB_F_GETLK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_GETLK F_GETLK64
 #  else
 #    define SMB_F_GETLK F_GETLK
@@ -559,9 +574,11 @@
 #if defined(HAVE_LONGLONG)
 #define SMB_BIG_UINT unsigned long long
 #define SMB_BIG_INT long long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
 #else
 #define SMB_BIG_UINT unsigned long
 #define SMB_BIG_INT long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #endif
 
 #ifndef MIN
@@ -600,6 +617,7 @@ extern int errno;
 #include "../tdb/tdb.h"
 #include "talloc.h"
 #include "interfaces.h"
+#include "hash.h"
 
 #ifdef HAVE_FNMATCH
 #include <fnmatch.h>
@@ -621,6 +639,8 @@ extern int errno;
 #include "kanji.h"
 #include "charset.h"
 
+#include "msdfs.h"
+
 #ifdef WITH_PROFILE
 #include "profile.h"
 #endif
@@ -628,6 +648,38 @@ extern int errno;
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
+
+/*
+ * Type for wide character dirent structure.
+ * Only d_name is defined by POSIX.
+ */
+
+typedef struct smb_wdirent {
+	wpstring        d_name;
+} SMB_STRUCT_WDIRENT;
+
+/*
+ * Type for wide character passwd structure.
+ */
+
+typedef struct smb_wpasswd {
+	wfstring       pw_name;
+	char           *pw_passwd;
+	uid_t          pw_uid;
+	gid_t          pw_gid;
+	wpstring       pw_gecos;
+	wpstring       pw_dir;
+	wpstring       pw_shell;
+} SMB_STRUCT_WPASSWD;
+
+/* Defines for wisXXX functions. */
+#define UNI_UPPER    0x1
+#define UNI_LOWER    0x2
+#define UNI_DIGIT    0x4
+#define UNI_XDIGIT   0x8
+#define UNI_SPACE    0x10
+
+#include "../lib/surs.h"
 
 /***** automatically generated prototypes *****/
 #include "ldapdb.h"
@@ -817,16 +869,44 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define bzero(a,b) memset((a),'\0',(b))
 #endif
 
-#ifdef REPLACE_GETPASS
-#define getpass(prompt) getsmbpass((prompt))
+/*
+ * Some older systems seem not to have MAXHOSTNAMELEN
+ * defined.
+ */
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 254
 #endif
- 
+
+/* yuck, I'd like a better way of doing this */
+#define DIRP_SIZE (256 + 32)
+
+/*
+ * glibc on linux doesn't seem to have MSG_WAITALL
+ * defined. I think the kernel has it though..
+ */
+
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0
+#endif
+
+/* default socket options. Dave Miller thinks we should default to TCP_NODELAY
+   given the socket IO pattern that Samba uses */
+#ifdef TCP_NODELAY
+#define DEFAULT_SOCKET_OPTIONS "TCP_NODELAY"
+#else
+#define DEFAULT_SOCKET_OPTIONS ""
+#endif
+
+/* Load header file for libdl stuff */
+
+#ifdef HAVE_LIBDL
+#include <dlfcn.h>
+#endif
+
 #ifdef USE_RENEWABLE_AFS_TICKET
 #include "afsticket.h"
 #endif /* USE_RENEWABLE_AFS_TICKET */
 
-/* yuck, I'd like a better way of doing this */
-#define DIRP_SIZE (256 + 32)
 /* change initialization ... support for IRIX cc */
 #define VUSER_KEY vuser_key key; key.pid=conn->smbd_pid; key.vuid=vuid
 #endif /* _INCLUDES_H */

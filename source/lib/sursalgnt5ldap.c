@@ -68,14 +68,13 @@ BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type,
 
 	switch (type)
 	{
-		case SID_NAME_USER:
+		case RID_TYPE_USER:
 		{
 			attribute = "uidNumber";
 			break;
 		}
-		case SID_NAME_ALIAS:
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
+		case RID_TYPE_GROUP:
+		case RID_TYPE_ALIAS:
 		{
 			attribute = "gidNumber";
 			break;

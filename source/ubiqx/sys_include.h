@@ -40,6 +40,8 @@
  */
 #define _PROTO_H_
 #define _NAMESERV_H_
+#define _DEBUG_H_
+#define _HASH_H_
 
 /* The main Samba system-adaptive header file.
  */

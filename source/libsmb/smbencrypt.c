@@ -224,6 +224,51 @@ void SMBNTencrypt(uchar * pwrd, uchar * c8, uchar * p24)
 #endif
 }
 
+BOOL make_oem_passwd_hash(uchar data[516],
+			  const char *pwrd, int new_pw_len,
+			  const uchar old_pw_hash[16], BOOL unicode)
+{
+	if (new_pw_len == 0)
+	{
+		new_pw_len = strlen(pwrd) * (unicode ? 2 : 1);
+	}
+
+	if (new_pw_len > 512)
+	{
+		DEBUG(0,
+		      ("make_oem_passwd_hash: new password is too long.\n"));
+		return False;
+	}
+
+	/*
+	 * Now setup the data area.
+	 * We need to generate a random fill
+	 * for this area to make it harder to
+	 * decrypt. JRA.
+	 */
+	generate_random_buffer(data, 516, False);
+	if (unicode)
+	{
+		ascii_to_unibuf(&data[512 - new_pw_len], pwrd, new_pw_len);
+	}
+	else
+	{
+		fstrcpy(&data[512 - new_pw_len], pwrd);
+	}
+	SIVAL(data, 512, new_pw_len);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("make_oem_passwd_hash\n"));
+	dump_data(100, data, 516);
+#endif
+	if (old_pw_hash != NULL)
+	{
+		SamOEMhash(data, old_pw_hash, True);
+	}
+
+	return True;
+}
+
 void SMBOWFencrypt_ntv2(const uchar kr[16],
 			const uchar * srv_chal, int srv_chal_len,
 			const uchar * cli_chal, int cli_chal_len,
@@ -414,51 +459,6 @@ void nt_lm_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16], uchar lm_p16[16])
 {
 	nt_owf_genW(pwd, nt_p16);
 	lm_owf_genW(pwd, lm_p16);
-}
-
-BOOL make_oem_passwd_hash(uchar data[516],
-			  const char *pwrd, int new_pw_len,
-			  const uchar old_pw_hash[16], BOOL unicode)
-{
-	if (new_pw_len == 0)
-	{
-		new_pw_len = strlen(pwrd) * (unicode ? 2 : 1);
-	}
-
-	if (new_pw_len > 512)
-	{
-		DEBUG(0,
-		      ("make_oem_passwd_hash: new password is too long.\n"));
-		return False;
-	}
-
-	/*
-	 * Now setup the data area.
-	 * We need to generate a random fill
-	 * for this area to make it harder to
-	 * decrypt. JRA.
-	 */
-	generate_random_buffer(data, 516, False);
-	if (unicode)
-	{
-		ascii_to_unibuf(&data[512 - new_pw_len], pwrd, new_pw_len);
-	}
-	else
-	{
-		fstrcpy(&data[512 - new_pw_len], pwrd);
-	}
-	SIVAL(data, 512, new_pw_len);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("make_oem_passwd_hash\n"));
-	dump_data(100, data, 516);
-#endif
-	if (old_pw_hash != NULL)
-	{
-		SamOEMhash(data, old_pw_hash, True);
-	}
-
-	return True;
 }
 
 BOOL nt_encrypt_string2(STRING2 * out, const STRING2 * in, const uchar * key)

@@ -75,6 +75,10 @@ struct vfs_connection_struct {
     BOOL read_only;
     BOOL admin_user;
 
+    /* Handle on dlopen() call */
+
+    void *dl_handle;
+
     /* Paths */
 
     pstring dirpath;
@@ -106,7 +110,7 @@ struct vfs_ops {
     int (*connect)(struct vfs_connection_struct *conn, char *service, 
 		   char *user);
     void (*disconnect)(void);
-    SMB_BIG_UINT (*disk_free)(char *path, SMB_BIG_UINT *bsize, 
+    SMB_BIG_UINT (*disk_free)(char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			      SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
     
     /* Directory operations */
@@ -125,17 +129,14 @@ struct vfs_ops {
     ssize_t (*write)(int fd, char *data, size_t n);
     SMB_OFF_T (*lseek)(int filedes, SMB_OFF_T offset, int whence);
     int (*rename)(char *old, char *new);
-    void (*sync)(int fd);
+    void (*fsync)(int fd);
     int (*stat)(char *fname, SMB_STRUCT_STAT *sbuf);
     int (*fstat)(int fd, SMB_STRUCT_STAT *sbuf);
     int (*lstat)(char *path, SMB_STRUCT_STAT *sbuf);
-    BOOL (*lock)(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
     int (*unlink)(char *path);
     int (*chmod)(char *path, mode_t mode);
     int (*utime)(char *path, struct utimbuf *times);
 };
-
-/* VFS options for configuration file */
 
 struct vfs_options {
     struct vfs_options *prev, *next;

@@ -88,6 +88,8 @@ static int create_new_id(fstring sid_str, int isgroup)
     uint32 hwm_id;
     fstring temp;
 
+    DEBUG(0,("TODO: create_new_id: lock tdb databases\n"));
+
     isgroup ? (id_by_sid = surs_tdb_gid_by_sid) : 
         (id_by_sid = surs_tdb_uid_by_sid);
 

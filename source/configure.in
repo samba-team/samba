@@ -989,65 +989,6 @@ if test x"$samba_cv_USE_SETUIDX" = x"yes"; then
 fi
 fi
 
-################################################
-# look for a method of setting the effective gid
-setegid=no;
-if test $setegid = no; then
-AC_CACHE_CHECK([for setresgid],samba_cv_USE_SETRESGID,[
-AC_TRY_RUN([
-#define AUTOCONF_TEST 1
-#define USE_SETRESUID 1
-#define USE_SETRESGID 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/util_sec.c"],
-           samba_cv_USE_SETRESGID=yes,samba_cv_USE_SETRESGID=no,samba_cv_USE_SETRESGID=cross)])
-if test x"$samba_cv_USE_SETRESGID" = x"yes"; then
-    setegid=yes;AC_DEFINE(USE_SETRESGID)
-fi
-fi
-
-
-if test $setegid = no; then
-AC_CACHE_CHECK([for setregid],samba_cv_USE_SETREGID,[
-AC_TRY_RUN([
-#define AUTOCONF_TEST 1
-#define USE_SETREUID 1
-#define USE_SETREGID 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/util_sec.c"],
-           samba_cv_USE_SETREGID=yes,samba_cv_USE_SETREGID=no,samba_cv_USE_SETREGID=cross)])
-if test x"$samba_cv_USE_SETREGID" = x"yes"; then
-    setegid=yes;AC_DEFINE(USE_SETREGID)
-fi
-fi
-
-if test $setegid = no; then
-AC_CACHE_CHECK([for setegid],samba_cv_USE_SETEGID,[
-AC_TRY_RUN([
-#define AUTOCONF_TEST 1
-#define USE_SETEUID 1
-#define USE_SETEGID 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/util_sec.c"],
-           samba_cv_USE_SETEGID=yes,samba_cv_USE_SETEGID=no,samba_cv_USE_SETEGID=cross)])
-if test x"$samba_cv_USE_SETEGID" = x"yes"; then
-    setegid=yes;AC_DEFINE(USE_SETEGID)
-fi
-fi
-
-if test $setegid = no; then
-AC_CACHE_CHECK([for setgidx],samba_cv_USE_SETGIDX,[
-AC_TRY_RUN([
-#define AUTOCONF_TEST 1
-#define USE_SETUIDX 1
-#define USE_SETGIDX 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/util_sec.c"],
-           samba_cv_USE_SETGIDX=yes,samba_cv_USE_SETGIDX=no,samba_cv_USE_SETGIDX=cross)])
-if test x"$samba_cv_USE_SETGIDX" = x"yes"; then
-    setegid=yes;AC_DEFINE(USE_SETGIDX)
-fi
-fi
 
 AC_CACHE_CHECK([for shared mmap],samba_cv_HAVE_SHARED_MMAP,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
@@ -1933,22 +1874,6 @@ if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
     AC_DEFINE(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
 else
     echo "no"
-fi
-
-# sometimes getopt_long cannot parse same arguments twice
-# e.g. on certain versions of CygWin32
-AC_CACHE_CHECK([for working getopt_long],samba_cv_HAVE_GETOPT_LONG,[
-AC_TRY_RUN([#include <getopt.h>
-main() {
-    int i, x = 0; char *argv[] = { "x", "--xx" };
-    struct option o[] = {{"xx", 0, 0, 1}, {0,0,0,0}};
-    getopt_long(2, argv, "x", o, &i) == 1 ? x++ : 0; optind = 0;
-    getopt_long(2, argv, "x", o, &i) == 1 ? x++ : 0;
-    exit(x == 2 ? 0 : 1);
-}], samba_cv_HAVE_GETOPT_LONG=yes,samba_cv_HAVE_GETOPT_LONG=no,
-    samba_cv_HAVE_GETOPT_LONG=cross)])
-if test x"$samba_cv_HAVE_GETOPT_LONG" = x"yes"; then
-    AC_DEFINE(HAVE_GETOPT_LONG)
 fi
 
 echo "checking configure summary"

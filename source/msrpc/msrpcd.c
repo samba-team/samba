@@ -298,8 +298,6 @@ void exit_server(char *reason)
 #endif
 	}    
 
-	locking_end();
-
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 #ifdef MEM_MAN
 	{
@@ -538,9 +536,6 @@ static void usage(char *pname)
 	{
 		exit_server("open socket failed");
 	}
-
-	if (!locking_init(0))
-		exit(1);
 
 	/* possibly reload the services file. */
 	fn->reload_services(True);

@@ -70,7 +70,7 @@ Corrections by richard.kettlewell@kewill.com
   epoch = (t->tm_year - 70) * YEAR + 
     ((n / 4 - n / 100 + n / 400) - (1969 / 4 - 1969 / 100 + 1969 / 400)) * DAY;
 
-  y = t->tm_year;
+  y = t->tm_year + 1900;
   m = 0;
 
   for(i = 0; i < t->tm_mon; i++) {
@@ -163,16 +163,21 @@ Corrections by richard.kettlewell@kewill.com
 	/* yikes! no SETGROUPS or INITGROUPS? how can this work? */
 	return(0);
 #else /* HAVE_SETGROUPS */
-	gid_t  grouplst[NGROUPS_MAX];
+	gid_t *grouplst = NULL;
+	int max_gr = groups_max();
+	int ret;
 	int    i,j;
 	struct group *g;
 	char   *gr;
 	
-	setgrent();
+	if((grouplst = (gid_t *)malloc(sizeof(gid_t) * max_gr)) == NULL) {
+		DEBUG(0,("initgroups: malloc fail !\n");
+		return -1;
+	}
+
 	grouplst[0] = id;
 	i = 1;
-	while (i < NGROUPS_MAX && 
-	       ((g = (struct group *)getgrent()) != (struct group *)NULL)) {
+	while (i < max_gr && ((g = (struct group *)getgrent()) != (struct group *)NULL)) {
 		if (g->gr_gid == id)
 			continue;
 		j = 0;
@@ -188,7 +193,9 @@ Corrections by richard.kettlewell@kewill.com
 		}
 	}
 	endgrent();
-	return(setgroups(i,grouplst));
+	ret = sys_setgroups(i,grouplst);
+	free((char *)grouplst);
+	return ret;
 #endif /* HAVE_SETGROUPS */
 }
 #endif /* HAVE_INITGROUPS */

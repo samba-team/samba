@@ -371,6 +371,8 @@ for code page %d failed. Using default client codepage 850\n",
       add_dos_char(cp[i][0], (BOOL)cp[i][2], cp[i][1], (BOOL)cp[i][3]);
   }
 
+  /* Try and load the unicode map. */
+  load_dos_unicode_map(client_codepage);
 }
 
 /*******************************************************************

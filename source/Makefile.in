@@ -154,7 +154,7 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/username.o \
 		lib/access.o lib/smbrun.o \
 		lib/bitmap.o lib/util_sid.o lib/snprintf.o \
-		lib/util_str.o lib/util_unistr.o \
+		lib/util_str.o lib/util_unistr.o lib/util_wunistr.o \
 		lib/util_file.o \
 		lib/util_sock.o lib/util_sec.o lib/util_array.o \
 		lib/vagent.o \
@@ -237,7 +237,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_eventlog.o \
 		rpc_client/cli_dfs.o
 
-LOCKING_OBJ = locking/locking.o 
+LOCKING_OBJ = lib/hash.o locking/locking.o locking/brlock.o
 
 GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 		groupdb/groupfile.o groupdb/aliasfile.o \
@@ -261,18 +261,19 @@ SIDDB_OBJ = lib/sids.o lib/util_seaccess.o
 PROFILE_OBJ = profile/profile.o
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
-            lib/set_uid.o \
-            smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
-            smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
-            smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
-            smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o \
-            smbd/uid.o \
-	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
-	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o smbd/vfs.o \
-	    smbd/vfs-wrap.o smbd/dfs.o \
-		smbd/challenge.o \
-		lib/util_pwdb.o smbd/afsticket.o
+		lib/set_uid.o smbd/dfree.o smbd/dir.o smbd/password.o \
+		smbd/conn.o smbd/fileio.o \
+		smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
+		smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
+		smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o \
+		smbd/uid.o smbd/dosmode.o smbd/filename.o smbd/open.o \
+		smbd/close.o smbd/blocking.o smbd/process.o smbd/oplock.o \
+		smbd/service.o smbd/error.o smbd/vfs.o smbd/vfs-wrap.o \
+		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o
+
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
+
+MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o
 
 MSRPCD_OBJ = msrpc/msrpcd.o \
 		msrpc/msrpcd_process.o \
@@ -343,7 +344,7 @@ SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 		spoolssd/srv_spoolss_nt.o \
 		printing/nt_printing.o 
 
-SMBD_OBJ = $(SMBD_OBJ1) $(UNIXPASSDB_OBJ) \
+SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(UNIXPASSDB_OBJ) \
            $(RPC_SERVER_OBJ) \
            lib/domain_namemap.o \
            $(LOCKING_OBJ) \
@@ -354,33 +355,33 @@ SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(LIBSURS)
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ)  \
+           $(PROFILE_OBJ)  \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ)
 
 WKSSVCD_OBJ = $(MSRPCD_OBJ) $(WKSSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(SIDDB_OBJ) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) 
+           $(PROFILE_OBJ) 
 
 BROWSERD_OBJ = $(MSRPCD_OBJ) $(BROWSERD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(SIDDB_OBJ) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) 
+           $(PROFILE_OBJ) 
 
 WINREGD_OBJ = $(MSRPCD_OBJ) $(WINREGD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(SIDDB_OBJ) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) 
+           $(PROFILE_OBJ) 
 
 SVCCTLD_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(SIDDB_OBJ) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) 
+           $(PROFILE_OBJ) 
 
 LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
-           $(SIDDB_OBJ) $(LOCKING_OBJ) \
+           $(SIDDB_OBJ) \
 		$(PROFILE_OBJ) 
 LSARPCD_LIBS = $(SAMBA_LIBS)
 
@@ -388,12 +389,11 @@ SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(PRINTING_OBJ) \
            $(SIDDB_OBJ) \
            $(RPC_SRVUTIL_OBJ) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ)
+           $(PROFILE_OBJ)
 SPOOLSSD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
-           $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(UNIXPASSDB_OBJ) $(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
@@ -411,7 +411,6 @@ NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(SAMRNT5LDAPLIB) \
 
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
-           $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(PROFILE_OBJ) 
 
@@ -451,6 +450,7 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
            rpc_server/srv_lookup.o \
            $(SIDDB_OBJ) \
+           $(PRINTING_OBJ) \
            $(UNIXPASSDB_OBJ) \
            $(STUB_UID_OBJ)
 
@@ -1015,9 +1015,9 @@ bin/testprns: $(SAMBALIB) $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(TESTPRNS_OBJ) $(SAMBALIB) $(LIBS)
 
-bin/smbstatus: $(SAMBALIB) $(STATUS_OBJ) bin/.dummy
+bin/smbstatus: $(SAMBALIB) $(UBIQXLIB) $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(STATUS_OBJ) $(SAMBALIB) $(LIBS)
+	@$(LINK) -o $@ $(STATUS_OBJ) $(SAMBALIB) $(UBIQXLIB) $(LIBS)
 
 bin/smbpasswd: $(SMBPASSWD_LIBS) $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1171,10 +1171,10 @@ rpc_client_proto:
 	  -f script/mkproto.awk `echo $(RPC_CLIENT_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/rpc_client_proto.h
 
 etags:
-	etags `find . -name "*.[ch]"`
+	etags `find . -name "*.[ch]" | grep -v /CVS/`
 
 ctags:
-	ctags `find . -name "*.[ch]"`
+	ctags `find . -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy

@@ -343,7 +343,7 @@ void strlower(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else
@@ -396,7 +396,7 @@ void strupper(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else
@@ -440,9 +440,20 @@ BOOL strisnormal(char *s)
 void string_replace(char *s,char oldc,char newc)
 {
   size_t skip;
+
+  /*
+   * sbcs optimization.
+   */
+  if(!global_is_multibyte_codepage) {
+    while (*s) {
+      if (oldc == *s)
+        *s = newc;
+      s++;
+    }
+  } else {
   while (*s)
   {
-    skip = skip_multibyte_char( *s );
+      skip = get_character_len( *s );
     if( skip != 0 )
       s += skip;
     else
@@ -453,6 +464,7 @@ void string_replace(char *s,char oldc,char newc)
     }
   }
 }
+}
 
 
 /*******************************************************************
@@ -462,7 +474,7 @@ char *skip_string(char *buf,size_t n)
 {
   while (n--)
     buf += strlen(buf) + 1;
-  return buf;
+  return(buf);
 }
 
 /*******************************************************************
@@ -476,10 +488,17 @@ size_t str_charnum(const char *s)
 {
   size_t len = 0;
   
+  /*
+   * sbcs optimization.
+   */
+  if(!global_is_multibyte_codepage) {
+    return strlen(s);
+  } else {
   while (*s != '\0') {
-    int skip = skip_multibyte_char(*s);
+      int skip = get_character_len(*s);
     s += (skip ? skip : 1);
     len++;
+  }
   }
   return len;
 }
@@ -518,7 +537,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
 
   if(back_len)
   {
-    if(!is_multibyte_codepage())
+    if(!global_is_multibyte_codepage)
     {
       s_len = strlen(s);
       while ((s_len >= back_len) && 
@@ -552,11 +571,20 @@ BOOL trim_string(char *s,const char *front,const char *back)
         size_t charcount = 0;
         char *mbp = s;
 
-        while(charcount < (mb_s_len - mb_back_len))
-        {
+        /*
+         * sbcs optimization.
+         */
+        if(!global_is_multibyte_codepage) {
+          while(charcount < (mb_s_len - mb_back_len)) {
+            mbp += 1;
+            charcount++;
+          }
+        } else {
+          while(charcount < (mb_s_len - mb_back_len)) {
           size_t skip = skip_multibyte_char(*mbp);
           mbp += (skip ? skip : 1);
           charcount++;
+        }
         }
 
         /*
@@ -615,7 +643,7 @@ BOOL strhasupper(const char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -670,7 +698,7 @@ BOOL strhaslower(const char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -720,7 +748,7 @@ size_t count_chars(const char *s,char c)
   {
     while (*s) 
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -733,7 +761,59 @@ size_t count_chars(const char *s,char c)
   return(count);
 }
 
+/*******************************************************************
+Return True if a string consists only of one particular character.
+********************************************************************/
 
+BOOL str_is_all(const char *s,char c)
+{
+  if(s == NULL)
+    return False;
+  if(!*s)
+    return False;
+
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+  /*
+   * For completeness we should put in equivalent code for code pages
+   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
+   * doubt anyone wants Samba to behave differently from Win95 and WinNT
+   * here. They both treat full width ascii characters as case senstive
+   * filenames (ie. they don't do the work we do here).
+   * JRA.
+   */
+
+  if(lp_client_code_page() == KANJI_CODEPAGE)
+  {
+    /* Win95 treats full width ascii characters as case sensitive. */
+    while (*s)
+    {
+      if (is_shift_jis (*s))
+        s += 2;
+      else
+      {
+        if (*s != c)
+          return False;
+        s++;
+      }
+    }
+  }
+  else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+  {
+    while (*s)
+    {
+      size_t skip = get_character_len( *s );
+      if( skip != 0 )
+        s += skip;
+      else {
+        if (*s != c)
+          return False;
+        s++;
+      }
+    }
+  }
+  return True;
+}
 
 /*******************************************************************
 safe string copy into a known length string. maxlength does not
@@ -742,11 +822,6 @@ include the terminating zero.
 char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
     size_t len;
-
-	if (maxlength == 0)
-	{
-		return dest;
-	}
 
     if (!dest) {
         DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
@@ -762,7 +837,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 
     if (len > maxlength) {
 	    DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
-		     len-maxlength, src));
+		     (int)(len-maxlength), src));
 	    len = maxlength;
     }
       
@@ -793,7 +868,7 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 
     if (src_len + dest_len > maxlength) {
 	    DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
-		     src_len + dest_len - maxlength, src));
+		     (int)(src_len + dest_len - maxlength), src));
 	    src_len = maxlength - dest_len;
     }
       
@@ -802,27 +877,46 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
     return dest;
 }
 
-/****************************************************************************
-this is a safer strcpy(), meant to prevent core dumps when nasty things happen
-****************************************************************************/
-char *StrCpy(char *dest,const char *src)
+/*******************************************************************
+ Paranoid strcpy into a buffer of given length (includes terminating
+ zero. Strips out all but 'a-Z0-9' and replaces with '_'. Deliberately
+ does *NOT* check for multibyte characters. Don't change it !
+********************************************************************/
+
+char *alpha_strcpy(char *dest, const char *src, size_t maxlength)
 {
-  char *d = dest;
+	size_t len, i;
 
-  /* I don't want to get lazy with these ... */
-  SMB_ASSERT(dest && src);
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
+		return NULL;
+	}
 
-  if (!dest) return(NULL);
   if (!src) {
     *dest = 0;
-    return(dest);
+		return dest;
   }
-  while ((*d++ = *src++)) ;
-  return(dest);
+
+	len = strlen(src);
+	if (len >= maxlength)
+		len = maxlength - 1;
+
+	for(i = 0; i < len; i++) {
+		int val = (src[i] & 0xff);
+		if(isupper(val) ||islower(val) || isdigit(val))
+			dest[i] = src[i];
+		else
+			dest[i] = '_';
+	}
+
+	dest[i] = '\0';
+
+	return dest;
 }
 
 /****************************************************************************
-like strncpy but always null terminates. Make sure there is room!
+ Like strncpy but always null terminates. Make sure there is room!
+ The variable n should always be one less than the available size.
 ****************************************************************************/
 char *StrnCpy(char *dest,const char *src,size_t n)
 {
@@ -842,7 +936,7 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 like strncpy but copies up to the character marker.  always null terminates.
 returns a pointer to the character marker in the source string (src).
 ****************************************************************************/
-char *strncpyn(char *dest, char *src,size_t n, char c)
+char *strncpyn(char *dest, const char *src,size_t n, char c)
 {
 	char *p;
 	size_t str_len;
@@ -940,7 +1034,7 @@ static char *null_string = NULL;
 /****************************************************************************
 set a string value, allocing the space for the string
 ****************************************************************************/
-BOOL string_init(char **dest,const char *src)
+static BOOL string_init(char **dest,const char *src)
 {
   size_t l;
   if (!src)     
@@ -1003,29 +1097,42 @@ enough room!
 This routine looks for pattern in s and replaces it with 
 insert. It may do multiple replacements.
 
-any of " ; ' or ` in the insert string are replaced with _
+any of " ; ' $ or ` in the insert string are replaced with _
+if len==0 then no length check is performed
 ****************************************************************************/
-void string_sub(char *s,const char *pattern,const char *insert)
+void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
-	size_t ls,lp,li, i;
+	ssize_t ls,lp,li, i;
 
 	if (!insert || !pattern || !s) return;
 
-	ls = strlen(s);
-	lp = strlen(pattern);
-	li = strlen(insert);
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
 
 	if (!*pattern) return;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
+		if (len && (ls + (li-lp) >= len)) {
+			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
+				 (int)(ls + (li-lp) - len),
+				 pattern, (int)len));
+			break;
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
 		for (i=0;i<li;i++) {
 			switch (insert[i]) {
 			case '`':
 			case '"':
 			case '\'':
 			case ';':
+			case '$':
+			case '%':
+			case '\r':
+			case '\n':
 				p[i] = '_';
 				break;
 			default:
@@ -1037,6 +1144,15 @@ void string_sub(char *s,const char *pattern,const char *insert)
 	}
 }
 
+void fstring_sub(char *s,const char *pattern,const char *insert)
+{
+	string_sub(s, pattern, insert, sizeof(fstring));
+}
+
+void pstring_sub(char *s,const char *pattern,const char *insert)
+{
+	string_sub(s, pattern, insert, sizeof(pstring));
+}
 
 /****************************************************************************
 similar to string_sub() but allows for any character to be substituted. 
@@ -1209,6 +1325,20 @@ char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default)
 
 	return NULL;
 }
+
+/****************************************************************************
+write an octal as a string
+****************************************************************************/
+char *octal_string(int i)
+{
+	static char ret[64];
+	if (i == -1) {
+		return "-1";
+	}
+	slprintf(ret, sizeof(ret), "0%o", i);
+	return ret;
+}
+
 
 /****************************************************************************
 truncate a string at a specified length

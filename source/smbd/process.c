@@ -23,9 +23,9 @@
 
 extern int DEBUGLEVEL;
 
-time_t smb_last_time=(time_t)0;
+struct timeval smb_last_time;
 
-char *InBuffer = NULL;
+static char *InBuffer = NULL;
 char *OutBuffer = NULL;
 char *last_inbuf = NULL;
 
@@ -48,7 +48,7 @@ extern char *last_inbuf;
 extern char *InBuffer;
 extern char *OutBuffer;
 extern int smb_read_error;
-extern BOOL reload_after_sighup;
+extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern int max_send;
@@ -230,6 +230,52 @@ BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
   return ret;
 }
 
+/****************************************************************************
+ We're terminating and have closed all our files/connections etc.
+ If there are any pending local messages we need to respond to them
+ before termination so that other smbds don't think we just died whilst
+ holding oplocks.
+****************************************************************************/
+
+void respond_to_all_remaining_local_messages(void)
+{
+  char buffer[1024];
+  fd_set fds;
+
+  /*
+   * Assert we have no exclusive open oplocks.
+   */
+
+  if(get_number_of_exclusive_open_oplocks()) {
+    DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d exclusive oplocks.\n",
+          get_number_of_exclusive_open_oplocks() ));
+    return;
+  }
+
+  /*
+   * Setup the select read fd set.
+   */
+
+  FD_ZERO(&fds);
+  if(!setup_oplock_select_set(&fds))
+    return;
+
+  /*
+   * Keep doing receive_local_message with a 1 ms timeout until
+   * we have no more messages.
+   */
+
+  while(receive_local_message(&fds, buffer, sizeof(buffer), 1)) {
+    /* Deal with oplock break requests from other smbd's. */
+    process_local_message(buffer, sizeof(buffer));
+
+    FD_ZERO(&fds);
+    (void)setup_oplock_select_set(&fds);
+  }
+
+  return;
+}
+
 
 /*
 These flags determine some of the permissions required to do an operation 
@@ -282,8 +328,8 @@ struct smb_message_struct
 
    {SMBunlink,"SMBunlink",reply_unlink,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK},
    {SMBread,"SMBread",reply_read,AS_USER},
-   {SMBwrite,"SMBwrite",reply_write,AS_USER | CAN_IPC},
-   {SMBclose,"SMBclose",reply_close,AS_USER | CAN_IPC},
+   {SMBwrite,"SMBwrite",reply_write,AS_USER | CAN_IPC },
+   {SMBclose,"SMBclose",reply_close,AS_USER | CAN_IPC },
    {SMBmkdir,"SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
    {SMBrmdir,"SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
    {SMBdskattr,"SMBdskattr",reply_dskattr,AS_USER},
@@ -318,9 +364,9 @@ struct smb_message_struct
    {SMBwriteBmpx,"SMBwriteBmpx",reply_writebmpx,AS_USER},
    {SMBwriteBs,"SMBwriteBs",reply_writebs,AS_USER},
    {SMBwritec,"SMBwritec",NULL,AS_USER},
-   {SMBsetattrE,"SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE},
-   {SMBgetattrE,"SMBgetattrE",reply_getattrE,AS_USER},
-   {SMBtrans,"SMBtrans",reply_trans,AS_USER | CAN_IPC},
+   {SMBsetattrE,"SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE },
+   {SMBgetattrE,"SMBgetattrE",reply_getattrE,AS_USER },
+   {SMBtrans,"SMBtrans",reply_trans,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK},
    {SMBtranss,"SMBtranss",NULL,AS_USER | CAN_IPC},
    {SMBioctls,"SMBioctls",NULL,AS_USER},
    {SMBcopy,"SMBcopy",reply_copy,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
@@ -329,7 +375,7 @@ struct smb_message_struct
    {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
    {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
    {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC },
-   {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
+   {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER },
    
    {SMBffirst,"SMBffirst",reply_search,AS_USER},
    {SMBfunique,"SMBfunique",reply_search,AS_USER},
@@ -338,14 +384,14 @@ struct smb_message_struct
    /* LANMAN2.0 PROTOCOL FOLLOWS */
    {SMBfindnclose, "SMBfindnclose", reply_findnclose, AS_USER},
    {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
-   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER | CAN_IPC},
+   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER | QUEUE_IN_OPLOCK | CAN_IPC },
    {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
 
    /* NT PROTOCOL FOLLOWS */
    {SMBntcreateX, "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
-   {SMBnttrans, "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC },
+   {SMBnttrans, "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK},
    {SMBnttranss, "SMBnttranss", reply_nttranss, AS_USER | CAN_IPC },
-   {SMBntcancel, "SMBntcancel", reply_ntcancel, AS_USER },
+   {SMBntcancel, "SMBntcancel", reply_ntcancel, 0 },
 
    /* messaging routines */
    {SMBsends,"SMBsends",reply_sends,AS_GUEST},
@@ -367,14 +413,15 @@ do a switch on the message type, and return the response size
 ****************************************************************************/
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
-  static int pid= -1;
+  static pid_t pid= (pid_t)-1;
   int outsize = 0;
   static int num_smb_messages = 
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
   extern int Client;
+  extern int global_smbpid;
 
-  if (pid == -1)
+  if (pid == (pid_t)-1)
     pid = getpid();
 
   errno = 0;
@@ -391,6 +438,10 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     if (smb_messages[match].code == type)
       break;
 
+  /* yuck! this is an interim measure before we get rid of our
+     current inbuf/outbuf system */
+  global_smbpid = SVAL(inbuf,smb_pid);
+
   if (match == num_smb_messages)
   {
     DEBUG(0,("Unknown message type %d!\n",type));
@@ -398,21 +449,25 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   }
   else
   {
-    DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,pid));
+    DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,(int)pid));
 
-    if(global_oplock_break && (smb_messages[match].flags & QUEUE_IN_OPLOCK))
+    if(global_oplock_break)
     {
-      /* 
-       * Queue this message as we are the process of an oplock break.
-       */
+      int flags = smb_messages[match].flags;
 
-      DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
-      DEBUGADD( 2, ( "oplock break state.\n" ) );
+      if(flags & QUEUE_IN_OPLOCK)
+      {
+        /* 
+         * Queue this message as we are the process of an oplock break.
+         */
 
-      push_oplock_pending_smb_message( inbuf, size );
-      return -1;
-    }          
+        DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
+        DEBUGADD( 2, ( "oplock break state.\n" ) );
 
+        push_oplock_pending_smb_message( inbuf, size );
+        return -1;
+      }          
+    }
     if (smb_messages[match].fn)
     {
       int flags = smb_messages[match].flags;
@@ -434,8 +489,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
        * move it unless you know what you're doing... :-).
        * JRA.
        */
-      if (session_tag != last_session_tag)
-      {
+      if (session_tag != last_session_tag) {
         user_struct *vuser = NULL;
         vuser_key key;
 	key.pid = pid;
@@ -460,7 +514,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         if (flags & AS_GUEST) 
           flags &= ~AS_USER;
         else
-          return(ERROR(ERRSRV,ERRinvnid));
+          return(ERROR(ERRSRV,ERRaccess));
       }
       /* this code is to work around a bug is MS client 3 without
          introducing a security hole - it needs to be able to do
@@ -512,9 +566,8 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int type = CVAL(inbuf,smb_com);
   int outsize = 0;
   int msg_type = CVAL(inbuf,0);
-  extern int chain_size;
 
-  smb_last_time = time(NULL);
+  GetTimeOfDay(&smb_last_time);
 
   chain_size = 0;
   file_chain_reset();
@@ -565,7 +618,7 @@ void process_smb(char *inbuf, char *outbuf)
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG( 1, ( "Connection denied from %s\n",
-			      client_connection_addr() ) );
+			      client_addr(Client) ) );
 		  send_smb(Client,(char *)buf);
 		  exit_server("connection denied");
 	  }
@@ -646,7 +699,7 @@ char *smb_fn_name(int type)
 
 void construct_reply_common(char *inbuf,char *outbuf)
 {
-  memset(outbuf, 0, smb_size);
+  memset(outbuf,'\0',smb_size);
 
   set_message(outbuf,0,0,True);
   CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
@@ -656,7 +709,9 @@ void construct_reply_common(char *inbuf,char *outbuf)
   CVAL(outbuf,smb_reh) = 0;
   SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); /* bit 7 set
                                  means a reply */
-  SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS); /* say we support long filenames */
+  SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS);
+	/* say we support long filenames */
+
   SSVAL(outbuf,smb_err,SMB_SUCCESS);
   SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
   SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
@@ -677,7 +732,6 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int outsize2;
   char inbuf_saved[smb_wct];
   char outbuf_saved[smb_wct];
-  extern int chain_size;
   int wct = CVAL(outbuf,smb_wct);
   int outsize = smb_size + 2*wct + SVAL(outbuf,smb_vwv0+2*wct);
 
@@ -692,6 +746,14 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
     orig_inbuf = inbuf;
     orig_outbuf = outbuf;
   }
+
+  /*
+   * The original Win95 redirector dies on a reply to
+   * a lockingX and read chain unless the chain reply is
+   * 4 byte aligned. JRA.
+   */
+
+  outsize = (outsize + 3) & ~3;
 
   /* we need to tell the client where the next part of the reply will be */
   SSVAL(outbuf,smb_vwv1,smb_offset(outbuf+outsize,outbuf));
@@ -747,12 +809,145 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
-  process commands from the client
+ Setup the needed select timeout.
 ****************************************************************************/
-void smbd_process(void)
+
+static int setup_select_timeout(void)
+{
+  int change_notify_timeout = lp_change_notify_timeout() * 1000;
+  int select_timeout;
+
+  /*
+   * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
+   * have removed any blocking locks. JRA.
+   */
+
+  select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
+                                              SMBD_SELECT_TIMEOUT*1000;
+
+  if (change_notifies_pending())
+    select_timeout = MIN(select_timeout, change_notify_timeout);
+
+  return select_timeout;
+}
+
+/****************************************************************************
+ Check if services need reloading.
+****************************************************************************/
+
+void check_reload(int t)
+{
+  static time_t last_smb_conf_reload_time = 0;
+
+  if(last_smb_conf_reload_time == 0)
+    last_smb_conf_reload_time = t;
+
+  if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK))
+  {
+    reload_services(True);
+    reload_after_sighup = False;
+    last_smb_conf_reload_time = t;
+  }
+}
+
+/****************************************************************************
+ Process any timeout housekeeping. Return False if the caller should exit.
+****************************************************************************/
+
+static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
 {
   extern int Client;
-  extern int ClientPort;
+  static time_t last_keepalive_sent_time = 0;
+  static time_t last_idle_closed_check = 0;
+  time_t t;
+  BOOL allidle = True;
+  extern int keepalive;
+
+  if (smb_read_error == READ_EOF) 
+  {
+    DEBUG(3,("end of file from client\n"));
+    return False;
+  }
+
+  if (smb_read_error == READ_ERROR) 
+  {
+    DEBUG(3,("receive_smb error (%s) exiting\n",
+              strerror(errno)));
+    return False;
+  }
+
+  *last_timeout_processing_time = t = time(NULL);
+
+  if(last_keepalive_sent_time == 0)
+    last_keepalive_sent_time = t;
+
+  if(last_idle_closed_check == 0)
+    last_idle_closed_check = t;
+
+  /* become root again if waiting */
+  unbecome_user();
+
+  /* check if we need to reload services */
+  check_reload(t);
+
+  /* automatic timeout if all connections are closed */      
+  if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) 
+  {
+    DEBUG( 2, ( "Closing idle connection\n" ) );
+    return False;
+  }
+  else
+    last_idle_closed_check = t;
+
+  if (keepalive && (t - last_keepalive_sent_time)>keepalive) 
+  {
+    if (!send_keepalive(Client)) {
+      DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+      return False;
+    }	    
+    DEBUG(0,("TODO: send keepalive to all smbd client-side SMB connections\n"));
+    last_keepalive_sent_time = t;
+  }
+
+  /* check for connection timeouts */
+  allidle = conn_idle_all(t, deadtime);
+
+  if (allidle && conn_num_open()>0) {
+    DEBUG(2,("Closing idle connection 2.\n"));
+    return False;
+  }
+
+  /*
+   * Check to see if we have any blocking locks
+   * outstanding on the queue.
+   */
+  process_blocking_lock_queue(t);
+
+  /*
+   * Check to see if we have any change notifies 
+   * outstanding on the queue.
+   */
+  process_pending_change_notify_queue(t);
+
+  /*
+   * Modify the select timeout depending upon
+   * what we have remaining in our queues.
+   */
+
+  *select_timeout = setup_select_timeout();
+
+  return True;
+}
+
+/****************************************************************************
+  process commands from the client
+****************************************************************************/
+
+void smbd_process(void)
+{
+  extern int smb_echo_count;
+  time_t last_timeout_processing_time = time(NULL);
+  unsigned int num_smbs = 0;
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -762,56 +957,16 @@ void smbd_process(void)
   InBuffer += SMB_ALIGNMENT;
   OutBuffer += SMB_ALIGNMENT;
 
-#if PRIME_NMBD
-  DEBUG(3,("priming nmbd\n"));
-  {
-    struct in_addr ip;
-    ip = *interpret_addr2("localhost");
-    if (zero_ip(ip)) ip = *interpret_addr2("127.0.0.1");
-    *OutBuffer = 0;
-    send_one_packet(OutBuffer,1,ip,NMB_PORT,SOCK_DGRAM);
-  }
-#endif    
-
-
   max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   /* re-initialise the timezone */
   TimeInit();
 
-  /* if connection on port 445, fake session setup... */
-  if(ClientPort == 445)
-  {
-    extern fstring remote_machine;
-    extern fstring local_machine;
-
-    fstrcpy(remote_machine, dns_to_netbios_name(client_connection_name()));
-    fstrcpy(local_machine, global_myname);
-    remote_machine[15] = 0;
-    local_machine[15] = 0;
-    strlower(remote_machine);
-    strlower(local_machine);
-
-    DEBUG(2, ("smbd_process(): faking session setup\n"
-              "client_name: %s my_name: %s\n", remote_machine, local_machine));
-
-    add_session_user(remote_machine);
-
-    reload_services(True);
-    reopen_logs();
-
-    if(lp_status(-1)) {
-      claim_connection(NULL,"STATUS.",MAXSTATUS,True);
-    }
-  }
-
   while (True)
   {
     int deadtime = lp_deadtime()*60;
-    int counter;
-    int last_keepalive=0;
-    int service_load_counter = 0;
     BOOL got_smb = False;
+    int select_timeout = setup_select_timeout();
 
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -823,106 +978,55 @@ void smbd_process(void)
 
     errno = 0;      
 
-    for (counter=SMBD_SELECT_LOOP; 
-          !receive_message_or_smb(InBuffer,BUFFER_SIZE,
-                                  SMBD_SELECT_LOOP*1000,&got_smb); 
-          counter += SMBD_SELECT_LOOP)
+    /* free up temporary memory */
+    lp_talloc_free();
+
+    while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
     {
-      time_t t;
-      BOOL allidle = True;
-      extern int keepalive;
-
-      if (counter > 365 * 3600) /* big number of seconds. */
-      {
-        counter = 0;
-        service_load_counter = 0;
-      }
-
-      if (smb_read_error == READ_EOF) 
-      {
-        DEBUG(3,("end of file from client\n"));
+      if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
         return;
-      }
-
-      if (smb_read_error == READ_ERROR) 
-      {
-        DEBUG(3,("receive_smb error (%s) exiting\n",
-                  strerror(errno)));
-        return;
-      }
-
-      t = time(NULL);
-
-      /* become root again if waiting */
-      unbecome_user();
-
-      /* check for smb.conf reload */
-      if (counter >= service_load_counter + SMBD_RELOAD_CHECK)
-      {
-        service_load_counter = counter;
-
-        /* reload services, if files have changed. */
-        reload_services(True);
-      }
-
-      /*
-       * If reload_after_sighup == True then we got a SIGHUP
-       * and are being asked to reload. Fix from <branko.cibej@hermes.si>
-       */
-
-      if (reload_after_sighup)
-      {
-        DEBUG(0,("Reloading services after SIGHUP\n"));
-        reload_services(False);
-        reload_after_sighup = False;
-        /*
-         * Use this as an excuse to print some stats.
-         */
-        print_stat_cache_statistics();
-      }
-
-      /* automatic timeout if all connections are closed */      
-      if (conn_num_open()==0 && counter >= IDLE_CLOSED_TIMEOUT) 
-      {
-        DEBUG( 2, ( "Closing idle connection\n" ) );
-        return;
-      }
-
-      if (keepalive && (counter-last_keepalive)>keepalive) 
-      {
-	      if (!send_keepalive(Client)) {
-		      DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
-		      return;
-	      }	    
-	      last_keepalive = counter;
-      }
-
-	/* close down all idle client-side MSRPC connections */
-	free_connections();
-
-      /* check for connection timeouts */
-      allidle = conn_idle_all(t, deadtime);
-
-      if (allidle && conn_num_open()>0) {
-	      DEBUG(2,("Closing idle connection 2.\n"));
-	      return;
-      }
-
-      /*
-       * Check to see if we have any blocking locks
-       * outstanding on the queue.
-       */
-      process_blocking_lock_queue(t);
-
-      /*
-       * Check to see if we have any change notifies 
-       * outstanding on the queue.
-       */
-      process_pending_change_notify_queue(t);
+      num_smbs = 0; /* Reset smb counter. */
     }
 
-    if(got_smb)
+    if(got_smb) {
+      /*
+       * Ensure we do timeout processing if the SMB we just got was
+       * only an echo request. This allows us to set the select
+       * timeout in 'receive_message_or_smb()' to any value we like
+       * without worrying that the client will send echo requests
+       * faster than the select timeout, thus starving out the
+       * essential processing (change notify, blocking locks) that
+       * the timeout code does. JRA.
+       */ 
+      int num_echos = smb_echo_count;
+
       process_smb(InBuffer, OutBuffer);
+
+      if(smb_echo_count != num_echos) {
+        if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+          return;
+        num_smbs = 0; /* Reset smb counter. */
+      }
+
+      num_smbs++;
+
+      /*
+       * If we are getting smb requests in a constant stream
+       * with no echos, make sure we attempt timeout processing
+       * every select_timeout milliseconds - but only check for this
+       * every 200 smb requests.
+       */
+
+      if((num_smbs % 200) == 0) {
+        time_t new_check_time = time(NULL);
+        if(last_timeout_processing_time - new_check_time >= (select_timeout/1000)) {
+          if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+            return;
+          num_smbs = 0; /* Reset smb counter. */
+          last_timeout_processing_time = new_check_time; /* Reset time. */
+        }
+      }
+    }
     else
       process_local_message(InBuffer, BUFFER_SIZE);
   }

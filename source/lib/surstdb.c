@@ -415,7 +415,7 @@ static BOOL tdb_surs_lock(void)
 }
 
 /******************************************************************
- converts SID + SID_NAME_USE type to a UNIX id.
+ converts SID + RID_TYPE_USE type to a UNIX id.
  ********************************************************************/
 BOOL surs_tdb_sam_sid_to_unixid(DOM_SID * sid, uint32 type, uint32 * id,
 				BOOL create)
@@ -431,16 +431,15 @@ BOOL surs_tdb_sam_sid_to_unixid(DOM_SID * sid, uint32 type, uint32 * id,
 	}
 	switch (type)
 	{
-		case SID_NAME_USER:
+		case RID_TYPE_USER:
 		{
 			ret = tdb_lookup_sid(sid, id);
 		}
-		case SID_NAME_ALIAS:
+		case RID_TYPE_ALIAS:
 		{
 			ret = tdb_lookup_sid(sid, id);
 		}
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
+		case RID_TYPE_GROUP:
 		{
 			ret = tdb_lookup_sid(sid, id);
 		}
@@ -460,14 +459,13 @@ BOOL surs_tdb_sam_sid_to_unixid(DOM_SID * sid, uint32 type, uint32 * id,
 
 	switch (type)
 	{
-		case SID_NAME_USER:
+		case RID_TYPE_USER:
 		{
 			ret = tdb_store_uid(*id, sid)
 				&& tdb_store_sid(sid, *id);
 		}
-		case SID_NAME_ALIAS:
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
+		case RID_TYPE_ALIAS:
+		case RID_TYPE_GROUP:
 		{
 			ret = tdb_store_gid(*id, sid)
 				&& tdb_store_sid(sid, *id);
@@ -480,7 +478,7 @@ BOOL surs_tdb_sam_sid_to_unixid(DOM_SID * sid, uint32 type, uint32 * id,
 }
 
 /******************************************************************
- converts UNIX gid + SID_NAME_USE type to a SID.
+ converts UNIX gid + RID_TYPE_USE type to a SID.
  ********************************************************************/
 BOOL surs_tdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID * sid,
 				BOOL create)
@@ -497,13 +495,12 @@ BOOL surs_tdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID * sid,
 	}
 	switch (type)
 	{
-		case SID_NAME_USER:
+		case RID_TYPE_USER:
 		{
 			ret = tdb_lookup_uid(id, sid);
 		}
-		case SID_NAME_ALIAS:
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
+		case RID_TYPE_ALIAS:
+		case RID_TYPE_GROUP:
 		{
 			ret = tdb_lookup_gid(id, sid);
 		}
@@ -524,14 +521,13 @@ BOOL surs_tdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID * sid,
 
 	switch (type)
 	{
-		case SID_NAME_USER:
+		case RID_TYPE_USER:
 		{
 			ret = tdb_store_uid(id, sid)
 				&& tdb_store_sid(sid, id);
 		}
-		case SID_NAME_ALIAS:
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
+		case RID_TYPE_ALIAS:
+		case RID_TYPE_GROUP:
 		{
 			ret = tdb_store_gid(id, sid)
 				&& tdb_store_sid(sid, id);

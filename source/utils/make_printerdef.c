@@ -27,7 +27,7 @@
 */
 
 char *files_to_copy;
-char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype;
+char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype, *vendorsetup;
 char buffer[50][sizeof(pstring)];
 char sbuffer[50][sizeof(pstring)];
 char sub_dir[50][2][sizeof(pstring)];
@@ -96,13 +96,20 @@ static char *scan(char *chaine,char **entry)
  	i++;
   }
   (*entry)[i]='\0'; 
-  pstrcpy(value,temp+i+1);      
+  if (temp[i]!='\0') {
+        i++;
+  }
+  while( temp[i]==' ' && temp[i]!='\0') {
+ 	i++;
+  }
+  pstrcpy(value,temp+i);      
   return (value);
 }
 
 static void build_subdir(void)
 {
   int i=0;
+  int j=0;
   char *entry;
   char *data;
  
@@ -111,12 +118,18 @@ static void build_subdir(void)
 #ifdef DEBUGIT
     fprintf(stderr,"\tentry=data %s:%s\n",entry,data);
 #endif      
+    j = strlen(entry);
+    while (j) {
+      if (entry[j-1] != ' ') break;
+      j--;
+    }
+    entry[j] = '\0';
 
-    if (strcmp(data,"11")==0) {
+    if (strncmp(data,"11",2)==0) {
       pstrcpy(sub_dir[i][0],entry);
       pstrcpy(sub_dir[i][1],"");
     }
-    if (strcmp(data,"23")==0) {
+    if (strncmp(data,"23",2)==0) {
       pstrcpy(sub_dir[i][0],entry);
       pstrcpy(sub_dir[i][1],"color\\");
     }
@@ -176,6 +189,13 @@ static void lookup_strings(FILE *fichier)
 		pointeur++;
 	}  
   }
+
+  /* CCMRCF Mod, seg fault or worse if not found */
+  if (pointeur == 0) {
+     fprintf(stderr,"Printer not found\tNo [Strings] block in inf file\n");
+     exit(2);
+  }
+
 #ifdef DEBUGIT
   fprintf(stderr,"\t\tFound %d entries\n",pointeur-1);
 #endif
@@ -318,8 +338,8 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
  	fprintf(stderr,"\tsubdir %s:%s\n",sub_dir[i][0],sub_dir[i][1]);
 #endif      
       	if (strcmp(sub_dir[i][0],part)==0)
-		pstrcpy(direc,sub_dir[i][1]);
-	i++;
+          pstrcpy(direc,sub_dir[i][1]);
+        i++;
       }	
       i=0;
       while (*buffer[i]!='\0') {
@@ -330,42 +350,84 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
  * 
  * pscript.hlp =  pscript.hl_
  * hpdcmon.dll,hpdcmon.dl_
+ * MSVCRT.DLL,MSVCRT.DL_,,32
  * ctl3dv2.dll,ctl3dv2.dl_,ctl3dv2.tmp
  *
  * In the first 2 cases you want the first file name - in the last case
  * you only want the last file name (at least that is what a Win95
- * machine sent). This may still be wrong but at least I get the same list
+ * machine sent). In the third case you also want the first file name
+ * (detect by the last component being just a number ?).
+ * This may still be wrong but at least I get the same list
  * of files as seen on a printer test page.
  */
         part = strchr(buffer[i],'=');
         if (part) {
+          /*
+           * Case (1) eg. pscript.hlp =  pscript.hl_ - chop after the first name.
+           */
+
           *part = '\0';
-	  while (--part > buffer[i])
-	    if ((*part == ' ') || (*part =='\t')) *part = '\0';
-	    else break;
-	} else {
-	  part = strchr(buffer[i],',');
-	  if (part) {
-	    if ((mpart = strrchr(part+1,','))!=NULL) {
-		pstrcpy(buffer[i],mpart+1);
-	    } else
-		*part = '\0';
+
+          /*
+           * Now move back to the start and print that.
+           */
+
+          while (--part > buffer[i]) {
+            if ((*part == ' ') || (*part =='\t'))
+              *part = '\0';
+            else
+              break;
+          }
+        } else {
+          part = strchr(buffer[i],',');
+          if (part) {
+            /*
+             * Cases (2-4)
+             */
+
+            if ((mpart = strrchr(part+1,','))!=NULL) {
+              /*
+               * Second ',' - case 3 or 4.
+               * Check if the last part is just a number,
+               * if so we need the first part.
+               */
+
+              char *endptr = NULL;
+              BOOL isnumber = False;
+
+              mpart++;
+              (void)strtol(mpart, &endptr, 10);
+
+              isnumber = ((endptr > mpart) && isdigit(*mpart));
+              if(!isnumber)
+                pstrcpy(buffer[i],mpart+1);
+              else
+                *part = '\0';
+            } else {
+              *part = '\0';
+            }
             while (--part > buffer[i])
               if ((*part == ' ') || (*part =='\t')) *part = '\0';
               else break;
-	  }
-	}
-        if (strlen(files_to_copy) != 0)
-          pstrcat(files_to_copy,",");
-	pstrcat(files_to_copy,direc);
-	pstrcat(files_to_copy,buffer[i]);
-	fprintf(stderr,"%s%s\n",direc,buffer[i]);
-	i++;
-      } 
+          }
+	    }
+        if (*buffer[i] != ';') {
+          if (strlen(files_to_copy) != 0)
+            pstrcat(files_to_copy,",");
+          pstrcat(files_to_copy,direc);
+          pstrcat(files_to_copy,buffer[i]);
+          fprintf(stderr,"%s%s\n",direc,buffer[i]);
+        }
+        i++;
+      } /* end while */ 
     }
     part=strtok(NULL,",");
-  }
-  while (part!=NULL);
+    if (part) {
+      while( *part ==' ' && *part != '\0') {
+        part++;
+      }
+    }
+  } while (part!=NULL);
   fprintf(stderr,"\n");
 }
 
@@ -378,6 +440,7 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
  
   helpfile=0;
   languagemonitor=0;
+  vendorsetup=0;
   datatype="RAW";
   if((temp=(char *)malloc(sizeof(pstring))) == NULL) {
     fprintf(stderr, "scan_short_desc: malloc fail !\n");
@@ -407,6 +470,8 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
 	languagemonitor=scan(buffer[i],&temp);
     else if (strncasecmp(buffer[i],"DefaultDataType",15)==0) 
 	datatype=scan(buffer[i],&temp);
+    else if (strncasecmp(buffer[i],"VendorSetup",11)==0) 
+	vendorsetup=scan(buffer[i],&temp);
     i++;	
   }
 
@@ -432,6 +497,8 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
 	  languagemonitor=scan(buffer[i],&temp);
       else if (strncasecmp(buffer[i],"DefaultDataType",15)==0) 
 	  datatype=scan(buffer[i],&temp);
+      else if (strncasecmp(buffer[i],"VendorSetup",11)==0) 
+	  vendorsetup=scan(buffer[i],&temp);
       i++;	
     }
   }
@@ -457,6 +524,8 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
 	helpfile?helpfile:"(null)");
   fprintf(stderr,"LanguageMonitor: %s\n",
 	languagemonitor?languagemonitor:"(null)");
+  fprintf(stderr,"VendorSetup: %s\n",
+	vendorsetup?vendorsetup:"(null)");
   if (copyfiles) scan_copyfiles(fichier,copyfiles);
 }
 

@@ -120,7 +120,7 @@ static void filter_child(int c, struct in_addr dest_ip)
 		if (s != -1) FD_SET(s, &fds);
 		if (c != -1) FD_SET(c, &fds);
 
-		num = sys_select(MAX(s+1, c+1),&fds,NULL, NULL);
+		num = sys_select(MAX(s+1, c+1),&fds,NULL);
 		if (num <= 0) continue;
 		
 		if (c != -1 && FD_ISSET(c, &fds)) {
@@ -184,7 +184,7 @@ static void start_filter(char *desthost)
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);
 
-		num = sys_select(s+1,&fds,NULL, NULL);
+		num = sys_select(s+1,&fds,NULL);
 		if (num > 0) {
 			c = accept(s, &addr, &in_addrlen);
 			if (c != -1) {

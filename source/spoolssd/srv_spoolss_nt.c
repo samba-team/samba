@@ -2569,10 +2569,10 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 	if (strstr(syscmd,"%s"))
 	{
 		pstrcpy(filename,filename1);
-		string_sub(syscmd, "%s", filename);
+		pstring_sub(syscmd, "%s", filename);
 	}
 
-	string_sub(syscmd, "%f", filename1);
+	pstring_sub(syscmd, "%f", filename1);
 
 	/* Does the service have a printername? If not, make a fake and empty
 	 * printer name. That way a %p is treated sanely if no printer
@@ -2586,10 +2586,10 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 		tstr = SERVICE(snum);
 	}
 
-	string_sub(syscmd, "%p", tstr);
+	pstring_sub(syscmd, "%p", tstr);
 
 	/* If the lpr command support the 'Job' option replace here */
-	string_sub(syscmd, "%j", job_name);
+	pstring_sub(syscmd, "%j", job_name);
 
 	if ( *syscmd != '\0')
 	{

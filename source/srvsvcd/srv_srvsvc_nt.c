@@ -515,6 +515,18 @@ uint32 _srv_net_share_get_info(const UNISTR2 *srv_name,
 
 	switch (info_level)
 	{
+		case 1:
+		{
+			ctr->info.id1 = g_new(SHARE_INFO_1, 1);
+			if (ctr->info.id1 == NULL)
+			{
+				return NT_STATUS_NO_MEMORY;
+			}
+			make_srv_share_1_info(&ctr->info.id1->info1_hdr,
+					      &ctr->info.id1->info1_str,
+					      snum);
+			return NT_STATUS_NOPROBLEMO;
+		}
 		case 2:
 		{
 			ctr->info.id2 = g_new(SHARE_INFO_2, 1);

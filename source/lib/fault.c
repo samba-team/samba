@@ -41,8 +41,7 @@ static void fault_report(int sig)
 	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)getpid(),VERSION));
 	DEBUG(0,("\nPlease read the file BUGS.txt in the distribution\n"));
 	DEBUG(0,("===============================================================\n"));
-
-  	sleep(10);
+  
 	smb_panic("internal error");
 
 	if (cont_fn) {
@@ -52,9 +51,6 @@ static void fault_report(int sig)
 #endif
 #ifdef SIGBUS
 		CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
-#endif
-#ifdef SIGILL
-		CatchSignal(SIGILL, SIGNAL_CAST SIG_DFL);
 #endif
 		return; /* this should cause a core dump */
 	}
@@ -81,9 +77,6 @@ void fault_setup(void (*fn)(void *))
 #endif
 #ifdef SIGBUS
 	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
-#endif
-#ifdef SIGILL
-	CatchSignal(SIGILL,SIGNAL_CAST sig_fault);
 #endif
 }
 

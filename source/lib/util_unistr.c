@@ -25,21 +25,6 @@
 extern int DEBUGLEVEL;
 
 /*******************************************************************
- Write a string in (little-endian) unicode format. src is in
- the current DOS codepage. len is the length in bytes of the
- string pointed to by dst.
-
- the return value is the length of the string *without* the trailing 
- two bytes of zero
-********************************************************************/
-
-int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
-{
-	char *end = ascii_to_unibuf(dst, src, len);
-	return PTR_DIFF(end, dst) - (null_terminate ? 0 : 2);
-}
-
-/*******************************************************************
  Put an ASCII string into a UNICODE buffer (little endian).
  ********************************************************************/
 
@@ -143,7 +128,6 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 /*******************************************************************
  Convert a UNISTR2 structure to an ASCII string
  ********************************************************************/
-
 char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 {
 	char *destend;

@@ -123,8 +123,8 @@ static BOOL srv_io_sh_info1_hdr(char *desc, SH_INFO_1 * sh1,
  makes a SHARE_INFO_1 structure
 ********************************************************************/
 static BOOL make_srv_share_info_1(SHARE_INFO_1 * sh1,
-			   const char *net_name, uint32 type,
-			   const char *remark)
+				  const char *net_name, uint32 type,
+				  const char *remark)
 {
 	if (sh1 == NULL)
 		return False;
@@ -847,7 +847,7 @@ BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM * q_n,
 	q_n->share_level = share_level;
 	q_n->preferred_len = preferred_len;
 
-	memcpy(&(q_n->enum_hnd), hnd, sizeof(*hnd));
+	q_n->enum_hnd = *hnd;
 
 	return True;
 }
@@ -1395,7 +1395,7 @@ BOOL make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM * q_n,
 	q_n->sess_level = sess_level;
 	q_n->preferred_len = preferred_len;
 
-	memcpy(&(q_n->enum_hnd), hnd, sizeof(*hnd));
+	q_n->enum_hnd = *hnd;
 
 	return True;
 }
@@ -1752,7 +1752,7 @@ BOOL make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM * q_n,
 	q_n->conn_level = conn_level;
 	q_n->preferred_len = preferred_len;
 
-	memcpy(&(q_n->enum_hnd), hnd, sizeof(*hnd));
+	q_n->enum_hnd = *hnd;
 
 	return True;
 }
@@ -2077,7 +2077,7 @@ BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM * q_n,
 	q_n->tprt_level = tprt_level;
 	q_n->preferred_len = preferred_len;
 
-	memcpy(&(q_n->enum_hnd), hnd, sizeof(*hnd));
+	q_n->enum_hnd = *hnd;
 
 	return True;
 }
@@ -2409,7 +2409,7 @@ BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM * q_n,
 	q_n->file_level = file_level;
 	q_n->preferred_len = preferred_len;
 
-	memcpy(&(q_n->enum_hnd), hnd, sizeof(*hnd));
+	q_n->enum_hnd = *hnd;
 
 	return True;
 }

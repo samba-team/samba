@@ -558,7 +558,7 @@ void cgi_setup(char *rootdir, int auth_required)
 		*p = 0;
 	}
 
-	string_sub(url, "/swat/", "");
+	string_sub(url, "/swat/", "", 0);
 
 	if (url[0] != '/' && strstr(url,"..")==0 && file_exist(url, NULL)) {
 		cgi_download(url);

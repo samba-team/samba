@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    service (connection) opening and closing
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell 1992-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 extern int DEBUGLEVEL;
 
-extern time_t smb_last_time;
+extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
@@ -54,7 +54,7 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 		return(False);
 	}
 
-	conn->lastused = smb_last_time;
+	conn->lastused = smb_last_time.tv_sec;
 
 	snum = SNUM(conn);
   
@@ -89,7 +89,7 @@ int find_service(char *service)
 {
    int iService;
 
-   string_sub(service,"\\","/");
+   all_string_sub(service,"\\","/",0);
 
    iService = lp_servicenumber(service);
 
@@ -99,7 +99,7 @@ int find_service(char *service)
       char *phome_dir = get_unixhome_dir(service);
 	pstring home_dir;
 
-      if(phome_dir == NULL)
+      if(!phome_dir)
       {
         /*
          * Try mapping the servicename, it may
@@ -173,7 +173,7 @@ int find_service(char *service)
        iService = find_service(defservice);
        if (iService >= 0)
        {
-         string_sub(service,"_","/");
+         all_string_sub(service,"_","/",0);
          iService = lp_add_service(service,iService);
        }
      }
@@ -315,13 +315,13 @@ connection_struct *make_connection(char *service,char *user,
 	{
 		pstring list;
 		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
-		string_sub(list,"%S",service);
+		pstring_sub(list,"%S",service);
 
 		if (user_in_list(user,list))
 			conn->read_only = True;
 		
 		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
-		string_sub(list,"%S",service);
+		pstring_sub(list,"%S",service);
 		
 		if (user_in_list(user,list))
 			conn->read_only = False;    
@@ -362,6 +362,36 @@ connection_struct *make_connection(char *service,char *user,
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 
+        conn->vfs_conn = (struct vfs_connection_struct *)
+            malloc(sizeof(struct vfs_connection_struct));
+
+        if (conn->vfs_conn == NULL) {
+            DEBUG(0, ("No memory to create vfs_connection_struct"));
+            return NULL;
+        }
+        
+        ZERO_STRUCTP(conn->vfs_conn);
+
+        /* Copy across relevant data from connection struct */
+        
+        conn->vfs_conn->printer = conn->printer;
+        conn->vfs_conn->ipc = conn->ipc;
+        conn->vfs_conn->read_only = conn->read_only;
+        conn->vfs_conn->admin_user = conn->admin_user;
+
+        pstrcpy(conn->vfs_conn->dirpath, conn->dirpath);
+        pstrcpy(conn->vfs_conn->connectpath, conn->connectpath);
+        pstrcpy(conn->vfs_conn->origpath, conn->origpath);
+        
+        pstrcpy(conn->vfs_conn->service, service);
+        pstrcpy(conn->vfs_conn->user, conn->user);
+        
+        conn->vfs_conn->uid = conn->uid;
+        conn->vfs_conn->gid = conn->gid;
+        conn->vfs_conn->ngroups = conn->ngroups;
+        conn->vfs_conn->groups = (gid_t *)memdup(conn->groups, 
+                                                 conn->ngroups * sizeof(gid_t));
+
 	/* Initialise VFS function pointers */
 
 	if (*lp_vfsobj(SNUM(conn))) {
@@ -386,32 +416,25 @@ connection_struct *make_connection(char *service,char *user,
 	    vfs_init_default(conn);
 	}
 
-#ifdef HAVE_GETGRNAM 
-	if (*lp_force_group(snum)) {
-		struct group *gptr;
-		pstring gname;
-		
-		StrnCpy(gname,lp_force_group(snum),sizeof(pstring)-1);
-		/* default service may be a group name 		*/
-		string_sub(gname,"%S",service);
-		gptr = (struct group *)getgrnam(gname);
-		
-		if (gptr) {
-			conn->gid = gptr->gr_gid;
-			DEBUG(3,("Forced group %s\n",gname));
-		} else {
-			DEBUG(1,("Couldn't find group %s\n",gname));
-		}
-	}
-#endif
+	/*
+	 * If force user is true, then store the
+	 * given userid and also the primary groupid
+	 * of the user we're forcing.
+	 */
 	
-	if (*lp_force_user(snum)) {
+	if (*lp_force_user(snum))
+	{
 		const struct passwd *pass2;
-		fstring fuser;
-		fstrcpy(fuser,lp_force_user(snum));
-		pass2 = (const struct passwd *)Get_Pwnam(fuser,True);
+		pstring fuser;
+		pstrcpy(fuser,lp_force_user(snum));
+
+		/* Allow %S to be used by force user. */
+		pstring_sub(fuser,"%S",service);
+
+		pass2 = Get_Pwnam(fuser,True);
 		if (pass2) {
 			conn->uid = pass2->pw_uid;
+			conn->gid = pass2->pw_gid;
 			string_set(&conn->user,fuser);
 			fstrcpy(user,fuser);
 			conn->force_user = True;
@@ -420,6 +443,56 @@ connection_struct *make_connection(char *service,char *user,
 			DEBUG(1,("Couldn't find user %s\n",fuser));
 		}
 	}
+
+#ifdef HAVE_GETGRNAM 
+	/*
+	 * If force group is true, then override
+	 * any groupid stored for the connecting user.
+	 */
+	
+	if (*lp_force_group(snum)) {
+		struct group *gptr;
+		pstring gname;
+		pstring tmp_gname;
+		BOOL user_must_be_member = False;
+		
+		StrnCpy(tmp_gname,lp_force_group(snum),sizeof(pstring)-1);
+
+		if (tmp_gname[0] == '+') {
+			user_must_be_member = True;
+			StrnCpy(gname,&tmp_gname[1],sizeof(pstring)-2);
+		} else {
+			StrnCpy(gname,tmp_gname,sizeof(pstring)-1);
+		}
+		/* default service may be a group name 		*/
+		pstring_sub(gname,"%S",service);
+		gptr = (struct group *)getgrnam(gname);
+		
+		if (gptr) {
+			/*
+			 * If the user has been forced and the forced group starts
+			 * with a '+', then we only set the group to be the forced
+			 * group if the forced user is a member of that group.
+			 * Otherwise, the meaning of the '+' would be ignored.
+			 */
+			if (conn->force_user && user_must_be_member) {
+				int i;
+				for (i = 0; gptr->gr_mem[i] != NULL; i++) {
+					if (strcmp(user,gptr->gr_mem[i]) == 0) {
+			conn->gid = gptr->gr_gid;
+						DEBUG(3,("Forced group %s for member %s\n",gname,user));
+						break;
+		}
+	}
+		} else {
+				conn->gid = gptr->gr_gid;
+				DEBUG(3,("Forced group %s\n",gname));
+			}
+		} else {
+			DEBUG(1,("Couldn't find group %s\n",gname));
+		}
+	}
+#endif /* HAVE_GETGRNAM */
 
 	{
 		pstring s;
@@ -453,20 +526,27 @@ connection_struct *make_connection(char *service,char *user,
 		}  
 		
 		if (lp_status(SNUM(conn)))
-			claim_connection(conn,"STATUS.",
+			claim_connection(conn,"",
 					 MAXSTATUS,False);
 	} /* IS_IPC */
 	
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(SNUM(conn)))
 	{
+		BOOL ret;
 		pstring cmd;
 		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
 		standard_sub(conn,vuser, cmd);
 		vuid_free_user_struct(vuser);
 		DEBUG(5,("cmd=%s\n",cmd));
-		smbrun(cmd,NULL,False);
+		ret = smbrun(cmd,NULL,False);
+		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
 	}
 	
 	if (!become_user(conn, conn->vuid)) {
@@ -476,7 +556,7 @@ connection_struct *make_connection(char *service,char *user,
 					 lp_servicename(SNUM(conn)),
 					 lp_max_connections(SNUM(conn)));
 			if (lp_status(SNUM(conn))) {
-				yield_connection(conn,"STATUS.",MAXSTATUS);
+				yield_connection(conn,"",MAXSTATUS);
 			}
 		}
 		conn_free(conn);
@@ -493,7 +573,7 @@ connection_struct *make_connection(char *service,char *user,
 					 lp_servicename(SNUM(conn)),
 					 lp_max_connections(SNUM(conn)));
 			if (lp_status(SNUM(conn))) 
-				yield_connection(conn,"STATUS.",MAXSTATUS);
+				yield_connection(conn,"",MAXSTATUS);
 		}
 		conn_free(conn);
 		*ecode = ERRinvnetname;
@@ -536,12 +616,32 @@ connection_struct *make_connection(char *service,char *user,
 	/* execute any "preexec = " line */
 	if (*lp_preexec(SNUM(conn)))
 	{
+		BOOL ret;
 		pstring cmd;
 		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
 		standard_sub(conn,vuser, cmd);
 		vuid_free_user_struct(vuser);
-		smbrun(cmd,NULL,False);
+		ret = smbrun(cmd,NULL,False);
+		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
+	}
+
+	/*
+	 * Print out the 'connected as' stuff here as we need
+	 * to know the effective uid and gid we will be using.
+	 */
+
+	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
+		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
+		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
+		dbgtext( "as user %s ", user );
+		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
+		dbgtext( "(pid %d)\n", (int)getpid() );
 	}
 	
 	/* we've finished with the sensitive stuff */
@@ -554,53 +654,10 @@ connection_struct *make_connection(char *service,char *user,
 		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(SNUM(conn)));
 	}
 	
-	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
-		
-		dbgtext( "%s (%s) ", remote_machine, client_connection_addr() );
-		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)));
-		dbgtext( "as user %s ", user );
-		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
-		dbgtext( "(pid %d)\n", (int)key.pid );
-	}
-
-	/* Invoke make connection hook */
+	/* Invoke VFS make connection hook */
 
 	if (conn->vfs_ops.connect) {
-	    struct vfs_connection_struct *vconn;
-
-	    vconn = (struct vfs_connection_struct *)
-		malloc(sizeof(struct vfs_connection_struct));
-
-	    if (vconn == NULL) {
-		DEBUG(0, ("No memory to create vfs_connection_struct"));
-		return NULL;
-	    }
-
-	    ZERO_STRUCTP(vconn);
-
-	    /* Copy across relevant data from connection struct */
-
-	    vconn->printer = conn->printer;
-	    vconn->ipc = conn->ipc;
-	    vconn->read_only = conn->read_only;
-	    vconn->admin_user = conn->admin_user;
-
-	    pstrcpy(vconn->dirpath, conn->dirpath);
-	    pstrcpy(vconn->connectpath, conn->connectpath);
-	    pstrcpy(vconn->origpath, conn->origpath);
-
-	    pstrcpy(vconn->service, service);
-	    pstrcpy(vconn->user, conn->user);
-
-	    vconn->uid = conn->uid;
-	    vconn->gid = conn->gid;
-	    vconn->ngroups = conn->ngroups;
-	    vconn->groups = (gid_t *)memdup(conn->groups,
-					    conn->ngroups * sizeof(gid_t));
-
-	    /* Call connect hook */
-	    
-	    if (conn->vfs_ops.connect(vconn, service, user) < 0) {
+            if (conn->vfs_ops.connect(conn->vfs_conn, service, user) < 0) {
 		return NULL;
 	    }
 	}
@@ -626,10 +683,18 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	if (conn->vfs_ops.disconnect != NULL) {
 
-	    /* Call disconnect hook */
+	    /* Call VFS disconnect hook */
 	    
 	    conn->vfs_ops.disconnect();
 	    
+	}
+
+        /* Close dlopen() handle */
+
+        if (conn->vfs_conn->dl_handle != NULL) {
+            dlclose(conn->vfs_conn->dl_handle);  /* should we check return val? */
+        }
+
 	    /* Free vfs_connection_struct */
 	    
 	    if (conn->vfs_conn != NULL) {
@@ -638,14 +703,13 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		}
 		free(conn->vfs_conn);
 	    }
-	}
 
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),
 			 lp_max_connections(SNUM(conn)));
 
 	if (lp_status(SNUM(conn)))
-		yield_connection(conn,"STATUS.",MAXSTATUS);
+		yield_connection(conn,"",MAXSTATUS);
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);

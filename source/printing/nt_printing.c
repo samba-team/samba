@@ -230,7 +230,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 		{
 			DEBUGADD(7,("Found: [%s]\n", dpname));
 			
-			StrCpy(driver_name, dpname+match_len);
+			fstrcpy(driver_name, dpname+match_len);
 			all_string_sub(driver_name, "#", "/", 0);
 			*list = Realloc(*list, sizeof(fstring)*(total+1));
 			StrnCpy((*list)[total], driver_name, strlen(driver_name));
@@ -1331,7 +1331,7 @@ void init_devicemode(NT_DEVICEMODE *nt_devmode)
  * should I init this ones ???
 	nt_devmode->devicename
 */
-	StrCpy(nt_devmode->formname, "A4");
+	safe_strcpy(nt_devmode->formname, "A4", sizeof(nt_devmode->formname)-1);
 
 	nt_devmode->specversion      = 0x0401;
 	nt_devmode->driverversion    = 0x0400;

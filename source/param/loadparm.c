@@ -71,7 +71,7 @@ BOOL bLoaded = False;
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
 extern pstring global_myname;
-pstring global_scope;
+pstring global_scope = "";
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -118,9 +118,6 @@ typedef struct
   char *szConfigFile;
   char *szSMBPasswdFile;
   char *szSAMDirectory;
-  char *szSMBPassGroupFile;
-  char *szSMBGroupFile;
-  char *szSMBAliasFile;
   char *szPasswordServer;
   char *szSocketOptions;
   char *szValidChars;
@@ -140,7 +137,6 @@ typedef struct
   char *szLogonHome;
   char *szSmbrun;
   char *szWINSserver;
-  char *szWINSHook;
   char *szCodingSystem;
   char *szInterfaces;
   char *szRemoteAnnounce;
@@ -167,8 +163,15 @@ typedef struct
   char *szLdapBuiltinSubcontext;
 #endif /* WITH_NT5LDAP */
   char *szPanicAction;
+  char *szAddUserScript;
+  char *szDelUserScript;
+  char *szWINSHook;
   char *szNtForms;
   char *szNtDriverFile;  
+#ifdef WITH_UTMP
+  char *szUtmpDir;
+#endif /* WITH_UTMP */
+  char *szSourceEnv;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -252,6 +255,7 @@ typedef struct
   BOOL bTimestampLogs;
   BOOL bNTSmbSupport;
   BOOL bNTPipeSupport;
+  BOOL bNTAclSupport;
   BOOL bStatCache;
   BOOL bKernelOplocks;
 #if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
@@ -264,6 +268,7 @@ typedef struct
   BOOL bDebugHiresTimestamp;
   BOOL bDebugPid;
   BOOL bDebugUid;
+  BOOL bHostMSDfs;
 } global;
 
 static global Globals;
@@ -315,17 +320,25 @@ typedef struct
   char *writelist;
   char *volume;
   char *fstype;
-  char *vfsObjectFile;
-  struct vfs_options *vfsOptions;
+  char *szVfsObjectFile;
+  char *szVfsOptions;
   int  iMinPrintSpace;
+  int  iWriteCacheSize;
   int  iCreate_mask;
   int  iCreate_force_mode;
+  int  iSecurity_mask;
+  int  iSecurity_force_mode;
   int  iDir_mask;
   int  iDir_force_mode;
+  int  iDir_Security_mask;
+  int  iDir_Security_force_mode;
   int  iMaxConnections;
   int  iDefaultCase;
   int  iPrinting;
+  int  iOplockContentionLimit;
   BOOL bAlternatePerm;
+  BOOL bPreexecClose;
+  BOOL bRootpreexecClose;
   BOOL bRevalidate;
   BOOL bCaseSensitive;
   BOOL bCasePreserve;
@@ -346,8 +359,12 @@ typedef struct
   BOOL bMap_archive;
   BOOL bLocking;
   BOOL bStrictLocking;
+#ifdef WITH_UTMP
+  BOOL bUtmp;
+#endif
   BOOL bShareModes;
   BOOL bOpLocks;
+  BOOL bLevel2OpLocks;
   BOOL bOnlyUser;
   BOOL bMangledNames;
   BOOL bWidelinks;
@@ -363,6 +380,11 @@ typedef struct
   BOOL bDosFiletimeResolution;
   BOOL bFakeDirCreateTimes;
   BOOL bBlockingLocks;
+  BOOL bInheritPerms; 
+#ifdef MS_DFS
+  char *szDfsMap;
+  BOOL bDfsMapLoaded;
+#endif
   char dummy[3]; /* for alignment */
 } service;
 
@@ -413,14 +435,22 @@ static service sDefault =
   NULL,    /* vfs object */
   NULL,    /* vfs options */
   0,       /* iMinPrintSpace */
+  0,       /* iWriteCacheSize */
   0744,    /* iCreate_mask */
   0000,    /* iCreate_force_mode */
+  -1,      /* iSecurity_mask */
+  -1,      /* iSecurity_force_mode */
   0755,    /* iDir_mask */
   0000,    /* iDir_force_mode */
+  -1,      /* iDir_Security_mask */
+  -1,      /* iDir_Security_force_mode */
   0,       /* iMaxConnections */
   CASE_LOWER, /* iDefaultCase */
   DEFAULT_PRINTING, /* iPrinting */
+  2,       /* iOplockContentionLimit */
   False,   /* bAlternatePerm */
+  False,   /* bPreexecClose */
+  False,   /* bRootpreexecClose */
   False,   /* revalidate */
   False,   /* case sensitive */
   True,   /* case preserve */
@@ -441,8 +471,12 @@ static service sDefault =
   True,  /* bMap_archive */
   True,  /* bLocking */
   False,  /* bStrictLocking */
+#ifdef WITH_UTMP
+  False,  /* bUtmp */
+#endif
   True,  /* bShareModes */
   True,  /* bOpLocks */
+  True, /* bLevel2OpLocks */
   False, /* bOnlyUser */
   True,  /* bMangledNames */
   True,  /* bWidelinks */
@@ -458,12 +492,17 @@ static service sDefault =
   False, /* bDosFiletimeResolution */
   False, /* bFakeDirCreateTimes */
   True,  /* bBlockingLocks */
+  False, /* bInheritPerms */
+#ifdef MS_DFS
+  NULL,    /* MS Dfs map path */
+  False, /* bDfsMapLoaded */
+#endif
   ""     /* dummy */
 };
 
 
 
-/* local variables */
+/* Local variables */
 static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
@@ -480,8 +519,10 @@ static BOOL handle_include(char *pszParmValue, char **ptr);
 static BOOL handle_copy(char *pszParmValue, char **ptr);
 static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_coding_system(char *pszParmValue,char **ptr);
+static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
-static BOOL handle_vfs_option(char *pszParmValue, char **ptr);
+static BOOL handle_source_env(char *pszParmValue,char **ptr);
+static BOOL handle_netbios_name(char *pszParmValue,char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -499,14 +540,26 @@ static struct enum_list enum_printing[] = {{PRINT_SYSV, "sysv"}, {PRINT_AIX, "ai
 					   {PRINT_HPUX, "hpux"}, {PRINT_BSD, "bsd"},
 					   {PRINT_QNX, "qnx"},   {PRINT_PLP, "plp"},
 					   {PRINT_LPRNG, "lprng"}, {PRINT_SOFTQ, "softq"},
-					   {-1, NULL}};
+					   {PRINT_CUPS, "cups"}, {-1, NULL}};
 
-static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT, "NT"}, {ANNOUNCE_AS_WIN95, "win95"},
-					      {ANNOUNCE_AS_WFW, "WfW"}, {-1, NULL}};
+static struct enum_list enum_bool_auto[] = {{True, "True"},
+						{False, "False"}, 
+						{True, "Yes"}, 
+						{False, "No"}, 
+						{Auto, "Auto"}, 
+						{-1, NULL}};
+
+/* Types of machine we can announce as. */
+#define ANNOUNCE_AS_NT_SERVER 1
+#define ANNOUNCE_AS_WIN95 2
+#define ANNOUNCE_AS_WFW 3
+#define ANNOUNCE_AS_NT_WORKSTATION 4
+
+static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT_SERVER, "NT"}, {ANNOUNCE_AS_NT_SERVER, "NT Server"}, {ANNOUNCE_AS_NT_WORKSTATION, "NT Workstation"}, {ANNOUNCE_AS_WIN95, "win95"}, {ANNOUNCE_AS_WFW, "WfW"}, {-1, NULL}};
 
 static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "upper"}, {-1, NULL}};
 
-static struct enum_list enum_bool_auto[] = {{True, "True"}, {False, "False"}, {True, "Yes"}, {False, "No"}, {Auto, "Auto"}, {-1, NULL}};
+static struct enum_list enum_lm_announce[] = {{0, "False"}, {1, "True"}, {2, "Auto"}, {-1, NULL}};
 
 /* 
    Do you want session setups at user level security with a invalid
@@ -540,15 +593,16 @@ static struct enum_list enum_ssl_version[] = {{SMB_SSL_V2, "ssl2"}, {SMB_SSL_V3,
 static struct parm_struct parm_table[] =
 {
   {"Base Options", P_SEP, P_SEPARATOR},
-
-  {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
-  {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
-  {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  0},
-  {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC},
-  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC},
-  {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  0},
-  {"netbios scope",    P_UGSTRING,  P_GLOBAL, global_scope,  NULL,   NULL,  0},
-  {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC},
+  {"coding system",    P_STRING,  P_GLOBAL, &Globals.szCodingSystem,    handle_coding_system, NULL,  0},
+  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	handle_client_code_page,   NULL,  0},
+  {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
+  {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
+  {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_DOS_STRING},
+  {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
+  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,              handle_netbios_name,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
+  {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  FLAG_DOS_STRING},
+  {"netbios scope",    P_UGSTRING,P_GLOBAL, global_scope,               NULL,   NULL,  FLAG_DOS_STRING},
+  {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL,   NULL,  FLAG_BASIC},
   {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL,  0},
 
@@ -588,38 +642,43 @@ static struct parm_struct parm_table[] =
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL,  0},
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
   {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL,  0},
-  {"dfs map",          P_STRING,  P_GLOBAL, &Globals.szDfsMap,          NULL,   NULL,  0},
-  {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL},
-  {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL},
+  {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
+  {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"user",             P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  0},
   {"users",            P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  0},
-  {"guest account",    P_STRING,  P_LOCAL,  &sDefault.szGuestaccount,   NULL,   NULL,  FLAG_BASIC|FLAG_PRINT|FLAG_GLOBAL},
-  {"invalid users",    P_STRING,  P_LOCAL,  &sDefault.szInvalidUsers,   NULL,   NULL,  FLAG_GLOBAL},
-  {"valid users",      P_STRING,  P_LOCAL,  &sDefault.szValidUsers,     NULL,   NULL,  FLAG_GLOBAL},
-  {"admin users",      P_STRING,  P_LOCAL,  &sDefault.szAdminUsers,     NULL,   NULL,  FLAG_GLOBAL},
-  {"read list",        P_STRING,  P_LOCAL,  &sDefault.readlist,         NULL,   NULL,  FLAG_GLOBAL},
-  {"write list",       P_STRING,  P_LOCAL,  &sDefault.writelist,        NULL,   NULL,  FLAG_GLOBAL},
-  {"force user",       P_STRING,  P_LOCAL,  &sDefault.force_user,       NULL,   NULL,  0},
-  {"force group",      P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL,  0},
+  {"guest account",    P_STRING,  P_LOCAL,  &sDefault.szGuestaccount,   NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_GLOBAL},
+  {"invalid users",    P_STRING,  P_LOCAL,  &sDefault.szInvalidUsers,   NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"valid users",      P_STRING,  P_LOCAL,  &sDefault.szValidUsers,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"admin users",      P_STRING,  P_LOCAL,  &sDefault.szAdminUsers,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"read list",        P_STRING,  P_LOCAL,  &sDefault.readlist,         NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"write list",       P_STRING,  P_LOCAL,  &sDefault.writelist,        NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"force user",       P_STRING,  P_LOCAL,  &sDefault.force_user,       NULL,   NULL,  FLAG_SHARE},
+  {"force group",      P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL,  FLAG_SHARE},
   {"group",            P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL,  0},
-  {"read only",        P_BOOL,    P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  FLAG_BASIC},
+  {"read only",        P_BOOL,    P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  FLAG_BASIC|FLAG_SHARE},
   {"write ok",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
   {"writeable",        P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
   {"writable",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
-  {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL},
+  {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL},
-  {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL,   NULL,  FLAG_GLOBAL},
-  {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL,  FLAG_GLOBAL},
+  {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"security mask",    P_OCTAL,   P_LOCAL,  &sDefault.iSecurity_mask,   NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"force security mode",P_OCTAL, P_LOCAL,  &sDefault.iSecurity_force_mode,NULL,NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL,  FLAG_GLOBAL},
-  {"force directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_force_mode,        NULL,   NULL,  FLAG_GLOBAL},
-  {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  0},
+  {"force directory mode",   P_OCTAL,P_LOCAL,&sDefault.iDir_force_mode, NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"directory security mask",P_OCTAL,P_LOCAL,&sDefault.iDir_Security_mask,NULL, NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"force directory security mode",P_OCTAL, P_LOCAL,  &sDefault.iDir_Security_force_mode,NULL,NULL,FLAG_GLOBAL|FLAG_SHARE},
+  {"inherit permissions",P_BOOL,  P_LOCAL,  &sDefault.bInheritPerms,    NULL,   NULL,  FLAG_SHARE},
+  {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  FLAG_SHARE},
   {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  0},
-  {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
+  {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
   {"public",           P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  0},
-  {"only user",        P_BOOL,    P_LOCAL,  &sDefault.bOnlyUser,        NULL,   NULL,  0},
-  {"hosts allow",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
+  {"only user",        P_BOOL,    P_LOCAL,  &sDefault.bOnlyUser,        NULL,   NULL,  FLAG_SHARE},
+  {"hosts allow",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
   {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  0},
-  {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
+  {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
   {"deny hosts",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  0},
 
 #ifdef WITH_SSL
@@ -654,7 +713,7 @@ static struct parm_struct parm_table[] =
   {"debug hires timestamp",  P_BOOL,    P_GLOBAL, &Globals.bDebugHiresTimestamp,    NULL,   NULL,  0},
   {"debug pid",        P_BOOL,    P_GLOBAL, &Globals.bDebugPid,         NULL,   NULL,  0},
   {"debug uid",        P_BOOL,    P_GLOBAL, &Globals.bDebugUid,         NULL,   NULL,  0},
-  {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL,  FLAG_GLOBAL},
+  {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE|FLAG_PRINT},
 
   {"Protocol Options", P_SEP, P_SEPARATOR},
 
@@ -664,6 +723,7 @@ static struct parm_struct parm_table[] =
   {"write raw",        P_BOOL,    P_GLOBAL, &Globals.bWriteRaw,         NULL,   NULL,  0},
   {"nt smb support",   P_BOOL,    P_GLOBAL, &Globals.bNTSmbSupport,    NULL,   NULL,  0},
   {"nt pipe support",   P_BOOL,    P_GLOBAL, &Globals.bNTPipeSupport,    NULL,   NULL,  0},
+  {"nt acl support",   P_BOOL,    P_GLOBAL, &Globals.bNTAclSupport,     NULL,   NULL,  0},
   {"announce version", P_STRING,  P_GLOBAL, &Globals.szAnnounceVersion, NULL,   NULL,  0},
   {"announce as",      P_ENUM,    P_GLOBAL, &Globals.announce_as,       NULL,   enum_announce_as, 0},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL,   NULL,  0},
@@ -683,40 +743,40 @@ static struct parm_struct parm_table[] =
   {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
   {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL,   NULL,  0},
   {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL,  0},
-  {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL,  0},
+  {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL,  FLAG_SHARE},
   {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL,  0},
   {"max open files",   P_INTEGER, P_GLOBAL, &Globals.max_open_files,    NULL,   NULL,  0},
-  {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL,  0},
+  {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL,  FLAG_PRINT},
   {"read prediction",  P_BOOL,    P_GLOBAL, &Globals.bReadPrediction,   NULL,   NULL,  0},
   {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL,   NULL,  0},
   {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL,   NULL,  0},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL,   NULL,  0},
   {"stat cache size",  P_INTEGER, P_GLOBAL, &Globals.stat_cache_size,   NULL,   NULL,  0},
-  {"strict sync",      P_BOOL,    P_LOCAL,  &sDefault.bStrictSync,      NULL,   NULL,  0},
-  {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  0},
+  {"strict sync",      P_BOOL,    P_LOCAL,  &sDefault.bStrictSync,      NULL,   NULL,  FLAG_SHARE},
+  {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  FLAG_SHARE},
+  {"write cache size", P_INTEGER, P_LOCAL,  &sDefault.iWriteCacheSize,  NULL,   NULL,  FLAG_SHARE},
 
   {"Printing Options", P_SEP, P_SEPARATOR},
-
-  {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  0},
-  {"printcap name",    P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  0},
+  {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  FLAG_PRINT},
+  {"printcap name",    P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  FLAG_PRINT},
   {"printcap",         P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  0},
-  {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL,   NULL,  0},
+  {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL,   NULL,  FLAG_PRINT},
+  {"printable",        P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  FLAG_PRINT},
   {"print ok",         P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  0},
-  {"printable",        P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  0},
   {"postscript",       P_BOOL,    P_LOCAL,  &sDefault.bPostscript,      NULL,   NULL,  FLAG_PRINT},
   {"printing",         P_ENUM,    P_LOCAL,  &sDefault.iPrinting,        NULL,   enum_printing, FLAG_PRINT|FLAG_GLOBAL},
   {"print command",    P_STRING,  P_LOCAL,  &sDefault.szPrintcommand,   NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
   {"lpq command",      P_STRING,  P_LOCAL,  &sDefault.szLpqcommand,     NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
   {"lprm command",     P_STRING,  P_LOCAL,  &sDefault.szLprmcommand,    NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
-  {"lppause command",  P_STRING,  P_LOCAL,  &sDefault.szLppausecommand, NULL,   NULL,  FLAG_GLOBAL},
-  {"lpresume command", P_STRING,  P_LOCAL,  &sDefault.szLpresumecommand,NULL,   NULL,  FLAG_GLOBAL},
-  {"queuepause command", P_STRING, P_LOCAL, &sDefault.szQueuepausecommand, NULL, NULL, FLAG_GLOBAL},
-  {"queueresume command", P_STRING, P_LOCAL, &sDefault.szQueueresumecommand, NULL, NULL, FLAG_GLOBAL},
+  {"lppause command",  P_STRING,  P_LOCAL,  &sDefault.szLppausecommand, NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
+  {"lpresume command", P_STRING,  P_LOCAL,  &sDefault.szLpresumecommand,NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
+  {"queuepause command", P_STRING, P_LOCAL, &sDefault.szQueuepausecommand, NULL, NULL, FLAG_PRINT|FLAG_GLOBAL},
+  {"queueresume command", P_STRING, P_LOCAL, &sDefault.szQueueresumecommand, NULL, NULL, FLAG_PRINT|FLAG_GLOBAL},
 
   {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  FLAG_PRINT},
   {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
-  {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  0},
-  {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL,  FLAG_GLOBAL},
+  {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  FLAG_PRINT},
+  {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
   {"nt forms file",    P_STRING,  P_GLOBAL, &Globals.szNtForms,         NULL,   NULL,  FLAG_GLOBAL},
   {"nt printer driver",P_STRING,  P_GLOBAL, &Globals.szNtDriverFile,    NULL,   NULL,  FLAG_GLOBAL},
 
@@ -724,25 +784,23 @@ static struct parm_struct parm_table[] =
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL,   NULL,  0},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set, NULL,  0},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL,   NULL,  0},
-  {"coding system",    P_STRING,  P_GLOBAL, &Globals.szCodingSystem,    handle_coding_system, NULL,  0},
-  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL,   NULL,  0},
-  {"default case",     P_ENUM, P_LOCAL,  &sDefault.iDefaultCase,        NULL,   enum_case, 0},
-  {"case sensitive",   P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  FLAG_GLOBAL},
+  {"default case",     P_ENUM, P_LOCAL,  &sDefault.iDefaultCase,        NULL,   enum_case, FLAG_SHARE},
+  {"case sensitive",   P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"casesignames",     P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  0},
-  {"preserve case",    P_BOOL,    P_LOCAL,  &sDefault.bCasePreserve,    NULL,   NULL,  FLAG_GLOBAL},
-  {"short preserve case",P_BOOL,  P_LOCAL,  &sDefault.bShortCasePreserve,NULL,   NULL,  FLAG_GLOBAL},
-  {"mangle case",      P_BOOL,    P_LOCAL,  &sDefault.bCaseMangle,      NULL,   NULL,  FLAG_GLOBAL},
-  {"mangling char",    P_CHAR,    P_LOCAL,  &sDefault.magic_char,       NULL,   NULL,  FLAG_GLOBAL},
-  {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL,   NULL,  FLAG_GLOBAL},
-  {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL,   NULL,  FLAG_GLOBAL},
-  {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL,   NULL,  FLAG_GLOBAL},
-  {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL,   NULL,  FLAG_GLOBAL},
-  {"veto oplock files",P_STRING,  P_LOCAL,  &sDefault.szVetoOplockFiles,NULL,   NULL,  FLAG_GLOBAL},
-  {"map system",       P_BOOL,    P_LOCAL,  &sDefault.bMap_system,      NULL,   NULL,  FLAG_GLOBAL},
-  {"map hidden",       P_BOOL,    P_LOCAL,  &sDefault.bMap_hidden,      NULL,   NULL,  FLAG_GLOBAL},
-  {"map archive",      P_BOOL,    P_LOCAL,  &sDefault.bMap_archive,     NULL,   NULL,  FLAG_GLOBAL},
-  {"mangled names",    P_BOOL,    P_LOCAL,  &sDefault.bMangledNames,    NULL,   NULL,  FLAG_GLOBAL},
-  {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL,   NULL,  FLAG_GLOBAL},
+  {"preserve case",    P_BOOL,    P_LOCAL,  &sDefault.bCasePreserve,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"short preserve case",P_BOOL,  P_LOCAL,  &sDefault.bShortCasePreserve,NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"mangle case",      P_BOOL,    P_LOCAL,  &sDefault.bCaseMangle,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"mangling char",    P_CHAR,    P_LOCAL,  &sDefault.magic_char,       NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL|FLAG_DOS_STRING},
+  {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL|FLAG_DOS_STRING},
+  {"veto oplock files",P_STRING,  P_LOCAL,  &sDefault.szVetoOplockFiles,NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL|FLAG_DOS_STRING},
+  {"map system",       P_BOOL,    P_LOCAL,  &sDefault.bMap_system,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"map hidden",       P_BOOL,    P_LOCAL,  &sDefault.bMap_hidden,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"map archive",      P_BOOL,    P_LOCAL,  &sDefault.bMap_archive,     NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"mangled names",    P_BOOL,    P_LOCAL,  &sDefault.bMangledNames,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"stat cache",       P_BOOL,    P_GLOBAL, &Globals.bStatCache,        NULL,   NULL,  0},
 
   {"Domain Options", P_SEP, P_SEPARATOR},
@@ -759,24 +817,25 @@ static struct parm_struct parm_table[] =
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
-
-  {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  0},
-  {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL,  0},
+  {"add user script",  P_STRING,  P_GLOBAL, &Globals.szAddUserScript,   NULL,   NULL,  0},
+  {"delete user script",P_STRING, P_GLOBAL, &Globals.szDelUserScript,   NULL,   NULL,  0},
+  {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  FLAG_DOS_STRING},
+  {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL,  FLAG_DOS_STRING},
   {"logon drive",      P_STRING,  P_GLOBAL, &Globals.szLogonDrive,      NULL,   NULL,  0},
-  {"logon home",       P_STRING,  P_GLOBAL, &Globals.szLogonHome,       NULL,   NULL,  0},
+  {"logon home",       P_STRING,  P_GLOBAL, &Globals.szLogonHome,       NULL,   NULL,  FLAG_DOS_STRING},
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL,   NULL,  0},
 
   {"Browse Options", P_SEP, P_SEPARATOR},
 
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL,   NULL,  FLAG_BASIC},
-  {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_bool_auto, 0},
+  {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_lm_announce, 0},
   {"lm interval",      P_INTEGER, P_GLOBAL, &Globals.lm_interval,       NULL,   NULL,  0},
   {"preferred master", P_ENUM,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   enum_bool_auto,  FLAG_BASIC},
   {"prefered master",  P_ENUM,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   enum_bool_auto,  FLAG_HIDE},
   {"local master",     P_BOOL,    P_GLOBAL, &Globals.bLocalMaster,      NULL,   NULL,  FLAG_BASIC},
   {"domain master",    P_ENUM,    P_GLOBAL, &Globals.bDomainMaster,     NULL,   enum_bool_auto,  FLAG_BASIC},
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL,   NULL,  0},
-  {"browseable",       P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  0},
+  {"browseable",       P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
   {"browsable",        P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  0},
 
   {"WINS Options", P_SEP, P_SEPARATOR},
@@ -788,15 +847,20 @@ static struct parm_struct parm_table[] =
   {"wins hook",        P_STRING,  P_GLOBAL, &Globals.szWINSHook, NULL,   NULL,  0},
 
   {"Locking Options", P_SEP, P_SEPARATOR},
-
-  {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  0},
-  {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
+  {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  FLAG_SHARE},
   {"kernel oplocks",   P_BOOL,    P_GLOBAL, &Globals.bKernelOplocks,    NULL,   NULL,  FLAG_GLOBAL},
-  {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_GLOBAL},
+  {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+#ifdef WITH_UTMP
+  {"utmp",             P_BOOL,    P_LOCAL,  &sDefault.bUtmp,            NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+#endif
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
-  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
-  {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_GLOBAL},
-  {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_GLOBAL},
+  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"level2 oplocks",   P_BOOL,    P_LOCAL,  &sDefault.bLevel2OpLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"oplock break wait time",P_INTEGER,P_GLOBAL,&Globals.oplock_break_wait_time,NULL,NULL,FLAG_GLOBAL},
+  {"oplock contention limit",P_INTEGER,P_LOCAL,&sDefault.iOplockContentionLimit,NULL,NULL,FLAG_SHARE|FLAG_GLOBAL},
+  {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
 
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   {"Ldap Options", P_SEP, P_SEPARATOR},
@@ -834,6 +898,10 @@ static struct parm_struct parm_table[] =
   {"auto services",    P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
   {"lock dir",         P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
   {"lock directory",   P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
+#ifdef WITH_UTMP
+  {"utmp dir",         P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
+  {"utmp directory",   P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
+#endif /* WITH_UTMP */
   {"default service",  P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
   {"default",          P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
   {"message command",  P_STRING,  P_GLOBAL, &Globals.szMsgCommand,      NULL,   NULL,  0},
@@ -849,31 +917,40 @@ static struct parm_struct parm_table[] =
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL,   NULL,  FLAG_HIDE},
   {"copy",             P_STRING,  P_LOCAL,  &sDefault.szCopy,           handle_copy, NULL,  FLAG_HIDE},
   {"include",          P_STRING,  P_LOCAL,  &sDefault.szInclude,        handle_include, NULL,  FLAG_HIDE},
-  {"exec",             P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  0},
+  {"exec",             P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
   {"preexec",          P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  0},
-  {"postexec",         P_STRING,  P_LOCAL,  &sDefault.szPostExec,       NULL,   NULL,  0},
-  {"root preexec",     P_STRING,  P_LOCAL,  &sDefault.szRootPreExec,    NULL,   NULL,  0},
-  {"root postexec",    P_STRING,  P_LOCAL,  &sDefault.szRootPostExec,   NULL,   NULL,  0},
-  {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL,  0},
-  {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  0},
-  {"fstype",           P_STRING,  P_LOCAL,  &sDefault.fstype,           NULL,   NULL,  0},
-  {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL,  0},
-  {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL,  FLAG_GLOBAL},
-  {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL,  FLAG_GLOBAL},
-  {"dont descend",     P_STRING,  P_LOCAL,  &sDefault.szDontdescend,    NULL,   NULL,  0},
-  {"magic script",     P_STRING,  P_LOCAL,  &sDefault.szMagicScript,    NULL,   NULL,  0},
-  {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL,   NULL,  0},
-  {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL,   NULL,  FLAG_GLOBAL},
-  {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL,   NULL,  FLAG_GLOBAL},
-  {"dos filetime resolution",P_BOOL,P_LOCAL,&sDefault.bDosFiletimeResolution,   NULL,  NULL,  FLAG_GLOBAL},
+  {"preexec close",    P_BOOL,    P_LOCAL,  &sDefault.bPreexecClose,    NULL,   NULL,  FLAG_SHARE},
+  {"postexec",         P_STRING,  P_LOCAL,  &sDefault.szPostExec,       NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
+  {"root preexec",     P_STRING,  P_LOCAL,  &sDefault.szRootPreExec,    NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
+  {"root preexec close", P_BOOL,  P_LOCAL,  &sDefault.bRootpreexecClose,NULL,   NULL,  FLAG_SHARE},
+  {"root postexec",    P_STRING,  P_LOCAL,  &sDefault.szRootPostExec,   NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
+  {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
+  {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  FLAG_SHARE},
+  {"fstype",           P_STRING,  P_LOCAL,  &sDefault.fstype,           NULL,   NULL,  FLAG_SHARE},
+  {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL,  FLAG_SHARE},
+  {"source environment",P_STRING, P_GLOBAL, &Globals.szSourceEnv,       handle_source_env,NULL,0},
+  {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"dont descend",     P_STRING,  P_LOCAL,  &sDefault.szDontdescend,    NULL,   NULL,  FLAG_SHARE},
+  {"magic script",     P_STRING,  P_LOCAL,  &sDefault.szMagicScript,    NULL,   NULL,  FLAG_SHARE},
+  {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL,   NULL,  FLAG_SHARE},
+  {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"dos filetime resolution",P_BOOL,P_LOCAL,&sDefault.bDosFiletimeResolution,   NULL,  NULL,  FLAG_SHARE|FLAG_GLOBAL},
   
-  {"fake directory create times", P_BOOL,P_LOCAL,  &sDefault.bFakeDirCreateTimes, NULL,   NULL, FLAG_GLOBAL},
+  {"fake directory create times", P_BOOL,P_LOCAL,  &sDefault.bFakeDirCreateTimes, NULL,   NULL, FLAG_SHARE|FLAG_GLOBAL},
   {"panic action",     P_STRING,  P_GLOBAL, &Globals.szPanicAction,     NULL,   NULL,  0},
 
   {"VFS options", P_SEP, P_SEPARATOR},
 
-  {"vfs object",       P_STRING,  P_LOCAL,  &sDefault.vfsObjectFile,    handle_vfs_object,   NULL,  0},
-  {"vfs option",       P_PTR,  P_LOCAL,  &sDefault.vfsOptions,       handle_vfs_option,   NULL,  0}, 
+  {"vfs object",       P_STRING,  P_LOCAL,  &sDefault.szVfsObjectFile,  handle_vfs_object,   NULL,  0},
+  {"vfs options",      P_STRING,  P_LOCAL,  &sDefault.szVfsOptions,     NULL,   NULL,  0}, 
+
+#ifdef MS_DFS
+  {"dfs map",	       P_STRING,  P_LOCAL,  &sDefault.szDfsMap,        NULL,   NULL,  FLAG_SHARE},
+  {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
+#endif
+
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
 
@@ -896,7 +973,7 @@ static void init_globals(void)
 	if ((parm_table[i].type == P_STRING ||
 	     parm_table[i].type == P_USTRING) && 
 	    parm_table[i].ptr)
-	  string_init(parm_table[i].ptr,"");
+	  string_set(parm_table[i].ptr,"");
 
       string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
       string_set(&sDefault.szPrinterDriver, "NULL");
@@ -917,7 +994,7 @@ static void init_globals(void)
   string_set(&Globals.szSMBGroupFile, SMB_GROUP_FILE);
   string_set(&Globals.szSMBAliasFile, SMB_ALIAS_FILE);
 #endif
-  string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
+  string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
   string_set(&Globals.szWorkGroup, WORKGROUP);
   string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
@@ -926,6 +1003,9 @@ static void init_globals(void)
   string_set(&Globals.szNtDriverFile, NTDRIVERSDIR);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
+#ifdef WITH_UTMP
+  string_set(&Globals.szUtmpDir, "");
+#endif /* WITH_UTMP */
   string_set(&Globals.szSmbrun, SMBRUN);
   string_set(&Globals.szSocketAddress, "0.0.0.0");
   pstrcpy(s, "Samba ");
@@ -962,7 +1042,7 @@ static void init_globals(void)
   Globals.bReadRaw = True;
   Globals.bWriteRaw = True;
   Globals.bReadPrediction = False;
-  Globals.bReadbmpx = True;
+  Globals.bReadbmpx = False;
   Globals.bNullPasswords = False;
   Globals.bStripDot = False;
   Globals.syslog = 1;
@@ -981,7 +1061,7 @@ static void init_globals(void)
   Globals.lm_interval = 60;
   Globals.shmem_size = SHMEM_SIZE;
   Globals.stat_cache_size = 50; /* Number of stat translations we'll keep */
-  Globals.announce_as = ANNOUNCE_AS_NT;
+  Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
   Globals.bUnixRealname = False;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
   Globals.bNISHomeMap = False;
@@ -999,9 +1079,10 @@ static void init_globals(void)
   Globals.bOleLockingCompat = True;
   Globals.bNTSmbSupport = True; /* Do NT SMB's by default. */
   Globals.bNTPipeSupport = True; /* Do NT pipes by default. */
+  Globals.bNTAclSupport = True; /* Use NT ACLs by default. */
   Globals.bStatCache = True; /* use stat cache by default */
   Globals.map_to_guest = 0; /* By Default, "Never" */
-  Globals.min_passwd_length = 5; /* By Default, 5. */
+  Globals.min_passwd_length = MINPASSWDLENGTH; /* By Default, 5. */
   Globals.oplock_break_wait_time = 10; /* By Default, 10 msecs. */
 
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
@@ -1021,20 +1102,15 @@ static void init_globals(void)
 
 #ifdef WITH_SSL
   Globals.sslVersion = SMB_SSL_V23;
-
-  /*
-   * Most of the next variables should be string_set!
-   */
-
-  string_set(&Globals.sslHostsRequire, NULL);
-  string_set(&Globals.sslHostsResign, NULL);
-  string_set(&Globals.sslCaCertDir, NULL);
-  string_set(&Globals.sslCaCertFile, NULL);
-  string_set(&Globals.sslCert, NULL);
-  string_set(&Globals.sslPrivKey, NULL);
-  string_set(&Globals.sslClientCert, NULL);
-  string_set(&Globals.sslClientPrivKey, NULL);
-  string_set(&Globals.sslCiphers, NULL);
+  string_set(&Globals.sslHostsRequire, "");
+  string_set(&Globals.sslHostsResign, "");
+  string_set(&Globals.sslCaCertDir, "");
+  string_set(&Globals.sslCaCertFile, "");
+  string_set(&Globals.sslCert, "");
+  string_set(&Globals.sslPrivKey, "");
+  string_set(&Globals.sslClientCert, "");
+  string_set(&Globals.sslClientPrivKey, "");
+  string_set(&Globals.sslCiphers, "");
   Globals.sslEnabled = False;
   Globals.sslReqClientCert = False;
   Globals.sslReqServerCert = False;
@@ -1097,16 +1173,6 @@ static void init_globals(void)
 }
 
 /***************************************************************************
-check if a string is initialised and if not then initialise it
-***************************************************************************/
-static void string_initial(char **s,char *v)
-{
-  if (!*s || !**s)
-    string_init(s,v);
-}
-
-
-/***************************************************************************
 Initialise the sDefault parameter structure.
 ***************************************************************************/
 static void init_locals(void)
@@ -1116,105 +1182,49 @@ static void init_locals(void)
     {
     case PRINT_BSD:
     case PRINT_AIX:
+    case PRINT_LPRNG:
     case PRINT_PLP:
-      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
-      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
-      string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lpr -r -P%p %s");
       break;
 
-    case PRINT_LPRNG:
-      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
-      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
-      string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
-      string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
-      string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
-      string_initial(&sDefault.szLppausecommand,"lpc hold %p %j");
-      string_initial(&sDefault.szLpresumecommand,"lpc release %p %j");
+    case PRINT_CUPS:
+      string_set(&sDefault.szLpqcommand,"/usr/bin/lpstat -o%p");
+      string_set(&sDefault.szLprmcommand,"/usr/bin/cancel %p-%j");
+      string_set(&sDefault.szPrintcommand,"/usr/bin/lp -d%p -oraw %s; rm %s");
+      string_set(&sDefault.szQueuepausecommand, "/usr/bin/disable %p");
+      string_set(&sDefault.szQueueresumecommand, "/usr/bin/enable %p");
       break;
 
     case PRINT_SYSV:
     case PRINT_HPUX:
-      string_initial(&sDefault.szLpqcommand,"lpstat -o%p");
-      string_initial(&sDefault.szLprmcommand,"cancel %p-%j");
-      string_initial(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
-#ifdef SYSV
-      string_initial(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
-      string_initial(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
-      string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
-      string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
-#else /* SYSV */
-      string_initial(&sDefault.szQueuepausecommand, "disable %p");
-      string_initial(&sDefault.szQueueresumecommand, "enable %p");
+      string_set(&sDefault.szLpqcommand,"lpstat -o%p");
+      string_set(&sDefault.szLprmcommand,"cancel %p-%j");
+      string_set(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
+      string_set(&sDefault.szQueuepausecommand, "disable %p");
+      string_set(&sDefault.szQueueresumecommand, "enable %p");
+#ifndef HPUX
+      string_set(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
+      string_set(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
 #endif /* SYSV */
       break;
 
     case PRINT_QNX:
-      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
-      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
-      string_initial(&sDefault.szPrintcommand,"lp -r -P%p %s");
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lp -r -P%p %s");
       break;
 
     case PRINT_SOFTQ:
-      string_initial(&sDefault.szLpqcommand,"qstat -l -d%p");
-      string_initial(&sDefault.szLprmcommand,"qstat -s -j%j -c");
-      string_initial(&sDefault.szPrintcommand,"lp -d%p -s %s; rm %s");
-      string_initial(&sDefault.szLppausecommand,"qstat -s -j%j -h");
-      string_initial(&sDefault.szLpresumecommand,"qstat -s -j%j -r");
+      string_set(&sDefault.szLpqcommand,"qstat -l -d%p");
+      string_set(&sDefault.szLprmcommand,"qstat -s -j%j -c");
+      string_set(&sDefault.szPrintcommand,"lp -d%p -s %s; rm %s");
+      string_set(&sDefault.szLppausecommand,"qstat -s -j%j -h");
+      string_set(&sDefault.szLpresumecommand,"qstat -s -j%j -r");
       break;
       
     }
-}
-
-
-/******************************************************************* a
-convenience routine to grab string parameters into a rotating buffer,
-and run standard_sub_basic on them. The buffers can be written to by
-callers without affecting the source string.
-********************************************************************/
-static char *lp_user_string(const user_struct *vuser, char *s)
-{
-  static char *bufs[10];
-  static int buflen[10];
-  static int next = -1;  
-  char *ret;
-  int i;
-  int len = s?strlen(s):0;
-
-  if (next == -1) {
-    /* initialisation */
-    for (i=0;i<10;i++) {
-      bufs[i] = NULL;
-      buflen[i] = 0;
-    }
-    next = 0;
-  }
-
-  len = MAX(len+100,sizeof(pstring)); /* the +100 is for some
-					 substitution room */
-
-  if (buflen[next] != len) {
-    buflen[next] = len;
-    if (bufs[next])
-      free(bufs[next]);
-    bufs[next] = (char *)malloc(len);
-    if (!bufs[next]) {
-      DEBUG(0,("out of memory in lp_string()"));
-      exit(1);
-    }
-  } 
-
-  ret = &bufs[next][0];
-  next = (next+1)%10;
-
-  if (!s) 
-    *ret = 0;
-  else
-    StrCpy(ret,s);
-
-  trim_string(ret, "\"", "\"");
-
-  standard_sub_vuser(vuser, ret);
-  return(ret);
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1229,49 +1239,53 @@ void lp_talloc_free(void)
 	lp_talloc = NULL;
 }
 
-/******************************************************************* a
-convenience routine to grab string parameters into a rotating buffer,
+/*******************************************************************
+convenience routine to grab string parameters into temporary memory
 and run standard_sub_basic on them. The buffers can be written to by
 callers without affecting the source string.
 ********************************************************************/
-static char *lp_string(char *s)
+static char *lp_user_string(const user_struct *vuser, const char *s)
 {
-  static char *bufs[10];
-  static int buflen[10];
-  static int next = -1;  
+	size_t len = s?strlen(s):0;
   char *ret;
-  int i;
-  int len = s?strlen(s):0;
 
-  if (next == -1) {
-    /* initialisation */
-    for (i=0;i<10;i++) {
-      bufs[i] = NULL;
-      buflen[i] = 0;
-    }
-    next = 0;
-  }
+	if (!lp_talloc) lp_talloc = talloc_init();
 
-  len = MAX(len+100,sizeof(pstring)); /* the +100 is for some
-					 substitution room */
+	ret = (char *)talloc(lp_talloc, len + 100); /* leave room for substitution */
 
-  if (buflen[next] != len) {
-    buflen[next] = len;
-    if (bufs[next]) free(bufs[next]);
-    bufs[next] = (char *)malloc(len);
-    if (!bufs[next]) {
-      DEBUG(0,("out of memory in lp_string()"));
-      exit(1);
-    }
-  } 
-
-  ret = &bufs[next][0];
-  next = (next+1)%10;
+	if (!ret) return NULL;
 
   if (!s) 
     *ret = 0;
   else
-    StrCpy(ret,s);
+		StrnCpy(ret,s,len);
+
+  trim_string(ret, "\"", "\"");
+
+  standard_sub_vuser(vuser, ret);
+  return(ret);
+}
+
+/*******************************************************************
+convenience routine to grab string parameters into temporary memory
+and run standard_sub_basic on them. The buffers can be written to by
+callers without affecting the source string.
+********************************************************************/
+static char *lp_string(const char *s)
+{
+	size_t len = s?strlen(s):0;
+  char *ret;
+
+	if (!lp_talloc) lp_talloc = talloc_init();
+
+	ret = (char *)talloc(lp_talloc, len + 100); /* leave room for substitution */
+
+	if (!ret) return NULL;
+
+  if (!s) 
+    *ret = 0;
+  else
+		StrnCpy(ret,s,len);
 
   trim_string(ret, "\"", "\"");
 
@@ -1306,9 +1320,6 @@ static char *lp_string(char *s)
 #define FN_VUSER_STRING(fn_name,ptr) \
  char *fn_name(const user_struct *usr) {return(lp_user_string(usr, *(char **)(ptr) ? *(char **)(ptr) : ""));}
 
-struct vfs_options *lp_vfsoptions(int i) 
-{ return(LP_SNUM_OK(i) ? pSERVICE(i)->vfsOptions : sDefault.vfsOptions); }
-
 FN_GLOBAL_STRING(lp_logfile,&Globals.szLogFile)
 FN_GLOBAL_STRING(lp_smbrun,&Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile,&Globals.szConfigFile)
@@ -1324,9 +1335,14 @@ FN_GLOBAL_STRING(lp_smb_alias_file,&Globals.szSMBAliasFile)
 FN_GLOBAL_STRING(lp_serverstring,&Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname,&Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
+#ifdef WITH_UTMP
+FN_GLOBAL_STRING(lp_utmpdir,&Globals.szUtmpDir)
+#endif /* WITH_UTMP */
 FN_GLOBAL_STRING(lp_rootdir,&Globals.szRootdir)
+FN_GLOBAL_STRING(lp_source_environment,&Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice,&Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command,&Globals.szMsgCommand)
+FN_GLOBAL_STRING(lp_dfree_command,&Globals.szDfree)
 FN_GLOBAL_STRING(lp_hosts_equiv,&Globals.szHostsEquiv)
 FN_GLOBAL_STRING(lp_auto_services,&Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program,&Globals.szPasswdProgram)
@@ -1345,7 +1361,6 @@ FN_GLOBAL_STRING(lp_ntusrname_map,&Globals.szNTusernameMap)
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_remote_browse_sync,&Globals.szRemoteBrowseSync) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
-FN_GLOBAL_STRING(lp_wins_hook,&Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
@@ -1353,9 +1368,12 @@ static FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
+FN_GLOBAL_STRING(lp_adduser_script,&Globals.szAddUserScript)
+FN_GLOBAL_STRING(lp_deluser_script,&Globals.szDelUserScript)
+FN_GLOBAL_STRING(lp_wins_hook,&Globals.szWINSHook)
+
 FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
 FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
-FN_GLOBAL_STRING(lp_dfs_map,&Globals.szDfsMap)
 
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
@@ -1424,8 +1442,9 @@ FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)
 FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_nt_pipe_support,&Globals.bNTPipeSupport)
+FN_GLOBAL_BOOL(lp_nt_acl_support,&Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
-
+FN_GLOBAL_BOOL(lp_host_msdfs,&Globals.bHostMSDfs)
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl,&Globals.max_wins_ttl)
@@ -1500,7 +1519,7 @@ FN_LOCAL_STRING(lp_force_group,force_group)
 FN_LOCAL_STRING(lp_readlist,readlist)
 FN_LOCAL_STRING(lp_writelist,writelist)
 FN_LOCAL_STRING(lp_fstype,fstype)
-FN_LOCAL_STRING(lp_vfsobj,vfsObjectFile)
+FN_LOCAL_STRING(lp_vfsobj,szVfsObjectFile)
 static FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
 FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
@@ -1508,6 +1527,13 @@ FN_LOCAL_STRING(lp_hide_files,szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks,szVetoOplockFiles)
 FN_LOCAL_STRING(lp_driverlocation,szPrinterDriverLocation)
 
+#ifdef MS_DFS
+FN_LOCAL_STRING(lp_dfsmap,szDfsMap)
+FN_LOCAL_BOOL(lp_dfsmap_loaded,bDfsMapLoaded)
+#endif
+
+FN_LOCAL_BOOL(lp_preexec_close,bPreexecClose)
+FN_LOCAL_BOOL(lp_rootpreexec_close,bRootpreexecClose)
 FN_LOCAL_BOOL(lp_revalidate,bRevalidate)
 FN_LOCAL_BOOL(lp_casesensitive,bCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase,bCasePreserve)
@@ -1526,8 +1552,12 @@ FN_LOCAL_BOOL(lp_map_hidden,bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive,bMap_archive)
 FN_LOCAL_BOOL(lp_locking,bLocking)
 FN_LOCAL_BOOL(lp_strict_locking,bStrictLocking)
+#ifdef WITH_UTMP
+FN_LOCAL_BOOL(lp_utmp,bUtmp)
+#endif
 FN_LOCAL_BOOL(lp_share_modes,bShareModes)
 FN_LOCAL_BOOL(lp_oplocks,bOpLocks)
+FN_LOCAL_BOOL(lp_level2_oplocks,bLevel2OpLocks)
 FN_LOCAL_BOOL(lp_onlyuser,bOnlyUser)
 FN_LOCAL_BOOL(lp_manglednames,bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks,bWidelinks)
@@ -1542,15 +1572,22 @@ FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution,bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks,bBlockingLocks)
+FN_LOCAL_BOOL(lp_inherit_perms,bInheritPerms)
 
-FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
+FN_LOCAL_INTEGER(lp_create_mask,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
-FN_LOCAL_INTEGER(lp_dir_mode,iDir_mask)
+FN_LOCAL_INTEGER(_lp_security_mask,iSecurity_mask)
+FN_LOCAL_INTEGER(_lp_force_security_mode,iSecurity_force_mode)
+FN_LOCAL_INTEGER(lp_dir_mask,iDir_mask)
 FN_LOCAL_INTEGER(lp_force_dir_mode,iDir_force_mode)
+FN_LOCAL_INTEGER(_lp_dir_security_mask,iDir_Security_mask)
+FN_LOCAL_INTEGER(_lp_force_dir_security_mode,iDir_Security_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace,iMinPrintSpace)
 FN_LOCAL_INTEGER(lp_printing,iPrinting)
+FN_LOCAL_INTEGER(lp_oplock_contention_limit,iOplockContentionLimit)
+FN_LOCAL_INTEGER(lp_write_cache_size,iWriteCacheSize)
 
 FN_LOCAL_CHAR(lp_magicchar,magic_char)
 
@@ -1657,9 +1694,10 @@ static int add_a_service(service *pservice, char *name)
 
   init_service(pSERVICE(i));
   copy_service(pSERVICE(i),&tservice,NULL);
-  if (name)
+  if (name) {
     string_set(&iSERVICE(i).szService,name);  
-
+    unix_to_dos(iSERVICE(i).szService, True);
+  }
   return(i);
 }
 
@@ -2042,6 +2080,164 @@ BOOL lp_file_list_changed(void)
 }
 
 /***************************************************************************
+ Run standard_sub_basic on netbios name... needed because global_myname
+ is not accessed through any lp_ macro.
+ Note: We must *NOT* use string_set() here as ptr points to global_myname.
+***************************************************************************/
+
+static BOOL handle_netbios_name(char *pszParmValue,char **ptr)
+{
+	pstring netbios_name;
+
+	pstrcpy(netbios_name,pszParmValue);
+
+	standard_sub_basic(netbios_name);
+	strupper(netbios_name);
+
+	/*
+	 * Convert from UNIX to DOS string - the UNIX to DOS converter
+	 * isn't called on the special handlers.
+	 */
+	unix_to_dos(netbios_name, True);
+	pstrcpy(global_myname,netbios_name);
+
+	DEBUG(4,("handle_netbios_name: set global_myname to: %s\n", global_myname));
+
+	return(True);
+}
+
+/***************************************************************************
+ Do the work of sourcing in environment variable/value pairs.
+***************************************************************************/
+
+static BOOL source_env(FILE *fenv)
+{
+	pstring line;
+	char *varval;
+	size_t len;
+	char *p;
+    
+	while (!feof(fenv)) {
+		if (fgets(line, sizeof(line), fenv) == NULL)
+			break;
+
+		if(feof(fenv))
+			break;
+
+		if((len = strlen(line)) == 0)
+			continue;
+
+		if (line[len - 1] == '\n')
+			line[--len] = '\0';
+
+		if ((varval=malloc(len+1)) == NULL) {
+			DEBUG(0,("source_env: Not enough memory!\n"));
+			return(False);
+    }
+
+		DEBUG(4,("source_env: Adding to environment: %s\n", line));
+		strncpy(varval, line, len);
+		varval[len] = '\0';
+
+		p=strchr(line, (int) '=');
+		if (p == NULL) {
+			DEBUG(4,("source_env: missing '=': %s\n", line));
+			continue;
+		}
+    
+		if (putenv(varval)) {
+			DEBUG(0,("source_env: Failed to put environment variable %s\n", varval ));
+			continue;
+		}
+
+		*p='\0';
+		p++;
+		DEBUG(4,("source_env: getting var %s = %s\n", line, getenv(line)));
+    }
+
+	DEBUG(4,("source_env: returning successfully\n"));
+	return(True);
+    }
+
+/***************************************************************************
+ Handle the source environment operation
+***************************************************************************/
+
+static BOOL handle_source_env(char *pszParmValue,char **ptr)
+{
+	pstring fname;
+	char *p = fname;
+	FILE *env;
+	BOOL result;
+
+	pstrcpy(fname,pszParmValue);
+
+	standard_sub_basic(fname);
+
+	string_set(ptr,pszParmValue);
+
+	DEBUG(4, ("handle_source_env: checking env type\n"));
+
+	/*
+	 * Filename starting with '|' means popen and read from stdin.
+	 */
+
+	if (*p == '|') {
+
+		DEBUG(4, ("handle_source_env: source env from pipe\n"));
+		p++;
+
+		if ((env = sys_popen(p, "r", True)) == NULL) {
+			DEBUG(0,("handle_source_env: Failed to popen %s. Error was %s\n", p, strerror(errno) ));
+			return(False);
+    }
+
+		DEBUG(4, ("handle_source_env: calling source_env()\n"));
+		result = source_env(env);
+		sys_pclose(env);
+
+	} else {
+
+		SMB_STRUCT_STAT st;
+
+		DEBUG(4, ("handle_source_env: source env from file %s\n", fname));
+		if ((env = sys_fopen(fname, "r")) == NULL) {
+			DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
+			return(False);
+	}
+	
+		/*
+		 * Ensure this file is owned by root and not writable by world.
+		 */
+		if(fstat(fileno(env), &st) != 0) {
+			DEBUG(0,("handle_source_env: Failed to stat file %s, Error was %s\n", fname, strerror(errno) ));
+			fclose(env);
+			return False;
+	}
+	
+		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
+			DEBUG(0,("handle_source_env: unsafe to source env file %s. Not owned by root or world writable\n", fname ));
+			fclose(env);
+			return False;
+    }
+
+		result=source_env(env);
+		fclose(env);
+	}
+	return(result);
+}
+
+
+
+#ifdef MS_DFS
+void set_dfsmap_loaded(int i,BOOL b)
+{
+  pSERVICE(i)->bDfsMapLoaded = b;
+}
+
+#endif
+
+/***************************************************************************
   handle the interpretation of the vfs object parameter
   *************************************************************************/
 static BOOL handle_vfs_object(char *pszParmValue,char **ptr)
@@ -2057,65 +2253,6 @@ static BOOL handle_vfs_object(char *pszParmValue,char **ptr)
 }
 
 /***************************************************************************
-  handle the interpretation of the vfs option parameter
- *************************************************************************/
-static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
-{
-    struct vfs_options *new_option, **options = (struct vfs_options **)ptr;
-    int i;
-    
-    /* Create new vfs option */
-
-    new_option = (struct vfs_options *)malloc(sizeof(*new_option));
-    if (new_option == NULL) {
-	return False;
-    }
-
-    ZERO_STRUCTP(new_option);
-
-    /* Get name and value */
-    
-    new_option->name = strtok(pszParmValue, "=");
-
-    if (new_option->name == NULL) {
-	return False;
-    }
-
-    while(isspace(*new_option->name)) {
-	new_option->name++;
-    }
-
-    for (i = strlen(new_option->name); i > 0; i--) {
-	if (!isspace(new_option->name[i - 1])) break;
-    }
-
-    new_option->name[i] = '\0';
-    new_option->name = strdup(new_option->name);
-
-    new_option->value = strtok(NULL, "=");
-
-    if (new_option->value != NULL) {
-
-	while(isspace(*new_option->value)) {
-	    new_option->value++;
-	}
-	
-	for (i = strlen(new_option->value); i > 0; i--) {
-	    if (!isspace(new_option->value[i - 1])) break;
-	}
-	
-	new_option->value[i] = '\0';
-	new_option->value = strdup(new_option->value);
-    }
-
-    /* Add to list */
-
-    DLIST_ADD(*options, new_option);
-
-    return True;
-}
-
-/***************************************************************************
   handle the interpretation of the coding system parameter
   *************************************************************************/
 static BOOL handle_coding_system(char *pszParmValue,char **ptr)
@@ -2126,15 +2263,36 @@ static BOOL handle_coding_system(char *pszParmValue,char **ptr)
 }
 
 /***************************************************************************
- Handle the interpretation of the character set system parameter
+ Handle the interpretation of the character set system parameter.
 ***************************************************************************/
+
+static char *saved_character_set = NULL;
+
 static BOOL handle_character_set(char *pszParmValue,char **ptr)
 {
+    /* A dependency here is that the parameter client code page should be
+      set before this is called.
+    */
 	string_set(ptr,pszParmValue);
-	interpret_character_set(pszParmValue);
+	strupper(*ptr);
+	saved_character_set = strdup(*ptr);
+	interpret_character_set(*ptr,lp_client_code_page());
 	return(True);
 }
 
+/***************************************************************************
+ Handle the interpretation of the client code page parameter.
+ We handle this separately so that we can reset the character set
+ parameter in case this came before 'client code page' in the smb.conf.
+***************************************************************************/
+
+static BOOL handle_client_code_page(char *pszParmValue,char **ptr)
+{
+	Globals.client_code_page = atoi(pszParmValue);
+	if (saved_character_set != NULL)
+		interpret_character_set(saved_character_set,lp_client_code_page());	
+	return(True);
+}
 
 /***************************************************************************
 handle the valid chars lines
@@ -2232,7 +2390,7 @@ static void init_copymap(service *pservice)
   pservice->copymap = (BOOL *)malloc(sizeof(BOOL)*NUMPARAMETERS);
   if (!pservice->copymap)
     DEBUG(0,("Couldn't allocate copymap!! (size %d)\n",(int)NUMPARAMETERS));
-
+  else
   for (i=0;i<NUMPARAMETERS;i++)
     pservice->copymap[i] = True;
 }
@@ -2326,19 +2484,27 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 
      case P_STRING:
        string_set(parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos(*(char **)parm_ptr, True);
        break;
 
      case P_USTRING:
        string_set(parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos(*(char **)parm_ptr, True);
        strupper(*(char **)parm_ptr);
        break;
 
      case P_GSTRING:
        pstrcpy((char *)parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos((char *)parm_ptr, True);
        break;
 
      case P_UGSTRING:
        pstrcpy((char *)parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos((char *)parm_ptr, True);
        strupper((char *)parm_ptr);
        break;
 
@@ -2350,8 +2516,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 		     }
 	     }
 	     break;
-
-     default:
+     case P_SEP:
 	     break;
      }
 
@@ -2407,7 +2572,7 @@ static void print_parameter(struct parm_struct *p,void *ptr, FILE *f)
 		break;
       
 	case P_OCTAL:
-		fprintf(f,"0%o",*(int *)ptr);
+		fprintf(f,"%s",octal_string(*(int *)ptr));
 		break;
       
 	case P_GSTRING:
@@ -2421,8 +2586,7 @@ static void print_parameter(struct parm_struct *p,void *ptr, FILE *f)
 		if (*(char **)ptr)
 			fprintf(f,"%s",*(char **)ptr);
 		break;
-
-	default:
+	case P_SEP:
 		break;
 	}
 }
@@ -2463,8 +2627,7 @@ static BOOL equal_parameter(parm_type type,void *ptr1,void *ptr2)
 	if (p2 && !*p2) p2 = NULL;
 	return(p1==p2 || strequal(p1,p2));
       }
-
-     default:
+     case P_SEP:
 	     break;
     }
   return(False);
@@ -2544,7 +2707,7 @@ static BOOL is_default(int i)
 	case P_OCTAL:
 	case P_ENUM:
 		return parm_table[i].def.ivalue == *(int *)parm_table[i].ptr;
-	default:
+	case P_SEP:
 		break;
 	}
 	return False;
@@ -2792,11 +2955,55 @@ static void lp_save_defaults(void)
 		case P_ENUM:
 			parm_table[i].def.ivalue = *(int *)parm_table[i].ptr;
 			break;
-		default:
+		case P_SEP:
 			break;
 		}
 	}
 	defaults_saved = True;
+}
+
+/*******************************************************************
+ Set the server type we will announce as via nmbd.
+********************************************************************/
+static void set_server_role(void)
+{
+	server_role = ROLE_DOMAIN_NONE;
+
+	switch (lp_security())
+	{
+		case SEC_SHARE:
+		{
+			if (lp_domain_logons())
+			{
+				DEBUG(0,("Server's Role (logon server) conflicts with share-level security\n"));
+			}
+			break;
+		}
+		case SEC_SERVER:
+		case SEC_DOMAIN:
+		{
+			if (lp_domain_logons())
+			{
+				server_role = ROLE_DOMAIN_BDC;
+				break;
+			}
+			server_role = ROLE_DOMAIN_MEMBER;
+			break;
+		}
+		case SEC_USER:
+		{
+			if (lp_domain_logons())
+			{
+				server_role = ROLE_DOMAIN_PDC;
+				break;
+			}
+			break;
+		}
+		default:
+		{
+			DEBUG(0,("Server's Role undefined due to unknown security mode\n"));
+		}
+	}
 }
 
 
@@ -2860,6 +3067,14 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 
 
 /***************************************************************************
+reset the max number of services
+***************************************************************************/
+void lp_resetnumservices(void)
+{
+  iNumServices = 0;
+}
+
+/***************************************************************************
 return the max number of services
 ***************************************************************************/
 int lp_numservices(void)
@@ -2870,7 +3085,7 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f, BOOL show_defaults)
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 {
    int iService;
 
@@ -2882,15 +3097,8 @@ void lp_dump(FILE *f, BOOL show_defaults)
    
    dump_a_service(&sDefault, f);
 
-   for (iService = 0; iService < iNumServices; iService++)
-   {
-     if (VALID(iService))
-       {
-	 if (iSERVICE(iService).szService[0] == '\0')
-	   break;
-	 dump_a_service(pSERVICE(iService), f);
-       }
-   }
+   for (iService = 0; iService < maxtoprint; iService++)
+     lp_dump_one(f, show_defaults, iService);
 }
 
 /***************************************************************************
@@ -2938,50 +3146,6 @@ char *volume_label(int snum)
   return(ret);
 }
 
-
-/*******************************************************************
- Set the server type we will announce as via nmbd.
-********************************************************************/
-static void set_server_role(void)
-{
-	server_role = ROLE_DOMAIN_NONE;
-
-	switch (lp_security())
-	{
-		case SEC_SHARE:
-		{
-			if (lp_domain_logons())
-			{
-				DEBUG(0,("Server's Role (logon server) conflicts with share-level security\n"));
-			}
-			break;
-		}
-		case SEC_SERVER:
-		case SEC_DOMAIN:
-		{
-			if (lp_domain_logons())
-			{
-				server_role = ROLE_DOMAIN_BDC;
-				break;
-			}
-			server_role = ROLE_DOMAIN_MEMBER;
-			break;
-		}
-		case SEC_USER:
-		{
-			if (lp_domain_logons())
-			{
-				server_role = ROLE_DOMAIN_PDC;
-				break;
-			}
-			break;
-		}
-		default:
-		{
-			DEBUG(0,("Server's Role undefined due to unknown security mode\n"));
-		}
-	}
-}
 
 /*******************************************************************
  Set the server type we will announce as via nmbd.
@@ -3047,6 +3211,44 @@ static void set_default_server_announce_type(void)
 		default_server_announce |= SV_TYPE_TIME_SOURCE;
 	}
 }
+
+/***********************************************************
+ returns role of Samba server
+************************************************************/
+
+int lp_server_role(void)
+{
+  return server_role;
+}
+
+/***********************************************************
+ If we are PDC then prefer us as DMB
+************************************************************/
+
+BOOL lp_domain_master(void)
+{
+	if (Globals.bDomainMaster == Auto)
+	{
+		return (lp_server_role() == ROLE_DOMAIN_PDC);
+	}
+
+	return Globals.bDomainMaster;
+}
+
+/***********************************************************
+ If we are DMB then prefer us as LMB
+************************************************************/
+
+BOOL lp_preferred_master(void)
+{
+	if (Globals.bPreferredMaster == Auto)
+	{
+		return (lp_local_master() && lp_domain_master());
+	}
+
+	return Globals.bPreferredMaster;
+}
+
 
 
 /*******************************************************************
@@ -3168,40 +3370,40 @@ BOOL lp_kernel_oplocks(void)
 }
 
 /***********************************************************
- returns role of Samba server
+ Functions to return the current security masks/modes. If
+ set to -1 then return the create mask/mode instead.
 ************************************************************/
 
-int lp_server_role(void)
+int lp_security_mask(int snum)
 {
-  return server_role;
+  int val = _lp_security_mask(snum);
+  if(val == -1)
+    return lp_create_mask(snum);
+  return val;
 }
 
-/***********************************************************
- If we are PDC then prefer us as DMB
-************************************************************/
-
-BOOL lp_domain_master(void)
+int lp_force_security_mode(int snum)
 {
-	if (Globals.bDomainMaster == Auto)
-	{
-		return (lp_server_role() == ROLE_DOMAIN_PDC);
-	}
-
-	return Globals.bDomainMaster;
+  int val = _lp_force_security_mode(snum);
+  if(val == -1)
+    return lp_force_create_mode(snum);
+  return val;
 }
 
-/***********************************************************
- If we are DMB then prefer us as LMB
-************************************************************/
-
-BOOL lp_preferred_master(void)
+int lp_dir_security_mask(int snum)
 {
-	if (Globals.bPreferredMaster == Auto)
-	{
-		return (lp_local_master() && lp_domain_master());
-	}
+  int val = _lp_dir_security_mask(snum);
+  if(val == -1)
+    return lp_dir_mask(snum);
+  return val;
+}
 
-	return Globals.bPreferredMaster;
+int lp_force_dir_security_mode(int snum)
+{
+  int val = _lp_force_dir_security_mode(snum);
+  if(val == -1)
+    return lp_force_dir_mode(snum);
+  return val;
 }
 
 

@@ -20,9 +20,6 @@
 */
 
 #include "includes.h"
-#ifdef HAVE_LIBDL
-#include <dlfcn.h>
-#endif
 
 extern int DEBUGLEVEL;
 
@@ -61,11 +58,10 @@ struct vfs_ops default_vfs_ops = {
     vfswrap_write,
     vfswrap_lseek,
     vfswrap_rename,
-    vfswrap_sync_file,
+    vfswrap_fsync,
     vfswrap_stat,
     vfswrap_fstat,
     vfswrap_lstat,
-    vfswrap_fcntl_lock,
     vfswrap_unlink,
     vfswrap_chmod,
     vfswrap_utime
@@ -96,7 +92,9 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     /* Open object file */
 
-    handle = dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW);
+    handle = dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL);
+    conn->vfs_conn->dl_handle = handle;
+
     if (!handle) {
 	DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)),
 		  dlerror()));
@@ -106,17 +104,17 @@ BOOL vfs_init_custom(connection_struct *conn)
     /* Get handle on vfs_init() symbol */
 
     fptr = dlsym(handle, "vfs_init");
+
     if (fptr == NULL) {
 	DEBUG(0, ("No vfs_init() symbol found in %s\n", 
 		  lp_vfsobj(SNUM(conn))));
 	return False;
     }
 
-    dlclose(handle);
-
     /* Initialise vfs_ops structure */
 
-    if ((ops = fptr(lp_vfsoptions(SNUM(conn)))) == NULL) {
+    if ((ops = fptr(NULL)) == NULL) {
+        DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
 	return False;
     }
 
@@ -182,8 +180,8 @@ BOOL vfs_init_custom(connection_struct *conn)
 	conn->vfs_ops.rename = default_vfs_ops.rename;
     }
     
-    if (conn->vfs_ops.sync == NULL) {
-	conn->vfs_ops.sync = default_vfs_ops.sync;
+    if (conn->vfs_ops.fsync == NULL) {
+	conn->vfs_ops.fsync = default_vfs_ops.fsync;
     }
     
     if (conn->vfs_ops.stat == NULL) {
@@ -196,10 +194,6 @@ BOOL vfs_init_custom(connection_struct *conn)
     
     if (conn->vfs_ops.lstat == NULL) {
 	conn->vfs_ops.lstat = default_vfs_ops.lstat;
-    }
-    
-    if (conn->vfs_ops.lock == NULL) {
-	conn->vfs_ops.lock = default_vfs_ops.lock;
     }
     
     if (conn->vfs_ops.unlink == NULL) {
@@ -217,6 +211,24 @@ BOOL vfs_init_custom(connection_struct *conn)
     return True;
 }
 #endif
+
+BOOL vfs_directory_exist(connection_struct *conn, char *dname,
+                         SMB_STRUCT_STAT *st)
+{
+  SMB_STRUCT_STAT st2;
+  BOOL ret;
+
+  if (!st) st = &st2;
+
+  if (conn->vfs_ops.stat(dos_to_unix(dname,False),st) != 0) 
+    return(False);
+
+  ret = S_ISDIR(st->st_mode);
+  if(!ret)
+    errno = ENOTDIR;
+
+  return ret;
+}
 
 /*******************************************************************
   check if a vfs file exists
@@ -377,3 +389,69 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	unix_to_dos(dname, True);
 	return(dname);
 }
+
+/* VFS options not quite working yet */
+
+#if 0
+
+/***************************************************************************
+  handle the interpretation of the vfs option parameter
+ *************************************************************************/
+static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
+{
+    struct vfs_options *new_option, **options = (struct vfs_options **)ptr;
+    int i;
+    
+    /* Create new vfs option */
+
+    new_option = (struct vfs_options *)malloc(sizeof(*new_option));
+    if (new_option == NULL) {
+	return False;
+    }
+
+    ZERO_STRUCTP(new_option);
+
+    /* Get name and value */
+    
+    new_option->name = strtok(pszParmValue, "=");
+
+    if (new_option->name == NULL) {
+	return False;
+    }
+
+    while(isspace(*new_option->name)) {
+	new_option->name++;
+    }
+
+    for (i = strlen(new_option->name); i > 0; i--) {
+	if (!isspace(new_option->name[i - 1])) break;
+    }
+
+    new_option->name[i] = '\0';
+    new_option->name = strdup(new_option->name);
+
+    new_option->value = strtok(NULL, "=");
+
+    if (new_option->value != NULL) {
+
+	while(isspace(*new_option->value)) {
+	    new_option->value++;
+	}
+	
+	for (i = strlen(new_option->value); i > 0; i--) {
+	    if (!isspace(new_option->value[i - 1])) break;
+	}
+	
+	new_option->value[i] = '\0';
+	new_option->value = strdup(new_option->value);
+    }
+
+    /* Add to list */
+
+    DLIST_ADD(*options, new_option);
+
+    return True;
+}
+
+#endif
+

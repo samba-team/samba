@@ -97,7 +97,7 @@ files_struct *file_new(void )
 	files_used++;
 
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
-	string_init(&fsp->fsp_name,"");
+	string_set(&fsp->fsp_name,"");
 	
 	DLIST_ADD(Files, fsp);
 
@@ -186,10 +186,7 @@ void file_close_conn(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn && fsp->open) {
-			if (fsp->is_directory)
-				close_directory(fsp); 
-			else                  
-				close_file(fsp,False); 
+			close_file(fsp,False); 
 		}
 	}
 }
@@ -226,7 +223,7 @@ open files, %d are available.\n", request_max_open_files, real_max_open_files));
 	}
 	
 	/*
-	 * Ensure that pipe_handle_offset is set correctly.
+	 * Ensure that pipe_handle_oppset is set correctly.
 	 */
 	set_pipe_handle_offset(real_max_open_files);
 }
@@ -242,10 +239,7 @@ void file_close_user(int vuid)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if ((fsp->vuid == vuid) && fsp->open) {
-			if(!fsp->is_directory)
-				close_file(fsp,False);
-			else
-				close_directory(fsp);
+			close_file(fsp,False);
 		}
 	}
 }
@@ -340,12 +334,12 @@ void file_sync_all(connection_struct *conn)
 
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
-		if (fsp->open && (conn == fsp->conn) && (fsp->fd_ptr != NULL)
-		    && lp_strict_sync(SNUM(conn))){
-		    conn->vfs_ops.sync(fsp->fd_ptr->fd);
+		if (fsp->open && (conn == fsp->conn) && (fsp->fd_ptr != NULL)) {
+			conn->vfs_ops.fsync(fsp->fd_ptr->fd);
 		}
 	}
 }
+
 
 /****************************************************************************
 free up a fd_ptr

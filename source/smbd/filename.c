@@ -3,6 +3,8 @@
    Version 1.9.
    filename handling routines
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 1999-200
+   Copyright (C) Ying Chen 2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +21,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/*
+ * New hash table stat cache code added by Ying Chen.
+ */
+
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -26,7 +32,6 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern fstring remote_machine;
-extern pstring global_myname;
 extern BOOL use_mangled_map;
 
 static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
@@ -97,7 +102,12 @@ static int global_stat_cache_hits;
 
 void print_stat_cache_statistics(void)
 {
-  double eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
+  double eff;
+
+  if(global_stat_cache_lookups == 0)
+    return;
+
+  eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
 
   DEBUG(0,("stat cache stats: lookups = %d, hits = %d, misses = %d, \
 stat cache was %f%% effective.\n", global_stat_cache_lookups,
@@ -105,15 +115,12 @@ stat cache was %f%% effective.\n", global_stat_cache_lookups,
 }
 
 typedef struct {
-  ubi_dlNode link;
   int name_len;
-  pstring orig_name;
-  pstring translated_name;
+  char names[2]; /* This is extended via malloc... */
 } stat_cache_entry;
 
-#define MAX_STAT_CACHE_SIZE 50
-
-static ubi_dlList stat_cache = { NULL, (ubi_dlNodePtr)&stat_cache, 0};
+#define INIT_STAT_CACHE_SIZE 512
+static hash_table stat_cache;
 
 /****************************************************************************
  Compare a pathname to a name in the stat cache - of a given length.
@@ -124,6 +131,7 @@ static ubi_dlList stat_cache = { NULL, (ubi_dlNodePtr)&stat_cache, 0};
  case.
 *****************************************************************************/
 
+#if 0 /* This function unused?? */
 static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 {
   BOOL matched = (memcmp( stat_name, orig_name, len) == 0);
@@ -132,6 +140,7 @@ static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 
   return matched;
 }
+#endif
 
 /****************************************************************************
  Add an entry into the stat cache.
@@ -140,9 +149,11 @@ static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 {
   stat_cache_entry *scp;
+  stat_cache_entry *found_scp;
   pstring orig_name;
   pstring translated_path;
   int namelen;
+  hash_element *hash_elem;
 
   if (!lp_stat_cache()) return;
 
@@ -190,39 +201,39 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
    * add it.
    */
 
-  for( scp = (stat_cache_entry *)ubi_dlFirst( &stat_cache); scp; 
-                        scp = (stat_cache_entry *)ubi_dlNext( scp )) {
-    if((strcmp( scp->orig_name, orig_name) == 0) &&
-       (strcmp( scp->translated_name, translated_path) == 0)) {
-      /*
-       * Name does exist - promote it.
-       */
-      if( (stat_cache_entry *)ubi_dlFirst( &stat_cache) != scp ) {
-        ubi_dlRemThis( &stat_cache, scp);
-        ubi_dlAddHead( &stat_cache, scp);
+  if ((hash_elem = hash_lookup(&stat_cache, orig_name))) {
+    found_scp = (stat_cache_entry *)(hash_elem->value);
+    if (strcmp((found_scp->names+found_scp->name_len+1), translated_path) == 0) {
+      return;
+    } else {
+      hash_remove(&stat_cache, hash_elem);
+      if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
+        DEBUG(0,("stat_cache_add: Out of memory !\n"));
+        return;
       }
+      pstrcpy(scp->names, orig_name);
+      pstrcpy((scp->names+namelen+1), translated_path);
+      scp->name_len = namelen;
+      hash_insert(&stat_cache, (char *)scp, orig_name);
+    }
+    return;
+  } else {
+
+    /*
+     * New entry.
+     */
+
+    if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
+      DEBUG(0,("stat_cache_add: Out of memory !\n"));
       return;
     }
+    pstrcpy(scp->names, orig_name);
+    pstrcpy(scp->names+namelen+1, translated_path);
+    scp->name_len = namelen;
+    hash_insert(&stat_cache, (char *)scp, orig_name);
   }
 
-  if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry))) == NULL) {
-    DEBUG(0,("stat_cache_add: Out of memory !\n"));
-    return;
-  }
-
-  pstrcpy(scp->orig_name, orig_name);
-  pstrcpy(scp->translated_name, translated_path);
-  scp->name_len = namelen;
-
-  ubi_dlAddHead( &stat_cache, scp);
-
-  DEBUG(10,("stat_cache_add: Added entry %s -> %s\n", scp->orig_name, scp->translated_name ));
-
-  if(ubi_dlCount(&stat_cache) > lp_stat_cache_size()) {
-    scp = (stat_cache_entry *)ubi_dlRemTail( &stat_cache );
-    free((char *)scp);
-    return;
-  }
+  DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->names, (scp->names+scp->name_len+1)));
 }
 
 /****************************************************************************
@@ -230,16 +241,18 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
  Return True if we translated (and did a scuccessful stat on) the entire name.
 *****************************************************************************/
 
-static BOOL stat_cache_lookup(struct connection_struct *conn, char *name, 
-			      char *dirpath, char **start, 
-			      SMB_STRUCT_STAT *pst)
+static BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
+                              char **start, SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
-  stat_cache_entry *longest_hit = NULL;
+  char *trans_name;
   pstring chk_name;
   int namelen;
+  hash_element *hash_elem;
+  char *sp;
 
-  if (!lp_stat_cache()) return False;
+  if (!lp_stat_cache())
+    return False;
  
   namelen = strlen(name);
 
@@ -258,123 +271,46 @@ static BOOL stat_cache_lookup(struct connection_struct *conn, char *name,
   if(!case_sensitive)
     strupper( chk_name );
 
-  for( scp = (stat_cache_entry *)ubi_dlFirst( &stat_cache); scp; 
-                        scp = (stat_cache_entry *)ubi_dlNext( scp )) {
-    if(scp->name_len <= namelen) {
-      if(stat_name_equal_len(scp->orig_name, chk_name, scp->name_len)) {
-        if((longest_hit == NULL) || (longest_hit->name_len <= scp->name_len))
-          longest_hit = scp;
+  while (1) {
+    hash_elem = hash_lookup(&stat_cache, chk_name);
+    if(hash_elem == NULL) {
+      /*
+       * Didn't find it - remove last component for next try.
+       */
+      sp = strrchr(chk_name, '/');
+      if (sp) {
+        *sp = '\0';
+      } else {
+        /*
+         * We reached the end of the name - no match.
+         */
+        global_stat_cache_misses++;
+        return False;
       }
+      if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
+                          || (strcmp(chk_name, "..") == 0)) {
+        global_stat_cache_misses++;
+        return False;
+      }
+    } else {
+      scp = (stat_cache_entry *)(hash_elem->value);
+      global_stat_cache_hits++;
+      trans_name = scp->names+scp->name_len+1;
+      if(conn->vfs_ops.stat(dos_to_unix(trans_name,False), pst) != 0) {
+        /* Discard this entry - it doesn't exist in the filesystem.  */
+        hash_remove(&stat_cache, hash_elem);
+        return False;
+      }
+      memcpy(name, trans_name, scp->name_len);
+      *start = &name[scp->name_len];
+      if(**start == '/')
+        ++*start;
+      StrnCpy( dirpath, trans_name, name - (*start));
+      return (namelen == scp->name_len);
     }
   }
-
-  if(longest_hit == NULL) {
-    DEBUG(10,("stat_cache_lookup: cache miss on %s\n", name));
-    global_stat_cache_misses++;
-    return False;
-  }
-
-  global_stat_cache_hits++;
-
-  DEBUG(10,("stat_cache_lookup: cache hit for name %s. %s -> %s\n",
-        name, longest_hit->orig_name, longest_hit->translated_name ));
-
-  /*
-   * longest_hit is the longest match we got in the list.
-   * Check it exists - if so, overwrite the original name
-   * and then promote it to the top.
-   */
-
-  if(conn->vfs_ops.stat(dos_to_unix(longest_hit->translated_name,False), 
-                        pst) != 0) {
-    /*
-     * Discard this entry.
-     */
-    ubi_dlRemThis( &stat_cache, longest_hit);
-    free((char *)longest_hit);
-    return False;
-  }
-
-  memcpy(name, longest_hit->translated_name, longest_hit->name_len);
-  if( (stat_cache_entry *)ubi_dlFirst( &stat_cache) != longest_hit ) {
-    ubi_dlRemThis( &stat_cache, longest_hit);
-    ubi_dlAddHead( &stat_cache, longest_hit);
-  }
-
-  *start = &name[longest_hit->name_len];
-  if(**start == '/')
-    ++*start;
-
-  StrnCpy( dirpath, longest_hit->translated_name, name - (*start));
-
-  return (namelen == longest_hit->name_len);
 }
 
-/****************************************************************************
- this routine converts from the dos and dfs namespace to the unix namespace.
-****************************************************************************/
-BOOL unix_dfs_convert(char *name,connection_struct *conn,
-				char *saved_last_component, 
-				BOOL *bad_path, SMB_STRUCT_STAT *pst)
-{
-	pstring local_path;
-
-	DEBUG(10,("unix_dfs_convert: %s\n", name));
-
-	if (name != NULL &&
-	    under_dfs(conn, name, local_path, sizeof(local_path)))
-	{
-		DEBUG(10,("%s is in dfs map.\n", name));
-
-		/* check for our own name */
-		if (StrCaseCmp(global_myname, name+1) > 0)
-		{
-			return False;
-		}
-
-		pstrcpy(name, local_path);
-
-		DEBUG(10,("removed name: %s\n", name));
-	}
-	return unix_convert(name, conn, saved_last_component, bad_path, pst);
-}
-
-
-/*******************************************************************
-reduce a file name, removing .. elements. 
-********************************************************************/
-static void unix_clean_name(char *s)
-{
-  char *p=NULL;
-
-  DEBUG(3,("unix_clean_name [%s]\n",s));
-
-  /* remove any double slashes */
-  string_sub(s, "//","/");
-
-  /* Remove leading ./ characters */
-  if(strncmp(s, "./", 2) == 0) {
-    trim_string(s, "./", NULL);
-    if(*s == 0)
-      pstrcpy(s,"./");
-  }
-
-  while ((p = strstr(s,"/../")) != NULL)
-    {
-      pstring s1;
-
-      *p = 0;
-      pstrcpy(s1,p+3);
-
-      if ((p=strrchr(s,'/')) != NULL)
-	*p = 0;
-      else
-	*s = 0;
-      pstrcat(s,s1);
-    }  
-
-  trim_string(s,NULL,"/..");
-}
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format
@@ -396,15 +332,14 @@ used to pick the correct error code to return between ENOENT and ENOTDIR
 as Windows applications depend on ERRbadpath being returned if a component
 of a pathname does not exist.
 ****************************************************************************/
-BOOL unix_convert(char *name,connection_struct *conn,
-				char *saved_last_component, 
-				BOOL *bad_path, SMB_STRUCT_STAT *pst)
+
+BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
+                  BOOL *bad_path, SMB_STRUCT_STAT *pst)
 {
   SMB_STRUCT_STAT st;
   char *start, *end;
   pstring dirpath;
   pstring orig_path;
-  int saved_errno;
   BOOL component_was_mangled = False;
   BOOL name_has_wildcard = False;
 #if 0
@@ -417,7 +352,7 @@ BOOL unix_convert(char *name,connection_struct *conn,
   *dirpath = 0;
   *bad_path = False;
   if(pst) {
-	  ZERO_STRUCTP(pst);
+    ZERO_STRUCTP(pst);
   }
 
   if(saved_last_component)
@@ -480,7 +415,7 @@ BOOL unix_convert(char *name,connection_struct *conn,
 
       for (s=name2 ; *s ; s++)
         if (!issafe(*s)) *s = '_';
-      pstrcpy(name,(char *)mktemp(name2));	  
+      pstrcpy(name,(char *)smbd_mktemp(name2));	  
     }      
     return(True);
   }
@@ -518,8 +453,6 @@ BOOL unix_convert(char *name,connection_struct *conn,
     return(True);
   }
 
-  saved_errno = errno;
-
   DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n",
         name, dirpath, start));
 
@@ -529,7 +462,7 @@ BOOL unix_convert(char *name,connection_struct *conn,
    */
 
   if (case_sensitive && !is_mangled(name) && 
-      !lp_strip_dot() && !use_mangled_map && (saved_errno != ENOENT))
+      !lp_strip_dot() && !use_mangled_map)
     return(False);
 
   if(strchr(start,'?') || strchr(start,'*'))
@@ -702,136 +635,6 @@ BOOL unix_convert(char *name,connection_struct *conn,
   return(True);
 }
 
-/*******************************************************************
-reduce a file name, removing .. elements and checking that 
-it is below dir in the hierarchy. This uses GetWd() and so must be run
-on the system that has the referenced file system.
-
-widelinks are allowed if widelinks is true
-********************************************************************/
-
-static BOOL reduce_name(char *s,char *dir,BOOL widelinks)
-{
-#ifndef REDUCE_PATHS
-  return True;
-#else
-  pstring dir2;
-  pstring wd;
-  pstring base_name;
-  pstring newname;
-  char *p=NULL;
-  BOOL relative = (*s != '/');
-
-  *dir2 = *wd = *base_name = *newname = 0;
-
-  if (widelinks)
-    {
-      unix_clean_name(s);
-      /* can't have a leading .. */
-      if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
-	{
-	  DEBUG(3,("Illegal file name? (%s)\n",s));
-	  return(False);
-	}
-
-      if (strlen(s) == 0)
-        pstrcpy(s,"./");
-
-      return(True);
-    }
-  
-  DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
-
-  /* remove any double slashes */
-  string_sub(s,"//","/");
-
-  pstrcpy(base_name,s);
-  p = strrchr(base_name,'/');
-
-  if (!p)
-    return(True);
-
-  if (!dos_GetWd(wd))
-    {
-      DEBUG(0,("couldn't getwd for %s %s\n",s,dir));
-      return(False);
-    }
-
-  if (dos_ChDir(dir) != 0)
-    {
-      DEBUG(0,("couldn't chdir to %s\n",dir));
-      return(False);
-    }
-
-  if (!dos_GetWd(dir2))
-    {
-      DEBUG(0,("couldn't getwd for %s\n",dir));
-      dos_ChDir(wd);
-      return(False);
-    }
-
-
-    if (p && (p != base_name))
-      {
-	*p = 0;
-	if (strcmp(p+1,".")==0)
-	  p[1]=0;
-	if (strcmp(p+1,"..")==0)
-	  *p = '/';
-      }
-
-  if (dos_ChDir(base_name) != 0)
-    {
-      dos_ChDir(wd);
-      DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,base_name));
-      return(False);
-    }
-
-  if (!dos_GetWd(newname))
-    {
-      dos_ChDir(wd);
-      DEBUG(2,("couldn't get wd for %s %s\n",s,dir2));
-      return(False);
-    }
-
-  if (p && (p != base_name))
-    {
-      pstrcat(newname,"/");
-      pstrcat(newname,p+1);
-    }
-
-  {
-    size_t l = strlen(dir2);    
-    if (dir2[l-1] == '/')
-      l--;
-
-    if (strncmp(newname,dir2,l) != 0)
-      {
-	dos_ChDir(wd);
-	DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
-	return(False);
-      }
-
-    if (relative)
-      {
-	if (newname[l] == '/')
-	  pstrcpy(s,newname + l + 1);
-	else
-	  pstrcpy(s,newname+l);
-      }
-    else
-      pstrcpy(s,newname);
-  }
-
-  dos_ChDir(wd);
-
-  if (strlen(s) == 0)
-    pstrcpy(s,"./");
-
-  DEBUG(3,("reduced to %s\n",s));
-  return(True);
-#endif
-}
 
 /****************************************************************************
 check a filename - possibly caling reducename
@@ -925,7 +728,8 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
 	continue;
 
       pstrcpy(name2,dname);
-      if (!name_map_mangle(name2,False,SNUM(conn))) continue;
+      if (!name_map_mangle(name2,False,True,SNUM(conn)))
+        continue;
 
       if ((mangled && mangled_equal(name,name2))
 	  || fname_equal(name, name2))
@@ -941,3 +745,16 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   CloseDir(cur_dir);
   return(False);
 }
+
+/*************************************************************************** **
+ * Initializes or clears the stat cache.
+ *
+ *  Input:  none.
+ *  Output: none.
+ *
+ * ************************************************************************** **
+ */
+BOOL reset_stat_cache( void )
+{
+  return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
+} /* reset_stat_cache  */

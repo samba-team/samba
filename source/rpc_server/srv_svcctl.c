@@ -31,8 +31,8 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  api_svc_close
  ********************************************************************/
-static BOOL api_svc_close( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_svc_close(rpcsrv_struct * p, prs_struct *data,
+			  prs_struct *rdata)
 {
 	SVC_Q_CLOSE q_r;
 	SVC_R_CLOSE r_u;
@@ -45,7 +45,7 @@ static BOOL api_svc_close( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-	memcpy(&r_u.pol, &q_r.pol, sizeof(POLICY_HND));
+	r_u.pol = q_r.pol;
 	r_u.status = _svc_close(&r_u.pol);
 
 	/* store the response in the SMB stream */
@@ -55,8 +55,8 @@ static BOOL api_svc_close( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  api_svc_open_service
  ********************************************************************/
-static BOOL api_svc_open_service( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_svc_open_service(rpcsrv_struct * p, prs_struct *data,
+				 prs_struct *rdata)
 {
 	SVC_Q_OPEN_SERVICE q_u;
 	SVC_R_OPEN_SERVICE r_u;
@@ -69,10 +69,9 @@ static BOOL api_svc_open_service( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-	r_u.status = _svc_open_service(&q_u.scman_pol, 
-						 &q_u.uni_svc_name,
-						 q_u.des_access,
-						 &r_u.pol);
+	r_u.status = _svc_open_service(&q_u.scman_pol,
+				       &q_u.uni_svc_name,
+				       q_u.des_access, &r_u.pol);
 
 	/* store the response in the SMB stream */
 	return svc_io_r_open_service("", &r_u, rdata, 0);
@@ -81,8 +80,8 @@ static BOOL api_svc_open_service( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  api_svc_stop_service
  ********************************************************************/
-static BOOL api_svc_stop_service( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_svc_stop_service(rpcsrv_struct * p, prs_struct *data,
+				 prs_struct *rdata)
 {
 	SVC_Q_STOP_SERVICE q_u;
 	SVC_R_STOP_SERVICE r_s;
@@ -96,14 +95,13 @@ static BOOL api_svc_stop_service( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	r_s.status = _svc_stop_service(&q_u.pol,
-				 		 q_u.unknown,
-				 		 &r_s.unknown0,
-				 		 &r_s.unknown1,
-				 		 &r_s.unknown2,
-				 		 &r_s.unknown3,
-				 		 &r_s.unknown4,
-				 		 &r_s.unknown5,
-				 		 &r_s.unknown6);
+				       q_u.unknown,
+				       &r_s.unknown0,
+				       &r_s.unknown1,
+				       &r_s.unknown2,
+				       &r_s.unknown3,
+				       &r_s.unknown4,
+				       &r_s.unknown5, &r_s.unknown6);
 
 	/* store the response in the SMB stream */
 	return svc_io_r_stop_service("", &r_s, rdata, 0);
@@ -112,8 +110,8 @@ static BOOL api_svc_stop_service( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  api_svc_start_service
  ********************************************************************/
-static BOOL api_svc_start_service( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_svc_start_service(rpcsrv_struct * p, prs_struct *data,
+				  prs_struct *rdata)
 {
 	SVC_Q_START_SERVICE q_u;
 	SVC_R_START_SERVICE r_s;
@@ -127,9 +125,7 @@ static BOOL api_svc_start_service( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	r_s.status = _svc_start_service(&q_u.pol,
-						  q_u.argc,
-						  q_u.argc2,
-						  q_u.argv);
+					q_u.argc, q_u.argc2, q_u.argv);
 
 	/* store the response in the SMB stream */
 	return svc_io_r_start_service("", &r_s, rdata, 0);
@@ -138,8 +134,8 @@ static BOOL api_svc_start_service( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  api_svc_open_sc_man
  ********************************************************************/
-static BOOL api_svc_open_sc_man( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_svc_open_sc_man(rpcsrv_struct * p, prs_struct *data,
+				prs_struct *rdata)
 {
 	SVC_Q_OPEN_SC_MAN q_u;
 	SVC_R_OPEN_SC_MAN r_u;
@@ -153,9 +149,8 @@ static BOOL api_svc_open_sc_man( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	r_u.status = _svc_open_sc_man(&q_u.uni_srv_name,
-						&q_u.uni_db_name,
-						q_u.des_access,
-						&r_u.pol);
+				      &q_u.uni_db_name,
+				      q_u.des_access, &r_u.pol);
 
 	/* store the response in the SMB stream */
 	return svc_io_r_open_sc_man("", &r_u, rdata, 0);
@@ -164,8 +159,8 @@ static BOOL api_svc_open_sc_man( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  api_svc_enum_svcs_status
  ********************************************************************/
-static BOOL api_svc_enum_svcs_status( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_svc_enum_svcs_status(rpcsrv_struct * p, prs_struct *data,
+				     prs_struct *rdata)
 {
 	SVC_Q_ENUM_SVCS_STATUS q_u;
 	SVC_R_ENUM_SVCS_STATUS r_u;
@@ -185,17 +180,16 @@ static BOOL api_svc_enum_svcs_status( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	buf_size = q_u.buf_size;
-	memcpy(&resume_hnd, &q_u.resume_hnd, sizeof(ENUM_HND));
+	resume_hnd = q_u.resume_hnd;
 	status = _svc_enum_svcs_status(&q_u.pol,
-						 q_u.service_type,
-						 q_u.service_state,
-						 &buf_size,
-						 &resume_hnd,
-						 svcs,
-						 &more_buf_size,
-						 &num_svcs);
-	make_svc_r_enum_svcs_status(&r_u, svcs, more_buf_size, num_svcs, &resume_hnd, status);
-	
+				       q_u.service_type,
+				       q_u.service_state,
+				       &buf_size,
+				       &resume_hnd,
+				       svcs, &more_buf_size, &num_svcs);
+	make_svc_r_enum_svcs_status(&r_u, svcs, more_buf_size, num_svcs,
+				    &resume_hnd, status);
+
 	/* store the response in the SMB stream */
 	return svc_io_r_enum_svcs_status("", &r_u, rdata, 0);
 }
@@ -203,8 +197,8 @@ static BOOL api_svc_enum_svcs_status( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  api_svc_query_disp_name
  ********************************************************************/
-static BOOL api_svc_query_disp_name( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_svc_query_disp_name(rpcsrv_struct * p, prs_struct *data,
+				    prs_struct *rdata)
 {
 	SVC_Q_QUERY_DISP_NAME q_u;
 	SVC_R_QUERY_DISP_NAME r_u;
@@ -218,10 +212,9 @@ static BOOL api_svc_query_disp_name( rpcsrv_struct *p, prs_struct *data,
 	}
 
 	r_u.status = _svc_query_disp_name(&q_u.scman_pol,
-						    &q_u.uni_svc_name,
-						    q_u.buf_size,
-						    &r_u.uni_disp_name,
-						    &r_u.buf_size);
+					  &q_u.uni_svc_name,
+					  q_u.buf_size,
+					  &r_u.uni_disp_name, &r_u.buf_size);
 
 	/* store the response in the SMB stream */
 	return svc_io_r_query_disp_name("", &r_u, rdata, 0);
@@ -230,7 +223,7 @@ static BOOL api_svc_query_disp_name( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  api_svc_unknown_3
  ********************************************************************/
-static BOOL api_svc_unknown_3(rpcsrv_struct *p, prs_struct *data,
+static BOOL api_svc_unknown_3(rpcsrv_struct * p, prs_struct *data,
 			      prs_struct *rdata)
 {
 	SVC_Q_UNKNOWN_3 q_u;
@@ -253,24 +246,24 @@ static BOOL api_svc_unknown_3(rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  array of \PIPE\svcctl operations
  ********************************************************************/
-static const struct api_struct api_svc_cmds[] =
-{
-	{ "SVC_CLOSE"           , SVC_CLOSE           , api_svc_close            },
-	{ "SVC_OPEN_SC_MAN"     , SVC_OPEN_SC_MAN     , api_svc_open_sc_man      },
-	{ "SVC_OPEN_SERVICE"    , SVC_OPEN_SERVICE    , api_svc_open_service     },
-	{ "SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS, api_svc_enum_svcs_status },
-	{ "SVC_QUERY_DISP_NAME" , SVC_QUERY_DISP_NAME , api_svc_query_disp_name  },
-	{ "SVC_START_SERVICE"   , SVC_START_SERVICE   , api_svc_start_service    },
-	{ "SVC_STOP_SERVICE"    , SVC_STOP_SERVICE    , api_svc_stop_service     },
-	{ "SVC_UNKNOWN_3"       , SVC_UNKNOWN_3       , api_svc_unknown_3        },
-	{ NULL                  , 0                   , NULL                     }
+static const struct api_struct api_svc_cmds[] = {
+	{"SVC_CLOSE", SVC_CLOSE, api_svc_close},
+	{"SVC_OPEN_SC_MAN", SVC_OPEN_SC_MAN, api_svc_open_sc_man},
+	{"SVC_OPEN_SERVICE", SVC_OPEN_SERVICE, api_svc_open_service},
+	
+		{"SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS,
+	 api_svc_enum_svcs_status},
+	{"SVC_QUERY_DISP_NAME", SVC_QUERY_DISP_NAME, api_svc_query_disp_name},
+	{"SVC_START_SERVICE", SVC_START_SERVICE, api_svc_start_service},
+	{"SVC_STOP_SERVICE", SVC_STOP_SERVICE, api_svc_stop_service},
+	{"SVC_UNKNOWN_3", SVC_UNKNOWN_3, api_svc_unknown_3},
+	{NULL, 0, NULL}
 };
 
 /*******************************************************************
  receives a svcctl pipe and responds.
  ********************************************************************/
-BOOL api_svcctl_rpc(rpcsrv_struct *p)
+BOOL api_svcctl_rpc(rpcsrv_struct * p)
 {
 	return api_rpcTNP(p, "api_svc_rpc", api_svc_cmds);
 }
-

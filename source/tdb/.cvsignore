@@ -1,3 +1,4 @@
+.libs
 *.lo
 tdbtool
 tdbtest

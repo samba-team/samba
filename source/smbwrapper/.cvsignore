@@ -1,3 +1,4 @@
+.libs
 *.po
 *.po32
 kernel_stat.h

@@ -55,6 +55,7 @@ static int verbose, brief;
 static int            shares_only = 0;            /* Added by RJS */
 static int            locks_only  = 0;            /* Added by RJS */
 static BOOL processes_only=False;
+static int show_brl;
 
 
 /* added by OH */
@@ -103,12 +104,13 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
 	if (Ucrit_checkPid(e->pid)) {
           printf("%-5d  ",(int)e->pid);
-	  switch ((e->share_mode>>4)&0xF) {
+	  switch (GET_DENY_MODE(e->share_mode)) {
 	  case DENY_NONE: printf("DENY_NONE  "); break;
 	  case DENY_ALL:  printf("DENY_ALL   "); break;
 	  case DENY_DOS:  printf("DENY_DOS   "); break;
 	  case DENY_READ: printf("DENY_READ  "); break;
 	  case DENY_WRITE:printf("DENY_WRITE "); break;
+	  case DENY_FCB:  printf("DENY_FCB "); break;
 	  }
 	  switch (e->share_mode&0xF) {
 	  case 0: printf("RDONLY     "); break;
@@ -134,6 +136,24 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	}
 }
 
+static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+		      enum brl_type lock_type,
+		      br_off start, br_off size)
+{
+	static int count;
+	if (count==0) {
+		printf("Byte range locks:\n");
+		printf("   Pid     dev:inode  R/W      start        size\n");
+		printf("------------------------------------------------\n");
+	}
+	count++;
+
+	printf("%6d   %05x:%05x    %s  %9.0f   %9.0f\n", 
+	       (int)pid, (int)dev, (int)ino, 
+	       lock_type==READ_LOCK?"R":"W",
+	       (double)start, (double)size);
+}
+
 
 /*******************************************************************
  dump the elements of the profile structure
@@ -156,7 +176,7 @@ static int profile_dump(void)
 }
 
 
-static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
+static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	static pid_t last_pid;
 	struct session_record *ptr;
@@ -234,10 +254,13 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 		return(1);
 	}
 	
-	while ((c = getopt(argc, argv, "pdLSs:u:bP")) != EOF) {
+	while ((c = getopt(argc, argv, "pdLSs:u:bPB")) != EOF) {
 		switch (c) {
 		case 'b':
 			brief = 1;
+			break;
+		case 'B':
+			show_brl = 1;
 			break;
 		case 'd':
 			verbose = 1;
@@ -336,6 +359,10 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 		}
 		
 		printf("\n");
+
+		if (show_brl) {
+			brl_forall(print_brl);
+		}
 		
 		locking_end();
 	}

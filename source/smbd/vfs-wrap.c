@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   Wrap disk only vfs functions to sidestep dodgy compilers.
+s   Wrap disk only vfs functions to sidestep dodgy compilers.
    Copyright (C) Tim Potter 1998
    
    This program is free software; you can redistribute it and/or modify
@@ -41,7 +41,7 @@ void vfswrap_dummy_disconnect(void)
 
 /* Disk operations */
 
-SMB_BIG_UINT vfswrap_disk_free(char *path, SMB_BIG_UINT *bsize, 
+SMB_BIG_UINT vfswrap_disk_free(char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
     SMB_BIG_UINT result;
@@ -54,7 +54,7 @@ SMB_BIG_UINT vfswrap_disk_free(char *path, SMB_BIG_UINT *bsize,
     }
 #endif
 
-    result = sys_disk_free(path, bsize, dfree, dsize);
+    result = sys_disk_free(path, small_query, bsize, dfree, dsize);
     return result;
 }
     
@@ -204,9 +204,9 @@ int vfswrap_rename(char *old, char *new)
     return result;
 }
 
-void vfswrap_sync_file(int fd)
+void vfswrap_fsync(int fd)
 {
-    sys_sync_file(fd);
+    fsync(fd);
 }
 
 int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf)
@@ -249,15 +249,6 @@ int vfswrap_lstat(char *path,
 #endif
 
     result = sys_lstat(path, sbuf);
-    return result;
-}
-
-BOOL vfswrap_fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, 
-			int type)
-{
-    BOOL result;
-
-    result = fcntl_lock(fd, op, offset, count, type);
     return result;
 }
 

@@ -26,7 +26,6 @@ extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
 extern fstring remote_machine;
-extern dfs_internal dfs_struct;
 
 /****************************************************************************
 reply for the core protocol
@@ -150,6 +149,16 @@ reply for the nt protocol
 static int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|
+                     (lp_nt_smb_support() ? CAP_NT_SMBS | CAP_RPC_REMOTE_APIS : 0) |
+                     (SMB_OFF_T_BITS == 64 ? CAP_LARGE_FILES : 0);
+
+
+/*
+  other valid capabilities which we may support at some time...
+                     CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
+ */
+
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
@@ -157,27 +166,6 @@ static int reply_nt1(char *outbuf)
   char cryptkey[8];
   char crypt_len = 0;
 
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ;
-
-	if (lp_nt_smb_support())
-	{
-		capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
-	}
-
-	if (SMB_OFF_T_BITS == 64)
-	{
-		capabilities |= CAP_LARGE_FILES;
-	}
-
-	if (dfs_struct.ready==True)
-	{
-		capabilities |= CAP_DFS;
-	}
-
-/*
-  other valid capabilities which we may support at some time...
-                     CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
- */
 
   if (doencrypt) {
 	  crypt_len = 8;
@@ -187,6 +175,11 @@ static int reply_nt1(char *outbuf)
   if (lp_readraw() && lp_writeraw()) {
 	  capabilities |= CAP_RAW_MODE;
   }
+
+#ifdef MS_DFS
+  if(lp_host_msdfs())
+	capabilities |= CAP_DFS;
+#endif
 
   if (lp_security() >= SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
@@ -242,6 +235,14 @@ protocol [LM1.2X002]
 protocol [LANMAN2.1]
 protocol [NT LM 0.12]
 
+Win2K:
+protocol [PC NETWORK PROGRAM 1.0]
+protocol [LANMAN1.0]
+protocol [Windows for Workgroups 3.1a]
+protocol [LM1.2X002]
+protocol [LANMAN2.1]
+protocol [NT LM 0.12]
+
 OS/2:
 protocol [PC NETWORK PROGRAM 1.0]
 protocol [XENIX CORE]
@@ -255,29 +256,31 @@ protocol [LANMAN2.1]
   *
   * This appears to be the matrix of which protocol is used by which
   * MS product.
-       Protocol                       WfWg    Win95   WinNT  OS/2
-       PC NETWORK PROGRAM 1.0          1       1       1      1
+       Protocol                       WfWg    Win95   WinNT  Win2K  OS/2
+       PC NETWORK PROGRAM 1.0          1       1       1      1      1
        XENIX CORE                                      2      2
        MICROSOFT NETWORKS 3.0          2       2       
        DOS LM1.2X002                   3       3       
        MICROSOFT NETWORKS 1.03                         3
        DOS LANMAN2.1                   4       4       
-       LANMAN1.0                                       4      3
-       Windows for Workgroups 3.1a     5       5       5
-       LM1.2X002                                       6      4
-       LANMAN2.1                                       7      5
-       NT LM 0.12                              6       8
+       LANMAN1.0                                       4      2      3
+       Windows for Workgroups 3.1a     5       5       5      3
+       LM1.2X002                                       6      4      4
+       LANMAN2.1                                       7      5      5
+       NT LM 0.12                              6       8      6
   *
   *  tim@fsg.com 09/29/95
+  *  Win2K added by matty 17/7/99
   */
   
 #define ARCH_WFWG     0x3      /* This is a fudge because WfWg is like Win95 */
 #define ARCH_WIN95    0x2
-#define	ARCH_OS2      0xC      /* Again OS/2 is like NT */
-#define ARCH_WINNT    0x8
-#define ARCH_SAMBA    0x10
+#define ARCH_WINNT    0x4
+#define ARCH_WIN2K    0xC      /* Win2K is like NT */
+#define ARCH_OS2      0x14     /* Again OS/2 is like NT */
+#define ARCH_SAMBA    0x20
  
-#define ARCH_ALL      0x1F
+#define ARCH_ALL      0x3F
  
 /* List of supported protocols, most desired first */
 static struct {
@@ -295,7 +298,7 @@ static struct {
   {"MICROSOFT NETWORKS 3.0",  "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
   {"MICROSOFT NETWORKS 1.03", "COREPLUS", reply_coreplus, PROTOCOL_COREPLUS},
   {"PC NETWORK PROGRAM 1.0",  "CORE",     reply_corep,    PROTOCOL_CORE}, 
-  {NULL,NULL},
+  {NULL,NULL,NULL,0},
 };
 
 
@@ -320,17 +323,17 @@ int reply_negprot(connection_struct *conn,
       Index++;
       DEBUG(3,("Requested protocol [%s]\n",p));
       if (strcsequal(p,"Windows for Workgroups 3.1a"))
-	arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT );
+	arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
       else if (strcsequal(p,"DOS LM1.2X002"))
 	arch &= ( ARCH_WFWG | ARCH_WIN95 );
       else if (strcsequal(p,"DOS LANMAN2.1"))
 	arch &= ( ARCH_WFWG | ARCH_WIN95 );
       else if (strcsequal(p,"NT LM 0.12"))
-	arch &= ( ARCH_WIN95 | ARCH_WINNT );
+	arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
       else if (strcsequal(p,"LANMAN2.1"))
-	arch &= ( ARCH_WINNT | ARCH_OS2 );
+	arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
       else if (strcsequal(p,"LM1.2X002"))
-	arch &= ( ARCH_WINNT | ARCH_OS2 );
+	arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
       else if (strcsequal(p,"MICROSOFT NETWORKS 1.03"))
 	arch &= ARCH_WINNT;
       else if (strcsequal(p,"XENIX CORE"))
@@ -354,7 +357,13 @@ int reply_negprot(connection_struct *conn,
     set_remote_arch(RA_WIN95);
     break;
   case ARCH_WINNT:
+   if(SVAL(inbuf,smb_flg2)==FLAGS2_WIN2K_SIGNATURE)
+     set_remote_arch(RA_WIN2K);
+   else
     set_remote_arch(RA_WINNT);
+    break;
+  case ARCH_WIN2K:
+    set_remote_arch(RA_WIN2K);
     break;
   case ARCH_OS2:
     set_remote_arch(RA_OS2);

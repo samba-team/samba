@@ -21,13 +21,13 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "sids.h"
 
 extern int DEBUGLEVEL;
 extern int Protocol;
 extern int Client;  
 extern int smb_read_error;
 extern int global_oplock_break;
-extern int chain_size;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
@@ -37,10 +37,8 @@ static void remove_pending_change_notify_requests_by_mid(int mid);
 static char *known_nt_pipes[] = {
   "\\LANMAN",
   "\\srvsvc",
-  "\\svcctl",
   "\\samr",
   "\\wkssvc",
-  "\\browser",
   "\\NETLOGON",
   "\\ntlsa",
   "\\ntsvcs",
@@ -58,7 +56,7 @@ static char *known_nt_pipes[] = {
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(char *outbuf, int bufsize, char *params,
+static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_error, char *params,
                            int paramsize, char *pdata, int datasize)
 {
   extern int max_send;
@@ -77,6 +75,13 @@ static int send_nt_replies(char *outbuf, int bufsize, char *params,
    */
 
   set_message(outbuf,18,0,True);
+
+  if(nt_error != 0) {
+    /* NT Error. */
+    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+
+    ERROR(0,nt_error);
+  }
 
   /* 
    * If there genuinely are no parameters or data to send just send
@@ -240,16 +245,15 @@ static int send_nt_replies(char *outbuf, int bufsize, char *params,
  strings in NT calls AND DOESN'T SET THE UNICODE BIT !!!!!!!
 ****************************************************************************/
 
-static void my_wcstombs(char *dst, uint16 *src, size_t len)
-{
-  size_t i;
-
-  for(i = 0; i < len; i++)
-    dst[i] = (char)SVAL(src,i*2);
-}
-
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
+  /*
+   * We need various heuristics here to detect a unicode string... JRA.
+   */
+
+  DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
+           data_offset, data_len, fname_len ));
+
   if(data_len - fname_len > 1) {
     /*
      * NT 5.0 Beta 2 has kindly sent us a UNICODE string
@@ -261,11 +265,46 @@ static void get_filename( char *fname, char *inbuf, int data_offset, int data_le
     fname_len = fname_len/2;
     if(data_offset & 1)
       data_offset++;
-    my_wcstombs( fname, (uint16 *)(inbuf+data_offset), fname_len);
+    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
   } else {
     StrnCpy(fname,inbuf+data_offset,fname_len);
+    fname[fname_len] = '\0';
   }
-  fname[fname_len] = '\0';
+}
+
+/****************************************************************************
+ Fix bugs in Win2000 final release. In trans calls this OS sends unicode
+ strings AND DOESN'T SET THE UNICODE BIT !!!!!!!
+****************************************************************************/
+
+static void get_filename_transact( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
+{
+  /*
+   * We need various heuristics here to detect a unicode string... JRA.
+   */
+
+  DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
+           data_offset, data_len, fname_len ));
+
+  /*
+   * Win2K sends a unicode filename plus one extra alingment byte.
+   * WinNT4.x send an ascii string with multiple garbage bytes on
+   * the end here.
+   */
+
+  if((data_len - fname_len == 1) || (inbuf[data_offset] == '\0')) {
+    /*
+     * Ensure that the data offset is aligned
+     * on a 2 byte boundary - add one if not.
+     */
+    fname_len = fname_len/2;
+    if(data_offset & 1)
+      data_offset++;
+    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
+  } else {
+    StrnCpy(fname,inbuf+data_offset,fname_len);
+    fname[fname_len] = '\0';
+  }
 }
 
 /****************************************************************************
@@ -355,18 +394,25 @@ static int map_create_disposition( uint32 create_disposition)
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( char *fname, uint32 desired_access, uint32 share_access, uint32 file_attributes)
+static int map_share_mode( BOOL *pstat_open_only, char *fname,
+							uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
   int smb_open_mode = -1;
 
-  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA) ) {
+  *pstat_open_only = False;
+
+  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
   case FILE_READ_DATA:
     smb_open_mode = DOS_OPEN_RDONLY;
     break;
   case FILE_WRITE_DATA:
+  case FILE_APPEND_DATA:
+  case FILE_WRITE_DATA|FILE_APPEND_DATA:
     smb_open_mode = DOS_OPEN_WRONLY;
     break;
   case FILE_READ_DATA|FILE_WRITE_DATA:
+  case FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA:
+  case FILE_READ_DATA|FILE_APPEND_DATA:
     smb_open_mode = DOS_OPEN_RDWR;
     break;
   }
@@ -386,8 +432,12 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
    */
 
   if (smb_open_mode == -1) {
+	if(desired_access == WRITE_DAC_ACCESS || desired_access == READ_CONTROL_ACCESS)
+		*pstat_open_only = True;
+
     if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
                               FILE_EXECUTE|FILE_READ_ATTRIBUTES|
+                              FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
                               FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS))
       smb_open_mode = DOS_OPEN_RDONLY;
     else {
@@ -464,10 +514,39 @@ static time_t fail_time;
 
 void fail_next_srvsvc_open(void)
 {
+  /* Check client is WinNT proper; Win2K doesn't like Jeremy's hack - matty */
+  if (get_remote_arch() != RA_WINNT)
+    return;
+
   fail_next_srvsvc = True;
   fail_time = time(NULL);
   DEBUG(10,("fail_next_srvsvc_open: setting up timeout close of \\srvsvc pipe for print fix.\n"));
 }
+
+/*
+ * HACK alert.... see above - JRA.
+ */
+
+BOOL should_fail_next_srvsvc_open(const char *pipename)
+{
+
+  DEBUG(10,("should_fail_next_srvsvc_open: fail = %d, pipe = %s\n",
+    (int)fail_next_srvsvc, pipename));
+
+  if(fail_next_srvsvc && (time(NULL) > fail_time + HACK_FAIL_TIME)) {
+    fail_next_srvsvc = False;
+    fail_time = (time_t)0;
+    DEBUG(10,("should_fail_next_srvsvc_open: End of timeout close of \\srvsvc pipe for print fix.\n"));
+  }
+
+  if(fail_next_srvsvc && strequal(pipename, "srvsvc")) {
+    fail_next_srvsvc = False;
+    DEBUG(10,("should_fail_next_srvsvc_open: Deliberately failing open of \\srvsvc pipe for print fix.\n"));
+    return True;
+  }
+  return False;
+}
+
 
 /****************************************************************************
  Reply to an NT create and X call on a pipe.
@@ -475,9 +554,8 @@ void fail_next_srvsvc_open(void)
 static int nt_open_pipe(char *fname, connection_struct *conn,
 			char *inbuf, char *outbuf, int *ppnum)
 {
-	vuser_key key;
 	pipes_struct *p = NULL;
-
+	vuser_key key;
 	uint16 vuid = SVAL(inbuf, smb_uid);
 	int i;
 
@@ -488,32 +566,15 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 		if( strequal(fname,known_nt_pipes[i]))
 			break;
     
-	/*
-	 * HACK alert.... see above - JRA.
-	 */
-
-	if(fail_next_srvsvc && (time(NULL) > fail_time + HACK_FAIL_TIME)) {
-		fail_next_srvsvc = False;
-		fail_time = (time_t)0;
-		DEBUG(10,("nt_open_pipe: End of timeout close of \\srvsvc pipe for print fix.\n"));
-	}
-
-	if(fail_next_srvsvc && strequal(fname, "\\srvsvc")) {
-		fail_next_srvsvc = False;
-		DEBUG(10,("nt_open_pipe: Deliberately failing open of \\srvsvc pipe for print fix.\n"));
-		return(ERROR(ERRSRV,ERRaccess));
-	}
-
-	/*
-	 * End hack alert.... see above - JRA.
-	 */
-
 	if ( known_nt_pipes[i] == NULL )
 		return(ERROR(ERRSRV,ERRaccess));
     
 	/* Strip \\ off the name. */
 	fname++;
     
+	if(should_fail_next_srvsvc_open(fname))
+		return (ERROR(ERRSRV,ERRaccess));
+
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
 	key.pid = getpid();
@@ -550,7 +611,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	int oplock_request = 0;
-    mode_t unixmode;
+	mode_t unixmode;
 	int pnum = -1;
 	int fmode=0,rmode=0;
 	SMB_OFF_T file_len = 0;
@@ -559,6 +620,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
+	BOOL stat_open_only = False;
 
 	/* 
 	 * We need to construct the open_and_X ofun value from the
@@ -579,8 +641,23 @@ int reply_ntcreate_and_X(connection_struct *conn,
       files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
       size_t dir_name_len;
 
-      if(!dir_fsp || !dir_fsp->is_directory)
+      if(!dir_fsp)
         return(ERROR(ERRDOS,ERRbadfid));
+
+      if(!dir_fsp->is_directory) {
+        /* 
+         * Check to see if this is a mac fork of some kind.
+         */
+
+        get_filename(&fname[0], inbuf, smb_buf(inbuf)-inbuf, 
+                   smb_buflen(inbuf),fname_len);
+
+        if( fname[0] == ':') {
+          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          return(ERROR(0, 0xc0000000|NT_STATUS_OBJECT_PATH_NOT_FOUND));
+        }
+        return(ERROR(ERRDOS,ERRbadfid));
+      }
 
       /*
        * Copy in the base directory name.
@@ -598,31 +675,27 @@ int reply_ntcreate_and_X(connection_struct *conn,
         dir_name_len++;
       }
 
+      /*
+       * This next calculation can refuse a correct filename if we're dealing
+       * with the Win2k unicode bug, but that would be rare. JRA.
+       */
+
       if(fname_len + dir_name_len >= sizeof(pstring))
         return(ERROR(ERRSRV,ERRfilespecs));
 
       get_filename(&fname[dir_name_len], inbuf, smb_buf(inbuf)-inbuf, 
                    smb_buflen(inbuf),fname_len);
-#if 0
-      StrnCpy(&fname[dir_name_len], smb_buf(inbuf),fname_len);
-      fname[dir_name_len+fname_len] = '\0';
-#endif
 
     } else {
       
       get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
                    smb_buflen(inbuf),fname_len);
-
-#if 0
-	  StrnCpy(fname,smb_buf(inbuf),fname_len);
-      fname[fname_len] = '\0';
-#endif
     }
 	
 	/* If it's an IPC, use the pipe handler. */
 
-	if (IS_IPC(conn) && lp_nt_pipe_support() && lp_security() != SEC_SHARE)
-	{
+	if (IS_IPC(conn) && lp_nt_pipe_support()) {
+
 		int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum);
 		if(ret != 0)
 			return ret;
@@ -656,12 +729,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Now contruct the smb_open_mode value from the filename, 
      * desired access and the share access.
 	 */
-	
-	if((smb_open_mode = map_share_mode(fname, desired_access, 
+	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
+	if((smb_open_mode = map_share_mode(&stat_open_only, fname, desired_access, 
 					   share_access, 
-					   file_attributes)) == -1) {
+					   file_attributes)) == -1)
 		return(ERROR(ERRDOS,ERRbadaccess));
-	}
+
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 
 	/*
 	 * Ordinary file or directory.
@@ -673,11 +749,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	set_posix_case_semantics(file_attributes);
 		
-	if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
-	{
-		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-	}
+	unix_convert(fname,conn,0,&bad_path,NULL);
 		
 	fsp = file_new();
 	if (!fsp) {
@@ -697,11 +769,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	} 
 		
-	unixmode = unix_mode(conn,smb_attr | aARCH);
+	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
-	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
-
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -709,8 +778,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		open_directory(fsp, conn, fname, smb_ofun, unixmode, 
-			       &smb_action);
+		open_directory(fsp, conn, fname, smb_ofun, 
+			       unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -736,13 +805,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-   	        open_file_shared(fsp,conn,fname,smb_open_mode,
-				 smb_ofun,unixmode,
-				 oplock_request,&rmode,&smb_action);
+		open_file_shared(fsp,conn,fname,smb_open_mode,
+				 smb_ofun,unixmode, oplock_request,&rmode,&smb_action);
 
 		if (!fsp->open) { 
-			/* We cheat here. The only case we
-			 * care about is a directory rename,
+			/* We cheat here. There are two cases we
+			 * care about. One is a directory rename,
 			 * where the NT client will attempt to
 			 * open the source directory for
 			 * DELETE access. Note that when the
@@ -755,21 +823,54 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			 * will generate an EISDIR error, so
 			 * we can catch this here and open a
 			 * pseudo handle that is flagged as a
-			 * directory. JRA.  */
+			 * directory. The second is an open
+			 * for a permissions read only, which
+			 * we handle in the open_file_stat case. JRA.
+			 */
 
 			if(errno == EISDIR) {
+
+				/*
+				 * Fail the open if it was explicitly a non-directory file.
+				 */
+
+				if (create_options & FILE_NON_DIRECTORY_FILE) {
+					file_free(fsp);
+					restore_case_semantics(file_attributes);
+					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+					return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
+				}
+	
 				oplock_request = 0;
-				
-				open_directory(fsp, conn, fname, 
-					       smb_ofun, unixmode, 
-					       &smb_action);
+				open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp->open) {
 					file_free(fsp);
 					restore_case_semantics(file_attributes);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
+#ifdef EROFS
+			} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
+#else /* !EROFS */
+			} else if (errno == EACCES && stat_open_only) {
+#endif
+				/*
+				 * We couldn't open normally and all we want
+				 * are the permissions. Try and do a stat open.
+				 */
+
+				oplock_request = 0;
+
+				open_file_stat(fsp,conn,fname,smb_open_mode,&sbuf,&smb_action);
+
+				if(!fsp->open) {
+					file_free(fsp);
+					restore_case_semantics(file_attributes);
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
+
 			} else {
+
 				if((errno == ENOENT) && bad_path) {
 					unix_ERR_class = ERRDOS;
 					unix_ERR_code = ERRbadpath;
@@ -785,15 +886,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	if(fsp->is_directory) {
-		if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
-					   &sbuf) != 0) {
-			close_directory(fsp);
+		if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
+			close_file(fsp,True);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) 
-		    != 0) {
+		if (conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -820,9 +919,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
 	
-	if(oplock_request && fsp->granted_oplock)
+	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
-	
+
 	set_message(outbuf,34,0,True);
 	
 	p = outbuf + smb_vwv2;
@@ -831,8 +930,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Currently as we don't support level II oplocks we just report
 	 * exclusive & batch here.
 	 */
+
+    if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+	  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
+	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+        SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+	else
+		SCVAL(p,0,NO_OPLOCK_RETURN);
 	
-	SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
 	p++;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
@@ -864,26 +969,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
 /****************************************************************************
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
+
 static int call_nt_transact_create(connection_struct *conn,
-				   char *inbuf, char *outbuf, int length, 
-                                   int bufsize, 
-                                   char **ppsetup, char **ppparams, 
-				   char **ppdata)
+					char *inbuf, char *outbuf, int length, 
+					int bufsize, char **ppsetup, char **ppparams, 
+					char **ppdata)
 {
   pstring fname;
   char *params = *ppparams;
-  uint32 flags = IVAL(params,0);
-  uint32 desired_access = IVAL(params,8);
-  uint32 file_attributes = IVAL(params,20);
-  uint32 share_access = IVAL(params,24);
-  uint32 create_disposition = IVAL(params,28);
-  uint32 create_options = IVAL(params,32);
-  uint32 fname_len = MIN(((uint32)IVAL(params,44)),
-                         ((uint32)sizeof(fname)-1));
-  uint16 root_dir_fid = (uint16)IVAL(params,4);
-  int smb_ofun;
-  int smb_open_mode;
-  int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
+  int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
   int oplock_request = 0;
@@ -896,6 +990,39 @@ static int call_nt_transact_create(connection_struct *conn,
   BOOL bad_path = False;
   files_struct *fsp = NULL;
   char *p = NULL;
+  BOOL stat_open_only = False;
+  uint32 flags;
+  uint32 desired_access;
+  uint32 file_attributes;
+  uint32 share_access;
+  uint32 create_disposition;
+  uint32 create_options;
+  uint32 fname_len;
+  uint16 root_dir_fid;
+  int smb_ofun;
+  int smb_open_mode;
+  int smb_attr;
+
+  DEBUG(5,("call_nt_transact_create\n"));
+
+  /*
+   * Ensure minimum number of parameters sent.
+   */
+
+  if(total_parameter_count < 54) {
+    DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
+    return(ERROR(ERRDOS,ERRbadaccess));
+  }
+
+  flags = IVAL(params,0);
+  desired_access = IVAL(params,8);
+  file_attributes = IVAL(params,20);
+  share_access = IVAL(params,24);
+  create_disposition = IVAL(params,28);
+  create_options = IVAL(params,32);
+  fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
+  root_dir_fid = (uint16)IVAL(params,4);
+  smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 
   /* 
    * We need to construct the open_and_X ofun value from the
@@ -903,7 +1030,7 @@ static int call_nt_transact_create(connection_struct *conn,
    */    
 
   if((smb_ofun = map_create_disposition( create_disposition )) == -1)
-    return(ERROR(ERRDOS,ERRbadaccess));
+    return(ERROR(ERRDOS,ERRbadmem));
 
   /*
    * Get the file name.
@@ -917,8 +1044,24 @@ static int call_nt_transact_create(connection_struct *conn,
     files_struct *dir_fsp = file_fsp(params,4);
     size_t dir_name_len;
 
-    if(!dir_fsp || !dir_fsp->is_directory)
+    if(!dir_fsp)
+        return(ERROR(ERRDOS,ERRbadfid));
+
+    if(!dir_fsp->is_directory) {
+      /*
+       * Check to see if this is a mac fork of some kind.
+       */
+
+      get_filename_transact(&fname[0], params, 53,
+                            total_parameter_count - 53 - fname_len, fname_len);
+
+      if( fname[0] == ':') {
+          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          return(ERROR(0, 0xc0000000|NT_STATUS_OBJECT_PATH_NOT_FOUND));
+      }
+
       return(ERROR(ERRDOS,ERRbadfid));
+    }
 
     /*
      * Copy in the base directory name.
@@ -936,15 +1079,20 @@ static int call_nt_transact_create(connection_struct *conn,
       dir_name_len++;
     }
 
+    /*
+     * This next calculation can refuse a correct filename if we're dealing
+     * with the Win2k unicode bug, but that would be rare. JRA.
+     */
+
     if(fname_len + dir_name_len >= sizeof(pstring))
       return(ERROR(ERRSRV,ERRfilespecs));
 
-    StrnCpy(&fname[dir_name_len], params+53, fname_len);
-    fname[dir_name_len+fname_len] = '\0';
+    get_filename_transact(&fname[dir_name_len], params, 53,
+                 total_parameter_count - 53 - fname_len, fname_len);
 
   } else {
-    StrnCpy(fname,params+53,fname_len);
-    fname[fname_len] = '\0';
+    get_filename_transact(&fname[0], params, 53,
+                 total_parameter_count - 53 - fname_len, fname_len);
   }
 
   /* If it's an IPC, use the pipe handler. */
@@ -954,17 +1102,28 @@ static int call_nt_transact_create(connection_struct *conn,
       return ret;
     smb_action = FILE_WAS_OPENED;
   } else {
+
+    /*
+     * Now contruct the smb_open_mode value from the desired access
+     * and the share access.
+     */
+
+    if((smb_open_mode = map_share_mode( &stat_open_only, fname, desired_access,
+                                        share_access, file_attributes)) == -1)
+      return(ERROR(ERRDOS,ERRbadaccess));
+
+    oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+    oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
     /*
      * Check if POSIX semantics are wanted.
      */
 
     set_posix_case_semantics(file_attributes);
+    
+    RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
-	{
-		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-	}
+    unix_convert(fname,conn,0,&bad_path,NULL);
     
     fsp = file_new();
     if (!fsp) {
@@ -984,19 +1143,8 @@ static int call_nt_transact_create(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     } 
   
-    unixmode = unix_mode(conn,smb_attr | aARCH);
+    unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
-    oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-    oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
-
-    /*
-     * Now contruct the smb_open_mode value from the desired access
-     * and the share access.
-     */
-
-    if((smb_open_mode = map_share_mode( fname, desired_access, share_access, file_attributes)) == -1)
-      return(ERROR(ERRDOS,ERRbadaccess));
-
     /*
      * If it's a request for a directory open, deal with it separately.
      */
@@ -1015,37 +1163,97 @@ static int call_nt_transact_create(connection_struct *conn,
 
       if(!fsp->open) {
         file_free(fsp);
+        restore_case_semantics(file_attributes);
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
+
+      if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
+			     &sbuf) != 0) {
+        close_file(fsp,True);
+        restore_case_semantics(file_attributes);
+        return(ERROR(ERRDOS,ERRnoaccess));
+      }
+
     } else {
 
       /*
        * Ordinary file case.
        */
 
-      open_file_shared(fsp,conn,fname,smb_open_mode,smb_ofun,
-		       unixmode,oplock_request,&rmode,&smb_action);
+      open_file_shared(fsp,conn,fname,smb_open_mode,smb_ofun,unixmode,
+                       oplock_request,&rmode,&smb_action);
 
       if (!fsp->open) { 
-        if((errno == ENOENT) && bad_path) {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadpath;
-        }
-        file_free(fsp);
 
-        restore_case_semantics(file_attributes);
+		if(errno == EISDIR) {
 
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
+			/*
+			 * Fail the open if it was explicitly a non-directory file.
+			 */
+
+			if (create_options & FILE_NON_DIRECTORY_FILE) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
+				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+				return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
+			}
+	
+			oplock_request = 0;
+			open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+				
+			if(!fsp->open) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+#ifdef EROFS
+		} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
+#else /* !EROFS */
+		} else if (errno == EACCES && stat_open_only) {
+#endif
+
+			/*
+			 * We couldn't open normally and all we want
+			 * are the permissions. Try and do a stat open.
+			 */
+
+			oplock_request = 0;
+
+			open_file_stat(fsp,conn,fname,smb_open_mode,&sbuf,&smb_action);
+
+			if(!fsp->open) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+		} else {
+
+			if((errno == ENOENT) && bad_path) {
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRbadpath;
+			}
+			file_free(fsp);
+
+			restore_case_semantics(file_attributes);
+
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
       } 
   
-      if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-        close_file(fsp,False);
-
-        restore_case_semantics(file_attributes);
-
-        return(ERROR(ERRDOS,ERRnoaccess));
-      } 
-  
+      if(fsp->is_directory) {
+          if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf) != 0) {
+              close_file(fsp,True);
+              restore_case_semantics(file_attributes);
+              return(ERROR(ERRDOS,ERRnoaccess));
+          }
+      } else {
+          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+              close_file(fsp,False);
+              restore_case_semantics(file_attributes);
+              return(ERROR(ERRDOS,ERRnoaccess));
+          } 
+      }
+ 
       file_len = sbuf.st_size;
       fmode = dos_mode(conn,fname,&sbuf);
       if(fmode == 0)
@@ -1066,7 +1274,7 @@ static int call_nt_transact_create(connection_struct *conn,
       if (oplock_request && lp_fake_oplocks(SNUM(conn)))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
   
-      if(oplock_request && fsp->granted_oplock)
+      if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
     }
   }
@@ -1078,8 +1286,16 @@ static int call_nt_transact_create(connection_struct *conn,
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
 
+  memset((char *)params,'\0',69);
+
   p = params;
-  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
+  if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
+  else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+    SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+  else
+	SCVAL(p,0,NO_OPLOCK_RETURN);
+	
   p += 2;
   if (IS_IPC(conn)) {
 	  SSVAL(p,0,pnum);
@@ -1121,8 +1337,10 @@ static int call_nt_transact_create(connection_struct *conn,
     SOFF_T(p,0,file_len);
   }
 
+  DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
+
   /* Send the required number of replies */
-  send_nt_replies(outbuf, bufsize, params, 69, *ppdata, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
 
   return -1;
 }
@@ -1159,6 +1377,7 @@ int reply_nttranss(connection_struct *conn,
 /****************************************************************************
  Reply to an NT transact rename command.
 ****************************************************************************/
+
 static int call_nt_transact_rename(connection_struct *conn,
 				   char *inbuf, char *outbuf, int length, 
                                    int bufsize,
@@ -1182,7 +1401,7 @@ static int call_nt_transact_rename(connection_struct *conn,
     /*
      * Rename was successful.
      */
-    send_nt_replies(outbuf, bufsize, NULL, 0, NULL, 0);
+    send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
 
     DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
           fsp->fsp_name, new_name));
@@ -1194,6 +1413,18 @@ static int call_nt_transact_rename(connection_struct *conn,
 }
    
 /****************************************************************************
+ This is the structure to keep the information needed to
+ determine if a directory has changed.
+*****************************************************************************/
+
+typedef struct {
+  time_t modify_time; /* Info from the directory we're monitoring. */ 
+  time_t status_time; /* Info from the directory we're monitoring. */
+  time_t total_time; /* Total time of all directory entries - don't care if it wraps. */
+  unsigned int num_entries; /* Zero or the number of files in the directory. */
+} change_hash_data;
+
+/****************************************************************************
  This is the structure to queue to implement NT change
  notify. It consists of smb_size bytes stored from the
  transact command (to keep the mid, tid etc around).
@@ -1204,9 +1435,9 @@ typedef struct {
   ubi_slNode msg_next;
   files_struct *fsp;
   connection_struct *conn;
+  uint32 flags;
   time_t next_check_time;
-  time_t modify_time; /* Info from the directory we're monitoring. */ 
-  time_t status_time; /* Info from the directory we're monitoring. */
+  change_hash_data change_data;
   char request_buf[smb_size];
 } change_notify_buf;
 
@@ -1247,8 +1478,92 @@ static void change_notify_reply_packet(char *inbuf, int error_class, uint32 erro
 }
 
 /****************************************************************************
+ Create the hash we will use to determine if the contents changed.
+*****************************************************************************/
+
+static BOOL create_directory_notify_hash( change_notify_buf *cnbp, change_hash_data *change_data)
+{
+  SMB_STRUCT_STAT st;
+  files_struct *fsp = cnbp->fsp;
+
+  memset((char *)change_data, '\0', sizeof(change_data));
+
+  /* 
+   * Store the current timestamp on the directory we are monitoring.
+   */
+
+  if(dos_stat(fsp->fsp_name, &st) < 0) {
+    DEBUG(0,("create_directory_notify_hash: Unable to stat name = %s. \
+Error was %s\n", fsp->fsp_name, strerror(errno) ));
+    return False;
+  }
+ 
+  change_data->modify_time = st.st_mtime;
+  change_data->status_time = st.st_ctime;
+
+  /*
+   * If we are to watch for changes that are only stored
+   * in inodes of files, not in the directory inode, we must
+   * scan the directory and produce a unique identifier with
+   * which we can determine if anything changed. We use the
+   * modify and change times from all the files in the
+   * directory, added together (ignoring wrapping if it's
+   * larger than the max time_t value).
+   */
+
+  if(cnbp->flags & (FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_LAST_WRITE)) {
+    pstring full_name;
+    char *p;
+    char *fname;
+    size_t remaining_len;
+    size_t fullname_len;
+    void *dp = OpenDir(cnbp->conn, fsp->fsp_name, True);
+
+    if(dp == NULL) {
+      DEBUG(0,("create_directory_notify_hash: Unable to open directory = %s. \
+Error was %s\n", fsp->fsp_name, strerror(errno) ));
+      return False;
+    }
+
+    change_data->num_entries = 0;
+
+    pstrcpy(full_name, fsp->fsp_name);
+    pstrcat(full_name, "/");
+
+    fullname_len = strlen(full_name);
+    remaining_len = sizeof(full_name) - fullname_len - 1;
+    p = &full_name[fullname_len];
+
+    while ((fname = ReadDirName(dp))) {
+      if(strequal(fname, ".") || strequal(fname, ".."))
+        continue;
+
+      change_data->num_entries++;
+      safe_strcpy( p, fname, remaining_len);
+
+      memset(&st, '\0', sizeof(st));
+
+      /*
+       * Do the stat - but ignore errors.
+       */
+
+      if(dos_stat(full_name, &st) < 0) {
+        DEBUG(5,("create_directory_notify_hash: Unable to stat content file = %s. \
+Error was %s\n", fsp->fsp_name, strerror(errno) ));
+      }
+      change_data->total_time += (st.st_mtime + st.st_ctime);
+    }
+
+    CloseDir(dp);
+  }
+
+  return True;
+}
+
+/****************************************************************************
  Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
+
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
 {
   change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
@@ -1289,19 +1604,48 @@ static void remove_pending_change_notify_requests_by_mid(int mid)
 }
 
 /****************************************************************************
- Process the change notify queue. Note that this is only called as root.
+ Delete entries by filename and cnum from the change notify pending queue.
+ Always send reply.
 *****************************************************************************/
 
-void process_pending_change_notify_queue(time_t t)
+void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  change_notify_buf *prev = NULL;
+
+  while(cnbp != NULL) {
+    /*
+     * We know it refers to the same directory if the connection number and
+     * the filename are identical.
+     */
+    if((cnbp->fsp->conn == fsp->conn) && strequal(cnbp->fsp->fsp_name,fsp->fsp_name)) {
+      change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_CANCELLED);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      continue;
+    }
+
+    prev = cnbp;
+    cnbp = (change_notify_buf *)ubi_slNext(cnbp);
+  }
+}
+
+/****************************************************************************
+ Process the change notify queue. Note that this is only called as root.
+ Returns True if there are still outstanding change notify requests on the
+ queue.
+*****************************************************************************/
+
+BOOL process_pending_change_notify_queue(time_t t)
 {
   change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
   change_notify_buf *prev = NULL;
 
   if(cnbp == NULL)
-    return;
+    return False;
 
   if(cnbp->next_check_time >= t)
-    return;
+    return True;
 
   /*
    * It's time to check. Go through the queue and see if
@@ -1309,8 +1653,7 @@ void process_pending_change_notify_queue(time_t t)
    */
 
   while((cnbp != NULL) && (cnbp->next_check_time <= t)) {
-    SMB_STRUCT_STAT st;
-    files_struct *fsp = cnbp->fsp;
+    change_hash_data change_data;
     connection_struct *conn = cnbp->conn;
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
                   SVAL(cnbp->request_buf,smb_uid);
@@ -1346,9 +1689,9 @@ void process_pending_change_notify_queue(time_t t)
       continue;
     }
 
-    if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &st) < 0) {
-      DEBUG(0,("process_pending_change_notify_queue: Unable to stat directory %s. \
-Error was %s.\n", fsp->fsp_name, strerror(errno) ));
+    if(!create_directory_notify_hash( cnbp, &change_data)) {
+      DEBUG(0,("process_pending_change_notify_queue: Unable to create change data for \
+directory %s\n", cnbp->fsp->fsp_name ));
       /*
        * Remove the entry and return an error to the client.
        */
@@ -1359,13 +1702,12 @@ Error was %s.\n", fsp->fsp_name, strerror(errno) ));
       continue;
     }
 
-    if(cnbp->modify_time != st.st_mtime ||
-       cnbp->status_time != st.st_ctime) {
+    if(memcmp( (char *)&cnbp->change_data, (char *)&change_data, sizeof(change_data))) {
       /*
        * Remove the entry and return a change notify to the client.
        */
-      DEBUG(5,("process_pending_change_notify_queue: directory name = %s changed\n",
-            fsp->fsp_name ));
+      DEBUG(5,("process_pending_change_notify_queue: directory name = %s changed.\n",
+            cnbp->fsp->fsp_name ));
       change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_NOTIFY_ENUM_DIR);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
@@ -1381,22 +1723,34 @@ Error was %s.\n", fsp->fsp_name, strerror(errno) ));
     prev = cnbp;
     cnbp = (change_notify_buf *)ubi_slNext(cnbp);
   }
+
+  return (cnbp != NULL);
+}
+
+/****************************************************************************
+ Return true if there are pending change notifies.
+****************************************************************************/
+
+BOOL change_notifies_pending(void)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  return (cnbp != NULL);
 }
 
 /****************************************************************************
  Reply to a notify change - queue the request and 
  don't allow a directory to be opened.
 ****************************************************************************/
+
 static int call_nt_transact_notify_change(connection_struct *conn,
-					  char *inbuf, char *outbuf, int length,
+                                          char *inbuf, char *outbuf, int length,
                                           int bufsize, 
                                           char **ppsetup, 
-					  char **ppparams, char **ppdata)
+                                          char **ppparams, char **ppdata)
 {
   char *setup = *ppsetup;
   files_struct *fsp;
   change_notify_buf *cnbp;
-  SMB_STRUCT_STAT st;
 
   fsp = file_fsp(setup,4);
 
@@ -1417,28 +1771,22 @@ static int call_nt_transact_notify_change(connection_struct *conn,
    */
 
   if((cnbp = (change_notify_buf *)malloc(sizeof(change_notify_buf))) == NULL) {
-    DEBUG(0,("call_nt_transact_notify_change: Malloc fail (2) !\n" ));
+    DEBUG(0,("call_nt_transact_notify_change: malloc fail !\n" ));
     return -1;
   }
 
-  /* 
-   * Store the current timestamp on the directory we are monitoring.
-   */
+  memset((char *)cnbp, '\0', sizeof(change_notify_buf));
 
-  if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &st) < 0) {
-    DEBUG(0,("call_nt_transact_notify_change: Unable to stat name = %s. \
-Error was %s\n", fsp->fsp_name, strerror(errno) ));
-    free((char *)cnbp);
-    return(UNIXERROR(ERRDOS,ERRbadfid));
-  }
- 
   memcpy(cnbp->request_buf, inbuf, smb_size);
   cnbp->fsp = fsp;
   cnbp->conn = conn;
-  cnbp->modify_time = st.st_mtime;
-  cnbp->status_time = st.st_ctime;
-
   cnbp->next_check_time = time(NULL) + lp_change_notify_timeout();
+  cnbp->flags = IVAL(setup, 0);
+
+  if(!create_directory_notify_hash( cnbp, &cnbp->change_data )) {
+    free((char *)cnbp);
+    return(UNIXERROR(ERRDOS,ERRbadfid));
+  }
 
   /*
    * Adding to the tail enables us to check only
@@ -1455,43 +1803,798 @@ name = %s\n", fsp->fsp_name ));
 }
 
 /****************************************************************************
- Reply to query a security descriptor - currently this is not implemented (it
- is planned to be though).
+ Map unix perms to NT.
 ****************************************************************************/
+
+static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w_mask, int x_mask, BOOL is_directory)
+{
+	SEC_ACCESS sa;
+	uint32 nt_mask = 0;
+
+	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+
+	if((perm & (r_mask|w_mask|x_mask)) == (r_mask|w_mask|x_mask)) {
+		nt_mask = UNIX_ACCESS_RWX;
+	} else if((perm & (r_mask|w_mask|x_mask)) == 0) {
+		nt_mask = UNIX_ACCESS_NONE;
+	} else {
+		nt_mask |= (perm & r_mask) ? UNIX_ACCESS_R : 0;
+		if(is_directory)
+			nt_mask |= (perm & w_mask) ? UNIX_ACCESS_W : 0;
+		else
+			nt_mask |= (perm & w_mask) ? UNIX_ACCESS_W : 0;
+		nt_mask |= (perm & x_mask) ? UNIX_ACCESS_X : 0;
+	}
+	make_sec_access(&sa,nt_mask);
+	return sa;
+}
+
+/****************************************************************************
+ Function to create owner and group SIDs from a SMB_STRUCT_STAT.
+****************************************************************************/
+
+static BOOL create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
+{
+	POSIX_ID id;
+
+	ZERO_STRUCTP(powner_sid);
+	ZERO_STRUCTP(pgroup_sid);
+	DEBUG(0,("TODO: create_file_sids: not ok to assume gid is NT group\n"));
+
+	id.type = SURS_POSIX_UID_AS_USR;
+	id.id = (uint32)psbuf->st_uid;
+
+	if (!surs_unixid_to_sam_sid(&id, powner_sid, False))
+	{
+		DEBUG(3,("create_file_sids: map uid %d failed\n",
+					(int)psbuf->st_uid));
+		return False;
+	}
+
+	id.type = SURS_POSIX_GID_AS_GRP;
+	id.id = (uint32)psbuf->st_gid;
+
+	if (!surs_unixid_to_sam_sid(&id, pgroup_sid, False))
+	{
+		DEBUG(3,("create_file_sids: map gid %d to group failed\n",
+					(int)psbuf->st_gid));
+
+		id.type = SURS_POSIX_GID_AS_ALS;
+		id.id = (uint32)psbuf->st_gid;
+
+		if (surs_unixid_to_sam_sid(&id, pgroup_sid, False))
+		{
+			return True;
+		}
+		DEBUG(3,("create_file_sids: map gid %d to alias failed\n",
+						(int)psbuf->st_gid));
+		return False;
+	}
+	return True;
+}
+
+/****************************************************************************
+ Reply to query a security descriptor from an fsp. If it succeeds it allocates
+ the space for the return elements and returns True.
+****************************************************************************/
+
+static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
+{
+  SMB_STRUCT_STAT sbuf;
+  SEC_ACE *ace_list = NULL;
+  DOM_SID owner_sid;
+  DOM_SID group_sid;
+  size_t sec_desc_size;
+  SEC_ACL *psa = NULL;
+  SEC_ACCESS owner_access;
+  int owner_acl_type;
+  SEC_ACCESS group_access;
+  int grp_acl_type;
+  SEC_ACCESS other_access;
+  int other_acl_type;
+  int num_acls = 0;
+ 
+  (*ppdesc) = NULL;
+
+  if(!lp_nt_acl_support()) {
+    sid_copy( &owner_sid, global_sid_everyone);
+    sid_copy( &group_sid, global_sid_everyone);
+  } else {
+
+    if(fsp->is_directory || fsp->fd_ptr == NULL) {
+      if(dos_stat(fsp->fsp_name, &sbuf) != 0)
+      {
+        return 0;
+      }
+    } else {
+      if(fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+        return 0;
+      }
+    }
+
+    /*
+     * Get the owner, group and world SIDs.
+     */
+
+    if (!create_file_sids(&sbuf, &owner_sid, &group_sid))
+    {
+	    DEBUG(3,("create_file_sids: uid or gid not mapped to SIDS\n"));
+	  	return 0;
+    }
+
+    /*
+     * Create the generic 3 element UNIX acl.
+     */
+
+    owner_access = map_unix_perms(&owner_acl_type, sbuf.st_mode,
+							S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
+    group_access = map_unix_perms(&grp_acl_type, sbuf.st_mode,
+							S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
+    other_access = map_unix_perms(&other_acl_type, sbuf.st_mode,
+							S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
+
+    if(owner_access.mask)
+    {
+	    ace_list = g_renew(SEC_ACE, ace_list, num_acls+1);
+	if (ace_list == NULL)
+	{
+		return 0;
+	}
+      make_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type,
+                   owner_access, 0);
+    }
+
+    if(group_access.mask)
+    {
+	    ace_list = g_renew(SEC_ACE, ace_list, num_acls+1);
+	if (ace_list == NULL)
+	{
+		return 0;
+	}
+
+      make_sec_ace(&ace_list[num_acls++], &group_sid, grp_acl_type,
+                   group_access, 0);
+    }
+
+    if(other_access.mask)
+    {
+	    ace_list = g_renew(SEC_ACE, ace_list, num_acls+1);
+	if (ace_list == NULL)
+	{
+		return 0;
+	}
+
+      make_sec_ace(&ace_list[num_acls++], global_sid_everyone, other_acl_type,
+                   other_access, 0);
+    }
+
+    if(fsp->is_directory) {
+      /*
+       * For directory ACLs we also add in the inherited permissions
+       * ACE entries. These are the permissions a file would get when
+       * being created in the directory.
+       */
+      mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
+
+      owner_access = map_unix_perms(&owner_acl_type, mode,
+                            S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
+      group_access = map_unix_perms(&grp_acl_type, mode,
+                            S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
+      other_access = map_unix_perms(&other_acl_type, mode,
+                            S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
+
+      if(owner_access.mask)
+    {
+	    ace_list = g_renew(SEC_ACE, ace_list, num_acls+1);
+	if (ace_list == NULL)
+	{
+		return 0;
+	}
+
+        make_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type,
+                     owner_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+    }
+
+      if(group_access.mask)
+    {
+	    ace_list = g_renew(SEC_ACE, ace_list, num_acls+1);
+	if (ace_list == NULL)
+	{
+		return 0;
+	}
+
+        make_sec_ace(&ace_list[num_acls++], &group_sid, grp_acl_type,
+                     group_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+    }
+
+      if(other_access.mask)
+    {
+	    ace_list = g_renew(SEC_ACE, ace_list, num_acls+1);
+	if (ace_list == NULL)
+	{
+		return 0;
+	}
+
+        make_sec_ace(&ace_list[num_acls++], global_sid_everyone, other_acl_type,
+                     other_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+    }
+    }
+
+    if(num_acls)
+    {
+      psa = g_new(SEC_ACL, 1);
+      if (psa == NULL)
+      {
+	      safe_free(ace_list);
+      }
+      if (!make_sec_acl( psa, 3, num_acls, ace_list))
+      {
+        DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
+	safe_free(ace_list);
+	safe_free(psa);
+        return 0;
+      }
+    }
+  }
+
+  (*ppdesc) = g_new(SEC_DESC, 1);
+
+  if((*ppdesc) == NULL)
+  {
+    DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
+    sec_desc_size = 0;
+    free_sec_acl(psa);
+    safe_free(psa);
+	      return 0;
+  }
+
+  sec_desc_size = make_sec_desc( (*ppdesc), 1,
+		                 SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+				 sid_dup(&owner_sid),
+				 sid_dup(&group_sid),
+				 NULL, psa);
+
+  return sec_desc_size;
+}
+
+/****************************************************************************
+ Reply to query a security descriptor - currently this is not implemented (it
+ is planned to be though). Right now it just returns the same thing NT would
+ when queried on a FAT filesystem. JRA.
+****************************************************************************/
+
 static int call_nt_transact_query_security_desc(connection_struct *conn,
-						char *inbuf, char *outbuf, 
-						int length, 
-                                                int bufsize, 
+                                                char *inbuf, char *outbuf, 
+                                                int length, int bufsize, 
                                                 char **ppsetup, char **ppparams, char **ppdata)
 {
-  static BOOL logged_message = False;
+  uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
+  char *params = *ppparams;
+  char *data = *ppdata;
+  prs_struct pd;
+  SEC_DESC *psd = NULL;
+  size_t sec_desc_size;
 
-  if(!logged_message) {
-    DEBUG(0,("call_nt_transact_query_security_desc: Currently not implemented.\n"));
-    logged_message = True; /* Only print this once... */
+  files_struct *fsp = file_fsp(params,0);
+
+  if(!fsp)
+    return(ERROR(ERRDOS,ERRbadfid));
+
+  DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
+
+  params = *ppparams = Realloc(*ppparams, 4);
+  if(params == NULL)
+    return(ERROR(ERRDOS,ERRnomem));
+
+  /*
+   * Get the permissions to return.
+   */
+
+  if((sec_desc_size = get_nt_acl(fsp, &psd)) == 0)
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+  DEBUG(3,("call_nt_transact_query_security_desc: sec_desc_size = %d.\n",(int)sec_desc_size));
+
+  SIVAL(params,0,(uint32)sec_desc_size);
+
+  if(max_data_count < sec_desc_size) {
+
+    free_sec_desc(psd);
+    safe_free(psd);
+
+    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
+                    params, 4, *ppdata, 0);
+    return -1;
   }
 
-  return(ERROR(ERRSRV,ERRnosupport));
+  /*
+   * Allocate the data we will point this at.
+   */
+
+  data = *ppdata = Realloc(*ppdata, sec_desc_size);
+  if(data == NULL) {
+    free_sec_desc(psd);
+    safe_free(psd);
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+
+  memset(data, '\0', sec_desc_size);
+
+  /*
+   * Init the parse struct we will marshall into.
+   */
+
+  prs_init(&pd, sec_desc_size, 4, MARSHALL);
+
+  /*
+   * Finally, linearize into the outgoing buffer.
+   */
+
+  if(!sec_io_desc( "sd data", psd, &pd, 1))
+  {
+    free_sec_desc(psd);
+    safe_free(psd);
+    prs_mem_free(&pd);
+    DEBUG(0,("call_nt_transact_query_security_desc: Error in marshalling \
+security descriptor.\n"));
+    /*
+     * Return access denied for want of a better error message..
+     */ 
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  /*
+   * copy the data out of the marshalled structure
+   */
+
+  prs_link(NULL, &pd, NULL);
+  prs_buf_copy(data, &pd, 0, sec_desc_size);
+
+  /*
+   * Now we can delete the security descriptor.
+   */
+
+  prs_mem_free(&pd);
+  free_sec_desc(psd);
+  safe_free(psd);
+
+  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sec_desc_size);
+  return -1;
 }
-   
-/****************************************************************************
- Reply to set a security descriptor - currently this is not implemented (it
- is planned to be though).
-****************************************************************************/
-static int call_nt_transact_set_security_desc(connection_struct *conn,
-					      char *inbuf, char *outbuf, 
-					      int length,
-                                              int bufsize, 
-                                              char **ppsetup, 
-					      char **ppparams, char **ppdata)
-{
-  static BOOL logged_message = False;
 
-  if(!logged_message) {
-    DEBUG(0,("call_nt_transact_set_security_desc: Currently not implemented.\n"));
-    logged_message = True; /* Only print this once... */
+/****************************************************************************
+ Map NT perms to UNIX.
+****************************************************************************/
+
+#define FILE_SPECIFIC_READ_BITS (FILE_READ_DATA|FILE_READ_EA|FILE_READ_ATTRIBUTES)
+#define FILE_SPECIFIC_WRITE_BITS (FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES)
+#define FILE_SPECIFIC_EXECUTE_BITS (FILE_EXECUTE)
+
+static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
+{
+  mode_t mode = 0;
+
+  switch(type) {
+  case S_IRUSR:
+    if(sec_access.mask & GENERIC_ALL_ACCESS)
+      mode = S_IRUSR|S_IWUSR|S_IXUSR;
+    else {
+      mode |= (sec_access.mask & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IRUSR : 0;
+      mode |= (sec_access.mask & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWUSR : 0;
+      mode |= (sec_access.mask & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXUSR : 0;
+    }
+    break;
+  case S_IRGRP:
+    if(sec_access.mask & GENERIC_ALL_ACCESS)
+      mode = S_IRGRP|S_IWGRP|S_IXGRP;
+    else {
+      mode |= (sec_access.mask & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IRGRP : 0;
+      mode |= (sec_access.mask & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWGRP : 0;
+      mode |= (sec_access.mask & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXGRP : 0;
+    }
+    break;
+  case S_IROTH:
+    if(sec_access.mask & GENERIC_ALL_ACCESS)
+      mode = S_IROTH|S_IWOTH|S_IXOTH;
+    else {
+      mode |= (sec_access.mask & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IROTH : 0;
+      mode |= (sec_access.mask & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWOTH : 0;
+      mode |= (sec_access.mask & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXOTH : 0;
+    }
+    break;
   }
-  return(ERROR(ERRSRV,ERRnosupport));
+
+  return mode;
+}
+
+/****************************************************************************
+ Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
+****************************************************************************/
+
+static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, mode_t *pmode,
+                                  uint32 security_info_sent, SEC_DESC *psd, BOOL is_directory)
+{
+  DOM_SID file_owner_sid;
+  DOM_SID file_grp_sid;
+  SEC_ACL *dacl = psd->dacl;
+  BOOL all_aces_are_inherit_only = (is_directory ? True : False);
+  int i;
+  POSIX_ID id;
+
+  *pmode = 0;
+  *puser = (uid_t)-1;
+  *pgrp = (gid_t)-1;
+
+  if(security_info_sent == 0) {
+    DEBUG(0,("unpack_nt_permissions: no security info sent !\n"));
+    return False;
+  }
+
+  /*
+   * Windows 2000 sends the owner and group SIDs as the logged in
+   * user, not the connected user. But it still sends the file
+   * owner SIDs on an ACL set. So we need to check for the file
+   * owner and group SIDs as well as the owner SIDs. JRA.
+   */
+ 
+    if (!create_file_sids(psbuf, &file_owner_sid, &file_grp_sid))
+    {
+	    DEBUG(3,("create_file_sids: uid or gid not mapped to SIDS\n"));
+	  	return 0;
+    }
+
+  /*
+   * Don't immediately fail if the owner sid cannot be validated.
+   * This may be a group chown only set.
+   */
+
+  DEBUG(0,("TODO: LsaLookupSids to find type of owner_sid\n"));
+
+  if (security_info_sent & OWNER_SECURITY_INFORMATION &&
+     surs_sam_sid_to_unixid( psd->owner_sid, &id, False) &&
+     id.type == SURS_POSIX_UID_AS_USR)
+  {
+    *puser = (uid_t)id.id;
+  }
+
+  /*
+   * Don't immediately fail if the group sid cannot be validated.
+   * This may be an owner chown only set.
+   */
+
+  /*
+   * assume support for RID_TYPE_ALIAS and RID_TYPE_GROUP only.
+   * also assume that calls to sur_sam_sid_to_unixid are exclusive
+   * and one will fail where the other succeeds
+   */
+   
+  if (security_info_sent & GROUP_SECURITY_INFORMATION &&
+      surs_sam_sid_to_unixid( psd->grp_sid, &id, False) &&
+      (id.type == SURS_POSIX_GID_AS_GRP || id.type == SURS_POSIX_GID_AS_ALS))
+  {
+    *pgrp = (gid_t)id.id;
+  }
+
+  /*
+   * If no DACL then this is a chown only security descriptor.
+   */
+
+  if(!(security_info_sent & DACL_SECURITY_INFORMATION) || !dacl) {
+    *pmode = 0;
+    return True;
+  }
+
+  /*
+   * Now go through the DACL and ensure that
+   * any owner/group sids match.
+   */
+
+  for(i = 0; i < dacl->num_aces; i++) {
+    DOM_SID ace_sid;
+    SEC_ACE *psa = &dacl->ace[i];
+
+    if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) &&
+       (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
+      DEBUG(3,("unpack_nt_permissions: unable to set anything but an ALLOW or DENY ACE.\n"));
+      return False;
+    }
+
+    /*
+     * Ignore or remove bits we don't care about on a directory ACE.
+     */
+
+    if(is_directory) {
+      if(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+        DEBUG(3,("unpack_nt_permissions: ignoring inherit only ACE.\n"));
+        continue;
+      }
+
+      /*
+       * At least one of the ACE entries wasn't inherit only.
+       * Flag this so we know the returned mode is valid.
+       */
+
+      all_aces_are_inherit_only = False;
+    }
+
+    /*
+     * Windows 2000 sets these flags even on *file* ACE's. This is wrong
+     * but we can ignore them for now. Revisit this when we go to POSIX
+     * ACLs on directories.
+     */
+
+    psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+    if(psa->flags != 0) {
+      DEBUG(1,("unpack_nt_permissions: unable to set ACE flags (%x).\n", 
+            (unsigned int)psa->flags));
+      return False;
+    }
+
+    /*
+     * The security mask may be UNIX_ACCESS_NONE which should map into
+     * no permissions (we overload the WRITE_OWNER bit for this) or it
+     * should be one of the ALL/EXECUTE/READ/WRITE bits. Arrange for this
+     * to be so. Any other bits override the UNIX_ACCESS_NONE bit.
+     */
+
+    psa->info.mask &= (GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
+                     GENERIC_READ_ACCESS|UNIX_ACCESS_NONE|FILE_ALL_ATTRIBUTES);
+
+    if(psa->info.mask != UNIX_ACCESS_NONE)
+      psa->info.mask &= ~UNIX_ACCESS_NONE;
+
+    sid_copy(&ace_sid, &psa->sid);
+
+    if(sid_equal(&ace_sid, &file_owner_sid)) {
+      /*
+       * Map the desired permissions into owner perms.
+       */
+
+      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+        *pmode |= map_nt_perms( psa->info, S_IRUSR);
+      else
+        *pmode &= ~(map_nt_perms( psa->info, S_IRUSR));
+
+    } else if( sid_equal(&ace_sid, &file_grp_sid)) {
+      /*
+       * Map the desired permissions into group perms.
+       */
+
+      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+        *pmode |= map_nt_perms( psa->info, S_IRGRP);
+      else
+        *pmode &= ~(map_nt_perms( psa->info, S_IRGRP));
+
+    } else if( sid_equal(&ace_sid, global_sid_everyone)) {
+      /*
+       * Map the desired permissions into other perms.
+       */
+
+      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+        *pmode |= map_nt_perms( psa->info, S_IROTH);
+      else
+        *pmode &= ~(map_nt_perms( psa->info, S_IROTH));
+
+    } else {
+      DEBUG(0,("unpack_nt_permissions: unknown SID used in ACL.\n"));
+      return False;
+    }
+  }
+
+  if (is_directory && all_aces_are_inherit_only) {
+    /*
+     * Windows 2000 is doing one of these weird 'inherit acl'
+     * traverses to conserve NTFS ACL resources. Just pretend
+     * there was no DACL sent. JRA.
+     */
+
+    DEBUG(10,("unpack_nt_permissions: Win2k inherit acl traverse. Ignoring DACL.\n"));
+    free_sec_acl(psd->dacl);
+    safe_free(psd->dacl);
+    psd->dacl = NULL;
+  }
+
+  return True;
+}
+
+/****************************************************************************
+ Reply to set a security descriptor. Map to UNIX perms.
+****************************************************************************/
+
+static int call_nt_transact_set_security_desc(connection_struct *conn,
+									char *inbuf, char *outbuf, int length,
+									int bufsize, char **ppsetup, 
+									char **ppparams, char **ppdata)
+{
+  uint32 total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
+  char *params= *ppparams;
+  char *data = *ppdata;
+  prs_struct pd;
+  SEC_DESC psd;
+  uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
+  uid_t user = (uid_t)-1;
+  gid_t grp = (gid_t)-1;
+  mode_t perms = 0;
+  SMB_STRUCT_STAT sbuf;
+  files_struct *fsp = NULL;
+  uint32 security_info_sent = 0;
+  BOOL got_dacl = False;
+
+  if(!lp_nt_acl_support())
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+  if(total_parameter_count < 8)
+    return(ERROR(ERRDOS,ERRbadfunc));
+
+  if((fsp = file_fsp(params,0)) == NULL)
+    return(ERROR(ERRDOS,ERRbadfid));
+
+  security_info_sent = IVAL(params,4);
+
+  DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
+       (unsigned int)security_info_sent ));
+
+  /*
+   * Init the parse struct we will unmarshall from.
+   */
+
+  prs_init(&pd, 0, 4, UNMARSHALL);
+
+  /*
+   * Setup the prs_struct with a copy of the memory we just
+   * allocated.  unmarshall from the beginning.
+   */
+	
+  prs_append_data(&pd, data, total_data_count);
+
+  /*
+   * Finally, unmarshall from the data buffer.
+   */
+
+  if(!sec_io_desc( "sd data", &psd, &pd, 1))
+  {
+    free_sec_desc(&psd);
+    prs_mem_free(&pd);
+    DEBUG(0,("call_nt_transact_set_security_desc: Error in unmarshalling \
+security descriptor.\n"));
+    /*
+     * Return access denied for want of a better error message..
+     */ 
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  /*
+   * finished with the marshalling structure, already
+   */
+
+  prs_mem_free(&pd);
+
+  /*
+   * Get the current state of the file.
+   */
+
+  if(fsp->is_directory) {
+    if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      free_sec_desc(&psd);
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+  } else {
+
+    int ret;
+
+    if(fsp->fd_ptr == NULL)
+      ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
+    else
+      ret = conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf);
+
+    if(ret != 0) {
+      free_sec_desc(&psd);
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+  }
+
+  /*
+   * Unpack the user/group/world id's and permissions.
+   */
+
+  if(!unpack_nt_permissions( &sbuf, &user, &grp, &perms, security_info_sent, &psd, fsp->is_directory)) {
+    free_sec_desc(&psd);
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  if (psd.dacl != NULL)
+    got_dacl = True;
+
+  free_sec_desc(&psd);
+
+  /*
+   * Do we need to chown ?
+   */
+
+  if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
+
+    DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
+          fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+
+    if(dos_chown( fsp->fsp_name, user, grp) == -1) {
+      DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
+            fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+
+    /*
+     * Recheck the current state of the file, which may have changed.
+     * (suid/sgid bits, for instance)
+     */
+
+    if(fsp->is_directory) {
+      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+      }
+    } else {
+
+      int ret;
+    
+      if(fsp->fd_ptr == NULL)
+        ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
+      else
+        ret = conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf);
+  
+      if(ret != 0)
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+  }
+
+  /*
+   * Only change security if we got a DACL.
+   */
+
+  if((security_info_sent & DACL_SECURITY_INFORMATION) && got_dacl) {
+
+    /*
+     * Check to see if we need to change anything.
+     * Enforce limits on modified bits *only*. Don't enforce masks
+	 * on bits not changed by the user.
+     */
+
+    if(fsp->is_directory) {
+
+      perms &= (lp_dir_security_mask(SNUM(conn)) | sbuf.st_mode);
+      perms |= (lp_force_dir_security_mode(SNUM(conn)) & ( perms ^ sbuf.st_mode ));
+
+    } else {
+
+      perms &= (lp_security_mask(SNUM(conn)) | sbuf.st_mode); 
+      perms |= (lp_force_security_mode(SNUM(conn)) & ( perms ^ sbuf.st_mode ));
+
+    }
+
+    /*
+     * Preserve special bits.
+     */
+
+    perms |= (sbuf.st_mode & ~0777);
+
+    /*
+     * Do we need to chmod ?
+     */
+
+    if(sbuf.st_mode != perms) {
+
+      DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
+            fsp->fsp_name, (unsigned int)perms ));
+
+      if(conn->vfs_ops.chmod(dos_to_unix(fsp->fsp_name, False), perms) == -1) {
+        DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",
+              fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+      }
+    }
+  }
+
+  send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+  return -1;
 }
    
 /****************************************************************************
@@ -1678,7 +2781,6 @@ due to being in oplock break state.\n" ));
 						     length, bufsize, 
                                                      &setup, &params, &data);
       break;
-
   default:
 	  /* Error in request */
 	  DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));
