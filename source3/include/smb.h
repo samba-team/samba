@@ -1145,6 +1145,10 @@ struct bitmap {
 #define SMB_SUPPORT_SEARCH_BITS        0x0001
 #define SMB_SHARE_IN_DFS               0x0002
 
+/* Named pipe write mode flags. Used in writeX calls. */
+#define PIPE_RAW_MODE 0x4
+#define PIPE_START_MESSAGE 0x8
+
 /* these are the constants used in the above call. */
 /* DesiredAccess */
 /* File Specific access rights. */

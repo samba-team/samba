@@ -24,6 +24,7 @@ BOOL allow_access(char *deny_list,char *allow_list,
 BOOL check_access(int sock, char *allow_list, char *deny_list);
 
 /*The following definitions come from  lib/bitmap.c  */
+
 struct bitmap *bitmap_allocate(int n);
 BOOL bitmap_set(struct bitmap *bm, unsigned i);
 BOOL bitmap_clear(struct bitmap *bm, unsigned i);
@@ -800,6 +801,35 @@ BOOL downgrade_share_oplock(files_struct *fsp);
 BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
 int share_mode_forall(SHAREMODE_FN(fn));
 
+/*The following definitions come from  msdfs/msdfs.c  */
+
+void create_nondfs_path(char* pathname, struct dfs_path* pdp);
+BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp);
+BOOL dfs_redirect(char* pathname, connection_struct* conn);
+BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn);
+int setup_dfs_referral(char* pathname, int max_referral_level, 
+			char** ppdata);
+int dfs_path_error(char* inbuf, char* outbuf);
+int setup_dfs_referral(char* pathname, int max_referral_level, 
+		       char** ppdata);
+int unistr_to_dos(char* dst,uint16* src)	       ;
+
+/*The following definitions come from  msdfs/msdfs_tdb.c  */
+
+BOOL msdfs_open(BOOL update);
+BOOL add_junction_entry(struct junction_map* junction);
+BOOL get_junction_entry(struct junction_map* junction);
+BOOL isDfsShare(char* svc,char* vol);
+void msdfs_close();
+void msdfs_end();
+
+/*The following definitions come from  msdfs/parse_dfs_map.c  */
+
+BOOL parse_referral(char* s, struct referral* ref);
+void load_dfsmaps();
+BOOL load_dfsmap(char* fname, int snum);
+void load_dfsmaps();
+
 /*The following definitions come from  nmbd/asyncdns.c  */
 
 int asyncdns_fd(void);
@@ -1244,6 +1274,7 @@ BOOL lp_nt_acl_support(void);
 BOOL lp_stat_cache(void);
 BOOL lp_allow_trusted_domains(void);
 BOOL lp_restrict_anonymous(void);
+BOOL lp_host_msdfs(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -1304,12 +1335,13 @@ char *lp_readlist(int );
 char *lp_writelist(int );
 char *lp_fstype(int );
 char *lp_vfsobj(int );
-char *lp_dfsmap(int );
 char *lp_mangled_map(int );
 char *lp_veto_files(int );
 char *lp_hide_files(int );
 char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
+char *lp_dfsmap(int );
+BOOL lp_dfsmap_loaded(int );
 BOOL lp_preexec_close(int );
 BOOL lp_rootpreexec_close(int );
 BOOL lp_revalidate(int );
@@ -1368,6 +1400,7 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
 BOOL lp_file_list_changed(void);
+void set_dfsmap_loaded(int i,BOOL b);
 void *lp_local_ptr(int snum, void *ptr);
 BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue);
 BOOL lp_is_default(int snum, struct parm_struct *parm);
@@ -2562,17 +2595,21 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
-BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
-		char **rdata, int *rlen);
-ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
-int read_pipe(pipes_struct *p, char *data, int n);
+BOOL create_next_pdu(pipes_struct *p);
+BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p);
+BOOL setup_fault_pdu(pipes_struct *p);
+BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);
+BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in);
+BOOL api_pipe_request(pipes_struct *p);
+BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
+				prs_struct *rpc_in);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
 void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
-BOOL pipe_init_outgoing_data(output_data *out_data);
+BOOL pipe_init_outgoing_data(output_data *o_data);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
 ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n);
@@ -2582,13 +2619,6 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);
-
-/*The following definitions come from  rpc_server/srv_pipe_srv.c  */
-
-BOOL create_next_pdu(pipes_struct *p);
-BOOL rpc_command(pipes_struct *p, char *input_data, int data_len);
-BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
-				prs_struct *rpc_in);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 

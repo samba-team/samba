@@ -31,14 +31,6 @@ extern global_client_caps;
 #define VERSION3_REFERRAL_SIZE 0x22
 #define REFERRAL_HEADER_SIZE 0x08
 
-struct dfs_path
-{
-  pstring hostname;
-  pstring servicename;
-  pstring volumename;
-  pstring restofthepath;
-};
-
 void create_nondfs_path(char* pathname, struct dfs_path* pdp)
 {
   pstrcpy(pathname,pdp->volumename); 

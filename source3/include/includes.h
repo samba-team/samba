@@ -665,6 +665,8 @@ extern int errno;
 
 #include "nterr.h"
 
+#include "msdfs.h"
+
 #ifdef WITH_PROFILE
 #include "profile.h"
 #endif
@@ -913,7 +915,5 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
 #endif
-
-#include "msdfs.h"
 
 #endif /* _INCLUDES_H */
