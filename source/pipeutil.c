@@ -217,12 +217,11 @@ int make_dom_gids(char *gids_str, DOM_GID *gids)
 	return count;
 }
 
-int create_rpc_request(uint32 call_id, uint16 op_num, char *q, int data_len)
+int create_rpc_request(uint32 call_id, uint8 op_num, char *q, int data_len)
 {
 	RPC_HDR hdr;
 
-	/* XXXX cheat - use cancel count to store opnum */
-	make_rpc_header(&hdr, RPC_RESPONSE, call_id, data_len, op_num);
+	make_rpc_header(&hdr, RPC_REQUEST, call_id, data_len, op_num);
 	return smb_io_rpc_hdr(False, &hdr, q, q, 4, 0) - q;
 }
 
@@ -230,7 +229,6 @@ int create_rpc_reply(uint32 call_id, char *q, int data_len)
 {
 	RPC_HDR hdr;
 
-	/* XXXX cheat - use cancel count to store opnum */
 	make_rpc_header(&hdr, RPC_RESPONSE, call_id, data_len, 0);
 	return smb_io_rpc_hdr(False, &hdr, q, q, 4, 0) - q;
 }

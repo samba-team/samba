@@ -612,7 +612,7 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int dept
 creates an RPC_HDR structure.
 ********************************************************************/
 void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len, int opnum)
+				uint32 call_id, int data_len, uint8 opnum)
 {
 	if (hdr == NULL) return;
 
@@ -626,8 +626,8 @@ void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
 	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
 	hdr->alloc_hint   = data_len - 0x18; /* allocation hint (no idea) */
 	hdr->context_id   = 0;               /* presentation context identifier */
-	hdr->cancel_count = opnum;           /* cancel count.  or opnum.  XXXX CHEAT! */
-	hdr->reserved     = 0;               /* reserved */
+	hdr->cancel_count = 0;               /* cancel count. */
+	hdr->reserved     = opnum;           /* response: reserved. request: opnum */
 }
 
 /*******************************************************************
@@ -639,9 +639,6 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int 
 
 	DEBUG(5,("%s%04x smb_io_rpc_hdr\n",  tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
-
-	/* reserved should be zero: enforce it */
-	rpc->reserved = 0;
 
 	DBG_RW_CVAL("major     ", depth, base, io, q, rpc->major); q++;
 	DBG_RW_CVAL("minor     ", depth, base, io, q, rpc->minor); q++;

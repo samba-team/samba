@@ -2781,7 +2781,8 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   fd = setup[1];
   subcommand = setup[0];
   
-  DEBUG(3,("Got API command %d on pipe %s ",subcommand,Files[fd].name));
+  DEBUG(3,("Got API command %d on pipe %s (fd %x)",
+            subcommand,Files[fd].name, fd));
   DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d,cnum=%d,vuid=%d)\n",
 	   tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
   

@@ -3528,9 +3528,10 @@ static BOOL do_lsa_req_chal(uint16 fnum)
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
+	char *rpc_hdr;
 	int rdrcnt,rprcnt;
 	int count = 0;
-	pstring param; /* only 1024 bytes */
+	pstring data; /* only 1024 bytes */
 	uint16 setup[2]; /* only need 2 uint16 setup parameters */
 	LSA_Q_REQ_CHAL q_c;
 	DOM_CHAL clnt_chal;
@@ -3547,28 +3548,29 @@ static BOOL do_lsa_req_chal(uint16 fnum)
 	/* store the parameters */
 	make_q_req_chal(&q_c, desthost, myhostname, &clnt_chal);
 
-	/* i have absolutely no idea why you do this */
-	SIVAL(param, 0, 0xF400);
+	/* i have absolutely no idea why you do this.  or what it is.  help! */
+	SIVAL(data, 0, 0xF400);
+
+	rpc_hdr = data + 2;
 
 	/* turn parameters into data stream */
-	p = lsa_io_q_req_chal(False, &q_c, param + 0x18, param, 4, 5);
+	p = lsa_io_q_req_chal(False, &q_c, rpc_hdr + 0x18, rpc_hdr, 4, 5);
 
 	/* create the request RPC_HDR _after_ the main data: length is now known */
-	create_rpc_request(call_id, LSA_REQCHAL, param, PTR_DIFF(p, param));
+	create_rpc_request(call_id, LSA_REQCHAL, rpc_hdr, PTR_DIFF(p, rpc_hdr));
 
 	/* create setup parameters. */
 	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
 	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
 
 	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", PTR_DIFF(p, param), 0, 2, 1024,
+	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
                 BUFFER_SIZE,
 				&rprcnt,&rdrcnt,
-				param, NULL, setup,
+				NULL, data, setup,
 				&rparam,&rdata))
 	{
 		DEBUG(5, ("cli_call_api: return OK\n"));
-		sleep(10);
 #if 0
 		/* oh, now what??? */
 
@@ -3595,46 +3597,52 @@ static BOOL do_lsa_req_chal(uint16 fnum)
 /****************************************************************************
   open an rpc pipe (\NETLOGON or \srvsvc for example)
   ****************************************************************************/
-static int open_rpc_pipe(char *inbuf, char *outbuf, char *rname)
+static uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname)
 {
-  int fnum;
-  char *p;
+	int fnum;
+	char *p;
 
-  DEBUG(5,("open_rpc_pipe: %s\n", rname));
+	DEBUG(5,("open_rpc_pipe: %s\n", rname));
 
-  bzero(outbuf,smb_size);
-  set_message(outbuf,15,1 + strlen(rname),True);
+	bzero(outbuf,smb_size);
+	set_message(outbuf,15,1 + strlen(rname),True);
 
-  CVAL(outbuf,smb_com) = SMBopenX;
-  SSVAL(outbuf,smb_tid, cnum);
-  cli_setup_pkt(outbuf);
+	CVAL(outbuf,smb_com) = SMBopenX;
+	SSVAL(outbuf,smb_tid, cnum);
+	cli_setup_pkt(outbuf);
 
-  SSVAL(outbuf,smb_vwv0,0xFF);
-  SSVAL(outbuf,smb_vwv2,1);
-  SSVAL(outbuf,smb_vwv3,(DENY_NONE<<4));
-  SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
-  SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
-  SSVAL(outbuf,smb_vwv8,1);
-  
-  p = smb_buf(outbuf);
-  strcpy(p,rname);
-  p = skip_string(p,1);
+	SSVAL(outbuf,smb_vwv0,0xFF);
+	SSVAL(outbuf,smb_vwv2,1);
+	SSVAL(outbuf,smb_vwv3,(DENY_NONE<<4));
+	SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
+	SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
+	SSVAL(outbuf,smb_vwv8,1);
 
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-  
-  if (CVAL(inbuf,smb_rcls) != 0)
-  {
-      DEBUG(0,("%s opening remote pipe %s\n", smb_errstr(inbuf),rname));
+	p = smb_buf(outbuf);
+	strcpy(p,rname);
+	p = skip_string(p,1);
 
-      return -1;
-  }
+	send_smb(Client,outbuf);
+	receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
-  fnum = SVAL(inbuf, smb_vwv0);
+	if (CVAL(inbuf,smb_rcls) != 0)
+	{
+		if (CVAL(inbuf,smb_rcls) == ERRSRV &&
+		    SVAL(inbuf,smb_err) == ERRnoresource &&
+		    cli_reopen_connection(inbuf,outbuf))
+		{
+			return open_rpc_pipe(inbuf, outbuf, rname);
+		}
+		DEBUG(0,("opening remote pipe %s - error %s\n", rname, smb_errstr(inbuf)));
 
-  DEBUG(5,("opening pipe: fnum %d\n", fnum));
+		return 0xffff;
+	}
 
-  return fnum;
+	fnum = SVAL(inbuf, smb_vwv2);
+
+	DEBUG(5,("opening pipe: fnum %d\n", fnum));
+
+	return fnum;
 }
 
 /****************************************************************************
@@ -3642,7 +3650,7 @@ static int open_rpc_pipe(char *inbuf, char *outbuf, char *rname)
 ****************************************************************************/
 static BOOL cli_lsa_req_chal(void)
 {
-	int fnum;
+	uint16 fnum;
 	char *inbuf,*outbuf; 
 
 	inbuf  = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -3657,7 +3665,7 @@ static BOOL cli_lsa_req_chal(void)
 	/* open the \PIPE\NETLOGON file */
 	fnum = open_rpc_pipe(inbuf, outbuf, PIPE_NETLOGON);
 
-	if (fnum > 0)
+	if (fnum != 0xffff)
 	{
 		do_lsa_req_chal(fnum);
 
