@@ -253,6 +253,7 @@ Found 0 aliased levels
 */
 #define SMB_FIND_STANDARD		    1
 #define SMB_FIND_EA_SIZE		    2
+#define SMB_FIND_EA_LIST		    3
 #define SMB_FIND_DIRECTORY_INFO		0x101
 #define SMB_FIND_FULL_DIRECTORY_INFO	0x102
 #define SMB_FIND_NAME_INFO		0x103
