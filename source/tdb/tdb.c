@@ -1463,11 +1463,12 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		goto fail;
 
 	/* Is it already in the open list?  If so, fail. */
+	if (tdb_already_open(st.st_dev, st.st_ino)
 	for (i = tdbs; i; i = i->next) {
 		if (i->device == st.st_dev && i->inode == st.st_ino) {
 			errno = EBUSY;
 			close(tdb->fd);
-			return NULL;
+			goto fail;
 		}
 	}
 
