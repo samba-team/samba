@@ -190,7 +190,7 @@ WERROR reg_import_hive(struct registry_context *h, const char *backend, const ch
 
 	/* Add hive to context */
 	h->num_hives++;
-	h->hives = talloc_realloc_p(h->hives, struct registry_hive *, h->num_hives);
+	h->hives = talloc_realloc_p(h, h->hives, struct registry_hive *, h->num_hives);
 	h->hives[h->num_hives-1] = ret;
 
 	return WERR_OK;

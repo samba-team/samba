@@ -83,7 +83,8 @@ static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 	file_info *tdl;
  
 	/* add file info to the dirlist pool */
-	tdl = talloc_realloc(state->dirlist,
+	tdl = talloc_realloc(state, 
+			     state->dirlist,
 			     state->dirlist_len + sizeof(struct file_info));
 
 	if (!tdl) {
@@ -225,7 +226,8 @@ static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 	file_info *tdl;
 	
 	/* add file info to the dirlist pool */
-	tdl = talloc_realloc(state->dirlist,
+	tdl = talloc_realloc(state,
+			     state->dirlist,
 			     state->dirlist_len + sizeof(struct file_info));
 
 	if (!tdl) {

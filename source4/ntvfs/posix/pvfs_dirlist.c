@@ -89,11 +89,6 @@ NTSTATUS pvfs_list(struct pvfs_state *pvfs, struct pvfs_filename *name, struct p
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	dir->names = talloc(dir, 0);
-	if (!dir->names) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	odir = opendir(name->full_name);
 	if (!odir) { 
 		return pvfs_map_errno(pvfs, errno); 
@@ -110,7 +105,7 @@ NTSTATUS pvfs_list(struct pvfs_state *pvfs, struct pvfs_filename *name, struct p
 		
 		if (dir->count >= allocated) {
 			allocated = (allocated + 100) * 1.2;
-			dir->names = talloc_realloc_p(dir->names, const char *, allocated);
+			dir->names = talloc_realloc_p(dir, dir->names, const char *, allocated);
 			if (!dir->names) { 
 				closedir(odir);
 				return NT_STATUS_NO_MEMORY;

@@ -90,7 +90,7 @@ WERROR rpc_list_hives (TALLOC_CTX *mem_ctx, const char *location, const char *cr
 	int i = 0;
 	*hives = talloc_p(mem_ctx, char *);
 	for(i = 0; known_hives[i].name; i++) {
-		*hives = talloc_realloc_p(*hives, char *, i+2);
+		*hives = talloc_realloc_p(mem_ctx, *hives, char *, i+2);
 		(*hives)[i] = talloc_strdup(mem_ctx, known_hives[i].name);
 	}
 	(*hives)[i] = NULL;
