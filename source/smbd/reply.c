@@ -1432,6 +1432,59 @@ void fail_readraw(void)
 }
 
 /****************************************************************************
+ Use sendfile in readbraw.
+****************************************************************************/
+
+void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T startpos, size_t nread,
+		ssize_t mincount, char *outbuf)
+{
+	ssize_t ret=0;
+
+#if defined(WITH_SENDFILE)
+	/*
+	 * We can only use sendfile on a non-chained packet and on a file
+	 * that is exclusively oplocked. reply_readbraw has already checked the length.
+	 */
+
+	if ((nread > 0) && (lp_write_cache_size(SNUM(conn)) == 0) &&
+			EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_use_sendfile(SNUM(conn)) ) {
+		DATA_BLOB header;
+
+		_smb_setlen(outbuf,nread);
+		header.data = outbuf;
+		header.length = 4;
+		header.free = NULL;
+
+		if ( conn->vfs_ops.sendfile( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
+			/*
+			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
+			 * return ENOSYS then pretend we just got a normal read.
+			 */
+			if (errno == ENOSYS)
+				goto normal_read;
+
+			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
+				fsp->fsp_name, strerror(errno) ));
+			exit_server("send_file_readbraw sendfile failed");
+		}
+
+	}
+
+  normal_read:
+#endif
+
+	if (nread > 0) {
+		ret = read_file(fsp,outbuf+4,startpos,nread);
+		if (ret < mincount)
+			ret = 0;
+	}
+
+	_smb_setlen(outbuf,ret);
+	if (write_data(smbd_server_fd(),outbuf,4+ret) != 4+ret)
+		fail_readraw();
+}
+
+/****************************************************************************
  Reply to a readbraw (core+ protocol).
 ****************************************************************************/
 
@@ -1441,7 +1494,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	size_t nread = 0;
 	SMB_OFF_T startpos;
 	char *header = outbuf;
-	ssize_t ret=0;
 	files_struct *fsp;
 	START_PROFILE(SMBreadbraw);
 
@@ -1545,15 +1597,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
 				(int)maxcount, (int)mincount, (int)nread ) );
   
-	if (nread > 0) {
-		ret = read_file(fsp,header+4,startpos,nread);
-		if (ret < mincount)
-			ret = 0;
-	}
-
-	_smb_setlen(header,ret);
-	if (write_data(smbd_server_fd(),header,4+ret) != 4+ret)
-		fail_readraw();
+	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf);
 
 	DEBUG(5,("readbraw finished\n"));
 	END_PROFILE(SMBreadbraw);
@@ -1698,7 +1742,8 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 	 * that is exclusively oplocked.
 	 */
 
-	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_use_sendfile(SNUM(conn)) ) {
+	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) &&
+			lp_use_sendfile(SNUM(conn)) && (lp_write_cache_size(SNUM(conn)) == 0) ) {
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
