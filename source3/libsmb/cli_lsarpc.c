@@ -699,7 +699,6 @@ NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	LSA_Q_PRIV_GET_DISPNAME q;
 	LSA_R_PRIV_GET_DISPNAME r;
 	NTSTATUS result;
-	int i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
