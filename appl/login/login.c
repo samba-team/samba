@@ -124,7 +124,7 @@ struct getargs args[] = {
     { NULL, 'r', arg_flag,	&r_flag,	"rlogin protocol" },
 #endif
     { "version", 0,  arg_flag,	&version_flag },
-    { "help",	 'h',  arg_flag,&help_flag, }
+    { "help",	 0,  arg_flag,&help_flag, }
 };
 
 int nargs = sizeof(args) / sizeof(args[0]);
