@@ -219,6 +219,9 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 /* read from a ASN1 buffer, advancing the buffer pointer */
 BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 {
+	if (data->has_error)
+		return False;
+
 	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
 		data->has_error = True;
 		return False;
@@ -309,6 +312,9 @@ BOOL asn1_end_tag(ASN1_DATA *data)
 /* work out how many bytes are left in this nested tag */
 int asn1_tag_remaining(ASN1_DATA *data)
 {
+	if (data->has_error)
+		return 0;
+
 	if (!data->nesting) {
 		data->has_error = True;
 		return -1;
