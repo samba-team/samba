@@ -18,7 +18,7 @@ done
 
 for sect in 1 5 7 8 ; do
   for m in $MANDIR/man$sect ; do
-    for s in $SRCDIR../docs/*$sect; do
+    for s in $SRCDIR../docs/manpages/*$sect; do
       FNAME=$m/`basename $s`
       echo Installing $FNAME
       cp $s $m || echo Cannot create $FNAME... does $USER have privileges?
