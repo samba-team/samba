@@ -331,16 +331,6 @@ typedef struct domsid2_info
 
 } DOM_SID2;
 
-/* DOM_SID3 - domain SID structure - SIDs stored in unicode */
-typedef struct domsid3_info
-{
-  UNISTR str; /* domain SID unicode string */
-  uint32 undoc; /* value is 0 */
-  uint32 type1; /* value is 1 */
-  uint32 type2; /* value is 5 or 3 */
-
-} DOM_SID3;
-
 /* DOM_RID2 - domain RID structure */
 typedef struct domrid2_info
 {
@@ -409,8 +399,8 @@ typedef struct id_info_1
   DOM_LOGON_ID      logon_id;            /* logon ID */
   UNIHDR            hdr_user_name;       /* user name unicode header */
   UNIHDR            hdr_workgroup_name;  /* workgroup name unicode header */
-  ARC4_OWF          arc4_lm_owf;         /* arc4 LM OWF Password */
-  ARC4_OWF          arc4_nt_owf;         /* arc4 NT OWF Password */
+  ARC4_OWF          arc4_lm_owf;         /* rc4 LM OWF Password */
+  ARC4_OWF          arc4_nt_owf;         /* rc4 NT OWF Password */
   UNISTR2           uni_domain_name;     /* domain name unicode string */
   UNISTR2           uni_user_name;       /* user name unicode string */
   UNISTR2           uni_workgroup_name;  /* workgroup name unicode string */
@@ -463,10 +453,11 @@ typedef struct rpc_hdr_info
 typedef struct dom_query_info
 {
   uint16 uni_dom_max_len; /* domain name string length * 2 */
+  uint16 padding;         /* 2 padding bytes? */
   uint16 uni_dom_str_len; /* domain name string length * 2 */
   uint32 buffer_dom_name; /* undocumented domain name string buffer pointer */
   uint32 buffer_dom_sid; /* undocumented domain SID string buffer pointer */
-  UNISTR uni_domain_name; /* domain name (unicode string) */
+  UNISTR2 uni_domain_name; /* domain name (unicode string) */
   DOM_SID dom_sid; /* domain SID */
 
 } DOM_QUERY;
@@ -475,13 +466,24 @@ typedef struct dom_query_info
 typedef DOM_QUERY DOM_QUERY_3;
 typedef DOM_QUERY DOM_QUERY_5;
 
+#define POL_HND_SIZE 20
+
 /* LSA_POL_HND */
 typedef struct lsa_policy_info
 {
-  uint8 data[20]; /* policy handle */
+  uint8 data[POL_HND_SIZE]; /* policy handle */
 
 } LSA_POL_HND;
 
+
+/* LSA_R_OPEN_POL - response to LSA Open Policy */
+typedef struct lsa_r_open_pol_info
+{
+	LSA_POL_HND pol; /* policy handle */
+
+	uint32 status; /* return code */
+
+} LSA_R_OPEN_POL;
 
 /* LSA_Q_QUERY_INFO - LSA query info policy */
 typedef struct lsa_query_info
@@ -530,7 +532,6 @@ typedef struct dom_ref_info
 /* LSA_Q_LOOKUP_SIDS - LSA Lookup SIDs */
 typedef struct lsa_q_lookup_sids
 {
-
     LSA_POL_HND pol_hnd; /* policy handle */
     uint32 num_entries;
     uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
@@ -669,7 +670,7 @@ typedef struct lsa_q_srv_pwset_info
 /* LSA_R_SRV_PWSET */
 typedef struct lsa_r_srv_pwset_info
 {
-    DOM_CHAL srv_chal;     /* server-calculated credentials */
+    DOM_CRED srv_cred;     /* server-calculated credentials */
 
   uint32 status; /* return code */
 
@@ -1040,8 +1041,10 @@ typedef struct
 {
   smb_shm_offset_t next_share_mode_entry;
   int pid;
+#ifdef USE_OPLOCKS
   uint16 op_port;
   uint16 op_type;
+#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } share_mode_entry;
@@ -1050,8 +1053,10 @@ typedef struct
 typedef struct
 {
   int pid;
+#ifdef USE_OPLOCKS
   uint16 op_port;
   uint16 op_type;
+#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } min_share_mode_entry;
@@ -1077,7 +1082,11 @@ struct connect_record
 };
 
 #ifndef LOCKING_VERSION
+#ifdef USE_OPLOCKS
 #define LOCKING_VERSION 4
+#else /* USE_OPLOCKS */
+#define LOCKING_VERSION 3
+#endif /* USE_OPLOCKS */
 #endif /* LOCKING_VERSION */
 
 #if !defined(FAST_SHARE_MODES)
@@ -1093,7 +1102,11 @@ struct connect_record
 #define SMF_FILENAME_LEN_OFFSET 8
 #define SMF_HEADER_LENGTH 10
 
+#ifdef USE_OPLOCKS
 #define SMF_ENTRY_LENGTH 20
+#else /* USE_OPLOCKS */
+#define SMF_ENTRY_LENGTH 16
+#endif /* USE_OPLOCKS */
 
 /*
  * Share mode record offsets.
@@ -1104,8 +1117,10 @@ struct connect_record
 #define SME_SHAREMODE_OFFSET 8
 #define SME_PID_OFFSET 12
 
+#ifdef USE_OPLOCKS
 #define SME_PORT_OFFSET 16
 #define SME_OPLOCK_TYPE_OFFSET 18
+#endif /* USE_OPLOCKS */
 
 #endif /* FAST_SHARE_MODES */
 

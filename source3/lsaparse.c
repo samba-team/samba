@@ -25,6 +25,20 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
+reads or writes an LSA_R_OPEN_POL structure.
+********************************************************************/
+char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align)
+{
+	if (r_p == NULL) return NULL;
+
+	q = smb_io_pol_hnd(io, &(r_p->pol), q, base, align);
+
+	RW_IVAL(io, q, r_p->status, 0); q += 4;
+
+	return q;
+}
+
+/*******************************************************************
 reads or writes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align)

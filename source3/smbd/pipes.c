@@ -2,7 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Pipe SMB reply routines
-   Copyright (C) Andrew Tridgell 1992-1997
+   Copyright (C) Andrew Tridgell 1992-1997,
+                 Paul Ashton  1997,
+                 Luke Kenneth Casson Leighton 1996-1997.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -51,6 +53,9 @@ a packet to ensure chaining works correctly */
 char * known_pipes [] =
 {
   "lsarpc",
+#if 0
+  "NETLOGON",
+#endif
   NULL
 };
 
@@ -357,3 +362,234 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
   }
   return(True);
 }
+
+/*
+   PAXX: Someone fix above.
+   The above API is indexing RPC calls based on RPC flags and 
+   fragment length. I've decided to do it based on operation number :-)
+*/
+
+/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+/* identauth >= 2^32 can be detected because it will be specified in hex */
+static void init_dom_sid(DOM_SID *sid, char *domsid)
+{
+	int identauth;
+	char *p;
+
+	DEBUG(4,("netlogon domain SID: %s\n", domsid));
+
+	/* assume, but should check, that domsid starts "S-" */
+	p = strtok(domsid+2,"-");
+	sid->sid_no = atoi(p);
+
+	/* identauth in decimal should be <  2^32 */
+	/* identauth in hex     should be >= 2^32 */
+	identauth = atoi(strtok(0,"-"));
+
+	DEBUG(4,("netlogon rev %d\n", sid->sid_no));
+	DEBUG(4,("netlogon %s ia %d\n", p, identauth));
+
+	sid->id_auth[0] = 0;
+	sid->id_auth[1] = 0;
+	sid->id_auth[2] = (identauth & 0xff000000) >> 24;
+	sid->id_auth[3] = (identauth & 0x00ff0000) >> 16;
+	sid->id_auth[4] = (identauth & 0x0000ff00) >> 8;
+	sid->id_auth[5] = (identauth & 0x000000ff);
+
+	sid->num_auths = 0;
+
+	while ((p = strtok(0, "-")) != NULL)
+	{
+		sid->sub_auths[sid->num_auths++] = atoi(p);
+	}
+}
+
+static void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
+{
+	if (hdr == NULL) return;
+
+	hdr->major        = 5;               /* RPC version 5 */
+	hdr->minor        = 0;               /* minor version 0 */
+	hdr->pkt_type     = 2;               /* RPC response packet */
+	hdr->frag         = 3;               /* first frag + last frag */
+	hdr->pack_type    = 1;               /* packed data representation */
+	hdr->frag_len     = data_len;        /* fragment length, fill in later */
+	hdr->auth_len     = 0;               /* authentication length */
+	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
+	hdr->alloc_hint   = data_len - 0x18; /* allocation hint (no idea) */
+	hdr->context_id   = 0;               /* presentation context identifier */
+	hdr->cancel_count = 0;               /* cancel count */
+	hdr->reserved     = 0;               /* reserved */
+}
+
+static void init_rpc_reply(char *inbuf, char *q, char *base, int data_len)
+{
+	uint32 callid = RIVAL(inbuf, 12);
+	RPC_HDR hdr;
+
+	create_rpc_reply(&hdr, callid, data_len);
+	smb_io_rpc_hdr(False, &hdr, q, base, 4);
+}
+
+static int lsa_reply_open_policy(char *q, char *base)
+{
+	char *start = q;
+	LSA_R_OPEN_POL r_o;
+
+	/* set up the LSA QUERY INFO response */
+	bzero(&(r_o.pol.data), POL_HND_SIZE);
+	r_o.status = 0x0;
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_open_pol(False, &r_o, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
+static void init_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
+{
+	/* set up string lengths. add one if string is not null-terminated */
+	str->uni_max_len = len + (terminate != 0 ? 1 : 0);
+	str->undoc       = 0;
+	str->uni_str_len = len;
+
+	/* store the string (null-terminated copy) */
+	PutUniCode((char *)str->buffer, buf);
+
+	/* overwrite the last character: some strings are terminated with 4 not 0 */
+	str->buffer[len] = (uint16)terminate;
+}
+
+static void init_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
+{
+	int domlen = strlen(dom_name);
+
+	d_q->uni_dom_max_len = domlen * 2;
+	d_q->padding = 0;
+	d_q->uni_dom_str_len = domlen * 2;
+
+	d_q->buffer_dom_name = 0; /* domain buffer pointer */
+	d_q->buffer_dom_sid  = 0; /* domain sid pointer */
+
+	/* NOT null-terminated: 4-terminated instead! */
+	init_unistr2(&(d_q->uni_domain_name), dom_name, domlen, 4);
+
+	init_dom_sid(&(d_q->dom_sid), dom_sid);
+}
+
+static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
+				char *dom_name, char *dom_sid)
+{
+	char *start = q;
+	LSA_R_QUERY_INFO r_q;
+
+	/* set up the LSA QUERY INFO response */
+
+	r_q.undoc_buffer = 1; /* not null */
+	r_q.info_class = q_q->info_class;
+
+	init_dom_query(&r_q.dom.id5, dom_name, dom_sid);
+
+	r_q.status = 0x0;
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_query(False, &r_q, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
+static void init_lsa_r_req_chal(LSA_R_REQ_CHAL *r_c, char chal[8], int status)
+{
+	memcpy(r_c->srv_chal.data, chal, sizeof(r_c->srv_chal.data));
+	r_c->status = status;
+}
+
+#if 0
+	char chal[8];
+	/* PAXX: set these to random values */
+	for (int i = 0; i < 8; i+++)
+	{
+		chal[i] = 0xA5;
+	}
+#endif
+
+static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
+					char chal[8])
+{
+	char *start = q;
+	LSA_R_REQ_CHAL r_c;
+
+	/* set up the LSA REQUEST CHALLENGE response */
+
+	init_lsa_r_req_chal(&r_c, chal, 0);
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_req_chal(False, &r_c, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
+static void init_lsa_chal(DOM_CHAL *cred, char resp_cred[8])
+{
+	memcpy(cred->data, resp_cred, sizeof(cred->data));
+}
+
+static void init_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
+                              char resp_cred[8], NEG_FLAGS *flgs, int status)
+{
+	init_lsa_chal(&(r_a->srv_chal), resp_cred);
+	memcpy(&(r_a->srv_flgs), flgs, sizeof(r_a->srv_flgs));
+	r_a->status = status;
+}
+
+static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
+				char resp_cred[8], int status)
+{
+	char *start = q;
+	LSA_R_AUTH_2 r_a;
+
+	/* set up the LSA AUTH 2 response */
+
+	init_lsa_r_auth_2(&r_a, resp_cred, &(q_a->clnt_flgs), status);
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_auth_2(False, &r_a, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
+static void init_lsa_dom_chal(DOM_CRED *cred, char srv_chal[8], UTIME srv_time)
+{
+	init_lsa_chal(&(cred->challenge), srv_chal);
+	cred->timestamp = srv_time;
+}
+	
+
+static void init_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
+                              char srv_chal[8], UTIME srv_time, int status)
+{
+	init_lsa_dom_chal(&(r_a->srv_cred), srv_chal, srv_time);
+	r_a->status = status;
+}
+
+static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
+				char srv_cred[8], UTIME srv_time,
+				int status)
+{
+	char *start = q;
+	LSA_R_SRV_PWSET r_s;
+
+	/* set up the LSA Server Password Set response */
+	init_lsa_r_srv_pwset(&r_s, srv_cred, srv_time, status);
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
