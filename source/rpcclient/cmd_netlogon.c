@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct user_credentials *usr_creds;
+extern struct ntuser_creds *usr_creds;
 
 extern FILE* out_hnd;
 

@@ -290,15 +290,122 @@ void process_smb(char *inbuf, char *outbuf)
 }
 
 
+BOOL get_user_creds(struct user_creds *usr)
+{
+	pstring buf;
+	int rl;
+	uint32 len;
+	BOOL new_con = False;
+	extern int Client;
+	uint32 status;
+
+	CREDS_CMD cmd;
+	prs_struct ps;
+
+	ZERO_STRUCTP(usr);
+	ZERO_STRUCT(cmd);
+	cmd.cred = usr;
+
+	DEBUG(10,("get_user_creds: first request\n"));
+
+	rl = read(Client, &buf, sizeof(len));
+
+	if (rl != sizeof(len))
+	{
+		DEBUG(0,("Unable to read length\n"));
+		dump_data(0, buf, sizeof(len));
+		return False;
+	}
+
+	len = IVAL(buf, 0);
+
+	if (len > sizeof(buf))
+	{
+		DEBUG(0,("length %d too long\n", len));
+		return False;
+	}
+
+	rl = read(Client, buf, len);
+
+	if (rl < 0)
+	{
+		DEBUG(0,("Unable to read from connection\n"));
+		return False;
+	}
+	
+#ifdef DEBUG_PASSWORD
+	dump_data(100, buf, rl);
+#endif
+
+ 	/* make a static data parsing structure from the api_fd_reply data */
+ 	prs_init(&ps, 0, 4, 0, True);
+ 	mem_create(ps.data, buf, 0, len, 0, False);
+
+	if (!creds_io_cmd("creds", &cmd, &ps, 0))
+	{
+		DEBUG(0,("Unable to parse credentials\n"));
+		mem_free_data(ps.data);
+		return False;
+	}
+
+ 	mem_free_data(ps.data);
+
+	if (ps.offset != rl)
+	{
+		DEBUG(0,("Buffer size %d %d!\n", ps.offset, rl));
+		return False;
+	}
+
+	switch (cmd.command)
+	{
+		case AGENT_CMD_CON:
+		case AGENT_CMD_CON_ANON:
+		{
+			new_con = True;
+			break;
+		}
+		case AGENT_CMD_CON_REUSE:
+		{
+			new_con = True;
+			break;
+		}
+		default:
+		{
+			DEBUG(0,("unknown command %d\n", cmd.command));
+			return False;
+		}
+	}
+
+	status = new_con ? 0x0 : 0x1;
+
+	if (write(Client, &status, sizeof(status)) !=
+	    sizeof(status))
+	{
+		return False;
+	}
+
+	return new_con;
+}
 
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
 void lsarpcd_process(void)
 {
+	struct user_creds usr;
+
 	ZERO_STRUCT(static_pipe);
 
 	fstrcpy(static_pipe.name, "lsarpc");
+	
+	if (!get_user_creds(&usr))
+	{
+		DEBUG(0,("authentication failed\n"));
+		free_user_creds(&usr);
+		return;
+	}
+
+	free_user_creds(&usr);
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -308,7 +415,6 @@ void lsarpcd_process(void)
   InBuffer += SMB_ALIGNMENT;
   OutBuffer += SMB_ALIGNMENT;
 
-
   max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   /* re-initialise the timezone */
@@ -316,18 +422,9 @@ void lsarpcd_process(void)
 
   while (True)
   {
-    int deadtime = lp_deadtime()*60;
     int counter;
     int service_load_counter = 0;
     BOOL got_smb = False;
-
-    if (deadtime <= 0)
-      deadtime = DEFAULT_SMBD_TIMEOUT;
-
-#if USE_READ_PREDICTION
-    if (lp_readprediction())
-      do_read_prediction();
-#endif
 
     errno = 0;      
 

@@ -882,8 +882,8 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	struct cli_state cli;
 	POLICY_HND lsa_pol;
 	fstring srv_name;
-	extern struct user_credentials *usr_creds;
-	struct user_credentials usr;
+	extern struct ntuser_creds *usr_creds;
+	struct ntuser_creds usr;
 
 	BOOL res3 = True;
 	BOOL res4 = True;

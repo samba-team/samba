@@ -482,7 +482,11 @@ void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,
 				BOOL (*fn) (pipes_struct *, prs_struct *))
 {
-	struct api_cmd cmd = { pipe_name, process_name, fn };
+	struct api_cmd cmd;
+	cmd.pipe_clnt_name = pipe_name;
+	cmd.pipe_srv_name = process_name;
+	cmd.fn = fn;
+
 	add_api_cmd_to_array(&num_cmds, &api_fd_commands, &cmd);
 }
 

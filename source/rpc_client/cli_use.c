@@ -110,13 +110,14 @@ find client state.  server name, user name, domain name and password must all
 match.
 ****************************************************************************/
 static struct cli_use *cli_find(const char* srv_name,
-				const struct user_credentials *usr_creds)
+				const struct ntuser_creds *usr_creds,
+				BOOL reuse)
 {
 	int i;
 	const char *sv_name = srv_name;
-	struct user_credentials null_usr;
+	struct ntuser_creds null_usr;
 
-	copy_user_creds(&null_usr, usr_creds);
+	copy_nt_creds(&null_usr, usr_creds);
 	usr_creds = &null_usr;
 		
 	if (strnequal("\\\\", sv_name, 2))
@@ -156,7 +157,7 @@ static struct cli_use *cli_find(const char* srv_name,
 		{
 			continue;
 		}
-		if (!usr_creds->reuse &&
+		if (!reuse &&
 		    !pwd_compare(&usr_creds->pwd, &c->cli->usr.pwd))
 		{
 			DEBUG(100,("password doesn't match\n"));
@@ -179,7 +180,7 @@ static struct cli_use *cli_find(const char* srv_name,
 create a new client state from user credentials
 ****************************************************************************/
 static struct cli_use *cli_use_get(const char* srv_name,
-				const struct user_credentials *usr_creds)
+				const struct ntuser_creds *usr_creds)
 {
 	struct cli_use *cli = (struct cli_use*)malloc(sizeof(*cli));
 
@@ -206,8 +207,9 @@ static struct cli_use *cli_use_get(const char* srv_name,
 init client state
 ****************************************************************************/
 struct cli_state *cli_net_use_add(const char* srv_name,
-				const struct user_credentials *usr_creds,
-				BOOL redir)
+				const struct ntuser_creds *usr_creds,
+				BOOL redir,
+				BOOL reuse)
 {
 	struct nmb_name calling;
 	struct nmb_name called;
@@ -215,7 +217,7 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 	fstring dest_host;
 	struct in_addr ip;
 
-	struct cli_use *cli = cli_find(srv_name, usr_creds); 
+	struct cli_use *cli = cli_find(srv_name, usr_creds, reuse); 
 
 	if (cli != NULL)
 	{
@@ -224,7 +226,7 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 	}
 
 	/* reuse an existing connection requested, and one was not found */
-	if (usr_creds != NULL && usr_creds->reuse && !redir)
+	if (usr_creds != NULL && reuse && !redir)
 	{
 		return False;
 	}
@@ -277,7 +279,7 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 delete a client state
 ****************************************************************************/
 BOOL cli_net_use_del(const char* srv_name,
-				const struct user_credentials *usr_creds,
+				const struct ntuser_creds *usr_creds,
 				BOOL force_close,
 				BOOL *connection_closed)
 {

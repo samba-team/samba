@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 
 extern FILE* out_hnd;
 
-extern struct user_credentials *usr_creds;
+extern struct ntuser_creds *usr_creds;
 
 /****************************************************************************
 nt spoolss query

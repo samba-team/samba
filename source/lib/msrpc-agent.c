@@ -28,7 +28,7 @@ static char packet[BUFFER_SIZE];
 
 /****************************************************************************
 terminate sockent connection
-***********************************************************<*****************/
+****************************************************************************/
 static void free_sock(void *sock)
 {
 	if (sock != NULL)
@@ -41,20 +41,21 @@ static void free_sock(void *sock)
 static struct msrpc_state *init_client_connection(int c)
 {
 	pstring buf;
-	uchar ntpw[16];
-	uchar lmpw[16];
 	fstring pipe_name;
-	struct user_credentials usr;
-	char *p = buf;
+	struct user_creds usr;
 	int rl;
 	uint32 len;
-	uint16 version;
-	uint16 command;
 	BOOL new_con = False;
+	struct msrpc_state *n = NULL;
+
+	CREDS_CMD cmd;
+	prs_struct ps;
 
 	ZERO_STRUCT(usr);
+	ZERO_STRUCT(cmd);
+	cmd.cred = &usr;
 
-	DEBUG(10,("first request\n"));
+	DEBUG(10,("init_client_connection: first request\n"));
 
 	rl = read(c, &buf, sizeof(len));
 
@@ -84,41 +85,30 @@ static struct msrpc_state *init_client_connection(int c)
 #ifdef DEBUG_PASSWORD
 	dump_data(100, buf, rl);
 #endif
-	version = SVAL(p, 0);
-	p += 2;
-	command = SVAL(p, 0);
-	p += 2;
 
-	fstrcpy(pipe_name, p);
-	p = skip_string(p, 1);
-	fstrcpy(usr.user_name, p);
-	p = skip_string(p, 1);
-	fstrcpy(usr.domain, p);
-	p = skip_string(p, 1);
+ 	/* make a static data parsing structure from the api_fd_reply data */
+ 	prs_init(&ps, 0, 4, 0, True);
+ 	mem_create(ps.data, buf, 0, len, 0, False);
 
-	if (PTR_DIFF(p, buf) < rl)
+	if (!creds_io_cmd("creds", &cmd, &ps, 0))
 	{
-		memcpy(lmpw, p, 16);
-		p += 16;
-		memcpy(ntpw, p, 16);
-		p += 16;
-		pwd_set_lm_nt_16(&usr.pwd, lmpw, ntpw);
-	}
-	else
-	{
-		pwd_set_nullpwd(&usr.pwd);
-	}
-
-	if (PTR_DIFF(p, buf) != rl)
-	{
-		DEBUG(0,("Buffer size %d %d!\n",
-			PTR_DIFF(p, buf), rl));
+		DEBUG(0,("Unable to parse credentials\n"));
+		mem_free_data(ps.data);
 		return NULL;
 	}
 
-	switch (command)
+ 	mem_free_data(ps.data);
+
+	if (ps.offset != rl)
+	{
+		DEBUG(0,("Buffer size %d %d!\n", ps.offset, rl));
+		return NULL;
+	}
+
+	switch (cmd.command)
 	{
 		case AGENT_CMD_CON:
+		case AGENT_CMD_CON_ANON:
 		{
 			new_con = True;
 			break;
@@ -126,19 +116,17 @@ static struct msrpc_state *init_client_connection(int c)
 		case AGENT_CMD_CON_REUSE:
 		{
 			new_con = True;
-			usr.reuse = True;
 			break;
 		}
 		default:
 		{
-			DEBUG(0,("unknown command %d\n", command));
+			DEBUG(0,("unknown command %d\n", cmd.command));
 			return NULL;
 		}
 	}
 
 	if (new_con)
 	{
-		struct msrpc_state *n;
 		uint32 status = 0;
 		n = msrpc_use_add(pipe_name, &usr, False);
 
@@ -162,9 +150,9 @@ static struct msrpc_state *init_client_connection(int c)
 				n = NULL;
 			}
 		}
-		return n;
 	}
-	return NULL;
+	free_user_creds(&usr);
+	return n;
 }
 
 static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
@@ -256,6 +244,7 @@ void start_msrpc_agent(char *pipe_name)
 	
 	if (fork() == 0)
 	{
+		/* child */
 		start_agent(&va);
 	}
 }

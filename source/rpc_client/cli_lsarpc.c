@@ -44,8 +44,8 @@ BOOL get_domain_sids(const char *myname,
 	BOOL res1 = True;
 	fstring dom3;
 	fstring dom5;
-	extern struct user_credentials *usr_creds;
-	struct user_credentials usr;
+	extern struct ntuser_creds *usr_creds;
+	struct ntuser_creds usr;
 	
 	usr_creds = &usr;
 	ZERO_STRUCT(usr);
@@ -140,8 +140,8 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	fstring dom3;
 	fstring dom5;
 
-	extern struct user_credentials *usr_creds;
-	struct user_credentials usr;
+	extern struct ntuser_creds *usr_creds;
+	struct ntuser_creds usr;
 	
 	usr_creds = &usr;
 	ZERO_STRUCT(usr);

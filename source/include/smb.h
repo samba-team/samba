@@ -576,14 +576,14 @@ typedef struct connection_struct
 	uid_t uid; /* uid of user who *opened* this connection */
 	gid_t gid; /* gid of user who *opened* this connection */
 
-	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
-
-	/* following groups stuff added by ih */
-
 	/* This groups info is valid for the user that *opened* the connection */
 	int ngroups;
 	gid_t *groups;
 	
+	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
+
+	/* following groups stuff added by ih */
+
 	time_t lastused;
 	BOOL used;
 	int num_files_open;
@@ -592,34 +592,6 @@ typedef struct connection_struct
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
 
 } connection_struct;
-
-struct unix_sec_ctxt
-{
-	uid_t uid;
-	gid_t gid;
-	int ngroups;
-	gid_t *groups;
-
-	char *name;
-};
-
-struct nt_sec_ctxt
-{
-	/* this should (will?) probably become a SEC_DESC */
-	DOM_SID user_sid;
-	DOM_SID group_sid;
-
-	char *name;
-	char *domain;
-};
-
-#if 0
-struct sec_ctxt
-{
-	struct unix_sec_ctxt unix;
-	struct nt_sec_ctxt   nt;
-};
-#endif
 
 struct current_user
 {
@@ -1700,8 +1672,6 @@ struct nmb_name {
   unsigned int name_type;
 };
 
-#include "client.h"
-#include "rpcclient.h"
 
 #include "dfs.h"
 
@@ -1744,6 +1714,7 @@ struct field_info
 };
 
 #define AGENT_CMD_CON       0
+#define AGENT_CMD_CON_ANON  2
 #define AGENT_CMD_CON_REUSE 1
 
 #define MAX_MAX_MUX_LIMIT 16
@@ -1754,16 +1725,43 @@ struct nmb_state
 	int port;
 };
 
+struct pwd_info
+{
+	BOOL null_pwd;
+	BOOL cleartext;
+	BOOL crypted;
+
+	fstring password;
+
+	uchar smb_lm_pwd[16];
+	uchar smb_nt_pwd[16];
+
+	uchar smb_lm_owf[24];
+	uchar smb_nt_owf[128];
+	size_t nt_owf_len;
+
+	uchar lm_cli_chal[8];
+	uchar nt_cli_chal[128];
+	size_t nt_cli_chal_len;
+
+	uchar sess_key[16];
+};
+
+#include "rpc_creds.h"
+
 struct msrpc_state
 {
 	fstring pipe_name;
-	struct user_credentials usr;
+	struct user_creds usr;
 	int fd;
 	BOOL redirect;
 	BOOL initialised;
 	char *inbuf;
 	char *outbuf;
 };
+
+#include "client.h"
+#include "rpcclient.h"
 
 #endif /* _SMB_H */
 
