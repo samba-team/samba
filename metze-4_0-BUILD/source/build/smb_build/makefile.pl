@@ -129,7 +129,7 @@ idl: build/pidl/idl.pm
 build/pidl/idl.pm: build/pidl/idl.yp
 	-yapp -s build/pidl/idl.yp
 
-pch: include/includes.h.gch
+pch: proto include/includes.h.gch
 
 pch_clean:
 	-rm -f include/includes.h.gch
@@ -557,7 +557,7 @@ sub _prepare_proto_rules()
 proto_exists: \$(builddir)/include/proto.h \$(builddir)/include/build_env.h
 
 delheaders: pch_clean
-	-rm -f \$(builddir)/include/proto.h include/build_env.h:
+	-rm -f \$(builddir)/include/proto.h \$(builddir)/include/build_env.h:
 
 include/proto.h:
 	\@cd \$(srcdir) && \$(SHELL) script/mkproto.sh \$(PERL) \\
