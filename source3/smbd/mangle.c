@@ -1033,7 +1033,6 @@ static int dos_to_ucs2(void *dest, const char *src, int dest_len)
 {
 	int len=0;
 	int src_len = strlen(src) + 1;
-	pstring tmpbuf;
 
 	/* treat a pstring as "unlimited" length */
 	if (dest_len == -1) {
@@ -1067,7 +1066,7 @@ static int ucs2_to_dos(char *dest, const smb_ucs2_t *src, int dest_len)
 /* trasform a ucs2 string in a dos charset string that contain only valid chars for 8.3 filenames */
 static int ucs2_to_dos83(char *dest, const smb_ucs2_t *src, int dest_len)
 {
-	int src_len, u2s_len, ret;
+	int src_len, ret;
 	smb_ucs2_t *u2s;
 
 	u2s = (smb_ucs2_t *)malloc((strlen_w(src) + 1) * sizeof(smb_ucs2_t));
@@ -1112,7 +1111,7 @@ static BOOL mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix
 		DEBUG(0,("mangle_get_prefix: out of memory!\n"));
 		return False;
 	}
-	if (p = strrchr_wa(*prefix, '.'))
+	if ((p = strrchr_wa(*prefix, '.')))
 	{
 		p++;
 		str_len = ucs2_to_dos83(ext, p, sizeof(ext));
@@ -1221,7 +1220,6 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 	smb_ucs2_t *um, *ext, *p = NULL;
 	smb_ucs2_t temp[9];
 	size_t pref_len, ext_len, ud83_len;
-	size_t um_len;
 	uint32 n, c, pos;
 
 	/* TODO: if it is a path return a failure ?? */
