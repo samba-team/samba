@@ -14,7 +14,7 @@
 #include "includes.h"
 #include "winbind_nss_config.h"
 
-#ifdef HAVE_NSS_COMMON_H 
+#if defined(HAVE_NSS_COMMON_H) || defined(HPUX)
 
 #undef NSS_DEBUG
 
@@ -273,6 +273,4 @@ _nss_winbind_group_constr (const char* db_name,
 	return be;
 }
 
-#endif /* SUN_NSS */
-
-
+#endif /* defined(HAVE_NSS_COMMON_H) || defined(HPUX) */
