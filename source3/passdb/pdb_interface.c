@@ -354,7 +354,8 @@ static void free_pdb_context(struct pdb_context **context)
 	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
 
 	while (pdb_selected){
-		pdb_selected->free_private_data(&(pdb_selected->private_data));
+		if(pdb_selected->free_private_data)
+			pdb_selected->free_private_data(&(pdb_selected->private_data));
 		pdb_selected = pdb_selected->next;
 	}
 
