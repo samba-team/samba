@@ -418,6 +418,36 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
 	return len;
 }
 
+/**
+ * Copy a string from a unix char* src to a UCS2 destination, allocating a buffer using talloc
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+
+	*dest = NULL;
+	return convert_string_talloc(ctx, CH_UNIX, CH_UCS2, src, src_len, dest);
+}
+
+/**
+ * Copy a string from a unix char* src to a UCS2 destination, allocating a buffer
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int push_ucs2_allocate(void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+
+	*dest = NULL;
+	return convert_string_allocate(CH_UNIX, CH_UCS2, src, src_len, dest);	
+}
+
 /****************************************************************************
 copy a string from a char* src to a UTF-8 destination
 return the number of bytes occupied by the string in the destination
@@ -532,6 +562,34 @@ int pull_ucs2_pstring(char *dest, const void *src)
 int pull_ucs2_fstring(char *dest, const void *src)
 {
 	return pull_ucs2(NULL, dest, src, sizeof(fstring), -1, STR_TERMINATE);
+}
+
+/**
+ * Copy a string from a UCS2 src to a unix char * destination, allocating a buffer using talloc
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int pull_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+	*dest = NULL;
+	return convert_string_talloc(ctx, CH_UCS2, CH_UNIX, src, src_len, dest);	
+}
+
+/**
+ * Copy a string from a UCS2 src to a unix char * destination, allocating a buffer
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int pull_ucs2_allocate(void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+	*dest = NULL;
+	return convert_string_allocate(CH_UCS2, CH_UNIX, src, src_len, dest);	
 }
 
 /****************************************************************************
