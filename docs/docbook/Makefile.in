@@ -56,6 +56,7 @@ MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
 PROJDOC_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
 PROJDOC_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
 PROJDOC_DEPS = $(PROJDOC)/*.xml $(PROJDOC)/attributions.xml $(MANPROJDOC)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
+DEVDOC_DEPS = $(DEVDOC)/*.xml $(DEVDOC)/attributions.xml
 
 all: 
 	@echo "Supported make targets:"
