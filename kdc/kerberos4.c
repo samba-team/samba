@@ -115,12 +115,17 @@ krb5_error_code
 get_des_key(hdb_entry *principal, Key **key)
 {
     krb5_error_code ret;
+
     ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_MD5, key);
     if(ret)
 	ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_MD4, key);
     if(ret)
 	ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_CRC, key);
-    return ret;
+    if(ret)
+	return ret;
+    if ((*key)->key.keyvalue.length == 0)
+	return KERB_ERR_NULL_KEY;
+    return 0;
 }
 
 #define RCHECK(X, L) if(X){make_err_reply(reply, KFAILURE, "Packet too short"); goto L;}
