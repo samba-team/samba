@@ -438,8 +438,8 @@ doit(int sock, int tcpp)
 
 			       fd = accept (sockets[i].fd, NULL, &zero);
 			   }
+			   break;
 		       }
-		       break;
 		   }
 	       }
 	       if (fd < 0)
