@@ -154,6 +154,7 @@ o   Volker Lendecke <vl@samba.org>
     * Implement 'net groupmap set' and 'net groupmap cleanup'.
     * Add 'net rpc group [add|del]mem' for domain groups and aliases.
     * Fix wb_delgrpmem (wbinfo -o)
+    * As a DC we should not reply to lsalookupnames on DCNAME\\user
 
 
 o   Herb Lewis <herb@samba.org>
