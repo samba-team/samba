@@ -1266,6 +1266,14 @@
 		does defeat this simple check, however so it must not be used
 		seriously as a security feature for <command>nmbd</command>.</para>
 
+		<para>If <parameter>bind interfaces only</parameter> is set and the
+		<link linkend="INTERFACES">interfaces</link> parameter only contains
+		a virtual interface like for example <parameter>eth0:1</parameter>,
+		then you also need to set the <link linkend="SOCKETADDRESS">socket
+		address</link> parameter to its IP address. Otherwise <command>nmbd
+		</command> as a local master browser will not be able to communicate
+		with the domain master browser for browse list replication.</para>
+
 		<para>For file service it causes <ulink url="smbd.8.html">smbd(8)</ulink>
 		to bind only to the interface list given in the <link linkend="INTERFACES">
 		interfaces</link> parameter. This restricts the networks that 
