@@ -148,12 +148,10 @@ SamrTestPrivateFunctionsUser
 
 typedef struct _DISP_USER_INFO {
 	SAM_ACCOUNT *sam;
-	uint32 size;
 } DISP_USER_INFO;
 
 typedef struct _DISP_GROUP_INFO {
 	DOMAIN_GRP *grp;
-	uint32 size;
 } DISP_GROUP_INFO;
 
 

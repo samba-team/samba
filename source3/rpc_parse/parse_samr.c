@@ -632,7 +632,7 @@ inits a structure.
 ********************************************************************/
 void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 			char *domain, char *server,
-			uint32 seq_num)
+			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias)
 {
 	int len_domain = strlen(domain);
 	int len_server = strlen(server);
@@ -651,9 +651,9 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 	u_2->unknown_4 = 0x00000001;
 	u_2->unknown_5 = 0x00000003;
 	u_2->unknown_6 = 0x00000001;
-	u_2->num_domain_usrs = MAX_SAM_ENTRIES;
-	u_2->num_domain_grps = MAX_SAM_ENTRIES;
-	u_2->num_local_grps = MAX_SAM_ENTRIES;
+	u_2->num_domain_usrs = num_users;
+	u_2->num_domain_grps = num_groups;
+	u_2->num_local_grps = num_alias;
 
 	memset(u_2->padding, 0, sizeof(u_2->padding));	/* 12 bytes zeros */
 
