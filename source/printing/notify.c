@@ -207,7 +207,7 @@ void notify_printer_driver(int snum, char *driver_name)
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
-		0, strlen(driver_name) + 1, driver_name);
+		snum, strlen(driver_name) + 1, driver_name);
 }
 
 void notify_printer_comment(int snum, char *comment)
@@ -216,7 +216,7 @@ void notify_printer_comment(int snum, char *comment)
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,
-		0, strlen(comment) + 1, comment);
+		snum, strlen(comment) + 1, comment);
 }
 
 void notify_printer_sharename(int snum, char *share_name)
@@ -225,7 +225,7 @@ void notify_printer_sharename(int snum, char *share_name)
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,
-		0, strlen(share_name) + 1, share_name);
+		snum, strlen(share_name) + 1, share_name);
 }
 
 void notify_printer_port(int snum, char *port_name)
@@ -234,7 +234,7 @@ void notify_printer_port(int snum, char *port_name)
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,
-		0, strlen(port_name) + 1, port_name);
+		snum, strlen(port_name) + 1, port_name);
 }
 
 void notify_printer_location(int snum, char *location)
@@ -243,5 +243,5 @@ void notify_printer_location(int snum, char *location)
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,
-		0, strlen(location) + 1, location);
+		snum, strlen(location) + 1, location);
 }
