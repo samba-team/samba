@@ -1,0 +1,17 @@
+Thu Mar 11 17:53:36 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* utmpx_login.c: add some consts
+
+	* utmp_login.c: add some consts
+
+	* login.c: staticize
+
+	* login_locl.h: add prototypes, and defaults for
+ 	_PATH_*
+
+Mon Mar  1 10:49:14 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* utmpx_login.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
+
+	* utmp_login.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
+
