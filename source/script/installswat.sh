@@ -29,6 +29,9 @@ done
 for ln in $LANGS; do
 
   for f in $SRCDIR../swat/$ln/images/*.gif; do
+      if [ ! -f $f ] ; then
+	continue
+      fi
       FNAME=$SWATDIR/$ln/images/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
@@ -38,6 +41,9 @@ for ln in $LANGS; do
   # Install html help
 
   for f in $SRCDIR../swat/$ln/help/*.html; do
+      if [ ! -f $f ] ; then
+	continue
+      fi
       FNAME=$SWATDIR/$ln/help/`basename $f`
       echo $FNAME
       if [ "x$BOOKDIR" = "x" ]; then
@@ -54,6 +60,9 @@ for ln in $LANGS; do
   # Install "server-side" includes
 
   for f in $SRCDIR../swat/$ln/include/*.html; do
+      if [ ! -f $f ] ; then
+	continue
+      fi
       FNAME=$SWATDIR/$ln/include/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
