@@ -2295,6 +2295,21 @@ if test x"$with_ads_support" = x"yes"; then
   AC_CHECK_LIB(krb5, krb5_free_ktypes, 
                 [AC_DEFINE(HAVE_KRB5_FREE_KTYPES,1,
                    [Whether krb5_free_ktypes is available])])
+  AC_CHECK_LIB(krb5, krb5_principal_get_comp_string, 
+                [AC_DEFINE(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING,1,
+                   [Whether krb5_principal_get_comp_string is available])])
+  AC_CACHE_CHECK([for the krb5_princ_component macro],
+                samba_cv_HAVE_KRB5_PRINC_COMPONENT,[
+    AC_TRY_LINK([#include <krb5.h>],
+      [const krb5_data *pkdata; krb5_context context; krb5_principal principal; pkdata = krb5_princ_component(context, principal, 0);],
+      samba_cv_HAVE_KRB5_PRINC_COMPONENT=yes,
+      samba_cv_HAVE_KRB5_PRINC_COMPONENT=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_PRINC_COMPONENT" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_PRINC_COMPONENT,1,
+               [Whether krb5_princ_component is available])
+  fi
+
 
   AC_CACHE_CHECK([for addrtype in krb5_address],
                 samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
