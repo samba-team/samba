@@ -245,8 +245,6 @@ AC_FIND_FUNC_NO_LIBS(pidfile,util,
 #include <util.h>
 #endif],0)
 
-dnl 	getifaddrs				\
-
 AC_BROKEN([					\
 	chown					\
 	copyhostent				\
