@@ -6011,7 +6011,7 @@ setting.
   bf(Default:)
 tt( 	set at compile time to WORKGROUP)
 
-.B Example:
+  bf(Example:)
  	workgroup = MYGROUP
 
 label(writable)
