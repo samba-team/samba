@@ -119,6 +119,16 @@ typedef struct dom_query_info
 typedef DOM_QUERY DOM_QUERY_3;
 typedef DOM_QUERY DOM_QUERY_5;
 
+/* level 2 is auditing settings */
+typedef struct dom_query_2
+{
+	uint32 auditing_enabled;
+	uint32 count1; /* usualy 7, at least on nt4sp4 */
+	uint32 count2; /* the same */
+	uint32 *auditsettings;
+} DOM_QUERY_2;
+
+
 typedef struct seq_qos_info
 {
 	uint32 len; /* 12 */
@@ -213,6 +223,7 @@ typedef struct lsa_r_query_info
     
 	union
 	{
+		DOM_QUERY_2 id2;
         	DOM_QUERY_3 id3;
 		DOM_QUERY_5 id5;
 

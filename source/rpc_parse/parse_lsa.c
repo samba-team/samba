@@ -1079,6 +1079,12 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q, prs_struct * ps,
 
 		switch (r_q->info_class)
 		{
+			case 2:
+			{
+				lsa_io_dom_query_2("", &(r_q->dom.id2), ps,
+						   depth);
+				break;
+			}
 			case 3:
 			{
 				lsa_io_dom_query_3("", &(r_q->dom.id3), ps,
@@ -1542,6 +1548,43 @@ static BOOL lsa_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int de
 	{
 		ZERO_STRUCT(d_q->dom_sid);
 	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q,
+			prs_struct *ps, int depth)
+{
+	uint32 ptr = 1;
+
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_2");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("auditing_enabled", ps, depth, &(d_q->auditing_enabled));
+	prs_uint32("ptr   ", ps, depth, &ptr);
+	prs_uint32("count1", ps, depth, &(d_q->count1));
+	prs_uint32("count2", ps, depth, &(d_q->count2));
+
+	if (UNMARSHALLING(ps))
+	{
+		d_q->auditsettings = g_new(uint32, d_q->count2);
+	}
+	if (d_q->auditsettings == NULL)
+	{
+		DEBUG(1, ("lsa_io_dom_query_2: NULL auditsettings!\n"));
+		return False;
+	}
+
+	prs_uint32s(False, "auditsettings", ps, depth,
+		    d_q->auditsettings, d_q->count2);
 
 	return True;
 }
