@@ -37,7 +37,7 @@ a guide to LDAP for System Administrators which has a planned release date of
 early summer, 2002.
 </para>
 
-<para>It may also be helpful to suppplement the reading of the HOWTO with 
+<para>It may also be helpful to supplement the reading of the HOWTO with 
 the <ulink url="http://www.unav.es/cti/ldap-smb/ldap-smb-2_2-howto.html">Samba-PDC-LDAP-HOWTO</ulink>
 maintained by Ignacio Coupeau.
 </para>
@@ -66,10 +66,10 @@ databases.
 </para>
 
 <para>
-The second problem is that administrators which desired to replicate an
+The second problem is that administrators who desired to replicate a
 smbpasswd file to more than one Samba server were left to use external
 tools such as <command>rsync(1)</command> and <command>ssh(1)</command>
-and write custom, in-house scripts.
+and wrote custom, in-house scripts.
 </para>
 
 <para>
@@ -98,7 +98,7 @@ comfortable with using an smbpasswd file, simply replace "smbpasswd" with
 
 <para>
 There are a few points to stress about what the <parameter>--with-ldapsam</parameter>
-does not provide.  The LDAP support referred to in the this documentat does not
+does not provide.  The LDAP support referred to in the this documentation does not
 include:
 </para>
 
@@ -112,7 +112,7 @@ include:
 The second item can be accomplished by using LDAP NSS and PAM modules.  LGPL
 versions of these libraries can be obtained from PADL Software
 (<ulink url="http://www.padl.com/">http://www.padl.com/</ulink>).  However,
-the details of configuring these packages i beyond the scope of this document.
+the details of configuring these packages are beyond the scope of this document.
 </para>
 
 </sect1>
@@ -124,8 +124,8 @@ the details of configuring these packages i beyond the scope of this document.
 The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
 2.0 server and client libraries.  The same code should be able to work with
 Netscape's Directory Server and client SDK. However, due to lack of testing
-so far, there are bounds to be compile errors and bugs.  These should not be
-hard to fix. If you are so inclined, please be sure to forward all pacthes to
+so far, there are bound to be compile errors and bugs.  These should not be
+hard to fix. If you are so inclined, please be sure to forward all patches to
 <ulink url="samba-patches@samba.org">samba-patches@samba.org</ulink> and
 <ulink url="jerry@samba.org">jerry@samba.org</ulink>.
 </para>
@@ -158,7 +158,7 @@ objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
 
 <para>
 The samba.schema file has been formatted for OpenLDAP 2.0.  The OID's are
-owned by the Samba Team and as such as legal to be openly published.
+owned by the Samba Team and as such is legal to be openly published.
 If you translate the schema to be used with Netscape DS, please
 submit the modified schema file as a patch to <ulink
 url="jerry@samba.org">jerry@samba.org</ulink>
@@ -179,9 +179,9 @@ it is necessary to use the sambaAccount and posixAccount objectclasses in
 combination.  However, smbd will still obtain the user's UNIX account
 information via the standard C library calls (e.g. getpwnam(), et. al.).
 This means that the Samba server must also have the LDAP NSS library installed
-and functioning correctly.  This division of information mkes it posible to
+and functioning correctly.  This division of information makes it possible to
 store all Samba account information in LDAP, but still maintain UNIX account
-information in NIS while the network is transitioning to a full LDAP infratrsucture.
+information in NIS while the network is transitioning to a full LDAP infrastructure.
 </para>
 
 <para>
@@ -301,7 +301,7 @@ of sambaAccount entries in the directory.
 
 <itemizedlist>
 	<listitem><para><emphasis>Never</emphasis> retrieve the lmPassword or
-	ntPassword attribute values over and unencrypted LDAP session.</para></listitem>
+	ntPassword attribute values over an unencrypted LDAP session.</para></listitem>
 	<listitem><para><emphasis>Never</emphasis> allow non-admin users to
 	view the lmPassword or ntPassword attribute values.</para></listitem>
 </itemizedlist>
@@ -365,9 +365,8 @@ for details on how to configure Samba as a Primary Domain Controller).
 Furthermore, these attributes are only stored with the sambaAccount entry if
 the values are non-default values.  For example, assume TASHTEGO has now been
 configured as a PDC and that <command>logon home = \\%L\%u</command> was defined in
-its <filename>smb.conf</filename> file.  Assuming <filename>smb.conf</filename>
-also contains , when a user named "becky" logons to the domain, the <parameter>logon
-home</parameter> string is expanded to \\TASHTEGO\becky.
+its <filename>smb.conf</filename> file. When a user named "becky" logons to the domain,
+the <parameter>logon home</parameter> string is expanded to \\TASHTEGO\becky.
 </para>
 
 <para>
