@@ -78,36 +78,6 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	return ldapsrv_queue_reply(call, reply);
 }
 
-static NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
-{
-	struct ldap_BindRequest *req = &call->request.r.BindRequest;
-	struct ldapsrv_reply *reply;
-	struct ldap_BindResponse *resp;
-
-	DEBUG(10, ("BindRequest dn: %s\n",req->dn));
-
-	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
-	if (!reply) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	resp = &reply->msg.r.BindResponse;
-	resp->response.resultcode = 0;
-	resp->response.dn = NULL;
-	resp->response.errormessage = NULL;
-	resp->response.referral = NULL;
-	resp->SASL.secblob = data_blob(NULL, 0);
-
-	return ldapsrv_queue_reply(call, reply);
-}
-
-static NTSTATUS ldapsrv_UnbindRequest(struct ldapsrv_call *call)
-{
-/*	struct ldap_UnbindRequest *req = &call->request->r.UnbindRequest;*/
-	DEBUG(10, ("UnbindRequest\n"));
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 {
 	struct ldap_SearchRequest *req = &call->request.r.SearchRequest;
