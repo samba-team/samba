@@ -103,6 +103,7 @@ krb5_rd_priv(krb5_context context,
   /* check receiver address */
 
   if (part.r_address
+      && auth_context->local_address
       && !krb5_address_compare (context,
 				auth_context->local_address,
 				part.r_address)) {
