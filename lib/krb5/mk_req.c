@@ -50,49 +50,61 @@ krb5_mk_req(krb5_context context,
 	    krb5_ccache ccache,
 	    krb5_data *outbuf)
 {
-  krb5_error_code r;
-  krb5_creds this_cred, *cred;
-  char **realms;
-  krb5_data realm_data;
-  char **p;
+    krb5_error_code r;
+    krb5_creds this_cred, *cred;
+    char **realms;
+    krb5_data realm_data;
+    char **p;
+    char *real_hostname;
 
-  memset(&this_cred, 0, sizeof(this_cred));
+    memset(&this_cred, 0, sizeof(this_cred));
 
-  r = krb5_cc_get_principal(context, ccache, &this_cred.client);
+    r = krb5_cc_get_principal(context, ccache, &this_cred.client);
   
-  if(r)
-      return r;
+    if(r)
+	return r;
 
-  r = krb5_get_host_realm(context, hostname, &realms);
-  if (r)
-    return r;
-  realm_data.length = strlen(*realms);
-  realm_data.data   = *realms;
+    r = krb5_expand_hostname (context, hostname, &real_hostname);
+    if (r) {
+	krb5_free_principal (context, this_cred.client);
+	return r;
+    }
 
-  r = krb5_build_principal (context, &this_cred.server,
-			    strlen(*realms),
-			    *realms,
-			    service,
-			    hostname,
-			    NULL);
-  for (p = realms; *p; ++p)
-      free (*p);
-  free (realms);
+    r = krb5_get_host_realm(context, real_hostname, &realms);
+    if (r) {
+	krb5_free_principal (context, this_cred.client);
+	return r;
+    }
+    realm_data.length = strlen(*realms);
+    realm_data.data   = *realms;
 
-  if (r)
-    return r;
-  this_cred.times.endtime = 0;
-  if (auth_context && *auth_context && (*auth_context)->keytype)
-      this_cred.session.keytype = (*auth_context)->keytype;
+    r = krb5_build_principal (context, &this_cred.server,
+			      strlen(*realms),
+			      *realms,
+			      service,
+			      real_hostname,
+			      NULL);
+    free (real_hostname);
+    for (p = realms; *p; ++p)
+	free (*p);
+    free (realms);
 
-  r = krb5_get_credentials (context, 0, ccache, &this_cred, &cred);
-  if (r)
-    return r;
+    if (r) {
+	krb5_free_principal (context, this_cred.client);
+	return r;
+    }
+    this_cred.times.endtime = 0;
+    if (auth_context && *auth_context && (*auth_context)->keytype)
+	this_cred.session.keytype = (*auth_context)->keytype;
 
-  return krb5_mk_req_extended (context,
-			       auth_context,
-			       ap_req_options,
-			       in_data,
-			       cred,
-			       outbuf);
+    r = krb5_get_credentials (context, 0, ccache, &this_cred, &cred);
+    if (r)
+	return r;
+
+    return krb5_mk_req_extended (context,
+				 auth_context,
+				 ap_req_options,
+				 in_data,
+				 cred,
+				 outbuf);
 }
