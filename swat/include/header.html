@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/swat/include/common.css" type="text/css" media="screen" title="SWAT style" />
 <link rel="stylesheet" href="/swat/include/main.css" type="text/css" media="screen" title="SWAT style" />
 
+
 <script src="/swat/js/navOvers.js" type="text/javascript"></script>
 <script src="/swat/js/ui.js" type="text/javascript"></script>
 <script src="/swat/js/domPipe.js" type="text/javascript"></script>
@@ -19,6 +20,16 @@
 </head>
 
 <body>
+
+<!-- Help avoid flicker when loading styles -->
+<script type="text/javascript">
+<!-- Hide from old browsers
+        if ( location.href.indexOf('viewconfig') > -1 || location.href.indexOf('help') > -1 ) {
+                thisPage = document.getElementsByTagName('body')[0]
+                thisPage.style.visibility = 'hidden';
+        }
+// end hide -->
+</script>
 
 <div id="gui">
 

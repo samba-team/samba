@@ -18,7 +18,6 @@
 */
 
 
-var page = document.getElementsByTagName('body')[0];
 
 function openHelp(url) 
 {
@@ -60,53 +59,23 @@ function formatHelp()
 	head.appendChild(altLink);
 }
 
-function hidePage(page, state)
-{
-	if (state == 'on') {
-		page.style.visibility = 'hidden';
-	} else if (state == 'off') {
-		page.style.visibility = 'visible';
-	}
-}
-
-function catchHardReload(event)
-{
-	if (event.ctrlKey && event.which == 82) {
-		setCookie();
-	}
-}
-
-function setCookie()
-{
-	document.cookie = "SWATHardReload=TRUE";
-}
-
-function deleteCookie()
-{
-	document.cookie = document.cookie + ";expires=Thu, 24-Jan-1972 00:00:01 GMT";
-}
-
-
 /*********************************************************************
  Initialize each page.
 *********************************************************************/
-window.onload = function initPage(e) 
+window.onload = function initPage() 
 {
-	window.captureEvents(Event.KEYPRESS);
-	window.onkeypress = catchHardReload;
-	
-	if (location.href.indexOf('help') > -1 || location.href.indexOf('viewconfig') > -1) {
+	var page = document.getElementsByTagName('body')[0];
+
+	if (location.href.indexOf('viewconfig') > -1) {
+		formatHelp();
+		page.style.visibility = 'visible';
+	}
+
+	if (location.href.indexOf('help') > -1 ) {
 		// Init iframe for file loads
 		setStage();
-
-		if (document.cookie != '') { 
-			hidePage(page, 'on');
-			setTimeout('formatHelp()', 100);
-			setTimeout('hidePage(page, "off")', 150);
-			deleteCookie();
-		} else {
-			formatHelp();
-		}
+		formatHelp();
+		page.style.visibility = 'visible';
 	}
 }
 
