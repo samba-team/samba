@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign no-dependencies
 
-AM_CFLAGS += $(WFLAGS)
+AM_CFLAGS = $(WFLAGS)
 
 ## ACLOCAL = @ACLOCAL@ -I cf
 ACLOCAL_AMFLAGS = -I ../../cf
@@ -27,15 +27,15 @@ TESTS = $(check_PROGRAMS)
 
 LIB_crypt = @LIB_crypt@
 
-common_LDADD = libroken.la $(LIB_crypt)
+LDADD_common = libroken.la $(LIB_crypt)
 
 strpftime_test_SOURCES	= strpftime-test.c strftime.c strptime.c snprintf.c
-base64_test_LDADD	= $(common_LDADD)
-getaddrinfo_test_LDADD	= $(common_LDADD)
-parse_bytes_test_LDADD	= $(common_LDADD)
+base64_test_LDADD	= $(LDADD_common)
+getaddrinfo_test_LDADD	= $(LDADD_common)
+parse_bytes_test_LDADD	= $(LDADD_common)
 snprintf_test_SOURCES	= snprintf-test.c snprintf.c
 snprintf_test_CFLAGS	= -DTEST_SNPRINTF
-snprintf_test_LDADD	= $(common_LDADD)
+snprintf_test_LDADD	= $(LDADD_common)
 
 libroken_la_SOURCES =		\
 	base64.c		\
@@ -215,7 +215,7 @@ nodist_include_HEADERS = roken.h
 
 man_MANS = getarg.3
 
-SUFFIXES += .hin
+SUFFIXES = .hin
 .hin.h:
 	cp $< $@
 
