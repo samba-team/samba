@@ -817,7 +817,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 {
         ADS_STRUCT *ads;
         ADS_STATUS rc;
-	const char *servername;
+	const char *servername, *printername;
 	struct cli_state *cli;
 	struct in_addr 		server_ip;
 	NTSTATUS nt_status;
@@ -831,15 +831,14 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	if (argc < 1)
 		return net_ads_printer_usage(argc, argv);
 	
+	printername = argv[0];
+
 	if (argc == 2)
 		servername = argv[1];
 	else
 		servername = global_myname();
 		
-	ads_find_machine_acct(ads, &res, servername);
-	srv_dn = ldap_get_dn(ads->ld, res);
-	srv_cn = ldap_explode_dn(srv_dn, 1);
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], argv[0], srv_dn);
+	/* Get printer data from SPOOLSS */
 
 	resolve_name(servername, &server_ip, 0x20);
 
@@ -851,8 +850,29 @@ static int net_ads_printer_publish(int argc, const char **argv)
 					CLI_FULL_CONNECTION_USE_KERBEROS, 
 					NULL);
 
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		d_printf("Unable to open a connnection to %s to obtain data "
+			 "for %s\n", servername, printername);
+		return -1;
+	}
+
+	/* Publish on AD server */
+
+	ads_find_machine_acct(ads, &res, servername);
+
+	if (ads_count_replies(ads, res) == 0) {
+		d_printf("Could not find machine account for server %s\n", 
+			 servername);
+		return -1;
+	}
+
+	srv_dn = ldap_get_dn(ads->ld, res);
+	srv_cn = ldap_explode_dn(srv_dn, 1);
+
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], printername, srv_dn);
+
 	cli_nt_session_open(cli, PI_SPOOLSS);
-	get_remote_printer_publishing_data(cli, mem_ctx, &mods, argv[0]);
+	get_remote_printer_publishing_data(cli, mem_ctx, &mods, printername);
 
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {
