@@ -1,4 +1,25 @@
-2003-08-26  Love  <lha@stacken.kth.se>
+2003-08-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/db3.c: patch for working with DB4 on heimdal-discuss
+	From: Luke Howard <lukeh@PADL.COM>
+	
+2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h: add KEYTYPE_ARCFOUR_56
+	
+	* appl/test/gssapi_client.c: send both INT and CONF wrapped token
+	
+	* appl/test/gssapi_server.c: recv both INT and CONF wrapped token
+	
+2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/k5.asn1: add KRB5_NT_SMTP_NAME and KRB5_NT_ENTERPRISE
+	
+2003-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/uu_client.c (proto): fill in client in the match cred
+	
+2003-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.h: CFX uses slightly diffrent usage numbers
 	

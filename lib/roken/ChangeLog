@@ -1,3 +1,8 @@
+2003-08-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ndbm_wrap.c: patch for working with DB4 on heimdal-discuss
+	From: Luke Howard <lukeh@PADL.COM>
+	
 2003-08-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: don't include discovered files in EXTRA_SOURCES;
