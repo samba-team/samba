@@ -508,7 +508,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	 * the existing fileset. JRA.
 	 */
 
-	if ( ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)) ) {
+	if ((ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)) ) == True) {
         p = gen_line;
 		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", lp_printerdriver(snum), gen_line));
     } else {
@@ -725,7 +725,7 @@ static int get_printerdrivernumber(int snum)
 
 	if( !ok ) {
 		/* no printers.def, or driver not found, check the NT driver tdb */
-		if ( ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)) ) {
+		if ((ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)))==True ) {
 	        p = gen_line;
 			DEBUG(10,("9x compatable driver line for [%s]: [%s]\n",
 					  lp_printerdriver(snum), gen_line));
