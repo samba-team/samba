@@ -80,7 +80,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT_ANON      0x00
 #define SAMR_CLOSE_HND         0x01
 
-#define SAMR_UNKNOWN_3         0x03
+#define SAMR_QUERY_SEC_OBJECT  0x03
 #define SAMR_LOOKUP_DOMAIN     0x05
 #define SAMR_OPEN_DOMAIN       0x07
 
@@ -120,15 +120,15 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_USERGROUPS  0x27
 #define SAMR_QUERY_DISPINFO    0x28
 
-#define SAMR_UNKNOWN_2C        0x2c
+#define SAMR_GET_USRDOM_PWINFO 0x2c
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 3 */
 #define SAMR_QUERY_DISPINFO4   0x33 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 4 */
-#define SAMR_UNKNOWN_34        0x34
+#define SAMR_ADDMULTI_ALIASMEM 0x34
 
 #define SAMR_CHGPASSWD_USER    0x37
-#define SAMR_UNKNOWN_38        0x38
+#define SAMR_GET_DOM_PWINFO    0x38
 
 #define SAMR_CONNECT           0x39
 

@@ -458,7 +458,7 @@ BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name)
 	samr_io_q_unknown_38("", &q_e, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SAMR_UNKNOWN_38, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SAMR_GET_DOM_PWINFO, &data, &rdata))
 	{
 		SAMR_R_UNKNOWN_38 r_e;
 		BOOL p;
