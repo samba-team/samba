@@ -764,6 +764,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	/* retrieve the blob */
 	request = ndr_push_blob(push);
 
+	DEBUG(10,("rpc request data:\n"));
 	dump_data(10, request.data, request.length);
 
 	/* make the actual dcerpc request */
@@ -778,6 +779,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 		goto failed;
 	}
 
+	DEBUG(10,("rpc reply data:\n"));
 	dump_data(10, pull->data, pull->data_size);
 
 	/* pull the structure from the blob */
