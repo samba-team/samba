@@ -216,6 +216,7 @@ typedef struct
 	char *szLdapSuffix;
 	char *szLdapFilter;
 	char *szLdapAdminDn;
+	BOOL ldap_trust_ids;
 	char *szAclCompat;
 	int ldap_passwd_sync; 
 	BOOL bMsAddPrinterWizard;
@@ -1008,6 +1009,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ldap trust ids", P_BOOL, P_GLOBAL, &Globals.ldap_trust_ids, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1602,6 +1604,7 @@ FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
+FN_GLOBAL_BOOL(lp_ldap_trust_ids, &Globals.ldap_trust_ids)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)

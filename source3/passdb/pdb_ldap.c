@@ -146,15 +146,17 @@ static BOOL fetch_ldapsam_pw(char **dn, char** pw)
 }
 
 static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
-		"logoffTime", "kickoffTime", "cn",
-		"pwdCanChange", "pwdMustChange",
-		"displayName", "homeDrive",
-		"smbHome", "scriptPath",
-		"profilePath", "description",
-		"userWorkstations", "rid",
-		"primaryGroupID", "lmPassword",
-		"ntPassword", "acctFlags",
-		"domain", NULL };
+			     "logoffTime", "kickoffTime", "cn",
+			     "pwdCanChange", "pwdMustChange",
+			     "displayName", "homeDrive",
+			     "smbHome", "scriptPath",
+			     "profilePath", "description",
+			     "userWorkstations", "rid",
+			     "primaryGroupID", "lmPassword",
+			     "ntPassword", "acctFlags",
+			     "domain", "objectClass", 
+			     "uidNumber", "gidNumber", 
+			     "homeDirectory", NULL };
 
 /*******************************************************************
  open a connection to the ldap server.
@@ -818,6 +820,60 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 /* New Interface is being implemented here */
 
 /**********************************************************************
+Initialize SAM_ACCOUNT from an LDAP query (unix attributes only)
+*********************************************************************/
+static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state, 
+				SAM_ACCOUNT * sampass,
+				LDAPMessage * entry)
+{
+	pstring  homedir;
+	pstring  temp;
+	uid_t uid;
+	gid_t gid;
+	char **ldap_values;
+	char **values;
+
+	if ((ldap_values = ldap_get_values (ldap_state->ldap_struct, entry, "objectClass")) == NULL) {
+		DEBUG (1, ("get_unix_attributes: no objectClass! \n"));
+		return False;
+	}
+
+	for (values=ldap_values;*values;values++) {
+		if (strcasecmp(*values, "posixAccount") == 0) {
+			break;
+		}
+	}
+	
+	if (!*values) { /*end of array, no posixAccount */
+		DEBUG(10, ("user does not have posixAcccount attributes\n"));
+		ldap_value_free(ldap_values);
+		return False;
+	}
+	ldap_value_free(ldap_values);
+
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "homeDirectory", homedir)) 
+		return False;
+	
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "uidNumber", temp))
+		return False;
+	
+	uid = (uid_t)atol(temp);
+	
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "gidNumber", temp))
+		return False;
+	
+	gid = (gid_t)atol(temp);
+
+	pdb_set_unix_homedir(sampass, homedir, PDB_SET);
+	pdb_set_uid(sampass, uid, PDB_SET);
+	pdb_set_gid(sampass, gid, PDB_SET);
+	
+	DEBUG(10, ("user has posixAcccount attributes\n"));
+	return True;
+}
+
+
+/**********************************************************************
 Initialize SAM_ACCOUNT from an LDAP query
 (Based on init_sam_from_buffer in pdb_tdb.c)
 *********************************************************************/
@@ -906,40 +962,44 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	}
 
-	if ((ldap_state->permit_non_unix_accounts) 
-	    && (user_rid >= ldap_state->low_nua_rid)
-	    && (user_rid <= ldap_state->high_nua_rid)) {
+
+	/* 
+	 * If so configured, try and get the values from LDAP 
+	 */
+
+	if (!lp_ldap_trust_ids() || (!get_unix_attributes(ldap_state, sampass, entry))) {
 		
-	} else {
-		
-		/* These values MAY be in LDAP, but they can also be retrieved through 
-		 *  sys_getpw*() which is how we're doing it 
+		/* 
+		 * Otherwise just ask the system getpw() calls.
 		 */
 	
 		pw = getpwnam_alloc(username);
 		if (pw == NULL) {
-			DEBUG (2,("init_sam_from_ldap: User [%s] does not exist via system getpwnam!\n", username));
-			return False;
-		}
-		uid = pw->pw_uid;
-		gid = pw->pw_gid;
-
-		pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
-
-		passwd_free(&pw);
-
-		pdb_set_uid(sampass, uid, PDB_SET);
-		pdb_set_gid(sampass, gid, PDB_SET);
-
-		if (group_rid == 0) {
-			GROUP_MAP map;
-			/* call the mapping code here */
-			if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
-				pdb_set_group_sid(sampass, &map.sid, PDB_SET);
-			} 
-			else {
-				pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
+			if (! ldap_state->permit_non_unix_accounts) {
+				DEBUG (2,("init_sam_from_ldap: User [%s] does not exist via system getpwnam!\n", username));
+				return False;
 			}
+		} else {
+			uid = pw->pw_uid;
+			pdb_set_uid(sampass, uid, PDB_SET);
+			gid = pw->pw_gid;
+			pdb_set_gid(sampass, gid, PDB_SET);
+			
+			pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
+
+			passwd_free(&pw);
+		}
+	}
+
+	if (group_rid == 0 && pdb_get_init_flags(sampass,PDB_GID) != PDB_DEFAULT) {
+		GROUP_MAP map;
+		gid = pdb_get_gid(sampass);
+		/* call the mapping code here */
+		if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
+			pdb_set_group_sid(sampass, &map.sid, PDB_SET);
+		} 
+		else {
+			pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
 		}
 	}
 
