@@ -1291,7 +1291,7 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)){
 		    chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, in, 0);
 		    if(chunk != NULL){
-			cnt = st.sz_size - restart_point;
+			cnt = st.st_size - restart_point;
 			auth_write(fileno(outstr),
 				   chunk + restart_point,
 				   cnt);
