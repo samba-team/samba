@@ -222,12 +222,12 @@ int main(int argc,char *argv[])
 	  switch (opt)
 	  {
 	  case 'B':
-		  bcast_addr = *interpret_addr2(optarg);
+		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
 		  got_bcast = True;
 		  use_bcast = True;
 		  break;
 	  case 'U':
-		  bcast_addr = *interpret_addr2(optarg);
+		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
 		  got_bcast = True;
 		  use_bcast = False;
 		  break;
