@@ -402,7 +402,6 @@ case "$host_os" in
 	*freebsd*)
 		AC_DEFINE(FREEBSD, 1, [Whether the host os is FreeBSD])
 		;;
-
 #
 # VOS may need to have POSIX support and System V compatibility enabled.
 #
@@ -503,6 +502,26 @@ main() {
        AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
 		;;
 
+#
+# MacOS X is the *only* system that uses compose character in utf8. This
+# is so horribly broken....
+#
+    *darwin*)
+		AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
+# Add Fink directories for various packages, like dlcompat.
+# Note: iconv does that explicitly below, but other packages
+# don't.
+		CPPFLAGS="$CPPFLAGS -I/sw/include"
+		LDFLAGS="$LDFLAGS -L/sw/lib"
+
+# If we have dlsym_prepend_underscore (from Fink's dlcompat),
+# use that instead of plain dlsym.
+
+		AC_CHECK_LIB(dl,dlopen)
+		AC_CHECK_FUNCS(dlsym_prepend_underscore,
+		[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
+
+		;;   
     *hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
@@ -1162,6 +1181,14 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="false"
 			LDSHFLAGS=""
 			;;
+
+		darwin*)   AC_DEFINE(DARWINOS,1,[Whether the host os is Darwin/MacOSX])
+			BLDSHARED="true"
+			LDSHFLAGS="-bundle -flat_namespace -undefined suppress"
+			SHLIBEXT="dylib"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
+
 		*)
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;

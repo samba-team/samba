@@ -176,6 +176,14 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 	descriptor = conv_handles[from][to];
 
+	if (srclen == (size_t)-1) {
+		if (from == CH_UCS2) {
+			srclen = (strlen_w((const smb_ucs2_t *)src)+1) * 2;
+		} else {
+			srclen = strlen((const char *)src)+1;
+		}
+	}
+
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		if (!conv_silent)
 			DEBUG(0,("convert_string_internal: Conversion not supported.\n"));
@@ -248,31 +256,40 @@ size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
 {
+	/*
+	 * NB. We deliberately don't do a strlen here is srclen == -1.
+	 * This is very expensive over millions of calls and is taken
+	 * care of in the slow path in convert_string_internal. JRA.
+	 */
+
 	if (srclen == 0)
 		return 0;
 
 	if (from != CH_UCS2 && to != CH_UCS2) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
+		size_t slen = srclen;
+		size_t dlen = destlen;
 		unsigned char lastp;
 		size_t retval = 0;
 
 		/* If all characters are ascii, fast path here. */
-		while (srclen && destlen) {
+		while (slen && dlen) {
 			if ((lastp = *p) <= 0x7f) {
 				*q++ = *p++;
-				if (srclen != (size_t)-1) {
-					srclen--;
+				if (slen != (size_t)-1) {
+					slen--;
 				}
-				destlen--;
+				dlen--;
 				retval++;
 				if (!lastp)
 					break;
 			} else {
-				if (srclen == (size_t)-1) {
-					srclen = strlen(p)+1;
-				}
-				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+				goto general_case;
+#else
+				return retval + convert_string_internal(from, to, p, slen, q, dlen);
+#endif
 			}
 		}
 		return retval;
@@ -280,25 +297,28 @@ size_t convert_string(charset_t from, charset_t to,
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
 		size_t retval = 0;
+		size_t slen = srclen;
+		size_t dlen = destlen;
 		unsigned char lastp;
 
 		/* If all characters are ascii, fast path here. */
-		while ((srclen >= 2) && destlen) {
+		while ((slen >= 2) && dlen) {
 			if (((lastp = *p) <= 0x7f) && (p[1] == 0)) {
 				*q++ = *p;
-				if (srclen != (size_t)-1) {
-					srclen -= 2;
+				if (slen != (size_t)-1) {
+					slen -= 2;
 				}
 				p += 2;
-				destlen--;
+				dlen--;
 				retval++;
 				if (!lastp)
 					break;
 			} else {
-				if (srclen == (size_t)-1) {
-					srclen = (strlen_w((const smb_ucs2_t *)p)+1) * 2;
-				}
-				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+				goto general_case;
+#else
+				return retval + convert_string_internal(from, to, p, slen, q, dlen);
+#endif
 			}
 		}
 		return retval;
@@ -306,29 +326,36 @@ size_t convert_string(charset_t from, charset_t to,
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
 		size_t retval = 0;
+		size_t slen = srclen;
+		size_t dlen = destlen;
 		unsigned char lastp;
 
 		/* If all characters are ascii, fast path here. */
-		while (srclen && (destlen >= 2)) {
+		while (slen && (dlen >= 2)) {
 			if ((lastp = *p) <= 0x7F) {
 				*q++ = *p++;
 				*q++ = '\0';
-				if (srclen != (size_t)-1) {
-					srclen--;
+				if (slen != (size_t)-1) {
+					slen--;
 				}
-				destlen -= 2;
+				dlen -= 2;
 				retval += 2;
 				if (!lastp)
 					break;
 			} else {
-				if (srclen == (size_t)-1) {
-					srclen = strlen(p)+1;
-				}
-				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+				goto general_case;
+#else
+				return retval + convert_string_internal(from, to, p, slen, q, dlen);
+#endif
 			}
 		}
 		return retval;
 	}
+
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+  general_case:
+#endif
 	return convert_string_internal(from, to, src, srclen, dest, destlen);
 }
 
