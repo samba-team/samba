@@ -107,7 +107,7 @@
 #define FILIO_H 1
 #define STREAMS 1
 
-#ifdef __svr4__
+#if defined(__svr4__) || defined(__SVR4)
 #define SOLARIS
 #endif
 
