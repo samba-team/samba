@@ -277,12 +277,19 @@ static void process_request(struct winbindd_cli_state *state)
 	state->response.result = WINBINDD_ERROR;
 	state->response.length = sizeof(struct winbindd_response);
 
-	/* Process command */
+	/* Don't bother if we don't have a LSA handle open.  This hack is
+	   to stop too long a timeout occuring if we are having network
+	   problems.  The check machine account command is special as we
+	   always want to execute it.  Yes this is ugly but it's fixed
+	   nicely in HEAD! */
 
-	if (!server_state.lsa_handle_open) {
+	if (!server_state.lsa_handle_open &&
+		state->request.cmd != WINBINDD_CHECK_MACHACC) {
                 DEBUG(5, ("lsa handle not open, ignoring request\n"));
                 return;
         }
+
+	/* Process command */
 
 	for (table = dispatch_table; table->fn; table++) {
 		if (state->request.cmd == table->cmd) {
