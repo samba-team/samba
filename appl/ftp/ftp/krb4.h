@@ -9,4 +9,6 @@ void sec_prot(int, char**);
 
 void kauth(int, char **);
 
+void krb4_quit(void);
+
 #endif /* __KRB4_H__ */
