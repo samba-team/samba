@@ -29,7 +29,7 @@
 
 enum spnego_state_position {
 	SPNEGO_SERVER_START,
-	SPNEGO_CLIENT_GET_MECHS,
+	SPNEGO_CLIENT_START,
 	SPNEGO_CLIENT_SEND_MECHS,
 	SPNEGO_TARG,
 	SPNEGO_FALLBACK,
@@ -59,7 +59,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	}
 
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
-	spnego_state->state_position = SPNEGO_CLIENT_GET_MECHS;
+	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->result = SPNEGO_ACCEPT_INCOMPLETE;
 	spnego_state->mem_ctx = mem_ctx;
 	spnego_state->sub_sec_security = NULL;
@@ -149,6 +149,51 @@ static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_securit
 				  session_key);
 }
 
+/** Fallback to another GENSEC mechanism, based on magic strings 
+ *
+ * This is the 'fallback' case, where we don't get SPENGO, and have to
+ * try all the other options (and hope they all have a magic string
+ * they check)
+*/
+
+static NTSTATUS gensec_spengo_server_try_fallback(struct gensec_security *gensec_security, 
+						  struct spnego_state *spnego_state,
+						  TALLOC_CTX *out_mem_ctx, 
+						  const DATA_BLOB in, DATA_BLOB *out) 
+{
+	int i;
+	int num_ops;
+	const struct gensec_security_ops **all_ops = gensec_security_all(&num_ops);
+	for (i=0; i < num_ops; i++) {
+		NTSTATUS nt_status;
+		if (!all_ops[i]->oid) {
+			continue;
+		}
+		nt_status = gensec_subcontext_start(gensec_security, 
+						    &spnego_state->sub_sec_security);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		/* select the sub context */
+		nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
+						     all_ops[i]->oid);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			gensec_end(&spnego_state->sub_sec_security);
+					continue;
+		}
+		nt_status = gensec_update(spnego_state->sub_sec_security,
+							  out_mem_ctx, in, out);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			spnego_state->state_position = SPNEGO_FALLBACK;
+			return nt_status;
+		}
+		gensec_end(&spnego_state->sub_sec_security);
+	}
+	DEBUG(1, ("Failed to parse SPENGO request\n"));
+	return NT_STATUS_INVALID_PARAMETER;
+	
+}
+
 static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
 			       const DATA_BLOB in, DATA_BLOB *out) 
 {
@@ -164,49 +209,47 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		out_mem_ctx = spnego_state->mem_ctx;
 	}
 
-	if (spnego_state->state_position == SPNEGO_FALLBACK) {
+	/* and switch into the state machine */
+
+	switch (spnego_state->state_position) {
+	case SPNEGO_FALLBACK:
 		return gensec_update(spnego_state->sub_sec_security,
 				     out_mem_ctx, in, out);
+	case SPNEGO_SERVER_START:
+	{
+		if (in.length) {
+			len = spnego_read_data(in, &spnego);
+			if (len == -1) {
+				return gensec_spengo_server_try_fallback(gensec_security, spnego_state, out_mem_ctx, in, out);
+			} else {
+				/* client sent NegTargetInit */
+			}
+		} else {
+			/* server needs to send NegTargetInit */
+		}
 	}
 
-	len = spnego_read_data(in, &spnego);
-
-	if (len == -1 && spnego_state->state_position == SPNEGO_SERVER_START) {
+	case SPNEGO_CLIENT_START:
+	{
+		/* The server offers a list of mechanisms */
+		
+		char **mechType;
+		char *my_mechs[] = {NULL, NULL};
 		int i;
-		int num_ops;
-		const struct gensec_security_ops **all_ops = gensec_security_all(&num_ops);
-		for (i=0; i < num_ops; i++) {
-			NTSTATUS nt_status;
-			if (!all_ops[i]->oid) {
-				continue;
-			}
-			nt_status = gensec_server_start(&spnego_state->sub_sec_security);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				return nt_status;
-			}
-			/* forward the user info to the sub context */
-			spnego_state->sub_sec_security->user = gensec_security->user;
-			spnego_state->sub_sec_security->password_callback = gensec_security->password_callback;
-			spnego_state->sub_sec_security->password_callback_private = gensec_security->password_callback_private;
-			/* select the sub context */
-			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
-							     all_ops[i]->oid);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				gensec_end(&spnego_state->sub_sec_security);
-				continue;
-			}
-			nt_status = gensec_update(spnego_state->sub_sec_security,
-						  out_mem_ctx, in, out);
-			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-				spnego_state->state_position = SPNEGO_FALLBACK;
-				return nt_status;
-			}
-			gensec_end(&spnego_state->sub_sec_security);
-		}
-		DEBUG(1, ("Failed to parse SPENGO request\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	} else {
+		NTSTATUS nt_status;
 
+		if (!in.length) {
+			/* client to produce negTokenInit */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		len = spnego_read_data(in, &spnego);
+		
+		if (len == -1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		/* OK, so it's real SPNEGO, check the packet's the one we expect */
 		if (spnego.type != spnego_state->expected_packet) {
 			spnego_free_data(&spnego);
 			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
@@ -214,133 +257,145 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (spnego_state->state_position == SPNEGO_CLIENT_GET_MECHS) {
-
-			/* The server offers a list of mechanisms */
-			
-			char **mechType = spnego.negTokenInit.mechTypes;
-			char *my_mechs[] = {NULL, NULL};
-			int i;
-			NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
-			
-			for (i=0; mechType && mechType[i]; i++) {
-				nt_status = gensec_client_start(&spnego_state->sub_sec_security);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					break;
-				}
-				/* forward the user info to the sub context */
-				spnego_state->sub_sec_security->user = gensec_security->user;
-				spnego_state->sub_sec_security->password_callback = gensec_security->password_callback;
-				spnego_state->sub_sec_security->password_callback_private = gensec_security->password_callback_private;
-				/* select the sub context */
-				nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
-								     mechType[i]);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					gensec_end(&spnego_state->sub_sec_security);
-					continue;
-				}
-
-				if (i == 0) {
-					nt_status = gensec_update(spnego_state->sub_sec_security,
-								  out_mem_ctx, 
-								  spnego.negTokenInit.mechToken, 
-								  &unwrapped_out);
-				} else {
-					/* only get the helping start blob for the first OID */
-					nt_status = gensec_update(spnego_state->sub_sec_security,
-								  out_mem_ctx, 
-								  null_data_blob, 
-								  &unwrapped_out);
-				}
-				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-					DEBUG(1, ("SPENGO(%s) NEG_TOKEN_INIT failed: %s\n", 
-						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-					gensec_end(&spnego_state->sub_sec_security);
-				} else {
-					break;
-				}
+		mechType = spnego.negTokenInit.mechTypes;
+		for (i=0; mechType && mechType[i]; i++) {
+			nt_status = gensec_client_start(&spnego_state->sub_sec_security);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				break;
 			}
-			if (!mechType || !mechType[i]) {
-				DEBUG(1, ("SPENGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
-			}
-
-			spnego_free_data(&spnego);
-			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-				return nt_status;
+			/* forward the user info to the sub context */
+			spnego_state->sub_sec_security->user = gensec_security->user;
+			spnego_state->sub_sec_security->password_callback = gensec_security->password_callback;
+			spnego_state->sub_sec_security->password_callback_private = gensec_security->password_callback_private;
+			/* select the sub context */
+			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
+							     mechType[i]);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				gensec_end(&spnego_state->sub_sec_security);
+				continue;
 			}
 			
-			/* compose reply */
-			my_mechs[0] = spnego_state->sub_sec_security->ops->oid;
-
-			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-			spnego_out.negTokenInit.mechTypes = my_mechs;
-			spnego_out.negTokenInit.reqFlags = 0;
-			spnego_out.negTokenInit.mechListMIC = null_data_blob;
-			spnego_out.negTokenInit.mechToken = unwrapped_out;
-			
-			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_INIT\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			/* set next state */
-			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
-			spnego_state->state_position = SPNEGO_TARG;
-
-			return nt_status;
-		} else if (spnego_state->state_position == SPNEGO_TARG) {
-			NTSTATUS nt_status;
-			if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
-				return NT_STATUS_ACCESS_DENIED;
-			}
-
-			if (spnego.negTokenTarg.responseToken.length) {
+			if (i == 0) {
 				nt_status = gensec_update(spnego_state->sub_sec_security,
 							  out_mem_ctx, 
-							  spnego.negTokenTarg.responseToken, 
+							  spnego.negTokenInit.mechToken, 
 							  &unwrapped_out);
 			} else {
-				unwrapped_out = data_blob(NULL, 0);
-				nt_status = NT_STATUS_OK;
+				/* only get the helping start blob for the first OID */
+				nt_status = gensec_update(spnego_state->sub_sec_security,
+							  out_mem_ctx, 
+							  null_data_blob, 
+							  &unwrapped_out);
 			}
-			
-			if (NT_STATUS_IS_OK(nt_status) 
-			    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
-				nt_status = NT_STATUS_INVALID_PARAMETER;
+			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				DEBUG(1, ("SPENGO(%s) NEG_TOKEN_INIT failed: %s\n", 
+					  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+				gensec_end(&spnego_state->sub_sec_security);
+			} else {
+				break;
 			}
-
-			spnego_state->result = spnego.negTokenTarg.negResult;
+		}
+		if (!mechType || !mechType[i]) {
+			DEBUG(1, ("SPENGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
+		}
+		
+		spnego_free_data(&spnego);
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			return nt_status;
+		}
+		
+		/* compose reply */
+		my_mechs[0] = spnego_state->sub_sec_security->ops->oid;
+		
+		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
+		spnego_out.negTokenInit.mechTypes = my_mechs;
+		spnego_out.negTokenInit.reqFlags = 0;
+		spnego_out.negTokenInit.mechListMIC = null_data_blob;
+		spnego_out.negTokenInit.mechToken = unwrapped_out;
+		
+		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
+			DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_INIT\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		/* set next state */
+		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+		spnego_state->state_position = SPNEGO_TARG;
+		
+		return nt_status;
+	}
+	case SPNEGO_TARG:
+	{
+		NTSTATUS nt_status;
+		if (!in.length) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		len = spnego_read_data(in, &spnego);
+		
+		if (len == -1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		/* OK, so it's real SPNEGO, check the packet's the one we expect */
+		if (spnego.type != spnego_state->expected_packet) {
 			spnego_free_data(&spnego);
+			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
+				  spnego_state->expected_packet));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	
+		if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		
+		if (spnego.negTokenTarg.responseToken.length) {
+			nt_status = gensec_update(spnego_state->sub_sec_security,
+						  out_mem_ctx, 
+						  spnego.negTokenTarg.responseToken, 
+						  &unwrapped_out);
+		} else {
+			unwrapped_out = data_blob(NULL, 0);
+			nt_status = NT_STATUS_OK;
+		}
+		
+		if (NT_STATUS_IS_OK(nt_status) 
+		    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
+			nt_status = NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		spnego_state->result = spnego.negTokenTarg.negResult;
+		spnego_free_data(&spnego);
+		
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			/* compose reply */
+			spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
+			spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+			spnego_out.negTokenTarg.supportedMech 
+				= spnego_state->sub_sec_security->ops->oid;
+			spnego_out.negTokenTarg.responseToken = unwrapped_out;
+			spnego_out.negTokenTarg.mechListMIC = null_data_blob;
 			
-			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-				/* compose reply */
-				spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-				spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-				spnego_out.negTokenTarg.supportedMech 
-					= spnego_state->sub_sec_security->ops->oid;
-				spnego_out.negTokenTarg.responseToken = unwrapped_out;
-				spnego_out.negTokenTarg.mechListMIC = null_data_blob;
-				
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_TARG\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-				spnego_state->state_position = SPNEGO_TARG;
-			} else if (NT_STATUS_IS_OK(nt_status)) {
-				spnego_state->state_position = SPNEGO_DONE;
-			} else {
-				DEBUG(1, ("SPENGO(%s) login failed: %s\n", 
-					  spnego_state->sub_sec_security->ops->name, 
-					  nt_errstr(nt_status)));
-				return nt_status;
-			}
-			
-			return nt_status;
+			spnego_state->state_position = SPNEGO_TARG;
+		} else if (NT_STATUS_IS_OK(nt_status)) {
+			spnego_state->state_position = SPNEGO_DONE;
 		} else {
-			spnego_free_data(&spnego);
-			DEBUG(1, ("Invalid SPENGO request: %d\n", spnego.type));
-			return NT_STATUS_INVALID_PARAMETER;
+			DEBUG(1, ("SPENGO(%s) login failed: %s\n", 
+				  spnego_state->sub_sec_security->ops->name, 
+				  nt_errstr(nt_status)));
+			return nt_status;
 		}
+		
+		return nt_status;
+	}
+	default:
+		spnego_free_data(&spnego);
+		DEBUG(1, ("Invalid SPENGO request: %d\n", spnego.type));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 }
 
