@@ -48,7 +48,7 @@
 
 
 DIR *block_opendir(struct connection_struct *conn, char *fname);
-int block_connect(struct connection_struct *conn, char *service, char *user);    
+int block_connect(struct connection_struct *conn, const char *service, const char *user);    
 void block_disconnect(struct connection_struct *conn);    
 
 
@@ -63,44 +63,77 @@ struct vfs_ops execute_vfs_ops = {
 
 	block_connect,
 	block_disconnect,
-	NULL,                     /* disk free */
+	NULL,					/* disk free */
 
 	/* Directory operations */
 
 	block_opendir,
-	NULL,                     /* readdir */
-	NULL,
-	NULL,
-	NULL,                     /* closedir */
+	NULL,					/* readdir */
+	NULL,					/* mkdir */
+	NULL,					/* rmdir */
+	NULL,					/* closedir */
 
 	/* File operations */
 
-	NULL,
-	NULL,
-	NULL,                     /* read  */
-	NULL,                     /* write */
-	NULL,                     /* lseek */
-	NULL,
-	NULL,                     /* fsync */
-	NULL,                     /* stat  */
-	NULL,                     /* fstat */
-	NULL,                     /* lstat */
-	NULL,
-	NULL,
-	NULL,
-	NULL,                     /* chown */
-	NULL,
-	NULL,                     /* chdir */
-	NULL,                     /* getwd */
-	NULL,                     /* utime */
-	NULL,                     /* ftruncate */
-	NULL,                     /* lock */
-	NULL,                     /* fget_nt_acl */
-	NULL,                     /* get_nt_acl */
-	NULL,                     /* fset_nt_acl */
-	NULL,                      /* set_nt_acl */
-	NULL,
-	NULL
+	NULL,					/* open */
+	NULL,					/* close */
+	NULL,					/* read  */
+	NULL,					/* write */
+	NULL,					/* lseek */
+	NULL,					/* rename */
+	NULL,					/* fsync */
+	NULL,					/* stat  */
+	NULL,					/* fstat */
+	NULL,					/* lstat */
+	NULL,					/* unlink */
+	NULL,					/* chmod */
+	NULL,					/* fchmod */
+	NULL,					/* chown */
+	NULL,					/* fchown */
+	NULL,					/* chdir */
+	NULL,					/* getwd */
+	NULL,					/* utime */
+	NULL,					/* ftruncate */
+	NULL,					/* lock */
+	NULL,					/* symlink */
+	NULL,					/* readlink */
+	NULL,					/* link */
+	NULL,					/* mknod */
+	NULL,					/* realpath */
+
+	/* NT ACL operations */
+
+	NULL,					/* fget_nt_acl */
+	NULL,					/* get_nt_acl */
+	NULL,					/* fset_nt_acl */
+	NULL,					/* set_nt_acl */
+
+	/* POSIX ACL operations. */
+
+	NULL,					/* chmod_acl */
+	NULL,					/* fchmod_acl */
+	NULL,					/* sys_acl_get_entry */
+	NULL,					/* sys_acl_get_tag_type */
+	NULL,					/* sys_acl_get_permset */
+	NULL,					/* sys_acl_get_qualifier */
+	NULL,					/* sys_acl_get_file */
+	NULL,					/* sys_acl_get_fd */
+	NULL,					/* sys_acl_clear_perms */
+	NULL,					/* sys_acl_add_perm */
+	NULL,					/* sys_acl_to_text */
+	NULL,					/* sys_acl_init */
+	NULL,					/* sys_acl_create_entry */
+	NULL,					/* sys_acl_set_tag_type */
+	NULL,					/* sys_acl_set_qualifier */
+	NULL,					/* sys_acl_set_permset */
+	NULL,					/* sys_acl_valid */
+	NULL,					/* sys_acl_set_file */
+	NULL,					/* sys_acl_set_fd */
+	NULL,					/* sys_acl_delete_def_file */
+	NULL,					/* sys_acl_get_perm */
+	NULL,					/* sys_acl_free_text */
+	NULL,					/* sys_acl_free_acl */
+	NULL					/* sys_acl_free_qualifier */
 };
 
 
@@ -297,10 +330,20 @@ BOOL get_parameter_value(char *param, char *value)
 /* VFS initialisation function.  Return initialised vfs_ops structure
    back to SAMBA. */
 
-struct vfs_ops *vfs_init(int *vfs_version)
+struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
 {
+	struct vfs_ops tmp_ops;
+
 	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	
+	memcpy(&tmp_ops, def_vfs_ops, sizeof(struct vfs_ops));
+
+	/* Override the ones we want. */
+	tmp_ops.connect = block_connect;
+	tmp_ops.disconnect = block_disconnect;
+	tmp_ops.opendir = block_opendir;
+
+	memcpy(&execute_vfs_ops, &tmp_ops, sizeof(struct vfs_ops));
 	return(&execute_vfs_ops);
 }
 
@@ -457,90 +500,3 @@ BOOL dir_search(char *link, char *dir)
 	return FALSE;
 	
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,7 +1,6 @@
 #
 # Makefile for samba-vfs examples
 #
-# $Id: Makefile,v 1.4 2000/11/06 20:01:03 jra Exp $
 #
 
 # Variables
@@ -13,8 +12,9 @@ SAMBA_SRC = ../../source
 SAMBA_INCL = ../../source/include
 UBIQX_SRC = ../../source/ubiqx
 SMBWR_SRC = ../../source/smbwrapper
-CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g
-VFS_OBJS = audit.so skel.so
+KRB5_SRC = /usr/kerberos/include
+CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -I$(KRB5_SRC) -Wall -g
+VFS_OBJS = audit.so skel.so recycle.so
 
 # Default target
 
