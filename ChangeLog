@@ -1,5 +1,8 @@
 2001-01-04  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/verify_user.c: use
+	krb5_get_init_creds_opt_set_default_flags
+
 	* kuser/kinit.c: use krb5_get_init_creds_opt_set_default_flags
 
 	* lib/krb5/init_creds.c: new function
