@@ -118,6 +118,27 @@ BOOL get_domain_info(void)
         return rv;
 }
 
+/* Free global domain info */
+
+void free_domain_info(void)
+{
+        struct winbindd_domain *domain;
+
+        /* Free list of domains */
+
+        if (domain_list) {
+                struct winbindd_domain *next_domain;
+
+                domain = domain_list;
+
+                while(domain) {
+                        next_domain = domain->next;
+                        free(domain);
+                        domain = next_domain;
+                }
+        }
+}
+
 /* Connect to a domain controller using get_any_dc_name() to discover 
    the domain name and sid */
 
@@ -420,6 +441,9 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 {
 	struct winbindd_domain *tmp;
 
+        if (domain_list == NULL)
+                get_domain_info();
+
 	/* Search through list */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
@@ -437,6 +461,9 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 {
 	struct winbindd_domain *tmp;
+
+        if (domain_list == NULL)
+                get_domain_info();
 
 	/* Search through list */
 
