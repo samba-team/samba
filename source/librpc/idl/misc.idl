@@ -101,7 +101,7 @@ interface misc
 	const int SEC_DESC_RM_CONTROL_VALID	 = 0x4000;
 	const int SEC_DESC_SELF_RELATIVE	 = 0x8000;
 
-	typedef [public] struct {
+	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct {
 		uint8 revision;
 		uint16 type;     /* SEC_DESC_xxxx flags */
 		[relative] dom_sid *owner_sid; 
