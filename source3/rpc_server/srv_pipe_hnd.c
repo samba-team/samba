@@ -772,6 +772,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 static ssize_t process_incoming_data(pipes_struct *p, char *data, size_t n)
 {
 	size_t data_to_copy = MIN(n, MAX_PDU_FRAG_LEN - p->in_data.pdu_received_len);
+	size_t old_pdu_received_len = p->in_data.pdu_received_len;
 
 	DEBUG(10,("process_incoming_data: Start: pdu_received_len = %u, pdu_needed_len = %u, incoming data = %u\n",
 		(unsigned int)p->in_data.pdu_received_len, (unsigned int)p->in_data.pdu_needed_len,
@@ -831,10 +832,11 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 
 	/*
 	 * Do we have a complete PDU ?
+	 * (return the nym of bytes handled in the call)
 	 */
 
 	if(p->in_data.pdu_received_len == p->in_data.pdu_needed_len)
-		return process_complete_pdu(p);
+		return process_complete_pdu(p) - old_pdu_received_len;
 
 	DEBUG(10,("process_incoming_data: not a complete PDU yet. pdu_received_len = %u, pdu_needed_len = %u\n",
 		(unsigned int)p->in_data.pdu_received_len, (unsigned int)p->in_data.pdu_needed_len ));
