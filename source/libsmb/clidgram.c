@@ -166,6 +166,7 @@ int cli_get_response(BOOL unique, char *mailslot, char *buf, int bufsiz)
   else 
     return -1;
 
+  return 0;
 }
 
 /*
@@ -219,6 +220,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   /* Should check the response here ... FIXME */
 
+  return 0;
 }
 
 /*
@@ -234,4 +236,7 @@ int cli_get_backup_server(char *my_name, char *target, char *servername, int nam
 
   strncpy(servername, cli_backup_list, MIN(16, namesize));
 
+  /* Should check the response here ... FIXME */
+
+  return 0;
 }

@@ -1837,7 +1837,7 @@ static void process_stdin(void)
 			temp = (char *)NULL;
 		}
 
-		snprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", cur_dir );
+		slprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", cur_dir );
 
 		temp = readline( prompt_str );		/* We read the line here */
 

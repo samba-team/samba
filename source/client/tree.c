@@ -88,7 +88,7 @@ char *get_path(GtkWidget *item)
    * Now, build the path
    */
 
-  snprintf(path_string, sizeof(path_string), "smb:/");
+  slprintf(path_string, sizeof(path_string)-1, "smb:/");
 
   for (j = i - 1; j >= 0; j--) {
 
@@ -367,7 +367,7 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 	  else {
 	    /* Now format each of the relevant things ... */
 
-	    snprintf(col2, sizeof(col2), "%s%s%s%s%s%s(%0X)",
+	    slprintf(col2, sizeof(col2)-1, "%s%s%s%s%s%s(%0X)",
 		     (st1.st_mode&0x20?"A":""),
 		     (st1.st_mode&0x10?"D":""),
 		     (st1.st_mode&0x08?"V":""),
@@ -375,8 +375,8 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 		     (st1.st_mode&0x02?"H":""),
 		     (st1.st_mode&0x01?"R":""),
 		     st1.st_mode); 
-	    snprintf(col3, sizeof(col3), "%u", st1.st_size);
-	    snprintf(col4, sizeof(col4), "%s", ctime(&st1.st_ctime));
+	    slprintf(col3, sizeof(col3)-1, "%u", st1.st_size);
+	    slprintf(col4, sizeof(col4)-1, "%s", ctime(&st1.st_ctime));
 	  }
 	}
 
