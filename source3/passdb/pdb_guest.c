@@ -105,7 +105,7 @@ static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT
   want to twidde the filesystem, so what should we do?
 
   Current plan is to transparently add the account.  It should appear
-  as if the pdb_unix version was modified, but its actually stored somehwere.
+  as if the pdb_guest version was modified, but its actually stored somehwere.
  ****************************************************************************/
 
 static NTSTATUS guestsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
