@@ -227,6 +227,9 @@ static void api_samr_add_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struc
 	SAMR_Q_ADD_GROUPMEM q_e;
 	SAMR_R_ADD_GROUPMEM r_e;
 
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
+
 	samr_io_q_add_groupmem("", &q_e, data, 0);
 
 	r_e.status = _samr_add_groupmem(&q_e.pol, q_e.rid, q_e.unknown);
@@ -241,6 +244,10 @@ static void api_samr_del_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struc
 {
 	SAMR_Q_DEL_GROUPMEM q_e;
 	SAMR_R_DEL_GROUPMEM r_e;
+
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
+
 	samr_io_q_del_groupmem("", &q_e, data, 0);
 
 	r_e.status = _samr_del_groupmem(&q_e.pol, q_e.rid);
@@ -249,69 +256,21 @@ static void api_samr_del_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struc
 }
 
 /*******************************************************************
- samr_reply_add_aliasmem
- ********************************************************************/
-static void samr_reply_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_ADD_ALIASMEM r_e;
-	DOM_SID alias_sid;
-	uint32 alias_rid;
-	fstring alias_sid_str;
-
-	r_e.status = 0x0;
-
-	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->alias_pol, &alias_sid))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	else
-	{
-		sid_to_string(alias_sid_str, &alias_sid);
-		sid_split_rid(&alias_sid, &alias_rid);
-	}
-
-	if (r_e.status == 0x0)
-	{
-		DEBUG(10,("sid is %s\n", alias_sid_str));
-
-		if (sid_equal(&alias_sid, &global_sam_sid))
-		{
-			DEBUG(10,("add member on Domain SID\n"));
-
-			become_root(True);
-			r_e.status = add_alias_member(alias_rid, &q_u->sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
-		}
-		else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
-		{
-			DEBUG(10,("add member on BUILTIN SID\n"));
-
-			become_root(True);
-			r_e.status = add_builtin_member(alias_rid, &q_u->sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
-		}
-		else
-		{
-			r_e.status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
-		}
-	}
-
-	/* store the response in the SMB stream */
-	samr_io_r_add_aliasmem("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_add_aliasmem: %d\n", __LINE__));
-}
-
-/*******************************************************************
  api_samr_add_aliasmem
  ********************************************************************/
 static void api_samr_add_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ADD_ALIASMEM q_e;
+	SAMR_R_ADD_ALIASMEM r_e;
+
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
+
 	samr_io_q_add_aliasmem("", &q_e, data, 0);
-	samr_reply_add_aliasmem(&q_e, rdata);
+
+	r_e.status = _samr_add_aliasmem(&q_e.alias_pol, &q_e.sid.sid);
+
+	samr_io_r_add_aliasmem("", &r_e, rdata, 0);
 }
 
 /*******************************************************************

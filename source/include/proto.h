@@ -4243,8 +4243,7 @@ uint32 _samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 				uint32 *num_sam_users);
 uint32 _samr_add_groupmem(POLICY_HND *pol, uint32 rid, uint32 unknown);
 uint32 _samr_del_groupmem(POLICY_HND *pol, uint32 rid);
-uint32 _samr_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
-				prs_struct *rdata);
+uint32 _samr_add_aliasmem(POLICY_HND *alias_pol, DOM_SID *sid);
 uint32 _samr_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
 				prs_struct *rdata);
 uint32 _samr_enum_domains(SAMR_Q_ENUM_DOMAINS *q_u,
