@@ -118,15 +118,18 @@ class SamrHandle:
 
         result = dcerpc.dcerpc_samr_QuerySecurity(self.pipe, r)
 
-        return r.data_out.sdbuf.sd
+        return r.data_out.sdbuf
 
-    def SetSecurity(self, sec_info = 7):
+    def SetSecurity(self, sdbuf, sec_info = 7):
 
         r = dcerpc.samr_SetSecurity()
         r.data_in.handle = self.handle
         r.data_in.sec_info = sec_info
+        r.data_in.sdbuf = sdbuf
 
+        result = dcerpc.dcerpc_samr_SetSecurity(self.pipe, r)
 
+        
 class ConnectHandle(SamrHandle):
 
     def EnumDomains(self):
@@ -329,6 +332,17 @@ class AliasHandle(SamrHandle):
     pass
     
 
+def Connect(pipe, access_mask = 0x02000000):
+
+    r = dcerpc.samr_Connect()
+    r.data_in.system_name = dcerpc.new_uint16_array(1)
+    dcerpc.uint16_array_setitem(r.data_in.system_name, 0, ord('\\'))
+    r.data_in.access_mask = access_mask
+
+    result = dcerpc.dcerpc_samr_Connect(pipe, r)
+
+    return ConnectHandle(pipe, r.data_out.connect_handle)
+
 def Connect2(pipe, system_name = '', access_mask = 0x02000000):
     """Connect to the SAMR pipe."""
 
@@ -340,6 +354,43 @@ def Connect2(pipe, system_name = '', access_mask = 0x02000000):
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
+def Connect3(pipe, system_name = '', access_mask = 0x02000000):
+
+    r = dcerpc.samr_Connect3()
+    r.data_in.system_name = system_name
+    r.data_in.unknown = 0
+    r.data_in.access_mask = access_mask
+
+    result = dcerpc.dcerpc_samr_Connect3(pipe, r)
+
+    return ConnectHandle(pipe, r.data_out.connect_handle)
+
+def Connect4(pipe, system_name = '', access_mask = 0x02000000):
+
+    r = dcerpc.samr_Connect4()
+    r.data_in.system_name = system_name
+    r.data_in.unknown = 0
+    r.data_in.access_mask = access_mask
+
+    result = dcerpc.dcerpc_samr_Connect4(pipe, r)
+
+    return ConnectHandle(pipe, r.data_out.connect_handle)
+
+def Connect5(pipe, system_name = '', access_mask = 0x02000000):
+
+    r = dcerpc.samr_Connect5()
+    r.data_in.system_name = system_name
+    r.data_in.access_mask = access_mask
+    r.data_in.level = 1
+    r.data_in.info = dcerpc.new_samr_ConnectInfo_array(1)
+    r.data_in.info.unknown1 = 0
+    r.data_in.info.unknown2 = 0
+
+    result = dcerpc.dcerpc_samr_Connect5(pipe, r)
+
+    return ConnectHandle(pipe, r.data_out.connect_handle)
+    
+    
 # CreateDomainGroup
 # CreateDomAlias
 # GetAliasMembership
@@ -379,13 +430,9 @@ def Connect2(pipe, system_name = '', access_mask = 0x02000000):
 # OemChangePasswordUser2
 # ChangePasswordUser2
 # GetDomPwInfo
-# Connect
 # SetUserInfo2
 # SetBootKeyInformation
 # GetBootKeyInformation
-# Connect3
-# Connect4
 # ChangePasswordUser3
-# Connect5
 # SetDsrmPassword
 # ValidatePassword
