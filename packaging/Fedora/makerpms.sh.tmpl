@@ -48,11 +48,13 @@ for file in samba.pamd samba.sysconfig samba.spec \
 	smb.init swat.desktop filter-requires-samba.sh \
 	samba.log samba.xinetd smbprint winbind.init
 do
-	cp -p filter-requires-samba.sh ${SRCDIR}
+	cp -p $file ${SRCDIR}
 
 done
 
 chmod 755 ${SRCDIR}/filter-requires-samba.sh
+
+cp -p ${SPECFILE} ${SPECDIR}
 
 ##
 ## Build
