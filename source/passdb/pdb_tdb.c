@@ -955,7 +955,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->free_private_data = free_private_data;
 
 	if (lp_idmap_uid(&low_nua_uid, &high_nua_uid)) {
-		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
+		DEBUG(3, ("idmap uid range defined, non unix accounts enabled\n"));
 
 		tdb_state->permit_non_unix_accounts = True;
 
