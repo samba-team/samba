@@ -119,7 +119,7 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 }
 
 /****************************************************************************
- Like atoi but gets the value up to the separater character.
+ Like atoi but gets the value up to the separator character.
 ****************************************************************************/
 
 char *Atoic(char *p, int *n, char *c)
