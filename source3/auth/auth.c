@@ -75,9 +75,9 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 
 	DEBUG(3, ("check_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		  user_info->domain.str, user_info->internal_username.str, user_info->wksta_name.str));
-	DEBUG(10, ("auth_info challange created by %s\n", auth_info->challange_set_by));
-	DEBUG(10, ("challange is: \n"));
-	dump_data(5, (auth_info)->challange.data, (auth_info)->challange.length);
+	DEBUG(10, ("auth_info challenge created by %s\n", auth_info->challenge_set_by));
+	DEBUG(10, ("challenge is: \n"));
+	dump_data(5, (auth_info)->challenge.data, (auth_info)->challenge.length);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
@@ -213,7 +213,7 @@ static NTSTATUS pass_check_smb(char *smb_name,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		chal = auth_get_challange(plaintext_auth_info);
+		chal = auth_get_challenge(plaintext_auth_info);
 
 		if (!make_user_info_for_reply(&user_info, 
 					      smb_name, domain, chal.data,

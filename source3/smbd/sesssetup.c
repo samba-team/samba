@@ -235,7 +235,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	cryptkey = auth_get_challange(ntlmssp_auth_info);
+	cryptkey = auth_get_challenge(ntlmssp_auth_info);
 
 	/* Give them the challenge. For now, ignore neg_flags and just
 	   return the flags we want. Obviously this is not correct */
@@ -649,7 +649,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
 
-		chal = auth_get_challange(plaintext_auth_info);
+		chal = auth_get_challenge(plaintext_auth_info);
 
 		if (!make_user_info_for_reply(&user_info, 
 					      user, domain, chal.data,

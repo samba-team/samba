@@ -41,7 +41,7 @@ static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
 	}
 	
 	if (sec_blob.length != 8) {
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challange size (%d)\n", sec_blob.length));
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%d)\n", sec_blob.length));
 		return False;
 	}
 	
@@ -174,7 +174,7 @@ static NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass,
 		*/
 		DEBUG(4,("smb_password_ok: Checking NTLMv2 password\n"));
 		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
-					  nt_pw, auth_info->challange, 
+					  nt_pw, auth_info->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
 					  user_sess_key))
@@ -191,7 +191,7 @@ static NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass,
 			*/
 			DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
 			if (smb_pwd_check_ntlmv1(user_info->nt_resp, 
-						 nt_pw, auth_info->challange,
+						 nt_pw, auth_info->challenge,
 						 user_sess_key)) 
 			{
 				return NT_STATUS_OK;
@@ -224,7 +224,7 @@ static NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass,
 		
 		DEBUG(4,("smb_password_ok: Checking LM password\n"));
 		if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
-					 lm_pw, auth_info->challange,
+					 lm_pw, auth_info->challenge,
 					 user_sess_key)) 
 		{
 			return NT_STATUS_OK;

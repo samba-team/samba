@@ -163,7 +163,7 @@ BOOL make_auth_info_subsystem(auth_authsupplied_info **auth_info)
 }
 
 /***************************************************************************
- Make a auth_info struct with a random challange
+ Make a auth_info struct with a random challenge
 ***************************************************************************/
 
 BOOL make_auth_info_random(auth_authsupplied_info **auth_info) 
@@ -174,15 +174,15 @@ BOOL make_auth_info_random(auth_authsupplied_info **auth_info)
 	}
 	
 	generate_random_buffer(chal, sizeof(chal), False);
-	(*auth_info)->challange = data_blob(chal, sizeof(chal));
+	(*auth_info)->challenge = data_blob(chal, sizeof(chal));
 
-	(*auth_info)->challange_set_by = "random";
+	(*auth_info)->challenge_set_by = "random";
 
 	return True;
 }
 
 /***************************************************************************
- Make a auth_info struct with a fixed challange
+ Make a auth_info struct with a fixed challenge
 ***************************************************************************/
 
 BOOL make_auth_info_fixed(auth_authsupplied_info **auth_info, uchar chal[8]) 
@@ -191,7 +191,7 @@ BOOL make_auth_info_fixed(auth_authsupplied_info **auth_info, uchar chal[8])
 		return False;
 	}
 	
-	(*auth_info)->challange = data_blob(chal, 8);
+	(*auth_info)->challenge = data_blob(chal, 8);
 	return True;
 }
 
@@ -213,70 +213,70 @@ void free_auth_info(auth_authsupplied_info **auth_info)
 			SAFE_FREE(old_head);
 		}
 		
-		data_blob_free(&(*auth_info)->challange);
+		data_blob_free(&(*auth_info)->challenge);
 		ZERO_STRUCT(**auth_info);
 	}
 	SAFE_FREE(*auth_info);
 }
 
 /****************************************************************************
- Try to get a challange out of the various authenticaion modules.
+ Try to get a challenge out of the various authenticaion modules.
  It is up to the caller to free it.
 ****************************************************************************/
 
-DATA_BLOB auth_get_challange(auth_authsupplied_info *auth_info) 
+DATA_BLOB auth_get_challenge(auth_authsupplied_info *auth_info) 
 {
-	DATA_BLOB challange = data_blob(NULL, 0);
-	char *challange_set_by = NULL;
+	DATA_BLOB challenge = data_blob(NULL, 0);
+	char *challenge_set_by = NULL;
 	auth_methods *auth_method;
 
-	if (auth_info->challange.length) {
-		DEBUG(5, ("auth_get_challange: returning previous challange (normal)\n"));
-		return data_blob(auth_info->challange.data, auth_info->challange.length);
+	if (auth_info->challenge.length) {
+		DEBUG(5, ("auth_get_challenge: returning previous challenge (normal)\n"));
+		return data_blob(auth_info->challenge.data, auth_info->challenge.length);
 	}
 
 	for (auth_method = auth_info->auth_method_list; auth_method; auth_method = auth_method->next)
 	{
 		if (auth_method->get_chal) {
-			DEBUG(5, ("auth_get_challange: getting challange from module %s\n", auth_method->name));
-			if (challange_set_by) {
-				DEBUG(1, ("auth_get_challange: CONFIGURATION ERROR: authenticaion method %s has already specified a challange.  Challange by %s ignored.\n", 
-					  challange_set_by, auth_method->name));
+			DEBUG(5, ("auth_get_challenge: getting challenge from module %s\n", auth_method->name));
+			if (challenge_set_by) {
+				DEBUG(1, ("auth_get_challenge: CONFIGURATION ERROR: authenticaion method %s has already specified a challenge.  Challenge by %s ignored.\n", 
+					  challenge_set_by, auth_method->name));
 			} else {
-				challange = auth_method->get_chal(&auth_method->private_data, auth_info);
-				if (challange.length) {
-					DEBUG(5, ("auth_get_challange: sucessfully got challange from module %s\n", auth_method->name));
-					auth_info->challange = challange;
-					challange_set_by = auth_method->name;
-					auth_info->challange_set_method = auth_method;
+				challenge = auth_method->get_chal(&auth_method->private_data, auth_info);
+				if (challenge.length) {
+					DEBUG(5, ("auth_get_challenge: sucessfully got challenge from module %s\n", auth_method->name));
+					auth_info->challenge = challenge;
+					challenge_set_by = auth_method->name;
+					auth_info->challenge_set_method = auth_method;
 				} else {
-					DEBUG(3, ("auth_get_challange: getting challange from authenticaion method %s FAILED.\n", 
+					DEBUG(3, ("auth_get_challenge: getting challenge from authenticaion method %s FAILED.\n", 
 						  auth_method->name));
 				}
 			}
 		} else {
-			DEBUG(5, ("auth_get_challange: module %s did not want to specify a challange\n", auth_method->name));
+			DEBUG(5, ("auth_get_challenge: module %s did not want to specify a challenge\n", auth_method->name));
 		}
 	}
 	
-	if (!challange_set_by) {
+	if (!challenge_set_by) {
 		uchar chal[8];
 		
 		generate_random_buffer(chal, sizeof(chal), False);
-		auth_info->challange = data_blob(chal, sizeof(chal));
+		auth_info->challenge = data_blob(chal, sizeof(chal));
 		
-		challange_set_by = "random";
+		challenge_set_by = "random";
 	} 
 	
-	DEBUG(5, ("auth_info challange created by %s\n", challange_set_by));
-	DEBUG(5, ("challange is: \n"));
-	dump_data(5, auth_info->challange.data, (auth_info)->challange.length);
+	DEBUG(5, ("auth_info challenge created by %s\n", challenge_set_by));
+	DEBUG(5, ("challenge is: \n"));
+	dump_data(5, auth_info->challenge.data, (auth_info)->challenge.length);
 	
-	SMB_ASSERT(auth_info->challange.length == 8);
+	SMB_ASSERT(auth_info->challenge.length == 8);
 
-	auth_info->challange_set_by=challange_set_by;
+	auth_info->challenge_set_by=challenge_set_by;
 
-	return data_blob(auth_info->challange.data, auth_info->challange.length);
+	return data_blob(auth_info->challenge.data, auth_info->challenge.length);
 }
 
 
