@@ -11,7 +11,7 @@ libexec_PROGRAMS	= push
 push_SOURCES = push.c push_locl.h
 
 pfrom: pfrom.in
-	sed -e "s!%libexecdir!$(libexecdir)!" $(srcdir)/pfrom.in > $@
+	sed -e "s!%libexecdir%!$(libexecdir)!" $(srcdir)/pfrom.in > $@
 	chmod +x $@
 
 man_MANS = push.8
