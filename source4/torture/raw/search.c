@@ -501,9 +501,9 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		enum search_level level;
 		enum continue_type cont_type;
 	} search_types[] = {
+		{"BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_NAME},
 		{"BOTH_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_FLAGS},
 		{"BOTH_DIRECTORY_INFO", "KEY",   RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_RESUME_KEY},
-		{"BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_NAME},
 		{"STANDARD",            "FLAGS", RAW_SEARCH_STANDARD,            CONT_FLAGS},
 		{"STANDARD",            "KEY",   RAW_SEARCH_STANDARD,            CONT_RESUME_KEY},
 		{"STANDARD",            "NAME",  RAW_SEARCH_STANDARD,            CONT_NAME},
