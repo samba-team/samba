@@ -364,7 +364,6 @@ static int msg_add_element(struct ldb_context *ldb,
 	if (el->num_values != 0) {
 		e2->values = ldb_malloc_array_p(ldb, struct ldb_val, el->num_values);
 		if (!e2->values) {
-			free(e2->name);
 			errno = ENOMEM;
 			return -1;
 		}
