@@ -534,8 +534,8 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
 		     char *serv, size_t servlen,
 		     int flags);
 
-int
-roken_getaddrinfo_hostspec(const char *, int, struct addrinfo **);
+int roken_getaddrinfo_hostspec(const char *, int, struct addrinfo **); 
+int roken_getaddrinfo_hostspec2(const char *, int, int, struct addrinfo **);
 
 #ifndef HAVE_STRFTIME
 size_t
