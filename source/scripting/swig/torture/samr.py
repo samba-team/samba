@@ -148,9 +148,9 @@ def test_CreateUser2(pipe, domain_handle):
     try:
         dcerpc.samr_CreateUser2(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] == 0xc0000022:
+        if arg[0] == dcerpc.NT_STATUS_ACCESS_DENIED:
             return
-        elif arg[0] == 0xc0000063:
+        elif arg[0] == dcerpc.NT_STATUS_USER_EXISTS:
             test_DeleteUser_byname(pipe, domain_handle, 'samrtorturemach$')
             result = dcerpc.samr_CreateUser(pipe, r)
         else:
@@ -177,7 +177,7 @@ def test_LookupName(pipe, domain_handle, name):
     try:
         dcerpc.samr_LookupNames(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] != 0x00000107:
+        if arg[0] != dcerpc.STATUS_SOME_UNMAPPED:
             raise dcerpc.NTSTATUS(arg)
 
     r['num_names'] = 0
@@ -273,7 +273,7 @@ def test_TestPrivateFunctionsUser(pipe, user_handle):
     try:
         dcerpc.samr_TestPrivateFunctionsUser(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] != 0xc0000002:
+        if arg[0] != dcerpc.NT_STATUS_NOT_IMPLEMENTED:
             raise dcerpc.NTSTATUS(arg)
 
 def test_user_ops(pipe, user_handle):
@@ -305,9 +305,9 @@ def test_CreateUser(pipe, domain_handle):
     try:
         result = dcerpc.samr_CreateUser(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] == 0xc0000022:
+        if arg[0] == dcerpc.NT_STATUS_ACCESS_DENIED:
             return
-        elif arg[0] == 0xc0000063:
+        elif arg[0] == dcerpc.NT_STATUS_USER_EXISTS:
             test_DeleteUser_byname(pipe, domain_handle, 'samrtorturetest')
             result = dcerpc.samr_CreateUser(pipe, r)
         else:
@@ -439,9 +439,9 @@ def test_CreateAlias(pipe, domain_handle, domain_sid):
     try:
         result = dcerpc.samr_CreateDomAlias(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] == 0xc0000022:
+        if arg[0] == dcerpc.NT_STATUS_ACCESS_DENIED:
             return
-        if arg[0] != 0xc0000063:
+        if arg[0] != dcerpc.NT_STATUS_USER_EXISTS:
             raise dcerpc.NTSTATUS(arg)
         test_DeleteAlias_byname(pipe, domain_handle, alias_name)
         result = dcerpc.samr_CreateDomAlias(pipe, r)
@@ -483,9 +483,9 @@ def test_CreateDomainGroup(pipe, domain_handle):
     try:
         result = dcerpc.samr_CreateDomainGroup(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] == 0xc0000022:
+        if arg[0] == dcerpc.NT_STATUS_ACCESS_DENIED:
             return
-        if arg[0] != 0xc0000065:
+        if arg[0] != dcerpc.NT_STATUS_GROUP_EXISTS:
             raise dcerpc.NTSTATUS(arg)
 
         test_DeleteGroup_byname(pipe, domain_handle, 'samrtorturetestgroup')
@@ -519,7 +519,7 @@ def test_QueryDomainInfo(pipe, domain_handle):
         except dcerpc.NTSTATUS, arg:
             if set_ok[i]:
                 raise dcerpc.NTSTATUS(arg)
-            if arg[0] != 0xc0000003:
+            if arg[0] != dcerpc.NT_STATUS_INVALID_INFO_CLASS:
                 raise dcerpc.NTSTATUS(arg)
 
 def test_QueryDomainInfo2(pipe, domain_handle):
@@ -548,7 +548,7 @@ def test_EnumDomainUsers(pipe, domain_handle):
 
     while 1:
         result = dcerpc.samr_EnumDomainUsers(pipe, r)
-        if result['result'] == 0x00000105:
+        if result['result'] == dcerpc.STATUS_MORE_ENTRIES:
             r['resume_handle'] = result['resume_handle']
             continue
         break
@@ -565,7 +565,7 @@ def test_EnumDomainGroups(pipe, domain_handle):
     
     while 1:
         result = dcerpc.samr_EnumDomainGroups(pipe, r)
-        if result['result'] == 0x00000105:
+        if result['result'] == dcerpc.STATUS_MORE_ENTRIES:
             r['resume_handle'] = result['resume_handle']
             continue
         break
@@ -582,7 +582,7 @@ def test_EnumDomainAliases(pipe, domain_handle):
 
     while 1:
         result = dcerpc.samr_EnumDomainAliases(pipe, r)
-        if result['result'] == 0x00000105:
+        if result['result'] == dcerpc.STATUS_MORE_ENTRIES:
             r['resume_handle'] = result['resume_handle']
             continue
         break
@@ -710,7 +710,7 @@ def test_TestPrivateFunctionsDomain(pipe, domain_handle):
     try:
         dcerpc.samr_TestPrivateFunctionsDomain(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] != 0xc0000002:
+        if arg[0] != dcerpc.NT_STATUS_NOT_IMPLEMENTED:
             raise dcerpc.NTSTATUS(arg)
 
 def test_RidToSid(pipe, domain_handle):
@@ -839,7 +839,7 @@ def test_LookupDomain(pipe, connect_handle, domain):
     try:
         dcerpc.samr_LookupDomain(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] != 0xc000000d:
+        if arg[0] != dcerpc.NT_STATUS_INVALID_PARAMETER:
             raise dcerpc.NTSTATUS(arg)
 
     r['domain']['name'] = 'xxNODOMAINxx'
@@ -847,7 +847,7 @@ def test_LookupDomain(pipe, connect_handle, domain):
     try:
         dcerpc.samr_LookupDomain(pipe, r)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] != 0xc00000df:
+        if arg[0] != dcerpc.NT_STATUS_NO_SUCH_DOMAIN:
             raise dcerpc.NTSTATUS(arg)
 
     r['domain']['name'] = domain
