@@ -250,17 +250,21 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 		return -1;
 	}
 
-	/* Register a home dir service for this user */
-	if ((!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)) {
-		DEBUG(3, ("Adding/updating homes service for user '%s' using home directory: '%s'\n", 
-			  vuser->user.unix_name, vuser->unix_homedir));
+	/* Register a home dir service for this user iff
+	   (a) This is not a guest connection,
+	   (b) we have a home directory defined, and
+	   (c) there s not an existing static share by that name */
 
-		/* only add the home directory if there doesn't exist a static share by that name */
-		if ( lp_servicenumber(vuser->user.unix_name) == -1 ) {
+	if ( (!vuser->guest) 
+		&& vuser->unix_homedir 
+		&& *(vuser->unix_homedir) 
+		&& (lp_servicenumber(vuser->user.unix_name) == -1) ) 
+	{
+			DEBUG(3, ("Adding/updating homes service for user '%s' using home directory: '%s'\n", 
+				vuser->user.unix_name, vuser->unix_homedir));
+
 			vuser->homes_snum = add_home_service(vuser->user.unix_name, 
 				vuser->user.unix_name, vuser->unix_homedir);
-		}
-
 	} else {
 		vuser->homes_snum = -1;
 	}
