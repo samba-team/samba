@@ -1620,7 +1620,8 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
 	POLICY_HND pol;
 	BOOL opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
-	PRINTER_INFO_0 *info = NULL;
+	PRINTER_INFO_0 info;
+	REGISTRY_VALUE value;
 
 	/* parse the command arguements */
 	if (argc != 4) {
@@ -1642,6 +1643,8 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
 
 	opened_hnd = True;
 
+	ctr.printers_0 = &info;
+
         result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
                                         &pol, 0, &ctr);
 
@@ -1652,13 +1655,16 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
                 goto done;
 		
 	printf("%s\n", timestring(True));
-	printf("\tchange_id (before set)\t:[0x%x]\n", info->change_id);
+	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
 
 	/* Set the printer data */
 	
-	result = cli_spoolss_setprinterdata(
-		cli, mem_ctx, &pol, argv[2], REG_SZ, argv[3], 
-		strlen(argv[3]) + 1);
+	fstrcpy(value.valuename, argv[2]);
+	value.type = REG_SZ;
+	value.size = strlen(argv[3]) + 1;
+	value.data_p = talloc_memdup(mem_ctx, argv[3], value.size);
+
+	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, &value);
 		
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to set [%s=%s]!\n", argv[2], argv[3]);
@@ -1675,7 +1681,7 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
                 goto done;
 		
 	printf("%s\n", timestring(True));
-	printf("\tchange_id (after set)\t:[0x%x]\n", info->change_id);
+	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
 
 done:
 	/* cleanup */
