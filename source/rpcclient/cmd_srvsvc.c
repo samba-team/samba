@@ -45,7 +45,7 @@ BOOL net_srv_get_info(struct client_info *info,
 		uint32 info_level,
 		SRV_INFO_CTR *ctr)
 {
-	uint16 nt_pipe_fnum;
+	uint16 fnum;
 	fstring dest_srv;
 
 	BOOL res = True;
@@ -58,14 +58,14 @@ BOOL net_srv_get_info(struct client_info *info,
 				dest_srv, (int)info_level));
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
 
 	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_srv_net_srv_get_info(smb_cli, nt_pipe_fnum,
+	res = res ? do_srv_net_srv_get_info(smb_cli, fnum,
 				dest_srv, info_level, ctr) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	cli_nt_session_close(smb_cli, fnum);
 
 	return res;
 }
@@ -105,16 +105,43 @@ void cmd_srv_query_info(struct client_info *info)
 /****************************************************************************
 server enum transports
 ****************************************************************************/
+BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
+				const char* dest_srv,
+				uint32 info_level,
+				SRV_TPRT_INFO_CTR *ctr,
+				uint32 pref_sz,
+				ENUM_HND *hnd)
+{
+	uint16 fnum;
+
+	BOOL res = True;
+	BOOL res1 = True;
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
+
+	/* enumerate transports on server */
+	res1 = res ? do_srv_net_srv_tprt_enum(smb_cli, fnum,
+				dest_srv, 
+	            info_level, ctr, pref_sz, hnd) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	return res1;
+}
+
+/****************************************************************************
+server enum transports
+****************************************************************************/
 void cmd_srv_enum_tprt(struct client_info *info)
 {
-	uint16 nt_pipe_fnum;
 	fstring dest_srv;
 	fstring tmp;
 	SRV_TPRT_INFO_CTR ctr;
 	ENUM_HND hnd;
 	uint32 info_level = 0;
-
-	BOOL res = True;
+	uint32 pref_sz = 0xffffffff;
 
 	bzero(&ctr, sizeof(ctr));
 
@@ -132,34 +159,16 @@ void cmd_srv_enum_tprt(struct client_info *info)
 
 	DEBUG(5, ("cmd_srv_enum_tprt: smb_cli->fd:%d\n", smb_cli->fd));
 
-	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
-
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate transports on server */
-	res = res ? do_srv_net_srv_tprt_enum(smb_cli, nt_pipe_fnum,
-				dest_srv, 
-	            info_level, &ctr, 0xffffffff, &hnd) : False;
-
-	if (res)
+	if (msrpc_srv_enum_tprt(smb_cli, dest_srv, 
+	            info_level, &ctr, pref_sz, &hnd))
 	{
 		display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
 		display_srv_tprt_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
 		display_srv_tprt_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
-	}
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
-
-	if (res)
-	{
-		DEBUG(5,("cmd_srv_enum_tprt: query succeeded\n"));
-	}
-	else
-	{
-		DEBUG(5,("cmd_srv_enum_tprt: query failed\n"));
 	}
 
 	free_srv_tprt_ctr(&ctr);
@@ -170,7 +179,7 @@ server enum connections
 ****************************************************************************/
 void cmd_srv_enum_conn(struct client_info *info)
 {
-	uint16 nt_pipe_fnum;
+	uint16 fnum;
 	fstring dest_srv;
 	fstring qual_srv;
 	fstring tmp;
@@ -201,13 +210,13 @@ void cmd_srv_enum_conn(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_conn: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate connections on server */
-	res = res ? do_srv_net_srv_conn_enum(smb_cli, nt_pipe_fnum,
+	res = res ? do_srv_net_srv_conn_enum(smb_cli, fnum,
 				dest_srv, qual_srv,
 	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
@@ -219,7 +228,7 @@ void cmd_srv_enum_conn(struct client_info *info)
 	}
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res)
 	{
@@ -236,7 +245,7 @@ server enum shares
 ****************************************************************************/
 void cmd_srv_enum_shares(struct client_info *info)
 {
-	uint16 nt_pipe_fnum;
+	uint16 fnum;
 	fstring dest_srv;
 	fstring tmp;
 	SRV_SHARE_INFO_CTR ctr;
@@ -262,13 +271,13 @@ void cmd_srv_enum_shares(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_shares: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
 
 	hnd.ptr_hnd = 0;
 	hnd.handle = 0;
 
 	/* enumerate shares_files on server */
-	res = res ? do_srv_net_srv_share_enum(smb_cli, nt_pipe_fnum,
+	res = res ? do_srv_net_srv_share_enum(smb_cli, fnum,
 				dest_srv, 
 	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
@@ -280,7 +289,7 @@ void cmd_srv_enum_shares(struct client_info *info)
 	}
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res)
 	{
@@ -297,7 +306,7 @@ server enum sessions
 ****************************************************************************/
 void cmd_srv_enum_sess(struct client_info *info)
 {
-	uint16 nt_pipe_fnum;
+	uint16 fnum;
 	fstring dest_srv;
 	fstring tmp;
 	SRV_SESS_INFO_CTR ctr;
@@ -323,13 +332,13 @@ void cmd_srv_enum_sess(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_sess: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate sessions on server */
-	res = res ? do_srv_net_srv_sess_enum(smb_cli, nt_pipe_fnum,
+	res = res ? do_srv_net_srv_sess_enum(smb_cli, fnum,
 				dest_srv, NULL, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
 	if (res)
@@ -340,7 +349,7 @@ void cmd_srv_enum_sess(struct client_info *info)
 	}
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res)
 	{
@@ -357,7 +366,7 @@ server enum files
 ****************************************************************************/
 void cmd_srv_enum_files(struct client_info *info)
 {
-	uint16 nt_pipe_fnum;
+	uint16 fnum;
 	fstring dest_srv;
 	fstring tmp;
 	SRV_FILE_INFO_CTR ctr;
@@ -383,13 +392,13 @@ void cmd_srv_enum_files(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_files: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate files on server */
-	res = res ? do_srv_net_srv_file_enum(smb_cli, nt_pipe_fnum,
+	res = res ? do_srv_net_srv_file_enum(smb_cli, fnum,
 				dest_srv, NULL, 0, info_level, &ctr, 0x1000, &hnd) : False;
 
 	if (res)
@@ -400,7 +409,7 @@ void cmd_srv_enum_files(struct client_info *info)
 	}
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res)
 	{
@@ -417,7 +426,7 @@ display remote time
 ****************************************************************************/
 void cmd_time(struct client_info *info)
 {
-	uint16 nt_pipe_fnum;
+	uint16 fnum;
 	fstring dest_srv;
 	TIME_OF_DAY_INFO tod;
 	BOOL res = True;
@@ -429,10 +438,10 @@ void cmd_time(struct client_info *info)
 	DEBUG(4,("cmd_time: server:%s\n", dest_srv));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
 
 	/* enumerate files on server */
-	res = res ? do_srv_net_remote_tod(smb_cli, nt_pipe_fnum,
+	res = res ? do_srv_net_remote_tod(smb_cli, fnum,
 					  dest_srv, &tod) : False;
 
 	if (res)
@@ -442,7 +451,7 @@ void cmd_time(struct client_info *info)
 	}
 
 	/* Close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res)
 	{

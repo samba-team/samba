@@ -328,7 +328,7 @@ static BOOL srv_io_srv_share_ctr(char *desc,  SRV_SHARE_INFO_CTR *ctr, prs_struc
 reads or writes a structure.
 ********************************************************************/
 BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
-				char *srv_name, 
+				const char *srv_name, 
 				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd)
@@ -691,7 +691,7 @@ static BOOL srv_io_srv_sess_ctr(char *desc,  SRV_SESS_INFO_CTR *ctr, prs_struct 
 reads or writes a structure.
 ********************************************************************/
 BOOL make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
-				char *srv_name, char *qual_name,
+				const char *srv_name, const char *qual_name,
 				char *user_name,
 				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
 				uint32 preferred_len,
@@ -1022,7 +1022,7 @@ static BOOL srv_io_srv_conn_ctr(char *desc,  SRV_CONN_INFO_CTR *ctr, prs_struct 
 reads or writes a structure.
 ********************************************************************/
 BOOL make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n, 
-				char *srv_name, char *qual_name,
+				const char *srv_name, const char *qual_name,
 				uint32 conn_level, SRV_CONN_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd)
@@ -1330,7 +1330,7 @@ void free_srv_tprt_ctr(SRV_TPRT_INFO_CTR *ctr)
 reads or writes a structure.
 ********************************************************************/
 BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM *q_n, 
-				char *srv_name, 
+				const char *srv_name, 
 				uint32 tprt_level, SRV_TPRT_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd)
@@ -1567,7 +1567,8 @@ static BOOL srv_io_srv_file_ctr(char *desc,  SRV_FILE_INFO_CTR *ctr, prs_struct 
 reads or writes a structure.
 ********************************************************************/
 BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				char *srv_name, char *qual_name, uint32 file_id,
+				const char *srv_name, const char *qual_name,
+				uint32 file_id,
 				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd)
