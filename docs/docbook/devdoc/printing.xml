@@ -1,6 +1,8 @@
 <chapter id="printing">
 <chapterinfo>
-	&author.jerry;
+	<author>
+		<firstname>Gerald</firstname><surname>Carter</surname>
+	</author>
 	<pubdate>October 2002</pubdate>
 </chapterinfo>
 
