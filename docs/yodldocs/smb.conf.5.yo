@@ -817,7 +817,7 @@ it() link(bf(directory mask))(directorymask)
 
 it() link(bf(directory mode))(directorymode)
 
-it() linf(bf(directory security mask))(directorysecuritymask)
+it() link(bf(directory security mask))(directorysecuritymask)
 
 it() link(bf(dont descend))(dontdescend)
 
