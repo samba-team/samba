@@ -341,8 +341,9 @@ include:
 <para>
 The second item can be accomplished by using LDAP NSS and PAM modules.  LGPL
 versions of these libraries can be obtained from PADL Software
-(<ulink url="http://www.padl.com/">http://www.padl.com/</ulink>).  However,
-the details of configuring these packages are beyond the scope of this document.
+(<ulink url="http://www.padl.com/">http://www.padl.com/</ulink>). More
+information about the configuration of these packages may be found at "LDAP,
+System Administration; Gerald Carter, O'Reilly; Chapter 6: Replacing NIS".
 </para>
 
 </sect2>
@@ -375,7 +376,7 @@ Samba 3.0 includes the necessary schema file for OpenLDAP 2.0 in
 </para>
 
 <para><programlisting>
-objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
+objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top AUXILIARY
      DESC 'Samba Account'
      MUST ( uid $ rid )
      MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
@@ -476,6 +477,11 @@ index rid           eq
 ##index gidNumber     eq
 ##index cn            eq
 ##index memberUid     eq
+
+# (both fetched via ldapsearch):
+index   primaryGroupID  eq
+index   displayName     pres,eq
+
 </programlisting></para>
 </sect3>
 
@@ -485,16 +491,20 @@ index rid           eq
 
 <para>
 The following parameters are available in smb.conf only with <parameter>--with-ldapsam</parameter>
-was included with compiling Samba.
+was included when compiling Samba.
 </para>
 
 <itemizedlist>
+        <listitem><para><ulink url="smb.conf.5.html#PASSDBBACKEND">passdb backend [ldapsam|ldapsam_nua]:url</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPSSL">ldap ssl</ulink></para></listitem>
-	<listitem><para><ulink url="smb.conf.5.html#LDAPSERVER">ldap server</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPADMINDN">ldap admin dn</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPSUFFIX">ldap suffix</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPFILTER">ldap filter</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPPORT">ldap port</ulink></para></listitem>
+        <listitem><para><ulink url="smb.conf.5.html#LDAPMACHINSUFFIX">ldap machine suffix</ulink></para></listitem>
+        <listitem><para><ulink url="smb.conf.5.html#LDAPUSERSUFFIX">ldap user suffix</ulink></para></listitem>
+        <listitem><para><ulink url="smb.conf.5.html#LDAPDELETEDN">ldap delete dn</ulink></para></listitem>
+
 </itemizedlist>
 
 <para>
@@ -521,12 +531,19 @@ use with an LDAP directory could appear as
      # changes, this password will need to be reset.
      ldap admin dn = "cn=Samba Manager,ou=people,dc=samba,dc=org"
 
-     #  specify the LDAP server's hostname (defaults to locahost)
-     ldap server = ahab.samba.org
-
      # Define the SSL option when connecting to the directory
      # ('off', 'start tls', or 'on' (default))
      ldap ssl = start tls
+
+     passdb backend ldapsam:ldap://ahab.samba.org
+
+     # smbpasswd -x delete the entire dn-entry
+     ldap delete dn = no
+
+     # the machine and user suffix added to the base suffix
+     # wrote WITHOUT quotes. NULL siffixes by default
+     ldap user suffix = ou=People
+     ldap machine suffix = ou=Systems
 
      # define the port to use in the LDAP session (defaults to 636 when
      # "ldap ssl = on")
