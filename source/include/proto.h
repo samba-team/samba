@@ -864,6 +864,16 @@ uint32 cli_samr_query_groupmem(
 	uint32 **rid, 
 	uint32 **attr
 );
+uint32 cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *pol, uint32 *start_idx, 
+				uint32 size, struct acct_info **dom_groups,
+				uint32 *num_dom_groups);
+uint32 cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *alias_pol, uint32 *num_mem, 
+			       DOM_SID **sids);
+uint32 cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   POLICY_HND *domain_pol, uint32 access_mask, 
+			   uint32 alias_rid, POLICY_HND *alias_pol);
 
 /*The following definitions come from  libsmb/cli_spoolss.c  */
 
