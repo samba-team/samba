@@ -222,7 +222,7 @@ _krb5_extract_ticket(krb5_context context,
 
     if (creds->times.starttime == 0
 	&& abs(tmp_time - sec_now) > context->max_skew) {
-	ret = KRB5KRB_AP_ERR_MODIFIED;
+	ret = KRB5KRB_AP_ERR_SKEW;
 	goto out;
     }
 
