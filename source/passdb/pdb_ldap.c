@@ -1162,7 +1162,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 }	
 
 /********************************************************************
-Do the actual modification - also change a plaittext passord if 
+Do the actual modification - also change a plaintext passord if 
 it it set.
 **********************************************************************/
 
