@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -DROKEN_RENAME
-
 YFLAGS = -d
 
 include_HEADERS = sl.h
