@@ -333,7 +333,9 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct * l,
 
 	if (l->auth_validated)
 	{
+		extern vuser_key ctx_id_table[65536];
 		l->auth_validated = become_vuser(&l->key);
+		ctx_id_table[l->hdr_rb.context_id] = l->key;
 	}
 
 	if (l->auth_validated)

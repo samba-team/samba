@@ -610,11 +610,21 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct *req,
 				reply = smb_io_rpc_hdr_req("req",
 							   &(l->hdr_req),
 							   &l->data_i, 0);
+				if (!reply)
+				{
+					DEBUG(10, ("smb_io_rpc_hdr_req failed\n"));
+				}
 				if (reply)
 				{
 					key = ctx_id_table[l->hdr_req.context_id];
 					reply = become_vuser(&key);
 
+				}
+				if (!reply)
+				{
+					DEBUG(10, ("become_vuser failed: "
+						   "%d %d\n", key.pid,
+						   key.vuid));
 				}
 				if (reply)
 				{

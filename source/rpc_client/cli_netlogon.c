@@ -490,7 +490,7 @@ uint32 cli_net_sam_logon(const char *srv_name, const char *cli_hostname,
 
 		net_io_r_sam_logon("", &r_s, &rbuf, 0);
 
-		if (rbuf.offset != 0)
+		if (rbuf.offset == 0)
 		{
 			status = NT_STATUS_INVALID_PARAMETER;
 		}

@@ -218,7 +218,7 @@ static uint32 remote_interactive(const NET_ID_INFO_1 * id1,
 	uint32 status;
 	char nt_pwd[16];
 	char lm_pwd[16];
-	unsigned char key[16];
+	uchar key[16];
 
 	memset(key, 0, 16);
 	memcpy(key, dc->sess_key, 8);
@@ -274,7 +274,7 @@ static uint32 net_login_interactive(const NET_ID_INFO_1 * id1,
 
 	char nt_pwd[16];
 	char lm_pwd[16];
-	unsigned char key[16];
+	uchar key[16];
 
 	memset(key, 0, 16);
 	memcpy(key, dc->sess_key, 8);
@@ -343,7 +343,7 @@ static uint32 net_login_general(const NET_ID_INFO_4 * id4,
 #endif
 		       NULL))
 	{
-		unsigned char key[16];
+		uchar key[16];
 		memset(key, 0, 16);
 		memcpy(key, dc->sess_key, 8);
 #ifdef DEBUG_PASSWORD
@@ -373,7 +373,7 @@ static uint32 remote_network(const NET_ID_INFO_2 * id2,
 	const UNISTR2 *uni_samnam = &id2->uni_domain_name;
 	fstring user;
 	fstring domain;
-	unsigned char key[16];
+	uchar key[16];
 	uint32 status;
 	int nt_pw_len = id2->hdr_nt_chal_resp.str_str_len;
 	int lm_pw_len = id2->hdr_lm_chal_resp.str_str_len;
@@ -422,7 +422,7 @@ static uint32 net_login_network(const NET_ID_INFO_2 * id2,
 	fstring user;
 	fstring domain;
 	SAM_USERINFO_CTR ctr;
-	unsigned char key[16];
+	uchar key[16];
 	uint32 status;
 	int nt_pw_len = id2->hdr_nt_chal_resp.str_str_len;
 	int lm_pw_len = id2->hdr_lm_chal_resp.str_str_len;
@@ -778,7 +778,7 @@ uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 		      const uint8 pwd[16], DOM_CRED * srv_cred)
 {
 	pstring trust_acct;
-	unsigned char hash3_pwd[16];
+	uchar hash3_pwd[16];
 	uint32 status_pwd;
 	fstring trust_name;
 	struct dcinfo dc;
@@ -1066,10 +1066,21 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	if (lm_pw_len <= 1 && nt_pw_len == 0 &&
 	    strlen(nt_username) == 0 && strlen(nt_samname) == 0)
 	{
+		uchar key[16];
 		char *guest_acct = lp_guestaccount(-1);
 		anonymouse = guest_acct && guest_acct[0];
 		DEBUG(5,("Anonymous Access allowed: %s\n",
 					BOOLSTR(anonymouse)));
+
+		memset(lm_pw8, 0, 8);
+		memset(key, 0, 16);
+		memcpy(key, dc.sess_key, 8);
+		dump_data_pw("key:", key, 16);
+		dump_data_pw("lm_pw8:", lm_pw8, 16);
+		SamOEMhash((uchar *) lm_pw8, key, 3);
+		dump_data_pw("encrypt of lm_pw8:", lm_pw8, 16);
+
+		padding = lm_pw8;
 	}
 
 	/*
