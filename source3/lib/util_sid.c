@@ -42,6 +42,7 @@ DOM_SID global_sid_Builtin_Guests;			/* Builtin guest users */
 DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
 DOM_SID global_sid_Network;					/* Network rids */
 DOM_SID global_sid_Anonymous;				/* Anonymous login */
+DOM_SID global_sid_nonexistent;     		/* S-0-0. Used in Lsa level 3. */
 
 const DOM_SID *global_sid_everyone = &global_sid_World;
 
@@ -182,6 +183,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
 	string_to_sid(&global_sid_Network, "S-1-5-2");
 	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
+	string_to_sid(&global_sid_nonexistent, "S-0-0"); /* Used in Lsa level 3. */
 
 	/* Create the anon token. */
 	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
@@ -360,10 +362,10 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
    
-BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
+BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
   pstring tok;
-  char *p = sidstr;
+  const char *p = sidstr;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
 
