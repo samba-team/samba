@@ -281,16 +281,18 @@ static void delete_map_list(ubi_slList *map_list)
 }
 
 
-/***************************************************************************
- maps a domain sid to user name
- ***************************************************************************/
+/**************************************************************************
+ makes a group sid out of a domain sid and a _unix_ gid.
+***************************************************************************/
 static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 {
 	int ret = False;
 	fstring sid_str;
- 
+
 	if (!map_domain_name_to_sid(&grp->sid, &(grp->nt_domain)))
 	{
+		DEBUG(0,("make_mydomain_sid: unknown domain %s\n",
+			  grp->nt_domain));
 		return False;
 	}
 
@@ -330,25 +332,34 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 		}
 		ret = True;
 	}
-	switch(type) {
-		case DOM_MAP_LOCAL:
-			if(grp->type != SID_NAME_ALIAS)
-				return False;
-			break;
-		case DOM_MAP_DOMAIN:
-			if(grp->type != SID_NAME_DOM_GRP)
-				return False;
-			break;
-		case DOM_MAP_USER:
-			if(grp->type != SID_NAME_USER)
-				return False;
-			break;
+	else
+	{
+		switch (type)
+		{
+			case DOM_MAP_USER:
+			{
+				grp->type = SID_NAME_USER;
+				break;
+			}
+			case DOM_MAP_DOMAIN:
+			{
+				grp->type = SID_NAME_DOM_GRP;
+				break;
+			}
+			case DOM_MAP_LOCAL:
+			{
+				grp->type = SID_NAME_ALIAS;
+				break;
+			}
+		}
+
+		ret = pwdb_unixid_to_sam_sid(grp->unix_id, grp->type, &grp->sid);
 	}
 
 	sid_to_string(sid_str, &grp->sid);
 	DEBUG(10,("nt name %s\\%s gid %d mapped to %s\n",
 	           grp->nt_domain, grp->nt_name, grp->unix_id, sid_str));
-	return True;
+	return ret;
 }
 
 /**************************************************************************
