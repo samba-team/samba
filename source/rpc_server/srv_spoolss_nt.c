@@ -715,7 +715,6 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	PRINTER_MESSAGE_INFO msg;
-	pid_t my_pid = sys_getpid();
 	
 	if (len < sizeof(msg)) {
 		DEBUG(2,("srv_spoolss_receive_message: got incorrect message size (%u)!\n", (unsigned int)len));
@@ -723,11 +722,6 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 	}
 
 	memcpy(&msg, buf, sizeof(PRINTER_MESSAGE_INFO));
-	
-	if (my_pid == src) {
-		DEBUG(10,("srv_spoolss_receive_message: Skipping message to myself\n"));
-		return;
-	}
 	
 	DEBUG(10,("srv_spoolss_receive_message: Got message printer change [queue = %s] low=0x%x  high=0x%x flags=0x%x\n",
 		msg.printer_name, (unsigned int)msg.low, (unsigned int)msg.high, msg.flags ));
@@ -5050,12 +5044,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	fstrcpy(msg.printer_name, printer->info_2->printername);
 
 	/* only send a notify if something changed */
-	if (msg.flags)
-	{
-		/* send to myself before replying to SetPrinter() */	
-		send_spoolss_event_notification(&msg);
-	
-		/* send to other smbd's */
+	if (msg.flags) {
 		srv_spoolss_sendnotify(msg.printer_name, 0, PRINTER_CHANGE_ADD_PRINTER, msg.flags);
 	}
 
