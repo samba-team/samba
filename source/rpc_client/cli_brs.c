@@ -50,8 +50,8 @@ BOOL brs_query_info( const char *srv_name, uint32 switch_value,
 
 	if (id == NULL) return False;
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api BRS_QUERY_INFO */
 

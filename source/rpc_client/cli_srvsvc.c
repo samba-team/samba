@@ -53,8 +53,8 @@ BOOL srv_net_srv_tprt_enum(
 		return False;
 	}
 
-	prs_init(&data , 1024, 4, False);
-	prs_init(&rdata, 0   , 4, True );
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
 
 	/* create and send a MSRPC command with api SRV_NETTPRTENUM */
 
@@ -137,8 +137,8 @@ BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 		return False;
 	}
 
-	prs_init(&data , 1024, 4, False);
-	prs_init(&rdata, 0   , 4, True );
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
 
 	/* create and send a MSRPC command with api SRV_NETCONNENUM */
 
@@ -221,8 +221,8 @@ BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 		return False;
 	}
 
-	prs_init(&data , 1024, 4, False);
-	prs_init(&rdata, 0   , 4, True );
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
 
 	/* create and send a MSRPC command with api SRV_NETSESSENUM */
 
@@ -305,8 +305,8 @@ BOOL srv_net_srv_share_enum( char *srv_name,
 		return False;
 	}
 
-	prs_init(&data , 1024, 4, False);
-	prs_init(&rdata, 0   , 4, True );
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
 
 	/* create and send a MSRPC command with api SRV_NETSHAREENUM */
 
@@ -391,8 +391,8 @@ BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 		return False;
 	}
 
-	prs_init(&data , 1024, 4, False);
-	prs_init(&rdata, 0   , 4, True );
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
 
 	/* create and send a MSRPC command with api SRV_NETFILEENUM */
 
@@ -475,8 +475,8 @@ BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 		return False;
 	}
 
-	prs_init(&data , 1024, 4, False);
-	prs_init(&rdata, 0   , 4, True );
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
 
 	/* create and send a MSRPC command with api SRV_NET_SRV_GET_INFO */
 
@@ -548,8 +548,8 @@ BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod)
 		return False;
 	}
 
-	prs_init(&data , 1024, 4, False);
-	prs_init(&rdata, 0   , 4, True );
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
 
 	/* create and send a MSRPC command with api SRV_NET_REMOTE_TOD */
 

@@ -54,8 +54,8 @@ BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
 
 	if (count == NULL || printers == NULL) return False;
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 
@@ -125,8 +125,8 @@ uint32 spoolss_enum_jobs( const POLICY_HND *hnd,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -210,8 +210,8 @@ BOOL spoolss_open_printer_ex( const char *printername,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api SPOOLSS_OPENPRINTEREX */
 
@@ -271,8 +271,8 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api SPOOLSS_CLOSEPRINTER */
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	DEBUG(4,("SPOOL Close Printer\n"));
 

@@ -105,9 +105,10 @@ static BOOL decode_ntlmssp_pdu(struct cli_connection *con,
 	{
 		RPC_HDR_AUTH         rhdr_auth; 
 		prs_struct auth_req;
-		char *data = prs_data(rdata, len - auth_len - 8);
 		prs_init(&auth_req , 0x0, 4, True);
-		prs_append_data(&auth_req, data, 8);
+		prs_append_data(&auth_req,
+		                prs_data(rdata, len - auth_len - 8),
+		                8);
 		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &auth_req, 0);
 		prs_free_data(&auth_req);
 
@@ -135,8 +136,7 @@ static BOOL decode_ntlmssp_pdu(struct cli_connection *con,
 
 	if (auth_verify)
 	{
-		char *data = prs_data(rdata, 0x18);
-		crc32 = crc32_calc_buffer(data_len, data);
+		crc32 = crc32_calc_buffer(data_len, prs_data(rdata, 0x18));
 		if (!rpc_auth_ntlmssp_chk(&chk, crc32 , a->ntlmssp_seq_num))
 		{
 			return False;
@@ -155,7 +155,6 @@ static BOOL create_ntlmssp_pdu(struct cli_connection *con,
 				prs_struct *dataa,
 				uint8 *flags)
 {
-	/* fudge this, at the moment: create the header; memcpy the data.  oops. */
 	prs_struct data_t;
 	prs_struct hdr;
 	prs_struct hdr_auth;
@@ -166,7 +165,7 @@ static BOOL create_ntlmssp_pdu(struct cli_connection *con,
 	BOOL auth_verify;
 	BOOL auth_seal;
 	uint32 crc32 = 0;
-	char *d = prs_data(data, data_start);
+
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 	ntlmssp_auth_struct *a;
 	a = (ntlmssp_auth_struct *)cli_conn_get_auth_info(con);
@@ -210,7 +209,7 @@ static BOOL create_ntlmssp_pdu(struct cli_connection *con,
 	prs_init(&hdr_auth , 8       , 4, False);
 	prs_init(&auth_verf, auth_len, 4, False);
 
-	prs_append_data(&data_t, d, data_len);
+	prs_append_data(&data_t, prs_data(data, data_start), data_len);
 	data_t.end = data_t.data_size;
 	data_t.offset = data_t.data_size;
 

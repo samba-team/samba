@@ -269,6 +269,19 @@ void prs_free_data(prs_struct *buf)
 	buf->data_size = 0;
 }
 
+static void *prs_realloc(void *p, size_t size)
+{
+	void *ret;
+	ret = (void *)malloc(size);
+	if (!ret) return NULL;
+	if (p) {
+		memcpy(ret, p, size);
+		*(char*)p = 0;
+	}
+	free(p);
+	return ret;
+}
+
 /*******************************************************************
  reallocate a memory buffer
 ********************************************************************/
@@ -284,7 +297,7 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 		return True;
 	}
 
-	new_data = (char*)Realloc(buf->data, new_size);
+	new_data = (char*)prs_realloc(buf->data, new_size);
 
 	if (new_data != NULL)
 	{
@@ -297,12 +310,12 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 	}
 	else if (buf->data_size >= new_size)
 	{
-		DEBUG(3,("prs_realloc: warning - could not realloc to %d\n",
+		DEBUG(3,("prs_realloc_data: warning - could not realloc to %d\n",
 				  new_size));
 	}
 	else 
 	{
-		DEBUG(3,("prs_realloc: error - could not realloc to %d\n",
+		DEBUG(3,("prs_realloc_data: error - could not realloc to %d\n",
 				  new_size));
 
 		prs_free_data(buf);

@@ -66,13 +66,13 @@ static BOOL api_ntlmssp_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *)l->auth_info;
 
 	BOOL ret;
-	char *data;
 	BOOL auth_verify = IS_BITS_SET_ALL(a->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal   = IS_BITS_SET_ALL(a->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SEAL);
 	uint32 data_len;
 	uint32 auth_len;
 	uint32 data_end = l->rdata.offset + (l->auth ? (8 + 16) : 0);
 	uint32 crc32 = 0;
+	char *data;
 
 	prs_struct rhdr;
 	prs_struct rdata_i;
@@ -170,14 +170,12 @@ static BOOL api_ntlmssp_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	if (auth_verify)
 	{
 		RPC_AUTH_NTLMSSP_CHK ntlmssp_chk;
-		char *auth_data;
 		a->ntlmssp_seq_num++;
 		make_rpc_auth_ntlmssp_chk(&ntlmssp_chk,
 					  NTLMSSP_SIGN_VERSION, crc32,
 					  a->ntlmssp_seq_num++);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &ntlmssp_chk, &rverf, 0);
-		auth_data = prs_data(&rverf, 4);
-		NTLMSSPcalc_p(a, (uchar*)auth_data, 12);
+		NTLMSSPcalc_p(a, (uchar*)prs_data(&rverf, 4), 12);
 	}
 	prs_link(NULL    , &rhdr   , &rdata_i);
 	prs_link(&rhdr   , &rdata_i, &rauth  );
@@ -579,9 +577,11 @@ static BOOL api_ntlmssp_decode_pdu(rpcsrv_struct *l)
 	if (auth_verify)
 	{
 		RPC_AUTH_NTLMSSP_CHK ntlmssp_chk;
-		char *req_data = prs_data(&l->data_i, l->data_i.offset + 4);
-		DEBUG(5,("api_pipe_auth_process: auth %d\n", l->data_i.offset + 4));
-		NTLMSSPcalc_p(a, (uchar*)req_data, 12);
+		DEBUG(5,("api_pipe_auth_process: auth %d\n",
+		          l->data_i.offset + 4));
+		NTLMSSPcalc_p(a, (uchar*)prs_data(&l->data_i,
+		                                  l->data_i.offset + 4),
+		                 12);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &ntlmssp_chk, &l->data_i, 0);
 
 		if (!rpc_auth_ntlmssp_chk(&ntlmssp_chk, crc32,

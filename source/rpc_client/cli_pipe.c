@@ -242,9 +242,9 @@ static BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data,
 #endif
 
 	{
-		char *d = prs_data(&rpdu, rpdu.offset);
-		int l = rhdr.frag_len - rpdu.offset;
-		prs_append_data(rdata, d, l);
+		prs_append_data(rdata,
+		                prs_data(&rpdu, rpdu.offset),
+		                rhdr.frag_len - rpdu.offset);
 		prs_free_data(&rpdu);
 	}
 
@@ -373,9 +373,9 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	}
 
 	{
-		char *d = prs_data(&rpdu, rpdu.offset);
-		int l = rhdr.frag_len - rpdu.offset;
-		prs_append_data(rdata, d, l);
+		prs_append_data(rdata,
+		                prs_data(&rpdu, rpdu.offset),
+		                rhdr.frag_len - rpdu.offset);
 		prs_free_data(&rpdu);
 	}
 
@@ -430,9 +430,9 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		}
 
 		{
-			char *d = prs_data(&rpdu, rpdu.offset);
-			int l = rhdr.frag_len - rpdu.offset;
-			prs_append_data(rdata, d, l);
+			prs_append_data(rdata,
+			                prs_data(&rpdu, rpdu.offset),
+			                rhdr.frag_len - rpdu.offset);
 			prs_free_data(&rpdu);
 		}
 	}

@@ -42,8 +42,8 @@ BOOL event_open(const char* srv_name, const char *log, POLICY_HND *hnd)
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* store the parameters */
 	make_eventlog_q_open(&q, log, NULL);
@@ -91,8 +91,8 @@ BOOL event_close( POLICY_HND *hnd)
 	EVENTLOG_Q_CLOSE q;
 	BOOL p = False;
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* store the parameters */
 	make_eventlog_q_close(&q, hnd);
@@ -134,8 +134,8 @@ BOOL event_numofeventlogrec( POLICY_HND *hnd, uint32 *number)
 	EVENTLOG_Q_NUMOFEVENTLOGREC q;
 	BOOL p = False;
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* store the parameters */
 	make_eventlog_q_numofeventlogrec(&q, hnd);
@@ -182,8 +182,8 @@ BOOL event_readeventlog(POLICY_HND *hnd,
 	EVENTLOG_R_READEVENTLOG r;
 	BOOL p = False;
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* store the parameters */
 	make_eventlog_q_readeventlog(&q, hnd, flags, offset, *number_of_bytes);

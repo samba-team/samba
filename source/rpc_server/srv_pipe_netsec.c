@@ -39,11 +39,11 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	netsec_auth_struct *a = (netsec_auth_struct *)l->auth_info;
 
 	BOOL ret;
-	char *data;
 	uint32 data_len;
 	uint32 frag_len;
 	uint32 auth_len;
 	uint32 data_end = l->rdata.offset + 8 + 0x20;
+	char *data;
 
 	prs_struct rhdr;
 	prs_struct rdata_i;
@@ -113,7 +113,6 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 
 	/* don't use rdata: use rdata_i instead, which moves... */
 	/* make a pointer to the rdata data, NOT A COPY */
-
 	data = prs_data(&l->rdata, data_start);
 	prs_create(&rdata_i, data, data_len, l->rdata.align, rdata_i.io); 
 	rdata_i.offset = data_len;
@@ -359,7 +358,6 @@ static BOOL api_netsec_decode_pdu(rpcsrv_struct *l)
 	uint32 old_offset;
 	RPC_HDR_AUTH auth_info;
 	RPC_AUTH_NETSEC_CHK netsec_chk;
-	char *data = prs_data(&l->data_i, l->data_i.offset);
 
 	auth_len = l->hdr.auth_len;
 
@@ -382,7 +380,9 @@ static BOOL api_netsec_decode_pdu(rpcsrv_struct *l)
 
 	smb_io_rpc_auth_netsec_chk("auth_sign", &netsec_chk, &l->data_i, 0);
 
-	if (!netsec_decode(a, &netsec_chk, data, data_len))
+	if (!netsec_decode(a, &netsec_chk,
+	                   prs_data(&l->data_i, l->data_i.offset),
+	                   data_len))
 	{
 		return False;
 	}

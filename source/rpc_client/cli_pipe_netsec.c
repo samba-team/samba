@@ -100,7 +100,6 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	prs_struct hdr_auth;
 	prs_struct auth_verf;
 	int data_len;
-	size_t len;
 	int frag_len;
 	int auth_len;
 	char *d = prs_data(data, data_start);
@@ -109,7 +108,6 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	BOOL ret;
 	RPC_HDR_AUTH  auth_info;
 	RPC_AUTH_NETSEC_CHK verf;
-	char *data_buf;
 	uchar sign[8];
 
 	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
@@ -151,9 +149,6 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	data_t.end = data_t.data_size;
 	data_t.offset = data_t.data_size;
 
-	data_buf = prs_data(&data_t, 0);
-	len      = prs_buf_len(&data_t);
-
 	create_rpc_request(&hdr, op_num, (*flags), frag_len, auth_len);
 
 	DEBUG(5,("create_netsec_reply: data %d auth %d\n",
@@ -166,7 +161,9 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	sign[4] = 0x80;
 
 	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, NULL, sign, NULL);
-	ret = netsec_encode(a, &verf, data_buf, len);
+
+	ret = netsec_encode(a, &verf, prs_data(&data_t, 0),
+	                              prs_buf_len(&data_t));
 
 	if (ret)
 	{
