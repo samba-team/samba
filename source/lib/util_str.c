@@ -36,11 +36,11 @@ void set_first_token(char *ptr)
 Based on a routine by GJC@VILLAGE.COM. 
 Extensively modified by Andrew.Tridgell@anu.edu.au
 ****************************************************************************/
-BOOL next_token(char **ptr,char *buff,char *sep, int bufsize)
+BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 {
   char *s;
   BOOL quoted;
-  int len=1;
+  size_t len=1;
 
   if (!ptr) ptr = &last_ptr;
   if (!ptr) return(False);
@@ -188,7 +188,7 @@ int StrCaseCmp(const char *s, const char *t)
 /*******************************************************************
   case insensitive string compararison, length limited
 ********************************************************************/
-int StrnCaseCmp(char *s, char *t, int n)
+int StrnCaseCmp(const char *s, const char *t, size_t n)
 {
   /* compare until we run out of string, either t or s, or chars */
   /* We *must* use toupper rather than tolower here due to the
@@ -283,7 +283,7 @@ BOOL strequal(const char *s1, const char *s2)
 /*******************************************************************
   compare 2 strings up to and including the nth char.
   ******************************************************************/
-BOOL strnequal(char *s1,char *s2,int n)
+BOOL strnequal(const char *s1,const char *s2,size_t n)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2 || !n) return(False);
@@ -294,7 +294,7 @@ BOOL strnequal(char *s1,char *s2,int n)
 /*******************************************************************
   compare 2 strings (case sensitive)
 ********************************************************************/
-BOOL strcsequal(char *s1,char *s2)
+BOOL strcsequal(const char *s1,const char *s2)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2) return(False);
@@ -343,7 +343,7 @@ void strlower(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      int skip = skip_multibyte_char( *s );
+      size_t skip = skip_multibyte_char( *s );
       if( skip != 0 )
         s += skip;
       else
@@ -396,7 +396,7 @@ void strupper(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      int skip = skip_multibyte_char( *s );
+      size_t skip = skip_multibyte_char( *s );
       if( skip != 0 )
         s += skip;
       else
@@ -439,7 +439,7 @@ BOOL strisnormal(char *s)
 ****************************************************************************/
 void string_replace(char *s,char oldc,char newc)
 {
-  int skip;
+  size_t skip;
   while (*s)
   {
     skip = skip_multibyte_char( *s );
@@ -458,11 +458,11 @@ void string_replace(char *s,char oldc,char newc)
 /*******************************************************************
 skip past some strings in a buffer
 ********************************************************************/
-char *skip_string(char *buf,int n)
+char *skip_string(const char *buf,size_t n)
 {
   while (n--)
     buf += strlen(buf) + 1;
-  return(buf);
+  return((char *)buf);
 }
 
 /*******************************************************************
@@ -472,7 +472,7 @@ char *skip_string(char *buf,int n)
  16.oct.98, jdblair@cobaltnet.com.
 ********************************************************************/
 
-size_t str_charnum(char *s)
+size_t str_charnum(const char *s)
 {
   size_t len = 0;
   
@@ -488,7 +488,7 @@ size_t str_charnum(char *s)
 trim the specified elements off the front and back of a string
 ********************************************************************/
 
-BOOL trim_string(char *s,char *front,char *back)
+BOOL trim_string(char *s,const char *front,const char *back)
 {
   BOOL ret = False;
   size_t front_len = (front && *front) ? strlen(front) : 0;
@@ -584,7 +584,7 @@ BOOL trim_string(char *s,char *front,char *back)
 /****************************************************************************
 does a string have any uppercase chars in it?
 ****************************************************************************/
-BOOL strhasupper(char *s)
+BOOL strhasupper(const char *s)
 {
   while (*s) 
   {
@@ -615,7 +615,7 @@ BOOL strhasupper(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      int skip = skip_multibyte_char( *s );
+      size_t skip = skip_multibyte_char( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -631,7 +631,7 @@ BOOL strhasupper(char *s)
 /****************************************************************************
 does a string have any lowercase chars in it?
 ****************************************************************************/
-BOOL strhaslower(char *s)
+BOOL strhaslower(const char *s)
 {
   while (*s) 
   {
@@ -670,7 +670,7 @@ BOOL strhaslower(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      int skip = skip_multibyte_char( *s );
+      size_t skip = skip_multibyte_char( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -686,9 +686,9 @@ BOOL strhaslower(char *s)
 /****************************************************************************
 find the number of chars in a string
 ****************************************************************************/
-int count_chars(char *s,char c)
+size_t count_chars(const char *s,char c)
 {
-  int count=0;
+  size_t count=0;
 
 #if !defined(KANJI_WIN95_COMPATIBILITY)
   /*
@@ -720,7 +720,7 @@ int count_chars(char *s,char c)
   {
     while (*s) 
     {
-      int skip = skip_multibyte_char( *s );
+      size_t skip = skip_multibyte_char( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -739,9 +739,9 @@ int count_chars(char *s,char c)
 safe string copy into a known length string. maxlength does not
 include the terminating zero.
 ********************************************************************/
-char *safe_strcpy(char *dest,const char *src, int maxlength)
+char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
-    int len;
+    size_t len;
 
     if (!dest) {
         DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
@@ -770,9 +770,9 @@ char *safe_strcpy(char *dest,const char *src, int maxlength)
 safe string cat into a string. maxlength does not
 include the terminating zero.
 ********************************************************************/
-char *safe_strcat(char *dest, char *src, int maxlength)
+char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
-    int src_len, dest_len;
+    size_t src_len, dest_len;
 
     if (!dest) {
         DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
@@ -800,7 +800,7 @@ char *safe_strcat(char *dest, char *src, int maxlength)
 /****************************************************************************
 this is a safer strcpy(), meant to prevent core dumps when nasty things happen
 ****************************************************************************/
-char *StrCpy(char *dest,char *src)
+char *StrCpy(char *dest,const char *src)
 {
   char *d = dest;
 
@@ -819,7 +819,7 @@ char *StrCpy(char *dest,char *src)
 /****************************************************************************
 like strncpy but always null terminates. Make sure there is room!
 ****************************************************************************/
-char *StrnCpy(char *dest,const char *src,int n)
+char *StrnCpy(char *dest,const char *src,size_t n)
 {
   char *d = dest;
   if (!dest) return(NULL);
@@ -837,10 +837,10 @@ char *StrnCpy(char *dest,const char *src,int n)
 like strncpy but copies up to the character marker.  always null terminates.
 returns a pointer to the character marker in the source string (src).
 ****************************************************************************/
-char *strncpyn(char *dest, const char *src,int n, char c)
+char *strncpyn(char *dest, const char *src,size_t n, char c)
 {
 	char *p;
-	int str_len;
+	size_t str_len;
 
 	p = strchr(src, c);
 	if (p == NULL)
@@ -866,10 +866,10 @@ char *strncpyn(char *dest, const char *src,int n, char c)
  valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
 
 **************************************************************/
-int strhex_to_str(char *p, int len, const char *strhex)
+size_t strhex_to_str(char *p, size_t len, const char *strhex)
 {
-	int i;
-	int num_chars = 0;
+	size_t i;
+	size_t num_chars = 0;
 	unsigned char   lonybble, hinybble;
 	char           *hexchars = "0123456789ABCDEF";
 	char           *p1 = NULL, *p2 = NULL;
@@ -935,9 +935,9 @@ static char *null_string = NULL;
 /****************************************************************************
 set a string value, allocing the space for the string
 ****************************************************************************/
-BOOL string_init(char **dest,char *src)
+BOOL string_init(char **dest,const char *src)
 {
-  int l;
+  size_t l;
   if (!src)     
     src = "";
 
@@ -983,7 +983,7 @@ void string_free(char **s)
 set a string value, allocing the space for the string, and deallocating any 
 existing space
 ****************************************************************************/
-BOOL string_set(char **dest,char *src)
+BOOL string_set(char **dest,const char *src)
 {
   string_free(dest);
 
@@ -999,11 +999,11 @@ insert. It may do multiple replacements.
 
 return True if a substitution was done.
 ****************************************************************************/
-BOOL string_sub(char *s,char *pattern,char *insert)
+BOOL string_sub(char *s,const char *pattern,const char *insert)
 {
   BOOL ret = False;
   char *p;
-  int ls,lp,li;
+  size_t ls,lp,li;
 
   if (!insert || !pattern || !s) return(False);
 

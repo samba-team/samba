@@ -390,6 +390,9 @@
 /* Define if you have the execl function.  */
 #undef HAVE_EXECL
 
+/* Define if you have the fopen64 function.  */
+#undef HAVE_FOPEN64
+
 /* Define if you have the fseek64 function.  */
 #undef HAVE_FSEEK64
 
@@ -464,6 +467,9 @@
 
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
+
+/* Define if you have the mmap64 function.  */
+#undef HAVE_MMAP64
 
 /* Define if you have the open64 function.  */
 #undef HAVE_OPEN64

@@ -36,7 +36,7 @@ static void do_filehash(char *fname, unsigned char *hash)
 	unsigned char tmp_md4[16];
 	int fd, n;
 
-	fd = open(fname,O_RDONLY);
+	fd = sys_open(fname,O_RDONLY,0);
 	if (fd == -1) return;
 
 	while ((n = read(fd, (char *)buf, sizeof(buf))) > 0) {
@@ -121,7 +121,7 @@ static uint32 do_reseed(unsigned char *md4_outbuf)
 
   memset(md4_inbuf, '\0', sizeof(md4_inbuf));
 
-  fd = open( "/dev/random", O_RDONLY);
+  fd = sys_open( "/dev/random", O_RDONLY,0);
   if(fd >= 0) {
     /* 
      * We can use /dev/random !

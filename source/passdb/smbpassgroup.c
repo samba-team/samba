@@ -77,9 +77,8 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 	static pstring  user_name;
 	struct passwd *pwfile;
 	pstring		linebuf;
-	unsigned char  *p;
+	char  *p;
 	int            uidval;
-	size_t            linebuf_len;
 
 	if (vp == NULL)
 	{
@@ -92,7 +91,7 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 	/*
 	 * Scan the file, a line at a time.
 	 */
-	while ((linebuf_len = getfileline(vp, linebuf, sizeof(linebuf))) > 0)
+	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
 	{
 		/*
 		 * The line we have should be of the form :-

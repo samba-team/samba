@@ -40,7 +40,7 @@ void smbw_setup_shared(void)
 	fstrcpy(name,(char *)mktemp(s));
 
 	/* note zero permissions! don't change this */
-	fd = open(name,O_RDWR|O_CREAT|O_TRUNC|O_EXCL,0); 
+	fd = sys_open(name,O_RDWR|O_CREAT|O_TRUNC|O_EXCL,0); 
 	if (fd == -1) goto failed;
 	unlink(name);
 

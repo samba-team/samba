@@ -168,10 +168,10 @@ AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
-AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64)
+AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
-AC_CHECK_FUNCS(srandom random srand rand setenv)
+AC_CHECK_FUNCS(srandom random srand rand setenv mmap64)
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
 

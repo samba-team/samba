@@ -65,7 +65,7 @@ void smbw_init(void)
 	dbf = stderr;
 
 	if ((p=smbw_getshared("LOGFILE"))) {
-		dbf = fopen(p, "a");
+		dbf = sys_fopen(p, "a");
 	}
 
 	smbw_file_bmap = bitmap_allocate(SMBW_MAX_OPEN);

@@ -38,7 +38,7 @@ pid_t pidfile_pid(char *name)
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
-	f = fopen(pidFile, "r");
+	f = sys_fopen(pidFile, "r");
 	if (!f) {
 		return 0;
 	}
@@ -71,7 +71,7 @@ void pidfile_create(char *name)
       exit(1);
     }
 
-	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY, 0644);
+	fd = sys_open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY, 0644);
 	if (fd < 0) {
 		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile, 
 			 strerror(errno)));

@@ -125,7 +125,7 @@ void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
   }
   DEBUG(10, ("startfilepwent: opening file %s\n", pfile));
 
-  fp = fopen(pfile, update ? "r+b" : "rb");
+  fp = sys_fopen(pfile, update ? "r+b" : "rb");
 
   if (fp == NULL) {
     DEBUG(0, ("startfilepwent: unable to open file %s\n", pfile));

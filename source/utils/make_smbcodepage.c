@@ -190,7 +190,7 @@ The maximum size I will believe is 100k.\n", prog_name, size);
     exit(1);
   }
 
-  if((fp = fopen(input_file, "r")) == NULL)
+  if((fp = sys_fopen(input_file, "r")) == NULL)
   {
     fprintf(stderr, "%s: cannot open file %s for input.\n", prog_name, input_file);
     exit(1);
@@ -283,7 +283,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
   }
 
   /* Now write out the output_buf. */
-  if((fp = fopen(output_file, "w"))==NULL)
+  if((fp = sys_fopen(output_file, "w"))==NULL)
   {
     fprintf(stderr, "%s: Cannot open output file %s. Error was %s.\n",
             prog_name, output_file, strerror(errno));
@@ -339,7 +339,7 @@ code page file.\n", prog_name, input_file);
      is held in little endian format.
    */
     
-  if((fp = fopen( input_file, "r")) == NULL)
+  if((fp = sys_fopen( input_file, "r")) == NULL)
   { 
     fprintf(stderr, "%s: cannot open file %s. Error was %s\n",
               prog_name, input_file, strerror(errno));
@@ -411,7 +411,7 @@ multiple of 4.\n", prog_name, input_file);
   fclose(fp);
     
   /* Now dump the codepage into an ascii file. */
-  if((fp = fopen(output_file, "w")) == NULL)
+  if((fp = sys_fopen(output_file, "w")) == NULL)
   {
     fprintf(stderr, "%s: cannot open file %s. Error was %s\n",
               prog_name, output_file, strerror(errno));

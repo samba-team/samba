@@ -3769,7 +3769,7 @@ else
 fi
 done
 
-for ac_func in setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64
+for ac_func in setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3776: checking for $ac_func" >&5
@@ -3934,7 +3934,7 @@ else
 fi
 done
 
-for ac_func in srandom random srand rand setenv
+for ac_func in srandom random srand rand setenv mmap64
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3941: checking for $ac_func" >&5

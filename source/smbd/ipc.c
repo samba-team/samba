@@ -635,7 +635,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
     pstring fname;
 
     pstrcpy(fname,lp_driverfile());
-    f=fopen(fname,"r");
+    f=sys_fopen(fname,"r");
     if (!f) {
       DEBUG(3,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
       desc->errcode=NERR_notsupported;
@@ -741,7 +741,7 @@ static int get_printerdrivernumber(int snum)
   pstrcpy(fname,lp_driverfile());
 
   DEBUG(4,("In get_printerdrivernumber: %s\n",fname));
-  f=fopen(fname,"r");
+  f=sys_fopen(fname,"r");
   if (!f) {
     DEBUG(3,("get_printerdrivernumber: Can't open %s - %s\n",fname,strerror(errno)));
     return(0);
@@ -999,7 +999,7 @@ static int get_server_info(uint32 servertype,
   pstrcat(fname,"/");
   pstrcat(fname,SERVER_LIST);
 
-  f = fopen(fname,"r");
+  f = sys_fopen(fname,"r");
 
   if (!f) {
     DEBUG(4,("Can't open %s - %s\n",fname,strerror(errno)));

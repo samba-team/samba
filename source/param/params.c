@@ -499,7 +499,7 @@ static FILE *OpenConfFile( char *FileName )
     return( NULL );
     }
 
-  OpenedFile = fopen( FileName, "r" );
+  OpenedFile = sys_fopen( FileName, "r" );
   if( NULL == OpenedFile )
     {
     DEBUG( lvl,

@@ -471,7 +471,7 @@ int main(int argc, char *argv[])
     return(-1);
   }
 
-  inf_file=fopen(argv[1],"r");  
+  inf_file=sys_fopen(argv[1],"r");  
   if (!inf_file)
   {
     fprintf(stderr,"Description file not found, bye\n");

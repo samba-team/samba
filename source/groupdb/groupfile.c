@@ -135,7 +135,7 @@ static char *get_group_members(char *p, int *num_mem, DOMAIN_GRP_MEMBER **member
 		uint8 type;
 		BOOL found = False;
 
-		if (isdigit(name))
+		if (isdigit(name[0]))
 		{
 			uint32 rid = get_number(name);
 			sid_copy(&sid, &global_sam_sid);
@@ -180,14 +180,13 @@ static DOMAIN_GRP *getgrpfilepwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 
 	pstring linebuf;
 	char  *p;
-	size_t            linebuf_len;
 
 	gpdb_init_grp(&gp_buf);
 
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
 	 */
-	while ((linebuf_len = getfileline(vp, linebuf, sizeof(linebuf))) > 0)
+	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
 	{
 		/* get group name */
 

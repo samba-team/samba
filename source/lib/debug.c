@@ -224,9 +224,9 @@ void reopen_logs( void )
       if( dbf )
         (void)fclose( dbf );
       if( append_log )
-        dbf = fopen( debugf, "a" );
+        dbf = sys_fopen( debugf, "a" );
       else
-        dbf = fopen( debugf, "w" );
+        dbf = sys_fopen( debugf, "w" );
       /* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
        * to fix problem where smbd's that generate less
        * than 100 messages keep growing the log.
@@ -331,9 +331,9 @@ va_dcl
       mode_t oldumask = umask( 022 );
 
       if( append_log )
-        dbf = fopen( debugf, "a" );
+        dbf = sys_fopen( debugf, "a" );
       else
-        dbf = fopen( debugf, "w" );
+        dbf = sys_fopen( debugf, "w" );
       (void)umask( oldumask );
       if( dbf )
         {

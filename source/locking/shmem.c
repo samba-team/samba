@@ -318,7 +318,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
   SMB_OFF_T free_slot = -1;
   SMB_OFF_T erased_slot;   
    
-  smb_shm_processes_fd = open(processreg_file, 
+  smb_shm_processes_fd = sys_open(processreg_file, 
                               read_only?O_RDONLY:(O_RDWR|O_CREAT), 
                               SHM_FILE_MODE);
 
@@ -429,7 +429,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    BOOL found = False;
    
    
-   smb_shm_processes_fd = open(processreg_file, O_RDWR);
+   smb_shm_processes_fd = sys_open(processreg_file, O_RDWR, 0);
    if ( smb_shm_processes_fd < 0 )
    {
       DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file open failed with code %s\n",strerror(errno)));
@@ -818,7 +818,7 @@ struct shmem_ops *smb_shm_open(int ronly)
   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %.0f\n",
         file_name,(double)size));
 
-  smb_shm_fd = open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
+  smb_shm_fd = sys_open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
                     SHM_FILE_MODE);
 
   if ( smb_shm_fd < 0 )
@@ -917,9 +917,9 @@ size (%.0f), using filesize\n", (double)filesize, (double)size));
     size = filesize;
   }
    
-  smb_shm_header_p = (struct SmbShmHeader *)mmap(NULL, size, 
+  smb_shm_header_p = (struct SmbShmHeader *)sys_mmap(NULL, size, 
                                read_only?PROT_READ: (PROT_READ | PROT_WRITE), 
-                               MAP_FILE | MAP_SHARED, smb_shm_fd, 0);
+                               MAP_FILE | MAP_SHARED, smb_shm_fd, (SMB_OFF_T)0);
 
   /* 
    * WARNING, smb_shm_header_p can be different for different
