@@ -1,3 +1,7 @@
+Thu Jan 22 21:23:23 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* getarg.c: Fix long form of negative flags.
+
 Mon Dec 29 23:31:10 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* roken.h.in: Include <err.h>, to get linux __progname.
