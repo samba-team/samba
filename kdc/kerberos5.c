@@ -1688,8 +1688,8 @@ need_referral(krb5_principal server, krb5_realm **realms)
        server->name.name_string.len != 2)
 	return FALSE;
  
-    return krb5_get_host_realm_int(context, server->name.name_string.val[1],
-				   FALSE, realms) == 0;
+    return _krb5_get_host_realm_int(context, server->name.name_string.val[1],
+				    FALSE, realms) == 0;
 }
 
 static krb5_error_code
