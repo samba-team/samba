@@ -435,6 +435,6 @@ krb5_get_in_tkt(krb5_context context,
     if(ret) 
 	return ret;
     ret = krb5_cc_store_cred (context, ccache, creds);
-    krb5_free_creds (context, creds);
+    krb5_free_creds_contents (context, creds);
     return ret;
 }

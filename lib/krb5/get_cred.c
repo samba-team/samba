@@ -172,7 +172,6 @@ krb5_get_kdc_cred(krb5_context context,
 			     NULL,
 			     NULL);
 	krb5_free_creds(context, krbtgt);
-	free(krbtgt);
 	if(ret == 0 && rep.part2.nonce != req.req_body.nonce)
 	    ret = KRB5KRB_AP_ERR_MODIFIED;
 	krb5_free_kdc_rep(context, &rep);
