@@ -278,10 +278,10 @@
 	Aliases, and RIDs are shown in <link linkend="WKURIDS">Well-Known User Default RIDs</link> table.
 	</para>
 
-	<para><note>
+	<note><para>
 	When the <parameter>passdb backend</parameter> uses LDAP (<constant>ldapsam</constant>) it is the
 	administrators' responsibility to create the essential Domain Groups, and to assign each its default RID.
-	</note></para>
+	</para></note>
 
 	<para>
 	It is permissible to create any Domain Group that may be necessary, just make certain that the essential

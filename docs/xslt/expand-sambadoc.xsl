@@ -317,12 +317,6 @@
 
 	<xsl:template match="related"><xsl:apply-templates/></xsl:template>
 
-	<xsl:template match="filterline">
-		<xsl:element name="programlisting">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
 	<xsl:template match="//samba:parameterlist">
 		<xsl:apply-templates>
 			<xsl:sort select="varlistentry/term/anchor"/>

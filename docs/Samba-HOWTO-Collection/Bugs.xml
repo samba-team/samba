@@ -151,7 +151,7 @@ prepared for a large volume of log data.
 		<tbody>
 		<row><entry>all</entry><entry>passdb</entry></row>
 		<row><entry>tdb</entry><entry>sam</entry></row>
-		<row><entry>printdrivers</entry>auth<entry></entry></row>
+		<row><entry>printdrivers</entry><entry>auth</entry></row>
 		<row><entry>lanman</entry><entry>winbind</entry></row>
 		<row><entry>smb</entry><entry>vfs</entry></row>
 		<row><entry>rpc_parse</entry><entry>idmap</entry></row>

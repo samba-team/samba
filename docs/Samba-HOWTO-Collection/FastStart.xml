@@ -378,6 +378,7 @@ Added user jackb.
 		</sect3>
 
 		<sect3>
+
 		<title>Secure Read-Write File and Print Server</title>
 
 		<para>
@@ -563,13 +564,13 @@ smb: \> <userinput>q</userinput>
 			</para></step>
 		</procedure>
 
-		</sect3>
+			<para>
+			By now you should be getting the hang of configuration basics. Clearly, it is time to
+			explore slightly more complex examples. For the remainder of this chapter we will abbreviate
+			instructions since there are previous examples.
+			</para>
 
-	<para>
-	By now you should be getting the hang of configuration basics. Clearly, it is time to
-	explore slightly more complex examples. For the remainder of this chapter we will abbreviate
-	instructions since there are previous examples.
-	</para>
+		</sect3>
 
 	</sect2>
 

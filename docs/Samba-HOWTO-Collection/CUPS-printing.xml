@@ -414,9 +414,9 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	In <filename>/etc/cups/mime.types</filename>, make sure this line is
 	present:
 
-	<filterline>
+	<programlisting>
 	 application/octet-stream
-	</filterline>
+	</programlisting>
 
 	<indexterm><primary>/etc/cups/mime.convs</primary></indexterm>
 	<indexterm><primary>/etc/cups/mime.types</primary></indexterm>
@@ -426,9 +426,9 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<indexterm><primary>application/vnd.cups-raw</primary></indexterm>
 
-	<filterline>
+	<programlisting>
 		application/octet-stream   application/vnd.cups-raw   0   - 
-	</filterline>
+	</programlisting>
 
 	If these two files are not set up correctly for raw Windows client
 	printing, you may encounter the dreaded <computeroutput>Unable to
@@ -639,7 +639,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<para>
 
-	<image><imagedescription>Windows printing to a local printer.</imagedescription><imagefile>1small</imagefile></image>
+		<image>
+			<imagedescription>Windows printing to a local printer.</imagedescription>
+			<imagefile>1small</imagefile>
+		</image>
 	</para>
 	</sect2>
 
@@ -732,8 +735,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	</note>
 
 	<para>
-	<image><imagedescription>Printing to a PostScript printer.</imagedescription>
-			<imagefile>2small</imagefile></image>
+		<image>
+			<imagedescription>Printing to a PostScript printer.</imagedescription>
+			<imagefile>2small</imagefile>
+		</image>
 	</para>
 
 
@@ -973,9 +978,9 @@ for <filename>mime.types</filename> and in the comments section of the
 like this:
 
 <indexterm><primary>application/pdf</primary></indexterm>
-<filterline>
+<programlisting>
  application/pdf         pdf string(0,%PDF)
-</filterline>
+</programlisting>
 
 This means if a filename has either a
 <filename>.pdf</filename> suffix or if the magic
@@ -984,9 +989,9 @@ beginning of the file itself (offset 0 from the start), then it is
 a PDF file (<parameter>application/pdf</parameter>).
 Another rule is this: 
 
-<filterline>
+<programlisting>
  application/postscript  ai eps ps string(0,%!) string(0,&lt;04&gt;%!)
-</filterline>
+</programlisting>
 
 If the filename has one of the suffixes
 <filename>.ai</filename>, <filename>.eps</filename>,
@@ -1040,9 +1045,9 @@ conversion filter that can produce the output from the input type
 and virtual costs associated with this conversion. One example line
 reads like this:
 
-<filterline>
+<programlisting>
  application/pdf         application/postscript   33   pdftops
-</filterline>
+</programlisting>
 
 This means that the <parameter>pdftops</parameter> filter will take
 <parameter>application/pdf</parameter> as input and produce
@@ -1052,27 +1057,27 @@ expensive, costing 66 CUPS-$:
 
 <indexterm><primary>pdf</primary></indexterm>
 
-<filterline>
+<programlisting>
  application/vnd.hp-HPGL application/postscript   66   hpgltops
-</filterline>
+</programlisting>
 
 This is the <parameter>hpgltops</parameter>, which processes HP-GL
 plotter files to PostScript.
 
 <indexterm><primary>application/octet-stream</primary></indexterm>
 
-<filterline>
+<programlisting>
  application/octet-stream
-</filterline>
+</programlisting>
 
 Here are two more examples: 
 
 <indexterm><primary>text/plain</primary></indexterm>
 
-<filterline>
+<programlisting>
  application/x-shell     application/postscript   33    texttops
  text/plain              application/postscript   33    texttops
-</filterline>
+</programlisting>
 
 The last two examples name the <parameter>texttops</parameter> filter
 to work on <parameter>text/plain</parameter> as well as on <parameter>application/x-shell</parameter>. (Hint:
@@ -1172,9 +1177,10 @@ print options already embedded into the file.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>Pre-filtering in CUPS to form PostScript.</imagedescription>
-	<imagefile>4small</imagefile>
-</image>
+	<image>
+		<imagedescription>Pre-filtering in CUPS to form PostScript.</imagedescription>
+		<imagefile scale="25">4small</imagefile>
+	</image>
 </para>
 </sect2>
 
@@ -1191,8 +1197,8 @@ stapling and punching it, and so on) into the PostScript file.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>Adding device-specific print options.</imagedescription>
-		<imagefile>5small</imagefile>
+	<image><imagedescription>Adding device-specific print options.</imagedescription>
+		<imagefile scale="25">5small</imagefile>
 	</image>
 </para>
 
@@ -1232,7 +1238,10 @@ that are able to generate device-specific printer data.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>PostScript to intermediate raster format.</imagedescription><imagefile>6small</imagefile></image>
+	<image>
+		<imagedescription>PostScript to intermediate raster format.</imagedescription>
+		<imagefile scale="25">6small</imagefile>
+	</image>
 </para>
 
 <para>
@@ -1249,7 +1258,8 @@ than one vendor financing the development of CUPS raster drivers).
 </para>
 
 <para>
-	<image><imagedescription>CUPS-raster production using Ghostscript.</imagedescription>
+	<image>
+		<imagedescription>CUPS-raster production using Ghostscript.</imagedescription>
 		<imagefile>7small</imagefile>
 	</image>
 </para>
@@ -1285,7 +1295,8 @@ filtering on <link linkend="small8">next picture</link>.
 </para>
 
 <para>
-	<image id="small8"><imagedescription>Image format to CUPS-raster format conversion.</imagedescription>
+	<image id="small8">
+		<imagedescription>Image format to CUPS-raster format conversion.</imagedescription>
 		<imagefile>8small</imagefile>
 	</image>
 </para>
@@ -1310,7 +1321,8 @@ closely as possible with CUPS.
 </para>
 
 <para>
-	<image id="small9"><imagedescription>Raster to printer-specific formats.</imagedescription>
+	<image id="small9">
+		<imagedescription>Raster to printer-specific formats.</imagedescription>
 		<imagefile>9small</imagefile>
 	</image>
 </para>
@@ -1468,9 +1480,9 @@ Printer &amp; Driver Database at Linuxprinting.org.
 You can recognize these PPDs from the line calling the
 <parameter>cupsomatic</parameter> filter:
 
-<filterline>
+<programlisting>
  *cupsFilter: "application/vnd.cups-postscript  0  cupsomatic"
-</filterline>
+</programlisting>
 
 You may find this line among the first 40 or so lines of the PPD
 file. If you have such a PPD installed, the printer shows up in the
@@ -1491,9 +1503,9 @@ and more powerful successor is now in a stable beta-version: it is called <param
 <parameter>foomatic-rip</parameter> as a filter with CUPS, you need the new-type PPDs. These
 have a similar but different line:
 
-<filterline>
+<programlisting>
  *cupsFilter: "application/vnd.cups-postscript  0  foomatic-rip"
-</filterline>
+</programlisting>
 
 The PPD generating engine at Linuxprinting.org has been revamped.
 The new PPDs comply to the Adobe spec. On top, they also provide a
@@ -1613,18 +1625,18 @@ make sure this line is present:
 
 <indexterm><primary>application/octet-stream</primary></indexterm>
 
-<filterline>
+<programlisting>
 application/octet-stream
-</filterline>
+</programlisting>
 
 This line (with no specific auto-typing rule set) makes all files
 not otherwise auto-typed a member of <parameter>application/octet-stream</parameter>. In
 <filename>/etc/cups/mime.convs</filename>, have this
 line: 
 
-<filterline>
+<programlisting>
 application/octet-stream   application/vnd.cups-raw   0   -
-</filterline>
+</programlisting>
 
 <indexterm><primary>MIME</primary></indexterm>
 
@@ -1686,9 +1698,9 @@ CUPS. The most important one looks similar to this:
 
 <indexterm><primary>application/vnd.cups-raster</primary></indexterm>
 
-<filterline>
+<programlisting>
  *cupsFilter: application/vnd.cups-raster  66   rastertoprinter
-</filterline>
+</programlisting>
 
 It is the last piece in the CUPS filtering puzzle. This line tells the
 CUPS daemon to use as a last filter <parameter>rastertoprinter</parameter>. This filter
@@ -1776,7 +1788,8 @@ advantages) than other methods.
 </para>
 
 <para>
-	<image id="cupsomatic-dia"><imagedescription>cupsomatic/foomatic Processing versus Native CUPS.</imagedescription>
+	<image id="cupsomatic-dia">
+		<imagedescription>cupsomatic/foomatic Processing versus Native CUPS.</imagedescription>
 		<imagefile>10small</imagefile>
 	</image>
 </para>
@@ -1785,8 +1798,8 @@ advantages) than other methods.
 One other method is the <parameter>cupsomatic/foomatic-rip</parameter>
 way. Note that <parameter>cupsomatic</parameter> is <emphasis>not</emphasis> made by the CUPS
 developers. It is an independent contribution to printing development,
-made by people from Linuxprinting.org <footnote>see also <ulink
-	noescape="1" url="http://www.cups.org/cups-help.html">http://www.cups.org/cups-help.html</ulink></footnote>.
+made by people from Linuxprinting.org <footnote><para>see also <ulink
+noescape="1" url="http://www.cups.org/cups-help.html">http://www.cups.org/cups-help.html</ulink></para></footnote>.
 <parameter>cupsomatic</parameter> is no longer developed and maintained and is no longer
 supported. It has now been replaced by
 <parameter>foomatic-rip</parameter>. <parameter>foomatic-rip</parameter> is a complete re-write
@@ -1867,7 +1880,10 @@ backend, which transfers the job to the printers.</para></listitem>
 
 <para>
 	The resulting filter chain, therefore, is as drawn in <link linkend="pdftosocket">PDF to socket chain</link>.
-	<image id="pdftosocket"><imagefile>pdftosocket</imagefile><imagedescription>PDF to socket chain.</imagedescription></image>
+	<image id="pdftosocket">
+		<imagedescription>PDF to socket chain.</imagedescription>
+		<imagefile>pdftosocket</imagefile>
+	</image>
 </para>
 
 
@@ -1918,7 +1934,10 @@ which transfers the job to the printers.</para></listitem>
 The resulting filter chain therefore is as drawn in <link linkend="pdftoepsonusb">this figure</link>.
 </para>
 
-<image id="pdftoepsonusb"><imagefile>pdftoepsonusb</imagefile><imagedescription>PDF to USB chain.</imagedescription></image>
+<image id="pdftoepsonusb">
+	<imagedescription>PDF to USB chain.</imagedescription>
+	<imagefile>pdftoepsonusb</imagefile>
+</image>
 </sect2>
 
 <sect2>
@@ -2061,7 +2080,8 @@ clients.
 </para>
 
 <para>
-	<image id="small11"><imagedescription>Print driver execution on the client.</imagedescription>
+	<image id="small11">
+		<imagedescription>Print driver execution on the client.</imagedescription>
 		<imagefile>11small</imagefile>
 	</image>
 </para>
@@ -2087,7 +2107,8 @@ understand.
 </para>
 
 <para>
-	<image id="small12"><imagedescription>Print driver execution on the server.</imagedescription>
+	<image id="small12">
+		<imagedescription>Print driver execution on the server.</imagedescription>
 		<imagefile>12small</imagefile>
 	</image>
 </para>
@@ -2159,9 +2180,10 @@ simply use <smbconfoption name="printing">sysv</smbconfoption>).
 </para>
 
 <para>
-<image><imagedescription>Printing via CUPS/Samba server.</imagedescription>
-	<imagefile>13small</imagefile>
-</image>
+	<image>
+		<imagedescription>Printing via CUPS/Samba server.</imagedescription>
+		<imagefile>13small</imagefile>
+	</image>
 </para>
 </sect2>
 
@@ -3085,7 +3107,8 @@ not intended to, and does not work with, raw queues!
 </para>
 
 <para>
-	<image id="small14"><imagedescription>cupsaddsmb flowchart.</imagedescription>
+	<image id="small14">
+		<imagedescription>cupsaddsmb flowchart.</imagedescription>
 		<imagefile>14small</imagefile></image>
 </para>
 </sect2>
@@ -3791,7 +3814,7 @@ back.
 <para>
 <indexterm significance="preferred"><primary>point 'n' print</primary></indexterm>
 	<screen>
-&dosprompt;<userinput>rundll32 printui.dll,PrintUIEntry /in /n <quote>\\sambaserver\mysmbtstprn</quote></userinput>
+&dosprompt;<userinput>rundll32 printui.dll,PrintUIEntry /in /n &quot;\\sambaserver\mysmbtstprn&quot;</userinput>
 </screen></para>
 
 <para>
@@ -4831,9 +4854,9 @@ in. cupsomatic bypasses pstoraster, kidnaps the printfile from CUPS
 away and redirects it to go through Ghostscript. CUPS accepts this,
 because the associated cupsomatic/foomatic-PPD specifies:
 
-<filterline>
+<programlisting>
   *cupsFilter:  "application/vnd.cups-postscript 0 cupsomatic"
-</filterline>
+</programlisting>
 
 This line persuades CUPS to hand the file to cupsomatic, once it has
 successfully converted it to the MIME type
@@ -4848,10 +4871,10 @@ CUPS is widely configurable and flexible, even regarding its filtering
 mechanism. Another workaround in some situations would be to have in
 <filename>/etc/cups/mime.types</filename> entries as follows:
 
-<filterline>
+<programlisting>
  application/postscript           application/vnd.cups-raw  0  -
  application/vnd.cups-postscript  application/vnd.cups-raw  0  -
-</filterline>
+</programlisting>
 
 This would prevent all PostScript files from being filtered (rather,
 they will through the virtual <emphasis>nullfilter</emphasis>
@@ -4859,9 +4882,9 @@ denoted with <quote>-</quote>). This could only be useful for PS printers. If yo
 want to print PS code on non-PS printers (provided they support ASCII
 text printing), an entry as follows could be useful:
 
-<filterline>
+<programlisting>
  */*           application/vnd.cups-raw  0  -
-</filterline>
+</programlisting>
 
 and would effectively send <emphasis>all</emphasis> files to the
 backend without further processing.
@@ -4870,10 +4893,10 @@ backend without further processing.
 <para>
 You could have the following entry:
 
-<filterline>
+<programlisting>
 application/vnd.cups-postscript application/vnd.cups-raw 0 \
 	my_PJL_stripping_filter
-</filterline>
+</programlisting>
 
 You will need to write a <parameter>my_PJL_stripping_filter</parameter>
 (which could be a shell script) that parses the PostScript and removes the
@@ -5082,9 +5105,9 @@ for: You can include the required parameters as part of the
 </para>
 
 <itemizedlist>
-	<listitem><filename>smb://WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></listitem>
-	<listitem><filename>smb://username:password@WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></listitem>
-	<listitem><filename>smb://username:password@WINDOWSNETBIOSNAME/printersharename</filename></listitem>
+	<listitem><para><filename>smb://WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></para></listitem>
+	<listitem><para><filename>smb://username:password@WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></para></listitem>
+	<listitem><para><filename>smb://username:password@WINDOWSNETBIOSNAME/printersharename</filename></para></listitem>
 </itemizedlist>
 
 <para>
@@ -5108,9 +5131,15 @@ feature of CUPS and you do not necessarily need to have smbd running.
 The following diagrams reveal how CUPS handles print jobs.
 </para>
 
-<image id="cups1"><imagefile>cups1</imagefile><imagedescription>Filtering chain 1.</imagedescription></image>
+<image id="cups1">
+	<imagedescription>Filtering chain 1.</imagedescription>
+	<imagefile>cups1</imagefile>
+</image>
 
-<image id="cups2"><imagefile>cups2</imagefile><imagedescription>Filtering chain with cupsomatic</imagedescription></image>
+<image id="cups2">
+	<imagedescription>Filtering chain with cupsomatic</imagedescription>
+	<imagefile>cups2</imagefile>
+</image>
 
 </sect1>
 
@@ -5411,8 +5440,8 @@ the other way round: <filename>/var/spool/cups/</filename> is set as
 section). These <parameter>must</parameter> be different. Set
 <!--FIXME-->
 <parameter>RequestRoot /var/spool/cups/</parameter> in
-<filename>cupsd.conf</filename> and <smbconfoption><name>path</name><value>
-/var/spool/samba</value></smbconfoption> in the <smbconfsection>[printers]</smbconfsection>
+<filename>cupsd.conf</filename> and <smbconfoption name="path"/>
+/var/spool/samba</smbconfoption> in the <smbconfsection>[printers]</smbconfsection>
 section of &smb.conf;. Otherwise cupsd will
 sanitize permissions to its spool directory with each restart and
 printing will not work reliably.</para></sect2>
@@ -5453,7 +5482,8 @@ files from the Adobe Web site.</para></sect2>
 
 <para>A complete overview of the CUPS printing processes can be found in <link linkend="a_small">the next flowchart</link>.</para>
 
-<image id="a_small"><imagedescription>CUPS printing overview.</imagedescription>
+<image id="a_small">
+	<imagedescription>CUPS printing overview.</imagedescription>
 	<imagefile>a_small</imagefile>
 </image>
 </sect1>

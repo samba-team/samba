@@ -171,7 +171,10 @@ Where a one-way trust has been established between two MS Windows NT4 domains (l
 DomA and DomB), the following facilities are created:
 </para>
 
-<image id="trusts1"><imagefile>trusts1</imagefile><imagedescription>Trusts overview.</imagedescription></image>
+<image id="trusts1">
+	<imagedescription>Trusts overview.</imagedescription>
+	<imagefile>trusts1</imagefile>
+</image>
 
 <itemizedlist>
 	<listitem><para>
@@ -421,10 +424,10 @@ Browsing from a machine in a trusted Windows 200x Domain to a Windows 200x membe
 a trusting samba domain, I get the following error:
 </para>
 
-<formalpara><emphasis>
+<screen>
 The system detected a possible attempt to compromise security. Please ensure that
-you can contact the server that authenticated you.</emphasis>
-</formalpara>
+you can contact the server that authenticated you.
+</screen>
 
 <para>
 The event logs on the box I'm trying to connect to have entries regarding group
