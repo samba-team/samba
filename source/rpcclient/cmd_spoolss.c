@@ -41,6 +41,15 @@ static const struct table_node archi_table[]= {
 	{NULL,                   "",		-1 }
 };
 
+/**
+ * @file
+ *
+ * rpcclient module for SPOOLSS rpc pipe.
+ *
+ * This generally just parses and checks command lines, and then calls
+ * a cli_spoolss function.
+ **/
+
 /****************************************************************************
 function to do the mapping between the long architecture name and
 the short one.
@@ -77,7 +86,7 @@ BOOL get_short_archi(char *short_archi, const char *long_archi)
   */
 static NTSTATUS cmd_spoolss_not_implemented(struct cli_state *cli, 
                                             TALLOC_CTX *mem_ctx,
-                                            int argc, char **argv)
+                                            int argc, const char **argv)
 {
 	printf ("(*) This command is not currently implemented.\n");
 	return NT_STATUS_OK;
@@ -89,7 +98,7 @@ static NTSTATUS cmd_spoolss_not_implemented(struct cli_state *cli,
  */
 static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli, 
                                             TALLOC_CTX *mem_ctx,
-                                            int argc, char **argv)
+                                            int argc, const char **argv)
 {
 	WERROR 	        werror;
 	fstring		printername;
@@ -291,7 +300,7 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 
 static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
-                                          int argc, char **argv)
+                                          int argc, const char **argv)
 {
 	WERROR                  result;
 	uint32			info_level = 1;
@@ -396,7 +405,7 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 
 static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
-				       char **argv)
+				       const char **argv)
 {
 	WERROR         		result;
 	uint32                  needed, info_level = 1;
@@ -448,7 +457,7 @@ static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli,
  */
 static NTSTATUS cmd_spoolss_setprinter(struct cli_state *cli,
                                        TALLOC_CTX *mem_ctx,
-                                       int argc, char **argv)
+                                       int argc, const char **argv)
 {
 	POLICY_HND 	pol;
 	WERROR		result;
@@ -518,7 +527,7 @@ static NTSTATUS cmd_spoolss_setprinter(struct cli_state *cli,
  */
 static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
                                        TALLOC_CTX *mem_ctx,
-                                       int argc, char **argv)
+                                       int argc, const char **argv)
 {
 	POLICY_HND 	pol;
 	WERROR          result;
@@ -637,7 +646,7 @@ static void display_reg_value(REGISTRY_VALUE value)
  */
 static NTSTATUS cmd_spoolss_getprinterdata(struct cli_state *cli,
 					   TALLOC_CTX *mem_ctx,
-					   int argc, char **argv)
+					   int argc, const char **argv)
 {
 	POLICY_HND 	pol;
 	WERROR          result;
@@ -646,7 +655,7 @@ static NTSTATUS cmd_spoolss_getprinterdata(struct cli_state *cli,
 			servername,
 			user;
 	uint32 needed;
-	char *valuename;
+	const char *valuename;
 	REGISTRY_VALUE value;
 
 	if (argc != 3) {
@@ -681,7 +690,7 @@ static NTSTATUS cmd_spoolss_getprinterdata(struct cli_state *cli,
 	/* Get printer info */
 
 	result = cli_spoolss_getprinterdata(cli, mem_ctx, 0, &needed,
-					&pol, valuename, &value);
+					    &pol, valuename, &value);
 
 	if (W_ERROR_V(result) == ERRmoredata)
 		result = cli_spoolss_getprinterdata(
@@ -708,7 +717,7 @@ static NTSTATUS cmd_spoolss_getprinterdata(struct cli_state *cli,
  */
 static NTSTATUS cmd_spoolss_getprinterdataex(struct cli_state *cli,
 					     TALLOC_CTX *mem_ctx,
-					     int argc, char **argv)
+					     int argc, const char **argv)
 {
 	POLICY_HND 	pol;
 	WERROR          result;
@@ -717,7 +726,7 @@ static NTSTATUS cmd_spoolss_getprinterdataex(struct cli_state *cli,
 			servername,
 			user;
 	uint32 needed;
-	char *valuename, *keyname;
+	const char *valuename, *keyname;
 	REGISTRY_VALUE value;
 
 	if (argc != 4) {
@@ -893,7 +902,7 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
  */
 static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli, 
                                       TALLOC_CTX *mem_ctx,
-                                      int argc, char **argv)
+                                      int argc, const char **argv)
 {
 	POLICY_HND 	pol;
 	WERROR          werror;
@@ -983,7 +992,7 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
  */
 static NTSTATUS cmd_spoolss_enum_drivers(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv)
+                                         int argc, const char **argv)
 {
 	WERROR werror;
 	uint32          info_level = 1;
@@ -1071,7 +1080,7 @@ static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
  */
 static NTSTATUS cmd_spoolss_getdriverdir(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv)
+                                         int argc, const char **argv)
 {
 	WERROR result;
 	fstring			env;
@@ -1136,7 +1145,7 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  wrapper for strtok to get the next parameter from a delimited list.
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
-static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
+static char* get_driver_3_param (const char* str, const char* delim, UNISTR* dest)
 {
 	char	*ptr;
 
@@ -1166,7 +1175,7 @@ static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
 static BOOL init_drv_info_3_members (
 	TALLOC_CTX *mem_ctx, 
 	DRIVER_INFO_3 *info, 
-	char *args
+	const char *args
 )
 {
 	char	*str, *str2;
@@ -1215,7 +1224,7 @@ static BOOL init_drv_info_3_members (
 
 static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli, 
                                              TALLOC_CTX *mem_ctx,
-                                             int argc, char **argv)
+                                             int argc, const char **argv)
 {
 	WERROR result;
 	uint32                  level = 3;
@@ -1268,7 +1277,7 @@ static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli,
 
 static NTSTATUS cmd_spoolss_addprinterex(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv)
+                                         int argc, const char **argv)
 {
 	WERROR result;
 	uint32			level = 2;
@@ -1325,7 +1334,7 @@ static NTSTATUS cmd_spoolss_addprinterex(struct cli_state *cli,
 
 static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli, 
                                       TALLOC_CTX *mem_ctx,
-                                      int argc, char **argv)
+                                      int argc, const char **argv)
 {
 	POLICY_HND		pol;
 	WERROR                  result;
@@ -1403,7 +1412,7 @@ done:
 
 static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv)
+                                         int argc, const char **argv)
 {
 	WERROR result;
 	fstring			servername;
@@ -1445,7 +1454,7 @@ static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli,
 
 static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli, 
 					    TALLOC_CTX *mem_ctx,
-					    int argc, char **argv)
+					    int argc, const char **argv)
 {
 	WERROR result;
 	char *servername = NULL, *environment = NULL;
@@ -1488,7 +1497,7 @@ static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli,
 /* Add a form */
 
 static NTSTATUS cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				    int argc, char **argv)
+				    int argc, const char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
@@ -1547,7 +1556,7 @@ static NTSTATUS cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Set a form */
 
 static NTSTATUS cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				    int argc, char **argv)
+				    int argc, const char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
@@ -1605,7 +1614,7 @@ static NTSTATUS cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Get a form */
 
 static NTSTATUS cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				    int argc, char **argv)
+				    int argc, const char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
@@ -1669,7 +1678,7 @@ static NTSTATUS cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
-				       char **argv)
+				       const char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
@@ -1716,7 +1725,7 @@ static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli,
 
 static NTSTATUS cmd_spoolss_enum_forms(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
-				       char **argv)
+				       const char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
@@ -1784,7 +1793,7 @@ static NTSTATUS cmd_spoolss_enum_forms(struct cli_state *cli,
 
 static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
 					    TALLOC_CTX *mem_ctx,
-					    int argc, char **argv)
+					    int argc, const char **argv)
 {
 	WERROR result;
 	uint32 needed;
@@ -1903,7 +1912,7 @@ static void display_job_info_2(JOB_INFO_2 *job)
 
 static NTSTATUS cmd_spoolss_enum_jobs(struct cli_state *cli, 
 				      TALLOC_CTX *mem_ctx, int argc, 
-				      char **argv)
+				      const char **argv)
 {
 	WERROR result;
 	uint32 needed, level = 1, num_jobs, i;
@@ -1978,7 +1987,7 @@ done:
 
 static NTSTATUS cmd_spoolss_enum_data( struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
-				       char **argv)
+				       const char **argv)
 {
 	WERROR result;
 	uint32 i=0, val_needed, data_needed;
@@ -2037,14 +2046,14 @@ done:
 
 static NTSTATUS cmd_spoolss_enum_data_ex( struct cli_state *cli, 
 					  TALLOC_CTX *mem_ctx, int argc, 
-					  char **argv)
+					  const char **argv)
 {
 	WERROR result;
 	uint32 needed, i;
 	BOOL got_hnd = False;
 	pstring printername;
 	fstring servername, user;
-	char *keyname = NULL;
+	const char *keyname = NULL;
 	POLICY_HND hnd;
 	REGVAL_CTR ctr;
 
@@ -2102,7 +2111,7 @@ done:
 
 static NTSTATUS cmd_spoolss_enum_printerkey( struct cli_state *cli, 
 					     TALLOC_CTX *mem_ctx, int argc, 
-					     char **argv)
+					     const char **argv)
 {
 	WERROR result;
 	uint32 needed, returned;
@@ -2174,7 +2183,7 @@ done:
 
 static NTSTATUS cmd_spoolss_rffpcnex(struct cli_state *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
-				     char **argv)
+				     const char **argv)
 {
 	fstring servername, printername;
 	POLICY_HND hnd;
