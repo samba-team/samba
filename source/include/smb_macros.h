@@ -80,17 +80,20 @@
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
 #define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-                               return(ERROR_DOS(ERRDOS,ERRbadfid)); \
-                            else if((fsp)->fd == -1) \
-                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
+			else if((fsp)->fd == -1) \
+				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
-                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
-                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
-								return(CACHED_ERROR(fsp))
+				return(CACHED_ERROR(fsp))
+
+#define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
+				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
 
 /* translates a connection number into a service number */
 #define SNUM(conn)         ((conn)?(conn)->service:-1)

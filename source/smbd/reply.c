@@ -1603,7 +1603,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK);
 
 	if (NT_STATUS_V(status)) {
-		if (lp_blocking_locks(SNUM(conn))) {
+		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -2425,7 +2425,7 @@ int reply_lock(connection_struct *conn,
 
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK);
 	if (NT_STATUS_V(status)) {
-		if (lp_blocking_locks(SNUM(conn))) {
+		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -3860,7 +3860,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
 				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
 		if (NT_STATUS_V(status)) {
-			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
+			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 				/*
 				 * A blocking lock was requested. Package up
 				 * this smb into a queued request and push it
