@@ -188,7 +188,7 @@ uint32 pass_check_smb_with_chal(char *user, char *domain, uchar chal[8],
 			user_info.nt_resp.len = 24;
 		}
 		
-		user_info.plaintext_password.str = lm_pwd;
+		user_info.plaintext_password.str = (char *)lm_pwd;
 		user_info.plaintext_password.len = lm_pwd_len;
 
 	}
@@ -232,11 +232,11 @@ BOOL password_ok(char *user, char *password, int pwlen)
 	
 	/* The password could be either NTLM or plain LM.  Try NTLM first, but fall-through as
 	   required. */
-	if (pass_check_smb(user, lp_workgroup(), NULL, 0, password, pwlen) == NT_STATUS_NOPROBLEMO) {
+	if (pass_check_smb(user, lp_workgroup(), NULL, 0, (unsigned char *)password, pwlen) == NT_STATUS_NOPROBLEMO) {
 		return True;
 	}
 
-	if (pass_check_smb(user, lp_workgroup(), password, pwlen, NULL, 0) == NT_STATUS_NOPROBLEMO) {
+	if (pass_check_smb(user, lp_workgroup(), (unsigned char *)password, pwlen, NULL, 0) == NT_STATUS_NOPROBLEMO) {
 		return True;
 	}
 

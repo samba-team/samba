@@ -205,9 +205,9 @@ use this machine as the password server.\n"));
 	 */
 
 	if (!cli_session_setup(cli, user_info->smb_username.str, 
-			       user_info->lm_resp.buffer, 
+			       (char *)user_info->lm_resp.buffer, 
 			       user_info->lm_resp.len, 
-			       user_info->nt_resp.buffer, 
+			       (char *)user_info->nt_resp.buffer, 
 			       user_info->nt_resp.len, 
 			       user_info->domain.str)) {
 		DEBUG(1,("password server %s rejected the password\n", cli->desthost));

@@ -808,7 +808,7 @@ static BOOL get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
-		enum_group_mapping(SID_NAME_WKN_GRP, &map, &num_entries, ENUM_ALL_MAPPED);
+		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ALL_MAPPED);
 	
 		*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
 		if (*d_grp==NULL)
@@ -919,7 +919,7 @@ static uint32 get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_
 
 	*p_num_entries = 0;
 
-	enum_group_mapping(SID_NAME_DOM_GRP, &map, &group_entries, ENUM_ONLY_MAPPED);
+	enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
 
 	num_entries=group_entries-start_idx;
 
@@ -2523,7 +2523,7 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
-			if (!set_user_info_pw(ctr->info.id24->pass, rid))
+			if (!set_user_info_pw((char *)ctr->info.id24->pass, rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 

@@ -45,7 +45,7 @@ static BOOL smb_pwd_check_ntlmv1(const uchar *password,
   SMBOWFencrypt(part_passwd, c8, p24);
 	if (user_sess_key != NULL)
 	{
-		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key);
+		SMBsesskeygen_ntv1(part_passwd, NULL, (char *)user_sess_key);
 	}
 
 
@@ -84,7 +84,7 @@ static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
 	}
 
 	ntv2_owf_gen(part_passwd, user, domain, kr);
-	SMBOWFencrypt_ntv2(kr, c8, 8, password+16, pwd_len-16, resp);
+	SMBOWFencrypt_ntv2(kr, c8, 8, password+16, pwd_len-16, (char *)resp);
 	if (user_sess_key != NULL)
 	{
 		SMBsesskeygen_ntv2(kr, resp, user_sess_key);
@@ -154,7 +154,7 @@ uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_
 						  nt_pw, 
 						  user_info->chal, user_info->requested_username.str, 
 						  user_info->requested_domain.str,
-						  server_info->session_key))
+						  (char *)server_info->session_key))
 			{
 				return NT_STATUS_NOPROBLEMO;
 			}
