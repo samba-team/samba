@@ -783,6 +783,8 @@ char *lp_string(char *s)
   else
     StrCpy(ret,s);
 
+  trim_string(ret, "\"", "\"");
+
   standard_sub_basic(ret);
   return(ret);
 }
