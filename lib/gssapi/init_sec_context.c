@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -154,6 +154,7 @@ init_auth
     goto failure;
   }
 
+  memset(&this_cred, 0, sizeof(this_cred));
   this_cred.client = (*context_handle)->source;
   this_cred.server = (*context_handle)->target;
   this_cred.times.endtime = 0;
@@ -169,15 +170,9 @@ init_auth
     goto failure;
   }
 
-  {
-      /* XXX ugly */
-      krb5_keyblock *c;
-      krb5_auth_con_getkey(gssapi_krb5_context, 
-			   (*context_handle)->auth_context, 
-			   &c);
-      cred->session = *c;
-      free(c);
-  }
+  krb5_auth_con_setkey(gssapi_krb5_context, 
+		       (*context_handle)->auth_context, 
+		       &cred->session);
   
   kret = gssapi_krb5_create_8003_checksum (input_chan_bindings,
 					   flags,
