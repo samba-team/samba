@@ -271,9 +271,9 @@ to function as a BDC, i.e., <parameter>domain master = No</parameter>.
 #### Keep this as a shell script for future re-use
 			
 # First assign well known domain global groups
-net groupmap modify ntgroup="Domain Admins" unixgroup=root   rid=512
-net groupmap modify ntgroup="Domain Users"  unixgroup=users  rid=513
-net groupmap modify ntgroup="Domain Guests" unixgroup=nobody rid=514
+net groupmap modify ntgroup="Domain Admins" unixgroup=root
+net groupmap modify ntgroup="Domain Users"  unixgroup=users
+net groupmap modify ntgroup="Domain Guests" unixgroup=nobody
 
 # Now for our added domain global groups
 net groupmap add ntgroup="Designers" unixgroup=designers type=d rid=3200
