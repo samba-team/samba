@@ -380,10 +380,10 @@ typedef struct
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct
 {
-  char name[17];
+  fstring name;
   uint32 type;
-  char comment[50];
-  char domain[17]; /* used ONLY in ipc.c NOT namework.c */
+  fstring comment;
+  fstring domain; /* used ONLY in ipc.c NOT namework.c */
   BOOL server_added; /* used ONLY in ipc.c NOT namework.c */
 };
 

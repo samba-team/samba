@@ -51,7 +51,7 @@ extern uint16 nb_type; /* samba's NetBIOS type */
   XXXX at present, the name is removed _even_ if a WINS server says keep it.
 
   ****************************************************************************/
-void remove_name_entry(struct subnet_record *d, int token, char *name,int type)
+void remove_name_entry(struct subnet_record *d, char *name,int type)
 {
   /* XXXX BUG: if samba is offering WINS support, it should still broadcast
       a de-registration packet to the local subnet before removing the
@@ -80,18 +80,17 @@ void remove_name_entry(struct subnet_record *d, int token, char *name,int type)
      don't really own */  
   remove_netbios_name(d,name,type,SELF,n2->ip_flgs[0].ip);
 
-  if (ip_equal(d->bcast_ip, ipgrp))
-  {
-      /* use WINS. this function can now be used to _either_
-         do the release on samba's own database _or_ release
-         the name with an arbitrary WINS server */
+  if (ip_equal(d->bcast_ip, ipgrp)) {
+    if (!lp_wins_support()) {
+      /* not a WINS server: we have to release them on the network */
       queue_netbios_pkt_wins(d,ClientNMB,NMB_REL,NAME_RELEASE,
-			     token, name, type, SELF, 0, 0,0,NULL,NULL,
+			     name, type, 0, 0,0,NULL,NULL,
 			     False, True, ipzero, ipzero);
+    }
   } else {
     /* local interface: release them on the network */
     queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
-			 token, name, type, SELF, 0, 0,0,NULL,NULL,
+			 name, type, 0, 0,0,NULL,NULL,
 			 True, True, d->bcast_ip, d->bcast_ip);
   }
 }
@@ -104,8 +103,7 @@ void remove_name_entry(struct subnet_record *d, int token, char *name,int type)
   it's just a matter of when this will be done (e.g after a time-out).
 
   ****************************************************************************/
-void add_my_name_entry(struct subnet_record *d, int token,
-                       char *name,int type,int nb_flags)
+void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
 {
   BOOL re_reg = False;
   struct nmb_name n;
@@ -117,7 +115,7 @@ void add_my_name_entry(struct subnet_record *d, int token,
 
   make_nmb_name(&n, name, type, scope);
   if (find_name(d->namelist, &n, SELF))
-    re_reg = True;
+	re_reg = True;
 
   /* XXXX BUG: if samba is offering WINS support, it should still add the
      name entry to a local-subnet name database. see rfc1001.txt 15.1.1 p28
@@ -125,7 +123,6 @@ void add_my_name_entry(struct subnet_record *d, int token,
 
   if (ip_equal(d->bcast_ip, ipgrp))
   {
-#if 0
     if (lp_wins_support())
     {
       /* we are a WINS server. */
@@ -134,38 +131,26 @@ void add_my_name_entry(struct subnet_record *d, int token,
          actually be true
        */
 
-      struct nmb_ip data;
-
-      data.nb_flags = nb_flags;
-      putip(&data.ip, ipzero);
-
       DEBUG(4,("samba as WINS server adding: "));
       /* this will call add_netbios_entry() */
-      
-      name_register_work(d,token,name,type,SELF,&data,GET_TTL(0),ipzero,False);
+      name_register_work(d, name, type, nb_flags,0, ipzero, False);
     }
     else
     {
-#endif
-      /* ipzero when not using an arbitrary wins server results in the
-         netbios packet being short-circuited to process_nmb()
-       */
       /* a time-to-live allows us to refresh this name with the WINS server. */
-      queue_netbios_pkt_wins(d,ClientNMB,
-                 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
-                 token, name, type, SELF, nb_flags, GET_TTL(0),0,NULL,NULL,
-                 False, True, ipzero, ipzero);
-#if 0
+  	  queue_netbios_pkt_wins(d,ClientNMB,
+				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
+			     name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
+			     False, True, ipzero, ipzero);
     }
-#endif
   }
   else
   {
     /* broadcast the packet, but it comes from ipzero */
-    queue_netbios_packet(d,ClientNMB,
-                 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
-                 token, name, type, SELF, nb_flags, GET_TTL(0),0,NULL,NULL,
-                 True, True, d->bcast_ip, ipzero);
+  	queue_netbios_packet(d,ClientNMB,
+				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
+			     name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
+			     True, True, d->bcast_ip, ipzero);
   }
 }
 
@@ -176,8 +161,6 @@ void add_my_name_entry(struct subnet_record *d, int token,
 void add_my_names(void)
 {
   struct subnet_record *d;
-  int token;
-
   /* each subnet entry, including WINS pseudo-subnet, has SELF names */
 
   /* XXXX if there was a transport layer added to samba (ipx/spx etc) then
@@ -186,56 +169,32 @@ void add_my_names(void)
 
   for (d = subnetlist; d; d = d->next)
   {
-    BOOL wins = ip_equal(d->bcast_ip,ipgrp);
+    BOOL wins = lp_wins_support() && ip_equal(d->bcast_ip,ipgrp);
 
-    for (token = 0; token < get_num_workgroups(); token++)
-    {
-      char *my_name = conf_browsing_alias(token);
-      char *wg_name = conf_workgroup_name(token);
-
-      if (my_name)
-      {
-        add_my_name_entry(d, token, my_name,0x20,nb_type|NB_ACTIVE);
-        add_my_name_entry(d, token, my_name,0x03,nb_type|NB_ACTIVE);
-        add_my_name_entry(d, token, my_name,0x00,nb_type|NB_ACTIVE);
-        add_my_name_entry(d, token, my_name,0x1f,nb_type|NB_ACTIVE);
-      }
-
-      if (wg_name && conf_should_domain_logon(token))
-      {
-        /* the 0x1c is to do with domain logons */
-        add_my_name_entry(d, token, wg_name,0x1c,nb_type|NB_ACTIVE|NB_GROUP);
-      }
-    }
-
+    add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
+    add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
+    add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE);
+    add_my_name_entry(d, myname,0x1f,nb_type|NB_ACTIVE);
+    
     /* these names are added permanently (ttl of zero) and will NOT be
        refreshed with the WINS server  */
-
     add_netbios_entry(d,"*",0x0,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
+    add_netbios_entry(d,"*",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
     add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
     add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
-
+    
+    if (lp_domain_logons()) {
+      /* XXXX the 0x1c is apparently something to do with domain logons */
+      add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
+    }
   }
-
-  /* check becoming a domain master under all browser aliases */
-
-  if ((d = find_subnet(ipgrp)))
+  if (lp_domain_master() && (d = find_subnet(ipgrp)))
   {
-    for (token = 0; token < get_num_workgroups(); token++)
+    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), True);
+    if (work && work->state == MST_NONE)
     {
-      if (conf_should_domain_master(token))
-      {
-        char *work_name = conf_workgroup_name(token);
-        if (work_name)
-        {
-          struct work_record *work = find_workgroupstruct(d,work_name,True);
-          if (work && work->state == MST_NONE)
-          {
-            work->state = MST_DOMAIN_NONE;
-            become_master(d, work);
-          }
-        }
-      }
+      work->state = MST_DOMAIN_NONE;
+      become_master(d, work);
     }
   }
 }
@@ -246,24 +205,52 @@ void add_my_names(void)
   **************************************************************************/
 void remove_my_names()
 {
-    struct subnet_record *d;
+	struct subnet_record *d;
 
-    for (d = subnetlist; d; d = d->next)
+	for (d = subnetlist; d; d = d->next)
+	{
+		struct name_record *n, *next;
+
+		for (n = d->namelist; n; n = next)
+		{
+			next = n->next;
+			if (n->source == SELF)
+			{
+				/* get all SELF names removed from the WINS server's database */
+				/* XXXX note: problem occurs if this removes the wrong one! */
+
+				remove_name_entry(d,n->name.name, n->name.name_type);
+			}
+		}
+	}
+}
+
+
+/*******************************************************************
+  refresh my own names
+  ******************************************************************/
+void refresh_my_names(time_t t)
+{
+  struct subnet_record *d;
+
+  for (d = subnetlist; d; d = d->next)
+  {
+    struct name_record *n;
+	  
+	for (n = d->namelist; n; n = n->next)
     {
-        struct name_record *n, *next;
-
-        for (n = d->namelist; n; n = next)
-        {
-            next = n->next;
-            if (n->source == SELF)
-            {
-                /* get all SELF names removed from the WINS server's database */
-                /* XXXX note: problem occurs if this removes the wrong one! */
-
-                remove_name_entry(d, -1, n->name.name, n->name.name_type);
-            }
-        }
+      /* each SELF name has an individual time to be refreshed */
+      if (n->source == SELF && n->refresh_time < time(NULL) && 
+          n->death_time != 0)
+      {
+        add_my_name_entry(d,n->name.name,n->name.name_type,
+                          n->ip_flgs[0].nb_flags);
+	/* they get a new lease on life :-) */
+	n->death_time += GET_TTL(0);
+	n->refresh_time += GET_TTL(0);
+      }
     }
+  }
 }
 
 
@@ -278,55 +265,55 @@ void remove_my_names()
   ******************************************************************/
 void query_refresh_names(void)
 {
-    struct name_record *n;
-    struct subnet_record *d = find_subnet(ipgrp);
+	struct name_record *n;
+	struct subnet_record *d = find_subnet(ipgrp);
 
-    static time_t lasttime = 0;
-    time_t t = time(NULL);
+	static time_t lasttime = 0;
+	time_t t = time(NULL);
 
-    int count = 0;
-    int name_refresh_time = NAME_POLL_REFRESH_TIME;
-    int max_count = name_refresh_time * 2 / NAME_POLL_INTERVAL;
-    if (max_count > 10) max_count = 10;
+	int count = 0;
+	int name_refresh_time = NAME_POLL_REFRESH_TIME;
+	int max_count = name_refresh_time * 2 / NAME_POLL_INTERVAL;
+	if (max_count > 10) max_count = 10;
 
-    name_refresh_time = NAME_POLL_INTERVAL * max_count / 2;
+	name_refresh_time = NAME_POLL_INTERVAL * max_count / 2;
 
-    /* if (!lp_poll_wins()) return; polling of registered names allowed */
+	/* if (!lp_poll_wins()) return; polling of registered names allowed */
 
-    if (!d) return;
+	if (!d) return;
 
     if (!lasttime) lasttime = t;
-    if (t - lasttime < NAME_POLL_INTERVAL) return;
+	if (t - lasttime < NAME_POLL_INTERVAL) return;
 
     lasttime = time(NULL);
 
-    for (n = d->namelist; n; n = n->next)
-    {
-        /* only do unique, registered names. */
+	for (n = d->namelist; n; n = n->next)
+	{
+		/* only do unique, registered names */
 
-        if (n->source != REGISTER) continue;
-        if (!NAME_GROUP(n->ip_flgs[0].nb_flags)) continue;
+		if (n->source != REGISTER) continue;
+		if (!NAME_GROUP(n->ip_flgs[0].nb_flags)) continue;
 
-        if (n->refresh_time < t)
-        {
-          DEBUG(3,("Polling name %s\n", namestr(&n->name)));
-          
-          queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_CONFIRM,
-                -1,n->name.name, n->name.name_type,
-                n->source,0,0,0,NULL,NULL,
-                False,False,n->ip_flgs[0].ip,n->ip_flgs[0].ip);
-          count++;
-        }
+		if (n->refresh_time < t)
+		{
+		  DEBUG(3,("Polling name %s\n", namestr(&n->name)));
+		  
+    	  queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_CONFIRM,
+				n->name.name, n->name.name_type,
+				0,0,0,NULL,NULL,
+				False,False,n->ip_flgs[0].ip,n->ip_flgs[0].ip);
+		  count++;
+		}
 
-        if (count >= max_count)
-        {
-            /* don't do too many of these at once, but do enough to
-               cover everyone in the list */
-            return;
-        }
+		if (count >= max_count)
+		{
+			/* don't do too many of these at once, but do enough to
+			   cover everyone in the list */
+			return;
+		}
 
-        /* this name will be checked on again, if it's not removed */
-        n->refresh_time += name_refresh_time;
-    }
+		/* this name will be checked on again, if it's not removed */
+		n->refresh_time += name_refresh_time;
+	}
 }
 

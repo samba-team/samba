@@ -116,15 +116,6 @@ int sys_unlink(char *fname)
 
 
 /*******************************************************************
-random number generator
-********************************************************************/
-unsigned int sys_random(int max_range)
-{
-  return(((unsigned int)random()) % max_range);
-}
-
-
-/*******************************************************************
 a simple open() wrapper
 ********************************************************************/
 int sys_open(char *fname,int flags,int mode)

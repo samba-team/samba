@@ -65,7 +65,7 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
       for (j = 0; j < 16; j++)
 	{
 	  if (i+j >= res->rdlength) break;
-	  DEBUG(4, ("%02x", (unsigned char)res->rdata[i+j]));
+	  DEBUG(4, ("%02X", (unsigned char)res->rdata[i+j]));
 	}
       
       DEBUG(4, ("\n"));
