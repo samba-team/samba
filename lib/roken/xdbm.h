@@ -41,9 +41,7 @@
 #if defined(HAVE_DB_H)
 #define DB_DBM_HSEARCH 1
 #include <db.h>
-#endif
-
-#if defined(HAVE_NDBM_H)
+#elif defined(HAVE_NDBM_H)
 #include <ndbm.h>
 #elif defined(HAVE_DBM_H)
 #include <dbm.h>
