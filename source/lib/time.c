@@ -79,12 +79,20 @@ static int tm_diff(struct tm *a, struct tm *b)
 }
 
 /*******************************************************************
-  return the UTC offset in seconds west of UTC
+  return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
   ******************************************************************/
 static int TimeZone(time_t t)
 {
-  struct tm tm_utc = *(gmtime(&t));
-  return tm_diff(&tm_utc,localtime(&t));
+  struct tm *tm = gmtime(&t);
+  struct tm tm_utc;
+  if (!tm)
+    return 0;
+  tm_utc = *tm;
+  tm = localtime(&t);
+  if (!tm)
+    return 0;
+  return tm_diff(&tm_utc,tm);
+
 }
 
 
@@ -217,7 +225,7 @@ static int LocTimeDiff(time_t lte)
 
 
 /****************************************************************************
-try to optimise the localtime call, it can be quite expenive on some machines
+try to optimise the localtime call, it can be quite expensive on some machines
 ****************************************************************************/
 struct tm *LocalTime(time_t *t)
 {
@@ -343,6 +351,8 @@ static uint32 make_dos_date(time_t unixdate)
   uint32 ret=0;
 
   t = LocalTime(&unixdate);
+  if (!t)
+    return 0xFFFFFFFF;
 
   ret = make_dos_date1(unixdate,t);
   ret = ((ret&0xFFFF)<<16) | make_dos_time1(unixdate,t);
@@ -457,11 +467,18 @@ return a HTTP/1.0 time string
   ***************************************************************************/
 char *http_timestring(time_t t)
 {
-	static char buf[40];
-	struct tm *tm = LocalTime(&t);
+  static fstring buf;
+  struct tm *tm = LocalTime(&t);
 
-	strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
-	return buf;
+  if (!tm)
+    slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
+  else
+#ifdef NO_STRFTIME
+  fstrcpy(buf, asctime(tm));
+#else /* NO_STRFTIME */
+  strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
+#endif /* NO_STRFTIME */
+  return buf;
 }
 
 
@@ -475,6 +492,9 @@ char *timestring(void )
   time_t t = time(NULL);
   struct tm *tm = LocalTime(&t);
 
+  if (!tm)
+    slprintf(TimeBuf,sizeof(TimeBuf)-1,"%ld seconds since the Epoch",(long)t);
+  else
 #ifdef NO_STRFTIME
   fstrcpy(TimeBuf, asctime(tm));
 #elif defined(CLIX) || defined(CONVEX)
