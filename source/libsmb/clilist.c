@@ -50,7 +50,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->ctime = make_unix_date2(p+4);
 			finfo->atime = make_unix_date2(p+8);
 			finfo->mtime = make_unix_date2(p+12);
-			finfo->size = IVAL_TO_SMB_OFF_T(p,16);
+			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 26);
 			p += 27;
@@ -67,7 +67,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->ctime = make_unix_date2(p+4);
 			finfo->atime = make_unix_date2(p+8);
 			finfo->mtime = make_unix_date2(p+12);
-			finfo->size = IVAL_TO_SMB_OFF_T(p,16);
+			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 30);
 			p += 31;
@@ -102,7 +102,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->ctime = interpret_long_date(p); p += 8;
 			finfo->atime = interpret_long_date(p); p += 8;
 			finfo->mtime = interpret_long_date(p); p += 8; p += 8;
-			finfo->size = IVAL_TO_SMB_OFF_T(p,0); p += 8;
+			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0); p += 8;
 			p += 8; /* alloc size */
 			finfo->mode = CVAL(p,0); p += 4;
 			namelen = IVAL(p,0); p += 4;
@@ -321,7 +321,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	/* this date is converted to GMT by make_unix_date */
 	finfo->ctime = make_unix_date(p+22);
 	finfo->mtime = finfo->atime = finfo->ctime;
-	finfo->size = IVAL_TO_SMB_OFF_T(p,26);
+	finfo->size = (SMB_BIG_UINT) IVAL(p,26); /* This returns a 4 byte length, not 8 */
 	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);
 	if (strcmp(finfo->name, "..") && strcmp(finfo->name, "."))
 		fstrcpy(finfo->short_name,finfo->name);
@@ -335,6 +335,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
   this uses the old SMBsearch interface. It is needed for testing Samba,
   but should otherwise not be used
   ****************************************************************************/
+
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state)
 {
