@@ -284,7 +284,13 @@ init_auth
     memset(&this_cred, 0, sizeof(this_cred));
     this_cred.client          = (*context_handle)->source;
     this_cred.server          = (*context_handle)->target;
-    this_cred.times.endtime   = 0;
+    if (time_req) {
+	krb5_timestamp ts;
+
+	krb5_timeofday (gssapi_krb5_context, &ts);
+	this_cred.times.endtime = ts + time_req;
+    } else
+	this_cred.times.endtime   = 0;
     this_cred.session.keytype = 0;
   
     kret = krb5_get_credentials (gssapi_krb5_context,
