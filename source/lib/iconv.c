@@ -136,7 +136,7 @@ static size_t sys_iconv(void *cd,
  * enough that Samba works on systems that don't have iconv.
  **/
 size_t smb_iconv(smb_iconv_t cd, 
-		 const char **inbuf, size_t *inbytesleft,
+		 char **inbuf, size_t *inbytesleft,
 		 char **outbuf, size_t *outbytesleft)
 {
 	char cvtbuf[2048];
