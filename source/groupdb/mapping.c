@@ -142,14 +142,17 @@ char *decode_sid_name_use(fstring group, enum SID_NAME_USE name_use)
 }
 
 /****************************************************************************
-open the group mapping tdb
+ Open the group mapping tdb.
 ****************************************************************************/
+
 BOOL init_group_mapping(void)
 {
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
-
-	if (tdb && local_pid == sys_getpid()) return True;
+	int32 vers_id;
+	
+	if (tdb && local_pid == sys_getpid())
+		return True;
 	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open group mapping database\n"));
@@ -160,10 +163,20 @@ BOOL init_group_mapping(void)
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, vstring);
-	if (tdb_fetch_int(tdb, vstring) != DATABASE_VERSION) {
-		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int(tdb, vstring, DATABASE_VERSION);
+
+	/* Cope with byte-reversed older versions of the db. */
+	vers_id = tdb_fetch_int32(tdb, vstring);
+	if ((vers_id != DATABASE_VERSION) && (IREV(vers_id) == DATABASE_VERSION)) {
+		/* Written on a bigendian machine with old fetch_int code. Save as le. */
+		tdb_store_int32(tdb, vstring, DATABASE_VERSION);
+		vers_id = DATABASE_VERSION;
 	}
+
+	if (vers_id != DATABASE_VERSION) {
+		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
+		tdb_store_int32(tdb, vstring, DATABASE_VERSION);
+	}
+
 	tdb_unlock_bystring(tdb, vstring);
 
 	/* write a list of default groups */

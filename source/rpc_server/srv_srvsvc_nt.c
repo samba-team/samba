@@ -120,30 +120,41 @@ static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
 
 BOOL share_info_db_init(void)
 {
-    static pid_t local_pid;
-    char *vstring = "INFO/version";
+	static pid_t local_pid;
+	char *vstring = "INFO/version";
+	int32 vers_id;
  
-    if (share_tdb && local_pid == sys_getpid()) return True;
-    share_tdb = tdb_open_log(lock_path("share_info.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-    if (!share_tdb) {
-        DEBUG(0,("Failed to open share info database %s (%s)\n",
-				lock_path("share_info.tdb"), strerror(errno) ));
-        return False;
-    }
+	if (share_tdb && local_pid == sys_getpid())
+		return True;
+	share_tdb = tdb_open_log(lock_path("share_info.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	if (!share_tdb) {
+		DEBUG(0,("Failed to open share info database %s (%s)\n",
+			lock_path("share_info.tdb"), strerror(errno) ));
+		return False;
+	}
  
-    local_pid = sys_getpid();
+	local_pid = sys_getpid();
  
-    /* handle a Samba upgrade */
-    tdb_lock_bystring(share_tdb, vstring);
-    if (tdb_fetch_int(share_tdb, vstring) != SHARE_DATABASE_VERSION) {
-        tdb_traverse(share_tdb, tdb_traverse_delete_fn, NULL);
-        tdb_store_int(share_tdb, vstring, SHARE_DATABASE_VERSION);
-    }
-    tdb_unlock_bystring(share_tdb, vstring);
+	/* handle a Samba upgrade */
+	tdb_lock_bystring(share_tdb, vstring);
+
+	/* Cope with byte-reversed older versions of the db. */
+	vers_id = tdb_fetch_int32(share_tdb, vstring);
+	if ((vers_id != SHARE_DATABASE_VERSION) && (IREV(vers_id) == SHARE_DATABASE_VERSION)) {
+		/* Written on a bigendian machine with old fetch_int code. Save as le. */
+		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION);
+		vers_id = SHARE_DATABASE_VERSION;
+	}
+
+	if (vers_id != SHARE_DATABASE_VERSION) {
+		tdb_traverse(share_tdb, tdb_traverse_delete_fn, NULL);
+		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION);
+	}
+	tdb_unlock_bystring(share_tdb, vstring);
 
 	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated);
  
-    return True;
+	return True;
 }
 
 /*******************************************************************

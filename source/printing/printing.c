@@ -45,9 +45,10 @@ static pid_t local_pid;
 static int get_queue_status(int, print_status_struct *);
 
 /****************************************************************************
-initialise the printing backend. Called once at startup. 
-Does not survive a fork
+ Initialise the printing backend. Called once at startup. 
+ Does not survive a fork
 ****************************************************************************/
+
 BOOL print_backend_init(void)
 {
 	char *sversion = "INFO/version";
@@ -63,9 +64,9 @@ BOOL print_backend_init(void)
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, sversion);
-	if (tdb_fetch_int(tdb, sversion) != PRINT_DATABASE_VERSION) {
+	if (tdb_fetch_int32(tdb, sversion) != PRINT_DATABASE_VERSION) {
 		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int(tdb, sversion, PRINT_DATABASE_VERSION);
+		tdb_store_int32(tdb, sversion, PRINT_DATABASE_VERSION);
 	}
 	tdb_unlock_bystring(tdb, sversion);
 
@@ -263,7 +264,7 @@ static void print_cache_flush(int snum)
 {
 	fstring key;
 	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
-	tdb_store_int(tdb, key, -1);
+	tdb_store_int32(tdb, key, -1);
 }
 
 /****************************************************************************
@@ -385,7 +386,7 @@ static void print_queue_update_background(int snum)
 	 */
 
 	slprintf(cachestr, sizeof(cachestr)-1, "CACHE/%s", printer_name);
-	tdb_store_int(tdb, cachestr, (int)time(NULL));
+	tdb_store_int32(tdb, cachestr, (int)time(NULL));
 
         /* get the current queue using the appropriate interface */
 	ZERO_STRUCT(status);
@@ -441,7 +442,7 @@ static void print_queue_update_background(int snum)
 
 	safe_free(tstruct.queue);
 
-	tdb_store_int(tdb, "INFO/total_jobs", tstruct.total_jobs);
+	tdb_store_int32(tdb, "INFO/total_jobs", tstruct.total_jobs);
 
 	/*
 	 * Get the old print status. We will use this to compare the
@@ -471,7 +472,7 @@ static void print_queue_update_background(int snum)
 	 */
 
 	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", printer_name);
-	tdb_store_int(tdb, keystr, (int)time(NULL));
+	tdb_store_int32(tdb, keystr, (int)time(NULL));
 
 	/* Delete our pid from the db. */
 	set_updating_pid(printer_name, True);
@@ -812,7 +813,7 @@ static BOOL print_cache_expired(int snum)
 	time_t t2, t = time(NULL);
 
 	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
-	t2 = tdb_fetch_int(tdb, key);
+	t2 = tdb_fetch_int32(tdb, key);
 	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
 		DEBUG(3, ("print cache expired for queue %s \
 (last_cache = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
@@ -875,7 +876,7 @@ static int get_total_jobs(int snum)
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum)) print_queue_update(snum);
 
-	total_jobs = tdb_fetch_int(tdb, "INFO/total_jobs");
+	total_jobs = tdb_fetch_int32(tdb, "INFO/total_jobs");
 	if (total_jobs >0)
 		return total_jobs;
 	else
@@ -966,7 +967,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* lock the database */
 	tdb_lock_bystring(tdb, "INFO/nextjob");
 
-	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
+	next_jobid = tdb_fetch_int32(tdb, "INFO/nextjob");
 	if (next_jobid == -1)
 		next_jobid = 1;
 
@@ -981,7 +982,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		goto fail;
 	}
 
-	tdb_store_int(tdb, "INFO/nextjob", jobid);
+	tdb_store_int32(tdb, "INFO/nextjob", jobid);
 
 	/* we have a job entry - now create the spool file */
 	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%.6d.XXXXXX", 
