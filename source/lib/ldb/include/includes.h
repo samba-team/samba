@@ -19,14 +19,8 @@
 #include <sys/time.h>
 #include <time.h>
 
-
-#ifndef _PRINTF_ATTRIBUTE
-#define _PRINTF_ATTRIBUTE(a,b)
-#endif
-
 #include "ldb.h"
-#include "tdb.h"
-#include "proto.h"
+#include "ldb_private.h"
 
 #ifdef HAVE_INTPTR_T
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))

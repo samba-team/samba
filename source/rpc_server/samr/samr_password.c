@@ -27,6 +27,7 @@
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
 #include "lib/crypto/crypto.h"
+#include "lib/ldb/include/ldb.h"
 
 /* 
   samr_ChangePasswordUser 

@@ -33,16 +33,17 @@
  */
 
 #include "includes.h"
-#include <fnmatch.h>
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 #include "ldb/include/ldb_parse.h"
-
+#include <fnmatch.h>
 
 /*
   see if two ldb_val structures contain the same data as integers
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_integer(const struct ldb_val *v1, const struct ldb_val *v2)
+static int ltdb_val_equal_integer(const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	int i1, i2;
 
@@ -56,7 +57,7 @@ static int ldb_val_equal_integer(const struct ldb_val *v1, const struct ldb_val 
   see if two ldb_val structures contain the same data as case insensitive strings
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_case_insensitive(const struct ldb_val *v1, 
+static int ltdb_val_equal_case_insensitive(const struct ldb_val *v1, 
 					  const struct ldb_val *v2)
 {
 	if (v1->length != v2->length) {
@@ -73,10 +74,11 @@ static int ldb_val_equal_case_insensitive(const struct ldb_val *v1,
   and case insensitive
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_wildcard_ci(struct ldb_context *ldb,
+static int ltdb_val_equal_wildcard_ci(struct ldb_module *module,
 				     const struct ldb_val *v1, 
 				     const struct ldb_val *v2)
 {
+	struct ldb_context *ldb = module->ldb;
 	char *s1, *s2;
 	int ret;
 
@@ -110,13 +112,13 @@ static int ldb_val_equal_wildcard_ci(struct ldb_context *ldb,
   see if two ldb_val structures contain the same data with wildcards
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_wildcard(struct ldb_context *ldb,
+static int ltdb_val_equal_wildcard(struct ldb_module *module,
 				  const struct ldb_val *v1, 
 				  const struct ldb_val *v2,
 				  int flags)
 {
 	if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
-		return ldb_val_equal_wildcard_ci(ldb, v1, v2);
+		return ltdb_val_equal_wildcard_ci(module, v1, v2);
 	}
 	if (!v1->data || !v2->data) {
 		return v1->data == v2->data;
@@ -137,13 +139,13 @@ static int ldb_val_equal_wildcard(struct ldb_context *ldb,
 
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_objectclass(struct ldb_module *module, 
+static int ltdb_val_equal_objectclass(struct ldb_module *module, 
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	unsigned int i;
 
-	if (ldb_val_equal_case_insensitive(v1, v2) == 1) {
+	if (ltdb_val_equal_case_insensitive(v1, v2) == 1) {
 		return 1;
 	}
 
@@ -152,7 +154,7 @@ static int ldb_val_equal_objectclass(struct ldb_module *module,
 		if (ldb_attr_cmp(el->name, v2->data) == 0) {
 			unsigned int j;
 			for (j=0;j<el->num_values;j++) {
-				if (ldb_val_equal_objectclass(module, v1, &el->values[j])) {
+				if (ltdb_val_equal_objectclass(module, v1, &el->values[j])) {
 					return 1;
 				}
 			}
@@ -171,27 +173,26 @@ static int ldb_val_equal_objectclass(struct ldb_module *module,
   
   return 1 for a match, 0 for a mis-match
 */
-int ldb_val_equal(struct ldb_module *module,
+int ltdb_val_equal(struct ldb_module *module,
 		  const char *attr_name,
 		  const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	struct ldb_context *ldb = module->ldb;
 	int flags = ltdb_attribute_flags(module, attr_name);
 
 	if (flags & LTDB_FLAG_OBJECTCLASS) {
-		return ldb_val_equal_objectclass(module, v1, v2);
+		return ltdb_val_equal_objectclass(module, v1, v2);
 	}
 
 	if (flags & LTDB_FLAG_INTEGER) {
-		return ldb_val_equal_integer(v1, v2);
+		return ltdb_val_equal_integer(v1, v2);
 	}
 
 	if (flags & LTDB_FLAG_WILDCARD) {
-		return ldb_val_equal_wildcard(ldb, v1, v2, flags);
+		return ltdb_val_equal_wildcard(module, v1, v2, flags);
 	}
 
 	if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
-		return ldb_val_equal_case_insensitive(v1, v2);
+		return ltdb_val_equal_case_insensitive(v1, v2);
 	}
 
 	if (v1->length != v2->length) return 0;
@@ -280,7 +281,7 @@ static int match_leaf(struct ldb_module *module,
 				return 1;
 			}
 			for (j=0;j<msg->elements[i].num_values;j++) {
-				if (ldb_val_equal(module, msg->elements[i].name,
+				if (ltdb_val_equal(module, msg->elements[i].name,
 						  &msg->elements[i].values[j], 
 						  &tree->u.simple.value)) {
 					return 1;
@@ -300,7 +301,7 @@ static int match_leaf(struct ldb_module *module,
 
   this is a recursive function, and does short-circuit evaluation
  */
-int ldb_message_match(struct ldb_module *module, 
+int ltdb_message_match(struct ldb_module *module, 
 		      struct ldb_message *msg,
 		      struct ldb_parse_tree *tree,
 		      const char *base,
@@ -314,11 +315,11 @@ int ldb_message_match(struct ldb_module *module,
 		break;
 
 	case LDB_OP_NOT:
-		return ! ldb_message_match(module, msg, tree->u.not.child, base, scope);
+		return ! ltdb_message_match(module, msg, tree->u.not.child, base, scope);
 
 	case LDB_OP_AND:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			v = ldb_message_match(module, msg, tree->u.list.elements[i],
+			v = ltdb_message_match(module, msg, tree->u.list.elements[i],
 					      base, scope);
 			if (!v) return 0;
 		}
@@ -326,7 +327,7 @@ int ldb_message_match(struct ldb_module *module,
 
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			v = ldb_message_match(module, msg, tree->u.list.elements[i],
+			v = ltdb_message_match(module, msg, tree->u.list.elements[i],
 					      base, scope);
 			if (v) return 1;
 		}

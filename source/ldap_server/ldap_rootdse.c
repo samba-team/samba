@@ -22,6 +22,7 @@
 #include "dynconfig.h"
 #include "ldap_server/ldap_server.h"
 #include "system/time.h"
+#include "lib/ldb/include/ldb.h"
 
 #define ATTR_BLOB_CONST(val) data_blob_talloc(mem_ctx, val, sizeof(val)-1)
 #define ATTR_SINGLE_NOVAL(ctx, attr, blob, num, nam) do { \
@@ -47,7 +48,8 @@ struct rootdse_db_context {
 /*
   this is used to catch debug messages from ldb
 */
-void rootdse_db_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)  _PRINTF_ATTRIBUTE(3,0)
+static void rootdse_db_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
+static void rootdse_db_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)
 {
 	char *s = NULL;
 	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {
@@ -73,7 +75,7 @@ static int rootdse_db_destructor(void *ctx)
   connect to the SAM database
   return an opaque context pointer on success, or NULL on failure
  */
-void *rootdse_db_connect(TALLOC_CTX *mem_ctx)
+static void *rootdse_db_connect(TALLOC_CTX *mem_ctx)
 {
 	static struct rootdse_db_context *ctx;
 	char *db_path;

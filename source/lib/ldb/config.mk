@@ -15,6 +15,7 @@ INIT_OBJ_FILES = \
 		lib/ldb/ldb_ldap/ldb_ldap.o
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_LDAP
+NOPROTO = YES
 # End MODULE libldb_tdb
 ################################################
 
@@ -32,6 +33,7 @@ ADD_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_cache.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
+NOPROTO = YES
 # End MODULE libldb_tdb
 ################################################
 
@@ -51,6 +53,7 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/ldb_modules.o
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
+NOPROTO = YES
 #
 # End SUBSYSTEM LIBLDB
 ################################################

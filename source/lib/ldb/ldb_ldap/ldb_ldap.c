@@ -33,6 +33,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/ldb_ldap/ldb_ldap.h"
 
 #if 0

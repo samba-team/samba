@@ -33,6 +33,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include <time.h>
 
 static int timestamps_close(struct ldb_module *module)

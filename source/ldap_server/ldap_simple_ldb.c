@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "ldap_parse.h"
+#include "lib/ldb/include/ldb.h"
 
 /* TODO: samdb_context is not a pulblic struct */
 struct samdb_context {

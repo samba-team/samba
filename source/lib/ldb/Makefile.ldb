@@ -74,9 +74,6 @@ manpages:
 clean:
 	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB) man/man?/*.[13]
 
-proto:
-	perl ../../script/mkproto.pl */*.c > include/proto.h
-
 etags:
 	etags */*.[ch]
 

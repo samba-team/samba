@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "system/time.h"
 #include "auth/auth.h"
+#include "lib/ldb/include/ldb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/ldb/include/ldb.h"
 
 struct spoolssdb_context {
 	struct ldb_context *ldb;
@@ -30,7 +31,8 @@ struct spoolssdb_context {
 /*
   this is used to catch debug messages from ldb
 */
-void spoolssdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap) _PRINTF_ATTRIBUTE(3, 0)
+static void spoolssdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3, 0);
+static void spoolssdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)
 {
 	char *s = NULL;
 	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {

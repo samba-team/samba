@@ -34,6 +34,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "dlinklist.h"
 #include <sys/types.h> 
 #include <sys/stat.h> 
@@ -82,10 +84,10 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 	if (!modules && strcmp("ldap", ldb->modules->ops->name)) { /* no modules in the options, look for @MODULES in the db (not for ldap) */
 		int ret, j, k;
-		char * attrs[] = { "@MODULE" };
+		const char * const attrs[] = { "@MODULE" , NULL};
 		struct ldb_message **msg;
 
-		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", (const char * const *)attrs, &msg);
+		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", attrs, &msg);
 		if (ret == 0) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
@@ -144,7 +146,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 #ifdef HAVE_DLOPEN_DISABLED
 		{
 			void *handle;
-			init_ldb_module_function init;
+			ldb_module_init_function init;
 			struct stat st;
 			const char *errstr;
 
@@ -160,7 +162,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				return -1;
 			}
 
-			init = (init_ldb_module_function)dlsym(handle, "init_module");
+			init = (ldb_module_init_function)dlsym(handle, "init_module");
 
 			errstr = dlerror();
 			if (errstr) {

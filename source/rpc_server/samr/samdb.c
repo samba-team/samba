@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "lib/ldb/include/ldb.h"
 
 /*
   connect to the SAM database

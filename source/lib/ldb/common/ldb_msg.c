@@ -33,6 +33,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 
 
 /*
@@ -83,6 +85,31 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 	return NULL;
 }
 
+/*
+  duplicate a ldb_val structure
+*/
+struct ldb_val ldb_val_dup(struct ldb_context *ldb,
+			   const struct ldb_val *v)
+{
+	struct ldb_val v2;
+	v2.length = v->length;
+	if (v->length == 0) {
+		v2.data = NULL;
+		return v2;
+	}
+
+	/* the +1 is to cope with buggy C library routines like strndup
+	   that look one byte beyond */
+	v2.data = ldb_malloc(ldb, v->length+1);
+	if (!v2.data) {
+		v2.length = 0;
+		return v2;
+	}
+
+	memcpy(v2.data, v->data, v->length);
+	((char *)v2.data)[v->length] = 0;
+	return v2;
+}
 
 /*
   add an empty element to a message

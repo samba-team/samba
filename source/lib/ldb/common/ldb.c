@@ -33,6 +33,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 
 /* 
  connect to a database. The URL can either be one of the following forms

@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
 
 static const char *ldb_url;
 static const char *base_dn = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
