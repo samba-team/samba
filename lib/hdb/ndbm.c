@@ -39,10 +39,10 @@ RCSID("$Id$");
 
 #if defined(HAVE_GDBM_NDBM_H)
 #include <gdbm/ndbm.h>
-#elif defined(HAVE_DBM_H)
-#include <dbm.h>
 #elif defined(HAVE_NDBM_H)
 #include <ndbm.h>
+#elif defined(HAVE_DBM_H)
+#include <dbm.h>
 #endif
 
 struct ndbm_db {
