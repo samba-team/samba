@@ -97,11 +97,9 @@ END {
 	print name "_num_errors, ERROR_TABLE_BASE_" name ");" > c_file
 	print "}" > c_file
 	print "" > c_file
-	close(c_file)
 
 	print "\t" name "_num_errors = " number > h_file
 	print "} " name "_error_number;" > h_file
 	print "" > h_file
 	print "#endif /* " H_FILE " */" > h_file
-	close(h_file)
 }
