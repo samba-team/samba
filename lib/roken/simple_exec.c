@@ -80,9 +80,10 @@ simple_execvp(const char *file, char *const args[])
     default: 
 	while(1) {
 	    int status;
-	    if(waitpid(pid, &status, 0) < 0) {
-		return -3;
-	    }
+
+	    while(waitpid(pid, &status, 0) < 0)
+		if (errno != EINTR)
+		    return -3;
 	    if(WIFSTOPPED(status))
 		continue;
 	    if(WIFEXITED(status))
