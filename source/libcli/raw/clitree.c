@@ -268,6 +268,12 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	asprintf(&tcon.tconx.in.path, "\\\\%s\\%s", dest_host, service);
+	if (!service_type) {
+		if (strequal(service, "IPC$"))
+			service_type = "IPC";
+		else
+			service_type = "?????";
+	}
 	tcon.tconx.in.device = service_type;
 	
 	status = smb_tree_connect(tree, mem_ctx, &tcon);
