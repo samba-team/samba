@@ -27,6 +27,8 @@
 #undef AIX
 #undef BSD
 #undef IRIX
+#undef UNIXWARE
+#undef SYSV
 #undef IRIX6
 #undef HPUX
 #undef QNX

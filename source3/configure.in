@@ -969,7 +969,7 @@ case "$host_os" in
 		;;
 		*next2*) AC_DEFINE(NEXT2);;
 		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
-		*sysv4*)
+		*sysv4*) AC_DEFINE(SYSV)
 			case "$host" in
 				*-univel-*)     if [ test "$GCC" != yes ]; then
 						AC_DEFINE(HAVE_MEMSET)
@@ -981,12 +981,13 @@ case "$host_os" in
 			esac
 		;;
 
-		*sysv5*)
+		*sysv5*) AC_DEFINE(SYSV)
 			if [ test "$GCC" != yes ]; then
 				AC_DEFINE(HAVE_MEMSET)
 			fi
 			LDSHFLAGS="-G"
 		;;
+		*sysv*) AC_DEFINE(SYSV);;
 esac
 AC_SUBST(DYNEXP)
 AC_MSG_RESULT($BLDSHARED)
