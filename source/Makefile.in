@@ -471,7 +471,9 @@ SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ)
+                 $(UBIQX_OBJ) $(LIB_OBJ) rpc_parse/parse_creds.o \
+		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
+		 rpc_parse/parse_misc.o
 
 RPCTORTURE_OBJ = utils/rpctorture.o \
              rpcclient/display.o \
