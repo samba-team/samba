@@ -711,7 +711,9 @@ pk_mk_padata(krb5_context context,
 
 	memset(&req_19, 0, sizeof(req_19));
 
-	copy_ContentInfo(&content_info, &req_19.signedAuthPack);
+	ret = copy_ContentInfo(&content_info, &req_19.signedAuthPack);
+	if (ret)
+	    goto out;
 	req_19.kdcCert = NULL;
 	req_19.trustedCertifiers = NULL;
 	req_19.encryptionCert = NULL;
@@ -721,13 +723,14 @@ pk_mk_padata(krb5_context context,
 
 	free_PA_PK_AS_REQ_19(&req_19);
 
-    } else {
+    } else if (compat & COMPAT_25) {
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
 			   &req, &size, ret);
 
-    }
+    } else
+	krb5_abortx(context, "internal pkinit error");
     if (ret) {
 	krb5_set_error_string(context, "PA-PK-AS-REQ %d", ret);
 	goto out;
