@@ -842,13 +842,14 @@ identifier:mysql port                     - defaults to 3306
 identifier:table                          - Name of the table containing users
 </programlisting></para>
 
+<warning>
 <para>
-<emphasis>
-WARNING: since the password for the mysql user is stored in the 
+Since the password for the mysql user is stored in the 
 smb.conf file, you should make the the smb.conf file 
 readable only to the user that runs samba. This is considered a security 
-bug and will be fixed soon.</emphasis>
+bug and will be fixed soon.
 </para>
+</warning>
 
 <para>Names of the columns in this table(I've added column types those columns should have first):</para>
 
