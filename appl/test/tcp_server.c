@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,7 +47,6 @@ proto (int sock, const char *service)
     struct sockaddr_in remote, local;
     int addrlen;
     krb5_address remote_addr, local_addr;
-    krb5_ccache ccache;
     krb5_auth_context auth_context;
     krb5_error_code status;
     krb5_principal server;

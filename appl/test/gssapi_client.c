@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,10 +52,8 @@ proto (int sock, const char *hostname, const char *service)
     gss_buffer_t input_token, output_token;
     gss_buffer_desc real_input_token, real_output_token;
     OM_uint32 maj_stat, min_stat;
-    u_int32_t len, net_len;
     gss_name_t server;
     gss_buffer_desc name_token;
-    char *n;
 
     name_token.length = asprintf ((char **)&name_token.value,
 				  "%s@%s", service, hostname);
