@@ -1913,6 +1913,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			break;
 		}
 
+	case SMB_FILE_END_OF_FILE_INFORMATION:
 		case SMB_SET_FILE_END_OF_FILE_INFO:
 		{
 			size = IVAL(pdata,0);
