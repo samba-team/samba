@@ -527,7 +527,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	smb_pass = getsmbpwnam(nt_username);
 	unbecome_root();
         
-	if (smb_pass == NULL)
+	if ((smb_pass == NULL) || (sam_pass == NULL) || (pw == NULL))
 		return NT_STATUS_NO_SUCH_USER;
 	else if (smb_pass->acct_ctrl & ACB_DISABLED)
 		return NT_STATUS_ACCOUNT_DISABLED;
