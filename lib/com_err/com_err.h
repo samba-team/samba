@@ -68,4 +68,6 @@ void com_err __P((const char *, long, const char *, ...));
 errf set_com_err_hook __P((errf));
 errf reset_com_err_hook __P((void));
 
+const char *error_table_name(int num);
+
 #endif /* __COM_ERR_H__ */
