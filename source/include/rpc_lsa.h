@@ -70,6 +70,21 @@ typedef struct dom_query_info
 typedef DOM_QUERY DOM_QUERY_3;
 typedef DOM_QUERY DOM_QUERY_5;
 
+/* level 2 is auditing settings */
+typedef struct dom_query_2
+{
+	uint32 auditing_enabled;
+	uint32 count1; /* usualy 7, at least on nt4sp4 */
+	uint32 count2; /* the same */
+	uint32 *auditsettings;
+} DOM_QUERY_2;
+
+/* level 6 is server role information */
+typedef struct dom_query_6
+{
+	uint16 server_role; /* 2=backup, 3=primary */
+} DOM_QUERY_6;
+
 typedef struct seq_qos_info
 {
 	uint32 len; /* 12 */
@@ -156,18 +171,22 @@ typedef struct lsa_query_info
 
 } LSA_Q_QUERY_INFO;
 
+/* LSA_INFO_UNION */
+typedef union lsa_info_union
+{
+	DOM_QUERY_2 id2;
+	DOM_QUERY_3 id3;
+	DOM_QUERY_5 id5;
+	DOM_QUERY_6 id6;
+} LSA_INFO_UNION;
+
 /* LSA_R_QUERY_INFO - response to LSA query info policy */
 typedef struct lsa_r_query_info
 {
     uint32 undoc_buffer; /* undocumented buffer pointer */
     uint16 info_class; /* info class (same as info class in request) */
-    
-	union
-    {
-        DOM_QUERY_3 id3;
-		DOM_QUERY_5 id5;
-
-    } dom;
+   
+	LSA_INFO_UNION dom; 
 
 	uint32 status; /* return code */
 
