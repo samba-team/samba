@@ -91,8 +91,13 @@ main (int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
   
-    if(cache == NULL)
+    if(cache == NULL) {
 	cache = krb5_cc_default_name(context);
+	if (cache == NULL) {
+	    warnx ("krb5_cc_default_name: %s", krb5_get_err_text(context, ret));
+	    exit(1);
+	}
+    }
 
     ret =  krb5_cc_resolve(context, 
 			   cache, 
