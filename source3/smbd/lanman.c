@@ -1984,7 +1984,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
 
 			become_root();
-			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2))) {
+			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2, False))) {
 				SSVAL(*rparam,0,NERR_Success);
 			}
 			unbecome_root();
@@ -2032,47 +2032,46 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-  fstring user;
-  char *p = param + 2;
-  *rparam_len = 2;
-  *rparam = REALLOC(*rparam,*rparam_len);
+	fstring user;
+	char *p = param + 2;
+	*rparam_len = 2;
+	*rparam = REALLOC(*rparam,*rparam_len);
 
-  *rdata_len = 0;
+	*rdata_len = 0;
 
-  SSVAL(*rparam,0,NERR_badpass);
+	SSVAL(*rparam,0,NERR_badpass);
 
-  /*
-   * Check the parameter definition is correct.
-   */
-  if(!strequal(param + 2, "zsT")) {
-    DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
-    return False;
-  }
-  p = skip_string(p, 1);
+	/*
+	 * Check the parameter definition is correct.
+	 */
 
-  if(!strequal(p, "B516B16")) {
-    DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
-    return False;
-  }
-  p = skip_string(p,1);
+	if(!strequal(param + 2, "zsT")) {
+		DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
+		return False;
+	}
+	p = skip_string(p, 1);
 
-  p += pull_ascii_fstring(user,p);
+	if(!strequal(p, "B516B16")) {
+		DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
+		return False;
+	}
+	p = skip_string(p,1);
+	p += pull_ascii_fstring(user,p);
 
-  DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
+	DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
 
-  /*
-   * Pass the user through the NT -> unix user mapping
-   * function.
-   */
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
 
-  (void)map_username(user);
+	(void)map_username(user);
 
-  if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL)))
-  {
-    SSVAL(*rparam,0,NERR_Success);
-  }
+	if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))) {
+		SSVAL(*rparam,0,NERR_Success);
+	}
 
-  return(True);
+	return(True);
 }
 
 /****************************************************************************
