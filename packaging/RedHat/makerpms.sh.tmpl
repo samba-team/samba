@@ -14,7 +14,7 @@
 #
 if [ -r ~/.rpmmacros ]; then
 	TOPDIR=`awk '/topdir/ {print $2}' < ~/.rpmmacros`
-	if [ z$TOPDIR <> "z" ]; then
+	if [ z$TOPDIR != "z" ]; then
 		SPECDIR=${TOPDIR}/SPECS
 		SRCDIR=${TOPDIR}/SOURCES
 	fi
