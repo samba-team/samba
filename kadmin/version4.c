@@ -868,7 +868,7 @@ decode_packet(krb5_context context,
 		     client_addr->sin_addr.s_addr, &ad, NULL);
 
     if(ret) {
-	make_you_loose_packet(krb_err_base + ret, reply);
+	make_you_loose_packet(ERROR_TABLE_BASE_krb + ret, reply);
 	krb5_warnx(context, "krb_rd_req: %d", ret);
 	return;
     }
@@ -905,7 +905,7 @@ decode_packet(krb5_context context,
     ret = krb_rd_priv(msg + off, rlen, schedule, &ad.session, 
 		      client_addr, admin_addr, &msg_dat);
     if (ret) {
-	make_you_loose_packet (krb_err_base + ret, reply);
+	make_you_loose_packet (ERROR_TABLE_BASE_krb + ret, reply);
 	krb5_warnx(context, "krb_rd_priv: %d", ret);
 	goto out;
     }
