@@ -134,13 +134,11 @@ krb5_get_host_realm(krb5_context context,
 
     p = host;
     while(p) {
-	printf("%s\n", p);
 	if(config_find_realm(context, p, *realms) == 0)
 	    return 0;
 	else if(dns_find_realm(context, p, *realms) == 0)
 	    return 0;
 	p = strchr(p, '.');
-	if(p) p++;
     }
     p = strchr(host, '.');
     if(p == NULL)
