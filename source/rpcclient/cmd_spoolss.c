@@ -1268,6 +1268,7 @@ static NTSTATUS cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Add the form */
 
+
 	werror = cli_spoolss_addform(cli, mem_ctx, &handle, 1, &form);
 
  done:
@@ -1304,9 +1305,9 @@ static NTSTATUS cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	strupper(servername);
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
-	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-					     MAXIMUM_ALLOWED_ACCESS, 
-					     servername, cli->user_name, &handle);
+	werror = cli_spoolss_open_printer_ex(
+		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, 
+		servername, cli->user_name, &handle);
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -1318,15 +1319,15 @@ static NTSTATUS cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	form.flags = FORM_PRINTER;
 	form.size_x = form.size_y = 100;
 	form.left = 0;
-	form.top = 10;
-	form.right = 20;
-	form.bottom = 30;
+	form.top = 1000;
+	form.right = 2000;
+	form.bottom = 3000;
 
 	init_unistr2(&form.name, argv[2], strlen(argv[2]) + 1);
 
 	/* Set the form */
 
-	werror = cli_spoolss_setform(cli, mem_ctx, &handle, 1, &form);
+	werror = cli_spoolss_setform(cli, mem_ctx, &handle, 1, argv[2], &form);
 
  done:
 	if (got_handle)
@@ -1338,10 +1339,74 @@ static NTSTATUS cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-/* Set a form */
+/* Get a form */
 
-static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				       int argc, char **argv)
+static NTSTATUS cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    int argc, char **argv)
+{
+	POLICY_HND handle;
+	WERROR werror;
+	char *servername = NULL, *printername = NULL;
+	FORM_1 form;
+	BOOL got_handle = False;
+	uint32 needed;
+	
+	/* Parse the command arguements */
+
+	if (argc != 3) {
+		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+	
+	/* Get a printer handle */
+
+	asprintf(&servername, "\\\\%s", cli->desthost);
+	strupper(servername);
+	asprintf(&printername, "%s\\%s", servername, argv[1]);
+
+	werror = cli_spoolss_open_printer_ex(
+		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, 
+		servername, cli->user_name, &handle);
+
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	got_handle = True;
+
+	/* Set the form */
+
+	werror = cli_spoolss_getform(cli, mem_ctx, 0, &needed,
+				     &handle, argv[2], 1, &form);
+
+	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+		werror = cli_spoolss_getform(cli, mem_ctx, needed, NULL,
+					     &handle, argv[2], 1, &form);
+
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	printf("width: %d\n", form.width);
+	printf("length: %d\n", form.length);
+	printf("left: %d\n", form.left);
+	printf("top: %d\n", form.top);
+	printf("right: %d\n", form.right);
+	printf("bottom: %d\n", form.bottom);
+
+ done:
+	if (got_handle)
+		cli_spoolss_close_printer(cli, mem_ctx, &handle);
+
+	SAFE_FREE(servername);
+	SAFE_FREE(printername);
+
+	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/* Delete a form */
+
+static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx, int argc, 
+				       char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
@@ -1361,9 +1426,9 @@ static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ct
 	strupper(servername);
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
-	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-					     MAXIMUM_ALLOWED_ACCESS, 
-					     servername, cli->user_name, &handle);
+	werror = cli_spoolss_open_printer_ex(
+		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, 
+		servername, cli->user_name, &handle);
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -1373,6 +1438,76 @@ static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ct
 	/* Delete the form */
 
 	werror = cli_spoolss_deleteform(cli, mem_ctx, &handle, argv[2]);
+
+ done:
+	if (got_handle)
+		cli_spoolss_close_printer(cli, mem_ctx, &handle);
+
+	SAFE_FREE(servername);
+	SAFE_FREE(printername);
+
+	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/* Enumerate forms */
+
+static NTSTATUS cmd_spoolss_enumforms(struct cli_state *cli, 
+				      TALLOC_CTX *mem_ctx, int argc, 
+				      char **argv)
+{
+	POLICY_HND handle;
+	WERROR werror;
+	char *servername = NULL, *printername = NULL;
+	BOOL got_handle = False;
+	uint32 needed, num_forms, level = 1, i;
+	FORM_1 *forms;
+	
+	/* Parse the command arguements */
+
+	if (argc != 2) {
+		printf ("Usage: %s <printer>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+	
+	/* Get a printer handle */
+
+	asprintf(&servername, "\\\\%s", cli->desthost);
+	strupper(servername);
+	asprintf(&printername, "%s\\%s", servername, argv[1]);
+
+	werror = cli_spoolss_open_printer_ex(
+		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, 
+		servername, cli->user_name, &handle);
+
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	got_handle = True;
+
+	/* Enumerate forms */
+
+	werror = cli_spoolss_enumforms(
+		cli, mem_ctx, 0, &needed, &handle, level, &num_forms, &forms);
+
+	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+		werror = cli_spoolss_enumforms(
+			cli, mem_ctx, needed, NULL, &handle, level, 
+			&num_forms, &forms);
+
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	/* Display output */
+
+	for (i = 0; i < num_forms; i++) {
+		fstring form_name;
+
+		if (forms[i].name.buffer)
+			rpcstr_pull(form_name, forms[i].name.buffer,
+				    sizeof(form_name), 0, STR_TERMINATE);
+
+		printf("%s\n", form_name);
+	}
 
  done:
 	if (got_handle)
@@ -1406,7 +1541,9 @@ struct cmd_set spoolss_commands[] = {
 	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",          "" },
 	{ "addform",            cmd_spoolss_addform,            PIPE_SPOOLSS, "Add form", "" },
 	{ "setform",            cmd_spoolss_setform,            PIPE_SPOOLSS, "Set form", "" },
+	{ "getform",            cmd_spoolss_getform,            PIPE_SPOOLSS, "Get form", "" },
 	{ "deleteform",         cmd_spoolss_deleteform,         PIPE_SPOOLSS, "Delete form", "" },
+	{ "enumforms",          cmd_spoolss_enumforms,         PIPE_SPOOLSS, "Enumerate forms", "" },
 
 	{ NULL }
 };

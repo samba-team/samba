@@ -1210,7 +1210,7 @@ WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Set a form on a printer - this doesn't seem to work very well.
+/** Set a form on a printer.
  *
  * @param cli              Pointer to client state structure which is open
  *                         on the SPOOLSS pipe.
@@ -1224,7 +1224,8 @@ WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  */
 
 WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *handle, uint32 level, FORM *form)
+			   POLICY_HND *handle, uint32 level, char *form_name,
+			   FORM *form)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETFORM q;
@@ -1241,7 +1242,7 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_setform(&q, handle, level, form);
+        make_spoolss_q_setform(&q, handle, level, form_name, form);
 	
 	/* Marshall data and send request */
 
@@ -1258,6 +1259,11 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+
+
  done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
@@ -1265,7 +1271,73 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Delete a form on a printer - this doesn't seem to work very well.
+/** Get a form on a printer.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex 
+ *                         or cli_spoolss_addprinterex.
+ * @param formname         Name of the form to get
+ * @param level            Form info level to get - should always be 1.
+ *
+ */
+
+WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   uint32 offered, uint32 *needed,
+			   POLICY_HND *handle, char *formname, uint32 level, 
+			   FORM_1 *form)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETFORM q;
+	SPOOL_R_GETFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getform(&q, handle, formname, level, &buffer, offered);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (W_ERROR_IS_OK(result)) 
+		smb_io_form_1("", r.buffer, form, 0);
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Delete a form on a printer.
  *
  * @param cli              Pointer to client state structure which is open
  *                         on the SPOOLSS pipe.
@@ -1278,7 +1350,7 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  */
 
 WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *handle, char *form)
+			      POLICY_HND *handle, char *form_name)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_DELETEFORM q;
@@ -1295,7 +1367,7 @@ WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_deleteform(&q, handle, form);
+        make_spoolss_q_deleteform(&q, handle, form_name);
 	
 	/* Marshall data and send request */
 
@@ -1311,6 +1383,88 @@ WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Return output parameters */
 
 	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+static void decode_forms_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			   uint32 num_forms, FORM_1 **forms)
+{
+	int i;
+
+	*forms = (FORM_1 *)talloc(mem_ctx, num_forms * sizeof(FORM_1));
+	buffer->prs.data_offset = 0;
+
+	for (i = 0; i < num_forms; i++) 
+		smb_io_form_1("", buffer, &((*forms)[i]), 0);
+}
+
+/** Enumerate forms
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param offered          Buffer size offered in the request.
+ * @param needed           Number of bytes needed to complete the request.
+ *                         may be NULL.
+ *                         or cli_spoolss_addprinterex.
+ * @param level            Form info level to get - should always be 1.
+ * @param handle           Open policy handle 
+ *
+ */
+
+WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			     uint32 offered, uint32 *needed,
+			     POLICY_HND *handle, int level, uint32 *num_forms,
+			     FORM_1 **forms)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMFORMS q;
+	SPOOL_R_ENUMFORMS r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumforms(&q, handle, level, &buffer, offered);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumforms("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMFORMS, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumforms("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (num_forms)
+		*num_forms = r.numofforms;
+
+	decode_forms_1(mem_ctx, r.buffer, *num_forms, forms);
 
  done:
 	prs_mem_free(&qbuf);
