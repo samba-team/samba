@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	int fd, ret, status=1;
 	pid_t pid;
 
-	if (!(pid=sys_fork())) {
+	if (!(pid=fork())) {
 		sleep(2);
 		fd = open64(DATA, O_RDONLY);
 
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 		lock.l_whence = SEEK_SET;
 		lock.l_start = 0;
 		lock.l_len = 4;
-		lock.l_pid = sys_getpid();
+		lock.l_pid = getpid();
 		
 		lock.l_type = F_WRLCK;
 		
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	lock.l_start = 0x100000000;
 #endif
 	lock.l_len = 4;
-	lock.l_pid = sys_getpid();
+	lock.l_pid = getpid();
 
 	/* set a 4 byte write lock */
 	fcntl(fd,F_SETLK64,&lock);
