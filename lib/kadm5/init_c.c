@@ -167,7 +167,6 @@ get_new_cache(krb5_context context,
     case 0:
 	break;
     case KRB5KDC_ERR_NONE: /* XXX hack in krb5_get_init_creds_password */
-	abort();
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
 	return KADM5_BAD_PASSWORD;
