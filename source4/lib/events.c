@@ -221,7 +221,7 @@ int event_loop_once(struct event_context *ev)
 	fd_set r_fds, w_fds;
 	struct fd_event *fe;
 	struct loop_event *le;
-	struct timed_event *te;
+	struct timed_event *te, *te_next;
 	int selrtn;
 	struct timeval tval, t;
 	uint32_t destruction_count = ev->destruction_count;
@@ -253,13 +253,24 @@ int event_loop_once(struct event_context *ev)
 	}
 
 	/* start with a reasonable max timeout */
-	tval.tv_sec = 600;
+	tval.tv_sec = 0;
 	tval.tv_usec = 0;
 		
 	/* work out the right timeout for all timed events */
-	for (te=ev->timed_events;te;te=te->next) {
-		struct timeval tv = timeval_diff(&te->next_event, &t);
-		tval = timeval_min(&tv, &tval);
+	for (te=ev->timed_events;te;te=te_next) {
+		struct timeval tv;
+		te_next = te->next;
+		if (timeval_is_zero(&te->next_event)) {
+			talloc_free(te);
+			continue;
+		}
+
+		tv = timeval_diff(&te->next_event, &t);
+		if (timeval_is_zero(&tval)) {
+			tval = tv;
+		} else {
+			tval = timeval_min(&tv, &tval);
+		}
 	}
 
 	/* only do a select() if there're fd_events
@@ -316,18 +327,14 @@ int event_loop_once(struct event_context *ev)
 	for (te=ev->timed_events;te;) {
 		struct timed_event *next = te->next;
 		if (timeval_compare(&te->next_event, &t) >= 0) {
+			te->next_event = timeval_zero();
 			te->handler(ev, te, t);
 			if (destruction_count != ev->destruction_count) {
 				break;
 			}
-			if (timeval_compare(&te->next_event, &t) >= 0) {
-				/* the handler didn't set a time for the 
-				   next event - remove the event */
-				talloc_free(te);
-			}
 		}
 		te = next;
-	}		
+	}
 	
 	return 0;
 }
