@@ -59,8 +59,6 @@ write_counted_string (unsigned short count, char *string, FILE *file)
 int
 XauWriteAuth (FILE *auth_file, Xauth *auth)
 {
-    char    *malloc ();
-
     if (write_short (auth->family, auth_file) == 0)
 	return 0;
     if (write_counted_string (auth->address_length, auth->address, auth_file) == 0)
