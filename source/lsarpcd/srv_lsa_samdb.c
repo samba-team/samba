@@ -373,7 +373,11 @@ uint32 _lsa_lookup_sids(const POLICY_HND * hnd,
 		if (map_domain_sid_to_name(&find_sid, dom_name))
 		{
 			sid_name_use = SID_NAME_DOMAIN;
-			name[0] = 0;
+			/*
+			 * it is currently better to put
+			 * the name also here
+			 */
+			fstrcpy(name, dom_name);
 		}
 		else if (sid_split_rid(&find_sid, &rid) &&
 			 map_domain_sid_to_name(&find_sid, dom_name))

@@ -454,7 +454,7 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 
 SWAT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) $(LIBSURS)
 
-SMBRUN_OBJ = utils/smbrun.o
+SMBRUN_OBJ = utils/smbrun.o lib/util_sec.o
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o
 
@@ -483,7 +483,7 @@ REGEDIT_OBJ = lib/cmd_interp.o \
 		rpcclient/display_sec.o \
 		rpcclient/cmd_reg.o \
 		$(STUB_UID_OBJ)
-REGEDIT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+REGEDIT_LIBS = $(SAMBA_LIBS)
 
 SVCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/svcctrl.o \
@@ -492,7 +492,7 @@ SVCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/cmd_svcctl.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
-SVCCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+SVCCLIENT_LIBS = $(SAMBA_LIBS)
 
 SAMCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/samedit.o \
@@ -505,7 +505,7 @@ SAMCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/cmd_netlogon.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
-SAMCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+SAMCLIENT_LIBS = $(SAMBA_LIBS)
 
 CMDCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/cmdat.o \
@@ -514,7 +514,7 @@ CMDCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/cmd_atsvc.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
-CMDCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+CMDCLIENT_LIBS = $(SAMBA_LIBS)
 
 NETCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/net.o \
@@ -528,7 +528,7 @@ NETCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/cmd_srvsvc.o \
            $(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
-NETCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+NETCLIENT_LIBS = $(SAMBA_LIBS)
 
 EVTCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/eventlog.o \
@@ -568,7 +568,7 @@ SPOOLCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/cmd_spoolss.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
-SPOOLCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+SPOOLCLIENT_LIBS = $(SAMBA_LIBS)
 
 RPCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/rpcclient.o \
@@ -606,7 +606,7 @@ RPCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/cmd_dfs.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
-RPCCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+RPCCLIENT_LIBS = $(SAMBA_LIBS)
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \

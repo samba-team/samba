@@ -347,12 +347,12 @@ void init_uid(void);
 BOOL become_uid(uid_t uid);
 BOOL become_gid(gid_t gid);
 BOOL unbecome_to_initial_uid(void);
-BOOL become_id(uid_t uid,gid_t gid);
-BOOL become_unix_sec_ctx(const vuser_key *k, connection_struct *conn,
-				uid_t new_uid, gid_t new_gid,
-				int n_groups, gid_t* groups);
+BOOL become_id(uid_t uid, gid_t gid);
+BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
+			 uid_t new_uid, gid_t new_gid,
+			 int n_groups, gid_t * groups);
 BOOL become_guest(void);
-void become_root(BOOL save_dir) ;
+void become_root(BOOL save_dir);
 void unbecome_root(BOOL restore_dir);
 
 /*The following definitions come from  lib/set_vuid.c  */
@@ -1740,6 +1740,8 @@ int lp_machine_password_timeout(void);
 int lp_change_notify_timeout(void);
 int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
+int lp_min_passwd_length(void);
+int lp_oplock_break_wait_time(void);
 int lp_ldap_port(void);
 int lp_ldap_protocol_version(void);
 char *lp_logon_script(const user_struct* );
@@ -1846,6 +1848,7 @@ void lp_killunused(BOOL (*snumused)(int ));
 BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc);
 int lp_numservices(void);
 void lp_dump(FILE *f, BOOL show_defaults);
+void lp_dump_one(FILE *f, BOOL show_defaults, int snum);
 int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
 void lp_remove_service(int snum);
@@ -4202,7 +4205,7 @@ uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 /*The following definitions come from  smbd/afsticket.c  */
 
 int get_afs_ticket_from_srvtab(void);
-pid_t get_renewed_ticket(void);
+pid_t get_renewed_ticket(connection_struct* conn);
 
 /*The following definitions come from  smbd/blocking.c  */
 
@@ -4838,17 +4841,20 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 
 /*The following definitions come from  srvsvcd/srv_srvsvc_nt.c  */
 
-uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod );
-uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
-                                SRV_INFO_CTR *ctr);
+uint32 _srv_net_remote_tod(UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod);
+uint32 _srv_net_srv_get_info(UNISTR2 *srv_name, uint32 switch_value,
+			     SRV_INFO_CTR *ctr);
 uint32 _srv_net_share_enum( const UNISTR2 *srv_name, 
 				uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 				uint32 preferred_len, ENUM_HND *enum_hnd,
 				uint32 *total_entries, uint32 share_level );
-uint32 _srv_net_sess_enum( const UNISTR2 *srv_name, 
-                                uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-                                uint32 preferred_len, ENUM_HND *enum_hnd,
-                                uint32 *total_entries, uint32 sess_level );
+uint32 _srv_net_share_get_info(const UNISTR2 *srv_name,
+			       const UNISTR2 *share_name, uint32 info_level,
+			       SHARE_INFO_CTR *ctr);
+uint32 _srv_net_sess_enum(const UNISTR2 *srv_name, 
+			  uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			  uint32 preferred_len, ENUM_HND *enum_hnd,
+			  uint32 *total_entries, uint32 sess_level);
 uint32 _srv_net_conn_enum( const UNISTR2 *srv_name, 
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
 			uint32 preferred_len, ENUM_HND *enum_hnd,

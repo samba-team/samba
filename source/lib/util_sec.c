@@ -47,14 +47,20 @@ abort if we haven't set the uid correctly
 ****************************************************************************/
 static void assert_uid(uid_t ruid, uid_t euid)
 {
-	if ((euid != (uid_t)-1 && geteuid() != euid) ||
-	    (ruid != (uid_t)-1 && getuid() != ruid)) {
-		DEBUG(0,("Failed to set uid privileges to (%d,%d) now set to (%d,%d)\n",
-			 (int)ruid, (int)euid,
-			 (int)getuid(), (int)geteuid()));
+#ifdef AUTOCONF_TEST
+#if (defined(USE_SETRESUID) || defined(USE_SETREUID) || \
+     defined(USE_SETEUID) || defined(USE_SETUIDX))
+	if ((euid != (uid_t) (-1) && geteuid() != euid) ||
+	    (ruid != (uid_t) (-1) && getuid() != ruid))
+	{
+		DEBUG(0,
+		      ("Failed to set uid privileges to (%d,%d) now set to (%d,%d)\n",
+		       (int)ruid, (int)euid, (int)getuid(), (int)geteuid()));
 		smb_panic("failed to set uid\n");
 		exit(1);
 	}
+#endif
+#endif
 }
 
 /****************************************************************************
@@ -62,15 +68,21 @@ abort if we haven't set the gid correctly
 ****************************************************************************/
 static void assert_gid(gid_t rgid, gid_t egid)
 {
-	if ((egid != (gid_t)-1 && getegid() != egid) ||
-	    (rgid != (gid_t)-1 && getgid() != rgid)) {
-		DEBUG(0,("Failed to set gid privileges to (%d,%d) now set to (%d,%d) uid=(%d,%d)\n",
-			 (int)rgid, (int)egid,
-			 (int)getgid(), (int)getegid(),
-			 (int)getuid(), (int)geteuid()));
+#ifdef AUTOCONF_TEST
+#if (defined(USE_SETRESGID) || defined(USE_SETREGID) || \
+     defined(USE_SETEGID) || defined(USE_SETGIDX))
+	if ((egid != (gid_t) (-1) && getegid() != egid) ||
+	    (rgid != (gid_t) (-1) && getgid() != rgid))
+	{
+		DEBUG(0,
+		      ("Failed to set gid privileges to (%d,%d) now set to (%d,%d) uid=(%d,%d)\n",
+		       (int)rgid, (int)egid, (int)getgid(), (int)getegid(),
+		       (int)getuid(), (int)geteuid()));
 		smb_panic("failed to set gid\n");
 		exit(1);
 	}
+#endif
+#endif
 }
 
 /****************************************************************************
@@ -78,20 +90,20 @@ static void assert_gid(gid_t rgid, gid_t egid)
  We want to end up with ruid==euid==0
 ****************************************************************************/
 void gain_root_privilege(void)
-{	
-#if USE_SETRESUID
-	setresuid(0,0,0);
+{
+#ifdef USE_SETRESUID
+	setresuid(0, 0, 0);
 #endif
-    
-#if USE_SETEUID
+
+#ifdef USE_SETEUID
 	seteuid(0);
 #endif
 
-#if USE_SETREUID
+#ifdef USE_SETREUID
 	setreuid(0, 0);
 #endif
 
-#if USE_SETUIDX
+#ifdef USE_SETUIDX
 	setuidx(ID_EFFECTIVE, 0);
 	setuidx(ID_REAL, 0);
 #endif
@@ -109,19 +121,19 @@ void gain_root_privilege(void)
 ****************************************************************************/
 void gain_root_group_privilege(void)
 {
-#if USE_SETRESUID
-	setresgid(0,0,0);
+#ifdef USE_SETRESGID
+	setresgid(0, 0, 0);
 #endif
 
-#if USE_SETREUID
-	setregid(0,0);
+#ifdef USE_SETREGID
+	setregid(0, 0);
 #endif
 
-#if USE_SETEUID
+#ifdef USE_SETEGID
 	setegid(0);
 #endif
 
-#if USE_SETUIDX
+#ifdef USE_SETGIDX
 	setgidx(ID_EFFECTIVE, 0);
 	setgidx(ID_REAL, 0);
 #endif
@@ -138,19 +150,19 @@ void gain_root_group_privilege(void)
 ****************************************************************************/
 void set_effective_uid(uid_t uid)
 {
-#if USE_SETRESUID
-	setresuid(-1,uid,-1);
+#ifdef USE_SETRESUID
+	setresuid(-1, uid, -1);
 #endif
 
-#if USE_SETREUID
-	setreuid(-1,uid);
+#ifdef USE_SETREUID
+	setreuid(-1, uid);
 #endif
 
-#if USE_SETEUID
+#ifdef USE_SETEUID
 	seteuid(uid);
 #endif
 
-#if USE_SETUIDX
+#ifdef USE_SETUIDX
 	setuidx(ID_EFFECTIVE, uid);
 #endif
 
@@ -163,19 +175,19 @@ void set_effective_uid(uid_t uid)
 ****************************************************************************/
 void set_effective_gid(gid_t gid)
 {
-#if USE_SETRESUID
-	setresgid(-1,gid,-1);
+#ifdef USE_SETRESGID
+	setresgid(-1, gid, -1);
 #endif
 
-#if USE_SETREUID
-	setregid(-1,gid);
+#ifdef USE_SETREGID
+	setregid(-1, gid);
 #endif
 
-#if USE_SETEUID
+#ifdef USE_SETEGID
 	setegid(gid);
 #endif
 
-#if USE_SETUIDX
+#ifdef USE_SETGIDX
 	setgidx(ID_EFFECTIVE, gid);
 #endif
 
@@ -202,7 +214,8 @@ void restore_re_uid(void)
 {
 	set_effective_uid(0);
 	set_effective_uid(saved_euid);
-	if (getuid() != saved_ruid) setuid(saved_ruid);
+	if (getuid() != saved_ruid)
+		setuid(saved_ruid);
 	set_effective_uid(saved_euid);
 
 	assert_uid(saved_ruid, saved_euid);
@@ -217,22 +230,22 @@ int set_re_uid(void)
 {
 	uid_t uid = geteuid();
 
-#if USE_SETRESUID
+#ifdef USE_SETRESUID
 	setresuid(geteuid(), -1, -1);
 #endif
 
-#if USE_SETREUID
+#ifdef USE_SETREUID
 	setreuid(0, 0);
 	setreuid(uid, -1);
 	setreuid(-1, uid);
 #endif
 
-#if USE_SETEUID
+#ifdef USE_SETEUID
 	/* can't be done */
 	return -1;
 #endif
 
-#if USE_SETUIDX
+#ifdef USE_SETUIDX
 	/* can't be done */
 	return -1;
 #endif
@@ -256,37 +269,49 @@ void become_user_permanently(uid_t uid, gid_t gid)
 	gain_root_privilege();
 	gain_root_group_privilege();
 
-#if USE_SETRESUID
-	setresgid(gid,gid,gid);
+#ifdef USE_SETRESGID
+	setresgid(gid, gid, gid);
 	setgid(gid);
-	setresuid(uid,uid,uid);
-	setuid(uid);
 #endif
 
-#if USE_SETREUID
-	setregid(gid,gid);
+#ifdef USE_SETREGID
+	setregid(gid, gid);
 	setgid(gid);
-	setreuid(uid,uid);
-	setuid(uid);
 #endif
 
-#if USE_SETEUID
+#ifdef USE_SETEGID
 	setegid(gid);
 	setgid(gid);
+#endif
+
+#ifdef USE_SETGIDX
+	setgidx(ID_REAL, gid);
+	setgidx(ID_EFFECTIVE, gid);
+	setgid(gid);
+#endif
+
+#ifdef USE_SETRESUID
+	setresuid(uid, uid, uid);
+	setuid(uid);
+#endif
+
+#ifdef USE_SETREUID
+	setreuid(uid, uid);
+	setuid(uid);
+#endif
+
+#ifdef USE_SETEUID
 	setuid(uid);
 	seteuid(uid);
 	setuid(uid);
 #endif
 
-#if USE_SETUIDX
-	setgidx(ID_REAL, gid);
-	setgidx(ID_EFFECTIVE, gid);
-	setgid(gid);
+#ifdef USE_SETUIDX
 	setuidx(ID_REAL, uid);
 	setuidx(ID_EFFECTIVE, uid);
 	setuid(uid);
 #endif
-	
+
 	assert_uid(uid, uid);
 	assert_gid(gid, gid);
 }
@@ -294,15 +319,16 @@ void become_user_permanently(uid_t uid, gid_t gid)
 #ifdef AUTOCONF_TEST
 main()
 {
-        if (getuid() != 0) {
+	if (getuid() != 0)
+	{
 #if (defined(AIX) && defined(USE_SETREUID))
 		/* setreuid is badly broken on AIX 4.1, we avoid it completely */
-                fprintf(stderr,"avoiding possibly broken setreuid\n");
+		fprintf(stderr, "avoiding possibly broken setreuid\n");
 		exit(1);
 #endif
 
 		/* assume that if we have the functions then they work */
-                fprintf(stderr,"not running as root: assuming OK\n");
+		fprintf(stderr, "not running as root: assuming OK\n");
 		exit(0);
 	}
 
@@ -313,11 +339,25 @@ main()
 	gain_root_privilege();
 	gain_root_group_privilege();
 	become_user_permanently(1, 1);
+#if (defined(USE_SETRESUID) || defined(USE_SETREUID) || \
+     defined(USE_SETEUID) || defined(USE_SETUIDX))
 	setuid(0);
-	if (getuid() == 0) {
-		fprintf(stderr,"uid not set permanently\n");
+	if (getuid() == 0)
+	{
+		fprintf(stderr, "uid not set permanently\n");
 		exit(1);
 	}
+#endif
+
+#if (defined(USE_SETRESGID) || defined(USE_SETREGID) || \
+     defined(USE_SETEGID) || defined(USE_SETGIDX))
+	setgid(0);
+	if (getgid() == 0)
+	{
+		fprintf(stderr, "gid not set permanently\n");
+		exit(1);
+	}
+#endif
 
 	printf("OK\n");
 

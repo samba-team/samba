@@ -409,8 +409,7 @@ static BOOL srv_io_share_info502(char *desc,
 /*******************************************************************
  reads or writes a structure.
  ********************************************************************/
-void srv_free_share_info_ctr(const char *desc,
-			     SHARE_INFO_CTR *info,
+void srv_free_share_info_ctr(SHARE_INFO_CTR *info,
 			     uint32 info_level, uint32 count)
 {
 	if (info == NULL) return;

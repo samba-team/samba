@@ -40,7 +40,7 @@ AC_SUBST(BROKEN_CC)
 dnl Check if the C compiler understands volatile (it should, being ANSI).
 AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
     AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
-       samba_cv_volatile=yes,samba_cv_volatile=no)])
+	samba_cv_volatile=yes,samba_cv_volatile=no)])
 if test x"$samba_cv_volatile" = x"yes"; then
    AC_DEFINE(HAVE_VOLATILE)
 fi
@@ -68,6 +68,7 @@ case "$host_os" in
 # files *at all* unless the -D_LARGE_FILE or -D_LARGE_FILE_API flags are set.
 #
     *aix4*)
+	  AC_MSG_RESULT([enabling large file support])
       CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
       ;;    
 #
@@ -80,6 +81,26 @@ case "$host_os" in
 EOF
 )
       ;;
+    *hurd*)
+        AC_MSG_CHECKING([for LFS support])
+        old_CPPFLAGS="$CPPFLAGS"
+        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+        AC_TRY_RUN([
+#include <unistd.h>
+main () {
+#if _LFS64_LARGEFILE == 1
+exit(0);
+#else
+exit(1);
+#endif
+}], [GLIBC_LFS_SUPPORT=yes], [GLIBC_LFS_SUPPORT=no], [GLIBC_LFS_SUPPORT=cross])
+        CPPFLAGS="$old_CPPFLAGS"
+        if test x$GLIBC_LFS_SUPPORT = xyes ; then
+          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+        fi
+      AC_MSG_RESULT([$GLIBC_LFS_SUPPORT])
+    ;;
+
 esac
 
 AC_INLINE
@@ -96,7 +117,18 @@ AC_CHECK_HEADERS(sys/filio.h string.h strings.h stdlib.h sys/socket.h sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
 AC_CHECK_HEADERS(sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 #
+# HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
+# This causes configure to fail to detect it. Check for shadow separately on HPUX.
 #
+case "$host_os" in
+    *hpux*)
+		AC_TRY_COMPILE([#include <shadow.h>],[struct spwd testme],
+			ac_cv_header_shadow_h=yes,ac_cv_header_shadow_h=no)
+		if test x"$ac_cv_header_shadow_h" = x"yes"; then
+		   AC_DEFINE(HAVE_SHADOW_H)
+		fi
+	;;
+esac
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
@@ -134,11 +166,42 @@ AC_CHECK_TYPE(wchar_t, unsigned short)
 AC_CHECK_LIB(cups,httpConnect)
 
 
+AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <signal.h>],[sig_atomic_t i = 0],
+	samba_cv_sig_atomic_t=yes,samba_cv_sig_atomic_t=no)])
+if test x"$samba_cv_sig_atomic_t" = x"yes"; then
+   AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE)
+fi
+
 AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
     AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
 	samba_cv_errno=yes,samba_cv_have_errno=no)])
 if test x"$samba_cv_errno" = x"yes"; then
    AC_DEFINE(HAVE_ERRNO_DECL)
+fi
+
+# stupid glibc has the functions but no declaration. grrrr.
+AC_CACHE_CHECK([for setresgid declaration],samba_cv_have_setresgid_decl,[
+    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)setresgid],
+        samba_cv_have_setresgid_decl=yes,samba_cv_have_setresgid_decl=no)])
+if test x"$samba_cv_have_setresgid_decl" = x"yes"; then
+    AC_DEFINE(HAVE_SETRESGID_DECL)
+fi
+
+# and glibc has setresgid under linux but the function does
+# nothing until kernel 2.1.44! very dumb.
+AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
+    AC_TRY_RUN([#include <errno.h>
+main() { setresgid(1,1,1); setresgid(2,2,2); exit(errno==EPERM?0:1);}],
+	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no,samba_cv_have_setresgid=cross)])
+if test x"$samba_cv_have_setresgid" = x"yes"; then
+    AC_DEFINE(HAVE_SETRESGID)
 fi
 
 # stupid glibc has the functions but no declaration. grrrr.
@@ -191,7 +254,7 @@ if test x"$ac_cv_func_pam_authenticate" = x"no"; then
 fi
 
 ###############################################
-# readline requires some curses routines
+# test for where we get readline() from
 if test "$ac_cv_header_readline_h" = "yes" ||
    test "$ac_cv_header_readline_readline_h" = "yes"; then
   AC_CHECK_FUNCS(tputs)
@@ -261,7 +324,8 @@ AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf)
 AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64)
 AC_CHECK_FUNCS(atexit grantpt dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 ftell64 setluid yp_get_default_domain getpwanam)
-AC_CHECK_FUNCS(srandom random srand rand setenv mmap64)
+AC_CHECK_FUNCS(srandom random srand rand setenv usleep mmap64 strcasecmp fcvt fcvtl)
+
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
 
@@ -326,10 +390,20 @@ case "$host_os" in
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
 		;;
 		*irix*) AC_DEFINE(IRIX)
+			case "$host_os" in
+			*irix6*) AC_DEFINE(IRIX6)
+			;;
+			esac
 			ATTEMPT_WRAP32_BUILD=yes
 		;;
 		*aix*) AC_DEFINE(AIX);;
 		*hpux*) AC_DEFINE(HPUX)
+			SHLIBEXT="sl"
+			# Use special PIC flags for the native HP-UX compiler.
+			if test $ac_cv_prog_cc_Ae = yes; then
+				LDSHFLAGS="-b"
+				PICFLAG="+z"
+			fi
 		;;
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1);;
@@ -337,6 +411,12 @@ case "$host_os" in
 		*next2*) AC_DEFINE(NEXT2);;
 		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
 		*sysv4.2*) AC_CHECK_LIB(resolv, strcasecmp);;
+		*sysv5*)
+			if [ test "$GCC" != yes ]; then
+				AC_DEFINE(HAVE_MEMSET)
+			fi
+			LDSHFLAGS="-G"
+			;;
 esac
 
 # try to work out how to produce pic code with this compiler
@@ -722,6 +802,246 @@ if test x"$samba_cv_USE_SETUIDX" = x"yes"; then
 fi
 fi
 
+################################################
+# look for a method of setting the effective gid
+setegid=no;
+if test $setegid = no; then
+AC_CACHE_CHECK([for setresgid],samba_cv_USE_SETRESGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETEUID 1
+#define USE_SETRESGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETRESGID=yes,samba_cv_USE_SETRESGID=no,samba_cv_USE_SETRESGID=cross)])
+if test x"$samba_cv_USE_SETRESGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETRESGID)
+fi
+fi
+
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setregid],samba_cv_USE_SETREGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETRESUID 1
+#define USE_SETREGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETREGID=yes,samba_cv_USE_SETREGID=no,samba_cv_USE_SETREGID=cross)])
+if test x"$samba_cv_USE_SETREGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETREGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setegid],samba_cv_USE_SETEGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETREUID 1
+#define USE_SETEGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETEGID=yes,samba_cv_USE_SETEGID=no,samba_cv_USE_SETEGID=cross)])
+if test x"$samba_cv_USE_SETEGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETEGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setgidx],samba_cv_USE_SETGIDX,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETUIDX 1
+#define USE_SETGIDX 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETGIDX=yes,samba_cv_USE_SETGIDX=no,samba_cv_USE_SETGIDX=cross)])
+if test x"$samba_cv_USE_SETGIDX" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETGIDX)
+fi
+fi
+
+################################################
+# look for a method of setting the effective gid
+setegid=no;
+if test $setegid = no; then
+AC_CACHE_CHECK([for setresgid],samba_cv_USE_SETRESGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETEUID 1
+#define USE_SETRESGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETRESGID=yes,samba_cv_USE_SETRESGID=no,samba_cv_USE_SETRESGID=cross)])
+if test x"$samba_cv_USE_SETRESGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETRESGID)
+fi
+fi
+
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setregid],samba_cv_USE_SETREGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETRESUID 1
+#define USE_SETREGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETREGID=yes,samba_cv_USE_SETREGID=no,samba_cv_USE_SETREGID=cross)])
+if test x"$samba_cv_USE_SETREGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETREGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setegid],samba_cv_USE_SETEGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETREUID 1
+#define USE_SETEGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETEGID=yes,samba_cv_USE_SETEGID=no,samba_cv_USE_SETEGID=cross)])
+if test x"$samba_cv_USE_SETEGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETEGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setgidx],samba_cv_USE_SETGIDX,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETUIDX 1
+#define USE_SETGIDX 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETGIDX=yes,samba_cv_USE_SETGIDX=no,samba_cv_USE_SETGIDX=cross)])
+if test x"$samba_cv_USE_SETGIDX" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETGIDX)
+fi
+fi
+
+################################################
+# look for a method of setting the effective gid
+setegid=no;
+if test $setegid = no; then
+AC_CACHE_CHECK([for setresgid],samba_cv_USE_SETRESGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETEUID 1
+#define USE_SETRESGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETRESGID=yes,samba_cv_USE_SETRESGID=no,samba_cv_USE_SETRESGID=cross)])
+if test x"$samba_cv_USE_SETRESGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETRESGID)
+fi
+fi
+
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setregid],samba_cv_USE_SETREGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETRESUID 1
+#define USE_SETREGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETREGID=yes,samba_cv_USE_SETREGID=no,samba_cv_USE_SETREGID=cross)])
+if test x"$samba_cv_USE_SETREGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETREGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setegid],samba_cv_USE_SETEGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETREUID 1
+#define USE_SETEGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETEGID=yes,samba_cv_USE_SETEGID=no,samba_cv_USE_SETEGID=cross)])
+if test x"$samba_cv_USE_SETEGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETEGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setgidx],samba_cv_USE_SETGIDX,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETUIDX 1
+#define USE_SETGIDX 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETGIDX=yes,samba_cv_USE_SETGIDX=no,samba_cv_USE_SETGIDX=cross)])
+if test x"$samba_cv_USE_SETGIDX" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETGIDX)
+fi
+fi
+
+################################################
+# look for a method of setting the effective gid
+setegid=no;
+if test $setegid = no; then
+AC_CACHE_CHECK([for setresgid],samba_cv_USE_SETRESGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETEUID 1
+#define USE_SETRESGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETRESGID=yes,samba_cv_USE_SETRESGID=no,samba_cv_USE_SETRESGID=cross)])
+if test x"$samba_cv_USE_SETRESGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETRESGID)
+fi
+fi
+
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setregid],samba_cv_USE_SETREGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETRESUID 1
+#define USE_SETREGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETREGID=yes,samba_cv_USE_SETREGID=no,samba_cv_USE_SETREGID=cross)])
+if test x"$samba_cv_USE_SETREGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETREGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setegid],samba_cv_USE_SETEGID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETREUID 1
+#define USE_SETEGID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETEGID=yes,samba_cv_USE_SETEGID=no,samba_cv_USE_SETEGID=cross)])
+if test x"$samba_cv_USE_SETEGID" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETEGID)
+fi
+fi
+
+if test $setegid = no; then
+AC_CACHE_CHECK([for setgidx],samba_cv_USE_SETGIDX,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETUIDX 1
+#define USE_SETGIDX 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETGIDX=yes,samba_cv_USE_SETGIDX=no,samba_cv_USE_SETGIDX=cross)])
+if test x"$samba_cv_USE_SETGIDX" = x"yes"; then
+    setegid=yes;AC_DEFINE(USE_SETGIDX)
+fi
+fi
+
 
 AC_CACHE_CHECK([for shared mmap],samba_cv_HAVE_SHARED_MMAP,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
@@ -758,6 +1078,7 @@ exit(1);
 #endif
 }],
        samba_cv_HAVE_STRUCT_FLOCK64=yes,samba_cv_HAVE_STRUCT_FLOCK64=no,samba_cv_HAVE_STRUCT_FLOCK64=cross)])
+
 if test x"$samba_cv_HAVE_STRUCT_FLOCK64" = x"yes"; then
     AC_DEFINE(HAVE_STRUCT_FLOCK64)
 fi
@@ -769,7 +1090,7 @@ if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
     AC_DEFINE(HAVE_SYSV_IPC)
 fi
 
-LOCKDIR='$(BASEDIR)/var'
+LOCKDIR='$(VARDIR)/locks'
 #################################################
 # Specify an alternative lock dir
 AC_MSG_CHECKING(where to put Samba lock files)
@@ -1001,6 +1322,8 @@ AC_ARG_WITH(surstdb,
   AC_MSG_RESULT(no)
 )
 
+#################################################
+# check for a PAM password database
 
 #################################################
 # check for a LDAP password database
@@ -1210,8 +1533,40 @@ AC_SUBST(QUOTAOBJS)
 #################################################
 # check for experimental utmp accounting
 
+AC_MSG_CHECKING(whether to support utmp accounting)
+AC_ARG_WITH(utmp,
+[  --with-utmp     Include experimental utmp accounting
+  --without-utmp  Don't include experimental utmp accounting (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_UTMP)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
 #################################################
 # check for MS Dfs support
+
+AC_MSG_CHECKING(whether to support MS Dfs)
+AC_ARG_WITH(msdfs,
+[  --with-msdfs		Include MS Dfs support
+  --without-msdfs	Don't include MS Dfs support (default)],
+[ case "$withval" in
+  yes)
+     AC_MSG_RESULT(yes)
+     AC_DEFINE(MS_DFS)
+     ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # set private directory location
@@ -1239,6 +1594,24 @@ AC_ARG_WITH(privatedir,
 
 #################################################
 # set SWAT directory location
+AC_ARG_WITH(swatdir,
+[  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-swatdir called without argument - will use default])
+    swatdir='${prefix}/swat'
+  ;;
+  * )
+    swatdir="$withval"
+    ;;
+  esac
+  AC_SUBST(swatdir)],
+  [swatdir='${prefix}/swat'
+   AC_SUBST(swatdir)]
+)
 
 #################################################
 # these tests are taken from the GNU fileutils package

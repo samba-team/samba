@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 time of day
 ********************************************************************/
-uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod )
+uint32 _srv_net_remote_tod(UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod)
 {
 	struct tm *t;
 	time_t unixdate = time(NULL);
@@ -41,18 +41,18 @@ uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod )
 
 	/* set up the */
 	make_time_of_day_info(tod,
-	                      unixdate,
-	                      0,
-	                      t->tm_hour,
-	                      t->tm_min,
-	                      t->tm_sec,
-	                      0,
-	                      TimeDiff(unixdate)/60,
-	                      10000,
-	                      t->tm_mday,
-	                      t->tm_mon + 1,
-	                      1900+t->tm_year,
-	                      t->tm_wday);
+			      unixdate,
+			      0,
+			      t->tm_hour,
+			      t->tm_min,
+			      t->tm_sec,
+			      0,
+			      TimeDiff(unixdate)/60,
+			      10000,
+			      t->tm_mday,
+			      t->tm_mon + 1,
+			      1900+t->tm_year,
+			      t->tm_wday);
 	return 0x0;
 }
 
@@ -72,9 +72,9 @@ static BOOL make_r_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id,
 	sv101->ver_major    = ver_major;
 	sv101->ver_minor    = ver_minor;
 	sv101->srv_type     = srv_type;
-	make_buf_unistr2(&(sv101->uni_comment ), &(sv101->ptr_comment) , comment );
+	make_buf_unistr2(&(sv101->uni_comment), &(sv101->ptr_comment), comment);
 
-return True;
+	return True;
 }
 
 /*******************************************************************
@@ -114,38 +114,38 @@ static BOOL make_r_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id,
 /*******************************************************************
 net server get info
 ********************************************************************/
-uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
-                                SRV_INFO_CTR *ctr)
+uint32 _srv_net_srv_get_info(UNISTR2 *srv_name, uint32 switch_value,
+			     SRV_INFO_CTR *ctr)
 {
 	switch (switch_value)
 	{
 		case 102:
 		{
 			make_r_srv_info_102(&(ctr->srv.sv102),
-					500, /* platform id */
-					global_myname,
-					lp_serverstring(),
-					lp_major_announce_version(),
-					lp_minor_announce_version(),
-					lp_default_server_announce(),
-					0xffffffff, /* users */
-					0xf, /* disc */
-					0, /* hidden */
-					240, /* announce */
-					3000, /* announce delta */
-					100000, /* licenses */
-					"c:\\"); /* user path */
+					    500, /* platform id */
+					    global_myname,
+					    lp_serverstring(),
+					    lp_major_announce_version(),
+					    lp_minor_announce_version(),
+					    lp_default_server_announce(),
+					    0xffffffff, /* users */
+					    0xf, /* disc */
+					    0, /* hidden */
+					    240, /* announce */
+					    3000, /* announce delta */
+					    100000, /* licenses */
+					    "c:\\"); /* user path */
 			break;
 		}
 		case 101:
 		{
 			make_r_srv_info_101(&(ctr->srv.sv101),
-					500, /* platform id */
-					global_myname,
-					lp_major_announce_version(),
-					lp_minor_announce_version(),
-					lp_default_server_announce(),
-					lp_serverstring());
+					    500, /* platform id */
+					    global_myname,
+					    lp_major_announce_version(),
+					    lp_minor_announce_version(),
+					    lp_default_server_announce(),
+					    lp_serverstring());
 			break;
 		}
 		default:
@@ -168,7 +168,7 @@ uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
 
  ********************************************************************/
 static void make_srv_share_1_info(SH_INFO_1    *sh1,
-                                  SH_INFO_1_STR *str1, int snum)
+				  SH_INFO_1_STR *str1, int snum)
 {
 	int len_net_name;
 	pstring net_name;
@@ -199,7 +199,7 @@ static void make_srv_share_1_info(SH_INFO_1    *sh1,
 
  ********************************************************************/
 static void make_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, uint32 *snum, 
-					uint32 *svcs)
+				  uint32 *svcs)
 {
 	uint32 num_entries = 0;
 	(*svcs) = lp_numservices();
@@ -223,8 +223,8 @@ static void make_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, uint32 *snum,
 			sh1->info_1_str[num_entries] = g_new(SH_INFO_1_STR, 1);
 
 			make_srv_share_1_info(sh1->info_1    [num_entries],
-			                      sh1->info_1_str[num_entries],
-			                      (*snum));
+					      sh1->info_1_str[num_entries],
+					      (*snum));
 
 			/* move on to creating next share */
 			num_entries++;
@@ -260,6 +260,7 @@ static void make_srv_share_2_info(SH_INFO_2     *sh2,
 	pstring path;
 	pstring passwd;
 	uint32 type;
+	uint32 max_uses;
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark  , lp_comment    (snum));
@@ -274,8 +275,11 @@ static void make_srv_share_2_info(SH_INFO_2     *sh2,
 	if (strequal("IPC$", net_name))    type = STYPE_IPC;
 	if (net_name[len_net_name] == '$') type |= STYPE_HIDDEN;
 
+	max_uses = lp_max_connections(snum);
+	if (max_uses == 0)  max_uses = 0xffffffff;
+
 	make_srv_share_info2    (sh2 , net_name, type, remark, 0, 
-				0xffffffff, 1, path, passwd);
+				 max_uses, 1, path, passwd);
 	make_srv_share_info2_str(str2, net_name, remark, path, passwd);
 }
 
@@ -288,7 +292,7 @@ static void make_srv_share_2_info(SH_INFO_2     *sh2,
 
  ********************************************************************/
 static void make_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, uint32 *snum, 
-					uint32 *svcs)
+				  uint32 *svcs)
 {
 	uint32 num_entries = 0;
 	(*svcs) = lp_numservices();
@@ -331,11 +335,38 @@ static void make_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, uint32 *snum,
 }
 
 /*******************************************************************
+ fill in a share info level 2 structure.
+
+ this function breaks the rule that i'd like to be in place, namely
+ it doesn't receive its data as arguments: it has to call lp_xxxx()
+ functions itself.  yuck.
+
+ see ipc.c:fill_share_info()
+
+ ********************************************************************/
+static void make_srv_share_502_info(SH_INFO_502_HDR *sh502,
+				    SH_INFO_502_DATA *str502,
+				    int snum)
+{
+	if (sh502 == NULL || str502 == NULL) return;
+
+	make_srv_share_2_info(&(sh502->info2_hdr),
+			      &(str502->info2_str),
+			      snum);
+
+	/* currently, no SD */
+	sh502->sd_size = 0;
+	sh502->sd_ptr = 0;
+	str502->sd_size2 = 0;
+	ZERO_STRUCT(str502->sd);
+}
+
+/*******************************************************************
  makes a SRV_R_NET_SHARE_ENUM structure.
 ********************************************************************/
 static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
-					int switch_value, uint32 *resume_hnd,
-					uint32 *total_entries)
+				      int switch_value, uint32 *resume_hnd,
+				      uint32 *total_entries)
 {
 	uint32 status = 0x0;
 	DEBUG(5,("make_srv_share_info_ctr: %d\n", __LINE__));
@@ -346,17 +377,15 @@ static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
 	{
 		case 1:
 		{
-			make_srv_share_info_1(&(ctr->share.info1), 
-						resume_hnd, 
-						total_entries);
+			make_srv_share_info_1(&(ctr->share.info1),
+					      resume_hnd, total_entries);
 			ctr->ptr_share_ctr = 1;
 			break;
 		}
 		case 2:
 		{
-			make_srv_share_info_2(&(ctr->share.info2), 
-						resume_hnd, 
-						total_entries);
+			make_srv_share_info_2(&(ctr->share.info2),
+					      resume_hnd, total_entries);
 			ctr->ptr_share_ctr = 2;
 			break;
 		}
@@ -418,14 +447,64 @@ uint32 _srv_net_share_enum( const UNISTR2 *srv_name,
 
 	DEBUG(5,("_srv_net_srv_share_enum: %d\n", __LINE__));
 	
-	status = make_srv_r_net_share_enum( get_enum_hnd(enum_hnd),
-						ctr->switch_value,
-						ctr,
-						total_entries,
-						enum_hnd,
-						share_level );
+	status = make_srv_r_net_share_enum(get_enum_hnd(enum_hnd),
+					   ctr->switch_value,
+					   ctr, total_entries,
+					   enum_hnd, share_level);
 
 	DEBUG(5,("_srv_net_srv_share_enum: %d\n", __LINE__));
+
+	return status;
+}
+
+
+/*******************************************************************
+net share get info
+********************************************************************/
+uint32 _srv_net_share_get_info(const UNISTR2 *srv_name,
+			       const UNISTR2 *share_name, uint32 info_level,
+			       SHARE_INFO_CTR *ctr)
+{
+	fstring share;
+	int snum;
+	uint32 status;
+
+	if (share_name == NULL || ctr == NULL)
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	unistr2_to_ascii(share, share_name, sizeof(share)-1);
+	if (share == NULL) return NT_STATUS_NO_MEMORY;
+
+	snum = lp_servicenumber(share);
+
+	if (snum < 0)
+	{
+		/* no such service */
+		/* safe_free(share); */
+		return NT_STATUS_ACCESS_DENIED; /* check this */
+	}
+
+	switch(info_level)
+	{
+		case 502:
+			ctr->info502 = g_new(SHARE_INFO_502, 1);
+			if (ctr->info502 == NULL)
+			{
+				status = NT_STATUS_NO_MEMORY;
+				break;
+			}
+			make_srv_share_502_info(&(ctr->info502->info502_hdr),
+						&(ctr->info502->info502_data),
+						snum);
+			status = NT_STATUS_NOPROBLEMO;
+			break;
+		default:
+			status = NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	/* safe_free(share); */
 
 	return status;
 }
@@ -459,7 +538,7 @@ static void make_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 	struct connect_record *crec;
 	uint32 session_count;
 
-        if (!get_session_count(&crec, &session_count))
+	if (!get_session_count(&crec, &session_count))
 	{
 		(*snum) = 0;
 		(*stot) = 0;
@@ -483,7 +562,8 @@ static void make_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++)
 		{
 			make_srv_sess_0_info(&(ss0->info_0    [num_entries]),
-								 &(ss0->info_0_str[num_entries]), crec[num_entries].machine);
+					     &(ss0->info_0_str[num_entries]),
+					     crec[num_entries].machine);
 
 			DEBUG(0,("make_srv_sess_0_info\n"));
 			/* move on to creating next session */
@@ -541,7 +621,7 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 	struct connect_record *crec;
 	uint32 session_count;
 
-        if (!get_session_count(&crec, &session_count))
+	if (!get_session_count(&crec, &session_count))
 	{
 		(*snum) = 0;
 		(*stot) = 0;
@@ -564,11 +644,14 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 	{
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++)
 		{
-			DEBUG(0,("sess1 machine: %s, uid : %u\n",crec[num_entries].machine,crec[num_entries].uid));
+			DEBUG(0, ("sess1 machine: %s, uid : %u\n",
+				  crec[num_entries].machine,
+				  crec[num_entries].uid));
 			make_srv_sess_1_info(&(ss1->info_1    [num_entries]),
-								 &(ss1->info_1_str[num_entries]),
-			                     crec[num_entries].machine, 
-			                     uidtoname(crec[num_entries].uid), 1, 10, 5, 0);
+					     &(ss1->info_1_str[num_entries]),
+					     crec[num_entries].machine, 
+					     uidtoname(crec[num_entries].uid),
+					     1, 10, 5, 0);
 /* 	What are these on the End ??? */
 
 			/* move on to creating next session */
@@ -671,10 +754,10 @@ static uint32 make_srv_r_net_sess_enum( uint32 resume_hnd,
 /*******************************************************************
 net sess enum
 ********************************************************************/
-uint32 _srv_net_sess_enum( const UNISTR2 *srv_name, 
-                                uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-                                uint32 preferred_len, ENUM_HND *enum_hnd,
-                                uint32 *total_entries, uint32 sess_level )
+uint32 _srv_net_sess_enum(const UNISTR2 *srv_name, 
+			  uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			  uint32 preferred_len, ENUM_HND *enum_hnd,
+			  uint32 *total_entries, uint32 sess_level)
 {
 	uint32 status;
 
@@ -682,11 +765,9 @@ uint32 _srv_net_sess_enum( const UNISTR2 *srv_name,
 
 	/* set up the */
 	status = make_srv_r_net_sess_enum(get_enum_hnd(enum_hnd),
-						ctr->switch_value,
-						ctr,
-						total_entries,
-						enum_hnd,
-						sess_level );
+					  ctr->switch_value,
+					  ctr, total_entries,
+					  enum_hnd, sess_level);
 
 	DEBUG(5,("_srv_net_sess_enum: %d\n", __LINE__));
 
@@ -707,7 +788,7 @@ static void make_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *sto
 	struct connect_record *crec;
 	uint32 connection_count;
 
-        if (!get_connection_status(&crec, &connection_count))
+	if (!get_connection_status(&crec, &connection_count))
 	{
 		(*snum) = 0;
 		(*stot) = 0;
@@ -738,8 +819,6 @@ static void make_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *sto
 		ss0->num_entries_read  = num_entries;
 		ss0->ptr_conn_info     = num_entries > 0 ? 1 : 0;
 		ss0->num_entries_read2 = num_entries;
-		
-		
 
 		if ((*snum) >= (*stot))
 		{
@@ -786,13 +865,13 @@ static void make_srv_conn_1_info(CONN_INFO_1    *se1, CONN_INFO_1_STR *str1,
 static void make_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *stot)
 {
 	uint32 num_entries = 0;	
-        time_t current_time;
-        time_t diff;
+	time_t current_time;
+	time_t diff;
 
 	struct connect_record *crec;
 	uint32 connection_count;
 
-        if (!get_connection_status(&crec, &connection_count))
+	if (!get_connection_status(&crec, &connection_count))
 	{
 		(*snum) = 0;
 		(*stot) = 0;
@@ -807,8 +886,8 @@ static void make_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		return;
 	}
 
-        current_time=time(NULL);
-        
+	current_time=time(NULL);
+
 	DEBUG(5,("make_srv_conn_1_ss1\n"));
 
 	if (snum)
@@ -817,9 +896,10 @@ static void make_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		{
 			diff = current_time - crec[num_entries].start;
 			make_srv_conn_1_info(&(ss1->info_1    [num_entries]),
-								 &(ss1->info_1_str[num_entries]),
-			                     (*snum), 0, 0, 1, diff,uidtoname(crec[num_entries].uid), 
-			                     crec[num_entries].name);
+					     &(ss1->info_1_str[num_entries]),
+					     (*snum), 0, 0, 1, diff,
+					     uidtoname(crec[num_entries].uid), 
+					     crec[num_entries].name);
 
 /* FIXME : type of connection + number of locked files */
 
@@ -878,7 +958,7 @@ static uint32 make_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 		default:
 		{
 			DEBUG(5,("make_srv_conn_info_ctr: unsupported switch value %d\n",
-			          switch_value));
+				 switch_value));
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_conn_ctr = 0;
@@ -934,11 +1014,9 @@ uint32 _srv_net_conn_enum( const UNISTR2 *srv_name,
 
 	/* set up the */
 	status = make_srv_r_net_conn_enum(get_enum_hnd(enum_hnd),
-						ctr->switch_value,
-						ctr,
-						total_entries,
-						enum_hnd,
-						conn_level );
+					  ctr->switch_value,
+					  ctr, total_entries,
+					  enum_hnd, conn_level);
 
 	DEBUG(5,("_srv_net_conn_enum: %d\n", __LINE__));
 
@@ -1034,7 +1112,7 @@ static uint32 make_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
 		default:
 		{
 			DEBUG(5,("make_srv_file_info_ctr: unsupported switch value %d\n",
-			          switch_value));
+				 switch_value));
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_file_ctr = 0;
@@ -1090,13 +1168,11 @@ uint32 _srv_net_file_enum( const UNISTR2 *srv_name,
 
 	/* set up the */
 	status = make_srv_r_net_file_enum(get_enum_hnd(enum_hnd),
-						ctr->switch_value,
-						ctr,
-						total_entries,
-						enum_hnd,
-						file_level );
+					  ctr->switch_value,
+					  ctr, total_entries,
+					  enum_hnd, file_level);
 
 	DEBUG(5,("_srv_net_file_enum: %d\n", __LINE__));
   
-  	return status;
+	return status;
 }

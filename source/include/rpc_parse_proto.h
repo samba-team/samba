@@ -1093,8 +1093,7 @@ BOOL make_srv_share_info2(SH_INFO_2 *sh2,
 			  const char *remark,
 			  uint32 perms, uint32 max_uses, uint32 num_uses,
 			  const char *path, const char *pass);
-void srv_free_share_info_ctr(const char *desc,
-			     SHARE_INFO_CTR *info,
+void srv_free_share_info_ctr(SHARE_INFO_CTR *info,
 			     uint32 info_level, uint32 count);
 void srv_free_srv_share_ctr(SRV_SHARE_INFO_CTR *ctr);
 BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 

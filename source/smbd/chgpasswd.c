@@ -123,8 +123,8 @@ static int dochild(int master, char *slavedev, const char *_name,
 	int slave;
 	struct termios stermios;
 	const struct passwd *pass;
-	int gid;
-	int uid;
+	gid_t gid;
+	uid_t uid;
 
 	fstring name;
 	fstrcpy(name, _name);
@@ -140,11 +140,8 @@ static int dochild(int master, char *slavedev, const char *_name,
 
 	gid = pass->pw_gid;
 	uid = pass->pw_uid;
-#ifdef HAVE_SETRESUID
-	setresuid(0, 0, 0);
-#else
-	setuid(0);
-#endif
+
+	gain_root_privilege();
 
 	/* Start new session - gets rid of controlling terminal. */
 	if (setsid() < 0)
@@ -215,19 +212,7 @@ static int dochild(int master, char *slavedev, const char *_name,
 	/* make us completely into the right uid */
 	if (!as_root)
 	{
-#ifdef HAVE_SETRESUID
-		setresgid(0, 0, 0);
-		setresuid(0, 0, 0);
-		setresgid(gid, gid, gid);
-		setresuid(uid, uid, uid);
-#else
-		setuid(0);
-		seteuid(0);
-		setgid(gid);
-		setegid(gid);
-		setuid(uid);
-		seteuid(uid);
-#endif
+		become_user_permanently(uid, gid);
 	}
 
 	DEBUG(10,

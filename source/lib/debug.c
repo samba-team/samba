@@ -114,7 +114,7 @@ static int     debug_count    = 0;
 static int     syslog_level   = 0;
 #endif
 static pstring format_bufr    = { '\0' };
-static int     format_pos     = 0;
+static size_t     format_pos     = 0;
 
 
 /* -------------------------------------------------------------------------- **
@@ -260,11 +260,11 @@ void force_check_log_size( void )
  * ************************************************************************** **
  */
 static void check_log_size( void )
-  {
+{
   int         maxlog;
   SMB_STRUCT_STAT st;
 
-  if( debug_count++ < 100 || getuid() != 0 )
+  if( debug_count++ < 100 || geteuid() != 0 )
     return;
 
   maxlog = lp_max_log_size() * 1024;
@@ -288,7 +288,7 @@ static void check_log_size( void )
       }
     }
   debug_count = 0;
-  } /* check_log_size */
+} /* check_log_size */
 
 /* ************************************************************************** **
  * Write an debug message on the debugfile.
@@ -315,7 +315,8 @@ va_dcl
     va_start( ap );
     format_str = va_arg( ap, char * );
 #endif
-    (void)vfprintf( dbf, format_str, ap );
+    if(dbf)
+      (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
     errno = old_errno;
     return( 0 );
@@ -392,9 +393,11 @@ va_dcl
     va_start( ap );
     format_str = va_arg( ap, char * );
 #endif
-    (void)vfprintf( dbf, format_str, ap );
+    if(dbf)
+      (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
-    (void)fflush( dbf );
+    if(dbf)
+      (void)fflush( dbf );
     }
 
   check_log_size();
@@ -439,7 +442,7 @@ static void bufr_print( void )
  */
 static void format_debug_text( char *msg )
   {
-  int i;
+  size_t i;
   BOOL timestamp = (timestamp_log && !stdout_logging && (lp_timestamp_logs() || 
 					!(lp_loaded())));
 
@@ -485,7 +488,8 @@ static void format_debug_text( char *msg )
 void dbgflush( void )
   {
   bufr_print();
-  (void)fflush( dbf );
+  if(dbf)
+    (void)fflush( dbf );
   } /* dbgflush */
 
 /* ************************************************************************** **
@@ -510,10 +514,13 @@ void dbgflush( void )
  *
  * ************************************************************************** **
  */
+
 BOOL dbghdr( int level, char *file, char *func, int line )
-  {
-  if( format_pos )
-    {
+{
+  /* Ensure we don't lose any real errno value. */
+  int old_errno = errno;
+
+  if( format_pos ) {
     /* This is a fudge.  If there is stuff sitting in the format_bufr, then
      * the *right* thing to do is to call
      *   format_debug_text( "\n" );
@@ -524,7 +531,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
      * that a new header is *not* desired.
      */
     return( True );
-    }
+  }
 
 #ifdef WITH_SYSLOG
   /* Set syslog_level. */
@@ -540,12 +547,29 @@ BOOL dbghdr( int level, char *file, char *func, int line )
    */
   if( timestamp_log && (lp_timestamp_logs() || !(lp_loaded()) ))
     {
-    /* Print it all out at once to prevent split syslog output. */
-    (void)Debug1("[%s, %d%s] %s:%s(%d)\n",
-                 timestring(lp_debug_hires_timestamp()), level, "",
-                 file, func, line);
-    }
+    char header_str[200];
 
+	header_str[0] = '\0';
+
+	if( lp_debug_pid())
+	  slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)getpid());
+
+	if( lp_debug_uid()) {
+      size_t hs_len = strlen(header_str);
+	  slprintf(header_str + hs_len,
+               sizeof(header_str) - 1 - hs_len,
+			   ", effective(%u, %u), real(%u, %u)",
+               (unsigned int)geteuid(), (unsigned int)getegid(),
+			   (unsigned int)getuid(), (unsigned int)getgid()); 
+	}
+  
+    /* Print it all out at once to prevent split syslog output. */
+    (void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
+                  timestring(lp_debug_hires_timestamp()), level,
+				  header_str, file, func, line );
+  }
+
+  errno = old_errno;
   return( True );
 }
 

@@ -67,7 +67,7 @@ extern fstring global_myworkgroup;
 
 DOM_SID global_sid_S_1_5_20; /* local well-known domain */
 DOM_SID global_sid_S_1_1;    /* Global Domain */
-static DOM_SID global_sid_S_1_3;    /* Creator Owner */
+static DOM_SID global_sid_S_1_3_0;  /* Creator Owner */
 DOM_SID global_sid_S_1_5;    /* NT Authority */
 DOM_SID global_sid_system;   /* NT System */
 static DOM_SID global_sid_S_1_1_0;  /* everyone */
@@ -87,11 +87,11 @@ static const struct sid_map static_sid_name_map[] =
 	{ &global_sid_S_1_5_20, "BUILTIN" }, /* SID_NAME_DOMAIN */
 	{ &global_sid_S_1_1   , "Global Domain" },
 	{ &global_sid_S_1_1_0 , "Everyone" }, /* SID_NAME_WKN_GRP */
-	{ &global_sid_S_1_3   , "Creator Owner" },
+	{ &global_sid_S_1_3_0 , "Creator Owner" }, /* SID_NAME_WKN_GRP */
 	{ &global_sid_S_1_5   , "NT Authority" }, /* SID_NAME_DOMAIN */
 	{ &global_sid_system  , "SYSTEM" }, /* SID_NAME_WKN_GRP */
-	{ &global_sam_sid     , global_sam_name },
-	{ &global_member_sid  , global_myworkgroup },
+	{ &global_sam_sid     , global_sam_name }, /* SID_NAME_DOMAIN */
+	{ &global_member_sid  , global_myworkgroup }, /* SID_NAME_DOMAIN */
 	{ NULL                , NULL      }
 };
 
@@ -230,9 +230,9 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_S_1_5_20, "S-1-5-32");
 	string_to_sid(&global_sid_S_1_1   , "S-1-1"   );
 	string_to_sid(&global_sid_S_1_1_0 , "S-1-1-0" );
-	string_to_sid(&global_sid_S_1_3   , "S-1-3"   );
+	string_to_sid(&global_sid_S_1_3_0 , "S-1-3-0" );
 	string_to_sid(&global_sid_S_1_5   , "S-1-5"   );
-	string_to_sid(&global_sid_system  , "S-1-5-17");
+	string_to_sid(&global_sid_system  , "S-1-5-18");
 
 	global_sid_everyone = &global_sid_S_1_1_0;
 	global_sid_builtin  = &global_sid_S_1_5_20;

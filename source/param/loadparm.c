@@ -195,6 +195,8 @@ typedef struct
   int change_notify_timeout;
   int stat_cache_size;
   int map_to_guest;
+  int min_passwd_length;
+  int oplock_break_wait_time;
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   int ldap_port;
   int ldap_protocol_version;
@@ -557,6 +559,10 @@ static struct parm_struct parm_table[] =
   {"server ntlmv2",    P_ENUM,    P_GLOBAL, &Globals.bServerNTLMv2,     NULL,   enum_bool_auto,  FLAG_BASIC},
   {"client ntlmv2",    P_ENUM,    P_GLOBAL, &Globals.bClientNTLMv2,     NULL,   enum_bool_auto,  FLAG_BASIC},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
+  {"alternate permissions",P_BOOL,P_LOCAL,  &sDefault.bAlternatePerm,   NULL,   NULL,  FLAG_GLOBAL|FLAG_DEPRECATED},
+  {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL,   NULL,  0},
+  {"min passwd length",     P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
+  {"min password length",   P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
   {"map to guest",     P_ENUM,    P_GLOBAL, &Globals.map_to_guest,      NULL,   enum_map_to_guest, 0},
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
@@ -569,7 +575,6 @@ static struct parm_struct parm_table[] =
   {"smb group file",   P_STRING,  P_GLOBAL, &Globals.szSMBGroupFile,    NULL,   NULL,  0},
   {"smb alias file",   P_STRING,  P_GLOBAL, &Globals.szSMBAliasFile,    NULL,   NULL,  0},
 #endif
-  {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL,   NULL,  0},
   {"root directory",   P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
   {"root dir",         P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
   {"root",             P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
@@ -581,7 +586,6 @@ static struct parm_struct parm_table[] =
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
   {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL,  0},
   {"dfs map",          P_STRING,  P_GLOBAL, &Globals.szDfsMap,          NULL,   NULL,  0},
-  {"alternate permissions",P_BOOL,P_LOCAL,  &sDefault.bAlternatePerm,   NULL,   NULL,  FLAG_GLOBAL|FLAG_DEPRECATED},
   {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL},
   {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL},
   {"user",             P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  0},
@@ -614,6 +618,7 @@ static struct parm_struct parm_table[] =
   {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  0},
   {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
   {"deny hosts",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  0},
+
 #ifdef WITH_SSL
   {"Secure Socket Layer Options", P_SEP, P_SEPARATOR},
 
@@ -881,7 +886,7 @@ static void init_globals(void)
   if (!done_init)
     {
       int i;
-      bzero((void *)&Globals,sizeof(Globals));
+      memset((void *)&Globals,'\0',sizeof(Globals));
 
       for (i = 0; parm_table[i].label; i++) 
 	if ((parm_table[i].type == P_STRING ||
@@ -962,7 +967,6 @@ static void init_globals(void)
   Globals.bDebugHiresTimestamp = False;
   Globals.bDebugPid = False;
   Globals.bDebugUid = False;
-  Globals.os_level = 32;
   Globals.max_ttl = 60*60*24*3; /* 3 days default. */
   Globals.max_wins_ttl = 60*60*24*6; /* 6 days default. */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default. */
@@ -993,6 +997,8 @@ static void init_globals(void)
   Globals.bNTPipeSupport = True; /* Do NT pipes by default. */
   Globals.bStatCache = True; /* use stat cache by default */
   Globals.map_to_guest = 0; /* By Default, "Never" */
+  Globals.min_passwd_length = 5; /* By Default, 5. */
+  Globals.oplock_break_wait_time = 10; /* By Default, 10 msecs. */
 
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   /* default values for ldap */
@@ -1053,6 +1059,7 @@ static void init_globals(void)
 
 */
 
+  Globals.os_level = 32;
   Globals.bPreferredMaster = Auto; /* depending on bDomainMaster */
   Globals.bLocalMaster = True;
   Globals.bDomainMaster = Auto; /* depending on bDomainLogons */
@@ -1428,6 +1435,8 @@ FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_change_notify_timeout,&Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_stat_cache_size,&Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest,&Globals.map_to_guest)
+FN_GLOBAL_INTEGER(lp_min_passwd_length,&Globals.min_passwd_length)
+FN_GLOBAL_INTEGER(lp_oplock_break_wait_time,&Globals.oplock_break_wait_time)
 
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
@@ -1556,7 +1565,7 @@ initialise a service to the defaults
 ***************************************************************************/
 static void init_service(service *pservice)
 {
-  bzero((char *)pservice,sizeof(service));
+  memset((char *)pservice,'\0',sizeof(service));
   copy_service(pservice,&sDefault,NULL);
 }
 
@@ -2100,7 +2109,7 @@ static BOOL handle_coding_system(char *pszParmValue,char **ptr)
 }
 
 /***************************************************************************
-handle the interpretation of the character set system parameter
+ Handle the interpretation of the character set system parameter
 ***************************************************************************/
 static BOOL handle_character_set(char *pszParmValue,char **ptr)
 {
@@ -2113,6 +2122,7 @@ static BOOL handle_character_set(char *pszParmValue,char **ptr)
 /***************************************************************************
 handle the valid chars lines
 ***************************************************************************/
+
 static BOOL handle_valid_chars(char *pszParmValue,char **ptr)
 { 
   string_set(ptr,pszParmValue);
@@ -2127,10 +2137,10 @@ static BOOL handle_valid_chars(char *pszParmValue,char **ptr)
   return(True);
 }
 
-
 /***************************************************************************
 handle the include operation
 ***************************************************************************/
+
 static BOOL handle_include(char *pszParmValue,char **ptr)
 { 
   pstring fname;
@@ -2204,7 +2214,7 @@ static void init_copymap(service *pservice)
   if (pservice->copymap) free(pservice->copymap);
   pservice->copymap = (BOOL *)malloc(sizeof(BOOL)*NUMPARAMETERS);
   if (!pservice->copymap)
-    DEBUG(0,("Couldn't allocate copymap!! (size %d)\n",NUMPARAMETERS));
+    DEBUG(0,("Couldn't allocate copymap!! (size %d)\n",(int)NUMPARAMETERS));
 
   for (i=0;i<NUMPARAMETERS;i++)
     pservice->copymap[i] = True;
@@ -2530,7 +2540,7 @@ Display the contents of the global structure.
 static void dump_globals(FILE *f)
 {
 	int i;
-	fprintf(f, "# Global parameters\n");
+	fprintf(f, "# Global parameters\n[global]\n");
 	
 	for (i=0;parm_table[i].label;i++)
 		if (parm_table[i].class == P_GLOBAL &&
@@ -2864,6 +2874,19 @@ void lp_dump(FILE *f, BOOL show_defaults)
 	 dump_a_service(pSERVICE(iService), f);
        }
    }
+}
+
+/***************************************************************************
+Display the contents of one service in human-readable form.
+***************************************************************************/
+void lp_dump_one(FILE *f, BOOL show_defaults, int snum)
+{
+   if (VALID(snum))
+     {
+       if (iSERVICE(snum).szService[0] == '\0')
+	 return;
+       dump_a_service(pSERVICE(snum), f);
+     }
 }
 
 

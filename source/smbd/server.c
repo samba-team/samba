@@ -544,14 +544,8 @@ static void usage(char *pname)
 
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */
-#ifdef HAVE_SETRESUID
-	setresuid(0,0,0);
-#else
-	setuid(0);
-	seteuid(0);
-	setuid(0);
-	seteuid(0);
-#endif
+	gain_root_privilege();
+	gain_root_group_privilege();
 
 	fault_setup((void (*)(void *))exit_server);
 	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);

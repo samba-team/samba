@@ -233,11 +233,15 @@ static BOOL api_srv_net_share_get_info(rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-	status = NT_STATUS_ACCESS_DENIED;
+	status = _srv_net_share_get_info(&q_n.uni_srv_name,
+					 &q_n.share_name, q_n.info_level,
+					 &ctr);;
 
 	make_srv_r_net_share_get_info(&r_n, q_n.info_level, &ctr, status);
 
 	ret = srv_io_r_net_share_get_info("", &r_n, rdata, 0);
+
+	srv_free_share_info_ctr(&ctr, q_n.info_level, 1);
 
 	return ret;
 }
