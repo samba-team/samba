@@ -543,7 +543,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *pol, uint32 *enum_ctx, 
                                 uint32 *pref_num_domains, uint32 *num_domains,
-				char ***domain_names, DOM_SID **domain_sids)
+                                char ***domain_names, DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM q;
@@ -598,7 +598,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		if (!*domain_names) {
 			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
-			result = NT_STATUS_UNSUCCESSFUL;
+			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
@@ -606,7 +606,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 						 r.num_domains);
 		if (!domain_sids) {
 			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
-			result = NT_STATUS_UNSUCCESSFUL;
+			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
@@ -631,6 +631,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
 
 /** Enumerate privileges*/
 
