@@ -45,16 +45,10 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 	struct server_pipe_state *state;
 	NTSTATUS status;
 
-	state = talloc(dce_call->conn, struct server_pipe_state);
+	/* We want the client and server challenge zero */
+	state = talloc_zero(dce_call->conn, struct server_pipe_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	ZERO_STRUCTP(state);
-	
-	if (dce_call->conn->auth_state.session_info == NULL) {
-		talloc_free(state);
-		smb_panic("No session info provided by schannel level setup!");
-		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 	
 	status = dcerpc_schannel_creds(dce_call->conn->auth_state.gensec_security, 
@@ -235,6 +229,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 
 	pipe_state->creds->secure_channel_type = r->in.secure_channel_type;
 
+	pipe_state->creds->rid = *r->out.rid;
 	/* remember this session key state */
 	nt_status = schannel_store_session_key(mem_ctx, pipe_state->creds);
 

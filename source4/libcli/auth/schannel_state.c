@@ -64,6 +64,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	char *s;
 	char *f;
 	char *sct;
+	char *rid;
 	time_t expiry = time(NULL) + SCHANNEL_CREDENTIALS_EXPIRY;
 	int ret;
 
@@ -89,6 +90,13 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	sct = talloc_asprintf(mem_ctx, "%u", (unsigned int)creds->secure_channel_type);
 
 	if (sct == NULL) {
+		talloc_free(ldb);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rid = talloc_asprintf(mem_ctx, "%u", (unsigned int)creds->rid);
+
+	if (rid == NULL) {
 		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -119,6 +127,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_string(ldb, msg, "secureChannelType", sct);
 	ldb_msg_add_string(ldb, msg, "accountName", creds->account_name);
 	ldb_msg_add_string(ldb, msg, "computerName", creds->computer_name);
+	ldb_msg_add_string(ldb, msg, "rid", rid);
 
 	ldb_delete(ldb, msg->dn);
 
@@ -207,6 +216,8 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "accountName", NULL));
 
 	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "computerName", NULL));
+
+	(*creds)->rid = ldb_msg_find_uint(res[0], "rid", 0);
 
 	talloc_free(ldb);
 
