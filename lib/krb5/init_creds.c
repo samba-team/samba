@@ -62,6 +62,7 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
 	free(o);
 	return ENOMEM;
     }
+    o->private->refcount = 1;
     *opt = o;
     return 0;
 }
@@ -71,19 +72,16 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
 			      const krb5_get_init_creds_opt *in,
 			      krb5_get_init_creds_opt **out)
 {
-    struct _krb5_get_init_creds_opt_private *private;
     krb5_get_init_creds_opt *opt;
-    krb5_error_code ret;
 
-    ret = krb5_get_init_creds_opt_alloc(context, &opt);
-    if (ret)
-	return ret;
-    
-    private = opt->private;
+    *out = NULL;
+    opt = malloc(sizeof(*opt));
+    if (opt == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
     *opt = *in;
-    opt->private = private;
-    if (in->private)
-	*opt->private = *in->private;
+    opt->private->refcount++;
     *out = opt;
     return 0;
 }
@@ -93,8 +91,12 @@ krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
 {
     if (opt->private == NULL)
 	return;
-    free(opt->private);
-    opt->private = NULL;
+    if (opt->private->refcount < 1) /* abort ? */
+	return;
+    if (--opt->private->refcount == 0) {
+	krb5_get_init_creds_opt_free_pkinit(opt);
+	free(opt->private);
+    }
     memset(opt, 0, sizeof(*opt));
     free(opt);
 }
