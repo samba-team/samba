@@ -42,6 +42,7 @@ RCSID("$Id$");
 
 static char *config_file;
 static char *keyfile;
+static char *keytab_str;
 static int help_flag;
 static int version_flag;
 static int debug_flag;
@@ -56,6 +57,10 @@ static struct getargs args[] = {
     {
 	"key-file",	'k',	arg_string, &keyfile, 
 	"location of master key file", "file"
+    },
+    {
+	"keytab",	0,	arg_string, &keytab_str,
+	"what keytab to use", "keytab"
     },
     {	"realm",	'r',	arg_string,   &realm, 
 	"realm to use", "realm" 
@@ -89,6 +94,7 @@ main(int argc, char **argv)
     int optind = 0;
     int e;
     krb5_log_facility *logf;
+    krb5_keytab keytab;
 
     set_progname(argv[0]);
 
@@ -119,6 +125,14 @@ main(int argc, char **argv)
 	    keyfile = strdup(p);
     }
 
+    if(keytab_str == NULL)
+	keytab = NULL;
+    else {
+	ret = krb5_kt_resolve(context, keytab_str, &keytab);
+	if(ret)
+	    krb5_err(context, 1, ret, "krb5_kt_resolve");
+    }
+
     {
 	krb5_principal server;
 	int fd = 0;
@@ -135,7 +149,7 @@ main(int argc, char **argv)
 	    krb5_set_default_realm(context, realm); /* XXX */
 	krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
 	ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
-			    server, 0, NULL, &ticket);
+			    server, 0, keytab, &ticket);
 	krb5_free_principal(context, server);
 	
 	if(ret)
