@@ -1756,7 +1756,7 @@ file %s as a share exists that was not opened with FILE_DELETE access.\n",
                                     (iterate_fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
                                     (iterate_fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
 
-              DEBUG(10,("call_trans2setfilepathinfo: Changing share mode for fnum %d, file %s\
+              DEBUG(10,("call_trans2setfilepathinfo: Changing share mode for fnum %d, file %s \
 dev = %x, inode = %.0f from %x to %x\n", 
                     iterate_fsp->fnum, iterate_fsp->fsp_name, (unsigned int)dev, 
                     (double)inode, iterate_fsp->share_mode, new_share_mode ));
@@ -1771,9 +1771,12 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
              * counted struct. Delete when the last reference
              * goes away.
              */
-            fsp->fd_ptr->delete_on_close = delete_on_close;
+           fsp->fd_ptr->delete_on_close = delete_on_close;
 
-            unlock_share_entry(fsp->conn, dev, inode, token);
+           unlock_share_entry(fsp->conn, dev, inode, token);
+
+           DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
+                 delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
 
           } /* end if(delete_on_close && !GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode)) */
         } /* end if lp_share_modes() */
