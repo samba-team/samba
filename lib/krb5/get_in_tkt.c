@@ -119,6 +119,7 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_const_pointer keyseed,
 		     krb5_addresses *addrs,
 		     unsigned nonce,
+		     krb5_boolean allow_server_mismatch,
 		     krb5_decrypt_proc decrypt_proc,
 		     krb5_const_pointer decryptarg)
 {
@@ -162,11 +163,17 @@ _krb5_extract_ticket(krb5_context context,
 					rep->part1.ticket.realm);
     if (err)
 	goto out;
-    tmp = krb5_principal_compare (context, tmp_principal, creds->server);
-    krb5_free_principal (context, tmp_principal);
-    if (!tmp) {
-	err = KRB5KRB_AP_ERR_MODIFIED;
-	goto out;
+    if(allow_server_mismatch){
+	krb5_free_principal(context, creds->server);
+	creds->server = tmp_principal;
+	tmp_principal = NULL;
+    }else{
+	tmp = krb5_principal_compare (context, tmp_principal, creds->server);
+	krb5_free_principal (context, tmp_principal);
+	if (!tmp) {
+	    err = KRB5KRB_AP_ERR_MODIFIED;
+	    goto out;
+	}
     }
     
     /* decrypt */
@@ -570,7 +577,7 @@ krb5_get_in_cred(krb5_context context,
 	return ret;
 	
     ret = _krb5_extract_ticket(context, &rep, creds, key, keyseed, 
-			      NULL, nonce, decrypt_proc, decryptarg);
+			      NULL, nonce, FALSE, decrypt_proc, decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_free_keyblock (context, key);
     free (key);
