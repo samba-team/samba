@@ -145,7 +145,6 @@ DB_delete(krb5_context context, HDB *db, hdb_entry *entry)
 
 static krb5_error_code
 DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
-
 {
     DB *d = (DB*)db->db;
     DBT key, value;
@@ -214,6 +213,25 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
     return 0;
 }
 
+static krb5_error_code
+DB_rename(krb5_context context, HDB *db, const char *new_name)
+{
+    int ret;
+    char *old, *new;
+
+    asprintf(&old, "%s.db", db->name);
+    asprintf(&new, "%s.db", new_name);
+    ret = rename(old, new);
+    free(old);
+    free(new);
+    if(ret)
+	return errno;
+    
+    free(db->name);
+    db->name = strdup(new_name);
+    return 0;
+}
+
 krb5_error_code
 hdb_db_open(krb5_context context, HDB **db, 
 	    const char *filename, int flags, mode_t mode)
@@ -227,6 +245,7 @@ hdb_db_open(krb5_context context, HDB **db,
 	return errno;
     *db = malloc(sizeof(**db));
     (*db)->db = d;
+    (*db)->name = strdup(filename);
     (*db)->close = DB_close;
     (*db)->fetch = DB_fetch;
     (*db)->store = DB_store;
@@ -235,6 +254,7 @@ hdb_db_open(krb5_context context, HDB **db,
     (*db)->nextkey= DB_nextkey;
     (*db)->lock = DB_lock;
     (*db)->unlock = DB_unlock;
+    (*db)->rename = DB_rename;
     return 0;
 }
 
