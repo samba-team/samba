@@ -3,6 +3,7 @@
    Version 3.0
    client RAP calls
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@
 #define NO_SYSLOG
 
 #include "includes.h"
+#include "trans2.h"
 
 
 /****************************************************************************
@@ -115,7 +117,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
                     &rparam, &rprcnt,               /* return params, return size */
                     &rdata, &rdrcnt                 /* return data, return size */
                    )) {
-		cli->rap_error = rparam? SVAL(rparam,0) : -1;
+		cli->rap_error = SVAL(rparam,0);
 		p = rdata;
 		
 		if (cli->rap_error == 0) {
@@ -139,66 +141,65 @@ call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
 int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *))
 {
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring param;
-	int count = -1;
+  char *rparam = NULL;
+  char *rdata = NULL;
+  char *p;
+  int rdrcnt,rprcnt;
+  pstring param;
+  int count = -1;
 
-	/* now send a SMBtrans command with api RNetShareEnum */
-	p = param;
-	SSVAL(p,0,0); /* api number */
-	p += 2;
-	pstrcpy(p,"WrLeh");
-	p = skip_string(p,1);
-	pstrcpy(p,"B13BWz");
-	p = skip_string(p,1);
-	SSVAL(p,0,1);
-	/*
-	 * Win2k needs a *smaller* buffer than 0xFFFF here -
-	 * it returns "out of server memory" with 0xFFFF !!! JRA.
-	 */
-	SSVAL(p,2,0xFFE0);
-	p += 4;
-	
-	if (cli_api(cli, 
-		    param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-		    NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
-		    &rparam, &rprcnt,                /* return params, length */
-		    &rdata, &rdrcnt))                /* return data, length */
-		{
-			int res = rparam? SVAL(rparam,0) : -1;
-			
-			if (res == 0 || res == ERRmoredata) {
-				int converter=SVAL(rparam,2);
-				int i;
-				
-				count=SVAL(rparam,4);
-				p = rdata;
-				
-				for (i=0;i<count;i++,p+=20) {
-					char *sname = p;
-					int type = SVAL(p,14);
-					int comment_offset = IVAL(p,16) & 0xFFFF;
-					char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-					dos_to_unix(sname,True);
-					dos_to_unix(cmnt,True);
-					fn(sname, type, cmnt);
-				}
-			} else {
-				DEBUG(4,("NetShareEnum res=%d\n", res));
-			}      
-		} else {
-			DEBUG(4,("NetShareEnum failed\n"));
-		}
+  /* now send a SMBtrans command with api RNetShareEnum */
+  p = param;
+  SSVAL(p,0,0); /* api number */
+  p += 2;
+  pstrcpy(p,"WrLeh");
+  p = skip_string(p,1);
+  pstrcpy(p,"B13BWz");
+  p = skip_string(p,1);
+  SSVAL(p,0,1);
+  /*
+   * Win2k needs a *smaller* buffer than 0xFFFF here -
+   * it returns "out of server memory" with 0xFFFF !!! JRA.
+   */
+  SSVAL(p,2,0xFFE0);
+  p += 4;
+
+  if (cli_api(cli, 
+              param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
+              NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
+              &rparam, &rprcnt,                /* return params, length */
+              &rdata, &rdrcnt))                /* return data, length */
+    {
+      int res = SVAL(rparam,0);
+      int converter=SVAL(rparam,2);
+      int i;
+      
+      if (res == 0 || res == ERRmoredata) {
+	      count=SVAL(rparam,4);
+	      p = rdata;
+
+	      for (i=0;i<count;i++,p+=20) {
+		      char *sname = p;
+		      int type = SVAL(p,14);
+		      int comment_offset = IVAL(p,16) & 0xFFFF;
+		      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+			  dos_to_unix(sname,True);
+			  dos_to_unix(cmnt,True);
+		      fn(sname, type, cmnt);
+	      }
+      } else {
+	      DEBUG(4,("NetShareEnum res=%d\n", res));
+      }      
+    } else {
+	      DEBUG(4,("NetShareEnum failed\n"));
+    }
   
-	if (rparam)
-		free(rparam);
-	if (rdata)
-		free(rdata);
-	
-	return count;
+  if (rparam)
+    free(rparam);
+  if (rdata)
+    free(rdata);
+
+  return count;
 }
 
 
@@ -245,12 +246,17 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
                     &rparam, &rprcnt,                   /* return params, return size */
                     &rdata, &rdrcnt                     /* return data, return size */
                    )) {
-		int res = rparam? SVAL(rparam,0) : -1;
+		int res = -1;
+		int converter = 0;
+		int i;
 			
-		if (res == 0 || res == ERRmoredata) {
-			int i;
-			int converter=SVAL(rparam,2);
+		if (rparam != NULL)
+		{
+			res = SVAL(rparam,0);
+			converter=SVAL(rparam,2);
+		}
 
+		if (res == 0 || res == ERRmoredata) {
 			count=SVAL(rparam,4);
 			p = rdata;
 					
@@ -270,9 +276,9 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	}
   
 	if (rparam)
-		free(rparam);
+      free(rparam);
 	if (rdata)
-		free(rdata);
+      free(rdata);
 	
 	return(count > 0);
 }
@@ -297,7 +303,6 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   char *rparam = NULL;
   char *rdata = NULL;
   int rprcnt, rdrcnt;
-  pstring dos_new_password;
 
   if (strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
@@ -323,22 +328,19 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    */
   memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
   fstrcpy(upper_case_old_pw, old_password);
-  unix_to_dos(upper_case_old_pw,True);
   strupper(upper_case_old_pw);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-  pstrcpy(dos_new_password, new_password);
-  unix_to_dos(dos_new_password, True);
-
-  if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
-    return False;
+	if (!make_oem_passwd_hash( data, new_password, 0, old_pw_hash, False))
+	{
+		return False;
+	}
 
   /* 
    * Now place the old password hash in the data.
    */
   memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
   fstrcpy(upper_case_new_pw, new_password);
-  unix_to_dos(upper_case_new_pw,True);
   strupper(upper_case_new_pw);
 
   E_P16((uchar *)upper_case_new_pw, new_pw_hash);
@@ -347,13 +349,14 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
   data_len = 532;
     
-  if (cli_send_trans(cli,SMBtrans,
+  if (!cli_send_trans(cli,SMBtrans,
                     PIPE_LANMAN,strlen(PIPE_LANMAN),      /* name, length */
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
                     param,param_len,2,                    /* param, length, max */
                     data,data_len,0                       /* data, length, max */
-                   ) == False) {
+                   ))
+  {
     DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
               user ));
     return False;
@@ -414,7 +417,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode, NULL);
+			cli_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 		}
@@ -508,7 +511,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 48);
+		*size = IVAL(rdata, 40);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
@@ -580,7 +583,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 48);
+		*size = IVAL(rdata, 40);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);

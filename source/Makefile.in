@@ -151,6 +151,8 @@ SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) \
 
 LIBSTATUS_OBJ = lib/util_status.o 
 
+TDB_OBJ = tdb/tdb.o tdb/tdbutil.o
+
 LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
 		lib/pidfile.o lib/replace.o \
@@ -181,10 +183,11 @@ LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ)
 
 LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
-LIBSMB_OBJ = libsmb/clientgen.o libsmb/clidomain.o \
-	libsmb/clifile.o libsmb/cliprint.o libsmb/clierror.o \
-	libsmb/climessage.o libsmb/cliconnect.o libsmb/clilist.o \
+LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
+	libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
+	libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	libsmb/clitrans.o \
+	libsmb/clidomain.o \
 	libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
 	libsmb/smberr.o libsmb/credentials.o \
 	libsmb/pwd_cache.o  lib/util_hnd.o \
