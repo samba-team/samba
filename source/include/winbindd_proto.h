@@ -483,6 +483,13 @@ const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
 BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
 				uchar usr_sess_key[16]);
 
+/*The following definitions come from  lib/util_seaccess.c  */
+
+BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
+		     uint32 acc_req, uint32 prev_grant_acc,
+		     uint32 * acc_grant,
+		     uint32 * status);
+
 /*The following definitions come from  lib/util_sec.c  */
 
 void gain_root_privilege(void);

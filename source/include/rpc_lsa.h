@@ -38,6 +38,54 @@ enum SID_NAME_USE
 	SID_NAME_UNKNOWN = 8  /* oops. */
 };
 
+/* LSA ACE permissions */
+
+#define POLICY_VIEW_LOCAL_INFORMATION    0x00000001
+#define POLICY_VIEW_AUDIT_INFORMATION    0x00000002
+#define POLICY_GET_PRIVATE_INFORMATION   0x00000004
+#define POLICY_TRUST_ADMIN               0x00000008
+#define POLICY_CREATE_ACCOUNT            0x00000010
+#define POLICY_CREATE_SECRET             0x00000020
+#define POLICY_CREATE_PRIVILEGE          0x00000040
+#define POLICY_SET_DEFAULT_QUOTA_LIMITS  0x00000080
+#define POLICY_SET_AUDIT_REQUIREMENTS    0x00000100
+#define POLICY_AUDIT_LOG_ADMIN           0x00000200
+#define POLICY_SERVER_ADMIN              0x00000400
+#define POLICY_LOOKUP_NAMES              0x00000800
+
+#define POLICY_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED          |\
+                            POLICY_VIEW_LOCAL_INFORMATION    |\
+                            POLICY_VIEW_AUDIT_INFORMATION    |\
+                            POLICY_GET_PRIVATE_INFORMATION   |\
+                            POLICY_TRUST_ADMIN               |\
+                            POLICY_CREATE_ACCOUNT            |\
+                            POLICY_CREATE_SECRET             |\
+                            POLICY_CREATE_PRIVILEGE          |\
+                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            POLICY_AUDIT_LOG_ADMIN           |\
+                            POLICY_SERVER_ADMIN              |\
+                            POLICY_LOOKUP_NAMES )
+
+
+#define POLICY_READ       (STANDARD_RIGHTS_READ              |\
+                            POLICY_VIEW_AUDIT_INFORMATION    |\
+                            POLICY_GET_PRIVATE_INFORMATION)
+
+#define POLICY_WRITE      (STANDARD_RIGHTS_WRITE             |\
+                            POLICY_TRUST_ADMIN               |\
+                            POLICY_CREATE_ACCOUNT            |\
+                            POLICY_CREATE_SECRET             |\
+                            POLICY_CREATE_PRIVILEGE          |\
+                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            POLICY_AUDIT_LOG_ADMIN           |\
+                            POLICY_SERVER_ADMIN)
+
+#define POLICY_EXECUTE    (STANDARD_RIGHTS_EXECUTE           |\
+                            POLICY_VIEW_LOCAL_INFORMATION    |\
+                            POLICY_LOOKUP_NAMES )
+
 /* ntlsa pipe */
 #define LSA_CLOSE              0x00
 #define LSA_OPENPOLICY         0x06

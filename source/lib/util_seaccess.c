@@ -139,8 +139,19 @@ static BOOL check_ace(const SEC_ACE *ace, BOOL is_owner,
 	return False;
 }
 
+/***********************************************************************
+ checks access_requested rights of user against sd.  returns access granted
+ and a status code if the grant succeeded, error message if it failed.
+
+ the previously_granted access rights requires some explanation: if you
+ open a policy handle with a set of permissions, you cannot then perform
+ operations that require more privileges than those requested.  pass in
+ the [previously granted] permissions from the open_policy_hnd call as
+ prev_grant_acc, and this function will do the checking for you.
+ ***********************************************************************/
 BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
-		     uint32 acc_req, uint32 * acc_grant,
+		     uint32 acc_req, uint32 prev_grant_acc,
+		     uint32 * acc_grant,
 		     uint32 * status)
 {
 	int num_aces;
@@ -155,22 +166,27 @@ BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
 	uint32 grnt;
 	uint32 deny;
 
+	if (status == NULL)
+	{
+		return False;
+	}
+
+	if (prev_grant_acc == SEC_RIGHTS_MAXIMUM_ALLOWED)
+	{
+		prev_grant_acc = 0xffffffff;
+	}
+	
+	/* cannot request any more than previously requested access */
+	acc_req &= prev_grant_acc;
+
 	if (acc_req == 0x0)
 	{
-		return False;
-	}
-	/* we must know the owner sid and the user acl */
-	if (sd->dacl == NULL || sd->dacl->ace == NULL || sd->dacl->num_aces == 0)
-	{
+		(*status) = NT_STATUS_ACCESS_DENIED;
 		return False;
 	}
 
+	/* we must know the owner sid */
 	if (sd->owner_sid == NULL)
-	{
-		return False;
-	}
-
-	if (status == NULL)
 	{
 		return False;
 	}

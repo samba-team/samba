@@ -691,7 +691,8 @@ char *lookup_wk_group_rid(uint32 rid);
 /*The following definitions come from  lib/util_seaccess.c  */
 
 BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
-		     uint32 acc_req, uint32 * acc_grant,
+		     uint32 acc_req, uint32 prev_grant_acc,
+		     uint32 * acc_grant,
 		     uint32 * status);
 
 /*The following definitions come from  lib/util_sec.c  */
