@@ -155,7 +155,7 @@ static struct getargs args[] = {
     {  "ca-dir",       'D',  arg_string, &pk_ca_dir,
        "directory with CA certificates", "directory" },
 
-    {  "pkinit-use-dh",       0,  arg_negative_flag, &pk_use_dh,
+    {  "pkinit-use-dh",       0,  arg_flag, &pk_use_dh,
        "make pkinit use DH" },
 #endif
     { "version", 	0,   arg_flag, &version_flag },
@@ -725,7 +725,7 @@ main (int argc, char **argv)
     if(pk_use_dh == -1)
 	krb5_appdefault_boolean(context, "kinit", 
 				krb5_principal_get_realm(context, principal), 
-				"pkinit-use-dh", TRUE, &pk_use_dh);
+				"pkinit-use-dh", FALSE, &pk_use_dh);
 #endif
 
     if(!addrs_flag && extra_addresses.num_strings > 0)
