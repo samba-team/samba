@@ -414,7 +414,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       pw_buf.smb_passwd = NULL;
       pw_buf.acct_ctrl |= ACB_PWNOTREQ;
     } else {
-      if (!pdb_gethexpwd((char *)p, smbpwd)) {
+      if (!smbpasswd_gethexpwd((char *)p, smbpwd)) {
         DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
         continue;
       }
@@ -431,7 +431,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
                 the lanman password. */
     if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
       if (*p != '*' && *p != 'X') {
-        if(pdb_gethexpwd((char *)p,smbntpwd))
+        if(smbpasswd_gethexpwd((char *)p,smbntpwd))
           pw_buf.smb_nt_passwd = smbntpwd;
       }
       p += 33; /* Move to the first character of the line after
@@ -444,7 +444,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
     if (*p == '[')
 	{
       unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
-      pw_buf.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
+      pw_buf.acct_ctrl = smbpasswd_decode_acb_info((char*)p);
 
       /* Must have some account type set. */
       if(pw_buf.acct_ctrl == 0)
@@ -545,8 +545,8 @@ static char *format_new_smbpasswd_entry(struct smb_passwd *newpwd)
   *p++ = ':';
 
   /* Add the account encoding and the last change time. */
-  slprintf((char *)p, new_entry_length - 1 - (p - new_entry),  "%s:LCT-%08X:\n",
-           pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN),
+  slprintf((char *)p, new_entry_length - 1 - (p - new_entry), "%s:LCT-%08X:\n",
+           smbpasswd_encode_acb_info(newpwd->acct_ctrl),
            (uint32)newpwd->pass_last_set_time);
 
   return new_entry;
@@ -903,7 +903,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
        * acct ctrl field. Encode the given acct ctrl
        * bits into it.
        */
-      fstrcpy(encode_bits, pdb_encode_acct_ctrl(pwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+      fstrcpy(encode_bits, smbpasswd_encode_acb_info(pwd->acct_ctrl));
     } else {
       /*
        * If using the old format and the ACB_DISABLED or

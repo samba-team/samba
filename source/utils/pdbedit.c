@@ -89,16 +89,20 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	{
 		char lm_passwd[33];
 		char nt_passwd[33];
-		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
-		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
+		smbpasswd_sethexpwd(lm_passwd, 
+                                    pdb_get_lanman_passwd(sam_pwent), 
+                                    pdb_get_acct_ctrl(sam_pwent));
+		smbpasswd_sethexpwd(nt_passwd, 
+                                    pdb_get_nt_passwd(sam_pwent), 
+                                    pdb_get_acct_ctrl(sam_pwent));
 		
-		printf ("%s:%d:%s:%s:%s:LCT-%08x:\n",
-			pdb_get_username(sam_pwent),
-			pdb_get_uid(sam_pwent),
-			lm_passwd,
-			nt_passwd,
-			pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
-			(uint32)pdb_get_pass_last_set_time(sam_pwent));
+		printf("%s:%d:%s:%s:%s:LCT-%08x:\n",
+                       pdb_get_username(sam_pwent),
+                       pdb_get_uid(sam_pwent),
+                       lm_passwd,
+                       nt_passwd,
+                       smbpasswd_encode_acb_info(pdb_get_acct_ctrl(sam_pwent)),
+                       (uint32)pdb_get_pass_last_set_time(sam_pwent));
 	}
 	else
 	{
@@ -452,7 +456,7 @@ static int import_users (char *filename)
 			}
 			else
 			{
-				if (!pdb_gethexpwd((char *)p, smbpwd))
+				if (!smbpasswd_gethexpwd((char *)p, smbpwd))
 				{
 					fprintf (stderr, "Error: malformed Lanman password entry at line %d (non hex chars)\n", line);
 					continue;
@@ -466,7 +470,7 @@ static int import_users (char *filename)
 			{
 				if (*p != '*' && *p != 'X')
 				{
-					if (pdb_gethexpwd((char *)p,smbntpwd))
+					if (smbpasswd_gethexpwd((char *)p,smbntpwd))
 					{
 						sam_pwent.nt_pw = smbntpwd;
 					}
@@ -480,7 +484,7 @@ static int import_users (char *filename)
 		{
 			unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
 			
-			sam_pwent.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
+			sam_pwent.acct_ctrl = smbpasswd_decode_acb_info((char*)p);
 			if(sam_pwent.acct_ctrl == 0) sam_pwent.acct_ctrl = ACB_NORMAL;
 			
 			/* Get last change time */

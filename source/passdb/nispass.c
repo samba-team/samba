@@ -641,7 +641,8 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	slprintf(smb_grpid, sizeof(smb_grpid)-1, "%u", newpwd->smb_grpid);
 	slprintf(group_rid, sizeof(group_rid)-1, "0x%x", newpwd->group_rid);
 
-	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), sizeof(acb)-1); 
+	safe_strcpy(acb, smbpasswd_encode_acct_ctrl(newpwd->acct_ctrl), 
+                    sizeof(acb)-1); 
 
 	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)     , 0);
 	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                  , 0);
@@ -805,7 +806,7 @@ static BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override)
        * acct ctrl field. Encode the given acct ctrl
        * bits into it.
        */
-      fstrcpy(acb, pdb_encode_acct_ctrl(pwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+      fstrcpy(acb, smbpasswd_encode_acct_ctrl(pwd->acct_ctrl));
     } else {
       /*
        * If using the old format and the ACB_DISABLED or

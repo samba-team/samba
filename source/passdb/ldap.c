@@ -601,7 +601,8 @@ static BOOL modadd_ldappwd_entry(struct smb_passwd *newpwd, int flag)
 	
 	make_a_mod(&mods, ldap_state, "rid", rid);
 	make_a_mod(&mods, ldap_state, "pwdLastSet", lst);
-	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	make_a_mod(&mods, ldap_state, "userAccountControl", 
+                   smbpasswd_encode_acb_info(newpwd->acct_ctrl));
 	
 	switch(flag)
 	{
@@ -733,7 +734,8 @@ static BOOL modadd_ldap21pwd_entry(struct sam_passwd *newpwd, int flag)
 	
 	make_a_mod(&mods, ldap_state, "rid", rid);
 	make_a_mod(&mods, ldap_state, "pwdLastSet", lst);
-	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl,NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	make_a_mod(&mods, ldap_state, "userAccountControl", 
+                   smbpasswd_encode_acct_ctrl(newpwd->acct_ctrl));
 	
 	ldap_modify_s(ldap_struct, dn, mods);
 	
