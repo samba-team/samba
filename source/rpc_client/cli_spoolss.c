@@ -56,6 +56,7 @@ static void decode_printer_info_0(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         PRINTER_INFO_0  *inf;
 
         inf=(PRINTER_INFO_0 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_0));
+	memset(inf, 0, returned*sizeof(PRINTER_INFO_0));
 
         buffer->prs.data_offset=0;
 
@@ -75,6 +76,7 @@ static void decode_printer_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         PRINTER_INFO_1  *inf;
 
         inf=(PRINTER_INFO_1 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_1));
+	memset(inf, 0, returned*sizeof(PRINTER_INFO_1));
 
         buffer->prs.data_offset=0;
 
@@ -94,6 +96,7 @@ static void decode_printer_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         PRINTER_INFO_2  *inf;
 
         inf=(PRINTER_INFO_2 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_2));
+	memset(inf, 0, returned*sizeof(PRINTER_INFO_2));
 
         buffer->prs.data_offset=0;
 
@@ -115,6 +118,7 @@ static void decode_printer_info_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         PRINTER_INFO_3  *inf;
 
         inf=(PRINTER_INFO_3 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_3));
+	memset(inf, 0, returned*sizeof(PRINTER_INFO_3));
 
         buffer->prs.data_offset=0;
 
@@ -135,6 +139,7 @@ static void decode_port_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         PORT_INFO_1 *inf;
 
         inf=(PORT_INFO_1*)talloc(mem_ctx, returned*sizeof(PORT_INFO_1));
+	memset(inf, 0, returned*sizeof(PORT_INFO_1));
 
         prs_set_offset(&buffer->prs, 0);
 
@@ -154,6 +159,7 @@ static void decode_port_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         PORT_INFO_2 *inf;
 
         inf=(PORT_INFO_2*)talloc(mem_ctx, returned*sizeof(PORT_INFO_2));
+	memset(info, 0, returned*sizeof(PORT_INFO_2));
 
         prs_set_offset(&buffer->prs, 0);
 
@@ -173,6 +179,7 @@ static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         DRIVER_INFO_1 *inf;
 
         inf=(DRIVER_INFO_1 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_1));
+	memset(inf, 0, returned*sizeof(DRIVER_INFO_1));
 
         buffer->prs.data_offset=0;
 
@@ -192,6 +199,7 @@ static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         DRIVER_INFO_2 *inf;
 
         inf=(DRIVER_INFO_2 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_2));
+	memset(inf, 0, returned*sizeof(DRIVER_INFO_2));
 
         buffer->prs.data_offset=0;
 
@@ -211,6 +219,7 @@ static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         DRIVER_INFO_3 *inf;
 
         inf=(DRIVER_INFO_3 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_3));
+	memset(inf, 0, returned*sizeof(DRIVER_INFO_3));
 
         buffer->prs.data_offset=0;
 
@@ -230,6 +239,7 @@ static void decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 	DRIVER_DIRECTORY_1 *inf;
  
         inf=(DRIVER_DIRECTORY_1 *)talloc(mem_ctx, sizeof(DRIVER_DIRECTORY_1));
+	memset(inf, 0, sizeof(DRIVER_DIRECTORY_1));
 
         prs_set_offset(&buffer->prs, 0);
 
