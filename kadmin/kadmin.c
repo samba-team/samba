@@ -168,10 +168,13 @@ main(int argc, char **argv)
     }
 
     memset(&conf, 0, sizeof(conf));
-    conf.realm = realm;
-    conf.mask |= KADM5_CONFIG_REALM;
-    krb5_set_default_realm(context, realm); /* XXX should be fixed
-					       some other way */
+    if(realm) {
+	krb5_set_default_realm(context, realm); /* XXX should be fixed
+						   some other way */
+	conf.realm = realm;
+	conf.mask |= KADM5_CONFIG_REALM;
+    }
+
     conf.admin_server = admin_server;
     conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
 
