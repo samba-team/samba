@@ -60,14 +60,16 @@ start() {
 stop() {
         KIND="SMB"
 	echo -n $"Shutting down $KIND services: "
-	killproc smbd
+	killproc smbd -TERM
 	RETVAL=$?
+	[ $RETVAL -eq 0 ] && rm -f /var/run/smbd.pid
 	echo
 	KIND="NMB"
 	echo -n $"Shutting down $KIND services: "
-	killproc nmbd
+	killproc nmbd -TERM
 	RETVAL2=$?
-	[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && rm -f /var/lock/subsys/smb
+	[ $RETVAL -eq 0 ] && rm -f /var/run/nmbd.pid
+	[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && rm -f /var/lock/subsys/smb 
 	echo ""
 	return $RETVAL
 }	
