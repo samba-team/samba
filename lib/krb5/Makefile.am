@@ -6,7 +6,13 @@ INCLUDES = -I$(top_builddir)/include
 
 CFLAGS=$(WFLAGS) @CFLAGS@
 
+COMPILE_ET = ../com_err/compile_et
+
 lib_LIBRARIES = libkrb5.a
+
+SUFFIXES = .et .h
+
+ERR_FILES = krb5_err.c heim_err.c
 
 libkrb5_a_SOURCES = \
 	addr_families.c \
@@ -88,7 +94,9 @@ libkrb5_a_SOURCES = \
 	verify_user.c \
 	version.c \
 	warn.c \
-	write_message.c
+	write_message.c \
+	$(ERR_FILES)
+
 
 $(libkrb5_a_OBJECTS): $(srcdir)/krb5-protos.h
 
@@ -97,9 +105,32 @@ $(srcdir)/krb5-protos.h:
 
 INCLUDES = $(INCLUDE_krb4)
 
-libkrb5_a_LIBADD = ../error/error.o ../error/krb5_err.o \
-	../error/asn1_err.o ../error/heim_err.o
+libkrb5_a_LIBADD = ../com_err/error.o ../com_err/com_err.o
 
 man_MANS = krb5.conf.5 krb5_warn.3 krb5_openlog.3 \
 	krb5_425_conv_principal.3 krb5_build_principal.3 krb5_free_principal.3 \
 	krb5_parse_name.3 krb5_sname_to_principal.3 krb5_unparse_name.3
+
+
+
+incdir = $(includedir)
+inc_DATA = krb5_err.h heim_err.h
+idir = $(top_builddir)/include
+
+CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h
+
+all-local: $(inc_DATA)
+	@for i in $(inc_DATA); do \
+		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
+			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
+			$(INSTALL_DATA) $$i $(idir)/$$i; \
+		fi ; \
+	done
+
+.et.c:
+	$(COMPILE_ET) $<
+
+.et.h:
+	$(COMPILE_ET) $<
+
+$(libkrb5_a_OBJECTS): krb5_err.h heim_err.h
