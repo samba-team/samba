@@ -40,6 +40,7 @@ struct reg_key_s {
   int cache_values_count;
   REG_KEY **cache_subkeys; 
   int cache_subkeys_count;
+  int hive;
   TALLOC_CTX *mem_ctx;
   int ref;
 };
@@ -61,10 +62,14 @@ struct reg_val_s {
 typedef void (*key_notification_function) (void);
 typedef void (*value_notification_function) (void);
 
-
 /* 
  * Container for function pointers to enumeration routines
  * for virtual registry view 
+ *
+ * Backends can provide :
+ *  - just one hive (example: nt4, w95)
+ *  - several hives (example: rpc)
+ * 
  */ 
  
 struct registry_ops {
@@ -73,17 +78,23 @@ struct registry_ops {
 	WERROR (*sync_key)(REG_KEY *, const char *location);
 	WERROR (*close_registry) (REG_HANDLE *);
 
+	/* Implement this one */
+	WERROR (*get_hive) (REG_HANDLE *, int , REG_KEY **);
+
+	/* Or this one */
+	WERROR (*open_key) (REG_HANDLE *, int hive, const char *name, REG_KEY **);
+
 	/* Either implement these */
-	WERROR (*open_root_key) (REG_HANDLE *, REG_KEY **);
 	WERROR (*num_subkeys) (REG_KEY *, int *count);
 	WERROR (*num_values) (REG_KEY *, int *count);
 	WERROR (*get_subkey_by_index) (REG_KEY *, int idx, REG_KEY **);
+	/* Can not contain more then one level */
 	WERROR (*get_subkey_by_name) (REG_KEY *, const char *name, REG_KEY **);
 	WERROR (*get_value_by_index) (REG_KEY *, int idx, REG_VAL **);
+	/* Can not contain more then one level */
 	WERROR (*get_value_by_name) (REG_KEY *, const char *name, REG_VAL **);
 
 	/* Or these */
-	WERROR (*open_key) (REG_HANDLE *, const char *name, REG_KEY **);
 	WERROR (*fetch_subkeys) (REG_KEY *, int *count, REG_KEY ***);
 	WERROR (*fetch_values) (REG_KEY *, int *count, REG_VAL ***);
 
@@ -111,15 +122,8 @@ struct registry_ops {
 	void (*free_val_backend_data) (REG_VAL *);
 };
 
-typedef struct reg_sub_tree_s {
-	char *path;
-	REG_HANDLE *handle;
-	struct reg_sub_tree_s *prev, *next;
-} REG_SUBTREE;
-
 struct reg_handle_s {
 	struct registry_ops *functions;
-	REG_SUBTREE *subtrees;
 	char *location;
 	char *credentials;
 	void *backend_data;

@@ -664,7 +664,7 @@ static CMD_FILE *cmd_file_create(const char *file)
 
 char *str_type(unsigned char type);
 
-static int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
+static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 {
 	CMD *cmd;
 	BOOL modified = False;
@@ -680,12 +680,12 @@ static int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 		 */
 		switch (cmd->cmd) {
 		case CMD_ADD_KEY: 
-		  error = reg_open_key(root, cmd->key, &tmp);
+		  error = reg_open_key_abs(r, cmd->key, &tmp);
 
 		  /* If we found it, apply the other bits, else create such a key */
 		  if (W_ERROR_EQUAL(error, WERR_DEST_NOT_FOUND)) {
-			  if(W_ERROR_IS_OK(reg_key_add_name_recursive(root, cmd->key))) {
-				  error = reg_open_key(root, cmd->key, &tmp);
+			  if(W_ERROR_IS_OK(reg_key_add_name_recursive_abs(r, cmd->key))) {
+				  error = reg_open_key_abs(r, cmd->key, &tmp);
 				  if(!W_ERROR_IS_OK(error)) {
 					DEBUG(0, ("Error finding new key '%s' after it has been added\n", cmd->key));
 					continue;
@@ -732,7 +732,7 @@ static int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 		   * Find the key if it exists, and delete it ...
 		   */
 
-		  error = reg_open_key(root, cmd->key, &tmp);
+		  error = reg_open_key_abs(r, cmd->key, &tmp);
 		  if(!W_ERROR_IS_OK(error)) {
 			  DEBUG(0, ("Unable to open key '%s'\n", cmd->key));
 			  continue;
@@ -756,7 +756,6 @@ static int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 {
 	int opt;
 	poptContext pc;
-	REG_KEY *root;
 	const char *location;
 	const char *credentials = NULL;
 	const char *patch;
@@ -793,13 +792,7 @@ static int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 	if(!patch) patch = "/dev/stdin";
 	poptFreeContext(pc);
 
-	error = reg_get_root(h, &root);
-	if(!W_ERROR_IS_OK(error)) {
-		DEBUG(0, ("Error opening root!\n"));
-		return 1;
-	}
-
-	nt_apply_reg_command_file(root, patch);
+	nt_apply_reg_command_file(h, patch);
 
 	reg_free(h);
 

@@ -27,6 +27,7 @@
  * rmval/rm - remove value
  * rmkey/rmdir - remove key
  * mkkey/mkdir - make key
+ * ch - change hive
  * help
  * exit
  */
@@ -227,7 +228,7 @@ static REG_KEY *process_cmd(REG_KEY *k, char *line)
 
     setup_logging("regtree", True);
 
-	error = reg_get_root(h, &curkey);
+	error = reg_get_hive(h, 0, &curkey);
 
 	if(!W_ERROR_IS_OK(error)) return 1;
 

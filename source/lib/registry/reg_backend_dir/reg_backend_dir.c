@@ -38,16 +38,22 @@ static WERROR reg_dir_del_key(REG_KEY *k)
 	return (rmdir((char *)k->backend_data) == 0)?WERR_OK:WERR_GENERAL_FAILURE;
 }
 
-static WERROR reg_dir_open_key(REG_HANDLE *h, const char *name, REG_KEY **subkey)
+static WERROR reg_dir_open_key(REG_HANDLE *h, int hive, const char *name, REG_KEY **subkey)
 {
 	DIR *d;
 	char *fullpath;
 	REG_KEY *ret;
-	TALLOC_CTX *mem_ctx = talloc_init("tmp");
+	TALLOC_CTX *mem_ctx;
+	
+	if(hive != 0) return WERR_NO_MORE_ITEMS;
+	
 	if(!name) {
 		DEBUG(0, ("NULL pointer passed as directory name!"));
 		return WERR_INVALID_PARAM;
 	}
+
+	
+	mem_ctx = talloc_init("tmp");
 	fullpath = talloc_asprintf(mem_ctx, "%s%s", h->location, name);
 	fullpath = reg_path_win2unix(fullpath);
 	

@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Gtk registry frontend
+   GTK+ registry frontend
    
    Copyright (C) Jelmer Vernooij 2004
 
@@ -115,20 +115,25 @@ static void registry_load_root()
 {
 	REG_KEY *root;
 	GtkTreeIter iter, tmpiter;
-	WERROR error;
+	WERROR error = WERR_OK;
+	int i = 0;
 	if(!registry) return;
-
-	error = reg_get_root(registry, &root);
-	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(error);
-		return;
-	}
 
 	gtk_tree_store_clear(store_keys);
 
-	/* Add the root */
-	gtk_tree_store_append(store_keys, &iter, NULL);
-	gtk_tree_store_set (store_keys,
+	while(1) {
+		error = reg_get_hive(registry, i, &root);
+		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
+			return;
+		}
+		if(!W_ERROR_IS_OK(error)) {
+			gtk_show_werror(error);
+			return;
+		}
+
+		/* Add the root */
+		gtk_tree_store_append(store_keys, &iter, NULL);
+		gtk_tree_store_set (store_keys,
 					    &iter, 
 						0,
 						reg_key_name(root),
@@ -136,7 +141,9 @@ static void registry_load_root()
 						root,
 						-1);
 
-	gtk_tree_store_append(store_keys, &tmpiter, &iter);
+		gtk_tree_store_append(store_keys, &tmpiter, &iter);
+		i++;
+	}
 
   	gtk_widget_set_sensitive( save, True );
   	gtk_widget_set_sensitive( save_as, True );
