@@ -8,11 +8,13 @@ krb5_rd_rep(krb5_context context,
 	    const krb5_data *inbuf,
 	    krb5_ap_rep_enc_part **repl)
 {
+  krb5_error_code ret;
   AP_REP ap_rep;
   int len;
   des_key_schedule schedule;
   char *buf;
   int i;
+  krb5_data data;
 
   len = decode_AP_REP(inbuf->data, inbuf->length, &ap_rep);
   if (len < 0)
@@ -22,25 +24,20 @@ krb5_rd_rep(krb5_context context,
   if (ap_rep.msg_type != krb_ap_rep)
     return KRB5KRB_AP_ERR_MSG_TYPE;
 
-  des_set_key (auth_context->key.contents.data, schedule);
-  len = ap_rep.enc_part.cipher.length;
-  buf = malloc (len);
-  if (buf == NULL)
-    return ENOMEM;
-  des_cbc_encrypt ((des_cblock *)ap_rep.enc_part.cipher.data,
-		   (des_cblock *)buf,
-		   len,
-		   schedule,
-		   auth_context->key.contents.data,
-		   DES_DECRYPT);
-  
-  /* XXX - Check CRC */
+  ret = krb5_decrypt (context,
+		      ap_rep.enc_part.cipher.data,
+		      ap_rep.enc_part.cipher.length,
+		      &auth_context->key,
+		      &data);
+  if (ret)
+    return ret;
 
   *repl = malloc(sizeof(**repl));
   if (*repl == NULL)
     return ENOMEM;
-
-  i = decode_EncAPRepPart((unsigned char *)buf + 12, len - 12, *repl);
+  i = decode_EncAPRepPart(data.data,
+			  data.length,
+			  *repl);
   if (i < 0)
     return ASN1_PARSE_ERROR;
   if ((*repl)->ctime != auth_context->authenticator->ctime ||
