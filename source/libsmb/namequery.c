@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    name query routines
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -26,25 +25,25 @@
 BOOL global_in_nmbd = False;
 
 /****************************************************************************
- Generate a random trn_id.
+generate a random trn_id
 ****************************************************************************/
-
 static int generate_trn_id(void)
 {
 	static int trn_id;
 
-	if (trn_id == 0)
+	if (trn_id == 0) {
 		sys_srandom(sys_getpid());
+	}
 
 	trn_id = sys_random();
 
 	return trn_id % (unsigned)0x7FFF;
 }
 
-/****************************************************************************
- Parse a node status response into an array of structures.
-****************************************************************************/
 
+/****************************************************************************
+ parse a node status response into an array of structures
+****************************************************************************/
 static struct node_status *parse_node_status(char *p, int *num_names)
 {
 	struct node_status *ret;
@@ -65,15 +64,17 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 		ret[i].type = CVAL(p,15);
 		ret[i].flags = p[16];
 		p += 18;
+		DEBUG(10, ("%s#%02x: flags = 0x%02x\n", ret[i].name, 
+			   ret[i].type, ret[i].flags));
 	}
 	return ret;
 }
 
-/****************************************************************************
- Do a NBT node status query on an open socket and return an array of
- structures holding the returned names or NULL if the query failed.
-**************************************************************************/
 
+/****************************************************************************
+do a NBT node status query on an open socket and return an array of
+structures holding the returned names or NULL if the query failed
+**************************************************************************/
 struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
 {
@@ -164,134 +165,106 @@ return the matched name in *name
 
 BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
 {
-	struct node_status *status;
+	struct node_status *status = NULL;
 	struct nmb_name nname;
 	int count, i;
 	int sock;
+	BOOL result = False;
+
+
+	DEBUG(10, ("name_status_find: looking up %s#%02x at %s\n", q_name, 
+		   q_type, inet_ntoa(to_ip)));
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
 	if (sock == -1)
-		return False;
+		goto done;
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
 	status = node_status_query(sock, &nname, to_ip, &count);
 	close(sock);
 	if (!status)
-		return False;
+		goto done;
 
 	for (i=0;i<count;i++) {
 		if (status[i].type == type)
 			break;
 	}
 	if (i == count)
-		return False;
+		goto done;
 
 	StrnCpy(name, status[i].name, 15);
+	result = True;
 
+ done:
 	SAFE_FREE(status);
-	return True;
-}
 
-/****************************************************************************
- Do a NetBIOS name registation to try to claim a name ...
-***************************************************************************/
-BOOL name_register(int fd, const char *name, int name_type,
-		   struct in_addr name_ip, int opcode,
-		   BOOL bcast, 
-		   struct in_addr to_ip, int *count)
-{
-  int retries = 3;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
-  struct in_addr register_ip;
+	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
 
-  DEBUG(4, ("name_register: %s as %s on %s\n", name, inet_ntoa(name_ip), inet_ntoa(to_ip)));
-
-  register_ip.s_addr = name_ip.s_addr;  /* Fix this ... */
+	if (result)
+		DEBUGADD(10, (", ip address is %s", inet_ntoa(to_ip)));
   
-  memset((char *)&p, '\0', sizeof(p));
+	DEBUG(10, ("\n"));	
 
-  *count = 0;
-
-  nmb->header.name_trn_id = generate_trn_id();
-  nmb->header.opcode = opcode;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = True;  /* ? */
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = True;
-
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 1;
-
-  make_nmb_name(&nmb->question.question_name, name, name_type);
-
-  nmb->question.question_type = 0x20;
-  nmb->question.question_class = 0x1;
-
-  /* Now, create the additional stuff for a registration request */
-
-  if ((nmb->additional = (struct res_rec *)malloc(sizeof(struct res_rec))) == NULL) {
-
-    DEBUG(0, ("name_register: malloc fail for additional record.\n"));
-    return False;
-
+	return result;
   }
 
-  memset((char *)nmb->additional, '\0', sizeof(struct res_rec));
 
-  nmb->additional->rr_name  = nmb->question.question_name;
-  nmb->additional->rr_type  = RR_TYPE_NB;
-  nmb->additional->rr_class = RR_CLASS_IN;
+/*
+  comparison function used by sort_ip_list
+*/
+int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
+{
+	int max_bits1=0, max_bits2=0;
+	int num_interfaces = iface_count();
+	int i;
 
-  /* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
-  if (nmb->header.nm_flags.bcast)
-    nmb->additional->ttl = PERMANENT_TTL;
-  else
-    nmb->additional->ttl = lp_max_ttl();
+	for (i=0;i<num_interfaces;i++) {
+		struct in_addr ip;
+		int bits1, bits2;
+		ip = *iface_n_bcast(i);
+		bits1 = matching_quad_bits((uchar *)&ip1->s_addr, (uchar *)&ip.s_addr);
+		bits2 = matching_quad_bits((uchar *)&ip2->s_addr, (uchar *)&ip.s_addr);
+		max_bits1 = MAX(bits1, max_bits1);
+		max_bits2 = MAX(bits2, max_bits2);
+	}	
 
-  nmb->additional->rdlength = 6;
+	/* bias towards directly reachable IPs */
+	if (iface_local(*ip1)) {
+		max_bits1 += 32;
+	}
+	if (iface_local(*ip2)) {
+		max_bits2 += 32;
+	}
 
-  nmb->additional->rdata[0] = NB_MFLAG & 0xFF;
-
-  /* Set the address for the name we are registering. */
-  putip(&nmb->additional->rdata[2], &register_ip);
-
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p))
-    return False;
-
-  retries--;
-
-  if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
-    debug_nmb_packet(p2);
-    SAFE_FREE(p2);  /* No memory leaks ... */
-  }
-
-  return True;
+	return max_bits2 - max_bits1;
 }
+
+/*
+  sort an IP list so that names that are close to one of our interfaces 
+  are at the top. This prevents the problem where a WINS server returns an IP that
+  is not reachable from our subnet as the first match
+*/
+static void sort_ip_list(struct in_addr *iplist, int count)
+{
+	if (count <= 1) {
+		return;
+  }
+
+	qsort(iplist, count, sizeof(struct in_addr), QSORT_CAST ip_compare);	
+}
+
 
 /****************************************************************************
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
  *count will be set to the number of addresses returned.
+ *timed_out is set if we failed by timing out
 ****************************************************************************/
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count, int *flags)
+			   struct in_addr to_ip, int *count, int *flags,
+			   BOOL *timed_out)
 {
 	BOOL found=False;
 	int i, retries = 3;
@@ -302,6 +275,11 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	struct nmb_packet *nmb = &p.packet.nmb;
 	struct in_addr *ip_list = NULL;
 
+
+	if (timed_out) {
+		*timed_out = False;
+	}
+	
 	memset((char *)&p,'\0',sizeof(p));
 	(*count) = 0;
 	(*flags) = 0;
@@ -453,11 +431,12 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 		}
 	}
 
-	/* Reach here if we've timed out waiting for replies.. */
-	if( !bcast && !found ) {
-		/* Timed out wating for WINS server to respond.  Mark it dead. */
-		wins_srv_died( to_ip );
+	if (timed_out) {
+		*timed_out = True;
 	}
+
+	/* sort the ip list so we choose close servers first if possible */
+	sort_ip_list(ip_list, *count);
 
 	return ip_list;
 }
@@ -571,71 +550,6 @@ void endlmhosts(XFILE *fp)
 	x_fclose(fp);
 }
 
-BOOL name_register_wins(const char *name, int name_type)
-{
-  int sock, i, return_count;
-  int num_interfaces = iface_count();
-  struct in_addr sendto_ip;
-
-  /* 
-   * Check if we have any interfaces, prevents a segfault later
-   */
-
-  if (num_interfaces <= 0)
-    return False;         /* Should return some indication of the problem */
-
-  /*
-   * Do a broadcast register ...
-   */
-
-  if (!lp_wins_server())
-    return False;
-
-  DEBUG(4, ("name_register_wins:Registering my name %s on %s\n", name, lp_wins_server()));
-
-  sock = open_socket_in(SOCK_DGRAM, 0, 3, 
-			interpret_addr("0.0.0.0"), True);
-
-  if (sock == -1) return False;
-
-  set_socket_options(sock, "SO_BROADCAST");
-
-  sendto_ip.s_addr = inet_addr(lp_wins_server());
-
-  if (num_interfaces > 1) {
-
-    for (i = 0; i < num_interfaces; i++) {
-      
-      if (!name_register(sock, name, name_type, *iface_n_ip(i), 
-			 NMB_NAME_MULTIHOMED_REG_OPCODE,
-			 True, sendto_ip, &return_count)) {
-
-	close(sock);
-	return False;
-
-      }
-
-    }
-
-  }
-  else {
-
-    if (!name_register(sock, name, name_type, *iface_n_ip(0),
-		       NMB_NAME_REG_OPCODE,
-		       True, sendto_ip, &return_count)) {
-
-      close(sock);
-      return False;
-
-    }
-
-  }
-
-  close(sock);
-
-  return True;
-
-}
 
 /********************************************************
  Resolve via "bcast" method.
@@ -646,6 +560,7 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 {
 	int sock, i;
 	int num_interfaces = iface_count();
+
 
 	*return_ip_list = NULL;
 	*return_count = 0;
@@ -670,9 +585,9 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 		struct in_addr sendto_ip;
 		int flags;
 		/* Done this way to fix compiler error on IRIX 5.x */
-		sendto_ip = *iface_bcast(*iface_n_ip(i));
+		sendto_ip = *iface_n_bcast(i);
 		*return_ip_list = name_query(sock, name, name_type, True, 
-				    True, sendto_ip, return_count, &flags);
+				    True, sendto_ip, return_count, &flags, NULL);
 		if(*return_ip_list != NULL) {
 			close(sock);
 			return True;
@@ -686,63 +601,89 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 /********************************************************
  Resolve via "wins" method.
 *********************************************************/
-
-static BOOL resolve_wins(const char *name, int name_type,
+BOOL resolve_wins(const char *name, int name_type,
                          struct in_addr **return_iplist, int *return_count)
 {
-	int sock;
-	struct in_addr wins_ip;
-	BOOL wins_ismyip;
+	int sock, t, i;
+	char **wins_tags;
+	struct in_addr src_ip;
+
 
 	*return_iplist = NULL;
 	*return_count = 0;
 	
-	/*
-	 * "wins" means do a unicast lookup to the WINS server.
-	 * Ignore if there is no WINS server specified or if the
-	 * WINS server is one of our interfaces (if we're being
-	 * called from within nmbd - we can't do this call as we
-	 * would then block).
-	 */
-
 	DEBUG(3,("resolve_wins: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
-	if (lp_wins_support()) {
-		/*
-		 * We're providing WINS support. Call ourselves so
-		 * long as we're not nmbd.
-		 */
-		extern struct in_addr loopback_ip;
-		wins_ip = loopback_ip;
-		wins_ismyip = True;
-	} else if( wins_srv_count() < 1 ) {
+	if (wins_srv_count() < 1) {
 		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS servers listed.\n"));
 		return False;
-	} else {
-		wins_ip     = wins_srv_ip();
-		wins_ismyip = ismyip(wins_ip);
 	}
 
-	DEBUG(3, ("resolve_wins: WINS server == <%s>\n", inet_ntoa(wins_ip)) );
-	if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
-		sock = open_socket_in(  SOCK_DGRAM, 0, 3,
-					interpret_addr(lp_socket_address()),
-					True );
-		if (sock != -1) {
+	/* we try a lookup on each of the WINS tags in turn */
+	wins_tags = wins_srv_tags();
+
+	if (!wins_tags) {
+		/* huh? no tags?? give up in disgust */
+		return False;
+	}
+
+	/* the address we will be sending from */
+	src_ip = *interpret_addr2(lp_socket_address());
+
+	/* in the worst case we will try every wins server with every
+	   tag! */
+	for (t=0; wins_tags && wins_tags[t]; t++) {
+		int srv_count = wins_srv_count_tag(wins_tags[t]);
+		for (i=0; i<srv_count; i++) {
+			struct in_addr wins_ip;
 		        int flags;
-			*return_iplist = name_query( sock,      name,
-						     name_type, False, 
-						     True,      wins_ip,
-						     return_count, &flags);
+			BOOL timed_out;
+
+			wins_ip = wins_srv_ip_tag(wins_tags[t], src_ip);
+
+			if (global_in_nmbd && ismyip(wins_ip)) {
+				/* yikes! we'll loop forever */
+				continue;
+			}
+
+			/* skip any that have been unresponsive lately */
+			if (wins_srv_is_dead(wins_ip, src_ip)) {
+				continue;
+			}
+
+			DEBUG(3,("resolve_wins: using WINS server %s and tag '%s'\n", inet_ntoa(wins_ip), wins_tags[t]));
+
+			sock = open_socket_in(SOCK_DGRAM, 0, 3, src_ip.s_addr, True);
+			if (sock == -1) {
+				continue;
+			}
+
+			*return_iplist = name_query(sock,name,name_type, False, 
+						    True, wins_ip, return_count, &flags, 
+						    &timed_out);
 			if(*return_iplist != NULL) {
-				close(sock);
-				return True;
+				goto success;
 			}
 			close(sock);
+
+			if (timed_out) {
+				/* Timed out wating for WINS server to respond.  Mark it dead. */
+				wins_srv_died(wins_ip, src_ip);
+			} else {
+				/* The name definately isn't in this
+				   group of WINS servers. goto the next group  */
+				break;
+			}
 		}
 	}
 
+	wins_srv_tags_free(wins_tags);
 	return False;
+
+success:
+	wins_srv_tags_free(wins_tags);
+	close(sock);
+	return True;
 }
 
 /********************************************************
@@ -807,17 +748,15 @@ static BOOL resolve_hosts(const char *name,
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-		int i = 0, j;
-		while (hp->h_addr_list[i]) i++;
-		DEBUG(10, ("%d addresses returned\n", i));
-		*return_iplist = (struct in_addr *)malloc(i*sizeof(struct in_addr));
+		struct in_addr return_ip;
+		putip((char *)&return_ip,(char *)hp->h_addr);
+		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			return False;
 		}
-                for (j = 0; j < i; j++)
-			putip(&(*return_iplist)[j], (char *)hp->h_addr_list[j]);
-		*return_count = i;
+		**return_iplist = return_ip;
+		*return_count = 1;
 		return True;
 	}
 	return False;
@@ -845,6 +784,8 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 
   *return_iplist = NULL;
   *return_count = 0;
+
+  DEBUG(10, ("internal_resolve_name: looking up %s#%x\n", name, name_type));
 
   if (allzeros || allones || is_address) {
 	*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
@@ -914,6 +855,8 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   /* All of the resolve_* functions above have returned false. */
 
   SAFE_FREE(*return_iplist);
+  *return_count = 0;
+
   return False;
 
   done:
@@ -923,8 +866,8 @@ static BOOL internal_resolve_name(const char *name, int name_type,
      controllers including the PDC in iplist[1..n].  Iterating over
      the iplist when the PDC is down will cause two sets of timeouts. */
 
-  if (*return_count && (nodupes_iplist =
-			(struct in_addr *)malloc(sizeof(struct in_addr) * (*return_count)))) {
+  if (*return_count && (nodupes_iplist = (struct in_addr *)
+       malloc(sizeof(struct in_addr) * (*return_count)))) {
       int nodupes_count = 0;
  
       /* Iterate over return_iplist looking for duplicates */
@@ -1010,69 +953,15 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	return False;
 }
 
-/**************************************************************************
- Resolve a name to a list of addresses
-**************************************************************************/
-BOOL resolve_name_2(const char *name, struct in_addr **return_ip, int *count, int name_type)
-{
-
-	return internal_resolve_name(name, name_type, return_ip, count);
-
-} 
-
-/********************************************************
- resolve a name of format \\server_name or \\ipaddress
- into a name.  also, cut the \\ from the front for us.
-*********************************************************/
-
-BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
-                                struct in_addr *ip)
-{
-        BOOL ret;
-        const char *sv_name = srv_name;
-
-        DEBUG(10,("resolve_srv_name: %s\n", srv_name));
-
-        if (srv_name == NULL || strequal("\\\\.", srv_name))
-        {
-                extern pstring global_myname;
-                fstrcpy(dest_host, global_myname);
-                ip = interpret_addr2("127.0.0.1");
-                return True;
-        }
-
-        if (strnequal("\\\\", srv_name, 2))
-        {
-                sv_name = &srv_name[2];
-        }
-
-        fstrcpy(dest_host, sv_name);
-        /* treat the '*' name specially - it is a magic name for the PDC */
-        if (strcmp(dest_host,"*") == 0) {
-                extern pstring global_myname;
-                ret = resolve_name(lp_workgroup(), ip, 0x1B);
-                lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
-        } else {
-                ret = resolve_name(dest_host, ip, 0x20);
-        }
-        
-        if (is_ipaddress(dest_host))
-        {
-                fstrcpy(dest_host, "*SMBSERVER");
-        }
-        
-        return ret;
-}
-
-
 /********************************************************
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
 
-BOOL find_master_ip(char *group, struct in_addr *master_ip)
+BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 {
 	struct in_addr *ip_list = NULL;
 	int count = 0;
+
 
 	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
 		*master_ip = ip_list[0];
@@ -1101,6 +990,7 @@ BOOL lookup_dc_name(const char *srcname, const char *domain,
 	fstring dc_name;
 	BOOL ret;
 
+	
 	/*
 	 * Due to the fact win WinNT *sucks* we must do a node status
 	 * query here... JRA.
@@ -1144,7 +1034,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	
 	/* Find out the transient UDP port we have been allocated. */
 	if(getsockname(sock, (struct sockaddr *)&sock_name, &sock_len)<0) {
-		DEBUG(0,("lookup_dc_name: Failed to get local UDP port. Error was %s\n",
+		DEBUG(0,("lookup_pdc_name: Failed to get local UDP port. Error was %s\n",
 			 strerror(errno)));
 		close(sock);
 		return False;
@@ -1165,6 +1055,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	bufp += (strlen(bufp) + 1);
 	bufp = ALIGN2(bufp, buffer);
 	bufp += dos_PutUniCode(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1, True);
+	
 	SIVAL(bufp,0,1);
 	SSVAL(bufp,4,0xFFFF); 
 	SSVAL(bufp,6,0xFFFF); 
@@ -1221,7 +1112,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	GetTimeOfDay(&tval);
 	
 	if (!send_packet(&p)) {
-		DEBUG(0,("lookup_dc_name: send_packet failed.\n"));
+		DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
 		close(sock);
 		return False;
 	}
@@ -1237,7 +1128,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			if (!retries)
 				break;
 			if (!send_packet(&p)) {
-				DEBUG(0,("lookup_dc_name: send_packet failed.\n"));
+				DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
 				close(sock);
 				return False;
 			}
@@ -1254,7 +1145,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			buf -= 4;
 
 			if (CVAL(buf,smb_com) != SMBtrans) {
-				DEBUG(0,("lookup_dc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
+				DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
 					 CVAL(buf,smb_com), (unsigned int)SMBtrans ));
 				free_packet(p_ret);
 				continue;
@@ -1264,17 +1155,17 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 			
 			if (len <= 0) {
-				DEBUG(0,("lookup_dc_name: datagram len < 0 (%d)\n", len ));
+				DEBUG(0,("lookup_pdc_name: datagram len < 0 (%d)\n", len ));
 				free_packet(p_ret);
 				continue;
 			}
 
-			DEBUG(4,("lookup_dc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
+			DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
 				 nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
 				 inet_ntoa(p_ret->ip), smb_buf(buf),SVAL(buf2,0),len));
 
 			if(SVAL(buf2,0) != QUERYFORPDC_R) {
-				DEBUG(0,("lookup_dc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
+				DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
 					 (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
 				free_packet(p_ret);
 				continue;
@@ -1313,7 +1204,7 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 		char *p;
 		char *pserver = lp_passwordserver();
 		fstring name;
-		int num_addresses = 0;
+		int num_adresses = 0;
 		struct in_addr *return_iplist = NULL;
 
 		if (! *pserver)
@@ -1321,21 +1212,14 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 
 		p = pserver;
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			if (strequal(name, "*")) {
-				/*
-				 * Use 1C followed by 1B. This shouldn't work but with
-				 * broken WINS servers it might. JRA.
-				 */
-				if (!pdc_only && internal_resolve_name(group, 0x1C, ip_list, count))
-					return True;
-				return internal_resolve_name(group, 0x1B, ip_list, count);
-			}
-			num_addresses++;
+			if (strequal(name, "*"))
+				return internal_resolve_name(group, name_type, ip_list, count);
+			num_adresses++;
 		}
-		if (num_addresses == 0)
+		if (num_adresses == 0)
 			return internal_resolve_name(group, name_type, ip_list, count);
 
-		return_iplist = (struct in_addr *)malloc(num_addresses * sizeof(struct in_addr));
+		return_iplist = (struct in_addr *)malloc(num_adresses * sizeof(struct in_addr));
 		if(return_iplist == NULL) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
 			return False;
@@ -1343,22 +1227,10 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 		p = pserver;
 		*count = 0;
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			struct in_addr *more_ip, *tmp;
-			int count_more;
-			if (resolve_name_2( name, &more_ip, &count_more, 0x20) == False)
+			struct in_addr name_ip;
+			if (resolve_name( name, &name_ip, 0x20) == False)
 				continue;
-			tmp = (struct in_addr *)realloc(return_iplist,(num_addresses + count_more) * sizeof(struct in_addr));
-			if (return_iplist == NULL) {
-				DEBUG(3, ("realloc failed with %d addresses\n", num_addresses + count_more));
-				SAFE_FREE(return_iplist);
-				SAFE_FREE(more_ip);
-				return False;
-			}
-			return_iplist = tmp;
-			memmove(&return_iplist[(*count)], more_ip, count_more * sizeof(struct in_addr));
-			SAFE_FREE(more_ip); /* Done with this ... */
-			*count += count_more;
-			num_addresses += count_more - 1;
+			return_iplist[(*count)++] = name_ip;
 		}
 		*ip_list = return_iplist;
 		return (*count != 0);
@@ -1367,10 +1239,42 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 }
 
 /********************************************************
- Get the IP address list of the Local Master Browsers
-********************************************************/
+ Resolve a name of format \\server_name or \\ipaddress
+ into a name.  also, cut the \\ from the front for us.
+*********************************************************/
 
-BOOL get_lmb_list(struct in_addr **ip_list, int *count)
+BOOL resolve_srv_name(const char *srv_name, fstring dest_host, struct in_addr *ip)
 {
-	return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
+	BOOL ret;
+	const char *sv_name = srv_name;
+
+	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
+
+	if (srv_name == NULL || strequal("\\\\.", srv_name)) {
+		extern pstring global_myname;
+
+		fstrcpy(dest_host, global_myname);
+		ip = interpret_addr2("127.0.0.1");
+		return True;
+	}
+
+	if (strnequal("\\\\", srv_name, 2)) {
+		sv_name = &srv_name[2];
+	}
+
+	fstrcpy(dest_host, sv_name);
+	/* treat the '*' name specially - it is a magic name for the PDC */
+	if (strcmp(dest_host,"*") == 0) {
+		extern pstring global_myname;
+		ret = resolve_name(lp_workgroup(), ip, 0x1B);
+		lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
+	} else {
+		ret = resolve_name(dest_host, ip, 0x20);
+	}
+
+	if (is_ipaddress(dest_host)) {
+		fstrcpy(dest_host, "*SMBSERVER");
+	}
+
+	return ret;
 }

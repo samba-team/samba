@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -43,7 +42,7 @@ struct sync_record {
 /* a linked list of current sync connections */
 static struct sync_record *syncs;
 
-static FILE *fp;
+static XFILE *fp;
 
 /*******************************************************************
   This is the NetServerEnum callback.
@@ -52,7 +51,7 @@ static FILE *fp;
 static void callback(const char *sname, uint32 stype, 
                      const char *comment, void *state)
 {
-	fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
+	x_fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
 }
 
 /*******************************************************************
@@ -167,7 +166,7 @@ done:
 	DEBUG(2,("Initiating browse sync for %s to %s(%s)\n",
 		 work->work_group, name, inet_ntoa(ip)));
 
-	fp = sys_fopen(s->fname,"w");
+	fp = x_fopen(s->fname,O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	if (!fp) {
 		END_PROFILE(sync_browse_lists);
 		_exit(1);	
@@ -176,7 +175,7 @@ done:
 	sync_child(name, nm_type, work->work_group, ip, local, servers,
 		   s->fname);
 
-	fclose(fp);
+	x_fclose(fp);
 	END_PROFILE(sync_browse_lists);
 	_exit(0);
 }

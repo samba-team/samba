@@ -143,7 +143,7 @@ typedef struct
 	char *szLogonPath;
 	char *szLogonDrive;
 	char *szLogonHome;
-	char *szWINSserver;
+	char **szWINSservers;
 	char *szCodingSystem;
 	char *szInterfaces;
 	char *szRemoteAnnounce;
@@ -560,7 +560,6 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
-static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
 
 static void set_server_role(void);
@@ -994,7 +993,7 @@ static struct parm_struct parm_table[] = {
 	{"dns proxy", P_BOOL, P_GLOBAL, &Globals.bDNSproxy, NULL, NULL, 0},
 	{"wins proxy", P_BOOL, P_GLOBAL, &Globals.bWINSproxy, NULL, NULL, 0},
 	
-	{"wins server", P_STRING, P_GLOBAL, &Globals.szWINSserver, handle_wins_server_list, NULL, FLAG_BASIC},
+	{"wins server", P_LIST, P_GLOBAL, &Globals.szWINSservers, NULL, NULL, FLAG_BASIC},
 	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC},
 	{"wins hook", P_STRING, P_GLOBAL, &Globals.szWINSHook, NULL, NULL, 0},
 
@@ -1510,6 +1509,8 @@ static char *lp_string(const char *s)
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
  char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
+#define FN_GLOBAL_LIST(fn_name,ptr) \
+ char **fn_name(void) {return(*(char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
  BOOL fn_name(void) {return(*(BOOL *)(ptr));}
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
@@ -1570,7 +1571,7 @@ FN_GLOBAL_STRING(lp_logon_drive, &Globals.szLogonDrive)
 FN_GLOBAL_STRING(lp_logon_home, &Globals.szLogonHome)
 FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
-FN_GLOBAL_STRING(lp_wins_server, &Globals.szWINSserver)
+FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_STRING(lp_interfaces, &Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
@@ -1852,13 +1853,18 @@ static void free_service(service * pservice)
 	string_free(&pservice->szService);
 	SAFE_FREE(pservice->copymap);
 
-	for (i = 0; parm_table[i].label; i++)
+	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].class == P_LOCAL)
 			string_free((char **)
 				    (((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+		else if (parm_table[i].type == P_LIST && parm_table[i].class == P_LOCAL)
+			str_list_free((char ***)
+					(((char *)pservice) +
+					 PTR_DIFF(parm_table[i].ptr, &sDefault)));
+	}
 
 	ZERO_STRUCTP(pservice);
 }
@@ -2172,6 +2178,9 @@ static void copy_service(service * pserviceDest,
 					string_set(dest_ptr,
 						   *(char **)src_ptr);
 					strupper(*(char **)dest_ptr);
+					break;
+				case P_LIST:
+					str_list_copy((char ***)dest_ptr, *(char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -2675,19 +2684,6 @@ static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
- Handle the WINS SERVER list.
-***************************************************************************/
-
-static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
-{
-	if( !wins_srv_load_list( pszParmValue ) )
-		return( False );  /* Parse failed. */
-
-	string_set( ptr, pszParmValue );
-	return( True );
-}
-
-/***************************************************************************
  Handle the DEBUG level list.
 ***************************************************************************/
 
@@ -2817,6 +2813,10 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			sscanf(pszParmValue, "%o", (int *)parm_ptr);
 			break;
 
+		case P_LIST:
+			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
+			break;
+
 		case P_STRING:
 			string_set(parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
@@ -2926,6 +2926,16 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(
 			fprintf(f, "%s", octal_string(*(int *)ptr));
 			break;
 
+		case P_LIST:
+			if ((char ***)ptr && *(char ***)ptr) {
+				char **list = *(char ***)ptr;
+
+				for (; *list; list++)
+					fprintf(f, "%s%s", *list,
+							((*(list+1))?", ":""));
+			}
+			break;
+
 		case P_GSTRING:
 		case P_UGSTRING:
 			if ((char *)ptr) {
@@ -2969,6 +2979,9 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 
 		case P_CHAR:
 			return (*((char *)ptr1) == *((char *)ptr2));
+
+		case P_LIST:
+			return str_list_compare(*(char ***)ptr1, *(char ***)ptr2);
 
 		case P_GSTRING:
 		case P_UGSTRING:
@@ -3068,6 +3081,9 @@ static BOOL is_default(int i)
 		return False;
 	switch (parm_table[i].type)
 	{
+		case P_LIST:
+			return str_list_compare (parm_table[i].def.lvalue,
+					*(char ***)parm_table[i].ptr);
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
@@ -3368,6 +3384,10 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type)
 		{
+			case P_LIST:
+				str_list_copy(&(parm_table[i].def.lvalue),
+						*(char ***)parm_table[i].ptr);
+				break;
 			case P_STRING:
 			case P_USTRING:
 				parm_table[i].def.svalue =
@@ -3496,11 +3516,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	/* if bWINSsupport is true and we are in the client            */
 
 	if (in_client && Globals.bWINSsupport)
-	{
-
-		string_set(&Globals.szWINSserver, "127.0.0.1");
-
-	}
+		lp_do_parameter(-1, "wins server", "127.0.0.1");
 
 	return (bRetval);
 }

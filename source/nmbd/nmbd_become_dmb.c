@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -236,7 +235,6 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
       dbgtext( "IP %s for workgroup %s ", inet_ntoa(ip), nmbname->name );
       dbgtext( "registered on subnet %s.\n", subrec->subnet_name );
     }
-    become_domain_master_stage1(subrec, nmbname->name);
   }
 }
 
@@ -349,7 +347,7 @@ static void become_domain_master_browser_wins(char *workgroup_name)
          we can become a domain master browser. 
        */
 
-      DEBUG(0,("become_domain_master_browser_wins: querying WINS server at IP %s \
+      DEBUG(0,("become_domain_master_browser_wins: querying WINS server from IP %s \
 for domain master browser name %s on workgroup %s\n",
          inet_ntoa(unicast_subnet->myip), nmb_namestr(&nmbname), workgroup_name));
 

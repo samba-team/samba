@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -238,40 +237,44 @@ static BOOL create_and_init_additional_record(struct packet_struct *packet,
                                                      uint16 nb_flags,
                                                      struct in_addr *register_ip)
 {
-  struct nmb_packet *nmb = &packet->packet.nmb;
+	struct nmb_packet *nmb = &packet->packet.nmb;
 
-  if((nmb->additional = (struct res_rec *)malloc(sizeof(struct res_rec))) == NULL)
-  {
-    DEBUG(0,("initiate_name_register_packet: malloc fail for additional record.\n"));
-    return False;
-  }
+	if((nmb->additional = (struct res_rec *)malloc(sizeof(struct res_rec))) == NULL) {
+		DEBUG(0,("initiate_name_register_packet: malloc fail for additional record.\n"));
+		return False;
+	}
 
-  memset((char *)nmb->additional,'\0',sizeof(struct res_rec));
+	memset((char *)nmb->additional,'\0',sizeof(struct res_rec));
 
-  nmb->additional->rr_name  = nmb->question.question_name;
-  nmb->additional->rr_type  = RR_TYPE_NB;
-  nmb->additional->rr_class = RR_CLASS_IN;
+	nmb->additional->rr_name  = nmb->question.question_name;
+	nmb->additional->rr_type  = RR_TYPE_NB;
+	nmb->additional->rr_class = RR_CLASS_IN;
+	
+	/* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
+	if (nmb->header.nm_flags.bcast)
+		nmb->additional->ttl = PERMANENT_TTL;
+	else
+		nmb->additional->ttl = lp_max_ttl();
+	
+	nmb->additional->rdlength = 6;
+	
+	set_nb_flags(nmb->additional->rdata,nb_flags);
+	
+	/* Set the address for the name we are registering. */
+	putip(&nmb->additional->rdata[2], register_ip);
+	
+	/* 
+	   it turns out that Jeremys code was correct, we are supposed
+	   to send registrations from the IP we are registering. The
+	   trick is what to do on timeouts! When we send on a
+	   non-routable IP then the reply will timeout, and we should
+	   treat this as success, not failure. That means we go into
+	   our standard refresh cycle for that name which copes nicely
+	   with disconnected networks.
+	*/
+	packet->fd = find_subnet_fd_for_address(*register_ip);
 
-  /* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
-  if (nmb->header.nm_flags.bcast)
-    nmb->additional->ttl = PERMANENT_TTL;
-  else
-    nmb->additional->ttl = lp_max_ttl();
-
-  nmb->additional->rdlength = 6;
-
-  set_nb_flags(nmb->additional->rdata,nb_flags);
-
-  /* Set the address for the name we are registering. */
-  putip(&nmb->additional->rdata[2], register_ip);
-
-  /* Ensure that we send out the file descriptor to give us the
-     the specific source address we are registering as our
-     IP source address. */
-
-  packet->fd = find_subnet_fd_for_address( *register_ip );
-
-  return True;
+	return True;
 }
 
 /***************************************************************************
@@ -346,28 +349,28 @@ static BOOL initiate_name_register_packet( struct packet_struct *packet,
  Sends out a multihomed name register.
 **************************************************************************/
 
-static BOOL initiate_multihomed_name_register_packet( struct packet_struct *packet,
-                                    uint16 nb_flags, struct in_addr *register_ip)
+static BOOL initiate_multihomed_name_register_packet(struct packet_struct *packet,
+						     uint16 nb_flags, struct in_addr *register_ip)
 {
-  struct nmb_packet *nmb = &packet->packet.nmb;
-  fstring second_ip_buf;
+	struct nmb_packet *nmb = &packet->packet.nmb;
+	fstring second_ip_buf;
 
-  fstrcpy(second_ip_buf, inet_ntoa(packet->ip));
+	fstrcpy(second_ip_buf, inet_ntoa(packet->ip));
 
-  nmb->header.opcode = NMB_NAME_MULTIHOMED_REG_OPCODE;
-  nmb->header.arcount = 1;
+	nmb->header.opcode = NMB_NAME_MULTIHOMED_REG_OPCODE;
+	nmb->header.arcount = 1;
 
-  nmb->header.nm_flags.recursion_desired = True;
-
-  if(create_and_init_additional_record(packet, nb_flags, register_ip) == False)
-    return False;
-
-  DEBUG(4,("initiate_multihomed_name_register_packet: sending registration \
+	nmb->header.nm_flags.recursion_desired = True;
+	
+	if(create_and_init_additional_record(packet, nb_flags, register_ip) == False)
+		return False;
+	
+	DEBUG(4,("initiate_multihomed_name_register_packet: sending registration \
 for name %s IP %s (bcast=%s) to IP %s\n",
-	   nmb_namestr(&nmb->additional->rr_name), inet_ntoa(*register_ip),
-           BOOLSTR(nmb->header.nm_flags.bcast), second_ip_buf ));
+		 nmb_namestr(&nmb->additional->rr_name), inet_ntoa(*register_ip),
+		 BOOLSTR(nmb->header.nm_flags.bcast), second_ip_buf ));
 
-  return send_netbios_packet( packet );
+	return send_netbios_packet( packet );
 } 
 
 /***************************************************************************
@@ -511,65 +514,123 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
   return rrec;
 }
 
+
 /****************************************************************************
- Queue a multihomed register name packet to the broadcast address of a subnet.
+ Queue a refresh name packet to the broadcast address of a subnet.
+****************************************************************************/
+void queue_wins_refresh(struct nmb_name *nmbname,
+			response_function resp_fn,
+			timeout_response_function timeout_fn,
+			uint16 nb_flags,
+			struct in_addr refresh_ip,
+			const char *tag)
+{
+	struct packet_struct *p;
+	struct response_record *rrec;
+	struct in_addr wins_ip;
+	struct userdata_struct *userdata;
+	fstring ip_str;
+
+	wins_ip = wins_srv_ip_tag(tag, refresh_ip);
+
+	if ((p = create_and_init_netbios_packet(nmbname, False, False, wins_ip)) == NULL) {
+		return;
+	}
+
+	if (!initiate_name_refresh_packet(p, nb_flags, &refresh_ip)) {
+		p->locked = False;
+		free_packet(p);
+		return;
+	}
+
+	fstrcpy(ip_str, inet_ntoa(refresh_ip));
+
+	DEBUG(6,("Refreshing name %s IP %s with WINS server %s using tag '%s'\n",
+		 nmb_namestr(nmbname), ip_str, inet_ntoa(wins_ip), tag));
+
+	userdata = (struct userdata_struct *)malloc(sizeof(*userdata) + strlen(tag) + 1);
+	if (!userdata) {
+		DEBUG(0,("Failed to allocate userdata structure!\n"));
+		return;
+	}
+	ZERO_STRUCTP(userdata);
+	userdata->userdata_len = strlen(tag) + 1;
+	strlcpy(userdata->data, tag, userdata->userdata_len);	
+
+	if ((rrec = make_response_record(unicast_subnet,
+					 p,
+					 resp_fn, timeout_fn,
+					 NULL,
+					 NULL,
+					 userdata)) == NULL) {
+		p->locked = False;
+		free_packet(p);
+		return;
+	}
+
+	free(userdata);
+
+	/* we don't want to repeat refresh packets */
+	rrec->repeat_count = 0;
+}
+
+
+/****************************************************************************
+ Queue a multihomed register name packet to a given WINS server IP
 ****************************************************************************/
 
 struct response_record *queue_register_multihomed_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          register_name_success_function success_fn,
-                          register_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname,
-                          uint16 nb_flags,
-                          struct in_addr register_ip)
+							response_function resp_fn,
+							timeout_response_function timeout_fn,
+							register_name_success_function success_fn,
+							register_name_fail_function fail_fn,
+							struct userdata_struct *userdata,
+							struct nmb_name *nmbname,
+							uint16 nb_flags,
+							struct in_addr register_ip,
+							struct in_addr wins_ip)
 {
-  struct packet_struct *p;
-  struct response_record *rrec;
-  BOOL ret;
-     
-  /* Sanity check. */
-  if(subrec != unicast_subnet)
-  {
-    DEBUG(0,("queue_register_multihomed_name: should only be done on \
+	struct packet_struct *p;
+	struct response_record *rrec;
+	BOOL ret;
+	
+	/* Sanity check. */
+	if(subrec != unicast_subnet) {
+		DEBUG(0,("queue_register_multihomed_name: should only be done on \
 unicast subnet. subnet is %s\n.", subrec->subnet_name ));
-    return NULL;
-  }
+		return NULL;
+	}
 
-  if(assert_check_subnet(subrec))
-    return NULL;
+	if(assert_check_subnet(subrec))
+		return NULL;
      
-  if(( p = create_and_init_netbios_packet(nmbname, False, True,
-					  subrec->bcast_ip)) == NULL)
-    return NULL;
+	if ((p = create_and_init_netbios_packet(nmbname, False, True, wins_ip)) == NULL)
+		return NULL;
 
-  if (nb_flags & NB_GROUP)
-    ret = initiate_name_register_packet( p, nb_flags, &register_ip);
-  else
-    ret = initiate_multihomed_name_register_packet( p, nb_flags, &register_ip);
+	if (nb_flags & NB_GROUP)
+		ret = initiate_name_register_packet( p, nb_flags, &register_ip);
+	else
+		ret = initiate_multihomed_name_register_packet(p, nb_flags, &register_ip);
 
-  if(ret == False)
-  {  
-    p->locked = False;
-    free_packet(p);
-    return NULL;
-  }  
+	if (ret == False) {  
+		p->locked = False;
+		free_packet(p);
+		return NULL;
+	}  
   
-  if((rrec = make_response_record(subrec,    /* subnet record. */
-                p,                     /* packet we sent. */
-                resp_fn,               /* function to call on response. */
-                timeout_fn,            /* function to call on timeout. */
-                (success_function)success_fn,            /* function to call on operation success. */
-                (fail_function)fail_fn,               /* function to call on operation fail. */
-                userdata)) == NULL)
-  {  
-    p->locked = False;
-    free_packet(p);
-    return NULL;
-  }  
-  
-  return rrec;
+	if ((rrec = make_response_record(subrec,    /* subnet record. */
+					 p,                     /* packet we sent. */
+					 resp_fn,               /* function to call on response. */
+					 timeout_fn,            /* function to call on timeout. */
+					 (success_function)success_fn, /* function to call on operation success. */
+					 (fail_function)fail_fn,       /* function to call on operation fail. */
+					 userdata)) == NULL) {  
+		p->locked = False;
+		free_packet(p);
+		return NULL;
+	}  
+	
+	return rrec;
 }
 
 /****************************************************************************
@@ -577,14 +638,15 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
 ****************************************************************************/
 
 struct response_record *queue_release_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          release_name_success_function success_fn,
-                          release_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname,
-                          uint16 nb_flags,
-                          struct in_addr release_ip)
+					    response_function resp_fn,
+					    timeout_response_function timeout_fn,
+					    release_name_success_function success_fn,
+					    release_name_fail_function fail_fn,
+					    struct userdata_struct *userdata,
+					    struct nmb_name *nmbname,
+					    uint16 nb_flags,
+					    struct in_addr release_ip,
+					    struct in_addr dest_ip)
 {
   struct packet_struct *p;
   struct response_record *rrec;
@@ -593,7 +655,7 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
     return NULL;
 
   if ((p = create_and_init_netbios_packet(nmbname, (subrec != unicast_subnet), False,
-                     subrec->bcast_ip)) == NULL)
+					  dest_ip)) == NULL)
     return NULL;
 
   if(initiate_name_release_packet( p, nb_flags, &release_ip) == False)
@@ -630,52 +692,6 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
 }
 
 /****************************************************************************
- Queue a refresh name packet to the broadcast address of a subnet.
-****************************************************************************/
-
-struct response_record *queue_refresh_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          refresh_name_success_function success_fn,
-                          refresh_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct name_record *namerec,
-                          struct in_addr refresh_ip)
-{
-  struct packet_struct *p;
-  struct response_record *rrec;
-
-  if(assert_check_subnet(subrec))
-    return NULL;
-
-  if(( p = create_and_init_netbios_packet(&namerec->name, (subrec != unicast_subnet), False,
-                     subrec->bcast_ip)) == NULL)
-    return NULL;
-
-  if( !initiate_name_refresh_packet( p, namerec->data.nb_flags, &refresh_ip ) )
-  {
-    p->locked = False;
-    free_packet(p);
-    return NULL;
-  }
-
-  if((rrec = make_response_record(subrec,           /* subnet record. */
-                  p,                     /* packet we sent. */
-                  resp_fn,               /* function to call on response. */
-                  timeout_fn,            /* function to call on timeout. */
-                  (success_function)success_fn,            /* function to call on operation success. */
-                  (fail_function)fail_fn,               /* function to call on operation fail. */
-                  userdata)) == NULL)
-  {
-    p->locked = False;
-    free_packet(p);
-    return NULL;
-  }
-  
-  return rrec;
-}
-
-/****************************************************************************
  Queue a query name packet to the broadcast address of a subnet.
 ****************************************************************************/
  
@@ -689,14 +705,33 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
 {
   struct packet_struct *p;
   struct response_record *rrec;
+  struct in_addr to_ip;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
+  to_ip = subrec->bcast_ip;
+  
+  /* queries to the WINS server turn up here as queries to IP 0.0.0.0 
+     These need to be handled a bit differently */
+  if (subrec->type == UNICAST_SUBNET && is_zero_ip(to_ip)) {
+	  /* what we really need to do is loop over each of our wins
+	   * servers and wins server tags here, but that just doesn't
+	   * fit our architecture at the moment (userdata may already
+	   * be used when we get here). For now we just query the first
+	   * active wins server on the first tag. */
+	  char **tags = wins_srv_tags();
+	  if (!tags) {
+		  return NULL;
+	  }
+	  to_ip = wins_srv_ip_tag(tags[0], to_ip);
+	  wins_srv_tags_free(tags);
+  }
+
   if(( p = create_and_init_netbios_packet(nmbname, 
 					  (subrec != unicast_subnet), 
 					  (subrec == unicast_subnet), 
-					  subrec->bcast_ip)) == NULL)
+					  to_ip)) == NULL)
     return NULL;
 
   if(lp_bind_interfaces_only()) {
@@ -1654,7 +1689,7 @@ void retransmit_or_expire_response_records(time_t t)
 to IP %s on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), 
                           subrec->subnet_name));
           }
-          rrec->repeat_time += rrec->repeat_interval;
+          rrec->repeat_time = t + rrec->repeat_interval;
           rrec->repeat_count--;
         }
         else
@@ -1849,8 +1884,10 @@ BOOL listen_for_packets(BOOL run_election)
 					  DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
-				  } else if (ip_equal(loopback_ip, packet->ip) && packet->port == global_nmb_port) {
-					  DEBUG(7,("discarding own packet from %s:%d\n",
+				  } else if ((ip_equal(loopback_ip, packet->ip) || 
+					      ismyip(packet->ip)) && packet->port == global_nmb_port &&
+					     packet->packet.nmb.header.nm_flags.bcast) {
+					  DEBUG(7,("discarding own bcast packet from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
 				  } else {
@@ -1876,7 +1913,7 @@ BOOL listen_for_packets(BOOL run_election)
 					  free_packet(packet);
 				  } else if ((ip_equal(loopback_ip, packet->ip) || 
 					      ismyip(packet->ip)) && packet->port == DGRAM_PORT) {
-					  DEBUG(7,("discarding own packet from %s:%d\n",
+					  DEBUG(7,("discarding own dgram packet from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
 				  } else {
@@ -1932,7 +1969,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   /* Setup the smb part. */
   ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
   memcpy(tmp,ptr,4);
-  set_message(ptr,17,17 + len,True);
+  set_message(ptr,17,23 + len,True);
   memcpy(ptr,tmp,4);
 
   SCVAL(ptr,smb_com,SMBtrans);

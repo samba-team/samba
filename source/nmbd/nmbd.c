@@ -56,8 +56,8 @@ static void terminate(void)
 	/* Write out wins.dat file if samba is a WINS server */
 	wins_write_database(False);
 
-	/* Remove all SELF registered names. */
-	release_my_names();
+	/* Remove all SELF registered names from WINS */
+	release_wins_names();
 
 	/* Announce all server entries as 0 time-to-live, 0 type. */
 	announce_my_servers_removed();
@@ -299,7 +299,7 @@ static BOOL reload_nmbd_services(BOOL test)
   }
 
   /* Do a sanity check for a misconfigured nmbd */
-  if( lp_wins_support() && *lp_wins_server() )
+  if( lp_wins_support() && wins_srv_count() )
   {
     DEBUG(0,("ERROR: both 'wins support = true' and 'wins server = <server>' \
 cannot be set in the smb.conf file. nmbd aborting.\n"));

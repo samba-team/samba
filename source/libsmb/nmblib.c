@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios library routines
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -785,10 +784,8 @@ static int build_dgram(char *buf,struct packet_struct *p)
   /* put in the header */
   ubuf[0] = dgram->header.msg_type;
   ubuf[1] = (((int)dgram->header.flags.node_type)<<2);
-  if (dgram->header.flags.more)
-    ubuf[1] |= 1;
-  if (dgram->header.flags.first)
-    ubuf[1] |= 2;
+  if (dgram->header.flags.more) ubuf[1] |= 1;
+  if (dgram->header.flags.first) ubuf[1] |= 2;
   RSSVAL(ubuf,2,dgram->header.dgm_id);
   putip(ubuf+4,(char *)&dgram->header.source_ip);
   RSSVAL(ubuf,8,dgram->header.source_port);
@@ -1050,7 +1047,7 @@ BOOL match_mailslot_name(struct packet_struct *p, char *mailslot_name)
 /****************************************************************************
 return the number of bits that match between two 4 character buffers
   ***************************************************************************/
-static int matching_bits(uchar *p1, uchar *p2)
+int matching_quad_bits(uchar *p1, uchar *p2)
 {
 	int i, j, ret = 0;
 	for (i=0; i<4; i++) {
@@ -1076,7 +1073,7 @@ compare two query reply records
   ***************************************************************************/
 static int name_query_comp(uchar *p1, uchar *p2)
 {
-	return matching_bits(p2+2, sort_ip) - matching_bits(p1+2, sort_ip);
+	return matching_quad_bits(p2+2, sort_ip) - matching_quad_bits(p1+2, sort_ip);
 }
 
 /****************************************************************************
@@ -1119,11 +1116,7 @@ char *dns_to_netbios_name(char *dns_name)
 	   netbios name up to and including the '.'  this even applies, by
 	   mistake, to workgroup (domain) names, which is _really_ daft.
 	 */
-        /*
-         * We need to go up, not down, to avoid netbios names like 
-         * fred.xyz being produced from fred.xyz.someco.com.
-         */
-	for (i = 0; i < 15; i++)
+	for (i = 15; i >= 0; i--)
 	{
 		if (netbios_name[i] == '.')
 		{
@@ -1184,8 +1177,8 @@ mangle a name into netbios format
 ****************************************************************************/
 int name_mangle( char *In, char *Out, char name_type )
   {
-  int   c;
   int   i;
+  int   c;
   int   len;
   char  buf[20];
   char *p = Out;
