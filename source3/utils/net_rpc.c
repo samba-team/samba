@@ -2702,6 +2702,11 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 		    strequal(netname,"global")) 
 			continue;
 
+		if (opt_exclude && in_list(netname, opt_exclude, False)) {
+			printf("excluding  [%s]\n", netname);
+			continue;
+		} 
+
 		/* only work with file-shares */
 		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
 			d_printf("skipping   [%s]: not a file share.\n", netname);
@@ -2971,7 +2976,7 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			continue;
 		}
 
-		if (opt_exclude && in_list(netname, (char *)opt_exclude, False)) {
+		if (opt_exclude && in_list(netname, opt_exclude, False)) {
 			printf("excluding  [%s]\n", netname);
 			continue;
 		} 
@@ -4472,6 +4477,7 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
+	const char **names;
 	DOM_SID trust_acct_sid;
 	uint32 *user_rids, num_rids, *name_types;
 	uint32 flags = 0x000003e8; /* Unknown */
@@ -4484,12 +4490,16 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	/* 
 	 * Make valid trusting domain account (ie. uppercased and with '$' appended)
 	 */
-	 
-	if (asprintf(&acct_name, "%s$", argv[0]) < 0) {
+	acct_name = talloc_asprintf(mem_ctx, "%s$", argv[0]);
+
+	if (acct_name == NULL)
 		return NT_STATUS_NO_MEMORY;
-	}
 
 	strupper_m(acct_name);
+
+	names = TALLOC_ARRAY(mem_ctx, const char *, 1);
+	names[0] = acct_name;
+
 
 	/* Get samr policy handle */
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
@@ -4507,8 +4517,8 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	}
 
 	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, flags, 1,
-				       &acct_name, &num_rids, &user_rids,
-				       &name_types);
+				       names, &num_rids,
+				       &user_rids, &name_types);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -4552,7 +4562,6 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	}
 
  done:
-	SAFE_FREE(acct_name);
 	return result;
 }
 
