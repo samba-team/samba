@@ -208,6 +208,87 @@ static BOOL srv_io_share_info2(char *desc, SH_INFO_2 *sh2, prs_struct *ps, int d
 }
 
 /*******************************************************************
+ Inits a SH_INFO_2 structure
+*******************************************************************/
+
+void init_srv_share_info501(SH_INFO_501 *sh501, char *net_name, uint32 type, char *remark, uint32 csc_policy)
+{
+	DEBUG(5,("init_srv_share_info501: %s %8x %s %08x\n", net_name, type,
+		remark, csc_policy));
+
+	ZERO_STRUCTP(sh501);
+
+	sh501->ptr_netname = (net_name != NULL) ? 1 : 0;
+	sh501->type = type;
+	sh501->ptr_remark = (remark != NULL) ? 1 : 0;
+	sh501->csc_policy = csc_policy;
+}
+
+/*******************************************************************
+ Reads of writes a structure.
+*******************************************************************/
+
+static BOOL srv_io_share_info501(char *desc, SH_INFO_501 *sh501, prs_struct *ps, int depth)
+{
+	if (sh501 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_share_info501");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_netname", ps, depth, &sh501->ptr_netname))
+		return False;
+	if (!prs_uint32("type     ", ps, depth, &sh501->type))
+		return False;
+	if (!prs_uint32("ptr_remark ", ps, depth, &sh501->ptr_remark))
+		return False;
+	if (!prs_uint32("csc_policy ", ps, depth, &sh501->csc_policy))
+		return False;
+
+	return True;
+}
+
+/********************************************************************
+ Inits a SH_INFO_501_STR structure
+********************************************************************/
+
+void init_srv_share_info501_str(SH_INFO_501_STR *sh501, char *net_name, char *remark)
+{
+	DEBUG(5,("init_srv_share_info501_str\n"));
+
+	init_unistr2(&sh501->uni_netname, net_name, strlen(net_name)+1);
+	init_unistr2(&sh501->uni_remark, remark, strlen(remark)+1);
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+static BOOL srv_io_share_info501_str(char *desc, SH_INFO_501_STR *sh501, prs_struct *ps, int depth)
+{
+	if (sh501 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_share_info501_str");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("", &sh501->uni_netname, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("", &sh501->uni_remark, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Inits a SH_INFO_502 structure
 ********************************************************************/
 
@@ -502,6 +583,32 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 		break;
 	}
 
+	case 501:
+	{
+		SRV_SHARE_INFO_501 *info501 = ctr->share.info501;
+		int num_entries = ctr->num_entries;
+		int i;
+
+		if (UNMARSHALLING(ps)) {
+			if (!(info501 = (SRV_SHARE_INFO_501 *) prs_alloc_mem(ps, num_entries *
+					sizeof (SRV_SHARE_INFO_501))))
+				return False;
+			ctr->share.info501 = info501;
+		}
+
+		for (i = 0; i < num_entries; i++) {
+			if (!srv_io_share_info501("", &info501[i].info_501, ps, depth))
+				return False;
+		}
+
+		for (i = 0; i < num_entries; i++) {
+			if (!srv_io_share_info501_str("", &info501[i].info_501_str, ps, depth))
+				return False;
+		}
+
+		break;
+	}
+
 	case 502:
 	{
 		SRV_SHARE_INFO_502 *info502 = ctr->share.info502;
@@ -691,6 +798,13 @@ static BOOL srv_io_srv_share_info(char *desc, prs_struct *ps, int depth, SRV_SHA
 				return False;
 
 			break;
+		case 501:
+			if (!srv_io_share_info501("", &r_n->share.info501.info_501, ps, depth))
+				return False;
+			if (!srv_io_share_info501_str("", &r_n->share.info501.info_501_str, ps, depth))
+				return False;
+			break;
+
 		case 502:
 			if(!srv_io_share_info502("", &r_n->share.info502.info_502, ps, depth))
 				return False;

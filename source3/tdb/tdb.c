@@ -306,7 +306,8 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off len, int probe)
 	}
 
 	/* Unmap, update size, remap */
-	tdb_munmap(tdb);
+	if (tdb_munmap(tdb) == -1)
+		return TDB_ERRCODE(TDB_ERR_IO, -1);
 	tdb->map_size = st.st_size;
 	tdb_mmap(tdb);
 	return 0;
