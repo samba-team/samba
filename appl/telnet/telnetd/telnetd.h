@@ -94,6 +94,10 @@
 #include <termios.h>
 #include <unistd.h>
 
+#ifdef HAVE_PTY_H
+#include <pty.h>
+#endif
+
 #include "defs.h"
 
 #include <arpa/telnet.h>
