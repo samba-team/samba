@@ -29,7 +29,7 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
                                 uid_t unix_uid, gid_t unix_gid, 
                                 char *full_name)
 {
-    char *s;
+    pstring homedir;
 
     if (!pw || !username) {
         return;
@@ -42,35 +42,26 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
     /* Username */
 
-    strncpy(pw->pw_name, username, sizeof(pw->pw_name) - 1);
+    safe_strcpy(pw->pw_name, username, sizeof(pw->pw_name) - 1);
 
     /* Full name (gecos) */
 
-    strncpy(pw->pw_gecos, full_name, sizeof(pw->pw_gecos) - 1);
+    safe_strcpy(pw->pw_gecos, full_name, sizeof(pw->pw_gecos) - 1);
 
     /* Home directory and shell - use template config parameters.  The
        defaults are /tmp for the home directory and /bin/false for shell. */
 
-    s = lp_template_homedir();
+    pstrcpy(homedir, lp_template_homedir());
+    pstring_sub(homedir,"%U",username);
 
-    if (strequal(s, "")) {
-        strncpy(pw->pw_dir, "/tmp", sizeof(pw->pw_dir) - 1);
-    } else {
-        strncpy(pw->pw_dir, lp_template_homedir(), sizeof(pw->pw_dir) - 1);
-    }
+    safe_strcpy(pw->pw_dir, homedir, sizeof(pw->pw_dir) - 1);
 
-    s = lp_template_shell();
-    
-    if (strequal(s, "")) {
-        strncpy(pw->pw_shell, "/bin/false", sizeof(pw->pw_shell) - 1);
-    } else {
-        strncpy(pw->pw_shell, lp_template_shell(), sizeof(pw->pw_shell) - 1);
-    }
+    safe_strcpy(pw->pw_shell, lp_template_shell(), sizeof(pw->pw_shell) - 1);
 
     /* Password - set to "x" as we can't generate anything useful here.
        Authentication can be done using the pam_ntdom module. */
 
-    strncpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
+    safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
 
 }
 
@@ -86,20 +77,14 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
     struct winbindd_domain *domain;
     uid_t uid;
     gid_t gid;
-    char *tmp;
 
     /* Parse domain and username */
-
-    memset(name_user, 0, sizeof(fstring));
-
-    tmp = state->request.data.username;
-    next_token(&tmp, name_domain, "/\\", sizeof(fstring));
-    next_token(NULL, name_user, "", sizeof(fstring));
+    parse_domain_user(state->request.data.username, name_domain, name_user);
 
     /* Reject names that don't have a domain - i.e name_domain contains the
        entire name. */
  
-    if (strequal(name_user, "")) {
+    if (strequal(name_domain, "")) {
         return WINBINDD_ERROR;
     }
 
