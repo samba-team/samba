@@ -99,7 +99,7 @@ sub FileLoad($)
 {
     my($filename) = shift;
     local(*INPUTFILE);
-    open(INPUTFILE, $filename) || die "can't load $filename";
+    open(INPUTFILE, $filename) || return undef;
     my($saved_delim) = $/;
     undef $/;
     my($data) = <INPUTFILE>;

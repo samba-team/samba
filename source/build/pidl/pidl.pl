@@ -8,12 +8,10 @@
 
 use strict;
 
-my($PIDLBASE) = "$ENV{HOME}/pidl";
 use lib "$ENV{HOME}/pidl";
 
 use Getopt::Long;
-use Data::Dumper;
-use Parse::RecDescent;
+use idl;
 use dump;
 use header;
 use parser;
@@ -43,8 +41,7 @@ sub IdlParse($)
                           $item[1] : 
                           "XX_" . $item[0] . "_XX[$#item]"  };
     my($filename) = shift;
-    my($grammer) = util::FileLoad("$PIDLBASE/idl.gram");
-    my($parser) = Parse::RecDescent->new($grammer);
+    my($parser) = idl->new;
     my($saved_sep) = $/;
 
     undef $/;

@@ -2,6 +2,7 @@
 # create C header files for an IDL structure
 # Copyright tridge@samba.org 2000
 # released under the GNU GPL
+
 package IdlHeader;
 
 use strict;

@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2000
 # released under the GNU GPL
 
-package IdlDump;
+package dump;
 
 use strict;
 use Data::Dumper;
