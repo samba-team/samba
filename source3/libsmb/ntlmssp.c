@@ -174,13 +174,11 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dnsdomname[0] = '\0';
-	if (!get_mydomname(dnsdomname))
-		return NT_STATUS_INVALID_PARAMETER;
+	get_mydomname(dnsdomname);
 	strlower_m(dnsdomname);
 	
 	dnsname[0] = '\0';
-	if (!get_myfullname(dnsname))
-		return NT_STATUS_INVALID_PARAMETER;
+	get_myfullname(dnsname);
 	strlower_m(dnsname);
 	
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
