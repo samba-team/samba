@@ -62,7 +62,7 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
                                        uint32 user_rid);
 CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
                                         uint32 group_rid);
-struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd);
+NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd, struct cli_state **cli);
 void winbindd_cm_status(void);
 
 /* The following definitions come from nsswitch/winbindd_group.c  */
