@@ -602,7 +602,7 @@ static BOOL illegal_name(char *name)
   unsigned char *s;
 
   if (!initialised) {
-    char *ill = "*\\/?<>|\":{}";
+    char *ill = "*\\/?<>|\":";
     initialised = True;
   
     bzero((char *)illegal,256);
