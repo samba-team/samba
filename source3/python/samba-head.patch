@@ -1,27 +1,11 @@
-Index: configure.in
-===================================================================
-RCS file: /data/cvs/samba/source/configure.in,v
-retrieving revision 1.293
-diff -u -r1.293 configure.in
---- configure.in	2002/03/23 08:28:19	1.293
-+++ configure.in	2002/03/26 09:25:39
-@@ -2691,7 +2691,7 @@
- builddir=`pwd`
- AC_SUBST(builddir)
- 
--AC_OUTPUT(include/stamp-h Makefile)
-+AC_OUTPUT(include/stamp-h Makefile python/setup.py)
- 
- #################################################
- # Print very concise instructions on building/use
 Index: Makefile.in
 ===================================================================
 RCS file: /data/cvs/samba/source/Makefile.in,v
-retrieving revision 1.461
-diff -u -r1.461 Makefile.in
---- Makefile.in	2002/03/25 01:29:55	1.461
-+++ Makefile.in	2002/03/26 09:25:40
-@@ -781,6 +781,17 @@
+retrieving revision 1.460
+diff -u -r1.460 Makefile.in
+--- Makefile.in	2002/03/22 02:39:35	1.460
++++ Makefile.in	2002/03/28 00:02:54
+@@ -781,6 +781,20 @@
  	-$(INSTALLCMD) -d ${prefix}/include
  	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
  
@@ -30,12 +14,31 @@ diff -u -r1.461 Makefile.in
 +PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
 +	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)
 +
++python/setup.py: $(srcdir)/setup.py.in
++	@echo "WARNING: you need to run ./config.status"
++
 +python_ext: $(PYTHON_OBJS)
 +	@echo python python/setup.py build
 +	@PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
-+		SRCDIR="$(srcdir)/" \
-+	python python/setup.py build
++		python python/setup.py build
++
 +
  # revert to the previously installed version
  revert:
  	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) 
+Index: configure.in
+===================================================================
+RCS file: /data/cvs/samba/source/configure.in,v
+retrieving revision 1.292
+diff -u -r1.292 configure.in
+--- configure.in	2002/03/19 02:32:31	1.292
++++ configure.in	2002/03/28 00:02:55
+@@ -2690,7 +2690,7 @@
+ builddir=`pwd`
+ AC_SUBST(builddir)
+ 
+-AC_OUTPUT(include/stamp-h Makefile)
++AC_OUTPUT(include/stamp-h Makefile python/setup.py)
+ 
+ #################################################
+ # Print very concise instructions on building/use
