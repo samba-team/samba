@@ -632,7 +632,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
     passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
-    if(!doencrypt) {
+    if (!doencrypt) {
        /* both Win95 and WinNT stuff up the password lengths for
           non-encrypting systems. Uggh. 
       
@@ -715,6 +715,14 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if (strstr(user, "..") || strstr(domain,"..")) {
 	  return bad_password_error(inbuf, outbuf);
   }
+
+  if (lp_security() == SEC_SHARE) {
+	  /* in share level we should ignore any passwords */
+	  smb_ntpasslen = 0;
+	  smb_apasslen = 0;
+	  guest = True;
+  }
+
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
 
