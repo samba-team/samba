@@ -579,7 +579,9 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 
 	cli_send_smb(cli);
 
-	cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+	if (timeout != 0) {
+		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+	}
 
 	if (!cli_receive_smb(cli)) {
 		cli->timeout = saved_timeout;
@@ -680,7 +682,9 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 
-        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+	if (timeout != 0) {
+		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 5*1000);
+	}
 
 	if (!cli_receive_smb(cli)) {
                 cli->timeout = saved_timeout;
