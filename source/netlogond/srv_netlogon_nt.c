@@ -240,10 +240,15 @@ static uint32 remote_interactive(const NET_ID_INFO_1 * id1,
 	unistr2_to_ascii(user, uni_samusr, sizeof(user) - 1);
 	unistr2_to_ascii(domain, uni_samnam, sizeof(domain) - 1);
 
-	DEBUG(5, ("remote_interactive: user:%s domain:%s\n", user, domain));
+	DEBUG(5, ("BEGIN remote_interactive: %s\\%s\n", domain, user));
 
 	status = check_domain_security(user, domain,
-				       NULL, lm_pwd, 16, nt_pwd, 16, usr);
+				       NULL, lm_pwd, 16,
+				       nt_pwd, 16, usr);
+
+	DEBUG(5, ("END remote_interactive: %x\n", status));
+
+	status = check_domain_security(user, domain,
 	if (status != 0x0)
 	{
 		return status;
@@ -374,9 +379,7 @@ static uint32 remote_network(const NET_ID_INFO_2 * id2,
 	unistr2_to_ascii(user, uni_samusr, sizeof(user) - 1);
 	unistr2_to_ascii(domain, uni_samnam, sizeof(domain) - 1);
 
-	DEBUG(5,
-	      ("remote_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
-	       lm_pw_len, nt_pw_len, user, domain));
+	DEBUG(5, ("BEGIN remote_network: %s\\%s\n", domain, user));
 
 	status = check_domain_security(user, domain,
 				       id2->lm_chal,
@@ -384,6 +387,9 @@ static uint32 remote_network(const NET_ID_INFO_2 * id2,
 				       buffer, lm_pw_len,
 				       (const uchar *)id2->nt_chal_resp.
 				       buffer, nt_pw_len, usr);
+
+	DEBUG(5, ("END remote_network: %x\n", status));
+
 	if (status != 0x0)
 	{
 		return status;
