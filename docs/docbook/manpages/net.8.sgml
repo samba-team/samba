@@ -600,7 +600,7 @@ List all current items in the cache.
 <refsect2>
 <title>GETLOCALSID [DOMAIN]</title>
 
-<para>Print the SID of the specified domain, or if the parameter is 
+<para>Print the SID of the specified domain, or if the parameter is
 omitted, the SID of the domain the local server is in.</para>
 
 </refsect2>
@@ -613,9 +613,64 @@ omitted, the SID of the domain the local server is in.</para>
 </refsect2>
 
 <refsect2>
+<title>GROUPMAP</title>
+
+<para>Manage the mappings between Windows group SIDs and UNIX groups.
+Parameters take the for "parameter=value".  Common options include:</para>
+
+<itemizedlist>
+<listitem><para>unixgroup - Name of the UNIX group</para></listitem>
+<listitem><para>ntgroup - Name of the Windows NT group (must be
+  resolvable to a SID</para></listitem>
+<listitem><para>rid - Unsigned 32-bit integer</para></listitem>
+<listitem><para>sid - Full SID in the form of "S-1-..."</para></listitem>
+<listitem><para>type - Type of the group; either 'domain', 'local',
+  or 'builtin'</para></listitem>
+<listitem><para>comment - Freeform text description of the group</para></listitem>
+</itemizedlist>
+
+<refsect3>
+<title>GROUPMAP ADD</title>
+
+<para>Add a new group mapping entry</para>
+
+<para>net groupmap add {rid=int|sid=string} unixgroup=string [type={domain|local|builtin}] [ntgroup=string] [comment=string]</para>
+
+</refsect3>
+
+<refsect3>
+<title>GROUPMAP DELETE</title>
+
+<para>Delete a group mapping entry</para>
+
+<para>net groupmap delete {ntgroup=string|sid=SID}</para>
+
+</refsect3>
+
+<refsect3>
+<title>GROUPMAP MODIFY</title>
+
+<para>Update en existing group entry</para>
+
+<para>net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] [comment=string] [type={domain|local}</para>
+</refsect3>
+
+<refsect3>
+<title>GROUPMAP LIST</title>
+
+<para>List existing group mapping entries</para>
+
+<para>net groupmap list [verbose] [ntgroup=string] [sid=SID]</para>
+
+</refsect3>
+</refsect2>
+
+
+
+<refsect2>
 <title>MAXRID</title>
 
-<para>Prints out the highest RID currently in use on the local 
+<para>Prints out the highest RID currently in use on the local
 server (by the active 'passdb backend').
 </para>
 
@@ -624,7 +679,7 @@ server (by the active 'passdb backend').
 <refsect2>
 <title>RPC INFO</title>
 
-<para>Print information about the domain of the remote server, 
+<para>Print information about the domain of the remote server,
 such as domain name, domain sid and number of users and groups.
 </para>
 
