@@ -426,18 +426,42 @@ CLASS="COMPUTEROUTPUT"
 		first entry of a printcap record. Records are separated by newlines,
 		components (if there are more than one) are separated by vertical 
 		bar symbols ('|').</P
+><DIV
+CLASS="NOTE"
 ><P
->NOTE: On SYSV systems which use lpstat to determine what 
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>On SYSV systems which use lpstat to determine what 
 		printers are defined on the system you may be able to use
 		"printcap name = lpstat" to automatically obtain a list 
 		of printers. See the "printcap name" option 
 		for more details.</P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN103"
+NAME="AEN104"
 ></A
 ><H2
 >PARAMETERS</H2
@@ -495,7 +519,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN113"
+NAME="AEN114"
 ></A
 ><H2
 >VARIABLE SUBSTITUTIONS</H2
@@ -694,7 +718,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN206"
+NAME="AEN207"
 ></A
 ><H2
 >NAME MANGLING</H2
@@ -799,7 +823,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN239"
+NAME="AEN240"
 ></A
 ><H2
 >NOTE ABOUT USERNAME/PASSWORD VALIDATION</H2
@@ -875,7 +899,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN258"
+NAME="AEN259"
 ></A
 ><H2
 >COMPLETE LIST OF GLOBAL PARAMETERS</H2
@@ -1462,6 +1486,16 @@ HREF="#LDAPADMINDN"
 ><VAR
 CLASS="PARAMETER"
 >ldap admin dn</VAR
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LDAPDELETEDN"
+><VAR
+CLASS="PARAMETER"
+>ldap delete dn</VAR
 ></A
 ></P
 ></LI
@@ -2168,6 +2202,16 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#PRELOADMODULES"
+><VAR
+CLASS="PARAMETER"
+>preload modules</VAR
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#PRINTCAP"
 ><VAR
 CLASS="PARAMETER"
@@ -2318,10 +2362,30 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#SERVERSCHANNEL"
+><VAR
+CLASS="PARAMETER"
+>server schannel</VAR
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#SERVERSTRING"
 ><VAR
 CLASS="PARAMETER"
 >server string</VAR
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#SETPRIMARYGROUPSCRIPT"
+><VAR
+CLASS="PARAMETER"
+>set primary group script</VAR
 ></A
 ></P
 ></LI
@@ -2780,7 +2844,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1018"
+NAME="AEN1035"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4015,7 +4079,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1510"
+NAME="AEN1527"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5218,7 +5282,7 @@ NAME="CASESENSITIVE"
 ><DD
 ><P
 >See the discussion in the section <A
-HREF="#AEN206"
+HREF="#AEN207"
 >NAME MANGLING</A
 >.</P
 ><P
@@ -5818,7 +5882,7 @@ NAME="DEFAULTCASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN206"
+HREF="#AEN207"
 >		NAME MANGLING</A
 >. Also note the <A
 HREF="#SHORTPRESERVECASE"
@@ -6915,7 +6979,7 @@ NAME="DOSCHARSET"
 		charset Samba should talk to DOS clients.
 		</P
 ><P
->The default depends on which charsets you have instaled. 
+>The default depends on which charsets you have installed. 
 		Samba tries to use charset 850 but falls back to ASCII in 
 		case it is not available. Run <SPAN
 CLASS="CITEREFENTRY"
@@ -8056,15 +8120,33 @@ CLASS="COMMAND"
 		the first ':'.  There should probably be a better parsing system 
 		that copes with different map formats and also Amd (another 
 		automounter) maps.</P
+><DIV
+CLASS="NOTE"
 ><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE :</I
-></SPAN
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="90%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >A working NIS client is required on 
 		the system for this option to work.</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >See also <A
 HREF="#NISHOMEDIR"
@@ -8337,14 +8419,28 @@ CLASS="PARAMETER"
 >		hosts equiv</VAR
 > may be useful for NT clients which will 
 		not supply passwords to Samba.</P
+><DIV
+CLASS="NOTE"
 ><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE :</I
-></SPAN
-> The use of <VAR
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="90%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>The use of <VAR
 CLASS="PARAMETER"
 >hosts equiv
 		</VAR
@@ -8364,6 +8460,10 @@ CLASS="EMPHASIS"
 ></SPAN
 > trust 
 		them :-).</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >Default: <SPAN
 CLASS="emphasis"
@@ -8875,14 +8975,25 @@ CLASS="REFENTRYTITLE"
 >smbpasswd</SPAN
 >(8)</SPAN
 > man page for more information on how 
-		to accmplish this.
+		to accmplish this.</P
+></DD
+><DT
+><A
+NAME="LDAPDELETEDN"
+></A
+>&#62;ldap delete dn (G)</DT
+><DD
+><P
+> This parameter specifies whether a delete
+		operation in the ldapsam deletes the complete entry or only the attributes
+		specific to Samba.
 		</P
 ><P
 >Default : <SPAN
 CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
->none</I
+>ldap delete dn = no</I
 ></SPAN
 ></P
 ></DD
@@ -10445,7 +10556,7 @@ NAME="MANGLECASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN206"
+HREF="#AEN207"
 >		NAME MANGLING</A
 ></P
 ><P
@@ -10521,7 +10632,7 @@ NAME="MANGLEDNAMES"
 		or whether non-DOS names should simply be ignored.</P
 ><P
 >See the section on <A
-HREF="#AEN206"
+HREF="#AEN207"
 >		NAME MANGLING</A
 > for details on how to control the mangling process.</P
 ><P
@@ -10695,7 +10806,7 @@ CLASS="EMPHASIS"
 >magic</I
 ></SPAN
 > character in <A
-HREF="#AEN206"
+HREF="#AEN207"
 >name mangling</A
 >. The default is a '~'
 		but this may interfere with some software. Use this option to set 
@@ -11958,11 +12069,35 @@ NAME="NONUNIXACCOUNTRANGE"
                 This is most often used for machine account creation. 
                 This range of ids should have no existing local or NIS users within 
                 it as strange conflicts can occur otherwise.</P
+><DIV
+CLASS="NOTE"
 ><P
->NOTE: These userids never appear on the system and Samba will never
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="90%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>These userids never appear on the system and Samba will never
                 'become' these users. They are used only to ensure that the algorithmic 
                 RID mapping does not conflict with normal users.
 		</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -13151,17 +13286,31 @@ CLASS="PARAMETER"
 > and so may resolved
 		by any method and order described in that parameter.</P
 ><P
->The password server much be a machine capable of using 
+>The password server must be a machine capable of using 
 		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</P
+><DIV
+CLASS="NOTE"
 ><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE:</I
-></SPAN
-> Using a password server 
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="90%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Using a password server 
 		means your UNIX box (running Samba) is only as secure as your 
 		password server. <SPAN
 CLASS="emphasis"
@@ -13171,6 +13320,10 @@ CLASS="EMPHASIS"
 		YOU DON'T COMPLETELY TRUST</I
 ></SPAN
 >.</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >Never point a Samba server at itself for password 
 		serving. This will cause a loop and could lock up your Samba 
@@ -13631,6 +13784,30 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="PRELOADMODULES"
+></A
+>&#62;preload modules (G)</DT
+><DD
+><P
+>This is a list of paths to modules that should 
+		be loaded into smbd before a client connects. This improves 
+		the speed of smbd when reacting to new connections somewhat. </P
+><P
+>It is recommended to only use this option on heavy-performance 
+		servers.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>preload modules = </B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>preload modules = /usr/lib/samba/passdb/mysql.so</B
+></P
+></DD
+><DT
+><A
 NAME="PRESERVECASE"
 ></A
 >&#62;preserve case (S)</DT
@@ -13653,7 +13830,7 @@ CLASS="COMMAND"
 ></P
 ><P
 >See the section on <A
-HREF="#AEN206"
+HREF="#AEN207"
 >NAME 
 		MANGLING</A
 > for a fuller discussion.</P
@@ -13950,14 +14127,28 @@ print5|My Printer 5</PRE
 >where the '|' separates aliases of a printer. The fact 
 		that the second alias has a space in it gives a hint to Samba 
 		that it's a comment.</P
+><DIV
+CLASS="NOTE"
 ><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE</I
-></SPAN
->: Under AIX the default printcap 
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="90%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Under AIX the default printcap 
 		name is <TT
 CLASS="FILENAME"
 >/etc/qconfig</TT
@@ -13970,6 +14161,10 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >qconfig</TT
 > appears in the printcap filename.</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -15080,7 +15275,7 @@ CLASS="EMPHASIS"
 		be used in granting access.</P
 ><P
 >See also the section <A
-HREF="#AEN239"
+HREF="#AEN240"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15161,7 +15356,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN239"
+HREF="#AEN240"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15260,7 +15455,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN239"
+HREF="#AEN240"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15395,7 +15590,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN239"
+HREF="#AEN240"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15496,6 +15691,51 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="SERVERSCHANNEL"
+></A
+>&#62;server schannel (G)</DT
+><DD
+><P
+>This controls whether the server offers or even
+		demands the use of the netlogon schannel.
+		<VAR
+CLASS="PARAMETER"
+>server schannel = no</VAR
+> does not
+		offer the schannel, <VAR
+CLASS="PARAMETER"
+>server schannel =
+		auto</VAR
+> offers the schannel but does not
+		enforce it, and <VAR
+CLASS="PARAMETER"
+>server schannel =
+		yes</VAR
+> denies access if the client is not
+		able to speak netlogon schannel. This is only the case
+		for Windows NT4 before SP4.</P
+><P
+>Please note that with this set to
+		<VAR
+CLASS="PARAMETER"
+>no</VAR
+> you will have to apply the
+		WindowsXP requireSignOrSeal-Registry patch found in
+		the docs/Registry subdirectory.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>server schannel = auto</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>server schannel = yes</B
+>/para&#62;
+		</P
+></DD
+><DT
+><A
 NAME="SERVERSTRING"
 ></A
 >&#62;server string (G)</DT
@@ -15533,6 +15773,48 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >server string = University of GNUs Samba 
 		Server</B
+></P
+></DD
+><DT
+><A
+NAME="SETPRIMARYGROUPSCRIPT"
+></A
+>&#62;set primary group script (G)</DT
+><DD
+><P
+>Thanks to the Posix subsystem in NT a
+		Windows User has a primary group in addition to the
+		auxiliary groups.  This script sets the primary group
+		in the unix userdatase when an administrator sets the
+		primary group from the windows user manager or when
+		fetching a SAM with <B
+CLASS="COMMAND"
+>net rpc
+		vampire</B
+>. <VAR
+CLASS="PARAMETER"
+>%u</VAR
+> will be
+		replaced with the user whose primary group is to be
+		set.  <VAR
+CLASS="PARAMETER"
+>%g</VAR
+> will be replaced with
+		the group to set.
+
+		</P
+><P
+>Default: <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>No default value</I
+></SPAN
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>set primary group script = /usr/sbin/usermod -g '%g' '%u'</B
 ></P
 ></DD
 ><DT
@@ -15649,7 +15931,7 @@ CLASS="COMMAND"
 		names are lowered. </P
 ><P
 >See the section on <A
-HREF="#AEN206"
+HREF="#AEN207"
 >		NAME MANGLING</A
 >.</P
 ><P
@@ -16851,7 +17133,7 @@ CLASS="PARAMETER"
 		search.</P
 ><P
 >See the section <A
-HREF="#AEN239"
+HREF="#AEN240"
 >NOTE ABOUT 
 		USERNAME/PASSWORD VALIDATION</A
 > for more information on how 
@@ -17868,22 +18150,45 @@ CLASS="REFENTRYTITLE"
 >You should point this at your WINS server if you have a
 		multi-subnetted network.</P
 ><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE</I
-></SPAN
->. You need to set up Samba to point 
+>If you want to work in multiple namespaces, you can 
+		give every wins server a 'tag'. For each tag, only one 
+		(working) server will be queried for a name. The tag should be 
+		seperated from the ip address by a colon.
+		</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="90%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>You need to set up Samba to point 
 		to a WINS server if you have multiple subnets and wish cross-subnet 
 		browsing to work correctly.</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >See the documentation file <A
 HREF="improved-browsing.html"
 TARGET="_top"
->BROWSING</A
-> 
-		in the docs/ directory of your Samba source distribution.</P
+>Browsing</A
+> in the samba howto collection.</P
 ><P
 >Default: <SPAN
 CLASS="emphasis"
@@ -17895,7 +18200,17 @@ CLASS="EMPHASIS"
 ><P
 >Example: <B
 CLASS="COMMAND"
->wins server = 192.9.200.1</B
+>wins server = mary:192.9.200.1 fred:192.168.3.199 mary:192.168.2.61</B
+></P
+><P
+>For this example when querying a certain name, 192.19.200.1 will 
+		be asked first and if that doesn't respond 192.168.2.61. If either 
+		of those doesn't know the name 192.168.3.199 will be queried.
+		</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>wins server = 192.9.200.1 192.168.2.61</B
 ></P
 ></DD
 ><DT
@@ -18146,7 +18461,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6228"
+NAME="AEN6291"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18177,7 +18492,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6236"
+NAME="AEN6299"
 ></A
 ><H2
 >VERSION</H2
@@ -18187,7 +18502,7 @@ NAME="AEN6236"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6239"
+NAME="AEN6302"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18251,7 +18566,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6269"
+NAME="AEN6332"
 ></A
 ><H2
 >AUTHOR</H2

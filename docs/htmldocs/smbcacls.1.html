@@ -37,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbcacls</B
->  {//server/share} {filename} [-U username] [-A acls] [-M acls] [-D acls] [-S acls] [-C name] [-G name] [-n] [-h]</P
+>  {//server/share} {filename} [-D acls] [-M acls] [-A acls] [-S acls] [-C name] [-G name] [-n] [-t] [-U username] [-h] [-d]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN22"
+NAME="AEN24"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -64,7 +64,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN30"
+NAME="AEN32"
 ></A
 ><H2
 >OPTIONS</H2
@@ -168,14 +168,98 @@ CLASS="PARAMETER"
 		and masks to a readable string format.  </P
 ></DD
 ><DT
->-h</DT
+>-t</DT
 ><DD
 ><P
->Print usage information on the <B
+>		Don't actually do anything, only validate the correctness of 
+		the arguments.
+		</P
+></DD
+><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
+></DD
+><DT
+>-V</DT
+><DD
+><P
+>Prints the version number for 
+<B
 CLASS="COMMAND"
->smbcacls
-		</B
-> program.</P
+>smbd</B
+>.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
+></DD
+><DT
+>-d|--debug=debuglevel</DT
+><DD
+><P
+><VAR
+CLASS="REPLACEABLE"
+>debuglevel</VAR
+> is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.</P
+><P
+>The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.</P
+><P
+>Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+override the <A
+HREF="smb.conf.5.html#loglevel"
+TARGET="_top"
+>log
+level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> file.</P
+></DD
+><DT
+>-l|--logfile=logbasename</DT
+><DD
+><P
+>File name for log/debug files. The extension
+<CODE
+CLASS="CONSTANT"
+>".client"</CODE
+> will be appended. The log file is
+never removed by the client.</P
 ></DD
 ></DL
 ></DIV
@@ -183,7 +267,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN79"
+NAME="AEN111"
 ></A
 ><H2
 >ACL FORMAT</H2
@@ -367,7 +451,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN133"
+NAME="AEN165"
 ></A
 ><H2
 >EXIT STATUS</H2
@@ -391,17 +475,17 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN139"
+NAME="AEN171"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of the Samba suite.</P
+>This man page is correct for version 3.0 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN142"
+NAME="AEN174"
 ></A
 ><H2
 >AUTHOR</H2

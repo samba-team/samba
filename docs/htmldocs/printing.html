@@ -13,9 +13,8 @@ REL="UP"
 TITLE="Advanced Configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="Configuring PAM for distributed but centrally 
-managed authentication"
-HREF="pam.html"><LINK
+TITLE="Configuring Group Mapping"
+HREF="groupmapping.html"><LINK
 REL="NEXT"
 TITLE="CUPS Printing Support"
 HREF="cups-printing.html"></HEAD
@@ -46,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="pam.html"
+HREF="groupmapping.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -75,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="PRINTING"
 ></A
->Chapter 14. Printing Support</H1
+>Chapter 12. Printing Support</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1946"
->14.1. Introduction</A
+NAME="AEN1711"
+>12.1. Introduction</A
 ></H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
@@ -164,8 +163,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1968"
->14.2. Configuration</A
+NAME="AEN1733"
+>12.2. Configuration</A
 ></H1
 ><DIV
 CLASS="WARNING"
@@ -226,8 +225,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1976"
->14.2.1. Creating [print$]</A
+NAME="AEN1741"
+>12.2.1. Creating [print$]</A
 ></H2
 ><P
 >In order to support the uploading of printer driver 
@@ -353,14 +352,14 @@ Samba follows this model as well.</P
 >Next create the directory tree below the [print$] share 
 for each architecture you wish to support.</P
 ><P
-><PRE
-CLASS="PROGRAMLISTING"
+><SAMP
+CLASS="COMPUTEROUTPUT"
 >[print$]-----
         |-W32X86           ; "Windows NT x86"
         |-WIN40            ; "Windows 95/98"
         |-W32ALPHA         ; "Windows NT Alpha_AXP"
         |-W32MIPS          ; "Windows NT R4000"
-        |-W32PPC           ; "Windows NT PowerPC"</PRE
+        |-W32PPC           ; "Windows NT PowerPC"</SAMP
 ></P
 ><DIV
 CLASS="WARNING"
@@ -443,8 +442,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2011"
->14.2.2. Setting Drivers for Existing Printers</A
+NAME="AEN1776"
+>12.2.2. Setting Drivers for Existing Printers</A
 ></H2
 ><P
 >The initial listing of printers in the Samba host's 
@@ -515,8 +514,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2027"
->14.2.3. Support a large number of printers</A
+NAME="AEN1792"
+>12.2.3. Support a large number of printers</A
 ></H2
 ><P
 >One issue that has arisen during the development
@@ -535,13 +534,16 @@ setdriver command</B
 associated with an installed driver.  The following is example
 of how this could be accomplished:</P
 ><P
-><PRE
-CLASS="PROGRAMLISTING"
-> 
-<SAMP
+><SAMP
 CLASS="PROMPT"
 >$ </SAMP
->rpcclient pogo -U root%secret -c "enumdrivers"
+><KBD
+CLASS="USERINPUT"
+>rpcclient pogo -U root%secret -c "enumdrivers"</KBD
+>
+<PRE
+CLASS="PROGRAMLISTING"
+> 
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
  
 [Windows NT x86]
@@ -552,27 +554,34 @@ Printer Driver Info 1:
      Driver Name: [HP LaserJet 2100 Series PS]
  
 Printer Driver Info 1:
-     Driver Name: [HP LaserJet 4Si/4SiMX PS]
-				  
+     Driver Name: [HP LaserJet 4Si/4SiMX PS]</PRE
+>				  
 <SAMP
 CLASS="PROMPT"
 >$ </SAMP
->rpcclient pogo -U root%secret -c "enumprinters"
-Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+><KBD
+CLASS="USERINPUT"
+>rpcclient pogo -U root%secret -c "enumprinters"</KBD
+>
+<PRE
+CLASS="PROGRAMLISTING"
+>Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
      flags:[0x800000]
      name:[\\POGO\hp-print]
      description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
      comment:[]
-				  
+				  </PRE
+>
 <SAMP
 CLASS="PROMPT"
 >$ </SAMP
->rpcclient pogo -U root%secret \
-<SAMP
-CLASS="PROMPT"
->&#62; </SAMP
-> -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""
-Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+><KBD
+CLASS="USERINPUT"
+>rpcclient pogo -U root%secret -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""</KBD
+>
+<PRE
+CLASS="PROGRAMLISTING"
+>Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
 Successfully set hp-print to driver HP LaserJet 4000 Series PS.</PRE
 ></P
 ></DIV
@@ -581,8 +590,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2038"
->14.2.4. Adding New Printers via the Windows NT APW</A
+NAME="AEN1807"
+>12.2.4. Adding New Printers via the Windows NT APW</A
 ></H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
@@ -736,8 +745,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2068"
->14.2.5. Samba and Printer Ports</A
+NAME="AEN1837"
+>12.2.5. Samba and Printer Ports</A
 ></H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
@@ -771,8 +780,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2076"
->14.3. The Imprints Toolset</A
+NAME="AEN1845"
+>12.3. The Imprints Toolset</A
 ></H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
@@ -789,8 +798,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2080"
->14.3.1. What is Imprints?</A
+NAME="AEN1849"
+>12.3.1. What is Imprints?</A
 ></H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
@@ -821,8 +830,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2090"
->14.3.2. Creating Printer Driver Packages</A
+NAME="AEN1859"
+>12.3.2. Creating Printer Driver Packages</A
 ></H2
 ><P
 >The process of creating printer driver packages is beyond
@@ -837,8 +846,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2093"
->14.3.3. The Imprints server</A
+NAME="AEN1862"
+>12.3.3. The Imprints server</A
 ></H2
 ><P
 >The Imprints server is really a database server that 
@@ -861,8 +870,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2097"
->14.3.4. The Installation Client</A
+NAME="AEN1866"
+>12.3.4. The Installation Client</A
 ></H2
 ><P
 >More information regarding the Imprints installation client 
@@ -955,16 +964,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2119"
->14.4. Diagnosis</A
+NAME="AEN1888"
+>12.4. Diagnosis</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2121"
->14.4.1. Introduction</A
+NAME="AEN1890"
+>12.4.1. Introduction</A
 ></H2
 ><P
 >This is a short description of how to debug printing problems with
@@ -1038,8 +1047,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2137"
->14.4.2. Debugging printer problems</A
+NAME="AEN1906"
+>12.4.2. Debugging printer problems</A
 ></H2
 ><P
 >One way to debug printing problems is to start by replacing these
@@ -1095,8 +1104,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2146"
->14.4.3. What printers do I have?</A
+NAME="AEN1915"
+>12.4.3. What printers do I have?</A
 ></H2
 ><P
 >You can use the 'testprns' program to check to see if the printer
@@ -1124,8 +1133,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2154"
->14.4.4. Setting up printcap and print servers</A
+NAME="AEN1923"
+>12.4.4. Setting up printcap and print servers</A
 ></H2
 ><P
 >You may need to set up some printcaps for your Samba system to use.
@@ -1208,8 +1217,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2182"
->14.4.5. Job sent, no output</A
+NAME="AEN1951"
+>12.4.5. Job sent, no output</A
 ></H2
 ><P
 >This is the most frustrating part of printing.  You may have sent the
@@ -1253,8 +1262,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2193"
->14.4.6. Job sent, strange output</A
+NAME="AEN1962"
+>12.4.6. Job sent, strange output</A
 ></H2
 ><P
 >Once you have the job printing, you can then start worrying about
@@ -1299,8 +1308,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2205"
->14.4.7. Raw PostScript printed</A
+NAME="AEN1974"
+>12.4.7. Raw PostScript printed</A
 ></H2
 ><P
 >This is a problem that is usually caused by either the print spooling
@@ -1314,8 +1323,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2208"
->14.4.8. Advanced Printing</A
+NAME="AEN1977"
+>12.4.8. Advanced Printing</A
 ></H2
 ><P
 >Note that you can do some pretty magic things by using your
@@ -1330,8 +1339,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2211"
->14.4.9. Real debugging</A
+NAME="AEN1980"
+>12.4.9. Real debugging</A
 ></H2
 ><P
 >If the above debug tips don't help, then maybe you need to bring in
@@ -1355,7 +1364,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="pam.html"
+HREF="groupmapping.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -1383,8 +1392,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Configuring PAM for distributed but centrally 
-managed authentication</TD
+>Configuring Group Mapping</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

@@ -83,7 +83,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1251"
+NAME="AEN1336"
 >8.1. Setup your <TT
 CLASS="FILENAME"
 >smb.conf</TT
@@ -111,26 +111,57 @@ CLASS="FILENAME"
 CLASS="PROGRAMLISTING"
 >  ads server = your.kerberos.server</PRE
 ></P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >You do *not* need a smbpasswd file, and older clients will
-  be authenticated as if "security = domain", although it won't do any harm
+  be authenticated as if <B
+CLASS="COMMAND"
+>security = domain</B
+>,
+  although it won't do any harm
   and allows you to have local users not in the domain.
   I expect that the above required options will change soon when we get better
   active directory integration.</P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1262"
+NAME="AEN1349"
 >8.2. Setup your <TT
 CLASS="FILENAME"
 >/etc/krb5.conf</TT
 ></A
 ></H1
 ><P
->The minimal configuration for krb5.conf is:</P
+>The minimal configuration for <TT
+CLASS="FILENAME"
+>krb5.conf</TT
+> is:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -140,10 +171,43 @@ CLASS="PROGRAMLISTING"
     }</PRE
 ></P
 ><P
->Test your config by doing a "kinit USERNAME@REALM" and making sure that
+>Test your config by doing a <KBD
+CLASS="USERINPUT"
+>kinit <VAR
+CLASS="REPLACEABLE"
+>USERNAME</VAR
+>@<VAR
+CLASS="REPLACEABLE"
+>REALM</VAR
+></KBD
+> and making sure that
   your password is accepted by the Win2000 KDC. </P
+><DIV
+CLASS="NOTE"
 ><P
->NOTE: The realm must be uppercase. </P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>The realm must be uppercase. </P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >You also must ensure that you can do a reverse DNS lookup on the IP
 address of your KDC. Also, the name that this reverse lookup maps to
@@ -151,13 +215,28 @@ must either be the netbios name of the KDC (ie. the hostname with no
 domain attached) or it can alternatively be the netbios name
 followed by the realm. </P
 ><P
->The easiest way to ensure you get this right is to add a /etc/hosts
-entry mapping the IP address of your KDC to its netbios name. If you
-don't get this right then you will get a "local error" when you try
-to join the realm.</P
+>The easiest way to ensure you get this right is to add a 
+<TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> entry mapping the IP address of your KDC to 
+its netbios name. If you don't get this right then you will get a 
+"local error" when you try to join the realm.</P
 ><P
 >If all you want is kerberos support in smbclient then you can skip
-straight to step 5 now. Step 3 is only needed if you want kerberos
+straight to <A
+HREF="ads.html#ADS-TEST-SMBCLIENT"
+>Test with smbclient</A
+> now. 
+<A
+HREF="ads.html#ADS-CREATE-MACHINE-ACCOUNT"
+>Creating a computer account</A
+> 
+and <A
+HREF="ads.html#ADS-TEST-SERVER"
+>testing your servers</A
+>
+is only needed if you want kerberos
 support for smbd and winbindd.</P
 ></DIV
 ><DIV
@@ -165,22 +244,22 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1273"
+NAME="ADS-CREATE-MACHINE-ACCOUNT"
 >8.3. Create the computer account</A
 ></H1
 ><P
 >As a user that has write permission on the Samba private directory
 (usually root) run:
-<B
-CLASS="COMMAND"
->net ads join</B
+<KBD
+CLASS="USERINPUT"
+>net ads join</KBD
 ></P
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1277"
+NAME="AEN1373"
 >8.3.1. Possible errors</A
 ></H2
 ><P
@@ -205,18 +284,18 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1285"
+NAME="ADS-TEST-SERVER"
 >8.4. Test your server setup</A
 ></H1
 ><P
->On a Windows 2000 client try <B
-CLASS="COMMAND"
->net use * \\server\share</B
+>On a Windows 2000 client try <KBD
+CLASS="USERINPUT"
+>net use * \\server\share</KBD
 >. You should
 be logged in with kerberos without needing to know a password. If
-this fails then run <B
-CLASS="COMMAND"
->klist tickets</B
+this fails then run <KBD
+CLASS="USERINPUT"
+>klist tickets</KBD
 >. Did you get a ticket for the
 server? Does it have an encoding type of DES-CBC-MD5 ? </P
 ></DIV
@@ -225,20 +304,23 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1290"
+NAME="ADS-TEST-SMBCLIENT"
 >8.5. Testing with smbclient</A
 ></H1
 ><P
 >On your Samba server try to login to a Win2000 server or your Samba
 server using smbclient and kerberos. Use smbclient as usual, but
-specify the -k option to choose kerberos authentication.</P
+specify the <VAR
+CLASS="PARAMETER"
+>-k</VAR
+> option to choose kerberos authentication.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1293"
+NAME="AEN1390"
 >8.6. Notes</A
 ></H1
 ><P

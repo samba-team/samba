@@ -240,13 +240,90 @@ CLASS="COMMAND"
 		than a file.</P
 ></DD
 ><DT
->-d debuglevel</DT
+>-V</DT
 ><DD
 ><P
->Sets the debuglevel to an integer between 
-		0 and 100. 0 is for no debugging and 100 is for reams and 
-		reams. To submit a bug report to the Samba Team, use debug 
-		level 100 (see BUGS.txt).   </P
+>Prints the version number for 
+<B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
+></DD
+><DT
+>-d|--debug=debuglevel</DT
+><DD
+><P
+><VAR
+CLASS="REPLACEABLE"
+>debuglevel</VAR
+> is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.</P
+><P
+>The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.</P
+><P
+>Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+override the <A
+HREF="smb.conf.5.html#loglevel"
+TARGET="_top"
+>log
+level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> file.</P
+></DD
+><DT
+>-l|--logfile=logbasename</DT
+><DD
+><P
+>File name for log/debug files. The extension
+<CODE
+CLASS="CONSTANT"
+>".client"</CODE
+> will be appended. The log file is
+never removed by the client.</P
+></DD
+><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
 ></DD
 ><DT
 >-i</DT
@@ -292,21 +369,8 @@ CLASS="COMMAND"
 		as 2 threads. The first will answer all requests from the cache, 
 		thus making responses to clients faster. The other will 
 		update the cache for the query that the first has just responded. 
-		Advantage of this is that responses are accurate and fast.
+		Advantage of this is that responses stay accurate and are faster.
 		</P
-></DD
-><DT
->-s|--conf=smb.conf</DT
-><DD
-><P
->Specifies the location of the all-important
-		<SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> file. </P
 ></DD
 ></DL
 ></DIV
@@ -314,7 +378,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN106"
+NAME="AEN126"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -345,7 +409,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN112"
+NAME="AEN132"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -469,7 +533,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN156"
+NAME="AEN176"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -524,7 +588,7 @@ CLASS="COMMAND"
 >The next step is to join the domain. To do that use the 
 	<B
 CLASS="COMMAND"
->smbpasswd</B
+>net</B
 > program like this:  </P
 ><P
 ><B
@@ -606,7 +670,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN194"
+NAME="AEN214"
 ></A
 ><H2
 >NOTES</H2
@@ -638,17 +702,6 @@ CLASS="COMMAND"
 > to become aware of new trust relationships between 
 	servers, it must be sent a SIGHUP signal. </P
 ><P
->Client processes resolving names through the <B
-CLASS="COMMAND"
->winbindd</B
->
-	nsswitch module read an environment variable named <VAR
-CLASS="ENVAR"
->	$WINBINDD_DOMAIN</VAR
->.  If this variable contains a comma separated
-	list of Windows NT domain names, then winbindd will only resolve users
-	and groups within those Windows NT domains. </P
-><P
 >PAM is really easy to misconfigure.  Make sure you know what 
 	you are doing when modifying PAM configuration files.  It is possible 
 	to set up PAM such that you can no longer log into your system. </P
@@ -667,7 +720,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN212"
+NAME="AEN229"
 ></A
 ><H2
 >SIGNALS</H2
@@ -721,7 +774,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN231"
+NAME="AEN248"
 ></A
 ><H2
 >FILES</H2
@@ -756,6 +809,34 @@ CLASS="FILENAME"
 		and <TT
 CLASS="FILENAME"
 >/tmp/.winbindd/pipe</TT
+> file are owned by 
+		root. </P
+></DD
+><DT
+>$LOCKDIR/winbindd_privilaged/pipe</DT
+><DD
+><P
+>The UNIX pipe over which 'privilaged' clients 
+                communicate with the <B
+CLASS="COMMAND"
+>winbindd</B
+> program.  For security 
+                reasons, access to some winbindd functions - like those needed by 
+                the <B
+CLASS="COMMAND"
+>ntlm_auth</B
+> utility - is restricted.  By default,
+                only users in the 'root' group will get this access, however the administrator
+                may change the group permissions on $LOCKDIR/winbindd_privilaged to allow
+                programs like 'squid' to use ntlm_auth.
+		Note that the winbind client will only attempt to connect to the winbindd daemon 
+		if both the <TT
+CLASS="FILENAME"
+>$LOCKDIR/winbindd_privilaged</TT
+> directory
+		and <TT
+CLASS="FILENAME"
+>$LOCKDIR/winbindd_privilaged/pipe</TT
 > file are owned by 
 		root. </P
 ></DD
@@ -795,7 +876,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN260"
+NAME="AEN285"
 ></A
 ><H2
 >VERSION</H2
@@ -806,7 +887,7 @@ NAME="AEN260"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN263"
+NAME="AEN288"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -837,7 +918,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN276"
+NAME="AEN301"
 ></A
 ><H2
 >AUTHOR</H2

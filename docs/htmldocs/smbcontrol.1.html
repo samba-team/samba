@@ -37,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbcontrol</B
->  [-i]</P
+>  [-i] [-s]</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -47,7 +47,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN17"
+NAME="AEN18"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -87,7 +87,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN34"
+NAME="AEN35"
 ></A
 ><H2
 >OPTIONS</H2
@@ -96,6 +96,32 @@ NAME="AEN34"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
+></DD
 ><DT
 >-i</DT
 ><DD
@@ -140,170 +166,11 @@ CLASS="FILENAME"
 >message-type</DT
 ><DD
 ><P
->One of: <CODE
+>Type of message to send. See 
+		the section <CODE
 CLASS="CONSTANT"
->close-share</CODE
->,
-		<CODE
-CLASS="CONSTANT"
->debug</CODE
->, 
-		<CODE
-CLASS="CONSTANT"
->force-election</CODE
->, <CODE
-CLASS="CONSTANT"
->ping
-		</CODE
->, <CODE
-CLASS="CONSTANT"
->profile</CODE
->, <CODE
-CLASS="CONSTANT"
->		debuglevel</CODE
->, <CODE
-CLASS="CONSTANT"
->profilelevel</CODE
->, 
-		or <CODE
-CLASS="CONSTANT"
->printnotify</CODE
->.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->close-share</CODE
-> message-type sends a 
-		message to smbd which will then close the client connections to
-		the named share. Note that this doesn't affect client connections
-		to any other shares. This message-type takes an argument of the
-		share name for which client connections will be closed, or the
-		"*" character which will close all currently open shares.
-		This may be useful if you made changes to the access controls on the share.
-		This message can only be sent to <CODE
-CLASS="CONSTANT"
->smbd</CODE
->.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->debug</CODE
-> message-type allows 
-		the debug level to be set to the value specified by the 
-		parameter. This can be sent to any of the destinations.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->force-election</CODE
-> message-type can only be 
-		sent to the <CODE
-CLASS="CONSTANT"
->nmbd</CODE
-> destination. This message 
-		causes the <B
-CLASS="COMMAND"
->nmbd</B
-> daemon to force a new browse
-		master election.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->ping</CODE
-> message-type sends the 
-		number of "ping" messages specified by the parameter and waits 
-		for the same number of  reply "pong" messages. This can be sent to 
-		any of the destinations.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->profile</CODE
-> message-type sends a 
-		message to an smbd to change the profile settings based on the 
-		parameter. The parameter can be "on" to turn on profile stats 
-		collection, "off" to turn off profile stats collection, "count"
-		to enable only collection of count stats (time stats are 
-		disabled), and "flush" to zero the current profile stats. This can 
-		be sent to any smbd or nmbd destinations.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->debuglevel</CODE
-> message-type sends 
-		a "request debug level" message. The current debug level setting 
-		is returned by a  "debuglevel" message. This can be 
-		sent to any of the destinations.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->profilelevel</CODE
-> message-type sends 
-		a "request profile level" message.  The current profile level 
-		setting is returned by a  "profilelevel" message. This can be sent 
-		to any smbd or nmbd destinations.</P
-><P
->The <CODE
-CLASS="CONSTANT"
->printnotify</CODE
-> message-type sends a 
-		message to smbd which in turn sends a printer notify message to 
-		any Windows NT clients connected to a printer. This message-type
-		takes the following arguments:
-
-		<P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->queuepause printername</DT
-><DD
-><P
->Send a queue pause change notify
-		    message to the printer specified.</P
-></DD
-><DT
->queueresume printername</DT
-><DD
-><P
->Send a queue resume change notify
-		    message for the printer specified.</P
-></DD
-><DT
->jobpause printername unixjobid</DT
-><DD
-><P
->Send a job pause change notify
-		    message for the printer and unix jobid
-		    specified.</P
-></DD
-><DT
->jobresume printername unixjobid</DT
-><DD
-><P
->Send a job resume change notify
-		    message for the printer and unix jobid
-		    specified.</P
-></DD
-><DT
->jobdelete printername unixjobid</DT
-><DD
-><P
->Send a job delete change notify
-		    message for the printer and unix jobid
-		    specified.</P
-></DD
-></DL
-></DIV
->
-
-		Note that this message only sends notification that an
-		event has occured.  It doesn't actually cause the
-		event to happen.
-
-		This message can only be sent to <CODE
-CLASS="CONSTANT"
->smbd</CODE
->. 
+>MESSAGE-TYPES</CODE
+> for details.
 		</P
 ></DD
 ><DT
@@ -318,18 +185,242 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN110"
+NAME="AEN73"
+></A
+><H2
+>MESSAGE-TYPES</H2
+><P
+>Available message types are:</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>close-share</DT
+><DD
+><P
+>Order smbd to close the client 
+	connections to the named share. Note that this doesn't affect client 
+	connections to any other shares. This message-type takes an argument of the
+	share name for which client connections will be closed, or the
+	"*" character which will close all currently open shares.
+	This may be useful if you made changes to the access controls on the share.
+	This message can only be sent to <CODE
+CLASS="CONSTANT"
+>smbd</CODE
+>.</P
+></DD
+><DT
+>debug</DT
+><DD
+><P
+>Set debug level to the value specified by the 
+	parameter. This can be sent to any of the destinations.</P
+></DD
+><DT
+>force-election</DT
+><DD
+><P
+>This message causes the <B
+CLASS="COMMAND"
+>nmbd</B
+> daemon to 
+	force a new browse master election. </P
+></DD
+><DT
+>ping</DT
+><DD
+><P
+>	Send specified number of "ping" messages and 
+	wait for the same number of  reply "pong" messages. This can be sent to 
+	any of the destinations.</P
+></DD
+><DT
+>profile</DT
+><DD
+><P
+>Change profile settings of a daemon, based on the 
+	parameter. The parameter can be "on" to turn on profile stats 
+	collection, "off" to turn off profile stats collection, "count"
+	to enable only collection of count stats (time stats are 
+	disabled), and "flush" to zero the current profile stats. This can 
+	be sent to any smbd or nmbd destinations.</P
+></DD
+><DT
+>debuglevel</DT
+><DD
+><P
+>	Request debuglevel of a certain daemon and write it to stdout. This 
+	can be sent to any of the destinations.</P
+></DD
+><DT
+>profilelevel</DT
+><DD
+><P
+>	Request profilelevel of a certain daemon and write it to stdout. 
+	This can be sent to any smbd or nmbd destinations.</P
+></DD
+><DT
+>printnotify</DT
+><DD
+><P
+>	Order smbd to send a printer notify message to any Windows NT clients 
+	connected to a printer. This message-type takes the following arguments:
+	</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>queuepause printername</DT
+><DD
+><P
+>Send a queue pause change notify
+	    message to the printer specified.</P
+></DD
+><DT
+>queueresume printername</DT
+><DD
+><P
+>Send a queue resume change notify
+	    message for the printer specified.</P
+></DD
+><DT
+>jobpause printername unixjobid</DT
+><DD
+><P
+>Send a job pause change notify
+	    message for the printer and unix jobid
+	    specified.</P
+></DD
+><DT
+>jobresume printername unixjobid</DT
+><DD
+><P
+>Send a job resume change notify
+	    message for the printer and unix jobid
+	    specified.</P
+></DD
+><DT
+>jobdelete printername unixjobid</DT
+><DD
+><P
+>Send a job delete change notify
+	    message for the printer and unix jobid
+	    specified.</P
+></DD
+></DL
+></DIV
+><P
+>	Note that this message only sends notification that an
+	event has occured.  It doesn't actually cause the
+	event to happen.
+	</P
+><P
+>This message can only be sent to <CODE
+CLASS="CONSTANT"
+>smbd</CODE
+>. </P
+></DD
+><DT
+>samsync</DT
+><DD
+><P
+>Order smbd to synchronise sam database from PDC (being BDC). Can only be sent to <CODE
+CLASS="CONSTANT"
+>smbd</CODE
+>. </P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="90%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Not working at the moment</P
+></TD
+></TR
+></TABLE
+></DIV
+></DD
+><DT
+>samrepl</DT
+><DD
+><P
+>Send sam replication message, with specified serial. Can only be sent to <CODE
+CLASS="CONSTANT"
+>smbd</CODE
+>. Should not be used manually.</P
+></DD
+><DT
+>dmalloc-mark</DT
+><DD
+><P
+>Set a mark for dmalloc. Can be sent to both smbd and nmbd. Only available if samba is built with dmalloc support. </P
+></DD
+><DT
+>dmalloc-log-changed</DT
+><DD
+><P
+>	Dump the pointers that have changed since the mark set by dmalloc-mark. 
+	Can be sent to both smbd and nmbd. Only available if samba is built with dmalloc support. </P
+></DD
+><DT
+>shutdown</DT
+><DD
+><P
+>Shut down specified daemon. Can be sent to both smbd and nmbd.</P
+></DD
+><DT
+>tallocdump and pool-usage</DT
+><DD
+><P
+>Print a human-readable description of all 
+	talloc(pool) memory usage by the specified daemon/process. Available 
+	for both smbd and nmbd.</P
+></DD
+><DT
+>drvupgrade</DT
+><DD
+><P
+>Force clients of printers using specified driver 
+	to update their local version of the driver. Can only be 
+	sent to smbd.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN167"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN113"
+NAME="AEN170"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -351,7 +442,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN122"
+NAME="AEN179"
 ></A
 ><H2
 >AUTHOR</H2

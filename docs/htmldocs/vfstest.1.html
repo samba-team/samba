@@ -85,6 +85,54 @@ CLASS="VARIABLELIST"
 		</P
 ></DD
 ><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
+></DD
+><DT
+>-l|--logfile=logbasename</DT
+><DD
+><P
+>File name for log/debug files. The extension
+		<CODE
+CLASS="CONSTANT"
+>'.client'</CODE
+> will be appended. The log file is never removed
+		by the client.
+		</P
+></DD
+><DT
+>-V</DT
+><DD
+><P
+>Prints the version number for 
+<B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
+></DD
+><DT
 >-d|--debug=debuglevel</DT
 ><DD
 ><P
@@ -124,22 +172,15 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-h|--help</DT
-><DD
-><P
->Print a summary of command line options.</P
-></DD
-><DT
 >-l|--logfile=logbasename</DT
 ><DD
 ><P
 >File name for log/debug files. The extension
-		<CODE
+<CODE
 CLASS="CONSTANT"
->'.client'</CODE
-> will be appended. The log file is never removed
-		by the client.
-		</P
+>".client"</CODE
+> will be appended. The log file is
+never removed by the client.</P
 ></DD
 ></DL
 ></DIV
@@ -147,7 +188,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN50"
+NAME="AEN66"
 ></A
 ><H2
 >COMMANDS</H2
@@ -468,7 +509,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN181"
+NAME="AEN197"
 ></A
 ><H2
 >VERSION</H2
@@ -479,7 +520,7 @@ NAME="AEN181"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN184"
+NAME="AEN200"
 ></A
 ><H2
 >AUTHOR</H2

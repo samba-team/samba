@@ -2,8 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Configuring PAM for distributed but centrally 
-managed authentication</TITLE
+>PAM Configuration for Centrally Managed Authentication</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
@@ -14,11 +13,11 @@ REL="UP"
 TITLE="Advanced Configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="Group mapping HOWTO"
-HREF="groupmapping.html"><LINK
+TITLE="Desktop Profile Management"
+HREF="profilemgmt.html"><LINK
 REL="NEXT"
-TITLE="Printing Support"
-HREF="printing.html"></HEAD
+TITLE="Stackable VFS modules"
+HREF="vfs.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -46,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="groupmapping.html"
+HREF="profilemgmt.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -60,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="printing.html"
+HREF="vfs.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -75,15 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="PAM"
 ></A
->Chapter 13. Configuring PAM for distributed but centrally 
-managed authentication</H1
+>Chapter 18. PAM Configuration for Centrally Managed Authentication</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1866"
->13.1. Samba and PAM</A
+NAME="AEN3332"
+>18.1. Samba and PAM</A
 ></H1
 ><P
 >A number of Unix systems (eg: Sun Solaris), as well as the 
@@ -150,7 +148,7 @@ CLASS="FILENAME"
 	
 	<PRE
 CLASS="PROGRAMLISTING"
->	eg: "auth       required      /other_path/pam_strange_module.so"
+>	auth       required      /other_path/pam_strange_module.so
 	</PRE
 >
 	</P
@@ -192,10 +190,16 @@ CLASS="PROGRAMLISTING"
 >PAM allows use of replacable modules. Those available on a 
 sample system include:</P
 ><P
-><PRE
+><SAMP
+CLASS="PROMPT"
+>$</SAMP
+><KBD
+CLASS="USERINPUT"
+>/bin/ls /lib/security</KBD
+>
+<PRE
 CLASS="PROGRAMLISTING"
->	$ /bin/ls /lib/security
-	pam_access.so    pam_ftp.so          pam_limits.so     
+>	pam_access.so    pam_ftp.so          pam_limits.so     
 	pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
 	pam_cracklib.so  pam_group.so        pam_listfile.so   
 	pam_nologin.so   pam_rootok.so       pam_tally.so      
@@ -289,10 +293,10 @@ CLASS="PROGRAMLISTING"
 >	#%PAM-1.0
 	# The PAM configuration file for the `samba' service
 	#
-	auth       required     /lib/security/pam_pwdb.so nullok nodelay shadow audit
-	account    required     /lib/security/pam_pwdb.so audit nodelay
-	session    required     /lib/security/pam_pwdb.so nodelay
-	password   required     /lib/security/pam_pwdb.so shadow md5</PRE
+	auth       required     pam_pwdb.so nullok nodelay shadow audit
+	account    required     pam_pwdb.so audit nodelay
+	session    required     pam_pwdb.so nodelay
+	password   required     pam_pwdb.so shadow md5</PRE
 ></P
 ><P
 >In the following example the decision has been made to use the 
@@ -306,10 +310,10 @@ CLASS="PROGRAMLISTING"
 >	#%PAM-1.0
 	# The PAM configuration file for the `samba' service
 	#
-	auth       required     /lib/security/pam_smbpass.so nodelay
-	account    required     /lib/security/pam_pwdb.so audit nodelay
-	session    required     /lib/security/pam_pwdb.so nodelay
-	password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf</PRE
+	auth       required     pam_smbpass.so nodelay
+	account    required     pam_pwdb.so audit nodelay
+	session    required     pam_pwdb.so nodelay
+	password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf</PRE
 ></P
 ><DIV
 CLASS="NOTE"
@@ -359,8 +363,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1915"
->13.2. Distributed Authentication</A
+NAME="AEN3383"
+>18.2. Distributed Authentication</A
 ></H1
 ><P
 >The astute administrator will realize from this that the 
@@ -385,8 +389,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1920"
->13.3. PAM Configuration in smb.conf</A
+NAME="AEN3388"
+>18.3. PAM Configuration in smb.conf</A
 ></H1
 ><P
 >There is an option in smb.conf called <A
@@ -437,7 +441,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="groupmapping.html"
+HREF="profilemgmt.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -455,7 +459,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="printing.html"
+HREF="vfs.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -465,7 +469,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Group mapping HOWTO</TD
+>Desktop Profile Management</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -479,7 +483,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Printing Support</TD
+>Stackable VFS modules</TD
 ></TR
 ></TABLE
 ></DIV

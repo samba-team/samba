@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Group mapping HOWTO</TITLE
+>Configuring Group Mapping</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
@@ -16,9 +16,8 @@ REL="PREVIOUS"
 TITLE="UNIX Permission Bits and Windows NT Access Control Lists"
 HREF="unix-permissions.html"><LINK
 REL="NEXT"
-TITLE="Configuring PAM for distributed but centrally 
-managed authentication"
-HREF="pam.html"></HEAD
+TITLE="Printing Support"
+HREF="printing.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -60,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="pam.html"
+HREF="printing.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -75,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="GROUPMAPPING"
 ></A
->Chapter 12. Group mapping HOWTO</H1
+>Chapter 11. Configuring Group Mapping</H1
 ><P
 > 
 Starting with Samba 3.0 alpha 2, a new group mapping function is available. The
@@ -143,9 +142,9 @@ CLASS="COMMAND"
 >domain admins</B
 > group by running the command:</P
 ><P
-><B
-CLASS="COMMAND"
->smbgroupedit -c "Domain Admins" -u domadm</B
+><KBD
+CLASS="USERINPUT"
+>smbgroupedit -c "Domain Admins" -u domadm</KBD
 ></P
 ></LI
 ></OL
@@ -165,9 +164,9 @@ CLASS="COMMAND"
 ><P
 >You can list the various groups in the mapping database like this</P
 ><P
-><B
-CLASS="COMMAND"
->smbgroupedit -v</B
+><KBD
+CLASS="USERINPUT"
+>smbgroupedit -v</KBD
 ></P
 ></DIV
 ><DIV
@@ -204,7 +203,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="pam.html"
+HREF="printing.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -228,8 +227,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Configuring PAM for distributed but centrally 
-managed authentication</TD
+>Printing Support</TD
 ></TR
 ></TABLE
 ></DIV
