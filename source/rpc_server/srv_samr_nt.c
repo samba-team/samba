@@ -3174,6 +3174,24 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 
 }
 
+/****************************************************************************
+ Delete a UNIX user on demand.
+****************************************************************************/
+
+static int smb_delete_user(const char *unix_user)
+{
+	pstring del_script;
+	int ret;
+
+	pstrcpy(del_script, lp_deluser_script());
+	if (! *del_script)
+		return -1;
+	all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
+	ret = smbrun(del_script,NULL);
+	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+	return ret;
+}
+
 /*********************************************************************
  _samr_delete_dom_user
 *********************************************************************/

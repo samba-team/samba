@@ -226,7 +226,7 @@ void standard_sub_basic(const char *smb_name, char *str)
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub_advanced(int snum, const char *user, const char *connectpath, gid_t gid, const char *smb_name, char *str)
+static void standard_sub_advanced(int snum, const char *user, const char *connectpath, gid_t gid, const char *smb_name, char *str)
 {
 	char *p, *s, *home;
 
@@ -391,20 +391,3 @@ void standard_sub_snum(int snum, char *str)
 	standard_sub_advanced(snum, cached_user, "", -1, current_user_info.smb_name, str);
 }
 
-/*******************************************************************
- Substitute strings with useful parameters.
-********************************************************************/
-
-void standard_sub_vuser(char *str, user_struct *vuser)
-{
-	standard_sub_advanced(-1, vuser->user.unix_name, "", -1, current_user_info.smb_name, str);
-}
-
-/*******************************************************************
- Substitute strings with useful parameters.
-********************************************************************/
-
-void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
-{
-	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, current_user_info.smb_name, str);
-}

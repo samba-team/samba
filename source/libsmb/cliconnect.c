@@ -1130,8 +1130,9 @@ again:
 			DEBUG(1,("failed tcon_X\n"));
 			nt_status = cli_nt_error(cli);
 			cli_shutdown(cli);
-			if (NT_STATUS_IS_OK(nt_status)) 
+			if (NT_STATUS_IS_OK(nt_status)) {
 				nt_status = NT_STATUS_UNSUCCESSFUL;
+			}
 			return nt_status;
 		}
 	}

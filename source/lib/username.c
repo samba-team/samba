@@ -30,7 +30,7 @@ static struct passwd *uname_string_combinations2(char *s, int offset, struct pas
  *local* people, there's nothing for you here...).
 *****************************************************************/
 
-BOOL name_is_local(const char *name)
+static BOOL name_is_local(const char *name)
 {
 	return !(strchr_m(name, *lp_winbind_separator()));
 }

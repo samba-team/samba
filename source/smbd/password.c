@@ -346,7 +346,7 @@ void add_session_user(char *user)
 /****************************************************************************
 check if a username is valid
 ****************************************************************************/
-BOOL user_ok(char *user,int snum)
+BOOL user_ok(const char *user,int snum)
 {
 	char **valid, **invalid;
 	BOOL ret;

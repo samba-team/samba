@@ -73,7 +73,7 @@ void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
  Gets a cleartext password.
 ****************************************************************************/
 
-void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
+void pwd_get_cleartext(struct pwd_info *pwd, fstring clr)
 {
 	if (pwd->cleartext)
 		fstrcpy(clr, pwd->password);
