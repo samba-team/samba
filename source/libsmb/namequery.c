@@ -1095,7 +1095,21 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.
 *********************************************************/
+
 BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
 {
 	return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
+}
+
+/********************************************************
+ Get the IP address list of the PDC/BDC's of a Domain
+ Use 1C followed by 1B. This shouldn't work but with
+ broken WINS servers it might.
+*********************************************************/
+
+BOOL get_dc_list_with_fallback(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
+{
+	if (!pdc_only && internal_resolve_name(group, 0x1C, ip_list, count))
+		return True;
+	return internal_resolve_name(group, 0x1B, ip_list, count);
 }

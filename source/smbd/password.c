@@ -1417,7 +1417,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 		use_pdc_only = True;
 	}
 
-	if (!get_dc_list(use_pdc_only, lp_workgroup(), &ip_list, &count))
+	if (!get_dc_list_with_fallback(use_pdc_only, lp_workgroup(), &ip_list, &count))
 		return False;
 
 	/*
