@@ -208,7 +208,7 @@ while (@sorted) {
     print IDB "d 0755 root sys usr/samba/src/$nextfile $SRCPFX/$nextfile $PKG.src.samba\n";
   }
   else {
-    if (grep((/\.sh$/ | /configure$/ | /configure\.developer/ | /config\.guess/ | /config\.sub/ | /\.pl$/ | /mkman$/),$nextfile)) {
+    if (grep((/\.sh$/ | /configure$/ | /configure\.developer/ | /config\.guess/ | /config\.sub/ | /\.pl$/ | /mkman$/ | /pcp\/Install/ | /pcp\/Remove/),$nextfile)) {
 	print IDB "f 0755 root sys usr/samba/src/$nextfile $SRCPFX/$nextfile $PKG.src.samba\n";
     }
     else {
@@ -233,7 +233,6 @@ while (@swatfiles) {
 
 print IDB "d 0755 root sys usr/samba/var $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 root sys usr/samba/var/locks $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "f 0644 root sys usr/samba/var/locks/STATUS..LCK $SRCPFX/packaging/SGI/STATUS..LCK $PKG.sw.base\n";
 
 if ($PKG eq "samba_irix") {
   while(@books) {
