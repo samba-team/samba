@@ -82,6 +82,7 @@
 /* mail slots */
 #define BROWSE_MAILSLOT    "\\MAILSLOT\\BROWSE"
 #define NET_LOGON_MAILSLOT "\\MAILSLOT\\NET\\NETLOGON"
+#define NT_LOGON_MAILSLOT  "\\MAILSLOT\\NET\\NTLOGON"
 
 enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
@@ -371,6 +372,12 @@ struct packet_struct
     struct dgram_packet dgram;
   } packet;
 };
+
+/* NETLOGON opcodes */
+#define QUERYFORPDC	7 /* Query for PDC */
+#define QUERYFORPDC_R	12 /* Response to Query for PDC */
+#define SAMLOGON	18
+#define SAMLOGON_R	19
 
 
 /* ids for netbios packet types */
