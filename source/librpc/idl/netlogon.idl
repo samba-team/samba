@@ -327,9 +327,20 @@ interface netlogon
 	} netr_USER_KEY16;
 
 	typedef struct {
+		uint16 nt_length;
+		uint16 nt_size;
+		uint32 nt_flags;
+		uint16 lm_length;
+		uint16 lm_size;
+		uint32 lm_flags;
+		uint8 nt_history[nt_length];
+		uint8 lm_history[lm_length];
+	} netr_PasswordHistory;
+
+	typedef struct {
 		netr_USER_KEY16 lmpassword;
 		netr_USER_KEY16 ntpassword;
-		
+		netr_PasswordHistory lmhistory;
 	} netr_USER_KEYS2;
 
 	typedef struct {
