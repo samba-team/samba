@@ -1,5 +1,8 @@
 2000-11-16  Assar Westerlund  <assar@sics.se>
 
+	* configure.in: use the libtool -rpath, do not rely on ld
+	understanding -rpath
+
 	* configure.in: fix the -Wl stuff for krb4 linking add some
 	gratuitous extra options when linking with an existing libdes
 
