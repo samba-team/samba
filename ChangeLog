@@ -1,5 +1,9 @@
 1999-12-04  Assar Westerlund  <assar@sics.se>
 
+	* configure.in: move AC_KRB_IPv6 to make sure it's performed
+ 	before AC_BROKEN
+	(el_init): use new feature of AC_FIND_FUNC_NO_LIBS
+
 	* appl/test/uu_client.c: use client_doit
 	* appl/test/test_locl.h (client_doit): add prototype
 	* appl/test/tcp_client.c: use client_doit
