@@ -38,6 +38,28 @@
 
 /* We use these, but they are not always present in <arpa/nameser.h> */
 
+#ifndef C_IN
+#define C_IN		1
+#endif
+
+#ifndef T_A
+#define T_A		1
+#endif
+#ifndef T_NS
+#define T_NS		2
+#endif
+#ifndef T_CNAME
+#define T_CNAME		5
+#endif
+#ifndef T_SOA
+#define T_SOA		5
+#endif
+#ifndef T_PTR
+#define T_PTR		12
+#endif
+#ifndef T_MX
+#define T_MX		15
+#endif
 #ifndef T_TXT
 #define T_TXT		16
 #endif
@@ -61,6 +83,10 @@
 #endif
 #ifndef T_CERT
 #define T_CERT		37
+#endif
+
+#ifndef MAXDNAME
+#define MAXDNAME	1025
 #endif
 
 #define dns_query		rk_dns_query
@@ -149,8 +175,17 @@ struct resource_record{
 typedef int HEADER; /* will never be used */
 #endif
 
+struct dns_header {
+    u_int16_t id;
+    u_int16_t misc;
+    u_int16_t qdcount;
+    u_int16_t ancount;
+    u_int16_t nscount;
+    u_int16_t arcount;
+};
+
 struct dns_reply{
-    HEADER h;
+    struct dns_header h;
     struct dns_query q;
     struct resource_record *head;
 };
