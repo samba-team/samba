@@ -89,18 +89,20 @@ krb5_storage_to_data(krb5_storage *sp, krb5_data *data)
 {
     off_t pos;
     size_t size;
+    krb5_error_code ret;
+
     pos = sp->seek(sp, 0, SEEK_CUR);
     size = (size_t)sp->seek(sp, 0, SEEK_END);
-    data->length = size;
-    data->data = malloc(data->length);
-    if(data->data == NULL){
-	data->length = 0;
+    ret = krb5_data_alloc (data, size);
+    if (ret) {
 	sp->seek(sp, pos, SEEK_SET);
-	return ENOMEM;
+	return ret;
     }
-    sp->seek(sp, 0, SEEK_SET);
-    sp->fetch(sp, data->data, data->length);
-    sp->seek(sp, pos, SEEK_SET);
+    if (size) {
+	sp->seek(sp, 0, SEEK_SET);
+	sp->fetch(sp, data->data, data->length);
+	sp->seek(sp, pos, SEEK_SET);
+    }
     return 0;
 }
 
@@ -231,14 +233,14 @@ krb5_ret_data(krb5_storage *sp,
     ret = krb5_ret_int32(sp, &size);
     if(ret)
 	return ret;
-    data->length = size;
+    ret = krb5_data_alloc (data, size);
+    if (ret)
+	return ret;
     if (size) {
-	data->data = malloc(size);
 	ret = sp->fetch(sp, data->data, size);
 	if(ret != size)
 	    return (ret < 0)? errno : KRB5_CC_END;
-    } else
-	data->data = NULL;
+    }
     return 0;
 }
 
