@@ -405,7 +405,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	/* connect to the domain */
 	res1 = res ? samr_open_group(smb_cli,
 	            &info->dom.samr_pol_open_domain,
-	            group_rid, &group_pol) : False;
+	            0x0000001f, group_rid, &group_pol) : False;
 
 	while (next_token(NULL, tmp, NULL, sizeof(tmp)) && res2 && res1)
 	{

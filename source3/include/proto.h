@@ -1643,7 +1643,8 @@ BOOL samr_create_dom_alias(struct cli_state *cli,
 BOOL samr_set_aliasinfo(struct cli_state *cli, 
 				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
 BOOL samr_open_group(struct cli_state *cli, 
-				POLICY_HND *domain_pol, uint32 rid,
+				POLICY_HND *domain_pol,
+				uint32 flags, uint32 rid,
 				POLICY_HND *group_pol);
 BOOL samr_add_groupmem(struct cli_state *cli, 
 				POLICY_HND *group_pol, uint32 rid);
