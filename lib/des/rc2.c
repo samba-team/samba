@@ -98,10 +98,8 @@ RC2_set_key(RC2_KEY *key, int len, const unsigned char *data, int bits)
 	k[j] = Sbox[(k[j - len] + k[j - 1]) & 0xff];
 
     T8 = (bits + 7) / 8;
-    j = 8 - (8*T8 - bits);
-    TM = 0;
-    while (j-- > 0)
-	TM = TM << 1 | 1;
+    j = (8*T8 - bits);
+    TM = 0xff >> j;
 
     k[128 - T8] = Sbox[k[128 - T8] & TM];
 
