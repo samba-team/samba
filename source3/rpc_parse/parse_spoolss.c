@@ -2659,6 +2659,26 @@ BOOL smb_io_printer_info_5(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_5 *info,
 }
 
 /*******************************************************************
+ Parse a PRINTER_INFO_7 structure.
+********************************************************************/  
+
+BOOL smb_io_printer_info_7(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_7 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "smb_io_printer_info_7");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+	
+	if (!smb_io_relstr("guid", buffer, depth, &info->guid))
+		return False;
+	if (!prs_uint32("action", ps, depth, &info->action))
+		return False;
+	return True;
+}
+
+/*******************************************************************
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
 
@@ -3419,6 +3439,19 @@ uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
 	/* The 4 is for the self relative pointer.. */
 	/* JRA !!!! TESTME - WHAT ABOUT prs_align.... !!! */
 	return 4 + (uint32)sec_desc_size( info->secdesc );
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+
+uint32 spoolss_size_printer_info_7(PRINTER_INFO_7 *info)
+{
+	uint32 size=0;
+		
+	size+=size_of_relative_string( &info->guid );
+	size+=size_of_uint32( &info->action );
+	return size;
 }
 
 /*******************************************************************
@@ -4826,6 +4859,24 @@ BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, p
 	return True;
 }
 
+BOOL spool_io_printer_info_level_7(char *desc, SPOOL_PRINTER_INFO_LEVEL_7 *il, prs_struct *ps, int depth)
+{	
+	prs_debug(ps, depth, desc, "spool_io_printer_info_level_7");
+	depth++;
+		
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("guid_ptr", ps, depth, &il->guid_ptr))
+		return False;
+	if(!prs_uint32("action", ps, depth, &il->action))
+		return False;
+
+	if(!smb_io_unistr2("servername", &il->guid, il->guid_ptr, ps, depth))
+		return False;
+	return True;
+}
+
 /*******************************************************************
 ********************************************************************/  
 
@@ -4891,6 +4942,13 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 				return False;
 			break;		
 		}
+		case 7:
+			if (UNMARSHALLING(ps))
+				if ((il->info_7=(SPOOL_PRINTER_INFO_LEVEL_7 *)prs_alloc_mem(ps,sizeof(SPOOL_PRINTER_INFO_LEVEL_7))) == NULL)
+					return False;
+			if (!spool_io_printer_info_level_7("", il->info_7, ps, depth))
+				return False;
+			break;
 	}
 
 	return True;
@@ -6501,6 +6559,11 @@ void free_printer_info_4(PRINTER_INFO_4 *printer)
 }
 
 void free_printer_info_5(PRINTER_INFO_5 *printer)
+{
+	SAFE_FREE(printer);
+}
+
+void free_printer_info_7(PRINTER_INFO_7 *printer)
 {
 	SAFE_FREE(printer);
 }
