@@ -565,7 +565,14 @@ static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
 {
 	SPOOL_NOTIFY_OPTION *option = p->notify.option;
 	uint32 i, j;
-	
+
+	/* 
+	 * Flags should always be zero when the change notify
+	 * is registered by the cliebnt's spooler.  A user Win32 app
+	 * might use the flags though instead of the NOTIFY_OPTION_INFO 
+	 * --jerry
+	 */
+	 
 	if (p->notify.flags)
 		return is_monitoring_event_flags(
 			p->notify.flags, notify_type, notify_field);
@@ -825,7 +832,9 @@ done:
 	return;
 }
 
-/* Receive a notify2 message */
+/********************************************************************
+ Receive a notify2 message
+ ********************************************************************/
 
 static void receive_notify2_message(int msg_type, pid_t src, void *buf, 
 				    size_t len)
@@ -7340,7 +7349,6 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	UNISTR2 *form_name = &q_u->name;
 	nt_forms_struct tmpForm;
 	int count=0;
-	WERROR ret = WERR_OK;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	int snum;
@@ -7354,40 +7362,49 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 		return WERR_BADFID;
 	}
 
- 	if (!get_printer_snum(p, handle, &snum))
-		return WERR_BADFID;
+	/* forms can be deleted on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(2,("_spoolss_deleteform: denied by handle permissions\n"));
-		return WERR_ACCESS_DENIED;
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
+		DEBUG(2,("_spoolss_deleteform: denied by handle permissions.\n"));
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't delete if builtin */
+	
 	if (get_a_builtin_ntform(form_name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	count = get_ntforms(&list);
-	if(!delete_a_form(&list, form_name, &count, &ret))
-		return WERR_INVALID_PARAM;
+	
+	if ( !delete_a_form(&list, form_name, &count, &status ))
+		goto done;
 
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
-	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
-	return ret;
+	return status;
 }
 
 /****************************************************************************
@@ -7413,37 +7430,45 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
-		return WERR_BADFID;
+	/* forms can be modified on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
 		DEBUG(2,("_spoolss_setform: denied by handle permissions\n"));
-		return WERR_ACCESS_DENIED;
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't set if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 
-	count=get_ntforms(&list);
+	count = get_ntforms(&list);
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
 
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
 	return WERR_OK;
