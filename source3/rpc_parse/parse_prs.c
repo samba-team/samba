@@ -679,6 +679,8 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	uint8 *start;
 	char *q;
 	char zero=0;
+	uint32 max_len;
+	uint16* ptr;
 
 	if (MARSHALLING(ps)) {
 
@@ -734,38 +736,42 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 		/*
 		 * Work out how much space we need and talloc it.
 		 */
+		max_len = (ps->buffer_size - ps->data_offset)/sizeof(uint16);
+
+		for ( ptr = (uint16 *)q; *ptr && (alloc_len <= max_len); alloc_len++)
+			;
+		if (alloc_len > 0)
 		{
-			uint32 max_len = (ps->buffer_size - ps->data_offset)/sizeof(uint16);
-			uint16 *ptr;
-
-			for ( ptr = (uint16 *)q; *ptr && (alloc_len <= max_len); alloc_len++)
-				;
-
 			str->buffer = (uint16 *)prs_alloc_mem(ps,alloc_len * sizeof(uint16));
 			if (str->buffer == NULL)
 				return False;
 
 			p = (unsigned char *)str->buffer;
-		}
 
-		do 
-		{
-			len++;
-
-			if(ps->bigendian_data) 
+			do 
 			{
-				RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
-				p += 2;
-				q += 2;
-			} else {
-				RW_CVAL(ps->io, q, *p, 0);
-				p++;
-				q++;
-				RW_CVAL(ps->io, q, *p, 0);
-				p++;
-				q++;
-			}
-		} while (len < alloc_len && str->buffer[len] != 0);
+				len++;
+
+				if(ps->bigendian_data) 
+				{
+					RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
+					p += 2;
+					q += 2;
+				} else {
+					RW_CVAL(ps->io, q, *p, 0);
+					p++;
+					q++;
+					RW_CVAL(ps->io, q, *p, 0);
+					p++;
+					q++;
+				}
+			} while (len < alloc_len && str->buffer[len] != 0);
+		}
+		else
+		{
+			len = 0;
+			str->buffer = NULL;
+		}
 	}
 
 	ps->data_offset += len*2;
