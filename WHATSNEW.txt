@@ -1,5 +1,5 @@
-          WHATS NEW IN Samba (The Next Generation) 2.5.2
-          ==============================================
+          WHATS NEW IN Samba (The Next Generation) 2.6
+          ============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
 print and login server for Windows systems.
@@ -111,7 +111,7 @@ It is important that you read the source/README file for
 instructions, and it is recommended that you join samba-ntdom@samba.org
 for update information and status reports.  For details, please see:
 
-http://samba.org/listproc/samba-ntdom
+http://lists.samba.org/
 
 =====================================================================
 
@@ -134,7 +134,7 @@ interested in participating in or helping with this development
 please join the Samba-NTDOM mailing list.  Details on joining
 are available at :
 
-http://samba.org/listproc/
+http://lists.samba.org/
 
 Details on obtaining CVS (developer) versions of Samba
 are available at:
@@ -164,12 +164,23 @@ Connection reuse has now been added and debugged: the number of
 incoming connections is reduced but still fairly large.
 
 
+2) Windows 9x style domain logons are reported to not work
+currently. If we have more information on this, this might be
+fixed in the future. Also this version of Samba if mainly
+targetted at NT developments.
+
+
+3) Printing is currently also not completely functional,
+because it is being developed in another tree and at times
+we try to merge this back into this tree.
+
+
 =====================================================================
 
 If you have problems, or think you have found a bug please email 
 a full, detailed report to:
 
-        samba-technical@samba.org
+        samba-ntdom@samba.org
 
 As always, all bugs are our responsibility.
 
