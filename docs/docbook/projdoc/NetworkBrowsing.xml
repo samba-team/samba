@@ -1283,6 +1283,32 @@ If either router R1 or R2 fails the following will occur:
 </orderedlist>
 </sect3>
 </sect2>
+</sect1>
 
+<sect1>
+<title>Common Errors</title>
+
+<para>
+Many questions are sked on the mailing lists regarding browsing. The majority of browsing
+problems originate out of incorrect configuration of NetBIOS name resolution. Some are of
+particular note.
+</para>
+
+<sect2>
+<title>How can one flush the Samba NetBIOS name cache without restarting samba?</title>
+
+<para>
+Sambas' nmbd process controls all browse list handling. Under normal circumstances it is
+safe to restart nmbd. This will effectively flush the samba NetBIOS name cache and cause it
+to be rebuilt. Note that this does NOT make certain that a rogue machine name will not re-appear
+in the browse list. When nmbd is taken out of service another machine on the network will
+become the browse master. This new list may still have the rogue entry in it. If you really
+want to clear a rogue machine from the list then every machine on the network will need to be
+shut down and restarted at after all machines are down. Failing a complete restart, the only
+other thing you can do is wait until the entry times out and is then flushed from the list.
+This may take a long time on some networks (months).
+</para>
+
+</sect2>
 </sect1>
 </chapter>
