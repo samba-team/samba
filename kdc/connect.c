@@ -718,7 +718,9 @@ handle_tcp(struct descr *d, int index, int min_free)
 
     n = recvfrom(d[index].s, buf, sizeof(buf), 0, NULL, NULL);
     if(n < 0){
-	krb5_warn(context, errno, "recvfrom");
+	krb5_warn(context, errno, "recvfrom failed from %s to %s/%d",
+		  d[index].addr_string, descr_type(d + index), 
+		  ntohs(d[index].port));
 	return;
     } else if (n == 0) {
 	krb5_warnx(context, "connection closed before end of data after %lu "
