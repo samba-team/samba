@@ -779,6 +779,163 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
   return(True);
 }
 
+/*******************************************************************
+parse lpq on an NT system
+
+                         Windows 2000 LPD Server
+                              Printer \\10.0.0.2\NP17PCL (Paused)
+
+Owner       Status         Jobname          Job-Id    Size   Pages  Priority
+----------------------------------------------------------------------------
+root (9.99. Printing  /usr/lib/rhs/rhs-pr      3       625      0      1
+root (9.99. Paused    /usr/lib/rhs/rhs-pr      4       625      0      1
+jmcd        Waiting   Re: Samba Open Sour     26     32476      1      1
+
+********************************************************************/
+static BOOL parse_lpq_nt(char *line,print_queue_struct *buf,BOOL first)
+{
+#define LPRNT_OWNSIZ 11
+#define LPRNT_STATSIZ 9
+#define LPRNT_JOBSIZ 19
+#define LPRNT_IDSIZ 6
+#define LPRNT_SIZSIZ 9
+  typedef struct 
+  {
+    char owner[LPRNT_OWNSIZ];
+    char space1;
+    char status[LPRNT_STATSIZ];
+    char space2;
+    char jobname[LPRNT_JOBSIZ];
+    char space3;
+    char jobid[LPRNT_IDSIZ];
+    char space4;
+    char size[LPRNT_SIZSIZ];
+    char terminator;
+  } nt_lpq_line;
+
+  nt_lpq_line parse_line;
+#define LPRNT_PRINTING "Printing"
+#define LPRNT_WAITING "Waiting"
+#define LPRNT_PAUSED "Paused"
+
+  memset(&parse_line, '\0', sizeof(parse_line));
+  strncpy((char *) &parse_line, line, sizeof(parse_line) -1);
+
+  if (strlen((char *) &parse_line) != sizeof(parse_line) - 1)
+    return(False);
+
+  /* Just want the first word in the owner field - the username */
+  if (strchr(parse_line.owner, ' '))
+    *(strchr(parse_line.owner, ' ')) = '\0';
+  else
+    parse_line.space1 = '\0';
+
+  /* Make sure we have an owner */
+  if (!strlen(parse_line.owner))
+    return(False);
+
+  /* Make sure the status is valid */
+  parse_line.space2 = '\0';
+  trim_string(parse_line.status, NULL, " ");
+  if (!strequal(parse_line.status, LPRNT_PRINTING) &&
+      !strequal(parse_line.status, LPRNT_PAUSED) &&
+      !strequal(parse_line.status, LPRNT_WAITING))
+    return(False);
+  
+  parse_line.space3 = '\0';
+  trim_string(parse_line.jobname, NULL, " ");
+
+  buf->job = atoi(parse_line.jobid);
+  buf->priority = 0;
+  buf->size = atoi(parse_line.size);
+  buf->time = time(NULL);
+  StrnCpy(buf->user, parse_line.owner, sizeof(buf->user)-1);
+  StrnCpy(buf->file, parse_line.jobname, sizeof(buf->file)-1);
+  if (strequal(parse_line.status, LPRNT_PRINTING))
+    buf->status = LPQ_PRINTING;
+  else if (strequal(parse_line.status, LPRNT_PAUSED))
+    buf->status = LPQ_PAUSED;
+  else
+    buf->status = LPQ_QUEUED;
+
+  return(True);
+}
+
+/*******************************************************************
+parse lpq on an OS2 system
+
+JobID  File Name          Rank      Size        Status          Comment       
+-----  ---------------    ------    --------    ------------    ------------  
+    3  Control                 1          68    Queued          root@psflinu  
+    4  /etc/motd               2       11666    Queued          root@psflinu  
+
+********************************************************************/
+static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
+{
+#define LPROS2_IDSIZ 5
+#define LPROS2_JOBSIZ 15
+#define LPROS2_SIZSIZ 8
+#define LPROS2_STATSIZ 12
+#define LPROS2_OWNSIZ 12
+  typedef struct 
+  {
+    char jobid[LPROS2_IDSIZ];
+    char space1[2];
+    char jobname[LPROS2_JOBSIZ];
+    char space2[14];
+    char size[LPROS2_SIZSIZ];
+    char space3[4];
+    char status[LPROS2_STATSIZ];
+    char space4[4];
+    char owner[LPROS2_OWNSIZ];
+    char terminator;
+  } os2_lpq_line;
+
+  os2_lpq_line parse_line;
+#define LPROS2_PRINTING "Printing"
+#define LPROS2_WAITING "Queued"
+#define LPROS2_PAUSED "Paused"
+
+  memset(&parse_line, '\0', sizeof(parse_line));
+  strncpy((char *) &parse_line, line, sizeof(parse_line) -1);
+
+  if (strlen((char *) &parse_line) != sizeof(parse_line) - 1)
+    return(False);
+
+  /* Get the jobid */
+  buf->job = atoi(parse_line.jobid);
+
+  /* Get the job name */
+  parse_line.space2[0] = '\0';
+  trim_string(parse_line.jobname, NULL, " ");
+  StrnCpy(buf->file, parse_line.jobname, sizeof(buf->file)-1);
+
+  buf->priority = 0;
+  buf->size = atoi(parse_line.size);
+  buf->time = time(NULL);
+
+  /* Make sure we have an owner */
+  if (!strlen(parse_line.owner))
+    return(False);
+
+  /* Make sure we have a valid status */
+  parse_line.space4[0] = '\0';
+  trim_string(parse_line.status, NULL, " ");
+  if (!strequal(parse_line.status, LPROS2_PRINTING) &&
+      !strequal(parse_line.status, LPROS2_PAUSED) &&
+      !strequal(parse_line.status, LPROS2_WAITING))
+    return(False);
+
+  StrnCpy(buf->user, parse_line.owner, sizeof(buf->user)-1);
+  if (strequal(parse_line.status, LPROS2_PRINTING))
+    buf->status = LPQ_PRINTING;
+  else if (strequal(parse_line.status, LPROS2_PAUSED))
+    buf->status = LPQ_PAUSED;
+  else
+    buf->status = LPQ_QUEUED;
+
+  return(True);
+}
 
 static char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "free", "ready", NULL };
 static char *stat1_strings[] = { "offline", "disabled", "down", "off", "waiting", "no daemon", NULL };
@@ -815,6 +972,12 @@ BOOL parse_lpq_entry(int snum,char *line,
       break;
     case PRINT_SOFTQ:
       ret = parse_lpq_softq(line,buf,first);
+      break;
+    case PRINT_LPRNT:
+      ret = parse_lpq_nt(line,buf,first);
+      break;
+    case PRINT_LPROS2:
+      ret = parse_lpq_os2(line,buf,first);
       break;
     default:
       ret = parse_lpq_bsd(line,buf,first);

@@ -549,6 +549,8 @@ static struct enum_list enum_printing[] = {
 	{PRINT_LPRNG, "lprng"},
 	{PRINT_SOFTQ, "softq"},
 	{PRINT_CUPS, "cups"},
+	{PRINT_LPRNT, "nt"},
+	{PRINT_LPROS2, "os2"},
 	{-1, NULL}
 };
 
@@ -1005,6 +1007,8 @@ static void init_printer_values(void)
 	{
 		case PRINT_BSD:
 		case PRINT_AIX:
+		case PRINT_LPRNT:
+		case PRINT_LPROS2:
 			string_set(&sDefault.szLpqcommand, "lpq -P%p");
 			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
 			string_set(&sDefault.szPrintcommand,
