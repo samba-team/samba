@@ -1139,6 +1139,38 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 }
 
 /*******************************************************************
+makes a structure.
+********************************************************************/
+
+void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
+{
+	ZERO_STRUCTP(r_u);
+
+	/* value name */
+
+	init_uni_hdr( &r_u->hdr_name, strlen(val->valuename)+1 );
+	init_unistr2( &r_u->uni_name, val->valuename, strlen(val->valuename)+1 );
+		
+	/* type */
+	
+	r_u->ptr_type = 1;
+	r_u->type = val->type;
+
+	/* data */
+	
+	r_u->ptr_value = 1;
+	init_buffer2( &r_u->buf_value, val->data.void_ptr, val->size );
+	
+	/* lengths */
+
+	r_u->ptr1 = 1;
+	r_u->len_value1 = val->size;
+	
+	r_u->ptr2 = 1;
+	r_u->len_value2 = val->size;
+}
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
@@ -1158,6 +1190,7 @@ BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int d
 	
 	if(!prs_uint32("val_index", ps, depth, &q_q->val_index))
 		return False;
+		
 	if(!smb_io_unihdr ("hdr_name", &q_q->hdr_name, ps, depth))
 		return False;
 	if(!smb_io_unistr2("uni_name", &q_q->uni_name, q_q->hdr_name.buffer, ps, depth))
@@ -1228,7 +1261,7 @@ BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int d
 
 	if(!prs_uint32("ptr_value", ps, depth, &r_q->ptr_value))
 		return False;
-	if(!smb_io_buffer2("buf_value", r_q->buf_value, r_q->ptr_value, ps, depth))
+	if(!smb_io_buffer2("buf_value", &r_q->buf_value, r_q->ptr_value, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
