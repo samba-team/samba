@@ -709,10 +709,23 @@ krb5_error_code
 krb5_free_krbhst (krb5_context context,
 		  char *const *hostlist);
 
+krb5_error_code
+krb5_get_host_realm(krb5_context context,
+		    const char *host,
+		    char ***realms);
+
 krb5_boolean
 krb5_kuserok (krb5_context context,
 	      krb5_principal principal,
 	      const char *luser);
+
+int
+krb5_verify_user(krb5_context context, 
+		 krb5_principal principal,
+		 krb5_ccache ccache,
+		 const char *password,
+		 int secure,
+		 const char *service);
 
 /* variables */
 
@@ -800,6 +813,7 @@ struct error_list {
 
 const char *krb5_get_err_text(krb5_context context, long code);
 
+void krb5_init_ets(krb5_context context);
 
 /* XXX these are glue functions and really don't belong here */
 
