@@ -20,18 +20,14 @@ endif
 libroken_la_SOURCES =		\
 	base64.c		\
 	concat.c		\
-	copyhostent.c		\
 	emalloc.c		\
 	eread.c			\
 	erealloc.c		\
 	estrdup.c		\
 	ewrite.c		\
-	freehostent.c		\
 	get_default_username.c	\
 	get_window_size.c	\
 	getarg.c		\
-	getipnodebyaddr.c	\
-	getipnodebyname.c	\
 	inaddr2str.c		\
 	issuid.c		\
 	k_getpwnam.c		\
@@ -57,6 +53,7 @@ libroken_la_SOURCES =		\
 
 EXTRA_libroken_la_SOURCES =	\
 	chown.c			\
+	copyhosten.c		\
 	daemon.c		\
 	err.c			\
 	err.h			\
@@ -65,11 +62,14 @@ EXTRA_libroken_la_SOURCES =	\
 	flock.c			\
 	fnmatch.c		\
 	fnmatch.h		\
+	freehostent.c		\
 	getdtablesize.c		\
 	getegid.c		\
 	geteuid.c		\
 	getgid.c		\
 	gethostname.c		\
+	getipnodebyaddr.c	\
+	getipnodebyname.c	\
 	getopt.c		\
 	gettimeofday.c		\
 	getuid.c		\
