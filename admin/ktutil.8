@@ -89,6 +89,13 @@ Removes the specified key or keys. Not specifying a
 removes keys with any version number. Not specifying a
 .Ar enctype
 removes keys of any type.
+.It purge Xo
+.Op Fl -age= Ns Ar age
+.Xc
+Removes all old entries (for which there is a newer version) that are
+older than
+.Ar age
+seconds.
 .It srvconvert
 .It srv2keytab Xo
 .Op Fl s Ar srvtab
