@@ -119,7 +119,7 @@ struct auth_context {
 
 	TALLOC_CTX *mem_ctx;
 	const uint8_t *(*get_ntlm_challenge)(struct auth_context *auth_context);
-	NTSTATUS (*check_ntlm_password)(const struct auth_context *auth_context,
+	NTSTATUS (*check_ntlm_password)(struct auth_context *auth_context,
 					const struct auth_usersupplied_info *user_info, 
 					struct auth_serversupplied_info **server_info);
 	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);

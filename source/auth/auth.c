@@ -152,7 +152,7 @@ static BOOL check_domain_match(const char *user, const char *domain)
  *
  **/
 
-static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
+static NTSTATUS check_ntlm_password(struct auth_context *auth_context,
 				    const struct auth_usersupplied_info *user_info, 
 				    struct auth_serversupplied_info **server_info)
 {
