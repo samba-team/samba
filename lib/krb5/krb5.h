@@ -200,8 +200,10 @@ typedef struct krb5_preauthdata {
 }krb5_preauthdata;
 
 typedef enum krb5_address_type { 
-    KRB5_ADDRESS_INET  = 2,
-    KRB5_ADDRESS_INET6 = 24
+    KRB5_ADDRESS_INET     =   2,
+    KRB5_ADDRESS_INET6    =  24,
+    KRB5_ADDRESS_ADDRPORT = 256,
+    KRB5_ADDRESS_IPPORT   = 257
 } krb5_address_type;
 
 enum {
@@ -462,6 +464,8 @@ typedef struct krb5_auth_context_data {
 
     krb5_address *local_address;
     krb5_address *remote_address;
+    int16_t local_port;
+    int16_t remote_port;
     krb5_keyblock *keyblock;
     krb5_keyblock *local_subkey;
     krb5_keyblock *remote_subkey;
