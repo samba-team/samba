@@ -268,31 +268,49 @@ MAKEDIR = || exec false; \
 	  mkdir "$$dir" || \
 	  exec false; fi || exec false
 
+# the lines below containing `@MAINT@' are for atomatic dependency tracking
+# they will only work with GNU make, gcc and --enable-maintainer-mode
+# without --enable-maintainer-mode, they do nothing
 .c.o: @MAINT@ .deps/.dummy
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@MAINT@@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+	@MAINT@ else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+	@MAINT@      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@ \
-	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
-# the line above is for atomatic dependency tracking
-# it will only work with GNU make, gcc and --enable-maintainer-mode
-
+	@MAINT@ -Wp,-MD,.deps/$@ && \
+	@MAINT@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
+	@MAINT@  <.deps/$@ >.deps/$@d && \
+	@MAINT@rm -f .deps/$@ && : >.deps/.stamp
 
 .c.po: @MAINT@ .deps/.dummy
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@MAINT@@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+	@MAINT@ else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+	@MAINT@      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< -o $*.po.o \
-	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
+	@MAINT@ -Wp,-MD,.deps/$@ && \
+	@MAINT@sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
+	@MAINT@  <.deps/$@ >.deps/$@d && \
+	@MAINT@rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po.o $@
 
 # this is for IRIX
 .c.po32: @MAINT@ .deps/.dummy
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@MAINT@@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+	@MAINT@ else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+	@MAINT@      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@ and -32
 	@$(CC) -32 -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< -o $*.po32.o \
-	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
+	@MAINT@ -Wp,-MD,.deps/$@ && \
+	@MAINT@sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
+	@MAINT@  <.deps/$@ >.deps/$@d && \
+	@MAINT@rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po32.o $@
 
 bin/.dummy:
@@ -476,7 +494,7 @@ Makefile: $(srcdir)/Makefile.in config.status \
 	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 # note that nothing depends on config.h, so will probably be rebuilt
-# only when explicitly requested
+# only when explicitly requested, unless dependency tracking is enabled
 include/config.h: include/stamp-h
 	@:
 
@@ -500,7 +518,8 @@ $(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.i
 .deps/.stamp: .deps/.dummy
 	@:
 
-.deps/.P: .deps/.stamp
-	@cat .deps/*.P >$@ 2>/dev/null || true
+.deps/depend: .deps/.stamp
+	@echo Updating dependencies
+	@: | cat `find .deps -type f -name \*d` >$@ 2>/dev/null || true
 
-@MAINT@-include .deps/.P
+@MAINT@-include .deps/depend
