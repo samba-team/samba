@@ -176,6 +176,7 @@ static const struct {
 	{"sign", DCERPC_SIGN},
 	{"seal", DCERPC_SEAL},
 	{"connect", DCERPC_CONNECT},
+	{"spnego", DCERPC_AUTH_SPNEGO},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
@@ -772,6 +773,42 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 }
 
 
+/* 
+   perform an authenticated bind if needed
+*/
+static NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p, 
+				 struct dcerpc_binding *binding,
+				 const char *pipe_uuid, 
+				 uint32_t pipe_version,
+				 const char *domain,
+				 const char *username,
+				 const char *password)
+{
+	NTSTATUS status;
+
+	p->conn->flags = binding->flags;
+
+	/* remember the binding string for possible secondary connections */
+	p->conn->binding_string = dcerpc_binding_string(p, binding);
+
+	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
+		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
+						   domain, username, password);
+	} else if (username && username[0] && (binding->flags & DCERPC_AUTH_SPNEGO)) {
+		status = dcerpc_bind_auth_spnego(p, pipe_uuid, pipe_version, domain, username, password);
+	} else if (username && username[0]) {
+		status = dcerpc_bind_auth_ntlm(p, pipe_uuid, pipe_version, domain, username, password);
+	} else {    
+		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
+	}
+	return status;
+}
+
+
 /* open a rpc connection to a rpc pipe on SMB using the binding
    structure to determine the endpoint and options */
 static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp, 
@@ -846,24 +883,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 		return status;
 	}
 	
-	p->conn->flags = binding->flags;
-
-	/* remember the binding string for possible secondary connections */
-	p->conn->binding_string = dcerpc_binding_string(p, binding);
-
-	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
-		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
-						   domain, username, password);
-	} else if (username && username[0] &&
-		   (binding->flags & (DCERPC_CONNECT|DCERPC_SIGN|DCERPC_SEAL))) {
-		status = dcerpc_bind_auth_ntlm(p, pipe_uuid, pipe_version, domain, username, password);
-	} else {    
-		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
-
-	}
-
+	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		talloc_free(p);
 		return status;
 	}
@@ -916,22 +937,8 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **pp,
    		return status;
 	}
 
-	p->conn->flags = binding->flags;
-
-	/* remember the binding string for possible secondary connections */
-	p->conn->binding_string = dcerpc_binding_string(p, binding);
-
-	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
-		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
-						   domain, username, password);
-	} else if (username && username[0]) {
-		status = dcerpc_bind_auth_ntlm(p, pipe_uuid, pipe_version, domain, username, password);
-	} else {    
-		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
-	}
-
+	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		talloc_free(p);
 		return status;
 	}
@@ -977,22 +984,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(struct dcerpc_pipe **pp,
                 return status;
 	}
 
-	p->conn->flags = binding->flags;
-
-	/* remember the binding string for possible secondary connections */
-	p->conn->binding_string = dcerpc_binding_string(p, binding);
-
-	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
-		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
-						   domain, username, password);
-	} else if (username && username[0]) {
-		status = dcerpc_bind_auth_ntlm(p, pipe_uuid, pipe_version, domain, username, password);
-	} else {    
-		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
-	}
-
+	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		talloc_free(p);
 		return status;
 	}
@@ -1047,23 +1040,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **pp,
                 return status;
         }
 
-	p->conn->flags = binding->flags;
-
-	/* remember the binding string for possible secondary connections */
-	p->conn->binding_string = dcerpc_binding_string(p, binding);
-
-	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
-		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
-						   domain, username, password);
-	} else if (username && username[0]) {
-		status = dcerpc_bind_auth_ntlm(p, pipe_uuid, pipe_version, domain, username, password);
-	} else {    
-		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
-	}
-
+	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", 
-			 pipe_uuid, nt_errstr(status)));
 		talloc_free(p);
 		return status;
 	}
@@ -1171,7 +1149,6 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 		if (!tree) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-
 		status = dcerpc_pipe_open_smb((*p2)->conn, tree, pipe_name);
 		break;
 
@@ -1180,7 +1157,6 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		b.flags &= ~DCERPC_AUTH_OPTIONS;
 		status = dcerpc_pipe_open_tcp((*p2)->conn, b.host, atoi(b.endpoint));
 		break;
 
@@ -1189,7 +1165,6 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		b.flags &= ~DCERPC_AUTH_OPTIONS;
 		status = dcerpc_pipe_open_pipe((*p2)->conn, b.endpoint);
 		break;
 

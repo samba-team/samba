@@ -72,9 +72,9 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 		return status;
 	}
 	
-	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_NTLMSSP,
-				   dcerpc_auth_level(p->conn),
-				   uuid, version);
+	status = dcerpc_bind_auth(p, DCERPC_AUTH_TYPE_NTLMSSP,
+				  dcerpc_auth_level(p->conn),
+				  uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("Failed to bind to pipe with NTLMSSP: %s\n", nt_errstr(status)));
