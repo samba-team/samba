@@ -105,7 +105,7 @@
 	/* Function: 0x09 */
 	WERROR winreg_EnumKey(
 		[in,ref]    policy_handle *handle,
-		[in] uint32 key_index,
+		[in] uint32 enum_index,
 		[in,out]    uint16 key_name_len,
 		[in,out]    uint16 unknown,
 		[in]        winreg_EnumKeyNameRequest *in_name,
@@ -138,7 +138,7 @@
 	/* Function: 0x0a */
 	WERROR winreg_EnumValue(
 		[in,ref] policy_handle *handle,
-		[in] uint32 val_index,
+		[in] uint32 enum_index,
 		[in,out,ref] winreg_EnumValueName *name,
 		[in,out] uint32 *type,
 		[in,out] winreg_Uint8buf *value,
