@@ -173,11 +173,11 @@ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
   parameters
 */
 NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree, 
-				  const char *my_name, 
-				  const char *dest_host, int port,
-				  const char *service, const char *service_type,
-				  const char *user, const char *domain, 
-				  const char *password)
+				     const char *my_name, 
+				     const char *dest_host, int port,
+				     const char *service, const char *service_type,
+				     const char *user, const char *domain, 
+				     const char *password)
 {
 	struct smbcli_socket *sock;
 	struct smbcli_transport *transport;
@@ -212,7 +212,7 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 
 	/* send a NBT session request, if applicable */
 	make_nmb_name(&calling, my_name, 0x0);
-	make_nmb_name(&called,  dest_host, 0x20);
+	choose_called_name(&called,  dest_host, 0x20);
 
 	if (!smbcli_transport_connect(transport, &calling, &called)) {
 		smbcli_transport_close(transport);
