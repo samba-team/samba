@@ -168,7 +168,7 @@ time_t2str(time_t t, char *str, size_t len, int include_time)
  */
 
 int
-str2time_t (const char *str, time_t *time)
+str2time_t (const char *str, time_t *t)
 {
     const char *p;
     struct tm tm, tm2;
@@ -176,12 +176,12 @@ str2time_t (const char *str, time_t *time)
     memset (&tm, 0, sizeof (tm));
 
     if(strcasecmp(str, "never") == 0) {
-	*time = 0;
+	*t = 0;
 	return 0;
     }
 
     if(strcasecmp(str, "now") == 0) {
-	*time = time(NULL);
+	*t = time(NULL);
 	return 0;
     }
 
@@ -201,7 +201,7 @@ str2time_t (const char *str, time_t *time)
 	tm.tm_sec  = tm2.tm_sec;
     }
 
-    *time = tm2time (tm, 0);
+    *t = tm2time (tm, 0);
     return 0;
 }
 
