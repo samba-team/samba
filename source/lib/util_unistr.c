@@ -107,6 +107,28 @@ void ascii_to_unistr(char *dest, const char *src, size_t maxlen)
 }
 
 /*******************************************************************
+ * HORRIBLE HACK!
+********************************************************************/
+void unistr_to_ascii(char *dest, const uint16 *src, int len)
+{
+	char *destend = dest + len;
+	register uint16 c;
+
+	while (dest < destend)
+	{
+		c = *(src++);
+		if (c == 0)
+		{
+			break;
+		}
+
+		*(dest++) = (char)c;
+	}
+
+	*dest = 0;
+}
+
+/*******************************************************************
  Pull a DOS codepage string out of a UNICODE array. len is in bytes.
 ********************************************************************/
 
