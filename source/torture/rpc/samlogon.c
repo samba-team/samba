@@ -626,6 +626,135 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 }
 
 /* 
+ * Test the NTLM and LMv2 responses
+ */
+
+static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm_break break_which, char **error_string) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
+	DATA_BLOB lmv2_response = data_blob(NULL, 0);
+	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
+	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, lp_netbios_name(), lp_workgroup());
+
+	DATA_BLOB ntlm_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
+	DATA_BLOB ntlm_session_key = data_blob_talloc(samlogon_state->mem_ctx, NULL, 16);
+
+	uint8_t lm_hash[16];
+	uint8_t lm_session_key[8];
+	uint8_t user_session_key[16];
+	uint8_t nt_hash[16];
+
+	SMBNTencrypt(samlogon_state->password, samlogon_state->chall.data, 
+		     ntlm_response.data);
+	E_md4hash(samlogon_state->password, nt_hash);
+	SMBsesskeygen_ntv1(nt_hash, 
+			   ntlm_session_key.data);
+	E_deshash(samlogon_state->password, lm_hash); 
+
+	ZERO_STRUCT(lm_session_key);
+	ZERO_STRUCT(user_session_key);
+	
+	/* TODO - test with various domain cases, and without domain */
+	if (!SMBNTLMv2encrypt(samlogon_state->account_name, samlogon_state->account_domain, 
+			      samlogon_state->password, &samlogon_state->chall,
+			      &names_blob,
+			      &lmv2_response, &ntlmv2_response, 
+			      &lmv2_session_key, &ntlmv2_session_key)) {
+		data_blob_free(&names_blob);
+		return False;
+	}
+	data_blob_free(&names_blob);
+
+	nt_status = check_samlogon(samlogon_state,
+				   break_which,
+				   &samlogon_state->chall,
+				   &lmv2_response,
+				   &ntlm_response,
+				   lm_session_key, 
+				   user_session_key,
+				   error_string);
+	
+	data_blob_free(&lmv2_response);
+	data_blob_free(&ntlmv2_response);
+
+
+	if (NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, nt_status)) {
+		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return False;
+	}
+
+	switch (break_which) {
+	case NO_NT:
+		if (memcmp(lmv2_session_key.data, user_session_key, 
+			   sizeof(user_session_key)) != 0) {
+			printf("USER (LMv2) Session Key does not match expectations!\n");
+			printf("user_session_key:\n");
+			dump_data(1, user_session_key, 16);
+			printf("expected:\n");
+			dump_data(1, lmv2_session_key.data, ntlmv2_session_key.length);
+			pass = False;
+		}
+		if (memcmp(lmv2_session_key.data, lm_session_key, 
+			   sizeof(lm_session_key)) != 0) {
+			printf("LM (LMv2) Session Key does not match expectations!\n");
+			printf("lm_session_key:\n");
+			dump_data(1, lm_session_key, 8);
+			printf("expected:\n");
+			dump_data(1, lmv2_session_key.data, 8);
+			pass = False;
+		}
+		break;
+	case BREAK_LM:
+		if (memcmp(ntlm_session_key.data, user_session_key, 
+			   sizeof(user_session_key)) != 0) {
+			printf("USER (NTLMv2) Session Key does not match expectations!\n");
+			printf("user_session_key:\n");
+			dump_data(1, user_session_key, 16);
+			printf("expected:\n");
+			dump_data(1, ntlm_session_key.data, ntlm_session_key.length);
+			pass = False;
+		}
+		if (memcmp(lm_hash, lm_session_key, 
+			   sizeof(lm_session_key)) != 0) {
+			printf("LM Session Key does not match expectations!\n");
+			printf("lm_session_key:\n");
+			dump_data(1, lm_session_key, 8);
+			printf("expected:\n");
+			dump_data(1, lm_hash, 8);
+			pass = False;
+		}
+		break;
+	default:
+		if (memcmp(ntlm_session_key.data, user_session_key, 
+			   sizeof(user_session_key)) != 0) {
+			printf("USER (NTLMv2) Session Key does not match expectations!\n");
+			printf("user_session_key:\n");
+			dump_data(1, user_session_key, 16);
+			printf("expected:\n");
+			dump_data(1, ntlm_session_key.data, ntlm_session_key.length);
+			pass = False;
+		}
+		if (memcmp(ntlm_session_key.data, lm_session_key, 
+			   sizeof(lm_session_key)) != 0) {
+			printf("LM (NTLMv2) Session Key does not match expectations!\n");
+			printf("lm_session_key:\n");
+			dump_data(1, lm_session_key, 8);
+			printf("expected:\n");
+			dump_data(1, ntlm_session_key.data, 8);
+			pass = False;
+		}
+	}
+
+        return pass;
+}
+
+/* 
  * Test the NTLMv2 and LMv2 responses
  */
 
@@ -684,6 +813,21 @@ static BOOL test_ntlmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, cha
 static BOOL test_ntlmv2_both_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
 	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_BOTH, error_string);
+}
+
+static BOOL test_lmv2_ntlm_both_broken(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_BOTH, error_string);
+}
+
+static BOOL test_lmv2_ntlm_break_ntlm(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_NT, error_string);
+}
+
+static BOOL test_lmv2_ntlm_break_lm(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_LM, error_string);
 }
 
 /* 
@@ -885,6 +1029,9 @@ static const struct ntlm_tests {
 	{test_ntlm_lm_broken, "NTLM and LM, LM broken", False},
 	{test_ntlm_ntlm_broken, "NTLM and LM, NTLM broken", False},
 	{test_ntlm2, "NTLM2 (NTLMv2 session security)", False},
+	{test_lmv2_ntlm_both_broken, "LMv2 and NTLM, both broken", False},
+	{test_lmv2_ntlm_break_ntlm, "LMv2 and NTLM, NTLM broken", False},
+	{test_lmv2_ntlm_break_lm, "LMv2 and NTLM, LMv2 broken", False},
 	{test_plaintext_none_broken, "Plaintext", True},
 	{test_plaintext_lm_broken, "Plaintext LM broken", True},
 	{test_plaintext_nt_broken, "Plaintext NT broken", True},
