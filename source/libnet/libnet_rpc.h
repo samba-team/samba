@@ -45,7 +45,7 @@ enum libnet_rpc_connect_level {
 };
 
 union libnet_rpc_connect {
-	/* connect to a standart server */
+	/* connect to a standard server */
 	struct {
 		enum libnet_rpc_connect_level level;
 
@@ -62,7 +62,7 @@ union libnet_rpc_connect {
 		} out;
 	} standard;
 
-	/* connect to a domains PDC */
+	/* connect to a domain PDC */
 	struct {
 		enum libnet_rpc_connect_level level;
 
