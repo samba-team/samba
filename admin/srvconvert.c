@@ -49,7 +49,6 @@ RCSID("$Id$");
 static char *srvtab = KEYFILE;
 static char *keytab;
 static int help_flag;
-static int version_flag;
 static int verbose;
 
 static struct getargs args[] = {
