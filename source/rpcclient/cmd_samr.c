@@ -94,6 +94,31 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
+static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
+{
+	fstring name;
+
+	unistr2_to_ascii(name, &info2->uni_domain, sizeof(name) - 1); 
+	printf("Domain:\t%s\n", name);
+
+	unistr2_to_ascii(name, &info2->uni_server, sizeof(name) - 1); 
+	printf("Server:\t%s\n", name);
+
+	printf("Total Users:\t%d\n", info2->num_domain_usrs);
+	printf("Total Groups:\t%d\n", info2->num_domain_grps);
+	printf("Total Aliases:\t%d\n", info2->num_local_grps);
+	
+	printf("Sequence No:\t%d\n", info2->seq_num);
+	
+	printf("Unknown 0:\t0x%x\n", info2->unknown_0);
+	printf("Unknown 1:\t0x%x\n", info2->unknown_1);
+	printf("Unknown 2:\t0x%x\n", info2->unknown_2);
+	printf("Unknown 3:\t0x%x\n", info2->unknown_3);
+	printf("Unknown 4:\t0x%x\n", info2->unknown_4);
+	printf("Unknown 5:\t0x%x\n", info2->unknown_5);
+	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
+}
+
 /**********************************************************************
  * Query user information 
  */
@@ -109,13 +134,16 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 	SAM_USER_INFO_21 info_21;
 	fstring			server;
 	TALLOC_CTX		*mem_ctx;
+	uint32 user_rid;
 	
 	
-	if (argc != 1) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc != 2) {
+		printf("Usage: %s rid\n", argv[0]);
 		return 0;
 	}
 	
+	sscanf(argv[1], "%i", &user_rid);
+
 	if (!(mem_ctx=talloc_init()))
 	{
 		DEBUG(0,("cmd_samr_query_user: talloc_init returned NULL!\n"));
@@ -152,7 +180,7 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 
 	if ((result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
 					 MAXIMUM_ALLOWED_ACCESS,
-					 0x1f4, &user_pol))
+					 user_rid, &user_pol))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
@@ -662,6 +690,178 @@ static uint32 cmd_samr_query_aliasmem(struct cli_state *cli, int argc,
 	return result;
 }
 
+/* Query display info */
+
+static uint32 cmd_samr_query_dispinfo(struct cli_state *cli, int argc, 
+				      char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	BOOL got_connect_pol = False, got_domain_pol = False;
+	TALLOC_CTX *mem_ctx;
+	fstring server;
+	uint32 start_idx, size, num_dom_groups, i;
+	struct acct_info *dom_groups;
+
+	if (argc != 1) {
+		printf("Usage: %s\n", argv[0]);
+		return 0;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("cmd_samr_query_dispinfo: talloc_init returned "
+			  "NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	fetch_domain_sid(cli);
+
+	/* Initialise RPC connection */
+
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper(server);
+
+	/* Get sam policy handle */
+
+	if ((result = cli_samr_connect(cli, mem_ctx, server, 
+				       MAXIMUM_ALLOWED_ACCESS, 
+				       &connect_pol)) !=
+	    NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_connect_pol = True;
+
+	/* Get domain policy handle */
+
+	if ((result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					   MAXIMUM_ALLOWED_ACCESS,
+					   &domain_sid, &domain_pol))
+	     != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_domain_pol = True;
+
+	/* Query display info */
+
+	start_idx = 0;
+	size = 0xffff;
+
+	result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
+					  &start_idx, size,
+					  &dom_groups, &num_dom_groups);
+
+	for (i = 0; i < num_dom_groups; i++)
+		printf("group:[%s] rid:[0x%x]\n", dom_groups[i].acct_name,
+		       dom_groups[i].rid);
+
+ done:
+	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
+
+	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
+/* Query domain info */
+
+static uint32 cmd_samr_query_dominfo(struct cli_state *cli, int argc, 
+				     char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	BOOL got_connect_pol = False, got_domain_pol = False;
+	TALLOC_CTX *mem_ctx;
+	fstring server;
+	uint16 switch_value = 2;
+	SAM_UNK_CTR ctr;
+
+	if (argc > 2) {
+		printf("Usage: %s [infolevel\n", argv[0]);
+		return 0;
+	}
+
+	if (argc == 2)
+		switch_value = atoi(argv[1]);
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("cmd_samr_query_dispinfo: talloc_init returned "
+			  "NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	fetch_domain_sid(cli);
+
+	/* Initialise RPC connection */
+
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper(server);
+
+	/* Get sam policy handle */
+
+	if ((result = cli_samr_connect(cli, mem_ctx, server, 
+				       MAXIMUM_ALLOWED_ACCESS, 
+				       &connect_pol)) 
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_connect_pol = True;
+
+	/* Get domain policy handle */
+
+	if ((result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					   MAXIMUM_ALLOWED_ACCESS,
+					   &domain_sid, &domain_pol))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_domain_pol = True;
+
+	/* Query domain info */
+
+	if ((result = cli_samr_query_dom_info(cli, mem_ctx, &domain_pol,
+					      switch_value, &ctr))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	/* Display domain info */
+
+	switch (switch_value) {
+	case 2:
+		display_sam_unk_info_2(&ctr.info.inf2);
+		break;
+	default:
+		printf("cannot display domain info for switch value %d\n",
+		       switch_value);
+		break;
+	}
+
+ done:
+	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
+
+	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
@@ -672,6 +872,8 @@ struct cmd_set samr_commands[] = {
 	{ "queryusergroups", 	cmd_samr_query_usergroups, 	"Query user groups" },
 	{ "querygroupmem", 	cmd_samr_query_groupmem, 	"Query group membership" },
 	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	"Query alias membership" },
+	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	"Query display info" },
+	{ "querydominfo", 	cmd_samr_query_dominfo, 	"Query domain info" },
 	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       "Enumerate domain groups" },
 
 	{ NULL, NULL, NULL }
