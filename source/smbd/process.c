@@ -223,7 +223,13 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		return False;
 	}
 
-	if (!FD_ISSET(smbd_server_fd(),&fds) || selrtn > 1) {
+	/*
+	 * Ensure we process oplock break messages by preference.
+	 * This is IMPORTANT ! Otherwise we can starve other processes
+	 * sending us an oplock break message. JRA.
+	 */
+
+	if (oplock_message_waiting(&fds)) {
 		async_processing(&fds, buffer, buffer_len);
 		if (!FD_ISSET(smbd_server_fd(),&fds)) goto again;
 	}
