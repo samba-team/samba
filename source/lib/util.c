@@ -2117,7 +2117,7 @@ static char *automount_path(char *user_name)
  When this is called p points at the '%' character.
 ********************************************************************/
 
-static size_t expand_env_var(char *p)
+static size_t expand_env_var(char *p, int len)
 {
 	fstring envname;
 	char *envval;
@@ -2161,7 +2161,7 @@ static size_t expand_env_var(char *p)
 	copylen = MIN((q+1-p),(sizeof(envname)-1));
 	strncpy(envname,p,copylen);
 	envname[copylen] = '\0';
-	pstring_sub(p,envname,envval);
+	string_sub(p,envname,envval,len);
 	return 0; /* Allow the environment contents to be parsed. */
 }
 
@@ -2180,35 +2180,36 @@ void standard_sub_basic(char *str)
 
 	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
 	{
+		int l = sizeof(pstring) - (int)(p-str);
 		switch (*(p+1))
 		{
 			case 'G' :
 			{
 				if ((pass = Get_Pwnam(username,False))!=NULL) {
-					pstring_sub(p,"%G",gidtoname(pass->pw_gid));
+					string_sub(p,"%G",gidtoname(pass->pw_gid),l);
 				} else {
 					p += 2;
 				}
 				break;
 			}
-			case 'N' : pstring_sub(p,"%N", automount_server(username)); break;
-			case 'I' : pstring_sub(p,"%I", client_addr(Client)); break;
-			case 'L' : pstring_sub(p,"%L", local_machine); break;
-			case 'M' : pstring_sub(p,"%M", client_name(Client)); break;
-			case 'R' : pstring_sub(p,"%R", remote_proto); break;
-			case 'T' : pstring_sub(p,"%T", timestring()); break;
-			case 'U' : pstring_sub(p,"%U", username); break;
-			case 'a' : pstring_sub(p,"%a", remote_arch); break;
+			case 'N' : string_sub(p,"%N", automount_server(username),l); break;
+			case 'I' : string_sub(p,"%I", client_addr(Client),l); break;
+			case 'L' : string_sub(p,"%L", local_machine,l); break;
+			case 'M' : string_sub(p,"%M", client_name(Client),l); break;
+			case 'R' : string_sub(p,"%R", remote_proto,l); break;
+			case 'T' : string_sub(p,"%T", timestring(),l); break;
+			case 'U' : string_sub(p,"%U", username,l); break;
+			case 'a' : string_sub(p,"%a", remote_arch,l); break;
 			case 'd' :
 			{
 				slprintf(pidstr,sizeof(pidstr) - 1, "%d",(int)getpid());
-				pstring_sub(p,"%d", pidstr);
+				string_sub(p,"%d", pidstr,l);
 				break;
 			}
-			case 'h' : pstring_sub(p,"%h", myhostname); break;
-			case 'm' : pstring_sub(p,"%m", remote_machine); break;
-			case 'v' : pstring_sub(p,"%v", VERSION); break;
-			case '$' : p += expand_env_var(p); break; /* Expand environment variables */
+			case 'h' : string_sub(p,"%h", myhostname,l); break;
+			case 'm' : string_sub(p,"%m", remote_machine,l); break;
+			case 'v' : string_sub(p,"%v", VERSION,l); break;
+			case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
 			case '\0': p++; break; /* don't run off end if last character is % */
 			default  : p+=2; break;
 		}
@@ -2226,30 +2227,32 @@ void standard_sub(connection_struct *conn,char *str)
 	char *p, *s, *home;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
+		int l = sizeof(pstring) - (int)(p-str);
+
 		switch (*(p+1)) {
 		case 'H': 
 			if ((home = get_home_dir(conn->user))) {
-				pstring_sub(p,"%H",home);
+				string_sub(p,"%H",home,l);
 			} else {
 				p += 2;
 			}
 			break;
 			
 		case 'P': 
-			pstring_sub(p,"%P",conn->connectpath); 
+			string_sub(p,"%P",conn->connectpath,l); 
 			break;
 			
 		case 'S': 
-			pstring_sub(p,"%S",
-				   lp_servicename(SNUM(conn))); 
+			string_sub(p,"%S",
+				   lp_servicename(SNUM(conn)),l); 
 			break;
 			
 		case 'g': 
-			pstring_sub(p,"%g",
-				   gidtoname(conn->gid)); 
+			string_sub(p,"%g",
+				   gidtoname(conn->gid),l); 
 			break;
 		case 'u': 
-			pstring_sub(p,"%u",conn->user); 
+			string_sub(p,"%u",conn->user,l); 
 			break;
 			
 			/* Patch from jkf@soton.ac.uk Left the %N (NIS
@@ -2260,8 +2263,8 @@ void standard_sub(connection_struct *conn,char *str)
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			pstring_sub(p,"%p",
-				   automount_path(lp_servicename(SNUM(conn)))); 
+			string_sub(p,"%p",
+				   automount_path(lp_servicename(SNUM(conn))),l); 
 			break;
 		case '\0': 
 			p++; 
