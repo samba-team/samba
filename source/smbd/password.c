@@ -426,7 +426,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 		DEBUG(4,("NT MD4 password check failed\n"));
 	}
 
-	if (lp_server_ntlmv2() == False)
+	if (lp_server_ntlmv2() == True)
 	{
 		DEBUG(4,("Not checking LM MD4 password\n"));
 		return False;
