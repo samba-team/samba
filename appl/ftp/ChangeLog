@@ -1,4 +1,6 @@
-2004-08-20  Love Hörnquist Åstrand <lha@it.su.se>
+2004-08-20 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftp/ftp.c: send ABOR protect with security layer if its there
 
 	* ftpd/{ftpd_locl.h, extern.h, ftpcmd.y, ftpd.8, ftpd.c}:
 	Remove all traces of setjmp/longjmp.
