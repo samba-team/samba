@@ -546,7 +546,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 
 #else
 
-#ifdef        __FreeBSD__
+#if    defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <ufs/ufs/quota.h>
 #include <machine/param.h>
 #elif         AIX
@@ -556,7 +556,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 #define dqb_curfiles dqb_curinodes
 #define dqb_fhardlimit dqb_ihardlimit
 #define dqb_fsoftlimit dqb_isoftlimit
-#else /* !__FreeBSD__ && !AIX */
+#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
 #include <sys/quota.h>
 #include <devnm.h>
 #endif
@@ -569,7 +569,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   uid_t euser_id;
   int r;
   struct dqblk D;
-#if !defined(__FreeBSD__) && !defined(AIX)
+#if !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__)
   char dev_disk[256];
   struct stat S;
   /* find the block device file */
@@ -591,7 +591,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
       DEBUG(5,("Unable to reset uid to %d\n", user_id));
   }
 #else /* USE_SETRES */
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
   {
     /* FreeBSD patches from Marty Moll <martym@arbor.edu> */
     uid_t user_id;
@@ -615,17 +615,17 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   /* AIX has both USER and GROUP quotas: 
      Get the USER quota (ohnielse@fysik.dtu.dk) */
   r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
-#else /* !__FreeBSD__ && !AIX */
+#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-#endif /* !__FreeBSD__ && !AIX */
+#endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
 #endif /* USE_SETRES */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
   *bsize = DEV_BSIZE;
-#else /* !__FreeBSD__ */
+#else /* !__FreeBSD__ && !__OpenBSD__ */
   *bsize = 1024;
-#endif /*!__FreeBSD__ */
+#endif /*!__FreeBSD__ && !__OpenBSD__ */
 
   if (r)
     {
@@ -641,7 +641,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     return(False);
   /* Use softlimit to determine disk space, except when it has been exceeded */
   if ((D.dqb_curblocks>D.dqb_bsoftlimit)
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 ||((D.dqb_curfiles>D.dqb_fsoftlimit) && (D.dqb_fsoftlimit != 0))
 #endif
     ) {

@@ -193,7 +193,7 @@
 #include <pwdadj.h>
 #endif
 
-#if defined(SHADOW_PWD) && !defined(NETBSD) && !defined(FreeBSD) && !defined(CONVEX)
+#if defined(SHADOW_PWD) && !defined(NETBSD) && !defined(FreeBSD) && !defined(CONVEX) && !defined(__OpenBSD__)
 #include <shadow.h>
 #endif
 
@@ -523,7 +523,21 @@ char *mktemp(char *); /* No standard include */
 #define HAVE_GETGRNAM 1
 #endif 
 
-
+#ifdef __OpenBSD__
+#include <strings.h>
+#include <netinet/tcp.h>
+#define NO_GETSPNAM
+#define SIGNAL_CAST (void (*)())
+#define USE_DIRECT
+#define REPLACE_INNETGR
+#define HAVE_BZERO
+#define HAVE_PATHCONF
+#define HAVE_GETGRNAM 1
+#define HAVE_GETTIMEOFDAY
+#define HAVE_MEMMOVE
+#define USE_GETCWD
+#define USE_SETSID
+#endif 
 
 #ifdef AIX
 #include <strings.h>
