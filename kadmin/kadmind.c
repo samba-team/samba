@@ -63,10 +63,8 @@ static struct getargs args[] = {
     {	"debug",	'd',	arg_flag,   &debug_flag, 
 	"enable debugging" 
     },
-    {	"debug",	'd',	arg_flag,   &debug_flag, 
-	"port to use with debug", "port" 
-    },
-    {	"debug-port",	'p',	arg_integer,&debug_port },
+    {	"debug-port",	'p',	arg_integer,&debug_port, 
+	"port to use with debug", "port" },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
 };
@@ -120,13 +118,22 @@ kadm5_server_recv(krb5_context context, krb5_auth_context ac,
     krb5_data in, out;
     kadm5_ret_t ret;
 
-    if(krb5_net_read(context, fd, buf, 4) != 4)
+    ret = krb5_net_read(context, fd, buf, 4);
+    if(ret == 0)
+	exit(1);
+    if(ret < 0)
 	krb5_err(context, 1, errno, "krb5_net_read");
+    if(ret != 4)
+	krb5_errx(context, 1, "krb5_net_read(4) = %d", ret);
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
     if(len > sizeof(buf))
 	return ENOMEM;
-    if(krb5_net_read(context, fd, buf, len) != len)
+    ret = krb5_net_read(context, fd, buf, len);
+    if(ret < 0)
 	krb5_err(context, 1, errno, "krb5_net_read");
+    if(ret != len)
+	krb5_errx(context, 1, "krb5_net_read(%d) = %d", len, ret);
+	
     in.data = buf;
     in.length = len;
     ret = krb5_rd_priv(context, ac, &in, &out, NULL);
