@@ -8,8 +8,6 @@ add some kind of remote admin protocol
 
 ** kpasswd
 
-send a reply from the server
-
 * appl
 
 more programs here
@@ -19,7 +17,7 @@ more programs here
 forwarding is not implemented at all.
 
 perhaps rsh and rshd should be able to handle `traditional'
-rsh-protocol as well.
+  rsh-protocol as well.
 
 ** appl/telnet
 
@@ -39,8 +37,6 @@ implement support for interoperability with kerberos V4.
 
 needs a configuration file.
 
-the requirement for preauthentication should be configurable.
-
 * kuser
 
 ** kinit
@@ -52,6 +48,8 @@ should try to give better error messages.
 * lib
 
 ** lib/asn1
+
+prepend a prefix on all generated symbols
 
 ** lib/auth
 

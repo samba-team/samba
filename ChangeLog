@@ -1,8 +1,28 @@
+Sun Jul 20 16:22:30 1997  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.c: break if des_read_pw_string() != 0
+
+	* kpasswd/kpasswdd.c: send a reply
+
+	* kpasswd/kpasswd.c: restructured code.  better report on
+ 	krb-error break if des_read_pw_string() != 0
+
+	* kdc/kerberos5.c: Check `require_enc_timestamp' malloc space for
+ 	starttime and renew_till
+
+	* appl/telnet/libtelnet/kerberos5.c (kerberos5_is): Send a
+ 	keyblock to krb5_verify_chekcsum
+
 Sun Jul 20 06:35:46 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* Release 0.0b
 
 	* kpasswd/kpasswd.c: Avoid using non-standard struct names.
+
+Sat Jul 19 19:26:23 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/keytab.c (krb5_kt_get_entry): check return from
+ 	`krb5_kt_start_seq_get'.  From <map@stacken.kth.se>
 
 Sat Jul 19 04:07:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
