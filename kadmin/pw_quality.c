@@ -44,11 +44,6 @@ password_quality(void *opt, int argc, char **argv)
     krb5_data pw_data;
     const char *s;
 
-    if(argc != 2) {
-	fprintf (stderr, "usage: password-quality principal password\n");
-	return 0;
-    }
-
     ret = krb5_parse_name(context, argv[0], &principal);
     if(ret){
 	krb5_warn(context, ret, "krb5_parse_name(%s)", argv[0]);

@@ -87,11 +87,6 @@ mod_entry(struct modify_options *opt, int argc, char **argv)
     krb5_error_code ret;
     int i;
 
-    if (argc < 1) {
-	fprintf (stderr, "usage: mod [options] principal\n");
-	return 0;
-    }
-
     for(i = 0; i < argc; i++)
 	ret = foreach_principal(argv[i], do_mod_entry, "mod", opt);
 

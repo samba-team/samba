@@ -42,11 +42,6 @@ rename_entry(void *opt, int argc, char **argv)
     krb5_error_code ret;
     krb5_principal princ1, princ2;
 
-    if(argc != 2) {
-	fprintf(stderr, "usage: rename [options] from to\n");
-	return 0;
-    }
-
     ret = krb5_parse_name(context, argv[0], &princ1);
     if(ret){
 	krb5_warn(context, ret, "krb5_parse_name(%s)", argv[0]);

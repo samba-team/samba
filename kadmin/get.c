@@ -339,11 +339,6 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
     krb5_error_code ret;
     struct get_entry_data data;
     
-    if(argc == 0) {
-	fprintf(stderr, "usage: %s principal...\n", name);
-	return 0;
-    }
-
     if(opt->long_flag == -1 && (opt->short_flag == 1 || opt->terse_flag == 1))
 	opt->long_flag = 0;
     if(opt->short_flag == -1 && (opt->long_flag == 1 || opt->terse_flag == 1))

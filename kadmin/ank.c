@@ -211,11 +211,6 @@ add_new_key(struct add_options *opt, int argc, char **argv)
     krb5_key_data key_data[3];
     krb5_key_data *kdp = NULL;
 
-    if(argc == 0) {
-	fprintf(stderr, "usage: add principal...\n");
-	return 0;
-    }
-
     num = 0;
     if (opt->random_key_flag)
 	++num;

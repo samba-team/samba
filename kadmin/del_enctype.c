@@ -52,11 +52,6 @@ del_enctype(void *opt, int argc, char **argv)
     int n_etypes;
     krb5_enctype *etypes;
 
-    if(argc < 2) {
-	fprintf(stderr, "usage: del_enctype principal enctypes...\n");
-	return 0;
-    }
-
     memset (&princ, 0, sizeof(princ));
     princ_name = argv[0];
     n_etypes   = argc - 1;
