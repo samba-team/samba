@@ -97,8 +97,13 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 1144: only set --with-fhs when the argument is 'yes'
+
     
-    
+o   Craig Barratt <cbarratt@users.sourceforge.net>
+    * BUG 389: Allow multiple exclude arguments with smbclient 
+      tar -Xr options (better support for Amanda backup client).
+
+
 o   Andrew Bartlet <abartlet@samba.org>
     * Include support for linking with cracklib for enforcing strong 
       password changes.
@@ -178,13 +183,17 @@ o   SATOH Fumiyasu <fumiya@miraclelinux.com>
     * BUG 692: correct truncation of share names and workgroup 
       names in smbclient.
     * BUG 1088: use strchr_m() for query_host (smbclient -L).
+    * Patch from to internally count characters correctly.
 
 
 o   Chris Hertel <crh@samba.org>
     * fix enumeration of shares 12 characters in length via 
       smbclient.
 
-      
+o   Ulrich Holeschak <ulrich@holeschak.de>
+    * BUG 932: fix local password change using pam_smbpass
+
+
 o   John Klinger <john.klinger@lmco.com>
     * Return NSS_SUCCESS once the max number of gids possible 
        has been found in initgroups() on Solaris.
@@ -207,6 +216,10 @@ o   Volker Lendecke <vl@samba.org>
     * Fix wb_delgrpmem (wbinfo -o).
     * As a DC we should not reply to lsalookupnames on DCNAME\\user.
     * Fix sambaUserWorkstations on a Samba DC.
+
+
+o   Derrell Lipman <Derrell.Lipman@UnwiredUniverse.com>
+    * Bug fixes and enhancements to libsmbclient library.
 
 
 o   Herb Lewis <herb@samba.org>
@@ -266,6 +279,7 @@ o   Tim Potter <tpot@samba.org>
 
 o   Simo Source <idra@samba.org>
     * Replace unknown_3 with fields_present in SAMR code.
+    * More length checks in strlcat().
 
 
 o   Richard Sharpe <rsharpe@samba.org>
