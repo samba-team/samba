@@ -640,8 +640,9 @@ static void smb_dump(char *name, int type, char *data, ssize_t len)
 
 
 /****************************************************************************
-do a switch on the message type, and return the response size
+ Do a switch on the message type, and return the response size.
 ****************************************************************************/
+
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
   static pid_t pid= (pid_t)-1;
@@ -659,7 +660,8 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   /* make sure this is an SMB packet */
   if (strncmp(smb_base(inbuf),"\377SMB",4) != 0)
   {
-    DEBUG(2,("Non-SMB packet of length %d\n",smb_len(inbuf)));
+    DEBUG(0,("Non-SMB packet of length %d. Terminating server\n",smb_len(inbuf)));
+    exit_server("Non-SMB packet");
     return(-1);
   }
 
