@@ -72,6 +72,7 @@
 #endif
 
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <arpa/telnet.h>
 
