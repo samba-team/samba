@@ -197,10 +197,10 @@ BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
 		/* groups stuff added by ih/wreu */
 		if (current_user.ngroups > 0)
 		{
-			if (setgroups(current_user.ngroups,
+			if (sys_setgroups(current_user.ngroups,
 				      current_user.groups) < 0)
 			{
-				DEBUG(0, ("setgroups call failed!\n"));
+				DEBUG(0, ("sys_setgroups call failed!\n"));
 			}
 		}
 	}
@@ -337,9 +337,9 @@ void unbecome_root(BOOL restore_dir)
 #ifdef HAVE_SETGROUPS
 	if (current_user_saved.ngroups > 0)
 	{
-		if (setgroups(current_user_saved.ngroups,
+		if (sys_setgroups(current_user_saved.ngroups,
 			      current_user_saved.groups) < 0)
-			DEBUG(0, ("ERROR: setgroups call failed!\n"));
+			DEBUG(0, ("ERROR: sys_setgroups call failed!\n"));
 	}
 #endif
 
