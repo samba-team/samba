@@ -2131,13 +2131,12 @@ static void cmd_mput(void)
 	      
 	      strcpy(rname,cur_dir);
 	      strcat(rname,lname);
-	      if (!do_mkdir(rname))
-		{
-		  strcat(lname,"/");
-		  if (!seek_list(f,lname))
-		    break;
-		  goto again1;		    		  
-		}
+	      if (!chkpath(rname,False) && !do_mkdir(rname)) {
+		strcat(lname,"/");
+		if (!seek_list(f,lname))
+		  break;
+		goto again1;		    		  
+	      }
 
 	      continue;
 	    }
@@ -3182,19 +3181,36 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
       strcpy(pword, ""); passlen=1; 
     }
 
-    set_message(outbuf,4,2 + strlen(service) + passlen + strlen(dev),True);
-    CVAL(outbuf,smb_com) = SMBtconX;
-    setup_pkt(outbuf);
+    if (Protocol <= PROTOCOL_CORE) {
+      set_message(outbuf,0,6 + strlen(service) + passlen + strlen(dev),True);
+      CVAL(outbuf,smb_com) = SMBtcon;
+      setup_pkt(outbuf);
 
-    SSVAL(outbuf,smb_vwv0,0xFF);
-    SSVAL(outbuf,smb_vwv3,passlen);
-
-    p = smb_buf(outbuf);
-    memcpy(p,pword,passlen);
-    p += passlen;
-    strcpy(p,service);
-    p = skip_string(p,1);
-    strcpy(p,dev);
+      p = smb_buf(outbuf);
+      *p++ = 0x04;
+      strcpy(p, service);
+      p = skip_string(p,1);
+      *p++ = 0x04;
+      memcpy(p,pword,passlen);
+      p += passlen;
+      *p++ = 0x04;
+      strcpy(p, dev);
+    }
+    else {
+      set_message(outbuf,4,2 + strlen(service) + passlen + strlen(dev),True);
+      CVAL(outbuf,smb_com) = SMBtconX;
+      setup_pkt(outbuf);
+  
+      SSVAL(outbuf,smb_vwv0,0xFF);
+      SSVAL(outbuf,smb_vwv3,passlen);
+  
+      p = smb_buf(outbuf);
+      memcpy(p,pword,passlen);
+      p += passlen;
+      strcpy(p,service);
+      p = skip_string(p,1);
+      strcpy(p,dev);
+    }
   }
 
   send_smb(Client,outbuf);
@@ -3225,11 +3241,18 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
     }
   
 
-  max_xmit = MIN(max_xmit,BUFFER_SIZE-4);
-  if (max_xmit <= 0)
-    max_xmit = BUFFER_SIZE - 4;
+  if (Protocol <= PROTOCOL_CORE) {
+    max_xmit = SVAL(inbuf,smb_vwv0);
 
-  cnum = SVAL(inbuf,smb_tid);
+    cnum = SVAL(inbuf,smb_vwv1);
+  }
+  else {
+    max_xmit = MIN(max_xmit,BUFFER_SIZE-4);
+    if (max_xmit <= 0)
+      max_xmit = BUFFER_SIZE - 4;
+
+    cnum = SVAL(inbuf,smb_tid);
+  }
 
   DEBUG(3,("Connected with cnum=%d max_xmit=%d\n",cnum,max_xmit));
 
