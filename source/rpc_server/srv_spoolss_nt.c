@@ -4793,7 +4793,9 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	free_a_printer(&printer, 2);
 	free_a_printer(&old_printer, 2);
 
+#if 0	/* JERRY */
 	srv_spoolss_sendnotify(0, PRINTER_CHANGE_SET_PRINTER);
+#endif
 
 	return result;
 }
@@ -6481,6 +6483,9 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 /*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
 	nt_forms_struct tmpForm;
+	int snum;
+	WERROR status = WERR_OK;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -6498,6 +6503,10 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	 * had time to verify.  --jerry
 	 */
 
+
+	if (!get_printer_snum(p,handle, &snum))
+                return WERR_BADFID;
+		
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
 		return WERR_ALREADY_EXISTS;
@@ -6507,10 +6516,27 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	if(!add_a_form(&list, form, &count))
 		return WERR_NOMEM;
 	write_ntforms(&list, count);
+	
+	/*
+	 * ChangeID must always be set
+	 */
+	 
+	if (!get_printer_snum(p,handle, &snum))
+                return WERR_BADFID;
 
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+        if (!W_ERROR_IS_OK(status))
+		goto done;
+	
+	status = mod_a_printer(*printer, 2);
+        if (!W_ERROR_IS_OK(status))
+		goto done;
+	
+done:
+	free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
-	return WERR_OK;
+	return status;
 }
 
 /****************************************************************************
@@ -6525,6 +6551,9 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	WERROR ret = WERR_OK;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	int snum;
+	WERROR status = WERR_OK;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
 	DEBUG(5,("spoolss_deleteform\n"));
 
@@ -6542,6 +6571,23 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	if(!delete_a_form(&list, form_name, &count, &ret))
 		return WERR_INVALID_PARAM;
 
+	/*
+	 * ChangeID must always be set
+	 */
+	 
+	if (!get_printer_snum(p,handle, &snum))
+                return WERR_BADFID;
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+        if (!W_ERROR_IS_OK(status))
+		goto done;
+	
+	status = mod_a_printer(*printer, 2);
+        if (!W_ERROR_IS_OK(status))
+		goto done;
+	
+done:
+	free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
 	return ret;
@@ -6557,6 +6603,9 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 /*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
 	nt_forms_struct tmpForm;
+	int snum;
+	WERROR status = WERR_OK;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -6577,6 +6626,23 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
 
+	/*
+	 * ChangeID must always be set
+	 */
+	 
+	if (!get_printer_snum(p,handle, &snum))
+                return WERR_BADFID;
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+        if (!W_ERROR_IS_OK(status))
+		goto done;
+	
+	status = mod_a_printer(*printer, 2);
+        if (!W_ERROR_IS_OK(status))
+		goto done;
+	
+done:
+	free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
 	return WERR_OK;
