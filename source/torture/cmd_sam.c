@@ -22,6 +22,11 @@
 #include "includes.h"
 #include "samtest.h"
 
+static void print_account(SAM_ACCOUNT_HANDLE *a)
+{
+	/* FIXME */
+}
+
 static NTSTATUS cmd_context(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	NTSTATUS status;
@@ -227,13 +232,13 @@ static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_num_groups(domain, &tmp_uint32))) {
 		printf("sam_get_domain_num_groups failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Number of groups: %d\n", tmp_uint32);
+		printf("Number of groups: %u\n", tmp_uint32);
 	}
 	
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_num_aliases(domain, &tmp_uint32))) {
 		printf("sam_get_domain_num_aliases failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Number of aliases: %d\n", tmp_uint32);
+		printf("Number of aliases: %u\n", tmp_uint32);
 	}
 	
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_name(domain, &tmp_string))) {
@@ -245,7 +250,7 @@ static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_lockout_count(domain, &tmp_uint16))) {
 		printf("sam_get_domain_lockout_count failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Lockout Count: %d\n", tmp_uint16);
+		printf("Lockout Count: %u\n", tmp_uint16);
 	}
 
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_force_logoff(domain, &tmp_bool))) {
@@ -257,7 +262,7 @@ static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_lockout_duration(domain, &tmp_nttime))) {
 		printf("sam_get_domain_lockout_duration failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Lockout duration: %d\n", tmp_nttime.low);
+		printf("Lockout duration: %u\n", tmp_nttime.low);
 	}
 
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_login_pwdchange(domain, &tmp_bool))) {
@@ -269,31 +274,31 @@ static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_max_pwdage(domain, &tmp_nttime))) {
 		printf("sam_get_domain_max_pwdage failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Maximum password age: %d\n", tmp_nttime.low);
+		printf("Maximum password age: %u\n", tmp_nttime.low);
 	}
 	
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_min_pwdage(domain, &tmp_nttime))) {
 		printf("sam_get_domain_min_pwdage failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Minimal password age: %d\n", tmp_nttime.low);
+		printf("Minimal password age: %u\n", tmp_nttime.low);
 	}
 	
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_min_pwdlength(domain, &tmp_uint16))) {
 		printf("sam_get_domain_min_pwdlength: %s\n", nt_errstr(status));
 	} else {
-		printf("Minimal Password Length: %d\n", tmp_uint16);
+		printf("Minimal Password Length: %u\n", tmp_uint16);
 	}
 
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_pwd_history(domain, &tmp_uint16))) {
 		printf("sam_get_domain_pwd_history failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Password history: %d\n", tmp_uint16);
+		printf("Password history: %u\n", tmp_uint16);
 	}
 
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_reset_count(domain, &tmp_nttime))) {
 		printf("sam_get_domain_reset_count failed: %s\n", nt_errstr(status));
 	} else {
-		printf("Reset count: %d\n", tmp_nttime.low);
+		printf("Reset count: %u\n", tmp_nttime.low);
 	}
 
 	if (!NT_STATUS_IS_OK(status = sam_get_domain_server(domain, &tmp_string))) {
@@ -326,6 +331,7 @@ static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 	DOM_SID sid;
 	int32 account_count, i;
 	SAM_ACCOUNT_ENUM *accounts;
+	uint16 acct_ctrl = (ACB_NORMAL |ACB_WSTRUST |ACB_SVRTRUST |ACB_DOMTRUST | ACB_MNS);
 
 	if (argc != 2) {
 		printf("Usage: enum_accounts <domain-sid>\n");
@@ -337,7 +343,7 @@ static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = context_sam_enum_accounts(st->context, st->token, &sid, 0, &account_count, &accounts))) {
+	if (!NT_STATUS_IS_OK(status = context_sam_enum_accounts(st->context, st->token, &sid, acct_ctrl, &account_count, &accounts))) {
 		printf("context_sam_enum_accounts failed: %s\n", nt_errstr(status));
 		return status;
 	}
@@ -348,7 +354,7 @@ static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < account_count; i++)
-		printf("%s\t%s\t%s\t%s\t%d\n", 
+		printf("SID: %s\nName: %s\nFullname: %s\nDescription: %s\nACB_BITS: %08X\n\n", 
 			   sid_string_static(&accounts[i].sid), accounts[i].account_name,
 			   accounts[i].full_name, accounts[i].account_desc, 
 			   accounts[i].acct_ctrl);
@@ -360,12 +366,49 @@ static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS cmd_lookup_account_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	DOM_SID sid;
+	SAM_ACCOUNT_HANDLE *account;
+
+	if (argc != 2) {
+		printf("Usage: lookup_account_sid <account-sid>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!string_to_sid(&sid, argv[1])){
+		printf("Unparseable SID specified!\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!NT_STATUS_IS_OK(status = context_sam_get_account_by_sid(st->context, st->token, USER_ALL_ACCESS, &sid, &account))) {
+		printf("context_sam_get_account_by_sid failed: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	print_account(account);
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_lookup_account_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	SAM_ACCOUNT_HANDLE *account;
+
+	if (argc != 3) {
+		printf("Usage: lookup_account_name <domain-name> <account-name>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+
+	if (!NT_STATUS_IS_OK(status = context_sam_get_account_by_name(st->context, st->token, USER_ALL_ACCESS, argv[1], argv[2], &account))) {
+		printf("context_sam_get_account_by_sid failed: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	print_account(account);
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_create_group(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
