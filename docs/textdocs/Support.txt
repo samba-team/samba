@@ -29,7 +29,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                33
+    AMERICA - USA                                34
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
@@ -626,6 +626,23 @@ We have been supporting software from the Free Software Foundation and
 other groups such as Linux for over 8 years.  The base rate is 150.00
 US dollars per hour.  Please contact us for more information on our
 rates and services.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+TEXAS - USA
+
+The Solutions Group
+P.O. Box 31400
+Houston, TX 77231-1400
+
+Voice:	(713) 729-2602
+Fax:	(713) 723-9387
+Email:	chuckb@LinuxTX.com
+
+The Solutions Group provides support for Linux, Solaris, and SCO UNIX.
+We specialize in mixed environments using Samba. We are certified NT
+as well as UNIX specialists. We can provide onsite support in the
+Houston area and remote support in any other areas.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
