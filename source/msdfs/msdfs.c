@@ -198,13 +198,21 @@ static BOOL parse_symlink(char* buf,struct referral** preflist,
 	}
 	
 	for(i=0;i<count;i++) {
-		/* replace / in the alternate path by a \ */
-		char* p = strchr_m(alt_path[i],'/');
-		if(p)
+		char *p;
+
+		/* replace all /'s in the alternate path by a \ */
+		for(p = alt_path[i]; *p && ((p = strchr_m(p,'/'))!=NULL); p++) {
 			*p = '\\'; 
+		}
+
+		/* Remove leading '\\'s */
+		p = alt_path[i];
+		while (*p && (*p == '\\')) {
+			p++;
+		}
 
 		pstrcpy(reflist[i].alternate_path, "\\");
-		pstrcat(reflist[i].alternate_path, alt_path[i]);
+		pstrcat(reflist[i].alternate_path, p);
 		reflist[i].proximity = 0;
 		reflist[i].ttl = REFERRAL_TTL;
 		DEBUG(10, ("parse_symlink: Created alt path: %s\n", reflist[i].alternate_path));
