@@ -60,7 +60,7 @@ name %s.\n", namestr(answer_name), namestr(question_name)));
   if(bcast)
   {
     /* Someone sent a response. This shouldn't happen/ */
-    DEBUG(1,("release_name_response: A response for releasing name %s was received on a\
+    DEBUG(1,("release_name_response: A response for releasing name %s was received on a \
 broadcast subnet %s. This should not happen !\n", namestr(answer_name), subrec->subnet_name));
     return;
   }

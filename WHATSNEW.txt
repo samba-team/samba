@@ -1,5 +1,5 @@
-          WHATS NEW IN 1.9.18p4 - March 27th 1998.
-          ===========================================
+          WHATS NEW IN 1.9.18p5 - May 4th 1998.
+          =====================================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
@@ -12,6 +12,92 @@ be maintenance only fixes.
 
 An announcement will be made when the first alpha release of the next
 Samba series is available.
+
+Added features in 1.9.18p5
+--------------------------
+
+New parameters
+--------------
+
+passwd chat debug
+
+This parameter is to allow Samba administrators to debug their password
+chat scripts more easily when they have "unix password sync" set. It is
+provided as a debugging convenience only and should be enabled only when
+debugging. Full documentation is in the smb.conf man page.
+
+update encrypted
+
+The code for this parameter was kindly donated by Bruce Tenison.
+If this parameter is set to "yes" (it defaults to "no") and an smbpasswd
+file exists containing all the valid users of a Samba system but
+no encrypted passwords (ie. the Lanman hash and NT hash entries in
+the file are set to "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"), then as
+users log in with plaintext passwords that are matched against  
+their UNIX password entries, their plaintext passwords will be  
+hashed and entered into the smbpasswd file. After all the users
+have successfully logged in using unencrypted passwords, the
+smbpasswd file will have the Lanman and NT hashes of these users
+UNIX passwords correctly stored. At that point the administrator
+can convert Samba to use encrypted passwords (and configure the
+Windows 95 and NT clients to send only encrypted passwords) and
+migrate to an encrypted setup without having to ask users to re-enter
+all their passwords explicitly. Note that to use this option the
+"encrypt passwords" parameter must be set to "no" when this option
+is set to "yes". See the smb.conf man page for up to date information 
+on this parameter.
+
+Updates to smbtar
+-----------------
+
+The following changes were developed by Richard Sharpe for Canon Information
+Systems Research Australia (CISRA).
+
+  1. Restore can now restore files with long file names
+  2. Save now saves directory information so that we can restore
+     directory creation times
+  3. tar now accepts both UNIX path names and DOS path names.
+
+Bugfixes added since 1.9.18p3
+-----------------------------
+
+1). Samba should now compile cleanly with the gcc -Wstrict-prototypes
+option.
+2). New code page 852 tranlation table created by Petr Hubeny.
+3). New "update encrypted" parameter (described above).
+4). New "passwd chat debug" parameter (described above).
+5). Updates to smbtar (described above).
+6). Fix to do correct null session connections from nmbd and smbd.
+7). Synchronous open flag is now honoured.
+8). security=server now logs out correctly.
+9). Fix to stop long printer job listings causing Win95 and smbd to
+spin the CPU & network.
+10). Multibyte character fix that prevented the "character set" parameter
+working in 1.9.18p4.
+11). Fix for problems with security=share and the [homes] share.
+12). NIS+ patch to get home directory info.
+13). Added FTRUNCATE_NEEDS_ROOT define for systems with broken ftruncate()
+call.
+14). Fix for nmbd not allowing log append mode.
+15). Fix for nmbd as a WINS server doing a name query after a WACK with
+the 'recursion desired' bit set - this would cause problems if directed
+at a machine running a WINS server.
+16). Correctly ignore "become backup browser" requests, rather than
+logging them as a problem.
+17). Use compressed names correctly as requested by RFC1002.
+18). Workaround for bug where NT allows a guest logon and 
+doesn't set the guest bit (in security=server mode).
+19). Added SOFTQ print type.
+20). Free filename on file close (long standing small memory leak fix).
+21). Fix for lp_defaultservice() getting overwritten by rotating string
+buffers.
+22). Print time in international, rather than USA, format.
+23). Fix to queue a trans2 open request when oplock break pending.
+24). Added Simplified Chinese codepage (936).
+
+
+Previous release notes for 1.9.18p4 follow.
+=========================================================================
 
 Added features in 1.9.18p4
 --------------------------
