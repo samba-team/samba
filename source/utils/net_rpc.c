@@ -1724,6 +1724,7 @@ static int rpc_trustdom_add(int argc, const char **argv)
 static int rpc_trustdom_del(int argc, const char **argv)
 {
 	d_printf("Sorry, not yet implemented.\n");
+	d_printf("Use 'smbpasswd -x -i' instead.\n");
 	return -1;
 }
 

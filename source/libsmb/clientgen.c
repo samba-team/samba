@@ -364,9 +364,6 @@ void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
 
 void cli_close_connection(struct cli_state *cli)
 {
-	if ( !cli )
-		return;
-		
 	cli_nt_session_close(cli);
 	cli_nt_netlogon_netsec_session_close(cli);
 

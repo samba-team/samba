@@ -1569,30 +1569,65 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         if test x"$ICONV_PATH_SPEC" = "xyes" ; then
            LIBS="$LIBS -L$ICONV_LOCATION/lib"
         fi
-        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
-        AC_TRY_RUN([
-#include <$jm_cv_include>
-main(){
-    iconv_t cd = iconv_open("ASCII", "UCS-2LE");
-    if (cd == 0 || cd == (iconv_t)-1) {
-       cd = iconv_open("CP850", "UCS-2LE");
-       if (cd == 0 || cd == (iconv_t)-1) {
-          cd = iconv_open("IBM850", "UCS-2LE"); /* Solaris has this */
-          if (cd == 0 || cd == (iconv_t)-1) {
-            return -1;
-          }
-       }
-    }
-    return 0;
-}
-        ],
-        samba_cv_HAVE_NATIVE_ICONV=yes,samba_cv_HAVE_NATIVE_ICONV=no,samba_cv_HAVE_NATIVE_ICONV=cross)])
+dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
+	default_dos_charset=no
+	default_display_charset=no
+	default_unix_charset=no
+	echo
+
+	# check for default dos charset name
+	for j in CP850 IBM850 ; do
+	    rjs_CHARSET($j)
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_dos_charset="\"$j\""
+		break
+	    fi
+	done
+	# check for default display charset name
+	for j in ASCII 646 ; do
+	    rjs_CHARSET($j)
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_display_charset="\"$j\""
+		break
+	    fi
+	done
+	# check for default unix charset name
+	for j in UTF-8 UTF8 ; do
+	    rjs_CHARSET($j)
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_unix_charset="\"$j\""
+		break
+	    fi
+	done
+	
+	if test "$default_dos_charset" != "no" -a \
+		"$default_dos_charset" != "cross" -a \
+		"$default_display_charset" != "no" -a \ 
+		"$default_display_charset" != "cross" -a \
+		"$default_unix_charset" != "no" -a \
+		"$default_unix_charset" != "cross"
+	then
+		samba_cv_HAVE_NATIVE_ICONV=yes
+	else if test "$default_dos_charset" = "cross" -o \
+		     "$default_display_charset" = "cross" -o \
+		     "$default_unix_charset" = "cross"
+	then
+		samba_cv_HAVE_NATIVE_ICONV=cross
+	else
+		samba_cv_HAVE_NATIVE_ICONV=no
+	fi
+	fi
+dnl ])
+
         LIBS="$ic_save_LIBS"
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
 		CPPFLAGS=$save_CPPFLAGS
 		CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
 		export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
+	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
+	   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
+	   AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,$default_unix_charset,[Default unix charset name])
            break
         fi
 dnl We didn't find a working iconv, so keep going
