@@ -330,7 +330,7 @@ DES3_string_to_key(krb5_context context,
 	des_key_schedule s[3];
 	int i;
 	
-	n_fold(str, len, tmp, 24);
+	_krb5_n_fold(str, len, tmp, 24);
 	
 	for(i = 0; i < 3; i++){
 	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
@@ -1938,7 +1938,7 @@ derive_key(krb5_context context,
 	k = malloc(nblocks * et->blocksize);
 	if(k == NULL)
 	    return ENOMEM;
-	n_fold(constant, len, k, et->blocksize);
+	_krb5_n_fold(constant, len, k, et->blocksize);
 	for(i = 0; i < nblocks; i++) {
 	    if(i > 0)
 		memcpy(k + i * et->blocksize, 
@@ -1955,7 +1955,7 @@ derive_key(krb5_context context,
 	k = malloc((kt->bits + 7) / 8);
 	if(k == NULL)
 	    return ENOMEM;
-	n_fold(c, len, k, kt->bits);
+	_krb5_n_fold(c, len, k, kt->bits);
 	free(c);
     }
     
@@ -2088,7 +2088,7 @@ krb5_string_to_key_derived(krb5_context context,
     ALLOC(kd.key, 1);
     kd.key->keytype = etype;
     krb5_data_alloc(&kd.key->keyvalue, et->keytype->size);
-    n_fold(str, len, kd.key->keyvalue.data, kd.key->keyvalue.length);
+    _krb5_n_fold(str, len, kd.key->keyvalue.data, kd.key->keyvalue.length);
     ret = derive_key(context,
 		     et,
 		     &kd,
