@@ -1978,6 +1978,31 @@ krb5_verify_checksum(krb5_context context,
 }
 
 krb5_error_code
+krb5_crypto_get_checksum_type(krb5_context context,
+                              krb5_crypto crypto,
+			      krb5_cksumtype *type)
+{
+    struct checksum_type *ct = NULL;
+    
+    if (crypto != NULL) {
+        ct = crypto->et->keyed_checksum;
+        if (ct == NULL)
+            ct = crypto->et->checksum;
+    }
+    
+    if (ct == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       type);
+        return KRB5_PROG_SUMTYPE_NOSUPP;
+    }    
+
+    *type = ct->type;
+    
+    return 0;      
+}
+
+
+krb5_error_code
 krb5_checksumsize(krb5_context context,
 		  krb5_cksumtype type,
 		  size_t *size)
