@@ -2067,9 +2067,9 @@ static void run_deletetest(int dummy)
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 
-	fnum1 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
 			FILE_SHARE_DELETE, FILE_OVERWRITE_IF, DELETE_ON_CLOSE_FLAG);
-								
+
 	if (fnum1 == -1) {
 		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
 		return;
@@ -2098,8 +2098,9 @@ static void run_deletetest(int dummy)
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 
-	fnum1 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
-								
+	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
 	if (fnum1 == -1) {
 		printf("[2] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
 		return;
@@ -2130,7 +2131,7 @@ static void run_deletetest(int dummy)
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 
-	fnum1 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0);
 
 	if (fnum1 == -1) {
@@ -2138,9 +2139,10 @@ static void run_deletetest(int dummy)
 		return;
 	}
 
-	/* This should fail with a sharing violation. */
+	/* This should fail with a sharing violation - SHARE_DELETE is only compatible
+	   with SHARE_DELETE. */
 
-	fnum2 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = cli_nt_create_full(&cli1, fname, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
 			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0);
 
 	if (fnum2 != -1) {
@@ -2150,7 +2152,7 @@ static void run_deletetest(int dummy)
 
 	/* This should succeed. */
 
-	fnum2 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = cli_nt_create_full(&cli1, fname, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
 
 	if (fnum2 == -1) {
@@ -2173,6 +2175,8 @@ static void run_deletetest(int dummy)
         return;
     }
 
+	/* This should fail - file should no longer be there. */
+
     fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
     if (fnum1 != -1) {
 		printf("[3] open of %s succeeded should have been deleted on close !\n", fname);
@@ -2183,12 +2187,56 @@ static void run_deletetest(int dummy)
     } else
 		printf("third delete on close test succeeded.\n");
 
+	/* Test 4 ... */
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 
-    close_connection(&cli1);
+	fnum1 = cli_nt_create_full(&cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
+								
+	if (fnum1 == -1) {
+		printf("[4] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	/* This should succeed. */
+	fnum2 = cli_nt_create_full(&cli1, fname, GENERIC_READ_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+	if (fnum2 == -1) {
+		printf("[4] open  - 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+    if (!cli_close(&cli1, fnum2)) {
+        printf("[4] close - 1 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
+        printf("[4] setting delete_on_close failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	/* This should fail - no more opens once delete on close set. */
+	fnum2 = cli_nt_create_full(&cli1, fname, GENERIC_READ_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+	if (fnum2 != -1) {
+		printf("[4] open  - 3 of %s succeeded ! Should have failed.\n", fname );
+		return;
+    } else
+		printf("fourth delete on close test succeeded.\n");
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[4] close - 2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
 
     printf("finished delete test 1\n");
+
+    close_connection(&cli1);
 }
 
 /*
