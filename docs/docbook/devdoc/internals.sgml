@@ -26,6 +26,7 @@ telling if a particular char* is in dos codepage or unix
 codepage. This led to a nightmare of code that tried to cope with
 particular cases without handlingt the general case.
 </para>
+</sect1>
 
 <sect1>
 <title>The new functions</title>
