@@ -291,13 +291,13 @@ string_to_key_internal (char *str,
 	 break;
      }
      default:
-	 abort();
+	 ret = KRB5_PROG_KEYTYPE_NOSUPP;
 	 break;
      }
-     if(ret)
-	 return ret;
      memset(s, 0, len);
      free(s);
+     if(ret)
+	 return ret;
      key->keytype = ktype;
      return 0;
 }
