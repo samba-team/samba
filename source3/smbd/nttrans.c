@@ -1496,6 +1496,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   prs_struct pd;
   SEC_DESC *psd = NULL;
   size_t sd_size;
+  TALLOC_CTX *mem_ctx;
 
   files_struct *fsp = file_fsp(params,0);
 
@@ -1544,7 +1545,13 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Init the parse struct we will marshall into.
    */
 
-  prs_init(&pd, 0, 4, MARSHALL);
+  if ((mem_ctx = talloc_init()) == NULL) {
+    DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
+    free_sec_desc(&psd);
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+
+  prs_init(&pd, 0, 4, mem_ctx, MARSHALL);
 
   /*
    * Setup the prs_struct to point at the memory we just
@@ -1564,6 +1571,7 @@ security descriptor.\n"));
     /*
      * Return access denied for want of a better error message..
      */ 
+    talloc_destroy(mem_ctx);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1572,6 +1580,7 @@ security descriptor.\n"));
    */
 
   free_sec_desc(&psd);
+  talloc_destroy(mem_ctx);
 
   send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sd_size);
   return -1;
@@ -1594,6 +1603,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
   files_struct *fsp = NULL;
   uint32 security_info_sent = 0;
+  TALLOC_CTX *mem_ctx;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1613,7 +1623,12 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
    * Init the parse struct we will unmarshall from.
    */
 
-  prs_init(&pd, 0, 4, UNMARSHALL);
+  if ((mem_ctx = talloc_init()) == NULL) {
+    DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+
+  prs_init(&pd, 0, 4, mem_ctx, UNMARSHALL);
 
   /*
    * Setup the prs_struct to point at the memory we just
@@ -1633,15 +1648,18 @@ security descriptor.\n"));
     /*
      * Return access denied for want of a better error message..
      */ 
+    talloc_destroy(mem_ctx);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   if (!set_nt_acl(fsp, security_info_sent, psd)) {
 	free_sec_desc(&psd);
+    talloc_destroy(mem_ctx);
 	return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   free_sec_desc(&psd);
+  talloc_destroy(mem_ctx);
   send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
   return -1;
 }

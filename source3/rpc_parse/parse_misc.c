@@ -26,6 +26,20 @@
 
 extern int DEBUGLEVEL;
 
+static TALLOC_CTX *parse_misc_talloc = NULL;
+
+/******************************************************************* a
+free up temporary memory - called from the main loop
+********************************************************************/
+
+void parse_talloc_free(void)
+{
+    if (!parse_misc_talloc)
+        return;
+    talloc_destroy(parse_misc_talloc);
+    parse_misc_talloc = NULL;
+}
+
 /*******************************************************************
  Reads or writes a UTIME type.
 ********************************************************************/
@@ -296,12 +310,6 @@ BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
 	if(!prs_uint32("buffer     ", ps, depth, &hdr->buffer))
 		return False;
 
-	/* oops! XXXX maybe issue a warning that this is happening... */
-	if (hdr->str_max_len > MAX_STRINGLEN)
-		hdr->str_max_len = MAX_STRINGLEN;
-	if (hdr->str_str_len > MAX_STRINGLEN)
-		hdr->str_str_len = MAX_STRINGLEN;
-
 	return True;
 }
 
@@ -337,12 +345,6 @@ BOOL smb_io_unihdr(char *desc, UNIHDR *hdr, prs_struct *ps, int depth)
 		return False;
 	if(!prs_uint32("buffer     ", ps, depth, &hdr->buffer))
 		return False;
-
-	/* oops! XXXX maybe issue a warning that this is happening... */
-	if (hdr->uni_max_len > MAX_UNISTRLEN)
-		hdr->uni_max_len = MAX_UNISTRLEN;
-	if (hdr->uni_str_len > MAX_UNISTRLEN)
-		hdr->uni_str_len = MAX_UNISTRLEN;
 
 	return True;
 }
@@ -429,12 +431,6 @@ BOOL smb_io_hdrbuf(char *desc, BUFHDR *hdr, prs_struct *ps, int depth)
 	if(!prs_uint32("buf_len    ", ps, depth, &hdr->buf_len))
 		return False;
 
-	/* oops! XXXX maybe issue a warning that this is happening... */
-	if (hdr->buf_max_len > MAX_BUFFERLEN)
-		hdr->buf_max_len = MAX_BUFFERLEN;
-	if (hdr->buf_len > MAX_BUFFERLEN)
-		hdr->buf_len = MAX_BUFFERLEN;
-
 	return True;
 }
 
@@ -477,8 +473,21 @@ BOOL smb_io_unihdr2(char *desc, UNIHDR2 *hdr2, prs_struct *ps, int depth)
 
 void init_unistr(UNISTR *str, const char *buf)
 {
+	size_t len = strlen(buf) + 1;
+
+    if (!parse_misc_talloc)
+		parse_misc_talloc = talloc_init();
+
+	if (len < MAX_UNISTRLEN)
+		len = MAX_UNISTRLEN;
+	len *= sizeof(uint16);
+
+    str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+	if (str->buffer == NULL)
+		smb_panic("init_unistr2: malloc fail\n");
+
 	/* store the string (null-terminated copy) */
-	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));
+	dos_struni2((char *)str->buffer, buf, len);
 }
 
 /*******************************************************************
@@ -503,6 +512,24 @@ BOOL smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Allocate the BUFFER3 memory.
+********************************************************************/
+
+static void create_buffer3(BUFFER3 *str, size_t len)
+{
+    if (!parse_misc_talloc)
+		parse_misc_talloc = talloc_init();
+
+	if (len < MAX_BUFFERLEN)
+		len = MAX_BUFFERLEN;
+
+    str->buffer = talloc(parse_misc_talloc, len);
+	if (str->buffer == NULL)
+		smb_panic("create_buffer3: malloc fail\n");
+
+}
+
+/*******************************************************************
  Inits a BUFFER3 structure from a uint32
 ********************************************************************/
 
@@ -514,6 +541,7 @@ void init_buffer3_uint32(BUFFER3 *str, uint32 val)
 	str->buf_max_len = sizeof(uint32);
 	str->buf_len     = sizeof(uint32);
 
+	create_buffer3(str, sizeof(uint32));
 	SIVAL(str->buffer, 0, val);
 }
 
@@ -529,8 +557,10 @@ void init_buffer3_str(BUFFER3 *str, char *buf, int len)
 	str->buf_max_len = len * 2;
 	str->buf_len     = len * 2;
 
+	create_buffer3(str, str->buf_max_len);
+
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));
+	dos_struni2((char *)str->buffer, buf, str->buf_max_len);
 }
 
 /*******************************************************************
@@ -540,6 +570,7 @@ void init_buffer3_str(BUFFER3 *str, char *buf, int len)
 void init_buffer3_hex(BUFFER3 *str, char *buf)
 {
 	ZERO_STRUCTP(str);
+	create_buffer3(str, strlen(buf));
 	str->buf_max_len = str->buf_len = strhex_to_str((char *)str->buffer, sizeof(str->buffer), buf);
 }
 
@@ -553,8 +584,10 @@ void init_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len)
 
 	/* max buffer size (allocated size) */
 	str->buf_max_len = len;
-	if (buf != NULL)
-		memcpy(str->buffer, buf, MIN(str->buf_len, sizeof(str->buffer)));
+	if (buf != NULL) {
+		create_buffer3(str, len);
+		memcpy(str->buffer, buf, len);
+	}
 	str->buf_len = buf != NULL ? len : 0;
 }
 
@@ -578,16 +611,17 @@ BOOL smb_io_buffer3(char *desc, BUFFER3 *buf3, prs_struct *ps, int depth)
 	if(!prs_uint32("uni_max_len", ps, depth, &buf3->buf_max_len))
 		return False;
 
-	if (buf3->buf_max_len > MAX_UNISTRLEN)
-		buf3->buf_max_len = MAX_UNISTRLEN;
+	if (UNMARSHALLING(ps)) {
+		buf3->buffer = prs_alloc_mem(ps, buf3->buf_max_len);
+		if (buf3->buffer == NULL)
+			return False;
+	}
 
 	if(!prs_uint8s(True, "buffer     ", ps, depth, buf3->buffer, buf3->buf_max_len))
 		return False;
 
 	if(!prs_uint32("buf_len    ", ps, depth, &buf3->buf_len))
 		return False;
-	if (buf3->buf_len > MAX_UNISTRLEN)
-		buf3->buf_len = MAX_UNISTRLEN;
 
 	return True;
 }
@@ -607,23 +641,15 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 	prs_uint32("buf_len", ps, depth, &(buf5->buf_len));
 
 	/* reading: alloc the buffer first */
-	if ( ps->io )
-	{
-		buf5->buffer=(uint16 *)malloc( sizeof(uint16)*buf5->buf_len );
+	if ( UNMARSHALLING(ps) ) {
+		buf5->buffer=(uint16 *)prs_alloc_mem(ps, sizeof(uint16)*buf5->buf_len );
+		if (buf5->buffer == NULL)
+			return False;
 	}
 	
 	prs_uint16s(True, "buffer", ps, depth, buf5->buffer, buf5->buf_len);
 
 	return True;
-}
-
-/*******************************************************************
- Frees a BUFFER5 structure (just the malloced part).
-********************************************************************/
-
-void free_buffer5(BUFFER5 *buf5)
-{
-	safe_free(buf5->buffer);
 }
 
 /*******************************************************************
@@ -639,8 +665,17 @@ void init_buffer2(BUFFER2 *str, uint8 *buf, int len)
 	str->undoc       = 0;
 	str->buf_len = buf != NULL ? len : 0;
 
-	if (buf != NULL)
-		memcpy(str->buffer, buf, MIN(str->buf_len, sizeof(str->buffer)));
+	if (buf != NULL) {
+		if (!parse_misc_talloc)
+			parse_misc_talloc = talloc_init();
+
+		if (len < MAX_BUFFERLEN)
+			len = MAX_BUFFERLEN;
+		str->buffer = talloc(parse_misc_talloc, len);
+		if (str->buffer == NULL)
+			smb_panic("init_buffer2: malloc fail\n");
+		memcpy(str->buffer, buf, MIN(str->buf_len, len));
+	}
 }
 
 /*******************************************************************
@@ -668,12 +703,6 @@ BOOL smb_io_buffer2(char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *ps, in
 			return False;
 		if(!prs_uint32("buf_len    ", ps, depth, &buf2->buf_len))
 			return False;
-
-		/* oops! XXXX maybe issue a warning that this is happening... */
-		if (buf2->buf_max_len > MAX_UNISTRLEN)
-			buf2->buf_max_len = MAX_UNISTRLEN;
-		if (buf2->buf_len > MAX_UNISTRLEN)
-			buf2->buf_len = MAX_UNISTRLEN;
 
 		/* buffer advanced by indicated length of string
 		   NOT by searching for null-termination */
@@ -721,6 +750,21 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 	str->undoc       = from->undoc;
 	str->uni_str_len = from->uni_str_len;
 
+	if (str->buffer == NULL) {
+		size_t len = from->uni_max_len * 2;
+
+    	if (!parse_misc_talloc)
+			parse_misc_talloc = talloc_init();
+
+		if (len < MAX_UNISTRLEN)
+			len = MAX_UNISTRLEN;
+		len *= sizeof(uint16);
+
+   		str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+		if (str->buffer == NULL)
+			smb_panic("copy_unistr2: malloc fail\n");
+	}
+
 	/* copy the string */
 	memcpy(str->buffer, from->buffer, sizeof(from->buffer));
 }
@@ -731,14 +775,23 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 
 void init_string2(STRING2 *str, char *buf, int len)
 {
-  /* set up string lengths. */
-  str->str_max_len = len;
-  str->undoc       = 0;
-  str->str_str_len = len;
+	/* set up string lengths. */
+	str->str_max_len = len;
+	str->undoc       = 0;
+	str->str_str_len = len;
 
-  /* store the string */
-  if(len != 0)
-    memcpy(str->buffer, buf, len);
+	/* store the string */
+	if(len != 0) {
+		if (!parse_misc_talloc)
+			parse_misc_talloc = talloc_init();
+
+		if (len < MAX_STRINGLEN)
+			len = MAX_STRINGLEN;
+		str->buffer = talloc(parse_misc_talloc, len);
+		if (str->buffer == NULL)
+			smb_panic("init_string2: malloc fail\n");
+		memcpy(str->buffer, buf, len);
+  }
 }
 
 /*******************************************************************
@@ -767,12 +820,6 @@ BOOL smb_io_string2(char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, in
 			return False;
 		if(!prs_uint32("str_str_len", ps, depth, &str2->str_str_len))
 			return False;
-
-		/* oops! XXXX maybe issue a warning that this is happening... */
-		if (str2->str_max_len > MAX_STRINGLEN)
-			str2->str_max_len = MAX_STRINGLEN;
-		if (str2->str_str_len > MAX_STRINGLEN)
-			str2->str_str_len = MAX_STRINGLEN;
 
 		/* buffer advanced by indicated length of string
 		   NOT by searching for null-termination */
@@ -803,8 +850,19 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 	str->undoc       = 0;
 	str->uni_str_len = (uint32)len;
 
+    if (!parse_misc_talloc)
+		parse_misc_talloc = talloc_init();
+
+	if (len < MAX_UNISTRLEN)
+		len = MAX_UNISTRLEN;
+	len *= sizeof(uint16);
+
+    str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+	if (str->buffer == NULL)
+		smb_panic("init_unistr2: malloc fail\n");
+
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));
+	dos_struni2((char *)str->buffer, buf, len);
 }
 
 /*******************************************************************
@@ -833,12 +891,6 @@ BOOL smb_io_unistr2(char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, in
 			return False;
 		if(!prs_uint32("uni_str_len", ps, depth, &uni2->uni_str_len))
 			return False;
-
-		/* oops! XXXX maybe issue a warning that this is happening... */
-		if (uni2->uni_max_len > MAX_UNISTRLEN)
-			uni2->uni_max_len = MAX_UNISTRLEN;
-		if (uni2->uni_str_len > MAX_UNISTRLEN)
-			uni2->uni_str_len = MAX_UNISTRLEN;
 
 		/* buffer advanced by indicated length of string
 		   NOT by searching for null-termination */
@@ -957,14 +1009,14 @@ static void init_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
 
 	if (logon_srv != NULL) {
 		log->undoc_buffer = 1;
-		init_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv)+1);
+		init_unistr2(&log->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
 	} else {
 		log->undoc_buffer = 0;
 	}
 
 	if (comp_name != NULL) {
 		log->undoc_buffer2 = 1;
-		init_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name)+1);
+		init_unistr2(&log->uni_comp_name, comp_name, strlen(comp_name)+1);
 	} else {
 		log->undoc_buffer2 = 0;
 	}

@@ -223,7 +223,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 
 		memcpy(data, dp, sizeof(data));
 		
-		prs_init(&auth_req , 0, 4, UNMARSHALL);
+		prs_init(&auth_req , 0, 4, cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&auth_req, data, RPC_HDR_AUTH_LEN, False);
 
 		/*
@@ -267,7 +267,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 		memcpy(data, dp, RPC_AUTH_NTLMSSP_CHK_LEN);
 		dump_data(100, data, auth_len);
 
-		prs_init(&auth_verf, 0, 4, UNMARSHALL);
+		prs_init(&auth_verf, 0, 4, cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&auth_verf, data, RPC_AUTH_NTLMSSP_CHK_LEN, False);
 
 		if(!smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0)) {
@@ -446,7 +446,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		 * First read the header of the next PDU.
 		 */
 
-		prs_init(&hps, 0, 4, UNMARSHALL);
+		prs_init(&hps, 0, 4, cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
 		num_read = cli_read(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
@@ -522,7 +522,7 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_ca
 	prs_struct auth_info;
 	int auth_len = 0;
 
-	prs_init(&auth_info, 0, 4, MARSHALL);
+	prs_init(&auth_info, 0, 4, prs_get_mem_context(rpc_out), MARSHALL);
 
 	if (do_auth) {
 		RPC_HDR_AUTH hdr_auth;
@@ -626,7 +626,7 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	 * Marshall the variable length data into a temporary parse
 	 * struct, pointing into a 4k local buffer.
 	 */
-        prs_init(&auth_info, 0, 4, MARSHALL);
+        prs_init(&auth_info, 0, 4, prs_get_mem_context(rpc_out), MARSHALL);
 
 	/*
 	 * Use the 4k buffer to store the auth info.
@@ -784,7 +784,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	 * Malloc a parse struct to hold it (and enough for alignments).
 	 */
 
-	if(!prs_init(&outgoing_packet, data_len + 8, 4, MARSHALL)) {
+	if(!prs_init(&outgoing_packet, data_len + 8, 4, cli->mem_ctx, MARSHALL)) {
 		DEBUG(0,("rpc_api_pipe_req: Failed to malloc %u bytes.\n", (unsigned int)data_len ));
 		return False;
 	}
@@ -1022,7 +1022,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
 
 	pwd_make_lm_nt_owf(&cli->pwd, rhdr_chal.challenge);
 
-	prs_init(&rpc_out, 0, 4, MARSHALL);
+	prs_init(&rpc_out, 0, 4, cli->mem_ctx, MARSHALL);
 
 	prs_give_memory( &rpc_out, buffer, sizeof(buffer), False);
 
@@ -1094,7 +1094,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
 	if (!valid_pipe_name(pipe_name, &abstract, &transfer))
 		return False;
 
-	prs_init(&rpc_out, 0, 4, MARSHALL);
+	prs_init(&rpc_out, 0, 4, cli->mem_ctx, MARSHALL);
 
 	/*
 	 * Use the MAX_PDU_FRAG_LEN buffer to store the bind request.
@@ -1110,7 +1110,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
 	                    global_myname, cli->domain, cli->ntlmssp_cli_flgs);
 
 	/* Initialize the incoming data struct. */
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	/* send data on \PIPE\.  receive a response */
 	if (rpc_api_pipe(cli, 0x0026, &rpc_out, &rdata)) {

@@ -36,7 +36,7 @@ BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout)
   	size_t len;
   	RPC_HDR hdr;
 
-	prs_init(data, 0, 4, True);
+	prs_init(data, 0, 4, NULL, True);
 
 	ok = prs_read(data, fd, 16, timeout);
 

@@ -1815,8 +1815,13 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
+	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
 	uint32 status;
+
+	mem_ctx = talloc_init();
+	if (mem_ctx == NULL)
+		return False;
 
         /* The old owner and group sids of the security descriptor are not
 	   present when new ACEs are added or removed by changing printer
@@ -1864,7 +1869,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	/* Store the security descriptor in a tdb */
 
 	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sec) + 
-		 sizeof(SEC_DESC_BUF), 4, MARSHALL);
+		 sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr, 
 			     &ps, 1)) {
@@ -1891,6 +1896,8 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	}
 
 	prs_mem_free(&ps);
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 	return status;
 }
 
@@ -1967,20 +1974,28 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
+	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
+
+	mem_ctx = talloc_init();
+	if (mem_ctx == NULL)
+		return False;
 
 	/* Fetch security descriptor from tdb */
 
 	slprintf(key, sizeof(key), "SECDESC/%s", printername);
 
-	if (tdb_prs_fetch(tdb, key, &ps)!=0 ||
+	if (tdb_prs_fetch(tdb, key, &ps, mem_ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
 		DEBUG(4,("using default secdesc for %s\n", printername));
 
-		if (!(*secdesc_ctr = construct_default_printer_sdb()))
+		if (!(*secdesc_ctr = construct_default_printer_sdb())) {
+			talloc_destroy(mem_ctx);
 			return False;
+		}
 
+		talloc_destroy(mem_ctx);
 		return True;
 	}
 
@@ -2028,6 +2043,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	}
 
 	prs_mem_free(&ps);
+	talloc_destroy(mem_ctx);
 	return True;
 }
 
@@ -2123,3 +2139,4 @@ BOOL print_access_check(struct current_user *user, int snum,
 
 	return result;
 }
+#undef OLD_NTDOMAIN

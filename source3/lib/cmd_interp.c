@@ -349,6 +349,7 @@ static uint32 do_command(struct client_info *info, char *line)
 	}
 
 	free_char_array(cmd_argc, cmd_argv);
+	parse_talloc_free(); /* Free up init_XXX memory. */
 
 	return status;
 }

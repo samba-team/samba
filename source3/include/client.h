@@ -107,6 +107,8 @@ struct cli_state {
 	int win95;
 	uint32 capabilities;
 
+	TALLOC_CTX *mem_ctx;
+
 	/*
 	 * Only used in NT domain calls.
 	 */

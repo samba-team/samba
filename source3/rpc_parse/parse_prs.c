@@ -67,7 +67,7 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 /*******************************************************************
  Initialise a parse structure - malloc the data if requested.
  ********************************************************************/
-BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io)
+BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, TALLOC_CTX *ctx, BOOL io)
 {
 	ZERO_STRUCTP(ps);
 	ps->io = io;
@@ -77,6 +77,7 @@ BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io)
 	ps->data_offset = 0;
 	ps->buffer_size = 0;
 	ps->data_p = NULL;
+	ps->mem_ctx = ctx;
 
 	if (size != 0) {
 		ps->buffer_size = size;
@@ -98,17 +99,12 @@ BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout)
 	BOOL ok;
 	size_t prev_size = ps->buffer_size;
 	if (!prs_grow(ps, len))
-	{
 		return False;
-	}
 
-	if (timeout > 0)
-	{
+	if (timeout > 0) {
 		ok = (read_with_timeout(fd, &ps->data_p[prev_size],
 		                            len, len,timeout) == len);
-	}
-	else 
-	{
+	} else {
 		ok = (read_data(fd, &ps->data_p[prev_size], len) == len);
 	}
 	return ok;
@@ -126,6 +122,24 @@ void prs_mem_free(prs_struct *ps)
 	ps->data_p = NULL;
 	ps->buffer_size = 0;
 	ps->data_offset = 0;
+}
+
+/*******************************************************************
+ Allocate memory when unmarshalling...
+ ********************************************************************/
+
+char *prs_alloc_mem(prs_struct *ps, size_t size)
+{
+	return talloc(ps->mem_ctx, size);
+}
+
+/*******************************************************************
+ Return the current talloc context we're using.
+ ********************************************************************/
+
+TALLOC_CTX *prs_get_mem_context(prs_struct *ps)
+{
+	return ps->mem_ctx;
 }
 
 /*******************************************************************
@@ -543,10 +557,18 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
 
 BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
-	char *p = (char *)str->buffer;
+	char *p;
 	char *q = prs_mem_get(ps, str->buf_len);
 	if (q == NULL)
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		str->buffer = (uint16 *)prs_alloc_mem(ps,str->buf_len);
+		if (str->buffer == NULL)
+			return False;
+	}
+
+	p = (char *)str->buffer;
 
 	/* If we're using big-endian, reverse to get little-endian. */
 	if(ps->bigendian_data)
@@ -569,6 +591,12 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
 	if (q == NULL)
 		return False;
 
+	if (UNMARSHALLING(ps)) {
+		str->buffer = prs_alloc_mem(ps,str->str_str_len);
+		if (str->buffer == NULL)
+			return False;
+	}
+
 	DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, str->buffer, str->str_max_len)
 	ps->data_offset += (str->str_str_len * sizeof(uint8));
 
@@ -583,16 +611,24 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
 
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
 {
-	char *p = (char *)str->buffer;
+	char *p;
 	char *q = prs_mem_get(ps, str->uni_str_len * sizeof(uint16));
 	if (q == NULL)
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		str->buffer = (uint16 *)prs_alloc_mem(ps,str->uni_str_len * sizeof(uint16));
+		if (str->buffer == NULL)
+			return False;
+	}
+
+	p = (char *)str->buffer;
 
 	/* If we're using big-endian, reverse to get little-endian. */
 	if(ps->bigendian_data)
 		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len)
 	else
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->uni_str_len * 2)
+		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->uni_str_len * sizeof(uint16))
 	ps->data_offset += (str->uni_str_len * sizeof(uint16));
 
 	return True;
@@ -608,16 +644,24 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 
 BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
 {
-	char *p = (char *)str->str.buffer;
+	char *p;
 	char *q = prs_mem_get(ps, str->uni_str_len * sizeof(uint16));
 	if (q == NULL)
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		str->str.buffer = (uint16 *)prs_alloc_mem(ps,str->uni_str_len * sizeof(uint16));
+		if (str->str.buffer == NULL)
+			return False;
+	}
+
+	p = (char *)str->str.buffer;
 
 	/* If we're using big-endian, reverse to get little-endian. */
 	if(ps->bigendian_data)
 		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len)
 	else
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->uni_str_len * 2)
+		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->uni_str_len * sizeof(uint16))
 	ps->data_offset += (str->uni_str_len * sizeof(uint16));
 
 	return True;
@@ -638,8 +682,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 
 	if (MARSHALLING(ps)) {
 
-		for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
-				   str->buffer[len] != 0; len++)
+		for(len = 0; str->buffer[len] != 0; len++)
 			;
 
 		q = prs_mem_get(ps, (len+1)*2);
@@ -648,8 +691,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 
 		start = (uint8*)q;
 
-		for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
-				   str->buffer[len] != 0; len++) 
+		for(len = 0; str->buffer[len] != 0; len++) 
 		{
 			if(ps->bigendian_data) 
 			{
@@ -685,8 +727,26 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	}
 	else { /* unmarshalling */
 	
+		uint32 alloc_len = 0;
 		len = -1;
 		q = prs_data_p(ps) + prs_offset(ps);
+
+		/*
+		 * Work out how much space we need and talloc it.
+		 */
+		{
+			uint32 max_len = (ps->buffer_size - ps->data_offset)/sizeof(uint16);
+			uint16 *ptr;
+
+			for ( ptr = (uint16 *)q; *ptr && (alloc_len <= max_len); alloc_len++)
+				;
+
+			str->buffer = (uint16 *)prs_alloc_mem(ps,alloc_len * sizeof(uint16));
+			if (str->buffer == NULL)
+				return False;
+
+			p = (unsigned char *)str->buffer;
+		}
 
 		do 
 		{
@@ -705,8 +765,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 				p++;
 				q++;
 			}
-		} while (len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
-				   str->buffer[len] != 0);
+		} while (len < alloc_len && str->buffer[len] != 0);
 	}
 
 	ps->data_offset += len*2;
@@ -852,7 +911,7 @@ int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
 }
 
 /* useful function to fetch a structure into rpc wire format */
-int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *mem_ctx)
 {
     TDB_DATA kbuf, dbuf;
     kbuf.dptr = keystr;
@@ -862,7 +921,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
     if (!dbuf.dptr) return -1;
 
     ZERO_STRUCTP(ps);
-    prs_init(ps, 0, 4, UNMARSHALL);
+    prs_init(ps, 0, 4, mem_ctx, UNMARSHALL);
     prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
 
     return 0;

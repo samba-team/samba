@@ -78,8 +78,10 @@ void init_rpc_pipe_hnd(void)
  Initialise an outgoing packet.
 ****************************************************************************/
 
-static BOOL pipe_init_outgoing_data(output_data *o_data)
+static BOOL pipe_init_outgoing_data(pipes_struct *p)
 {
+	output_data *o_data = &p->out_data;
+
 	/* Reset the offset counters. */
 	o_data->data_sent_length = 0;
 	o_data->current_pdu_len = 0;
@@ -94,67 +96,13 @@ static BOOL pipe_init_outgoing_data(output_data *o_data)
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, 4, MARSHALL)) {
+	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, 4, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
 
 	return True;
 }
-
-/****************************************************************************
- Attempt to find a remote process to communicate RPC's with.
-****************************************************************************/
-
-#if 0
-
-static void attempt_remote_rpc_connect(pipes_struct *p)
-{
-	struct user_creds usr;
-	user_struct *vuser = get_valid_user_struct(p->vuid);
-
-	p->m = NULL;
-
-	if (vuser == NULL) {
-		DEBUG(4,("attempt_remote_rpc_connect: invalid vuid %d\n", (int)p->vuid));
-		return;
-	}
-
-	ZERO_STRUCT(usr);
-
-	/* set up unix credentials from the smb side, to feed over the pipe */
-	make_creds_unix(&usr.uxc, vuser->user.unix_name, vuser->user.smb_name,
-					vuser->user.full_name, vuser->guest);
-	usr.ptr_uxc = 1;
-	make_creds_unix_sec(&usr.uxs, vuser->uid, vuser->gid,
-					vuser->n_groups, vuser->groups);
-	usr.ptr_uxs = 1;
-
-	usr.ptr_ssk = 1;
-	DEBUG(10,("user session key not available (yet).\n"));
-	DEBUG(10,("password-change operations may fail.\n"));
-
-#if USER_SESSION_KEY_DEFINED_IN_VUSER_STRUCT
-	memcpy(usr.usr_sess_key, vuser->usr_sess_key, sizeof(usr.usr_sess_key));
-#else
-	memset(usr.usr_sess_key, 0, sizeof(usr.usr_sess_key));
-#endif
-
-	/* set up nt credentials from the smb side, to feed over the pipe */
-	/* lkclXXXX todo!
-	make_creds_nt(&usr.ntc);
-	make_creds_nt_sec(&usr.nts);
-	*/
-
-	become_root(); /* to connect to pipe */
-	p->m = msrpc_use_add(p->name, sys_getpid(), &usr, False);
-	unbecome_root();
-
-	if (p->m == NULL)
-		DEBUG(10,("attempt_remote_rpc_connect: msrpc redirect failed - using local implementation.\n"));
-}
-
-#endif
 
 /****************************************************************************
  Find first available pipe slot.
@@ -196,6 +144,12 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	ZERO_STRUCTP(p);
 
+	if ((p->mem_ctx = talloc_init()) == NULL) {
+		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
+		free(p);
+		return NULL;
+	}
+
 	DLIST_ADD(Pipes, p);
 
 	/*
@@ -205,7 +159,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	 * change the type to UNMARSALLING before processing the stream.
 	 */
 
-	if(!prs_init(&p->in_data.data, MAX_PDU_FRAG_LEN, 4, MARSHALL)) {
+	if(!prs_init(&p->in_data.data, MAX_PDU_FRAG_LEN, 4, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		return NULL;
 	}
@@ -250,7 +204,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	/*
 	 * Initialize the outgoing RPC data buffer with no memory.
 	 */	
-	prs_init(&p->out_data.rdata, 0, 4, MARSHALL);
+	prs_init(&p->out_data.rdata, 0, 4, p->mem_ctx, MARSHALL);
 	
 	ZERO_STRUCT(p->pipe_user);
 
@@ -332,7 +286,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		return -1;
 	}
 
-	prs_init( &rpc_in, 0, 4, UNMARSHALL);
+	prs_init( &rpc_in, 0, 4, p->mem_ctx, UNMARSHALL);
 	prs_give_memory( &rpc_in, (char *)&p->in_data.current_in_pdu[0],
 					p->in_data.pdu_received_len, False);
 
@@ -344,6 +298,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	if(!smb_io_rpc_hdr("", &p->hdr, &rpc_in, 0)) {
 		DEBUG(0,("unmarshall_rpc_header: failed to unmarshall RPC_HDR.\n"));
 		set_incoming_fault(p);
+		prs_mem_free(&rpc_in);
 		return -1;
 	}
 
@@ -354,6 +309,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	if(p->hdr.major != 5 && p->hdr.minor != 0) {
 		DEBUG(0,("unmarshall_rpc_header: invalid major/minor numbers in RPC_HDR.\n"));
 		set_incoming_fault(p);
+		prs_mem_free(&rpc_in);
 		return -1;
 	}
 
@@ -366,6 +322,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	if((p->hdr.pkt_type == RPC_REQUEST) && (prs_offset(&p->in_data.data) == 0) && !(p->hdr.flags & RPC_FLG_FIRST)) {
 		DEBUG(0,("unmarshall_rpc_header: FIRST flag not set in first PDU !\n"));
 		set_incoming_fault(p);
+		prs_mem_free(&rpc_in);
 		return -1;
 	}
 
@@ -376,6 +333,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	if((p->hdr.frag_len < RPC_HEADER_LEN) || (p->hdr.frag_len > MAX_PDU_FRAG_LEN)) {
 		DEBUG(0,("unmarshall_rpc_header: assert on frag length failed.\n"));
 		set_incoming_fault(p);
+		prs_mem_free(&rpc_in);
 		return -1;
 	}
 
@@ -393,6 +351,8 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	 */
 
 	memset((char *)&p->in_data.current_in_pdu[0], '\0', RPC_HEADER_LEN);
+
+	prs_mem_free(&rpc_in);
 
 	return 0; /* No extra data processed. */
 }
@@ -505,7 +465,7 @@ authentication failed. Denying the request.\n", p->name));
 		 * Process the complete data stream here.
 		 */
 
-		if(pipe_init_outgoing_data(&p->out_data))
+		if(pipe_init_outgoing_data(p))
 			ret = api_pipe_request(p);
 
 		/*
@@ -536,6 +496,14 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 	char *data_p = (char *)&p->in_data.current_in_pdu[0];
 	BOOL reply = False;
 
+	if (p->mem_ctx) {
+		talloc_destroy_pool(p->mem_ctx);
+	} else {
+		p->mem_ctx = talloc_init();
+		if (p->mem_ctx == NULL)
+			p->fault_state = True;
+	}
+
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
@@ -544,7 +512,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 		return (ssize_t)data_len;
 	}
 
-	prs_init( &rpc_in, 0, 4, UNMARSHALL);
+	prs_init( &rpc_in, 0, 4, p->mem_ctx, UNMARSHALL);
 	prs_give_memory( &rpc_in, data_p, (uint32)data_len, False);
 
 	DEBUG(10,("process_complete_pdu: processing packet type %u\n",
@@ -556,14 +524,14 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 			/*
 			 * We assume that a pipe bind is only in one pdu.
 			 */
-			if(pipe_init_outgoing_data(&p->out_data))
+			if(pipe_init_outgoing_data(p))
 				reply = api_pipe_bind_req(p, &rpc_in);
 			break;
 		case RPC_BINDRESP:
 			/*
 			 * We assume that a pipe bind_resp is only in one pdu.
 			 */
-			if(pipe_init_outgoing_data(&p->out_data))
+			if(pipe_init_outgoing_data(p))
 				reply = api_pipe_bind_auth_resp(p, &rpc_in);
 			break;
 		case RPC_REQUEST:
@@ -578,6 +546,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
 		set_incoming_fault(p);
 		setup_fault_pdu(p);
+		prs_mem_free(&rpc_in);
 	} else {
 		/*
 		 * Reset the lengths. We're ready for a new pdu.
@@ -586,6 +555,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 		p->in_data.pdu_received_len = 0;
 	}
 
+	prs_mem_free(&rpc_in);
 	return (ssize_t)data_len;
 }
 
@@ -687,14 +657,7 @@ ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n)
 
 		DEBUG(10,("write_to_pipe: data_left = %u\n", (unsigned int)data_left ));
 
-		/*
-		 * Deal with the redirect to the remote RPC daemon.
-		 */
-
-		if(p->m)
-			data_used = write(p->m->fd, data, data_left);
-		else
-			data_used = process_incoming_data(p, data, data_left);
+		data_used = process_incoming_data(p, data, data_left);
 
 		DEBUG(10,("write_to_pipe: data_used = %d\n", (int)data_used ));
 
@@ -706,70 +669,6 @@ ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n)
 	}	
 
 	return n;
-}
-
-/****************************************************************************
- Gets data from a remote TNG daemon. Gets data from the remote daemon into
- the outgoing prs_struct.
-
- NB. Note to Luke : This code will be broken until Luke implements a length
- field before reply data...
-
-****************************************************************************/
-
-static BOOL read_from_remote(pipes_struct *p)
-{
-	uint32 data_len;
-	uint32 data_len_left;
-
-	if(prs_offset(&p->out_data.rdata) == 0) {
-
-		ssize_t len = 0;
-
-		/*
-		 * Read all the reply data as a stream of pre-created
-		 * PDU's from the remote deamon into the rdata struct.
-		 */
-
-	    /*
-		 * Create the response data buffer.
-		 */
-
-		if(!pipe_init_outgoing_data(&p->out_data)) {
-			DEBUG(0,("read_from_remote: failed to create outgoing buffer.\n"));
-			return False;
-		}
-
-		/* Read from remote here. */
-		if((len = read_with_timeout(p->m->fd, prs_data_p(&p->out_data.rdata), 1, 65536, 10000)) < 0) {
-			DEBUG(0,("read_from_remote: failed to read from external daemon.\n"));
-			prs_mem_free(&p->out_data.rdata);
-			return False;
-		}
-
-		/* Set the length we got. */
-		prs_set_offset(&p->out_data.rdata, (uint32)len);
-	}
-
-	/*
-	 * The amount we send is the minimum of the available
-	 * space and the amount left to send.
-	 */
-
-	data_len_left = prs_offset(&p->out_data.rdata) - p->out_data.data_sent_length;
-
-	/*
-	 * Ensure there really is data left to send.
-	 */
-
-	if(!data_len_left) {
-		DEBUG(0,("read_from_remote: no data left to send !\n"));
-		return False;
-	}
-
-	data_len = MIN(data_len_left, MAX_PDU_FRAG_LEN);
-
-	return False; /* Notfinished... */
 }
 
 /****************************************************************************
@@ -844,28 +743,16 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 		return 0;
 	}
 
-	if(p->m) {
-		/*
-		 * Remote to the RPC daemon.
-		 */
-		if(!read_from_remote(p)) {
-			DEBUG(0,("read_from_pipe: %s: read_from_remote failed.\n", p->name ));
-			return -1;
-		}
+	/*
+	 * We need to create a new PDU from the data left in p->rdata.
+	 * Create the header/data/footers. This also sets up the fields
+	 * p->current_pdu_len, p->current_pdu_sent, p->data_sent_length
+	 * and stores the outgoing PDU in p->current_pdu.
+	 */
 
-	} else {
-
-		/*
-		 * We need to create a new PDU from the data left in p->rdata.
-		 * Create the header/data/footers. This also sets up the fields
-		 * p->current_pdu_len, p->current_pdu_sent, p->data_sent_length
-		 * and stores the outgoing PDU in p->current_pdu.
-		 */
-
-		if(!create_next_pdu(p)) {
-			DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n", p->name));
-			return -1;
-		}
+	if(!create_next_pdu(p)) {
+		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n", p->name));
+		return -1;
 	}
 
 	data_returned = MIN(n, p->out_data.current_pdu_len);
@@ -937,17 +824,12 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	prs_mem_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 
+	if (p->mem_ctx)
+		talloc_destroy(p->mem_ctx);
+
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
 	pipes_open--;
-
-	if (p->m != NULL) {
-		DEBUG(4,("close_rpc_pipe_hnd: closing msrpc redirect: "));
-		if (msrpc_use_del(p->m->pipe_name, &p->m->usr, False, NULL))
-			DEBUG(4,("OK\n"));
-		else
-			DEBUG(4,("FAILED\n"));
-	}
 
 	DEBUG(4,("closed pipe name %s pnum=%x (pipes_open=%d)\n", 
 		 p->name, p->pnum, pipes_open));  

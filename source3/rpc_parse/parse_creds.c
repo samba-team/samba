@@ -597,7 +597,7 @@ BOOL create_ntuser_creds( prs_struct *ps,
 		usr.ptr_ntc = 0;
 	}
 		
-	prs_init(ps, 1024, 4, False);
+	prs_init(ps, 1024, 4, NULL, False);
 
 	ps->data_offset = 4;
 	return creds_io_cmd("creds", &cmd, ps, 0);
@@ -623,7 +623,7 @@ BOOL create_user_creds( prs_struct *ps,
 	cmd.ptr_creds = usr != NULL ? 1 : 0;
 	cmd.cred = usr;
 
-	prs_init(ps, 1024, 4, False);
+	prs_init(ps, 1024, 4, NULL, False);
 
 	ps->data_offset = 4;
 	return creds_io_cmd("creds", &cmd, ps, 0);
