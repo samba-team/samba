@@ -144,6 +144,7 @@ check_host(krb5_context context, const char *path, char *data)
     struct addrinfo hints;
     char service[32];
     int defport;
+    struct addrinfo *ai;
 
     hints.ai_flags = 0;
     hints.ai_family = PF_UNSPEC;
@@ -155,7 +156,6 @@ check_host(krb5_context context, const char *path, char *data)
     hints.ai_addr = NULL;
     hints.ai_next = NULL;
     
-    struct addrinfo *ai;
     /* XXX data could be a list of hosts that this code can't handle */
     /* XXX copied from krbhst.c */
     if(strncmp(p, "http://", 7) == 0){
