@@ -1,3 +1,8 @@
+1999-11-25  Assar Westerlund  <assar@sics.se>
+
+	* getopt.c (getopt): return -1 instead of EOF.  From
+	<art@stacken.kth.se>
+
 1999-11-13  Assar Westerlund  <assar@sics.se>
 
 	* strftime.c (strftime): handle `%z' and `%Z' in a tm_gmtoff-less
