@@ -168,7 +168,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 		return;
 	}
 
-	location = gtk_rpc_binding_dialog_get_binding(GTK_RPC_BINDING_DIALOG(rpcwin), NULL);
+	location = gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx);
 	asprintf(&credentials, "%s%%%s", gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)));
 	error = reg_open(&registry, "rpc", location, credentials);
 

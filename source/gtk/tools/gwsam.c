@@ -124,7 +124,7 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 	}
 
 	/* If connected, get list of jobs */
-	status = dcerpc_pipe_connect(&sam_pipe, gtk_rpc_binding_dialog_get_binding(d, DCERPC_SAMR_NAME), DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, lp_workgroup(), gtk_rpc_binding_dialog_get_username(d), gtk_rpc_binding_dialog_get_password(d));
+	status = dcerpc_pipe_connect_b(&sam_pipe, gtk_rpc_binding_dialog_get_binding(d, mem_ctx), DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, lp_workgroup(), gtk_rpc_binding_dialog_get_username(d), gtk_rpc_binding_dialog_get_password(d));
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
 		sam_pipe = NULL;
