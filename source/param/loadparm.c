@@ -188,6 +188,7 @@ typedef struct
 	int unamelevel;
 	int deadtime;
 	int maxprotocol;
+	int minprotocol;
 	int security;
 	int maxdisksize;
 	int lpqcachetime;
@@ -263,6 +264,7 @@ typedef struct
 	BOOL bKernelOplocks;
 	BOOL bAllowTrustedDomains;
 	BOOL bRestrictAnonymous;
+	BOOL bLanmanAuth;
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
 	BOOL bDebugUid;
@@ -691,6 +693,7 @@ static struct parm_struct parm_table[] = {
 	{"username level", P_INTEGER, P_GLOBAL, &Globals.unamelevel, NULL, NULL, 0},
 	{"unix password sync", P_BOOL, P_GLOBAL, &Globals.bUnixPasswdSync, NULL, NULL, 0},
 	{"restrict anonymous", P_BOOL, P_GLOBAL, &Globals.bRestrictAnonymous, NULL, NULL, 0},
+	{"lanman auth", P_BOOL, P_GLOBAL, &Globals.bLanmanAuth, NULL, NULL, 0},
 	{"use rhosts", P_BOOL, P_GLOBAL, &Globals.bUseRhosts, NULL, NULL, 0},
 	
 	{"username", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
@@ -774,6 +777,8 @@ static struct parm_struct parm_table[] = {
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
 	{"protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, 0},
+	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, 0},
+	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, 0},
 	{"read bmpx", P_BOOL, P_GLOBAL, &Globals.bReadbmpx, NULL, NULL, 0},
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, 0},
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, 0},
@@ -1214,6 +1219,7 @@ static void init_globals(void)
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = MAX_OPEN_FILES;
 	Globals.maxprotocol = PROTOCOL_NT1;
+	Globals.minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
 	Globals.bEncryptPasswords = False;
 	Globals.bUpdateEncrypt = False;
@@ -1258,6 +1264,7 @@ static void init_globals(void)
 	Globals.bNTAclSupport = True;	/* Use NT ACLs by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
 	Globals.bRestrictAnonymous = False;
+	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
@@ -1516,6 +1523,7 @@ FN_GLOBAL_BOOL(lp_nt_acl_support, &Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
+FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
@@ -1531,6 +1539,7 @@ FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_readsize, &Globals.ReadSize)
 FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
+FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
