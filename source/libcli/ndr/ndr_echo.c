@@ -44,3 +44,27 @@ NTSTATUS ndr_push_rpcecho_addone(struct ndr_push *ndr,
 	NDR_CHECK(ndr_push_u32(ndr, r->in.data));
 	return NT_STATUS_OK;
 }
+
+
+/*
+  parse a echodata
+*/
+NTSTATUS ndr_pull_rpcecho_echodata(struct ndr_pull *ndr, 
+				   struct rpcecho_echodata *r)
+{
+	NDR_CHECK(ndr_pull_u32(ndr, &r->out.len));
+	NDR_CHECK(ndr_pull_bytes(ndr, &r->out.data, r->out.len));
+	return NT_STATUS_OK;
+}
+
+/*
+  push a echodata
+*/
+NTSTATUS ndr_push_rpcecho_echodata(struct ndr_push *ndr, 
+				   struct rpcecho_echodata *r)
+{
+	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_bytes(ndr, r->in.data, r->in.len));
+	return NT_STATUS_OK;
+}
