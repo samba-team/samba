@@ -61,7 +61,7 @@ static void free_samr_info(void *ptr)
   dynamically returns the correct user info..... JRA.
  ********************************************************************/
 
-static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
+static uint32 get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
                                 int *total_entries, int *num_entries,
                                 int max_num_entries, uint16 acb_mask)
 {
@@ -72,12 +72,12 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
     (*total_entries) = 0;
 
     if (pw_buf == NULL)
-        return False;
+        return NT_STATUS_NO_MEMORY;
 
     vp = startsmbpwent(False);
     if (!vp) {
         DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
-        return False;
+        return NT_STATUS_ACCESS_DENIED;
     }
 
     while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries) {
@@ -119,7 +119,10 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 
     endsmbpwent(vp);
 
-    return (*num_entries) > 0;
+	if (pwd!=NULL)
+		return STATUS_MORE_ENTRIES;
+	else
+		return NT_STATUS_NO_PROBLEMO;
 }
 
 static uint32 jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
@@ -679,7 +682,6 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
 	int num_entries = 0;
 	int total_entries = 0;
-	BOOL ret;
 	
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
@@ -690,12 +692,12 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+	r_u->status = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 								MAX_SAM_ENTRIES, q_u->acb_mask);
 	unbecome_root();
 
-	if (!ret)
-		return NT_STATUS_ACCESS_DENIED;
+	if (r_u->status != NT_STATUS_NOPROBLEMO && r_u->status != STATUS_MORE_ENTRIES)
+		return r_u->status;
 
 	samr_clear_passwd_fields(pass, num_entries);
 
@@ -971,7 +973,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
     int total_entries = 0;
     uint32 data_size = 0;
 	DOM_SID sid;
-	uint32 ret;
+	uint32 disp_ret;
 	SAM_DISPINFO_CTR *ctr;
 
 	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
@@ -996,30 +998,30 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	case 0x4:
 		become_root();
 #if 0
-		ret = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+		r_u->status = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 #if 0
 	/*
 	 * Which should we use here ? JRA.
 	 */
-		ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+		r_u->status = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 #if 1
-		ret = jf_get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+		r_u->status = jf_get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 		unbecome_root();
-		if (ret!=STATUS_MORE_ENTRIES && ret!=NT_STATUS_NO_PROBLEMO) {
+		if (r_u->status!=STATUS_MORE_ENTRIES && r_u->status!=NT_STATUS_NO_PROBLEMO) {
 			DEBUG(5, ("get_sampwd_entries: failed\n"));
-			return NT_STATUS_ACCESS_DENIED;
+			return r_u->status;
 		}
 		break;
 	case 0x3:
 	case 0x5:
-		ret = get_group_domain_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
-		if (ret!=NT_STATUS_NO_PROBLEMO)
+		r_u->status = get_group_domain_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+		if (r_u->status!=NT_STATUS_NO_PROBLEMO)
 			return NT_STATUS_ACCESS_DENIED;
 		break;
 	default:
@@ -1027,7 +1029,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	r_u->status = ret;
+	orig_num_entries = num_entries;
 
 	if (num_entries > q_u->max_entries)
 		num_entries = q_u->max_entries;
@@ -1041,7 +1043,6 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	samr_clear_passwd_fields(pass, num_entries);
 
 	data_size = q_u->max_size;
-	orig_num_entries = num_entries;
 
 	ctr = (SAM_DISPINFO_CTR *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_CTR));
 	if (!ctr)
@@ -1052,43 +1053,49 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	case 0x1:
 		if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1))))
 			return NT_STATUS_NO_MEMORY;
-		r_u->status= init_sam_dispinfo_1(p->mem_ctx,ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
+		disp_ret = init_sam_dispinfo_1(p->mem_ctx,ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x2:
 		if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2))))
 			return NT_STATUS_NO_MEMORY;
-		r_u->status = init_sam_dispinfo_2(p->mem_ctx,ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
+		disp_ret = init_sam_dispinfo_2(p->mem_ctx,ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x3:
 		if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3))))
 			return NT_STATUS_NO_MEMORY;
-		r_u->status = init_sam_dispinfo_3(p->mem_ctx,ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
+		disp_ret = init_sam_dispinfo_3(p->mem_ctx,ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x4:
 		if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4))))
 			return NT_STATUS_NO_MEMORY;
-		r_u->status = init_sam_dispinfo_4(p->mem_ctx,ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
+		disp_ret = init_sam_dispinfo_4(p->mem_ctx,ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x5:
 		if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5))))
 			return NT_STATUS_NO_MEMORY;
-		r_u->status = init_sam_dispinfo_5(p->mem_ctx,ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
+		disp_ret = init_sam_dispinfo_5(p->mem_ctx,ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	default:
 		ctr->sam.info = NULL;
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if (r_u->status != NT_STATUS_NO_PROBLEMO)
-		return r_u->status;
-
 	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
 
-	init_samr_r_query_dispinfo(r_u, num_entries, data_size, q_u->switch_level, ctr, r_u->status);
+	if (num_entries < orig_num_entries)
+		r_u->status = STATUS_MORE_ENTRIES;
 
-	if (num_entries < orig_num_entries) {
-		return STATUS_MORE_ENTRIES;
-	}
+	init_samr_r_query_dispinfo(r_u, num_entries, data_size, q_u->switch_level, ctr, r_u->status);
 
 	return r_u->status;
 }

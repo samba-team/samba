@@ -1340,7 +1340,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	return ret;
 
  fail:
-        if (tdb.name) free(tdb.name);
+	if (tdb.name) free(tdb.name);
 	if (tdb.fd != -1) close(tdb.fd);
 	tdb_munmap(&tdb);
 	return NULL;
