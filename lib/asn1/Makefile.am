@@ -15,6 +15,10 @@ BUILT_SOURCES =			\
 	asn1_err.c
 
 gen_files =					\
+	asn1_AD_AND_OR.x			\
+	asn1_AD_IF_RELEVANT.x			\
+	asn1_AD_KDCIssued.x			\
+	asn1_AD_MANDATORY_FOR_KDC.x		\
 	asn1_APOptions.x			\
 	asn1_AP_REP.x				\
 	asn1_AP_REQ.x				\
@@ -22,6 +26,7 @@ gen_files =					\
 	asn1_AS_REQ.x				\
 	asn1_Authenticator.x			\
 	asn1_AuthorizationData.x		\
+	asn1_AUTHDATA_TYPE.x			\
 	asn1_CBCParameter.x			\
 	asn1_CKSUMTYPE.x			\
 	asn1_ChangePasswdDataMS.x		\
@@ -40,6 +45,7 @@ gen_files =					\
 	asn1_EncTicketPart.x			\
 	asn1_EncryptedData.x			\
 	asn1_EncryptionKey.x			\
+	asn1_EtypeList.x			\
 	asn1_HostAddress.x			\
 	asn1_HostAddresses.x			\
 	asn1_KDCOptions.x			\

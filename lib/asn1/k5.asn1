@@ -67,6 +67,22 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-PA-PAC-REQUEST(128)		-- jbrezak@exchange.microsoft.com
 }
 
+AUTHDATA-TYPE ::= INTEGER {
+	KRB5-AUTHDATA-IF-RELEVANT(1),
+	KRB5-AUTHDATA-INTENDED-FOR_SERVER(2),
+	KRB5-AUTHDATA-INTENDED-FOR-APPLICATION-CLASS(3),
+	KRB5-AUTHDATA-KDC-ISSUED(4),
+	KRB5-AUTHDATA-AND-OR(5),
+	KRB5-AUTHDATA-MANDATORY-TICKET-EXTENSIONS(6),
+	KRB5-AUTHDATA-IN-TICKET-EXTENSIONS(7),
+	KRB5-AUTHDATA-MANDATORY-FOR-KDC(8),
+	KRB5-AUTHDATA-OSF-DCE(64),
+	KRB5-AUTHDATA-SESAME(65),
+	KRB5-AUTHDATA-OSF-DCE-PKI-CERTID(66),
+	KRB5-AUTHDATA-WIN2K-PAC(128),
+	KRB5-AUTHDATA-GSS-API-ETYPE-NEGOTIATION(129) -- Authenticator only
+}
+
 -- checksumtypes
 
 CKSUMTYPE ::= INTEGER {
@@ -480,11 +496,33 @@ ChangePasswdDataMS ::= SEQUENCE {
 	targrealm[2]		Realm OPTIONAL
 }
 
+EtypeList ::= SEQUENCE OF INTEGER
+	-- the client's proposed enctype list in
+	-- decreasing preference order, favorite choice first
+
 pvno INTEGER ::= 5 -- current Kerberos protocol version number
 
 -- transited encodings
 
 DOMAIN-X500-COMPRESS	INTEGER ::= 1
+
+-- authorization data primitives
+
+AD-IF-RELEVANT ::= AuthorizationData
+
+AD-KDCIssued ::= SEQUENCE {
+	ad-checksum[0]		Checksum,
+	i-realm[1]		Realm OPTIONAL,
+	i-sname[2]		PrincipalName OPTIONAL,
+	elements[3]		AuthorizationData
+}
+
+AD-AND-OR ::= SEQUENCE {
+	condition-count[0]	INTEGER,
+	elements[1]		AuthorizationData
+}
+
+AD-MANDATORY-FOR-KDC ::= AuthorizationData
 
 -- PA-SAM-RESPONSE-2/PA-SAM-RESPONSE-2
 
