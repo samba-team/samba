@@ -25,25 +25,25 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SAM
 
-NTSTATUS sam_init_plugin(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const char *location)
+NTSTATUS sam_init_plugin(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const DOM_SID *domain, const char *module_params)
 {
-	void * dl_handle;
-	char *plugin_location, *plugin_name, *p;
+	void *dl_handle;
+	char *plugin_params, *plugin_name, *p;
 	sam_init_function plugin_init;
 	int (*plugin_version)(void);
 
-	if (location == NULL) {
+	if (module_params == NULL) {
 		DEBUG(0, ("The plugin module needs an argument!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	plugin_name = smb_xstrdup(location);
+	plugin_name = smb_xstrdup(module_params);
 	p = strchr(plugin_name, ':');
 	if (p) {
 		*p = 0;
-		plugin_location = p+1;
-		trim_string(plugin_location, " ", " ");
-	} else plugin_location = NULL;
+		plugin_params = p+1;
+		trim_string(plugin_params, " ", " ");
+	} else plugin_params = NULL;
 	trim_string(plugin_name, " ", " ");
 
 	DEBUG(5, ("Trying to load sam plugin %s\n", plugin_name));
@@ -74,6 +74,6 @@ NTSTATUS sam_init_plugin(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_metho
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(5, ("Starting sam plugin %s with location %s\n", plugin_name, plugin_location));
-	return plugin_init(sam_context, sam_method, plugin_location);
+	DEBUG(5, ("Starting sam plugin %s with parameters %s for domain %s\n", plugin_name, plugin_params, sid_string_static(domain)));
+	return plugin_init(sam_context, sam_method, domain, plugin_params);
 }

@@ -224,7 +224,7 @@ SAM_STATIC_MODULES = sam/sam_plugin.o
 SAM_OBJ = sam/account.o sam/get_set_account.o sam/get_set_group.o \
 		sam/get_set_domain.o sam/interface.o sam/api.o $(SAM_STATIC_MODULES)
 
-SAMTEST_OBJ = torture/samtest.o $(SAM_OBJ) $(LIB_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(READLINE_OBJ) lib/util_seaccess.o
+SAMTEST_OBJ = torture/samtest.o $(SAM_OBJ) $(LIB_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(READLINE_OBJ) lib/util_seaccess.o passdb/machine_sid.o passdb/secrets.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
