@@ -129,5 +129,10 @@ typedef struct ntlmssp_client_state
 	/* ntlmv1 */
 	unsigned char ntlmssp_hash[258];
 
+	/* it turns out that we don't always get the
+	   response in at the time we want to process it.
+	   Store it here, until we need it */
+	DATA_BLOB stored_response; 
+	
 } NTLMSSP_CLIENT_STATE;
 

@@ -1911,6 +1911,17 @@ void dump_data(int level, const char *buf1,int len)
 	}	
 }
 
+void dump_data_pw(const char *msg, const uchar * data, size_t len)
+{
+#ifdef DEBUG_PASSWORD
+	DEBUG(11, ("%s", msg));
+	if (data != NULL && len > 0)
+	{
+		dump_data(11, data, len);
+	}
+#endif
+}
+
 char *tab_depth(int depth)
 {
 	static pstring spaces;

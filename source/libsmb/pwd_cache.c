@@ -43,15 +43,10 @@ static void pwd_init(struct pwd_info *pwd)
 
 static void pwd_make_lm_nt_16(struct pwd_info *pwd, const char *clr)
 {
-	pstring dos_passwd;
-
 	pwd_init(pwd);
 
-	push_ascii_pstring(dos_passwd, clr);
-
-	nt_lm_owf_gen(dos_passwd, pwd->smb_nt_pwd, pwd->smb_lm_pwd);
+	nt_lm_owf_gen(clr, pwd->smb_nt_pwd, pwd->smb_lm_pwd);
 	pwd->null_pwd  = False;
-	pwd->cleartext = False;
 	pwd->crypted = False;
 }
 
@@ -61,12 +56,9 @@ static void pwd_make_lm_nt_16(struct pwd_info *pwd, const char *clr)
 
 void pwd_set_cleartext(struct pwd_info *pwd, const char *clr)
 {
-	pwd_init(pwd);
-	push_ascii_fstring(pwd->password, clr);
-	pwd->cleartext = True;
-	pwd->null_pwd  = False;
-	pwd->crypted   = False;
 	pwd_make_lm_nt_16(pwd, clr);
+	fstrcpy(pwd->password, clr);
+	pwd->cleartext = True;
 }
 
 /****************************************************************************
