@@ -23,16 +23,20 @@
 
 #ifdef HAVE_ADS
 
+struct cldap_netlogon_reply {
+	uint32 i1;
+};
+
 /*
   do a cldap netlogon query
 */
-int ads_cldap_netlogon(ADS_STRUCT *ads)
+static int send_cldap_netlogon(int sock, const char *domain, 
+			       const char *hostname, unsigned ntversion)
 {
 	ASN1_DATA data;
 	char ntver[4];
-	int sock;
 
-	SIVAL(ntver, 0, 6);
+	SIVAL(ntver, 0, ntversion);
 
 	memset(&data, 0, sizeof(data));
 
@@ -49,14 +53,13 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 
 	asn1_push_tag(&data, ASN1_CONTEXT(3));
 	asn1_write_OctetString(&data, "DnsDomain", 9);
-	asn1_write_OctetString(&data, ads->config.realm, strlen(ads->config.realm));
+	asn1_write_OctetString(&data, domain, strlen(domain));
 	asn1_pop_tag(&data);
 
 	asn1_push_tag(&data, ASN1_CONTEXT(3));
 	asn1_write_OctetString(&data, "Host", 4);
-	asn1_write_OctetString(&data, "blu", 3);
+	asn1_write_OctetString(&data, hostname, strlen(hostname));
 	asn1_pop_tag(&data);
-
 
 	asn1_push_tag(&data, ASN1_CONTEXT(3));
 	asn1_write_OctetString(&data, "NtVer", 5);
@@ -77,6 +80,75 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 		return -1;
 	}
 
+	if (write(sock, data.data, data.length) != data.length) {
+		d_printf("failed to send cldap query (%s)\n", strerror(errno));
+	}
+
+	file_save("cldap_query.dat", data.data, data.length);
+	asn1_free(&data);
+
+	return 0;
+}
+
+
+/*
+  receive a cldap netlogon reply
+*/
+static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
+{
+	int ret;
+	ASN1_DATA data;
+	DATA_BLOB blob;
+	DATA_BLOB os1, os2, os3;
+
+	blob = data_blob(NULL, 8192);
+
+	ret = read(sock, blob.data, blob.length);
+	if (ret <= 0) {
+		d_printf("no reply to cldap netlogon\n");
+		return -1;
+	}
+	blob.length = ret;
+
+	file_save("cldap_reply.dat", blob.data, blob.length);
+
+	asn1_load(&data, blob);
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_read_Integer(&data, &reply->i1);
+	asn1_start_tag(&data, ASN1_APPLICATION(4));
+	asn1_read_OctetString(&data, &os1);
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_read_OctetString(&data, &os2);
+	asn1_start_tag(&data, ASN1_SET);
+	asn1_read_OctetString(&data, &os3);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	file_save("cldap_reply_core.dat", os3.data, os3.length);
+	
+	data_blob_free(&os1);
+	data_blob_free(&os2);
+	data_blob_free(&os3);
+	data_blob_free(&blob);
+	
+	return 0;
+}
+
+
+/*
+  do a cldap netlogon query
+*/
+int ads_cldap_netlogon(ADS_STRUCT *ads)
+{
+	int sock;
+	int ret;
+	extern pstring global_myname;
+	struct cldap_netlogon_reply reply;
+
 	sock = open_udp_socket(inet_ntoa(ads->ldap_ip), ads->ldap_port);
 	if (sock == -1) {
 		d_printf("Failed to open udp socket to %s:%u\n", 
@@ -85,10 +157,16 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 		return -1;
 	}
 
-	write(sock, data.data, data.length);
-	file_save("cldap_query.dat", data.data, data.length);
-	asn1_free(&data);
-	return 0;
+	ret = send_cldap_netlogon(sock, ads->config.realm, global_myname, 6);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = recv_cldap_netlogon(sock, &reply);
+
+	close(sock);
+	
+	return ret;
 }
 
 
