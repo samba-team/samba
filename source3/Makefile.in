@@ -374,7 +374,7 @@ MOUNT_OBJ = client/smbmount.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) 
 
 MNT_OBJ = client/smbmnt.o \
-             $(PARAM_OBJ) $(LIB_OBJ)
+             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o \
              $(PARAM_OBJ) $(LIB_OBJ)
