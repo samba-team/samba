@@ -545,7 +545,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
 	pstring fname;
 	int c;
-	int profile_only = 0;
+	static int profile_only = 0;
 	static int new_debuglevel = -1;
 	TDB_CONTEXT *tdb;
 	poptContext pc;
