@@ -38,7 +38,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id");
+RCSID("$Id$");
 
 struct facility {
     int min;
@@ -223,8 +223,18 @@ krb5_openlog(krb5_context context,
 				   logname,
 				   NULL)){
 	struct facility *fp = NULL;
-	int min = 0, max = 0, n;
-	n = sscanf(p, "%d-%d/", &min, &max);
+	int min = 0, max = -1, n;
+	char c;
+	n = sscanf(p, "%d%c%d/", &min, &c, &max);
+	if(n == 2){
+	    if(c == '/')
+		if(min < 0){
+		    max = -min;
+		    min = 0;
+		}else{
+		    max = min;
+		}
+	}
 	if(n){
 	    p = strchr(p, '/');
 	    if(p == NULL) continue;
@@ -301,7 +311,7 @@ krb5_vlog_msg(krb5_context context,
     strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&t));
     for(i = 0; i < fac->len; i++)
 	if(fac->val[i].min <= level && 
-	   (fac->val[i].max == 0 || fac->val[i].max >= level))
+	   (fac->val[i].max < 0 || fac->val[i].max >= level))
 	    (*fac->val[i].log)(&fac->val[i], buf, msg);
     *reply = msg;
     return 0;
