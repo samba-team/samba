@@ -397,13 +397,19 @@ BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 
 TDB_CONTEXT *open_usr_db(const DOM_SID * sid, uint32 rid, int perms)
 {
+	TDB_CONTEXT *db;
 	pstring tmp;
 	pstring usr;
 
 	sid_to_string(tmp, sid);
 	slprintf(usr, sizeof(usr) - 1, "%s/usr/%x", tmp, rid);
 
-	return tdb_open(passdb_path(usr), 0, 0, perms, 0644);
+	db = tdb_open(passdb_path(usr), 0, 0, perms, 0644);
+	if (db == NULL)
+	{
+		DEBUG(2,("open_usr_db: open failed, perms: %x\n", perms));
+	}
+	return db;
 }
 
 /*******************************************************************
@@ -441,8 +447,11 @@ uint32 samr_open_user_tdb(const POLICY_HND *parent_pol,
 		perms_write = IS_BITS_SET_SOME(ace_perms,
 					       SEC_RIGHTS_WRITE_OWNER |
 					       SEC_RIGHTS_WRITE_DAC);
-		perms_read = IS_BITS_SET_ALL(ace_perms, SEC_RIGHTS_READ);
+		perms_read = IS_BITS_SET_ALL(ace_perms, SEC_RIGHTS_READ_CONTROL);
 
+		DEBUG(10,("_samr_open_user: read: %s ", BOOLSTR(perms_read)));
+		DEBUG(10,("write: %s\n", BOOLSTR(perms_write)));
+		
 		if (perms_write)
 			perms = O_WRONLY;
 		if (perms_read)
