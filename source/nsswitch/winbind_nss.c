@@ -191,7 +191,7 @@ int read_sock(void *buffer, int count)
 {
     int result, nread;
 
-   /* Read data from socket */
+    /* Read data from socket */
 
     nread = 0;
 
@@ -213,7 +213,49 @@ int read_sock(void *buffer, int count)
         nread += result;
     }
 
-    return nread;
+    return result;
+}
+
+/* Read reply */
+
+int read_reply(struct winbindd_response *response)
+{
+    int result1, result2;
+
+    if (!response) {
+        return -1;
+    }
+
+    /* Read fixed length response */
+
+    if ((result1 = read_sock(response, sizeof(struct winbindd_response)))
+         == -1) {
+
+        return -1;
+    }
+
+    /* Read variable length response */
+
+    if (response->length > sizeof(struct winbindd_response)) {
+        int extra_data_len = response->length - 
+            sizeof(struct winbindd_response);
+
+        /* Mallocate memory for extra data */
+
+        if (!(response->extra_data = malloc(extra_data_len))) {
+            return -1;
+        }
+
+        if ((result2 = read_sock(response->extra_data, extra_data_len))
+            == -1) {
+
+            return -1;
+        }
+    }
+
+    /* Return total amount of data read */
+
+    return result1 + result2;
 }
 
 /* Allocate some space from the nss static buffer.  The buffer and buflen
@@ -385,7 +427,6 @@ static int fill_grent(struct group *result,
 {
     struct winbindd_gr *gr = &response->data.gr;
     fstring name;
-    char *mem;
     int i;
 
     /* Group name */
@@ -418,10 +459,9 @@ static int fill_grent(struct group *result,
 
     result->gr_gid = gr->gr_gid;
 
-    /* Group membership.  Turn comma separated string into array of
-       char pointers. */
+    /* Group membership */
 
-    if (gr->num_gr_mem < 0) {
+    if ((gr->num_gr_mem < 0) || !response->extra_data) {
         gr->num_gr_mem = 0;
     }
 
@@ -443,13 +483,11 @@ static int fill_grent(struct group *result,
         return NSS_STATUS_SUCCESS;
     }
 
-    /* Start looking at list */
+    /* Start looking at extra data */
 
     i = 0;
 
-    mem = gr->gr_mem;
-
-    while(next_token(&mem, name, ",", sizeof(fstring))) {
+    while(next_token(&response->extra_data, name, ",", sizeof(fstring))) {
         
         /* Allocate space for member */
         
@@ -507,7 +545,7 @@ _nss_ntdom_setpwent(void)
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -550,7 +588,7 @@ _nss_ntdom_endpwent(void)
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -594,7 +632,7 @@ _nss_ntdom_getpwent_r(struct passwd *result, char *buffer,
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -628,7 +666,7 @@ _nss_ntdom_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -664,7 +702,7 @@ _nss_ntdom_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -711,7 +749,7 @@ _nss_ntdom_setgrent(void)
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -754,7 +792,7 @@ _nss_ntdom_endgrent(void)
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -798,7 +836,7 @@ _nss_ntdom_getgrent_r(struct group *result,
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -835,7 +873,7 @@ _nss_ntdom_getgrnam_r(const char *name,
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
@@ -870,7 +908,7 @@ _nss_ntdom_getgrgid_r(gid_t gid,
 
     /* Wait for reply */
 
-    if (read_sock(&response, sizeof(response)) == -1) {
+    if (read_reply(&response) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
