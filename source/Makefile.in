@@ -623,6 +623,10 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
+bin/smbwrapper.@SHLIBEXT@: smbwrapper.@SHLIBEXT@
+
+bin/smbwrapper.32.@SHLIBEXT@: smbwrapper.32.@SHLIBEXT@
+
 smbwrapper.@SHLIBEXT@: $(PICOBJS)
 	@echo Linking shared library bin/$@
 	@$(SHLD) @LDSHFLAGS@ -o bin/$@ $(PICOBJS) $(LIBS)

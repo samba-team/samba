@@ -1721,12 +1721,12 @@ AC_ARG_WITH(smbwrapper,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SMBWRAPPER)
 	WRAPPROG="bin/smbsh"
-	WRAP="smbwrapper.$SHLIBEXT"
+	WRAP="bin/smbwrapper.$SHLIBEXT"
 
 	if test x$ATTEMPT_WRAP32_BUILD = x; then
 		WRAP32=""
 	else
-			WRAP32=smbwrapper.32.$SHLIBEXT
+			WRAP32=bin/smbwrapper.32.$SHLIBEXT
 	fi
 
 # Conditions under which smbwrapper should not be built.
