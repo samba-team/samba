@@ -239,24 +239,30 @@ cmd
 		}
 	| RETR SP pathname CRLF check_login
 		{
-			if ($5 && $3 != NULL)
-				retrieve(0, $3);
-			if ($3 != NULL)
-				free($3);
+			char *name = $3;
+
+			if ($5 && name != NULL)
+				retrieve(0, name);
+			if (name != NULL)
+				free(name);
 		}
 	| STOR SP pathname CRLF check_login
 		{
-			if ($5 && $3 != NULL)
-				do_store($3, "w", 0);
-			if ($3 != NULL)
-				free($3);
+			char *name = $3;
+
+			if ($5 && name != NULL)
+				do_store(name, "w", 0);
+			if (name != NULL)
+				free(name);
 		}
 	| APPE SP pathname CRLF check_login
 		{
-			if ($5 && $3 != NULL)
-				do_store($3, "a", 0);
-			if ($3 != NULL)
-				free($3);
+			char *name = $3;
+
+			if ($5 && name != NULL)
+				do_store(name, "a", 0);
+			if (name != NULL)
+				free(name);
 		}
 	| NLST CRLF check_login
 		{
@@ -265,10 +271,12 @@ cmd
 		}
 	| NLST SP STRING CRLF check_login
 		{
-			if ($5 && $3 != NULL)
-				send_file_list($3);
-			if ($3 != NULL)
-				free($3);
+			char *name = $3;
+
+			if ($5 && name != NULL)
+				send_file_list(name);
+			if (name != NULL)
+				free(name);
 		}
 	| LIST CRLF check_login
 		{
@@ -537,15 +545,13 @@ cmd
 #ifdef KRB4
 		    if(guest)
 			reply(500, "Can't be done as guest.");
-		    else if($7){
+		    else if($7)
 			afslog($5);
-		    }
 		    if($5)
 			free($5);
 #else
 		    reply(500, "Command not implemented.");
 #endif
-		}
 		}
 	| SITE SP LOCATE SP STRING CRLF check_login
 		{
