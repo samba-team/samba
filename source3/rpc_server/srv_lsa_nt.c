@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -473,3 +474,4 @@ uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECR
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
+#undef OLD_NTDOMAIN
