@@ -55,8 +55,8 @@ char STRING[] = "****************";
 #define FRONT	020
 #define X_INCR 3
 #define Y_INCR 2
-#define CTRL 1
-#define NOCTRL 0
+#define XNLOCK_CTRL 1
+#define XNLOCK_NOCTRL 0
 
 XtAppContext	app;
 Display        *dpy;
@@ -540,7 +540,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     XKeyEvent *event = (XKeyEvent *)_event;
     static char passwd[MAX_PASSWD_LENGTH];
     static int cnt;
-    static int is_ctrl = NOCTRL;
+    static int is_ctrl = XNLOCK_NOCTRL;
     char c;
     KeySym keysym;
 
@@ -563,14 +563,14 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     if (event->type == KeyRelease) {
       keysym = XLookupKeysym(event, 0);
       if (keysym == XK_Control_L || keysym == XK_Control_R) {
-	is_ctrl = NOCTRL;
+	is_ctrl = XNLOCK_NOCTRL;
       }
     }
     if (event->type != KeyPress)
 	return;
     keysym = XLookupKeysym(event, 0);
     if (keysym == XK_Control_L || keysym == XK_Control_R) {
-      is_ctrl = CTRL;
+      is_ctrl = XNLOCK_CTRL;
       return;
     }
     if (!XLookupString(event, &c, 1, &keysym, 0))
@@ -644,7 +644,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     if (keysym == XK_BackSpace || keysym == XK_Delete || keysym == XK_Left) {
 	if (cnt)
 	    passwd[cnt--] = ' ';
-    } else if (keysym == XK_u && is_ctrl == CTRL) {
+    } else if (keysym == XK_u && is_ctrl == XNLOCK_CTRL) {
       while (cnt) {
 	passwd[cnt--] = ' ';
 	XDrawImageString(dpy, XtWindow(w), gc,
