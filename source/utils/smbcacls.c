@@ -37,6 +37,7 @@ static int numeric;
 
 enum acl_mode {ACL_SET, ACL_DELETE, ACL_MODIFY, ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
+enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 struct perm_value {
 	char *perm;
@@ -463,24 +464,24 @@ int do_cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 /***************************************************** 
 dump the acls for a file
 *******************************************************/
-static void cacl_dump(struct cli_state *cli, char *filename)
+static int cacl_dump(struct cli_state *cli, char *filename)
 {
 	int fnum;
 	SEC_DESC *sd;
 
-	if (test_args) return;
+	if (test_args) return EXIT_OK;
 
 	fnum = do_cli_nt_create(cli, filename, 0x20000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	sd = cli_query_secdesc(cli, fnum);
 
 	if (!sd) {
 		printf("ERROR: secdesc query failed: %s\n", cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	sec_desc_print(stdout, sd);
@@ -488,6 +489,8 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 	free_sec_desc(&sd);
 
 	cli_close(cli, fnum);
+
+	return EXIT_OK;
 }
 
 /***************************************************** 
@@ -495,7 +498,8 @@ Change the ownership or group ownership of a file. Just
 because the NT docs say this can't be done :-). JRA.
 *******************************************************/
 
-static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *filename, char *new_username)
+static int owner_set(struct cli_state *cli, enum chown_mode change_mode, 
+		     char *filename, char *new_username)
 {
 	int fnum;
 	DOM_SID sid;
@@ -508,11 +512,11 @@ static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *
 
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	if (!StringToSid(&sid, new_username))
-		return;
+		return EXIT_PARSE_ERROR;
 
 	old = cli_query_secdesc(cli, fnum);
 
@@ -529,6 +533,8 @@ static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *
 	free_sec_desc(&old);
 
 	cli_close(cli, fnum);
+
+	return EXIT_OK;
 }
 
 /* The MSDN is contradictory over the ordering of ACE entries in an ACL.
@@ -579,18 +585,19 @@ static void sort_acl(SEC_ACL *the_acl)
 /***************************************************** 
 set the ACLs on a file given an ascii description
 *******************************************************/
-static void cacl_set(struct cli_state *cli, char *filename, 
-		     char *the_acl, enum acl_mode mode)
+static int cacl_set(struct cli_state *cli, char *filename, 
+		    char *the_acl, enum acl_mode mode)
 {
 	int fnum;
 	SEC_DESC *sd, *old;
 	int i, j;
 	size_t sd_size;
+	int result = EXIT_OK;
 
 	sd = sec_desc_parse(the_acl);
 
-	if (!sd) return;
-	if (test_args) return;
+	if (!sd) return EXIT_PARSE_ERROR;
+	if (test_args) return EXIT_OK;
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
@@ -600,7 +607,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	old = cli_query_secdesc(cli, fnum);
@@ -688,6 +695,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
+		result = EXIT_FAILED;
 	}
 
 	/* Clean up */
@@ -696,6 +704,8 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	free_sec_desc(&old);
 
 	cli_close(cli, fnum);
+
+	return result;
 }
 
 
@@ -828,6 +838,7 @@ You can string acls together with spaces, commas or newlines\n\
 	enum acl_mode mode;
 	char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
+	int result;
 
 	setlinebuf(stdout);
 
@@ -835,7 +846,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	if (argc < 3 || argv[1][0] == '-') {
 		usage();
-		exit(1);
+		exit(EXIT_PARSE_ERROR);
 	}
 
 	setup_logging(argv[0],True);
@@ -920,11 +931,11 @@ You can string acls together with spaces, commas or newlines\n\
 
 		case 'h':
 			usage();
-			exit(1);
+			exit(EXIT_PARSE_ERROR);
 
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
-			exit(1);
+			exit(EXIT_PARSE_ERROR);
 		}
 	}
 
@@ -933,16 +944,15 @@ You can string acls together with spaces, commas or newlines\n\
 	
 	if (argc > 0) {
 		usage();
-		exit(1);
+		exit(EXIT_PARSE_ERROR);
 	}
 
 	/* Make connection to server */
 
 	if (!test_args) {
 		cli = connect_one(share);
-		if (!cli) exit(1);
+		if (!cli) exit(EXIT_FAILED);
 	}
-
 
 	{
 		char *s;
@@ -957,12 +967,12 @@ You can string acls together with spaces, commas or newlines\n\
 	/* Perform requested action */
 
 	if (change_mode != REQUEST_NONE) {
-		owner_set(cli, change_mode, filename, owner_username);
+		result = owner_set(cli, change_mode, filename, owner_username);
 	} else if (the_acl) {
-		cacl_set(cli, filename, the_acl, mode);
+		result = cacl_set(cli, filename, the_acl, mode);
 	} else {
-		cacl_dump(cli, filename);
+		result = cacl_dump(cli, filename);
 	}
 
-	return(0);
+	return result;
 }
