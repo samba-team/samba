@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <ctype.h>
+#include <signal.h>
 #include "tdb.h"
 
 static void print_data(TDB_DATA d)
