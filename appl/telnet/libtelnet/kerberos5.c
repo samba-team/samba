@@ -449,7 +449,7 @@ kerberos5_status(Authenticator *ap, char *name, int level)
 	return(level);
 
     if (UserNameRequested &&
-	/*krb5_kuserok(context, authdat->ticket->enc_part2->client, UserNameRequested)*/ 1)
+	krb5_kuserok(context, authdat->ticket->enc_part2->client, UserNameRequested))
 	{
 	    strcpy(name, UserNameRequested);
 	    return(AUTH_VALID);
