@@ -269,10 +269,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring domain;
 	fstring wks;
 	BOOL guest_user = False;
-	uchar null_smb_passwd[16];
 
-	const uchar *smb_passwd_ptr = NULL;
-	
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 
