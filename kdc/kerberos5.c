@@ -316,21 +316,21 @@ as_rep(KDC_REQ *req,
     et.flags.initial = 1;
     if(client->flags.forwardable && server->flags.forwardable)
 	et.flags.forwardable = f.forwardable;
-    else{
+    else if (f.forwardable) {
 	ret = KRB5KDC_ERR_POLICY;
 	kdc_log(0, "Ticket may not be forwardable -- %s", client_name);
 	goto out;
     }
     if(client->flags.proxiable && server->flags.proxiable)
 	et.flags.proxiable = f.proxiable;
-    else{
+    else if (f.proxiable) {
 	ret = KRB5KDC_ERR_POLICY;
 	kdc_log(0, "Ticket may not be proxiable -- %s", client_name);
 	goto out;
     }
     if(client->flags.postdate && server->flags.postdate)
 	et.flags.may_postdate = f.allow_postdate;
-    else{
+    else if (f.allow_postdate){
 	ret = KRB5KDC_ERR_POLICY;
 	kdc_log(0, "Ticket may not be postdatable -- %s", client_name);
 	goto out;
