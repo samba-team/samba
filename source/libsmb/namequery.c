@@ -671,7 +671,7 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	for( i = num_interfaces-1; i >= 0; i--) {
 		struct in_addr sendto_ip;
 		/* Done this way to fix compiler error on IRIX 5.x */
-		sendto_ip = *iface_bcast(*iface_n_ip(i));
+		sendto_ip = *iface_n_bcast(i);
 		*return_ip_list = name_query(sock, name, name_type, True, 
 				    True, sendto_ip, return_count);
 		if(*return_ip_list != NULL) {
