@@ -50,12 +50,20 @@ int samdb_connect(void)
 	return 0;
 }
 
+/*
+  a alloc function for ldb
+*/
+static void *samdb_alloc(void *context, void *ptr, size_t size)
+{
+	return talloc_realloc((TALLOC_CTX *)context, ptr, size);
+}
 
 /*
   search the sam for the specified attributes - va_list varient
 */
-int samdb_search_v(struct ldb_message ***res,
-		   const char * const *attrs,
+int samdb_search_v(TALLOC_CTX *mem_ctx,
+		   struct ldb_message ***res,
+		   char * const *attrs,
 		   const char *format, 
 		   va_list ap)
 {
@@ -66,6 +74,8 @@ int samdb_search_v(struct ldb_message ***res,
 	if (expr == NULL) {
 		return -1;
 	}
+
+	ldb_set_alloc(sam_db, samdb_alloc, mem_ctx);
 
 	count = ldb_search(sam_db, NULL, LDB_SCOPE_SUBTREE, expr, attrs, res);
 
@@ -78,15 +88,16 @@ int samdb_search_v(struct ldb_message ***res,
 /*
   search the sam for the specified attributes - varargs varient
 */
-int samdb_search(struct ldb_message ***res,
-		 const char * const *attrs,
+int samdb_search(TALLOC_CTX *mem_ctx, 
+		 struct ldb_message ***res,
+		 char * const *attrs,
 		 const char *format, ...)
 {
 	va_list ap;
 	int count;
 
 	va_start(ap, format);
-	count = samdb_search_v(res, attrs, format, ap);
+	count = samdb_search_v(mem_ctx, res, attrs, format, ap);
 	va_end(ap);
 
 	return count;
@@ -95,8 +106,9 @@ int samdb_search(struct ldb_message ***res,
 /*
   free up a search result
 */
-int samdb_search_free(struct ldb_message **res)
+int samdb_search_free(TALLOC_CTX *mem_ctx, struct ldb_message **res)
 {
+	ldb_set_alloc(sam_db, samdb_alloc, mem_ctx);
 	return ldb_search_free(sam_db, res);
 }
 				 
@@ -104,18 +116,18 @@ int samdb_search_free(struct ldb_message **res)
 /*
   search the sam for a single string attribute in exactly 1 record
 */
-const char *samdb_search_string(TALLOC_CTX *mem_ctx,
-				const char *attr_name,
-				const char *format, ...)
+char *samdb_search_string(TALLOC_CTX *mem_ctx,
+			  const char *attr_name,
+			  const char *format, ...)
 {
 	va_list ap;
 	int count;
-	const char * const attrs[2] = { attr_name, NULL };
+	char * const attrs[2] = { attr_name, NULL };
 	struct ldb_message **res = NULL;
-	const char *str = NULL;
+	char *str = NULL;
 
 	va_start(ap, format);
-	count = samdb_search_v(&res, attrs, format, ap);
+	count = samdb_search_v(mem_ctx, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count == 0) {
@@ -129,7 +141,7 @@ const char *samdb_search_string(TALLOC_CTX *mem_ctx,
 	    res[0]->elements[0].values[0].data == NULL) {
 		DEBUG(1,("samdb: search for %s %s not single valued\n", 
 			 attr_name, format));
-		samdb_search_free(res);
+		samdb_search_free(mem_ctx, res);
 		return NULL;
 	}
 
@@ -137,7 +149,7 @@ const char *samdb_search_string(TALLOC_CTX *mem_ctx,
 			     res[0]->elements[0].values[0].data,
 			     res[0]->elements[0].values[0].length);
 
-	samdb_search_free(res);
+	samdb_search_free(mem_ctx, res);
 
 	return str;
 }
@@ -154,11 +166,11 @@ int samdb_search_string_multiple(TALLOC_CTX *mem_ctx,
 {
 	va_list ap;
 	int count, i;
-	const char * const attrs[2] = { attr_name, NULL };
+	char * const attrs[2] = { attr_name, NULL };
 	struct ldb_message **res = NULL;
 
 	va_start(ap, format);
-	count = samdb_search_v(&res, attrs, format, ap);
+	count = samdb_search_v(mem_ctx, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count <= 0) {
@@ -172,14 +184,14 @@ int samdb_search_string_multiple(TALLOC_CTX *mem_ctx,
 		    res[i]->elements[0].values[0].data == NULL) {
 			DEBUG(1,("samdb: search for %s %s not single valued\n", 
 				 attr_name, format));
-			samdb_search_free(res);
+			samdb_search_free(mem_ctx, res);
 			return -1;
 		}
 	}
 
 	*strs = talloc_array_p(mem_ctx, char *, count+1);
 	if (! *strs) {
-		samdb_search_free(res);
+		samdb_search_free(mem_ctx, res);
 		return -1;
 	}
 
@@ -190,7 +202,7 @@ int samdb_search_string_multiple(TALLOC_CTX *mem_ctx,
 	}
 	(*strs)[count] = NULL;
 
-	samdb_search_free(res);
+	samdb_search_free(mem_ctx, res);
 
 	return count;
 }
