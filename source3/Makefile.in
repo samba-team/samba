@@ -17,9 +17,7 @@ AWK=@AWK@
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
 
-LIBTOOL=@LIBTOOL@ --quiet
-LIBTOOL_DEPS=@LIBTOOL_DEPS@
-LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
+LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
 INSTALLCMD=@INSTALL@
 
@@ -445,15 +443,6 @@ MAKEDIR = || exec false; \
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
 	  -o $@ 
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
-
-# This is for libtool
-.c.lo: 
-	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
-	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@echo Compiling $< with libtool
-	@$(LIBTOOL) --mode=compile \
-	  $(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
-	  -o $@ 
 
 .c.po: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
