@@ -472,6 +472,7 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 /****************************************************************************
  Use in-memory credentials cache
 ****************************************************************************/
+
 static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
 }
@@ -483,18 +484,23 @@ static void use_in_memory_ccache(void) {
 static BOOL cli_session_setup_kerberos(struct cli_state *cli, const char *principal, const char *workgroup)
 {
 	DATA_BLOB blob2, negTokenTarg;
-
+	unsigned char session_key_krb5[16];
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	
 	DEBUG(2,("Doing kerberos session setup\n"));
 
 	/* generate the encapsulated kerberos5 ticket */
-	negTokenTarg = spnego_gen_negTokenTarg(principal, 0);
+	negTokenTarg = spnego_gen_negTokenTarg(principal, 0, session_key_krb5);
 
-	if (!negTokenTarg.data) return False;
+	if (!negTokenTarg.data)
+		return False;
 
 #if 0
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
 #endif
 
+	cli_simple_set_signing(cli, session_key_krb5, null_blob); 
+			
 	blob2 = cli_session_setup_blob(cli, negTokenTarg);
 
 	/* we don't need this blob for kerberos */
@@ -551,7 +557,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 						  blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DATA_BLOB null = data_blob(NULL, 0);
+			DATA_BLOB null_blob = data_blob(NULL, 0);
 			if (turn == 1) {
 				/* and wrap it in a SPNEGO wrapper */
 				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
@@ -562,7 +568,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 		
 			cli_simple_set_signing(cli, 
 					       ntlmssp_state->session_key.data, 
-					       null); 
+					       null_blob); 
 			
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
