@@ -73,50 +73,34 @@ static void add_subnet(struct subnet_record *subrec)
   subrec->prev = subrec2;
 }
 
-/* CRH!!! */
-#if 0
-/* ************************************************************************** ** * This will go away when we move to a "real" database back-end.
-  Note that we cannot use memcmp here as we have no control
-  over how the struct nmb_name structures are packed in memory. JRA.
- * ************************************************************************** ** */
-static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
-  {
-  struct name_record *NR = (struct name_record *)Node;
-  struct nmb_name *nmbname = (struct nmb_name *)Item;
-  int ret;
-
-  if(nmb_name_equal( &NR->name, nmbname))
-    return 0;
-
-  ret = strcmp( nmbname->name, NR->name.name);
-  if(ret)
-    return ret;
-
-  ret = strcmp( nmbname->scope, NR->name.scope);
-  if(ret)
-    return ret;
-
-  return nmbname->name_type - NR->name.name_type;
-  } /* namelist_entry_compare */
-#else
 /* ************************************************************************** **
- * This will go away when we move to a "real" database back-end.
+ * Comparison routine for ordering the splay-tree based namelists assoicated
+ * with each subnet record.
+ *
+ *  Input:  Item  - Pointer to the comparison key.
+ *          Node  - Pointer to a node the splay tree.
+ *
+ *  Output: The return value will be <0 , ==0, or >0 depending upon the
+ *          ordinal relationship of the two keys.
+ *
  * ************************************************************************** **
  */
 static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
   {
   struct name_record *NR = (struct name_record *)Node;
 
-  struct nmb_name *Iname = (struct nmb_name *)Item;
-  DEBUG(10, ("namelist_entry_compare: %d == memcmp( \"%s\", \"%s\", %d )\n",
-          memcmp( Item, &(NR->name), sizeof(struct nmb_name) ),
-          namestr(Iname), namestr(&NR->name), sizeof(struct nmb_name)) );
+  if( DEBUGLVL( 10 ) )
+    {
+    struct nmb_name *Iname = (struct nmb_name *)Item;
+
+    Debug1( "nmbd_subnetdb:namelist_entry_compare()\n" );
+    Debug1( "%d == memcmp( \"%s\", \"%s\", %d )\n",
+            memcmp( Item, &(NR->name), sizeof(struct nmb_name) ),
+            namestr(Iname), namestr(&NR->name), sizeof(struct nmb_name) );
+    }
 
   return( memcmp( Item, &(NR->name), sizeof(struct nmb_name) ) ); 
   } /* namelist_entry_compare */
-
-#endif
-/* CRH!!! */   
 
 /****************************************************************************
   Create a subnet entry.
@@ -148,15 +132,25 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
 
     if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, myip.s_addr)) == -1)
     {
-      DEBUG(0,("make_subnet: Failed to open nmb socket on interface %s \
-for port %d. Error was %s\n", inet_ntoa(myip), global_nmb_port, strerror(errno)));
+      if( DEBUGLVL( 0 ) )
+      {
+        Debug1( "nmbd_subnetdb:make_subnet()\n" );
+        Debug1( "  Failed to open nmb socket on interface %s ", inet_ntoa(myip) );
+        Debug1( "for port %d.  ", global_nmb_port );
+        Debug1( "Error was %s\n", strerror(errno) );
+      }
       return NULL;
     }
 
     if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, myip.s_addr)) == -1)
     {
-      DEBUG(0,("make_subnet: Failed to open dgram socket on interface %s \
-for port %d. Error was %s\n", inet_ntoa(myip), DGRAM_PORT, strerror(errno)));
+      if( DEBUGLVL( 0 ) )
+      {
+        Debug1( "nmbd_subnetdb:make_subnet()\n" );
+        Debug1( "  Failed to open dgram socket on interface %s ", inet_ntoa(myip) );
+        Debug1( "for port %d.  ", DGRAM_PORT );
+        Debug1( "Error was %s\n", strerror(errno) );
+      }
       return NULL;
     }
 
