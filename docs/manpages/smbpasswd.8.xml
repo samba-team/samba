@@ -314,8 +314,7 @@
 		<varlistentry>
 		<term>-w password</term>
 		<listitem><para>This parameter is only available if Samba
-		has been configured to use the experimental
-		<command>--with-ldapsam</command> option. The <parameter>-w</parameter> 
+		has been compiled with LDAP support. The <parameter>-w</parameter> 
 		switch is used to specify the password to be used with the 
 		<smbconfoption><name>ldap admin dn</name></smbconfoption>.  Note that the password is stored in
 		the <filename>secrets.tdb</filename> and is keyed off 
