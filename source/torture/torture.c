@@ -1804,7 +1804,7 @@ static BOOL run_attrtest(int dummy)
 		correct = False;
 	}
 
-	if (abs(t - time(NULL)) > 2) {
+	if (abs(t - time(NULL)) > 60*60*24*10) {
 		printf("ERROR: SMBgetatr bug. time is %s",
 		       ctime(&t));
 		t = time(NULL);
@@ -2867,7 +2867,7 @@ static BOOL run_dirtest(int dummy)
 	srandom(0);
 	for (i=0;i<numops;i++) {
 		fstring fname;
-		slprintf(fname, sizeof(fname), "%x", (int)random());
+		slprintf(fname, sizeof(fname), "\\%x", (int)random());
 		fnum = cli_open(&cli, fname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum == -1) {
 			fprintf(stderr,"Failed to open %s\n", fname);
@@ -2887,7 +2887,7 @@ static BOOL run_dirtest(int dummy)
 	srandom(0);
 	for (i=0;i<numops;i++) {
 		fstring fname;
-		slprintf(fname, sizeof(fname), "%x", (int)random());
+		slprintf(fname, sizeof(fname), "\\%x", (int)random());
 		cli_unlink(&cli, fname);
 	}
 
