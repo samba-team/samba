@@ -1,3 +1,8 @@
+2000-01-01  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/sys_term.c (addarg): make void (return value isn't check
+	anyway).  fatal error when malloc fails
+
 1999-12-16  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (*): handle ai_canonname not being set
