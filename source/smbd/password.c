@@ -1558,6 +1558,7 @@ BOOL domain_client_validate( char *user, char *domain,
    */
 
   ZERO_STRUCT(cli);
+  cli.fd = -1;
 
   /*
    * Treat each name in the 'password server =' line as a potential
