@@ -1344,7 +1344,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
       Connections[cnum].num_files_open++;
       fsp->mode = sbuf->st_mode;
       GetTimeOfDay(&fsp->open_time);
-      fsp->uid = current_user.id;
+      fsp->vuid = current_user.vuid;
       fsp->size = 0;
       fsp->pos = -1;
       fsp->open = True;
@@ -1637,13 +1637,15 @@ BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
           {
             DEBUG(0,("check_file_sharing: NT redirector workaround - rename attempted on \
 batch oplocked file %s, dev = %x, inode = %x\n", fname, dev, inode));
-#if 0
             /* 
              * This next line is a test that allows the deny-mode
-             * processing to be skipped. JRA.
+             * processing to be skipped. This seems to be needed as
+             * NT insists on the rename succeeding (in Office 9x no less !).
+             * This should be removed as soon as (a) MS fix the redirector
+             * bug or (b) NT SMB support in Samba makes NT not issue the
+             * call (as is my fervent hope). JRA.
              */ 
             continue;
-#endif
           }
           else
           {
@@ -3695,6 +3697,31 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   return(cnum);
 }
 
+/****************************************************************************
+  Attempt to break an oplock on a file (if oplocked).
+  Returns True if the file was closed as a result of
+  the oplock break, False otherwise.
+  Used as a last ditch attempt to free a space in the 
+  file table when we have run out.
+****************************************************************************/
+
+static BOOL attempt_close_oplocked_file(files_struct *fp)
+{
+
+  DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fp->name));
+
+  if (fp->open && fp->granted_oplock && !fp->sent_oplock_break) {
+
+    /* Try and break the oplock. */
+    file_fd_struct *fsp = fp->fd_ptr;
+    if(oplock_break( fsp->dev, fsp->inode, &fp->open_time)) {
+      if(!fp->open) /* Did the oplock break close the file ? */
+        return True;
+    }
+  }
+
+  return False;
+}
 
 /****************************************************************************
   find first available file slot
@@ -3734,6 +3761,32 @@ int find_free_file(void )
 			return(i);
 		}
 
+        /* 
+         * Before we give up, go through the open files 
+         * and see if there are any files opened with a
+         * batch oplock. If so break the oplock and then
+         * re-use that entry (if it becomes closed).
+         * This may help as NT/95 clients tend to keep
+         * files batch oplocked for quite a long time
+         * after they have finished with them.
+         */
+        for (i=first_file;i<MAX_OPEN_FILES;i++) {
+          if(attempt_close_oplocked_file( &Files[i])) {
+            memset(&Files[i], 0, sizeof(Files[i]));
+            first_file = i+1;
+            Files[i].reserved = True;
+            return(i);
+          }
+        }
+
+        for (i=1;i<MAX_OPEN_FILES;i++) {
+          if(attempt_close_oplocked_file( &Files[i])) {
+            memset(&Files[i], 0, sizeof(Files[i]));
+            first_file = i+1;
+            Files[i].reserved = True;
+            return(i);
+          }
+        }
 
 	DEBUG(1,("ERROR! Out of file structures - perhaps increase MAX_OPEN_FILES?\n"));
 	return(-1);
@@ -5280,7 +5333,12 @@ static void usage(char *pname)
   {
     struct rlimit rlp;
     getrlimit(RLIMIT_NOFILE, &rlp);
-    rlp.rlim_cur = (MAX_OPEN_FILES>rlp.rlim_max)? rlp.rlim_max:MAX_OPEN_FILES;
+    /*
+     * Set the fd limit to be MAX_OPEN_FILES + 10 to account for the
+     * extra fd we need to read directories, as well as the log files
+     * and standard handles etc.
+     */
+    rlp.rlim_cur = (MAX_OPEN_FILES+10>rlp.rlim_max)? rlp.rlim_max:MAX_OPEN_FILES+10;
     setrlimit(RLIMIT_NOFILE, &rlp);
     getrlimit(RLIMIT_NOFILE, &rlp);
     DEBUG(3,("Maximum number of open files per session is %d\n",rlp.rlim_cur));

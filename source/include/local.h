@@ -17,16 +17,6 @@
    refer to the special "printers" service */
 #define PRINTERS_NAME "printers"
 
-/* this affects server level security. With this set (recommended)
-   samba will do a full NetWkstaUserLogon to confirm that the client
-   really should have login rights. This can cause problems with
-   machines in trust relationships in which case you can disable it
-   here, but be warned, we have heard that some NT machines will then
-   allow anyone in with any password! Make sure you test it. */
-#ifndef USE_NETWKSTAUSERLOGON
-#define USE_NETWKSTAUSERLOGON 1
-#endif
-
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
 #define SYSLOG_FACILITY LOG_DAEMON

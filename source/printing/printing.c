@@ -486,7 +486,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
   /* we must get 6 tokens */
   if (count < 10)
   {
-      if ((count == 7) && (strcmp(tok[0],"QUEUED") == 0))
+      if ((count == 7) && ((strcmp(tok[0],"QUEUED") == 0) || (strcmp(tok[0],"HELD") == 0)))
       {
           /* the 2nd and 5th columns must be integer */
           if (!isdigit(*tok[1]) || !isdigit(*tok[4])) return(False);
@@ -508,7 +508,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
 
 
           buf->job = atoi(tok[1]);
-          buf->status = LPQ_QUEUED;
+          buf->status = strequal(tok[0],"HELD")?LPQ_PAUSED:LPQ_QUEUED;
 	  buf->priority = 0;
           buf->time = time(NULL);
           StrnCpy(buf->user,tok[3],sizeof(buf->user)-1);

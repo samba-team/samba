@@ -1385,7 +1385,7 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
   if ((vuser != 0) && (lp_security() != SEC_SHARE)) {
     int i;
     for (i=0;i<MAX_OPEN_FILES;i++)
-      if (Files[i].uid == vuser->uid && Files[i].open) {
+      if ((Files[i].vuid == vuid) && Files[i].open) {
 	close_file(i,False);
       }
   }
@@ -3917,7 +3917,7 @@ int reply_getattrE(char *inbuf,char *outbuf)
      date to be last modify date as UNIX doesn't save
      this */
   put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf));
-  put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
+  put_dos_date2(outbuf,smb_vwv2,get_access_time(&sbuf));
   put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
   if (mode & aDIR)
     {

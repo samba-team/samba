@@ -279,6 +279,8 @@ BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
 BOOL lp_time_server(void);
 BOOL lp_bind_interfaces_only(void);
+BOOL lp_net_wksta_user_logon(void);
+BOOL lp_win95_bug_compatibility(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -1340,6 +1342,7 @@ time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
 char *timestring(void );
 time_t get_create_time(struct stat *st);
+time_t get_access_time(struct stat *st);
 
 /*The following definitions come from  trans2.c  */
 
