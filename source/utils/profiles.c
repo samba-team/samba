@@ -514,7 +514,7 @@ void process_acl(ACL *acl, char *prefix)
   }
 } 
 
-void usage(voi)
+void usage(void)
 {
   fprintf(stderr, "usage: profiles [-c <OLD-SID> -n <NEW-SID>] <profilefile>\n");
   fprintf(stderr, "Version: %s\n", VERSION);
@@ -530,11 +530,9 @@ int main(int argc, char *argv[])
   extern char *optarg;
   extern int optind;
   int opt;
-  int i, fd, aces, start = 0;
-  int process_sids = 0;
+  int fd, start = 0;
   char *base;
   struct stat sbuf;
-  fstring sid_str;
   REGF_HDR *regf_hdr;
   HBIN_HDR *hbin_hdr;
   NK_HDR *nk_hdr;
@@ -639,7 +637,7 @@ int main(int argc, char *argv[])
 
   regf_hdr = (REGF_HDR *)base;
 
-  if (verbose) fprintf(stdout, "Registry file size: %u\n", sbuf.st_size);
+  if (verbose) fprintf(stdout, "Registry file size: %u\n", (unsigned int)sbuf.st_size);
 
   if (IVAL(&regf_hdr->REGF_ID, 0) != REG_REGF_ID) {
     fprintf(stderr, "Incorrect Registry file (doesn't have header ID): %s\n", argv[optind]);
@@ -727,5 +725,5 @@ int main(int argc, char *argv[])
   munmap(base, sbuf.st_size); 
 
   close(fd);
-
+  return 0;
 }

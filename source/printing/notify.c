@@ -26,6 +26,7 @@ static TALLOC_CTX *send_ctx;
 
 static struct notify_queue {
 	struct notify_queue *next, *prev;
+	char *printername;
 	void *buf;
 	size_t buflen;
 } *notify_queue_head = NULL;
@@ -40,33 +41,25 @@ BOOL print_notify_messages_pending(void)
 }
 
 /*******************************************************************
- Actually send the batched messages.
+ Send the batched messages - on a per-printer basis.
 *******************************************************************/
 
-void print_notify_send_messages(void)
+static void print_notify_send_messages_to_printer(const char *printer)
 {
-	TDB_CONTEXT *tdb;
 	char *buf;
-	struct notify_queue *pq;
+	struct notify_queue *pq, *pq_next;
 	size_t msg_count = 0, offset = 0;
+	size_t num_pids = 0;
+	size_t i;
+	pid_t *pid_list = NULL;
 
-	if (!print_notify_messages_pending())
-		return;
-
-	if (!send_ctx)
-		return;
-
-	tdb = conn_tdb_ctx();
-
-	if (!tdb) {
-		DEBUG(3, ("Failed to open connections database in send_spoolss_notify2_msg\n"));
-		return;
-	}
-	
 	/* Count the space needed to send the messages. */
-	for (pq = notify_queue_head; pq; pq = pq->next, msg_count++)
-		offset += (pq->buflen + 4);
-		
+	for (pq = notify_queue_head; pq; pq = pq->next) {
+		if (strequal(printer, pq->printername)) {
+			offset += (pq->buflen + 4);
+			msg_count++;
+		}	
+	}
 	offset += 4; /* For count. */
 
 	buf = talloc(send_ctx, offset);
@@ -79,19 +72,50 @@ void print_notify_send_messages(void)
 	offset = 0;
 	SIVAL(buf,offset,msg_count);
 	offset += 4;
-	for (pq = notify_queue_head; pq; pq = pq->next) {
-		SIVAL(buf,offset,pq->buflen);
-		offset += 4;
-		memcpy(buf + offset, pq->buf, pq->buflen);
-		offset += pq->buflen;
+	for (pq = notify_queue_head; pq; pq = pq_next) {
+		pq_next = pq->next;
+
+		if (strequal(printer, pq->printername)) {
+			SIVAL(buf,offset,pq->buflen);
+			offset += 4;
+			memcpy(buf + offset, pq->buf, pq->buflen);
+			offset += pq->buflen;
+
+			/* Remove from list. */
+			DLIST_REMOVE(notify_queue_head, pq);
+		}
 	}
 
-	DEBUG(5, ("print_notify_send_messages: sending %d print notify message%s\n", 
-		  msg_count, msg_count != 1 ? "s" : ""));
+	DEBUG(5, ("print_notify_send_messages_to_printer: sending %d print notify message%s to printer %s\n", 
+		  msg_count, msg_count != 1 ? "s" : "", printer));
 
-	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf, offset, False, NULL);
+	/*
+	 * Get the list of PID's to send to.
+	 */
+
+	if (!print_notify_pid_list(printer, send_ctx, &num_pids, &pid_list))
+		return;
+
+	for (i = 0; i < num_pids; i++)
+		message_send_pid(pid_list[i], MSG_PRINTER_NOTIFY2, buf, offset, True);
+}
+
+/*******************************************************************
+ Actually send the batched messages.
+*******************************************************************/
+
+void print_notify_send_messages(void)
+{
+	if (!print_notify_messages_pending())
+		return;
+
+	if (!send_ctx)
+		return;
+
+	while (print_notify_messages_pending())
+		print_notify_send_messages_to_printer(notify_queue_head->printername);
+
 	talloc_destroy_pool(send_ctx);
-	notify_queue_head = NULL;
 }
 
 /*******************************************************************
@@ -150,10 +174,15 @@ again:
 	if (!pnqueue)
 		goto fail;
 
+	pnqueue->printername = talloc_strdup(send_ctx, msg->printer);
+	if (!pnqueue->printername)
+		 goto fail;
+
 	pnqueue->buf = buf;
 	pnqueue->buflen = buflen;
 
-	DEBUG(5, ("send_spoolss_notify2_msg: appending message 0x%02x/0x%02x to notify_queue_head\n", msg->type, msg->field));
+	DEBUG(5, ("send_spoolss_notify2_msg: appending message 0x%02x/0x%02x for printer %s \
+to notify_queue_head\n", msg->type, msg->field, msg->printer));
 		  
 	/* Note we add to the end of the list to ensure
 	 * the messages are sent in the order they were received. JRA.

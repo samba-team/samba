@@ -1041,6 +1041,254 @@ static void print_queue_update(int snum)
 }
 
 /****************************************************************************
+ Fetch and clean the pid_t record list for all pids interested in notify
+ messages. data needs freeing on exit.
+****************************************************************************/
+
+#define NOTIFY_PID_LIST_KEY "NOTIFY_PID_LIST"
+
+static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb)
+{
+	TDB_DATA data;
+	size_t i;
+
+	ZERO_STRUCT(data);
+
+	data = tdb_fetch_by_string( pdb->tdb, NOTIFY_PID_LIST_KEY );
+
+	if (!data.dptr) {
+		ZERO_STRUCT(data);
+		return data;
+	}
+
+	if (data.dsize % 8) {
+		DEBUG(0,("get_pid_list: Size of record for printer %s not a multiple of 8 !\n",
+					pdb->printer_name ));
+		tdb_delete_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY );
+		ZERO_STRUCT(data);
+		return data;
+	}
+
+	/*
+	 * Weed out all dead entries.
+	 */
+
+	for( i = 0; i < data.dsize; ) {
+		pid_t pid = (pid_t)IVAL(data.dptr, i);
+
+		if (pid == sys_getpid())
+			continue;
+
+		/* Entry is dead if process doesn't exist or refcount is zero. */
+
+		if ((IVAL(data.dptr, i + 4) == 0) || !process_exists(pid)) {
+
+			/* Refcount == zero is a logic error and should never happen. */
+			if (IVAL(data.dptr, i + 4) == 0) {
+				DEBUG(0,("get_pid_list: Refcount == 0 for pid = %u printer %s !\n",
+							(unsigned int)pid, pdb->printer_name ));
+			}
+
+			if (data.dsize - i > 8)
+				memmove( &data.dptr[i], &data.dptr[i+8], data.dsize - i - 8);
+			data.dsize -= 8;
+			continue;
+		}
+
+		i += 8;
+	}
+
+	return data;
+}
+
+/****************************************************************************
+ Return a malloced list of pid_t's that are interested in getting update
+ messages on this print queue. Used in printing/notify to send the messages.
+****************************************************************************/
+
+BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list)
+{
+	struct tdb_print_db *pdb;
+	TDB_DATA data;
+	BOOL ret = True;
+	size_t i, num_pids;
+	pid_t *pid_list;
+
+	*p_num_pids = 0;
+	*pp_pid_list = NULL;
+
+	pdb = get_print_db_byname(printername);
+	if (!pdb)
+		return False;
+
+	if (tdb_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+		DEBUG(0,("print_notify_pid_list: Failed to lock printer %s database\n", printername));
+		release_print_db(pdb);
+		return False;
+	}
+
+	data = get_printer_notify_pid_list( pdb );
+
+	if (!data.dptr) {
+		ret = True;
+		goto done;
+	}
+
+	num_pids = data.dsize / 8;
+
+	if ((pid_list = (pid_t *)talloc(mem_ctx, sizeof(pid_t) * num_pids)) == NULL) {
+		ret = False;
+		goto done;
+	}
+
+	for( i = 0; i < data.dsize; i += 8) {
+		pid_t pid = (pid_t)IVAL(data.dptr, i);
+		pid_list[i] = pid;
+	}
+
+	*pp_pid_list = pid_list;
+	*p_num_pids = num_pids;
+
+	ret = True;
+
+  done:
+
+	tdb_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
+	release_print_db(pdb);
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+/****************************************************************************
+ Create/Update an entry in the print tdb that will allow us to send notify
+ updates only to interested smbd's. 
+****************************************************************************/
+
+BOOL print_notify_register_pid(int snum)
+{
+	TDB_DATA data;
+	struct tdb_print_db *pdb;
+	const char *printername = lp_const_servicename(snum);
+	uint32 mypid = (uint32)sys_getpid();
+	BOOL ret = False;
+	size_t i;
+
+	pdb = get_print_db_byname(printername);
+	if (!pdb)
+		return False;
+
+	if (tdb_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s\n", printername));
+		release_print_db(pdb);
+		return False;
+	}
+
+	data = get_printer_notify_pid_list( pdb );
+
+	/* Add ourselves and increase the refcount. */
+
+	for (i = 0; i < data.dsize; i += 8) {
+		if (IVAL(data.dptr,i) == mypid) {
+			uint32 new_refcount = IVAL(data.dptr, i+4) + 1;
+			SIVAL(data.dptr, i+4, new_refcount);
+			break;
+		}
+	}
+
+	if (i == data.dsize) {
+		/* We weren't in the list. Realloc. */
+		data.dptr = Realloc(data.dptr, data.dsize + 8);
+		if (!data.dptr) {
+			DEBUG(0,("print_notify_register_pid: Relloc fail for printer %s\n", printername));
+			goto done;
+		}
+		data.dsize += 8;
+		SIVAL(data.dptr,data.dsize - 8,mypid);
+		SIVAL(data.dptr,data.dsize - 4,1); /* Refcount. */
+	}
+
+	/* Store back the record. */
+	if (tdb_store_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to update pid list for printer %s\n", printername));
+		goto done;
+	}
+
+	ret = True;
+
+ done:
+
+	tdb_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
+	release_print_db(pdb);
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+/****************************************************************************
+ Update an entry in the print tdb that will allow us to send notify
+ updates only to interested smbd's. 
+****************************************************************************/
+
+BOOL print_notify_deregister_pid(int snum)
+{
+	TDB_DATA data;
+	struct tdb_print_db *pdb;
+	const char *printername = lp_const_servicename(snum);
+	uint32 mypid = (uint32)sys_getpid();
+	size_t i;
+	BOOL ret = False;
+
+	pdb = get_print_db_byname(printername);
+	if (!pdb)
+		return False;
+
+	if (tdb_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s database\n", printername));
+		release_print_db(pdb);
+		return False;
+	}
+
+	data = get_printer_notify_pid_list( pdb );
+
+	/* Reduce refcount. Remove ourselves if zero. */
+
+	for (i = 0; i < data.dsize; ) {
+		if (IVAL(data.dptr,i) == mypid) {
+			uint32 refcount = IVAL(data.dptr, i+4);
+
+			refcount--;
+
+			if (refcount == 0) {
+				if (data.dsize - i > 8)
+					memmove( &data.dptr[i], &data.dptr[i+8], data.dsize - i - 8);
+				data.dsize -= 8;
+				continue;
+			}
+			SIVAL(data.dptr, i+4, refcount);
+		}
+
+		i += 8;
+	}
+
+	if (data.dsize == 0)
+		SAFE_FREE(data.dptr);
+
+	/* Store back the record. */
+	if (tdb_store_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to update pid list for printer %s\n", printername));
+		goto done;
+	}
+
+	ret = True;
+
+  done:
+
+	tdb_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
+	release_print_db(pdb);
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+/****************************************************************************
  Check if a jobid is valid. It is valid if it exists in the database.
 ****************************************************************************/
 
