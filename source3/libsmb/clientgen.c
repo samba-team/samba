@@ -976,6 +976,50 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 /****************************************************************************
 open a file
 ****************************************************************************/
+int cli_nt_create(struct cli_state *cli, char *fname)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,24,1 + strlen(fname),True);
+
+	CVAL(cli->outbuf,smb_com) = SMBntcreateX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,0xFF);
+	SIVAL(cli->outbuf,smb_ntcreate_Flags, 0x06);
+	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
+	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, 0x2019f);
+	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, 0x0);
+	SIVAL(cli->outbuf,smb_ntcreate_ShareAccess, 0x03);
+	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, 0x01);
+	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, 0x0);
+	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
+	SSVAL(cli->outbuf,smb_ntcreate_NameLength, strlen(fname));
+
+	p = smb_buf(cli->outbuf);
+	pstrcpy(p,fname);
+	p = skip_string(p,1);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	return SVAL(cli->inbuf,smb_vwv2 + 1);
+}
+
+
+/****************************************************************************
+open a file
+****************************************************************************/
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 {
 	char *p;

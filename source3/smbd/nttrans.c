@@ -412,7 +412,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
 	uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
 			       ((uint32)sizeof(fname)-1));
-    uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
+	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
 	int smb_ofun;
 	int smb_open_mode;
 	int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
