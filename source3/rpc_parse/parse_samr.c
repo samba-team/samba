@@ -6719,13 +6719,16 @@ BOOL samr_io_r_get_dom_pwinfo(char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint16("unk_0", ps, depth, &r_u->unk_0))
+	/*
+	 * We need 16 bytes here according to tests.  Don't know
+	 * what they are, but the length is important for the singing
+	*/
+
+	if(!prs_uint32("unk_0", ps, depth, &r_u->unk_0))
 		return False;
-	if(!prs_uint16("unk_1", ps, depth, &r_u->unk_1))
+	if(!prs_uint32("unk_1", ps, depth, &r_u->unk_1))
 		return False;
-	if(!prs_uint16("unk_2", ps, depth, &r_u->unk_2))
-		return False;
-	if(!prs_align(ps))
+	if(!prs_uint32("unk_2", ps, depth, &r_u->unk_2))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
