@@ -618,9 +618,8 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	{
 		struct group *gptr;
 		char **member;
-		BOOL checked_pwent=False;
 		setgrent();
-		while (gptr = (struct group *)getgrent()) {
+		while ((gptr = (struct group *)getgrent())) {
 			if (!strequal(gptr->gr_name,group))
 				continue;
 			member = gptr->gr_mem;
