@@ -1,6 +1,9 @@
 Changes in release 0.1d:
 
+ * Support building with DB2 (uses 1.85-compat API)
  * Support krb5-realm.DOMAIN in DNS
+ * new `ktutil srvcreate'
+ * v4/kafs support in klist/kdestroy
  * bug fixes
 
 Changes in release 0.1c:
