@@ -343,6 +343,12 @@ struct smb_passwd *getsmbpwent(FILE *fp)
 
       for(p++;*p && !finished; p++) {
         switch (*p) {
+#if 0
+   /*
+    * Hmmm. Don't allow these to be set/read independently
+    * of the actual password fields. We don't want a mismatch.
+    * JRA.
+    */
           case 'N':
             /* 'N'o password. */
             pw_buf.acct_ctrl |= ACB_PWNOTREQ;
@@ -351,6 +357,7 @@ struct smb_passwd *getsmbpwent(FILE *fp)
             /* 'D'isabled. */
             pw_buf.acct_ctrl |= ACB_DISABLED;
             break;
+#endif 
           case 'H':
             /* 'H'omedir required. */
             pw_buf.acct_ctrl |= ACB_HOMDIRREQ;
