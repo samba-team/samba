@@ -105,9 +105,19 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 #ifdef HAVE_ADS
 		case SEC_ADS: {
 			extern struct winbindd_methods ads_methods;
-			domain->backend = &ads_methods;
-			break;
-		}
+			/* always obey the lp_security parameter for our domain */
+			if ( strequal(lp_realm(), domain->alt_name) ) {
+				domain->backend = &ads_methods;
+				break;
+			}
+
+			if ( domain->native_mode ) {
+				domain->backend = &ads_methods;
+				break;
+			}
+
+			/* fall through */
+		}	
 #endif
 		default:
 			domain->backend = &msrpc_methods;
@@ -989,10 +999,6 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 do_query:
 	*name = NULL;
-
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
 
 	/* If the seq number check indicated that there is a problem
 	 * with this DC, then return that status... except for

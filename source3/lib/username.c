@@ -589,13 +589,14 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				fstrcpy(domain, *list);
 				domain[PTR_DIFF(p, *list)] = 0;
 
-			/* Check to see if name is a Windows group;  Win2k native mode DCs
-			   will return domain local groups; while NT4 or mixed mode 2k DCs
-			   will not */
+				/* Check to see if name is a Windows group;  Win2k native mode DCs
+				   will return domain local groups; while NT4 or mixed mode 2k DCs
+				   will not */
 			
-			if ( winbind_lookup_name(NULL, *list, &g_sid, &name_type) 
-				&& ( name_type==SID_NAME_DOM_GRP || name_type==SID_NAME_ALIAS ) )
-			{
+				if ( winbind_lookup_name(NULL, *list, &g_sid, &name_type) 
+					&& ( name_type==SID_NAME_DOM_GRP || 
+					   (strequal(lp_workgroup(), domain) && name_type==SID_NAME_ALIAS) ) )
+				{
 					
 					/* Check if user name is in the Windows group */
 					ret = user_in_winbind_group_list(user, *list, &winbind_answered);
