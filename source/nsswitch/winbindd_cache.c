@@ -150,12 +150,12 @@ void winbindd_fill_group_cache(char *domain_name,
 	fill_cache(domain_name, CACHE_TYPE_GROUP, sam_entries, num_sam_entries);
 }
 
-static void fill_cache_entry(char *domain, char *name, void *buf, int len)
+static void fill_cache_entry(char *domain, char *cache_type, char *name, void *buf, int len)
 {
 	fstring keystr;
 
 	/* Create key for store */
-	slprintf(keystr, sizeof(keystr), "%s/%s", domain, name);
+	slprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, domain, name);
 
 	DEBUG(4, ("filling cache entry %s\n", keystr));
 
@@ -169,7 +169,7 @@ void winbindd_fill_user_cache_entry(char *domain, char *user_name,
 {
         if (lp_winbind_cache_time() == 0) return;
 
-        fill_cache_entry(domain, user_name, pw, sizeof(struct winbindd_pw));
+        fill_cache_entry(domain, CACHE_TYPE_USER, user_name, pw, sizeof(struct winbindd_pw));
 	set_cache_sequence_number(domain, CACHE_TYPE_USER, user_name);
 }
 
@@ -182,7 +182,7 @@ void winbindd_fill_uid_cache_entry(char *domain, uid_t uid,
         if (lp_winbind_cache_time() == 0) return;
 
         slprintf(uidstr, sizeof(uidstr), "#%u", (unsigned)uid);
-        fill_cache_entry(domain, uidstr, pw, sizeof(struct winbindd_pw));
+        fill_cache_entry(domain, CACHE_TYPE_USER, uidstr, pw, sizeof(struct winbindd_pw));
         set_cache_sequence_number(domain, CACHE_TYPE_USER, uidstr);
 }
 
@@ -196,10 +196,10 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
         if (lp_winbind_cache_time() == 0) return;
 
         /* Fill group data */
-        fill_cache_entry(domain, group_name, gr, sizeof(struct winbindd_gr));
+        fill_cache_entry(domain, CACHE_TYPE_GROUP, group_name, gr, sizeof(struct winbindd_gr));
 
         /* Fill extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain, group_name);
+        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, group_name);
         tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 
 	set_cache_sequence_number(domain, CACHE_TYPE_GROUP, group_name);
@@ -218,10 +218,10 @@ void winbindd_fill_gid_cache_entry(char *domain, gid_t gid,
         if (lp_winbind_cache_time() == 0) return;
 
         /* Fill group data */
-        fill_cache_entry(domain, gidstr, gr, sizeof(struct winbindd_gr));
+        fill_cache_entry(domain, CACHE_TYPE_GROUP, gidstr, gr, sizeof(struct winbindd_gr));
 
         /* Fill extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain, gidstr);
+        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, gidstr);
         tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 
 	set_cache_sequence_number(domain, CACHE_TYPE_GROUP, gidstr);
@@ -291,13 +291,13 @@ BOOL winbindd_fetch_group_cache(char *domain_name,
 			   num_entries);
 }
 
-static BOOL fetch_cache_entry(char *domain, char *name, void *buf, int len)
+static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name, void *buf, int len)
 {
 	TDB_DATA data;
 	fstring keystr;
     
 	/* Create key for lookup */
-	slprintf(keystr, sizeof(keystr), "%s/%s", domain, name);
+	slprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, domain, name);
     
 	/* Look up cache entry */
 	data = tdb_fetch_by_string(cache_tdb, keystr);
@@ -322,7 +322,7 @@ BOOL winbindd_fetch_user_cache_entry(char *domain_name, char *user,
 	seq_num = get_cache_sequence_number(domain_name, CACHE_TYPE_USER, user);
 	if (cache_domain_expired(domain_name, seq_num)) return False;
 
-	return fetch_cache_entry(domain_name, user, pw, sizeof(struct winbindd_pw));
+	return fetch_cache_entry(domain_name, CACHE_TYPE_USER, user, pw, sizeof(struct winbindd_pw));
 }
 
 /* Fetch an individual uid cache entry */
@@ -338,7 +338,7 @@ BOOL winbindd_fetch_uid_cache_entry(char *domain_name, uid_t uid,
     	seq_num = get_cache_sequence_number(domain_name, CACHE_TYPE_USER, uidstr);
 	if (cache_domain_expired(domain_name, seq_num)) return False;
 
-	return fetch_cache_entry(domain_name, uidstr, pw, sizeof(struct winbindd_pw));
+	return fetch_cache_entry(domain_name, CACHE_TYPE_USER, uidstr, pw, sizeof(struct winbindd_pw));
 }
 
 /* Fetch an individual group cache entry.  This function differs from the
@@ -358,10 +358,10 @@ BOOL winbindd_fetch_group_cache_entry(char *domain_name, char *group,
 	if (cache_domain_expired(domain_name, seq_num)) return False;
 
         /* Fetch group data */
-        if (!fetch_cache_entry(domain_name, group, gr, sizeof(struct winbindd_gr))) return False;
+        if (!fetch_cache_entry(domain_name, CACHE_TYPE_GROUP, group, gr, sizeof(struct winbindd_gr))) return False;
 	
         /* Fetch extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain_name, group);
+        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, group);
         data = tdb_fetch_by_string(cache_tdb, keystr);
 
         if (!data.dptr) return False;
@@ -394,10 +394,11 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain_name, gid_t gid,
 	if (cache_domain_expired(domain_name, seq_num)) return False;
 
         /* Fetch group data */
-        if (!fetch_cache_entry(domain_name, gidstr, gr, sizeof(struct winbindd_gr))) return False;
+        if (!fetch_cache_entry(domain_name, CACHE_TYPE_GROUP, 
+			       gidstr, gr, sizeof(struct winbindd_gr))) return False;
 
         /* Fetch extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain_name, gidstr);
+        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, gidstr);
         data = tdb_fetch_by_string(cache_tdb, keystr);
         if (!data.dptr) return False;
 
