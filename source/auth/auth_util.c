@@ -942,13 +942,37 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 
 	/* This is pointless -- there is no suport for differeing 
 	   unix and windows names.  Make sure to always store the 
-	   one we actuall looked up and succeeded. Have I mentioned
+	   one we actually looked up and succeeded. Have I mentioned
 	   why I hate the 'winbind use default domain' parameter?   
 	                                 --jerry              */
 	   
 	*found_username = talloc_strdup(mem_ctx, dom_user);
 
 	return pdb_init_sam_pw(sam_account, passwd);
+}
+
+/****************************************************************************
+ Wrapper to allow the getpwnam() call to styrip the domain name and 
+ try again in case a local UNIX user is already there.
+ ****************************************************************************/
+ 
+struct passwd *smb_getpwnam( char *domuser )
+{
+	struct passwd *pw;
+	char *p;
+
+	pw = Get_Pwnam( domuser );
+	if ( pw )
+		return pw;
+
+	/* fallback to looking up just the username */
+
+	p = strchr( domuser, *lp_winbind_separator() );
+
+	if ( p )
+		return Get_Pwnam(p+1);
+
+	return NULL;
 }
 
 /***************************************************************************
