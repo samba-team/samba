@@ -26,7 +26,8 @@ static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryUserInfo r;
-	uint16 levels[] = {1, 2, 3};
+	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+			   11, 12, 13, 14, 16, 17, 20};
 	int i;
 	BOOL ret = True;
 
