@@ -491,10 +491,16 @@ alias|alias|alias|alias...
 		</varlistentry> 
 	
 		<varlistentry>
-		<term>case sensitive = yes/no</term>
+		<term>case sensitive = yes/no/auto</term>
 		<listitem><para>controls whether filenames are case sensitive. If 
 		they aren't, Samba must do a filename search and match on passed 
-		names. Default <emphasis>no</emphasis>.</para></listitem>
+		names. The default setting of auto allows clients that support case
+		sensitive filenames (Linux CIFSVFS and smbclient 3.0.5 and above currently)
+		to tell the Samba server on a per-packet basis that they wish to access
+		the file system in a case-sensitive manner (to support UNIX case sensitive
+		semantics). No Windows or DOS system supports case-sensitive filename so
+		setting this option to auto is that same as setting it to no for them.
+		Default <emphasis>auto</emphasis>.</para></listitem>
 		</varlistentry> 
 
 		<varlistentry>
