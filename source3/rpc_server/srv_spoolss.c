@@ -1305,8 +1305,8 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMMONITORS",              SPOOLSS_ENUMMONITORS,              api_spoolss_enumprintmonitors         },
  {"SPOOLSS_GETJOB",                    SPOOLSS_GETJOB,                    api_spoolss_getjob                    },
  {"SPOOLSS_ENUMPRINTPROCDATATYPES",    SPOOLSS_ENUMPRINTPROCDATATYPES,    api_spoolss_enumprintprocdatatypes    },
- {"SPOOLSS_GETPRINTERDATAEX",            SPOOLSS_GETPRINTERDATAEX,            api_spoolss_getprinterdataex            },
- {"SPOOLSS_sETPRINTERDATAEX",            SPOOLSS_SETPRINTERDATAEX,            api_spoolss_setprinterdataex            },
+ {"SPOOLSS_GETPRINTERDATAEX",          SPOOLSS_GETPRINTERDATAEX,          api_spoolss_getprinterdataex          },
+ {"SPOOLSS_SETPRINTERDATAEX",          SPOOLSS_SETPRINTERDATAEX,          api_spoolss_setprinterdataex          },
 
  { NULL,                               0,                                 NULL                                  }
 };
