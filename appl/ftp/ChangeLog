@@ -1,3 +1,7 @@
+1999-12-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c (dataconn): make sure from points to actual data
+
 1999-12-16  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ruserpass.c (guess_domain): handle ai_canonname not being
