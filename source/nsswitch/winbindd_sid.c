@@ -192,7 +192,7 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	sid_copy(&sid, &domain->sid);
 	sid_append_rid(&sid, group_rid);
 	sid_to_string(state->response.data.sid.sid, &sid);
-	state->response.data.sid.type = SID_NAME_DOM_GRP;  /* XXX fixme */
+	state->response.data.sid.type = SID_NAME_DOM_GRP;
 
 	return WINBINDD_OK;
 }
