@@ -531,6 +531,19 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	return (result == 0 ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED);
 }
 
+static void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
+{
+	*sids = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
+
+	if (*sids == NULL)
+		return;
+
+	sid_copy(&((*sids)[*num]), sid);
+	*num += 1;
+
+	return;
+}
+
 static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, int *num)
 {
 	GROUP_MAP map;
