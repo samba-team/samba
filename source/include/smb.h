@@ -1687,10 +1687,6 @@ struct ncacn_np
 #include "rpc_creds.h"
 #include "rpc_secdes.h"
 #include "nt_printing.h"
-#include "ntdomain.h"
-
-#include "client.h"
-#include "rpcclient.h"
 
 typedef struct
 {
@@ -1716,6 +1712,11 @@ typedef struct
 	/* lkclXXXX - THIS SHOULD NOT BE HERE! */
 	struct dcinfo dc;
 } user_struct;
+
+#include "ntdomain.h"
+
+#include "client.h"
+#include "rpcclient.h"
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.

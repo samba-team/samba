@@ -260,7 +260,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	uchar lm_owf[24];
 	uchar nt_owf[24];
 	fstring user_name;
-	fstring unix_user_name;
+	fstring pipe_user_name;
 	fstring domain;
 	fstring wks;
 	BOOL guest_user = False;
@@ -272,7 +272,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
 	memset(p->user_name, '\0', sizeof(p->user_name));
-	memset(p->unix_user_name, '\0', sizeof(p->unix_user_name));
+	memset(p->pipe_user_name, '\0', sizeof(p->pipe_user_name));
 	memset(p->domain, '\0', sizeof(p->domain));
 	memset(p->wks, '\0', sizeof(p->wks));
 
@@ -317,8 +317,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	  {
 		guest_user = True;
 
-        fstrcpy(unix_user_name, lp_guestaccount(-1));
-		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", unix_user_name));
+        fstrcpy(pipe_user_name, lp_guestaccount(-1));
+		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", pipe_user_name));
 
 		smb_passwd_ptr = null_smb_passwd;
 
@@ -329,8 +329,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		 * function.
 		 */
 
-		fstrcpy(unix_user_name, user_name);
-		(void)map_username(unix_user_name);
+		fstrcpy(pipe_user_name, user_name);
+		(void)map_username(pipe_user_name);
 
 	 	/* 
 		 * Do the length checking only if user is not NULL.
@@ -353,8 +353,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 * Find the user in the unix password db.
 	 */
 
-	if(!(pass = Get_Pwnam(unix_user_name,True))) {
-		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",unix_user_name));
+	if(!(pass = Get_Pwnam(pipe_user_name,True))) {
+		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",pipe_user_name));
 		return(False);
 	}
 
@@ -362,17 +362,17 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 		become_root();
 
-		if(!(p->ntlmssp_auth_validated = pass_check_smb(unix_user_name, domain,
+		if(!(p->ntlmssp_auth_validated = pass_check_smb(pipe_user_name, domain,
 		                      (uchar*)p->challenge, lm_owf, nt_owf, NULL))) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
-failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name ));
+failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name ));
 			unbecome_root();
 			return False;
 		}
 
-		if(!(smb_pass = getsmbpwnam(unix_user_name))) {
+		if(!(smb_pass = getsmbpwnam(pipe_user_name))) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
-				unix_user_name));
+				pipe_user_name));
 			unbecome_root();
 			return False;
 		}
@@ -381,18 +381,18 @@ failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name
 
 		if (smb_pass == NULL) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Couldn't find user '%s' in smb_passwd file.\n", 
-				unix_user_name));
+				pipe_user_name));
 			return(False);
 		}
 
 		/* Quit if the account was disabled. */
 		if((smb_pass->acct_ctrl & ACB_DISABLED) || !smb_pass->smb_passwd) {
-			DEBUG(1,("Account for user '%s' was disabled.\n", unix_user_name));
+			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
 			return(False);
 		}
 
 		if(!smb_pass->smb_nt_passwd) {
-			DEBUG(1,("Account for user '%s' has no NT password hash.\n", unix_user_name));
+			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
 			return(False);
 		}
 
@@ -439,7 +439,7 @@ failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name
 	}
 
 	fstrcpy(p->user_name, user_name);
-	fstrcpy(p->unix_user_name, unix_user_name);
+	fstrcpy(p->pipe_user_name, pipe_user_name);
 	fstrcpy(p->domain, domain);
 	fstrcpy(p->wks, wks);
 
@@ -447,8 +447,10 @@ failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	p->uid = pass->pw_uid;
-	p->gid = pass->pw_gid;
+	p->pipe_user.uid = pass->pw_uid;
+	p->pipe_user.gid = pass->pw_gid;
+
+	/* XXX also set up pipe user group membership */
 
 	p->ntlmssp_auth_validated = True;
 	return True;
