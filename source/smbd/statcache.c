@@ -217,10 +217,10 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	/*
 	 * Don't lookup trivial valid directory entries.
 	 */
-	if((*name == '\0') || (strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
-		DO_PROFILE_INC(statcache_misses);
+	if((*name == '\0') || (name[0] == '.' && 
+				((name[1] == '\0') ||
+				 (name[1] == '.' && name[1] == '\0'))))
 		return False;
-	}
 
 	if (case_sensitive) {
 		chk_name = strdup(name);
@@ -248,6 +248,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	while (1) {
 		hash_elem = hash_lookup(&stat_cache, chk_name);
 		if(hash_elem == NULL) {
+			DEBUG(10,("stat_cache_lookup: lookup failed for name [%s]\n", chk_name ));
 			/*
 			 * Didn't find it - remove last component for next try.
 			 */
@@ -277,6 +278,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 			}
 		} else {
 			scp = (stat_cache_entry *)(hash_elem->value);
+			DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] -> [%s]\n", chk_name, scp->translated_path ));
 			DO_PROFILE_INC(statcache_hits);
 			if(SMB_VFS_STAT(conn,scp->translated_path, pst) != 0) {
 				/* Discard this entry - it doesn't exist in the filesystem.  */

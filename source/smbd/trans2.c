@@ -1781,7 +1781,7 @@ static int call_trans2setfsinfo(connection_struct *conn,
 
 int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint32 def_code)
 {
-	DEBUG(10,("set_bad_path_error: err = %dm bad_path = %d\n",
+	DEBUG(10,("set_bad_path_error: err = %d bad_path = %d\n",
 			err, (int)bad_path ));
 
 	if(err == ENOENT) {

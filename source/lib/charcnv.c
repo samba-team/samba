@@ -511,22 +511,43 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 char *strdup_upper(const char *s)
 {
-	size_t size;
-	wpstring buffer;
 	pstring out_buffer;
-	
-	size = convert_string(CH_UNIX, CH_UCS2, s, -1, buffer, sizeof(buffer));
-	if (size == -1) {
-		return NULL;
+	const unsigned char *p = (const unsigned char *)s;
+	unsigned char *q = (unsigned char *)out_buffer;
+
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	while (1) {
+		if (*p & 0x80)
+			break;
+		*q++ = toupper(*p);
+		if (!*p)
+			break;
+		p++;
+		if (p - ( const unsigned char *)s >= sizeof(pstring))
+			break;
 	}
 
-	strupper_w(buffer);
+	if (*p) {
+		/* MB case. */
+		size_t size;
+		wpstring buffer;
+		size = convert_string(CH_UNIX, CH_UCS2, s, -1, buffer, sizeof(buffer));
+		if (size == -1) {
+			return NULL;
+		}
+
+		strupper_w(buffer);
 	
-	size = convert_string(CH_UCS2, CH_UNIX, buffer, sizeof(buffer), out_buffer, sizeof(out_buffer));
-	if (size == -1) {
-		return NULL;
+		size = convert_string(CH_UCS2, CH_UNIX, buffer, sizeof(buffer), out_buffer, sizeof(out_buffer));
+		if (size == -1) {
+			return NULL;
+		}
 	}
-	
+
 	return strdup(out_buffer);
 }
 
