@@ -1328,7 +1328,7 @@ krb5_get_init_creds_password(krb5_context context,
     char buf[BUFSIZ];
     krb5_error_code ret;
 
-    ret = krb5_get_init_creds_opt_copy(context, in_options, &options);
+    ret = _krb5_get_init_creds_opt_copy(context, in_options, &options);
     if (ret)
 	return ret;
 
