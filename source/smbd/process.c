@@ -1265,8 +1265,10 @@ void smbd_process(void)
 	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
 		return;
 
+#if defined(DEVELOPER)
 	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
 	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
+#endif
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
@@ -1295,7 +1297,9 @@ void smbd_process(void)
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
+#if defined(DEVELOPER)
 		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
+#endif
 
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
