@@ -69,10 +69,7 @@ WERROR _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   pstrcat(altpath, "\\");
   pstrcat(altpath, sharename);
 
-  if(!create_junction(dfspath, &jn))
-    return WERR_DFS_NO_SUCH_SERVER;
-
-  if(get_referred_path(&jn))
+  if(get_referred_path(dfspath, &jn, NULL, NULL))
     {
       exists = True;
       jn.referral_count += 1;
@@ -137,16 +134,14 @@ WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u,
       pstrcpy(altpath, servername);
       pstrcat(altpath, "\\");
       pstrcat(altpath, sharename);
+      strlower(altpath);
     }
 
   DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 	   dfspath, servername, sharename));
 
-  if(!create_junction(dfspath, &jn))
-    return WERR_DFS_NO_SUCH_SERVER;
-
-  if(!get_referred_path(&jn))
-    return WERR_DFS_NO_SUCH_VOL;
+  if(!get_referred_path(dfspath, &jn, NULL, NULL))
+	  return WERR_DFS_NO_SUCH_VOL;
 
   /* if no server-share pair given, remove the msdfs link completely */
   if(!q_u->ptr_ServerName && !q_u->ptr_ShareName)
@@ -158,14 +153,18 @@ WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u,
     {
       int i=0;
       /* compare each referral in the list with the one to remove */
+      DEBUG(10,("altpath: .%s. refcnt: %d\n", altpath, jn.referral_count));
       for(i=0;i<jn.referral_count;i++)
 	{
 	  pstring refpath;
 	  pstrcpy(refpath,jn.referral_list[i].alternate_path);
 	  trim_string(refpath, "\\", "\\");
+	  DEBUG(10,("_dfs_remove:  refpath: .%s.\n", refpath));
 	  if(strequal(refpath, altpath))
 	    {
 	      *(jn.referral_list[i].alternate_path)='\0';
+	      DEBUG(10,("_dfs_remove: Removal request matches referral %s\n",
+			refpath));
 	      found = True;
 	    }
 	}
@@ -227,8 +226,13 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
     {
       pstring str;
       dfs3[i].ptr_entrypath = 1;
-      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname,
-	       j[i].service_name, j[i].volume_name);
+      if (j[i].volume_name[0] == '\0')
+	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s",
+		       global_myname, j[i].service_name);
+      else
+	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname,
+		       j[i].service_name, j[i].volume_name);
+
       init_unistr2(&dfs3[i].entrypath, str, strlen(str)+1);
       dfs3[i].ptr_comment = 1;
       init_unistr2(&dfs3[i].comment, "", 1); 
@@ -355,8 +359,8 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
   if(!create_junction(path, &jn))
      return WERR_DFS_NO_SUCH_SERVER;
   
-  if(!get_referred_path(&jn))
-    return WERR_DFS_NO_SUCH_VOL;
+  if(!get_referred_path(path, &jn, NULL, NULL))
+     return WERR_DFS_NO_SUCH_VOL;
 
   r_u->level = level;
   r_u->ptr_ctr = 1;
