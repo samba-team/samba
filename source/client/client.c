@@ -3547,8 +3547,8 @@ static BOOL cli_lsa_req_chal(void)
 	/* create the request RPC_HDR _after_ the main data: length is now known */
 	create_rpc_request(call_id, LSA_REQCHAL, param, PTR_DIFF(p, param));
 
-	/* send the data on \PIPE\NETLOGON */
-	if (cli_call_api(PIPE_NETLOGON, PTR_DIFF(p, param),0,
+	/* send the data on \PIPE\ */
+	if (cli_call_api("\\PIPE\\", PTR_DIFF(p, param),0,
 				1024,BUFFER_SIZE,
 				&rprcnt,&rdrcnt,
 				param,NULL,
