@@ -1989,7 +1989,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
-	SAM_USER_INFO_16 usr16;
+	SAM_USERINFO_CTR *ctr = NULL;
 	uint16 acb_set = 0x0;
 
 	fstrcpy(domain, info->dom.level5_dom);
@@ -2050,20 +2050,19 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	/* send set user info */
 	if (res1 && num_rids == 1 && get_samr_query_userinfo( &pol_dom,
 						    0x10, rids[0],
-	                                            (void*)&usr16))
+	                                            &ctr) && ctr != NULL)
 	{
 		void *usr = NULL;
 		uint32 switch_value = 0;
 
-		if (set_acb_bits)
-		{
-			usr16.acb_info |= acb_set;
-		}
-
 		if (True)
 		{
 			SAM_USER_INFO_16 *p = (SAM_USER_INFO_16 *)malloc(sizeof(SAM_USER_INFO_16));
-			p->acb_info = usr16.acb_info;
+			p->acb_info = ctr->info.id10->acb_info;
+			if (set_acb_bits)
+			{
+				p->acb_info |= acb_set;
+			}
 
 			usr = (void*)p;
 			switch_value = 16;
@@ -2096,6 +2095,11 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	if (types != NULL)
 	{
 		free(types);
+	}
+	if (ctr != NULL)
+	{
+		free_samr_userinfo_ctr(ctr);
+		free(ctr);
 	}
 }
 

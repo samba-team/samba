@@ -1185,20 +1185,30 @@ typedef struct r_samr_set_user_info2
 
 } SAMR_R_SET_USERINFO2;
 
-/* SAMR_Q_SET_USERINFO - set sam info */
-typedef struct q_samr_set_user_info
+/* SAM_USERINFO_CTR - sam user info */
+typedef struct sam_userinfo_ctr_info
 {
-	POLICY_HND pol;          /* policy handle associated with user */
-	uint16 switch_value;      /* 0x0017 */
-	uint16 switch_value2;      /* 0x0017 */
+	uint16 switch_value;      
 
 	union
 	{
+		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
+		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
+		SAM_USER_INFO_21 *id21; /* auth-level 21 */
 		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
 		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
 		void* id; /* to make typecasting easy */
 
 	} info;
+
+} SAM_USERINFO_CTR;
+
+/* SAMR_Q_SET_USERINFO - set sam info */
+typedef struct q_samr_set_user_info
+{
+	POLICY_HND pol;          /* policy handle associated with user */
+	uint16 switch_value;
+	SAM_USERINFO_CTR *ctr;
 
 } SAMR_Q_SET_USERINFO;
 
@@ -1222,19 +1232,7 @@ typedef struct q_samr_query_user_info
 typedef struct r_samr_query_user_info
 {
 	uint32 ptr;            /* pointer */
-	uint16 switch_value;      /* 0x0015, 0x0011 or 0x0010 - same as in query */
-	/* uint8[2] padding. */
-
-	union
-	{
-		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
-		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
-		SAM_USER_INFO_21 *id21; /* auth-level 21 */
-		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
-		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
-		void* id; /* to make typecasting easy */
-
-	} info;
+	SAM_USERINFO_CTR *ctr;
 
 	uint32 status;         /* return status */
 

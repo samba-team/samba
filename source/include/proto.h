@@ -2270,7 +2270,8 @@ BOOL samr_query_groupinfo(  POLICY_HND *pol,
 BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 				void* usr);
 BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr);
-BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr);
+BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR **ctr);
 BOOL samr_close(  POLICY_HND *hnd);
 BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 				uint32 *num_entries,
@@ -3463,8 +3464,12 @@ BOOL make_sam_user_info21(SAM_USER_INFO_21 *usr,
 	LOGON_HRS *hrs,
 	uint32 unknown_5,
 	uint32 unknown_6);
+BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr, const uchar *sess_key,
+				uint16 switch_value, void *info);
+BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, int depth);
+void free_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr);
 BOOL make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
-				uint16 switch_value, void *info, uint32 status);
+				SAM_USERINFO_CTR *ctr, uint32 status);
 BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 				POLICY_HND *hnd,
@@ -4311,13 +4316,13 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
 					UNIHDR **hdr_name, UNISTR2** uni_name,
 					uint32 **types);
 uint32 _samr_open_user(const POLICY_HND *domain_pol,
-					uint32 unk_0, uint32 rid, 
+					uint32 unk_0, uint32 user_rid, 
 					POLICY_HND *user_pol);
-uint32 _samr_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
-				prs_struct *rdata);
+uint32 _samr_query_userinfo(POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR *ctr);
+uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR *ctr);
 uint32 _samr_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
-				prs_struct *rdata, uchar user_sess_key[16]);
-uint32 _samr_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 				prs_struct *rdata, uchar user_sess_key[16]);
 uint32 _samr_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				prs_struct *rdata);

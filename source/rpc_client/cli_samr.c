@@ -2252,7 +2252,8 @@ BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 /****************************************************************************
 do a SAMR Query User Info
 ****************************************************************************/
-BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
+BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR **ctr)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -2262,7 +2263,7 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 
 	DEBUG(4,("SAMR Query User Info.  level: %d\n", switch_value));
 
-	if (pol == NULL || usr == NULL || switch_value == 0) return False;
+	if (pol == NULL || ctr == NULL || switch_value == 0) return False;
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERINFO */
 
@@ -2280,9 +2281,7 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 	{
 		SAMR_R_QUERY_USERINFO r_o;
 		BOOL p;
-
-		/* get user info */
-		r_o.info.id = usr;
+		ZERO_STRUCT(r_o);
 
 		samr_io_r_query_userinfo("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
@@ -2294,15 +2293,21 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 			p = False;
 		}
 
-		if (p && r_o.switch_value != switch_value)
+		if (p && (r_o.ptr == 0 || r_o.ctr == NULL))
+		{
+			p = False;
+		}
+
+		if (p && r_o.ctr->switch_value != switch_value)
 		{
 			DEBUG(4,("SAMR_R_QUERY_USERINFO: received incorrect level %d\n",
-			          r_o.switch_value));
+			          r_o.ctr->switch_value));
 		}
 
 		if (p && r_o.ptr != 0)
 		{
 			valid_query = True;
+			(*ctr) = r_o.ctr;
 		}
 	}
 

@@ -5398,73 +5398,198 @@ static BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *p
 	return True;
 }
 
+/*******************************************************************
+makes a SAM_USERINFO_CTR structure.
+********************************************************************/
+BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr, const uchar *sess_key,
+				uint16 switch_value, void *info)
+{
+	if (ctr == NULL) return False;
+
+	DEBUG(5,("make_samr_userinfo_ctr\n"));
+
+	ctr->switch_value  = switch_value;
+	ctr->info.id = info;
+
+	switch (switch_value)
+	{
+		case 0x18:
+		{
+			SamOEMhash(ctr->info.id24->pass, sess_key, 1);
+			dump_data_pw("sess_key", sess_key, 16);
+			dump_data_pw("passwd", ctr->info.id24->pass, 516);
+			break;
+		}
+		case 0x17:
+		{
+			SamOEMhash(ctr->info.id23->pass, sess_key, 1);
+			dump_data_pw("sess_key", sess_key, 16);
+			dump_data_pw("passwd", ctr->info.id23->pass, 516);
+			break;
+		}
+		default:
+		{
+			DEBUG(4,("make_samr_userinfo_ctr: unsupported switch level\n"));
+			return False;
+		}
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, int depth)
+{
+	if (ctr == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_userinfo_ctr");
+	depth++;
+
+	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
+	prs_align(ps);
+
+	switch (ctr->switch_value)
+	{
+		case 0x10:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				ctr->info.id = (SAM_USER_INFO_10*)Realloc(NULL,
+						 sizeof(*ctr->info.id10));
+			}
+			if (ctr->info.id10 != NULL)
+			{
+				sam_io_user_info10("", ctr->info.id10, ps, depth);
+			}
+			else
+			{
+				DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+				return False;
+			}
+			break;
+		}
+		case 0x11:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				ctr->info.id = (SAM_USER_INFO_11*)Realloc(NULL,
+						 sizeof(*ctr->info.id11));
+			}
+			if (ctr->info.id11 != NULL)
+			{
+				sam_io_user_info11("", ctr->info.id11, ps, depth);
+			}
+			else
+			{
+				DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+				return False;
+			}
+			break;
+		}
+		case 21:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				ctr->info.id = (SAM_USER_INFO_21*)Realloc(NULL,
+						 sizeof(*ctr->info.id21));
+			}
+			if (ctr->info.id21 != NULL)
+			{
+				sam_io_user_info21("", ctr->info.id21, ps, depth);
+			}
+			else
+			{
+				DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+				return False;
+			}
+			break;
+		}
+		case 23:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				ctr->info.id = (SAM_USER_INFO_23*)Realloc(NULL,
+						 sizeof(*ctr->info.id23));
+			}
+			if (ctr->info.id23 != NULL)
+			{
+				sam_io_user_info23("", ctr->info.id23, ps, depth);
+			}
+			else
+			{
+				DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+				return False;
+			}
+			break;
+		}
+		case 24:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				ctr->info.id = (SAM_USER_INFO_24*)Realloc(NULL,
+						 sizeof(*ctr->info.id24));
+			}
+			if (ctr->info.id24 != NULL)
+			{
+				sam_io_user_info24("", ctr->info.id24, ps, depth);
+			}
+			else
+			{
+				DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+				return False;
+			}
+			break;
+		}
+		default:
+		{
+			DEBUG(2,("samr_io_userinfo_ctr: unknown switch level\n"));
+			break;
+		}
+			
+	}
+
+	prs_align(ps);
+
+	return True;
+}
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void free_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr)
+{
+	if (ctr->info.id == NULL)
+	{
+		free(ctr->info.id);
+	}
+	ctr->info.id = NULL;
+}
+
 
 /*******************************************************************
 makes a SAMR_R_QUERY_USERINFO structure.
 ********************************************************************/
 BOOL make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
-				uint16 switch_value, void *info, uint32 status)
+				SAM_USERINFO_CTR *ctr, uint32 status)
 				
 {
-	if (r_u == NULL || info == NULL) return False;
+	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_query_userinfo\n"));
 
 	r_u->ptr = 0;
-	r_u->switch_value = 0;
+	r_u->ctr = NULL;
 
 	if (status == 0)
 	{
-		r_u->switch_value = switch_value;
-
-		switch (switch_value)
-		{
-			case 0x10:
-			{
-				r_u->ptr = 1;
-				r_u->info.id10 = (SAM_USER_INFO_10*)info;
-
-				break;
-			}
-
-			case 0x11:
-			{
-				r_u->ptr = 1;
-				r_u->info.id11 = (SAM_USER_INFO_11*)info;
-
-				break;
-			}
-
-			case 21:
-			{
-				r_u->ptr = 1;
-				r_u->info.id21 = (SAM_USER_INFO_21*)info;
-
-				break;
-			}
-
-			case 23:
-			{
-				r_u->ptr = 1;
-				r_u->info.id23 = (SAM_USER_INFO_23*)info;
-
-				break;
-			}
-
-			case 24:
-			{
-				r_u->ptr = 1;
-				r_u->info.id24 = (SAM_USER_INFO_24*)info;
-
-				break;
-			}
-
-			default:
-			{
-				DEBUG(4,("make_samr_r_query_userinfo: unsupported switch level\n"));
-				break;
-			}
-		}
+		r_u->ctr = ctr;
 	}
 
 	r_u->status = status;         /* return status */
@@ -5484,92 +5609,24 @@ BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 
 	prs_align(ps);
 
-	prs_uint32("ptr         ", ps, depth, &(r_u->ptr         ));
-	prs_uint16("switch_value", ps, depth, &(r_u->switch_value));
-	prs_align(ps);
+	prs_uint32("ptr", ps, depth, &(r_u->ptr));
 
-	if (r_u->ptr != 0 && r_u->switch_value != 0 && r_u->info.id != NULL)
+	if (r_u->ptr != 0)
 	{
-		switch (r_u->switch_value)
-		{
-			case 0x10:
-			{
-				if (r_u->info.id10 != NULL)
-				{
-					sam_io_user_info10("", r_u->info.id10, ps, depth);
-				}
-				else
-				{
-					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
-					return False;
-				}
-				break;
-			}
-/*
-			case 0x11:
-			{
-				if (r_u->info.id11 != NULL)
-				{
-					sam_io_user_info11("", r_u->info.id11, ps, depth);
-				}
-				else
-				{
-					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
-					return False;
-				}
-				break;
-			}
-*/
-			case 21:
-			{
-				if (r_u->info.id21 != NULL)
-				{
-					sam_io_user_info21("", r_u->info.id21, ps, depth);
-				}
-				else
-				{
-					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
-					return False;
-				}
-				break;
-			}
-			case 23:
-			{
-				if (r_u->info.id23 != NULL)
-				{
-					sam_io_user_info23("", r_u->info.id23, ps, depth);
-				}
-				else
-				{
-					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
-					return False;
-				}
-				break;
-			}
-			case 24:
-			{
-				if (r_u->info.id24 != NULL)
-				{
-					sam_io_user_info24("", r_u->info.id24, ps, depth);
-				}
-				else
-				{
-					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
-					return False;
-				}
-				break;
-			}
-			default:
-			{
-				DEBUG(2,("samr_io_r_query_userinfo: unknown switch level\n"));
-				break;
-			}
-				
-		}
+		samr_io_userinfo_ctr("ctr", r_u->ctr, ps, depth);
 	}
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
+	if (!ps->io)
+	{
+		/* writing */
+		if (r_u->ctr != NULL)
+		{
+			free_samr_userinfo_ctr(r_u->ctr);
+			free(r_u->ctr);
+		}
+	}
 	return True;
 }
 
@@ -5580,50 +5637,21 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 				POLICY_HND *hnd,
 				uint16 switch_value, void *info)
 {
+	uchar sess_key[16];
 	if (q_u == NULL || hnd == NULL) return False;
 
 	DEBUG(5,("make_samr_q_set_userinfo\n"));
 
 	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
-	q_u->switch_value  = switch_value;
-	q_u->switch_value2 = switch_value;
-	q_u->info.id = info;
+	q_u->switch_value = switch_value;
 
-	switch (switch_value)
+	if (!cli_get_usr_sesskey(hnd, sess_key))
 	{
-		case 0x18:
-		{
-			uchar sess_key[16];
-			if (!cli_get_usr_sesskey(hnd, sess_key))
-			{
-				return False;
-			}
-			SamOEMhash(q_u->info.id24->pass, sess_key, 1);
-#ifdef DEBUG_PASSWORD
-			dump_data(100, sess_key, 16);
-			dump_data(100, q_u->info.id24->pass, 516);
-#endif
-			break;
-		}
-		case 0x17:
-		{
-			uchar sess_key[16];
-			if (!cli_get_usr_sesskey(hnd, sess_key))
-			{
-				return False;
-			}
-			SamOEMhash(q_u->info.id23->pass, sess_key, 1);
-#ifdef DEBUG_PASSWORD
-			dump_data(100, sess_key, 16);
-			dump_data(100, q_u->info.id23->pass, 516);
-#endif
-			break;
-		}
-		default:
-		{
-			DEBUG(4,("make_samr_q_set_userinfo: unsupported switch level\n"));
-			return False;
-		}
+		return False;
+	}
+	if (!make_samr_userinfo_ctr(q_u->ctr, sess_key, switch_value, info))
+	{
+		return False;
 	}
 
 	return True;
@@ -5645,57 +5673,8 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint16("switch_value ", ps, depth, &(q_u->switch_value )); 
-	prs_uint16("switch_value2", ps, depth, &(q_u->switch_value2)); 
-
-	prs_align(ps);
-
-	switch (q_u->switch_value)
-	{
-		case 0:
-		{
-			break;
-		}
-		case 24:
-		{
-			if (ps->io)
-			{
-				/* reading */
-				q_u->info.id = (SAM_USER_INFO_24*)Realloc(NULL,
-						 sizeof(*q_u->info.id24));
-			}
-			if (q_u->info.id == NULL)
-			{
-				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
-				return False;
-			}
-			sam_io_user_info24("", q_u->info.id24, ps, depth);
-			break;
-		}
-		case 23:
-		{
-			if (ps->io)
-			{
-				/* reading */
-				q_u->info.id = (SAM_USER_INFO_23*)Realloc(NULL,
-						 sizeof(*q_u->info.id23));
-			}
-			if (q_u->info.id == NULL)
-			{
-				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
-				return False;
-			}
-			sam_io_user_info23("", q_u->info.id23, ps, depth);
-			break;
-		}
-		default:
-		{
-			DEBUG(2,("samr_io_q_query_userinfo: unknown switch level\n"));
-			break;
-		}
-			
-	}
-	prs_align(ps);
+	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
+	samr_io_userinfo_ctr("ctr", q_u->ctr, ps, depth);
 
 	if (!ps->io)
 	{
@@ -5711,11 +5690,7 @@ frees a structure.
 ********************************************************************/
 void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u)
 {
-	if (q_u->info.id == NULL)
-	{
-		free(q_u->info.id);
-	}
-	q_u->info.id = NULL;
+	free_samr_userinfo_ctr(q_u->ctr);
 }
 
 /*******************************************************************
