@@ -91,7 +91,7 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 	(*ctx)->admin_server = strdup(h);
     }
 	    
-    initialize_kadm5_error_table(&context->et_list);
+    initialize_kadm5_error_table_r(&context->et_list);
     return 0;
 }
 
