@@ -2497,6 +2497,7 @@ uint32 _samr_create_user(const POLICY_HND * domain_pol,
 	}
 
 	unistr2_to_ascii(user_name, uni_username, sizeof(user_name) - 1);
+	strlower(user_name);
 
 	sam_pass = getsam21pwntnam(user_name);
 
