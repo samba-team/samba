@@ -98,21 +98,40 @@ struct samr_EnumDomains {
 
 };
 
-struct samr_OPEN_DOMAIN {
+struct samr_OpenDomain {
 	struct {
+		struct policy_handle *handle;
+		uint32 access_mask;
+		struct dom_sid2 *sid;
 	} in;
 
 	struct {
+		struct policy_handle *domain_handle;
 		NTSTATUS result;
 	} out;
 
 };
 
-struct samr_QUERY_DOMAIN_INFO {
+struct samr_DomInfo1 {
+	uint16 min_length_password;
+	uint16 password_history;
+	uint32 flag;
+	NTTIME expire;
+	NTTIME min_passwordage;
+};
+
+union samr_DomainInfo {
+/* [case(1)] */ struct samr_DomInfo1 info1;
+};
+
+struct samr_QueryDomainInfo {
 	struct {
+		struct policy_handle *handle;
+		uint16 level;
 	} in;
 
 	struct {
+		union samr_DomainInfo *info;
 		NTSTATUS result;
 	} out;
 
@@ -719,8 +738,8 @@ struct samr_VALIDATE_PASSWORD {
 #define DCERPC_SAMR_SHUTDOWN 4
 #define DCERPC_SAMR_LOOKUPDOMAIN 5
 #define DCERPC_SAMR_ENUMDOMAINS 6
-#define DCERPC_SAMR_OPEN_DOMAIN 7
-#define DCERPC_SAMR_QUERY_DOMAIN_INFO 8
+#define DCERPC_SAMR_OPENDOMAIN 7
+#define DCERPC_SAMR_QUERYDOMAININFO 8
 #define DCERPC_SAMR_SET_DOMAIN_INFO 9
 #define DCERPC_SAMR_CREATE_DOM_GROUP 10
 #define DCERPC_SAMR_ENUM_DOM_GROUPS 11

@@ -21,6 +21,55 @@
 
 #include "includes.h"
 
+static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				 struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryDomainInfo r;
+
+	printf("Testing QueryDomainInfo\n");
+
+	r.in.handle = handle;
+	r.in.level = 1;
+
+	status = dcerpc_samr_QueryDomainInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryDomainInfo failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	NDR_PRINT_UNION_DEBUG(samr_DomainInfo, r.in.level, r.out.info);
+
+	return True;	
+}
+
+static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			    struct policy_handle *handle, struct dom_sid2 *sid)
+{
+	NTSTATUS status;
+	struct samr_OpenDomain r;
+	struct policy_handle domain_handle;
+
+	printf("Testing OpenDomain\n");
+
+	r.in.handle = handle;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.sid = sid;
+	r.out.domain_handle = &domain_handle;
+
+	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_QueryDomainInfo(p, mem_ctx, &domain_handle)) {
+		return False;
+	}
+
+	return True;	
+}
+
 static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			      struct policy_handle *handle, struct samr_Name *domain)
 {
@@ -40,6 +89,10 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	NDR_PRINT_DEBUG(dom_sid2, r.out.sid);
 
+	if (!test_OpenDomain(p, mem_ctx, handle, r.out.sid)) {
+		return False;
+	}
+
 	return True;	
 }
 
@@ -52,6 +105,7 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32 resume_handle = 0;
 	uint32 num_entries=0;
 	int i;
+	BOOL ret = True;
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
@@ -67,13 +121,18 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	NDR_PRINT_DEBUG(samr_SamArray, r.out.sam);
 
-	if (r.out.sam) {
-		for (i=0;i<r.out.sam->count;i++) {
-			test_LookupDomain(p, mem_ctx, handle, &r.out.sam->entries[i].name);
+	if (!r.out.sam) {
+		return False;
+	}
+
+	for (i=0;i<r.out.sam->count;i++) {
+		if (!test_LookupDomain(p, mem_ctx, handle, 
+				       &r.out.sam->entries[i].name)) {
+			ret = False;
 		}
 	}
 
-	return True;
+	return ret;
 }
 
 

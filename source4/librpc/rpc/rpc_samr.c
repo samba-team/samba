@@ -101,12 +101,12 @@ NTSTATUS dcerpc_samr_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, str
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_OPEN_DOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OPEN_DOMAIN *r)
+NTSTATUS dcerpc_samr_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OpenDomain *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPEN_DOMAIN, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_OPEN_DOMAIN,
-				    (ndr_pull_fn_t) ndr_pull_samr_OPEN_DOMAIN,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPENDOMAIN, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_OpenDomain,
+				    (ndr_pull_fn_t) ndr_pull_samr_OpenDomain,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -115,12 +115,12 @@ NTSTATUS dcerpc_samr_OPEN_DOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, str
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_QUERY_DOMAIN_INFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QUERY_DOMAIN_INFO *r)
+NTSTATUS dcerpc_samr_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QueryDomainInfo *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERY_DOMAIN_INFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_QUERY_DOMAIN_INFO,
-				    (ndr_pull_fn_t) ndr_pull_samr_QUERY_DOMAIN_INFO,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERYDOMAININFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_QueryDomainInfo,
+				    (ndr_pull_fn_t) ndr_pull_samr_QueryDomainInfo,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

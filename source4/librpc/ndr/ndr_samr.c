@@ -70,14 +70,19 @@ NTSTATUS ndr_push_samr_EnumDomains(struct ndr_push *ndr, struct samr_EnumDomains
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_OPEN_DOMAIN(struct ndr_push *ndr, struct samr_OPEN_DOMAIN *r)
+NTSTATUS ndr_push_samr_OpenDomain(struct ndr_push *ndr, struct samr_OpenDomain *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.access_mask));
+	NDR_CHECK(ndr_push_dom_sid2(ndr, r->in.sid));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_QUERY_DOMAIN_INFO(struct ndr_push *ndr, struct samr_QUERY_DOMAIN_INFO *r)
+NTSTATUS ndr_push_samr_QueryDomainInfo(struct ndr_push *ndr, struct samr_QueryDomainInfo *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
 
 	return NT_STATUS_OK;
 }
@@ -578,15 +583,70 @@ NTSTATUS ndr_pull_samr_EnumDomains(struct ndr_pull *ndr, struct samr_EnumDomains
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_OPEN_DOMAIN(struct ndr_pull *ndr, struct samr_OPEN_DOMAIN *r)
+NTSTATUS ndr_pull_samr_OpenDomain(struct ndr_pull *ndr, struct samr_OpenDomain *r)
 {
+	NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.domain_handle));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_QUERY_DOMAIN_INFO(struct ndr_pull *ndr, struct samr_QUERY_DOMAIN_INFO *r)
+static NTSTATUS ndr_pull_samr_DomInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo1 *r)
 {
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->min_length_password));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->password_history));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->flag));
+	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->expire));
+	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->min_passwordage));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_DomainInfo *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, level));
+	switch (*level) {
+	case 1: {
+	NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, &r->info1));
+	break; }
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (*level) {
+	case 1:
+		NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_BUFFERS, &r->info1));
+	break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_samr_QueryDomainInfo(struct ndr_pull *ndr, struct samr_QueryDomainInfo *r)
+{
+	uint32 _ptr_info;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
+	if (_ptr_info) {
+		NDR_ALLOC(ndr, r->out.info);
+	} else {
+		r->out.info = NULL;
+	}
+	if (r->out.info) {
+	{ uint16 _level;
+	NDR_CHECK(ndr_pull_samr_DomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
+	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	}
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -1042,5 +1102,30 @@ void ndr_print_samr_SamArray(struct ndr_print *ndr, const char *name, struct sam
 	}
 	ndr->depth--;
 	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo1(struct ndr_print *ndr, const char *name, struct samr_DomInfo1 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo1");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "min_length_password", r->min_length_password);
+	ndr_print_uint16(ndr, "password_history", r->password_history);
+	ndr_print_uint32(ndr, "flag", r->flag);
+	ndr_print_NTTIME(ndr, "expire", r->expire);
+	ndr_print_NTTIME(ndr, "min_passwordage", r->min_passwordage);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, uint16 level, union samr_DomainInfo *r)
+{
+	ndr_print_union(ndr, name, level, "samr_DomainInfo");
+	switch (level) {
+	case 1:
+	ndr_print_samr_DomInfo1(ndr, "info1", &r->info1);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
 }
 
