@@ -2960,12 +2960,12 @@ BOOL string_sub(char *s,char *pattern,char *insert)
   return(ret);
 }
 
-
-
 /*********************************************************
 * Recursive routine that is called by mask_match.
-* Does the actual matching.
+* Does the actual matching. Returns True if matched,
+* False if failed.
 *********************************************************/
+
 BOOL do_match(char *str, char *regexp, int case_sig)
 {
   char *p;
@@ -2978,48 +2978,61 @@ BOOL do_match(char *str, char *regexp, int case_sig)
 
     case '*':
       /* Look for a character matching 
-	 the one after the '*' */
+         the one after the '*' */
       p++;
       if(!*p)
-	return True; /* Automatic match */
+        return True; /* Automatic match */
       while(*str) {
-	while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
-	  str++;
-	if(do_match(str,p,case_sig))
-	  return True;
-	if(!*str)
-	  return False;
-	else
-	  str++;
+        while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
+          str++;
+        /* Now eat all characters that match, as
+           we want the *last* character to match. */
+        while(*str && (case_sig ? (*p == *str) : (toupper(*p)==toupper(*str))))
+          str++;
+        str--; /* We've eaten the match char after the '*' */
+        if(do_match(str,p,case_sig)) {
+          return True;
+        }
+        if(!*str) {
+          return False;
+        } else {
+          str++;
+        }
       }
       return False;
 
     default:
       if(case_sig) {
-	if(*str != *p)
-	  return False;
+        if(*str != *p) {
+          return False;
+        }
       } else {
-	if(toupper(*str) != toupper(*p))
-	  return False;
+        if(toupper(*str) != toupper(*p)) {
+          return False;
+        }
       }
       str++, p++;
       break;
     }
   }
+
   if(!*p && !*str)
     return True;
 
-  if (!*p && str[0] == '.' && str[1] == 0)
+  if (!*p && str[0] == '.' && str[1] == 0) {
     return(True);
+  }
   
-  if (!*str && *p == '?')
-    {
-      while (*p == '?') p++;
-      return(!*p);
-    }
+  if (!*str && *p == '?') {
+    while (*p == '?')
+      p++;
+    return(!*p);
+  }
 
-  if(!*str && (*p == '*' && p[1] == '\0'))
+  if(!*str && (*p == '*' && p[1] == '\0')) {
     return True;
+  }
+ 
   return False;
 }
 
@@ -3028,106 +3041,214 @@ BOOL do_match(char *str, char *regexp, int case_sig)
 * Routine to match a given string with a regexp - uses
 * simplified regexp that takes * and ? only. Case can be
 * significant or not.
+* The 8.3 handling was rewritten by Ums Harald <Harald.Ums@pro-sieben.de>
 *********************************************************/
+
 BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 {
   char *p;
-  pstring p1, p2;
+  pstring t_pattern, t_filename, te_pattern, te_filename;
   fstring ebase,eext,sbase,sext;
 
-  BOOL matched;
+  BOOL matched = False;
 
   /* Make local copies of str and regexp */
-  StrnCpy(p1,regexp,sizeof(pstring)-1);
-  StrnCpy(p2,str,sizeof(pstring)-1);
-
-  if (!strchr(p2,'.')) {
-    pstrcat(p2,".");
-  }
-
-/*
-  if (!strchr(p1,'.')) {
-    pstrcat(p1,".");
-  }
-*/
+  pstrcpy(t_pattern,regexp);
+  pstrcpy(t_filename,str);
 
 #if 0
-  if (strchr(p1,'.'))
-    {
-      string_sub(p1,"*.*","*");
-      string_sub(p1,".*","*");
-    }
+  /* 
+   * Not sure if this is a good idea. JRA.
+   */
+  if(trans2 && is_8_3(t_pattern,False) && is_8_3(t_filename,False))
+    trans2 = False;
+#endif
+
+#if 0
+  if (!strchr(t_filename,'.')) {
+    pstrcat(t_filename,".");
+  }
 #endif
 
   /* Remove any *? and ** as they are meaningless */
-  for(p = p1; *p; p++)
-    while( *p == '*' && (p[1] == '?' ||p[1] == '*'))
-      (void)pstrcpy( &p[1], &p[2]);
+  string_sub(t_pattern, "*?", "*");
+  string_sub(t_pattern, "**", "*");
 
-  if (strequal(p1,"*")) return(True);
+  if (strequal(t_pattern,"*"))
+    return(True);
 
-  DEBUG(8,("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
-
-  if (trans2) {
-    fstrcpy(ebase,p1);
-    fstrcpy(sbase,p2);
-  } else {
-    if ((p=strrchr(p1,'.'))) {
-      *p = 0;
-      fstrcpy(ebase,p1);
-      fstrcpy(eext,p+1);
-    } else {
-      fstrcpy(ebase,p1);
-      eext[0] = 0;
-    }
-
-  if (!strequal(p2,".") && !strequal(p2,"..") && (p=strrchr(p2,'.'))) {
-    *p = 0;
-    fstrcpy(sbase,p2);
-    fstrcpy(sext,p+1);
-  } else {
-    fstrcpy(sbase,p2);
-    fstrcpy(sext,"");
-  }
-  }
+  DEBUG(8,("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", t_filename, t_pattern, case_sig));
 
   if(trans2) {
     /*
-     * Match each component of the path, split up by '.'
+     * Match each component of the regexp, split up by '.'
      * characters.
      */
     char *fp, *rp, *cp2, *cp1;
     BOOL last_wcard_was_star = False;
-    matched = False;
-    for( cp1 = ebase, cp2 = sbase; cp1;) {
-      fp = strchr(cp2, '.');
-      if(fp)
-        *fp = '\0';
-      rp = strchr(cp1, '.');
-      if(rp)
-        *rp = '\0';
+    int num_path_components, num_regexp_components;
 
-     if(cp1[strlen(cp1)-1] == '*')
-       last_wcard_was_star = True;
-     else
-       last_wcard_was_star = False;
+    pstrcpy(te_pattern,t_pattern);
+    pstrcpy(te_filename,t_filename);
+    /*
+     * Remove multiple "*." patterns.
+     */
+    string_sub(te_pattern, "*.*.", "*.");
+    num_regexp_components = count_chars(te_pattern, '.');
+    num_path_components = count_chars(te_filename, '.');
 
-      if(!do_match(cp2, cp1, case_sig))
-        break;
-      cp2 = fp ? fp + 1 : "";
-      cp1 = rp ? rp + 1 : NULL;
-    } 
-    if(cp1 == NULL && ((*cp2 == '\0') || last_wcard_was_star))
-      matched = True;
+    /* 
+     * Check for special 'hack' case of "DIR a*z". - needs to match a.b.c...z
+     */
+    if(num_regexp_components == 0)
+      matched = do_match( te_filename, te_pattern, case_sig);
+    else {
+      for( cp1 = te_pattern, cp2 = te_filename; cp1;) {
+        fp = strchr(cp2, '.');
+        if(fp)
+          *fp = '\0';
+        rp = strchr(cp1, '.');
+        if(rp)
+          *rp = '\0';
+
+        if(cp1[strlen(cp1)-1] == '*')
+          last_wcard_was_star = True;
+        else
+          last_wcard_was_star = False;
+
+        if(!do_match(cp2, cp1, case_sig))
+          break;
+
+        cp1 = rp ? rp + 1 : NULL;
+        cp2 = fp ? fp + 1 : "";
+
+        if(last_wcard_was_star || ((cp1 != NULL) && (*cp1 == '*'))) {
+          /* Eat the extra path components. */
+          int i;
+
+          for(i = 0; i < num_path_components - num_regexp_components; i++) {
+            fp = strchr(cp2, '.');
+            if(fp)
+              *fp = '\0';
+
+            if((cp1 != NULL) && do_match( cp2, cp1, case_sig)) {
+              cp2 = fp ? fp + 1 : "";
+              break;
+            }
+            cp2 = fp ? fp + 1 : "";
+          }
+          num_path_components -= i;
+        }
+      } 
+      if(cp1 == NULL && ((*cp2 == '\0') || last_wcard_was_star))
+        matched = True;
+    }
   } else {
-    matched = do_match(sbase,ebase,case_sig) && do_match(sext,eext,case_sig);
+
+    /* -------------------------------------------------
+     * Behaviour of Win95
+     * for 8.3 filenames and 8.3 Wildcards
+     * -------------------------------------------------
+     */
+    if (strequal (t_filename, ".")) {
+      /*
+       *  Patterns:  *.*  *. ?. ?  are valid
+       *
+       */
+      if(strequal(t_pattern, "*.*") || strequal(t_pattern, "*.") ||
+         strequal(t_pattern, "?.") || strequal(t_pattern, "?"))
+        matched = True;
+    } else if (strequal (t_filename, "..")) {
+      /*
+       *  Patterns:  *.*  *. ?. ? *.? are valid
+       *
+       */
+      if(strequal(t_pattern, "*.*") || strequal(t_pattern, "*.") ||
+         strequal(t_pattern, "?.") || strequal(t_pattern, "?") ||
+         strequal(t_pattern, "*.?") || strequal(t_pattern, "?.*"))
+        matched = True;
+    } else {
+
+      if ((p = strrchr (t_pattern, '.'))) {
+        /*
+         * Wildcard has a suffix.
+         */
+        *p = 0;
+        fstrcpy (ebase, t_pattern);
+        if (p[1]) {
+          fstrcpy (eext, p + 1);
+        } else {
+          /* pattern ends in DOT: treat as if there is no DOT */
+          *eext = 0;
+          if (strequal (ebase, "*"))
+            return (True);
+        }
+      } else {
+        /*
+         * No suffix for wildcard.
+         */
+        fstrcpy (ebase, t_pattern);
+        eext[0] = 0;
+      }
+
+      p = strrchr (t_filename, '.');
+      if (p && (p[1] == 0)	) {
+        /*
+         * Filename has an extension of '.' only.
+         */
+        *p = 0; /* nuke dot at end of string */
+        p = 0;  /* and treat it as if there is no extension */
+      }
+
+      if (p) {
+        /*
+         * Filename has an extension.
+         */
+        *p = 0;
+        fstrcpy (sbase, t_filename);
+        fstrcpy (sext, p + 1);
+        if (*eext) {
+          matched = do_match(sbase, ebase, case_sig)
+                    && do_match(sext, eext, case_sig);
+        } else {
+          /* pattern has no extension */
+          /* Really: match complete filename with pattern ??? means exactly 3 chars */
+          matched = do_match(str, ebase, case_sig);
+        }
+      } else {
+        /* 
+         * Filename has no extension.
+         */
+        fstrcpy (sbase, t_filename);
+        fstrcpy (sext, "");
+        if (*eext) {
+          /* pattern has extension */
+          matched = do_match(sbase, ebase, case_sig)
+                    && do_match(sext, eext, case_sig);
+        } else {
+          matched = do_match(sbase, ebase, case_sig);
+#ifdef EMULATE_WEIRD_W95_MATCHING
+          /*
+           * Even Microsoft has some problems
+           * Behaviour Win95 -> local disk 
+           * is different from Win95 -> smb drive from Nt 4.0
+           * This branch would reflect the Win95 local disk behaviour
+           */
+          if (!matched) {
+            /* a? matches aa and a in w95 */
+            fstrcat (sbase, ".");
+            matched = do_match(sbase, ebase, case_sig);
+          }
+#endif
+        }
+      }
+    }
   }
 
   DEBUG(8,("mask_match returning %d\n", matched));
 
   return matched;
 }
-
 
 
 /****************************************************************************
