@@ -178,46 +178,54 @@ static int do_delete_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
 
 int main(int argc, char *argv[])
 {
-	char *line;
-	char *tok;
+    char *line;
+    char *tok;
 	
-	while ((line=getline("tdb> "))) {
-		tok = strtok(line," ");
-		if (strcmp(tok,"create") == 0) {
-			create_tdb();
-			continue;
-		} else if (strcmp(tok,"open") == 0) {
-			open_tdb();
-			continue;
-		}
+    while ((line = getline("tdb> "))) {
 
-		/* all the rest require a open database */
-		if (!tdb) {
-			terror("database not open");
-			help();
-			continue;
-		}
+        /* Shell command */
+        
+        if (line[0] == '!') {
+            system(line + 1);
+            continue;
+        }
+        
+        tok = strtok(line," ");
+        if (strcmp(tok,"create") == 0) {
+            create_tdb();
+            continue;
+        } else if (strcmp(tok,"open") == 0) {
+            open_tdb();
+            continue;
+        }
+            
+        /* all the rest require a open database */
+        if (!tdb) {
+            terror("database not open");
+            help();
+            continue;
+        }
+            
+        if (strcmp(tok,"insert") == 0) {
+            insert_tdb();
+        } else if (strcmp(tok,"store") == 0) {
+            store_tdb();
+        } else if (strcmp(tok,"show") == 0) {
+            show_tdb();
+        } else if (strcmp(tok,"erase") == 0) {
+            tdb_traverse(tdb, do_delete_fn, NULL);
+        } else if (strcmp(tok,"delete") == 0) {
+            delete_tdb();
+        } else if (strcmp(tok,"dump") == 0) {
+            tdb_traverse(tdb, print_rec, NULL);
+        } else if (strcmp(tok,"info") == 0) {
+            info_tdb();
+        } else {
+            help();
+        }
+    }
 
-		if (strcmp(tok,"insert") == 0) {
-			insert_tdb();
-		} else if (strcmp(tok,"store") == 0) {
-			store_tdb();
-		} else if (strcmp(tok,"show") == 0) {
-			show_tdb();
-		} else if (strcmp(tok,"erase") == 0) {
-			tdb_traverse(tdb, do_delete_fn, NULL);
-		} else if (strcmp(tok,"delete") == 0) {
-			delete_tdb();
-		} else if (strcmp(tok,"dump") == 0) {
-			tdb_traverse(tdb, print_rec, NULL);
-		} else if (strcmp(tok,"info") == 0) {
-			info_tdb();
-		} else {
-			help();
-		}
-	}
+    if (tdb) tdb_close(tdb);
 
-	if (tdb) tdb_close(tdb);
-
-	return 0;
+    return 0;
 }
