@@ -1035,7 +1035,7 @@ void check_kernel_oplocks(void)
       return;
     }
 
-    if((fd = open(tmpname, O_RDWR)) < 0) {
+    if((fd = open(tmpname, O_RDWR|O_CREAT|O_TRUNC, 0600)) < 0) {
       DEBUG(0,("check_kernel_oplocks: Unable to open temp test file %s. Error was %s\n",
             tmpname, strerror(errno) ));
       unlink( tmpname );
