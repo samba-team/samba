@@ -101,12 +101,8 @@ typedef unsigned int uint32;
 #define DEF_CREATE_MASK (0755)
 #endif
 
-#ifndef DEFAULT_PIPE_TIMEOUT
-#define DEFAULT_PIPE_TIMEOUT 10000000 /* Ten seconds */
-#endif
-
-/* how long to wait for secondary SMB packets (seconds) */
-#define SMB_SECONDARY_WAIT 30
+/* how long to wait for secondary SMB packets (milli-seconds) */
+#define SMB_SECONDARY_WAIT (60*1000)
 
 /* debugging code */
 #ifndef SYSLOG
