@@ -2052,11 +2052,6 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 
   (void)map_username(user);
 
-  /*
-   * Do any UNIX username case mangling.
-   */
-  (void)Get_Pwnam_Modify( user );
-
   if (pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))
   {
     SSVAL(*rparam,0,NERR_Success);
