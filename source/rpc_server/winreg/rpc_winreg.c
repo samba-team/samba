@@ -23,62 +23,47 @@
 #include "includes.h"
 #include "rpc_server/common/common.h"
 
-/**
- * General notes for the current implementation:
- * 
- * - All hives are currently openened as subkeys of one single registry file 
- *   (e.g. HKCR from \HKEY_CURRENT_USER, etc). This might be changed in 
- *   the future and we might want to make it possible to configure 
- *   what registries are behind which hives (e.g. 
- *   	\HKEY_CURRENT_USER -> gconf,
- *   	\HKEY_LOCAL_MACHINE -> tdb,
- *   	etc
- */
+enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 
-enum handle_types { HTYPE_REGKEY, HTYPE_REGVAL };
-
-struct _privatedata {
-	struct registry_context *registry;
-};
-
-
-/* this function is called when the client disconnects the endpoint */
-static void winreg_unbind(struct dcesrv_connection *dc, const struct dcesrv_interface *di) 
+static void winreg_destroy_hive(struct dcesrv_connection *c, struct dcesrv_handle *h)
 {
+	/* FIXME: Free ((struct registry_key *)h->data)->root->hive->reg_ctx */
 }
 
-static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_interface *di) 
+static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, const char *hivename, struct policy_handle **outh)
 {
-	struct _privatedata *data;
+	struct registry_context *ctx;
+	struct dcesrv_handle *h; 
 	WERROR error;
-	data = talloc_p(dc->conn, struct _privatedata);
-	error = reg_create(&data->registry);
+	const char *conf = lp_parm_string(-1, "registry", hivename);
+	char *backend, *location;
+	
+	if (!conf) {
+		return WERR_NOT_SUPPORTED;
+	}
 
-	/* FIXME: This should happen somewhere after configuration... */
-	reg_import_hive(data->registry, "nt4", "NTUSER.DAT", "", "HKEY_CURRENT_USER");
-	reg_import_hive(data->registry, "ldb", "ldb:///", "", "HKEY_LOCAL_MACHINE");
+	backend = talloc_strdup(mem_ctx, conf);
+	location = strchr(backend, ':');
 
-	if(!W_ERROR_IS_OK(error)) return werror_to_ntstatus(error);
-	dc->conn->private = data;
-	return NT_STATUS_OK;
+	if (location) {
+		*location = '\0';
+		location++;
+	}
+
+	error = reg_open(&ctx, backend, location, NULL); 
+	if(!W_ERROR_IS_OK(error)) return error; 
+	
+	h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); 
+	h->data = ctx->hives[0]->root; 
+	SMB_ASSERT(h->data);
+	h->destroy = winreg_destroy_hive;
+	*outh = &h->wire_handle; 
+	return WERR_OK; 
 }
-
-#define DCESRV_INTERFACE_WINREG_BIND winreg_bind
-#define DCESRV_INTERFACE_WINREG_UNBIND winreg_unbind
 
 #define func_winreg_OpenHive(k,n) static WERROR winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
 { \
-	struct _privatedata *data = dce_call->conn->private; \
-	struct registry_key *root; \
-	struct dcesrv_handle *h; \
-	WERROR error = reg_get_hive(data->registry, n, &root); \
-	if(!W_ERROR_IS_OK(error)) return error; \
-	\
-	h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); \
-	DCESRV_CHECK_HANDLE(h); \
-	h->data = root; \
-	r->out.handle = &h->wire_handle; \
-	return WERR_OK; \
+	return winreg_openhive (dce_call, mem_ctx, n, &r->out.handle);\
 }
 
 func_winreg_OpenHive(HKCR,"HKEY_CLASSES_ROOT")
@@ -97,8 +82,9 @@ func_winreg_OpenHive(HKPN,"HKEY_PN")
 static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_CloseKey *r)
 {
-	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	struct dcesrv_handle *h; 
 
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
 
 	dcesrv_handle_destroy(dce_call->conn, h);
@@ -113,19 +99,23 @@ static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_CreateKey *r)
 {
-	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	struct dcesrv_handle *h, *newh;
 	WERROR error;
-	struct registry_key *parent;
 
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
+	
+	newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
 
-	parent = h->data;
-	error = reg_key_add_name_recursive(parent, r->in.key.name);
+	error = reg_key_add_name(newh, (struct registry_key *)h->data, r->in.key.name, 
+							 r->in.access_mask, 
+							 r->in.sec_desc?r->in.sec_desc->sd:NULL, 
+							 (struct registry_key **)&newh->data);
+
 	if(W_ERROR_IS_OK(error)) {
-		struct dcesrv_handle *newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
-		error = reg_open_key(parent->hive->reg_ctx->mem_ctx, parent, r->in.key.name, (struct registry_key **)&newh->data);
-		if(W_ERROR_IS_OK(error)) r->out.handle = &newh->wire_handle;
-		else dcesrv_handle_destroy(dce_call->conn, newh);
+		r->out.handle = &newh->wire_handle;
+	} else {
+		dcesrv_handle_destroy(dce_call->conn, newh);
 	}
 
 	return error;
@@ -138,14 +128,14 @@ static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_DeleteKey *r)
 {
-	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	struct registry_key *parent, *key;
+	struct dcesrv_handle *h;
+	struct registry_key *key;
 	WERROR result;
 
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
 
-	parent = h->data;
-	result = reg_open_key(parent->hive->reg_ctx->mem_ctx, parent, r->in.key.name, &key);
+	result = reg_open_key(mem_ctx, (struct registry_key *)h->data, r->in.key.name, &key);
 
 	if (W_ERROR_IS_OK(result)) {
 		return reg_key_del(key);
@@ -161,6 +151,16 @@ static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static WERROR winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_DeleteValue *r)
 {
+	struct dcesrv_handle *h;
+	struct registry_value *value;
+
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGVAL);
+	DCESRV_CHECK_HANDLE(h);
+
+	value = h->data;
+	
+	/* FIXME */
+
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -171,9 +171,10 @@ static WERROR winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_EnumKey *r)
 {
-	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	struct dcesrv_handle *h;
 	struct registry_key *key;
 
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
 
 	key = h->data;
@@ -188,6 +189,7 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_EnumValue *r)
 {
+
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -238,19 +240,21 @@ static WERROR winreg_NotifyChangeKeyValue(struct dcesrv_call_state *dce_call, TA
 static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_OpenKey *r)
 {
-	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	struct registry_key *k, *subkey;
+	struct dcesrv_handle *h, *newh;
 	WERROR result;
 
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
 
-	k = h->data;
+	newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
 
+	result = reg_open_key(newh, (struct registry_key *)h->data, 
+				r->in.keyname.name, (struct registry_key **)&newh->data);
 
-	result = reg_open_key(k->hive->reg_ctx->mem_ctx, k, r->in.keyname.name, &subkey);
 	if (W_ERROR_IS_OK(result)) {
-		h->data = subkey; 
-		r->out.handle = &h->wire_handle; 
+		r->out.handle = &newh->wire_handle; 
+	} else {
+		dcesrv_handle_destroy(dce_call->conn, newh);
 	}
 	
 	return result;
