@@ -949,7 +949,6 @@ typedef struct r_samr_unknown_32_info
 
 } SAMR_R_UNKNOWN_32;
 
-
 /* SAMR_Q_OPEN_ALIAS - probably an open */
 typedef struct q_samr_open_alias_info
 {

@@ -199,10 +199,10 @@ void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 
 	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	init_uni_hdr(&q_c->hdr_name, len_name, len_name, 1);
+	init_uni_hdr(&q_c->hdr_name, len_name);
 	init_unistr2(&q_c->uni_name, name, len_name);
 
-	init_uni_hdr(&q_c->hdr_class, len_class, len_class, 1);
+	init_uni_hdr(&q_c->hdr_class, len_class);
 	init_unistr2(&q_c->uni_class, class, len_class);
 
 	q_c->reserved = 0x00000000;
@@ -313,7 +313,7 @@ void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 
 	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	init_uni_hdr(&q_c->hdr_name, len_name, len_name, 1);
+	init_uni_hdr(&q_c->hdr_name, len_name);
 	init_unistr2(&q_c->uni_name, name, len_name);
 }
 
@@ -379,7 +379,7 @@ void init_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 
 	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	init_uni_hdr(&q_c->hdr_name, len_name, len_name, 1);
+	init_uni_hdr(&q_c->hdr_name, len_name);
 	init_unistr2(&q_c->uni_name, name, len_name);
 }
 
@@ -442,7 +442,7 @@ void init_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
 	ZERO_STRUCTP(q_o);
 
 	memcpy(&q_o->pol, hnd, sizeof(q_o->pol));
-	init_uni_hdr(&q_o->hdr_class, max_class_len, 0, max_class_len > 0 ? 1 : 0);
+	init_uni_hdr(&q_o->hdr_class, max_class_len);
 	q_o->uni_class.uni_max_len = max_class_len;
 }
 
@@ -874,7 +874,7 @@ void init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
 
 	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
-	init_uni_hdr(&q_i->hdr_type, len_type, len_type, 1);
+	init_uni_hdr(&q_i->hdr_type, len_type);
 	init_unistr2(&q_i->uni_type, product_type, len_type);
 
 	q_i->ptr1 = 1;
@@ -1046,7 +1046,7 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
 	q_i->val_index = val_idx;
-	init_uni_hdr(&q_i->hdr_name, max_val_len, 0, 1);
+	init_uni_hdr(&q_i->hdr_name, max_val_len);
 	q_i->uni_name.uni_max_len = max_val_len;
 	
 	q_i->ptr_type = 1;
@@ -1191,7 +1191,7 @@ void init_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
 
 	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
-	init_uni_hdr(&q_i->hdr_name, val_len, val_len, 1);
+	init_uni_hdr(&q_i->hdr_name, val_len);
 	init_unistr2(&q_i->uni_name, val_name, val_len);
 	
 	q_i->type      = type;
@@ -1398,7 +1398,7 @@ void init_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
 
 	memcpy(&r_q->pol, pol, sizeof(r_q->pol));
 
-	init_uni_hdr(&r_q->hdr_name, len_name, len_name, 1);
+	init_uni_hdr(&r_q->hdr_name, len_name);
 	init_unistr2(&r_q->uni_name, key_name, len_name);
 
 	r_q->unknown_0 = 0x00000000;

@@ -165,7 +165,7 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 		/* report error code */
 		DEBUG(0,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));
 	} else {
-		if (t_names.ptr_trans_names != 0 && ref.undoc_buffer != 0)
+		if (t_names.ptr_trans_names != 0)
 			valid_response = True;
 	}
 

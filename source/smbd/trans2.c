@@ -1136,6 +1136,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
 #endif /* Old code. */
+
       SIVAL(pdata,4,128); /* Max filename component length */
       SIVAL(pdata,8,2*strlen(fstype));
       PutUniCode(pdata+12,fstype);

@@ -29,11 +29,14 @@
 
 extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
+extern fstring global_myworkgroup;
+extern pstring global_myname;
 
 /***************************************************************************
-lsa_reply_open_policy2
+ lsa_reply_open_policy2
  ***************************************************************************/
-static void lsa_reply_open_policy2(prs_struct *rdata)
+
+static BOOL lsa_reply_open_policy2(prs_struct *rdata)
 {
 	int i;
 	LSA_R_OPEN_POL2 r_o;
@@ -43,19 +46,23 @@ static void lsa_reply_open_policy2(prs_struct *rdata)
 	/* set up the LSA QUERY INFO response */
 
 	for (i = 4; i < POL_HND_SIZE; i++)
-	{
 		r_o.pol.data[i] = i;
-	}
 	r_o.status = 0x0;
 
 	/* store the response in the SMB stream */
-	lsa_io_r_open_pol2("", &r_o, rdata, 0);
+	if(!lsa_io_r_open_pol2("", &r_o, rdata, 0)) {
+		DEBUG(0,("lsa_reply_open_policy2: unable to marshall LSA_R_OPEN_POL2.\n"));
+		return False;
+	}
+
+	return True;
 }
 
 /***************************************************************************
 lsa_reply_open_policy
  ***************************************************************************/
-static void lsa_reply_open_policy(prs_struct *rdata)
+
+static BOOL lsa_reply_open_policy(prs_struct *rdata)
 {
 	int i;
 	LSA_R_OPEN_POL r_o;
@@ -65,37 +72,44 @@ static void lsa_reply_open_policy(prs_struct *rdata)
 	/* set up the LSA QUERY INFO response */
 
 	for (i = 4; i < POL_HND_SIZE; i++)
-	{
 		r_o.pol.data[i] = i;
-	}
 	r_o.status = 0x0;
 
 	/* store the response in the SMB stream */
-	lsa_io_r_open_pol("", &r_o, rdata, 0);
+	if(!lsa_io_r_open_pol("", &r_o, rdata, 0)) {
+		DEBUG(0,("lsa_reply_open_policy: unable to marshall LSA_R_OPEN_POL.\n"));
+		return False;
+	}
+
+	return True;
 }
 
 /***************************************************************************
-make_dom_query
+Init dom_query
  ***************************************************************************/
-static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
+
+static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 {
+	fstring sid_str;
 	int domlen = strlen(dom_name);
 
 	d_q->uni_dom_max_len = domlen * 2;
 	d_q->uni_dom_str_len = domlen * 2;
 
-	d_q->buffer_dom_name = 4; /* domain buffer pointer */
-	d_q->buffer_dom_sid  = 2; /* domain sid pointer */
+	d_q->buffer_dom_name = domlen  != 0    ? 1 : 0; /* domain buffer pointer */
+	d_q->buffer_dom_sid  = dom_sid != NULL ? 1 : 0; /* domain sid pointer */
 
 	/* this string is supposed to be character short */
-	init_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
+	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);
 
-	init_dom_sid2(&(d_q->dom_sid), dom_sid);
+	sid_to_string(sid_str, dom_sid);
+	init_dom_sid2(&d_q->dom_sid, dom_sid);
 }
 
 /***************************************************************************
-lsa_reply_query_info
+ lsa_reply_enum_trust_dom
  ***************************************************************************/
+
 static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 				prs_struct *rdata,
 				uint32 enum_context, char *dom_name, DOM_SID *dom_sid)
@@ -115,7 +129,8 @@ static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 /***************************************************************************
 lsa_reply_query_info
  ***************************************************************************/
-static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
+
+static BOOL lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 				char *dom_name, DOM_SID *dom_sid)
 {
 	LSA_R_QUERY_INFO r_q;
@@ -127,142 +142,241 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 	r_q.undoc_buffer = 0x22000000; /* bizarre */
 	r_q.info_class = q_q->info_class;
 
-	make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
+	init_dom_query(&r_q.dom.id5, dom_name, dom_sid);
 
 	r_q.status = 0x0;
 
 	/* store the response in the SMB stream */
-	lsa_io_r_query("", &r_q, rdata, 0);
-}
-
-
-/***************************************************************************
-make_dom_ref
- ***************************************************************************/
-static void make_dom_ref(DOM_R_REF *ref, int num_domains,
-				char **dom_names, DOM_SID **dom_sids)
-                         
-{
-	int i;
-
-	if (num_domains > MAX_REF_DOMAINS)
-	{
-		num_domains = MAX_REF_DOMAINS;
+	if(!lsa_io_r_query("", &r_q, rdata, 0)) {
+		DEBUG(0,("lsa_reply_query_info: failed to marshall LSA_R_QUERY_INFO.\n"));
+		return False;
 	}
 
-	ref->undoc_buffer = 1;
-	ref->num_ref_doms_1 = num_domains;
-	ref->undoc_buffer2 = 1;
+	return True;
+}
+
+/***************************************************************************
+ init_dom_ref - adds a domain if it's not already in, returns the index.
+***************************************************************************/
+
+static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
+{
+	int num = 0;
+	int len;
+
+	if (dom_name != NULL) {
+		for (num = 0; num < ref->num_ref_doms_1; num++) {
+			fstring domname;
+			fstrcpy(domname, unistr2_to_str(&ref->ref_dom[num].uni_dom_name));
+			if (strequal(domname, dom_name))
+				return num;
+		}
+	} else {
+		num = ref->num_ref_doms_1;
+	}
+
+	if (num >= MAX_REF_DOMAINS) {
+		/* index not found, already at maximum domain limit */
+		return -1;
+	}
+
+	ref->num_ref_doms_1 = num+1;
+	ref->ptr_ref_dom  = 1;
 	ref->max_entries = MAX_REF_DOMAINS;
-	ref->num_ref_doms_2 = num_domains;
+	ref->num_ref_doms_2 = num+1;
 
-	for (i = 0; i < num_domains; i++)
-	{
-		int len = dom_names[i] != NULL ? strlen(dom_names[i]) : 0;
+	len = (dom_name != NULL) ? strlen(dom_name) : 0;
+	if(dom_name != NULL && len == 0)
+		len = 1;
 
-		init_uni_hdr(&(ref->hdr_ref_dom[i].hdr_dom_name), len, len, len != 0 ? 1 : 0);
-		ref->hdr_ref_dom[i].ptr_dom_sid = dom_sids[i] != NULL ? 1 : 0;
+	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, len);
+	ref->hdr_ref_dom[num].ptr_dom_sid = dom_sid != NULL ? 1 : 0;
 
-		init_unistr2 (&(ref->ref_dom[i].uni_dom_name), dom_names[i], len);
-		init_dom_sid2(&(ref->ref_dom[i].ref_dom     ), dom_sids [i]);
-	}
+	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, len);
+	init_dom_sid2(&ref->ref_dom[num].ref_dom, dom_sid );
 
+	return num;
 }
 
 /***************************************************************************
-make_reply_lookup_rids
+ init_lsa_rid2s
  ***************************************************************************/
-static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
-				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
-				int num_ref_doms,
-				char **dom_names, DOM_SID **dom_sids)
+
+static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
+				int num_entries, UNISTR2 name[MAX_LOOKUP_SIDS],
+				uint32 *mapped_count)
 {
 	int i;
-
-	make_dom_ref(&(r_l->dom_ref), num_ref_doms, dom_names, dom_sids);
-
-	r_l->num_entries = num_entries;
-	r_l->undoc_buffer = 1;
-	r_l->num_entries2 = num_entries;
-
-	SMB_ASSERT_ARRAY(r_l->dom_rid, num_entries);
-
-	for (i = 0; i < num_entries; i++)
-	{
-		init_dom_rid2(&(r_l->dom_rid[i]), dom_rids[i], 0x01);
-	}
-
-	r_l->num_entries3 = num_entries;
-}
-
-/***************************************************************************
-make_lsa_trans_names
- ***************************************************************************/
-static void make_lsa_trans_names(LSA_TRANS_NAME_ENUM *trn,
-				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS],
-				uint32 *total)
-{
-	uint32 status = 0x0;
-	int i;
-	(*total) = 0;
+	int total = 0;
+	*mapped_count = 0;
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
-	for (i = 0; i < num_entries; i++)
-	{
+	for (i = 0; i < num_entries; i++) {
+		BOOL status = False;
+		DOM_SID dom_sid;
+		DOM_SID sid;
 		uint32 rid = 0xffffffff;
-		uint8 num_auths = sid[i].sid.num_auths;
-		fstring name;
-		uint32 type;
-		
-		SMB_ASSERT_ARRAY(sid[i].sid.sub_auths, num_auths);
+		int dom_idx = -1;
+		pstring full_name;
+		fstring dom_name;
+		fstring user;
+		uint8 sid_name_use = SID_NAME_UNKNOWN;
 
-		/* find the rid to look up */
-		if (num_auths != 0)
-		{
-			rid = sid[i].sid.sub_auths[num_auths-1];
+		pstrcpy(full_name, unistr2_to_str(&name[i]));
 
-			status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+		/*
+		 * Try and split the name into a DOMAIN and
+		 * user component.
+		 */
 
-			status = (status != 0x0) ? lookup_user_name (rid, name, &type) : status;
-			status = (status != 0x0) ? lookup_group_name(rid, name, &type) : status;
-			status = (status != 0x0) ? lookup_alias_name(rid, name, &type) : status;
+		split_domain_name(full_name, dom_name, user);
+
+		/*
+		 * We only do anything with this name if we
+		 * can map the Domain into a SID we know.
+		 */
+
+		if (map_domain_name_to_sid(&dom_sid, dom_name)) {
+			dom_idx = init_dom_ref(ref, dom_name, &dom_sid);
+
+			if (lookup_local_name(dom_name, user, &sid, &sid_name_use) && sid_split_rid(&sid, &rid)) 
+				status = True;
 		}
 
-		if (status == 0x0)
-		{
-			init_lsa_trans_name(&(trn->name    [(*total)]),
-			                    &(trn->uni_name[(*total)]),
-			                    type, name, (*total));
-			(*total)++;
+		if (status)
+			(*mapped_count)++;
+		else {
+			dom_idx = -1;
+			rid = 0xffffffff;
+			sid_name_use = SID_NAME_UNKNOWN;
 		}
+
+		init_dom_rid2(&rid2[total], rid, sid_name_use, dom_idx);
+		total++;
 	}
-
-	trn->num_entries = (*total);
-	trn->ptr_trans_names = 1;
-	trn->num_entries2 = (*total);
 }
 
 /***************************************************************************
-make_reply_lookup_sids
+ init_reply_lookup_names
  ***************************************************************************/
-static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
-				DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *names,
-				uint32 mapped_count, uint32 status)
+
+static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
+                DOM_R_REF *ref, uint32 num_entries,
+                DOM_RID2 *rid2, uint32 mapped_count)
 {
+	r_l->ptr_dom_ref  = 1;
+	r_l->dom_ref      = ref;
+
+	r_l->num_entries  = num_entries;
+	r_l->ptr_entries  = 1;
+	r_l->num_entries2 = num_entries;
+	r_l->dom_rid      = rid2;
+
+	r_l->mapped_count = mapped_count;
+
+	if (mapped_count == 0)
+		r_l->status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	else
+		r_l->status = 0x0;
+}
+
+/***************************************************************************
+ Init lsa_trans_names.
+ ***************************************************************************/
+
+static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
+				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS], uint32 *mapped_count)
+{
+	extern DOM_SID global_sid_S_1_5_0x20; /* BUILTIN sid. */
+	int i;
+	int total = 0;
+	*mapped_count = 0;
+
+	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
+
+	for (i = 0; i < num_entries; i++) {
+		BOOL status = False;
+		DOM_SID find_sid = sid[i].sid;
+		DOM_SID tmp_sid  = sid[i].sid;
+		uint32 rid = 0xffffffff;
+		int dom_idx = -1;
+		fstring name;
+		fstring dom_name;
+		uint8 sid_name_use = 0;
+
+		memset(dom_name, '\0', sizeof(dom_name));
+		memset(name, '\0', sizeof(name));
+
+		/*
+		 * First, check to see if the SID is one of the well
+		 * known ones (this includes our own domain SID).
+		 * Next, check if the domain prefix is one of the
+		 * well known ones. If so and the domain prefix was
+		 * either BUILTIN or our own global sid, then lookup
+		 * the RID as a user or group id and translate to
+		 * a name.
+		 */
+
+		if (map_domain_sid_to_name(&find_sid, dom_name)) {
+			sid_name_use = SID_NAME_DOMAIN;
+		} else if (sid_split_rid(&find_sid, &rid) && map_domain_sid_to_name(&find_sid, dom_name)) {
+			if (sid_equal(&find_sid, &global_sam_sid) ||
+				sid_equal(&find_sid, &global_sid_S_1_5_0x20)) {
+				status = lookup_local_rid(rid, name, &sid_name_use);
+			} else  {
+				status = lookup_known_rid(&find_sid, rid, name, &sid_name_use);
+			}
+		}
+
+		DEBUG(10,("init_lsa_trans_names: adding domain '%s' sid %s to referenced list.\n",
+				dom_name ));
+
+		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
+
+		if(!status) {
+			slprintf(name, sizeof(name)-1, "unix.%08x", rid);
+			sid_name_use = SID_NAME_UNKNOWN;
+		}
+
+		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to referenced list.\n", dom_name, name ));
+
+		(*mapped_count)++;
+
+		init_lsa_trans_name(&trn->name[total], &trn->uni_name[total],
+					sid_name_use, name, dom_idx);
+		total++;
+	}
+
+	trn->num_entries = total;
+	trn->ptr_trans_names = 1;
+	trn->num_entries2 = total;
+}
+
+/***************************************************************************
+ Init_reply_lookup_sids.
+ ***************************************************************************/
+
+static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
+                DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *names,
+                uint32 mapped_count)
+{
+	r_l->ptr_dom_ref  = 1;
 	r_l->dom_ref      = ref;
 	r_l->names        = names;
 	r_l->mapped_count = mapped_count;
-	r_l->status       = status;
+
+	if (mapped_count == 0)
+		r_l->status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	else
+		r_l->status = 0x0;
 }
 
 /***************************************************************************
 lsa_reply_lookup_sids
  ***************************************************************************/
-static void lsa_reply_lookup_sids(prs_struct *rdata,
-				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS],
-				int num_ref_doms,
-				char **dom_names, DOM_SID **dom_sids)
+
+static BOOL lsa_reply_lookup_sids(prs_struct *rdata, DOM_SID2 *sid, int num_entries)
 {
 	LSA_R_LOOKUP_SIDS r_l;
 	DOM_R_REF ref;
@@ -274,38 +388,51 @@ static void lsa_reply_lookup_sids(prs_struct *rdata,
 	ZERO_STRUCT(names);
 
 	/* set up the LSA Lookup SIDs response */
-	make_dom_ref(&ref, num_ref_doms, dom_names, dom_sids);
-	make_lsa_trans_names(&names, num_entries, sid, &mapped_count);
-	make_reply_lookup_sids(&r_l, &ref, &names, mapped_count, 0x0);
+	init_lsa_trans_names(&ref, &names, num_entries, sid, &mapped_count);
+	init_reply_lookup_sids(&r_l, &ref, &names, mapped_count);
 
 	/* store the response in the SMB stream */
-	lsa_io_r_lookup_sids("", &r_l, rdata, 0);
+	if(!lsa_io_r_lookup_sids("", &r_l, rdata, 0)) {
+		DEBUG(0,("lsa_reply_lookup_sids: Failed to marshall LSA_R_LOOKUP_SIDS.\n"));
+		return False;
+	}
+
+	return True;
 }
 
 /***************************************************************************
-lsa_reply_lookup_rids
+lsa_reply_lookup_names
  ***************************************************************************/
-static void lsa_reply_lookup_rids(prs_struct *rdata,
-				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
-				int num_ref_doms,
-				char **dom_names, DOM_SID **dom_sids)
+
+static BOOL lsa_reply_lookup_names(prs_struct *rdata,
+                UNISTR2 names[MAX_LOOKUP_SIDS], int num_entries)
 {
-	LSA_R_LOOKUP_RIDS r_l;
+	LSA_R_LOOKUP_NAMES r_l;
+	DOM_R_REF ref;
+	DOM_RID2 rids[MAX_LOOKUP_SIDS];
+	uint32 mapped_count = 0;
 
 	ZERO_STRUCT(r_l);
+	ZERO_STRUCT(ref);
+	ZERO_STRUCT(rids);
 
 	/* set up the LSA Lookup RIDs response */
-	make_reply_lookup_rids(&r_l, num_entries, dom_rids,
-				num_ref_doms, dom_names, dom_sids);
-	r_l.status = 0x0;
+	init_lsa_rid2s(&ref, rids, num_entries, names, &mapped_count);
+	init_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
 
 	/* store the response in the SMB stream */
-	lsa_io_r_lookup_rids("", &r_l, rdata, 0);
+	if(!lsa_io_r_lookup_names("", &r_l, rdata, 0)) {
+		DEBUG(0,("lsa_reply_lookup_names: Failed to marshall LSA_R_LOOKUP_NAMES.\n"));
+		return False;
+	}
+
+	return True;
 }
 
 /***************************************************************************
-api_lsa_open_policy
+ api_lsa_open_policy2
  ***************************************************************************/
+
 static BOOL api_lsa_open_policy2( uint16 vuid, prs_struct *data,
                              prs_struct *rdata )
 {
@@ -314,12 +441,16 @@ static BOOL api_lsa_open_policy2( uint16 vuid, prs_struct *data,
 	ZERO_STRUCT(q_o);
 
 	/* grab the server, object attributes and desired access flag...*/
-	lsa_io_q_open_pol2("", &q_o, data, 0);
+	if(!lsa_io_q_open_pol2("", &q_o, data, 0)) {
+		DEBUG(0,("api_lsa_open_policy2: unable to unmarshall LSA_Q_OPEN_POL2.\n"));
+		return False;
+	}
 
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* return a 20 byte policy handle */
-	lsa_reply_open_policy2(rdata);
+	if(!lsa_reply_open_policy2(rdata))
+		return False;
 
 	return True;
 }
@@ -335,12 +466,16 @@ static BOOL api_lsa_open_policy( uint16 vuid, prs_struct *data,
 	ZERO_STRUCT(q_o);
 
 	/* grab the server, object attributes and desired access flag...*/
-	lsa_io_q_open_pol("", &q_o, data, 0);
+	if(!lsa_io_q_open_pol("", &q_o, data, 0)) {
+		DEBUG(0,("api_lsa_open_policy: unable to unmarshall LSA_Q_OPEN_POL.\n"));
+		return False;
+	}
 
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* return a 20 byte policy handle */
-	lsa_reply_open_policy(rdata);
+	if(!lsa_reply_open_policy(rdata))
+		return False;
 
 	return True;
 }
@@ -371,147 +506,79 @@ static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
                                 prs_struct *rdata )
 {
 	LSA_Q_QUERY_INFO q_i;
-	pstring dom_name;
+	fstring name;
+	DOM_SID *sid = NULL;
+	memset(name, 0, sizeof(name));
 
 	ZERO_STRUCT(q_i);
 
 	/* grab the info class and policy handle */
-	lsa_io_q_query("", &q_i, data, 0);
+	if(!lsa_io_q_query("", &q_i, data, 0)) {
+		DEBUG(0,("api_lsa_query_info: failed to unmarshall LSA_Q_QUERY_INFO.\n"));
+		return False;
+	}
 
-	pstrcpy(dom_name, lp_workgroup());
-
-	/* construct reply.  return status is always 0x0 */
-	lsa_reply_query_info(&q_i, rdata, dom_name, &global_sam_sid);
-
-	return True;
-}
-
-/***************************************************************************
-api_lsa_lookup_sids
- ***************************************************************************/
-static BOOL api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
-                                 prs_struct *rdata )
-{
-	LSA_Q_LOOKUP_SIDS q_l;
-	pstring dom_name;
-	DOM_SID sid_S_1_1;
-	DOM_SID sid_S_1_3;
-	DOM_SID sid_S_1_5;
-
-	DOM_SID *sid_array[4];
-	char    *dom_names[4];
-
-	ZERO_STRUCT(q_l);
-	ZERO_STRUCT(sid_S_1_1);
-	ZERO_STRUCT(sid_S_1_3);
-	ZERO_STRUCT(sid_S_1_5);
-
-	/* grab the info class and policy handle */
-	lsa_io_q_lookup_sids("", &q_l, data, 0);
-
-	pstrcpy(dom_name, lp_workgroup());
-
-	string_to_sid(&sid_S_1_1, "S-1-1");
-        string_to_sid(&sid_S_1_3, "S-1-3");
-        string_to_sid(&sid_S_1_5, "S-1-5");
-
-	dom_names[0] = dom_name;
-	sid_array[0] = &global_sam_sid;
-
-	dom_names[1] = "Everyone";
-	sid_array[1] = &sid_S_1_1;
-
-	dom_names[2] = "don't know";
-	sid_array[2] = &sid_S_1_3;
-
-	dom_names[3] = "NT AUTHORITY";
-	sid_array[3] = &sid_S_1_5;
-
-	/* construct reply.  return status is always 0x0 */
-	lsa_reply_lookup_sids(rdata,
-                              q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
-                              4, dom_names, sid_array);
-
-	return True;
-}
-
-/***************************************************************************
-api_lsa_lookup_names
- ***************************************************************************/
-static BOOL api_lsa_lookup_names( uint16 vuid, prs_struct *data,
-                                  prs_struct *rdata )
-{
-	int i;
-	LSA_Q_LOOKUP_RIDS q_l;
-	pstring dom_name;
-	uint32 dom_rids[MAX_LOOKUP_SIDS];
-	uint32 dummy_g_rid;
-
-	DOM_SID sid_S_1_1;
-	DOM_SID sid_S_1_3;
-	DOM_SID sid_S_1_5;
-
-	DOM_SID *sid_array[4];
-	char    *dom_names[4];
-
-	ZERO_STRUCT(q_l);
-	ZERO_STRUCT(sid_S_1_1);
-	ZERO_STRUCT(sid_S_1_3);
-	ZERO_STRUCT(sid_S_1_5);
-	ZERO_ARRAY(dom_rids);	
-
-	/* grab the info class and policy handle */
-	lsa_io_q_lookup_rids("", &q_l, data, 0);
-
-	pstrcpy(dom_name, lp_workgroup());
-
-	string_to_sid(&sid_S_1_1, "S-1-1");
-        string_to_sid(&sid_S_1_3, "S-1-3");
-        string_to_sid(&sid_S_1_5, "S-1-5");
-
-	dom_names[0] = dom_name;
-	sid_array[0] = &global_sam_sid;
-
-	dom_names[1] = "Everyone";
-	sid_array[1] = &sid_S_1_1;
-
-	dom_names[2] = "don't know";
-	sid_array[2] = &sid_S_1_3;
-
-	dom_names[3] = "NT AUTHORITY";
-	sid_array[3] = &sid_S_1_5;
-
-	SMB_ASSERT_ARRAY(q_l.lookup_name, q_l.num_entries);
-
-	/* convert received RIDs to strings, so we can do them. */
-	for (i = 0; i < q_l.num_entries; i++)
-	{
-		fstring user_name;
-		fstrcpy(user_name, unistr2(q_l.lookup_name[i].str.buffer));
-
-		/*
-		 * Map to the UNIX username.
-		 */
-		map_username(user_name);
-
-		/*
-		 * Do any case conversions.
-		 */
-		(void)Get_Pwnam(user_name, True);
-
-		if (!pdb_name_to_rid(user_name, &dom_rids[i], &dummy_g_rid))
-		{
-			/* WHOOPS!  we should really do something about this... */
-			dom_rids[i] = 0;
-		}
+	switch (q_i.info_class) {
+	case 0x03:
+		fstrcpy(name, global_myworkgroup);
+		sid = &global_sam_sid;
+		break;
+	case 0x05:
+		fstrcpy(name, global_myname);
+		sid = &global_sam_sid;
+		break;
+	default:
+		DEBUG(0,("api_lsa_query_info: unknown info level in Lsa Query: %d\n", q_i.info_class));
+		break;
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_lookup_rids(rdata,
-                              q_l.num_entries, dom_rids, /* text-converted SIDs */
-                              4, dom_names, sid_array);
+	if(!lsa_reply_query_info(&q_i, rdata, name, sid))
+		return False;
 
 	return True;
+}
+
+/***************************************************************************
+ api_lsa_lookup_sids
+ ***************************************************************************/
+
+static BOOL api_lsa_lookup_sids( uint16 vuid, prs_struct *data, prs_struct *rdata )
+{
+	LSA_Q_LOOKUP_SIDS q_l;
+	ZERO_STRUCT(q_l);
+
+	/* grab the info class and policy handle */
+	if(!lsa_io_q_lookup_sids("", &q_l, data, 0)) {
+		DEBUG(0,("api_lsa_lookup_sids: failed to unmarshall LSA_Q_LOOKUP_SIDS.\n"));
+		return False;
+	}
+
+	/* construct reply.  return status is always 0x0 */
+	if(!lsa_reply_lookup_sids(rdata, q_l.sids.sid, q_l.sids.num_entries))
+		return False;
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_lookup_names
+ ***************************************************************************/
+
+static BOOL api_lsa_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rdata )
+{
+	LSA_Q_LOOKUP_NAMES q_l;
+	ZERO_STRUCT(q_l);
+
+	/* grab the info class and policy handle */
+	if(!lsa_io_q_lookup_names("", &q_l, data, 0)) {
+		DEBUG(0,("api_lsa_lookup_names: failed to unmarshall LSA_Q_LOOKUP_NAMES.\n"));
+		return False;
+	}
+
+	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
+
+	return lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
 }
 
 /***************************************************************************

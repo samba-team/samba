@@ -309,11 +309,11 @@ BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
  Inits a UNIHDR structure.
 ********************************************************************/
 
-void init_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer)
+void init_uni_hdr(UNIHDR *hdr, int len)
 {
 	hdr->uni_str_len = 2 * len;
-	hdr->uni_max_len = 2 * max_len;
-	hdr->buffer      = buffer;
+	hdr->uni_max_len = 2 * len;
+	hdr->buffer      = len != 0 ? 1 : 0;
 }
 
 /*******************************************************************
@@ -442,9 +442,9 @@ BOOL smb_io_hdrbuf(char *desc, BUFHDR *hdr, prs_struct *ps, int depth)
 creates a UNIHDR2 structure.
 ********************************************************************/
 
-void init_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate)
+void init_uni_hdr2(UNIHDR2 *hdr, int len)
 {
-	init_uni_hdr(&hdr->unihdr, max_len, len, terminate);
+	init_uni_hdr(&hdr->unihdr, len);
 	hdr->buffer = (len > 0) ? 1 : 0;
 }
 
@@ -826,12 +826,11 @@ BOOL smb_io_unistr2(char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, in
  Inits a DOM_RID2 structure.
 ********************************************************************/
 
-void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type)
+void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx)
 {
 	rid2->type    = type;
-	rid2->undoc   = 0x5;
 	rid2->rid     = rid;
-	rid2->rid_idx = 0;
+	rid2->rid_idx = idx;
 }
 
 /*******************************************************************
@@ -848,20 +847,14 @@ BOOL smb_io_dom_rid2(char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth)
 
 	if(!prs_align(ps))
 		return False;
-	
-	/* should be value 5, so enforce it */
-	rid2->type = 5;
-
-	/* should be value 5, so enforce it */
-	rid2->undoc = 5;
-
-	if(!prs_uint32("type   ", ps, depth, &rid2->type))
+   
+	if(!prs_uint8("type   ", ps, depth, &rid2->type))
 		return False;
-	if(!prs_uint32("undoc  ", ps, depth, &rid2->undoc))
+	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("rid    ", ps, depth, &rid2->rid))
 		return False;
-	if(!prs_uint32("rid_idx", ps, depth, &rid2->rid_idx ))
+	if(!prs_uint32("rid_idx", ps, depth, &rid2->rid_idx))
 		return False;
 
 	return True;
@@ -873,10 +866,11 @@ creates a DOM_RID3 structure.
 
 void init_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type)
 {
-	rid3->rid      = rid;
-	rid3->type1    = type;
-	rid3->ptr_type = 0x1; /* non-zero, basically. */
-	rid3->type2    = 0x1;
+    rid3->rid      = rid;
+    rid3->type1    = type;
+    rid3->ptr_type = 0x1; /* non-zero, basically. */
+    rid3->type2    = 0x1;
+    rid3->unk      = type;
 }
 
 /*******************************************************************
@@ -893,7 +887,7 @@ BOOL smb_io_dom_rid3(char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth)
 
 	if(!prs_align(ps))
 		return False;
-	
+
 	if(!prs_uint32("rid     ", ps, depth, &rid3->rid))
 		return False;
 	if(!prs_uint32("type1   ", ps, depth, &rid3->type1))
@@ -901,6 +895,8 @@ BOOL smb_io_dom_rid3(char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth)
 	if(!prs_uint32("ptr_type", ps, depth, &rid3->ptr_type))
 		return False;
 	if(!prs_uint32("type2   ", ps, depth, &rid3->type2))
+		return False;
+	if(!prs_uint32("unk     ", ps, depth, &rid3->unk))
 		return False;
 
 	return True;
@@ -912,11 +908,10 @@ BOOL smb_io_dom_rid3(char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth)
 
 void init_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid)
 {
-	rid4->unknown = unknown;
-	rid4->attr    = attr;
-	rid4->rid     = rid;
+    rid4->unknown = unknown;
+    rid4->attr    = attr;
+    rid4->rid     = rid;
 }
-
 
 /*******************************************************************
  Inits a DOM_CLNT_SRV structure.

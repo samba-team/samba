@@ -311,11 +311,16 @@ BOOL become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_sid.c  */
 
+void generate_wellknown_sids(void);
+BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
+BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, uint8 *psid_name_use);
+BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain);
+void split_domain_name(const char *fullname, char *domain, char *name);
 char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
-void sid_copy(DOM_SID *sid1, DOM_SID *sid2);
+void sid_copy(DOM_SID *dst, DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
 BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2);
@@ -1236,9 +1241,12 @@ BOOL pdb_gethexpwd(char *p, char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 BOOL pdb_generate_sam_sid(void);
 uid_t pdb_user_rid_to_uid(uint32 user_rid);
+gid_t pdb_user_rid_to_gid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
 BOOL pdb_rid_is_user(uint32 rid);
+BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use);
+BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -1482,8 +1490,10 @@ void init_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 				uint16 level);
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
-BOOL lsa_io_q_lookup_rids(char *desc, LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, int depth);
-BOOL lsa_io_r_lookup_rids(char *desc, LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, int depth);
+void init_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
+                int num_names, char **names);
+BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
 void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
@@ -1501,14 +1511,14 @@ void init_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid);
 BOOL smb_io_dom_sid2(char *desc, DOM_SID2 *sid, prs_struct *ps, int depth);
 void init_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
 BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
-void init_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer);
+void init_uni_hdr(UNIHDR *hdr, int len);
 BOOL smb_io_unihdr(char *desc, UNIHDR *hdr, prs_struct *ps, int depth);
 void init_buf_hdr(BUFHDR *hdr, int max_len, int len);
 BOOL smb_io_hdrbuf_pre(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
 BOOL smb_io_hdrbuf_post(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
 				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
 BOOL smb_io_hdrbuf(char *desc, BUFHDR *hdr, prs_struct *ps, int depth);
-void init_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
+void init_uni_hdr2(UNIHDR2 *hdr, int len);
 BOOL smb_io_unihdr2(char *desc, UNIHDR2 *hdr2, prs_struct *ps, int depth);
 void init_unistr(UNISTR *str, char *buf);
 BOOL smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth);
@@ -1525,7 +1535,7 @@ void init_string2(STRING2 *str, char *buf, int len);
 BOOL smb_io_string2(char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 void init_unistr2(UNISTR2 *str, char *buf, int len);
 BOOL smb_io_unistr2(char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type);
+void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth);
 void init_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
 BOOL smb_io_dom_rid3(char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth);
@@ -2456,7 +2466,6 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 /*The following definitions come from  smbd/oplock.c  */
 
 int32 get_number_of_open_oplocks(void);
-BOOL defer_processing_due_to_kernel_oplock(files_struct *fsp);
 BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);

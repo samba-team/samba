@@ -37,8 +37,11 @@ void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
 {
 	int len_name = strlen(name);
 
+	if(len_name == 0)
+		len_name = 1;
+
 	trn->sid_name_use = sid_name_use;
-	init_uni_hdr(&(trn->hdr_name), len_name, len_name, len_name != 0);
+	init_uni_hdr(&trn->hdr_name, len_name);
 	init_unistr2(uni_name, name, len_name);
 	trn->domain_idx = idx;
 }
@@ -76,7 +79,7 @@ static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, int dep
 {
 	int i, s, n;
 
-	prs_debug(ps, depth, desc, "smb_io_dom_r_ref");
+	prs_debug(ps, depth, desc, "lsa_io_dom_r_ref");
 	depth++;
 
 	if (r_r == NULL)
@@ -85,53 +88,54 @@ static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, int dep
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("undoc_buffer  ", ps, depth, &r_r->undoc_buffer)) /* undocumented buffer pointer. */
-		return False;
 	if(!prs_uint32("num_ref_doms_1", ps, depth, &r_r->num_ref_doms_1)) /* num referenced domains? */
 		return False;
-	if(!prs_uint32("undoc_buffer2 ", ps, depth, &r_r->undoc_buffer2)) /* undocumented buffer pointer. */
+	if(!prs_uint32("ptr_ref_dom   ", ps, depth, &r_r->ptr_ref_dom)) /* undocumented buffer pointer. */
 		return False;
 	if(!prs_uint32("max_entries   ", ps, depth, &r_r->max_entries)) /* 32 - max number of entries */
 		return False;
-	if(!prs_uint32("num_ref_doms_2", ps, depth, &r_r->num_ref_doms_2)) /* 4 - num referenced domains? */
-		return False;
 
-	SMB_ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1-1);
-	SMB_ASSERT_ARRAY(r_r->ref_dom, r_r->num_ref_doms_2);
+	SMB_ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1);
 
-	for (i = 0; i < r_r->num_ref_doms_1; i++) {
-		fstring t;
-
-		slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
-		if(!smb_io_unihdr(t, &r_r->hdr_ref_dom[i].hdr_dom_name, ps, depth))
+	if (r_r->ptr_ref_dom != 0) {
+		if(!prs_uint32("num_ref_doms_2", ps, depth, &r_r->num_ref_doms_2)) /* 4 - num referenced domains? */
 			return False;
 
-		slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
-		if(!prs_uint32(t, ps, depth, &r_r->hdr_ref_dom[i].ptr_dom_sid))
-			return False;
-	}
+		SMB_ASSERT_ARRAY(r_r->ref_dom, r_r->num_ref_doms_2);
 
-	for (i = 0, n = 0, s = 0; i < r_r->num_ref_doms_2; i++) {
-		fstring t;
+		for (i = 0; i < r_r->num_ref_doms_1; i++) {
+			fstring t;
 
-		if (r_r->hdr_ref_dom[i].hdr_dom_name.buffer != 0) {
 			slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
-			if(!smb_io_unistr2(t, &r_r->ref_dom[n].uni_dom_name, True, ps, depth)) /* domain name unicode string */
+			if(!smb_io_unihdr(t, &r_r->hdr_ref_dom[i].hdr_dom_name, ps, depth))
 				return False;
-			n++;
+
+			slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
+			if(!prs_uint32(t, ps, depth, &r_r->hdr_ref_dom[i].ptr_dom_sid))
+				return False;
 		}
 
-		if (r_r->hdr_ref_dom[i].ptr_dom_sid != 0) {
-			slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
-			if(!smb_io_dom_sid2("", &r_r->ref_dom[s].ref_dom, ps, depth)) /* referenced domain SIDs */
-				return False;
-			s++;
+		for (i = 0, n = 0, s = 0; i < r_r->num_ref_doms_2; i++) {
+			fstring t;
+
+			if (r_r->hdr_ref_dom[i].hdr_dom_name.buffer != 0) {
+				slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
+				if(!smb_io_unistr2(t, &r_r->ref_dom[n].uni_dom_name, True, ps, depth)) /* domain name unicode string */
+					return False;
+				n++;
+			}
+
+			if (r_r->hdr_ref_dom[i].ptr_dom_sid != 0) {
+				slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
+				if(!smb_io_dom_sid2("", &r_r->ref_dom[s].ref_dom, ps, depth)) /* referenced domain SIDs */
+					return False;
+				s++;
+			}
 		}
 	}
 
 	return True;
 }
-
 
 /*******************************************************************
  Inits an LSA_SEC_QOS structure.
@@ -480,7 +484,7 @@ void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
 		r_e->ptr_enum_domains = 1;
 		r_e->num_domains2 = 1;
 
-		init_uni_hdr2(&r_e->hdr_domain_name, len_domain_name, len_domain_name, 4);
+		init_uni_hdr2(&r_e->hdr_domain_name, len_domain_name);
 		init_unistr2 (&r_e->uni_domain_name, domain_name, len_domain_name);
 		init_dom_sid2(&r_e->other_domain_sid, domain_sid);
 	} else {
@@ -695,10 +699,9 @@ BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, in
 ********************************************************************/
 
 static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
-				prs_struct *ps, int depth)
+                prs_struct *ps, int depth)
 {
 	int i;
-	int i2;
 
 	if (trn == NULL)
 		return False;
@@ -708,7 +711,7 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
 
 	if(!prs_align(ps))
 		return False;
-	
+   
 	if(!prs_uint32("num_entries    ", ps, depth, &trn->num_entries))
 		return False;
 	if(!prs_uint32("ptr_trans_names", ps, depth, &trn->ptr_trans_names))
@@ -717,23 +720,24 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
 	if (trn->ptr_trans_names != 0) {
 		if(!prs_uint32("num_entries2   ", ps, depth, &trn->num_entries2))
 			return False;
-
 		SMB_ASSERT_ARRAY(trn->name, trn->num_entries);
 
-		for (i = 0, i2 = 0; i < trn->num_entries2; i++) {
+		for (i = 0; i < trn->num_entries2; i++) {
 			fstring t;
 			slprintf(t, sizeof(t) - 1, "name[%d] ", i);
 
 			if(!lsa_io_trans_name(t, &trn->name[i], ps, depth)) /* translated name */
 				return False;
+		}
 
-			if (trn->name[i].hdr_name.buffer != 0) {
-				if(!smb_io_unistr2(t, &trn->uni_name[i2], 1, ps, depth))
-					return False;
-				if(!prs_align(ps))
-					return False;
-				i2++;
-			}
+		for (i = 0; i < trn->num_entries2; i++) {
+			fstring t;
+			slprintf(t, sizeof(t) - 1, "name[%d] ", i);
+
+			if(!smb_io_unistr2(t, &trn->uni_name[i], trn->name[i].hdr_name.buffer, ps, depth))
+				return False;
+			if(!prs_align(ps))
+				return False;
 		}
 	}
 
@@ -755,8 +759,13 @@ BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, in
 	if(!prs_align(ps))
 		return False;
 	
-	if(!lsa_io_dom_r_ref ("dom_ref", r_s->dom_ref, ps, depth)) /* domain reference info */
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &r_s->ptr_dom_ref))
 		return False;
+
+	if (r_s->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref ("dom_ref", r_s->dom_ref, ps, depth)) /* domain reference info */
+			return False;
+
 	if(!lsa_io_trans_names("names  ", r_s->names, ps, depth)) /* translated names */
 		return False;
 
@@ -773,82 +782,131 @@ BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, in
 }
 
 /*******************************************************************
- Reads or writes a structure.
+makes a structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_rids(char *desc, LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, int depth)
+void init_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
+                int num_names, char **names)
+{
+	int i;
+
+	DEBUG(5,("init_q_lookup_names\n"));
+
+	memcpy(&q_l->pol, hnd, sizeof(q_l->pol));
+
+	q_l->num_entries = num_names;
+	q_l->num_entries2 = num_names;
+
+	SMB_ASSERT_ARRAY(q_l->uni_name, q_l->num_entries);
+
+	for (i = 0; i < num_names; i++) {
+		char* name = names[i];
+		int len = strlen(name);
+		init_uni_hdr(&q_l->hdr_name[i], len);
+		init_unistr2(&q_l->uni_name[i], name, len);
+	}
+
+	q_l->num_trans_entries  = 0;
+	q_l->ptr_trans_sids  = 0;
+	q_l->lookup_level = 1;
+	q_l->mapped_count = 0;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth)
 {
 	int i;
 
 	if (q_r == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_q_lookup_rids");
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
-	
- 	if(!smb_io_pol_hnd("", &q_r->pol, ps, depth)) /* policy handle */
+
+	if(!smb_io_pol_hnd("", &q_r->pol, ps, depth)) /* policy handle */
 		return False;
 
 	if(!prs_uint32("num_entries    ", ps, depth, &q_r->num_entries))
 		return False;
 	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
 		return False;
-	if(!prs_uint32("buffer_dom_sid ", ps, depth, &q_r->buffer_dom_sid)) /* undocumented domain SID buffer pointer */
-		return False;
-	if(!prs_uint32("buffer_dom_name", ps, depth, &q_r->buffer_dom_name)) /* undocumented domain name buffer pointer */
-		return False;
 
-	SMB_ASSERT_ARRAY(q_r->lookup_name, q_r->num_entries);
+	SMB_ASSERT_ARRAY(q_r->uni_name, q_r->num_entries);
 
 	for (i = 0; i < q_r->num_entries; i++) {
-		if(!smb_io_unistr3("", &q_r->lookup_name[i], ps, depth)) /* names to be looked up */
+		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
 			return False;
 	}
 
-	if(!prs_uint8s (False, "undoc          ", ps, depth, q_r->undoc, UNKNOWN_LEN))
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
+			return False;
+		if(!prs_align(ps))
+			return False;
+	}
+
+	if(!prs_uint32("num_trans_entries ", ps, depth, &q_r->num_trans_entries))
+		return False;
+	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))
+		return False;
+	if(!prs_uint32("lookup_level   ", ps, depth, &q_r->lookup_level))
+		return False;
+	if(!prs_uint32("mapped_count   ", ps, depth, &q_r->mapped_count))
 		return False;
 
 	return True;
 }
 
 /*******************************************************************
- Reads or writes a structure.
+reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_rids(char *desc, LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, int depth)
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
 {
 	int i;
 
 	if (r_r == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_r_lookup_rids");
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
-	
-	if(!lsa_io_dom_r_ref("", &r_r->dom_ref, ps, depth)) /* domain reference info */
+
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &r_r->ptr_dom_ref))
 		return False;
 
-	if(!prs_uint32("num_entries ", ps, depth, &r_r->num_entries))
+	if (r_r->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref("", r_r->dom_ref, ps, depth))
+			return False;
+
+	if(!prs_uint32("num_entries", ps, depth, &r_r->num_entries))
 		return False;
-	if(!prs_uint32("undoc_buffer", ps, depth, &r_r->undoc_buffer))
-		return False;
-	if(!prs_uint32("num_entries2", ps, depth, &r_r->num_entries2))
+	if(!prs_uint32("ptr_entries", ps, depth, &r_r->ptr_entries))
 		return False;
 
-	SMB_ASSERT_ARRAY(r_r->dom_rid, r_r->num_entries2);
+	if (r_r->ptr_entries != 0) {
+		if(!prs_uint32("num_entries2", ps, depth, &r_r->num_entries2))
+			return False;
 
-	for (i = 0; i < r_r->num_entries2; i++) {
-		if(!smb_io_dom_rid2("", &r_r->dom_rid[i], ps, depth)) /* domain RIDs being looked up */
-		return False;
+		if (r_r->num_entries2 != r_r->num_entries) {
+			/* RPC fault */
+			return False;
+		}
+
+		for (i = 0; i < r_r->num_entries2; i++)
+			if(!smb_io_dom_rid2("", &r_r->dom_rid[i], ps, depth)) /* domain RIDs being looked up */
+				return False;
 	}
 
-	if(!prs_uint32("num_entries3", ps, depth, &r_r->num_entries3))
+	if(!prs_uint32("mapped_count", ps, depth, &r_r->mapped_count))
 		return False;
 
 	if(!prs_uint32("status      ", ps, depth, &r_r->status))

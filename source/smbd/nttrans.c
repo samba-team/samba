@@ -1636,25 +1636,23 @@ static SEC_ACCESS map_unix_perms( mode_t perm, int r_mask, int w_mask, int x_mas
 static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
   extern DOM_SID global_sam_sid;
-  static DOM_SID world_sid;
-  static BOOL world_sid_initialized = False;
+  extern DOM_SID global_sid_World;
   SMB_STRUCT_STAT sbuf;
   SEC_ACE ace_list[3];
   DOM_SID owner_sid;
   DOM_SID group_sid;
   size_t sec_desc_size;
   SEC_ACL *psa = NULL;
-  
+  SEC_ACCESS owner_access;
+  SEC_ACCESS group_access;
+  SEC_ACCESS other_access;
+  int num_acls = 0;
+ 
   *ppdesc = NULL;
 
-  if(!world_sid_initialized) {
-    world_sid_initialized = True;
-    string_to_sid( &world_sid, "S-1-1-0");
-  }
-
   if(!lp_nt_acl_support()) {
-    sid_copy( &owner_sid, &world_sid);
-    sid_copy( &group_sid, &world_sid);
+    sid_copy( &owner_sid, &global_sid_World);
+    sid_copy( &group_sid, &global_sid_World);
   } else {
 
     if(fsp->is_directory) {
@@ -1680,17 +1678,27 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
      * Create the generic 3 element UNIX acl.
      */
 
-    init_sec_ace(&ace_list[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
-				map_unix_perms(sbuf.st_mode, S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory), 0);
-    init_sec_ace(&ace_list[1], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
-				map_unix_perms(sbuf.st_mode, S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory), 0);
-    init_sec_ace(&ace_list[2], &world_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
-				map_unix_perms(sbuf.st_mode, S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory), 0);
+	owner_access = map_unix_perms(sbuf.st_mode, S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
+    group_access = map_unix_perms(sbuf.st_mode, S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
+    other_access = map_unix_perms(sbuf.st_mode, S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
 
-    if((psa = make_sec_acl( 3, 3, ace_list)) == NULL) {
-      DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
-      return 0;
-    }
+    if(owner_access.mask)
+      init_sec_ace(&ace_list[num_acls++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+                   owner_access, 0);
+
+	if(group_access.mask)
+      init_sec_ace(&ace_list[num_acls++], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+                   group_access, 0);
+
+    if(other_access.mask)
+      init_sec_ace(&ace_list[num_acls++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+                   other_access, 0);
+
+    if(num_acls)
+      if((psa = make_sec_acl( 3, num_acls, ace_list)) == NULL) {
+        DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
+        return 0;
+      }
   }
 
   *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sec_desc_size);

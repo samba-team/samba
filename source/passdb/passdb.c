@@ -31,7 +31,9 @@ extern int DEBUGLEVEL;
  * responsible.
  */
 
-DOM_SID global_sam_sid;
+extern DOM_SID global_sam_sid;
+extern pstring global_myname;
+extern fstring global_myworkgroup;
 
 /*
  * NOTE. All these functions are abstracted into a structure
@@ -827,6 +829,8 @@ BOOL pdb_generate_sam_sid(void)
 	SMB_STRUCT_STAT st;
 	BOOL overwrite_bad_sid = False;
 
+	generate_wellknown_sids();
+
 	pstrcpy(sid_file, lp_smb_passwd_file());
 	p = strrchr(sid_file, '/');
 	if(p != NULL) {
@@ -1016,12 +1020,21 @@ Error was %s\n", sid_file, strerror(errno) ));
 }   
 
 /*******************************************************************
- converts UNIX uid to an NT User RID.
+ Converts NT user RID to a UNIX uid.
  ********************************************************************/
 
 uid_t pdb_user_rid_to_uid(uint32 user_rid)
 {
 	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
+}
+
+/*******************************************************************
+ Converts NT user RID to a UNIX gid.
+ ********************************************************************/
+
+gid_t pdb_user_rid_to_gid(uint32 user_rid)
+{
+	return (uid_t)(((user_rid & (~GROUP_RID_TYPE))- 1000)/RID_MULTIPLIER);
 }
 
 /*******************************************************************
@@ -1072,4 +1085,122 @@ BOOL pdb_rid_is_user(uint32 rid)
      return True;
    }
    return False;
+}
+
+/*******************************************************************
+ Convert a rid into a name. Used in the lookup SID rpc.
+ ********************************************************************/
+
+BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
+{
+
+	BOOL is_user = pdb_rid_is_user(rid);
+
+	DEBUG(5,("lookup_local_rid: looking up %s RID %u.\n", is_user ? "user" :
+			"group", (unsigned int)rid));
+
+	if(is_user) {
+		if(rid == DOMAIN_USER_RID_ADMIN) {
+			pstring admin_users;
+			char *p = admin_users;
+			pstrcpy( admin_users, lp_domain_admin_users());
+			if(!next_token(&p, name, NULL, sizeof(fstring)))
+				fstrcpy(name, "Administrator");
+		} else if (rid == DOMAIN_USER_RID_GUEST) {
+			pstring guest_users;
+			char *p = guest_users;
+			pstrcpy( guest_users, lp_domain_guest_users());
+			if(!next_token(&p, name, NULL, sizeof(fstring)))
+				fstrcpy(name, "Guest");
+		} else {
+			uid_t uid = pdb_user_rid_to_uid(rid);
+			struct passwd *pass = getpwuid(uid);
+
+			*psid_name_use = SID_NAME_USER;
+
+			DEBUG(5,("lookup_local_rid: looking up uid %u %s\n", (unsigned int)uid,
+				pass ? "succeeded" : "failed" ));
+
+			if(!pass) {
+				slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);
+				return True;
+			}
+
+			fstrcpy(name, pass->pw_name);
+
+			DEBUG(5,("lookup_local_rid: found user %s for rid %u\n", name,
+				(unsigned int)rid ));
+		}
+
+	} else {
+		gid_t gid = pdb_user_rid_to_gid(rid);
+		struct group *gr = getgrgid(gid);
+
+		*psid_name_use = SID_NAME_DOM_GRP;
+
+		DEBUG(5,("lookup_local_rid: looking up gid %u %s\n", (unsigned int)gid,
+			gr ? "succeeded" : "failed" ));
+
+		if(!gr) {
+			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
+			return True;
+		}
+
+		fstrcpy( name, gr->gr_name);
+
+		DEBUG(5,("lookup_local_rid: found group %s for rid %u\n", name,
+			(unsigned int)rid ));
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Convert a name into a SID. Used in the lookup name rpc.
+ ********************************************************************/
+
+BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use)
+{
+	extern DOM_SID global_sid_World_Domain;
+	struct passwd *pass = NULL;
+	DOM_SID local_sid;
+
+	sid_copy(&local_sid, &global_sam_sid);
+
+	if(!strequal(global_myname, domain) && !strequal(global_myworkgroup, domain))
+		return False;
+
+	/*
+	 * Special case for MACHINE\Everyone. Map to the world_sid.
+	 */
+
+	if(strequal(user, "Everyone")) {
+		sid_copy( psid, &global_sid_World_Domain);
+		sid_append_rid(psid, 0);
+		*psid_name_use = SID_NAME_ALIAS;
+		return True;
+	}
+
+	(void)map_username(user);
+
+	if(!(pass = Get_Pwnam(user, False))) {
+		/*
+		 * Maybe it was a group ?
+		 */
+		struct group *grp = getgrnam(user);
+
+		if(!grp)
+			return False;
+
+		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
+		*psid_name_use = SID_NAME_DOM_GRP;
+	} else {
+
+		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
+		*psid_name_use = SID_NAME_USER;
+	}
+
+	sid_copy( psid, &local_sid);
+
+	return True;
 }

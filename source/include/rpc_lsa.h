@@ -198,7 +198,7 @@ typedef struct lsa_r_close_info
 } LSA_R_CLOSE;
 
 
-#define MAX_REF_DOMAINS 10
+#define MAX_REF_DOMAINS 32
 
 /* DOM_TRUST_HDR */
 typedef struct dom_trust_hdr
@@ -219,14 +219,13 @@ typedef struct dom_trust_info
 /* DOM_R_REF */
 typedef struct dom_ref_info
 {
-	uint32 undoc_buffer; /* undocumented buffer pointer. */
-	uint32 num_ref_doms_1; /* num referenced domains */
-	uint32 undoc_buffer2; /* undocumented domain name buffer pointer. */
-	uint32 max_entries; /* 32 - max number of entries */
-	uint32 num_ref_doms_2; /* num referenced domains */
+    uint32 num_ref_doms_1; /* num referenced domains */
+    uint32 ptr_ref_dom; /* pointer to referenced domains */
+    uint32 max_entries; /* 32 - max number of entries */
+    uint32 num_ref_doms_2; /* num referenced domains */
 
-	DOM_TRUST_HDR  hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domains */
-	DOM_TRUST_INFO ref_dom    [MAX_REF_DOMAINS]; /* referenced domains */
+    DOM_TRUST_HDR  hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domains */
+    DOM_TRUST_INFO ref_dom    [MAX_REF_DOMAINS]; /* referenced domains */
 
 } DOM_R_REF;
 
@@ -281,7 +280,9 @@ typedef struct lsa_q_lookup_sids
 /* LSA_R_LOOKUP_SIDS - response to LSA Lookup SIDs */
 typedef struct lsa_r_lookup_sids
 {
+	uint32              ptr_dom_ref;
 	DOM_R_REF           *dom_ref; /* domain reference info */
+
 	LSA_TRANS_NAME_ENUM *names;
 	uint32              mapped_count;
 
@@ -289,39 +290,38 @@ typedef struct lsa_r_lookup_sids
 
 } LSA_R_LOOKUP_SIDS;
 
-
-#define UNKNOWN_LEN 1
-
-/* LSA_Q_LOOKUP_RIDS - LSA Lookup RIDs */
-typedef struct lsa_q_lookup_rids
+/* LSA_Q_LOOKUP_NAMES - LSA Lookup NAMEs */
+typedef struct lsa_q_lookup_names
 {
-    POLICY_HND pol; /* policy handle */
-    uint32 num_entries;
-    uint32 num_entries2;
-    uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
-    uint32 buffer_dom_name; /* undocumented domain name buffer pointer */
-    UNISTR3 lookup_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
-    uint8 undoc[UNKNOWN_LEN]; /* completely undocumented bytes of unknown length */
+	POLICY_HND pol; /* policy handle */
+	uint32 num_entries;
+	uint32 num_entries2;
+	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* name buffer pointers */
+	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
 
-} LSA_Q_LOOKUP_RIDS;
+	uint32 num_trans_entries;
+	uint32 ptr_trans_sids; /* undocumented domain SID buffer pointer */
+	uint32 lookup_level;
+	uint32 mapped_count;
 
-/* LSA_R_LOOKUP_RIDS - response to LSA Lookup RIDs by name */
-typedef struct lsa_r_lookup_rids
+} LSA_Q_LOOKUP_NAMES;
+
+/* LSA_R_LOOKUP_NAMES - response to LSA Lookup NAMEs by name */
+typedef struct lsa_r_lookup_names
 {
-    DOM_R_REF dom_ref; /* domain reference info */
+	uint32 ptr_dom_ref;
+	DOM_R_REF *dom_ref; /* domain reference info */
 
-    uint32 num_entries;
-    uint32 undoc_buffer; /* undocumented buffer pointer */
+	uint32 num_entries;
+	uint32 ptr_entries;
+	uint32 num_entries2;
+	DOM_RID2 *dom_rid; /* domain RIDs being looked up */
 
-    uint32 num_entries2; 
-    DOM_RID2 dom_rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+	uint32 mapped_count;
 
-    uint32 num_entries3; 
+	uint32 status; /* return code */
 
-  uint32 status; /* return code */
-
-} LSA_R_LOOKUP_RIDS;
-
+} LSA_R_LOOKUP_NAMES;
 
 #endif /* _RPC_LSA_H */
 
