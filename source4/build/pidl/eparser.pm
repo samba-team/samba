@@ -68,7 +68,7 @@ sub ParseArray($)
 
     $res .= "\tfor (i = 0; i < count; i++) {\n";
     if (is_scalar_type($elt)) {
-	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME});\n";
+	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, NULL, \"$elt->{NAME});\n";
 	$res .= "\t}\n\n";
     } else {
 	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"PARSE_SCALARS\", \"$elt->{NAME}\");\n";
@@ -107,7 +107,7 @@ sub ParseElement($$)
 	    # Simple type are scalars too
 
 	    if (is_scalar_type($elt->{TYPE})) {
-		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n";
+		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, NULL, \"$elt->{NAME}\");\n\n";
 	    }
 	}
 
@@ -122,17 +122,19 @@ sub ParseElement($$)
 	    # If we have a pointer, check it
 
 	    if ($elt->{POINTERS}) {
-		$res .= "\t\tif (ptr_$elt->{NAME}) {\n\t";
+		$res .= "\t\tif (ptr_$elt->{NAME})\n\t";
 	    }
 	    
 	    if (has_property($elt->{PROPERTIES}, "size_is")) {
 		ParseArray($elt);
 	    } else {
-		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
-	    }
-
-	    if ($elt->{POINTERS}) {
-		$res .= "\t\t}\n\n";
+		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, ";
+		if (is_scalar_type($elt->{TYPE})) {
+		    $res .= "NULL, ";
+		} else {
+		    $res .= "flags, ";
+		}
+		$res .= "\"$elt->{NAME}\");\n\n";
 	    }
 	}
     }
@@ -221,7 +223,7 @@ sub ParseTypedef($)
     my($typedef) = shift;
 
     $res .= "static int prs_$typedef->{NAME}(tvbuff_t *tvb, int offset,\
-\tpacket_info *pinfo, proto_tree *tree)\n{\n";
+\tpacket_info *pinfo, proto_tree *tree, int flags, char *name)\n{\n";
     ParseType($typedef->{DATA});
     $res .= "}\n\n";
 }
