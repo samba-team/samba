@@ -14,6 +14,7 @@ DEFS = @DEFS@
 
 if KRB4
 KAFS=$(top_builddir)/lib/kafs/.libs/libkafs.a
+KAFS_S=$(top_builddir)/lib/kafs/.libs/libkafs.so
 endif
 
 L = \
@@ -27,6 +28,17 @@ L = \
 	$(LIB_getpwnam_r)				\
 	-lc
 
+L_shared = \
+	$(KAFS_S)					\
+	$(top_builddir)/lib/krb5/.libs/libkrb5.so	\
+	$(top_builddir)/lib/asn1/.libs/libasn1.so	\
+	$(LIB_krb4)					\
+	$(top_builddir)/lib/des/.libs/libdes.so		\
+	$(top_builddir)/lib/com_err/.libs/libcom_err.so	\
+	$(top_builddir)/lib/roken/.libs/libroken.so	\
+	$(LIB_getpwnam_r)				\
+	-lc
+
 EXTRA_DIST = sia.c krb5_matrix.conf krb5+c2_matrix.conf security.patch
 
 foodir = $(libdir)
@@ -37,7 +49,13 @@ LDFLAGS = -rpath $(libdir) -hidden -exported_symbol siad_\*
 OBJS = sia.o posix_getpw.o
 
 libsia_krb5.so: $(OBJS)
-	ld -shared -o $@ $(LDFLAGS) $(OBJS) $(L)
+	if test -f $(top_builddir)/lib/krb5/.libs/libkrb5.a; then \
+		ld -shared -o $@ $(LDFLAGS) $(OBJS) $(L); \
+	elif test -f $(top_builddir)/lib/krb5/.libs/libkrb5.so; then \
+		ld -shared -o $@ $(LDFLAGS) $(OBJS) $(L_shared); \
+	else \
+		echo "missing libraries"; exit 1; \
+	fi
 	ostrip -x -z $@
 
 CLEANFILES = libsia_krb5.so $(OBJS) so_locations
