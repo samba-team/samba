@@ -5952,7 +5952,7 @@
 		<parameter>lprm command</parameter> if specified in the 
 		[global] section.</para>
 
-		<para>Currently eight printing styles are supported. They are
+		<para>Currently nine printing styles are supported. They are
 		<constant>BSD</constant>, <constant>AIX</constant>, 
 		<constant>LPRNG</constant>, <constant>PLP</constant>,
 		<constant>SYSV</constant>, <constant>HPUX</constant>,
