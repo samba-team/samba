@@ -257,6 +257,8 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 
   if (strequal(tokarr[LPRNG_RANKTOK],"active")) {
     buf->status = LPQ_PRINTING;
+  } else if (strequal(tokarr[LPRNG_RANKTOK],"done")) {
+    buf->status = LPQ_PRINTED;
   } else if (isdigit((int)*tokarr[LPRNG_RANKTOK])) {
     buf->status = LPQ_QUEUED;
   } else {
