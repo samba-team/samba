@@ -165,13 +165,13 @@ interface netlogon
 		uint32 primary_gid;
 		uint32 group_count;
 		[size_is(group_count)] netr_GroupMembership *groupids;
-		uint32 acct_flags;
+		uint32 user_flags;
 		netr_UserSessionKey key;
 		netr_String logon_server;
 		netr_String domain;
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
-		uint32 AccountControl;
+		uint32 acct_flags;
 		uint32 unknown[7];
 	} netr_SamBaseInfo;
 
@@ -908,17 +908,15 @@ interface netlogon
 		netr_Blob blob;
 		unistr *workstation_domain;
 		unistr *workstation_site;
-		unistr *foo2;
-		unistr *p1;
-		unistr *p2;
-		unistr *p3;
+		unistr *unknown1;
+		unistr *unknown2;
+		unistr *unknown3;
+		unistr *unknown4;
 		netr_BinaryString blob2;
 		netr_String product;
-		uint32 i1;
-		unistr *p4;
-		uint32 i2;
-		uint32 pp;
-		uint32 xx[4];
+		uint32 unknown5;
+		unistr *unknown6;
+		uint32 unknown7[6];
 	} netr_DomainQuery1;
 
 	typedef union {
