@@ -200,8 +200,10 @@ login(char *host)
 	if (n == CONTINUE) {
 	    if(auth_complete)
 		pass = user;
-	    else if (pass == NULL)
-		pass = getpass("Password:");
+	    else if (pass == NULL) {
+	        des_read_pw_string (tmp, sizeof(tmp), "Password:", 0);
+		pass = tmp;
+	    }
 	    n = command("PASS %s", pass);
 	}
 	if (n == CONTINUE) {
