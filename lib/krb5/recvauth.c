@@ -64,6 +64,22 @@ krb5_recvauth(krb5_context context,
   krb5_data data;
   krb5_flags ap_options;
 
+  /*
+   * If there are no addresses in auth_context, get them from `fd'.
+   */
+
+  if (*auth_context == NULL) {
+      ret = krb5_auth_con_init (context, auth_context);
+      if (ret)
+	  return ret;
+  }
+
+  ret = krb5_auth_con_setaddrs_from_fd (context,
+					*auth_context,
+					fd);
+  if (ret)
+      return ret;
+
   if(!(flags & KRB5_RECVAUTH_IGNORE_VERSION)) {
     if (krb5_net_read (context, fd, &len, 4) != 4)
       return errno;
