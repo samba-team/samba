@@ -214,6 +214,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 		queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*(numlines+1));
 
 	if (queue) {
+		memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));
 		for (i=0; i<numlines; i++) {
 			/* parse the line */
 			if (parse_lpq_entry(snum,qlines[i],
