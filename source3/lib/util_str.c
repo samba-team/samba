@@ -1838,6 +1838,8 @@ DATA_BLOB base64_decode_data_blob(const char *s)
 		s++; i++;
 	}
 
+	if (*s == '=') n -= 1;
+
 	/* fix up length */
 	decoded.length = n;
 	return decoded;
