@@ -302,6 +302,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 *************************************************************************/
 
+#ifdef STANDALONE
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -315,6 +316,10 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 #define False 0
 #define True 1
+#else /* STANDALAONE */
+#include "includes.h"
+#endif /* STANDALONE */
+
 #define REG_KEY_LIST_SIZE 10
 
 /*
@@ -1900,7 +1905,7 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
 {
   SEC_DESC *tmp = NULL;
   
-  tmp = (SEC_DESC *)malloc(sizeof(SEC_DESC));
+  tmp = SMB_MALLOC_P(SEC_DESC);
 
   if (!tmp) {
     return NULL;
