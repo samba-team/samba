@@ -1141,9 +1141,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	return result;
 }
 
-static void add_sid_to_array_unique_talloc(TALLOC_CTX *mem_ctx,
-					   const DOM_SID *sid,
-					   DOM_SID ***sids, int *num_sids)
+static void add_sid_to_parray_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+				    DOM_SID ***sids, int *num_sids)
 {
 	int i;
 
@@ -1170,15 +1169,15 @@ static void add_local_sids_from_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	DOM_SID *aliases = NULL;
 	int i, num_aliases = 0;
 
-	if (!pdb_enum_alias_memberships(sid, &aliases, &num_aliases))
+	if (!pdb_enum_alias_memberships(sid, 1, &aliases, &num_aliases))
 		return;
 
 	if (num_aliases == 0)
 		return;
 
 	for (i=0; i<num_aliases; i++)
-		add_sid_to_array_unique_talloc(mem_ctx, &aliases[i],
-					       user_grpsids, num_groups);
+		add_sid_to_parray_unique(mem_ctx, &aliases[i], user_grpsids,
+					 num_groups);
 
 	SAFE_FREE(aliases);
 
