@@ -3,9 +3,7 @@ mailto(samba@samba.org)
 manpage(smbspool htmlcommand((1)))(1)(11 October 1999)(Samba)(SAMBA)
 
 label(NAME)
-
-label(NAME)
-manpagename(smbspool)(mount an SMB filesystem)
+manpagename(smbspool)(send print file to an SMB printer)
 
 label(SYNOPSIS)
 manpagesynopsis()
@@ -17,7 +15,7 @@ manpagedescription()
 This program is part of the Samba suite.
 
 smbspool is a very small print spooling program that sends a print
-file to a SMB printer. The command-line arguments are position-dependent for
+file to an SMB printer. The command-line arguments are position-dependent for
 compatibility with the Common UNIX Printing System, but you can use
 smbspool with any printing system or from a program or script.
 
@@ -70,7 +68,7 @@ standard input.
 label(VERSION)
 manpagesection(VERSION)
 
-This man page is correct for version 2\&.0 of the Samba suite\&.
+This man page is correct for version 2.0 of the Samba suite.
 
 label(SEEALSO)
 manpagesection(SEE ALSO)
