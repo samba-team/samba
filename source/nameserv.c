@@ -160,11 +160,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
   **************************************************************************/
 void add_my_names(void)
 {
-  BOOL wins = lp_wins_support();
   struct subnet_record *d;
-
-  struct in_addr ip = ipzero;
-
   /* each subnet entry, including WINS pseudo-subnet, has SELF names */
 
   /* XXXX if there was a transport layer added to samba (ipx/spx etc) then
@@ -173,20 +169,23 @@ void add_my_names(void)
 
   for (d = subnetlist; d; d = d->next)
   {
-	add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
-	add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
-	add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE);
-	add_my_name_entry(d, myname,0x1f,nb_type|NB_ACTIVE);
+    BOOL wins = lp_wins_support() && ip_equal(d->bcast_ip,ipgrp);
 
+    add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
+    add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
+    add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE);
+    add_my_name_entry(d, myname,0x1f,nb_type|NB_ACTIVE);
+    
     /* these names are added permanently (ttl of zero) and will NOT be
        refreshed with the WINS server  */
-	add_netbios_entry(d,"*",0x0,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
-	add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
-	add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
-
+    add_netbios_entry(d,"*",0x0,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
+    add_netbios_entry(d,"*",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
+    add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
+    add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
+    
     if (lp_domain_logons()) {
-	/* XXXX the 0x1c is apparently something to do with domain logons */
-	  add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
+      /* XXXX the 0x1c is apparently something to do with domain logons */
+      add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
     }
   }
   if (lp_domain_master() && (d = find_subnet(ipgrp)))

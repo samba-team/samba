@@ -310,6 +310,29 @@ void reply_name_reg(struct packet_struct *p)
   }
 }
 
+/* this is used to sort names for a name status into a sensible order
+   we put our own names first, then in alphabetical order */
+static int status_compare(char *n1,char *n2)
+{
+  extern pstring myname;
+  int l1,l2,l3;
+
+  /* its a bit tricky because the names are space padded */
+  for (l1=0;l1<15 && n1[l1] && n1[l1] != ' ';l1++) ;
+  for (l2=0;l2<15 && n2[l2] && n2[l2] != ' ';l2++) ;
+  l3 = strlen(myname);
+
+  if ((l1==l3) && strncmp(n1,myname,l3) == 0 && 
+      (l2!=l3 || strncmp(n2,myname,l3) != 0))
+    return -1;
+
+  if ((l2==l3) && strncmp(n2,myname,l3) == 0 && 
+      (l1!=l3 || strncmp(n1,myname,l3) != 0))
+    return 1;
+
+  return memcmp(n1,n2,18);
+}
+
 
 /****************************************************************************
   reply to a name status query
@@ -323,15 +346,14 @@ void reply_name_status(struct packet_struct *p)
   char *qname   = nmb->question.question_name.name;
   int ques_type = nmb->question.question_name.name_type;
   char rdata[MAX_DGRAM_SIZE];
-  char *countptr, *buf, *bufend;
-  int names_added;
+  char *countptr, *buf, *bufend, *buf0;
+  int names_added,i;
   struct name_record *n;
   struct subnet_record *d = NULL;
-  int search = FIND_SELF | FIND_WINS;
+  int search = FIND_SELF | FIND_WINS | FIND_LOCAL;
 
-  BOOL bcast = nmb->header.nm_flags.bcast;
-  
-  if (!(d = find_req_subnet(p->ip, bcast)))
+  /* NOTE: we always treat a name status lookup as a bcast */ 
+  if (!(d = find_req_subnet(p->ip, True)))
   {
     DEBUG(3,("Name status req: bcast %s not known\n",
 			inet_ntoa(p->ip)));
@@ -339,10 +361,8 @@ void reply_name_status(struct packet_struct *p)
   }
 
   DEBUG(3,("Name status for name %s %s\n",
-	   namestr(&nmb->question.question_name), inet_ntoa(p->ip)));
-  
-  if (bcast)
-    search |= FIND_LOCAL;
+	   namestr(&nmb->question.question_name), 
+	   inet_ntoa(p->ip)));
 
   n = find_name_search(&d, &nmb->question.question_name,
 				search, p->ip);
@@ -353,7 +373,8 @@ void reply_name_status(struct packet_struct *p)
   bufend = &rdata[MAX_DGRAM_SIZE] - 18;
   countptr = buf = rdata;
   buf += 1;
-  
+  buf0 = buf;
+
   names_added = 0;
 
   n = d->namelist;
@@ -368,9 +389,11 @@ void reply_name_status(struct packet_struct *p)
 	     from the response. if we don't exclude them, windows clients
 	     get confused and will respond with an error for NET VIEW */
       
-      if (name_type < 0x1b || name_type > 0x20 || 
-          ques_type < 0x1b || ques_type > 0x20 ||
-          strequal(qname, n->name.name))
+      if (!strequal(n->name.name,"*") &&
+	  !strequal(n->name.name,"__SAMBA__") &&
+	  (name_type < 0x1b || name_type > 0x20 || 
+	   ques_type < 0x1b || ques_type > 0x20 ||
+	   strequal(qname, n->name.name)))
       {
         /* start with first bit of putting info in buffer: the name */
         bzero(buf,18);
@@ -386,6 +409,20 @@ void reply_name_status(struct packet_struct *p)
         names_added++;
       }
     }
+
+    /* remove duplicate names */
+    qsort(buf0,names_added,18,QSORT_CAST status_compare);
+
+    for (i=1;i<names_added;i++) {
+      if (memcmp(buf0 + 18*i,buf0 + 18*(i-1),16) == 0) {
+	names_added--;
+	if (names_added == i) break;
+	memmove(buf0 + 18*i,buf0 + 18*(i+1),18*(names_added-i));
+	i--;
+      }
+    }
+
+    buf = buf0 + 18*names_added;
 
     n = n->next;
 
