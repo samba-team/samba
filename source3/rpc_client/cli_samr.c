@@ -561,8 +561,8 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                  uint32 size, char ***dom_users, uint32 **rids,
                                  uint32 *num_dom_users)
 {
-	prs_struct qdata;
-	prs_struct rdata;
+	prs_struct qbuf;
+	prs_struct rbuf;
 	SAMR_Q_ENUM_DOM_USERS q;
 	SAMR_R_ENUM_DOM_USERS r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -571,40 +571,24 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 	
-	if (cli == NULL || pol == NULL)
-		return result;
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 	
-	/* initialise parse structures */
-	prs_init(&qdata, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, mem_ctx, UNMARSHALL);
-	
-	DEBUG(4, ("SAMR Enum Domain Users. start_idx: %d, acb: %d, size: %d\n",
-			*start_idx, acb_mask, size));
-	
-	/* fill query structure with parameters */
+	/* Fill query structure with parameters */
+
 	init_samr_q_enum_dom_users(&q, pol, *start_idx, acb_mask, 0, size);
 	
-	/* prepare query stream */
-	if (!samr_io_q_enum_dom_users("", &q, &qdata, 0)) {
-		prs_mem_free(&qdata);
-		prs_mem_free(&rdata);
-		return result;
+	if (!samr_io_q_enum_dom_users("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_ENUM_DOM_USERS, &qbuf, &rbuf)) {
+		goto done;
 	}
-	
-	/* send rpc call over the pipe */
-	if (!rpc_api_pipe_req(cli, SAMR_ENUM_DOM_USERS, &qdata, &rdata)) {
-		prs_mem_free(&qdata);
-		prs_mem_free(&rdata);
-		return result;
-	}
-		
+
 	/* unpack received stream */
-	if(!samr_io_r_enum_dom_users("", &r, &rdata, 0)) {
-		prs_mem_free(&qdata);
-		prs_mem_free(&rdata);
-		result = r.status;
-		return result;
-	}
+
+	if(!samr_io_r_enum_dom_users("", &r, &rbuf, 0))
+		goto done;
 	
 	/* return the data obtained in response */
 	if (!NT_STATUS_IS_OK(r.status) &&
@@ -641,12 +625,12 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		}
 	}
 	
-	prs_mem_free(&qdata);
-	prs_mem_free(&rdata);
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 	
 	return result;
 };
-
 
 /* Enumerate domain groups */
 
