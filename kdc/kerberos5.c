@@ -629,6 +629,7 @@ as_rep(KDC_REQ *req,
     free_AS_REP(&rep);
 out:
     if(ret){
+	/* XXX should just return protocol errors */
 	krb5_mk_error(context,
 		      ret,
 		      e_text,
@@ -637,6 +638,7 @@ out:
 		      server_princ,
 		      0,
 		      reply);
+	ret = 0;
     }
 out2:
     krb5_free_principal(context, client_princ);
@@ -1322,7 +1324,7 @@ tgs_rep(KDC_REQ *req,
     }
     ret = tgs_rep2(&req->req_body, pa_data, data, from);
 out:
-    if(ret && data->data == NULL)
+    if(ret && data->data == NULL){
 	krb5_mk_error(context,
 		      ret,
 		      NULL,
@@ -1331,5 +1333,6 @@ out:
 		      NULL,
 		      0,
 		      data);
-    return ret;
+    }
+    return 0;
 }
