@@ -670,6 +670,8 @@ extern int errno;
 
 #include "mapping.h"
 
+#include "rap.h"
+
 #include "md5.h"
 #include "hmacmd5.h"
 
