@@ -27,7 +27,7 @@ extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
 
 /* Current printer interface */
-static BOOL remove_from_jobs_changed(int snum, uint32 jobid);
+static BOOL remove_from_jobs_changed(const char *printername, uint32 jobid);
 
 /* 
    the printing backend revolves around a tdb database that stores the
@@ -631,7 +631,8 @@ static uint32 print_parse_jobid(char *fname)
  List a unix job in the print database.
 ****************************************************************************/
 
-static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
+static void print_unix_job(const char *printer_name, print_queue_struct *q,
+			   uint32 jobid)
 {
 	struct printjob pj, *old_pj;
 
@@ -640,7 +641,7 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 
 	/* Preserve the timestamp on an existing unix print job */
 
-	old_pj = print_job_find(lp_const_servicename(snum), jobid);
+	old_pj = print_job_find(printer_name, jobid);
 
 	ZERO_STRUCT(pj);
 
@@ -660,9 +661,9 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 		fstrcpy(pj.jobname, old_pj ? old_pj->jobname : q->fs_file);
 	}
 	fstrcpy(pj.user, old_pj ? old_pj->user : q->fs_user);
-	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : lp_const_servicename(snum));
+	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : printer_name);
 
-	pjob_store(lp_const_servicename(snum), jobid, &pj);
+	pjob_store(printer_name, jobid, &pj);
 }
 
 
@@ -962,7 +963,8 @@ static TDB_DATA get_jobs_changed_data(struct tdb_print_db *pdb)
 	return data;
 }
 
-static void check_job_changed(int snum, TDB_DATA data, uint32 jobid)
+static void check_job_changed(const char *printer_name, TDB_DATA data,
+			      uint32 jobid)
 {
 	unsigned int i;
 	unsigned int job_count = data.dsize / 4;
@@ -972,7 +974,7 @@ static void check_job_changed(int snum, TDB_DATA data, uint32 jobid)
 
 		ch_jobid = IVAL(data.dptr, i*4);
 		if (ch_jobid == jobid)
-			remove_from_jobs_changed(snum, jobid);
+			remove_from_jobs_changed(printer_name, jobid);
 	}
 }
 
@@ -1096,7 +1098,7 @@ static void print_queue_update_internal(struct print_queue_update_context *ctx)
 
 		if (jobid == (uint32)-1) {
 			/* assume its a unix print job */
-			print_unix_job(ctx->snum, &queue[i], jobid);
+			print_unix_job(ctx->printer_name, &queue[i], jobid);
 			continue;
 		}
 
@@ -1106,14 +1108,14 @@ static void print_queue_update_internal(struct print_queue_update_context *ctx)
 			/* err, somethings wrong. Probably smbd was restarted
 			   with jobs in the queue. All we can do is treat them
 			   like unix jobs. Pity. */
-			print_unix_job(ctx->snum, &queue[i], jobid);
+			print_unix_job(ctx->printer_name, &queue[i], jobid);
 			continue;
 		}
 
 		pjob->sysjob = queue[i].job;
 		pjob->status = queue[i].status;
 		pjob_store(ctx->printer_name, jobid, pjob);
-		check_job_changed(ctx->snum, jcdata, jobid);
+		check_job_changed(ctx->printer_name, jcdata, jobid);
 	}
 
 	SAFE_FREE(jcdata.dptr);
@@ -1542,9 +1544,8 @@ BOOL print_job_set_name(int snum, uint32 jobid, char *name)
  Remove a jobid from the 'jobs changed' list.
 ***************************************************************************/
 
-static BOOL remove_from_jobs_changed(int snum, uint32 jobid)
+static BOOL remove_from_jobs_changed(const char *printername, uint32 jobid)
 {
-	const char *printername = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(printername);
 	TDB_DATA data, key;
 	size_t job_count, i;
@@ -1630,7 +1631,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 	if (pjob->spooled && pjob->sysjob != -1)
 		result = (*(current_printif->job_delete))(snum, pjob);
 	else
-		remove_from_jobs_changed(snum, jobid);
+		remove_from_jobs_changed(lp_const_servicename(snum), jobid);
 
 	/* Delete the tdb entry if the delete succeeded or the job hasn't
 	   been spooled. */
@@ -2265,7 +2266,7 @@ fail:
 	/* Still need to add proper error return propagation! 010122:JRR */
 	unlink(pjob->filename);
 	pjob_delete(snum, jobid);
-	remove_from_jobs_changed(snum, jobid);
+	remove_from_jobs_changed(lp_const_servicename(snum), jobid);
 	return False;
 }
 
@@ -2353,7 +2354,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		pjob = print_job_find(lp_const_servicename(snum), jobid);
 		if (!pjob) {
 			DEBUG(5,("get_stored_queue_info: failed to find changed job = %u\n", (unsigned int)jobid));
-			remove_from_jobs_changed(snum, jobid);
+			remove_from_jobs_changed(lp_const_servicename(snum), jobid);
 			continue;
 		}
 
