@@ -33,47 +33,61 @@ static WERROR wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
 
+	ZERO_STRUCT(r->out);
+
 	/* NOTE: win2k3 ignores r->in.server_name completly so we do --metze */
 
 	switch(r->in.level) {
-	case 100: {
-			r->out.info.info100 = talloc_p(mem_ctx, struct wkssvc_NetWkstaInfo100);
-			WERR_TALLOC_CHECK(r->out.info.info100);
+	case 100:
+	{
+		struct wkssvc_NetWkstaInfo100 *info100;
+		
+		info100 = talloc_p(mem_ctx, struct wkssvc_NetWkstaInfo100);
+		W_ERROR_HAVE_NO_MEMORY(info100);
 
-			r->out.info.info100->platform_id = dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
-			r->out.info.info100->server = dcesrv_common_get_server_name(mem_ctx, dce_ctx);
-			r->out.info.info100->domain = dcesrv_common_get_domain_name(mem_ctx, dce_ctx);
-			r->out.info.info100->ver_major = dcesrv_common_get_version_major(mem_ctx, dce_ctx);
-			r->out.info.info100->ver_minor = dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
-			break;
-		}
-	case 101: {
-			r->out.info.info101 = talloc_p(mem_ctx, struct wkssvc_NetWkstaInfo101);
-			WERR_TALLOC_CHECK(r->out.info.info101);
+		info100->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
+		info100->server		= dcesrv_common_get_server_name(mem_ctx, dce_ctx, NULL);
+		W_ERROR_HAVE_NO_MEMORY(info100->server);
+		info100->domain		= dcesrv_common_get_domain_name(mem_ctx, dce_ctx);
+		W_ERROR_HAVE_NO_MEMORY(info100->domain);
+		info100->ver_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx);
+		info100->ver_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
 
-			r->out.info.info101->platform_id = dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
-			r->out.info.info101->server = dcesrv_common_get_server_name(mem_ctx, dce_ctx);
-			r->out.info.info101->domain = dcesrv_common_get_domain_name(mem_ctx, dce_ctx);
-			r->out.info.info101->ver_major = dcesrv_common_get_version_major(mem_ctx, dce_ctx);
-			r->out.info.info101->ver_minor = dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
-			r->out.info.info101->lan_root = dcesrv_common_get_lan_root(mem_ctx, dce_ctx);
-			break;
-		}
-	case 102: {
-			r->out.info.info102 = NULL;
+		r->out.info.info100 = info100;
+		return WERR_OK;
+	}
+	case 101:
+	{
+		struct wkssvc_NetWkstaInfo101 *info101;
 
-			return WERR_ACCESS_DENIED;
-		}
-	case 502: {	
-			r->out.info.info502 = NULL;
+		info101 = talloc_p(mem_ctx, struct wkssvc_NetWkstaInfo101);
+		W_ERROR_HAVE_NO_MEMORY(info101);
 
-			return WERR_ACCESS_DENIED;
-		}
+		info101->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
+		info101->server		= dcesrv_common_get_server_name(mem_ctx, dce_ctx, NULL);
+		W_ERROR_HAVE_NO_MEMORY(info101->server);
+		info101->domain		= dcesrv_common_get_domain_name(mem_ctx, dce_ctx);
+		W_ERROR_HAVE_NO_MEMORY(info101->domain);
+		info101->ver_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx);
+		info101->ver_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
+		info101->lan_root	= dcesrv_common_get_lan_root(mem_ctx, dce_ctx);
+
+		r->out.info.info101 = info101;
+		return WERR_OK;
+	}
+	case 102:
+	{
+		return WERR_ACCESS_DENIED;
+	}
+	case 502:
+	{
+		return WERR_ACCESS_DENIED;
+	}
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	return WERR_OK;
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -130,7 +144,7 @@ static WERROR wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_call, T
 	switch (r->in.level) {
 	case 0:
 		r->out.ctr.ctr0 = talloc_p(mem_ctx, struct wkssvc_NetWkstaTransportCtr0);
-		WERR_TALLOC_CHECK(r->out.ctr.ctr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
 
 		r->out.ctr.ctr0->count = 0;
 		r->out.ctr.ctr0->array = NULL;

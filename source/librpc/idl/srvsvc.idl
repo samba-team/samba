@@ -542,12 +542,12 @@
 /**************************/
 	typedef struct {
 		uint32 platform_id;
-		unistr *server_unc;
+		unistr *server_name;
 	} srvsvc_NetSrvInfo100;
 
 	typedef struct {
 		uint32 platform_id;
-		unistr *server_unc;
+		unistr *server_name;
 		uint32 ver_major;
 		uint32 ver_minor;
 		uint32 type;
@@ -556,7 +556,7 @@
 
 	typedef struct {
 		uint32 platform_id;
-		unistr *server_unc;
+		unistr *server_name;
 		uint32 ver_major;
 		uint32 ver_minor;
 		uint32 type;
