@@ -13,10 +13,14 @@
 # cvs should be submitted for inclusion in samba cvs.
 
 %define pkg_name	samba
-%define ver 		3.0.0beta3
-%define rel 		3mdk
+%define ver 		3.0.0rc4
+%define rel 		2mdk
 %define vscanver 	0.3.3beta1
 %define libsmbmajor 	0
+
+%{!?mklibname: %define mklibname %lib%{1}%{?2:%{2}}%{?3:_%{3}}%{-s:-static}%{-d:-devel}}
+
+%define libname %mklibname smbclient %libsmbmajor
 
 # Version and release replaced by samba-team at release from samba cvs
 %define pversion PVERSION
@@ -28,6 +32,7 @@
 
 %if %have_pversion
 %define source_ver 	%{pversion}
+# Don't abort for stupid reasons on builds from tarballs:
 %global	_unpackaged_files_terminate_build	0
 %global	_missing_doc_files_terminate_build	0
 %else
@@ -63,6 +68,7 @@
 %define build_non_default 0
 
 # Default options
+%define build_alternatives	0
 %define build_system	0
 %define build_acl 	1
 %define build_winbind 	1
@@ -72,30 +78,30 @@
 %define build_scanners	0
 # CUPS supports functionality for 'printcap name = cups' (9.0 and later):
 %define build_cupspc	0
-# releases that have chrpath available in main
-%define build_chrpath	0
+# %_{pre,postun}_service are provided by rpm-helper in 9.0 and later
+%define have_rpmhelper	1
 
 # Set defaults for each version
 %if %build_mdk92
+%define build_alternatives	1
 %define build_cupspc	1
-%define build_chrpath	1
 %endif
 
 %if %build_mdk91
 %define build_cupspc	1
-%define build_chrpath	1
 %endif
 
 %if %build_mdk90
-%define build_chrpath	1
 %endif
 
 %if %build_mdk82
+%define have_rpmhelper	0
 %endif
 
 %if %build_mdk81
 %define build_winbind	0
 %define build_wins	0
+%define have_rpmhelper	0
 %endif
 
 %if %build_mdk80
@@ -103,6 +109,7 @@
 %define build_winbind	0
 %define build_wins	0
 %define build_ads	0
+%define have_rpmhelper	1
 %endif
 
 %if %build_mdk72
@@ -110,6 +117,7 @@
 %define build_winbind	0
 %define build_wins	0
 %define build_ads	0
+%define have_rpmhelper	1
 %endif
 
 
@@ -117,30 +125,30 @@
 # To use it, do rpm [-ba|--rebuild] --with 'xxx'
 # Check if the rpm was built with the defaults, otherwise we inform the user
 %define build_non_default 0
-%{?_with_system: %{expand: %%global build_system 1}}
-%{?_without_system: %{expand: %%global build_system 0}}
-%{?_with_acl: %{expand: %%global build_acl 1}}
-%{?_with_acl: %{expand: %%global build_non_default 1}}
-%{?_without_acl: %{expand: %%global build_acl 0}}
-%{?_without_acl: %{expand: %%global build_non_default 1}}
-%{?_with_winbind: %{expand: %%global build_winbind 1}}
-%{?_with_winbind: %{expand: %%global build_non_default 1}}
-%{?_without_winbind: %{expand: %%global build_winbind 0}}
-%{?_without_winbind: %{expand: %%global build_non_default 1}}
-%{?_with_wins: %{expand: %%global build_wins 1}}
-%{?_with_wins: %{expand: %%global build_non_default 1}}
-%{?_without_wins: %{expand: %%global build_wins 0}}
-%{?_without_wins: %{expand: %%global build_non_default 1}}
-%{?_with_ldap: %{expand: %%global build_ldap 1}}
-%{?_with_ldap: %{expand: %%global build_non_default 1}}
-%{?_without_ldap: %{expand: %%global build_ldap 0}}
-%{?_without_ldap: %{expand: %%global build_non_default 1}}
-%{?_with_ads: %{expand: %%global build_ads 1}}
-%{?_with_ads: %{expand: %%global build_non_default 1}}
-%{?_without_ads: %{expand: %%global build_ads 0}}
-%{?_without_ads: %{expand: %%global build_non_default 1}}
-%{?_with_scanners: %{expand: %%global build_scanners 1}}
-%{?_with_scanners: %{expand: %%global build_non_default 1}}
+%{?_with_system: %global build_system 1}
+%{?_without_system: %global build_system 0}
+%{?_with_acl: %global build_acl 1}
+%{?_with_acl: %global build_non_default 1}
+%{?_without_acl: %global build_acl 0}
+%{?_without_acl: %global build_non_default 1}
+%{?_with_winbind: %global build_winbind 1}
+%{?_with_winbind: %global build_non_default 1}
+%{?_without_winbind: %global build_winbind 0}
+%{?_without_winbind: %global build_non_default 1}
+%{?_with_wins: %global build_wins 1}
+%{?_with_wins: %global build_non_default 1}
+%{?_without_wins: %global build_wins 0}
+%{?_without_wins: %global build_non_default 1}
+%{?_with_ldap: %global build_ldap 1}
+%{?_with_ldap: %global build_non_default 1}
+%{?_without_ldap: %global build_ldap 0}
+%{?_without_ldap: %global build_non_default 1}
+%{?_with_ads: %global build_ads 1}
+%{?_with_ads: %global build_non_default 1}
+%{?_without_ads: %global build_ads 0}
+%{?_without_ads: %global build_non_default 1}
+%{?_with_scanners: %global build_scanners 1}
+%{?_with_scanners: %global build_non_default 1}
 
 # As if that weren't enough, we're going to try building with antivirus
 # support as an option also
@@ -179,6 +187,18 @@
 #check gcc version to disable some optimisations on gcc-3.3.1
 %define gcc331 %(gcc -dumpversion|awk '{if ($1>3.3) print 1; else print 0}')
 
+#Define sets of binaries that we can use in globs and loops:
+%global commonbin net,ntlm_auth,rpcclient,smbcacls,smbcquotas,smbpasswd,smbtree,testparm,testprns
+
+%global serverbin 	editreg,pdbedit,profiles,smbcontrol,smbstatus,tdbbackup
+%global serversbin nmbd,samba,smbd
+
+%global clientbin 	findsmb,nmblookup,smbclient,smbmnt,smbmount,smbprint,smbspool,smbtar,smbumount
+%global client_bin 	mount.cifs
+%global client_sbin 	mount.smb,mount.smbfs
+
+%global testbin 	debug2html,smbtorture,msgtest,masktest,locktest,locktest2,nsstest,vfstest
+
 %ifarch alpha
 %define build_expsam xml
 %else
@@ -193,6 +213,12 @@
 %define samba_major	%{nil}
 %else
 %define samba_major	3
+%endif
+# alternatives_major is %{nil} if we aren't system and not using alternatives
+%if !%build_system || %build_alternatives
+%define alternative_major 3
+%else
+%define alternative_major %{nil}
 %endif
 
 Summary: Samba SMB server.
@@ -237,6 +263,7 @@ Patch3: samba-2.2.0-buildroot.patch.bz2
 Patch4: samba-3.0-smbmount-sbin.patch.bz2
 %if !%have_pversion
 # Version specific patches: current version
+Patch100: samba-3.0.0rc4-mandrake-packaging.patch.bz2
 %else
 # Version specific patches: upcoming version
 %endif
@@ -262,10 +289,7 @@ BuildRequires: libldap-devel
 %if %build_ads
 BuildRequires: libldap-devel krb5-devel
 %endif
-%if %build_chrpath
-BuildRequires: chrpath
-%endif
-BuildRoot: %{_tmppath}/%{name}-root
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prefix: /usr
 Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /bin/grep
@@ -308,7 +332,9 @@ more information.
 URL:	http://www.samba.org
 Summary: Samba (SMB) server programs.
 Requires: %{name}-common = %{version}
+%if %have_rpmhelper
 PreReq:		rpm-helper
+%endif
 Group: Networking/Other
 %if %build_system
 Provides: samba
@@ -352,12 +378,18 @@ URL:	http://www.samba.org
 Summary: Samba (SMB) client programs.
 Group: Networking/Other
 Requires: %{name}-common = %{version}
+%if %build_alternatives
+#Conflicts:	samba-client < 2.2.8a-9mdk
+%endif
 %if %build_system
 Provides:  samba3-client
 Obsoletes: samba3-client
 Obsoletes: smbfs
 %else
 #Provides: samba-client
+%endif
+%if !%build_system && %build_alternatives
+Provides: samba-client
 %endif
 
 %description client
@@ -482,21 +514,21 @@ IP addresses.
 %message_system
 %endif
 
-%if %{?_without_test:0}%{!?_without_test:1}
+%if %{?_with_test:1}%{!?_with_test:0}
 %package test
 URL:	http://www.samba.org
 Summary: Debugging and benchmarking tools for samba
 Group: System/Servers
 Requires: %{name}-common = %{version}
 %endif
-%if %build_system && %{?_without_test:0}%{!?_without_test:1}
+%if %build_system && %{?_with_test:1}%{!?_with_test:0}
 Provides:  samba3-test samba3-debug
 Obsoletes: samba3-test samba3-debug
 %else
 Provides: samba-test samba3-debug
 Obsoletes: samba3-debug
 %endif
-%if %{?_without_test:0}%{!?_without_test:1}
+%if %{?_with_test:1}%{!?_with_test:0}
 
 %description test
 This package provides tools for benchmarking samba, and debugging
@@ -504,52 +536,53 @@ the correct operation of tools against smb servers.
 %endif
 
 %if %build_system
-%package -n libsmbclient%{libsmbmajor}
+%package -n %{libname}
 URL:		http://www.samba.org
 Summary: 	SMB Client Library
 Group:		System/Libraries
 Provides:	libsmbclient
 
-%description -n libsmbclient%{libsmbmajor}
+%description -n %{libname}
 This package contains the SMB client library, part of the samba
 suite of networking software, allowing other software to access
 SMB shares.
 %endif
 %if %have_pversion && %build_system
-%message_bugzilla libsmbclient%{libsmbmajor}
+%message_bugzilla %{libname}
 %endif
 
 %if %build_system
-%package -n libsmbclient%{libsmbmajor}-devel
+%package -n %{libname}-devel
 URL:		http://www.samba.org
 Summary: 	SMB Client Library Development files
 Group:		System/Libraries
 Provides:	libsmbclient-devel
+Requires:       %{libname} = %{version}-%{release}
 
-%description -n libsmbclient%{libsmbmajor}-devel
+%description -n %{libname}-devel
 This package contains the development files for the SMB client
 library, part of the samba suite of networking software, allowing
 the development of other software to access SMB shares.
 %endif
 %if %have_pversion && %build_system
-%message_bugzilla libsmbclient%{libsmbmajor}-devel
+%message_bugzilla %{libname}-devel
 %endif
 
 %if %build_system
-%package -n libsmbclient%{libsmbmajor}-static-devel
+%package -n %{libname}-static-devel
 URL:            http://www.samba.org
 Summary:        SMB Client Static Library Development files
 Group:          System/Libraries
 Provides:       libsmbclient-static-devel = %{version}-%{release}
-Requires:       libsmbclient%{libsmbmajor}-devel = %{version}-%{release}
+Requires:       %{libname}-devel = %{version}-%{release}
 
-%description -n libsmbclient%{libsmbmajor}-static-devel
+%description -n %{libname}-static-devel
 This package contains the static development files for the SMB
 client library, part of the samba suite of networking software,
 allowing the development of other software to access SMB shares.
 %endif
 %if %have_pversion && %build_system
-%message_bugzilla libsmbclient%{libsmbmajor}-devel
+%message_bugzilla %{libname}-devel
 %endif
 
 #%package passdb-ldap
@@ -763,6 +796,7 @@ echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 # Version specific patches: current version
 %if !%have_pversion
 echo "Applying patches for current version: %{ver}"
+%patch100 -p1 -b .mdk
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
@@ -805,6 +839,14 @@ perl -pi -e 's/%{pkg_name}/%{name}/g' source/auth/pampass.c
 
 #remove cvs internal files from docs:
 find docs examples -name '.cvsignore' -exec rm -f {} \;
+
+#make better doc trees:
+mkdir -p clean-docs/samba-doc
+cp -a examples docs clean-docs/samba-doc
+mv -f clean-docs/samba-doc/examples/libsmbclient clean-docs/
+rm -Rf clean-docs/samba-doc/docs/{docbook,manpages,htmldocs,using_samba}
+ln -s %{_datadir}/swat%{samba_major}/using_samba/ clean-docs/samba-doc/docs/using_samba
+ln -sf %{_datadir}/swat%{samba_major}/help/ clean-docs/samba-doc/docs/htmldocs
 
 %build
 #%serverbuild
@@ -859,8 +901,10 @@ CFLAGS=`echo "$RPM_OPT_FLAGS"|sed -e 's/-g//g'`
 perl -pi -e 's/-g //g' Makefile
 %endif
 
+perl -pi -e 's|-Wl,-rpath,%{_libdir}||g;s|-Wl,-rpath -Wl,%{_libdir}||g' Makefile
+
 make proto_exists
-%make	all libsmbclient smbfilter wins modules %{!?_without_test: torture debug2html} bin/editreg client/mount.cifs
+%make all libsmbclient smbfilter wins modules %{?_with_test: torture debug2html bin/log2pcap} bin/editreg client/mount.cifs
 
 
 # Build VFS modules (experimental)
@@ -873,10 +917,7 @@ make proto_exists
 )
 
 # Build mkntpasswd in examples/LDAP/ for smbldaptools
-#(
-#cd examples.bin/LDAP/smbldap-tools/mkntpwd
-#make
-#)
+make -C examples.bin/LDAP/smbldap-tools/mkntpwd
 
 # Build antivirus vfs objects:
 %if %build_fprot
@@ -930,7 +971,7 @@ make DESTDIR=$RPM_BUILD_ROOT LIBDIR=%{_libdir}/%{name} install installclientlib 
 install -m755 source/bin/editreg %{buildroot}/%{_bindir}
 
 #need to stay
-mkdir -p $RPM_BUILD_ROOT/sbin
+mkdir -p $RPM_BUILD_ROOT/{sbin,bin}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{logrotate.d,pam.d,xinetd.d}
 mkdir -p $RPM_BUILD_ROOT/%{_initrddir}
 mkdir -p $RPM_BUILD_ROOT/var/cache/%{name}
@@ -951,6 +992,10 @@ install -m 755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_sm
 install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/pam_winbind%{samba_major}.so
 
 install -m755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
+pushd $RPM_BUILD_ROOT/%{_libdir}
+[ -f libsmbclient.so ] && mv -f libsmbclient.so libsmbclient.so.%{libsmbmajor}
+ln -sf libsmbclient.so.%{libsmbmajor} libsmbclient.so
+popd
 
 # smbsh forgotten
 #install -m 755 source/bin/smbsh $RPM_BUILD_ROOT%{_bindir}/
@@ -981,9 +1026,9 @@ done
 # Make link for wins and winbind resolvers
 ( cd $RPM_BUILD_ROOT/%{_lib}; ln -s libnss_wins%{samba_major}.so libnss_wins%{samba_major}.so.2; ln -s libnss_winbind%{samba_major}.so libnss_winbind%{samba_major}.so.2)
 
-%if %{?_without_test:0}%{!?_without_test:1}
-for i in smbtorture msgtest masktest locktest locktest2 nsstest vfstest debug2html;do
-  install -m755 source/bin/$i $RPM_BUILD_ROOT/%{_bindir}
+%if %{?_with_test:1}%{!?_with_test:0}
+for i in {%{testbin}};do
+  install -m755 source/bin/${i} $RPM_BUILD_ROOT/%{_bindir}/${i}%{samba_major}
 done
 %endif
 
@@ -1006,29 +1051,34 @@ done
 #	install -m644 packaging/Mandrake/samba-slapd-include.conf $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/samba-slapd.include
 
 # Install smbldap-tools scripts:
-#for i in examples/LDAP/smbldap-tools/*.pl; do
-#	install -m 750 $i $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
-#done
+for i in examples/LDAP/smbldap-tools/*.pl; do
+	install -m 750 $i $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
+	ln -s %{_datadir}/%{name}/scripts/`basename $i` $RPM_BUILD_ROOT/%{_bindir}/`basename $i|sed -e 's/\.pl//g'`%{samba_major}
+done
 
-#install -m 750 examples/LDAP/smbldap-tools/smbldap_tools.pm $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
+install -m 750 examples/LDAP/smbldap-tools/smbldap_tools.pm $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
 
 # The conf file	
-#install -m 640 examples/LDAP/smbldap-tools/smbldap_conf.pm $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}
+install -m 640 examples/LDAP/smbldap-tools/smbldap_conf.pm $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}
+
+#Fix the smbldap-tools when not system samba:
+%if !%build_system
+perl -pi -e 's/^(use|package)(\s+)smbldap_(\w+);$/${1}${2}smbldap_${3}%{samba_major};/g' \
+%{buildroot}/%{_sysconfdir}/%{name}/smbldap_conf.pm \
+%{buildroot}/%{_datadir}/%{name}/scripts/smbldap*.p?
+perl -pi -e 's,/usr/local/sbin/mkntpwd,/usr/sbin/mkntpwd%{samba_major},g;s,553,421,g' %{buildroot}/%{_sysconfdir}/%{name}/smbldap_conf.pm
+perl -pi -e 's,\$smbldap_conf::SID,\$smbldap_conf3::SID,g' %{buildroot}/%{_datadir}/%{name}/scripts/smbldap*.p?
+%endif
 
 # Link both smbldap*.pm into vendor-perl (any better ideas?)
-#mkdir -p %{buildroot}/%{perl_vendorlib}
-#ln -s %{_sysconfdir}/%{name}/smbldap_conf.pm $RPM_BUILD_ROOT/%{perl_vendorlib}
-#ln -s %{_datadir}/%{name}/scripts/smbldap_tools.pm $RPM_BUILD_ROOT/%{perl_vendorlib}
-
+mkdir -p %{buildroot}/%{perl_vendorlib}
+ln -s %{_sysconfdir}/%{name}/smbldap_conf.pm $RPM_BUILD_ROOT/%{perl_vendorlib}/smbldap_conf%{samba_major}.pm
+ln -s %{_datadir}/%{name}/scripts/smbldap_tools.pm $RPM_BUILD_ROOT/%{perl_vendorlib}/smbldap_tools%{samba_major}.pm
 #mkntpwd
-#install -m750 examples.bin/LDAP/smbldap-tools/mkntpwd/mkntpwd %{buildroot}/%{_sbindir}
+install -m750 examples.bin/LDAP/smbldap-tools/mkntpwd/mkntpwd %{buildroot}/%{_sbindir}/mkntpwd%{samba_major}
 
 # Samba smbpasswd migration script:
-install -m700 examples/LDAP/export_smbpasswd.pl $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
-install -m700 examples/LDAP/import_smbpasswd.pl $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
 install -m755 examples/LDAP/convertSambaAccount $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
-
-
 
 # make a conf file for winbind from the default one:
 	cat packaging/Mandrake/smb.conf|sed -e  's/^;  winbind/  winbind/g;s/^;  obey pam/  obey pam/g; s/^;   printer admin = @"D/   printer admin = @"D/g;s/^;   password server = \*/   password server = \*/g;s/^;  template/  template/g; s/^   security = user/   security = domain/g' > packaging/Mandrake/smb-winbind.conf
@@ -1043,23 +1093,22 @@ perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/%{
 perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/smb-winbind.conf
 %endif
 
-# Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
-#I don't think it's possible for make to do this ...
-(cd $RPM_BUILD_ROOT/sbin
-        ln -s ..%{_bindir}/smbmount%{samba_major} mount.smb%{samba_major}
-        ln -s ..%{_bindir}/smbmount%{samba_major} mount.smbfs%{samba_major}
-)
+#%if !%build_system
+# Fix script paths in smb.conf
+#perl -pi -e 's,%{_datadir}/samba,%{_datadir}/%{name},g' %{buildroot}/%{_sysconfdir}/%{name}/smb*.conf
+#%endif
+
 
 #install mount.cifs
-install -m755 source/client/mount.cifs %{buildroot}/sbin
-bzcat %{SOURCE11} > %{buildroot}/%{_mandir}/man8/mount.cifs.8
+install -m755 source/client/mount.cifs %{buildroot}/bin/mount.cifs%{samba_major}
+#bzcat %{SOURCE11} > %{buildroot}/%{_mandir}/man8/mount.cifs%{samba_major}.8
 
         echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/lmhosts
 
 # Link smbspool to CUPS (does not require installed CUPS)
 
         mkdir -p $RPM_BUILD_ROOT/%{_libdir}/cups/backend
-        ln -s %{_bindir}/smbspool $RPM_BUILD_ROOT/%{_libdir}/cups/backend/smb%{samba_major}
+        ln -s %{_bindir}/smbspool%{alternative_major} $RPM_BUILD_ROOT/%{_libdir}/cups/backend/smb%{alternative_major}
 
 # xinetd support
 
@@ -1094,27 +1143,51 @@ bzcat %{SOURCE6} > $RPM_BUILD_ROOT%{_miconsdir}/swat%{samba_major}.png
 
 bzcat %{SOURCE10}> $RPM_BUILD_ROOT%{_datadir}/%{name}/scripts/print-pdf
 
-%if %build_chrpath
-find %{buildroot}/%{_lib} %{buildroot}/%{_bindir} %{buildroot}/%{_sbindir} %{buildroot}/%{_libdir} -type f -exec chrpath -d {} \;
-%endif
-
 # Fix configs when not building system samba:
-%if !%build_system
-# Work around non-existent but claimed --program-suffix support :-(
-for dir in %{_sbindir} %{_bindir};do
-    FILES=`find %{buildroot}$dir -type f |grep -v "\."|grep -v %{samba_major}$`
-    for OLD in $FILES; do
-        NEW=`echo ${OLD}%{samba_major}`
+
+#Client binaries will have suffixes while we use alternatives, even
+# if we are system samba
+%if !%build_system || %build_alternatives
+for OLD in %{buildroot}/%{_bindir}/{%{clientbin}} %{buildroot}/bin/%{client_bin} %{buildroot}/%{_libdir}/cups/backend/smb
+do
+    NEW=`echo ${OLD}%{alternative_major}`
+    [ -e $OLD ] && mv -f $OLD $NEW
+done
+for OLD in %{buildroot}/%{_mandir}/man?/{%{clientbin}}* %{buildroot}/%{_mandir}/man?/%{client_bin}*
+do
+    if [ -e $OLD ]
+    then
+        BASE=`perl -e '$_="'${OLD}'"; m,(%buildroot)(.*?)(\.[0-9]),;print "$1$2\n";'`
+        EXT=`echo $OLD|sed -e 's,'${BASE}',,g'`
+        NEW=`echo ${BASE}%{alternative_major}${EXT}`
         mv $OLD $NEW
-    done
+    fi
+done		
+%endif
+# Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
+#I don't think it's possible for make to do this ...
+(cd $RPM_BUILD_ROOT/sbin
+        ln -s ..%{_bindir}/smbmount%{alternative_major} mount.smb%{alternative_major}
+        ln -s ..%{_bindir}/smbmount%{alternative_major} mount.smbfs%{alternative_major}
+)
+# Server/common binaries are versioned only if not system samba:
+%if !%build_system
+for OLD in %{buildroot}/%{_bindir}/{%{commonbin}} %{buildroot}/%{_bindir}/{%{serverbin},wbinfo} %{buildroot}/%{_sbindir}/{%{serversbin},winbindd,swat}
+do
+    NEW=`echo ${OLD}%{alternative_major}`
+    mv $OLD $NEW -f ||:
 done
 # And the man pages too:
-FILES=`find %{buildroot}%{_mandir} -type f `
-for OLD in $FILES; do
-    BASE=`perl -e '$name="'${OLD}'"; print "",($name =~ /(.*?)\.[0-9]/), "\n";'`
-    EXT=`echo $OLD|sed -e 's,'${BASE}',,g'`
-    NEW=`echo ${BASE}%{samba_major}${EXT}`
-    mv $OLD $NEW
+for OLD in %{buildroot}/%{_mandir}/man?/{%{commonbin},%{serverbin},wbinfo,%{serversbin},winbindd,swat,{%testbin},smb.conf,lmhosts}*
+do
+    if [ -e $OLD ]
+    then
+        BASE=`perl -e '$_="'${OLD}'"; m,(%buildroot)(.*?)(\.[0-9]),;print "$1$2\n";'`
+#        BASE=`perl -e '$name="'${OLD}'"; print "",($name =~ /(.*?)\.[0-9]/), "\n";'`
+	EXT=`echo $OLD|sed -e 's,'${BASE}',,g'`
+	NEW=`echo ${BASE}%{samba_major}${EXT}`
+	mv $OLD $NEW
+    fi
 done		
 # Replace paths in config files and init scripts:
 for i in smb winbind;do
@@ -1292,6 +1365,27 @@ if [ "$1" = "0" -a -x /usr/bin/update-menus ]; then /usr/bin/update-menus || tru
 
 %clean_menus
 
+%if %build_system
+%post -n %{libname} -p /sbin/ldconfig
+%postun -n %{libname} -p /sbin/ldconfig
+%endif
+
+%if %build_alternatives
+%post client
+
+update-alternatives --install %{_bindir}/smbclient smbclient \
+%{_bindir}/smbclient%{alternative_major} 10 \
+$(for i in {/bin/mount.cifs,/sbin/{%{client_sbin}},%{_bindir}/{%{clientbin}}};do
+j=`basename $i`
+[ "$j" = "smbclient" ] || \
+echo -n " --slave ${i} ${j} ${i}%{alternative_major}";done) \
+--slave %{_libdir}/cups/backend/smb cups_smb %{_libdir}/cups/backend/smb%{alternative_major} || \
+update-alternatives --auto smbclient
+
+%preun client
+[ $1 = 0 ] && update-alternatives --remove smbclient %{_bindir}/smbclient%{alternative_major}
+%endif
+
 %triggerpostun -- samba < 1.9.18p7
 
 if [ $1 != 0 ]; then
@@ -1314,7 +1408,7 @@ fi
 %{_sbindir}/nmbd%{samba_major}
 #%{_sbindir}/wrepld%{samba_major}
 %{_bindir}/smbcontrol%{samba_major}
-#%{_sbindir}/mkntpwd
+%{_sbindir}/mkntpwd%{samba_major}
 %{_bindir}/smbstatus%{samba_major}
 %{_bindir}/pdbedit%{samba_major}
 %{_bindir}/tdbbackup%{samba_major}
@@ -1349,11 +1443,12 @@ fi
 %dir %{_datadir}/%{name}
 %dir %{_datadir}/%{name}/scripts
 %attr(0755,root,root) %{_datadir}/%{name}/scripts/print-pdf
-#%attr(0750,root,root) %{_datadir}/%{name}/scripts/smbldap*.pl
-#%attr(0640,root,root) %config(noreplace) %{_sysconfdir}/%{name}/smbldap_conf.pm
-#%attr(0644,root,root) %{_datadir}/%{name}/scripts/smbldap_tools.pm
-#%{perl_vendorlib}/*.pm
-%attr(0700,root,root) %{_datadir}/%{name}/scripts/*port_smbpasswd.pl
+%attr(0750,root,adm) %{_datadir}/%{name}/scripts/smbldap*.pl
+%attr(0750,root,adm) %{_bindir}/smbldap*
+%attr(0640,root,adm) %config(noreplace) %{_sysconfdir}/%{name}/smbldap_conf.pm
+%attr(0644,root,root) %{_datadir}/%{name}/scripts/smbldap_tools.pm
+%{perl_vendorlib}/*.pm
+#%attr(0700,root,root) %{_datadir}/%{name}/scripts/*port_smbpasswd.pl
 %attr(0755,root,root) %{_datadir}/%{name}/scripts/convertSambaAccount
 
 
@@ -1362,8 +1457,8 @@ fi
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
 %doc README.%{name}-mandrake-rpm
-%doc docs
-%doc examples
+%doc clean-docs/samba-doc/docs
+%doc clean-docs/samba-doc/examples
 %attr(-,root,root) %{_datadir}/swat%{samba_major}/using_samba/
 
 %files swat
@@ -1381,17 +1476,18 @@ fi
 %lang(ja) %{_datadir}/swat%{samba_major}/lang/ja
 %lang(tr) %{_datadir}/swat%{samba_major}/lang/tr
 %{_mandir}/man8/swat*.8*
-%doc swat/README
+#%doc swat/README
 
 %files client
 %defattr(-,root,root)
+%(for i in %{_bindir}/{%{clientbin}}%{alternative_major};do echo $i;done)
+%(for i in %{_mandir}/man?/{%{clientbin}}%{alternative_major}.?.*;do echo $i|grep -v smbprint;done)
 %ifnarch alpha
-/sbin/mount.smb%{samba_major}
-/sbin/mount.smbfs%{samba_major}
-/sbin/mount.cifs
-%attr(755,root,root) %{_bindir}/smbmount%{samba_major}
-%attr(4755,root,root) %{_bindir}/smbumount%{samba_major}
-%attr(4755,root,root) %{_bindir}/smbmnt%{samba_major}
+%(for i in /sbin/{%{client_sbin}}%{alternative_major};do echo $i;done)
+%attr(4755,root,root) /bin/mount.cifs%{alternative_major}
+%attr(755,root,root) %{_bindir}/smbmount%{alternative_major}
+%attr(4755,root,root) %{_bindir}/smbumount%{alternative_major}
+%attr(4755,root,root) %{_bindir}/smbmnt%{alternative_major}
 %{_mandir}/man8/smbmnt*.8*
 %{_mandir}/man8/smbmount*.8*
 %{_mandir}/man8/smbumount*.8*
@@ -1400,41 +1496,20 @@ fi
 %exclude %{_bindir}/smb*m*nt%{samba_major}
 %exclude %{_mandir}/man8/smb*m*nt*.8*
 %endif
-%{_bindir}/nmblookup%{samba_major}
-%{_bindir}/findsmb%{samba_major}
-%{_bindir}/smbclient%{samba_major}
-%{_bindir}/smbprint%{samba_major}
-%{_bindir}/smbtar%{samba_major}
-%{_bindir}/smbspool%{samba_major}
 # Link of smbspool to CUPS
-/%{_libdir}/cups/backend/smb%{samba_major}
-/%{_mandir}/man1/nmblookup*.1*
-/%{_mandir}/man1/findsmb*.1*
-/%{_mandir}/man1/smbclient*.1*
-/%{_mandir}/man1/smbtar*.1*
-/%{_mandir}/man8/smbspool*.8*
+/%{_libdir}/cups/backend/smb%{alternative_major}
 
 %files common
 %defattr(-,root,root)
 %dir /var/cache/%{name}
 %dir /var/log/%{name}
 %dir /var/run/%{name}
-#%{_bindir}/make_smbcodepage
-#%{_bindir}/make_unicodemap
-%{_bindir}/testparm%{samba_major}
-%{_bindir}/testprns%{samba_major}
-#%{_bindir}/make_printerdef
-%{_bindir}/rpcclient%{samba_major}
-#%{_bindir}/smbsh%{samba_major}
-%{_bindir}/smbpasswd%{samba_major}
-%{_bindir}/smbcacls%{samba_major}
-%{_bindir}/smbcquotas%{samba_major}
-%{_bindir}/net%{samba_major}
-%{_bindir}/smbtree%{samba_major}
-%{_bindir}/ntlm_auth%{samba_major}
+%(for i in %{_bindir}/{%{commonbin}}%{samba_major};do echo $i;done)
+%(for i in %{_mandir}/man?/{%{commonbin}}%{samba_major}\.[0-9]*;do echo $i;done)
 #%{_libdir}/smbwrapper%{samba_major}.so
 %dir %{_libdir}/%{name}
 %{_libdir}/%{name}/*.dat
+%{_libdir}/%{name}/charset
 #%{_libdir}/%{name}/lowcase.dat
 #%{_libdir}/%{name}/valid.dat
 %dir %{_sysconfdir}/%{name}
@@ -1443,19 +1518,8 @@ fi
 %attr(-,root,root) %config(noreplace) %{_sysconfdir}/%{name}/lmhosts
 %dir %{_localstatedir}/%{name}
 %attr(-,root,root) %{_localstatedir}/%{name}/codepages
-#%{_mandir}/man1/make_smbcodepage*.1*
-#%{_mandir}/man1/make_unicodemap*.1*
-%{_mandir}/man1/testparm*.1*
-%{_mandir}/man1/rpcclient*.1*
-%{_mandir}/man1/testprns*.1*
 %{_mandir}/man5/smb.conf*.5*
 %{_mandir}/man5/lmhosts*.5*
-%{_mandir}/man8/smbpasswd*.8*
-%{_mandir}/man1/smbcacls*.1*
-%{_mandir}/man1/smbcquotas*.1*
-%{_mandir}/man8/net*.8*
-%{_mandir}/man1/smbtree*.1*
-%{_mandir}/man1/ntlm_auth*.1*
 %{_mandir}/man7/Samba*.7*
 %dir %{_datadir}/swat%{samba_major}
 
@@ -1479,40 +1543,38 @@ fi
 %attr(755,root,root) /%{_lib}/libnss_wins%{samba_major}.so*
 %endif
 
-%if %{?_without_test:0}%{!?_without_test:1}
+%if %{?_with_test:1}%{!?_with_test:0}
 %files test
 %defattr(-,root,root)
-%{_bindir}/debug2html%{samba_major}
-%{_bindir}/smbtorture%{samba_major}
-%{_bindir}/msgtest%{samba_major}
-%{_bindir}/masktest%{samba_major}
-%{_bindir}/locktest%{samba_major}
-%{_bindir}/locktest2%{samba_major}
-%{_bindir}/nsstest%{samba_major}
-%{_bindir}/vfstest%{samba_major}
+%(for i in %{_bindir}/{%{testbin}}%{samba_major};do echo $i;done)
 %{_mandir}/man1/vfstest%{samba_major}*.1*
+%exclude %{_mandir}/man1/log2pcap*.1*
 %else
 %exclude %{_mandir}/man1/vfstest%{samba_major}*.1*
+%exclude %{_mandir}/man1/log2pcap*.1*
 %endif
 
 %if %build_system
-%files -n libsmbclient%{libsmbmajor}
+%files -n %{libname}
 %defattr(-,root,root)
-%{_libdir}/libsmbclient.so*
+%{_libdir}/libsmbclient.so.*
 %else
-%exclude %{_libdir}/libsmbclient.so*
+%exclude %{_libdir}/libsmbclient.so.*
 %endif
 
 %if %build_system
-%files -n libsmbclient%{libsmbmajor}-devel
+%files -n %{libname}-devel
 %defattr(-,root,root)
 %{_includedir}/*
+%{_libdir}/libsmbclient.so
+%doc clean-docs/libsmbclient/*
 %else
 %exclude %{_includedir}/*
+%exclude %{_libdir}/libsmbclient.so
 %endif
 
 %if %build_system
-%files -n libsmbclient%{libsmbmajor}-static-devel
+%files -n %{libname}-static-devel
 %defattr(-,root,root)
 %{_libdir}/libsmbclient.a
 %else
@@ -1593,6 +1655,42 @@ fi
 %exclude %{_mandir}/man1/smbsh*.1*
 
 %changelog
+* Sat Sep 13 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.rc4.2mdk
+- rc4
+- Don't update alternatives in pre/post scripts when not using alternatives
+- Fix case of --with-system without alternatives
+- Final fixes to smbldap-tools for non-system case
+- Remove duplicate docs (really - 1 character typo ...)
+- Update configs (fix winbind init script, add example scripts in smb.conf)
+
+* Tue Sep 09 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.rc3.2mdk
+- rc3
+- Fix mount.smb{,fs} alternatives (spotted by Laurent Culioli)
+
+* Thu Sep 04 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.rc2.3mdk
+- Fix alternatives
+- Fix libname (can I blame guillomovitch's evil line-wrapping spec mode?)
+- Fix smbldap-tools package/use names when not system samba
+- Don't conflict samba3-client with samba-client for now so we can install it
+
+* Fri Aug 29 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.rc2.2mdk
+- rc2
+- Remove patches 100-102 (upstream)
+- Fix libname
+- Alternatavise client
+- Better solution to avoid rpath
+
+* Fri Aug 22 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.rc1.3mdk
+- Fix build with test package (p100), but not by default (too big)
+- Fix (p101) for SID resolution when member of samba-2.2.x domain
+- Fix libsmbclient packages (thanks Gotz)
+- version mount.cifs, patch from CVS (p102), and setuid it
+- Clean up docs (guillomovitch spam ;-)
+
+* Sat Aug 16 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.rc1.2mdk
+- rc1
+- disable test subpackage since it's broken again
+
 * Mon Jul 28 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta3.3mdk
 - Rebuild for kerberos-1.3 on cooker
 - Put printer directories back
