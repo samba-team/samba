@@ -162,7 +162,7 @@ static NTSTATUS smb_full_request(struct dcerpc_pipe *p,
 /* 
    retrieve a secondary pdu from a pipe 
 */
-NTSTATUS smb_secondary_request(struct dcerpc_pipe *p, 
+static NTSTATUS smb_secondary_request(struct dcerpc_pipe *p, 
 			       TALLOC_CTX *mem_ctx,
 			       DATA_BLOB *blob)
 {
