@@ -198,8 +198,11 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		if (ads_kinit_password(ads) == 0) {
 			status = ads_sasl_spnego_krb5_bind(ads, principal);
 		}
-		if (ADS_ERR_OK(status))
+		/* only fallback to NTLMSSP if allowed */
+		if (ADS_ERR_OK(status) || 
+		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
 			return status;
+		}
 	}
 #endif
 
