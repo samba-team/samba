@@ -100,8 +100,10 @@ srvconv(int argc, char **argv)
 	krb5_keytab_entry entry;
 	
 	ret = krb5_ret_stringz(sp, &service);
-	if(ret == KRB5_CC_END)
+	if(ret == KRB5_CC_END) {
+	    ret = 0;
 	    break;
+	}
 	if(ret) {
 	    krb5_warn(context, ret, "reading service");
 	    break;
