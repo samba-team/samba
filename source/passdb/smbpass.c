@@ -768,12 +768,6 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
     return False;
   }
 
-  if (!strncasecmp((char *) p, "NO PASSWORD", 11)) {
-    fclose(fp);
-    pw_file_unlock(lockfd);
-    return False;
-  }
-
   /* Now check if the NT compatible password is
      available. */
   p += 33; /* Move to the first character of the line after

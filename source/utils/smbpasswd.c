@@ -19,11 +19,23 @@
 
 #include "includes.h"
 
-/* Static buffers we will return. */
-static struct smb_passwd pw_buf;
-static pstring  user_name;
-static unsigned char smbpwd[16];
-static unsigned char smbntpwd[16];
+/* 
+ * Password changing error codes.
+ */
+
+struct
+{
+  int err;
+  char *message;
+} pw_change_errmap[] =
+{
+  {5,    "User has insufficient privilege" },
+  {86,   "The specified password is invalid" },
+  {2226, "Operation only permitted on a Primary Domain Controller"  },
+  {2243, "The password cannot be changed" },
+  {2246, "The password is too short" },
+  {0, NULL}
+};
 
 static int gethexpwd(char *p, char *pwd)
 {
@@ -52,6 +64,12 @@ static struct smb_passwd *
 _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd, 
 		BOOL *got_valid_nt_entry, long *pwd_seekpos)
 {
+	/* Static buffers we will return. */
+	static struct smb_passwd pw_buf;
+	static pstring  user_name;
+	static unsigned char smbpwd[16];
+	static unsigned char smbntpwd[16];
+
 	char            linebuf[256];
 	unsigned char   c;
 	unsigned char  *p;
@@ -198,14 +216,21 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 /*
  * Print command usage on stderr and die.
  */
-static void usage(char *name)
+static void usage(char *name, BOOL is_root)
 {
-	fprintf(stderr, "Usage is : %s [-add] [username] [password]\n", name);
+	if(is_root)
+		fprintf(stderr, "Usage is : %s [-a] [username] [password]\n\
+%s: [-r machine] [username] [password]\n%s: [-h]", name, name, name);
+	else
+		fprintf(stderr, "Usage is : %s [-h] [-r machine] [password]\n", name);
 	exit(1);
 }
 
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
+  extern char *optarg;
+  extern int optind;
+  char *prog_name;
   int             real_uid;
   struct passwd  *pwd;
   fstring         old_passwd;
@@ -218,9 +243,7 @@ static void usage(char *name)
   struct smb_passwd *smb_pwent;
   FILE           *fp;
   BOOL            valid_old_pwd = False;
-  BOOL 			got_valid_nt_entry = False;
-  BOOL            add_user = False;
-  int             add_pass = 0;
+  BOOL		 got_valid_nt_entry = False;
   long            seekpos;
   int             pwfd;
   char            ascii_p16[66];
@@ -229,103 +252,141 @@ static void usage(char *name)
   int             lockfd = -1;
   char           *pfile = SMB_PASSWD_FILE;
   char            readbuf[16 * 1024];
-  
+  BOOL is_root = False;
+  pstring  user_name;
+  char *remote_machine = NULL;
+  BOOL		 add_user = False;
+  BOOL		 got_new_pass = False;
+  pstring servicesf = CONFIGFILE;
+
+  new_passwd[0] = '\0';
+  user_name[0] = '\0';
+
+  memset(old_passwd, '\0', sizeof(old_passwd));
+  memset(new_passwd, '\0', sizeof(old_passwd));
+
+  prog_name = argv[0];
+
   TimeInit();
 
-  setup_logging(argv[0],True);
+  setup_logging(prog_name,True);
   
   charset_initialise();
-  
-#ifndef DEBUG_PASSWORD
-  /* Check the effective uid */
-  if (geteuid() != 0) {
-    fprintf(stderr, "%s: Must be setuid root.\n", argv[0]);
-    exit(1);
+
+  if (!lp_load(servicesf,True,False,False)) {
+    fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n", prog_name, servicesf);
   }
-#endif
-  
+    
+  codepage_initialise(lp_client_code_page());
+
   /* Get the real uid */
   real_uid = getuid();
   
-  /* Deal with usage problems */
-  if (real_uid == 0)
-  {
-    /* As root we can change anothers password and add a user. */
-    if (argc > 4 )
-      usage(argv[0]);
-  }
-  else if (argc == 2 || argc > 3)
-  {
-    fprintf(stderr, "%s: Only root can set anothers password.\n", argv[0]);
-    usage(argv[0]);
-  }
-  
-  if (real_uid == 0 && (argc > 1))
-  {
-    /* We are root - check if we should add the user */
-    if ((argv[1][0] == '-') && (argv[1][1] == 'a'))
-      add_user = True;
-
-    if(add_user && (argc <= 2 || argc > 4))
-      usage(argv[0]);
-
-    /* root can specify password on command-line */
-    if (argc == (add_user ? 4 : 3))
-    {
-      /* -a argument (add_user): new password is 3rd argument. */
-      /* no -a argument (add_user): new password is 2nd argument */
-
-      add_pass = add_user ? 3 : 2;
-    }
-
-    /* If we are root we can change another's password. */
-    strncpy(user_name, add_user ? argv[2] : argv[1], sizeof(user_name) - 1);
-    user_name[sizeof(user_name) - 1] = '\0';
-
-    pwd = getpwnam(user_name);
-  }
-  else
-  {
-    /* non-root can specify old pass / new pass on command-line */
-    if (argc == 3)
-    {
-       /* non-root specifies new password as 2nd argument */
-       add_pass = 2;
-    }
-
-    pwd = getpwuid(real_uid);
-  }
-  
-  if (pwd == 0) {
-    fprintf(stderr, "%s: Unable to get UNIX password entry for user.\n", argv[0]);
+  /* Check the effective uid */
+  if ((geteuid() == 0) && (real_uid != 0)) {
+    fprintf(stderr, "%s: Must *NOT* be setuid root.\n", prog_name);
     exit(1);
   }
 
-  /* If we are root we don't ask for the old password. */
-  old_passwd[0] = '\0';
-  if (real_uid != 0)
-  {
-    if (add_pass)
-    {
-      /* old password, as non-root, is 1st argument */
-      strncpy(old_passwd, argv[1], sizeof(fstring));
+  is_root = (real_uid == 0);
+
+  while ((c = getopt(argc, argv, "ahr:")) != EOF) {
+    switch(c) {
+    case 'a':
+      add_user = True;
+      break;
+    case 'r':
+      remote_machine = optarg;
+      break;
+    case 'h':
+    default:
+      usage(prog_name, is_root);
     }
-    else
-    {
-      p = getpass("Old SMB password:");
-      strncpy(old_passwd, p, sizeof(fstring));
-    }
-    old_passwd[sizeof(fstring)-1] = '\0';
   }
 
-  if (add_pass)
-  {
-    /* new password is specified on the command line */
-    strncpy(new_passwd, argv[add_user ? 3 : 2], sizeof(new_passwd) - 1);
-    new_passwd[sizeof(new_passwd) - 1] = '\0';
+  argc -= optind;
+  argv += optind;
+
+  /*
+   * Ensure add_user and remote machine are
+   * not both set.
+   */
+  if(add_user && (remote_machine != NULL))
+    usage(prog_name, True);
+
+  if( is_root ) {
+
+    /*
+     * Deal with root - can add a user, but only locally.
+     */
+
+    switch(argc) {
+      case 0:
+        break;
+      case 1:
+        /* If we are root we can change another's password. */
+        pstrcpy(user_name, argv[0]);
+        break;
+      case 2:
+        pstrcpy(user_name, argv[0]);
+        fstrcpy(new_passwd, argv[1]);
+        got_new_pass = True;
+        break;
+      default:
+        usage(prog_name, True);
+    }
+
+    if(*user_name)
+      pwd = getpwnam(user_name);
+    else {
+      if((pwd = getpwuid(real_uid)) != NULL)
+        pstrcpy( user_name, pwd->pw_name);
+    }
+
+  } else {
+
+    if(add_user) {
+      fprintf(stderr, "%s: Only root can set anothers password.\n", prog_name);
+      usage(prog_name, False);
+    }
+
+    if(argc > 1)
+      usage(prog_name, False);
+
+    if(argc == 1) {
+      fstrcpy(new_passwd, argv[0]);
+      got_new_pass = True;
+    }
+
+    if((pwd = getpwuid(real_uid)) != NULL)
+      pstrcpy( user_name, pwd->pw_name);
+
+    /*
+     * A non-root user is always setting a password
+     * via a remote machine (even if that machine is
+     * localhost).
+     */
+
+    if(remote_machine == NULL)
+      remote_machine = "127.0.0.1";
+  }    
+    
+  if (*user_name == '\0') {
+    fprintf(stderr, "%s: Unable to get a user name for password change.\n", prog_name);
+    exit(1);
   }
-  else
-  {
+
+  /* 
+   * If we are root we don't ask for the old password (unless it's on a
+   * remote machine.
+   */
+
+  if (remote_machine != NULL) {
+    p = getpass("Old SMB password:");
+    fstrcpy(old_passwd, p);
+  }
+
+  if (!got_new_pass) {
     new_passwd[0] = '\0';
 
     p = getpass("New SMB password:");
@@ -337,17 +398,96 @@ static void usage(char *name)
 
     if (strncmp(p, new_passwd, sizeof(fstring)-1))
     {
-      fprintf(stderr, "%s: Mismatch - password unchanged.\n", argv[0]);
+      fprintf(stderr, "%s: Mismatch - password unchanged.\n", prog_name);
       exit(1);
     }
   }
   
-  if (new_passwd[0] == '\0')
-  {
+  if (new_passwd[0] == '\0') {
     printf("Password not set\n");
     exit(0);
   }
+ 
+  /* 
+   * Now do things differently depending on if we're changing the
+   * password on a remote machine. Remember - a normal user is
+   * always using this code, looping back to the local smbd.
+   */
+
+  if(remote_machine != NULL) {
+    struct cli_state cli;
+    struct in_addr ip;
+    fstring myname;
+
+    if(get_myname(myname,NULL) == False) {
+      fprintf(stderr, "%s: unable to get my hostname.\n", prog_name );
+      exit(1);
+    }
+
+    if(!resolve_name( remote_machine, &ip)) {
+      fprintf(stderr, "%s: unable to find an IP address for machine %s.\n",
+              prog_name, remote_machine );
+      exit(1);
+    }
   
+    if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
+      fprintf(stderr, "%s: unable to connect to SMB server on machine %s.\n",
+              prog_name, remote_machine );
+      exit(1);
+    }
+  
+    if (!cli_session_request(&cli, remote_machine, 0x20, myname)) {
+      fprintf(stderr, "%s: machine %s rejected the session setup.\n",
+              prog_name, remote_machine );
+      cli_shutdown(&cli);
+      exit(1);
+    }
+  
+    cli.protocol = PROTOCOL_NT1;
+
+    if (!cli_negprot(&cli)) {
+      fprintf(stderr, "%s: machine %s rejected the negotiate protocol.\n",        
+              prog_name, remote_machine );
+      cli_shutdown(&cli);
+      exit(1);
+    }
+  
+    if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd),
+                           "", 0, "")) {
+      fprintf(stderr, "%s: machine %s rejected the session setup.\n",        
+              prog_name, remote_machine );
+      cli_shutdown(&cli);
+      exit(1);
+    }               
+
+    if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+      fprintf(stderr, "%s: machine %s rejected the tconX on the IPC$ share.\n",
+              prog_name, remote_machine );
+      cli_shutdown(&cli);
+      exit(1);
+    }
+
+    if(!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
+      fstring error_message;
+
+      sprintf(error_message, " with code %d", cli.error);
+      
+      for(i = 0; pw_change_errmap[i].message != NULL; i++) {
+        if (pw_change_errmap[i].err == cli.error) {
+          fstrcpy( error_message, pw_change_errmap[i].message);
+          break;
+        }
+      }
+      fprintf(stderr, "%s: machine %s rejected the password change: %s.\n",
+              prog_name, remote_machine, error_message );
+      cli_shutdown(&cli);
+      exit(1);
+    }
+
+    cli_shutdown(&cli);
+    exit(0);
+  }
+
   /* Calculate the MD4 hash (NT compatible) of the old and new passwords */
   memset(old_nt_p16, '\0', 16);
   E_md4hash((uchar *)old_passwd, old_nt_p16);
@@ -387,9 +527,9 @@ static void usage(char *name)
   if (!fp) {
 	  err = errno;
 	  fprintf(stderr, "%s: Failed to open password file %s.\n",
-		  argv[0], pfile);
+		  prog_name, pfile);
 	  errno = err;
-	  perror(argv[0]);
+	  perror(prog_name);
 	  exit(err);
   }
   
@@ -403,19 +543,19 @@ static void usage(char *name)
   if ((lockfd = pw_file_lock(fileno(fp), F_WRLCK, 5)) < 0) {
     err = errno;
     fprintf(stderr, "%s: Failed to lock password file %s.\n",
-	    argv[0], pfile);
+	    prog_name, pfile);
     fclose(fp);
     errno = err;
-    perror(argv[0]);
+    perror(prog_name);
     exit(err);
   }
   /* Get the smb passwd entry for this user */
-  smb_pwent = _my_get_smbpwnam(fp, pwd->pw_name, &valid_old_pwd, 
+  smb_pwent = _my_get_smbpwnam(fp, user_name, &valid_old_pwd, 
 			       &got_valid_nt_entry, &seekpos);
   if (smb_pwent == NULL) {
     if(add_user == False) {
       fprintf(stderr, "%s: Failed to find entry for user %s in file %s.\n",
-  	      argv[0], pwd->pw_name, pfile);
+  	      prog_name, pwd->pw_name, pfile);
       fclose(fp);
       pw_file_unlock(lockfd);
       exit(1);
@@ -435,7 +575,7 @@ static void usage(char *name)
 
       if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
-Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
+Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
         fclose(fp);
         pw_file_unlock(lockfd);
         exit(1);
@@ -447,7 +587,7 @@ Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
                          strlen(pwd->pw_shell) + 1;
       if((new_entry = (char *)malloc( new_entry_length )) == 0) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
-Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
+Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
         fclose(fp);
         pw_file_unlock(lockfd);
         exit(1);
@@ -467,12 +607,12 @@ Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
               pwd->pw_dir, pwd->pw_shell);
       if(write(fd, new_entry, strlen(new_entry)) != strlen(new_entry)) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
-Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
+Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
         /* Remove the entry we just wrote. */
         if(ftruncate(fd, offpos) == -1) {
           fprintf(stderr, "%s: ERROR failed to ftruncate file %s. \
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
-                   argv[0], pwd->pw_name, strerror(errno));
+                   prog_name, pwd->pw_name, strerror(errno));
         }
         fclose(fp);
         pw_file_unlock(lockfd);
@@ -488,35 +628,10 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 	  add_user = False;
   }
 
-  /* If we are root or the password is 'NO PASSWORD' then
-     we don't need to check the old password. */
-  if (real_uid != 0) {
-    if (valid_old_pwd == False) {
-      fprintf(stderr, "%s: User %s has no old SMB password.\n", argv[0], pwd->pw_name);
-    }
-    /* Check the old Lanman password - NULL means 'NO PASSWORD' */
-    if (smb_pwent->smb_passwd != NULL) {
-      if (memcmp(old_p16, smb_pwent->smb_passwd, 16)) {
-        fprintf(stderr, "%s: Couldn't change password.\n", argv[0]);
-        fclose(fp);
-        pw_file_unlock(lockfd);
-        exit(1);
-      }
-    }
-    /* Check the NT password if it exists */
-    if (smb_pwent->smb_nt_passwd != NULL) {
-      if (memcmp(old_nt_p16, smb_pwent->smb_nt_passwd, 16)) {
-	fprintf(stderr, "%s: Couldn't change password.\n", argv[0]);
-	fclose(fp);
-	pw_file_unlock(lockfd);
-	exit(1);
-      }
-    }
-  }
   /*
-   * If we get here either we were root or the old password checked out
-   * ok.
+   * We are root - just write the new password.
    */
+
   /* Create the 32 byte representation of the new p16 */
   for (i = 0; i < 16; i++) {
     sprintf(&ascii_p16[i * 2], "%02X", (uchar) new_p16[i]);
@@ -537,10 +652,10 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
   if (ret != seekpos - 1) {
     err = errno;
     fprintf(stderr, "%s: seek fail on file %s.\n",
-	    argv[0], pfile);
+	    prog_name, pfile);
     fclose(fp);
     errno = err;
-    perror(argv[0]);
+    perror(prog_name);
     pw_file_unlock(lockfd);
     exit(1);
   }
@@ -548,16 +663,16 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
   if (read(pwfd, &c, 1) != 1) {
     err = errno;
     fprintf(stderr, "%s: read fail on file %s.\n",
-	    argv[0], pfile);
+	    prog_name, pfile);
     fclose(fp);
     errno = err;
-    perror(argv[0]);
+    perror(prog_name);
     pw_file_unlock(lockfd);
     exit(1);
   }
   if (c != ':') {
     fprintf(stderr, "%s: sanity check on passwd file %s failed.\n",
-	    argv[0], pfile);
+	    prog_name, pfile);
     fclose(fp);
     pw_file_unlock(lockfd);
     exit(1);
@@ -566,10 +681,10 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
   if (write(pwfd, ascii_p16, writelen) != writelen) {
     err = errno;
     fprintf(stderr, "%s: write fail in file %s.\n",
-	    argv[0], pfile);
+	    prog_name, pfile);
     fclose(fp);
     errno = err;
-    perror(argv[0]);
+    perror(prog_name);
     pw_file_unlock(lockfd);
     exit(err);
   }
