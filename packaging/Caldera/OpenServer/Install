@@ -9,8 +9,8 @@ V=
 
 # Make sure we pick up the install binary from /usr/local/bin
 # rather than /etc/install
-PATH=/usr/local/bin:$PATH
-export PATH
+#PATH=/usr/local/bin:$PATH
+#export PATH
 
 PREFIX=/usr/lib/samba
 HERE=`pwd`
@@ -19,6 +19,7 @@ PKGDIR=packaging/Caldera/OpenServer
 BUILD_ROOT=${HERE}/dist
 BLDFIX=${BUILD_ROOT}/${PREFIX}
 $V rm -rf $BUILD_ROOT
+$V mkdir -p $BUILD_ROOT/etc/copyrights
 $V mkdir -p $BUILD_ROOT/etc/init.d
 $V mkdir -p $BUILD_ROOT/etc/samba.d
 $V mkdir -p $BUILD_ROOT/usr/lib/mkdev
@@ -34,6 +35,10 @@ $V mkdir -p ${BLDFIX}/man/man.1
 $V mkdir -p ${BLDFIX}/man/man.5
 $V mkdir -p ${BLDFIX}/man/man.7
 $V mkdir -p ${BLDFIX}/man/man.8
+$V mkdir -p ${BLDFIX}/man/cat.1
+$V mkdir -p ${BLDFIX}/man/cat.5
+$V mkdir -p ${BLDFIX}/man/cat.7
+$V mkdir -p ${BLDFIX}/man/cat.8
 $V mkdir -p ${BLDFIX}/var/locks
 $V mkdir -p ${BLDFIX}/lib/codepages/src
 
@@ -143,10 +148,26 @@ $V install -m755 ${PKGDIR}/smb.init $BUILD_ROOT/etc/init.d/samba
 $V install -m755 ${PKGDIR}/smb.mkdev $BUILD_ROOT/usr/lib/mkdev/samba
 $V install -m644 ${PKGDIR}/docview.html $BUILD_ROOT/doc/index.html
 $V install -m644 ${PKGDIR}/osr5config.html $BUILD_ROOT/doc
-$V install -m644 ${PKGDIR}/callogo.gif $BUILD_ROOT/doc
-$V install -m644 ${PKGDIR}/samba.desktop $BUILD_ROOT/doc
+$V install -m644 ${PKGDIR}/sco_logo_med.gif $BUILD_ROOT/doc
+$V install -m644 ${PKGDIR}/samba_help.desktop $BUILD_ROOT/doc
+$V install -m644 ${PKGDIR}/samba_using.desktop $BUILD_ROOT/doc
+$V install -m644 ${PKGDIR}/samba_configure.desktop $BUILD_ROOT/doc
 $V install -m644 ${PKGDIR}/samba.directory $BUILD_ROOT/doc
 $V install -m644 ${PKGDIR}/swat.readme ${BLDFIX}/swat/README
+$V install -m644 ${PKGDIR}/copyrights $BUILD_ROOT/etc/copyrights/samba
+
+for i in ${PKGDIR}/man/cat.1/*; do
+$V 	install -m644 $i ${BLDFIX}/man/cat.1
+done
+for i in ${PKGDIR}/man/cat.5/*; do
+$V 	install -m644 $i ${BLDFIX}/man/cat.5
+done
+for i in ${PKGDIR}/man/cat.7/*; do
+$V 	install -m644 $i ${BLDFIX}/man/cat.7
+done
+for i in ${PKGDIR}/man/cat.8/*; do
+$V 	install -m644 $i ${BLDFIX}/man/cat.8
+done
 
 # The following is now done in the postinstall script
 #

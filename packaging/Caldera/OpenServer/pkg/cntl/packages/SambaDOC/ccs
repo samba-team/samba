@@ -15,7 +15,11 @@ PostExport()
     if [ -x /usr/bin/doctool ]; then
         /usr/bin/doctool --add NetworkDoc/WinConnect/Samba/.directory >&- 2>&-
         /usr/bin/doctool --add \
-            NetworkDoc/WinConnect/Samba/samba.desktop >&- 2>&-
+            NetworkDoc/WinConnect/Samba/samba_help.desktop >&- 2>&-
+        /usr/bin/doctool --add \
+            NetworkDoc/WinConnect/Samba/samba_using.desktop >&- 2>&-
+        /usr/bin/doctool --add \
+            NetworkDoc/WinConnect/Samba/samba_configure.desktop >&- 2>&-
     fi
 }
 
@@ -23,8 +27,13 @@ PreUnexport()
 {
     if [ -x /usr/bin/doctool ]; then
         /usr/bin/doctool --remove \
-            NetworkDoc/WinConnect/Samba/samba.desktop >&- 2>&-
-        /usr/bin/doctool --remove NetworkDoc/WinConnect/Samba/.directory >&- 2>&-
+            NetworkDoc/WinConnect/Samba/samba_help.desktop >&- 2>&-
+        /usr/bin/doctool --remove \
+            NetworkDoc/WinConnect/Samba/samba_using.desktop >&- 2>&-
+        /usr/bin/doctool --remove \
+            NetworkDoc/WinConnect/Samba/samba_configure.desktop >&- 2>&-
+        /usr/bin/doctool --remove \
+            NetworkDoc/WinConnect/Samba/.directory >&- 2>&-
     fi
 }
     
