@@ -189,6 +189,7 @@ man_MANS =					\
 	krb5_get_in_cred.3			\
 	krb5_get_init_creds.3			\
 	krb5_get_krbhst.3			\
+	krb5_getportbyname.3			\
 	krb5_init_context.3			\
 	krb5_keyblock.3				\
 	krb5_keytab.3				\
