@@ -54,8 +54,7 @@ void	 source (int, char *[]);
 void	 tolocal (int, char *[]);
 void	 toremote (char *, int, char *[]);
 
-int      do_cmd(const char *host, const char *remuser, const char *cmd,
-		int *fdin, int *fdout);
+int      do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout);
 
 static int fflag, tflag;
 
@@ -226,7 +225,7 @@ toremote(char *targ, int argc, char **argv)
 void
 tolocal(int argc, char **argv)
 {
-	int i, len;
+	int i;
 	char *bp, *host, *src, *suser;
 
 	for (i = 0; i < argc - 1; i++) {
@@ -710,8 +709,7 @@ run_err(const char *fmt, ...)
  */
 
 int 
-do_cmd(const char *host, const char *remuser, const char *cmd,
-       int *fdin, int *fdout)
+do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout)
 {
 	int pin[2], pout[2], reserved[2];
 
