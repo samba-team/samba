@@ -21,6 +21,8 @@ mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l snprintf.c
 ssincludedir = $(includedir)/ss
 ssinclude_HEADERS = ss.h
 
+CLEANFILES = lex.c parse.c parse.h
+
 $(mk_cmds_OBJECTS): parse.h
 
 LDADD = ../roken/libroken.la $(LEXLIB)
