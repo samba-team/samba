@@ -17,6 +17,17 @@
 #include <syslog.h>
 #include "version.h"
 
+#ifdef KERBEROS
+#include <krb.h>
+#else
+/* Portable file locking */
+#define k_flock(fd, operation) flock((fd), (operation))
+#define   K_LOCK_SH   LOCK_SH         /* Shared lock */
+#define   K_LOCK_EX   LOCK_EX         /* Exclusive lock */
+#define   K_LOCK_NB   LOCK_NB         /* Don't block when locking */
+#define   K_LOCK_UN   LOCK_UN         /* Unlock */
+#endif
+
 #define NULLCP          ((char *) 0)
 #define SPACE           32
 #define TAB             9
