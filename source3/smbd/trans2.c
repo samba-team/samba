@@ -210,7 +210,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   if (!Files[fnum].open)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  if (fstat(Files[fnum].fd,&sbuf) != 0) {
+  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -351,9 +351,6 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
     }
 
 
-#ifndef KANJI
-  unix2dos_format(fname, True);
-#endif
 
   p = pdata;
   nameptr = p;
@@ -447,11 +444,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
-#ifndef KANJI
-	strcpy(p+2,unix2dos_format(fname,False));
-#else 
 	strcpy(p+2,fname);
-#endif
 	if (!name_map_mangle(p+2,True,SNUM(cnum)))
 	  (p+2)[12] = 0;
       } else
@@ -937,9 +930,12 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
       strcpy(pdata+4,vname);      
       break;
     case SMB_QUERY_FS_VOLUME_INFO:      
-      data_len = 17 + strlen(vname);
-      SIVAL(pdata,12,strlen(vname));
-      strcpy(pdata+17,vname);      
+      data_len = 18 + 2*strlen(vname);
+      SIVAL(pdata,12,2*strlen(vname));
+      PutUniCode(pdata+18,vname);      
+      DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", strlen(vname),
+	       vname));
+      break;
       break;
     case SMB_QUERY_FS_SIZE_INFO:
       {
@@ -1018,11 +1014,11 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     CHECK_ERROR(fnum);
 
     fname = Files[fnum].name;
-    if (fstat(Files[fnum].fd,&sbuf) != 0) {
+    if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
       DEBUG(3,("fstat of fnum %d failed (%s)\n",fnum, strerror(errno)));
       return(UNIXERROR(ERRDOS,ERRbadfid));
     }
-    pos = lseek(Files[fnum].fd,0,SEEK_CUR);
+    pos = lseek(Files[fnum].fd_ptr->fd,0,SEEK_CUR);
   } else {
     /* qpathinfo */
     info_level = SVAL(params,0);
@@ -1212,7 +1208,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     CHECK_ERROR(fnum);
 
     fname = Files[fnum].name;
-    fd = Files[fnum].fd;
+    fd = Files[fnum].fd_ptr->fd;
 
     if(fstat(fd,&st)!=0) {
       DEBUG(3,("fstat of %s failed (%s)\n", fname, strerror(errno)));

@@ -122,8 +122,8 @@ int interpret_coding_system (char *str, int def);
 
 #else 
 
-#define unix_to_dos(x,y) (x)
-#define dos_to_unix(x,y) (x)
+#define unix_to_dos(x,y) unix2dos_format(x,y)
+#define dos_to_unix(x,y) dos2unix_format(x,y)
 
 #endif /* not KANJI */
 

@@ -702,6 +702,22 @@ static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
     return True;
 }
 
+int padit(char *buf, int bufsize, int padsize)
+{
+  int berr= 0;
+  int bytestowrite;
+  
+  DEBUG(0, ("Padding with %d zeros\n", padsize));
+  memset(buf, 0, bufsize);
+  while( !berr && padsize > 0 ) {
+    bytestowrite= MIN(bufsize, padsize);
+    berr = dotarbuf(tarhandle, buf, bytestowrite) != bytestowrite;
+    padsize -= bytestowrite;
+  }
+  
+  return berr;
+}
+
 /*
  * smbclient functions
  */
@@ -1033,7 +1049,15 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	  dataptr=NULL;
 	  datalen=0;
 	}
-      
+
+       /* pad tar file with zero's if we couldn't get entire file */
+       if (nread < finfo.size)
+        {
+          DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n", finfo.size, nread));
+          if (padit(inbuf, BUFFER_SIZE, finfo.size - nread))
+              DEBUG(0,("Error writing local file\n"));
+        }
+
       /* round tar file to nearest block */
       if (finfo.size % TBLOCK)
 	dozerobuf(tarhandle, TBLOCK - (finfo.size % TBLOCK));
@@ -1681,17 +1705,15 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     return 0;
   }
 
+  tar_excl=tar_clipfl!='X';
+  if (Optind+1<argc) {
+    cliplist=argv+Optind+1;
+    clipn=argc-Optind-1;
+  }
   if (Optind>=argc || !strcmp(argv[Optind], "-")) {
     /* Sets tar handle to either 0 or 1, as appropriate */
     tarhandle=(tar_type=='c');
   } else {
-    tar_excl=tar_clipfl!='X';
-    
-    if (Optind+1<argc) {
-      cliplist=argv+Optind+1;
-      clipn=argc-Optind-1;
-    }
-
     if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY)) == -1)
 	|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0))
       {

@@ -666,7 +666,7 @@ BOOL unix_convert(char *name,int cnum);
 int disk_free(char *path,int *bsize,int *dfree,int *dsize);
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
-void open_file(int fnum,int cnum,char *fname1,int flags,int mode);
+void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *st);
 void sync_file(int fnum);
 void close_file(int fnum);
 BOOL check_file_sharing(int cnum,char *fname);

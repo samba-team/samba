@@ -45,7 +45,7 @@ BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset)
   if (!lp_locking(snum) || !lp_strict_locking(snum))
     return(False);
 
-  return(fcntl_lock(Files[fnum].fd,F_GETLK,offset,count,
+  return(fcntl_lock(Files[fnum].fd_ptr->fd,F_GETLK,offset,count,
 		    (Files[fnum].can_write?F_WRLCK:F_RDLCK)));
 }
 
@@ -67,7 +67,7 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ec
   }
 
   if (Files[fnum].can_lock && OPEN_FNUM(fnum) && (Files[fnum].cnum == cnum))
-    ok = fcntl_lock(Files[fnum].fd,F_SETLK,offset,count,
+    ok = fcntl_lock(Files[fnum].fd_ptr->fd,F_SETLK,offset,count,
 		    (Files[fnum].can_write?F_WRLCK:F_RDLCK));
 
   if (!ok) {
@@ -90,7 +90,7 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
     return(True);
 
   if (Files[fnum].can_lock && OPEN_FNUM(fnum) && (Files[fnum].cnum == cnum))
-    ok = fcntl_lock(Files[fnum].fd,F_SETLK,offset,count,F_UNLCK);
+    ok = fcntl_lock(Files[fnum].fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
    
   if (!ok) {
     *eclass = ERRDOS;
@@ -151,7 +151,7 @@ static BOOL share_name(int cnum,struct stat *st,char *name)
 static BOOL share_name_fnum(int fnum,char *name)
 {
   struct stat st;
-  if (fstat(Files[fnum].fd,&st) != 0) return(False);
+  if (fstat(Files[fnum].fd_ptr->fd,&st) != 0) return(False);
   return(share_name(Files[fnum].cnum,&st,name));
 }
 
@@ -163,7 +163,7 @@ static BOOL share_name_fnum(int fnum,char *name)
 int get_share_mode_by_fnum(int cnum,int fnum,int *pid)
 {
   struct stat sbuf;
-  if (fstat(Files[fnum].fd,&sbuf) == -1) return(0);
+  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) == -1) return(0);
   return(get_share_mode(cnum,&sbuf,pid));
 }
 
@@ -257,9 +257,9 @@ int get_share_mode(int cnum,struct stat *sbuf,int *pid)
 #else
   pstring fname;
   int fd2;
-  char buf[16];
+  char buf[20];
   int ret;
-  time_t t;
+  struct timeval t;
 
   *pid = 0;
 
@@ -268,18 +268,20 @@ int get_share_mode(int cnum,struct stat *sbuf,int *pid)
   fd2 = open(fname,O_RDONLY,0);
   if (fd2 < 0) return(0);
 
-  if (read(fd2,buf,16) != 16) {
+  if (read(fd2,buf,20) != 20) {
+    DEBUG(2,("Failed to read share file %s\n",fname));
     close(fd2);
     unlink(fname);
     return(0);
   }
   close(fd2);
 
-  t = IVAL(buf,0);
-  ret = IVAL(buf,4);
-  *pid = IVAL(buf,8);
+  t.tv_sec = IVAL(buf,4);
+  t.tv_usec = IVAL(buf,8);
+  ret = IVAL(buf,12);
+  *pid = IVAL(buf,16);
   
-  if (IVAL(buf,12) != LOCKING_VERSION) {    
+  if (IVAL(buf,0) != LOCKING_VERSION) {    
     if (!unlink(fname)) DEBUG(2,("Deleted old locking file %s",fname));
     *pid = 0;
     return(0);
@@ -368,29 +370,31 @@ void del_share_mode(int fnum)
 #else
   pstring fname;
   int fd2;
-  char buf[16];
-  time_t t=0;
+  char buf[20];
+  struct timeval t;
   int pid=0;
   BOOL del = False;
 
+  t.tv_sec = t.tv_usec = 0;
   if (!share_name_fnum(fnum,fname)) return;
 
   fd2 = open(fname,O_RDONLY,0);
   if (fd2 < 0) return;
-  if (read(fd2,buf,16) != 16)
+  if (read(fd2,buf,20) != 20)
     del = True;
   close(fd2);
 
   if (!del) {
-    t = IVAL(buf,0);
-    pid = IVAL(buf,8);
+    t.tv_sec = IVAL(buf,4);
+    t.tv_usec = IVAL(buf,8);
+    pid = IVAL(buf,16);
   }
 
   if (!del)
-    if (IVAL(buf,12) != LOCKING_VERSION || !pid || !process_exists(pid))
+    if (IVAL(buf,0) != LOCKING_VERSION || !pid || !process_exists(pid))
       del = True;
 
-  if (!del && t == Files[fnum].open_time && pid==(int)getpid())
+  if (!del && (memcmp(&t,&Files[fnum].open_time,sizeof(t)) == 0) && (pid==(int)getpid()))
     del = True;
 
   if (del) {
@@ -443,7 +447,7 @@ BOOL set_share_mode(int fnum,int mode)
 #else
   pstring fname;
   int fd2;
-  char buf[16];
+  char buf[20];
   int pid = (int)getpid();
 
   if (!share_name_fnum(fnum,fname)) return(False);
@@ -458,12 +462,14 @@ BOOL set_share_mode(int fnum,int mode)
     return(False);
   }
 
-  SIVAL(buf,0,Files[fnum].open_time);
-  SIVAL(buf,4,mode);
-  SIVAL(buf,8,pid);
-  SIVAL(buf,12,LOCKING_VERSION);
+  SIVAL(buf,0,LOCKING_VERSION);
+  SIVAL(buf,4,Files[fnum].open_time.tv_sec);
+  SIVAL(buf,8,Files[fnum].open_time.tv_usec);
+  SIVAL(buf,12,mode);
+  SIVAL(buf,16,pid);
 
-  if (write(fd2,buf,16) != 16) {
+  if (write(fd2,buf,20) != 20) {
+    DEBUG(2,("Failed to write share file %s\n",fname));
     close(fd2);
     unlink(fname);
     return(False);
@@ -538,7 +544,7 @@ void clean_share_modes(void)
   if (!dir) return;
 
   while ((s=readdirname(dir))) {
-    char buf[16];
+    char buf[20];
     int pid;
     int fd;
     pstring lname;
@@ -554,7 +560,7 @@ void clean_share_modes(void)
     fd = open(lname,O_RDONLY,0);
     if (fd < 0) continue;
 
-    if (read(fd,buf,16) != 16) {
+    if (read(fd,buf,20) != 20) {
       close(fd);
       if (!unlink(lname))
 	printf("Deleted corrupt share file %s\n",s);
@@ -562,9 +568,9 @@ void clean_share_modes(void)
     }
     close(fd);
 
-    pid = IVAL(buf,8);
+    pid = IVAL(buf,16);
 
-    if (IVAL(buf,12) != LOCKING_VERSION || !process_exists(pid)) {
+    if (IVAL(buf,0) != LOCKING_VERSION || !process_exists(pid)) {
       if (!unlink(lname))
 	printf("Deleted stale share file %s\n",s);
     }
